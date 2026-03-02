@@ -149,9 +149,22 @@ If the user invoked this with a slug argument:
 
 If no slug provided, or the intent doesn't exist, proceed to Phase 1.
 
-**Start fresh cleanup:** When the user chooses "Start fresh", delete the entire `.ai-dlc/{slug}/` directory. This includes any `discovery.md` that may have been created in a prior elaboration attempt:
+**Start fresh cleanup:** When the user chooses "Start fresh", remove the intent worktree and its branch (if they exist from a prior elaboration attempt), then clean up any leftover `.ai-dlc/{slug}/` directory:
 
 ```bash
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+INTENT_WORKTREE="${PROJECT_ROOT}/.ai-dlc/worktrees/${slug}"
+INTENT_BRANCH="ai-dlc/${slug}/main"
+
+# Remove worktree if it exists
+if [ -d "$INTENT_WORKTREE" ]; then
+  git worktree remove --force "$INTENT_WORKTREE" 2>/dev/null
+fi
+
+# Delete the intent branch if it exists
+git branch -D "$INTENT_BRANCH" 2>/dev/null
+
+# Clean up any leftover directory on main (from older elaboration format)
 rm -rf ".ai-dlc/${slug}"
 ```
 
@@ -192,17 +205,38 @@ Continue asking until you can articulate back to the user, in your own words, ex
 
 ---
 
-## Phase 2.25: Discovery Artifact Initialization
+## Phase 2.25: Intent Worktree & Discovery Initialization
 
-Before beginning technical exploration, initialize the discovery scratchpad. This file persists elaboration findings to disk so they survive context compaction and are available to builders later.
+Before beginning technical exploration, create the intent worktree and initialize the discovery scratchpad inside it. Creating the worktree early ensures **no artifacts are left on `main`** — all files from this point forward are written on the intent branch.
 
 ```bash
 # Derive intent slug from the user's description (same slug used throughout elaboration)
 INTENT_SLUG="{intent-slug}"
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+INTENT_BRANCH="ai-dlc/${INTENT_SLUG}/main"
+INTENT_WORKTREE="${PROJECT_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
+
+# Ensure worktrees directory exists and is gitignored (on main, before creating worktree)
+mkdir -p "${PROJECT_ROOT}/.ai-dlc/worktrees"
+if ! grep -q '\.ai-dlc/worktrees/' "${PROJECT_ROOT}/.gitignore" 2>/dev/null; then
+  echo '.ai-dlc/worktrees/' >> "${PROJECT_ROOT}/.gitignore"
+  git add "${PROJECT_ROOT}/.gitignore"
+  git commit -m "chore: gitignore .ai-dlc/worktrees"
+fi
+
+# Create the intent worktree on its own branch
+git worktree add -B "$INTENT_BRANCH" "$INTENT_WORKTREE"
+cd "$INTENT_WORKTREE"
+```
+
+**Tell the user the worktree location** so they know where to find it.
+
+Now initialize the discovery scratchpad. This file persists elaboration findings to disk so they survive context compaction and are available to builders later.
+
+```bash
 DISCOVERY_DIR=".ai-dlc/${INTENT_SLUG}"
 DISCOVERY_FILE="${DISCOVERY_DIR}/discovery.md"
 
-# Create directory (may already exist from Phase 0)
 mkdir -p "$DISCOVERY_DIR"
 
 # Initialize discovery.md with frontmatter header
@@ -221,7 +255,15 @@ Builders: read section headers for an overview, then dive into specific sections
 DISCOVERY_EOF
 ```
 
-This file lives in the main repo's working directory (not in a worktree — the worktree doesn't exist yet). It will be copied into the intent worktree in Phase 6.
+This file is written directly in the intent worktree on the `ai-dlc/{intent-slug}/main` branch. No artifacts touch `main`.
+
+This ensures:
+- Main working directory stays on `main` for other work
+- All discovery findings are written directly on the intent branch
+- All subsequent `han keep` operations use the intent branch's storage
+- Multiple intents can run in parallel in separate worktrees
+- Clean separation between main and AI-DLC orchestration state
+- Subagents spawn from the intent worktree, not the original repo
 
 ---
 
@@ -842,52 +884,26 @@ Map selections to the `announcements` array in intent.md frontmatter:
 
 ## Phase 6: Write AI-DLC Artifacts
 
-Create the intent branch and worktree, then write files in `.ai-dlc/{intent-slug}/`:
+Write intent and unit files in `.ai-dlc/{intent-slug}/` (already in the intent worktree since Phase 2.25):
 
-### 1. Create intent branch and worktree
+### 1. Verify intent worktree
 
-**CRITICAL: The intent MUST run in an isolated worktree, not the main working directory. Create this BEFORE writing any artifacts so all files are committed to the intent branch.**
+The intent worktree was already created in **Phase 2.25** (before discovery began), so all files — including `discovery.md` — are already on the intent branch. Verify we're in the right place:
 
 ```bash
+INTENT_SLUG="{intent-slug}"
 PROJECT_ROOT=$(git rev-parse --show-toplevel)
-INTENT_BRANCH="ai-dlc/${intentSlug}/main"
-INTENT_WORKTREE="${PROJECT_ROOT}/.ai-dlc/worktrees/${intentSlug}"
+INTENT_WORKTREE="${PROJECT_ROOT}"  # We should already be cd'd into the worktree
 
-# Ensure worktrees directory exists and is gitignored
-mkdir -p "${PROJECT_ROOT}/.ai-dlc/worktrees"
-if ! grep -q '\.ai-dlc/worktrees/' "${PROJECT_ROOT}/.gitignore" 2>/dev/null; then
-  echo '.ai-dlc/worktrees/' >> "${PROJECT_ROOT}/.gitignore"
-  git add "${PROJECT_ROOT}/.gitignore"
-  git commit -m "chore: gitignore .ai-dlc/worktrees"
-fi
-
-git worktree add -B "$INTENT_BRANCH" "$INTENT_WORKTREE"
-cd "$INTENT_WORKTREE"
-```
-
-#### 1b. Copy discovery.md into worktree
-
-If a discovery log was created during Phase 2.5, copy it into the worktree so it gets committed with the intent artifacts:
-
-```bash
-DISCOVERY_SOURCE="${PROJECT_ROOT}/.ai-dlc/${INTENT_SLUG}/discovery.md"
-if [ -f "$DISCOVERY_SOURCE" ]; then
-  mkdir -p "${INTENT_WORKTREE}/.ai-dlc/${INTENT_SLUG}"
-  cp "$DISCOVERY_SOURCE" "${INTENT_WORKTREE}/.ai-dlc/${INTENT_SLUG}/discovery.md"
+# Verify we're on the intent branch
+CURRENT_BRANCH=$(git branch --show-current)
+EXPECTED_BRANCH="ai-dlc/${INTENT_SLUG}/main"
+if [ "$CURRENT_BRANCH" != "$EXPECTED_BRANCH" ]; then
+  echo "ERROR: Expected to be on branch $EXPECTED_BRANCH but on $CURRENT_BRANCH"
+  echo "The intent worktree should have been created in Phase 2.25."
+  exit 1
 fi
 ```
-
-The file is already caught by `git add .ai-dlc/` in Step 5's commit.
-
-This ensures:
-- Main working directory stays on `main` for other work
-- All artifacts are written directly on the intent branch
-- All subsequent `han keep` operations use the intent branch's storage
-- Multiple intents can run in parallel in separate worktrees
-- Clean separation between main and AI-DLC orchestration state
-- Subagents spawn from the intent worktree, not the original repo
-
-**Tell the user the worktree location** so they know where to find it.
 
 ### 2. Write `intent.md`:
 ```markdown
