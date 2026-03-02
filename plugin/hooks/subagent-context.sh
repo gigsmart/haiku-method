@@ -116,6 +116,20 @@ if [ -f "${INTENT_DIR}/completion-criteria.md" ]; then
   echo ""
 fi
 
+# Inject discovery.md section headers (keep subagent context lean)
+if [ -f "${INTENT_DIR}/discovery.md" ]; then
+  DISCOVERY_HEADERS=$(grep -E '^## ' "${INTENT_DIR}/discovery.md" 2>/dev/null || true)
+  if [ -n "$DISCOVERY_HEADERS" ]; then
+    echo "### Discovery Log"
+    echo ""
+    echo "Elaboration findings available in \`.ai-dlc/${INTENT_SLUG}/discovery.md\`:"
+    echo ""
+    echo "$DISCOVERY_HEADERS"
+    echo ""
+    echo "*Read the full file for detailed findings.*"
+    echo ""
+  fi
+fi
 
 # Source DAG library if available
 DAG_LIB="${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"

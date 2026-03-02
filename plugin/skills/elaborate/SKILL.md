@@ -150,6 +150,14 @@ If the user invoked this with a slug argument:
 
 If no slug provided, or the intent doesn't exist, proceed to Phase 1.
 
+**Start fresh cleanup:** When the user chooses "Start fresh", delete the entire `.ai-dlc/{slug}/` directory. This includes any `discovery.md` that may have been created in a prior elaboration attempt:
+
+```bash
+rm -rf ".ai-dlc/${slug}"
+```
+
+Then proceed to Phase 1.
+
 ---
 
 ## Phase 1: Gather Intent
@@ -185,6 +193,39 @@ Continue asking until you can articulate back to the user, in your own words, ex
 
 ---
 
+## Phase 2.25: Discovery Artifact Initialization
+
+Before beginning technical exploration, initialize the discovery scratchpad. This file persists elaboration findings to disk so they survive context compaction and are available to builders later.
+
+```bash
+# Derive intent slug from the user's description (same slug used throughout elaboration)
+INTENT_SLUG="{intent-slug}"
+DISCOVERY_DIR=".ai-dlc/${INTENT_SLUG}"
+DISCOVERY_FILE="${DISCOVERY_DIR}/discovery.md"
+
+# Create directory (may already exist from Phase 0)
+mkdir -p "$DISCOVERY_DIR"
+
+# Initialize discovery.md with frontmatter header
+cat > "$DISCOVERY_FILE" << 'DISCOVERY_EOF'
+---
+intent: {intent-slug}
+created: {ISO date}
+status: active
+---
+
+# Discovery Log: {Intent Title}
+
+Elaboration findings persisted during Phase 2.5 domain discovery.
+Builders: read section headers for an overview, then dive into specific sections as needed.
+
+DISCOVERY_EOF
+```
+
+This file lives in the main repo's working directory (not in a worktree — the worktree doesn't exist yet). It will be copied into the intent worktree in Phase 6.
+
+---
+
 ## Phase 2.5: Domain Discovery & Technical Exploration
 
 **This phase is mandatory.** Before defining success criteria or decomposing into units, you MUST deeply understand the technical landscape. Shallow understanding here causes builders to build the wrong thing.
@@ -208,7 +249,7 @@ Based on what the user described in Phase 2, identify every relevant technical s
 7. **Configured Providers**: If providers are configured in `.ai-dlc/settings.yml` or discovered via MCP:
    - **Spec providers** (Notion, Confluence, Google Docs): Search for requirements docs, PRDs, or technical specs related to the intent
    - **Ticketing providers** (Jira, Linear): Search for existing tickets, epics, or stories that relate to or duplicate this work
-   - **Design providers** (Figma, Sketch, Adobe XD): Search for design files, component libraries, or mockups relevant to UI work. When possible, download/export assets (images, icons, SVGs) for analysis rather than relying on visual inspection alone. **Important:** Designers often annotate mockups with callouts, arrows, measurement labels, sticky notes, and descriptive text that convey UX behavior or implementation details. These annotations are **guidance, not part of the design itself** — extract the guidance (interaction notes, spacing rules, state descriptions, edge cases) and incorporate it into unit specs, but do not treat annotation visuals as UI elements to build.
+   - **Design providers** (Figma, Sketch, Adobe XD): Delegate to design analysis subagents (see item 4 in "How to Explore" below) to avoid flooding your context with design data. **Important:** Designers often annotate mockups with callouts, arrows, measurement labels, sticky notes, and descriptive text that convey UX behavior or implementation details. These annotations are **guidance, not part of the design itself** — extract the guidance (interaction notes, spacing rules, state descriptions, edge cases) and incorporate it into unit specs, but do not treat annotation visuals as UI elements to build.
    - **Comms providers** (Slack, Teams): Search for relevant discussions or decisions in channels
    Use `ToolSearch` to discover available MCP tools matching provider types, then use read-only MCP tools for research.
 
@@ -235,6 +276,46 @@ Task({
 
 3. **Web research for external context**: Use `WebSearch` for library docs, design patterns, API references, prior art. Use `WebFetch` to read specific documentation pages.
 
+4. **Design analysis subagents**: If a design provider is configured, delegate design analysis to subagents to keep your context lean:
+
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+PROVIDERS=$(load_providers)
+DESIGN_TYPE=$(echo "$PROVIDERS" | jq -r '.design.type // empty')
+```
+
+If `DESIGN_TYPE` is set, spawn a `general-purpose` subagent (NOT `Explore` — it needs MCP tool access via `ToolSearch`) for each design file:
+
+```
+Task({
+  description: "Analyze design: {file name}",
+  subagent_type: "general-purpose",
+  prompt: "Analyze a design file for AI-DLC elaboration.
+
+    ## Instructions
+    1. Use ToolSearch to discover design MCP tools (e.g., 'figma', 'sketch', 'design')
+    2. Use discovered tools to fetch design metadata, screenshots, and component trees
+    3. Extract and return ONLY a structured summary:
+       - Component hierarchy (parent/child tree of design elements)
+       - Design tokens: colors (hex values), spacing values, typography (font families, sizes, weights)
+       - Interactions and states (hover, active, disabled, error states)
+       - Annotations and designer notes (text callouts, sticky notes, measurement labels)
+
+    ## CRITICAL
+    - Return structured text ONLY — no raw screenshots or binary data in your response
+    - Focus on information builders need to implement the design accurately
+    - Note any ambiguities or missing states that builders should ask about
+
+    ## Design File
+    {design file URL or identifier}"
+})
+```
+
+Spawn one subagent per design file, in parallel with codebase Explore agents. When results return:
+- Share key findings with the user (component structure, notable design decisions)
+- Append to `discovery.md` under `## Design Analysis: {file name}`
+- If no design MCP tools are discoverable, the subagent reports unavailability — log a warning and continue without design analysis
+
 **Spawn multiple research paths in parallel.** Don't serialize explorations that are independent — launch all of them at once and synthesize when results return.
 
 If a VCS MCP is available (e.g., GitHub MCP), use it for code browsing alongside or instead of local file tools.
@@ -249,6 +330,42 @@ If a VCS MCP is available (e.g., GitHub MCP), use it for code browsing alongside
 - **Check your mental model incrementally.** Don't wait until the end to validate everything at once. After each major finding, briefly confirm: "I found X — does that match your understanding?" This catches misunderstandings early.
 
 The goal is a **conversation**, not a research report. The user has domain knowledge you don't have. They can correct your understanding in seconds if you surface it, but they can't fix what they can't see.
+
+### Persist Findings to Discovery Log
+
+After each significant finding (API schema mapped, codebase pattern identified, design analyzed, external research completed), **append a section to `discovery.md`** using `cat >>`. This offloads detailed findings from context to disk, keeping your context window lean while preserving full details for builders.
+
+```bash
+DISCOVERY_FILE=".ai-dlc/${INTENT_SLUG}/discovery.md"
+
+cat >> "$DISCOVERY_FILE" << 'EOF'
+
+## {Section Type}: {Name}
+
+**Discovered:** {ISO timestamp}
+
+### Findings
+{Structured findings — entities, fields, patterns, constraints, etc.}
+
+### Key Observations
+- {Important insight 1}
+- {Important insight 2}
+
+### Gaps / Concerns
+- {Any gap, limitation, or open question}
+
+EOF
+```
+
+**Use standardized section headers** so builders can quickly scan the file:
+- `## API Schema: {name}` — For API introspection results (types, fields, queries, mutations)
+- `## Codebase Pattern: {area}` — For architecture patterns discovered in existing code
+- `## Design Analysis: {file}` — For design file findings (components, tokens, interactions)
+- `## External Research: {topic}` — For web research, library docs, prior art
+- `## Data Source: {name}` — For data source exploration (what's available, what's missing)
+- `## Provider Context: {type}` — For ticketing, spec, or comms provider findings
+
+**After appending to `discovery.md`, keep only a brief summary in your context** — the full details are safely on disk and will be available to builders. This is the key benefit: your context stays lean for continued exploration while nothing is lost.
 
 **CRITICAL**: Do not summarize or skip this phase. The exploration results directly determine whether the spec is accurate. If you explore a GraphQL API, report every type. If you read source code, report the actual architecture, not your guess about it.
 
@@ -668,6 +785,31 @@ Map user selections to config values:
 - "Yes" auto-merge → `true`
 - "No" auto-merge → `false`
 
+### Hybrid Per-Unit Strategy (Optional)
+
+If the user selected **"Intent branch"** strategy, ask whether any foundational units should use per-unit branching instead. This creates a **hybrid** strategy where one or more units get their own PR (merged directly to the default branch), while the remaining units merge into the intent branch.
+
+This is useful when a foundational unit (e.g., database schema, shared library setup) needs to land on `main` before other units can build on it.
+
+Use `AskUserQuestion`:
+```json
+{
+  "questions": [{
+    "question": "Should any foundational units use per-unit branching (own PR to main) while others use the intent branch?",
+    "header": "Hybrid",
+    "options": [
+      {"label": "No, all intent branch", "description": "All units merge into the intent branch (standard intent strategy)"},
+      {"label": "Yes, some per-unit", "description": "I'll specify which foundational units should get their own PR"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+If the user selects "Yes", ask which units should use per-unit branching. Note these units — their `git: { change_strategy: unit }` override will be written into unit frontmatter in Phase 6 Step 3.
+
+**Skip this question entirely if the user selected "Unit branches" or "Trunk-based" in the main strategy question** — per-unit overrides only make sense with the intent branch strategy.
+
 ---
 
 ## Phase 5.9: Completion Announcements
@@ -723,6 +865,20 @@ fi
 git worktree add -B "$INTENT_BRANCH" "$INTENT_WORKTREE"
 cd "$INTENT_WORKTREE"
 ```
+
+#### 1b. Copy discovery.md into worktree
+
+If a discovery log was created during Phase 2.5, copy it into the worktree so it gets committed with the intent artifacts:
+
+```bash
+DISCOVERY_SOURCE="${PROJECT_ROOT}/.ai-dlc/${INTENT_SLUG}/discovery.md"
+if [ -f "$DISCOVERY_SOURCE" ]; then
+  mkdir -p "${INTENT_WORKTREE}/.ai-dlc/${INTENT_SLUG}"
+  cp "$DISCOVERY_SOURCE" "${INTENT_WORKTREE}/.ai-dlc/${INTENT_SLUG}/discovery.md"
+fi
+```
+
+The file is already caught by `git add .ai-dlc/` in Step 5's commit.
 
 This ensures:
 - Main working directory stays on `main` for other work
@@ -793,6 +949,8 @@ branch: ai-dlc/{intent-slug}/NN-{unit-slug}
 discipline: {discipline}  # frontend, backend, api, documentation, devops, design, etc.
 workflow: ""  # Per-unit workflow override (optional — omit or leave empty to use intent-level workflow)
 ticket: ""  # Ticketing provider ticket key (auto-populated if ticketing provider configured)
+# git:                         # Optional: per-unit VCS override (only include when unit has an override)
+#   change_strategy: ""        # Overrides intent-level strategy for this unit (e.g., "unit" for foundational units)
 ---
 
 # unit-NN-{slug}

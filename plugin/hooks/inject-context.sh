@@ -381,6 +381,17 @@ if [ -n "$INTENT_DIR" ] && [ -f "${INTENT_DIR}/completion-criteria.md" ]; then
   echo ""
 fi
 
+# Show discovery.md availability indicator
+if [ -n "$INTENT_DIR" ] && [ -f "${INTENT_DIR}/discovery.md" ]; then
+  DISCOVERY_COUNT=$(grep -cE '^## ' "${INTENT_DIR}/discovery.md" 2>/dev/null || echo "0")
+  if [ "$DISCOVERY_COUNT" -gt 0 ]; then
+    echo "### Discovery Log"
+    echo ""
+    echo "**${DISCOVERY_COUNT} sections** of elaboration findings available in \`.ai-dlc/${INTENT_SLUG}/discovery.md\`"
+    echo ""
+  fi
+fi
+
 # Load and display current plan (from cached values)
 PLAN="${KEEP_VALUES[current-plan.md]}"
 if [ -n "$PLAN" ]; then

@@ -91,6 +91,7 @@ Context windows reset. Files persist.
 AI-DLC stores state in files:
 - `intent.md` - What we're building
 - `completion-criteria.md` - How we know it's done
+- `discovery.md` - Domain discovery findings from elaboration
 - `scratchpad.md` - Learnings and notes
 - `blockers.md` - What's blocking progress
 - `iteration.json` - Current hat, iteration count, workflow state
@@ -208,6 +209,7 @@ AI-DLC uses `han keep` for state persistence:
 | `iteration.json` | Hat, iteration count, status | Commands |
 | `intent.md` | What we're building | /elaborate |
 | `completion-criteria.md` | How we know it's done | /elaborate |
+| `discovery.md` | Domain discovery findings | /elaborate |
 | `current-plan.md` | Plan for this iteration | Planner hat |
 | `scratchpad.md` | Learnings and notes | AI during work |
 | `blockers.md` | What's blocking progress | AI when stuck |

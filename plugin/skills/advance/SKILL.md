@@ -108,8 +108,15 @@ INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
 CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
 AUTO_MERGE=$(echo "$CONFIG" | jq -r '.auto_merge // "true"')
 AUTO_SQUASH=$(echo "$CONFIG" | jq -r '.auto_squash // "false"')
-CHANGE_STRATEGY=$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')
 DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
+
+# Resolve effective change strategy: per-unit override takes priority over intent-level
+source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
+UNIT_CHANGE_STRATEGY=""
+if [ -n "$CURRENT_UNIT" ] && [ -f "$INTENT_DIR/${CURRENT_UNIT}.md" ]; then
+  UNIT_CHANGE_STRATEGY=$(parse_unit_change_strategy "$INTENT_DIR/${CURRENT_UNIT}.md")
+fi
+CHANGE_STRATEGY="${UNIT_CHANGE_STRATEGY:-$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')}"
 
 UNIT_SLUG="${CURRENT_UNIT#unit-}"
 UNIT_BRANCH="ai-dlc/${INTENT_SLUG}/${UNIT_SLUG}"
@@ -176,10 +183,26 @@ if (dagSummary.allComplete) {
   // ALL UNITS COMPLETE - Check if integrator should run
   // Skip integrator for:
   //   - Single-unit intents (reviewer already validated it)
-  //   - change_strategy "unit" (each unit reviewed individually via per-unit MR)
-  const unitCount = dagSummary.totalCount;
-  const changeStrategy = config.change_strategy || "unit";
-  const skipIntegrator = unitCount <= 1 || changeStrategy === "unit";
+  //   - ALL units effectively use "unit" strategy (each reviewed individually via per-unit MR)
+  // Hybrid check: iterate all units to see if any use non-unit strategy
+```
+
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
+ALL_UNIT_STRATEGY=true
+for unit_file in "$INTENT_DIR"/unit-*.md; do
+  [ -f "$unit_file" ] || continue
+  UNIT_CS=$(parse_unit_change_strategy "$unit_file")
+  EFFECTIVE_CS="${UNIT_CS:-$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')}"
+  [ "$EFFECTIVE_CS" != "unit" ] && { ALL_UNIT_STRATEGY=false; break; }
+done
+UNIT_COUNT=$(ls -1 "$INTENT_DIR"/unit-*.md 2>/dev/null | wc -l)
+SKIP_INTEGRATOR=false
+[ "$UNIT_COUNT" -le 1 ] && SKIP_INTEGRATOR=true
+[ "$ALL_UNIT_STRATEGY" = "true" ] && SKIP_INTEGRATOR=true
+```
+
+```javascript
   if (!skipIntegrator && !state.integratorComplete) {
     // Spawn integrator on the intent branch
     // See Step 2e below

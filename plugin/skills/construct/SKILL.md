@@ -351,7 +351,10 @@ han keep save iteration.json "$STATE"
 AGENT_TEAMS_ENABLED="${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}"
 CHANGE_STRATEGY=$(han parse yaml "git.change_strategy" -r --default "unit" < "$INTENT_DIR/intent.md")
 
-# Unit strategy always uses Sequential path (subagent delegation, no team orchestration)
+# Pure unit strategy always uses Sequential path (subagent delegation, no team orchestration).
+# Hybrid strategy (intent-level "intent" + some units overriding to "unit") keeps Teams enabled —
+# the intent-level strategy drives orchestration. Per-unit overrides are resolved at merge time
+# by /advance, not at spawn time.
 if [ "$CHANGE_STRATEGY" = "unit" ]; then
   AGENT_TEAMS_ENABLED=""
 fi
@@ -625,18 +628,50 @@ Task({
 
 a. Mark unit as completed: `update_unit_status "$UNIT_FILE" "completed"`
 b. Remove unit from `unitStates`
-c. Merge unit branch into intent branch:
+c. Merge or PR based on effective change strategy:
 
 ```bash
-# Merge unit branch into intent branch
+# Determine merge behavior based on per-unit or intent-level change strategy
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
 INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
 CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
 AUTO_MERGE=$(echo "$CONFIG" | jq -r '.auto_merge // "true"')
 AUTO_SQUASH=$(echo "$CONFIG" | jq -r '.auto_squash // "false"')
+DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
 
-if [ "$AUTO_MERGE" = "true" ]; then
-  UNIT_BRANCH="ai-dlc/${INTENT_SLUG}/${UNIT_SLUG}"
+# Check per-unit change strategy override
+UNIT_FILE="$INTENT_DIR/${UNIT_NAME}.md"
+UNIT_CS=$(parse_unit_change_strategy "$UNIT_FILE")
+EFFECTIVE_CS="${UNIT_CS:-$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')}"
+UNIT_BRANCH="ai-dlc/${INTENT_SLUG}/${UNIT_SLUG}"
+
+if [ "$EFFECTIVE_CS" = "unit" ]; then
+  # Per-unit strategy: create PR to default branch (same as advance/SKILL.md unit path)
+  git push -u origin "$UNIT_BRANCH" 2>/dev/null || true
+
+  UNIT_TICKET=$(han parse yaml ticket -r --default "" < "$UNIT_FILE" 2>/dev/null || echo "")
+  TICKET_LINE=""
+  [ -n "$UNIT_TICKET" ] && TICKET_LINE="Closes ${UNIT_TICKET}"
+
+  gh pr create \
+    --base "$DEFAULT_BRANCH" \
+    --head "$UNIT_BRANCH" \
+    --title "unit: ${UNIT_NAME}" \
+    --body "## Unit: ${UNIT_NAME}
+
+Part of intent: ${INTENT_SLUG}
+
+${TICKET_LINE}
+
+---
+*Built with [AI-DLC](https://ai-dlc.dev)*" 2>/dev/null || echo "PR may already exist for $UNIT_BRANCH"
+
+  WORKTREE_PATH="${PROJECT_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
+  [ -d "$WORKTREE_PATH" ] && git worktree remove "$WORKTREE_PATH"
+
+elif [ "$AUTO_MERGE" = "true" ]; then
+  # Intent strategy: merge unit branch into intent branch (existing behavior)
   git checkout "ai-dlc/${INTENT_SLUG}/main"
 
   if [ "$AUTO_SQUASH" = "true" ]; then
@@ -698,15 +733,27 @@ UNIT_COUNT=$(ls -1 "$INTENT_DIR"/unit-*.md 2>/dev/null | wc -l)
 
 Skip the integrator if:
 - Only one unit (the reviewer already validated it)
-- `change_strategy` is `unit` (each unit reviewed individually via per-unit MR)
+- ALL units effectively use `unit` strategy (each unit reviewed individually via per-unit MR)
+
+Note: In hybrid mode (intent-level `intent` + some units overriding to `unit`), the integrator still runs because non-unit units merge into the intent branch and need integration verification.
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
 CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
-CHANGE_STRATEGY=$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')
+
+# Hybrid-aware check: iterate all units to determine if ALL effectively use "unit" strategy
+ALL_UNIT_STRATEGY=true
+for unit_file in "$INTENT_DIR"/unit-*.md; do
+  [ -f "$unit_file" ] || continue
+  UNIT_CS=$(parse_unit_change_strategy "$unit_file")
+  EFFECTIVE_CS="${UNIT_CS:-$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')}"
+  [ "$EFFECTIVE_CS" != "unit" ] && { ALL_UNIT_STRATEGY=false; break; }
+done
+
 SKIP_INTEGRATOR=false
 [ "$UNIT_COUNT" -le 1 ] && SKIP_INTEGRATOR=true
-[ "$CHANGE_STRATEGY" = "unit" ] && SKIP_INTEGRATOR=true
+[ "$ALL_UNIT_STRATEGY" = "true" ] && SKIP_INTEGRATOR=true
 ```
 
 If `SKIP_INTEGRATOR` is false and `integratorComplete` is not `true`:

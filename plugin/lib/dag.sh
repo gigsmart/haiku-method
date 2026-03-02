@@ -109,6 +109,35 @@ parse_unit_branch() {
   _yaml_get_simple "branch" "" < "$unit_file"
 }
 
+# Parse per-unit change strategy from nested git: { change_strategy: ... } frontmatter
+# Usage: parse_unit_change_strategy <unit_file>
+# Returns the strategy value if set, empty string if not
+parse_unit_change_strategy() {
+  local unit_file="$1"
+  [ ! -f "$unit_file" ] && { echo ""; return; }
+  local in_frontmatter=false in_git=false value=""
+  while IFS= read -r line; do
+    [[ "$line" == "---" ]] && { $in_frontmatter && break || in_frontmatter=true; continue; }
+    $in_frontmatter || continue
+    if [[ "$line" =~ ^git:\ *$ ]]; then
+      in_git=true
+      continue
+    fi
+    if $in_git; then
+      if [[ "$line" =~ ^[[:space:]]+change_strategy:\ *(.*)$ ]]; then
+        value="${BASH_REMATCH[1]}"
+        value="${value#\"}"
+        value="${value%\"}"
+        value="${value#\'}"
+        value="${value%\'}"
+        break
+      fi
+      [[ ! "$line" =~ ^[[:space:]] ]] && in_git=false
+    fi
+  done < "$unit_file"
+  echo "$value"
+}
+
 # Check if all dependencies of a unit are completed
 # Returns 0 (true) if all deps completed, 1 (false) otherwise
 # Usage: are_deps_completed <intent_dir> <unit_file>
