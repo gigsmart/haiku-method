@@ -29,17 +29,24 @@ if [ -z "$OLD_VERSION" ]; then
 	fi
 fi
 
-# Determine git range for commits
-# Get the last 50 commits and filter later
-GIT_RANGE="HEAD~50..HEAD"
+# Determine git range: from the last version bump commit to HEAD
+# This ensures each version only includes commits new since the previous release
+GIT_RANGE=""
+if [ -n "$OLD_VERSION" ]; then
+	# Find the commit that bumped TO the old version (e.g., "bump version X -> 1.16.0")
+	LAST_BUMP_COMMIT=$(git log --all --grep="bump version.*-> $OLD_VERSION" --format="%H" -1 2>/dev/null || true)
+	if [ -n "$LAST_BUMP_COMMIT" ]; then
+		GIT_RANGE="$LAST_BUMP_COMMIT..HEAD"
+	fi
+fi
+
+# Fallback: if no bump commit found, use all commits (first release scenario)
+if [ -z "$GIT_RANGE" ]; then
+	GIT_RANGE="HEAD"
+fi
 
 # Get commits for this path, excluding version bump commits and website changes
 COMMITS=$(git log $GIT_RANGE --pretty=format:"%h|%s|%an|%ad" --date=short -- "$PATH_DIR" ':!website' 2>/dev/null | grep -v "\[skip ci\]" | grep -v "chore(release):" | grep -v "chore(plugin): bump" || true)
-
-# If we still don't have commits, try without range limit
-if [ -z "$COMMITS" ]; then
-	COMMITS=$(git log --all --pretty=format:"%h|%s|%an|%ad" --date=short -- "$PATH_DIR" ':!website' 2>/dev/null | grep -v "\[skip ci\]" | grep -v "chore(release):" | grep -v "chore(plugin): bump" | head -20 || true)
-fi
 
 if [ -z "$COMMITS" ]; then
 	echo "No commits found for $PATH_DIR in range $GIT_RANGE"
@@ -143,10 +150,11 @@ if [ -n "$OTHER" ]; then
 	} >>"$TEMP_FILE"
 fi
 
-# If existing changelog exists, append old entries (excluding the header)
+# If existing changelog exists, append old entries (excluding the header and [Unreleased] section)
 if [ -f "$CHANGELOG_FILE" ]; then
-	# Skip the first 6 lines (header) and append the rest
-	tail -n +7 "$CHANGELOG_FILE" >>"$TEMP_FILE" 2>/dev/null || true
+	# Skip header (first 6 lines), then strip any [Unreleased] section
+	# (its commits are now captured in the new version's range)
+	tail -n +7 "$CHANGELOG_FILE" 2>/dev/null | sed '/^## \[Unreleased\]/,/^## \[/{ /^## \[Unreleased\]/d; /^## \[/!d; }' >>"$TEMP_FILE" || true
 fi
 
 # Remove consecutive blank lines and ensure single trailing newline
