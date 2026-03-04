@@ -175,6 +175,34 @@ Spawn one subagent per design file, in parallel with codebase Explore agents. Wh
 
    Discovery mockups are always ASCII — they exist to facilitate discussion, not to serve as spec artifacts. Unit wireframes (Phase 6.25) handle the structured HTML spec.
 
+   #### ASCII Wireframe Rules
+
+   **Alignment is critical.** Misaligned ASCII wireframes are unreadable and useless for discussion. Follow these rules strictly:
+
+   1. **Use monospace box-drawing characters** — `┌ ┐ └ ┘ │ ─ ├ ┤ ┬ ┴ ┼` for all borders. Never use `+`, `-`, `|` for box edges.
+   2. **Fixed-width columns** — decide column widths first, then fill content. Every row in a section must have the same total width.
+   3. **Pad content inside boxes** — always one space of padding: `│ Label │` not `│Label│`.
+   4. **Verify vertical alignment** — every `│` in a column must sit in the same character position across all rows. Count characters if needed.
+   5. **Keep it readable** — target 80-120 character width for most views, up to 160 for complex multi-column layouts. Prefer multiple focused mockups over one that's too dense.
+   6. **Label everything** — every box, region, and element gets a text label. Unlabeled boxes are ambiguous.
+   7. **Use consistent indentation** — nested elements indent by exactly 2 spaces.
+
+   Example of correct alignment:
+   ```
+   ┌─────────────────────────────────────────────┐
+   │ Header                                      │
+   ├──────────────────────┬──────────────────────┤
+   │ Sidebar              │ Main Content         │
+   │                      │                      │
+   │  [Nav Item 1]        │  Page Title          │
+   │  [Nav Item 2]        │  ───────────         │
+   │  [Nav Item 3]        │  Content area...     │
+   │                      │                      │
+   ├──────────────────────┴──────────────────────┤
+   │ Footer                                      │
+   └─────────────────────────────────────────────┘
+   ```
+
    #### Per-View Mockup Process
 
    For each distinct screen or view identified in the domain model:
@@ -182,6 +210,7 @@ Spawn one subagent per design file, in parallel with codebase Explore agents. Wh
    - Annotate with interaction notes (what happens on click, hover, submit, error states)
    - Show which domain entities map to which UI regions
    - If working from designs: note where your interpretation might diverge from the source
+   - **After drawing each mockup, visually verify that all vertical lines align before writing to disk**
 
    Append each mockup to `discovery.md`:
    ```
