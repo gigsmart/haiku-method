@@ -455,7 +455,34 @@ git commit -m "announce: generate completion announcements for ${INTENT_SLUG}"
 
 Skip this step if `announcements` is empty or `[]`.
 
-Then ask the user how to deliver using `AskUserQuestion`:
+**Gate on change strategy.** The delivery prompt only applies to intent-level strategy. With unit strategy, each unit already has its own PR.
+
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
+CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
+CHANGE_STRATEGY=$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')
+
+ALL_UNIT_STRATEGY=true
+for unit_file in "$INTENT_DIR"/unit-*.md; do
+  [ -f "$unit_file" ] || continue
+  UNIT_CS=$(parse_unit_change_strategy "$unit_file")
+  EFFECTIVE_CS="${UNIT_CS:-$CHANGE_STRATEGY}"
+  [ "$EFFECTIVE_CS" != "unit" ] && { ALL_UNIT_STRATEGY=false; break; }
+done
+```
+
+**If ALL units use unit strategy** (`ALL_UNIT_STRATEGY=true`): Skip the delivery prompt. Each unit already has its own PR. Output:
+
+```
+All unit PRs have been created during construction. Review and merge them individually.
+
+To clean up:
+  git worktree remove .ai-dlc/worktrees/{intent-slug}
+  /reset
+```
+
+**If intent strategy** (or hybrid with non-unit units): Ask the user how to deliver using `AskUserQuestion`:
 
 ```json
 {
@@ -483,6 +510,8 @@ git push -u origin "$INTENT_BRANCH" 2>/dev/null || true
 2. Collect ticket references from all units:
 
 ```bash
+DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
+
 TICKET_REFS=""
 for unit_file in "$INTENT_DIR"/unit-*.md; do
   [ -f "$unit_file" ] || continue
@@ -520,7 +549,7 @@ EOF
 )"
 ```
 
-3. Output the PR URL.
+4. Output the PR URL.
 
 ### If manual:
 

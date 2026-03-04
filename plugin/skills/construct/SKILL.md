@@ -848,7 +848,36 @@ han keep save iteration.json "$STATE"
 
 #### 5c. Delivery Prompt
 
-After the completion summary, ask the user how to deliver using `AskUserQuestion`:
+**Gate on change strategy.** The delivery prompt only applies to intent-level strategy, where all unit work merges into a single intent branch that needs delivery. With unit strategy, each unit already has its own PR — there's nothing to deliver as a whole.
+
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
+INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
+CHANGE_STRATEGY=$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')
+
+# Check if ALL units effectively use unit strategy (including hybrid)
+ALL_UNIT_STRATEGY=true
+for unit_file in "$INTENT_DIR"/unit-*.md; do
+  [ -f "$unit_file" ] || continue
+  UNIT_CS=$(parse_unit_change_strategy "$unit_file")
+  EFFECTIVE_CS="${UNIT_CS:-$CHANGE_STRATEGY}"
+  [ "$EFFECTIVE_CS" != "unit" ] && { ALL_UNIT_STRATEGY=false; break; }
+done
+```
+
+**If ALL units use unit strategy** (`ALL_UNIT_STRATEGY=true`): Skip the delivery prompt entirely. Each unit already has its own PR. Output:
+
+```
+All unit PRs have been created during construction. Review and merge them individually.
+
+To clean up:
+  git worktree remove .ai-dlc/worktrees/{intent-slug}
+  /reset
+```
+
+**If intent strategy** (or hybrid with non-unit units): Ask the user how to deliver using `AskUserQuestion`:
 
 ```json
 {
@@ -876,9 +905,6 @@ git push -u origin "$INTENT_BRANCH" 2>/dev/null || true
 2. Collect ticket references from all units:
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
-CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
 DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
 
 TICKET_REFS=""
