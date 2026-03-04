@@ -333,6 +333,8 @@ provider_config: {JSON of PROVIDERS object}
 Skill("elaborate-discover", args: ".ai-dlc/{INTENT_SLUG}/.briefs/elaborate-discover.md")
 ```
 
+**CRITICAL — DO NOT STOP HERE.** Discovery is only one sub-step of elaboration. After the discovery subagent completes, you MUST immediately proceed to Step 4 below. There are many more phases remaining (Domain Model validation, Workflow Selection, Success Criteria, Decomposition, etc.). Stopping after discovery means the elaboration is incomplete.
+
 ### Step 4: Read results
 
 Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-discover-results.md`.
@@ -1075,6 +1077,8 @@ design_provider_type: {DESIGN_TYPE or empty}
 Skill("elaborate-wireframes", args: ".ai-dlc/{INTENT_SLUG}/.briefs/elaborate-wireframes.md")
 ```
 
+**CRITICAL — DO NOT STOP HERE.** After the wireframes subagent completes, immediately proceed to Step 5.
+
 ### Step 5: Read results
 
 Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md`.
@@ -1167,6 +1171,8 @@ plugin_root: {CLAUDE_PLUGIN_ROOT}
 ```
 Skill("elaborate-ticket-sync", args: ".ai-dlc/{INTENT_SLUG}/.briefs/elaborate-ticket-sync.md")
 ```
+
+**CRITICAL — DO NOT STOP HERE.** After the ticket sync subagent completes, immediately proceed to Step 4.
 
 ### Step 4: Read results
 
