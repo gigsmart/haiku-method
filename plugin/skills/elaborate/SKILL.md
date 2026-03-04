@@ -215,22 +215,36 @@ Continue asking until you can articulate back to the user, in your own words, ex
 
 Before beginning technical exploration, create the intent worktree and initialize the discovery scratchpad inside it. Creating the worktree early ensures **no artifacts are left on `main`** — all files from this point forward are written on the intent branch.
 
-```bash
-# Derive intent slug from the user's description (same slug used throughout elaboration)
-INTENT_SLUG="{intent-slug}"
-PROJECT_ROOT=$(git rev-parse --show-toplevel)
-INTENT_BRANCH="ai-dlc/${INTENT_SLUG}/main"
-INTENT_WORKTREE="${PROJECT_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
+**CRITICAL — Step 1: Gitignore worktrees directory (MUST run before creating any worktree)**
 
-# Ensure worktrees directory exists and is gitignored (on main, before creating worktree)
+You MUST ensure `.ai-dlc/worktrees/` is in `.gitignore` BEFORE creating the worktree. Run this as a **separate Bash command** first:
+
+```bash
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
 mkdir -p "${PROJECT_ROOT}/.ai-dlc/worktrees"
 if ! grep -q '\.ai-dlc/worktrees/' "${PROJECT_ROOT}/.gitignore" 2>/dev/null; then
   echo '.ai-dlc/worktrees/' >> "${PROJECT_ROOT}/.gitignore"
   git add "${PROJECT_ROOT}/.gitignore"
   git commit -m "chore: gitignore .ai-dlc/worktrees"
 fi
+```
 
-# Create the intent worktree on its own branch
+**Step 2: Create the intent worktree**
+
+Only after confirming the gitignore entry exists:
+
+```bash
+INTENT_SLUG="{intent-slug}"
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+INTENT_BRANCH="ai-dlc/${INTENT_SLUG}/main"
+INTENT_WORKTREE="${PROJECT_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
+
+# Guard: abort if worktrees dir is not gitignored
+if ! grep -q '\.ai-dlc/worktrees/' "${PROJECT_ROOT}/.gitignore" 2>/dev/null; then
+  echo "ERROR: .ai-dlc/worktrees/ is not in .gitignore. Run Step 1 first." >&2
+  exit 1
+fi
+
 git worktree add -B "$INTENT_BRANCH" "$INTENT_WORKTREE"
 cd "$INTENT_WORKTREE"
 ```
