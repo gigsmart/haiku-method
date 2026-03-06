@@ -306,7 +306,7 @@ If you `/clear` without the stop hook:
 
 1. Committed artifacts (`.ai-dlc/`) are safe
 2. Ephemeral state persists in `han keep`
-3. Run `/construct` to continue
+3. Run `/execute` to continue
 
 ## Next Steps
 

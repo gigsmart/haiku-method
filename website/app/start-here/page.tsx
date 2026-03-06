@@ -157,7 +157,17 @@ export default function StartHerePage() {
 				<div className="mb-8 text-center">
 					<h1 className="mb-4 text-4xl font-bold">Start Here</h1>
 					<p className="text-lg text-gray-600 dark:text-gray-400">
-						Your guided path to understanding and implementing AI-DLC.
+						Your guided path to understanding and implementing AI-DLC, the
+						software development profile of the{" "}
+						<a
+							href="https://haikumethod.ai"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-blue-600 hover:underline dark:text-blue-400"
+						>
+							HAIKU Method
+						</a>
+						.
 					</p>
 				</div>
 

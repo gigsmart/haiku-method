@@ -20,8 +20,16 @@ export function Footer() {
 							AI-DLC
 						</Link>
 						<p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-							A methodology for iterative AI-driven development with hat-based
-							workflows.
+							The software development profile of the{" "}
+							<a
+								href="https://haikumethod.ai"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="underline hover:text-gray-900 dark:hover:text-white"
+							>
+								HAIKU Method
+							</a>
+							.
 						</p>
 						{/* Social links */}
 						<div className="mt-4 flex gap-3">

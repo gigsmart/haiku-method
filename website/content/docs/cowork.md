@@ -26,9 +26,9 @@ In cowork mode, after elaboration writes `.ai-dlc/` artifacts and creates ticket
 - The intent branch is pushed to the remote automatically
 - Builders can pull the branch or clone independently
 
-## Construction in Cowork
+## Execution in Cowork
 
-The `/construct` skill handles cowork transparently:
+The `/execute` skill handles cowork transparently:
 
 - Ensures remote tracking is configured for the intent branch
 - Pulls latest changes before starting each unit

@@ -117,12 +117,12 @@ Shall I create these files?"
 User: Yes, looks good.
 ```
 
-## Phase 2: Construction - Unit 01
+## Phase 2: Execution - Unit 01
 
 ### Starting the First Unit
 
 ```
-User: /construct
+User: /execute
 ```
 
 ### Planner Hat (HITL)
@@ -280,7 +280,7 @@ All quality gates pass. Unit complete."
 
 Ready for unit-02."
 
-## Phase 3: Construction - Unit 02
+## Phase 3: Execution - Unit 02
 
 ### Planner Hat
 
@@ -365,7 +365,7 @@ All gates pass."
 
 APPROVE."
 
-## Phase 4: Construction - Units 03-04
+## Phase 4: Execution - Units 03-04
 
 *(Similar pattern continues for frontend and preferences units)*
 
