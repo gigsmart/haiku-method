@@ -305,6 +305,26 @@ if ! echo "$ITERATION_JSON" | han parse json-validate \
   exit 0
 fi
 
+# State migration: add 'phase' field if missing (backward compat with pre-HAIKU state)
+PHASE=$(echo "$ITERATION_JSON" | han parse json phase -r --default "" 2>/dev/null || echo "")
+if [ -z "$PHASE" ]; then
+  # Infer phase from current hat
+  HAT_FOR_PHASE=$(echo "$ITERATION_JSON" | han parse json hat -r --default "builder" 2>/dev/null || echo "builder")
+  case "$HAT_FOR_PHASE" in
+    planner) PHASE="elaboration" ;;
+    operator) PHASE="operation" ;;
+    reflector) PHASE="reflection" ;;
+    *) PHASE="execution" ;;
+  esac
+  ITERATION_JSON=$(echo "$ITERATION_JSON" | han parse json-set phase "$PHASE" 2>/dev/null || echo "$ITERATION_JSON")
+  # Save migrated state
+  if [ -n "$INTENT_BRANCH" ]; then
+    han keep save --branch "$INTENT_BRANCH" iteration.json "$ITERATION_JSON" 2>/dev/null || true
+  else
+    han keep save iteration.json "$ITERATION_JSON" 2>/dev/null || true
+  fi
+fi
+
 # Check for needsAdvance flag (set by Stop hook to signal iteration should increment)
 # Only advance on 'clear' or 'startup' sources - NOT on 'compact' events.
 #
@@ -646,7 +666,7 @@ fi
 
 echo "---"
 echo ""
-echo "**Commands:** \`/construct\` (continue loop) | \`/reset\` (abandon task)"
+echo "**Commands:** \`/execute\` (continue loop) | \`/construct\` (deprecated alias) | \`/reset\` (abandon task)"
 echo ""
 echo "> **No file changes?** If this hat's work is complete but no files were modified,"
 echo "> save findings to scratchpad and run \`/advance\` to continue."

@@ -22,6 +22,10 @@
 			"enum": ["ascii", "html"],
 			"default": "ascii",
 			"description": "Format for UI mockups generated during elaboration. 'ascii' produces text-based wireframes in markdown code blocks. 'html' produces self-contained HTML files written to .ai-dlc/{intent-slug}/mockups/."
+		},
+		"quality_gates": {
+			"$ref": "#/definitions/qualityGatesConfig",
+			"description": "Quality gates (backpressure checks) to run during execution. When configured, these replace the default backpressure behavior."
 		}
 	},
 	"additionalProperties": false,
@@ -172,6 +176,48 @@
 					"then": { "properties": { "config": { "$ref": "providers/slack.schema.json" } } }
 				}
 			]
+		},
+		"qualityGatesConfig": {
+			"type": "object",
+			"description": "Quality gate configuration for backpressure checks during execution",
+			"properties": {
+				"test": {
+					"$ref": "#/definitions/qualityGateEntry",
+					"description": "Test command to run (e.g., 'bun test', 'npm test', 'pytest')"
+				},
+				"lint": {
+					"$ref": "#/definitions/qualityGateEntry",
+					"description": "Lint command to run (e.g., 'biome check', 'eslint .', 'ruff check')"
+				},
+				"typecheck": {
+					"$ref": "#/definitions/qualityGateEntry",
+					"description": "Type checking command (e.g., 'tsc --noEmit', 'mypy .')"
+				},
+				"build": {
+					"$ref": "#/definitions/qualityGateEntry",
+					"description": "Build command (e.g., 'bun run build', 'cargo build')"
+				}
+			},
+			"additionalProperties": {
+				"$ref": "#/definitions/qualityGateEntry"
+			}
+		},
+		"qualityGateEntry": {
+			"type": "object",
+			"description": "A single quality gate check",
+			"properties": {
+				"command": {
+					"type": "string",
+					"description": "Shell command to execute for this quality gate"
+				},
+				"enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Whether this gate is active"
+				}
+			},
+			"required": ["command"],
+			"additionalProperties": false
 		},
 		"vcsConfig": {
 			"type": "object",

@@ -67,6 +67,21 @@ export interface ProvidersConfig {
 	ciCd?: CiCdType | null
 }
 
+export interface QualityGateEntry {
+	/** Shell command to execute for this quality gate */
+	command: string
+	/** Whether this gate is active (default: true) */
+	enabled?: boolean
+}
+
+export interface QualityGatesConfig {
+	test?: QualityGateEntry
+	lint?: QualityGateEntry
+	typecheck?: QualityGateEntry
+	build?: QualityGateEntry
+	[key: string]: QualityGateEntry | undefined
+}
+
 export interface AiDlcSettings {
 	git?: Partial<VcsConfig>
 	jj?: Partial<VcsConfig>
@@ -76,6 +91,8 @@ export interface AiDlcSettings {
 		design?: ProviderEntry<DesignProviderType>
 		comms?: ProviderEntry<CommsProviderType>
 	}
+	/** Quality gates (backpressure checks) to run during execution */
+	quality_gates?: QualityGatesConfig
 }
 
 /**

@@ -134,7 +134,7 @@ if [ "$ALL_COMPLETE" = "true" ]; then
   echo ""
 elif [ "$READY_COUNT" -gt 0 ] || [ "$IN_PROGRESS_COUNT" -gt 0 ]; then
   # Work remains - instruct agent to continue
-  echo "## AI-DLC: Session Exhausted - Continue Construction"
+  echo "## AI-DLC: Session Exhausted - Continue Execution"
   echo ""
   echo "**Iteration:** $CURRENT_ITERATION | **Hat:** $HAT"
   echo "**Ready units:** $READY_COUNT | **In progress:** $IN_PROGRESS_COUNT"
@@ -143,9 +143,9 @@ elif [ "$READY_COUNT" -gt 0 ] || [ "$IN_PROGRESS_COUNT" -gt 0 ]; then
   echo ""
   TARGET_UNIT=$(echo "$ITERATION_JSON" | han parse json targetUnit -r --default "" 2>/dev/null || echo "")
   if [ -n "$TARGET_UNIT" ]; then
-    echo "Call \`/construct ${INTENT_SLUG} ${TARGET_UNIT}\` to continue targeted construction."
+    echo "Call \`/execute ${INTENT_SLUG} ${TARGET_UNIT}\` to continue targeted execution."
   else
-    echo "Call \`/construct\` to continue the autonomous loop."
+    echo "Call \`/execute\` to continue the autonomous loop."
   fi
   echo ""
   echo "**Note:** Subagents have clean context. No \`/clear\` needed."
@@ -161,7 +161,7 @@ else
   echo "**User action required:**"
   echo "1. Review blockers: \`han keep load blockers.md\`"
   echo "2. Unblock units or resolve dependencies"
-  echo "3. Run \`/construct\` to resume"
+  echo "3. Run \`/execute\` to resume"
   echo ""
 fi
 
