@@ -1,0 +1,21 @@
+# HAIKU Method Workflows
+#
+# Each workflow is a named sequence of hats. Override or extend
+# by creating .haiku/workflows.yml in your project root.
+#
+# Format:
+#   workflow-name:
+#     description: Short description
+#     hats: [hat1, hat2, hat3]
+
+default:
+  description: Standard workflow
+  hats: [planner, executor, reviewer]
+
+operational:
+  description: Workflow with operational setup
+  hats: [planner, executor, operator, reviewer]
+
+reflective:
+  description: Full lifecycle with reflection
+  hats: [planner, executor, operator, reflector, reviewer]

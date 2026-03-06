@@ -1,0 +1,18 @@
+{
+  "name": "haiku-method",
+  "version": "0.1.0",
+  "description": "HAIKU Method - Universal Human-AI Collaboration Framework",
+  "author": {
+    "name": "The Bushido Collective",
+    "url": "https://thebushido.co"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "haiku",
+    "methodology",
+    "workflow",
+    "iteration",
+    "human-ai-collaboration",
+    "domain-agnostic"
+  ]
+}

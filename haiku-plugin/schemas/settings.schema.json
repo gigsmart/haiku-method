@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://haiku.method/schemas/settings.schema.json",
+  "title": "HAIKU Settings",
+  "description": "Configuration schema for .haiku/settings.yml files that configure HAIKU Method behavior",
+  "type": "object",
+  "properties": {
+    "storage": {
+      "type": "object",
+      "description": "Storage configuration",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["auto", "git", "folder"],
+          "default": "auto",
+          "description": "Storage mode: 'auto' detects git vs folder, 'git' forces git mode, 'folder' forces folder mode"
+        }
+      },
+      "additionalProperties": false
+    },
+    "gates": {
+      "type": "array",
+      "description": "Quality gates that must pass before advancing",
+      "items": {
+        "$ref": "#/definitions/gate"
+      }
+    },
+    "workflow": {
+      "type": "string",
+      "default": "default",
+      "description": "Default workflow to use for new intents"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "gate": {
+      "type": "object",
+      "description": "A quality gate configuration",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Human-readable gate name"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["command", "manual", "criteria"],
+          "default": "command",
+          "description": "Gate type: 'command' runs an automated check, 'manual' requires human approval, 'criteria' has reviewer validate"
+        },
+        "command": {
+          "type": "string",
+          "description": "Shell command to run (only for type: command)"
+        },
+        "event": {
+          "type": "string",
+          "enum": ["Stop", "Advance", "Complete"],
+          "default": "Stop",
+          "description": "When this gate fires"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether this gate is active"
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": false
+    }
+  }
+}

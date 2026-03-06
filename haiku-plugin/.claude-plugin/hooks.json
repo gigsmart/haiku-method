@@ -1,0 +1,17 @@
+{
+  "description": "HAIKU Method hooks registered with Claude Code for lifecycle management",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Task|Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/subagent-context.sh\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
