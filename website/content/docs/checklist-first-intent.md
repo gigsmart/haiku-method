@@ -70,16 +70,16 @@ Use `/elaborate` to define your intent collaboratively with Claude.
 ### Elaboration Complete
 - [ ] Intent is clear and well-defined
 - [ ] Units are appropriately scoped
-- [ ] Ready to begin construction
+- [ ] Ready to begin execution
 
 ---
 
 ## Phase 2: First Unit
 
-Work through your first unit using `/construct`.
+Work through your first unit using `/execute`.
 
-### Start Construction
-- [ ] Run `/construct`
+### Start Execution
+- [ ] Run `/execute`
 - [ ] Verify Claude loaded the correct unit
 
 ### Planner Hat
@@ -137,7 +137,7 @@ Continue with remaining units.
 
 ### For Each Remaining Unit
 
-- [ ] Run `/construct` to load next unit
+- [ ] Run `/execute` to load next unit
 - [ ] Review any dependencies are satisfied
 - [ ] Complete Planner → Builder → Reviewer cycle
 - [ ] Commit with unit reference
@@ -146,7 +146,7 @@ Continue with remaining units.
 ### Between Units
 
 - [ ] Check if context is getting heavy
-- [ ] `/clear` if needed, then `/construct` to continue
+- [ ] `/clear` if needed, then `/execute` to continue
 - [ ] Verify committed artifacts reflect current state
 
 ### Handling Blockers
@@ -214,7 +214,7 @@ Answer these questions honestly:
 
 **Tooling:**
 - [ ] Any friction with the commands?
-- [ ] Did `/clear` + `/construct` work smoothly?
+- [ ] Did `/clear` + `/execute` work smoothly?
 - [ ] Were artifacts helpful?
 
 ### Metrics to Note
@@ -240,7 +240,7 @@ Based on this experience:
 | Command | When to Use |
 |---------|-------------|
 | `/elaborate` | Start new intent |
-| `/construct` | Continue/start unit work |
+| `/execute` | Continue/start unit work |
 | `/researcher` | Need more understanding |
 | `/planner` | Need to redesign approach |
 | `/builder` | Ready to implement |

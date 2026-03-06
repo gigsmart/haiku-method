@@ -6,7 +6,7 @@ order: 7
 
 # Providers
 
-Providers connect AI-DLC to external systems your team already uses — ticketing, specs, design tools, and communication channels. When configured, AI-DLC automatically syncs work across these systems during elaboration and construction.
+Providers connect AI-DLC to external systems your team already uses — ticketing, specs, design tools, and communication channels. When configured, AI-DLC automatically syncs work across these systems during elaboration and execution.
 
 ## Provider Categories
 
@@ -74,7 +74,7 @@ When you run `/elaborate`, AI-DLC uses providers to enrich the process:
    - Unit `depends_on` relationships become ticket blocked-by links
    - Epic and ticket keys are stored in intent/unit frontmatter
 
-### During Construction
+### During Execution
 
 Hats interact with providers as they work:
 
