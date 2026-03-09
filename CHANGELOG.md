@@ -5,24 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.20.10] - 2026-03-09
 
 ### Added
 
-- HAIKU integration — AI-DLC is now the software development profile of HAIKU (Human AI Knowledge Unification)
-- `/execute` skill replaces `/construct` (deprecated alias still works)
-- Operation phase (`/operate`) available for AI-DLC intents (opt-in)
-- Reflection phase (`/reflect`) available for AI-DLC intents (opt-in)
-- `operational` and `reflective` workflows
-- Configurable quality gates via `.ai-dlc/settings.yml`
+- add HAIKU workspace integration and enhanced reflection ([ed90396](../../commit/ed90396))
+- add HAIKU references, rename Construction to Execution, add Operation/Reflection docs ([6fc0097](../../commit/6fc0097))
+- integrate AI-DLC as HAIKU software development profile ([f5fe76d](../../commit/f5fe76d))
+- implement reflection phase with /reflect skill and enriched reflector hat ([f2d7cc0](../../commit/f2d7cc0))
+- build HAIKU website for haikumethod.ai ([c2e7a6a](../../commit/c2e7a6a))
+- implement operation phase with /operate skill and enriched hats ([acee292](../../commit/acee292))
+- implement HAIKU core plugin with 4-phase lifecycle ([aae495f](../../commit/aae495f))
+- write HAIKU methodology paper ([e4c2792](../../commit/e4c2792))
+- establish HAIKU foundation - manifesto, brand identity, repo structure ([84d393e](../../commit/84d393e))
 
-### Changed
+### Other
 
-- "Construction" renamed to "Execution" in user-facing messages and documentation
-
-### Deprecated
-
-- `/construct` (use `/execute` instead)
+- Merge methodology-evolution: HAIKU integration, /execute, /operate, /reflect ([f12fdcd](../../commit/f12fdcd))
+- Move HAIKU content to dedicated repo (TheBushidoCollective/haiku-method) ([71b32a6](../../commit/71b32a6))
+- Merge unit-04-reflection-phase into intent branch ([123a048](../../commit/123a048))
+- Merge unit-07-haiku-website into intent branch ([2ecf732](../../commit/2ecf732))
+- Merge unit-02-haiku-core-plugin into intent branch ([eb1e5fa](../../commit/eb1e5fa))
+- define intent and units for methodology-evolution ([acc5ee9](../../commit/acc5ee9))
 
 ## [1.20.9] - 2026-03-09
 
