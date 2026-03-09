@@ -54,6 +54,38 @@ add-recommendation-engine/
   unit-04-frontend.md           # Display recommendations
 ```
 
+### Pass
+
+A **Pass** is a typed iteration through the standard AI-DLC loop (elaborate → units → construct → review) focused on a specific discipline. Passes enable cross-functional handoffs within a single intent.
+
+**Pass Types:**
+
+| Pass | Participants | Mode | Output |
+|------|-------------|------|--------|
+| `design` | Design + Product | OHOTL | High-fidelity design artifacts |
+| `product` | Product + Design | HITL | Behavioral specs, acceptance criteria |
+| `dev` | Dev + Product + Design | AHOTL/HITL | Working code |
+
+**How it works:**
+
+1. Each pass runs the full AI-DLC loop independently
+2. The output of one pass becomes input to the next
+3. Backward flow is expected -- dev discovering a constraint feeds back to product; product finding a design gap feeds back to design
+
+**Configuration:**
+
+Passes are optional. Single-pass (dev only) is the default. Add passes to an intent when cross-functional iteration is needed:
+
+```yaml
+# intent.md frontmatter
+---
+passes: [design, product, dev]
+active_pass: "design"
+---
+```
+
+When all units in a pass complete, the intent transitions to the next pass automatically. Units belong to a specific pass via their `pass:` frontmatter field.
+
 ### Unit Dependencies (DAG)
 
 Units can declare dependencies, forming a Directed Acyclic Graph:
@@ -307,6 +339,34 @@ If you `/clear` without the stop hook:
 1. Committed artifacts (`.ai-dlc/`) are safe
 2. Ephemeral state persists in `han keep`
 3. Run `/construct` to continue
+
+## Iteration Through Passes
+
+AI-DLC treats iteration as the natural state of product development. The same State → Work → Feedback → Learn → Adjust pattern applies at every level:
+
+```
+Product → Intent → Pass → Unit → Bolt
+```
+
+Each level contains the same loop. Passes make the cross-functional iteration explicit rather than ad-hoc.
+
+### When to Use Passes
+
+- **Single-pass (default):** Most dev work. Skip passes entirely -- just elaborate and construct.
+- **Multi-pass:** When an intent needs design exploration, product specs, or other discipline-specific iteration before (or after) dev work.
+
+### Backward Flow
+
+Backward arrows between passes are expected, not failures:
+
+```
+Design Pass → Product Pass → Dev Pass
+     ↑              ↑             │
+     │              └─ constraint ─┘
+     └──── design gap ─┘
+```
+
+When dev discovers a technical constraint that changes the product spec, the intent moves back to the product pass. When product finds a design gap, it moves back to the design pass. This is normal iteration.
 
 ## Next Steps
 

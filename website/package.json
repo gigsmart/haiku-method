@@ -4,7 +4,7 @@
 	"private": true,
 	"scripts": {
 		"dev": "next dev",
-		"prebuild": "tsx scripts/generate-paper-revisions.ts",
+		"prebuild": "tsx scripts/generate-paper-revisions.ts && cd .. && zip -r website/public/ai-dlc-plugin.zip plugin/ -x 'plugin/.git/*' 'plugin/__pycache__/*' 'plugin/*.pyc'",
 		"build": "next build",
 		"start": "next start",
 		"lint": "biome check ."

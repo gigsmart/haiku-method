@@ -31,6 +31,9 @@ coverage/
 # Misc
 *.tsbuildinfo
 
+# Generated plugin zip
+website/public/ai-dlc-plugin.zip
+
 # AI-DLC worktrees
 .ai-dlc/worktrees/
 .claude/worktrees

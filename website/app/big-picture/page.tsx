@@ -35,7 +35,7 @@ export default function BigPicturePage() {
 				<div className="mt-16 grid gap-8 md:grid-cols-2">
 					<ExplanationCard
 						title="Development Phases"
-						description="Work flows from Intent (what you want to build) through Units (cohesive work elements) and Bolts (focused iteration cycles) to Deploy (shipping verified work)."
+						description="Work flows from Intent (what you want to build) through optional Passes (cross-functional iterations), Units (cohesive work elements), and Bolts (focused iteration cycles) to Deploy (shipping verified work)."
 						href="/docs/concepts/"
 						color="blue"
 					/>

@@ -13,6 +13,9 @@ const xPos = (index: number, total: number): number => {
 	return spacing * (index + 1) - NODE_WIDTH / 2
 }
 
+// Top row has 5 nodes now (Intent, Pass, Unit, Bolt, Deploy)
+const TOP_ROW_COUNT = 5
+
 export const diagramData: DiagramData = {
 	layers: [
 		{
@@ -49,7 +52,19 @@ export const diagramData: DiagramData = {
 				"High-level statement of purpose defining what you want to achieve with clear completion criteria.",
 			href: "/paper/#intent",
 			category: "artifact",
-			x: xPos(0, 4),
+			x: xPos(0, TOP_ROW_COUNT),
+			y: 30,
+			width: NODE_WIDTH,
+			height: NODE_HEIGHT,
+		},
+		{
+			id: "pass",
+			label: "Pass",
+			description:
+				"A typed iteration (design, product, dev) through the standard AI-DLC loop. Enables cross-functional handoffs within a single intent.",
+			href: "/paper/#pass",
+			category: "artifact",
+			x: xPos(1, TOP_ROW_COUNT),
 			y: 30,
 			width: NODE_WIDTH,
 			height: NODE_HEIGHT,
@@ -61,7 +76,7 @@ export const diagramData: DiagramData = {
 				"Cohesive, self-contained work element derived from an Intent. Independently deployable with clear boundaries.",
 			href: "/paper/#unit",
 			category: "artifact",
-			x: xPos(1, 4),
+			x: xPos(2, TOP_ROW_COUNT),
 			y: 30,
 			width: NODE_WIDTH,
 			height: NODE_HEIGHT,
@@ -73,7 +88,7 @@ export const diagramData: DiagramData = {
 				"Single iteration cycle - one focused work session bounded by context resets. High-velocity delivery.",
 			href: "/paper/#bolt",
 			category: "artifact",
-			x: xPos(2, 4),
+			x: xPos(3, TOP_ROW_COUNT),
 			y: 30,
 			width: NODE_WIDTH,
 			height: NODE_HEIGHT,
@@ -85,7 +100,7 @@ export const diagramData: DiagramData = {
 				"Ship verified work to production. Units are independently deployable when criteria are met.",
 			href: "/paper/#deployment-unit",
 			category: "artifact",
-			x: xPos(3, 4),
+			x: xPos(4, TOP_ROW_COUNT),
 			y: 30,
 			width: NODE_WIDTH,
 			height: NODE_HEIGHT,
@@ -231,9 +246,12 @@ export const diagramData: DiagramData = {
 	],
 	connectors: [
 		// Phase flow (left to right)
-		{ id: "intent-unit", from: "intent", to: "unit", type: "flow" },
+		{ id: "intent-pass", from: "intent", to: "pass", type: "flow" },
+		{ id: "pass-unit", from: "pass", to: "unit", type: "flow" },
 		{ id: "unit-bolt", from: "unit", to: "bolt", type: "flow" },
 		{ id: "bolt-deploy", from: "bolt", to: "deploy", type: "flow" },
+		// Feedback: bolts can feed back to passes (cross-functional iteration)
+		{ id: "bolt-pass", from: "bolt", to: "pass", type: "influences" },
 
 		// Hat flow (left to right)
 		{
@@ -246,7 +264,8 @@ export const diagramData: DiagramData = {
 		{ id: "builder-reviewer", from: "builder", to: "reviewer", type: "flow" },
 
 		// Phases to hats (vertical influence)
-		{ id: "unit-researcher", from: "unit", to: "researcher", type: "contains" },
+		{ id: "pass-researcher", from: "pass", to: "researcher", type: "contains" },
+		{ id: "unit-planner", from: "unit", to: "planner", type: "contains" },
 		{ id: "bolt-builder", from: "bolt", to: "builder", type: "contains" },
 
 		// Operating modes influence hats

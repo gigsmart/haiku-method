@@ -317,6 +317,66 @@ Work pauses briefly at checkpoints. Same agent continues with feedback. Context 
 
 This doesn't mean structure disappears. It means structure changes form—from sequential gates to parallel loops with human oversight at strategic moments.
 
+### Iteration Through Passes
+
+While phases collapse into continuous flow, real product development still involves distinct disciplines—design, product, and engineering—each bringing different expertise to the same intent. The question isn't whether these disciplines contribute sequentially (they often do), but whether that sequence is rigid and lossy (waterfall) or fluid and iterative.
+
+AI-DLC 2026 introduces **Passes**: typed iterations through the standard AI-DLC loop (elaborate → units → construct → review), where each pass refines the intent through a different disciplinary lens. The output of one pass becomes the input to the next.
+
+```mermaid
+flowchart TB
+    IDEA["Customer Idea"] --> DP
+
+    subgraph DP["DESIGN PASS"]
+        direction LR
+        D1["Elaborate"] --> D2["Design Units"]
+        D2 --> D3["Construct"]
+        D3 --> D4["Review"]
+        D4 -->|"Gaps"| D1
+        D4 -->|"Done"| DART["Design Artifacts"]
+    end
+
+    DART --> PP
+
+    subgraph PP["PRODUCT PASS"]
+        direction LR
+        P1["Elaborate"] --> P2["Acceptance Units"]
+        P2 --> P3["Construct"]
+        P3 --> P4["Review"]
+        P4 -->|"Gaps"| P1
+        P4 -.->|"Design gap"| D1
+        P4 -->|"Done"| PART["Behavioral Specs"]
+    end
+
+    PART --> EP
+
+    subgraph EP["DEV PASS"]
+        direction LR
+        E1["Elaborate"] --> E2["Dev Units"]
+        E2 --> E3["Construct"]
+        E3 --> E4["Review"]
+        E4 -->|"Gaps"| E1
+        E4 -.->|"Constraint"| P1
+        E4 -->|"Done"| CODE["Working Code"]
+    end
+```
+
+**The key difference from waterfall:** backward arrows are expected, not exceptional. When the dev pass discovers a constraint that invalidates a design assumption, work flows back to the product pass or design pass. This isn't failure—it's the intent iterating at a higher level than a bolt.
+
+**Each pass uses the same AI-DLC loop** but with different participants, inputs, and outputs:
+
+| | Design Pass | Product Pass | Dev Pass |
+|---|---|---|---|
+| **Who elaborates** | Design + Product | Product (reviewing designs) | Product + Design + Dev |
+| **Unit type** | Design units | Acceptance units | Dev units |
+| **Construction mode** | OHOTL (subjective) | HITL (judgment) | AHOTL or HITL |
+| **Output artifact** | High-fidelity designs | Behavioral specs + criteria | Working code |
+| **Feedback flows to** | Itself | Back to Design if gap found | Back to Product if constraint found |
+
+**Passes are optional and configurable.** A solo developer building a CLI tool may need only a dev pass. A cross-functional team building a consumer product may use all three. The methodology doesn't prescribe which passes to use—it provides the structure for teams that need them.
+
+**Passes preserve the "Everyone Becomes a Builder" principle.** A designer running a design pass uses the same elaborate → construct → review loop as an engineer running a dev pass. The workflow is identical; the discipline and artifacts differ.
+
 ### Context Is Abundant—Use It Wisely
 
 Modern language models offer context windows ranging from 200K tokens (Claude Opus 4.5) to over 1 million tokens (Claude Sonnet 4.5, Gemini). This abundance fundamentally changes how we think about AI workflows—but not in the ways that might be obvious.
@@ -519,7 +579,8 @@ This section outlines the core framework of AI-DLC 2026, detailing its artifacts
 graph TB
     subgraph Inception["🎯 Inception"]
         I["💡 Intent"]
-        I --> U["📦 Units"]
+        I --> PA["🔄 Passes"]
+        PA --> U["📦 Units"]
     end
 
     subgraph Construction["🔨 Construction"]
@@ -530,6 +591,8 @@ graph TB
     subgraph Operations["🚀 Operations"]
         D --> P["🌐 Production"]
     end
+
+    B -.->|"Feedback"| PA
 ```
 
 ### Artifacts
@@ -564,6 +627,44 @@ email/password registration and OAuth providers for social login.
 - [ ] Security scan passes with no critical findings
 - [ ] Load test: 100 concurrent logins complete in <2s p99
 ```
+
+#### Pass
+
+A **Pass** is a typed iteration through the standard AI-DLC loop (elaborate, decompose into units, construct, review) that refines an Intent through a specific disciplinary lens. Passes are the mechanism by which cross-functional teams contribute to a shared intent without waterfall-style handoffs.
+
+**Each pass follows the same structure:**
+
+1. **Elaborate** — Clarify scope through the pass's disciplinary lens
+2. **Decompose** — Break into discipline-appropriate units
+3. **Construct** — Build artifacts using appropriate operating mode
+4. **Review** — Validate output; feed gaps back to current or previous pass
+
+**Built-in pass types:**
+
+| Pass Type | Purpose | Typical Output |
+|-----------|---------|----------------|
+| **design** | Visual and interaction design | High-fidelity mockups, prototypes, design tokens |
+| **product** | Behavioral specification and gap analysis | Acceptance criteria, edge cases, user journeys |
+| **dev** | Working implementation | Tested, deployable code |
+
+**Pass configuration in intent frontmatter:**
+
+```yaml
+# intent.md frontmatter
+passes:
+  - type: design
+    status: completed
+  - type: product
+    status: active
+  - type: dev
+    status: pending
+```
+
+**Passes are optional.** An intent with no `passes` field uses a single implicit dev pass—the current default behavior. Teams add passes when cross-functional iteration is needed.
+
+**Feedback between passes:** When a later pass discovers issues that require earlier-pass work, the intent iterates backward. The dev pass finding a constraint feeds back to the product pass. The product pass finding a design gap feeds back to the design pass. These backward flows are tracked in pass status and are a normal part of the workflow.
+
+**Pass artifacts persist as context:** Each completed pass produces artifacts (designs, specs, code) that become input context for the next pass. This preserves the institutional knowledge that traditional handoffs lose.
 
 #### Unit
 
@@ -912,10 +1013,23 @@ sequenceDiagram
 - Completion Criteria (tests, thresholds, checks)
 - Measurement criteria traced to business intent
 - Suggested Bolts with mode recommendations
+- Pass structure (if multi-phase iteration is needed)
+
+**Multi-Pass Elaboration**
+
+For intents requiring cross-functional iteration, Mob Elaboration also defines the pass structure. Each pass gets its own elaboration cycle:
+
+1. **Design pass elaboration:** Design and product stakeholders define design units—screens, flows, components, interactions. Output: design artifacts that become input context for the product pass.
+2. **Product pass elaboration:** Product reviews completed designs, writes acceptance criteria, identifies behavioral gaps and edge cases. Output: annotated designs and behavioral specs that become input context for the dev pass.
+3. **Dev pass elaboration:** The full cross-functional team (product, design, dev) elaborates dev units using design artifacts and behavioral specs as input. Output: dev units ready for construction.
+
+Each pass elaboration runs the same Mob Elaboration ritual with different participants and inputs. The intent stays the same throughout—passes refine it through different lenses.
 
 #### Construction Phase
 
 The Construction Phase transforms Units into tested, deployment-ready artifacts through Bolts. This phase progresses through domain modeling, logical design, code generation, and testing—though these steps may be implicit rather than explicit depending on complexity.
+
+**When an intent has multiple passes,** Construction executes one pass at a time. The active pass's units are constructed, reviewed, and completed before the next pass begins its elaboration. Feedback from a later pass can reactivate an earlier pass, sending the intent backward for refinement—this is expected iteration, not failure.
 
 **Mode Selection**
 
@@ -1060,22 +1174,25 @@ The complete AI-DLC 2026 workflow integrates all phases into a continuous flow:
 ```mermaid
 flowchart TB
     W1["🎯 1. Capture Intent<br/><i>Human articulates goal</i>"]
-    W2["💬 2. AI Elaborates<br/><i>Clarifies ambiguities</i>"]
-    W3["📋 3. Decompose<br/><i>Break into Units</i>"]
-    W4["✅ 4. Define Criteria<br/><i>Measurable success conditions</i>"]
-    W5["⚡ 5. Execute Bolts<br/><i>Supervised or Autonomous</i>"]
-    W6["🔄 6. Iterate<br/><i>Until criteria met</i>"]
-    W7["🔍 7. Checkpoint<br/><i>Human reviews output</i>"]
-    W8["🚀 8. Deploy<br/><i>To production</i>"]
-    W9["📊 9. Operate<br/><i>Monitor & maintain</i>"]
+    W2["🔄 2. Select Pass<br/><i>Design, Product, or Dev</i>"]
+    W3["💬 3. Elaborate Pass<br/><i>Clarify through discipline lens</i>"]
+    W4["📋 4. Decompose<br/><i>Break into Units</i>"]
+    W5["✅ 5. Define Criteria<br/><i>Measurable success conditions</i>"]
+    W6["⚡ 6. Execute Bolts<br/><i>Supervised or Autonomous</i>"]
+    W7["🔄 7. Iterate<br/><i>Until criteria met</i>"]
+    W8["🔍 8. Checkpoint<br/><i>Human reviews output</i>"]
+    W9["🚀 9. Deploy<br/><i>To production</i>"]
+    W10["📊 10. Operate<br/><i>Monitor & maintain</i>"]
 
-    W1 --> W2 --> W3 --> W4 --> W5
-    W5 --> W6 --> W7
-    W7 -->|"More work"| W5
-    W7 -->|"Adjustments"| W4
-    W7 -->|"Ready"| W8
-    W8 --> W9
-    W9 -.->|"New Intent"| W1
+    W1 --> W2 --> W3 --> W4 --> W5 --> W6
+    W6 --> W7 --> W8
+    W8 -->|"More work"| W6
+    W8 -->|"Adjustments"| W5
+    W8 -->|"Next pass"| W2
+    W8 -->|"Previous pass"| W2
+    W8 -->|"Ready"| W9
+    W9 --> W10
+    W10 -.->|"New Intent"| W1
 ```
 
 **Key principles of the workflow:**
@@ -1084,7 +1201,9 @@ flowchart TB
 - **Files are the memory:** Progress persists in modified files and commits, not in conversation
 - **Checkpoints enable adjustment:** Human review points can redirect work without restarting from scratch
 - **Flow replaces phases:** Rather than discrete handoffs, work flows continuously with human oversight at strategic moments
-- **Traceability is maintained:** All artifacts link together, enabling forward and backward traceability
+- **Passes enable cross-functional iteration:** The same loop runs for design, product, and dev—each refining the intent through a different lens
+- **Backward flow is expected:** A dev pass discovering a constraint that sends work back to the design pass is normal iteration, not failure
+- **Traceability is maintained:** All artifacts link together, enabling forward and backward traceability across passes
 
 ---
 
@@ -1404,6 +1523,7 @@ For detailed runbooks with system prompts, entry/exit criteria, and failure mode
 | **Mob Elaboration** | Collaborative ritual where humans and AI decompose Intent into Units with Completion Criteria |
 | **Mob Construction** | Collaborative ritual where multiple teams build Units in parallel with AI assistance |
 | **OHOTL** | Observed Human-on-the-Loop: human watches AI work in real-time with ability to intervene; synchronous awareness with asynchronous control; used for creative, subjective, or training scenarios |
+| **Pass** | A typed iteration through the standard AI-DLC loop (elaborate, units, construct, review) that refines an Intent through a specific disciplinary lens (design, product, dev); passes are optional and configurable; output of one pass becomes input to the next |
 | **Quality Gate** | Automated check (tests, types, lint, security) that provides pass/fail feedback |
 | **Ralph Wiggum Pattern** | Autonomous loop methodology: try, fail, learn, iterate until success criteria met |
 | **Unit** | Cohesive, independently deployable work element derived from an Intent; named with numerical prefix + slug (e.g., `unit-01-setup-auth`); can declare dependencies via `depends_on` forming a DAG |

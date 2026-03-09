@@ -398,6 +398,53 @@ When `/construct` processes each unit, it resolves the unit's workflow independe
 
 This means a single intent can have some units flowing through Planner → Designer → Reviewer while others go through Planner → Builder → Reviewer, each progressing through their own hat sequence.
 
+## Multi-Pass Intents
+
+Passes add a layer above workflows: each pass runs the full AI-DLC loop (elaborate → units → construct → review) with a different focus. Workflows still control hat sequencing *within* each pass.
+
+### How Passes and Workflows Interact
+
+```
+Intent
+  └── Design Pass (workflow: design)
+  │     └── Elaborate → Units → Construct (Planner → Designer → Reviewer) → Review
+  └── Product Pass (workflow: default)
+  │     └── Elaborate → Units → Construct (Planner → Builder → Reviewer) → Review
+  └── Dev Pass (workflow: default)
+        └── Elaborate → Units → Construct (Planner → Builder → Reviewer) → Review
+```
+
+Each pass can use a different workflow. Design passes naturally use the design workflow, while dev passes typically use the default or TDD workflow.
+
+### Pass Transitions
+
+When all units in a pass complete:
+
+1. The intent's `active_pass` advances to the next pass
+2. You re-elaborate to define units for the new pass, informed by the previous pass's output
+3. Construction continues with the new pass's units
+
+If a later pass discovers issues (e.g., a technical constraint during dev), the intent can move backward to a previous pass for another iteration.
+
+### Configuration
+
+Add passes to an intent during `/elaborate`:
+
+```yaml
+# intent.md frontmatter
+passes: [design, product, dev]
+active_pass: "design"
+```
+
+Units belong to a pass via their frontmatter:
+
+```yaml
+# unit-01-homepage-layout.md
+pass: "design"
+```
+
+The DAG only surfaces units for the active pass, keeping focus on the current phase of work.
+
 ## Custom Workflows
 
 Create project-specific workflows in `.ai-dlc/workflows.yml`. Project workflows merge with the built-in workflows, and project definitions take precedence if names collide.

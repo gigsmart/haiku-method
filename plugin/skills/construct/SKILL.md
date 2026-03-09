@@ -837,7 +837,41 @@ SendMessage({
 TeamDelete()
 ```
 
-3. Mark intent complete:
+3. **Check for next pass** before marking intent complete:
+
+```bash
+# Read pass configuration from intent.md
+INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+PASSES=$(grep '^passes:' "$INTENT_DIR/intent.md" | sed 's/passes: *//' | sed 's/\[//;s/\]//' | tr ',' '\n' | sed 's/ //g' | grep -v '^$')
+ACTIVE_PASS=$(grep '^active_pass:' "$INTENT_DIR/intent.md" | sed 's/active_pass: *//' | tr -d '"')
+
+if [ -n "$PASSES" ] && [ -n "$ACTIVE_PASS" ]; then
+  # Find the next pass after the active one
+  NEXT_PASS=""
+  FOUND_ACTIVE=false
+  for pass in $PASSES; do
+    if [ "$FOUND_ACTIVE" = "true" ]; then
+      NEXT_PASS="$pass"
+      break
+    fi
+    [ "$pass" = "$ACTIVE_PASS" ] && FOUND_ACTIVE=true
+  done
+
+  if [ -n "$NEXT_PASS" ]; then
+    echo "PASS_TRANSITION: $ACTIVE_PASS -> $NEXT_PASS"
+  fi
+fi
+```
+
+**If a next pass exists:** Do NOT mark intent complete. Instead:
+1. Update `active_pass` in intent.md frontmatter to the next pass
+2. Notify the user: "The **{active_pass}** pass is complete. The next pass is **{next_pass}**. Run `/elaborate` to define {next_pass} units using the artifacts from the {active_pass} pass."
+3. Save state with `status=pass_transition`
+4. Stop construction — the user will re-elaborate for the next pass
+
+**If no next pass** (last pass or no passes configured):
+
+Mark intent complete:
 
 ```bash
 STATE=$(echo "$STATE" | han parse json --set "status=complete")

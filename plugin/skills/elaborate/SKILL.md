@@ -834,6 +834,37 @@ Map selections to the `announcements` array in intent.md frontmatter:
 
 ---
 
+## Phase 5.95: Iteration Passes
+
+Ask the user if this intent needs multi-phase iteration across disciplines. Most intents only need a single dev pass (the default). Cross-functional teams building user-facing features may benefit from design and product passes before dev.
+
+Use `AskUserQuestion`:
+```json
+{
+  "questions": [{
+    "question": "Does this intent need cross-functional iteration passes?",
+    "header": "Iteration Passes",
+    "options": [
+      {"label": "Dev only", "description": "Single pass — elaborate and build (default for most work)"},
+      {"label": "Design + Dev", "description": "Design pass produces artifacts, then dev pass builds from them"},
+      {"label": "Design + Product + Dev", "description": "Full cross-functional: design artifacts → product specs → working code"},
+      {"label": "Product + Dev", "description": "Product defines acceptance criteria, then dev builds"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+Map selections to the `passes` array in intent.md frontmatter:
+- "Dev only" → `[]` (empty — single implicit dev pass, the default)
+- "Design + Dev" → `[design, dev]`
+- "Design + Product + Dev" → `[design, product, dev]`
+- "Product + Dev" → `[product, dev]`
+
+When passes are configured, set `active_pass` to the first pass in the list. The units elaborated in this session belong to the active pass. When construction completes the active pass, the next pass will trigger a new elaboration cycle for its discipline-specific units.
+
+---
+
 ## Phase 6: Write AI-DLC Artifacts
 
 Write intent and unit files in `.ai-dlc/{intent-slug}/` (already in the intent worktree since Phase 2.25):
@@ -866,6 +897,8 @@ git:
   auto_merge: {true|false}
   auto_squash: false
 announcements: []  # e.g., [changelog, release-notes, social-posts, blog-draft]
+passes: []  # Optional: [design, product, dev] — omit or leave empty for single-pass (default dev)
+active_pass: ""  # Current pass being worked on (auto-managed by construct)
 created: {ISO date}
 status: active
 epic: ""  # Ticketing provider epic key (auto-populated if ticketing provider configured)
@@ -925,6 +958,7 @@ status: pending
 depends_on: []
 branch: ai-dlc/{intent-slug}/NN-{unit-slug}
 discipline: {discipline}  # frontend, backend, api, documentation, devops, design, etc.
+pass: ""  # Which pass this unit belongs to (design, product, dev) — empty for single-pass intents
 workflow: ""  # Per-unit workflow override (optional — omit or leave empty to use intent-level workflow)
 ticket: ""  # Ticketing provider ticket key (auto-populated if ticketing provider configured)
 # git:                         # Optional: per-unit VCS override (only include when unit has an override)

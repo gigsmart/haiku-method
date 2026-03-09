@@ -9,7 +9,7 @@ import { GlossaryContent } from "./GlossaryContent"
 export const metadata: Metadata = {
 	title: "Glossary",
 	description:
-		"Complete glossary of AI-DLC terminology - Intent, Unit, Bolt, HITL, OHOTL, AHOTL, Backpressure, and more.",
+		"Complete glossary of AI-DLC terminology - Intent, Pass, Unit, Bolt, HITL, OHOTL, AHOTL, Backpressure, and more.",
 	openGraph: {
 		title: "AI-DLC Glossary",
 		description:

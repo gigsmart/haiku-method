@@ -220,6 +220,32 @@ export default function StartHerePage() {
 					</div>
 				</div>
 
+				<div className="my-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+					<p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+						Alternative: Download Plugin
+					</p>
+					<p className="mb-3 text-sm text-gray-600 dark:text-gray-400">
+						Download the plugin zip, extract it into your project, and point Claude
+						Code to it:
+					</p>
+					<div className="space-y-3">
+						<a
+							href="/ai-dlc-plugin.zip"
+							download
+							className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+						>
+							<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+							</svg>
+							Download Plugin (.zip)
+						</a>
+						<div className="rounded-lg bg-gray-900 p-4 font-mono text-sm text-white dark:bg-gray-800">
+							<div className="text-gray-400"># Extract and add to your project</div>
+							<div>unzip ai-dlc-plugin.zip -d .claude</div>
+						</div>
+					</div>
+				</div>
+
 				<div className="prose prose-gray dark:prose-invert max-w-none">
 					<p>
 						Need Han CLI for state management?{" "}
