@@ -37,7 +37,7 @@ Planner → Builder → Reviewer
     ↓
 Define intent, criteria, units, and workflow
     ↓
-/construct
+/execute
     ↓
 Planner (HITL): Plan how to build it
     ↓
@@ -48,7 +48,7 @@ Reviewer (HITL): Verify it's done
 Next unit or intent complete
 ```
 
-> **Where did Elaborator go?** Elaboration is not a hat in the construction workflow. It happens before construction starts, via the `/elaborate` command. By the time `/construct` runs, the intent and its units are already defined.
+> **Where did Elaborator go?** Elaboration is not a hat in the execution workflow. It happens before execution starts, via the `/elaborate` command. By the time `/execute` runs, the intent and its units are already defined.
 
 ### When to Use
 
@@ -66,7 +66,7 @@ Next unit or intent complete
 You: "Name, email, avatar image"
 (Intent and units are now defined)
 
-/construct kicks off:
+/execute kicks off:
 
 Planner: "I'll add an /api/profile endpoint, a ProfileForm
 component, and image upload with size validation."
@@ -98,7 +98,7 @@ Planner → Builder → Red Team → Blue Team → Reviewer
 ```
 /elaborate (select adversarial workflow)
     ↓
-/construct
+/execute
     ↓
 Planner (HITL): Plan the feature
     ↓
@@ -170,7 +170,7 @@ Planner → Designer → Reviewer
 ```
 /elaborate (select design workflow)
     ↓
-/construct
+/execute
     ↓
 Planner (HITL): Define what needs to be designed
     ↓
@@ -233,7 +233,7 @@ Observer → Hypothesizer → Experimenter → Analyst
 ```
 /elaborate (select hypothesis workflow)
     ↓
-/construct
+/execute
     ↓
 Observer (OHOTL): Collect symptoms, logs, traces
     ↓
@@ -315,7 +315,7 @@ Test Writer → Implementer → Refactorer
 ```
 /elaborate (select tdd workflow)
     ↓
-/construct
+/execute
     ↓
 Test Writer (OHOTL): Write tests that fail
     ↓
@@ -392,58 +392,57 @@ workflow: default
 Build the API endpoints for analytics data...
 ```
 
-When `/construct` processes each unit, it resolves the unit's workflow independently:
+When `/execute` processes each unit, it resolves the unit's workflow independently:
 1. If the unit has a `workflow:` field, that workflow is used
 2. If not, the intent-level workflow applies
 
 This means a single intent can have some units flowing through Planner → Designer → Reviewer while others go through Planner → Builder → Reviewer, each progressing through their own hat sequence.
 
-## Multi-Pass Intents
+## Operational Workflow (Opt-in)
 
-Passes add a layer above workflows: each pass runs the full AI-DLC loop (elaborate → units → construct → review) with a different focus. Workflows still control hat sequencing *within* each pass.
+The operational workflow is for post-deployment monitoring and maintenance tasks. Use `/operate` to enter the Operation phase for an intent.
 
-### How Passes and Workflows Interact
+### Hats
 
-```
-Intent
-  └── Design Pass (workflow: design)
-  │     └── Elaborate → Units → Construct (Planner → Designer → Reviewer) → Review
-  └── Product Pass (workflow: default)
-  │     └── Elaborate → Units → Construct (Planner → Builder → Reviewer) → Review
-  └── Dev Pass (workflow: default)
-        └── Elaborate → Units → Construct (Planner → Builder → Reviewer) → Review
-```
+Monitor → Responder → Reviewer
 
-Each pass can use a different workflow. Design passes naturally use the design workflow, while dev passes typically use the default or TDD workflow.
+| Hat | Recommended Mode | Focus |
+|-----|------------------|-------|
+| Monitor | AHOTL | Watch metrics, logs, and alerts |
+| Responder | OHOTL | Investigate and address issues |
+| Reviewer | HITL | Validate operational changes |
 
-### Pass Transitions
+### When to Use
 
-When all units in a pass complete:
+- Post-deployment monitoring
+- Incident response
+- Performance tuning in production
+- Operational runbook execution
 
-1. The intent's `active_pass` advances to the next pass
-2. You re-elaborate to define units for the new pass, informed by the previous pass's output
-3. Construction continues with the new pass's units
+> **Note:** The Operation phase is opt-in. Most intents complete at the end of execution. Enable it via `.ai-dlc/settings.yml` when your workflow extends beyond deployment.
 
-If a later pass discovers issues (e.g., a technical constraint during dev), the intent can move backward to a previous pass for another iteration.
+## Reflective Workflow (Opt-in)
 
-### Configuration
+The reflective workflow captures learnings after an intent completes. Use `/reflect` to enter the Reflection phase.
 
-Add passes to an intent during `/elaborate`:
+### Hats
 
-```yaml
-# intent.md frontmatter
-passes: [design, product, dev]
-active_pass: "design"
-```
+Retrospector → Documenter → Reviewer
 
-Units belong to a pass via their frontmatter:
+| Hat | Recommended Mode | Focus |
+|-----|------------------|-------|
+| Retrospector | HITL | Analyze what went well and what didn't |
+| Documenter | OHOTL | Capture learnings and update documentation |
+| Reviewer | HITL | Validate that insights are actionable |
 
-```yaml
-# unit-01-homepage-layout.md
-pass: "design"
-```
+### When to Use
 
-The DAG only surfaces units for the active pass, keeping focus on the current phase of work.
+- After completing a complex intent
+- When you want to improve process for next time
+- Team retrospectives
+- Capturing institutional knowledge
+
+> **Note:** The Reflection phase is opt-in. Enable it via `.ai-dlc/settings.yml` when you want to build a learning loop into your development process.
 
 ## Custom Workflows
 

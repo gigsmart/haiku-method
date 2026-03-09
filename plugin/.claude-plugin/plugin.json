@@ -1,7 +1,7 @@
 {
   "name": "ai-dlc",
   "version": "1.20.9",
-  "description": "AI-DLC methodology - iterative AI-driven development with hat-based workflows, completion criteria, and automatic context preservation",
+  "description": "AI-DLC methodology - iterative AI-driven development with hat-based workflows, completion criteria, and automatic context preservation. Software development profile of the HAIKU Method.",
   "author": {
     "name": "The Bushido Collective",
     "url": "https://thebushido.co"
@@ -17,6 +17,7 @@
     "completion-criteria",
     "hat-switching",
     "context-preservation",
-    "human-ai-collaboration"
+    "human-ai-collaboration",
+    "haiku-method"
   ]
 }

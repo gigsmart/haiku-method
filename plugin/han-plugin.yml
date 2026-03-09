@@ -1,10 +1,12 @@
 # jutsu-ai-dlc - AI-DLC Methodology Plugin
 #
+# Software development profile of the HAIKU Method.
 # Provides iterative AI-driven development workflow with:
 # - Hat-based role switching
 # - Named workflows (patterns) - see workflows.yml
 # - Completion criteria tracking
 # - Automatic context preservation across /clear
+# - Operation and Reflection phases (opt-in via workflows)
 
 hooks:
   inject-context:

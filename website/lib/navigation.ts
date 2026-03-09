@@ -295,6 +295,11 @@ export const navigation: NavCategory[] = [
 				title: "Related Projects",
 				items: [
 					{
+						title: "HAIKU Method",
+						href: "https://haikumethod.ai",
+						description: "Parent methodology for human-AI collaboration",
+					},
+					{
 						title: "Han Plugin Marketplace",
 						href: "https://han.guru",
 						description: "Claude Code plugin ecosystem",
@@ -354,6 +359,7 @@ export const footerNavigation = {
 				title: "GitHub",
 				href: "https://github.com/thebushidocollective/ai-dlc",
 			},
+			{ title: "HAIKU Method", href: "https://haikumethod.ai" },
 			{ title: "Han Plugins", href: "https://han.guru" },
 		],
 	},

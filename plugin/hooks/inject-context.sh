@@ -42,6 +42,13 @@ if [ -f "$CONFIG_LIB" ]; then
   source "$CONFIG_LIB"
 fi
 
+# Source HAIKU workspace integration (opt-in org memory)
+HAIKU_LIB="${CLAUDE_PLUGIN_ROOT}/lib/haiku.sh"
+if [ -f "$HAIKU_LIB" ]; then
+  # shellcheck source=/dev/null
+  source "$HAIKU_LIB"
+fi
+
 # Detect project maturity (greenfield / early / established)
 PROJECT_MATURITY=""
 if type detect_project_maturity &>/dev/null; then
@@ -303,6 +310,26 @@ if ! echo "$ITERATION_JSON" | han parse json-validate \
   --quiet 2>/dev/null; then
   echo "Warning: Invalid iteration.json format. Run /reset to clear state." >&2
   exit 0
+fi
+
+# State migration: add 'phase' field if missing (backward compat with pre-HAIKU state)
+PHASE=$(echo "$ITERATION_JSON" | han parse json phase -r --default "" 2>/dev/null || echo "")
+if [ -z "$PHASE" ]; then
+  # Infer phase from current hat
+  HAT_FOR_PHASE=$(echo "$ITERATION_JSON" | han parse json hat -r --default "builder" 2>/dev/null || echo "builder")
+  case "$HAT_FOR_PHASE" in
+    planner) PHASE="elaboration" ;;
+    operator) PHASE="operation" ;;
+    reflector) PHASE="reflection" ;;
+    *) PHASE="execution" ;;
+  esac
+  ITERATION_JSON=$(echo "$ITERATION_JSON" | han parse json-set phase "$PHASE" 2>/dev/null || echo "$ITERATION_JSON")
+  # Save migrated state
+  if [ -n "$INTENT_BRANCH" ]; then
+    han keep save --branch "$INTENT_BRANCH" iteration.json "$ITERATION_JSON" 2>/dev/null || true
+  else
+    han keep save iteration.json "$ITERATION_JSON" 2>/dev/null || true
+  fi
 fi
 
 # Check for needsAdvance flag (set by Stop hook to signal iteration should increment)
@@ -589,6 +616,19 @@ else
   echo "\`\`\`"
 fi
 
+# Inject HAIKU organizational memory (if workspace configured)
+if type haiku_is_configured &>/dev/null && haiku_is_configured; then
+  ORG_MEMORY=$(haiku_memory_context 100)
+  if [ -n "$ORG_MEMORY" ]; then
+    echo "### Organizational Memory (HAIKU)"
+    echo ""
+    echo "The following learnings are from your organization's HAIKU workspace:"
+    echo ""
+    echo "$ORG_MEMORY"
+    echo ""
+  fi
+fi
+
 # ============================================================================
 # SHARED ITERATION MANAGEMENT INSTRUCTIONS
 # These apply to ALL hats and are not customizable
@@ -646,7 +686,7 @@ fi
 
 echo "---"
 echo ""
-echo "**Commands:** \`/construct\` (continue loop) | \`/reset\` (abandon task)"
+echo "**Commands:** \`/execute\` (continue loop) | \`/construct\` (deprecated alias) | \`/reset\` (abandon task)"
 echo ""
 echo "> **No file changes?** If this hat's work is complete but no files were modified,"
 echo "> save findings to scratchpad and run \`/advance\` to continue."

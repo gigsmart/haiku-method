@@ -231,7 +231,15 @@ export default function Home() {
 									<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
 									<span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500" />
 								</span>
-								Now available for Claude Code
+								Part of the{" "}
+								<a
+									href="https://haikumethod.ai"
+									target="_blank"
+									rel="noopener noreferrer"
+									className="underline hover:text-blue-900 dark:hover:text-blue-100"
+								>
+									HAIKU Method
+								</a>
 							</div>
 							<h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
 								<span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400">
@@ -242,10 +250,17 @@ export default function Home() {
 								AI-Driven Development Lifecycle
 							</p>
 							<p className="mb-8 text-lg text-gray-600 dark:text-gray-400">
-								Software development has evolved. AI can sustain autonomous
-								reasoning for hours, iterate in seconds, and write production
-								code at scale. Traditional methods weren't built for this.
-								AI-DLC is.
+								AI-DLC is how software teams use the{" "}
+								<a
+									href="https://haikumethod.ai"
+									target="_blank"
+									rel="noopener noreferrer"
+									className="text-blue-600 hover:underline dark:text-blue-400"
+								>
+									HAIKU Method
+								</a>
+								. Structure your work with clear phases, switch contexts
+								intentionally, and ship with confidence.
 							</p>
 							<div className="flex flex-col gap-4 sm:flex-row">
 								<Link

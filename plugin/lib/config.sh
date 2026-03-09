@@ -238,6 +238,66 @@ get_config_value() {
 }
 
 # ============================================================================
+# Quality Gates Configuration
+# ============================================================================
+
+# Load quality gates from .ai-dlc/settings.yml
+# Usage: load_quality_gates [repo_root]
+# Returns: JSON object with gate configs or '{}' if none configured
+load_quality_gates() {
+  local repo_root="${1:-$(find_repo_root)}"
+  local settings
+  settings=$(load_repo_settings "$repo_root")
+
+  if [ "$settings" = "{}" ] || [ -z "$settings" ]; then
+    echo "{}"
+    return
+  fi
+
+  local gates
+  gates=$(echo "$settings" | jq -c '.quality_gates // {}' 2>/dev/null || echo "{}")
+  echo "$gates"
+}
+
+# Run quality gates from settings
+# Usage: run_quality_gates [repo_root]
+# Returns: 0 if all gates pass (or none configured), 1 if any fail
+run_quality_gates() {
+  local repo_root="${1:-$(find_repo_root)}"
+  local gates
+  gates=$(load_quality_gates "$repo_root")
+
+  if [ "$gates" = "{}" ] || [ "$gates" = "null" ]; then
+    # No quality gates configured - use default backpressure behavior
+    return 0
+  fi
+
+  local failed=false
+
+  # Iterate over each gate
+  for gate_name in $(echo "$gates" | jq -r 'keys[]' 2>/dev/null); do
+    local enabled command
+    enabled=$(echo "$gates" | jq -r ".[\"$gate_name\"].enabled // true" 2>/dev/null)
+    command=$(echo "$gates" | jq -r ".[\"$gate_name\"].command // empty" 2>/dev/null)
+
+    [ "$enabled" = "false" ] && continue
+    [ -z "$command" ] && continue
+
+    echo "Running quality gate: $gate_name"
+    if ! eval "$command"; then
+      echo "Quality gate FAILED: $gate_name"
+      failed=true
+    fi
+  done
+
+  if [ "$failed" = "true" ]; then
+    return 1
+  fi
+
+  return 0
+}
+
+# ============================================================================
 # Provider Configuration
 # ============================================================================
 

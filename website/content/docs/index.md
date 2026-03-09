@@ -4,7 +4,7 @@ description: An introduction to AI-DLC and its core concepts
 order: 1
 ---
 
-AI-DLC is a methodology for the era of AI-driven software development. It reimagines how software gets built when AI is a central collaborator, not just a tool.
+AI-DLC is the software development profile of the [HAIKU Method](https://haikumethod.ai) (Human AI Knowledge Unification). It provides a framework for structured, iterative software development with AI assistants, organizing work into focused units with clear phases and responsibilities.
 
 ## Why AI-DLC?
 

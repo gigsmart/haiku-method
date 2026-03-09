@@ -172,7 +172,7 @@ However, committing is recommended - it provides:
 
 ### Commands Not Recognized
 
-**Symptom:** `/elaborate` or `/construct` don't activate
+**Symptom:** `/elaborate` or `/execute` don't activate
 
 **Solutions:**
 1. Restart Claude Code session

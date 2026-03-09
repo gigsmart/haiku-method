@@ -4,7 +4,7 @@ description: Get started with AI-DLC in 5 minutes
 order: 2
 ---
 
-Get AI-DLC running in your project and complete your first feature.
+Get AI-DLC running in your project and complete your first feature. AI-DLC is the software development profile of the [HAIKU Method](https://haikumethod.ai) (Human AI Knowledge Unification).
 
 ## Installation
 
@@ -26,7 +26,7 @@ AI-DLC uses just two main commands:
 | Command | What it does |
 |---------|--------------|
 | `/elaborate` | Define what you're building and how you'll know it's done |
-| `/construct` | Start the autonomous build loop |
+| `/execute` | Start the autonomous execution loop |
 
 ## Your First Feature
 
@@ -48,13 +48,13 @@ AI: What do you want to build?
 User: Add user authentication with email/password
 AI: [Asks clarifying questions via interactive prompts]
 AI: Here are the success criteria I captured...
-AI: Elaboration complete! Run /construct to start.
+AI: Elaboration complete! Run /execute to start.
 ```
 
-### Step 2: Construct
+### Step 2: Execute
 
 ```
-/construct
+/execute
 ```
 
 The AI now works autonomously:
@@ -72,7 +72,7 @@ If the session runs long, the AI will suggest clearing context:
 ```
 AI: "Context getting full. Run /clear to continue."
 User: /clear
-User: /construct
+User: /execute
 ```
 
 Your progress is preserved - the AI picks up where it left off.
@@ -94,7 +94,7 @@ User: Add a dark mode toggle to the settings page
 AI: [Guides through requirements and criteria]
 AI: Elaboration complete!
 
-User: /construct
+User: /execute
 AI: [Works autonomously through planner → builder → reviewer]
 AI: Intent complete! All criteria satisfied.
 

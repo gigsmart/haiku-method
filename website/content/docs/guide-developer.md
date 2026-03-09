@@ -16,7 +16,7 @@ This guide covers the day-to-day workflow of using AI-DLC. It assumes you've com
    - Review any blockers from previous sessions
 
 2. **Load context**
-   - Run `/construct` if continuing existing work
+   - Run `/execute` if continuing existing work
    - Run `/elaborate` if starting new work
 
 3. **Announce your hat**
@@ -52,7 +52,7 @@ This guide covers the day-to-day workflow of using AI-DLC. It assumes you've com
 You left off mid-unit or a colleague handed you an intent.
 
 ```
-/construct
+/execute
 ```
 
 This loads the intent and current unit state. Review what's been done:
@@ -91,7 +91,7 @@ Solution:
 /clear
 ```
 
-Then `/construct` to reload from committed state. The hat system ensures your progress is captured in files, not just context.
+Then `/execute` to reload from committed state. The hat system ensures your progress is captured in files, not just context.
 
 ### Getting Stuck
 

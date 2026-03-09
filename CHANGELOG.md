@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- HAIKU integration — AI-DLC is now the software development profile of HAIKU (Human AI Knowledge Unification)
+- `/execute` skill replaces `/construct` (deprecated alias still works)
+- Operation phase (`/operate`) available for AI-DLC intents (opt-in)
+- Reflection phase (`/reflect`) available for AI-DLC intents (opt-in)
+- `operational` and `reflective` workflows
+- Configurable quality gates via `.ai-dlc/settings.yml`
+
+### Changed
+
+- "Construction" renamed to "Execution" in user-facing messages and documentation
+
+### Deprecated
+
+- `/construct` (use `/execute` instead)
+
 ## [1.20.9] - 2026-03-09
 
 ### Other

@@ -15,8 +15,17 @@ export default function StartHerePage() {
 					Start Here
 				</h1>
 				<p className="mb-12 text-lg text-gray-600 dark:text-gray-400">
-					Everything you need to understand AI-DLC and start using it —
-					all on one page.
+					Your guided path to understanding and implementing AI-DLC, the
+					software development profile of the{" "}
+					<a
+						href="https://haikumethod.ai"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="text-blue-600 hover:underline dark:text-blue-400"
+					>
+						HAIKU Method
+					</a>
+					.
 				</p>
 
 				<div className="prose prose-gray dark:prose-invert max-w-none">
@@ -52,7 +61,7 @@ export default function StartHerePage() {
 					</div>
 					<div className="rounded-xl border border-green-200 bg-green-50 p-6 dark:border-green-900 dark:bg-green-950/50">
 						<div className="mb-2 font-mono text-lg font-bold text-green-700 dark:text-green-300">
-							/construct
+							/execute
 						</div>
 						<p className="text-gray-600 dark:text-gray-400">
 							Start building. The AI creates a branch, plans the approach,
@@ -106,7 +115,7 @@ export default function StartHerePage() {
 								AI:{" "}
 							</span>
 							<span className="text-gray-600 dark:text-gray-400">
-								Elaboration complete! Run /construct to start.
+								Elaboration complete! Run /execute to start.
 							</span>
 						</div>
 						<div className="border-t border-gray-200 pt-3 dark:border-gray-700">
@@ -114,7 +123,7 @@ export default function StartHerePage() {
 								User:{" "}
 							</span>
 							<span className="text-gray-600 dark:text-gray-400">
-								/construct
+								/execute
 							</span>
 						</div>
 						<div>
@@ -140,7 +149,7 @@ export default function StartHerePage() {
 					<p>
 						If a session runs long, the AI will suggest clearing context. Your
 						progress is saved — just run{" "}
-						<code>/construct</code> again to pick up where you left off.
+						<code>/execute</code> again to pick up where you left off.
 					</p>
 
 					{/* How It Works Under the Hood */}
@@ -153,7 +162,7 @@ export default function StartHerePage() {
 						completed in one session.
 					</p>
 					<p>
-						When you run <code>/construct</code>, the AI cycles through three
+						When you run <code>/execute</code>, the AI cycles through three
 						hats:
 					</p>
 				</div>

@@ -1,12 +1,12 @@
 ---
-description: Continue the AI-DLC construction loop - autonomous build/review cycles until completion
+description: (Deprecated) Use /execute instead. Alias for the AI-DLC execution loop.
 argument-hint: "[intent-slug] [unit-name]"
 disable-model-invocation: true
 ---
 
 ## Name
 
-`ai-dlc:construct` - Run the autonomous AI-DLC construction loop.
+`ai-dlc:construct` - **(Deprecated)** Alias for `/execute`. Use `/execute` instead.
 
 ## Synopsis
 
@@ -16,7 +16,10 @@ disable-model-invocation: true
 
 ## Description
 
-**User-facing command** - Continue the AI-DLC autonomous construction loop.
+> **DEPRECATED:** `/construct` has been renamed to `/execute` to align with the HAIKU methodology.
+> This command still works but will display a deprecation notice. Use `/execute` going forward.
+
+**User-facing command** - Continue the AI-DLC autonomous execution loop.
 
 **Two modes:**
 - `/construct` — DAG-driven, behavior depends on `change_strategy`
@@ -472,7 +475,7 @@ elif [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hats/${HAT_NAME
   HAT_FILE="${CLAUDE_PLUGIN_ROOT}/hats/${HAT_NAME}.md"
 fi
 
-# Extract instructions (content after second --- in frontmatter)
+# Extract instructions (content after second — in frontmatter)
 HAT_INSTRUCTIONS=""
 if [ -n "$HAT_FILE" ]; then
   HAT_INSTRUCTIONS=$(sed '1,/^---$/d' "$HAT_FILE" | sed '1,/^---$/d')

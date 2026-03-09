@@ -16,9 +16,18 @@ export default function AboutPage() {
 
 				<div className="prose prose-gray dark:prose-invert max-w-none">
 					<p className="lead text-xl text-gray-600 dark:text-gray-400">
-						AI-DLC is a methodology for the next era of software development.
-						It reimagines how software gets built when AI is a central
-						collaborator, not just a tool.
+						AI-DLC is how software teams use the{" "}
+						<a
+							href="https://haikumethod.ai"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-blue-600 hover:underline dark:text-blue-400"
+						>
+							HAIKU Method
+						</a>{" "}
+						(Human AI Knowledge Unification). It provides a framework for
+						organizing work into focused units with clear phases and
+						responsibilities.
 					</p>
 
 					<h2>The Evolution of Software Development</h2>
@@ -63,7 +72,7 @@ export default function AboutPage() {
 					<h2>The Hat System</h2>
 					<p>
 						AI-DLC organizes work through hats — distinct mindsets that keep
-						each phase of development focused. The default construction workflow
+						each phase of development focused. The default execution workflow
 						uses three core hats, while specialized workflows add hats for
 						security testing, design, TDD, and scientific debugging.
 					</p>
@@ -143,6 +152,23 @@ export default function AboutPage() {
 						<div><code>/plugin marketplace add thebushidocollective/ai-dlc</code></div>
 						<div><code>/plugin install ai-dlc@thebushidocollective-ai-dlc --scope project</code></div>
 					</div>
+
+					<h2>Part of the HAIKU Method</h2>
+					<p>
+						AI-DLC is the software development profile of{" "}
+						<a
+							href="https://haikumethod.ai"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-blue-600 hover:underline dark:text-blue-400"
+						>
+							HAIKU
+						</a>{" "}
+						(Human AI Knowledge Unification) — a methodology for structured
+						collaboration between humans and AI across any domain. HAIKU provides
+						the universal framework; AI-DLC applies it specifically to software
+						development.
+					</p>
 
 					<h2>Go Deeper</h2>
 					<p>
