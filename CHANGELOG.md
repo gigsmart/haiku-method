@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.13] - 2026-03-10
+
+### Other
+
+- update README, skill definitions, and website layout ([48e1ac9](../../commit/48e1ac9))
+- Merge pull request #8 from mjquinlan2000/main ([25e747b](../../commit/25e747b))
+- Fixing the marketplace path to be ./plugin ([8ac6e70](../../commit/8ac6e70))
+- Fixing relative path issue. Needs a forward slash ([329c015](../../commit/329c015))
+- Fixing the source in marketplace.json to relect what claude expects ([355e4f7](../../commit/355e4f7))
+
 ## [1.20.12] - 2026-03-10
 
 ### Fixed
