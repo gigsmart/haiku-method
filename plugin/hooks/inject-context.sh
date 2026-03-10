@@ -319,8 +319,6 @@ if [ -z "$PHASE" ]; then
   HAT_FOR_PHASE=$(echo "$ITERATION_JSON" | han parse json hat -r --default "builder" 2>/dev/null || echo "builder")
   case "$HAT_FOR_PHASE" in
     planner) PHASE="elaboration" ;;
-    operator) PHASE="operation" ;;
-    reflector) PHASE="reflection" ;;
     *) PHASE="execution" ;;
   esac
   ITERATION_JSON=$(echo "$ITERATION_JSON" | han parse json-set phase "$PHASE" 2>/dev/null || echo "$ITERATION_JSON")

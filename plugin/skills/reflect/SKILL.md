@@ -169,11 +169,9 @@ Produce a structured analysis:
 | {gate} | {%} | {useful/noisy/misconfigured} |
 ```
 
-### Step 3: Don the Reflector Hat
+### Step 3: Analyze Outcomes
 
-Load and follow the Reflector hat instructions from `hats/reflector.md`.
-
-As the Reflector, analyze:
+Perform a structured reflection analysis. As the reflector, analyze:
 
 1. **Execution patterns** - Which units went smoothly? Which required retries?
 2. **Criteria satisfaction** - How well were success criteria met? Any partial satisfaction?

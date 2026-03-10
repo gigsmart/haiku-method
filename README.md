@@ -238,8 +238,6 @@ Select a workflow during `/elaborate`:
 | **default** | Standard development | planner, builder, reviewer |
 | **adversarial** | Security-focused with Red/Blue team | planner, builder, red-team, blue-team, reviewer |
 | **design** | UI/UX units producing design artifacts | planner, designer, reviewer |
-| **operational** | Development with operational setup | planner, builder, operator, reviewer |
-| **reflective** | Full lifecycle with reflection | planner, builder, operator, reflector, reviewer |
 | **hypothesis** | Scientific debugging | observer, hypothesizer, experimenter, analyst |
 
 ## Hats
@@ -261,8 +259,6 @@ All hats follow the [Agent SOP format](https://github.com/strands-agents/agent-s
 | Builder | Implement according to plan and criteria |
 | Reviewer | Verify implementation meets criteria |
 | Designer | Produce UI/UX design artifacts |
-| Operator | Execute operational setup tasks |
-| Reflector | Analyze outcomes and capture learnings |
 | Integrator | Cross-cutting integration concerns |
 | Test Writer | Write failing tests first |
 | Implementer | Make tests pass with minimal code |
