@@ -7,30 +7,30 @@ workflow: ""
 ticket: ""
 ---
 
-# unit-05: HAIKU Methodology Paper
+# unit-05: H•AI•K•U Methodology Paper
 
 ## Description
-Write the HAIKU methodology paper — the canonical articulation of the universal human-AI collaboration framework. This builds on the existing AI-DLC 2026 paper but generalizes it for any domain, adds the Operation and Reflection phases, and uses domain-agnostic language throughout. AI-DLC and SWARM are referenced as concrete domain implementations.
+Write the H•AI•K•U methodology paper — the canonical articulation of the universal human-AI collaboration framework. This builds on the existing AI-DLC 2026 paper but generalizes it for any domain, adds the Operation and Reflection phases, and uses domain-agnostic language throughout. AI-DLC and SWARM are referenced as concrete domain implementations.
 
 ## Discipline
 documentation
 
 ## Domain Entities
-- HAIKU (framework), Phase (all 4), Profile, Quality Gate, Hat, Workflow
+- H•AI•K•U (framework), Phase (all 4), Profile, Quality Gate, Hat, Workflow
 
 ## Data Sources
 - Existing AI-DLC paper: `website/content/papers/ai-dlc-2026.md` in the AI-DLC repo (~1400 lines)
-- HAIKU manifesto from unit-01
+- H•AI•K•U manifesto from unit-01
 - Discovery log: detailed analysis of current paper terminology and gaps
 - SWARM brief: the marketing/sales framework that validates universality
 
 ## Technical Specification
 
-### Paper Structure (in HAIKU repo at `paper/haiku-method.md` or similar)
+### Paper Structure (in H•AI•K•U repo at `paper/haiku-method.md` or similar)
 
 **Section 1: Introduction**
 - The problem: structured work requires disciplined human-AI collaboration, not ad-hoc prompting
-- HAIKU = Human AI Knowledge Unification
+- H•AI•K•U = Human AI Knowledge Unification
 - The 4-phase lifecycle: Elaboration -> Execution -> Operation -> Reflection
 - Who this is for: any team running structured initiatives with AI collaboration
 
@@ -55,7 +55,7 @@ Adapt HITL/OHOTL/AHOTL from AI-DLC:
 - These modes apply to ALL phases, not just Execution
 
 **Section 5: The Profile Model**
-- HAIKU is the universal core
+- H•AI•K•U is the universal core
 - Domain profiles add specialized hats, quality gates, workflows, and tooling
 - AI-DLC profile: software development (git, tests, lint, PRs, deployment)
 - SWARM profile: marketing/sales (briefs, campaigns, Slack reminders, close-outs)
@@ -64,7 +64,7 @@ Adapt HITL/OHOTL/AHOTL from AI-DLC:
 **Section 6: Practical Examples**
 - Example 1: Software feature (using AI-DLC profile) — show all 4 phases
 - Example 2: Marketing campaign (using SWARM profile) — show all 4 phases
-- Example 3: Strategic planning / business process — show HAIKU core without a profile
+- Example 3: Strategic planning / business process — show H•AI•K•U core without a profile
 
 **Section 7: Adoption**
 - Starting with Elaboration only (planning tool for humans)
@@ -74,7 +74,7 @@ Adapt HITL/OHOTL/AHOTL from AI-DLC:
 
 ### Language Guidelines
 From discovery log — terms that MUST be generalized:
-| AI-DLC Term | HAIKU Term |
+| AI-DLC Term | H•AI•K•U Term |
 |---|---|
 | Construction | Execution |
 | Builder (hat) | Executor |
@@ -108,5 +108,5 @@ This unit writes the paper. It does NOT build the plugin (unit-02), website (uni
 
 ## Notes
 - The AI-DLC 2026 paper is the reference template — same quality and depth, broader scope
-- Consider the paper living at `paper/` in the HAIKU repo, published to haikumethod.ai
+- Consider the paper living at `paper/` in the H•AI•K•U repo, published to haikumethod.ai
 - The paper should be the "source of truth" that the plugin implements

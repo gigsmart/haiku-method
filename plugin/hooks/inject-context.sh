@@ -42,7 +42,7 @@ if [ -f "$CONFIG_LIB" ]; then
   source "$CONFIG_LIB"
 fi
 
-# Source HAIKU workspace integration (opt-in org memory)
+# Source H•AI•K•U workspace integration (opt-in org memory)
 HAIKU_LIB="${CLAUDE_PLUGIN_ROOT}/lib/haiku.sh"
 if [ -f "$HAIKU_LIB" ]; then
   # shellcheck source=/dev/null
@@ -312,7 +312,7 @@ if ! echo "$ITERATION_JSON" | han parse json-validate \
   exit 0
 fi
 
-# State migration: add 'phase' field if missing (backward compat with pre-HAIKU state)
+# State migration: add 'phase' field if missing (backward compat with pre-H•AI•K•U state)
 PHASE=$(echo "$ITERATION_JSON" | han parse json phase -r --default "" 2>/dev/null || echo "")
 if [ -z "$PHASE" ]; then
   # Infer phase from current hat
@@ -625,13 +625,13 @@ else
   echo "\`\`\`"
 fi
 
-# Inject HAIKU organizational memory (if workspace configured)
+# Inject H•AI•K•U organizational memory (if workspace configured)
 if type haiku_is_configured &>/dev/null && haiku_is_configured; then
   ORG_MEMORY=$(haiku_memory_context 100)
   if [ -n "$ORG_MEMORY" ]; then
-    echo "### Organizational Memory (HAIKU)"
+    echo "### Organizational Memory (H•AI•K•U)"
     echo ""
-    echo "The following learnings are from your organization's HAIKU workspace:"
+    echo "The following learnings are from your organization's H•AI•K•U workspace:"
     echo ""
     echo "$ORG_MEMORY"
     echo ""

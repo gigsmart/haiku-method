@@ -10,7 +10,7 @@ ticket: ""
 # unit-04: Reflection Phase
 
 ## Description
-Implement the Reflection phase in the HAIKU core plugin. Reflection is about taking what we learned and refining it into data that drives the next iteration. The `/reflect` skill analyzes a completed Execution + Operation cycle, produces structured reflection artifacts, and feeds learnings forward in two ways: (a) into a new version of the same intent, (b) into organizational memory for all future intents.
+Implement the Reflection phase in the H•AI•K•U core plugin. Reflection is about taking what we learned and refining it into data that drives the next iteration. The `/reflect` skill analyzes a completed Execution + Operation cycle, produces structured reflection artifacts, and feeds learnings forward in two ways: (a) into a new version of the same intent, (b) into organizational memory for all future intents.
 
 ## Discipline
 backend
@@ -19,7 +19,7 @@ backend
 - Reflection Artifact, Phase (Reflection), Hat (reflector)
 
 ## Data Sources
-- HAIKU core plugin (unit-02, unit-03 output)
+- H•AI•K•U core plugin (unit-02, unit-03 output)
 - Intent artifacts: intent.md, unit-*.md, operations.md
 - Execution state: iteration.json, scratchpad.md, blockers.md
 

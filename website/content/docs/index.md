@@ -4,7 +4,7 @@ description: An introduction to AI-DLC and its core concepts
 order: 1
 ---
 
-AI-DLC is the software development profile of the [HAIKU Method](https://haikumethod.ai) (Human AI Knowledge Unification). It provides a framework for structured, iterative software development with AI assistants, organizing work into focused units with clear phases and responsibilities.
+AI-DLC is the software development profile of the [H•AI•K•U Method](https://haikumethod.ai) (Human AI Knowledge Unification). It provides a framework for structured, iterative software development with AI assistants, organizing work into focused units with clear phases and responsibilities.
 
 ## Why AI-DLC?
 

@@ -7,19 +7,19 @@ workflow: ""
 ticket: ""
 ---
 
-# unit-06: AI-DLC HAIKU Integration
+# unit-06: AI-DLC H•AI•K•U Integration
 
 ## Description
-Refactor the AI-DLC plugin to become the software development profile of HAIKU. AI-DLC either depends on the HAIKU core plugin (extending it with software-specific features) or references the HAIKU methodology while maintaining its own implementation. Existing AI-DLC users must experience zero breakage.
+Refactor the AI-DLC plugin to become the software development profile of H•AI•K•U. AI-DLC either depends on the H•AI•K•U core plugin (extending it with software-specific features) or references the H•AI•K•U methodology while maintaining its own implementation. Existing AI-DLC users must experience zero breakage.
 
 ## Discipline
 backend
 
 ## Domain Entities
-- Profile (AI-DLC as a HAIKU implementation), Quality Gate, Hat, Storage Backend
+- Profile (AI-DLC as a H•AI•K•U implementation), Quality Gate, Hat, Storage Backend
 
 ## Data Sources
-- HAIKU core plugin (unit-02, 03, 04 output) — the universal plugin to extend
+- H•AI•K•U core plugin (unit-02, 03, 04 output) — the universal plugin to extend
 - AI-DLC plugin source (`plugin/` in AI-DLC repo) — current implementation
 - Discovery log — detailed analysis of AI-DLC architecture, git dependencies, hat system
 
@@ -28,25 +28,25 @@ backend
 ### Integration Strategy
 Two options (decide during planning):
 
-**Option A: AI-DLC depends on HAIKU plugin**
-- HAIKU is a Claude Code plugin dependency
-- AI-DLC plugin extends HAIKU with software-specific overrides
-- AI-DLC adds its own hats, gates, and workflows ON TOP of HAIKU core
+**Option A: AI-DLC depends on H•AI•K•U plugin**
+- H•AI•K•U is a Claude Code plugin dependency
+- AI-DLC plugin extends H•AI•K•U with software-specific overrides
+- AI-DLC adds its own hats, gates, and workflows ON TOP of H•AI•K•U core
 - Benefits: single source of truth for core methodology
 - Challenges: plugin dependency system in Claude Code may not support this natively
 
-**Option B: AI-DLC references HAIKU methodology independently**
+**Option B: AI-DLC references H•AI•K•U methodology independently**
 - AI-DLC remains a standalone plugin
 - Rename Construction -> Execution in AI-DLC
 - Add Operation and Reflection phases to AI-DLC
 - Port storage abstraction concepts (but keep git-first since AI-DLC IS the software profile)
 - Benefits: simpler, no cross-plugin dependency
-- Challenges: code duplication between HAIKU and AI-DLC
+- Challenges: code duplication between H•AI•K•U and AI-DLC
 
 The builder should evaluate both options and recommend the best approach based on Claude Code's plugin architecture constraints.
 
-### What AI-DLC Adds to HAIKU (the software profile)
-- **Git-specific storage**: Worktrees, branches, han keep (HAIKU core has this via storage abstraction, AI-DLC ensures it's the default)
+### What AI-DLC Adds to H•AI•K•U (the software profile)
+- **Git-specific storage**: Worktrees, branches, han keep (H•AI•K•U core has this via storage abstraction, AI-DLC ensures it's the default)
 - **Software quality gates**: tests, lint, typecheck, build, security scan (configured in settings, not hardcoded)
 - **Code-specific hats**: builder (extends executor with code-writing instructions), refactorer, test-writer, designer (UI/UX)
 - **VCS integration**: PR/MR creation, branch management, git strategy (unit/intent/trunk)
@@ -56,7 +56,7 @@ The builder should evaluate both options and recommend the best approach based o
 ### Phase Renames in AI-DLC
 - `/construct` -> `/execute` (with `/construct` as deprecated alias that warns and calls `/execute`)
 - "Construction" -> "Execution" in all user-facing messages, hook output, skill descriptions
-- "Builder" hat -> "Builder" (keep for AI-DLC since it's specifically about building software, but it's a specialization of HAIKU's "executor")
+- "Builder" hat -> "Builder" (keep for AI-DLC since it's specifically about building software, but it's a specialization of H•AI•K•U's "executor")
 - State keys: `iteration.json` format stays compatible (add `phase` field, keep `hat` field)
 
 ### Backward Compatibility Requirements
@@ -66,13 +66,13 @@ The builder should evaluate both options and recommend the best approach based o
 - All existing tests pass
 - Users who haven't updated their intents can still `/resume` and `/construct`
 
-### New Features from HAIKU
+### New Features from H•AI•K•U
 - Operation phase: AI-DLC intents can now produce `operations.md` during execution (for deployment runbooks, monitoring setup, maintenance tasks)
 - Reflection phase: Completed intents can `/reflect` to capture learnings
 - These are opt-in — existing workflows don't require them
 
 ## Success Criteria
-- [ ] AI-DLC plugin references or extends HAIKU for software development
+- [ ] AI-DLC plugin references or extends H•AI•K•U for software development
 - [ ] `/construct` works as deprecated alias for `/execute`
 - [ ] All existing AI-DLC tests pass unchanged
 - [ ] Existing intents with old state format load correctly (migration)
@@ -86,10 +86,10 @@ The builder should evaluate both options and recommend the best approach based o
 - **Plugin dependency complexity**: If Option A (dependency), Claude Code may not support plugin-to-plugin dependencies well. Mitigation: evaluate early, fall back to Option B if needed.
 
 ## Boundaries
-This unit modifies the AI-DLC plugin. It does NOT modify the HAIKU core plugin (units 02-04). It does NOT update the AI-DLC website (unit-08).
+This unit modifies the AI-DLC plugin. It does NOT modify the H•AI•K•U core plugin (units 02-04). It does NOT update the AI-DLC website (unit-08).
 
 ## Notes
 - This is the most sensitive unit — backward compatibility is paramount
 - Consider writing a migration guide for existing AI-DLC users
 - The builder should read ALL existing AI-DLC tests before making changes
-- Keep AI-DLC's "builder" hat name (it's domain-appropriate for software) but have it extend HAIKU's "executor" concept
+- Keep AI-DLC's "builder" hat name (it's domain-appropriate for software) but have it extend H•AI•K•U's "executor" concept

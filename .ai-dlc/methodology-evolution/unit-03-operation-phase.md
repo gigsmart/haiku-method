@@ -10,7 +10,7 @@ ticket: ""
 # unit-03: Operation Phase
 
 ## Description
-Implement the Operation phase in the HAIKU core plugin. During Execution, the executor produces an `operations.md` file that defines what needs to happen to run and manage what was built. The `/operate` skill reads this plan and automates its tasks. Operational items can be recurring (scheduled), reactive (triggered by conditions), or manual (human-performed with AI guidance).
+Implement the Operation phase in the H•AI•K•U core plugin. During Execution, the executor produces an `operations.md` file that defines what needs to happen to run and manage what was built. The `/operate` skill reads this plan and automates its tasks. Operational items can be recurring (scheduled), reactive (triggered by conditions), or manual (human-performed with AI guidance).
 
 ## Discipline
 backend
@@ -19,7 +19,7 @@ backend
 - Operational Plan, Phase (Operation), Hat (operator)
 
 ## Data Sources
-- HAIKU core plugin (unit-02 output) — the plugin infrastructure to extend
+- H•AI•K•U core plugin (unit-02 output) — the plugin infrastructure to extend
 - AI-DLC paper lines 1002-1052 — current thin Operation description
 - Discovery log — analysis of missing Operation implementation
 

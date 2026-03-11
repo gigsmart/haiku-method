@@ -1555,6 +1555,6 @@ For detailed runbooks with system prompts, entry/exit criteria, and failure mode
 
 ---
 
-*AI-DLC 2026 is an open methodology and the software development profile of [HAIKU](https://haikumethod.ai) (Human AI Knowledge Unification). See the [HAIKU Methodology Paper](https://haikumethod.ai/paper/) for the universal framework that AI-DLC implements for software teams. Contributions and adaptations are welcome.*
+*AI-DLC 2026 is an open methodology and the software development profile of [H•AI•K•U](https://haikumethod.ai) (Human AI Knowledge Unification). See the [H•AI•K•U Methodology Paper](https://haikumethod.ai/paper/) for the universal framework that AI-DLC implements for software teams. Contributions and adaptations are welcome.*
 
 **[View source on GitHub →](https://github.com/thebushidocollective/ai-dlc/blob/main/website/content/papers/ai-dlc-2026.md)**

@@ -1,7 +1,7 @@
 #!/bin/bash
-# haiku.sh - HAIKU Workspace Integration for AI-DLC
+# haiku.sh - H•AI•K•U Workspace Integration for AI-DLC
 #
-# Detects and reads from an organization's HAIKU workspace.
+# Detects and reads from an organization's H•AI•K•U workspace.
 # This is opt-in: only activates if .haiku.yml exists in the project
 # or HAIKU_WORKSPACE is set.
 #
@@ -11,7 +11,7 @@
 #   context=$(haiku_memory_context 100)
 #   haiku_memory_write "learnings" "$CONTENT" "append"
 
-# Resolve the HAIKU workspace path (if configured)
+# Resolve the H•AI•K•U workspace path (if configured)
 # Returns empty string if not configured.
 # Usage: haiku_resolve_workspace
 haiku_resolve_workspace() {
@@ -42,7 +42,7 @@ haiku_resolve_workspace() {
   echo ""
 }
 
-# Read organizational memory from the HAIKU workspace.
+# Read organizational memory from the H•AI•K•U workspace.
 # Returns formatted markdown context block.
 # Usage: haiku_memory_context [max_lines]
 haiku_memory_context() {
@@ -96,7 +96,7 @@ ${content}
   fi
 }
 
-# Write to organizational memory in the HAIKU workspace.
+# Write to organizational memory in the H•AI•K•U workspace.
 # Usage: haiku_memory_write <name> <content> [mode]
 # mode: "overwrite" (default) or "append"
 haiku_memory_write() {
@@ -121,7 +121,7 @@ haiku_memory_write() {
   esac
 }
 
-# Check if a HAIKU workspace is configured.
+# Check if a H•AI•K•U workspace is configured.
 # Usage: haiku_is_configured && echo "yes"
 haiku_is_configured() {
   local ws

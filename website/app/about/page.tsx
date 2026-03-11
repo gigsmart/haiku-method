@@ -23,7 +23,7 @@ export default function AboutPage() {
 							rel="noopener noreferrer"
 							className="text-blue-600 hover:underline dark:text-blue-400"
 						>
-							HAIKU Method
+							H•AI•K•U Method
 						</a>{" "}
 						(Human AI Knowledge Unification). It provides a framework for
 						organizing work into focused units with clear phases and
@@ -153,7 +153,7 @@ export default function AboutPage() {
 						<div><code>/plugin install ai-dlc@thebushidocollective-ai-dlc --scope project</code></div>
 					</div>
 
-					<h2>Part of the HAIKU Method</h2>
+					<h2>Part of the H•AI•K•U Method</h2>
 					<p>
 						AI-DLC is the software development profile of{" "}
 						<a
@@ -162,10 +162,10 @@ export default function AboutPage() {
 							rel="noopener noreferrer"
 							className="text-blue-600 hover:underline dark:text-blue-400"
 						>
-							HAIKU
+							H•AI•K•U
 						</a>{" "}
 						(Human AI Knowledge Unification) — a methodology for structured
-						collaboration between humans and AI across any domain. HAIKU provides
+						collaboration between humans and AI across any domain. H•AI•K•U provides
 						the universal framework; AI-DLC applies it specifically to software
 						development.
 					</p>

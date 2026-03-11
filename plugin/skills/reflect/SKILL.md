@@ -335,7 +335,7 @@ Create a new version of this intent with learnings pre-loaded.
 ### Option C: Close
 Capture organizational learnings and archive this intent.
 - Distills key learnings into project memory (.claude/memory/)
-- Syncs to HAIKU organizational memory (if workspace configured)
+- Syncs to H•AI•K•U organizational memory (if workspace configured)
 - Archives the intent
 ```
 
@@ -410,7 +410,7 @@ Commit the learnings immediately after writing:
 git add .claude/memory/learnings.md && git commit -m "reflect(${INTENT_SLUG}): capture learnings"
 ```
 
-3. **Sync to HAIKU organizational memory** (if workspace configured):
+3. **Sync to H•AI•K•U organizational memory** (if workspace configured):
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/haiku.sh"
@@ -427,7 +427,7 @@ if haiku_is_configured; then
   mkdir -p "$HAIKU_WS/memory/software"
   haiku_memory_write "software/patterns" "$SOFTWARE_PATTERNS" "append"
 
-  echo "Organizational memory synced to HAIKU workspace: $HAIKU_WS"
+  echo "Organizational memory synced to H•AI•K•U workspace: $HAIKU_WS"
 fi
 ```
 
@@ -459,7 +459,7 @@ rm -f "$INTENT_DIR/intent.md.bak"
 **Intent:** {title}
 **Status:** archived
 **Project learnings saved to:** .claude/memory/learnings.md
-{if HAIKU configured: **Org learnings synced to:** {workspace}/memory/}
+{if H•AI•K•U configured: **Org learnings synced to:** {workspace}/memory/}
 
 ### Key Learnings Captured
 {summary of what was written to memory}

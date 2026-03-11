@@ -4,7 +4,7 @@ description: Get started with AI-DLC in 5 minutes
 order: 2
 ---
 
-Get AI-DLC running in your project and complete your first feature. AI-DLC is the software development profile of the [HAIKU Method](https://haikumethod.ai) (Human AI Knowledge Unification).
+Get AI-DLC running in your project and complete your first feature. AI-DLC is the software development profile of the [H•AI•K•U Method](https://haikumethod.ai) (Human AI Knowledge Unification).
 
 ## Installation
 

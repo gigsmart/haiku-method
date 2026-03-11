@@ -131,7 +131,7 @@ if [ -f "${INTENT_DIR}/discovery.md" ]; then
   fi
 fi
 
-# Source HAIKU workspace integration (opt-in org memory)
+# Source H•AI•K•U workspace integration (opt-in org memory)
 HAIKU_LIB="${CLAUDE_PLUGIN_ROOT}/lib/haiku.sh"
 if [ -f "$HAIKU_LIB" ]; then
   # shellcheck source=/dev/null
@@ -214,11 +214,11 @@ if [ -z "${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}" ]; then
   fi
 fi
 
-# Inject HAIKU organizational memory (if workspace configured)
+# Inject H•AI•K•U organizational memory (if workspace configured)
 if type haiku_is_configured &>/dev/null && haiku_is_configured; then
   ORG_MEMORY=$(haiku_memory_context 60)
   if [ -n "$ORG_MEMORY" ]; then
-    echo "### Organizational Memory (HAIKU)"
+    echo "### Organizational Memory (H•AI•K•U)"
     echo ""
     echo "$ORG_MEMORY"
     echo ""

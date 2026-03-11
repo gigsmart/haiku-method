@@ -10,7 +10,7 @@ status: active
 epic: ""
 ---
 
-# HAIKU: Evolve AI-DLC into a Universal Human-AI Collaboration Framework
+# H•AI•K•U: Evolve AI-DLC into a Universal Human-AI Collaboration Framework
 
 ## Problem
 
@@ -20,18 +20,18 @@ Businesses need a universal framework for running any initiative — software, m
 
 ## Solution
 
-Create **HAIKU** (Human AI Knowledge Unification) — a universal human-AI collaboration framework with a 4-phase lifecycle: Elaboration, Execution, Operation, Reflection. HAIKU is the domain-agnostic core; AI-DLC becomes the software development implementation of HAIKU.
+Create **H•AI•K•U** (Human AI Knowledge Unification) — a universal human-AI collaboration framework with a 4-phase lifecycle: Elaboration, Execution, Operation, Reflection. H•AI•K•U is the domain-agnostic core; AI-DLC becomes the software development implementation of H•AI•K•U.
 
 Architecture:
-- **HAIKU core plugin** — universal, works in repos (git) and folders (cowork), domain-agnostic hats/gates/workflows
-- **AI-DLC plugin** — extends HAIKU with software-specific features (git worktrees, tests/lint/types, PRs, deployment)
-- **SWARM** — referenced as the marketing/sales validation of HAIKU's universality
+- **H•AI•K•U core plugin** — universal, works in repos (git) and folders (cowork), domain-agnostic hats/gates/workflows
+- **AI-DLC plugin** — extends H•AI•K•U with software-specific features (git worktrees, tests/lint/types, PRs, deployment)
+- **SWARM** — referenced as the marketing/sales validation of H•AI•K•U's universality
 - **haikumethod.ai** — website for the universal framework
 
 ## Domain Model
 
 ### Entities
-- **HAIKU** — The universal framework. Human AI Knowledge Unification. Domain-agnostic methodology for any structured work.
+- **H•AI•K•U** — The universal framework. Human AI Knowledge Unification. Domain-agnostic methodology for any structured work.
 - **Phase** — One of four lifecycle stages: Elaboration, Execution, Operation, Reflection. Each has distinct mechanics, artifacts, and quality gates.
 - **Intent** — The thing being accomplished. Domain-agnostic: feature, campaign, strategy, process, research.
 - **Unit** — A discrete piece of work within an intent. Has discipline, dependencies, workflow.
@@ -40,13 +40,13 @@ Architecture:
 - **Workflow** — Ordered sequence of hats defining how a unit progresses.
 - **Quality Gate** — Configurable verification mechanism. Software: tests/lint/types. Marketing: stakeholder sign-off. Domain-specific.
 - **Storage Backend** — How state persists. Git mode (branches/worktrees) or folder mode (subdirectories/files). Auto-detected.
-- **Profile** — A domain-specific implementation of HAIKU. AI-DLC (software), SWARM (marketing/sales), future profiles.
+- **Profile** — A domain-specific implementation of H•AI•K•U. AI-DLC (software), SWARM (marketing/sales), future profiles.
 - **Operational Plan** — Defines what needs to happen to run/manage what was built. Created during Execution, automated during Operation.
 - **Reflection Artifact** — Learnings from a completed cycle. Feeds forward into next iteration and organizational memory.
 
 ### Relationships
-- HAIKU defines 4 Phases (Elaboration -> Execution -> Operation -> Reflection -> loop)
-- Profiles implement HAIKU for specific domains (AI-DLC for software, SWARM for marketing)
+- H•AI•K•U defines 4 Phases (Elaboration -> Execution -> Operation -> Reflection -> loop)
+- Profiles implement H•AI•K•U for specific domains (AI-DLC for software, SWARM for marketing)
 - Intent contains Units (DAG-ordered by dependencies)
 - Unit is executed through Bolts, each wearing a Hat from its Workflow
 - Quality Gates validate during Execution (domain-configurable)
@@ -63,20 +63,20 @@ Architecture:
 - **Discovery log** (`.ai-dlc/methodology-evolution/discovery.md`) — Detailed technical findings from elaboration
 
 ### Data Gaps
-- No HAIKU core plugin exists — must be built from scratch (informed by AI-DLC patterns)
+- No H•AI•K•U core plugin exists — must be built from scratch (informed by AI-DLC patterns)
 - No Operation phase implementation — conceptual in paper, zero code
 - No Reflection phase — not in paper, not in plugin
 - No folder-based storage — han keep is entirely git-dependent
 - No domain-agnostic quality gate configuration
 
 ## Success Criteria
-- [ ] HAIKU framework is defined: Human AI Knowledge Unification, with 4-phase lifecycle
-- [ ] HAIKU methodology paper articulates Elaboration, Execution, Operation, Reflection with domain-agnostic language
-- [ ] HAIKU core plugin works in both git repos and plain folders (auto-detect)
+- [ ] H•AI•K•U framework is defined: Human AI Knowledge Unification, with 4-phase lifecycle
+- [ ] H•AI•K•U methodology paper articulates Elaboration, Execution, Operation, Reflection with domain-agnostic language
+- [ ] H•AI•K•U core plugin works in both git repos and plain folders (auto-detect)
 - [ ] Quality gates are configurable per domain, not hardcoded to tests/lint/typecheck
 - [ ] `/reflect` skill produces reflection artifacts that feed forward into next iteration and org memory
 - [ ] `/operate` skill reads operational plans and automates tasks
-- [ ] AI-DLC plugin extends or depends on HAIKU core for software-specific features
+- [ ] AI-DLC plugin extends or depends on H•AI•K•U core for software-specific features
 - [ ] Existing AI-DLC git-based workflows function identically (backward compatibility)
 - [ ] Reflection and Operation phases are opt-in (teams can use Elaboration + Execution only)
 - [ ] Custom quality gates and hats definable per-project without modifying plugin core
@@ -86,7 +86,7 @@ Architecture:
 - [ ] Announcements generated: changelog, release notes, social posts, blog draft
 
 ## Context
-- HAIKU name: Human AI Knowledge Unification. Domain: haikumethod.ai
+- H•AI•K•U name: Human AI Knowledge Unification. Domain: haikumethod.ai
 - Japanese-inspired, bushido-adjacent: disciplined structure, intentional form (like haiku poetry)
 - SWARM (Scope Workstreams Accountability Results Memory) — a friend's marketing framework that independently validated the same 4-phase pattern
 - AI-DLC terminology preserved: Intent (epic), Unit (ticket/story), Bolt (sprint iteration)

@@ -7,20 +7,20 @@ workflow: ""
 ticket: ""
 ---
 
-# unit-07: HAIKU Website
+# unit-07: H•AI•K•U Website
 
 ## Description
-Build the website for HAIKU at haikumethod.ai. This is the public-facing home for the universal methodology — explaining what HAIKU is, the 4-phase lifecycle, the profile model, and how to get started.
+Build the website for H•AI•K•U at haikumethod.ai. This is the public-facing home for the universal methodology — explaining what H•AI•K•U is, the 4-phase lifecycle, the profile model, and how to get started.
 
 ## Discipline
 documentation (frontend implementation, but the primary deliverable is content/documentation)
 
 ## Domain Entities
-- HAIKU (framework), Phase, Profile
+- H•AI•K•U (framework), Phase, Profile
 
 ## Data Sources
-- HAIKU manifesto (unit-01 output)
-- HAIKU paper (unit-05 output)
+- H•AI•K•U manifesto (unit-01 output)
+- H•AI•K•U paper (unit-05 output)
 - AI-DLC website (`website/` in AI-DLC repo) — reference for design patterns and tech stack
 - Brand constants from unit-01
 
@@ -34,21 +34,21 @@ Use the same stack as the AI-DLC website for consistency:
 
 ### Site Structure
 ```
-/                       # Homepage: What is HAIKU? The 4-phase lifecycle.
+/                       # Homepage: What is H•AI•K•U? The 4-phase lifecycle.
 /methodology            # Deep dive into the methodology (adapted from paper)
 /phases/elaboration     # Phase detail: Elaboration
 /phases/execution       # Phase detail: Execution
 /phases/operation       # Phase detail: Operation
 /phases/reflection      # Phase detail: Reflection
-/profiles               # The profile model: how domains implement HAIKU
+/profiles               # The profile model: how domains implement H•AI•K•U
 /profiles/ai-dlc        # AI-DLC software development profile (links to ai-dlc.dev)
 /profiles/swarm         # SWARM marketing/sales profile
-/getting-started        # How to adopt HAIKU incrementally
+/getting-started        # How to adopt H•AI•K•U incrementally
 /paper                  # The full methodology paper
 ```
 
 ### Homepage Content
-- Hero: "HAIKU — Human AI Knowledge Unification"
+- Hero: "H•AI•K•U — Human AI Knowledge Unification"
 - Subtitle: The universal framework for human-AI collaboration
 - 4-phase lifecycle diagram: Elaboration -> Execution -> Operation -> Reflection (with loop back)
 - "Not just for software" messaging — works for any structured initiative
@@ -71,7 +71,7 @@ Each phase page:
 
 ## Success Criteria
 - [ ] Website deployed at haikumethod.ai
-- [ ] Homepage clearly communicates HAIKU's purpose and 4-phase lifecycle
+- [ ] Homepage clearly communicates H•AI•K•U's purpose and 4-phase lifecycle
 - [ ] All 4 phase pages exist with domain-agnostic content
 - [ ] Profile model explained with AI-DLC and SWARM examples
 - [ ] Getting started guide enables incremental adoption
@@ -83,9 +83,9 @@ Each phase page:
 - **Content overlap with paper**: Website and paper may duplicate content. Mitigation: website provides concise summaries with links to the full paper for depth.
 
 ## Boundaries
-This unit builds the HAIKU website. It does NOT modify the AI-DLC website (unit-08) or build the plugin (units 02-04).
+This unit builds the H•AI•K•U website. It does NOT modify the AI-DLC website (unit-08) or build the plugin (units 02-04).
 
 ## Notes
-- The website should be in the HAIKU repo (not the AI-DLC repo)
+- The website should be in the H•AI•K•U repo (not the AI-DLC repo)
 - Consider a simple, clean design that communicates "universal framework" not "dev tool"
 - Domain registration for haikumethod.ai should happen early (unit-01 or as a prerequisite)

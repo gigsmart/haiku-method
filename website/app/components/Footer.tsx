@@ -27,7 +27,7 @@ export function Footer() {
 								rel="noopener noreferrer"
 								className="underline hover:text-gray-900 dark:hover:text-white"
 							>
-								HAIKU Method
+								H•AI•K•U Method
 							</a>
 							.
 						</p>

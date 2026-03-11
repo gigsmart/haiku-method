@@ -238,7 +238,7 @@ export default function Home() {
 									rel="noopener noreferrer"
 									className="underline hover:text-blue-900 dark:hover:text-blue-100"
 								>
-									HAIKU Method
+									H•AI•K•U Method
 								</a>
 							</div>
 							<h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
@@ -257,7 +257,7 @@ export default function Home() {
 									rel="noopener noreferrer"
 									className="text-blue-600 hover:underline dark:text-blue-400"
 								>
-									HAIKU Method
+									H•AI•K•U Method
 								</a>
 								. Structure your work with clear phases, switch contexts
 								intentionally, and ship with confidence.

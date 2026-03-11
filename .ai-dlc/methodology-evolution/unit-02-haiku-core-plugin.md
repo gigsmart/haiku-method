@@ -7,16 +7,16 @@ workflow: ""
 ticket: ""
 ---
 
-# unit-02: HAIKU Core Plugin
+# unit-02: H•AI•K•U Core Plugin
 
 ## Description
-Build the HAIKU core plugin — a universal Claude Code plugin that implements the 4-phase lifecycle (Elaboration, Execution, Operation, Reflection) in a domain-agnostic way. This plugin works in both git repos and plain folders (auto-detect). It provides configurable quality gates, domain-agnostic hats, and flexible workflows. This is the largest technical unit.
+Build the H•AI•K•U core plugin — a universal Claude Code plugin that implements the 4-phase lifecycle (Elaboration, Execution, Operation, Reflection) in a domain-agnostic way. This plugin works in both git repos and plain folders (auto-detect). It provides configurable quality gates, domain-agnostic hats, and flexible workflows. This is the largest technical unit.
 
 ## Discipline
 backend
 
 ## Domain Entities
-- HAIKU (framework), Phase, Intent, Unit, Bolt, Hat, Workflow, Quality Gate, Storage Backend
+- H•AI•K•U (framework), Phase, Intent, Unit, Bolt, Hat, Workflow, Quality Gate, Storage Backend
 
 ## Data Sources
 - AI-DLC plugin source code (`plugin/` in the AI-DLC repo) — reference architecture for skills, hats, hooks, DAG system, config loading
@@ -25,7 +25,7 @@ backend
 
 ## Technical Specification
 
-### Plugin Structure (in HAIKU repo at `plugin/`)
+### Plugin Structure (in H•AI•K•U repo at `plugin/`)
 ```
 plugin/
   .claude-plugin/
@@ -169,7 +169,7 @@ Port `dag.sh` from AI-DLC with one key change: all functions must work from file
 ### Elaboration Skill
 Port the elaborate skill from AI-DLC with these changes:
 - Use "Execution" not "Construction" in all prompts and output
-- Reference HAIKU methodology, not AI-DLC
+- Reference H•AI•K•U methodology, not AI-DLC
 - Support folder mode (no worktree creation when not in git)
 - Quality gates configured from settings, not hardcoded
 
@@ -182,7 +182,7 @@ Port the construct skill with:
 - During execution, produce `operations.md` alongside deliverables (guidance for the Operation phase)
 
 ## Success Criteria
-- [ ] HAIKU core plugin installs and runs in Claude Code
+- [ ] H•AI•K•U core plugin installs and runs in Claude Code
 - [ ] `detect_storage_mode()` correctly identifies git vs folder environments
 - [ ] Folder mode: all state persists in `.haiku/` directories with no git commands
 - [ ] Git mode: works identically to current AI-DLC patterns (worktrees, branches, han keep)
@@ -195,7 +195,7 @@ Port the construct skill with:
 
 ## Risks
 - **Storage abstraction complexity**: Two storage modes means double the testing surface. Mitigation: unified API with clear mode-specific implementations behind it.
-- **AI-DLC divergence**: HAIKU core may diverge from AI-DLC patterns. Mitigation: unit-06 (AI-DLC Integration) handles reconciliation.
+- **AI-DLC divergence**: H•AI•K•U core may diverge from AI-DLC patterns. Mitigation: unit-06 (AI-DLC Integration) handles reconciliation.
 - **han keep dependency**: In folder mode, han keep may not work. Mitigation: storage.sh provides its own file-based persistence that doesn't depend on han keep.
 
 ## Boundaries

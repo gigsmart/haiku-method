@@ -52,20 +52,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- add HAIKU workspace integration and enhanced reflection ([ed90396](../../commit/ed90396))
-- add HAIKU references, rename Construction to Execution, add Operation/Reflection docs ([6fc0097](../../commit/6fc0097))
-- integrate AI-DLC as HAIKU software development profile ([f5fe76d](../../commit/f5fe76d))
+- add H•AI•K•U workspace integration and enhanced reflection ([ed90396](../../commit/ed90396))
+- add H•AI•K•U references, rename Construction to Execution, add Operation/Reflection docs ([6fc0097](../../commit/6fc0097))
+- integrate AI-DLC as H•AI•K•U software development profile ([f5fe76d](../../commit/f5fe76d))
 - implement reflection phase with /reflect skill and enriched reflector hat ([f2d7cc0](../../commit/f2d7cc0))
-- build HAIKU website for haikumethod.ai ([c2e7a6a](../../commit/c2e7a6a))
+- build H•AI•K•U website for haikumethod.ai ([c2e7a6a](../../commit/c2e7a6a))
 - implement operation phase with /operate skill and enriched hats ([acee292](../../commit/acee292))
-- implement HAIKU core plugin with 4-phase lifecycle ([aae495f](../../commit/aae495f))
-- write HAIKU methodology paper ([e4c2792](../../commit/e4c2792))
-- establish HAIKU foundation - manifesto, brand identity, repo structure ([84d393e](../../commit/84d393e))
+- implement H•AI•K•U core plugin with 4-phase lifecycle ([aae495f](../../commit/aae495f))
+- write H•AI•K•U methodology paper ([e4c2792](../../commit/e4c2792))
+- establish H•AI•K•U foundation - manifesto, brand identity, repo structure ([84d393e](../../commit/84d393e))
 
 ### Other
 
-- Merge methodology-evolution: HAIKU integration, /execute, /operate, /reflect ([f12fdcd](../../commit/f12fdcd))
-- Move HAIKU content to dedicated repo (TheBushidoCollective/haiku-method) ([71b32a6](../../commit/71b32a6))
+- Merge methodology-evolution: H•AI•K•U integration, /execute, /operate, /reflect ([f12fdcd](../../commit/f12fdcd))
+- Move H•AI•K•U content to dedicated repo (TheBushidoCollective/haiku-method) ([71b32a6](../../commit/71b32a6))
 - Merge unit-04-reflection-phase into intent branch ([123a048](../../commit/123a048))
 - Merge unit-07-haiku-website into intent branch ([2ecf732](../../commit/2ecf732))
 - Merge unit-02-haiku-core-plugin into intent branch ([eb1e5fa](../../commit/eb1e5fa))

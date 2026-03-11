@@ -16,7 +16,7 @@ disable-model-invocation: true
 
 ## Description
 
-> **DEPRECATED:** `/construct` has been renamed to `/execute` to align with the HAIKU methodology.
+> **DEPRECATED:** `/construct` has been renamed to `/execute` to align with the H•AI•K•U methodology.
 > This command still works but will display a deprecation notice. Use `/execute` going forward.
 
 **User-facing command** - Continue the AI-DLC autonomous execution loop.
