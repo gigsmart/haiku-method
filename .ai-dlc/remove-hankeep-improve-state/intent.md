@@ -1,0 +1,260 @@
+---
+workflow: default
+created: 2026-03-14
+status: active
+---
+
+# Intent: Remove Han Keep Dependency & Improve Intent State Management
+
+## Problem Statement
+
+AI-DLC currently has a **hard dependency on the `han` CLI** for two distinct capabilities:
+
+### 1. `han keep` — Branch-scoped ephemeral key-value storage
+Used across 32 files (hooks, skills, hats, docs) for persisting state that survives context resets but is scoped to a git branch. This is the **core state layer** of AI-DLC.
+
+**What it does:** Stores key-value pairs scoped to a git branch. Under the hood, `han keep` uses git notes or a similar git-native mechanism to attach arbitrary data to branches without polluting the working tree.
+
+**Current usage (155 references across 32 files):**
+- `han keep save <key> <content>` — persist ephemeral state
+- `han keep load <key> --quiet` — retrieve state
+- `han keep delete <key>` — remove a key
+- `han keep list` — list all keys
+- `han keep clear --branch` — clear all state for a branch
+- `han keep load --branch <branch> <key>` — cross-branch state access
+
+**Keys managed:**
+| Key | Scope | Purpose |
+|-----|-------|---------|
+| `iteration.json` | intent branch | Hat, iteration count, workflow, status, unitStates |
+| `intent-slug` | intent branch | Pointer to current intent directory |
+| `scratchpad.md` | unit branch | Progress notes and learnings from previous bolts |
+| `blockers.md` | unit branch | Documented blockers |
+| `current-plan.md` | unit branch | Planner's tactical output |
+| `completion-criteria.md` | intent branch | Success criteria (also on filesystem) |
+| `next-prompt.md` | unit branch | Continuation prompt for next iteration |
+| `operation-status.json` | intent branch | Operation phase tracking |
+| `reflection-status.json` | intent branch | Reflection phase tracking |
+| `providers.json` | intent branch | Cached MCP provider discovery |
+
+### 2. `han parse` — YAML/JSON parsing utility
+Used across 13 files (107 occurrences) for parsing YAML frontmatter and manipulating JSON. This is a **utility dependency**, not a state dependency.
+
+**Current usage:**
+- `han parse yaml <field> -r` — extract YAML field
+- `han parse yaml --json` — convert YAML to JSON
+- `han parse yaml-to-json` — same
+- `han parse yaml-set <field> <value>` — update YAML frontmatter in-place
+- `han parse json <field> -r` — extract JSON field
+- `han parse json-validate --schema <schema>` — validate JSON structure
+- `han parse json-set <field> <value>` — update JSON field
+
+---
+
+## Analysis: Why Remove Han?
+
+1. **External CLI dependency** — Users must install `han` before AI-DLC works. This is the only external runtime dependency beyond git itself.
+2. **Opaque storage** — `han keep` stores data in a way that's invisible to standard git tools (not in working tree, not easily inspectable).
+3. **Cross-branch complexity** — The `--branch` flag for accessing intent-level state from unit branches adds complexity and potential race conditions.
+4. **Two concerns conflated** — `han keep` (state storage) and `han parse` (YAML/JSON parsing) are unrelated capabilities bundled in one tool.
+
+---
+
+## Proposed Replacement: File-Based State in `.ai-dlc/`
+
+### Principle: State should be **visible, git-tracked, and inspectable**
+
+Instead of opaque `han keep` storage, move all ephemeral state to files within the `.ai-dlc/` directory structure that are committed to git. This aligns with AI-DLC's existing pattern where `intent.md`, `unit-*.md`, and `completion-criteria.md` already live on the filesystem.
+
+### New State Layout
+
+```
+.ai-dlc/{intent-slug}/
+├── intent.md                    # (existing) Intent definition
+├── unit-*.md                    # (existing) Unit specs
+├── completion-criteria.md       # (existing) Success criteria
+├── discovery.md                 # (existing) Elaboration findings
+├── state/                       # NEW: ephemeral state directory
+│   ├── iteration.json           # Was: han keep save iteration.json
+│   ├── scratchpad.md            # Was: han keep save scratchpad.md
+│   ├── blockers.md              # Was: han keep save blockers.md
+│   ├── current-plan.md          # Was: han keep save current-plan.md
+│   ├── next-prompt.md           # Was: han keep save next-prompt.md
+│   ├── operation-status.json    # Was: han keep save operation-status.json
+│   ├── reflection-status.json   # Was: han keep save reflection-status.json
+│   └── providers.json           # Was: han keep save providers.json
+├── operations.md                # (existing) Operational plan
+└── reflection.md                # (existing) Reflection artifacts
+```
+
+### Key Design Decisions
+
+**1. Intent-scoped vs. unit-scoped state**
+
+Currently, `han keep` scopes state to the **git branch** you're on. Unit branches get unit-scoped state, intent branches get intent-scoped state. This is implicit and requires `--branch` for cross-scope access.
+
+**Proposed:** Make scoping **explicit via directory structure**:
+- Intent-scoped state: `.ai-dlc/{intent-slug}/state/`
+- Unit-scoped state: `.ai-dlc/{intent-slug}/units/{unit-slug}/state/`
+
+This eliminates the need for `--branch` cross-access since all state is in the working tree and accessible from any branch.
+
+**2. State committed to git**
+
+Since state files are in the working tree, they get committed with normal `git add && git commit`. This means:
+- State is visible in `git diff` and `git log`
+- State survives branch switches
+- State is inspectable with any text editor
+- No special tooling needed to read/write state
+- State merge conflicts are possible but manageable (JSON/MD files)
+
+**3. `han parse` replacement**
+
+Replace `han parse` with lightweight alternatives:
+- **JSON parsing:** Use `jq` (already used in `config.sh`) or a small built-in shell function
+- **YAML parsing:** Use the existing `_yaml_get_simple` / `_yaml_get_array` functions from `dag.sh` (already working, no external dep)
+- **YAML-to-JSON:** Use `python3 -c 'import yaml, json, sys; ...'` or `yq` as optional
+- **JSON-set:** Use `jq` for JSON manipulation
+- **YAML-set:** Use `sed` for simple frontmatter updates (already partially done in `dag.sh`)
+
+### State Management Helper Library
+
+Create a new `plugin/lib/state.sh` that provides a clean API matching the current `han keep` interface but using files:
+
+```bash
+# Save state (writes file, auto-commits if in git)
+dlc_state_save <key> <content> [--scope intent|unit] [--unit <unit-slug>]
+
+# Load state (reads file)
+dlc_state_load <key> [--scope intent|unit] [--unit <unit-slug>]
+
+# Delete state (removes file)
+dlc_state_delete <key> [--scope intent|unit] [--unit <unit-slug>]
+
+# List state keys
+dlc_state_list [--scope intent|unit] [--unit <unit-slug>]
+
+# Clear all state
+dlc_state_clear [--scope intent|unit] [--unit <unit-slug>]
+```
+
+---
+
+## Improvement Opportunities for Intent State Management
+
+Beyond removing `han keep`, the migration presents an opportunity to improve how state flows through the system:
+
+### 1. Single Source of Truth for Iteration State
+
+**Current problem:** `iteration.json` stores `unitStates` as a nested object that duplicates status from `unit-*.md` frontmatter. Two sources of truth for unit status.
+
+**Improvement:** Remove `unitStates` from `iteration.json`. The unit files already have `status` in frontmatter — the DAG library (`dag.sh`) already reads status from unit files, not from `iteration.json`. The `unitStates` field is redundant.
+
+Simplified `iteration.json`:
+```json
+{
+  "iteration": 3,
+  "hat": "builder",
+  "workflow": ["planner", "builder", "reviewer"],
+  "workflowName": "default",
+  "status": "active",
+  "currentUnit": "unit-02-auth",
+  "targetUnit": null,
+  "phase": "execution",
+  "maxIterations": 0,
+  "needsAdvance": false
+}
+```
+
+### 2. Explicit Phase State Machine
+
+**Current problem:** The `phase` field was added as a migration (see `inject-context.sh:316-331`) and inferred from the current hat. There's no formal phase transition logic.
+
+**Improvement:** Define a formal phase state machine:
+```
+elaboration → execution → [operation] → [reflection] → closed
+                ↑                              |
+                └──────────── iterate ─────────┘
+```
+
+Each transition should be explicit (e.g., `/execute` transitions from elaboration to execution, `/operate` transitions to operation, etc.).
+
+### 3. Reduce State Parsing Overhead
+
+**Current problem:** The `inject-context.sh` hook spawns 10+ subprocesses to parse iteration.json (one `han parse json` call per field). This is slow on session start.
+
+**Improvement:** Parse iteration.json **once** using `jq` and extract all needed fields in a single call:
+```bash
+eval "$(echo "$ITERATION_JSON" | jq -r '@sh "
+  ITERATION=\(.iteration // 1)
+  HAT=\(.hat // "planner")
+  STATUS=\(.status // "active")
+  WORKFLOW_NAME=\(.workflowName // "default")
+  PHASE=\(.phase // "execution")
+"')"
+```
+
+### 4. State Validation
+
+**Current problem:** State validation is minimal — just a basic JSON schema check on iteration.json. Invalid state can cause silent failures.
+
+**Improvement:** Add validation on load:
+- Required fields check for iteration.json
+- Hat must exist in current workflow
+- Phase must be valid enum
+- currentUnit must reference an existing unit file
+- Warn (don't crash) on validation failures
+
+### 5. State Observability
+
+**Current problem:** State is stored in opaque `han keep` storage, making debugging difficult. Users can't easily see what state exists or inspect it.
+
+**Improvement:** Since state moves to files:
+- `git diff .ai-dlc/*/state/` shows all state changes
+- `cat .ai-dlc/{slug}/state/iteration.json | jq .` inspects current state
+- State changes appear in commit diffs
+- Add a `/status` skill that pretty-prints current state
+
+---
+
+## Units
+
+### Unit 1: Create `state.sh` Library
+Build `plugin/lib/state.sh` with file-based state management functions that mirror `han keep` semantics but use `.ai-dlc/{slug}/state/` files.
+
+### Unit 2: Create `parse.sh` Library
+Build `plugin/lib/parse.sh` with JSON/YAML parsing utilities that replace `han parse` using `jq`, `sed`, and existing `_yaml_get_simple` patterns.
+
+### Unit 3: Migrate Hooks
+Update `inject-context.sh`, `enforce-iteration.sh`, and `subagent-context.sh` to use `state.sh` and `parse.sh` instead of `han keep` and `han parse`.
+
+### Unit 4: Migrate Skills
+Update all 10 skills that use `han keep` (advance, blockers, completion-criteria, construct, elaborate, execute, fail, operate, reflect, refine, reset, resume) to use the new libraries.
+
+### Unit 5: Migrate Hat Documentation
+Update references in hat markdown files (builder, experimenter, observer, planner, red-team).
+
+### Unit 6: Migrate Config Libraries
+Update `config.sh` and `config.ts` to remove `han keep`/`han parse` dependencies.
+
+### Unit 7: Simplify iteration.json
+Remove redundant `unitStates` field, add formal phase enum, reduce parsing overhead.
+
+### Unit 8: Update Documentation
+Update README.md, website docs, paper references to reflect the removal of the `han` dependency.
+
+---
+
+## Out of Scope
+
+- Removing git as a dependency (git remains the foundation)
+- Changing the DAG resolution logic (works well as-is)
+- Changing workflow/hat definitions
+- Website/UI changes beyond documentation
+- jj VCS support (not implemented anyway)
+
+## Risk Assessment
+
+- **Low risk:** State files are a simpler, more transparent mechanism
+- **Migration path:** Can keep `han keep` as optional fallback during transition
+- **Testing:** Each unit can be validated independently since hooks/skills have clear boundaries
