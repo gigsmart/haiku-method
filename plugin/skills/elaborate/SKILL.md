@@ -1179,6 +1179,7 @@ git commit -m "elaborate(${INTENT_SLUG}): define intent"
 ```markdown
 ---
 status: pending
+last_updated: ""  # ISO 8601 UTC timestamp of last status change (auto-populated)
 depends_on: []
 branch: ai-dlc/{intent-slug}/NN-{unit-slug}
 discipline: {discipline}  # frontend, backend, api, documentation, devops, design, etc.

@@ -6,6 +6,7 @@
 # status: pending  # pending | in_progress | completed | blocked
 # depends_on: [unit-01-setup, unit-03-session]
 # branch: ai-dlc/intent/04-auth
+# last_updated: 2026-03-26T19:30:00Z  # ISO 8601 UTC timestamp of last status change
 # ---
 
 # Source configuration system
@@ -484,6 +485,9 @@ update_unit_status() {
 
   # Update status in frontmatter using han parse yaml-set
   han parse yaml-set status "$new_status" < "$unit_file" > "$unit_file.tmp" && mv "$unit_file.tmp" "$unit_file"
+
+  # Update last_updated timestamp
+  han parse yaml-set last_updated "$(date -u +%Y-%m-%dT%H:%M:%SZ)" < "$unit_file" > "$unit_file.tmp" && mv "$unit_file.tmp" "$unit_file"
 
   # Emit telemetry for unit status change (non-blocking)
   if [ -z "${_AIDLC_TELEMETRY_INIT:-}" ]; then
