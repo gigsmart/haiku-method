@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.0] - 2026-03-26
+
+### Added
+
+- add design-focused success criteria guidance ([d760163](../../commit/d760163))
+
+### Other
+
+- Merge pull request #20 from TheBushidoCollective/hampton/design-criteria-guidance ([c760c34](../../commit/c760c34))
+
 ## [1.23.0] - 2026-03-26
 
 ### Added
