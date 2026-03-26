@@ -225,9 +225,9 @@
 			"properties": {
 				"change_strategy": {
 					"type": "string",
-					"enum": ["trunk", "unit", "intent"],
+					"enum": ["trunk", "unit", "intent", "deferred"],
 					"default": "unit",
-					"description": "How changes are organized:\n- trunk: All work on main branch, no feature branches\n- unit: One branch per unit, each gets its own MR reviewed individually (default)\n- intent: One long-lived branch per intent, agents build autonomously via DAG ordering"
+					"description": "How changes are organized:\n- trunk: All work on main branch, no feature branches\n- unit: One branch per unit, each gets its own MR reviewed individually (default)\n- intent: One long-lived branch per intent, agents build autonomously via DAG ordering\n- deferred: Work on intent branch like 'intent' strategy, but defer publishing decisions until units/intent complete"
 				},
 				"elaboration_review": {
 					"type": "boolean",

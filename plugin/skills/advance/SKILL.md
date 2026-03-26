@@ -152,6 +152,11 @@ EOF
   WORKTREE_PATH="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
   [ -d "$WORKTREE_PATH" ] && git worktree remove "$WORKTREE_PATH"
 
+elif [ "$CHANGE_STRATEGY" = "deferred" ]; then
+  # Deferred strategy: ask the user how to handle this completed unit
+  # Present options via AskUserQuestion (see Step 2d-deferred below)
+  DEFERRED_UNIT_ACTION="ask"
+
 elif [ "$AUTO_MERGE" = "true" ]; then
   # Intent/trunk strategy: merge unit branch into intent branch
   # Ensure we're on the intent branch
@@ -170,6 +175,89 @@ elif [ "$AUTO_MERGE" = "true" ]; then
   [ -d "$WORKTREE_PATH" ] && git worktree remove "$WORKTREE_PATH"
 fi
 ```
+
+### Step 2d-deferred: Deferred Unit Completion Prompt
+
+When `CHANGE_STRATEGY` is `deferred` and a unit has just completed, ask the user how to handle the finished unit:
+
+```json
+{
+  "questions": [{
+    "question": "Unit '${CURRENT_UNIT}' is complete. How would you like to handle it?",
+    "header": "Deferred Publishing — Unit Complete",
+    "options": [
+      {"label": "Open individual PR for this unit", "description": "Create a PR from the unit branch directly to the default branch"},
+      {"label": "Accumulate into intent branch", "description": "Merge unit into the intent branch — no PR yet, decide at intent completion"},
+      {"label": "Do nothing", "description": "Keep changes on the unit branch — you'll handle it manually later"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+**If "Open individual PR for this unit":**
+
+```bash
+git push -u origin "$UNIT_BRANCH" 2>/dev/null || true
+
+UNIT_TICKET=$(han parse yaml ticket -r --default "" < "$INTENT_DIR/${CURRENT_UNIT}.md" 2>/dev/null || echo "")
+TICKET_LINE=""
+if [ -n "$UNIT_TICKET" ]; then
+  TICKET_LINE="Closes ${UNIT_TICKET}"
+fi
+
+gh pr create \
+  --base "$DEFAULT_BRANCH" \
+  --head "$UNIT_BRANCH" \
+  --title "unit: ${CURRENT_UNIT}" \
+  --body "$(cat <<EOF
+## Unit: ${CURRENT_UNIT}
+
+Part of intent: ${INTENT_SLUG}
+
+${TICKET_LINE}
+
+---
+*Built with [AI-DLC](https://ai-dlc.dev)*
+EOF
+)" 2>/dev/null || echo "PR may already exist for $UNIT_BRANCH"
+
+WORKTREE_PATH="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
+[ -d "$WORKTREE_PATH" ] && git worktree remove "$WORKTREE_PATH"
+```
+
+**If "Accumulate into intent branch":**
+
+```bash
+git checkout "ai-dlc/${INTENT_SLUG}/main"
+
+if [ "$AUTO_SQUASH" = "true" ]; then
+  git merge --squash "$UNIT_BRANCH"
+  git commit -m "unit: ${CURRENT_UNIT} completed"
+else
+  git merge --no-ff "$UNIT_BRANCH" -m "Merge ${CURRENT_UNIT} into intent branch"
+fi
+
+WORKTREE_PATH="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
+[ -d "$WORKTREE_PATH" ] && git worktree remove "$WORKTREE_PATH"
+```
+
+**If "Do nothing":**
+
+```
+Unit branch preserved: ${UNIT_BRANCH}
+
+To merge later:
+  git checkout ai-dlc/${INTENT_SLUG}/main
+  git merge --no-ff ${UNIT_BRANCH}
+
+To create PR later:
+  gh pr create --base ${DEFAULT_BRANCH} --head ${UNIT_BRANCH}
+```
+
+No merge or PR is performed. The unit branch is left as-is for the user to handle manually.
+
+---
 
 ```bash
 # Get DAG summary
@@ -461,6 +549,96 @@ All unit PRs have been created during construction. Review and merge them indivi
 To clean up:
   /reset
 ```
+
+**If deferred strategy**: Ask the user how to distribute the completed intent using `AskUserQuestion`:
+
+```json
+{
+  "questions": [{
+    "question": "All units are complete. How would you like to publish this intent?",
+    "header": "Deferred Publishing — Intent Complete",
+    "options": [
+      {"label": "Open single intent PR", "description": "Create one PR for the entire intent branch to merge into the default branch"},
+      {"label": "Open individual PRs per unit", "description": "Create separate PRs for each unit branch against the default branch"},
+      {"label": "Merge directly", "description": "Merge the intent branch directly into the default branch (no PR)"},
+      {"label": "Do nothing", "description": "Leave the intent branch as-is — you'll handle publishing manually"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+**If "Open single intent PR":** Follow the same PR creation flow as the intent strategy below (push intent branch, collect tickets, create PR).
+
+**If "Open individual PRs per unit":**
+
+```bash
+for unit_file in "$INTENT_DIR"/unit-*.md; do
+  [ -f "$unit_file" ] || continue
+  UNIT_NAME=$(basename "$unit_file" .md)
+  UNIT_SLUG="${UNIT_NAME#unit-}"
+  UNIT_BRANCH="ai-dlc/${INTENT_SLUG}/${UNIT_SLUG}"
+
+  # Skip if branch doesn't exist (may have been merged into intent already)
+  if ! git rev-parse --verify "$UNIT_BRANCH" >/dev/null 2>&1; then
+    echo "Skipping ${UNIT_NAME} — branch not found (may already be merged into intent)"
+    continue
+  fi
+
+  git push -u origin "$UNIT_BRANCH" 2>/dev/null || true
+
+  UNIT_TICKET=$(han parse yaml ticket -r --default "" < "$unit_file" 2>/dev/null || echo "")
+  TICKET_LINE=""
+  if [ -n "$UNIT_TICKET" ]; then
+    TICKET_LINE="Closes ${UNIT_TICKET}"
+  fi
+
+  gh pr create \
+    --base "$DEFAULT_BRANCH" \
+    --head "$UNIT_BRANCH" \
+    --title "unit: ${UNIT_NAME}" \
+    --body "$(cat <<EOF
+## Unit: ${UNIT_NAME}
+
+Part of intent: ${INTENT_SLUG}
+
+${TICKET_LINE}
+
+---
+*Built with [AI-DLC](https://ai-dlc.dev)*
+EOF
+)" 2>/dev/null || echo "PR may already exist for $UNIT_BRANCH"
+done
+```
+
+Note: If the user chose "Accumulate into intent branch" for some units during construction, those unit branches may no longer exist as separate refs. In that case, the per-unit PR option will skip those units and inform the user. Consider suggesting the single intent PR option if most units were accumulated.
+
+**If "Merge directly":**
+
+```bash
+INTENT_BRANCH="ai-dlc/${INTENT_SLUG}/main"
+git checkout "$DEFAULT_BRANCH"
+git merge --no-ff "$INTENT_BRANCH" -m "Merge intent ${INTENT_SLUG} into ${DEFAULT_BRANCH}"
+git push origin "$DEFAULT_BRANCH"
+```
+
+**If "Do nothing":**
+
+```
+Intent branch preserved: ai-dlc/${INTENT_SLUG}/main
+
+To create PR later:
+  gh pr create --base ${DEFAULT_BRANCH} --head ai-dlc/${INTENT_SLUG}/main
+
+To merge later:
+  git checkout ${DEFAULT_BRANCH}
+  git merge --no-ff ai-dlc/${INTENT_SLUG}/main
+
+To clean up:
+  /reset
+```
+
+---
 
 **If intent strategy** (or hybrid with non-unit units): Ask the user how to deliver using `AskUserQuestion`:
 

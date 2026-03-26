@@ -264,6 +264,7 @@ Use `AskUserQuestion`:
 - Options:
   - **Unit branches (Recommended)** — Each unit gets its own branch and MR, reviewed individually. Supports human or agent builders and `/construct <unit-name>` targeting. Best for teams adopting AI-DLC gradually.
   - **Intent branch** — All units merge into a single intent branch. Agents build autonomously via DAG ordering, one MR reviewed at the end. Best for fully autonomous workflows.
+  - **Deferred** — Defer publishing decisions until work is complete. You'll choose how to distribute after each unit or intent is finished. Work proceeds on an intent branch like the intent strategy, but no PRs are created automatically.
   - **Trunk** — All work on main branch, no feature branches
 
 Pre-fill from existing `settings.yml` `{vcs}.change_strategy` if available.
@@ -276,7 +277,7 @@ Pre-fill from existing `settings.yml` `{vcs}.change_strategy` if available.
 
 Pre-fill from existing `settings.yml` `{vcs}.auto_merge` if available.
 
-Only ask auto-merge if strategy is `intent`. For `unit` strategy, merging is the user's responsibility (they merge their own PRs), so skip this question and do not set `auto_merge`. For `trunk`, branches aren't used.
+Only ask auto-merge if strategy is `intent` or `deferred`. For `unit` strategy, merging is the user's responsibility (they merge their own PRs), so skip this question and do not set `auto_merge`. For `trunk`, branches aren't used. For `deferred`, auto-merge controls whether completed unit branches are merged into the intent branch during construction (the publishing decision is still deferred to completion time).
 
 ---
 
