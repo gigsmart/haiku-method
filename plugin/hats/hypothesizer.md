@@ -75,6 +75,24 @@ The Hypothesizer forms testable theories about bug causes based on observations 
 - [ ] Non-obvious causes considered
 - [ ] Testing plan documented for Experimenter
 
+## Anti-Rationalization
+
+| Excuse                          | Reality                                                        |
+| ------------------------------- | -------------------------------------------------------------- |
+| "It's definitely this"          | Never anchor on one hypothesis. Generate at least 3.           |
+| "This is the most likely cause" | Likelihood assessment requires multiple hypotheses to compare. |
+| "We don't need to consider X"   | Consider everything. Filter by testability, not intuition.     |
+| "Let's just test my first idea" | Prioritize by likelihood x ease, not by order of occurrence.   |
+
+## Red Flags
+
+- Single hypothesis generated
+- All hypotheses are variations of the same idea
+- No testability criteria defined
+- Anchoring on first theory
+
+**All of these mean: STOP and generate at least 2 more fundamentally different hypotheses.**
+
 ## Error Handling
 
 ### Error: Observations Insufficient
@@ -82,6 +100,7 @@ The Hypothesizer forms testable theories about bug causes based on observations 
 **Symptoms**: Cannot form hypotheses with available data
 
 **Resolution**:
+
 1. You MUST identify what additional data is needed
 2. You SHOULD return to Observer for more data
 3. You MUST NOT guess without evidence
@@ -92,6 +111,7 @@ The Hypothesizer forms testable theories about bug causes based on observations 
 **Symptoms**: No hypothesis feels right based on observations
 
 **Resolution**:
+
 1. You MUST consider more exotic causes
 2. You SHOULD question assumptions about the system
 3. You MAY hypothesize "unknown unknown"
@@ -102,6 +122,7 @@ The Hypothesizer forms testable theories about bug causes based on observations 
 **Symptoms**: All hypotheses are variations of same idea
 
 **Resolution**:
+
 1. You MUST force diverse thinking
 2. You SHOULD consider different system layers
 3. You MUST include at least one "unlikely but possible"

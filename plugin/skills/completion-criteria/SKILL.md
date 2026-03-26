@@ -106,6 +106,43 @@ Don't just specify what should work—specify what should fail.
 - [ ] Empty fields → validation errors shown
 ```
 
+### 6. Include Anti-Patterns (DO NOT)
+
+Telling the agent what NOT to do constrains the output space more effectively than positive instructions alone. Every unit spec should include an explicit anti-patterns section.
+
+```markdown
+## Anti-Patterns (DO NOT)
+- Do not [specific prohibited approach]
+- Do not [technology/pattern to avoid]
+- Do not [scope boundary violation]
+```
+
+Why anti-patterns matter:
+- They prevent the most common failure modes before they happen
+- They constrain the AI's solution space to acceptable approaches
+- They encode team knowledge about what has failed before
+- They are more actionable than vague positive guidance
+
+Examples:
+
+Good anti-patterns:
+```markdown
+## Anti-Patterns (DO NOT)
+- Do not add a new database table — use the existing events table
+- Do not introduce a new HTTP client library — use the project's fetch wrapper
+- Do not modify the auth middleware — scope is the API endpoint only
+- Do not use raw SQL queries — use the ORM's query builder
+- Do not hardcode environment-specific values — use config system
+```
+
+Bad anti-patterns:
+```markdown
+## Anti-Patterns (DO NOT)
+- Do not write bad code    (too vague)
+- Do not make mistakes     (not actionable)
+- Do not break anything    (not specific)
+```
+
 ## Writing Process
 
 ### Step 1: Start with Intent
@@ -221,6 +258,10 @@ What existing behavior should NOT CHANGE:
 - [ ] All tests pass
 - [ ] No type errors
 - [ ] No lint warnings
+
+### Anti-Patterns (DO NOT)
+- [ ] Do not [specific prohibited approach]
+- [ ] Do not [technology/pattern to avoid]
 ```
 
 ### Bug Fix

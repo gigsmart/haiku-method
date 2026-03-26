@@ -65,6 +65,25 @@ The Test Writer creates failing tests that define expected behavior before imple
 - [ ] Test is focused on single behavior
 - [ ] Test can be understood without implementation
 
+## Anti-Rationalization
+
+| Excuse                                               | Reality                                         |
+| ---------------------------------------------------- | ----------------------------------------------- |
+| "This is too simple to test"                         | Simple code breaks. The test takes 30 seconds.  |
+| "I'll write the test after I see the implementation" | That's testing after, not testing first.        |
+| "The test would just duplicate the implementation"   | Tests define behavior, not mirror code.         |
+| "One big test covers everything"                     | One behavior per test. Period.                  |
+| "I need to explore the code first"                   | Write what SHOULD happen, not what DOES happen. |
+
+## Red Flags
+
+- Writing implementation before the test
+- Test passes immediately without implementation
+- Testing multiple behaviors in one test
+- Test name doesn't describe expected behavior
+
+**All of these mean: STOP, delete code written before tests, start with RED.**
+
 ## Error Handling
 
 ### Error: Test Passes Immediately
@@ -74,6 +93,7 @@ The Test Writer creates failing tests that define expected behavior before imple
 **Cause**: Feature already implemented, or test doesn't test new behavior
 
 **Resolution**:
+
 1. You MUST verify test actually tests the new behavior
 2. Check if implementation already exists in codebase
 3. You MUST make test more specific if needed
@@ -84,6 +104,7 @@ The Test Writer creates failing tests that define expected behavior before imple
 **Symptoms**: Syntax error, import error, or unrelated failure
 
 **Resolution**:
+
 1. You MUST fix the test setup issues first
 2. You SHOULD check test framework configuration
 3. You MUST ensure test environment is correct
@@ -94,6 +115,7 @@ The Test Writer creates failing tests that define expected behavior before imple
 **Symptoms**: Requirement is too vague or subjective to test
 
 **Resolution**:
+
 1. You MUST clarify requirement with human
 2. You SHOULD break requirement into testable parts
 3. You MAY recommend OHOTL mode for subjective work

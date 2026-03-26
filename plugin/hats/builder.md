@@ -49,32 +49,33 @@ When working with designs from design tools (Figma, Sketch, Adobe XD, etc.):
 - **Distinguish design annotations from UI elements.** Designers often annotate mockups with callouts, arrows, measurement labels, sticky notes, and text blocks that describe UX behavior or implementation details. These annotations are **guidance for you, not part of the design to implement.** Look for: redline measurements, numbered callouts, text outside the frame/artboard, comment threads, and annotation layers. Treat them as implementation instructions — extract and follow the guidance, but do not render them as UI elements.
 
 #### Provider Sync — Ticket Status
+
 - If a `ticket` field exists in the current unit's frontmatter, **SHOULD** update the ticket status to **In Progress** using the ticketing provider's MCP tools
 - If the unit is completed successfully, **SHOULD** update the ticket to **Done**
 - If the unit is blocked, **SHOULD** flag the ticket as **Blocked** and add the blocker description as a comment
 - If MCP tools are unavailable, skip silently — never block building on ticket updates
 
-2. Implement incrementally
+1. Implement incrementally
    - You MUST work in small, verifiable increments
    - You MUST run backpressure checks after each change
    - You MUST NOT proceed if tests/types/lint fail
    - You SHOULD commit working increments
    - **Validation**: Each increment passes all quality gates
 
-3. Use backpressure as guidance
+2. Use backpressure as guidance
    - You MUST treat test failures as implementation guidance
    - You MUST fix lint errors before proceeding
    - You MUST resolve type errors immediately
    - You MUST NOT disable or skip quality checks
    - **Validation**: All quality gates pass
 
-4. Document progress
+3. Document progress
    - You MUST update scratchpad with learnings
    - You SHOULD note any decisions made
    - You MUST document blockers immediately when encountered
    - **Validation**: Progress is recoverable after context reset
 
-5. Handle blockers
+4. Handle blockers
    - If stuck for more than 3 attempts on same issue:
      - You MUST document the blocker in detail
      - You MUST save to `han keep --branch blockers`
@@ -82,7 +83,7 @@ When working with designs from design tools (Figma, Sketch, Adobe XD, etc.):
      - You MUST NOT continue banging head against wall
    - **Validation**: Blockers documented with context
 
-6. Complete or iterate
+5. Complete or iterate
    - If all criteria met: Signal completion
    - If bolt limit reached: Save state for next iteration
    - You MUST commit all working changes
@@ -98,6 +99,105 @@ When working with designs from design tools (Figma, Sketch, Adobe XD, etc.):
 - [ ] Blockers documented if encountered
 - [ ] State saved for context recovery
 
+## Anti-Rationalization
+
+| Excuse                           | Reality                                                 |
+| -------------------------------- | ------------------------------------------------------- |
+| "I'll add tests later"           | Tests first or not at all. "Later" never comes.         |
+| "It's just a small change"       | Small changes break production. Test everything.        |
+| "The existing tests cover this"  | Verify - don't assume. Run them.                        |
+| "TDD will slow us down"          | TDD is faster than debugging blind.                     |
+| "This lint rule is wrong"        | The lint rule is the spec. Fix your code, not the rule. |
+| "I'll commit when it's all done" | Commit working increments. Batching loses progress.     |
+| "I can skip the type check"      | The type system is your co-reviewer. Listen to it.      |
+
+## Red Flags
+
+- Writing code before tests
+- Disabling or bypassing quality checks
+- Working 10+ minutes without committing
+- Ignoring backpressure failures
+
+**All of these mean: STOP, revert to last green state, and re-approach.**
+
+## Deviation Rules
+
+When encountering unexpected situations during building, follow these rules:
+
+### Auto-Fix (No User Permission Needed)
+
+| Rule                             | Triggers                                                                                                | Tracking                                  |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| **Rule 1: Fix Bugs**             | Broken behavior, runtime errors, type errors, security vulnerabilities, race conditions, memory leaks   | `[Rule 1 - Bug] description`              |
+| **Rule 2: Add Missing Critical** | Error handling, input validation, null checks, auth on protected routes, CSRF/CORS, rate limiting       | `[Rule 2 - Missing Critical] description` |
+| **Rule 3: Fix Blockers**         | Missing dependencies, wrong types, broken imports, missing env vars, build config errors, circular deps | `[Rule 3 - Blocking] description`         |
+
+### Pause for Humans (MUST STOP)
+
+| Triggers                                  | Action                                         |
+| ----------------------------------------- | ---------------------------------------------- |
+| New database table or major schema change | STOP — present change details and alternatives |
+| Switching libraries or frameworks         | STOP — present rationale and alternatives      |
+| Changing authentication approach          | STOP — present security implications           |
+| Breaking API changes                      | STOP — present migration path                  |
+| New infrastructure requirements           | STOP — present scope and cost                  |
+
+**Decision heuristic:** "Does this affect correctness, security, or ability to complete the task?" Yes = Auto-fix (Rules 1-3). Maybe = Pause for humans (Rule 4).
+
+**Scope boundary:** Only auto-fix issues directly caused by current task's changes. Pre-existing warnings in unrelated files should be noted in scratchpad, not fixed during this bolt.
+
+### Auto-Fix Limits
+
+- **3-attempt limit** per task. After 3 auto-fix attempts on the same issue, document remaining issues in scratchpad under "Deferred Issues" and move to the next task.
+- **Analysis paralysis guard:** If 5+ consecutive Read/Grep/Glob calls without any Edit/Write/Bash action, you MUST either write code or declare "blocked" with specific missing information.
+
+All deviations MUST be documented in scratchpad:
+
+```markdown
+## Deviations from Plan
+
+### Auto-fixed Issues
+**1. [Rule 1 - Bug] Fixed null reference in user lookup**
+- **Found during:** Task 3
+- **Issue:** user.profile was undefined when profile not loaded
+- **Fix:** Added null check with early return
+- **Files modified:** src/services/user.ts
+```
+
+## Structured Completion Marker
+
+When completing building work, output this structured block:
+
+```markdown
+## BUILD COMPLETE
+
+**Unit:** {unit name}
+**Plan Tasks:** {completed}/{total}
+**Criteria Progress:** {met}/{total} criteria satisfied
+**Quality Gates:** all passing | {failing gates}
+**Deviations:** none | {count} auto-fixed
+
+### Completed Tasks
+| Task   | Files Modified | Tests Added  |
+| ------ | -------------- | ------------ |
+| {task} | {files}        | {test count} |
+
+### Remaining (if any)
+- {criterion not yet satisfied} — {reason}
+```
+
+If blocked and cannot continue:
+
+```markdown
+## BUILD BLOCKED
+
+**Unit:** {unit name}
+**Completed:** {completed}/{total} tasks
+**Blocker:** {specific blocker description}
+**Attempts:** {count}/3
+**Needs:** {what is required to unblock}
+```
+
 ## Error Handling
 
 ### Error: Tests Keep Failing
@@ -105,6 +205,7 @@ When working with designs from design tools (Figma, Sketch, Adobe XD, etc.):
 **Symptoms**: Same test fails repeatedly despite different approaches
 
 **Resolution**:
+
 1. You MUST stop and analyze the test itself
 2. You SHOULD check if test expectations are correct
 3. You MAY ask for human review of the test
@@ -115,6 +216,7 @@ When working with designs from design tools (Figma, Sketch, Adobe XD, etc.):
 **Symptoms**: Cannot satisfy type checker without unsafe casts
 
 **Resolution**:
+
 1. You MUST examine the type definitions
 2. You SHOULD consider if types need updating (with justification)
 3. You MUST NOT use `any` or type assertions without documenting why
@@ -125,6 +227,7 @@ When working with designs from design tools (Figma, Sketch, Adobe XD, etc.):
 **Symptoms**: Linter rejects code that is correct and intentional
 
 **Resolution**:
+
 1. You SHOULD first verify the code is truly correct
 2. You MAY add targeted disable comments with explanation
 3. You MUST NOT globally disable lint rules
@@ -135,6 +238,7 @@ When working with designs from design tools (Figma, Sketch, Adobe XD, etc.):
 **Symptoms**: Multiple approaches tried, none working
 
 **Resolution**:
+
 1. You MUST document all approaches tried
 2. You MUST save detailed blockers
 3. You MUST recommend escalation to HITL

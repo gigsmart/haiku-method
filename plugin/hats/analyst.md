@@ -81,6 +81,24 @@ The Analyst evaluates experimental results and implements the fix (analysis phas
 - [ ] Original bug verified as fixed
 - [ ] Resolution documented
 
+## Anti-Rationalization
+
+| Excuse                                   | Reality                                                    |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| "The fix is obvious now"                 | Design the fix carefully. Obvious fixes have side effects. |
+| "We don't need a regression test"        | Every fix needs a test that would have caught the bug.     |
+| "The fix is too small to break anything" | Small changes break things. Test anyway.                   |
+| "Let's fix more while we're here"        | Fix the diagnosed bug. Nothing more.                       |
+
+## Red Flags
+
+- No regression test for the fix
+- Fix doesn't address root cause
+- Scope creeping beyond the diagnosed bug
+- Skipping full test suite after applying fix
+
+**All of these mean: STOP. Root cause fix + regression test + full suite green. No exceptions.**
+
 ## Error Handling
 
 ### Error: Fix Doesn't Resolve Bug
@@ -88,6 +106,7 @@ The Analyst evaluates experimental results and implements the fix (analysis phas
 **Symptoms**: Bug persists after fix applied
 
 **Resolution**:
+
 1. You MUST return to Experimenter
 2. Root cause diagnosis may be wrong
 3. You SHOULD re-examine experimental evidence
@@ -98,6 +117,7 @@ The Analyst evaluates experimental results and implements the fix (analysis phas
 **Symptoms**: Fix breaks other functionality
 
 **Resolution**:
+
 1. You MUST revert the fix
 2. You SHOULD design less invasive fix
 3. You MAY need to fix root cause differently
@@ -108,6 +128,7 @@ The Analyst evaluates experimental results and implements the fix (analysis phas
 **Symptoms**: Proper fix requires large changes
 
 **Resolution**:
+
 1. You MUST document scope of proper fix
 2. You MAY implement temporary mitigation
 3. You MUST flag for human decision
@@ -118,6 +139,7 @@ The Analyst evaluates experimental results and implements the fix (analysis phas
 **Symptoms**: Can't verify fix because can't reproduce bug
 
 **Resolution**:
+
 1. You MUST add regression test that would catch it
 2. You SHOULD deploy to environment where it occurred
 3. You MAY need to monitor for recurrence

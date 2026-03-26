@@ -83,6 +83,25 @@ When exploring designs in design tools (Figma, Sketch, Adobe XD, etc.):
 - [ ] Accessibility requirements specified
 - [ ] Responsive behavior defined
 
+## Anti-Rationalization
+
+| Excuse                             | Reality                                                    |
+| ---------------------------------- | ---------------------------------------------------------- |
+| "The first design is good enough"  | Always explore alternatives. First ideas have blind spots. |
+| "Users will figure it out"         | If it needs figuring out, the design failed.               |
+| "Accessibility can come later"     | Accessibility is a design constraint, not a polish step.   |
+| "Mobile can wait"                  | Responsive is not optional. Design all breakpoints.        |
+| "This matches what they asked for" | What they asked for may not be what they need.             |
+
+## Red Flags
+
+- Presenting a single design option
+- No accessibility considerations in the spec
+- No responsive or breakpoint specs
+- No user validation or feedback loop
+
+**All of these mean: STOP and generate at least 2 more alternatives.**
+
 ## Error Handling
 
 ### Error: Requirements Too Vague
@@ -90,6 +109,7 @@ When exploring designs in design tools (Figma, Sketch, Adobe XD, etc.):
 **Symptoms**: Cannot design without clearer requirements
 
 **Resolution**:
+
 1. You MUST ask clarifying questions
 2. You SHOULD propose example scenarios
 3. You MAY create rough sketches to elicit feedback
@@ -100,6 +120,7 @@ When exploring designs in design tools (Figma, Sketch, Adobe XD, etc.):
 **Symptoms**: Brand guidelines conflict with accessibility or usability
 
 **Resolution**:
+
 1. You MUST document the conflict clearly
 2. You SHOULD propose compromises
 3. You MUST prioritize accessibility over aesthetics
@@ -110,6 +131,7 @@ When exploring designs in design tools (Figma, Sketch, Adobe XD, etc.):
 **Symptoms**: Needed components don't exist in design system
 
 **Resolution**:
+
 1. You MUST document what's missing
 2. You SHOULD propose new components following system patterns
 3. You MAY suggest temporary solutions
@@ -120,6 +142,7 @@ When exploring designs in design tools (Figma, Sketch, Adobe XD, etc.):
 **Symptoms**: Unsure if design can be implemented
 
 **Resolution**:
+
 1. You MUST flag uncertainty to user
 2. You SHOULD consult with Builder hat
 3. You MAY propose simpler alternative

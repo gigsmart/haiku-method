@@ -64,6 +64,25 @@ The Implementer writes the minimal code necessary to make failing tests pass (GR
 - [ ] No optimization performed yet
 - [ ] Code may be ugly (that's OK for now)
 
+## Anti-Rationalization
+
+| Excuse                             | Reality                                         |
+| ---------------------------------- | ----------------------------------------------- |
+| "I should add error handling too"  | Make the test pass first. Nothing else.         |
+| "This could be more elegant"       | Elegance is the Refactorer's job. Make it pass. |
+| "I should handle edge cases now"   | Each edge case gets its own test first.         |
+| "Let me generalize this"           | Premature generalization. Make THIS test pass.  |
+| "The test expectation seems wrong" | The test is the spec. Implement to match.       |
+
+## Red Flags
+
+- Adding untested functionality
+- Optimizing before reaching GREEN
+- Refactoring before reaching GREEN
+- Questioning tests instead of implementing
+
+**All of these mean: STOP. Make the single failing test pass. Nothing more.**
+
 ## Error Handling
 
 ### Error: Cannot Make Test Pass Simply
@@ -71,6 +90,7 @@ The Implementer writes the minimal code necessary to make failing tests pass (GR
 **Symptoms**: Simple implementation doesn't work, complexity growing
 
 **Resolution**:
+
 1. You MUST check if the test is too broad
 2. You SHOULD ask Test Writer to split into smaller tests
 3. You MAY implement a simple hard-coded solution first
@@ -81,6 +101,7 @@ The Implementer writes the minimal code necessary to make failing tests pass (GR
 **Symptoms**: Tests pass individually but not together
 
 **Resolution**:
+
 1. You MUST identify the conflict
 2. You SHOULD check for shared state issues
 3. You MAY need to refactor existing code (carefully)
@@ -91,6 +112,7 @@ The Implementer writes the minimal code necessary to make failing tests pass (GR
 **Symptoms**: Test expects behavior that seems incorrect
 
 **Resolution**:
+
 1. You MUST NOT change the test (tests are spec)
 2. You SHOULD flag concern but implement as tested
 3. You MAY ask for clarification from human

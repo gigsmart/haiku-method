@@ -29,6 +29,23 @@ The Planner reviews the current Unit and creates a tactical execution plan for t
 - `han keep --branch active-intent` set
 - Unit file exists with criteria defined
 
+## Learning Retrieval
+
+Before creating the plan, search for relevant past learnings:
+
+```bash
+# Search docs/solutions/ for learnings relevant to this unit
+grep -rl "tags:.*{technology}" docs/solutions/ 2>/dev/null | head -10
+grep -rl "module: {module}" docs/solutions/ 2>/dev/null | head -10
+```
+
+If relevant learnings are found:
+
+1. Read only the frontmatter (~30 lines) to assess relevance
+2. Full-read only strongly relevant files
+3. Incorporate key insights into the plan
+4. Reference the learning file in the plan for traceability
+
 ## Steps
 
 1. Review current state
@@ -73,6 +90,57 @@ The Planner reviews the current Unit and creates a tactical execution plan for t
 - [ ] Risks identified with mitigations
 - [ ] Plan saved to `han keep --branch current-plan`
 
+## Anti-Rationalization
+
+| Excuse                                        | Reality                                          |
+| --------------------------------------------- | ------------------------------------------------ |
+| "The requirements are clear enough"           | Verify programmatically - assumptions compound.  |
+| "We can figure it out during building"        | Unclear plans produce unclear code.              |
+| "This is too small to plan"                   | Small tasks still need verification steps.       |
+| "Just repeat the approach that almost worked" | If it failed before, you need a different angle. |
+| "The user said to just do it"                 | Even explicit requests need verifiable steps.    |
+
+## Red Flags
+
+- Planning without reading the Completion Criteria
+- Copying a previous failed plan without changes
+- Not identifying risks or blockers up front
+- Skipping verification steps in the plan
+
+**All of these mean: STOP and re-read the unit's Completion Criteria.**
+
+## Structured Completion Marker
+
+When completing planning, output this structured block:
+
+```markdown
+## PLANNING COMPLETE
+
+**Unit:** {unit name}
+**Bolt:** {bolt number}
+**Tasks Planned:** {count}
+**Criteria Targeted:** {count}/{total} remaining criteria
+**Risks Identified:** {count}
+
+### Plan Summary
+1. {task 1} — targets criterion: {criterion}
+2. {task 2} — targets criterion: {criterion}
+
+### Risks
+- {risk 1} — mitigation: {approach}
+```
+
+If planning cannot proceed:
+
+```markdown
+## PLANNING BLOCKED
+
+**Unit:** {unit name}
+**Reason:** {specific reason}
+**Previous Approaches Tried:** {count}
+**Recommendation:** {escalate to HITL | split unit | revise criteria}
+```
+
 ## Error Handling
 
 ### Error: All Previous Approaches Failed
@@ -80,6 +148,7 @@ The Planner reviews the current Unit and creates a tactical execution plan for t
 **Symptoms**: Multiple bolts with same blockers, no progress
 
 **Resolution**:
+
 1. You MUST recommend escalation to HITL mode
 2. You SHOULD suggest architectural alternatives
 3. You MAY recommend splitting the Unit differently
@@ -90,6 +159,7 @@ The Planner reviews the current Unit and creates a tactical execution plan for t
 **Symptoms**: Criteria conflict with each other or are technically impossible
 
 **Resolution**:
+
 1. You MUST flag this to the user immediately
 2. You SHOULD propose modified criteria that are achievable
 3. You MUST NOT proceed with impossible criteria
@@ -100,6 +170,7 @@ The Planner reviews the current Unit and creates a tactical execution plan for t
 **Symptoms**: Cannot determine which criteria are done vs pending
 
 **Resolution**:
+
 1. You MUST run verification commands to check each criterion
 2. You SHOULD document current state explicitly
 3. You MUST NOT guess - verify programmatically

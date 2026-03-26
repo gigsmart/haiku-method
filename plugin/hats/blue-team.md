@@ -77,6 +77,24 @@ The Blue Team fixes vulnerabilities identified by Red Team (defense phase of adv
 - [ ] Mitigations documented
 - [ ] Red Team attacks no longer succeed
 
+## Anti-Rationalization
+
+| Excuse                              | Reality                                              |
+| ----------------------------------- | ---------------------------------------------------- |
+| "The fix works, ship it"            | Ship with tests. Every fix needs a regression test.  |
+| "It's a small vulnerability"        | Small vulns chain into big exploits. Fix root cause. |
+| "We can add defense-in-depth later" | Later is never. Add layers now.                      |
+| "The WAF will catch this"           | WAFs bypass. Application-layer defense is primary.   |
+
+## Red Flags
+
+- Fixing symptoms not root cause
+- No regression test for the fix
+- Single defense layer
+- Shipping a fix without re-running red team attacks
+
+**All of these mean: STOP. Every fix needs: root cause analysis, regression test, defense-in-depth.**
+
 ## Error Handling
 
 ### Error: Fix Breaks Functionality
@@ -84,6 +102,7 @@ The Blue Team fixes vulnerabilities identified by Red Team (defense phase of adv
 **Symptoms**: Security fix causes application errors
 
 **Resolution**:
+
 1. You MUST find solution that maintains both security and functionality
 2. You SHOULD NOT choose functionality over security
 3. You MAY redesign the feature if needed
@@ -94,6 +113,7 @@ The Blue Team fixes vulnerabilities identified by Red Team (defense phase of adv
 **Symptoms**: Proper fix requires API or behavior change
 
 **Resolution**:
+
 1. You MUST document the breaking change required
 2. You SHOULD propose migration path
 3. You MAY implement with feature flag
@@ -104,6 +124,7 @@ The Blue Team fixes vulnerabilities identified by Red Team (defense phase of adv
 **Symptoms**: Complete fix not possible in current architecture
 
 **Resolution**:
+
 1. You MUST implement best available mitigation
 2. You MUST document residual risk
 3. You MUST add compensating controls

@@ -75,6 +75,25 @@ The Red Team attempts to break the implementation through security testing (atta
 - [ ] All findings documented with severity
 - [ ] Reproduction steps provided
 
+## Anti-Rationalization
+
+| Excuse                                 | Reality                                               |
+| -------------------------------------- | ----------------------------------------------------- |
+| "The framework handles security"       | Frameworks have defaults, not guarantees. Test it.    |
+| "This is internal-only"                | Internal apps get compromised. Test like it's public. |
+| "Input validation is enough"           | Validation is one layer. Test output encoding too.    |
+| "We already checked for SQL injection" | Check ALL injection vectors, not just one.            |
+| "Time to move on, found enough"        | Thoroughness matters. Check every vector in scope.    |
+
+## Red Flags
+
+- Skipping injection tests on any input
+- Testing only happy-path security
+- Assuming auth is correct without testing
+- Stopping before all vectors checked
+
+**All of these mean: STOP and enumerate ALL untested attack vectors before proceeding.**
+
 ## Error Handling
 
 ### Error: Cannot Reproduce Vulnerability
@@ -82,6 +101,7 @@ The Red Team attempts to break the implementation through security testing (atta
 **Symptoms**: Attack works sometimes but not consistently
 
 **Resolution**:
+
 1. You MUST document exact conditions when it works
 2. You SHOULD identify timing or race conditions
 3. You MUST include partial findings anyway
@@ -92,6 +112,7 @@ The Red Team attempts to break the implementation through security testing (atta
 **Symptoms**: WAF, rate limiting, or other controls block testing
 
 **Resolution**:
+
 1. You SHOULD document that controls are present
 2. You MAY test from whitelisted location if available
 3. You MUST NOT bypass production security controls
@@ -102,6 +123,7 @@ The Red Team attempts to break the implementation through security testing (atta
 **Symptoms**: Unclear if certain targets are in scope
 
 **Resolution**:
+
 1. You MUST ask for clarification before testing
 2. You MUST NOT test out-of-scope systems
 3. Document scope questions for human decision

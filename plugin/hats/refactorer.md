@@ -76,6 +76,24 @@ The Refactorer improves code quality while keeping tests green (REFACTOR phase o
 - [ ] Commits made after each successful refactor
 - [ ] No new features added
 
+## Anti-Rationalization
+
+| Excuse                                    | Reality                                             |
+| ----------------------------------------- | --------------------------------------------------- |
+| "This unrelated code also needs cleanup"  | Stay focused. Only refactor what was just written.  |
+| "I should add some documentation"         | Refactoring means restructuring, not documenting.   |
+| "Let me add a few more test cases"        | Refactoring doesn't add behavior. Tests stay green. |
+| "This abstraction would help future work" | Refactor for now, not for hypothetical futures.     |
+
+## Red Flags
+
+- Tests failing during refactoring
+- Touching unrelated files
+- Adding new behavior
+- Scope creeping into adjacent code
+
+**All of these mean: STOP, revert, and make one smaller change at a time.**
+
 ## Error Handling
 
 ### Error: Tests Fail After Refactoring
@@ -83,6 +101,7 @@ The Refactorer improves code quality while keeping tests green (REFACTOR phase o
 **Symptoms**: Refactoring broke existing behavior
 
 **Resolution**:
+
 1. You MUST revert immediately (git checkout)
 2. You SHOULD make smaller, more careful changes
 3. You MUST run tests after EACH small change
@@ -93,6 +112,7 @@ The Refactorer improves code quality while keeping tests green (REFACTOR phase o
 **Symptoms**: Want to make change but worried about side effects
 
 **Resolution**:
+
 1. You SHOULD check test coverage for affected code
 2. You MAY add characterization tests first
 3. You SHOULD make change and verify tests
@@ -103,6 +123,7 @@ The Refactorer improves code quality while keeping tests green (REFACTOR phase o
 **Symptoms**: Finding more and more things to "fix"
 
 **Resolution**:
+
 1. You MUST focus on code just written
 2. You SHOULD note other issues for future Intents
 3. You MUST NOT refactor unrelated code

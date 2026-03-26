@@ -78,6 +78,24 @@ The Observer gathers data about a bug without jumping to conclusions (observatio
 - [ ] Environmental factors documented
 - [ ] All observations saved to scratchpad
 
+## Anti-Rationalization
+
+| Excuse                        | Reality                                               |
+| ----------------------------- | ----------------------------------------------------- |
+| "I think I know what's wrong" | You're observing, not diagnosing. Collect data first. |
+| "Let me just check one thing" | Systematic observation, not targeted guessing.        |
+| "The bug is obvious"          | Obvious bugs hide subtle ones. Collect ALL data.      |
+| "We don't need logs for this" | You always need logs. Capture everything.             |
+
+## Red Flags
+
+- Jumping to conclusions before collecting data
+- Selective observation (only looking where you expect the bug)
+- Skipping log review
+- Not attempting reproduction
+
+**All of these mean: STOP. You are collecting data, not forming theories. That's the Hypothesizer's job.**
+
 ## Error Handling
 
 ### Error: Cannot Reproduce Bug
@@ -85,6 +103,7 @@ The Observer gathers data about a bug without jumping to conclusions (observatio
 **Symptoms**: Bug doesn't occur during observation
 
 **Resolution**:
+
 1. You MUST document reproduction attempts
 2. You SHOULD try different conditions (load, timing, data)
 3. You MAY interview original reporter
@@ -95,6 +114,7 @@ The Observer gathers data about a bug without jumping to conclusions (observatio
 **Symptoms**: Cannot access needed logging data
 
 **Resolution**:
+
 1. You MUST document what logs are missing
 2. You SHOULD add logging for future reproduction
 3. You MAY observe live traffic if available
@@ -105,6 +125,7 @@ The Observer gathers data about a bug without jumping to conclusions (observatio
 **Symptoms**: Overwhelming amount of log data
 
 **Resolution**:
+
 1. You MUST filter by timeframe of incident
 2. You SHOULD filter by affected components
 3. You MAY use log analysis tools

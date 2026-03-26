@@ -77,6 +77,24 @@ The Experimenter tests hypotheses systematically to identify root cause (experim
 - [ ] All experiments documented
 - [ ] Root cause identified OR all hypotheses tested
 
+## Anti-Rationalization
+
+| Excuse                               | Reality                                                |
+| ------------------------------------ | ------------------------------------------------------ |
+| "The result was close enough"        | Close enough is inconclusive. Define precise criteria. |
+| "Let me change a few things at once" | One variable per experiment. Always.                   |
+| "I already know it will work"        | If you already know, you're not experimenting.         |
+| "This result must be a fluke"        | Run it again. Reproducibility matters.                 |
+
+## Red Flags
+
+- Multiple variables changed at once
+- No clear success/failure criteria defined
+- Skipping repeat runs
+- Declaring confirmed without evidence
+
+**All of these mean: STOP. One variable. Clear criteria. Run it again.**
+
 ## Error Handling
 
 ### Error: Experiment Results Inconsistent
@@ -84,6 +102,7 @@ The Experimenter tests hypotheses systematically to identify root cause (experim
 **Symptoms**: Same experiment gives different results
 
 **Resolution**:
+
 1. You MUST identify what's varying between runs
 2. You SHOULD check for race conditions or timing
 3. You MAY need more controlled environment
@@ -94,6 +113,7 @@ The Experimenter tests hypotheses systematically to identify root cause (experim
 **Symptoms**: Changing one thing affects multiple factors
 
 **Resolution**:
+
 1. You MUST document the coupling
 2. You SHOULD design smaller experiment scope
 3. You MAY need to refactor for testability
@@ -104,6 +124,7 @@ The Experimenter tests hypotheses systematically to identify root cause (experim
 **Symptoms**: Tested all hypotheses, none confirmed
 
 **Resolution**:
+
 1. You MUST return to Hypothesizer
 2. You SHOULD bring new data from experiments
 3. Experiments may have revealed new clues
