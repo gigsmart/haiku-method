@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.2] - 2026-03-26
+
+### Fixed
+
+- commit unit/intent status changes to git ([1303fb3](../../commit/1303fb3))
+
+### Other
+
+- Merge pull request #17 from TheBushidoCollective/hampton/fix-status-persistence ([92e0f2f](../../commit/92e0f2f))
+
 ## [1.28.1] - 2026-03-26
 
 ### Other
