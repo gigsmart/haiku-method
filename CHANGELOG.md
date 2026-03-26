@@ -5,6 +5,82 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.0] - 2026-03-26
+
+### Added
+
+- auto-cleanup worktrees at completion milestones ([d17a34b](../../commit/d17a34b))
+
+### Other
+
+- Merge pull request #23 from TheBushidoCollective/hampton/auto-cleanup-lifecycle ([8d9118f](../../commit/8d9118f))
+
+## [1.27.0] - 2026-03-26
+
+### Added
+
+- add design-specific unit template sections ([ef67955](../../commit/ef67955))
+
+### Other
+
+- Merge pull request #19 from TheBushidoCollective/hampton/design-unit-template ([8b1e653](../../commit/8b1e653))
+
+## [1.26.0] - 2026-03-26
+
+### Added
+
+- rework /followup to create linked iteration intents ([0723438](../../commit/0723438))
+
+### Other
+
+- Merge pull request #14 from TheBushidoCollective/hampton/followup-workflow ([3e44f9c](../../commit/3e44f9c))
+
+## [1.25.0] - 2026-03-26
+
+### Added
+
+- include design units in wireframe generation ([2f4c611](../../commit/2f4c611))
+
+### Other
+
+- Merge pull request #18 from TheBushidoCollective/hampton/design-unit-wireframes ([fc7cb8d](../../commit/fc7cb8d))
+
+## [1.24.0] - 2026-03-26
+
+### Added
+
+- add design-focused success criteria guidance ([d760163](../../commit/d760163))
+
+### Other
+
+- Merge pull request #20 from TheBushidoCollective/hampton/design-criteria-guidance ([c760c34](../../commit/c760c34))
+
+## [1.23.0] - 2026-03-26
+
+### Added
+
+- auto-route discipline: design to design workflow ([eae1c68](../../commit/eae1c68))
+
+### Other
+
+- Merge pull request #21 from TheBushidoCollective/hampton/auto-design-workflow ([dba8202](../../commit/dba8202))
+
+## [1.22.0] - 2026-03-26
+
+### Added
+
+- detect and remove merged worktrees ([bb1b27a](../../commit/bb1b27a))
+
+### Other
+
+- Merge pull request #11 from TheBushidoCollective/hampton/smart-worktree-cleanup ([90eeb1f](../../commit/90eeb1f))
+
+## [1.21.0] - 2026-03-26
+
+### Added
+
+- add OTEL reporting for AI-DLC workflow events ([b0cfb0c](../../commit/b0cfb0c))
+
 ## [1.20.17] - 2026-03-23
 
 ### Other

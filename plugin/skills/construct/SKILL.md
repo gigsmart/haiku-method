@@ -437,10 +437,19 @@ fi
 update_unit_status "$UNIT_FILE" "in_progress"
 ```
 
-3. **Resolve per-unit workflow** — read the unit's `workflow:` frontmatter field. If present, resolve it to a hat sequence. If absent, fall back to the intent-level workflow:
+3. **Resolve per-unit workflow** — read the unit's `workflow:` frontmatter field. If present, resolve it to a hat sequence. If absent, check for discipline-based defaults before falling back to the intent-level workflow:
 
 ```bash
 UNIT_WORKFLOW_NAME=$(han parse yaml workflow -r --default "" < "$UNIT_FILE" 2>/dev/null || echo "")
+
+# Discipline-based fallback: auto-route discipline: design → workflow: design
+if [ -z "$UNIT_WORKFLOW_NAME" ]; then
+  UNIT_DISCIPLINE=$(han parse yaml discipline -r --default "" < "$UNIT_FILE" 2>/dev/null || echo "")
+  case "$UNIT_DISCIPLINE" in
+    design) UNIT_WORKFLOW_NAME="design" ;;
+    *)      ;;  # fall through to intent-level
+  esac
+fi
 
 if [ -n "$UNIT_WORKFLOW_NAME" ]; then
   # Resolve unit-specific workflow

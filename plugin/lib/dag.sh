@@ -479,11 +479,36 @@ update_unit_status() {
       ;;
   esac
 
+  # Capture old status for telemetry
+  local old_status
+  old_status=$(parse_unit_status "$unit_file")
+
   # Update status in frontmatter using han parse yaml-set
   han parse yaml-set status "$new_status" < "$unit_file" > "$unit_file.tmp" && mv "$unit_file.tmp" "$unit_file"
 
   # Update last_updated timestamp
   han parse yaml-set last_updated "$(date -u +%Y-%m-%dT%H:%M:%SZ)" < "$unit_file" > "$unit_file.tmp" && mv "$unit_file.tmp" "$unit_file"
+
+  # Emit telemetry for unit status change (non-blocking)
+  if [ -z "${_AIDLC_TELEMETRY_INIT:-}" ]; then
+    local telemetry_lib="${SCRIPT_DIR}/telemetry.sh"
+    if [ -f "$telemetry_lib" ]; then
+      # shellcheck source=telemetry.sh
+      source "$telemetry_lib"
+      aidlc_telemetry_init
+    fi
+  fi
+  if type aidlc_record_unit_status_change &>/dev/null; then
+    # Extract intent slug and unit slug from the path
+    # Path pattern: .ai-dlc/<intent_slug>/unit-NN-<unit_slug>.md
+    local unit_basename
+    unit_basename=$(basename "$unit_file" .md)
+    local intent_slug=""
+    if [[ "$real_path" =~ /\.ai-dlc/([^/]+)/ ]]; then
+      intent_slug="${BASH_REMATCH[1]}"
+    fi
+    aidlc_record_unit_status_change "$intent_slug" "$unit_basename" "$old_status" "$new_status"
+  fi
 }
 
 # Get DAG summary counts

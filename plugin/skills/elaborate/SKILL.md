@@ -185,7 +185,115 @@ Then proceed to Phase 1.
 
 ---
 
+## Phase 0.5: Detect Iteration Intent (`iterates_on`)
+
+> **CALLOUT:** If the intent being elaborated has an `iterates_on` field in its frontmatter, it is an **iteration intent** — a follow-up that builds on a previous intent. This changes how several subsequent phases behave. The agent MUST check for this field early and carry the prior context through the entire elaboration.
+
+If elaborating an existing intent (slug provided), check its frontmatter for `iterates_on`:
+
+```bash
+INTENT_SLUG="{slug}"
+
+# Check if intent.md exists and has iterates_on
+if [ -f ".ai-dlc/${INTENT_SLUG}/intent.md" ]; then
+  ITERATES_ON=$(han parse yaml iterates_on -r --default "" < ".ai-dlc/${INTENT_SLUG}/intent.md")
+fi
+```
+
+If `ITERATES_ON` is non-empty, this is an iteration intent. Load the previous intent's full context:
+
+**Load from filesystem first, then fall back to git branch:**
+
+```bash
+PREVIOUS_SLUG="$ITERATES_ON"
+
+# Try filesystem
+if [ -f ".ai-dlc/${PREVIOUS_SLUG}/intent.md" ]; then
+  PREVIOUS_INTENT=$(cat ".ai-dlc/${PREVIOUS_SLUG}/intent.md")
+  PREVIOUS_SOURCE="filesystem"
+else
+  # Fallback: read from intent branch
+  PREVIOUS_INTENT=$(git show "ai-dlc/${PREVIOUS_SLUG}/main:.ai-dlc/${PREVIOUS_SLUG}/intent.md" 2>/dev/null)
+  PREVIOUS_SOURCE="git-branch"
+fi
+
+# Load previous units
+if [ "$PREVIOUS_SOURCE" = "filesystem" ]; then
+  PREVIOUS_UNITS=""
+  for unit_file in .ai-dlc/${PREVIOUS_SLUG}/unit-*.md; do
+    [ -f "$unit_file" ] && PREVIOUS_UNITS="${PREVIOUS_UNITS}$(cat "$unit_file")\n---\n"
+  done
+else
+  PREVIOUS_UNITS=""
+  git ls-tree --name-only "ai-dlc/${PREVIOUS_SLUG}/main" ".ai-dlc/${PREVIOUS_SLUG}/" 2>/dev/null | \
+    grep 'unit-' | while read -r f; do
+      git show "ai-dlc/${PREVIOUS_SLUG}/main:$f" 2>/dev/null
+    done
+fi
+
+# Load previous discovery.md if available
+if [ "$PREVIOUS_SOURCE" = "filesystem" ]; then
+  PREVIOUS_DISCOVERY=$(cat ".ai-dlc/${PREVIOUS_SLUG}/discovery.md" 2>/dev/null)
+else
+  PREVIOUS_DISCOVERY=$(git show "ai-dlc/${PREVIOUS_SLUG}/main:.ai-dlc/${PREVIOUS_SLUG}/discovery.md" 2>/dev/null)
+fi
+```
+
+**Present prior context to the user:**
+
+```markdown
+## Iteration Context
+
+This intent iterates on **{previous title}** (`{previous-slug}`).
+
+### What was built previously
+{Summary of previous intent's problem, solution, and domain model}
+
+### Previous Units
+| Unit | Status | Description |
+|------|--------|-------------|
+| {unit-slug} | {status} | {brief description} |
+...
+
+### Previous Domain Knowledge
+{Key findings from discovery.md if available}
+```
+
+**Store this context** — it will be referenced in Phase 2, Phase 2.5, and Phase 5. Use `han keep save` to persist:
+
+```bash
+han keep save previous-intent-context "{JSON summary of previous intent}"
+```
+
+**When `iterates_on` is set, the following phases are modified:**
+- **Phase 1**: Skip the "What do you want to build?" question — the intent scaffold already has a Problem/Solution from `/followup`. Instead, present the existing description and ask if the user wants to refine it.
+- **Phase 2**: Use previous intent context to ask more targeted clarifying questions. Focus on what's *different* from the previous intent, not re-establishing the full domain.
+- **Phase 2.5**: Shorten or skip domain discovery — the previous intent already explored the domain. Focus discovery on *new* areas or changes only.
+- **Phase 5**: Reference previous units to understand what exists. Suggest units that modify, extend, or fix what was previously built.
+
+---
+
 ## Phase 1: Gather Intent
+
+**If `iterates_on` is set:** The intent was created by `/followup` and already has a Problem/Solution section. Present the existing description to the user and ask if they want to refine it:
+
+```json
+{
+  "questions": [{
+    "question": "Here's the follow-up description from the intent scaffold. Does this capture what you need, or would you like to refine it?",
+    "header": "Follow-up Description",
+    "options": [
+      {"label": "Looks good", "description": "Proceed with this description"},
+      {"label": "Refine it", "description": "I want to adjust the problem or solution statement"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+If they choose "Refine it", engage in dialogue to update the Problem/Solution sections. If "Looks good", proceed to Phase 2.
+
+**If `iterates_on` is NOT set (normal flow):**
 
 Ask the user: "What do you want to build or accomplish?"
 
@@ -204,6 +312,8 @@ Use discovered context to inform your clarification questions in Phase 2.
 Use `AskUserQuestion` to explore the user's intent. Ask 2-4 questions at a time, each with 2-4 options.
 
 CRITICAL: Do NOT list questions as plain text. Always use the `AskUserQuestion` tool.
+
+> **Iteration intents (`iterates_on` set):** When elaborating an iteration intent, you already have the previous intent's domain model, units, and decisions as context. Focus clarifying questions on what's **different or new** in this follow-up — do not re-establish the full domain from scratch. Ask about: what specifically changed, which parts of the previous implementation are affected, any new constraints or requirements that didn't exist before, and whether the previous domain model needs updates.
 
 Focus your questions on understanding:
 - What **specific problem** this solves (not just "build X" but "build X because Y")
@@ -308,6 +418,13 @@ This ensures:
 ## Phase 2.5: Domain Discovery & Technical Exploration (Delegated)
 
 **This phase is mandatory.** Domain discovery runs in a forked subagent to keep the main context lean. The subagent performs deep technical exploration autonomously, writing all findings to `discovery.md` on disk.
+
+> **Iteration intents (`iterates_on` set):** When this intent iterates on a previous one, domain discovery should be **shortened, not skipped**. The previous intent already explored the domain — include the previous intent's `discovery.md` content in the discovery brief so the subagent can use it as a starting point. The subagent should focus on:
+> - **New areas** introduced by the follow-up that weren't covered before
+> - **Changes** to existing code/systems made by the previous intent (the codebase has evolved since the original discovery)
+> - **Affected components** — which parts of what was built need modification
+>
+> Include the previous intent's discovery findings and unit specs in the discovery brief (Step 2) under a `## Previous Intent Context` section so the subagent has full context.
 
 ### Step 1: Load provider config
 
@@ -546,6 +663,38 @@ Bad:
 - [ ] API works well
 ```
 
+### Design-Focused Criteria
+
+The examples above are **developer-focused** — they verify behavior through automated tests. **Design units** need a different kind of criteria: ones verified by **visual approval** (a human reviews and approves) rather than automated test suites.
+
+Design criteria should be **verifiable by inspection** — the reviewer can check them by reading the spec or reviewing the artifact. They cover responsive coverage, interactive states, accessibility, and design system alignment.
+
+Good (design):
+```
+- [ ] Screen layouts defined for all breakpoints (mobile 375px / tablet 768px / desktop 1280px)
+- [ ] All interactive states specified (default, hover, focus, active, disabled, error)
+- [ ] Color usage references only design system tokens — no raw hex values
+- [ ] Touch targets meet 44px minimum on mobile breakpoints
+- [ ] Empty states, loading states, and error states designed
+- [ ] Contrast ratios meet WCAG AA (4.5:1 body text, 3:1 large text)
+- [ ] Focus order documented for keyboard navigation
+- [ ] Component hierarchy documented (which design system components to use/extend)
+- [ ] Interaction specs complete for all user actions (tap, swipe, scroll, transition)
+```
+
+Bad (design):
+```
+- [ ] Design looks good
+- [ ] It's responsive
+- [ ] Accessible
+```
+
+**When writing design criteria, keep these principles in mind:**
+- Design criteria are verified by **visual approval**, not automated tests — a reviewer inspects the deliverable against the criteria.
+- Include **explicit responsive breakpoint requirements**. "Responsive" alone is meaningless — name the breakpoints and viewport widths.
+- **Always include accessibility criteria** for design units: contrast ratios, focus order, touch target sizing, screen reader annotations.
+- Design criteria and dev criteria can coexist on the same intent — design units get design criteria, implementation units get dev criteria.
+
 ### Non-Functional Requirements
 
 Before confirming criteria, explicitly ask the user about non-functional dimensions using `AskUserQuestion`. Select the dimensions relevant to this intent:
@@ -599,6 +748,13 @@ Decompose the intent into **Units** — independent pieces of work. This is NOT 
 
 Do NOT ask the user whether to decompose. Assess the complexity from the domain model, success criteria, and data sources — then decompose accordingly.
 
+> **Iteration intents (`iterates_on` set):** When decomposing an iteration intent, reference the previous intent's units to understand what already exists in the codebase. Use this context to:
+> - **Identify which previous units are affected** by the follow-up work and note them in the new unit specs
+> - **Suggest units that modify or extend** specific previous units rather than starting from scratch
+> - **Auto-populate `context` references** in unit descriptions pointing to previous unit files (e.g., "See `{previous-slug}/unit-02-auth-middleware` for the existing implementation")
+> - **Avoid duplicating work** — if a previous unit already handles a concern, the new unit should describe how it *changes* that work, not rebuild it
+> - **Carry forward domain knowledge** — reference the previous intent's domain model and data sources rather than re-describing them
+
 **Hard rules for unit boundaries:**
 
 1. **Units MUST NOT span dependency boundaries.** If a piece of work depends on another piece being done first, those are two separate units with an explicit `depends_on` edge. This applies regardless of change strategy (`unit` or `intent`). A unit that contains both "set up the database schema" and "build the API that uses it" is a bad unit — those are two units where the API unit depends on the schema unit.
@@ -618,6 +774,8 @@ Do NOT ask the user whether to decompose. Assess the complexity from the domain 
 | Units without a clear workflow need | (omit `workflow:` field) | Inherits the intent-level workflow |
 
 Set the `workflow:` frontmatter field on units that need a non-default workflow. Omit it (or leave empty) for units that should use the intent-level workflow.
+
+**Auto-routing rule:** When generating a unit with `discipline: design`, automatically set `workflow: design` in the frontmatter. Do not require the user to specify this manually. This ensures design units always route through the design workflow (`planner → designer → reviewer`) instead of accidentally inheriting the intent-level workflow.
 
 Define each unit with **enough detail that a builder with zero prior context builds the right thing**:
 
@@ -921,6 +1079,7 @@ git:
 announcements: []  # e.g., [changelog, release-notes, social-posts, blog-draft]
 passes: []  # Optional: [design, product, dev] — omit or leave empty for single-pass (default dev)
 active_pass: ""  # Current pass being worked on (auto-managed by construct)
+iterates_on: ""  # Slug of the previous intent this iterates on (set by /followup, leave empty for new intents)
 created: {ISO date}
 status: active
 epic: ""  # Ticketing provider epic key (auto-populated if ticketing provider configured)
@@ -982,7 +1141,7 @@ depends_on: []
 branch: ai-dlc/{intent-slug}/NN-{unit-slug}
 discipline: {discipline}  # frontend, backend, api, documentation, devops, design, etc.
 pass: ""  # Which pass this unit belongs to (design, product, dev) — empty for single-pass intents
-workflow: ""  # Per-unit workflow override (optional — omit or leave empty to use intent-level workflow)
+workflow: ""  # Per-unit workflow override (optional — omit or leave empty to use intent-level workflow). Auto-set to "design" when discipline is "design".
 ticket: ""  # Ticketing provider ticket key (auto-populated if ticketing provider configured)
 # git:                         # Optional: per-unit VCS override (only include when unit has an override)
 #   change_strategy: ""        # Overrides intent-level strategy for this unit (e.g., "unit" for foundational units)
@@ -1023,12 +1182,74 @@ misinterpret what to build.}
 {Implementation hints, context, pitfalls to avoid}
 ```
 
+> **Template selection by discipline:** For `discipline: design` units, use the design template below (Design Deliverables, States to Cover, Constraints, Design Tokens Reference). For all other disciplines (`frontend`, `backend`, `api`, `documentation`, `devops`, etc.), use the standard template above (Domain Entities, Data Sources, Technical Specification).
+
+#### Design unit file template:
+
+When a unit has `discipline: design`, use this template instead of the standard one above:
+
+```markdown
+---
+status: pending
+depends_on: []
+branch: ai-dlc/{intent-slug}/NN-{unit-slug}
+discipline: design
+pass: ""  # Which pass this unit belongs to (design, product, dev) — empty for single-pass intents
+workflow: ""  # Per-unit workflow override (optional — omit or leave empty to use intent-level workflow)
+ticket: ""  # Ticketing provider ticket key (auto-populated if ticketing provider configured)
+# git:                         # Optional: per-unit VCS override (only include when unit has an override)
+#   change_strategy: ""        # Overrides intent-level strategy for this unit (e.g., "unit" for foundational units)
+---
+
+# unit-NN-{slug}
+
+## Description
+{What screens, components, or flows to design}
+
+## Discipline
+design - This unit will be executed by design-focused agents.
+
+## Design Deliverables
+- {Screen layouts, component specs, interaction flows, responsive rules}
+- {List each deliverable expected from this unit}
+
+## States to Cover
+- Default (happy path)
+- Empty state
+- Loading state
+- Error state
+- {Other states relevant to this unit}
+
+## Constraints
+- {Design system to follow (e.g., specific tokens, component library)}
+- {Accessibility requirements (WCAG level, contrast ratios, touch targets)}
+- {Brand guidelines or visual boundaries}
+- {Responsive breakpoints to support}
+
+## Design Tokens Reference
+- {Color tokens, spacing scale, typography scale from the design system}
+- {Reference to design system documentation if available}
+
+## Success Criteria
+- [ ] {Design-focused criteria — visual approval, responsive coverage, state coverage}
+
+## Risks
+- **{Risk}**: {impact}. Mitigation: {how to address it}.
+
+## Boundaries
+{What this unit does NOT handle. Reference which other units own related concerns.}
+
+## Notes
+{Implementation hints, context, pitfalls to avoid}
+```
+
 **Discipline determines which specialized agents execute the unit:**
 - `frontend` → `do-frontend-development` agents
 - `backend` → backend-focused agents
 - `api` → API development agents
 - `documentation` → `do-technical-documentation` agents
 - `devops` → infrastructure/deployment agents
+- `design` → design-focused agents
 
 #### Per-unit review loop:
 
@@ -1055,10 +1276,10 @@ git commit -m "elaborate(${INTENT_SLUG}): draft unit-NN-{slug}"
 
 **CRITICAL: If your output only shows the unit title or frontmatter without the body sections (Description, Technical Specification, Success Criteria, etc.), you have truncated the output. Go back and display the full file.**
 
-**Step C — If the unit has `discipline: frontend`, open its wireframe in the browser** so the user can review the visual alongside the spec:
+**Step C — If the unit has `discipline: frontend` or `discipline: design`, open its wireframe in the browser** so the user can review the visual alongside the spec:
 
 ```bash
-# Only for frontend units — open the wireframe if it exists
+# Only for frontend or design units — open the wireframe if it exists
 WIREFRAME=".ai-dlc/${INTENT_SLUG}/mockups/unit-NN-{slug}-wireframe.html"
 if [ -f "$WIREFRAME" ]; then
   open "$WIREFRAME"  # macOS; use xdg-open on Linux
@@ -1125,17 +1346,17 @@ This ensures builders can pull the intent branch when working remotely. Note in 
 
 ---
 
-## Phase 6.25: Generate Frontend Wireframes (Delegated)
+## Phase 6.25: Generate Frontend & Design Wireframes (Delegated)
 
-**Skip this phase entirely if no units have `discipline: frontend` in their frontmatter.**
+**Skip this phase entirely if no units have `discipline: frontend` or `discipline: design` in their frontmatter.**
 
-Wireframe generation runs in a forked subagent. The subagent generates low-fidelity HTML wireframes for all frontend units, updates unit frontmatter, and commits the artifacts.
+Wireframe generation runs in a forked subagent. The subagent generates low-fidelity HTML wireframes for all frontend and design units, updates unit frontmatter, and commits the artifacts.
 
-### Step 1: Identify frontend units
+### Step 1: Identify frontend and design units
 
-Scan all `unit-*.md` files in `.ai-dlc/{intent-slug}/`. Collect units where frontmatter contains `discipline: frontend`.
+Scan all `unit-*.md` files in `.ai-dlc/{intent-slug}/`. Collect units where frontmatter contains `discipline: frontend` or `discipline: design`.
 
-If no frontend units exist, skip to Phase 6.5.
+If no frontend or design units exist, skip to Phase 6.5.
 
 ### Step 2: Load design provider config
 
@@ -1157,9 +1378,9 @@ intent_title: {Intent Title from intent.md}
 design_provider_type: {DESIGN_TYPE or empty}
 ---
 
-# Frontend Units
+# Frontend & Design Units
 
-{For each frontend unit, include:}
+{For each frontend or design unit, include:}
 
 ## {unit filename}
 
@@ -1196,7 +1417,7 @@ Skill("elaborate-wireframes", args: ".ai-dlc/{INTENT_SLUG}/.briefs/elaborate-wir
 
 Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md`.
 
-- If `status: skipped` — no frontend units found, proceed to Phase 6.5
+- If `status: skipped` — no frontend or design units found, proceed to Phase 6.5
 - If `status: error` — report the error to the user and discuss how to proceed
 - If `status: success` — list the generated wireframes for the user
 
@@ -1204,7 +1425,7 @@ Commit the wireframe artifacts and results brief:
 
 ```bash
 git add .ai-dlc/${INTENT_SLUG}/mockups/ .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md
-git commit -m "elaborate(${INTENT_SLUG}): generate frontend wireframes"
+git commit -m "elaborate(${INTENT_SLUG}): generate frontend and design wireframes"
 ```
 
 ### Step 6: Product review gate
@@ -1214,7 +1435,7 @@ Present all generated wireframes to product for review using `AskUserQuestion`:
 ```json
 {
   "questions": [{
-    "question": "I've generated low-fidelity wireframes for the frontend units. Please open them in a browser to review screen structure, flow, and placeholder copy. How do they look?",
+    "question": "I've generated low-fidelity wireframes for the frontend and design units. Please open them in a browser to review screen structure, flow, and placeholder copy. How do they look?",
     "header": "Wireframes",
     "options": [
       {"label": "Approved", "description": "Wireframes accurately capture the intended screens, flows, and copy"},
@@ -1452,7 +1673,20 @@ EOF
 )"
 ```
 
-3. Tell the user:
+3. Clean up elaboration worktree after PR is pushed (work is on remote now):
+
+```bash
+# Clean up elaboration worktree — spec is on the remote branch now
+REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
+INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
+if [ -d "$INTENT_WORKTREE" ]; then
+  git worktree remove "$INTENT_WORKTREE" 2>/dev/null || true
+  echo "Cleaned up elaboration worktree for ${INTENT_SLUG}"
+fi
+# Keep the branch — it backs the open spec review PR
+```
+
+4. Tell the user:
 
 ```
 Spec PR created: {PR_URL}

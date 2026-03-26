@@ -49,6 +49,14 @@ if [ -f "$HAIKU_LIB" ]; then
   source "$HAIKU_LIB"
 fi
 
+# Source telemetry library (non-blocking, no-op when disabled)
+TELEMETRY_LIB="${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
+if [ -f "$TELEMETRY_LIB" ]; then
+  # shellcheck source=/dev/null
+  source "$TELEMETRY_LIB"
+  aidlc_telemetry_init
+fi
+
 # Detect project maturity (greenfield / early / established)
 PROJECT_MATURITY=""
 if type detect_project_maturity &>/dev/null; then
@@ -353,6 +361,13 @@ if [ "$NEEDS_ADVANCE" = "true" ] && [ "$SOURCE" != "compact" ]; then
     han keep save --branch "$INTENT_BRANCH" iteration.json "$ITERATION_JSON" 2>/dev/null || true
   else
     han keep save iteration.json "$ITERATION_JSON" 2>/dev/null || true
+  fi
+
+  # Emit telemetry for bolt iteration advance
+  if type aidlc_log_event &>/dev/null; then
+    _ADVANCE_INTENT_SLUG=$(echo "$ITERATION_JSON" | han parse json intentSlug -r --default "" 2>/dev/null || echo "")
+    _ADVANCE_UNIT_SLUG=$(echo "$ITERATION_JSON" | han parse json targetUnit -r --default "" 2>/dev/null || echo "")
+    aidlc_record_bolt_iteration "$_ADVANCE_INTENT_SLUG" "$_ADVANCE_UNIT_SLUG" "$NEW_ITER" "advanced"
   fi
 fi
 

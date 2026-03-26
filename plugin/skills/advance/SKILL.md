@@ -148,9 +148,13 @@ ${TICKET_LINE}
 EOF
 )" 2>/dev/null || echo "PR may already exist for $UNIT_BRANCH"
 
-  # Clean up unit worktree
-  WORKTREE_PATH="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
-  [ -d "$WORKTREE_PATH" ] && git worktree remove "$WORKTREE_PATH"
+  # Clean up local unit worktree after PR is pushed (work is on remote now)
+  UNIT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
+  if [ -d "$UNIT_WORKTREE" ]; then
+    git worktree remove "$UNIT_WORKTREE" 2>/dev/null || true
+    echo "Cleaned up unit worktree for ${CURRENT_UNIT}"
+  fi
+  # Keep the branch — it backs the open PR
 
 elif [ "$AUTO_MERGE" = "true" ]; then
   # Intent/trunk strategy: merge unit branch into intent branch
@@ -165,9 +169,14 @@ elif [ "$AUTO_MERGE" = "true" ]; then
     git merge --no-ff "$UNIT_BRANCH" -m "Merge ${CURRENT_UNIT} into intent branch"
   fi
 
-  # Clean up unit worktree
-  WORKTREE_PATH="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
-  [ -d "$WORKTREE_PATH" ] && git worktree remove "$WORKTREE_PATH"
+  # Clean up unit worktree and branch after merge into intent
+  UNIT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
+  if [ -d "$UNIT_WORKTREE" ]; then
+    git worktree remove "$UNIT_WORKTREE" 2>/dev/null || true
+    echo "Cleaned up unit worktree for ${CURRENT_UNIT}"
+  fi
+  git branch -d "ai-dlc/${INTENT_SLUG}/${UNIT_SLUG}" 2>/dev/null || true
+  echo "Cleaned up unit branch for ${CURRENT_UNIT}"
 fi
 ```
 
@@ -453,7 +462,16 @@ for unit_file in "$INTENT_DIR"/unit-*.md; do
 done
 ```
 
-**If ALL units use unit strategy** (`ALL_UNIT_STRATEGY=true`): Skip the delivery prompt. Each unit already has its own PR. Output:
+**If ALL units use unit strategy** (`ALL_UNIT_STRATEGY=true`): Skip the delivery prompt. Each unit already has its own PR. Clean up the intent worktree and output:
+
+```bash
+# Clean up intent worktree — all unit PRs are on the remote
+INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
+if [ -d "$INTENT_WORKTREE" ]; then
+  git worktree remove "$INTENT_WORKTREE" 2>/dev/null || true
+  echo "Cleaned up intent worktree for ${INTENT_SLUG}"
+fi
+```
 
 ```
 All unit PRs have been created during construction. Review and merge them individually.
@@ -529,7 +547,19 @@ EOF
 )"
 ```
 
-4. Output the PR URL.
+4. Clean up intent worktree after PR is pushed (work is on remote now):
+
+```bash
+# Clean up intent worktree after PR is pushed
+INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
+if [ -d "$INTENT_WORKTREE" ]; then
+  git worktree remove "$INTENT_WORKTREE" 2>/dev/null || true
+  echo "Cleaned up intent worktree for ${INTENT_SLUG}"
+fi
+# Keep the branch — it backs the open PR
+```
+
+5. Output the PR URL.
 
 ### If manual:
 
@@ -545,4 +575,16 @@ To create PR manually:
 
 To clean up:
   /reset
+```
+
+Clean up intent worktree since all work is committed and pushed:
+
+```bash
+# Clean up intent worktree — work is committed on the branch
+INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
+if [ -d "$INTENT_WORKTREE" ]; then
+  git worktree remove "$INTENT_WORKTREE" 2>/dev/null || true
+  echo "Cleaned up intent worktree for ${INTENT_SLUG}"
+fi
+# Keep the branch — user may create a PR from it
 ```
