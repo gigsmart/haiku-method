@@ -1672,7 +1672,20 @@ EOF
 )"
 ```
 
-3. Tell the user:
+3. Clean up elaboration worktree after PR is pushed (work is on remote now):
+
+```bash
+# Clean up elaboration worktree — spec is on the remote branch now
+REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
+INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
+if [ -d "$INTENT_WORKTREE" ]; then
+  git worktree remove "$INTENT_WORKTREE" 2>/dev/null || true
+  echo "Cleaned up elaboration worktree for ${INTENT_SLUG}"
+fi
+# Keep the branch — it backs the open spec review PR
+```
+
+4. Tell the user:
 
 ```
 Spec PR created: {PR_URL}
