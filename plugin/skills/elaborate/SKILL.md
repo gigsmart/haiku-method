@@ -546,6 +546,38 @@ Bad:
 - [ ] API works well
 ```
 
+### Design-Focused Criteria
+
+The examples above are **developer-focused** — they verify behavior through automated tests. **Design units** need a different kind of criteria: ones verified by **visual approval** (a human reviews and approves) rather than automated test suites.
+
+Design criteria should be **verifiable by inspection** — the reviewer can check them by reading the spec or reviewing the artifact. They cover responsive coverage, interactive states, accessibility, and design system alignment.
+
+Good (design):
+```
+- [ ] Screen layouts defined for all breakpoints (mobile 375px / tablet 768px / desktop 1280px)
+- [ ] All interactive states specified (default, hover, focus, active, disabled, error)
+- [ ] Color usage references only design system tokens — no raw hex values
+- [ ] Touch targets meet 44px minimum on mobile breakpoints
+- [ ] Empty states, loading states, and error states designed
+- [ ] Contrast ratios meet WCAG AA (4.5:1 body text, 3:1 large text)
+- [ ] Focus order documented for keyboard navigation
+- [ ] Component hierarchy documented (which design system components to use/extend)
+- [ ] Interaction specs complete for all user actions (tap, swipe, scroll, transition)
+```
+
+Bad (design):
+```
+- [ ] Design looks good
+- [ ] It's responsive
+- [ ] Accessible
+```
+
+**When writing design criteria, keep these principles in mind:**
+- Design criteria are verified by **visual approval**, not automated tests — a reviewer inspects the deliverable against the criteria.
+- Include **explicit responsive breakpoint requirements**. "Responsive" alone is meaningless — name the breakpoints and viewport widths.
+- **Always include accessibility criteria** for design units: contrast ratios, focus order, touch target sizing, screen reader annotations.
+- Design criteria and dev criteria can coexist on the same intent — design units get design criteria, implementation units get dev criteria.
+
 ### Non-Functional Requirements
 
 Before confirming criteria, explicitly ask the user about non-functional dimensions using `AskUserQuestion`. Select the dimensions relevant to this intent:
