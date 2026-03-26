@@ -169,6 +169,46 @@ Produce a structured analysis:
 | {gate} | {%} | {useful/noisy/misconfigured} |
 ```
 
+### Step 2c: Aggregate Compound Learnings
+
+Search for learnings captured via `/compound` during this intent's lifecycle:
+
+```bash
+# Find all compound learnings created during this intent's timeframe
+# Learnings are stored in docs/solutions/{category}/*.md with YAML frontmatter
+if [ -d "docs/solutions" ]; then
+  # Search for learnings that reference modules/tags related to this intent's units
+  for unit_file in "$INTENT_DIR"/unit-*.md; do
+    [ -f "$unit_file" ] || continue
+    UNIT_NAME=$(basename "$unit_file" .md)
+    # Search by unit name, discipline, or tags
+    grep -rl "$UNIT_NAME\|$(han parse yaml discipline -r --default '' < "$unit_file" 2>/dev/null)" docs/solutions/ 2>/dev/null
+  done | sort -u
+fi
+```
+
+For each compound learning found:
+1. Read the YAML frontmatter (title, category, severity, symptom, root_cause)
+2. Assess whether this learning surfaced a pattern seen across multiple units
+3. Include in the reflection analysis
+
+Produce a compound learnings summary:
+
+```markdown
+## Compound Learnings Captured
+
+| Title | Category | Severity | Module | Key Insight |
+|-------|----------|----------|--------|-------------|
+| {title} | {category} | {severity} | {module} | {root_cause or key insight} |
+
+### Cross-Cutting Patterns
+- {Pattern that appeared in multiple learnings}
+
+### Learnings Not Yet Captured
+- {Problems solved during this intent that don't have /compound entries}
+  Consider running `/compound` for these before closing.
+```
+
 ### Step 3: Analyze Outcomes
 
 Perform a structured reflection analysis. As the reflector, analyze:
@@ -402,6 +442,11 @@ If user chooses to close:
 
 ### Process Insights
 - {Process improvement that applies broadly}
+
+### Compound Learnings (from /compound)
+{Count} specific problem/solution pairs captured in docs/solutions/
+Key categories: {list of categories with counts}
+See docs/solutions/ for full details.
 ```
 
 Commit the learnings immediately after writing:

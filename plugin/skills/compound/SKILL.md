@@ -146,3 +146,22 @@ The SessionStart hook already loads learnings from `.claude/memory/learnings.md`
 Both systems complement each other:
 - `.claude/memory/learnings.md` — high-level intent reflections (from /reflect)
 - `docs/solutions/` — specific problem/solution pairs (from /compound)
+
+## Integration with /reflect
+
+When `/reflect` runs, it aggregates all compound learnings captured during the intent:
+
+1. **During reflection** — `/reflect` scans `docs/solutions/` for learnings related to the intent's units, identifies cross-cutting patterns, and includes them in the reflection artifact
+2. **On Close** — Compound learnings are summarized in `.claude/memory/learnings.md` alongside the high-level intent reflection
+3. **Feedback loop** — Patterns identified across multiple compound learnings may surface recommendations for hat instruction changes or workflow adjustments
+
+**The compound cycle:**
+```
+Build → Solve problem → /compound → Learning saved
+                                         ↓
+Plan next bolt → Planner searches docs/solutions/ → Learning surfaced
+                                         ↓
+Reflect on intent → /reflect aggregates compound learnings → Patterns identified
+                                         ↓
+Close intent → Learnings distilled to project memory → Future intents start smarter
+```

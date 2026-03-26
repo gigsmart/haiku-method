@@ -146,10 +146,40 @@ When encountering unexpected situations during building, follow these rules:
 
 **Scope boundary:** Only auto-fix issues directly caused by current task's changes. Pre-existing warnings in unrelated files should be noted in scratchpad, not fixed during this bolt.
 
-### Auto-Fix Limits
+### Node Repair Operator
 
-- **3-attempt limit** per task. After 3 auto-fix attempts on the same issue, document remaining issues in scratchpad under "Deferred Issues" and move to the next task.
-- **Analysis paralysis guard:** If 5+ consecutive Read/Grep/Glob calls without any Edit/Write/Bash action, you MUST either write code or declare "blocked" with specific missing information.
+When a task fails during building, follow this graduated recovery pattern:
+
+```
+RETRY → DECOMPOSE → PRUNE → ESCALATE
+```
+
+**1. RETRY** (default: 2 attempts per task)
+- Same approach with a specific adjustment
+- Use for: transient errors, missing deps, command failures
+- You MUST change something between retries — never retry the exact same action
+
+**2. DECOMPOSE** (after retry budget exhausted)
+- Break the failing task into 2-3 smaller sub-tasks
+- Execute each sub-task sequentially
+- Use for: task too broad, unclear failure point, partial progress possible
+- You MUST create concrete sub-tasks, not vague "try again" steps
+
+**3. PRUNE** (when task is infeasible)
+- Skip the task with documented justification
+- Use for: missing prerequisites, out of scope, contradicts earlier decisions
+- You MUST document what was skipped and why in scratchpad
+- You MUST NOT prune tasks that are core to completion criteria
+
+**4. ESCALATE** (when repair budget exhausted or architectural decision needed)
+- Stop and surface to the user with:
+  - Summary of what was tried (retries + decomposition attempts)
+  - Specific blocker description
+  - Available options for the user to choose from
+- Use for: architectural decisions, ambiguous requirements, external blockers
+- Save blocker to `han keep save blockers.md`
+
+**Analysis paralysis guard:** If 5+ consecutive Read/Grep/Glob calls without any Edit/Write/Bash action, you MUST either write code or declare "blocked" with specific missing information.
 
 All deviations MUST be documented in scratchpad:
 
@@ -194,7 +224,8 @@ If blocked and cannot continue:
 **Unit:** {unit name}
 **Completed:** {completed}/{total} tasks
 **Blocker:** {specific blocker description}
-**Attempts:** {count}/3
+**Repair Stage:** RETRY | DECOMPOSE | PRUNE | ESCALATE
+**Attempts:** {count}
 **Needs:** {what is required to unblock}
 ```
 
