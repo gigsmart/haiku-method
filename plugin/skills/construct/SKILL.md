@@ -68,6 +68,38 @@ If truly blocked (cannot proceed without user input):
 2. Stop the loop naturally (don't call /advance)
 3. The Stop hook will alert the user that human intervention is required
 
+### Hard Gates
+
+Hard gates are named checkpoints that MUST be satisfied before the workflow advances. Unlike hat transitions (which rely on agent judgment), hard gates are explicit conditions verified programmatically.
+
+| Gate | Between | Condition | Enforcement |
+|------|---------|-----------|-------------|
+| `PLAN_APPROVED` | planner -> builder | Plan saved to han keep, all criteria have planned tasks | Check plan exists and covers all criteria |
+| `TESTS_PASS` | builder -> reviewer | All quality gates (tests, lint, types) pass | Run test suite, verify exit code 0 |
+| `CRITERIA_MET` | reviewer -> advance | Each criterion has PASS with evidence | Parse structured completion marker |
+
+### Gate Enforcement
+
+Before advancing to the next hat, verify the gate condition:
+
+```bash
+# Example: TESTS_PASS gate before reviewer
+if ! verify_gate "TESTS_PASS"; then
+  echo "## HARD GATE: TESTS_PASS"
+  echo ""
+  echo "Cannot advance to reviewer — quality gates are not passing."
+  echo "Fix failing tests/lint/types before requesting review."
+  exit 1
+fi
+```
+
+Gates are checked by the `/advance` skill. If a gate fails, advance is blocked and the agent must fix the issue before retrying.
+
+**An agent MUST NEVER skip a hard gate.** Hard gates exist to prevent the most common workflow failures:
+- Reviewing code that doesn't compile
+- Building without a plan
+- Marking criteria met without evidence
+
 ## Implementation
 
 ### Pre-check: Reject Cowork Mode
@@ -410,6 +442,41 @@ fi
 
 If `AGENT_TEAMS_ENABLED` is set, follow the **Agent Teams** path below.
 If not set, skip to the **Fallback: Sequential Subagent Execution** section.
+
+### Wave-Based Parallel Execution
+
+When Agent Teams are enabled, units can be grouped into dependency waves for parallel execution:
+
+**Wave Resolution:**
+1. **Wave 0** — Units with no dependencies (can start immediately)
+2. **Wave 1** — Units whose dependencies are all in Wave 0
+3. **Wave N** — Units whose dependencies are all in Waves 0 through N-1
+
+```bash
+# Resolve waves from DAG
+source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
+# Wave 0: units with empty depends_on
+# Wave 1: units whose depends_on are all in wave 0
+# etc.
+```
+
+**Execution:**
+- All units within a wave execute in parallel (separate subagents with fresh context)
+- A wave completes only when ALL its units pass review
+- The next wave starts only after the previous wave completes
+- If a unit in wave N fails, it blocks wave N+1 but not other units in wave N
+
+**Benefits over sequential execution:**
+- Independent units don't wait for each other
+- Each subagent gets fresh context (no degradation from prior unit's work)
+- Natural synchronization at wave boundaries
+
+**When to use:**
+- Intents with 3+ units
+- When Agent Teams (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`) is enabled
+- When the intent strategy is `intent` (all work on one branch)
+
+**Sequential fallback:** Without Agent Teams, continue executing units one at a time in DAG order.
 
 ### Step 2 (Teams): Create or Reconnect Team
 
