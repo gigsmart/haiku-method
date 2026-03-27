@@ -1,4 +1,5 @@
 ---
+type: technique
 description: (Internal) Autonomous ticket sync for AI-DLC elaboration — creates epics, tickets, and DAG links
 context: fork
 agent: general-purpose

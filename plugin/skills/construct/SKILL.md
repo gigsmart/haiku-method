@@ -1,4 +1,5 @@
 ---
+type: technique
 description: (Deprecated) Use /execute instead. Alias for the AI-DLC execution loop.
 argument-hint: "[intent-slug] [unit-name]"
 disable-model-invocation: true

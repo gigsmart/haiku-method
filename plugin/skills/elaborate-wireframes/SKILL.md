@@ -1,4 +1,5 @@
 ---
+type: technique
 description: (Internal) Autonomous wireframe generation for AI-DLC elaboration frontend and design units
 context: fork
 agent: general-purpose

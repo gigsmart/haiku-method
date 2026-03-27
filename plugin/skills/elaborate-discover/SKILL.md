@@ -1,4 +1,5 @@
 ---
+type: technique
 description: (Internal) Autonomous domain discovery and technical exploration for AI-DLC elaboration
 context: fork
 agent: general-purpose

@@ -1,4 +1,5 @@
 ---
+type: pattern
 description: Analyze a completed AI-DLC intent cycle and produce reflection artifacts with learnings, metrics, and recommendations
 argument-hint: "[intent-slug]"
 ---

@@ -1,4 +1,5 @@
 ---
+type: reference
 name: backpressure
 description: Use when implementing or understanding backpressure in AI-DLC workflows. Covers quality gates, Stop hooks, and how automated enforcement guides AI behavior toward quality.
 user-invocable: false

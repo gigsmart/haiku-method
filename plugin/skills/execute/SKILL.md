@@ -1,4 +1,5 @@
 ---
+type: technique
 description: Continue the AI-DLC execution loop - autonomous build/review cycles until completion
 argument-hint: "[intent-slug] [unit-name]"
 disable-model-invocation: true

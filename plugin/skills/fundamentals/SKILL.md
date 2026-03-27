@@ -1,4 +1,5 @@
 ---
+type: reference
 name: fundamentals
 description: Use when understanding AI-DLC methodology fundamentals. Covers core principles, iteration patterns, hat-based workflows, and the philosophy of human-AI collaboration in software development.
 user-invocable: false

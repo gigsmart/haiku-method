@@ -1,4 +1,5 @@
 ---
+type: technique
 description: Clear all AI-DLC state and start fresh
 disable-model-invocation: true
 ---

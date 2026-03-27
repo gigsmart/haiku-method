@@ -1,4 +1,5 @@
 ---
+type: technique
 description: Create a follow-up intent that iterates on a previous intent
 argument-hint: "[previous-intent-slug]"
 allowed-tools:

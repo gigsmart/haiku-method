@@ -1,4 +1,5 @@
 ---
+type: technique
 description: Resume work on an existing AI-DLC intent when ephemeral state is lost
 argument-hint: "[intent-slug]"
 ---

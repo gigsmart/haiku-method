@@ -1,4 +1,5 @@
 ---
+type: technique
 description: Configure AI-DLC for this project — auto-detects VCS, hosting, CI/CD, and MCP providers. Creates or updates .ai-dlc/settings.yml.
 disable-model-invocation: true
 allowed-tools:

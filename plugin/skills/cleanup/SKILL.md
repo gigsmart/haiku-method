@@ -1,4 +1,5 @@
 ---
+type: technique
 description: Remove orphaned and merged AI-DLC worktrees
 disable-model-invocation: true
 ---

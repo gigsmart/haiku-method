@@ -1,4 +1,5 @@
 ---
+type: technique
 description: Refine intent or unit specs mid-construction without losing progress
 argument-hint: "[unit-slug]"
 ---

@@ -1,4 +1,5 @@
 ---
+type: technique
 description: (Internal) Advance to the next hat in the AI-DLC workflow
 user-invocable: false
 ---

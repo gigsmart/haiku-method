@@ -1,4 +1,5 @@
 ---
+type: technique
 description: (Internal) Cross-cutting intent-level validation after all units are merged
 context: fork
 agent: general-purpose

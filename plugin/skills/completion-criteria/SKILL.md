@@ -1,4 +1,5 @@
 ---
+type: reference
 name: completion-criteria
 description: Use when defining completion criteria for AI-DLC tasks. Covers writing verifiable, specific, and measurable criteria that enable autonomous operation and clear exit conditions.
 user-invocable: false
