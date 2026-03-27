@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.63.0] - 2026-03-27
+
+### Added
+
+- add anti-rationalization tables and red flags to all 13 hats ([968b27b](../../commit/968b27b))
+- add goal-backward verification and three-level artifact checks ([2c2e0ad](../../commit/2c2e0ad))
+
+### Other
+
+- Merge pull request #28 from TheBushidoCollective/eco/anti-rationalization ([731b01c](../../commit/731b01c))
+- resolve conflicts with main ([61019da](../../commit/61019da))
+- resolve conflicts with main ([42bb0c6](../../commit/42bb0c6))
+- resolve conflicts with main ([657ad42](../../commit/657ad42))
+- resolve conflicts with main ([feb99da](../../commit/feb99da))
+- sync branch with main (v1.61.1) and integrate goal-backward steps ([fae06a8](../../commit/fae06a8))
+- resolve conflicts with main, integrating goal-backward steps with anti-patterns, confidence scoring, CoVe, and specialized reviews ([db3379b](../../commit/db3379b))
+
 ## [1.62.3] - 2026-03-27
 
 ### Fixed
@@ -39,7 +56,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 
 - Merge pull request #99 from TheBushidoCollective/eco/data-driven-config ([77b976e](../../commit/77b976e))
-
 
 ## [1.61.1] - 2026-03-27
 
