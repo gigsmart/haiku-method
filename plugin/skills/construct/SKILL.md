@@ -443,6 +443,41 @@ fi
 If `AGENT_TEAMS_ENABLED` is set, follow the **Agent Teams** path below.
 If not set, skip to the **Fallback: Sequential Subagent Execution** section.
 
+### Wave-Based Parallel Execution
+
+When Agent Teams are enabled, units can be grouped into dependency waves for parallel execution:
+
+**Wave Resolution:**
+1. **Wave 0** — Units with no dependencies (can start immediately)
+2. **Wave 1** — Units whose dependencies are all in Wave 0
+3. **Wave N** — Units whose dependencies are all in Waves 0 through N-1
+
+```bash
+# Resolve waves from DAG
+source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
+# Wave 0: units with empty depends_on
+# Wave 1: units whose depends_on are all in wave 0
+# etc.
+```
+
+**Execution:**
+- All units within a wave execute in parallel (separate subagents with fresh context)
+- A wave completes only when ALL its units pass review
+- The next wave starts only after the previous wave completes
+- If a unit in wave N fails, it blocks wave N+1 but not other units in wave N
+
+**Benefits over sequential execution:**
+- Independent units don't wait for each other
+- Each subagent gets fresh context (no degradation from prior unit's work)
+- Natural synchronization at wave boundaries
+
+**When to use:**
+- Intents with 3+ units
+- When Agent Teams (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`) is enabled
+- When the intent strategy is `intent` (all work on one branch)
+
+**Sequential fallback:** Without Agent Teams, continue executing units one at a time in DAG order.
+
 ### Step 2 (Teams): Create or Reconnect Team
 
 Check if the team already exists before creating:
