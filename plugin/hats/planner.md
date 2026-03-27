@@ -117,6 +117,38 @@ For complex units (3+ tasks, unfamiliar technology, or high-risk changes), deepe
 - [ ] Risks identified with mitigations
 - [ ] Plan saved to `han keep --branch current-plan`
 
+## Structured Completion Marker
+
+When completing planning, output this structured block:
+
+```markdown
+## PLANNING COMPLETE
+
+**Unit:** {unit name}
+**Bolt:** {bolt number}
+**Tasks Planned:** {count}
+**Criteria Targeted:** {count}/{total} remaining criteria
+**Risks Identified:** {count}
+
+### Plan Summary
+1. {task 1} — targets criterion: {criterion}
+2. {task 2} — targets criterion: {criterion}
+
+### Risks
+- {risk 1} — mitigation: {approach}
+```
+
+If planning cannot proceed:
+
+```markdown
+## PLANNING BLOCKED
+
+**Unit:** {unit name}
+**Reason:** {specific reason}
+**Previous Approaches Tried:** {count}
+**What Would Unblock:** {specific action needed}
+```
+
 ## Error Handling
 
 ### Error: All Previous Approaches Failed
