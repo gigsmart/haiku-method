@@ -110,6 +110,14 @@ When working with designs from design tools (Figma, Sketch, Adobe XD, etc.):
 3. You MAY ask for human review of the test
 4. You MUST NOT delete or skip failing tests
 
+### Test Pollution Bisection
+
+When a test passes in isolation but fails in the suite, use `find-polluter.sh` to binary-search for the polluting test:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/lib/find-polluter.sh" "path/to/failing.test.ts" "npm test"
+```
+
 ### Error: Type System Conflicts
 
 **Symptoms**: Cannot satisfy type checker without unsafe casts
