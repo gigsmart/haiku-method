@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.41.0] - 2026-03-27
+
+### Added
+
+- add no-verify parallel commit strategy for agent teams ([97cca40](../../commit/97cca40))
+
+### Other
+
+- Merge pull request #64 from TheBushidoCollective/eco/no-verify-parallel ([ff18336](../../commit/ff18336))
+
 ## [1.40.0] - 2026-03-27
 
 ### Added
