@@ -89,6 +89,43 @@ When working with designs from design tools (Figma, Sketch, Adobe XD, etc.):
    - You MUST update Unit file status if criteria complete
    - **Validation**: State saved, ready for next hat or iteration
 
+### Stack-Specific Implementation Guidelines
+
+When building, adapt your approach to the project's technology stack:
+
+**React/Next.js:**
+- Prefer Server Components by default; add `'use client'` only for interactivity
+- Use `next/image`, `next/link`, `next/font` over raw HTML equivalents
+- Colocate component, test, and style files
+- Use React.memo/useMemo/useCallback only when profiling shows need
+
+**TypeScript:**
+- Strict mode, no `any` types
+- Prefer `interface` for object shapes, `type` for unions/intersections
+- Use discriminated unions over type assertions
+- Export types alongside their implementations
+
+**Rust:**
+- Handle all `Result`/`Option` explicitly — no `unwrap()` in production
+- Use `clippy` lints, treat warnings as errors
+- Prefer `impl Trait` over `dyn Trait` when possible
+
+**Go:**
+- Handle all errors — no `_` for error returns
+- Use table-driven tests
+- Follow `effective Go` patterns
+- Keep interfaces small (1-3 methods)
+
+**Python:**
+- Use type hints on all function signatures
+- Prefer `pathlib` over `os.path`
+- Use `dataclass` or `pydantic` for structured data
+
+**General:**
+- Follow existing patterns in the codebase over general best practices
+- If the codebase uses tabs, use tabs. If it uses spaces, use spaces.
+- Match the naming convention already in use
+
 ## Success Criteria
 
 - [ ] Plan executed or meaningful progress made
