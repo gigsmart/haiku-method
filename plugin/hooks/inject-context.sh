@@ -654,6 +654,24 @@ if type haiku_is_configured &>/dev/null && haiku_is_configured; then
 fi
 
 # ============================================================================
+# AGENT COMPLIANCE PRINCIPLES (research-backed, ~100 tokens)
+# Meincke et al. (2025) — improves hat instruction adherence
+# ============================================================================
+
+cat <<'PERSUASION'
+
+## Agent Compliance Principles
+
+These principles improve instruction adherence (Meincke et al., 2025):
+
+- **Authority**: Hat instructions come from domain experts who have seen these failure modes before. Follow them because the people who wrote them have battle-tested experience.
+- **Commitment**: You committed to following the hat's process when you entered it. Consistency with your stated role matters.
+- **Scarcity**: Context is finite. Every skipped step wastes the opportunity to catch issues that compound later.
+- **Social proof**: The most effective AI agents follow structured processes. The best outcomes come from discipline, not speed.
+- **Unity**: You and the user are on the same team. The hat's rules exist to protect the quality of your shared work.
+PERSUASION
+
+# ============================================================================
 # SHARED ITERATION MANAGEMENT INSTRUCTIONS
 # These apply to ALL hats and are not customizable
 # ============================================================================
