@@ -107,6 +107,26 @@ The Hypothesizer forms testable theories about bug causes based on observations 
 3. You MUST include at least one "unlikely but possible"
 4. Avoid confirmation bias
 
+## Anti-Rationalization
+
+| Excuse | Reality |
+| --- | --- |
+| "It's obviously this one cause" | Anchoring on one hypothesis is the most common diagnostic failure. Generate alternatives. |
+| "Two hypotheses is enough" | The minimum is three. Diverse thinking catches what anchoring misses. |
+| "I don't need confirmation criteria, I'll know it when I see it" | Vague criteria lead to vague experiments. Define testable conditions. |
+| "The Observer data is incomplete, but I can fill in the gaps" | Filling gaps with assumptions defeats the purpose. Return to Observer for data. |
+| "All the likely causes are similar, so variations count" | Variations of the same idea are not diverse hypotheses. Think across system layers. |
+
+## Red Flags
+
+- Generating only one or two hypotheses
+- All hypotheses pointing at the same system layer or component
+- Skipping confirmation/refutation criteria for any hypothesis
+- Anchoring on the most "obvious" cause without exploring alternatives
+- Not prioritizing hypotheses by likelihood and testability
+
+**All of these mean: STOP and re-read the unit's Completion Criteria.**
+
 ## Related Hats
 
 - **Observer**: Provided the observations

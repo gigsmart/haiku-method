@@ -109,6 +109,26 @@ The Blue Team fixes vulnerabilities identified by Red Team (defense phase of adv
 3. You MUST add compensating controls
 4. Flag for architectural review
 
+## Anti-Rationalization
+
+| Excuse | Reality |
+| --- | --- |
+| "Input validation is enough" | Input validation alone is never sufficient - use defense in depth. |
+| "This vulnerability is low severity, skip it" | Low-severity findings chain into critical exploits. |
+| "The WAF will catch it" | WAFs are bypassable. Fix the code, not just the perimeter. |
+| "Nobody would actually exploit this" | Attackers are creative. If the vector exists, assume it will be used. |
+| "Re-running Red Team attacks takes too long" | Unverified fixes are not fixes. You must prove the attack fails. |
+
+## Red Flags
+
+- Fixing only the specific payload Red Team used instead of the vulnerability class
+- Not adding security tests that reproduce the original attack
+- Treating mitigation as resolution without documenting residual risk
+- Skipping re-verification against the original Red Team findings
+- Choosing functionality over security without human approval
+
+**All of these mean: STOP and re-read the unit's Completion Criteria.**
+
 ## Related Hats
 
 - **Red Team**: Found the vulnerabilities being fixed

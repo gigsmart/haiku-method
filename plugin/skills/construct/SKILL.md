@@ -68,6 +68,35 @@ If truly blocked (cannot proceed without user input):
 2. Stop the loop naturally (don't call /advance)
 3. The Stop hook will alert the user that human intervention is required
 
+### Process Authority: DOT Flowcharts
+
+When a hat or skill contains a DOT flowchart, the flowchart is the **authoritative process definition**. Prose descriptions are supporting context only.
+
+**The Description Trap:** Agents naturally follow the shortest description they can find. If a 2-sentence summary exists alongside a detailed flowchart, the agent will follow the summary and skip the flowchart's nuance. To prevent this:
+
+1. When a DOT flowchart exists, follow it node-by-node
+2. Do NOT substitute prose summaries for flowchart steps
+3. Each flowchart node represents a discrete action — execute them in order
+4. Branch conditions in the flowchart are decision points — evaluate each explicitly
+
+**Example DOT in a hat file:**
+```dot
+digraph builder {
+  start -> read_criteria
+  read_criteria -> check_plan
+  check_plan -> implement [label="plan exists"]
+  check_plan -> escalate [label="no plan"]
+  implement -> run_tests
+  run_tests -> commit [label="pass"]
+  run_tests -> fix [label="fail"]
+  fix -> run_tests
+  commit -> next_task
+}
+```
+
+When present, this graph IS the process. The surrounding markdown explains WHY, not WHAT.
+
+
 ### Hard Gates
 
 Hard gates are named checkpoints that MUST be satisfied before the workflow advances. Unlike hat transitions (which rely on agent judgment), hard gates are explicit conditions verified programmatically.
@@ -615,7 +644,26 @@ fi
 - `builder` -> discipline-specific agent (see builder agent selection table below)
 - All other hats (`reviewer`, `red-team`, `blue-team`, etc.) -> `general-purpose` agent
 
-6. **Create shared task via TaskCreate**:
+6. **Resolve model profile for the hat**:
+
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+SETTINGS_JSON=$(load_repo_settings "$(find_repo_root)")
+MODEL_PROFILE=$(echo "$SETTINGS_JSON" | jq -r ".model_profiles.${HAT_NAME} // \"inherit\"" 2>/dev/null || echo "inherit")
+```
+
+If `MODEL_PROFILE` is not `inherit`, pass the `model` parameter when spawning the subagent. This lets teams route expensive reasoning to Opus for planning while using Sonnet or Haiku for implementation, significantly reducing cost.
+
+**Example configurations** for `settings.yml` (these are reference patterns, not named profiles you can set by name — configure per-hat tiers directly):
+
+| Pattern | Planner | Builder | Reviewer | Use Case |
+|---------|---------|---------|----------|----------|
+| Quality | opus | opus | opus | Maximum quality, highest cost |
+| Balanced | opus | sonnet | sonnet | Good planning, fast execution |
+| Budget | sonnet | haiku | sonnet | Cost-efficient, adequate quality |
+| (default) | inherit | inherit | inherit | Use session model for everything |
+
+7. **Create shared task via TaskCreate**:
 
 ```javascript
 TaskCreate({
@@ -625,11 +673,12 @@ TaskCreate({
 })
 ```
 
-7. **Spawn teammate with hat instructions in prompt**:
+8. **Spawn teammate with hat instructions in prompt**:
 
 ```javascript
 Task({
   subagent_type: getAgentTypeForHat(FIRST_HAT, unit.discipline),
+  model: MODEL_PROFILE !== "inherit" ? MODEL_PROFILE : undefined,
   description: `${FIRST_HAT}: ${unitName}`,
   name: `${FIRST_HAT}-${unitSlug}`,
   team_name: `ai-dlc-${intentSlug}`,
@@ -709,11 +758,17 @@ d. Select agent type based on hat:
    - `builder` -> discipline-specific agent (see builder agent selection table below)
    - All other hats (`reviewer`, `red-team`, `blue-team`, etc.) -> `general-purpose` agent
 
-e. Spawn teammate with hat instructions in prompt:
+e. Resolve model profile for the hat (same as step 6 above):
+   ```bash
+   MODEL_PROFILE=$(echo "$SETTINGS_JSON" | jq -r ".model_profiles.${HAT_NAME} // \"inherit\"" 2>/dev/null || echo "inherit")
+   ```
+
+f. Spawn teammate with hat instructions in prompt:
 
 ```javascript
 Task({
   subagent_type: getAgentTypeForHat(nextHat, unit.discipline),
+  model: MODEL_PROFILE !== "inherit" ? MODEL_PROFILE : undefined,
   description: `${nextHat}: ${unitName}`,
   name: `${nextHat}-${unitSlug}`,
   team_name: `ai-dlc-${intentSlug}`,
@@ -1237,11 +1292,24 @@ han keep save iteration.json "$STATE"
 - `documentation` -> `do-technical-documentation:documentation-engineer`
 - (other) -> `general-purpose`
 
+##### Resolve model profile
+
+Before spawning, resolve the model profile for the current hat:
+
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+SETTINGS_JSON=$(load_repo_settings "$(find_repo_root)")
+MODEL_PROFILE=$(echo "$SETTINGS_JSON" | jq -r ".model_profiles.${state_hat} // \"inherit\"" 2>/dev/null || echo "inherit")
+```
+
+If `MODEL_PROFILE` is not `inherit`, pass the `model` parameter to the subagent. See `model_profiles` in the settings schema for details.
+
 ##### Example spawn (standard subagents)
 
 ```javascript
 Task({
   subagent_type: getAgentForRole(state.hat, unit.discipline),
+  model: MODEL_PROFILE !== "inherit" ? MODEL_PROFILE : undefined,
   description: `${state.hat}: ${unit.name}`,
   prompt: `
     Execute the ${state.hat} role for this AI-DLC unit.

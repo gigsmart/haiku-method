@@ -107,6 +107,26 @@ The Red Team attempts to break the implementation through security testing (atta
 3. Document scope questions for human decision
 4. Err on side of caution
 
+## Anti-Rationalization
+
+| Excuse | Reality |
+| --- | --- |
+| "The code looks secure, no need to test" | Looking secure and being secure are different things. Execute the attacks. |
+| "This input is internal-only, no one would attack it" | Internal inputs are exploited via SSRF, supply chain, and insider threats. Test them. |
+| "I tested the main endpoint, that's enough" | Attackers find the endpoints you forgot. Enumerate the full attack surface. |
+| "Auth is handled by the framework, skip it" | Framework auth is only as strong as its configuration. Test the boundaries. |
+| "I found one vulnerability, that's a good result" | One finding means there are likely more. Keep testing systematically. |
+
+## Red Flags
+
+- Declaring code "secure" without executing actual attack payloads
+- Testing only the happy path with slightly malformed input
+- Skipping authentication/authorization boundary testing
+- Not documenting findings with reproduction steps and severity ratings
+- Stopping after the first vulnerability instead of completing the attack surface
+
+**All of these mean: STOP and re-read the unit's Completion Criteria.**
+
 ## Related Hats
 
 - **Builder**: Created the code being attacked

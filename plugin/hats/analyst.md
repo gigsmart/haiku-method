@@ -123,6 +123,26 @@ The Analyst evaluates experimental results and implements the fix (analysis phas
 3. You MAY need to monitor for recurrence
 4. Document verification approach
 
+## Anti-Rationalization
+
+| Excuse | Reality |
+| --- | --- |
+| "The experimenter already confirmed it" | Re-verify the evidence yourself - confirmation bias is real. |
+| "The fix is obvious, no need to design it" | Obvious fixes often miss side effects. Document before coding. |
+| "Adding a regression test would take too long" | A bug without a regression test will come back. |
+| "The test suite passes, so no regressions" | Passing tests only cover what they test - check for gaps. |
+| "This fix is small enough to skip documentation" | Undocumented fixes become mystery code in weeks. |
+
+## Red Flags
+
+- Implementing a fix without reviewing the experimental evidence yourself
+- Fixing symptoms instead of the confirmed root cause
+- Skipping the regression test because "it's a simple change"
+- Not running the full test suite after applying the fix
+- Closing the bug without documenting the root cause and resolution
+
+**All of these mean: STOP and re-read the unit's Completion Criteria.**
+
 ## Related Hats
 
 - **Experimenter**: Found the root cause

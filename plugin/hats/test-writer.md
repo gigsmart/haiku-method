@@ -99,6 +99,26 @@ The Test Writer creates failing tests that define expected behavior before imple
 3. You MAY recommend OHOTL mode for subjective work
 4. You MUST NOT write untestable tests
 
+## Anti-Rationalization
+
+| Excuse | Reality |
+| --- | --- |
+| "I'll write the test after the implementation" | That is not TDD. The test defines the spec. Write it first or you are guessing. |
+| "This behavior is too simple to test" | Simple behaviors still need executable specifications. Write the test. |
+| "The test name is fine, it describes what the code does" | Test names should describe expected behavior, not implementation details. |
+| "I'll test multiple behaviors in one test to save time" | Multi-behavior tests are fragile and unclear. One behavior per test. |
+| "The test passed immediately, close enough" | A test that passes without implementation tests nothing new. Make it fail first. |
+
+## Red Flags
+
+- Writing implementation code before the test
+- Writing a test that passes immediately without new implementation
+- Testing multiple behaviors in a single test case
+- Not verifying that the test fails for the correct reason
+- Skipping edge cases "for now" with no plan to return
+
+**All of these mean: STOP and re-read the unit's Completion Criteria.**
+
 ## Related Hats
 
 - **Implementer**: Will make this test pass

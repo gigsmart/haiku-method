@@ -312,7 +312,22 @@ Map selections to config values under `review_agents:` in settings.yml. Core age
 
 ---
 
-## Phase 5: VCS Strategy
+## Phase 5: Workflow Tuning
+
+Ask the user about their preferred workflow intensity:
+
+**Workflow mode:**
+- **Interactive (default)** — Pause for approval at elaboration, planning, and review
+- **Autonomous** — Proceed automatically, only pause on blockers or ambiguity
+
+**Granularity:**
+- **Coarse** — Fewer, larger units. Less process overhead. Good for experienced teams or small features.
+- **Standard (default)** — Balanced decomposition. Recommended for most work.
+- **Fine** — Many small units with detailed specs. Good for complex features or onboarding.
+
+---
+
+## Phase 6: VCS Strategy
 
 Ask the user about their preferred delivery strategy, source branch, and auto-merge behavior.
 
@@ -389,7 +404,7 @@ Only ask auto-merge if strategy is `intent` ("Build everything, then open one MR
 
 ---
 
-## Phase 6: Write Settings File
+## Phase 7: Write Settings File
 
 1. Read existing `.ai-dlc/settings.yml` via `Read` tool (if it exists) to preserve any manual edits or fields not covered by this wizard.
 
@@ -433,7 +448,7 @@ Rules:
 
 ---
 
-## Phase 7: Confirmation
+## Phase 8: Confirmation
 
 Display a final summary:
 
