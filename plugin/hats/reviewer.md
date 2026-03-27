@@ -83,22 +83,43 @@ The Reviewer verifies that the Builder's implementation satisfies the Unit's Com
 - **MAY** post a summary of the review outcome to the comms provider (if configured)
 - If MCP tools are unavailable, skip silently — never block review on provider sync
 
-### Multi-Judge Critique (High-Stakes Units)
+### Master Reviewer Delegation
 
-For units marked as high-stakes (security-critical, data-handling, public API), run a structured critique with specialized judges:
+The reviewer hat acts as a **coordinator**, not a solo reviewer. It delegates to specialized review agents and consolidates findings.
 
-**Judges:**
-1. **Requirements Validator** — Does the implementation match what was asked for? Are all criteria addressed?
-2. **Solution Architect** — Is the solution well-designed? Are there architectural issues?
-3. **Code Quality Reviewer** — Is the code maintainable, tested, and following conventions?
+**Architecture:**
+```
+Reviewer (Master)
+  ├── Security Review Agent
+  ├── Performance Review Agent
+  ├── Architecture Review Agent
+  ├── Correctness Review Agent
+  ├── Test Quality Review Agent
+  └── {domain-specific agents from review_agents config}
+```
 
-**Process:**
-1. Each judge independently reviews and produces findings
-2. Judges share findings and debate disagreements
-3. Consensus findings are high confidence; contested findings are medium
-4. Final verdict requires 2/3 judge agreement
+**Pros of delegation:**
+- Each agent has focused context (not polluted by other concerns)
+- Parallel execution — all reviews run simultaneously
+- Specialized agents catch issues a generalist misses
+- Findings are already categorized by domain
 
-**When to use:** Only for units where `high_stakes: true` is set in frontmatter, or units touching auth, payments, or data migrations.
+**Cons of delegation:**
+- More subagent spawns = more tokens
+- Need consolidation logic to merge overlapping findings
+- Overkill for small units (1-2 files changed)
+
+**When to delegate:**
+- **Always delegate** for units with 3+ modified files
+- **Always delegate** for units marked `high_stakes: true`
+- **Skip delegation** for units with 1-2 files — the reviewer hat handles these directly
+
+**How:**
+1. Master reviewer reads the unit, identifies which specialized agents to spawn (based on changed files and `review_agents` config)
+2. Spawn all applicable agents in parallel
+3. Collect findings from all agents
+4. De-duplicate and rank by confidence
+5. Present consolidated review with agent attribution
 
 ## Success Criteria
 
