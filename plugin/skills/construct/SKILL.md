@@ -68,6 +68,35 @@ If truly blocked (cannot proceed without user input):
 2. Stop the loop naturally (don't call /advance)
 3. The Stop hook will alert the user that human intervention is required
 
+### Process Authority: DOT Flowcharts
+
+When a hat or skill contains a DOT flowchart, the flowchart is the **authoritative process definition**. Prose descriptions are supporting context only.
+
+**The Description Trap:** Agents naturally follow the shortest description they can find. If a 2-sentence summary exists alongside a detailed flowchart, the agent will follow the summary and skip the flowchart's nuance. To prevent this:
+
+1. When a DOT flowchart exists, follow it node-by-node
+2. Do NOT substitute prose summaries for flowchart steps
+3. Each flowchart node represents a discrete action — execute them in order
+4. Branch conditions in the flowchart are decision points — evaluate each explicitly
+
+**Example DOT in a hat file:**
+```dot
+digraph builder {
+  start -> read_criteria
+  read_criteria -> check_plan
+  check_plan -> implement [label="plan exists"]
+  check_plan -> escalate [label="no plan"]
+  implement -> run_tests
+  run_tests -> commit [label="pass"]
+  run_tests -> fix [label="fail"]
+  fix -> run_tests
+  commit -> next_task
+}
+```
+
+When present, this graph IS the process. The surrounding markdown explains WHY, not WHAT.
+
+
 ### Hard Gates
 
 Hard gates are named checkpoints that MUST be satisfied before the workflow advances. Unlike hat transitions (which rely on agent judgment), hard gates are explicit conditions verified programmatically.

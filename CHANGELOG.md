@@ -116,6 +116,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - add Claude conflict resolver workflow ([c28bac4](../../commit/c28bac4))
 
+
 ## [1.61.0] - 2026-03-27
 
 ### Added
