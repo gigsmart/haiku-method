@@ -1,4 +1,4 @@
-name: Claude Conflict Resolver
+name: Auto Conflict Resolver
 
 on:
   push:
@@ -8,93 +8,111 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  find-conflicts:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      conflicting_prs: ${{ steps.find.outputs.conflicting_prs }}
-      has_conflicts: ${{ steps.find.outputs.has_conflicts }}
-    steps:
-      - name: Find conflicting PRs
-        id: find
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Poll with backoff until GitHub recalculates mergeability
-          CONFLICTING=""
-          for attempt in 1 2 3 4 5 6; do
-            echo "Attempt $attempt: checking mergeability..."
-            sleep $(( attempt * 10 ))
-
-            ALL_PRS=$(gh pr list --base main --state open --json number,mergeable --repo "$GITHUB_REPOSITORY" 2>/dev/null || echo "[]")
-            UNKNOWN_COUNT=$(echo "$ALL_PRS" | jq '[.[] | select(.mergeable == "UNKNOWN")] | length')
-            CONFLICT_COUNT=$(echo "$ALL_PRS" | jq '[.[] | select(.mergeable == "CONFLICTING")] | length')
-
-            echo "  UNKNOWN: $UNKNOWN_COUNT, CONFLICTING: $CONFLICT_COUNT"
-
-            if [ "$UNKNOWN_COUNT" -eq 0 ]; then
-              CONFLICTING=$(echo "$ALL_PRS" | jq -c '[.[] | select(.mergeable == "CONFLICTING") | .number]')
-              break
-            fi
-
-            if [ "$attempt" -eq 6 ]; then
-              CONFLICTING=$(echo "$ALL_PRS" | jq -c '[.[] | select(.mergeable == "CONFLICTING") | .number]')
-            fi
-          done
-
-          if [ "$CONFLICTING" = "[]" ] || [ -z "$CONFLICTING" ]; then
-            echo "No conflicting PRs found"
-            echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
-            echo "conflicting_prs=[]" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "Conflicting PRs: $CONFLICTING"
-          echo "has_conflicts=true" >> "$GITHUB_OUTPUT"
-          echo "conflicting_prs=$CONFLICTING" >> "$GITHUB_OUTPUT"
-
-  resolve:
-    needs: find-conflicts
-    if: needs.find-conflicts.outputs.has_conflicts == 'true'
+  resolve-conflicts:
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
-      issues: write
-      id-token: write
-    strategy:
-      matrix:
-        pr_number: ${{ fromJson(needs.find-conflicts.outputs.conflicting_prs) }}
-      max-parallel: 3
-      fail-fast: false
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get PR branch
-        id: pr-info
+      - name: Find and resolve conflicting PRs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          BRANCH=$(gh pr view ${{ matrix.pr_number }} --json headRefName --jq '.headRefName' --repo "$GITHUB_REPOSITORY")
-          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
-          echo "Resolving PR #${{ matrix.pr_number }} on branch $BRANCH"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Resolve conflicts with Claude
-        uses: anthropics/claude-code-action@v1
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          allowed_bots: '*'
-          direct_prompt: |
-            PR #${{ matrix.pr_number }} on branch `${{ steps.pr-info.outputs.branch }}` has merge conflicts with main. Resolve them:
+          # Poll until GitHub recalculates mergeability
+          for attempt in 1 2 3 4 5; do
+            echo "Attempt $attempt: checking mergeability..."
+            sleep $(( attempt * 10 ))
 
-            1. `git fetch origin && git checkout ${{ steps.pr-info.outputs.branch }}`
-            2. `git merge origin/main`
-            3. Resolve conflicts: keep both sides' changes where possible. For true conflicts, preserve the PR branch's intent while incorporating main's updates.
-            4. `git add -A && git commit -m "merge: resolve conflicts with main" && git push origin ${{ steps.pr-info.outputs.branch }}`
+            ALL_PRS=$(gh pr list --base main --state open --json number,headRefName,mergeable --repo "$GITHUB_REPOSITORY" 2>/dev/null || echo "[]")
+            UNKNOWN=$(echo "$ALL_PRS" | jq '[.[] | select(.mergeable == "UNKNOWN")] | length')
+            [ "$UNKNOWN" -eq 0 ] && break
+          done
 
-            If conflicts are too complex, explain what needs manual resolution.
+          CONFLICTING=$(echo "$ALL_PRS" | jq -r '.[] | select(.mergeable == "CONFLICTING") | "\(.number) \(.headRefName)"')
+
+          if [ -z "$CONFLICTING" ]; then
+            echo "No conflicting PRs"
+            exit 0
+          fi
+
+          echo "Conflicting PRs:"
+          echo "$CONFLICTING"
+
+          RESOLVED=0
+          FAILED=0
+
+          while IFS=' ' read -r PR_NUM BRANCH; do
+            echo ""
+            echo "=== PR #$PR_NUM ($BRANCH) ==="
+
+            # Fetch and checkout PR branch
+            git fetch origin "$BRANCH" main
+            git checkout "$BRANCH"
+            git reset --hard "origin/$BRANCH"
+
+            # Attempt merge
+            if git merge origin/main --no-edit 2>/dev/null; then
+              echo "Auto-merged cleanly"
+              git push origin "$BRANCH"
+              RESOLVED=$((RESOLVED + 1))
+              continue
+            fi
+
+            # Check if conflicts are in version/changelog files only (auto-resolvable)
+            CONFLICT_FILES=$(git diff --name-only --diff-filter=U)
+            echo "Conflicted files: $CONFLICT_FILES"
+
+            CAN_AUTO_RESOLVE=true
+            for f in $CONFLICT_FILES; do
+              case "$f" in
+                # Version files: take main's version (theirs)
+                plugin/.claude-plugin/plugin.json|.claude-plugin/marketplace.json)
+                  git checkout --theirs "$f"
+                  git add "$f"
+                  ;;
+                # Changelog: take main's version (theirs) — it has the full history
+                CHANGELOG.md)
+                  git checkout --theirs "$f"
+                  git add "$f"
+                  ;;
+                # Content files: try to auto-resolve by keeping both
+                *.md|*.sh|*.json|*.yml|*.yaml|*.ts|*.tsx)
+                  # Check if conflict markers exist
+                  if grep -q '<<<<<<<' "$f" 2>/dev/null; then
+                    echo "  Complex conflict in $f — needs manual resolution"
+                    CAN_AUTO_RESOLVE=false
+                  fi
+                  ;;
+                *)
+                  echo "  Unknown conflict in $f — needs manual resolution"
+                  CAN_AUTO_RESOLVE=false
+                  ;;
+              esac
+            done
+
+            if [ "$CAN_AUTO_RESOLVE" = true ]; then
+              # All conflicts were version/changelog — commit and push
+              git commit --no-edit
+              git push origin "$BRANCH"
+              echo "Resolved (version/changelog only)"
+              RESOLVED=$((RESOLVED + 1))
+            else
+              # Abort and comment on PR
+              git merge --abort
+              gh pr comment "$PR_NUM" --repo "$GITHUB_REPOSITORY" --body "⚠️ This PR has merge conflicts with main that require manual resolution. Conflicted files: \`$CONFLICT_FILES\`"
+              echo "Could not auto-resolve — commented on PR"
+              FAILED=$((FAILED + 1))
+            fi
+          done <<< "$CONFLICTING"
+
+          echo ""
+          echo "Summary: $RESOLVED resolved, $FAILED need manual resolution"
