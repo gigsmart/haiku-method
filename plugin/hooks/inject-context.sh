@@ -653,6 +653,21 @@ if type haiku_is_configured &>/dev/null && haiku_is_configured; then
   fi
 fi
 
+# Instruction Priority
+cat <<'PRIORITY'
+
+## Instruction Priority
+
+When instructions conflict, follow this precedence (highest to lowest):
+
+1. **User explicit instructions** — what the user just told you to do
+2. **AI-DLC hat/skill instructions** — the current hat's steps, the active skill's procedure
+3. **Project CLAUDE.md** — project-level conventions and rules
+4. **Default behavior** — Claude Code's built-in behavior
+
+If a hat says "always run tests" but the user says "skip tests this time," follow the user. If the hat says "run tests" and CLAUDE.md says "use pytest," follow both. Lower levels never override higher levels.
+PRIORITY
+
 # ============================================================================
 # SHARED ITERATION MANAGEMENT INSTRUCTIONS
 # These apply to ALL hats and are not customizable
