@@ -551,7 +551,7 @@ For UI-heavy intents, support visual brainstorming alongside the terminal conver
    echo '<wireframe html>' > /tmp/aidlc-wireframe.html && open /tmp/aidlc-wireframe.html
    ```
 3. **Iterate visually** — After the user reviews, update and reopen. The visual and terminal conversation run in parallel.
-4. **Persist approved visuals** — Save approved wireframes/diagrams to `.ai-dlc/{intent-slug}/mockups/`
+4. **Persist approved visuals** — Save approved wireframes/diagrams to `.ai-dlc/{intent-slug}/brainstorm/`
 
 This is most useful during:
 - Phase 2.5 (domain discovery) — architecture diagrams
