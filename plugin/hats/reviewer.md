@@ -108,6 +108,29 @@ For each criterion being reviewed, apply the CoVe pattern:
 - [ ] Clear decision: APPROVE or REQUEST CHANGES
 - [ ] Actionable feedback provided if changes requested
 
+### Specialized Pre-Delivery Reviews
+
+Instead of a static checklist, delegate pre-delivery verification to focused review agents:
+
+| Agent | Focus Area | Trigger |
+|-------|-----------|---------|
+| **Code Quality** | TODOs, stubs, console.log, hardcoded values | Always |
+| **Security** | Credentials, injection, CSRF, input validation | Code handling user input or auth |
+| **Performance** | N+1 queries, re-renders, memory leaks | Database or rendering code |
+| **Accessibility** | Semantic HTML, keyboard nav, contrast, focus | Frontend units |
+| **Responsive** | Breakpoint behavior, horizontal scroll | Frontend units |
+| **Test Coverage** | Missing tests, assertion quality, edge cases | Always |
+
+Each agent runs independently with a focused prompt. The master reviewer consolidates findings.
+
+**Activation:** The reviewer determines which agents to spawn based on:
+- Unit discipline (frontend → accessibility + responsive)
+- Changed file patterns (*.sql, migrations → performance)
+- `review_agents` settings config
+- `high_stakes: true` frontmatter
+
+This is more effective than a static checklist because each agent has dedicated context for its domain.
+
 ## Error Handling
 
 ### Error: Cannot Verify Criterion Programmatically
