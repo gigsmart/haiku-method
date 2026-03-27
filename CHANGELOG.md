@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.62.2] - 2026-03-27
+
+### Other
+
+- update old plugin terminology (Jutsu/Hashi/Do → current names) ([bab4ff6](../../commit/bab4ff6))
+
+## [1.62.1] - 2026-03-27
+
+### Other
+
+- opt into Node 24 for all workflows, fix conflict resolver polling ([dcd41fb](../../commit/dcd41fb))
+
+## [1.62.0] - 2026-03-27
+
+### Added
+
+- restore phase customization files with elaboration support ([21309d1](../../commit/21309d1))
+- add phase customization files (.ai-dlc/ELABORATION.md pattern) ([fa3a1a0](../../commit/fa3a1a0))
+- add data-driven configuration pattern for external rule files ([b2b7d8b](../../commit/b2b7d8b))
+
+### Changed
+
+- remove hat-based phase customization files ([d0510e3](../../commit/d0510e3))
+- remove phase customization files in favor of hat overrides ([82da60c](../../commit/82da60c))
+
+### Other
+
+- Merge pull request #99 from TheBushidoCollective/eco/data-driven-config ([77b976e](../../commit/77b976e))
+
+## [1.61.1] - 2026-03-27
+
+### Other
+
+- add Claude conflict resolver workflow ([c28bac4](../../commit/c28bac4))
+
+
 ## [1.61.0] - 2026-03-27
 
 ### Added

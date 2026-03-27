@@ -623,6 +623,7 @@ if [ -n "$HAT_FILE" ] && [ -f "$HAT_FILE" ]; then
   if [ -n "$INSTRUCTIONS" ]; then
     echo "$INSTRUCTIONS"
   fi
+
 else
   # No hat file found - show generic message
   echo "**$HAT** (Custom hat - no instructions found)"

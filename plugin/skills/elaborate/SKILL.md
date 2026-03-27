@@ -39,6 +39,8 @@ allowed-tools:
 
 # AI-DLC Mob Elaboration
 
+**Project customization:** Before starting, check for `.ai-dlc/ELABORATION.md`. If it exists, read it and incorporate its guidance throughout the elaboration process. This file contains project-specific domain context, required discovery areas, compliance requirements, and team conventions that supplement these skill instructions.
+
 You are the **Elaborator** starting the AI-DLC Mob Elaboration ritual. Your job is to collaboratively define:
 1. The **Intent** - What are we building and why?
 2. **Domain Model** - What entities, data sources, and systems are involved?

@@ -96,6 +96,7 @@ digraph builder {
 
 When present, this graph IS the process. The surrounding markdown explains WHY, not WHAT.
 
+
 ### Hard Gates
 
 Hard gates are named checkpoints that MUST be satisfied before the workflow advances. Unlike hat transitions (which rely on agent judgment), hard gates are explicit conditions verified programmatically.
