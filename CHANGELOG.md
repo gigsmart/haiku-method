@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.34.0] - 2026-03-27
+
+### Added
+
+- add chain-of-verification (CoVe) for evidence-based reviews ([c123153](../../commit/c123153))
+
+### Other
+
+- Merge pull request #83 from TheBushidoCollective/eco/chain-verification ([c64a84e](../../commit/c64a84e))
+
 ## [1.33.0] - 2026-03-27
 
 ### Added
