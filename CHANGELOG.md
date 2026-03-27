@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.73.0] - 2026-03-27
+
+### Added
+
+- add /autopilot skill for full autonomous feature lifecycle ([77b1e24](../../commit/77b1e24))
+
+### Fixed
+
+- use /construct instead of /execute for build phase ([33d4df2](../../commit/33d4df2))
+
+### Changed
+
+- make /execute primary, /construct a deprecated alias ([d75c7e4](../../commit/d75c7e4))
+
+### Other
+
+- Merge pull request #70 from TheBushidoCollective/eco/lfg-autopilot ([603321a](../../commit/603321a))
+- resolve conflicts with main ([0d32b85](../../commit/0d32b85))
+- resolve conflicts with main ([e1ce64a](../../commit/e1ce64a))
+- sync with origin/main (v1.59.1) to resolve branch divergence ([9378784](../../commit/9378784))
+
 ## [1.72.0] - 2026-03-27
 
 ### Added
@@ -222,7 +243,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 
 - Merge pull request #53 from TheBushidoCollective/eco/visual-brainstorm ([8fe1b98](../../commit/8fe1b98))
-
 
 ## [1.59.1] - 2026-03-27
 
