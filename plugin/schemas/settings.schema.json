@@ -26,6 +26,41 @@
 		"quality_gates": {
 			"$ref": "#/definitions/qualityGatesConfig",
 			"description": "Quality gates (backpressure checks) to run during execution. When configured, these replace the default backpressure behavior."
+		},
+		"model_profiles": {
+			"type": "object",
+			"description": "Map hats to model tiers for cost optimization. Defaults to inheriting the session model for all hats.",
+			"properties": {
+				"planner": {
+					"type": "string",
+					"enum": ["opus", "sonnet", "haiku", "inherit"],
+					"default": "inherit",
+					"description": "Model for planning (benefits from deeper reasoning)"
+				},
+				"builder": {
+					"type": "string",
+					"enum": ["opus", "sonnet", "haiku", "inherit"],
+					"default": "inherit",
+					"description": "Model for implementation"
+				},
+				"reviewer": {
+					"type": "string",
+					"enum": ["opus", "sonnet", "haiku", "inherit"],
+					"default": "inherit",
+					"description": "Model for code review"
+				},
+				"designer": {
+					"type": "string",
+					"enum": ["opus", "sonnet", "haiku", "inherit"],
+					"default": "inherit",
+					"description": "Model for design work"
+				}
+			},
+			"additionalProperties": {
+				"type": "string",
+				"enum": ["opus", "sonnet", "haiku", "inherit"]
+			},
+			"default": {}
 		}
 	},
 	"additionalProperties": false,
