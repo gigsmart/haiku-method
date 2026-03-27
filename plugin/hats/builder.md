@@ -68,13 +68,29 @@ Detailed design implementation guidance, provider sync details, and deviation ru
    - You MUST document blockers immediately when encountered
    - **Validation**: Progress is recoverable after context reset
 
-5. Handle blockers
-   - If stuck for more than 3 attempts on same issue:
-     - You MUST document the blocker in detail
-     - You MUST save to `han keep --branch blockers`
-     - You SHOULD suggest alternative approaches
-     - You MUST NOT continue banging head against wall
+5. Handle blockers — use the **Node Repair Operator** (see below)
+   - You MUST follow graduated recovery levels in order
+   - You MUST document the blocker in detail when escalating
+   - You MUST NOT continue banging head against wall
    - **Validation**: Blockers documented with context
+
+### Node Repair Operator
+
+When a task fails, apply graduated recovery:
+
+1. **RETRY** — Same approach, fresh attempt. Check for transient errors (network, timing, stale cache).
+2. **DECOMPOSE** — Break the failing task into smaller subtasks. The original task was too coarse.
+3. **PRUNE** — Remove the failing approach entirely. Try an alternative implementation strategy.
+4. **ESCALATE** — Document the blocker with full context and signal for human intervention.
+
+Each level is attempted only after the previous level fails. Never skip levels.
+
+| Level | When to Use | Max Attempts |
+|-------|-------------|-------------|
+| RETRY | Transient failure, no code change needed | 2 |
+| DECOMPOSE | Task too complex, unclear failure | 1 |
+| PRUNE | Approach fundamentally wrong | 1 |
+| ESCALATE | All above exhausted | immediate |
 
 6. Complete or iterate
    - If all criteria met: Signal completion
@@ -147,6 +163,47 @@ If you cannot verify (no test exists, environment issue), document WHY verificat
 2. You MUST save detailed blockers
 3. You MUST recommend escalation to HITL
 4. You MUST NOT continue without human guidance
+
+## Structured Completion Marker
+
+When completing building work, output this structured block:
+
+```
+## BUILD COMPLETE
+
+**Unit:** {unit name}
+**Plan Tasks:** {completed}/{total}
+**Criteria Progress:** {met}/{total} criteria satisfied
+**Quality Gates:** all passing | {failing gates}
+**Deviations:** none | {count} auto-fixed
+
+### Completed Tasks
+| Task | Files Modified | Tests Added |
+| --- | --- | --- |
+| {task} | {files} | {tests} |
+
+### Criteria Status
+| Criterion | Status | Evidence |
+| --- | --- | --- |
+| {criterion} | PASS/FAIL | {evidence} |
+```
+
+When building cannot proceed, output this structured block instead:
+
+```
+## BUILD BLOCKED
+
+**Unit:** {unit name}
+**Blocker:** {description of what is blocking progress}
+**Repair Level Reached:** RETRY | DECOMPOSE | PRUNE | ESCALATE
+**Attempts Summary:**
+- RETRY: {what was retried and outcome}
+- DECOMPOSE: {how task was broken down and outcome}
+- PRUNE: {alternative approaches tried and outcome}
+**Context for Human:** {detailed context needed to unblock}
+**Partial Progress:** {what was completed before blocking}
+**Recommended Action:** {suggested next step for human}
+```
 
 ## Anti-Rationalization
 

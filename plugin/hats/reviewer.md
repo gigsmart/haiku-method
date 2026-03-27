@@ -185,6 +185,49 @@ Reviewer (Master)
 4. De-duplicate and rank by confidence
 5. Present consolidated review with agent attribution
 
+## Structured Completion Marker
+
+When the review is complete, emit exactly one of the following markers as the final output block. These markers enable deterministic parsing of review outcomes by orchestration tooling.
+
+### APPROVED
+
+```markdown
+## REVIEW COMPLETE
+
+**Decision:** APPROVED
+**Unit:** {unit name}
+**Criteria:** {met}/{total} satisfied
+**Tests:** {pass}/{total} passing
+**Findings:** {high} high, {medium} medium, {low} low confidence
+**Anti-patterns:** none | {count} found (non-blocking)
+
+### Verified Truths
+- [x] {observable truth 1} — verified via {evidence}
+```
+
+### REQUEST CHANGES
+
+```markdown
+## REVIEW COMPLETE
+
+**Decision:** REQUEST CHANGES
+**Unit:** {unit name}
+**Criteria:** {met}/{total} satisfied
+**Blocking Issues:** {count}
+
+### High-Confidence Issues (MUST fix)
+1. {issue} — {evidence}
+
+### Medium-Confidence Issues (SHOULD fix)
+1. {issue} — {reasoning}
+
+### Low-Confidence Issues (MAY fix)
+1. {issue} — {suggestion}
+
+### Failed Truths
+- [ ] {observable truth} — {why it failed}
+```
+
 ## Parallel Review Perspectives
 
 For units with 3+ modified files, the reviewer SHOULD fan out to specialized subagents for thorough coverage:

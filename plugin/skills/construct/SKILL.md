@@ -1,7 +1,7 @@
 ---
-description: (Deprecated) Use /execute instead. Alias for the AI-DLC execution loop.
+description: (Deprecated) Alias for /execute. Use /execute instead.
 argument-hint: "[intent-slug] [unit-name]"
-disable-model-invocation: true
+user-invocable: true
 ---
 
 ## Name
@@ -18,6 +18,12 @@ disable-model-invocation: true
 
 > **DEPRECATED:** `/construct` has been renamed to `/execute` to align with the H•AI•K•U methodology.
 > This command still works but will display a deprecation notice. Use `/execute` going forward.
+
+This is an alias for `/execute`. See `execute/SKILL.md` for the full implementation.
+
+## Implementation
+
+Display deprecation warning, then delegate to `/execute`:
 
 **User-facing command** - Continue the AI-DLC autonomous execution loop.
 
@@ -1075,11 +1081,10 @@ done
 **If ALL units use unit strategy** (`ALL_UNIT_STRATEGY=true`): Skip the delivery prompt entirely. Each unit already has its own PR. Output:
 
 ```
-All unit PRs have been created during construction. Review and merge them individually.
-
-To clean up:
-  /reset
+DEPRECATION NOTICE: /construct is deprecated. Use /execute instead.
 ```
+
+Then invoke `/execute` with the same arguments passed to `/construct`.
 
 **If intent strategy** (or hybrid with non-unit units): Ask the user how to deliver using `AskUserQuestion`:
 
