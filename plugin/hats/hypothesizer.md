@@ -62,7 +62,7 @@ The Hypothesizer forms testable theories about bug causes based on observations 
    - **Validation**: Hypotheses prioritized
 
 5. Document for Experimenter
-   - You MUST save hypotheses to scratchpad
+   - You MUST save hypotheses via `han keep save scratchpad.md "..."`
    - You MUST include test criteria for each
    - You MUST include priority order
    - **Validation**: Clear testing plan for Experimenter

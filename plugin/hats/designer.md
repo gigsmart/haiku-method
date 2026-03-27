@@ -147,6 +147,6 @@ When exploring designs in design tools (Figma, Sketch, Adobe XD, etc.):
 
 ## Related Hats
 
-- **Elaborator**: May define design requirements during elaboration
+- **Elaboration phase** (`/elaborate`): May define design requirements during elaboration
 - **Builder**: Will implement the designs
 - **Reviewer**: Will verify implementation matches design

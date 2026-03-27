@@ -66,7 +66,7 @@ The Observer gathers data about a bug without jumping to conclusions (observatio
 6. Compile observations
    - You MUST organize all observations clearly
    - You MUST NOT include conclusions (only data)
-   - Save observations to `han keep --branch scratchpad`
+   - Save observations via `han keep save scratchpad.md "..."`
    - **Validation**: Observations compiled for Hypothesizer
 
 ## Success Criteria

@@ -208,7 +208,7 @@ if [ -d "$INTENT_DIR" ] && ls "$INTENT_DIR"/unit-*.md 1>/dev/null 2>&1; then
   fi
 fi
 
-# In team mode, hat instructions are embedded in teammate prompts by /construct
+# In team mode, hat instructions are embedded in teammate prompts by /execute
 # Skip here to avoid injecting the orchestrator's hat instead of the per-unit hat
 if [ -z "${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}" ]; then
   # Load role/hat instructions (builder/reviewer are orchestration roles)
@@ -347,7 +347,7 @@ if [ -n "${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}" ]; then
   echo ""
   echo "You are a **teammate** in an Agent Teams session."
   echo "- Report completion/issues to team lead via SendMessage"
-  echo "- Do NOT call /construct, /advance, or /fail — the lead handles orchestration"
+  echo "- Do NOT call /execute, /advance, or /fail — the lead handles orchestration"
   echo "- Use TaskUpdate to mark shared tasks as completed when done"
   echo "- Coordinate with other teammates through the team lead"
   echo ""

@@ -11,7 +11,7 @@
   "plugins": [
     {
       "name": "ai-dlc",
-      "description": "AI-DLC methodology - iterative AI-driven development with hat-based workflows, completion criteria, and automatic context preservation",
+      "description": "AI-DLC methodology - iterative AI-driven development with hat-based workflows, completion criteria, and automatic context preservation. Software development profile of the H\u2022AI\u2022K\u2022U Method.",
       "source": "./plugin",
       "category": "Pattern",
       "keywords": [

@@ -11,5 +11,6 @@ FILE=$(echo "$INPUT" | han parse json tool_input.file_path -r --default "" 2>/de
 # Skip .ai-dlc files (those are expected)
 [[ "$FILE" =~ /\.ai-dlc/ ]] && exit 0
 # Warn about source file edits outside hat context
-HAT=$(han keep load hat --quiet 2>/dev/null || echo "")
-[ -z "$HAT" ] && echo "⚠️ WORKFLOW GUARD: Editing $FILE outside of hat context. Consider running /construct first."
+ITERATION_JSON=$(han keep load iteration.json --quiet 2>/dev/null || echo "")
+HAT=$(echo "$ITERATION_JSON" | han parse json hat -r --default "" 2>/dev/null || echo "")
+[ -z "$HAT" ] && echo "⚠️ WORKFLOW GUARD: Editing $FILE outside of hat context. Consider running /execute first."

@@ -114,7 +114,7 @@ If the user invoked this with a slug argument:
 1. Check if `.ai-dlc/{slug}/intent.md` exists
 2. If it exists, check the intent and unit statuses:
    - **Skip if intent status is `complete`**: Tell the user "Intent `{slug}` is already completed. Run `/elaborate` without a slug to start a new intent." Then stop.
-   - **Skip if ANY unit has status `in_progress` or `completed`**: Construction has already started — elaboration would conflict with in-flight work. Tell the user "Intent `{slug}` already has units in progress or completed. Use `/resume {slug}` to continue construction or `/construct` to resume the build loop." Then stop.
+   - **Skip if ANY unit has status `in_progress` or `completed`**: Construction has already started — elaboration would conflict with in-flight work. Tell the user "Intent `{slug}` already has units in progress or completed. Use `/resume {slug}` to continue construction or `/execute` to resume the build loop." Then stop.
    - **Only proceed if ALL units have `status: pending`** (no work has begun yet):
 3. If all units are pending — **assume the user wants to modify the existing intent**:
    - Read ALL files in `.ai-dlc/{slug}/` directory
@@ -144,7 +144,7 @@ If the user invoked this with a slug argument:
          {"label": "Modify intent", "description": "Review and update the intent definition"},
          {"label": "Modify units", "description": "Adjust the unit breakdown"},
          {"label": "Start fresh", "description": "Delete and re-elaborate from scratch"},
-         {"label": "Looks good", "description": "Proceed to /construct as-is"}
+         {"label": "Looks good", "description": "Proceed to /execute as-is"}
        ],
        "multiSelect": false
      }]
@@ -154,7 +154,7 @@ If the user invoked this with a slug argument:
    - **Modify intent**: Jump to Phase 4 (Success Criteria) with current values pre-filled
    - **Modify units**: Jump to Phase 5 (Decompose) with current units shown
    - **Start fresh**: Delete `.ai-dlc/{slug}/` and proceed to Phase 1
-   - **Looks good**: Tell them to run `/construct` to begin
+   - **Looks good**: Tell them to run `/execute` to begin
 
 If no slug provided, or the intent doesn't exist, proceed to Phase 1.
 
@@ -1424,7 +1424,7 @@ fi
 han keep save intent-slug "{intent-slug}"
 ```
 
-**Note:** Do NOT save `iteration.json` here. Construction state (hat, iteration count, workflow, status) is initialized by `/construct` when the build loop starts. Elaboration only writes the spec artifacts and the intent slug.
+**Note:** Do NOT save `iteration.json` here. Construction state (hat, iteration count, workflow, status) is initialized by `/execute` when the build loop starts. Elaboration only writes the spec artifacts and the intent slug.
 
 ### 5. Commit any remaining artifacts on intent branch:
 
@@ -1780,7 +1780,7 @@ Tell the user:
 
 ```
 To start the autonomous build loop:
-  /construct
+  /execute
 
 The construction phase will iterate through each unit, using quality gates
 (tests, types, lint) as backpressure until all success criteria are met.
@@ -1833,7 +1833,7 @@ ${SUCCESS_CRITERIA_SECTION}
 ${UNIT_BREAKDOWN}
 
 ---
-*This is an AI-DLC spec review PR. Approve and run \`/construct\` to begin the autonomous build loop.*
+*This is an AI-DLC spec review PR. Approve and run \`/execute\` to begin the autonomous build loop.*
 EOF
 )"
 ```
@@ -1857,7 +1857,7 @@ fi
 Spec PR created: {PR_URL}
 
 Review the spec with your team. When approved, a developer can run:
-  /construct
+  /execute
 ```
 
 ### If local folder (cowork — no question needed):
@@ -1875,7 +1875,7 @@ These are ready to commit. From your project directory, run:
   git add .ai-dlc/{intent-slug}/
   git commit -m "elaborate: define intent and units for {intent-slug}"
 
-Then a developer can run `/construct` in Claude Code to start the build loop.
+Then a developer can run `/execute` in Claude Code to start the build loop.
 ```
 
 ### If Download as zip (cowork):
@@ -1897,5 +1897,5 @@ Spec packaged: {ZIP_PATH}
 To use this spec:
 1. Unzip into the project root (preserves the .ai-dlc/{intent-slug}/ structure)
 2. Commit the files
-3. Run /construct in Claude Code to start the build loop
+3. Run /execute in Claude Code to start the build loop
 ```

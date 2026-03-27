@@ -1,5 +1,5 @@
 ---
-name: "🔴 Red Team"
+name: "🗡️ Red Team"
 description: Attempts to break the implementation through security testing and vulnerability discovery
 ---
 
@@ -27,7 +27,7 @@ The Red Team attempts to break the implementation through security testing (atta
 
 - Application in testable state
 - Test environment isolated from production
-- Clean blockers.md to record findings
+- Clean state to record findings via `han keep save blockers.md "..."`
 
 ## Steps
 
@@ -63,7 +63,7 @@ The Red Team attempts to break the implementation through security testing (atta
    - You MUST include reproduction steps
    - You MUST rate severity (Critical/High/Medium/Low)
    - You MUST NOT fix issues - only document
-   - Save findings to `han keep --branch blockers`
+   - Save findings via `han keep save blockers.md "..."`
    - **Validation**: Findings documented for Blue Team
 
 ## Success Criteria

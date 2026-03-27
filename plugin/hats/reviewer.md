@@ -147,54 +147,51 @@ For each criterion being reviewed, apply the CoVe pattern:
 
 **Why:** Initial assessments based on code reading alone have a ~20% false positive rate (claiming PASS when the code actually fails). CoVe forces verification with evidence.
 
-### Master Reviewer Delegation
+### Review Delegation
 
-The reviewer hat acts as a **coordinator**, not a solo reviewer. It delegates to specialized review agents and consolidates findings.
+The reviewer hat acts as a **coordinator**, not a solo reviewer. For non-trivial units it delegates to specialized review agents and consolidates findings.
 
 **Architecture:**
 ```
 Reviewer (Master)
+  ├── Correctness Review Agent
   ├── Security Review Agent
   ├── Performance Review Agent
   ├── Architecture Review Agent
-  ├── Correctness Review Agent
   ├── Test Quality Review Agent
+  ├── Code Quality Review Agent
+  ├── Accessibility Review Agent
+  ├── Responsive Review Agent
   └── {domain-specific agents from review_agents config}
 ```
-
-**Pros of delegation:**
-- Each agent has focused context (not polluted by other concerns)
-- Parallel execution — all reviews run simultaneously
-- Specialized agents catch issues a generalist misses
-- Findings are already categorized by domain
-
-**Cons of delegation:**
-- More subagent spawns = more tokens
-- Need consolidation logic to merge overlapping findings
-- Overkill for small units (1-2 files changed)
 
 **When to delegate:**
 - **Always delegate** for units with 3+ modified files
 - **Always delegate** for units marked `high_stakes: true`
 - **Skip delegation** for units with 1-2 files — the reviewer hat handles these directly
 
-**How:**
-1. Master reviewer reads the unit, identifies which specialized agents to spawn (based on changed files and `review_agents` config)
-2. Spawn all applicable agents in parallel
+**Review agents:**
+
+| Agent | Focus | When to Activate |
+|-------|-------|-------------------|
+| **Correctness** | Edge cases, off-by-one, null handling, race conditions | Always — minimum viable review |
+| **Code Quality** | TODOs, stubs, console.log, hardcoded values | Always |
+| **Test Quality** | Meaningful assertions, coverage gaps, flaky patterns | When new tests were written |
+| **Security** | Injection, auth, data exposure, secrets, CSRF, input validation | Code handling user input, auth, or sensitive data |
+| **Performance** | N+1 queries, re-renders, memory leaks, large payloads | Database queries, API endpoints, rendering code |
+| **Architecture** | SOLID violations, coupling, abstraction boundaries | New modules, interface changes, boundary crossings |
+| **Accessibility** | Semantic HTML, keyboard nav, contrast, focus management | Frontend units |
+| **Responsive** | Breakpoint behavior, horizontal scroll | Frontend units |
+
+Additional domain-specific agents (Data Integrity, Schema Drift, Deployment Safety, etc.) are defined in `reviewer-reference.md` and activate based on changed file patterns.
+
+**How to delegate:**
+1. Read the unit, identify which agents to spawn based on changed files, unit discipline (frontend → accessibility + responsive), `review_agents` config, and `high_stakes` frontmatter
+2. Launch all applicable agents in parallel — each gets a focused prompt for its perspective only and scores findings as high/medium/low confidence
 3. Collect findings from all agents
-4. De-duplicate and rank by confidence
-5. Present consolidated review with agent attribution
-
-## Specialized Review Perspectives
-
-> **Note:** Domain-specific review checks (e.g., schema drift detection, security audit,
-> performance profiling) belong in `reviewer-reference.md` as specialized review agents
-> activated by file-pattern matching -- not in the general reviewer hat. When
-> `reviewer-reference.md` is added, register specialized agents there using the format:
->
-> | Agent | Detects | Activation File Patterns |
-> |-------|---------|--------------------------|
-> | **Schema Drift** | Unrelated schema changes, accidental migrations | Database files (`*.migration.*`, `schema.*`, `db/migrate/`) |
+4. De-duplicate identical findings across agents
+5. Elevate findings flagged by multiple agents (higher confidence)
+6. Present consolidated review with agent attribution
 
 ## Structured Completion Marker
 
@@ -239,27 +236,6 @@ When the review is complete, emit exactly one of the following markers as the fi
 - [ ] {observable truth} — {why it failed}
 ```
 
-## Parallel Review Perspectives
-
-For units with 3+ modified files, the reviewer SHOULD fan out to specialized subagents for thorough coverage:
-
-| Perspective | Focus | When to Use |
-|-------------|-------|-------------|
-| **Security** | Injection, auth, data exposure, secrets | Code handling user input, auth, or sensitive data |
-| **Performance** | N+1 queries, re-renders, memory leaks, large payloads | Database queries, API endpoints, rendering |
-| **Architecture** | SOLID violations, coupling, abstraction boundaries | New modules, interface changes, boundary crossings |
-| **Correctness** | Edge cases, off-by-one, null handling, race conditions | Always — minimum viable review |
-| **Test Quality** | Meaningful assertions, coverage gaps, flaky patterns | When new tests were written |
-
-### How to Fan Out
-
-Launch multiple review subagents in a single message. Each gets a focused prompt for its perspective only, scores findings as high/medium/low confidence.
-
-After all complete:
-1. De-duplicate identical findings across perspectives
-2. Elevate findings flagged by multiple perspectives (higher confidence)
-3. Consolidate into a single structured review output
-
 ## Success Criteria
 
 - [ ] All new code has corresponding tests
@@ -270,29 +246,6 @@ After all complete:
 - [ ] Security considerations checked
 - [ ] Clear decision: APPROVE or REQUEST CHANGES
 - [ ] Actionable feedback provided if changes requested
-
-### Specialized Pre-Delivery Reviews
-
-Instead of a static checklist, delegate pre-delivery verification to focused review agents:
-
-| Agent | Focus Area | Trigger |
-|-------|-----------|---------|
-| **Code Quality** | TODOs, stubs, console.log, hardcoded values | Always |
-| **Security** | Credentials, injection, CSRF, input validation | Code handling user input or auth |
-| **Performance** | N+1 queries, re-renders, memory leaks | Database or rendering code |
-| **Accessibility** | Semantic HTML, keyboard nav, contrast, focus | Frontend units |
-| **Responsive** | Breakpoint behavior, horizontal scroll | Frontend units |
-| **Test Coverage** | Missing tests, assertion quality, edge cases | Always |
-
-Each agent runs independently with a focused prompt. The master reviewer consolidates findings.
-
-**Activation:** The reviewer determines which agents to spawn based on:
-- Unit discipline (frontend → accessibility + responsive)
-- Changed file patterns (*.sql, migrations → performance)
-- `review_agents` settings config
-- `high_stakes: true` frontmatter
-
-This is more effective than a static checklist because each agent has dedicated context for its domain.
 
 ## Error Handling
 
@@ -326,26 +279,6 @@ This is more effective than a static checklist because each agent has dedicated 
 3. You MAY suggest follow-up Intent for cleanup
 4. Focus review on changes made in this Unit
 
-## Anti-Rationalization
-
-| Excuse | Reality |
-| --- | --- |
-| "The tests pass, so the code must be correct" | Tests only cover what they test. Check for missing test cases and edge cases. |
-| "The code looks clean, approve it" | Clean code that does not satisfy the Completion Criteria is still wrong. Verify each criterion. |
-| "This is a small change, no need for deep review" | Small changes cause production incidents too. Review proportionally, not perfunctorily. |
-| "I'll note the issue but approve anyway" | If the issue is blocking, request changes. Approving with known problems is not reviewing. |
-| "I read the code, that's enough" | Reading is not verifying. Run commands and check output programmatically. |
-
-## Red Flags
-
-- Approving without verifying each Completion Criterion individually
-- Not running the test suite yourself
-- Approving code that has no tests for new functionality
-- Providing vague feedback like "looks good" or "make it better"
-- Rubber-stamping because the Builder seems confident
-
-**All of these mean: STOP and re-read the unit's Completion Criteria.**
-
 ## Discipline Reference
 
 Anti-rationalization tables, red flags, and parallel review setup details are in the companion reference file.
@@ -359,4 +292,4 @@ Anti-rationalization tables, red flags, and parallel review setup details are in
 
 - **Builder**: Created the implementation being reviewed
 - **Planner**: May need to re-plan if changes requested
-- **Security** (Adversarial workflow): For deeper security review
+- **Red Team / Blue Team** (Adversarial workflow): For deeper security review

@@ -693,7 +693,7 @@ echo "### Never Stop Arbitrarily"
 echo ""
 echo "- You MUST NOT stop mid-bolt without saving state"
 echo "- If you need user input, use \`AskUserQuestion\` tool"
-echo "- If blocked, document in \`han keep save --branch blockers.md\`"
+echo "- If blocked, document in \`han keep save blockers.md\`"
 echo ""
 
 # Check branch naming convention (informational only)

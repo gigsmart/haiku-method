@@ -32,7 +32,7 @@ The Builder implements code to satisfy the Unit's Completion Criteria, using bac
 ## Steps
 
 1. Review plan and criteria
-   - You MUST read the current plan from `han keep --branch current-plan`
+   - You MUST read the current plan via `han keep load current-plan.md`
    - You MUST understand all Completion Criteria
    - You SHOULD identify which criteria to tackle first
    - You SHOULD reference design provider for UI specs if configured (Figma mockups, component specs)
@@ -161,7 +161,7 @@ If you cannot verify (no test exists, environment issue), document WHY verificat
 **Resolution**:
 1. You MUST document all approaches tried
 2. You MUST save detailed blockers
-3. You MUST recommend escalation to HITL
+3. You MUST recommend escalation to Human-in-the-Loop (HITL)
 4. You MUST NOT continue without human guidance
 
 ## Structured Completion Marker

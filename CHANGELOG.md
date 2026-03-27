@@ -787,6 +787,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.20.16] - 2026-03-11
 
+- Internal release with no user-facing changes
+
 ## [1.20.15] - 2026-03-11
 
 ### Changed
@@ -1108,6 +1110,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - remove intent ([0040b8c](../../commit/0040b8c))
 
 ## [1.3.1] - 2026-02-13
+
+- Internal release with no user-facing changes
 
 ## [1.3.0] - 2026-02-13
 

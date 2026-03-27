@@ -224,14 +224,14 @@ Hook only runs if matching files changed since last successful run.
 
 Start lenient, increase strictness as codebase matures:
 
-**Week 1:** Only test backpressure
+**Phase 1:** Only test backpressure
 ```yaml
 hooks:
   test:
     command: bun test
 ```
 
-**Week 2:** Add type checking
+**Phase 2:** Add type checking
 ```yaml
 hooks:
   test:
@@ -240,7 +240,7 @@ hooks:
     command: tsc --noEmit
 ```
 
-**Week 3:** Add linting
+**Phase 3:** Add linting
 ```yaml
 hooks:
   test:

@@ -228,7 +228,7 @@ AI-DLC uses Han's hook system:
 AI-DLC provides slash commands:
 
 - `/elaborate` - Start mob elaboration
-- `/construct` - Run autonomous construction loop
+- `/execute` - Run autonomous execution loop
 - `/advance` - Next hat (internal)
 - `/fail` - Previous hat (internal)
 - `/resume` - Resume lost intent

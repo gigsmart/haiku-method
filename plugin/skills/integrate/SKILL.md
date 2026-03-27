@@ -22,7 +22,7 @@ Unlike the Reviewer hat (which validates individual units), this skill validates
 
 ## Input
 
-This skill is invoked by `/advance` or `/construct` when all units are complete. It receives its context via the subagent prompt, including:
+This skill is invoked by `/advance` or `/execute` when all units are complete. It receives its context via the subagent prompt, including:
 
 - **Intent slug** - The intent being validated
 - **Worktree path** - Path to the intent worktree (contains all merged unit work)

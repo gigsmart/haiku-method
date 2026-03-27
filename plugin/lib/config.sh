@@ -11,6 +11,21 @@
 #   config=$(get_ai_dlc_config "$intent_dir")
 #   change_strategy=$(echo "$config" | jq -r '.change_strategy')
 
+# Guard: ensure jq is available (config.sh relies on it for JSON manipulation)
+if ! command -v jq >/dev/null 2>&1; then
+  echo "ai-dlc: config.sh requires 'jq' but it was not found in PATH." >&2
+  echo "ai-dlc: Install jq (https://jqlang.github.io/jq/download/) or ensure it is on your PATH." >&2
+  # Define stub functions so sourcing scripts don't get undefined-function errors
+  get_ai_dlc_config() { echo '{"change_strategy":"unit","elaboration_review":true,"default_branch":"main"}'; }
+  export_ai_dlc_config() { export AI_DLC_CHANGE_STRATEGY="unit" AI_DLC_ELABORATION_REVIEW="true" AI_DLC_DEFAULT_BRANCH="main" AI_DLC_AUTO_MERGE="false" AI_DLC_AUTO_SQUASH="false" AI_DLC_VCS="git"; }
+  get_config_value() { echo ""; }
+  load_quality_gates() { echo "{}"; }
+  run_quality_gates() { return 0; }
+  load_providers() { echo '{"spec":null,"ticketing":null,"design":null,"comms":null,"vcsHosting":null,"ciCd":null}'; }
+  format_providers_markdown() { echo "### Project Providers"; echo ""; echo "No providers configured (jq not available)."; }
+  return 0 2>/dev/null || exit 0
+fi
+
 # Default configuration values
 AI_DLC_DEFAULT_CHANGE_STRATEGY="unit"
 AI_DLC_DEFAULT_ELABORATION_REVIEW="true"

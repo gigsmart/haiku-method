@@ -1,0 +1,18 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://han.guru/schemas/providers/google-docs.schema.json",
+	"title": "Google Docs Provider Config",
+	"description": "Provider-specific configuration for Google Docs spec provider",
+	"type": "object",
+	"properties": {
+		"folder_id": {
+			"type": "string",
+			"description": "Google Drive folder ID where spec documents are stored"
+		},
+		"template_doc_id": {
+			"type": "string",
+			"description": "Google Docs template document ID for new spec pages"
+		}
+	},
+	"additionalProperties": false
+}

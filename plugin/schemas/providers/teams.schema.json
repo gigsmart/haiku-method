@@ -1,0 +1,18 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://han.guru/schemas/providers/teams.schema.json",
+	"title": "Microsoft Teams Provider Config",
+	"description": "Provider-specific configuration for Microsoft Teams comms provider",
+	"type": "object",
+	"properties": {
+		"team_id": {
+			"type": "string",
+			"description": "Microsoft Teams team ID"
+		},
+		"channel_id": {
+			"type": "string",
+			"description": "Default Teams channel ID for notifications"
+		}
+	},
+	"additionalProperties": false
+}

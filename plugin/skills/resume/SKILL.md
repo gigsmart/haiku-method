@@ -28,7 +28,7 @@ This happens when:
 SessionStart: "Resumable Intents Found: my-feature"
 User: /resume my-feature
 AI: Initialized state, continuing as builder...
-User: /construct
+User: /execute
 ...continues work...
 ```
 
@@ -166,8 +166,8 @@ If `AGENT_TEAMS_ENABLED` is set:
    - Note: Active teammates may need to be re-spawned if they were shut down
 
 2. **Team does not exist**:
-   - Save `teamName` to `iteration.json` (for `/construct` to create it)
-   - Note in output: "Team will be created when `/construct` runs"
+   - Save `teamName` to `iteration.json` (for `/execute` to create it)
+   - Note in output: "Team will be created when `/execute` runs"
 
 **Without Agent Teams:** Skip this step. No team management needed.
 
@@ -188,7 +188,7 @@ If `AGENT_TEAMS_ENABLED` is set:
 
 **Summary:** {completed}/{total} units completed
 
-**Next:** Run `/construct` to continue the construction loop.
+**Next:** Run `/execute` to continue the execution loop.
 
 Note: All AI-DLC work happens in the worktree at .ai-dlc/worktrees/{slug}/
 ```
@@ -254,7 +254,7 @@ AI: Found 1 resumable intent: han-team-platform
 
 **Summary:** 1/3 units completed
 
-**Next:** Run `/construct` to continue the construction loop.
+**Next:** Run `/execute` to continue the execution loop.
 ```
 
 ### Multiple Intents (Requires Selection)

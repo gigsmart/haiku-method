@@ -243,5 +243,5 @@ Re-queued units: {list of re-queued units}
 Unaffected units: {list of units that stay completed}
 
 To resume the build loop:
-  /construct
+  /execute
 ```

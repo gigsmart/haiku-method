@@ -1,5 +1,5 @@
 ---
-name: "🔵 Blue Team"
+name: "🛡️ Blue Team"
 description: Fixes vulnerabilities identified by Red Team with proper security controls and tests
 ---
 

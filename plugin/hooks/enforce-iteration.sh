@@ -112,10 +112,19 @@ if [ -n "$INTENT_SLUG" ]; then
 
     # Get DAG status
     if type get_dag_summary &>/dev/null; then
-      DAG_SUMMARY=$(get_dag_summary "$INTENT_DIR" 2>/dev/null || echo "{}")
-      READY_COUNT=$(echo "$DAG_SUMMARY" | han parse json readyCount -r --default 0 2>/dev/null || echo "0")
-      IN_PROGRESS_COUNT=$(echo "$DAG_SUMMARY" | han parse json inProgressCount -r --default 0 2>/dev/null || echo "0")
-      ALL_COMPLETE=$(echo "$DAG_SUMMARY" | han parse json allComplete -r --default false 2>/dev/null || echo "false")
+      DAG_SUMMARY=$(get_dag_summary "$INTENT_DIR" 2>/dev/null || echo "")
+      # Format: "pending:N in_progress:N completed:N blocked:N ready:N"
+      READY_COUNT=$(echo "$DAG_SUMMARY" | sed -n 's/.*ready:\([0-9]*\).*/\1/p')
+      IN_PROGRESS_COUNT=$(echo "$DAG_SUMMARY" | sed -n 's/.*in_progress:\([0-9]*\).*/\1/p')
+      PENDING=$(echo "$DAG_SUMMARY" | sed -n 's/.*pending:\([0-9]*\).*/\1/p')
+      BLOCKED=$(echo "$DAG_SUMMARY" | sed -n 's/.*blocked:\([0-9]*\).*/\1/p')
+      READY_COUNT=${READY_COUNT:-0}
+      IN_PROGRESS_COUNT=${IN_PROGRESS_COUNT:-0}
+      PENDING=${PENDING:-0}
+      BLOCKED=${BLOCKED:-0}
+      if [ "$READY_COUNT" -eq 0 ] && [ "$IN_PROGRESS_COUNT" -eq 0 ] && [ "$PENDING" -eq 0 ] && [ "$BLOCKED" -eq 0 ]; then
+        ALL_COMPLETE="true"
+      fi
     fi
   fi
 fi

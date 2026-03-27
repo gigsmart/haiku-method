@@ -192,7 +192,7 @@ git add .ai-dlc/seeds/ && git commit -m "seed: check and update seed statuses"
 
 ## Auto-Surfacing During Elaboration
 
-During the elaboration phase (Phase 1 of the AI-DLC), the elaborate skill should check for relevant seeds:
+During the elaboration phase, the elaborate skill should check for relevant seeds:
 
 ```bash
 # At the start of elaboration, check for relevant seeds

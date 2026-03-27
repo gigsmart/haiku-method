@@ -1,0 +1,18 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://han.guru/schemas/providers/discord.schema.json",
+	"title": "Discord Provider Config",
+	"description": "Provider-specific configuration for Discord comms provider",
+	"type": "object",
+	"properties": {
+		"guild_id": {
+			"type": "string",
+			"description": "Discord server (guild) ID"
+		},
+		"channel_id": {
+			"type": "string",
+			"description": "Default Discord channel ID for notifications"
+		}
+	},
+	"additionalProperties": false
+}

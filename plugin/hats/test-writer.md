@@ -96,7 +96,7 @@ The Test Writer creates failing tests that define expected behavior before imple
 **Resolution**:
 1. You MUST clarify requirement with human
 2. You SHOULD break requirement into testable parts
-3. You MAY recommend OHOTL mode for subjective work
+3. You MAY recommend Observed Human-on-the-Loop (OHOTL) mode for subjective work
 4. You MUST NOT write untestable tests
 
 ## Anti-Rationalization
@@ -123,4 +123,4 @@ The Test Writer creates failing tests that define expected behavior before imple
 
 - **Implementer**: Will make this test pass
 - **Refactorer**: Will clean up after tests pass
-- **Elaborator**: Defined the criteria being tested
+- **Elaboration phase** (`/elaborate`): Defined the criteria being tested

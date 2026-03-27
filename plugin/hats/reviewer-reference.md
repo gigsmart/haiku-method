@@ -12,6 +12,9 @@ Companion to the Reviewer hat. Loaded on-demand for discipline checks and parall
 | "We can fix this in the next bolt" | The next bolt inherits this bolt's debt. Fix now. |
 | "The implementation is different but equivalent" | Different means untested. Verify equivalence. |
 | "I trust the builder's judgment" | Trust but verify. Read the code, don't just scan it. |
+| "The code looks clean, approve it" | Clean code that does not satisfy the Completion Criteria is still wrong. Verify each criterion. |
+| "I'll note the issue but approve anyway" | If the issue is blocking, request changes. Approving with known problems is not reviewing. |
+| "I read the code, that's enough" | Reading is not verifying. Run commands and check output programmatically. |
 
 ## Red Flags
 

@@ -39,7 +39,7 @@ Autopilot is designed for straightforward features. It pauses and returns contro
 1. **Pause on blockers or ambiguity** - Never guess. If elaboration or execution encounters something unclear, stop and ask.
 2. **Pause if elaboration generates more than 5 units** - Confirm scope with the user before proceeding to execution. More than 5 units suggests the feature may be too large or complex for autopilot.
 3. **Pause before creating PR** - Always confirm with the user before delivery. Show a summary of what was built across all units.
-4. **Config-aware mode** - Uses `workflow_mode: autonomous` from project config (`.ai-dlc/config.yml`) if available. Falls back to interactive mode for any decision that could go wrong.
+4. **Config-aware mode** - Uses `workflow_mode: autonomous` from project config (`.ai-dlc/settings.yml`) if available. Falls back to interactive mode for any decision that could go wrong.
 5. **No silent failures** - If any phase fails, stop immediately and report what happened. Do not attempt to recover autonomously from phase-level failures.
 
 ---
@@ -86,7 +86,7 @@ Invoke `/elaborate` with the provided feature description in autonomous mode:
 
 **After elaboration completes, apply guardrails:**
 
-1. Read the generated unit specs from `.ai-dlc/{intent-slug}/units/`
+1. Read the generated unit specs from `.ai-dlc/{intent-slug}/unit-*.md`
 2. Count the number of units
 3. **If more than 5 units:** STOP and present the unit list to the user:
    ```

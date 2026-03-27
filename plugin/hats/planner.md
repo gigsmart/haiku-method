@@ -26,7 +26,7 @@ The Planner reviews the current Unit and creates a tactical execution plan for t
 
 ### Required State
 
-- `han keep --branch active-intent` set
+- Active intent set (`han keep load intent-slug` returns a value)
 - Unit file exists with criteria defined
 
 ### Git History Analysis
@@ -97,32 +97,6 @@ If relevant learnings are found:
 3. Incorporate key insights into the plan
 4. Reference the learning file in the plan for traceability
 
-### Relevance-Ranked Learning Search
-
-When searching `docs/solutions/` for relevant learnings, use a multi-signal ranking approach:
-
-1. **Frontmatter match (highest signal)** — Exact matches on `tags`, `module`, `component` fields
-2. **Title match (high signal)** — Keywords from the current unit appear in the learning title
-3. **Category match (medium signal)** — Learning category matches the unit's discipline (e.g., `debugging` category for a bug fix unit)
-4. **Content match (lower signal)** — Keywords appear in the body text
-
-**Search strategy:**
-```bash
-# Phase 1: Frontmatter-first (high precision)
-grep -rl "tags:.*${TECHNOLOGY}" docs/solutions/ | head -5
-grep -rl "module: ${MODULE}" docs/solutions/ | head -5
-
-# Phase 2: Category narrowing
-ls docs/solutions/${CATEGORY}/ 2>/dev/null | head -10
-
-# Phase 3: Content search (if Phase 1-2 yield <3 results)
-grep -rl "${KEYWORD}" docs/solutions/ | head -5
-```
-
-**Always read:** `docs/solutions/patterns/critical-patterns.md` (if it exists) — this file contains patterns that apply to ALL work, regardless of search results.
-
-**Read strategy:** Read only frontmatter (~30 lines) first to assess relevance. Full-read only files where frontmatter signals strong relevance. Never bulk-read all learnings.
-
 ## Steps
 
 1. Review current state
@@ -150,11 +124,11 @@ grep -rl "${KEYWORD}" docs/solutions/ | head -5
 4. Identify risks
    - You MUST flag potential blockers before they occur
    - You SHOULD suggest fallback approaches
-   - You MAY recommend mode change if AHOTL is struggling
+   - You MAY recommend mode change if Autonomous Human-on-the-Loop (AHOTL) is struggling
    - **Validation**: Risks documented with mitigations
 
 5. Save plan
-   - You MUST save plan to `han keep --branch current-plan`
+   - You MUST save plan via `han keep save current-plan.md "..."`
    - You SHOULD include specific files to modify
    - You MUST include verification steps
    - **Validation**: Plan saved and readable
@@ -183,7 +157,7 @@ For complex units (3+ tasks, unfamiliar technology, or high-risk changes), deepe
 - [ ] Plan is specific and actionable
 - [ ] Plan addresses previous blockers if any
 - [ ] Risks identified with mitigations
-- [ ] Plan saved to `han keep --branch current-plan`
+- [ ] Plan saved via `han keep save current-plan.md "..."`
 
 ## Structured Completion Marker
 
@@ -224,7 +198,7 @@ If planning cannot proceed:
 **Symptoms**: Multiple bolts with same blockers, no progress
 
 **Resolution**:
-1. You MUST recommend escalation to HITL mode
+1. You MUST recommend escalation to Human-in-the-Loop (HITL) mode
 2. You SHOULD suggest architectural alternatives
 3. You MAY recommend splitting the Unit differently
 4. You MUST document the pattern of failures for human review
@@ -237,7 +211,7 @@ If planning cannot proceed:
 1. You MUST flag this to the user immediately
 2. You SHOULD propose modified criteria that are achievable
 3. You MUST NOT proceed with impossible criteria
-4. Return to Elaborator hat to revise criteria
+4. Return to the `/elaborate` skill to revise criteria
 
 ### Error: Unclear What Remains
 
@@ -291,6 +265,6 @@ Rules can come from:
 
 ## Related Hats
 
-- **Elaborator**: Created the Unit this hat is planning for
+- **Elaboration phase** (`/elaborate`): Created the Unit this hat is planning for
 - **Builder**: Will execute the plan this hat creates
 - **Reviewer**: Will verify the Builder's work

@@ -15,7 +15,7 @@ user-invocable: false
 
 ## Description
 
-**Internal command** - Called by the AI during `/construct`, not directly by users.
+**Internal command** - Called by the AI during `/execute`, not directly by users.
 
 Advances to the next hat in the workflow sequence. For example, in the default workflow:
 - planner -> builder (plan ready, now implement)
@@ -154,8 +154,8 @@ if [ -n "$TARGET_UNIT" ] && [ "$TARGET_UNIT" = "$CURRENT_UNIT" ]; then
   echo "The targeted unit has finished its workflow."
   echo ""
   echo "**Next steps:**"
-  echo "- Run \`/construct\` to continue with the next ready unit"
-  echo "- Run \`/construct <unit-name>\` to target another specific unit"
+  echo "- Run \`/execute\` to continue with the next ready unit"
+  echo "- Run \`/execute <unit-name>\` to target another specific unit"
   echo "- Run \`/advance\` if all units are complete"
   exit 0
 fi
@@ -302,7 +302,7 @@ git commit -m "status: mark intent ${INTENT_SLUG} as complete"
 if (dagSummary.readyCount > 0) {
   // MORE UNITS READY - Loop back to builder
   state.hat = workflow[2] || "builder";  // Reset to builder (index 2 in default workflow)
-  state.currentUnit = null;  // Will be set by /construct when it picks next unit
+  state.currentUnit = null;  // Will be set by /execute when it picks next unit
   // han keep save iteration.json '<updated JSON>'
   return `Unit completed. ${dagSummary.readyCount} more unit(s) ready. Continuing construction...`;
 }
@@ -316,7 +316,7 @@ ${dagSummary.blockedUnits.join('\n')}
 Review blockers and unblock units to continue.`;
 ```
 
-### Step 2d: Spawn Newly Unblocked Units (Agent Teams)
+### Step 2e: Spawn Newly Unblocked Units (Agent Teams)
 
 When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is enabled and completing a unit unblocks new units:
 
@@ -336,9 +336,9 @@ If `AGENT_TEAMS_ENABLED` is set and `readyCount > 0` after completing a unit:
 
 This replaces the sequential "loop back to builder" behavior when Agent Teams is active. Instead of the lead picking up the next unit sequentially, newly unblocked units are spawned as parallel teammates immediately.
 
-**Without Agent Teams:** The existing behavior (reset hat to builder, let `/construct` pick next unit) continues unchanged.
+**Without Agent Teams:** The existing behavior (reset hat to builder, let `/execute` pick next unit) continues unchanged.
 
-### Step 2e: Integration Validation (When All Units Complete)
+### Step 2f: Integration Validation (When All Units Complete)
 
 When `dagSummary.allComplete` is true and `state.integratorComplete` is not true, run integration validation instead of marking the intent complete.
 
@@ -424,10 +424,10 @@ GLOBAL_FIRST_HAT=$(echo "$INTENT_WORKFLOW_HATS" | jq -r '.[0]')
 STATE=$(echo "$STATE" | han parse json --set "hat=${GLOBAL_FIRST_HAT}" --set "integratorComplete=false")
 han keep save iteration.json "$STATE"
 
-# Output: "Integration rejected. Re-queued units: {list}. Run /construct to continue."
+# Output: "Integration rejected. Re-queued units: {list}. Run /execute to continue."
 ```
 
-The re-queued units will be picked up on the next `/construct` cycle through the normal DAG-based unit selection.
+The re-queued units will be picked up on the next `/execute` cycle through the normal DAG-based unit selection.
 
 ### Step 3: Update State
 
@@ -444,7 +444,7 @@ if [ "$ITERATION" -ge "$MAX_ITERATIONS" ]; then
   echo "Construction has reached ${MAX_ITERATIONS} iterations without completing."
   echo "This likely indicates poorly specified criteria or a systematic issue."
   echo ""
-  echo "**Action required:** Review the intent and unit specs, then run \`/construct\` to resume."
+  echo "**Action required:** Review the intent and unit specs, then run \`/execute\` to resume."
   STATE=$(echo "$STATE" | han parse json --set "status=blocked" --set "iteration=$ITERATION")
   han keep save iteration.json "$STATE"
   exit 0

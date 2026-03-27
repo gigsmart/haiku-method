@@ -15,7 +15,7 @@ user-invocable: false
 
 ## Description
 
-**Internal command** - Called by the AI during `/construct`, not directly by users.
+**Internal command** - Called by the AI during `/execute`, not directly by users.
 
 Goes back to the previous hat in the workflow. Typically used when:
 - Reviewer finds issues -> return to builder

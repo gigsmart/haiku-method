@@ -15,7 +15,7 @@ Used across 32 files (hooks, skills, hats, docs) for persisting state that survi
 
 **What it does:** Stores key-value pairs scoped to a git branch. Under the hood, `han keep` uses git notes or a similar git-native mechanism to attach arbitrary data to branches without polluting the working tree.
 
-**Current usage (155 references across 32 files):**
+**Current usage (~115 references across 32 files):**
 - `han keep save <key> <content>` — persist ephemeral state
 - `han keep load <key> --quiet` — retrieve state
 - `han keep delete <key>` — remove a key
@@ -38,7 +38,7 @@ Used across 32 files (hooks, skills, hats, docs) for persisting state that survi
 | `providers.json` | intent branch | Cached MCP provider discovery |
 
 ### 2. `han parse` — YAML/JSON parsing utility
-Used across 13 files (107 occurrences) for parsing YAML frontmatter and manipulating JSON. This is a **utility dependency**, not a state dependency.
+Used across 13 files (~145 occurrences) for parsing YAML frontmatter and manipulating JSON. This is a **utility dependency**, not a state dependency.
 
 **Current usage:**
 - `han parse yaml <field> -r` — extract YAML field
@@ -57,6 +57,7 @@ Used across 13 files (107 occurrences) for parsing YAML frontmatter and manipula
 2. **Opaque storage** — `han keep` stores data in a way that's invisible to standard git tools (not in working tree, not easily inspectable).
 3. **Cross-branch complexity** — The `--branch` flag for accessing intent-level state from unit branches adds complexity and potential race conditions.
 4. **Two concerns conflated** — `han keep` (state storage) and `han parse` (YAML/JSON parsing) are unrelated capabilities bundled in one tool.
+5. **`han hook` wrapper** — `hooks.json` uses `han hook wrap-subagent-context` to wrap the subagent context hook. This is a third dependency on the `han` CLI beyond state and parsing.
 
 ---
 
@@ -302,7 +303,7 @@ Update all skills that use `han keep` (advance, blockers, completion-criteria, c
 Update references in hat markdown files (builder, experimenter, observer, planner, red-team).
 
 ### Unit 7: Migrate Config Libraries
-Update `config.sh` and `config.ts` to remove `han keep`/`han parse` dependencies.
+Update `config.sh` to remove `han keep`/`han parse` dependencies. Replace `han hook wrap-subagent-context` in `hooks.json` with a direct hook script.
 
 ### Unit 8: Simplify iteration.json
 Remove redundant `unitStates` field, add formal phase enum, reduce parsing overhead.

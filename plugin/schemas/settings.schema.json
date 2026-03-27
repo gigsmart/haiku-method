@@ -94,23 +94,6 @@
 				"enum": ["opus", "sonnet", "haiku", "inherit"]
 			},
 			"default": {}
-		},
-		"review_agents": {
-			"type": "object",
-			"description": "Configure which specialized review agents run for this project",
-			"properties": {
-				"security": { "type": "boolean", "default": true },
-				"performance": { "type": "boolean", "default": true },
-				"architecture": { "type": "boolean", "default": true },
-				"correctness": { "type": "boolean", "default": true },
-				"test_quality": { "type": "boolean", "default": true },
-				"data_integrity": { "type": "boolean", "default": false },
-				"schema_drift": { "type": "boolean", "default": false },
-				"accessibility": { "type": "boolean", "default": false },
-				"api_contract": { "type": "boolean", "default": false },
-				"design_system": { "type": "boolean", "default": false }
-			},
-			"default": {}
 		}
 	},
 	"additionalProperties": false,
@@ -166,6 +149,10 @@
 				{
 					"if": { "properties": { "type": { "const": "confluence" } } },
 					"then": { "properties": { "config": { "$ref": "providers/confluence.schema.json" } } }
+				},
+				{
+					"if": { "properties": { "type": { "const": "google-docs" } } },
+					"then": { "properties": { "config": { "$ref": "providers/google-docs.schema.json" } } }
 				}
 			]
 		},
@@ -259,6 +246,14 @@
 				{
 					"if": { "properties": { "type": { "const": "slack" } } },
 					"then": { "properties": { "config": { "$ref": "providers/slack.schema.json" } } }
+				},
+				{
+					"if": { "properties": { "type": { "const": "teams" } } },
+					"then": { "properties": { "config": { "$ref": "providers/teams.schema.json" } } }
+				},
+				{
+					"if": { "properties": { "type": { "const": "discord" } } },
+					"then": { "properties": { "config": { "$ref": "providers/discord.schema.json" } } }
 				}
 			]
 		},
