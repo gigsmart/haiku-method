@@ -537,6 +537,27 @@ Use `AskUserQuestion` to validate:
 
 **Do NOT proceed past this phase until the user confirms the domain model is accurate.** If they identify gaps, explore more. This is the foundation everything else builds on.
 
+### Visual Brainstorming
+
+For UI-heavy intents, support visual brainstorming alongside the terminal conversation:
+
+1. **Generate wireframes/diagrams** — When discussing UI flows or architecture, generate HTML wireframes or Mermaid diagrams
+2. **Open in browser** — Use `open` (macOS) or `xdg-open` (Linux) to display visuals:
+   ```bash
+   # Architecture diagram
+   echo '<mermaid diagram>' > /tmp/aidlc-brainstorm.html && open /tmp/aidlc-brainstorm.html
+
+   # UI wireframe
+   echo '<wireframe html>' > /tmp/aidlc-wireframe.html && open /tmp/aidlc-wireframe.html
+   ```
+3. **Iterate visually** — After the user reviews, update and reopen. The visual and terminal conversation run in parallel.
+4. **Persist approved visuals** — Save approved wireframes/diagrams to `.ai-dlc/{intent-slug}/mockups/`
+
+This is most useful during:
+- Phase 2.5 (domain discovery) — architecture diagrams
+- Phase 5 (unit decomposition) — flow diagrams showing unit dependencies
+- Phase 6.25 (wireframes) — already handled by elaborate-wireframes skill
+
 ---
 
 ## Phase 3: Discover Hats and Select Workflow
