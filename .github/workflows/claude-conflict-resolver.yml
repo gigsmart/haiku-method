@@ -14,15 +14,8 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
-      id-token: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Find conflicting PRs
-        id: find-conflicts
+      - name: Find and trigger resolution for conflicting PRs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -33,55 +26,40 @@ jobs:
             echo "Attempt $attempt: checking mergeability..."
             sleep $(( attempt * 10 ))
 
-            ALL_PRS=$(gh pr list --base main --state open --json number,mergeable 2>/dev/null || echo "[]")
+            ALL_PRS=$(gh pr list --base main --state open --json number,mergeable --repo "$GITHUB_REPOSITORY" 2>/dev/null || echo "[]")
             UNKNOWN_COUNT=$(echo "$ALL_PRS" | jq '[.[] | select(.mergeable == "UNKNOWN")] | length')
+            CONFLICT_COUNT=$(echo "$ALL_PRS" | jq '[.[] | select(.mergeable == "CONFLICTING")] | length')
 
-            echo "  UNKNOWN: $UNKNOWN_COUNT"
+            echo "  UNKNOWN: $UNKNOWN_COUNT, CONFLICTING: $CONFLICT_COUNT"
 
-            # If no PRs are UNKNOWN, GitHub has finished calculating
             if [ "$UNKNOWN_COUNT" -eq 0 ]; then
-              CONFLICTING=$(echo "$ALL_PRS" | jq -r '[.[] | select(.mergeable == "CONFLICTING")] | .[].number' | tr '\n' ' ')
+              CONFLICTING=$(echo "$ALL_PRS" | jq -r '[.[] | select(.mergeable == "CONFLICTING")] | .[].number')
               break
             fi
 
-            # On last attempt, take whatever we have
             if [ "$attempt" -eq 6 ]; then
-              CONFLICTING=$(echo "$ALL_PRS" | jq -r '[.[] | select(.mergeable == "CONFLICTING")] | .[].number' | tr '\n' ' ')
+              CONFLICTING=$(echo "$ALL_PRS" | jq -r '[.[] | select(.mergeable == "CONFLICTING")] | .[].number')
             fi
           done
 
-          CONFLICTING=$(echo "$CONFLICTING" | xargs)  # trim whitespace
-
           if [ -z "$CONFLICTING" ]; then
             echo "No conflicting PRs found"
-            echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          echo "Conflicting PRs: $CONFLICTING"
-          echo "has_conflicts=true" >> "$GITHUB_OUTPUT"
-          echo "pr_numbers=$CONFLICTING" >> "$GITHUB_OUTPUT"
+          echo "Conflicting PRs found: $CONFLICTING"
 
-      - name: Resolve conflicts with Claude
-        if: steps.find-conflicts.outputs.has_conflicts == 'true'
-        uses: anthropics/claude-code-action@v1
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          allowed_bots: '*'
-          prompt: |
-            The following PRs have merge conflicts with main after a recent push: ${{ steps.find-conflicts.outputs.pr_numbers }}
+          # Comment @claude on each conflicting PR to trigger the mention bot
+          for PR_NUM in $CONFLICTING; do
+            BRANCH=$(gh pr view "$PR_NUM" --json headRefName --jq '.headRefName' --repo "$GITHUB_REPOSITORY")
+            echo "Triggering conflict resolution for PR #$PR_NUM ($BRANCH)..."
 
-            For each conflicting PR number:
+            gh pr comment "$PR_NUM" --repo "$GITHUB_REPOSITORY" --body "@claude This PR has merge conflicts with main. Please resolve them:
 
-            1. Check out the PR branch: `git fetch origin && git checkout <branch>`
-            2. Attempt to merge main: `git merge origin/main`
-            3. If there are conflicts, resolve them by:
-               - Reading both sides of each conflict
-               - Keeping BOTH changes where they don't actually conflict (most common case — both sides added different content)
-               - For true conflicts (same lines changed differently), prefer the PR branch's intent while incorporating main's updates
-            4. After resolving: `git add <resolved files> && git commit -m "merge: resolve conflicts with main" && git push origin <branch>`
-            5. Comment on the PR: "Automatically resolved merge conflicts with main."
+          1. Merge origin/main into this branch
+          2. Resolve any conflicts by keeping both sides' changes where possible
+          3. For true conflicts, preserve this PR's intent while incorporating main's updates
+          4. Commit and push the resolution"
+          done
 
-            If a conflict is too complex to resolve automatically (e.g., architectural changes on both sides), comment on the PR explaining what conflicts exist and that manual resolution is needed.
-
-            Process each PR independently. A failure on one PR should not block others.
+          echo "Posted @claude comments on $(echo "$CONFLICTING" | wc -w | xargs) PRs"
