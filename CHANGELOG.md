@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.55.0] - 2026-03-27
+
+### Added
+
+- add anti-patterns guidance for constraining agent output ([884deb8](../../commit/884deb8))
+
+### Other
+
+- Merge pull request #36 from TheBushidoCollective/eco/criteria-anti-patterns ([bf50145](../../commit/bf50145))
+
 ## [1.54.0] - 2026-03-27
 
 ### Added
