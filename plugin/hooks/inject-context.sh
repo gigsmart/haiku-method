@@ -415,15 +415,16 @@ if [ -n "$PROJECT_MATURITY" ]; then
   echo ""
 fi
 
-# Load project-level learnings from prior reflections (.claude/memory/learnings.md)
-# These are distilled insights captured when intents are closed via /reflect
-LEARNINGS_FILE=".claude/memory/learnings.md"
-if [ -f "$LEARNINGS_FILE" ]; then
-  echo "### Learnings from Previous Intents"
-  echo ""
-  # Show last 50 lines to keep context lean
-  tail -n 50 "$LEARNINGS_FILE"
-  echo ""
+# Lazy learnings injection — count-based pointer instead of eager loading
+LEARNINGS_DIR="docs/solutions"
+if [ -d "$LEARNINGS_DIR" ]; then
+  LEARNING_COUNT=$(find "$LEARNINGS_DIR" -name "*.md" -type f 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$LEARNING_COUNT" -gt 0 ]; then
+    echo ""
+    echo "📚 **${LEARNING_COUNT} compound learnings available** in \`docs/solutions/\`."
+    echo "The Planner hat will search these automatically before planning."
+    echo "Use \`/compound\` to capture new learnings."
+  fi
 fi
 
 # Batch load all han keep values at once (single subprocess call)
@@ -622,6 +623,7 @@ if [ -n "$HAT_FILE" ] && [ -f "$HAT_FILE" ]; then
   if [ -n "$INSTRUCTIONS" ]; then
     echo "$INSTRUCTIONS"
   fi
+
 else
   # No hat file found - show generic message
   echo "**$HAT** (Custom hat - no instructions found)"

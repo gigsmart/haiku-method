@@ -111,7 +111,7 @@ npx han plugin install jutsu-ruff --scope project
 npx han plugin install jutsu-go --scope project
 ```
 
-> **Note:** Jutsu plugins follow the same installation pattern via Han. To install via Claude Code directly, use `/plugin marketplace add` and `/plugin install` with the appropriate marketplace identifier for each plugin.
+> **Note:** Han plugins follow the same installation pattern. To install via Claude Code directly, use `/plugin marketplace add` and `/plugin install` with the appropriate marketplace identifier for each plugin.
 
 These plugins provide:
 - **Type checking** that blocks on errors
