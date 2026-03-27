@@ -48,7 +48,23 @@ Run review in two distinct passes. Combining them into one pass leads to either 
 
 ## Steps
 
-1. Verify test coverage
+1. Goal-backward verification
+   - You MUST ask: "What must be TRUE for this unit's intent to be achieved?"
+   - You MUST ask: "What must EXIST for those truths to hold?"
+   - You MUST ask: "What must be WIRED for those artifacts to function?"
+   - You MUST enumerate observable truths, not just check task completion
+   - You MUST NOT trust claims in scratchpad/summaries — verify against actual code
+   - **Validation**: Observable truths enumerated with evidence
+
+2. Verify artifacts at three levels
+   - **Existence**: Does the artifact exist on disk?
+   - **Substance**: Is it meaningful (not a stub, not empty, not TODO)?
+   - **Wiring**: Is it imported, referenced, and used by the rest of the system?
+   - You MUST check all three levels for each critical artifact
+   - You MUST flag stubs, empty implementations, and TODO comments
+   - **Validation**: Each artifact verified at all three levels
+
+3. Verify test coverage
    - You MUST verify that unit tests exist for all new and modified code
    - You MUST run the full test suite and confirm all tests pass
    - You MUST check that tests are meaningful (not just asserting `true`)
@@ -56,7 +72,7 @@ Run review in two distinct passes. Combining them into one pass leads to either 
    - You SHOULD verify integration tests exist for component boundaries
    - **Validation**: All new code has corresponding tests, all tests pass
 
-2. Verify criteria satisfaction
+4. Verify criteria satisfaction
    - You MUST check each Completion Criterion individually
    - You MUST run verification commands, not just read code
    - You MUST NOT assume - verify programmatically
@@ -64,21 +80,21 @@ Run review in two distinct passes. Combining them into one pass leads to either 
    - You SHOULD cross-reference design provider for visual/UX compliance if configured. When comparing implementation to designs, match colors against the project's named color tokens (design tokens, CSS custom properties, theme variables) — not raw hex values. If the design contains annotations (callouts, arrows, measurement labels, descriptive text), treat them as implementation guidance that should have been followed, not UI elements that should have been rendered.
    - **Validation**: Each criterion marked pass/fail with evidence
 
-3. Review code quality
+5. Review code quality
    - You MUST check for security vulnerabilities
    - You SHOULD verify code follows project patterns
    - You MUST identify any code that is hard to maintain
    - You MUST NOT modify code - only provide feedback
    - **Validation**: Quality issues documented
 
-4. Scan for anti-patterns
+6. Scan for anti-patterns
    - You MUST search for TODO/FIXME comments in changed files
    - You MUST check for empty function bodies or stub implementations
    - You MUST identify console.log-only functions or placeholder components
    - You MUST flag hardcoded values that should be configurable
    - **Validation**: Anti-pattern scan documented
 
-5. Score and classify findings
+7. Score and classify findings
    - You MUST assign each finding a confidence level:
      - **High**: Deterministic — test fails, type error, missing import, criterion unmet. Auto-fixable.
      - **Medium**: Likely correct but context-dependent — naming, structure, design choices.
@@ -88,26 +104,26 @@ Run review in two distinct passes. Combining them into one pass leads to either 
    - Low-confidence issues MUST NOT block approval
    - **Validation**: All findings scored and classified
 
-6. Check edge cases
+8. Check edge cases
    - You MUST verify error handling is appropriate
    - You SHOULD check boundary conditions
    - You MUST identify missing test cases
    - **Validation**: Edge cases documented
 
-7. Provide structured feedback
+9. Provide structured feedback
    - You MUST be specific about what needs changing
    - You SHOULD explain why changes are needed
    - You MUST prioritize feedback (high → medium → low confidence)
    - You MUST NOT fail a review for low-confidence issues alone
    - **Validation**: Feedback structured by confidence level
 
-8. Make decision
-   - If all criteria pass, tests pass, and quality acceptable: APPROVE
-   - If criteria fail, tests missing, or blocking issues: REQUEST CHANGES
-   - You MUST document decision clearly
-   - You MUST NOT approve if criteria are not met
-   - You MUST NOT approve if new code lacks tests
-   - **Validation**: Clear approve/reject with rationale
+10. Make decision
+    - If all criteria pass, tests pass, and quality acceptable: APPROVE
+    - If criteria fail, tests missing, or blocking issues: REQUEST CHANGES
+    - You MUST document decision clearly
+    - You MUST NOT approve if criteria are not met
+    - You MUST NOT approve if new code lacks tests
+    - **Validation**: Clear approve/reject with rationale
 
 #### Provider Sync — Review Outcome
 - If a `ticket` field exists in the reviewed unit's frontmatter:
@@ -116,6 +132,41 @@ Run review in two distinct passes. Combining them into one pass leads to either 
   - If **rejecting**: keep ticket as **In Progress**, add rejection feedback as comment
 - **MAY** post a summary of the review outcome to the comms provider (if configured)
 - If MCP tools are unavailable, skip silently — never block review on provider sync
+
+### Chain-of-Verification (CoVe)
+
+For each criterion being reviewed, apply the CoVe pattern:
+
+1. **Initial assessment** — Form an initial judgment (PASS/FAIL) based on code reading
+2. **Generate verification questions** — Create 2-3 questions that would prove/disprove your judgment:
+   - "If this criterion is met, what should I observe when I run X?"
+   - "If this is working correctly, what should the output of Y be?"
+   - "If this handles edge case Z, what happens when I..."
+3. **Answer questions with evidence** — Actually run the verification (execute tests, check outputs, trace code paths)
+4. **Revise if needed** — If evidence contradicts your initial judgment, update it
+
+**Why:** Initial assessments based on code reading alone have a ~20% false positive rate (claiming PASS when the code actually fails). CoVe forces verification with evidence.
+
+## Parallel Review Perspectives
+
+For units with 3+ modified files, the reviewer SHOULD fan out to specialized subagents for thorough coverage:
+
+| Perspective | Focus | When to Use |
+|-------------|-------|-------------|
+| **Security** | Injection, auth, data exposure, secrets | Code handling user input, auth, or sensitive data |
+| **Performance** | N+1 queries, re-renders, memory leaks, large payloads | Database queries, API endpoints, rendering |
+| **Architecture** | SOLID violations, coupling, abstraction boundaries | New modules, interface changes, boundary crossings |
+| **Correctness** | Edge cases, off-by-one, null handling, race conditions | Always — minimum viable review |
+| **Test Quality** | Meaningful assertions, coverage gaps, flaky patterns | When new tests were written |
+
+### How to Fan Out
+
+Launch multiple review subagents in a single message. Each gets a focused prompt for its perspective only, scores findings as high/medium/low confidence.
+
+After all complete:
+1. De-duplicate identical findings across perspectives
+2. Elevate findings flagged by multiple perspectives (higher confidence)
+3. Consolidate into a single structured review output
 
 ### Chain-of-Verification (CoVe)
 
@@ -196,6 +247,26 @@ This is more effective than a static checklist because each agent has dedicated 
 2. You MUST NOT block approval for pre-existing problems
 3. You MAY suggest follow-up Intent for cleanup
 4. Focus review on changes made in this Unit
+
+## Anti-Rationalization
+
+| Excuse | Reality |
+| --- | --- |
+| "The tests pass, so the code must be correct" | Tests only cover what they test. Check for missing test cases and edge cases. |
+| "The code looks clean, approve it" | Clean code that does not satisfy the Completion Criteria is still wrong. Verify each criterion. |
+| "This is a small change, no need for deep review" | Small changes cause production incidents too. Review proportionally, not perfunctorily. |
+| "I'll note the issue but approve anyway" | If the issue is blocking, request changes. Approving with known problems is not reviewing. |
+| "I read the code, that's enough" | Reading is not verifying. Run commands and check output programmatically. |
+
+## Red Flags
+
+- Approving without verifying each Completion Criterion individually
+- Not running the test suite yourself
+- Approving code that has no tests for new functionality
+- Providing vague feedback like "looks good" or "make it better"
+- Rubber-stamping because the Builder seems confident
+
+**All of these mean: STOP and re-read the unit's Completion Criteria.**
 
 ## Discipline Reference
 

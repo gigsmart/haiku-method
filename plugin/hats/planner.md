@@ -29,6 +29,74 @@ The Planner reviews the current Unit and creates a tactical execution plan for t
 - `han keep --branch active-intent` set
 - Unit file exists with criteria defined
 
+### Git History Analysis
+
+Before planning changes to existing code, analyze its evolution:
+
+```bash
+# Find files that will be modified by this unit
+# Then check their change frequency and recent authors
+for file in {files-to-modify}; do
+  echo "## $file"
+  echo "Change frequency (last 6 months):"
+  git log --oneline --since="6 months ago" -- "$file" | wc -l
+  echo "Recent changes:"
+  git log --oneline -5 -- "$file"
+  echo "Contributors:"
+  git log --format="%an" --since="6 months ago" -- "$file" | sort -u
+done
+```
+
+**Use this to inform planning:**
+- **High churn files** (>10 changes in 6 months) — likely complex, plan extra review time
+- **Multiple contributors** — coordinate, check for in-flight work
+- **Recent refactors** — understand the direction the code is moving
+- **Stable files** (0-1 changes) — changes here may surprise maintainers, plan communication
+
+
+### Relevance-Ranked Learning Search
+
+When searching `docs/solutions/` for relevant learnings, use a multi-signal ranking approach:
+
+1. **Frontmatter match (highest signal)** — Exact matches on `tags`, `module`, `component` fields
+2. **Title match (high signal)** — Keywords from the current unit appear in the learning title
+3. **Category match (medium signal)** — Learning category matches the unit's discipline (e.g., `debugging` category for a bug fix unit)
+4. **Content match (lower signal)** — Keywords appear in the body text
+
+**Search strategy:**
+```bash
+# Phase 1: Frontmatter-first (high precision)
+grep -rl "tags:.*${TECHNOLOGY}" docs/solutions/ | head -5
+grep -rl "module: ${MODULE}" docs/solutions/ | head -5
+
+# Phase 2: Category narrowing
+ls docs/solutions/${CATEGORY}/ 2>/dev/null | head -10
+
+# Phase 3: Content search (if Phase 1-2 yield <3 results)
+grep -rl "${KEYWORD}" docs/solutions/ | head -5
+```
+
+**Always read:** `docs/solutions/patterns/critical-patterns.md` (if it exists) — this file contains patterns that apply to ALL work, regardless of search results.
+
+**Read strategy:** Read only frontmatter (~30 lines) first to assess relevance. Full-read only files where frontmatter signals strong relevance. Never bulk-read all learnings.
+
+## Learning Retrieval
+
+Before creating the plan, search for relevant past learnings:
+
+```bash
+# Search docs/solutions/ for learnings relevant to this unit
+grep -rl "tags:.*{technology}" docs/solutions/ 2>/dev/null | head -10
+grep -rl "module: {module}" docs/solutions/ 2>/dev/null | head -10
+```
+
+If relevant learnings are found:
+
+1. Read only the frontmatter (~30 lines) to assess relevance
+2. Full-read only strongly relevant files
+3. Incorporate key insights into the plan
+4. Reference the learning file in the plan for traceability
+
 ### Relevance-Ranked Learning Search
 
 When searching `docs/solutions/` for relevant learnings, use a multi-signal ranking approach:
@@ -179,6 +247,24 @@ If planning cannot proceed:
 1. You MUST run verification commands to check each criterion
 2. You SHOULD document current state explicitly
 3. You MUST NOT guess - verify programmatically
+
+## Anti-Rationalization
+
+| Excuse | Reality |
+| --- | --- |
+| "The requirements are clear enough" | Verify programmatically - assumptions compound. |
+| "We can figure it out during building" | Unclear plans produce unclear code. |
+| "This is too small to plan" | Small tasks still need verification steps. |
+| "Just repeat the approach that almost worked" | If it failed before, you need a different angle. |
+
+## Red Flags
+
+- Planning without reading the Completion Criteria
+- Copying a previous failed plan without changes
+- Not identifying risks or blockers up front
+- Skipping verification steps in the plan
+
+**All of these mean: STOP and re-read the unit's Completion Criteria.**
 
 ### Rule-Based Decision Filtering
 

@@ -109,6 +109,26 @@ The Experimenter tests hypotheses systematically to identify root cause (experim
 3. Experiments may have revealed new clues
 4. Document what was learned
 
+## Anti-Rationalization
+
+| Excuse | Reality |
+| --- | --- |
+| "I can tell this hypothesis is right without testing" | Intuition is not evidence. Run the experiment. |
+| "The first experiment confirmed it, move on" | One run is not proof. Check for consistency and confounding factors. |
+| "I changed two things but that's basically one variable" | Two changes means you cannot attribute the result. Isolate strictly. |
+| "The result was inconclusive, but probably confirmed" | Inconclusive means inconclusive. Refine the experiment or move on. |
+| "I don't need to document this, I'll remember" | You will not remember. Context resets are real. Write it down. |
+
+## Red Flags
+
+- Skipping lower-priority hypotheses after an early "confirmation"
+- Changing multiple variables in a single experiment
+- Not recording observations or results
+- Declaring a hypothesis confirmed on inconclusive evidence
+- Jumping straight to the Analyst hat without documenting findings
+
+**All of these mean: STOP and re-read the unit's Completion Criteria.**
+
 ## Related Hats
 
 - **Hypothesizer**: Provided the hypotheses

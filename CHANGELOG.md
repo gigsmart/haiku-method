@@ -5,6 +5,130 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.70.1] - 2026-03-27
+
+### Fixed
+
+- use direct_prompt with matrix strategy for conflict resolution ([8c90fc7](../../commit/8c90fc7))
+
+## [1.70.0] - 2026-03-27
+
+### Added
+
+- add git history analysis to inform planning decisions ([238d504](../../commit/238d504))
+- add git history analysis to inform planning decisions ([246c657](../../commit/246c657))
+- add git history analysis to inform planning decisions ([b3f5b6c](../../commit/b3f5b6c))
+
+### Other
+
+- Merge pull request #76 from TheBushidoCollective/eco/git-history ([8c4692d](../../commit/8c4692d))
+- resolve conflicts with main ([cfc47f3](../../commit/cfc47f3))
+
+## [1.68.1] - 2026-03-27
+
+### Added
+
+- add workflow mode and granularity tuning ([aff733c](../../commit/aff733c))
+
+### Fixed
+
+- restore executable permissions on shell scripts ([b751920](../../commit/b751920))
+
+### Other
+
+- Merge pull request #62 from TheBushidoCollective/eco/config-system ([80196fd](../../commit/80196fd))
+- Merge pull request #49 from TheBushidoCollective/eco/compound-reflect-docs ([5174bda](../../commit/5174bda))
+- resolve conflicts with main ([d6366a7](../../commit/d6366a7))
+- resolve conflicts with main ([b6c4d3b](../../commit/b6c4d3b))
+- Merge remote-tracking branch 'origin/main' into eco/compound-reflect-docs ([e40be8b](../../commit/e40be8b))
+- remove temp files ([0c1663b](../../commit/0c1663b))
+- checking commit permissions ([be3cc91](../../commit/be3cc91))
+- resolve conflicts with main (add review_agents, config precedence, phase 4c) ([3acfe0c](../../commit/3acfe0c))
+- add reflect integration lifecycle documentation ([b5a664d](../../commit/b5a664d))
+
+## [1.68.0] - 2026-03-27
+
+### Added
+
+- add DOT flowchart process authority guideline ([041e102](../../commit/041e102))
+
+### Other
+
+- Merge pull request #47 from TheBushidoCollective/eco/dot-flowcharts ([2c3429c](../../commit/2c3429c))
+- resolve conflicts with main ([fcf8bd5](../../commit/fcf8bd5))
+- sync branch with main (unrelated histories) ([46557d4](../../commit/46557d4))
+- resolve conflicts with main, keep DOT flowcharts and hard gates ([0f3981c](../../commit/0f3981c))
+
+## [1.67.0] - 2026-03-27
+
+### Added
+
+- add model profiles for cost-optimized hat routing ([801229b](../../commit/801229b))
+
+### Fixed
+
+- add missing sections from main and align version ([c33b7d1](../../commit/c33b7d1))
+- use load_repo_settings + jq for model_profiles resolution ([25275ee](../../commit/25275ee))
+- restore sections accidentally dropped from main ([7d38fde](../../commit/7d38fde))
+
+### Other
+
+- Merge pull request #45 from TheBushidoCollective/eco/model-profiles ([22b0986](../../commit/22b0986))
+- resolve conflicts with main ([fe2d383](../../commit/fe2d383))
+- resolve conflicts with main ([38a8bcd](../../commit/38a8bcd))
+
+## [1.66.0] - 2026-03-27
+
+### Added
+
+- add learning retrieval before planning ([0cf3fa1](../../commit/0cf3fa1))
+
+### Fixed
+
+- restore accidentally dropped Structured Completion Marker section ([a37b4f2](../../commit/a37b4f2))
+
+### Other
+
+- Merge pull request #31 from TheBushidoCollective/eco/planner-learning ([1e33278](../../commit/1e33278))
+- Merge branch 'eco/planner-learning' of github.com:TheBushidoCollective/ai-dlc into eco/planner-learning ([40a5ad6](../../commit/40a5ad6))
+- resolve conflicts with main ([e4e0105](../../commit/e4e0105))
+- incorporate main's learning search enhancements into planner ([0389bde](../../commit/0389bde))
+
+## [1.64.0] - 2026-03-27
+
+### Added
+
+- add parallel review perspectives for multi-file units ([1bb3fa4](../../commit/1bb3fa4))
+
+### Fixed
+
+- restore Two-Stage Review section missing from main ([f2a013a](../../commit/f2a013a))
+- resolve conflicts with main — restore missing steps and section order ([59ded75](../../commit/59ded75))
+- restore CoVe and Specialized Pre-Delivery Reviews sections ([7a38399](../../commit/7a38399))
+
+### Other
+
+- Merge pull request #29 from TheBushidoCollective/eco/reviewer-parallel ([270aeb7](../../commit/270aeb7))
+- Merge branch 'eco/reviewer-parallel' of github.com:TheBushidoCollective/ai-dlc into eco/reviewer-parallel ([61b7a5b](../../commit/61b7a5b))
+- resolve conflicts with main ([4f4e456](../../commit/4f4e456))
+
+## [1.63.0] - 2026-03-27
+
+### Added
+
+- add anti-rationalization tables and red flags to all 13 hats ([968b27b](../../commit/968b27b))
+- add goal-backward verification and three-level artifact checks ([2c2e0ad](../../commit/2c2e0ad))
+
+### Other
+
+- Merge pull request #28 from TheBushidoCollective/eco/anti-rationalization ([731b01c](../../commit/731b01c))
+- resolve conflicts with main ([61019da](../../commit/61019da))
+- resolve conflicts with main ([42bb0c6](../../commit/42bb0c6))
+- resolve conflicts with main ([657ad42](../../commit/657ad42))
+- resolve conflicts with main ([feb99da](../../commit/feb99da))
+- sync branch with main (v1.61.1) and integrate goal-backward steps ([fae06a8](../../commit/fae06a8))
+- resolve conflicts with main, integrating goal-backward steps with anti-patterns, confidence scoring, CoVe, and specialized reviews ([db3379b](../../commit/db3379b))
+
 ## [1.62.3] - 2026-03-27
 
 ### Fixed

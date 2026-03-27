@@ -96,6 +96,26 @@ The Implementer writes the minimal code necessary to make failing tests pass (GR
 3. You MAY ask for clarification from human
 4. Trust the test unless clearly wrong
 
+## Anti-Rationalization
+
+| Excuse | Reality |
+| --- | --- |
+| "I'll add a little extra functionality while I'm here" | Extra functionality without tests is untested code. Stay minimal. |
+| "This implementation needs to be clean from the start" | Clean is the Refactorer's job. Your job is GREEN, not pretty. |
+| "The test seems wrong, I'll adjust it slightly" | Tests are the spec. Do not change them - implement what they demand. |
+| "I need to refactor this existing code to make my test pass" | Refactoring now changes behavior unpredictably. Make it pass first, refactor second. |
+| "Hard-coding the value feels wrong" | If it makes the test pass and is minimal, it is correct for this phase. |
+
+## Red Flags
+
+- Writing code that is not required by the current failing test
+- Refactoring or optimizing before the test is green
+- Modifying the test to match your implementation
+- Implementing a generalized solution when a simple one suffices
+- Not running the full test suite after making the test pass
+
+**All of these mean: STOP and re-read the unit's Completion Criteria.**
+
 ## Related Hats
 
 - **Test Writer**: Wrote the test being implemented

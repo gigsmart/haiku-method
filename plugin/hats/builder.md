@@ -148,6 +148,27 @@ If you cannot verify (no test exists, environment issue), document WHY verificat
 3. You MUST recommend escalation to HITL
 4. You MUST NOT continue without human guidance
 
+## Anti-Rationalization
+
+| Excuse | Reality |
+| --- | --- |
+| "I'll fix the lint/type errors later" | Backpressure exists to catch mistakes now. Later never comes. |
+| "The tests are wrong, not my code" | Tests are the spec. If they fail, your implementation is wrong until proven otherwise. |
+| "This is close enough to the criteria" | Close enough is not done. Verify each criterion explicitly. |
+| "I'll clean up the code after it works" | Uncomitted messy code gets lost on context reset. Commit working increments. |
+| "I've been stuck but one more try will work" | Three failed attempts means document the blocker and stop. |
+| "The plan doesn't apply to this edge case" | If the plan is wrong, return to Planner. Do not freelance. |
+
+## Red Flags
+
+- Disabling lint rules or type checks to make code pass
+- Building without reading the Completion Criteria first
+- Skipping backpressure checks between increments
+- Continuing past three failed attempts without documenting a blocker
+- Not committing working increments
+
+**All of these mean: STOP and re-read the unit's Completion Criteria.**
+
 ### Version-Aware Building
 
 Track changes for rollback capability during construction:

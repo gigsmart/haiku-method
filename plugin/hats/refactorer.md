@@ -108,6 +108,26 @@ The Refactorer improves code quality while keeping tests green (REFACTOR phase o
 3. You MUST NOT refactor unrelated code
 4. Complete this cycle, then move on
 
+## Anti-Rationalization
+
+| Excuse | Reality |
+| --- | --- |
+| "I'll just make this one big refactor" | Big refactors break things. One small change at a time, tests between each. |
+| "The tests will still pass, I'm just renaming" | Run the tests. Renaming breaks more than you expect. |
+| "This unrelated code could use cleanup too" | Stay in scope. Refactoring unrelated code is scope creep, not diligence. |
+| "I should extract this abstraction now" | Rule of three - do not abstract until you see the pattern repeated. |
+| "The code works, I'll skip tests this time" | Skipping tests during refactoring is how you introduce silent regressions. |
+
+## Red Flags
+
+- Making multiple changes before running tests
+- Refactoring code that was not part of the current implementation
+- Adding new functionality disguised as "cleanup"
+- Over-abstracting with premature patterns or frameworks
+- Not committing after each successful refactoring step
+
+**All of these mean: STOP and re-read the unit's Completion Criteria.**
+
 ## Related Hats
 
 - **Implementer**: Wrote the code being refactored

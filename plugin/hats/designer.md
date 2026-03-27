@@ -125,6 +125,26 @@ When exploring designs in design tools (Figma, Sketch, Adobe XD, etc.):
 3. You MAY propose simpler alternative
 4. Document technical questions for engineering review
 
+## Anti-Rationalization
+
+| Excuse | Reality |
+| --- | --- |
+| "The first design idea is good enough" | Exploring alternatives is how you find the right design. Commit to exploration. |
+| "Accessibility can be added later" | Retrofitting accessibility is always harder. Design it in from the start. |
+| "Users will figure it out" | If you have to say that, the UX is unclear. |
+| "We don't need responsive specs for this" | Every interface will be viewed on unexpected screen sizes. |
+| "The color looks close enough" | Use named tokens, not visual approximation. Close enough creates inconsistency. |
+
+## Red Flags
+
+- Presenting only one design option without exploring alternatives
+- Skipping accessibility requirements in the design spec
+- Using raw hex colors instead of named design tokens
+- Not specifying interaction states (hover, focus, error, disabled)
+- Making design decisions without presenting trade-offs to the user
+
+**All of these mean: STOP and re-read the unit's Completion Criteria.**
+
 ## Related Hats
 
 - **Elaborator**: May define design requirements during elaboration

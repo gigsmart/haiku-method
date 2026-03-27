@@ -178,3 +178,21 @@ Other potential learnings detected in this session:
 
 Run `/compound {topic}` to capture a specific one.
 ```
+
+## Integration with /reflect
+
+When `/reflect` runs after intent completion, it aggregates all compound learnings:
+
+1. **During reflection** — `/reflect` scans `docs/solutions/` for learnings related to the intent's units, identifies cross-cutting patterns, and includes them in the reflection artifact
+2. **Feedback loop** — Patterns identified during reflection can inform the next intent's planning phase via the Planner's learning retrieval
+3. **Knowledge persistence** — Compound learnings persist in `docs/solutions/` across intents, building institutional knowledge over time
+
+### Lifecycle
+
+```
+Build → encounter problem → /compound captures learning → docs/solutions/{category}/{slug}.md
+                                                                    ↓
+Intent completes → /reflect aggregates learnings → cross-cutting patterns identified
+                                                                    ↓
+Next intent → Planner searches docs/solutions/ → incorporates past learnings into plan
+```
