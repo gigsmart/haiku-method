@@ -37,6 +37,48 @@ allowed-tools:
   - "mcp__*__add*comment*"
 ---
 
+### Phase Customization
+
+AI-DLC supports per-phase customization via markdown files in `.ai-dlc/`:
+
+| File | Phase | Purpose |
+|------|-------|---------|
+| `.ai-dlc/ELABORATION.md` | Elaboration | Custom elaboration instructions, domain context, preferred patterns |
+| `.ai-dlc/PLANNING.md` | Planning | Planning constraints, preferred approaches, architectural guidance |
+| `.ai-dlc/BUILDING.md` | Building | Implementation conventions, coding standards, tooling preferences |
+| `.ai-dlc/REVIEW.md` | Review | Review focus areas, acceptance standards, quality thresholds |
+
+**How it works:** At the start of each phase, check for the corresponding customization file. If it exists, read it and incorporate its guidance alongside the hat/skill instructions.
+
+```bash
+PHASE_FILE=".ai-dlc/${PHASE_NAME}.md"
+if [ -f "$PHASE_FILE" ]; then
+  # Read and incorporate into phase context
+  cat "$PHASE_FILE"
+fi
+```
+
+**These files follow Claude's rules pattern:**
+- Plain markdown with instructions
+- User-editable without plugin knowledge
+- Project-specific (committed to repo)
+- Override general hat behavior with project context
+
+**Example `.ai-dlc/ELABORATION.md`:**
+```markdown
+# Elaboration Customization
+
+## Domain Context
+This is a fintech application. All features must consider:
+- PCI compliance for payment data
+- Multi-currency support
+- Audit logging for financial transactions
+
+## Preferred Patterns
+- Use event sourcing for state changes
+- Prefer CQRS for read/write separation
+```
+
 # AI-DLC Mob Elaboration
 
 You are the **Elaborator** starting the AI-DLC Mob Elaboration ritual. Your job is to collaboratively define:
@@ -54,6 +96,8 @@ Then you'll write these as files in `.ai-dlc/{intent-slug}/` for the constructio
 ---
 
 ## Phase 0 (Pre-check): Environment Check
+
+**Phase customization:** Before starting, check for `.ai-dlc/ELABORATION.md`. If it exists, read it and incorporate its guidance throughout the elaboration process. This file contains project-specific domain context, preferred patterns, and custom instructions that supplement these skill instructions.
 
 Before any elaboration, verify the working environment:
 

@@ -622,6 +622,21 @@ if [ -n "$HAT_FILE" ] && [ -f "$HAT_FILE" ]; then
   if [ -n "$INSTRUCTIONS" ]; then
     echo "$INSTRUCTIONS"
   fi
+# Inject phase customization file if it exists (.ai-dlc/PHASE_NAME.md)
+# Maps hat names to phase customization files following Claude's rules pattern
+PHASE_CUSTOM_FILE=""
+case "$HAT" in
+  planner) PHASE_CUSTOM_FILE=".ai-dlc/PLANNING.md" ;;
+  builder|implementer) PHASE_CUSTOM_FILE=".ai-dlc/BUILDING.md" ;;
+  reviewer) PHASE_CUSTOM_FILE=".ai-dlc/REVIEW.md" ;;
+esac
+if [ -n "$PHASE_CUSTOM_FILE" ] && [ -f "$PHASE_CUSTOM_FILE" ]; then
+  echo ""
+  echo "### Project Phase Customization"
+  echo ""
+  cat "$PHASE_CUSTOM_FILE"
+  echo ""
+fi
 else
   # No hat file found - show generic message
   echo "**$HAT** (Custom hat - no instructions found)"

@@ -140,34 +140,6 @@ When working with designs from design tools (Figma, Sketch, Adobe XD, etc.):
 3. You MUST recommend escalation to HITL
 4. You MUST NOT continue without human guidance
 
-### Data-Driven Configuration
-
-When the project has domain-specific rules that shouldn't be hardcoded in hat definitions, look for external data files:
-
-**Locations to check:**
-- `.ai-dlc/rules/` — project-specific rules in YAML/CSV format
-- `docs/conventions/` — documented conventions
-- `.ai-dlc/{intent}/rules/` — intent-specific rules
-
-**Example: component naming rules**
-```yaml
-# .ai-dlc/rules/component-naming.yml
-prefix: "App"
-suffix: ""
-style: PascalCase
-exceptions:
-  - layouts: "use kebab-case"
-  - utils: "use camelCase"
-```
-
-**How to use:**
-1. Before implementing, check for applicable rule files
-2. If rules exist, follow them over general conventions
-3. If rules conflict with hat guidance, rules take precedence (they're project-specific)
-4. If no rules exist, follow hat guidance and suggest creating rule files for future consistency
-
-This pattern keeps domain knowledge in data files that non-technical users can edit, rather than buried in AI-DLC plugin configuration.
-
 ## Related Hats
 
 - **Planner**: Created the plan being executed

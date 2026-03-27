@@ -212,6 +212,21 @@ if [ -z "${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}" ]; then
     echo "**$HAT** orchestrates work by spawning discipline-specific agents based on unit requirements."
     echo ""
   fi
+
+  # Inject phase customization file if it exists (.ai-dlc/PHASE_NAME.md)
+  # Maps hat names to phase customization files following Claude's rules pattern
+  PHASE_CUSTOM_FILE=""
+  case "$HAT" in
+    planner) PHASE_CUSTOM_FILE=".ai-dlc/PLANNING.md" ;;
+    builder|implementer) PHASE_CUSTOM_FILE=".ai-dlc/BUILDING.md" ;;
+    reviewer) PHASE_CUSTOM_FILE=".ai-dlc/REVIEW.md" ;;
+  esac
+  if [ -n "$PHASE_CUSTOM_FILE" ] && [ -f "$PHASE_CUSTOM_FILE" ]; then
+    echo "### Project Phase Customization"
+    echo ""
+    cat "$PHASE_CUSTOM_FILE"
+    echo ""
+  fi
 fi
 
 # Inject H•AI•K•U organizational memory (if workspace configured)
