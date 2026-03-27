@@ -1513,7 +1513,7 @@ TICKETING_TYPE=$(echo "$PROVIDERS" | jq -r '.ticketing.type // empty')
 TICKETING_CONFIG=$(echo "$PROVIDERS" | jq -c '.ticketing.config // {}')
 ```
 
-If `TICKETING_TYPE` is empty, skip this phase entirely and proceed to Phase 7.
+If `TICKETING_TYPE` is empty, skip this phase entirely and proceed to Phase 7 (Spec Review).
 
 ### Step 2: Write ticket sync brief
 
@@ -1573,9 +1573,9 @@ Skill("elaborate-ticket-sync", args: ".ai-dlc/{INTENT_SLUG}/.briefs/elaborate-ti
 
 Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-ticket-sync-results.md`.
 
-- If `status: skipped` — ticketing not configured or MCP tools unavailable, proceed to Phase 7
-- If `status: error` — report the errors to the user. If `validation_passed: false`, the subagent already retried. Log the failures and proceed to Phase 7 (never block elaboration on ticket sync failure)
-- If `status: success` — log the epic key and ticket keys, confirm validation passed, proceed to Phase 7
+- If `status: skipped` — ticketing not configured or MCP tools unavailable, proceed to Phase 7 (Spec Review)
+- If `status: error` — report the errors to the user. If `validation_passed: false`, the subagent already retried. Log the failures and proceed to Phase 7 (Spec Review) (never block elaboration on ticket sync failure)
+- If `status: success` — log the epic key and ticket keys, confirm validation passed, proceed to Phase 7 (Spec Review)
 
 Commit the ticket sync artifacts (updated intent.md and unit files with ticket keys, plus the results brief):
 
@@ -1586,7 +1586,63 @@ git commit -m "elaborate(${INTENT_SLUG}): sync tickets to provider"
 
 ---
 
-## Phase 7: Handoff
+## Phase 7: Spec Review
+
+Before construction begins, run an automated spec review to catch issues early.
+
+Launch a review subagent:
+
+```javascript
+Agent({
+  subagent_type: "general-purpose",
+  description: "spec review: ${intentSlug}",
+  prompt: `
+    Review the intent and unit specifications for completeness and consistency.
+
+    ## Files to Review
+    - .ai-dlc/${intentSlug}/intent.md
+    - .ai-dlc/${intentSlug}/unit-*.md
+
+    ## Review Checklist
+
+    ### Completeness
+    - [ ] Every unit has success criteria
+    - [ ] Every unit has a description
+    - [ ] Dependencies (depends_on) reference existing units
+    - [ ] No circular dependencies
+    - [ ] All units have a discipline assigned
+    - [ ] Design units have workflow: design
+
+    ### Consistency
+    - [ ] Unit numbering is sequential (no gaps)
+    - [ ] Unit slugs match file names
+    - [ ] Success criteria are verifiable (not vague)
+    - [ ] Boundaries don't overlap between units
+
+    ### YAGNI
+    - [ ] No units that aren't required by the intent's success criteria
+    - [ ] No over-specified technical details that constrain implementation unnecessarily
+    - [ ] Scope matches what the user asked for (no scope creep)
+
+    ## Output
+
+    Report findings as:
+    - **PASS**: Spec is ready for construction
+    - **WARN**: Issues found but not blocking (list them)
+    - **FAIL**: Critical issues that must be fixed (list them)
+
+    For FAIL findings, suggest specific fixes.
+  `
+})
+```
+
+If the review returns FAIL, present the findings to the user via `AskUserQuestion` and ask whether to fix the issues or proceed anyway.
+
+If PASS or WARN, output the review summary and proceed.
+
+---
+
+## Phase 8: Handoff
 
 Present the elaboration summary:
 
