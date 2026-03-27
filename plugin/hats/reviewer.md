@@ -83,6 +83,20 @@ The Reviewer verifies that the Builder's implementation satisfies the Unit's Com
 - **MAY** post a summary of the review outcome to the comms provider (if configured)
 - If MCP tools are unavailable, skip silently — never block review on provider sync
 
+### Chain-of-Verification (CoVe)
+
+For each criterion being reviewed, apply the CoVe pattern:
+
+1. **Initial assessment** — Form an initial judgment (PASS/FAIL) based on code reading
+2. **Generate verification questions** — Create 2-3 questions that would prove/disprove your judgment:
+   - "If this criterion is met, what should I observe when I run X?"
+   - "If this is working correctly, what should the output of Y be?"
+   - "If this handles edge case Z, what happens when I..."
+3. **Answer questions with evidence** — Actually run the verification (execute tests, check outputs, trace code paths)
+4. **Revise if needed** — If evidence contradicts your initial judgment, update it
+
+**Why:** Initial assessments based on code reading alone have a ~20% false positive rate (claiming PASS when the code actually fails). CoVe forces verification with evidence.
+
 ### Master Reviewer Delegation
 
 The reviewer hat acts as a **coordinator**, not a solo reviewer. It delegates to specialized review agents and consolidates findings.
@@ -131,6 +145,29 @@ Reviewer (Master)
 - [ ] Security considerations checked
 - [ ] Clear decision: APPROVE or REQUEST CHANGES
 - [ ] Actionable feedback provided if changes requested
+
+### Specialized Pre-Delivery Reviews
+
+Instead of a static checklist, delegate pre-delivery verification to focused review agents:
+
+| Agent | Focus Area | Trigger |
+|-------|-----------|---------|
+| **Code Quality** | TODOs, stubs, console.log, hardcoded values | Always |
+| **Security** | Credentials, injection, CSRF, input validation | Code handling user input or auth |
+| **Performance** | N+1 queries, re-renders, memory leaks | Database or rendering code |
+| **Accessibility** | Semantic HTML, keyboard nav, contrast, focus | Frontend units |
+| **Responsive** | Breakpoint behavior, horizontal scroll | Frontend units |
+| **Test Coverage** | Missing tests, assertion quality, edge cases | Always |
+
+Each agent runs independently with a focused prompt. The master reviewer consolidates findings.
+
+**Activation:** The reviewer determines which agents to spawn based on:
+- Unit discipline (frontend → accessibility + responsive)
+- Changed file patterns (*.sql, migrations → performance)
+- `review_agents` settings config
+- `high_stakes: true` frontmatter
+
+This is more effective than a static checklist because each agent has dedicated context for its domain.
 
 ## Error Handling
 
