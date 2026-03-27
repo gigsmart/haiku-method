@@ -83,6 +83,23 @@ The Reviewer verifies that the Builder's implementation satisfies the Unit's Com
 - **MAY** post a summary of the review outcome to the comms provider (if configured)
 - If MCP tools are unavailable, skip silently — never block review on provider sync
 
+### Multi-Judge Critique (High-Stakes Units)
+
+For units marked as high-stakes (security-critical, data-handling, public API), run a structured critique with specialized judges:
+
+**Judges:**
+1. **Requirements Validator** — Does the implementation match what was asked for? Are all criteria addressed?
+2. **Solution Architect** — Is the solution well-designed? Are there architectural issues?
+3. **Code Quality Reviewer** — Is the code maintainable, tested, and following conventions?
+
+**Process:**
+1. Each judge independently reviews and produces findings
+2. Judges share findings and debate disagreements
+3. Consensus findings are high confidence; contested findings are medium
+4. Final verdict requires 2/3 judge agreement
+
+**When to use:** Only for units where `high_stakes: true` is set in frontmatter, or units touching auth, payments, or data migrations.
+
 ## Success Criteria
 
 - [ ] All new code has corresponding tests
