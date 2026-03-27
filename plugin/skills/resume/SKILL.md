@@ -1,6 +1,7 @@
 ---
 description: Resume work on an existing AI-DLC intent when ephemeral state is lost
 argument-hint: "[intent-slug]"
+disable-model-invocation: true
 ---
 
 ## Name
@@ -191,6 +192,42 @@ If `AGENT_TEAMS_ENABLED` is set:
 
 Note: All AI-DLC work happens in the worktree at .ai-dlc/worktrees/{slug}/
 ```
+
+### Session Handoff
+
+When a session ends (context limit, user stops, bolt completes), create a structured handoff file for seamless continuation:
+
+**Create `.ai-dlc/{intent-slug}/handoff.md`:**
+
+```markdown
+---
+session_ended: "{ISO date}"
+hat: "{current hat}"
+unit: "{current unit}"
+bolt: {iteration number}
+reason: "{why session ended: context_limit | user_stop | bolt_complete}"
+---
+
+## Where We Left Off
+{Specific task in progress, last action taken}
+
+## What's Working
+- {completed items since last handoff}
+
+## What's Not Working
+- {blockers, failing tests, unresolved issues}
+
+## Immediate Next Steps
+1. {first thing to do when resuming}
+2. {second thing}
+
+## Important Context
+{Decisions made, approaches tried and abandoned, key learnings from this session}
+```
+
+**On resume:** `/resume` reads `handoff.md` (if it exists) to restore context before starting the next bolt. This is more structured than relying on `han keep` alone — it captures the narrative of where things stand.
+
+After reading handoff.md on resume, rename it to `handoff-{date}.md` to archive it.
 
 ## Examples
 

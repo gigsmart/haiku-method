@@ -39,6 +39,8 @@ allowed-tools:
 
 # AI-DLC Mob Elaboration
 
+**Project customization:** Before starting, check for `.ai-dlc/ELABORATION.md`. If it exists, read it and incorporate its guidance throughout the elaboration process. This file contains project-specific domain context, required discovery areas, compliance requirements, and team conventions that supplement these skill instructions.
+
 You are the **Elaborator** starting the AI-DLC Mob Elaboration ritual. Your job is to collaboratively define:
 1. The **Intent** - What are we building and why?
 2. **Domain Model** - What entities, data sources, and systems are involved?
@@ -537,6 +539,27 @@ Use `AskUserQuestion` to validate:
 
 **Do NOT proceed past this phase until the user confirms the domain model is accurate.** If they identify gaps, explore more. This is the foundation everything else builds on.
 
+### Visual Brainstorming
+
+For UI-heavy intents, support visual brainstorming alongside the terminal conversation:
+
+1. **Generate wireframes/diagrams** — When discussing UI flows or architecture, generate HTML wireframes or Mermaid diagrams
+2. **Open in browser** — Use `open` (macOS) or `xdg-open` (Linux) to display visuals:
+   ```bash
+   # Architecture diagram
+   echo '<mermaid diagram>' > /tmp/aidlc-brainstorm.html && open /tmp/aidlc-brainstorm.html
+
+   # UI wireframe
+   echo '<wireframe html>' > /tmp/aidlc-wireframe.html && open /tmp/aidlc-wireframe.html
+   ```
+3. **Iterate visually** — After the user reviews, update and reopen. The visual and terminal conversation run in parallel.
+4. **Persist approved visuals** — Save approved wireframes/diagrams to `.ai-dlc/{intent-slug}/brainstorm/`
+
+This is most useful during:
+- Phase 2.5 (domain discovery) — architecture diagrams
+- Phase 5 (unit decomposition) — flow diagrams showing unit dependencies
+- Phase 6.25 (wireframes) — already handled by elaborate-wireframes skill
+
 ---
 
 ## Phase 3: Discover Hats and Select Workflow
@@ -849,6 +872,28 @@ For each cross-cutting concern identified, decide how to handle it using `AskUse
 
 ---
 
+## Phase 5.6: Spec Flow Analysis
+
+After decomposing into units, analyze the specification flow for gaps:
+
+1. **Trace user flows end-to-end** — For each key user flow (login, purchase, submit form, etc.), verify that every step has a unit covering it. Gaps mean missing units.
+
+2. **Check data flow completeness** — For each data entity, verify: create, read, update, delete are all covered (where applicable). Missing CRUD operations are spec gaps.
+
+3. **Verify error paths** — For each success path, verify the corresponding error path is specified. "What happens when X fails?" should have an answer in the specs.
+
+4. **Cross-unit boundary check** — Where unit A's output feeds unit B's input, verify the contract (data format, API shape, events) is specified in both units.
+
+Report gaps as:
+```markdown
+### Spec Flow Gaps
+- [ ] **Missing unit**: {user flow} has no unit covering {step}
+- [ ] **Missing error path**: {unit} specifies success but not {failure scenario}
+- [ ] **Contract gap**: {unit A} outputs {format} but {unit B} expects {different format}
+```
+
+---
+
 ## Phase 5.75: Spec Alignment Gate
 
 **This is a high-level alignment check before writing artifacts.** The goal is to confirm the overall direction — intent, unit breakdown, and scope — before investing effort in writing detailed unit specs. Detailed per-unit review happens in Phase 6 step 3.
@@ -904,6 +949,15 @@ Then ask with `AskUserQuestion`:
 
 Ask about the delivery strategy, source branch, and merge behavior for this intent. These settings control how unit work is organized and delivered.
 
+**Before asking questions**, resolve the repo's default branch name so you can show it in the options:
+
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+resolve_default_branch "auto" "$REPO_ROOT"
+```
+
+Use the resolved branch name (e.g. `main`, `master`, `dev`) to replace `{DEFAULT_BRANCH}` in the questions below.
+
 Use `AskUserQuestion`:
 
 **Question 1: Delivery strategy**
@@ -924,8 +978,8 @@ Use `AskUserQuestion`:
           "description": "Units merge into an intent branch as they complete. Dependent units start automatically once their dependencies are done. One final MR for the whole intent."
         },
         {
-          "label": "Build everything on my default branch",
-          "description": "Same as above, but all work happens directly on the default branch. No feature branches, no MR — relies on CI to gate quality."
+          "label": "Build everything on {DEFAULT_BRANCH}",
+          "description": "Same as above, but all work happens directly on {DEFAULT_BRANCH}. No feature branches, no MR — relies on CI to gate quality."
         }
       ],
       "multiSelect": false
@@ -944,8 +998,8 @@ Use `AskUserQuestion`:
       "header": "Source Branch",
       "options": [
         {
-          "label": "Use the default branch (recommended)",
-          "description": "Create unit/intent branches from the repo's default branch (e.g. main, dev)."
+          "label": "Use {DEFAULT_BRANCH} (recommended)",
+          "description": "Create unit/intent branches from {DEFAULT_BRANCH}."
         },
         {
           "label": "Use my current branch",
@@ -976,7 +1030,7 @@ Use `AskUserQuestion`:
 }
 ```
 
-**Skip the auto-merge question for "Review each unit individually"** — in unit strategy, each unit creates its own PR and the user is responsible for merging. **Skip for "Build everything on my default branch"** — no branches to merge.
+**Skip the auto-merge question for "Review each unit individually"** — in unit strategy, each unit creates its own PR and the user is responsible for merging. **Skip for "Build everything on {DEFAULT_BRANCH}"** — no branches to merge.
 
 Store the selections. These will be written into the `intent.md` frontmatter in Phase 6 under a `git:` key:
 
@@ -993,11 +1047,11 @@ Map user selections to config values:
 |--------------|----------------|
 | Review each unit individually | `unit` |
 | Build everything, then open one MR | `intent` |
-| Build everything on my default branch | `trunk` |
+| Build everything on {DEFAULT_BRANCH} | `trunk` |
 
 - "Review each unit individually" → `unit` (no `auto_merge` key — user merges their own PRs)
 - "Build everything, then open one MR" → `intent`
-- "Build everything on my default branch" → `trunk`
+- "Build everything on {DEFAULT_BRANCH}" → `trunk`
 - "Yes" auto-merge → `auto_merge: true` (intent strategy only)
 - "No" auto-merge → `auto_merge: false` (intent strategy only)
 
@@ -1024,7 +1078,7 @@ Use `AskUserQuestion`:
 
 If the user selects "Yes", ask which units should be reviewed individually. Note these units — their `git: { change_strategy: unit }` override will be written into unit frontmatter in Phase 6 Step 3.
 
-**Skip this question entirely if the user selected "Review each unit individually" or "Build everything on my default branch"** — per-unit overrides only make sense with the intent branch strategy.
+**Skip this question entirely if the user selected "Review each unit individually" or "Build everything on {DEFAULT_BRANCH}"** — per-unit overrides only make sense with the intent branch strategy.
 
 ---
 
@@ -1513,7 +1567,7 @@ TICKETING_TYPE=$(echo "$PROVIDERS" | jq -r '.ticketing.type // empty')
 TICKETING_CONFIG=$(echo "$PROVIDERS" | jq -c '.ticketing.config // {}')
 ```
 
-If `TICKETING_TYPE` is empty, skip this phase entirely and proceed to Phase 7.
+If `TICKETING_TYPE` is empty, skip this phase entirely and proceed to Phase 7 (Spec Review).
 
 ### Step 2: Write ticket sync brief
 
@@ -1573,9 +1627,9 @@ Skill("elaborate-ticket-sync", args: ".ai-dlc/{INTENT_SLUG}/.briefs/elaborate-ti
 
 Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-ticket-sync-results.md`.
 
-- If `status: skipped` — ticketing not configured or MCP tools unavailable, proceed to Phase 7
-- If `status: error` — report the errors to the user. If `validation_passed: false`, the subagent already retried. Log the failures and proceed to Phase 7 (never block elaboration on ticket sync failure)
-- If `status: success` — log the epic key and ticket keys, confirm validation passed, proceed to Phase 7
+- If `status: skipped` — ticketing not configured or MCP tools unavailable, proceed to Phase 7 (Spec Review)
+- If `status: error` — report the errors to the user. If `validation_passed: false`, the subagent already retried. Log the failures and proceed to Phase 7 (Spec Review) (never block elaboration on ticket sync failure)
+- If `status: success` — log the epic key and ticket keys, confirm validation passed, proceed to Phase 7 (Spec Review)
 
 Commit the ticket sync artifacts (updated intent.md and unit files with ticket keys, plus the results brief):
 
@@ -1586,7 +1640,63 @@ git commit -m "elaborate(${INTENT_SLUG}): sync tickets to provider"
 
 ---
 
-## Phase 7: Handoff
+## Phase 7: Spec Review
+
+Before construction begins, run an automated spec review to catch issues early.
+
+Launch a review subagent:
+
+```javascript
+Agent({
+  subagent_type: "general-purpose",
+  description: "spec review: ${intentSlug}",
+  prompt: `
+    Review the intent and unit specifications for completeness and consistency.
+
+    ## Files to Review
+    - .ai-dlc/${intentSlug}/intent.md
+    - .ai-dlc/${intentSlug}/unit-*.md
+
+    ## Review Checklist
+
+    ### Completeness
+    - [ ] Every unit has success criteria
+    - [ ] Every unit has a description
+    - [ ] Dependencies (depends_on) reference existing units
+    - [ ] No circular dependencies
+    - [ ] All units have a discipline assigned
+    - [ ] Design units have workflow: design
+
+    ### Consistency
+    - [ ] Unit numbering is sequential (no gaps)
+    - [ ] Unit slugs match file names
+    - [ ] Success criteria are verifiable (not vague)
+    - [ ] Boundaries don't overlap between units
+
+    ### YAGNI
+    - [ ] No units that aren't required by the intent's success criteria
+    - [ ] No over-specified technical details that constrain implementation unnecessarily
+    - [ ] Scope matches what the user asked for (no scope creep)
+
+    ## Output
+
+    Report findings as:
+    - **PASS**: Spec is ready for construction
+    - **WARN**: Issues found but not blocking (list them)
+    - **FAIL**: Critical issues that must be fixed (list them)
+
+    For FAIL findings, suggest specific fixes.
+  `
+})
+```
+
+If the review returns FAIL, present the findings to the user via `AskUserQuestion` and ask whether to fix the issues or proceed anyway.
+
+If PASS or WARN, output the review summary and proceed.
+
+---
+
+## Phase 8: Handoff
 
 Present the elaboration summary:
 

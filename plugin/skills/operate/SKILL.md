@@ -1,6 +1,7 @@
 ---
 description: Manage the operation phase - read operational plans, execute agent tasks, guide human tasks, and track operational status
 argument-hint: "[intent-slug]"
+disable-model-invocation: true
 ---
 
 ## Name

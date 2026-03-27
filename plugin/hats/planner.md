@@ -29,6 +29,32 @@ The Planner reviews the current Unit and creates a tactical execution plan for t
 - `han keep --branch active-intent` set
 - Unit file exists with criteria defined
 
+### Relevance-Ranked Learning Search
+
+When searching `docs/solutions/` for relevant learnings, use a multi-signal ranking approach:
+
+1. **Frontmatter match (highest signal)** — Exact matches on `tags`, `module`, `component` fields
+2. **Title match (high signal)** — Keywords from the current unit appear in the learning title
+3. **Category match (medium signal)** — Learning category matches the unit's discipline (e.g., `debugging` category for a bug fix unit)
+4. **Content match (lower signal)** — Keywords appear in the body text
+
+**Search strategy:**
+```bash
+# Phase 1: Frontmatter-first (high precision)
+grep -rl "tags:.*${TECHNOLOGY}" docs/solutions/ | head -5
+grep -rl "module: ${MODULE}" docs/solutions/ | head -5
+
+# Phase 2: Category narrowing
+ls docs/solutions/${CATEGORY}/ 2>/dev/null | head -10
+
+# Phase 3: Content search (if Phase 1-2 yield <3 results)
+grep -rl "${KEYWORD}" docs/solutions/ | head -5
+```
+
+**Always read:** `docs/solutions/patterns/critical-patterns.md` (if it exists) — this file contains patterns that apply to ALL work, regardless of search results.
+
+**Read strategy:** Read only frontmatter (~30 lines) first to assess relevance. Full-read only files where frontmatter signals strong relevance. Never bulk-read all learnings.
+
 ## Steps
 
 1. Review current state
@@ -65,6 +91,24 @@ The Planner reviews the current Unit and creates a tactical execution plan for t
    - You MUST include verification steps
    - **Validation**: Plan saved and readable
 
+### Plan Deepening (Optional)
+
+For complex units (3+ tasks, unfamiliar technology, or high-risk changes), deepen the plan by dispatching parallel research agents:
+
+1. For each major task in the plan, spawn a research agent:
+   - Search `docs/solutions/` for relevant learnings
+   - Search the codebase for existing patterns
+   - Identify potential pitfalls from similar past work
+
+2. Incorporate findings into the plan:
+   - Add "Research Notes" to each task
+   - Update risk assessment based on findings
+   - Adjust approach if research reveals a better path
+
+3. Mark the plan as "deepened" in the completion marker
+
+**When to skip:** Simple tasks, well-understood codebases, or when learnings retrieval already covered the ground.
+
 ## Success Criteria
 
 - [ ] Remaining criteria clearly identified
@@ -72,6 +116,38 @@ The Planner reviews the current Unit and creates a tactical execution plan for t
 - [ ] Plan addresses previous blockers if any
 - [ ] Risks identified with mitigations
 - [ ] Plan saved to `han keep --branch current-plan`
+
+## Structured Completion Marker
+
+When completing planning, output this structured block:
+
+```markdown
+## PLANNING COMPLETE
+
+**Unit:** {unit name}
+**Bolt:** {bolt number}
+**Tasks Planned:** {count}
+**Criteria Targeted:** {count}/{total} remaining criteria
+**Risks Identified:** {count}
+
+### Plan Summary
+1. {task 1} — targets criterion: {criterion}
+2. {task 2} — targets criterion: {criterion}
+
+### Risks
+- {risk 1} — mitigation: {approach}
+```
+
+If planning cannot proceed:
+
+```markdown
+## PLANNING BLOCKED
+
+**Unit:** {unit name}
+**Reason:** {specific reason}
+**Previous Approaches Tried:** {count}
+**What Would Unblock:** {specific action needed}
+```
 
 ## Error Handling
 
@@ -103,6 +179,29 @@ The Planner reviews the current Unit and creates a tactical execution plan for t
 1. You MUST run verification commands to check each criterion
 2. You SHOULD document current state explicitly
 3. You MUST NOT guess - verify programmatically
+
+### Rule-Based Decision Filtering
+
+When evaluating approaches for a plan, apply domain-specific rules to filter and rank options:
+
+1. **Gather candidate approaches** — identify 2-3 viable implementation strategies
+2. **Apply filtering rules** — for each approach, check against project-specific constraints:
+   - Does it follow existing patterns in the codebase?
+   - Does it introduce new dependencies? (prefer fewer)
+   - Does it increase or decrease complexity?
+   - Does it handle the known edge cases?
+   - Is it testable without mocking infrastructure?
+3. **Rank by score** — approaches that pass more rules rank higher
+4. **Select and justify** — choose the highest-ranking approach and document why alternatives were rejected
+
+**Anti-pattern:** Selecting the first approach that comes to mind without evaluating alternatives.
+**Pattern:** Enumerate approaches, apply rules, select the winner with documented reasoning.
+
+Rules can come from:
+- Project CLAUDE.md conventions
+- Compound learnings (`docs/solutions/`)
+- Anti-patterns from completion criteria
+- Tech stack standards
 
 ## Related Hats
 
