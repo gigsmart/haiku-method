@@ -552,20 +552,20 @@ fi
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
-MODEL_PROFILE=$(echo "$CONFIG" | yq -r ".model_profiles.${HAT_NAME} // \"inherit\"" 2>/dev/null || echo "inherit")
+SETTINGS_JSON=$(load_repo_settings "$(find_repo_root)")
+MODEL_PROFILE=$(echo "$SETTINGS_JSON" | jq -r ".model_profiles.${HAT_NAME} // \"inherit\"" 2>/dev/null || echo "inherit")
 ```
 
 If `MODEL_PROFILE` is not `inherit`, pass the `model` parameter when spawning the subagent. This lets teams route expensive reasoning to Opus for planning while using Sonnet or Haiku for implementation, significantly reducing cost.
 
-**Pre-built profiles** users can reference in `settings.yml`:
+**Example configurations** for `settings.yml` (these are reference patterns, not named profiles you can set by name — configure per-hat tiers directly):
 
-| Profile | Planner | Builder | Reviewer | Use Case |
+| Pattern | Planner | Builder | Reviewer | Use Case |
 |---------|---------|---------|----------|----------|
-| `quality` | opus | opus | opus | Maximum quality, highest cost |
-| `balanced` | opus | sonnet | sonnet | Good planning, fast execution |
-| `budget` | sonnet | haiku | sonnet | Cost-efficient, adequate quality |
-| `inherit` (default) | inherit | inherit | inherit | Use session model for everything |
+| Quality | opus | opus | opus | Maximum quality, highest cost |
+| Balanced | opus | sonnet | sonnet | Good planning, fast execution |
+| Budget | sonnet | haiku | sonnet | Cost-efficient, adequate quality |
+| (default) | inherit | inherit | inherit | Use session model for everything |
 
 7. **Create shared task via TaskCreate**:
 
@@ -664,7 +664,7 @@ d. Select agent type based on hat:
 
 e. Resolve model profile for the hat (same as step 6 above):
    ```bash
-   MODEL_PROFILE=$(echo "$CONFIG" | yq -r ".model_profiles.${HAT_NAME} // \"inherit\"" 2>/dev/null || echo "inherit")
+   MODEL_PROFILE=$(echo "$SETTINGS_JSON" | jq -r ".model_profiles.${HAT_NAME} // \"inherit\"" 2>/dev/null || echo "inherit")
    ```
 
 f. Spawn teammate with hat instructions in prompt:
@@ -1202,8 +1202,8 @@ Before spawning, resolve the model profile for the current hat:
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
-MODEL_PROFILE=$(echo "$CONFIG" | yq -r ".model_profiles.${state_hat} // \"inherit\"" 2>/dev/null || echo "inherit")
+SETTINGS_JSON=$(load_repo_settings "$(find_repo_root)")
+MODEL_PROFILE=$(echo "$SETTINGS_JSON" | jq -r ".model_profiles.${state_hat} // \"inherit\"" 2>/dev/null || echo "inherit")
 ```
 
 If `MODEL_PROFILE` is not `inherit`, pass the `model` parameter to the subagent. See `model_profiles` in the settings schema for details.
