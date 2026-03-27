@@ -266,7 +266,7 @@ export function resolveDefaultBranch(
 
 	try {
 		// Try to get the default branch from origin/HEAD
-		const result = execSync("git symbolic-ref refs/remotes/origin/HEAD", {
+		const result = execSync("git symbolic-ref refs/remotes/${remote:-origin}/HEAD", {
 			cwd,
 			stdio: "pipe",
 		})
