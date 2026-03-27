@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.46.0] - 2026-03-27
+
+### Added
+
+- add /seed skill for forward-looking ideas with trigger conditions ([ecbb857](../../commit/ecbb857))
+
+### Other
+
+- Merge pull request #58 from TheBushidoCollective/eco/seed-system ([74b1521](../../commit/74b1521))
+
 ## [1.45.0] - 2026-03-27
 
 ### Added
