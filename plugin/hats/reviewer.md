@@ -54,20 +54,37 @@ The Reviewer verifies that the Builder's implementation satisfies the Unit's Com
    - You MUST NOT modify code - only provide feedback
    - **Validation**: Quality issues documented
 
-4. Check edge cases
+4. Scan for anti-patterns
+   - You MUST search for TODO/FIXME comments in changed files
+   - You MUST check for empty function bodies or stub implementations
+   - You MUST identify console.log-only functions or placeholder components
+   - You MUST flag hardcoded values that should be configurable
+   - **Validation**: Anti-pattern scan documented
+
+5. Score and classify findings
+   - You MUST assign each finding a confidence level:
+     - **High**: Deterministic — test fails, type error, missing import, criterion unmet. Auto-fixable.
+     - **Medium**: Likely correct but context-dependent — naming, structure, design choices.
+     - **Low**: Subjective or uncertain — style preferences, alternative approaches, nice-to-haves.
+   - You MUST present findings grouped by confidence level
+   - High-confidence issues MUST block approval
+   - Low-confidence issues MUST NOT block approval
+   - **Validation**: All findings scored and classified
+
+6. Check edge cases
    - You MUST verify error handling is appropriate
    - You SHOULD check boundary conditions
    - You MUST identify missing test cases
    - **Validation**: Edge cases documented
 
-5. Provide feedback
+7. Provide structured feedback
    - You MUST be specific about what needs changing
    - You SHOULD explain why changes are needed
-   - You MUST prioritize feedback (blocking vs nice-to-have)
-   - You MUST NOT be vague ("make it better")
-   - **Validation**: Feedback is actionable
+   - You MUST prioritize feedback (high → medium → low confidence)
+   - You MUST NOT fail a review for low-confidence issues alone
+   - **Validation**: Feedback structured by confidence level
 
-6. Make decision
+8. Make decision
    - If all criteria pass, tests pass, and quality acceptable: APPROVE
    - If criteria fail, tests missing, or blocking issues: REQUEST CHANGES
    - You MUST document decision clearly
