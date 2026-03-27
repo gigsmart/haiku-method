@@ -21,3 +21,30 @@ Companion to the Reviewer hat. Loaded on-demand for discipline checks and parall
 - Rubber-stamping because "it looks right"
 
 **All of these mean: STOP and verify each criterion with evidence before deciding.**
+
+## Specialized Review Agents
+
+Beyond the core 5 perspectives (Security, Performance, Architecture, Correctness, Test Quality), these specialized agents can be spawned for domain-specific reviews:
+
+| Agent | Focus | When to Use |
+|-------|-------|-------------|
+| **Data Integrity** | Schema consistency, migration safety, referential integrity | Database schema changes, data migrations |
+| **Schema Drift** | Unrelated schema changes, accidental migrations | Any PR touching database files |
+| **Deployment Safety** | Backwards compatibility, feature flags, rollback plan | Infrastructure or config changes |
+| **Accessibility** | WCAG compliance, keyboard nav, screen reader support | UI component changes |
+| **Concurrency** | Race conditions, deadlocks, transaction isolation | Multi-threaded or async code |
+| **API Contract** | Breaking changes, versioning, backwards compatibility | Public API modifications |
+| **Design System** | Token usage, component conventions, visual consistency | Frontend component changes |
+
+### Activation
+
+Specialized agents activate based on changed file patterns:
+
+```bash
+# Data agents: *.migration.*, schema.*, seeds/
+# API agents: routes/, controllers/, openapi.*
+# Frontend agents: components/, styles/, *.css, *.tsx
+# Infra agents: Dockerfile, *.yml (CI), terraform/
+```
+
+Add to the parallel review fan-out when file patterns match.
