@@ -30,6 +30,23 @@
 		"quality_gates": {
 			"$ref": "#/definitions/qualityGatesConfig",
 			"description": "Quality gates (backpressure checks) to run during execution. When configured, these replace the default backpressure behavior."
+		},
+		"review_agents": {
+			"type": "object",
+			"description": "Configure which specialized review agents run for this project",
+			"properties": {
+				"security": { "type": "boolean", "default": true },
+				"performance": { "type": "boolean", "default": true },
+				"architecture": { "type": "boolean", "default": true },
+				"correctness": { "type": "boolean", "default": true },
+				"test_quality": { "type": "boolean", "default": true },
+				"data_integrity": { "type": "boolean", "default": false },
+				"schema_drift": { "type": "boolean", "default": false },
+				"accessibility": { "type": "boolean", "default": false },
+				"api_contract": { "type": "boolean", "default": false },
+				"design_system": { "type": "boolean", "default": false }
+			},
+			"default": {}
 		}
 	},
 	"additionalProperties": false,

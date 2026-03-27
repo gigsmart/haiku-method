@@ -272,6 +272,46 @@ For each **confirmed provider**, offer to customize how AI-DLC interacts with it
 
 ---
 
+## Phase 4c: Review Agent Configuration
+
+Ask which specialized review agents should activate for this project:
+
+Core agents (always on): Security, Performance, Architecture, Correctness, Test Quality
+
+Optional agents (project-specific):
+- Data Integrity — for projects with database/data layer
+- Schema Drift — for projects with database migrations
+- Accessibility — for frontend/UI projects
+- API Contract — for projects with public APIs
+- Design System — for projects with design systems
+
+Use `AskUserQuestion` to present the optional agents as a multi-select:
+
+```json
+{
+  "questions": [
+    {
+      "question": "Which optional review agents should be enabled for this project?",
+      "header": "Review Agent Configuration",
+      "options": [
+        { "label": "Data Integrity", "description": "Reviews database queries, migrations, and data layer changes for correctness" },
+        { "label": "Schema Drift", "description": "Detects schema changes that may break dependent services or migrations" },
+        { "label": "Accessibility", "description": "Reviews UI components for WCAG compliance and accessibility best practices" },
+        { "label": "API Contract", "description": "Validates API changes against OpenAPI specs and checks for breaking changes" },
+        { "label": "Design System", "description": "Ensures UI changes conform to the project's design system tokens and patterns" }
+      ],
+      "multiSelect": true
+    }
+  ]
+}
+```
+
+Pre-fill from existing `settings.yml` `review_agents` if available.
+
+Map selections to config values under `review_agents:` in settings.yml. Core agents default to `true` and do not need to be written unless the user explicitly disables them. Only write optional agents that the user selected as `true`.
+
+---
+
 ## Phase 5: VCS Strategy
 
 Ask the user about their preferred delivery strategy, source branch, and auto-merge behavior.
