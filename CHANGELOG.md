@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.61.0] - 2026-03-27
+
+### Added
+
+- add two-stage review (spec compliance then code quality) ([e023c4a](../../commit/e023c4a))
+
+### Fixed
+
+- move test coverage into Stage 1 spec compliance ([85e7764](../../commit/85e7764))
+
+### Other
+
+- Merge pull request #51 from TheBushidoCollective/eco/two-stage-review ([1ac1e4e](../../commit/1ac1e4e))
+
 ## [1.60.0] - 2026-03-27
 
 ### Added
