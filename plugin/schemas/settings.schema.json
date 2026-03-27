@@ -4,6 +4,10 @@
 	"title": "AI-DLC Settings",
 	"description": "Configuration schema for .ai-dlc/settings.yml files that configure AI-DLC behavior including VCS strategy",
 	"type": "object",
+	"_override_pattern": {
+		"type": "string",
+		"description": "AI-DLC supports a Master + Overrides configuration pattern. Global settings in settings.yml apply to all intents. Per-intent overrides in .ai-dlc/{intent}/settings.yml take precedence. Per-unit overrides in unit frontmatter take highest precedence. Precedence: unit frontmatter > intent settings > global settings."
+	},
 	"properties": {
 		"git": {
 			"$ref": "#/definitions/vcsConfig",

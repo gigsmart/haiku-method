@@ -49,6 +49,25 @@ If `CLAUDE_CODE_IS_COWORK=1`, stop immediately with the message above. Do NOT pr
 
 ---
 
+### Configuration Precedence
+
+AI-DLC uses a Master + Overrides pattern for configuration:
+
+| Level | Location | Scope | Precedence |
+|-------|----------|-------|------------|
+| **Global** | `settings.yml` | All intents | Lowest |
+| **Intent** | `.ai-dlc/{intent}/settings.yml` | This intent | Medium |
+| **Unit** | Unit frontmatter fields | This unit | Highest |
+
+**Examples:**
+- Global sets `change_strategy: unit`, but a specific intent overrides to `intent` for parallel work
+- Global sets `granularity: standard`, but a complex intent overrides to `fine`
+- A unit overrides `change_strategy: unit` even when the intent uses `intent` (hybrid strategy)
+
+When reading configuration, always resolve in order: unit frontmatter → intent settings → global settings. First non-empty value wins.
+
+---
+
 ## Phase 0: Load Existing Settings
 
 1. Check if `.ai-dlc/settings.yml` exists using the `Read` tool.
