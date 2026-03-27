@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.72.0] - 2026-03-27
+
+### Added
+
+- add structured completion markers for deterministic review outcomes ([88c26c0](../../commit/88c26c0))
+
+### Other
+
+- Merge pull request #46 from TheBushidoCollective/eco/reviewer-markers ([66a9158](../../commit/66a9158))
+- resolve conflicts with main ([5e97be7](../../commit/5e97be7))
+- Merge branch 'eco/reviewer-markers' of github.com:TheBushidoCollective/ai-dlc into eco/reviewer-markers ([08ebdbe](../../commit/08ebdbe))
+- resolve conflicts with main ([7e6de00](../../commit/7e6de00))
+- integrate main's CoVe and pre-delivery review sections with structured completion markers ([e4d2143](../../commit/e4d2143))
+
 ## [1.71.0] - 2026-03-27
 
 ### Added
