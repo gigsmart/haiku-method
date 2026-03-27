@@ -47,6 +47,58 @@
 				"design_system": { "type": "boolean", "default": false }
 			},
 			"default": {}
+		},
+		"model_profiles": {
+			"type": "object",
+			"description": "Map hats to model tiers for cost optimization. Defaults to inheriting the session model for all hats.",
+			"properties": {
+				"planner": {
+					"type": "string",
+					"enum": ["opus", "sonnet", "haiku", "inherit"],
+					"default": "inherit",
+					"description": "Model for planning (benefits from deeper reasoning)"
+				},
+				"builder": {
+					"type": "string",
+					"enum": ["opus", "sonnet", "haiku", "inherit"],
+					"default": "inherit",
+					"description": "Model for implementation"
+				},
+				"reviewer": {
+					"type": "string",
+					"enum": ["opus", "sonnet", "haiku", "inherit"],
+					"default": "inherit",
+					"description": "Model for code review"
+				},
+				"designer": {
+					"type": "string",
+					"enum": ["opus", "sonnet", "haiku", "inherit"],
+					"default": "inherit",
+					"description": "Model for design work"
+				}
+			},
+			"additionalProperties": {
+				"type": "string",
+				"enum": ["opus", "sonnet", "haiku", "inherit"]
+			},
+			"default": {}
+		},
+		"review_agents": {
+			"type": "object",
+			"description": "Configure which specialized review agents run for this project",
+			"properties": {
+				"security": { "type": "boolean", "default": true },
+				"performance": { "type": "boolean", "default": true },
+				"architecture": { "type": "boolean", "default": true },
+				"correctness": { "type": "boolean", "default": true },
+				"test_quality": { "type": "boolean", "default": true },
+				"data_integrity": { "type": "boolean", "default": false },
+				"schema_drift": { "type": "boolean", "default": false },
+				"accessibility": { "type": "boolean", "default": false },
+				"api_contract": { "type": "boolean", "default": false },
+				"design_system": { "type": "boolean", "default": false }
+			},
+			"default": {}
 		}
 	},
 	"additionalProperties": false,
