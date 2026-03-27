@@ -849,6 +849,28 @@ For each cross-cutting concern identified, decide how to handle it using `AskUse
 
 ---
 
+## Phase 5.6: Spec Flow Analysis
+
+After decomposing into units, analyze the specification flow for gaps:
+
+1. **Trace user flows end-to-end** — For each key user flow (login, purchase, submit form, etc.), verify that every step has a unit covering it. Gaps mean missing units.
+
+2. **Check data flow completeness** — For each data entity, verify: create, read, update, delete are all covered (where applicable). Missing CRUD operations are spec gaps.
+
+3. **Verify error paths** — For each success path, verify the corresponding error path is specified. "What happens when X fails?" should have an answer in the specs.
+
+4. **Cross-unit boundary check** — Where unit A's output feeds unit B's input, verify the contract (data format, API shape, events) is specified in both units.
+
+Report gaps as:
+```markdown
+### Spec Flow Gaps
+- [ ] **Missing unit**: {user flow} has no unit covering {step}
+- [ ] **Missing error path**: {unit} specifies success but not {failure scenario}
+- [ ] **Contract gap**: {unit A} outputs {format} but {unit B} expects {different format}
+```
+
+---
+
 ## Phase 5.75: Spec Alignment Gate
 
 **This is a high-level alignment check before writing artifacts.** The goal is to confirm the overall direction — intent, unit breakdown, and scope — before investing effort in writing detailed unit specs. Detailed per-unit review happens in Phase 6 step 3.
