@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.37.0] - 2026-03-27
+
+### Added
+
+- add plan deepening with parallel research agents ([7b9f4b0](../../commit/7b9f4b0))
+
+### Other
+
+- Merge pull request #71 from TheBushidoCollective/eco/deepen-plan ([3404949](../../commit/3404949))
+
 ## [1.36.0] - 2026-03-27
 
 ### Added
