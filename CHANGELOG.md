@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.60.0] - 2026-03-27
+
+### Added
+
+- add visual brainstorming companion guidance ([0f6b4ff](../../commit/0f6b4ff))
+
+### Fixed
+
+- change brainstorm persist path to avoid mockups/ collision ([6219c1b](../../commit/6219c1b))
+
+### Other
+
+- Merge pull request #53 from TheBushidoCollective/eco/visual-brainstorm ([8fe1b98](../../commit/8fe1b98))
+
 ## [1.59.1] - 2026-03-27
 
 ### Fixed
