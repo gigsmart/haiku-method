@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.74.0] - 2026-03-27
+
+### Added
+
+- add schema drift detection for database changes ([adb2965](../../commit/adb2965))
+
+### Fixed
+
+- resolve merge conflicts with origin/main in reviewer.md ([49a2a89](../../commit/49a2a89))
+
+### Changed
+
+- move schema drift to specialized review agent ([4519c66](../../commit/4519c66))
+
+### Other
+
+- resolve conflicts with main ([815e441](../../commit/815e441))
+- resolve conflicts with main ([7ea3864](../../commit/7ea3864))
+- resolve conflicts with main ([1fd307a](../../commit/1fd307a))
+
 ## [1.73.0] - 2026-03-27
 
 ### Added
