@@ -285,6 +285,38 @@ What existing behavior should NOT CHANGE:
 ❌ Only specifying happy path
 (Always include error scenarios)
 
+## Anti-Patterns in Criteria
+
+When writing completion criteria, include explicit **DO NOT** constraints alongside the positive criteria. Anti-patterns constrain the agent's output space and prevent common failure modes.
+
+### Why Anti-Patterns Matter
+
+Without anti-patterns, agents optimize for the stated criteria and may take shortcuts that technically satisfy the criteria but produce poor results.
+
+### Examples
+
+**Instead of just:**
+- [ ] API endpoint returns user data
+
+**Add anti-patterns:**
+- [ ] API endpoint returns user data
+- [ ] DO NOT return sensitive fields (password_hash, SSN, tokens) in API responses
+- [ ] DO NOT use N+1 queries for nested data loading
+- [ ] DO NOT skip pagination for list endpoints
+
+**Instead of just:**
+- [ ] UI renders the dashboard
+
+**Add anti-patterns:**
+- [ ] UI renders the dashboard
+- [ ] DO NOT use hardcoded strings (use i18n keys)
+- [ ] DO NOT make synchronous API calls that block rendering
+- [ ] DO NOT ignore loading/error states
+
+### Pattern
+
+For each positive criterion, ask: "What's the worst way an agent could satisfy this?" Then add a DO NOT for each.
+
 ## Verification Methods
 
 ### Automated Tests

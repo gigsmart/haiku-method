@@ -1,0 +1,65 @@
+name: Claude Conflict Resolver
+
+on:
+  push:
+    branches: [main]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  resolve-conflicts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Find and trigger resolution for conflicting PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # GitHub needs time to recalculate mergeability after a push.
+          # Poll with backoff until no PRs show UNKNOWN, or up to ~90 seconds.
+          CONFLICTING=""
+          for attempt in 1 2 3 4 5 6; do
+            echo "Attempt $attempt: checking mergeability..."
+            sleep $(( attempt * 10 ))
+
+            ALL_PRS=$(gh pr list --base main --state open --json number,mergeable --repo "$GITHUB_REPOSITORY" 2>/dev/null || echo "[]")
+            UNKNOWN_COUNT=$(echo "$ALL_PRS" | jq '[.[] | select(.mergeable == "UNKNOWN")] | length')
+            CONFLICT_COUNT=$(echo "$ALL_PRS" | jq '[.[] | select(.mergeable == "CONFLICTING")] | length')
+
+            echo "  UNKNOWN: $UNKNOWN_COUNT, CONFLICTING: $CONFLICT_COUNT"
+
+            if [ "$UNKNOWN_COUNT" -eq 0 ]; then
+              CONFLICTING=$(echo "$ALL_PRS" | jq -r '[.[] | select(.mergeable == "CONFLICTING")] | .[].number')
+              break
+            fi
+
+            if [ "$attempt" -eq 6 ]; then
+              CONFLICTING=$(echo "$ALL_PRS" | jq -r '[.[] | select(.mergeable == "CONFLICTING")] | .[].number')
+            fi
+          done
+
+          if [ -z "$CONFLICTING" ]; then
+            echo "No conflicting PRs found"
+            exit 0
+          fi
+
+          echo "Conflicting PRs found: $CONFLICTING"
+
+          # Comment @claude on each conflicting PR to trigger the mention bot
+          for PR_NUM in $CONFLICTING; do
+            BRANCH=$(gh pr view "$PR_NUM" --json headRefName --jq '.headRefName' --repo "$GITHUB_REPOSITORY")
+            echo "Triggering conflict resolution for PR #$PR_NUM ($BRANCH)..."
+
+            gh pr comment "$PR_NUM" --repo "$GITHUB_REPOSITORY" --body "@claude This PR has merge conflicts with main. Please resolve them:
+
+          1. Merge origin/main into this branch
+          2. Resolve any conflicts by keeping both sides' changes where possible
+          3. For true conflicts, preserve this PR's intent while incorporating main's updates
+          4. Commit and push the resolution"
+          done
+
+          echo "Posted @claude comments on $(echo "$CONFLICTING" | wc -w | xargs) PRs"

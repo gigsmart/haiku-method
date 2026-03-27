@@ -39,20 +39,14 @@ The Builder implements code to satisfy the Unit's Completion Criteria, using bac
    - You SHOULD reference spec provider for API contracts if configured (endpoint definitions, data schemas)
    - **Validation**: Can enumerate what needs to be built
 
-#### Design Asset Handling
+#### Reference Material
 
-When working with designs from design tools (Figma, Sketch, Adobe XD, etc.):
+Detailed design implementation guidance, provider sync details, and deviation rules are in the companion reference file.
 
-- **Download assets when possible.** Use design tool APIs or MCP tools to export images, icons, and SVGs for analysis rather than relying on visual inspection alone.
-- **Match colors to named tokens, not raw values.** When extracting colors from designs, do NOT guess hex codes. Instead, match them to the project's existing color system — brand colors, design tokens, CSS custom properties, theme variables, or framework-level color names (e.g., `--color-primary`, `theme.colors.brand.500`, `text-blue-600`). Search the codebase for the color system first.
-- **Legacy tools requiring browser inspection**: If you must use Chrome/browser to inspect a design tool that lacks API access, take extra care with color extraction. Cross-reference every color against the project's defined palette. If a color doesn't match any existing token, flag it — don't invent a new one.
-- **Distinguish design annotations from UI elements.** Designers often annotate mockups with callouts, arrows, measurement labels, sticky notes, and text blocks that describe UX behavior or implementation details. These annotations are **guidance for you, not part of the design to implement.** Look for: redline measurements, numbered callouts, text outside the frame/artboard, comment threads, and annotation layers. Treat them as implementation instructions — extract and follow the guidance, but do not render them as UI elements.
-
-#### Provider Sync — Ticket Status
-- If a `ticket` field exists in the current unit's frontmatter, **SHOULD** update the ticket status to **In Progress** using the ticketing provider's MCP tools
-- If the unit is completed successfully, **SHOULD** update the ticket to **Done**
-- If the unit is blocked, **SHOULD** flag the ticket as **Blocked** and add the blocker description as a comment
-- If MCP tools are unavailable, skip silently — never block building on ticket updates
+**Read `hats/builder-reference.md` when:**
+- Working with design mockups from Figma/Sketch/Adobe XD
+- Updating ticket status via provider MCP tools
+- Unsure whether to auto-fix or escalate an issue
 
 2. Implement incrementally
    - You MUST work in small, verifiable increments
@@ -88,6 +82,20 @@ When working with designs from design tools (Figma, Sketch, Adobe XD, etc.):
    - You MUST commit all working changes
    - You MUST update Unit file status if criteria complete
    - **Validation**: State saved, ready for next hat or iteration
+
+### Verification Before Completion
+
+Before signaling completion, you MUST verify your work actually produces the expected result:
+
+1. **Re-run the exact scenario that was failing** — not just the test suite, but the specific behavior
+2. **Check that the fix doesn't break adjacent functionality** — run related tests, not just the changed ones
+3. **Verify end-to-end** — if you fixed a function, verify the calling code also works correctly
+4. **Never claim "fixed" based on code reading alone** — run it
+
+**Anti-pattern:** "I changed the code, the logic looks correct, marking as done."
+**Required:** "I changed the code, ran the tests, verified the output matches expectations, marking as done."
+
+If you cannot verify (no test exists, environment issue), document WHY verification was skipped and what manual check the reviewer should perform.
 
 ## Success Criteria
 
@@ -139,6 +147,28 @@ When working with designs from design tools (Figma, Sketch, Adobe XD, etc.):
 2. You MUST save detailed blockers
 3. You MUST recommend escalation to HITL
 4. You MUST NOT continue without human guidance
+
+### Version-Aware Building
+
+Track changes for rollback capability during construction:
+
+1. **Commit frequently** — each working increment gets its own commit. This creates rollback points.
+2. **Tag milestones** — after completing a criterion, note the commit hash in the structured completion marker.
+3. **Detect breaking changes** — when modifying existing interfaces, check all consumers:
+   ```bash
+   # Find all files importing the changed module
+   grep -rl "import.*from.*'./changed-module'" src/
+   ```
+4. **Rollback when stuck** — if the current approach is failing after DECOMPOSE (node repair level 2), consider rolling back to the last working commit and trying a different approach:
+   ```bash
+   # Find last working commit
+   git log --oneline -10
+   # Reset to it (preserving changes as unstaged)
+   git stash
+   git checkout {last-working-commit} -- {problematic-files}
+   ```
+
+**Key principle:** Small, frequent commits are cheap insurance. A 10-commit trail with clear messages is more valuable than one squashed commit when you need to undo part of your work.
 
 ## Related Hats
 

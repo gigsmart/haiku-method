@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "AI-DLC — the software development profile of H·AI·K·U. Iterative AI-driven development with git integration, test suites, PR workflows, CI/CD pipelines, and deployment gates.",
-    "version": "1.29.0"
+    "version": "1.62.3"
   },
   "plugins": [
     {

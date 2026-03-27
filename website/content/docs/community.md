@@ -21,7 +21,7 @@ The primary hub for AI-DLC development:
 **Han Plugin Ecosystem**
 - [github.com/thebushidocollective/han](https://github.com/thebushidocollective/han)
 - The broader plugin marketplace
-- Jutsu (validation hooks), Hashi (MCP servers), Do (agents)
+- Validation hooks, framework plugins, discipline agents, MCP bridges
 
 ### Discussions
 
@@ -79,10 +79,13 @@ The foundational methodology document:
 AI-DLC is part of Han, a plugin marketplace for Claude Code:
 
 - **Website:** [han.guru](https://han.guru)
-- **Bushido:** Core quality principles
-- **Jutsu:** Language/tool validation hooks
-- **Hashi:** MCP server bridges
-- **Do:** Specialized agent plugins
+- **Core:** Foundation plugins and quality principles
+- **Validation:** Language and tool validation hooks
+- **Frameworks:** Framework-specific plugins (React, Next.js, Rails, etc.)
+- **Languages:** Language-specific plugins (TypeScript, Go, Rust, etc.)
+- **Disciplines:** Specialized agent plugins (frontend, backend, security, etc.)
+- **Bridges:** MCP server integrations
+- **Bushido:** Quality principles and engineering virtues
 
 ### Related Projects
 

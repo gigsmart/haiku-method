@@ -1,6 +1,7 @@
 ---
 description: Analyze a completed AI-DLC intent cycle and produce reflection artifacts with learnings, metrics, and recommendations
 argument-hint: "[intent-slug]"
+disable-model-invocation: true
 ---
 
 ## Name
@@ -182,6 +183,30 @@ Perform a structured reflection analysis. As the reflector, analyze:
 
 Ground all analysis in evidence from the artifacts and session data. Do not speculate without data.
 
+### Step 3b: Compound Learning Aggregation
+
+If `docs/solutions/` exists and contains learnings:
+
+1. **Scan** all learning files in `docs/solutions/` created during this intent (compare dates with intent start)
+2. **Categorize** learnings by type: architecture, debugging, testing, performance, security, patterns
+3. **Identify cross-cutting patterns** — learnings that appear across multiple units or categories
+4. **Surface recommendations** — patterns that should influence future intents
+
+Include in the reflection output:
+
+```markdown
+### Compound Learnings
+
+**New learnings captured:** {count}
+**Categories:** {category list with counts}
+
+#### Cross-Cutting Patterns
+- {pattern}: observed in {units/categories} — recommendation: {action}
+
+#### Recommended Process Changes
+- {change}: based on {learning} — would prevent {problem}
+```
+
 ### Step 4: Produce reflection.md
 
 Write the reflection artifact to `.ai-dlc/{intent-slug}/reflection.md`:
@@ -215,6 +240,9 @@ status: complete
 
 ## Operational Outcomes
 - {How operational tasks performed, if applicable}
+
+## Compound Learnings
+{Include compound learning aggregation from Step 3b, if docs/solutions/ was present}
 
 ## Key Learnings
 - {Distilled actionable insight}

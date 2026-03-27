@@ -35,7 +35,69 @@ Advances to the next hat in the workflow sequence. For example, in the default w
 STATE=$(han keep load iteration.json --quiet)
 ```
 
-### Step 2: Determine Next Hat (or Handle Completion)
+### Step 2: Verify Hard Gate and Determine Next Hat (or Handle Completion)
+
+Before advancing, check the hard gate for the current transition:
+
+```bash
+# Hard gate verification — block advancement if gate conditions are not met
+CURRENT_HAT=$(echo "$STATE" | han parse json hat -r)
+
+case "$CURRENT_HAT" in
+  planner)
+    # PLAN_APPROVED gate: plan must exist and cover all criteria
+    PLAN=$(han keep load plan.md --quiet 2>/dev/null || echo "")
+    if [ -z "$PLAN" ]; then
+      echo "## HARD GATE: PLAN_APPROVED"
+      echo ""
+      echo "Cannot advance to builder — no plan found in han keep."
+      echo "The planner must save a plan before advancement."
+      exit 1
+    fi
+    ;;
+  builder)
+    # TESTS_PASS gate: quality gates must pass before review
+    if command -v npm &>/dev/null && [ -f "package.json" ]; then
+      if ! npm test --if-present 2>/dev/null; then
+        echo "## HARD GATE: TESTS_PASS"
+        echo ""
+        echo "Cannot advance to reviewer — quality gates are not passing."
+        echo "Fix failing tests/lint/types before requesting review."
+        exit 1
+      fi
+    fi
+    # Additional quality checks (lint, typecheck) if configured
+    if command -v npm &>/dev/null && [ -f "package.json" ]; then
+      npm run lint --if-present 2>/dev/null || {
+        echo "## HARD GATE: TESTS_PASS"
+        echo ""
+        echo "Cannot advance to reviewer — lint is failing."
+        echo "Fix lint errors before requesting review."
+        exit 1
+      }
+      npm run typecheck --if-present 2>/dev/null || npm run type-check --if-present 2>/dev/null || true
+    fi
+    ;;
+  reviewer)
+    # CRITERIA_MET gate: each criterion must have PASS with evidence
+    # This is verified by the reviewer hat itself — if the reviewer calls /advance,
+    # it means criteria were evaluated. The structured completion marker is checked here.
+    REVIEW_RESULT=$(han keep load review-result.json --quiet 2>/dev/null || echo "")
+    if [ -n "$REVIEW_RESULT" ]; then
+      ALL_PASS=$(echo "$REVIEW_RESULT" | han parse json allPass -r --default "false" 2>/dev/null || echo "false")
+      if [ "$ALL_PASS" != "true" ]; then
+        echo "## HARD GATE: CRITERIA_MET"
+        echo ""
+        echo "Cannot advance — not all criteria have PASS status with evidence."
+        echo "Review the failing criteria and address them before advancing."
+        exit 1
+      fi
+    fi
+    ;;
+esac
+```
+
+Then determine the next hat:
 
 ```javascript
 // Resolve workflow for this unit: per-unit workflow takes priority, then intent-level fallback

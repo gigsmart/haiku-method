@@ -246,6 +246,33 @@ Spawn one subagent per design file, in parallel with codebase Explore agents. Wh
 
 If a VCS MCP is available (e.g., GitHub MCP), use it for code browsing alongside or instead of local file tools.
 
+### Brownfield Codebase Mapping
+
+When the intent targets an existing codebase (not a greenfield project), produce a lightweight architecture overview:
+
+1. **Stack identification** — Detect languages, frameworks, build tools, package managers from config files (package.json, Cargo.toml, go.mod, etc.)
+
+2. **Architecture mapping** — Identify major modules/packages, entry points, and dependency direction from directory structure and imports
+
+3. **Conventions detection** — Scan for patterns: naming conventions, file organization, test structure, error handling patterns
+
+4. **Concerns inventory** — Note existing technical debt, TODOs, known issues from comments and issue trackers
+
+Output as a structured block in the discovery results:
+
+```markdown
+## Codebase Context
+
+**Stack:** {languages, frameworks, build tools}
+**Architecture:** {monolith/microservices/monorepo, major modules}
+**Conventions:** {naming, file org, test patterns}
+**Concerns:** {tech debt, known issues relevant to this intent}
+```
+
+This context feeds into unit decomposition — units should respect existing module boundaries and follow established conventions.
+
+**Skip this step for greenfield projects** (no existing source files in the target directories).
+
 ### Persist Findings to Discovery Log
 
 After each significant finding (API schema mapped, codebase pattern identified, design analyzed, external research completed), **append a section to `discovery.md`**. This offloads detailed findings from context to disk, keeping your context window lean while preserving full details for builders.

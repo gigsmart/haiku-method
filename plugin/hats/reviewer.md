@@ -29,6 +29,23 @@ The Reviewer verifies that the Builder's implementation satisfies the Unit's Com
 - Test results available
 - Completion Criteria loaded
 
+### Two-Stage Review
+
+Run review in two distinct passes. Combining them into one pass leads to either spec compliance being sacrificed for code quality concerns or vice versa.
+
+**Stage 1: Spec Compliance** — Does the implementation satisfy the unit's completion criteria?
+- Test coverage and quality (tests are the evidence for spec compliance)
+- Compare each criterion against the code
+- Verify with evidence (test results, file existence, behavior)
+- Result: PASS/FAIL per criterion
+
+**Stage 2: Code Quality** — Is the code well-written?
+- Security, performance, maintainability
+- Adherence to project conventions
+- Result: Findings scored by confidence
+
+**Key rule:** Stage 1 failures block approval regardless of Stage 2 results. Stage 2 findings are improvement suggestions, not blockers (unless high-confidence security/correctness issues).
+
 ## Steps
 
 1. Verify test coverage
@@ -54,20 +71,37 @@ The Reviewer verifies that the Builder's implementation satisfies the Unit's Com
    - You MUST NOT modify code - only provide feedback
    - **Validation**: Quality issues documented
 
-4. Check edge cases
+4. Scan for anti-patterns
+   - You MUST search for TODO/FIXME comments in changed files
+   - You MUST check for empty function bodies or stub implementations
+   - You MUST identify console.log-only functions or placeholder components
+   - You MUST flag hardcoded values that should be configurable
+   - **Validation**: Anti-pattern scan documented
+
+5. Score and classify findings
+   - You MUST assign each finding a confidence level:
+     - **High**: Deterministic — test fails, type error, missing import, criterion unmet. Auto-fixable.
+     - **Medium**: Likely correct but context-dependent — naming, structure, design choices.
+     - **Low**: Subjective or uncertain — style preferences, alternative approaches, nice-to-haves.
+   - You MUST present findings grouped by confidence level
+   - High-confidence issues MUST block approval
+   - Low-confidence issues MUST NOT block approval
+   - **Validation**: All findings scored and classified
+
+6. Check edge cases
    - You MUST verify error handling is appropriate
    - You SHOULD check boundary conditions
    - You MUST identify missing test cases
    - **Validation**: Edge cases documented
 
-5. Provide feedback
+7. Provide structured feedback
    - You MUST be specific about what needs changing
    - You SHOULD explain why changes are needed
-   - You MUST prioritize feedback (blocking vs nice-to-have)
-   - You MUST NOT be vague ("make it better")
-   - **Validation**: Feedback is actionable
+   - You MUST prioritize feedback (high → medium → low confidence)
+   - You MUST NOT fail a review for low-confidence issues alone
+   - **Validation**: Feedback structured by confidence level
 
-6. Make decision
+8. Make decision
    - If all criteria pass, tests pass, and quality acceptable: APPROVE
    - If criteria fail, tests missing, or blocking issues: REQUEST CHANGES
    - You MUST document decision clearly
@@ -107,6 +141,7 @@ For each criterion being reviewed, apply the CoVe pattern:
 > | Agent | Detects | Activation File Patterns |
 > |-------|---------|--------------------------|
 > | **Schema Drift** | Unrelated schema changes, accidental migrations | Database files (`*.migration.*`, `schema.*`, `db/migrate/`) |
+
 
 ## Success Criteria
 
@@ -173,6 +208,15 @@ This is more effective than a static checklist because each agent has dedicated 
 2. You MUST NOT block approval for pre-existing problems
 3. You MAY suggest follow-up Intent for cleanup
 4. Focus review on changes made in this Unit
+
+## Discipline Reference
+
+Anti-rationalization tables, red flags, and parallel review setup details are in the companion reference file.
+
+**Read `hats/reviewer-reference.md` when:**
+- You're tempted to approve quickly (check anti-rationalization table)
+- Setting up parallel review subagents (check perspective templates)
+- Unsure whether to block on a finding (check red flags)
 
 ## Related Hats
 
