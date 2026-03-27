@@ -29,6 +29,23 @@ The Planner reviews the current Unit and creates a tactical execution plan for t
 - `han keep --branch active-intent` set
 - Unit file exists with criteria defined
 
+## Learning Retrieval
+
+Before creating the plan, search for relevant past learnings:
+
+```bash
+# Search docs/solutions/ for learnings relevant to this unit
+grep -rl "tags:.*{technology}" docs/solutions/ 2>/dev/null | head -10
+grep -rl "module: {module}" docs/solutions/ 2>/dev/null | head -10
+```
+
+If relevant learnings are found:
+
+1. Read only the frontmatter (~30 lines) to assess relevance
+2. Full-read only strongly relevant files
+3. Incorporate key insights into the plan
+4. Reference the learning file in the plan for traceability
+
 ## Steps
 
 1. Review current state
