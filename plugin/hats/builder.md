@@ -140,6 +140,40 @@ When working with designs from design tools (Figma, Sketch, Adobe XD, etc.):
 3. You MUST recommend escalation to HITL
 4. You MUST NOT continue without human guidance
 
+### Auto-Fix Validation Loop
+
+When quality gates fail, attempt automatic fixes before escalating:
+
+```
+Run quality gates (lint, type-check, tests)
+  ↓ fails?
+Classify error type
+  ↓
+Auto-fixable? (lint → auto-format, missing import → add it, type error → fix signature)
+  ↓ yes
+Apply auto-fix
+  ↓
+Re-validate
+  ↓ still fails?
+Manual fix needed → use node repair operator
+```
+
+**Auto-fixable patterns:**
+| Error Type | Auto-Fix |
+|------------|----------|
+| Lint formatting | `npx prettier --write` or `npx eslint --fix` |
+| Missing import | Add the import statement |
+| Unused variable | Remove the declaration |
+| Type mismatch (simple) | Update type annotation |
+
+**NOT auto-fixable (require manual intervention):**
+- Logic errors
+- Missing functionality
+- Architectural issues
+- Failing tests (the test is right, the code is wrong)
+
+**Max auto-fix attempts:** 3 per quality gate run. After 3, escalate to manual fix.
+
 ## Related Hats
 
 - **Planner**: Created the plan being executed
