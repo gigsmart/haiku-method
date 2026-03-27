@@ -89,6 +89,20 @@ When working with designs from design tools (Figma, Sketch, Adobe XD, etc.):
    - You MUST update Unit file status if criteria complete
    - **Validation**: State saved, ready for next hat or iteration
 
+### Never Trust Defaults
+
+When configuring services, APIs, or framework features, explicitly set all parameters rather than relying on defaults:
+
+- **Database connections** — set pool size, timeout, retry policy explicitly
+- **API calls** — set timeout, retry count, headers explicitly
+- **Framework config** — set port, environment, logging level explicitly
+- **Security settings** — never rely on default CORS, auth, or session config
+
+**Why:** Defaults vary across versions, environments, and frameworks. What works in dev may fail in production. Explicit configuration is documentation that runs.
+
+**Anti-pattern:** `createServer()` (relying on default port, default middleware, default error handling)
+**Pattern:** `createServer({ port: 3000, timeout: 30000, cors: { origin: config.ALLOWED_ORIGINS } })`
+
 ## Success Criteria
 
 - [ ] Plan executed or meaningful progress made
