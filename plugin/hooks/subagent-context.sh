@@ -1,11 +1,17 @@
 #!/bin/bash
 # subagent-context.sh - SubagentPrompt hook for AI-DLC
 #
-# Injects full AI-DLC context into subagent prompts:
+# Injects role-scoped AI-DLC context into subagent prompts:
 # - Hat instructions (from hat file)
 # - AI-DLC workflow rules (iteration management)
 # - Unit/Bolt context (current unit, status, dependencies)
 # - Intent and completion criteria
+#
+# Context scoping by role (saves ~400 tokens for review subagents):
+#   review  (reviewer/red-team/blue-team) — skip bootstrap, worktree, resilience
+#   build   (builder/implementer/refactorer) — full context
+#   plan    (planner) — skip bootstrap, worktree, resilience; keep branch refs
+#   full    (default) — everything included
 
 set -e
 
@@ -48,6 +54,28 @@ WORKFLOW_NAME=$(echo "$ITERATION_JSON" | han parse json workflowName -r --defaul
 if [ "$STATUS" = "complete" ] || [ -z "$HAT" ]; then
   exit 0
 fi
+
+# Role-scoped context — skip irrelevant sections for review-focused subagents
+# Review hats don't need bootstrap, worktree setup, or resilience boilerplate
+# This saves ~400 tokens per review subagent invocation
+case "$HAT" in
+  reviewer|red-team|blue-team)
+    # Lean context: skip bootstrap, worktree, resilience sections
+    # Include: unit criteria, code context, review methodology
+    CONTEXT_SCOPE="review"
+    ;;
+  builder|implementer|refactorer)
+    # Full context: include everything
+    CONTEXT_SCOPE="build"
+    ;;
+  planner)
+    # Planning context: skip build details, include architecture, learnings
+    CONTEXT_SCOPE="plan"
+    ;;
+  *)
+    CONTEXT_SCOPE="full"
+    ;;
+esac
 
 # Get workflow hats array as string
 WORKFLOW_HATS=$(echo "$ITERATION_JSON" | han parse json workflow 2>/dev/null || echo '["planner","builder","reviewer"]')
@@ -231,65 +259,73 @@ echo ""
 echo "## AI-DLC Workflow Rules"
 echo ""
 
-# Branch references for cross-branch state access
-echo "### Branch References"
-echo ""
-echo "- **Intent branch:** \`ai-dlc/${INTENT_SLUG}/main\`"
+# Branch references - useful for build and plan scopes, skip for review
 REPO_ROOT=$(git worktree list --porcelain 2>/dev/null | head -1 | sed 's/^worktree //')
-echo "- **Intent worktree:** \`${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}/\`"
-echo ""
-echo "To access intent-level state from a unit branch:"
-echo "\`\`\`bash"
-echo "han keep load --branch \"ai-dlc/${INTENT_SLUG}/main\" <key>"
-echo "\`\`\`"
-echo ""
+if [ "$CONTEXT_SCOPE" != "review" ]; then
+  echo "### Branch References"
+  echo ""
+  echo "- **Intent branch:** \`ai-dlc/${INTENT_SLUG}/main\`"
+  echo "- **Intent worktree:** \`${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}/\`"
+  echo ""
+  echo "To access intent-level state from a unit branch:"
+  echo "\`\`\`bash"
+  echo "han keep load --branch \"ai-dlc/${INTENT_SLUG}/main\" <key>"
+  echo "\`\`\`"
+  echo ""
+fi
 
-echo "### Bootstrap (MANDATORY)"
-echo ""
-echo "Your spawn prompt tells you which worktree and branch to use."
-echo "After entering your unit worktree, load unit-scoped state:"
-echo ""
-echo "\`\`\`bash"
-echo "# Load previous context from your unit branch"
-echo "han keep load current-plan.md --quiet 2>/dev/null || true"
-echo "han keep load scratchpad.md --quiet 2>/dev/null || true"
-echo "han keep load blockers.md --quiet 2>/dev/null || true"
-echo "han keep load next-prompt.md --quiet 2>/dev/null || true"
-echo "\`\`\`"
-echo ""
-echo "These are scoped to YOUR branch. Read them to understand prior work on this unit."
-echo ""
+# Bootstrap and Worktree — only for build/full scopes (not review or plan)
+if [ "$CONTEXT_SCOPE" = "build" ] || [ "$CONTEXT_SCOPE" = "full" ]; then
+  echo "### Bootstrap (MANDATORY)"
+  echo ""
+  echo "Your spawn prompt tells you which worktree and branch to use."
+  echo "After entering your unit worktree, load unit-scoped state:"
+  echo ""
+  echo "\`\`\`bash"
+  echo "# Load previous context from your unit branch"
+  echo "han keep load current-plan.md --quiet 2>/dev/null || true"
+  echo "han keep load scratchpad.md --quiet 2>/dev/null || true"
+  echo "han keep load blockers.md --quiet 2>/dev/null || true"
+  echo "han keep load next-prompt.md --quiet 2>/dev/null || true"
+  echo "\`\`\`"
+  echo ""
+  echo "These are scoped to YOUR branch. Read them to understand prior work on this unit."
+  echo ""
 
-echo "### Worktree Isolation"
-echo ""
-echo "All bolt work MUST happen in an isolated worktree."
-echo "Working outside a worktree will cause conflicts with the parent session."
-echo ""
-echo "After entering your worktree, verify:"
-echo "1. You are in \`${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-{unit-slug}/\`"
-echo "2. You are on the correct unit branch (\`git branch --show-current\`)"
-echo "3. You loaded unit-scoped state (see Bootstrap above)"
-echo ""
+  echo "### Worktree Isolation"
+  echo ""
+  echo "All bolt work MUST happen in an isolated worktree."
+  echo "Working outside a worktree will cause conflicts with the parent session."
+  echo ""
+  echo "After entering your worktree, verify:"
+  echo "1. You are in \`${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-{unit-slug}/\`"
+  echo "2. You are on the correct unit branch (\`git branch --show-current\`)"
+  echo "3. You loaded unit-scoped state (see Bootstrap above)"
+  echo ""
+fi
 
-echo "### Before Stopping"
-echo ""
-echo "1. **Commit changes**: \`git add -A && git commit\`"
-echo "2. **Save scratchpad** (unit-scoped - your branch): \`han keep save scratchpad.md \"...\"\`"
-echo "3. **Write next prompt** (unit-scoped - your branch): \`han keep save next-prompt.md \"...\"\`"
-echo ""
-echo "**Note:** Unit-level state (scratchpad.md, next-prompt.md, blockers.md) is saved to YOUR branch."
-echo "Intent-level state (iteration.json, intent.md, etc.) is managed by the orchestrator on main."
-echo ""
-echo "### Resilience (CRITICAL)"
-echo ""
-echo "Bolts MUST attempt to rescue before declaring blocked:"
-echo ""
-echo "1. **Commit early, commit often** - Don't wait until the end"
-echo "2. **If changes disappear** - Investigate, recreate, commit immediately"
-echo "3. **If on wrong branch** - Switch to correct branch and continue"
-echo "4. **If tests fail** - Fix and retry, don't give up"
-echo "5. **Only declare blocked** after 3+ genuine rescue attempts"
-echo ""
+# Before Stopping and Resilience — only for build/full scopes
+if [ "$CONTEXT_SCOPE" = "build" ] || [ "$CONTEXT_SCOPE" = "full" ]; then
+  echo "### Before Stopping"
+  echo ""
+  echo "1. **Commit changes**: \`git add -A && git commit\`"
+  echo "2. **Save scratchpad** (unit-scoped - your branch): \`han keep save scratchpad.md \"...\"\`"
+  echo "3. **Write next prompt** (unit-scoped - your branch): \`han keep save next-prompt.md \"...\"\`"
+  echo ""
+  echo "**Note:** Unit-level state (scratchpad.md, next-prompt.md, blockers.md) is saved to YOUR branch."
+  echo "Intent-level state (iteration.json, intent.md, etc.) is managed by the orchestrator on main."
+  echo ""
+  echo "### Resilience (CRITICAL)"
+  echo ""
+  echo "Bolts MUST attempt to rescue before declaring blocked:"
+  echo ""
+  echo "1. **Commit early, commit often** - Don't wait until the end"
+  echo "2. **If changes disappear** - Investigate, recreate, commit immediately"
+  echo "3. **If on wrong branch** - Switch to correct branch and continue"
+  echo "4. **If tests fail** - Fix and retry, don't give up"
+  echo "5. **Only declare blocked** after 3+ genuine rescue attempts"
+  echo ""
+fi
 echo "### Communication"
 echo ""
 echo "**Notify users of important events:**"
