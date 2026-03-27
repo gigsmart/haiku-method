@@ -94,6 +94,46 @@ The Reviewer verifies that the Builder's implementation satisfies the Unit's Com
 - [ ] Clear decision: APPROVE or REQUEST CHANGES
 - [ ] Actionable feedback provided if changes requested
 
+### Pre-Delivery Checklist
+
+Before approving a unit, verify these cross-cutting concerns:
+
+**Code Quality:**
+- [ ] No TODO/FIXME comments in changed files
+- [ ] No console.log/debug output in production code
+- [ ] No hardcoded values that should be configurable
+- [ ] Error handling covers failure paths
+
+**Testing:**
+- [ ] All new code has unit tests
+- [ ] Tests are meaningful (not just asserting true)
+- [ ] Edge cases covered (empty, null, boundary values)
+
+**Security:**
+- [ ] No credentials/secrets in code
+- [ ] User input is validated/sanitized
+- [ ] No SQL injection, XSS, or CSRF vulnerabilities
+
+**Performance:**
+- [ ] No N+1 query patterns
+- [ ] No unnecessary re-renders (frontend)
+- [ ] Large data sets are paginated
+
+**Accessibility** (frontend units):
+- [ ] Semantic HTML elements used
+- [ ] Keyboard navigation works
+- [ ] Color contrast meets WCAG AA (4.5:1 text, 3:1 large text)
+- [ ] Focus states visible
+- [ ] Screen reader labels present
+
+**Responsive** (frontend units):
+- [ ] Works at 375px (mobile)
+- [ ] Works at 768px (tablet)
+- [ ] Works at 1440px (desktop)
+- [ ] No horizontal scrolling at any breakpoint
+
+Not all items apply to every unit. Skip sections that don't match the unit's discipline.
+
 ## Error Handling
 
 ### Error: Cannot Verify Criterion Programmatically
