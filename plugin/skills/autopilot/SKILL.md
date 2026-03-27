@@ -16,7 +16,7 @@ argument-hint: "<feature description>"
 
 ## Description
 
-**User-facing command** - Orchestrates the complete AI-DLC lifecycle for a well-understood feature: elaborate, execute all units, and deliver via PR/MR.
+**User-facing command** - Orchestrates the complete AI-DLC lifecycle for a well-understood feature: elaborate, construct all units, and deliver via PR/MR.
 
 **When to use:** Well-understood features with clear requirements. NOT for exploratory work, complex architecture, or anything requiring design decisions.
 
@@ -25,7 +25,7 @@ argument-hint: "<feature description>"
 User: /autopilot Add a dark mode toggle to the settings page
 AI: Starting autonomous lifecycle...
   Phase 1: Elaboration (/elaborate in autonomous mode)
-  Phase 2: Execution (/execute for each unit)
+  Phase 2: Construction (/construct for each unit)
   Phase 3: Delivery (PR/MR creation)
 AI: Done! PR #42 created. [summary]
 ```
@@ -100,24 +100,24 @@ Invoke `/elaborate` with the provided feature description in autonomous mode:
    This may be too complex for fully autonomous execution.
    Options:
    1. Continue with autopilot (I understand the scope)
-   2. Drop to manual mode (I'll run /execute myself)
+   2. Drop to manual mode (I'll run /construct myself)
    3. Re-elaborate with narrower scope
    ```
 4. **If 5 or fewer units:** Continue automatically.
 
-### Step 3: Execution Phase
+### Step 3: Construction Phase
 
-For each unit in dependency order, invoke `/execute`:
+For each unit in dependency order, invoke `/construct`:
 
-- `/execute` handles the full autonomous build/review cycle per unit
-- Units are executed in DAG order respecting dependencies
+- `/construct` handles the full autonomous build/review cycle per unit
+- Units are constructed in DAG order respecting dependencies
 - If any unit hits a blocker that requires human intervention, STOP the autopilot loop and report:
   ```
   AUTOPILOT PAUSED: Unit {unit-name} is blocked.
 
   Blocker: {description}
 
-  Resolve the blocker and run /autopilot to resume, or /execute to continue manually.
+  Resolve the blocker and run /autopilot to resume, or /construct to continue manually.
   ```
 
 ### Step 4: Delivery Phase
@@ -175,7 +175,7 @@ Phase summary:
 | Active intent already exists | Warn and ask user to confirm |
 | Elaboration fails | Stop, report error, suggest `/elaborate` manually |
 | More than 5 units generated | Pause, show scope, ask user to confirm |
-| Unit blocked during execution | Pause, report blocker, suggest resolution |
+| Unit blocked during construction | Pause, report blocker, suggest resolution |
 | All units complete but tests fail | Pause before delivery, report failures |
 | PR creation fails | Report error, provide manual instructions |
 
@@ -184,6 +184,6 @@ Phase summary:
 ## Relationship to Other Skills
 
 - **`/elaborate`** - Used internally for Phase 2 (elaboration). Use standalone for exploratory or complex elaboration.
-- **`/execute`** - Used internally for Phase 3 (execution). Use standalone for manual unit-by-unit execution.
+- **`/construct`** - Used internally for Phase 3 (construction). Use standalone for manual unit-by-unit construction.
 - **`/reflect`** - Can be run after autopilot completes to analyze the cycle.
-- **`/resume`** - If autopilot is interrupted mid-execution, `/resume` can restore state before re-running `/execute` or `/autopilot`.
+- **`/resume`** - If autopilot is interrupted mid-construction, `/resume` can restore state before re-running `/construct` or `/autopilot`.
