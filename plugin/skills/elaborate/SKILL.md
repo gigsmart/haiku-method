@@ -39,6 +39,8 @@ allowed-tools:
 
 # AI-DLC Mob Elaboration
 
+**Project customization:** Before starting, check for `.ai-dlc/ELABORATION.md`. If it exists, read it and incorporate its guidance throughout the elaboration process. This file contains project-specific domain context, required discovery areas, compliance requirements, and team conventions that supplement these skill instructions.
+
 You are the **Elaborator** starting the AI-DLC Mob Elaboration ritual. Your job is to collaboratively define:
 1. The **Intent** - What are we building and why?
 2. **Domain Model** - What entities, data sources, and systems are involved?
@@ -536,6 +538,27 @@ Use `AskUserQuestion` to validate:
 ```
 
 **Do NOT proceed past this phase until the user confirms the domain model is accurate.** If they identify gaps, explore more. This is the foundation everything else builds on.
+
+### Visual Brainstorming
+
+For UI-heavy intents, support visual brainstorming alongside the terminal conversation:
+
+1. **Generate wireframes/diagrams** — When discussing UI flows or architecture, generate HTML wireframes or Mermaid diagrams
+2. **Open in browser** — Use `open` (macOS) or `xdg-open` (Linux) to display visuals:
+   ```bash
+   # Architecture diagram
+   echo '<mermaid diagram>' > /tmp/aidlc-brainstorm.html && open /tmp/aidlc-brainstorm.html
+
+   # UI wireframe
+   echo '<wireframe html>' > /tmp/aidlc-wireframe.html && open /tmp/aidlc-wireframe.html
+   ```
+3. **Iterate visually** — After the user reviews, update and reopen. The visual and terminal conversation run in parallel.
+4. **Persist approved visuals** — Save approved wireframes/diagrams to `.ai-dlc/{intent-slug}/brainstorm/`
+
+This is most useful during:
+- Phase 2.5 (domain discovery) — architecture diagrams
+- Phase 5 (unit decomposition) — flow diagrams showing unit dependencies
+- Phase 6.25 (wireframes) — already handled by elaborate-wireframes skill
 
 ---
 

@@ -6,7 +6,7 @@ AI-DLC methodology plugin for Claude Code. Provides iterative AI-driven developm
 
 AI-DLC (AI-Driven Development Lifecycle) is a methodology for collaborative human-AI software development. It addresses the fundamental challenge of maintaining productive AI sessions across context window limitations through **committed artifacts** and **ephemeral state**.
 
-AI-DLC is a software development profile of the [H•AI•K•U Method](https://haikumethod.ai) (Human AI Knowledge Unification), a universal framework for structured human-AI collaboration. While H•AI•K•U provides the domain-agnostic lifecycle (Elaboration, Execution, Operation, Reflection), AI-DLC implements it with software-specific tooling: git worktrees, automated tests/lint/types as quality gates, pull requests, and deployment workflows.
+AI-DLC structures work into four phases — Elaboration, Execution, Operation, and Reflection — implemented with software-specific tooling: git worktrees, automated tests/lint/types as quality gates, pull requests, and deployment workflows.
 
 **Key Principles:**
 

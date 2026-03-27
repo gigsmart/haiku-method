@@ -240,6 +240,7 @@ if [ -z "${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}" ]; then
     echo "**$HAT** orchestrates work by spawning discipline-specific agents based on unit requirements."
     echo ""
   fi
+
 fi
 
 # Inject H•AI•K•U organizational memory (if workspace configured)
