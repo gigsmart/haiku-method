@@ -21,6 +21,18 @@
 			"$ref": "#/definitions/providersConfig",
 			"description": "External system providers for spec, ticketing, design, and comms"
 		},
+		"workflow_mode": {
+			"type": "string",
+			"enum": ["interactive", "autonomous"],
+			"default": "interactive",
+			"description": "interactive: pause for user approval at key decision points. autonomous: proceed automatically, only pause on blockers."
+		},
+		"granularity": {
+			"type": "string",
+			"enum": ["coarse", "standard", "fine"],
+			"default": "standard",
+			"description": "coarse: fewer, larger units with minimal process. standard: balanced unit decomposition. fine: many small units with detailed specs."
+		},
 		"mockup_format": {
 			"type": "string",
 			"enum": ["ascii", "html"],
