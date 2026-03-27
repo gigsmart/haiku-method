@@ -1,0 +1,64 @@
+name: Claude Conflict Resolver
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  resolve-conflicts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find conflicting PRs
+        id: find-conflicts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Wait a moment for GitHub to recalculate mergeability
+          sleep 5
+
+          # Get all open PRs targeting this branch
+          CONFLICTING=$(gh pr list --base main --state open --json number,headRefName,mergeable --jq '[.[] | select(.mergeable == "CONFLICTING")] | .[].number' 2>/dev/null || echo "")
+
+          if [ -z "$CONFLICTING" ]; then
+            echo "No conflicting PRs found"
+            echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Conflicting PRs: $CONFLICTING"
+          echo "has_conflicts=true" >> "$GITHUB_OUTPUT"
+          echo "pr_numbers=$CONFLICTING" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve conflicts with Claude
+        if: steps.find-conflicts.outputs.has_conflicts == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: '*'
+          prompt: |
+            The following PRs have merge conflicts with main after a recent push: ${{ steps.find-conflicts.outputs.pr_numbers }}
+
+            For each conflicting PR number:
+
+            1. Check out the PR branch: `git fetch origin && git checkout <branch>`
+            2. Attempt to merge main: `git merge origin/main`
+            3. If there are conflicts, resolve them by:
+               - Reading both sides of each conflict
+               - Keeping BOTH changes where they don't actually conflict (most common case — both sides added different content)
+               - For true conflicts (same lines changed differently), prefer the PR branch's intent while incorporating main's updates
+            4. After resolving: `git add <resolved files> && git commit -m "merge: resolve conflicts with main" && git push origin <branch>`
+            5. Comment on the PR: "Automatically resolved merge conflicts with main."
+
+            If a conflict is too complex to resolve automatically (e.g., architectural changes on both sides), comment on the PR explaining what conflicts exist and that manual resolution is needed.
+
+            Process each PR independently. A failure on one PR should not block others.
