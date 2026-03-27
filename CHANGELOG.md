@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.44.0] - 2026-03-27
+
+### Added
+
+- add file-based state persistence with lockfile protection ([227f170](../../commit/227f170))
+
+### Other
+
+- Merge pull request #60 from TheBushidoCollective/eco/file-state ([1deaa46](../../commit/1deaa46))
+
 ## [1.43.0] - 2026-03-27
 
 ### Added
