@@ -1244,6 +1244,8 @@ discipline: {discipline}  # frontend, backend, api, documentation, devops, desig
 pass: ""  # Which pass this unit belongs to (design, product, dev) — empty for single-pass intents
 workflow: ""  # Per-unit workflow override (optional — omit or leave empty to use intent-level workflow). Auto-set to "design" when discipline is "design".
 ticket: ""  # Ticketing provider ticket key (auto-populated if ticketing provider configured)
+design_ref: ""  # Optional: path to external design file (PNG/JPG/HTML) or directory. Activates visual fidelity gate with high fidelity.
+views: []  # Optional: list of views/routes this unit produces (e.g., ["/", "/about"]). Used for screenshot capture targeting.
 # git:                         # Optional: per-unit VCS override (only include when unit has an override)
 #   change_strategy: ""        # Overrides intent-level strategy for this unit (e.g., "unit" for foundational units)
 ---
@@ -1285,6 +1287,8 @@ misinterpret what to build.}
 
 > **Template selection by discipline:** For `discipline: design` units, use the design template below (Design Deliverables, States to Cover, Constraints, Design Tokens Reference). For all other disciplines (`frontend`, `backend`, `api`, `documentation`, `devops`, etc.), use the standard template above (Domain Entities, Data Sources, Technical Specification).
 
+> **Visual fidelity fields (`design_ref:` and `views:`):** These fields control the visual fidelity gate during review. Set `design_ref:` to a path when you have an external design mockup (PNG, JPG, HTML file, or directory of images) — this activates the visual gate with **high** fidelity, meaning the reviewer will expect a pixel-close match. Set `views:` to list the routes or views this unit produces (e.g., `["/", "/about", "/dashboard"]`) — this helps the capture system know which pages to screenshot. If neither field is set, the visual gate may still activate automatically via heuristics (discipline, changed file types, or UI terms in the spec), but will use lower-fidelity references (previous iteration screenshots or wireframes).
+
 #### Design unit file template:
 
 When a unit has `discipline: design`, use this template instead of the standard one above:
@@ -1298,6 +1302,8 @@ discipline: design
 pass: ""  # Which pass this unit belongs to (design, product, dev) — empty for single-pass intents
 workflow: ""  # Per-unit workflow override (optional — omit or leave empty to use intent-level workflow)
 ticket: ""  # Ticketing provider ticket key (auto-populated if ticketing provider configured)
+design_ref: ""  # Optional: path to external design file (PNG/JPG/HTML) or directory. Activates visual fidelity gate with high fidelity.
+views: []  # Optional: list of views/routes this unit produces (e.g., ["/", "/about"]). Used for screenshot capture targeting.
 # git:                         # Optional: per-unit VCS override (only include when unit has an override)
 #   change_strategy: ""        # Overrides intent-level strategy for this unit (e.g., "unit" for foundational units)
 ---

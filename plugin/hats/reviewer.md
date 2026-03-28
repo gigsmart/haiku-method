@@ -162,6 +162,7 @@ Reviewer (Master)
   ├── Code Quality Review Agent
   ├── Accessibility Review Agent
   ├── Responsive Review Agent
+  ├── Visual Fidelity Review Agent
   └── {domain-specific agents from review_agents config}
 ```
 
@@ -182,8 +183,22 @@ Reviewer (Master)
 | **Architecture** | SOLID violations, coupling, abstraction boundaries | New modules, interface changes, boundary crossings |
 | **Accessibility** | Semantic HTML, keyboard nav, contrast, focus management | Frontend units |
 | **Responsive** | Breakpoint behavior, horizontal scroll | Frontend units |
+| **Visual Fidelity** | Design reference comparison via AI vision | Units where `detect-visual-gate.sh` returns true |
 
 Additional domain-specific agents (Data Integrity, Schema Drift, Deployment Safety, etc.) are defined in `reviewer-reference.md` and activate based on changed file patterns.
+
+**Visual Fidelity agent process:**
+1. Run `run-visual-comparison.sh` to prepare screenshot pairs and comparison context
+2. Read `comparison-context.json` from the output directory
+3. For each screenshot pair: read both images (ref + built) using the Read tool
+4. Apply the vision comparison prompt (`vision-comparison-prompt.md`) with the resolved fidelity level
+5. Parse findings and update `comparison-report.md` with verdict and categorized findings
+6. Return findings to the master reviewer for consolidation
+
+**Visual Fidelity hard gate:**
+- If visual gate is active and comparison produces high-severity findings: reviewer MUST issue `Decision: REQUEST CHANGES`
+- If visual gate is active but infrastructure fails (capture error, reference resolution error, dev server down): reviewer MUST issue `Decision: REQUEST CHANGES` with infrastructure failure details
+- The visual gate is NEVER silently skipped when it should be active
 
 **How to delegate:**
 1. Read the unit, identify which agents to spawn based on changed files, unit discipline (frontend → accessibility + responsive), `review_agents` config, and `high_stakes` frontmatter
@@ -207,6 +222,7 @@ When the review is complete, emit exactly one of the following markers as the fi
 **Criteria:** {met}/{total} satisfied
 **Tests:** {pass}/{total} passing
 **Findings:** {high} high, {medium} medium, {low} low confidence
+**Visual Fidelity:** PASS|N/A — {findings_count} findings ({high} high, {medium} medium, {low} low)
 **Anti-patterns:** none | {count} found (non-blocking)
 
 ### Verified Truths
@@ -222,6 +238,7 @@ When the review is complete, emit exactly one of the following markers as the fi
 **Unit:** {unit name}
 **Criteria:** {met}/{total} satisfied
 **Blocking Issues:** {count}
+**Visual Fidelity:** PASS|FAIL|N/A — {findings_count} findings ({high} high, {medium} medium, {low} low)
 
 ### High-Confidence Issues (MUST fix)
 1. {issue} — {evidence}

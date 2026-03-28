@@ -60,6 +60,12 @@ Detailed design implementation guidance, provider sync details, and deviation ru
    - You MUST fix lint errors before proceeding
    - You MUST resolve type errors immediately
    - You MUST NOT disable or skip quality checks
+   - You MUST treat visual fidelity failures as implementation guidance:
+     - Read `.ai-dlc/{intent}/screenshots/{unit}/comparison-report.md` for specific visual differences
+     - High-severity findings are blocking — fix them before re-submitting
+     - Reference screenshots at `.ai-dlc/{intent}/screenshots/{unit}/ref-*.png` show design intent
+     - Built screenshots at `.ai-dlc/{intent}/screenshots/{unit}/*.png` show what you produced
+     - Compare them to understand the gap, then adjust your implementation
    - **Validation**: All quality gates pass
 
 4. Document progress

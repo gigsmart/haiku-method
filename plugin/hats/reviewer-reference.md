@@ -15,6 +15,10 @@ Companion to the Reviewer hat. Loaded on-demand for discipline checks and parall
 | "The code looks clean, approve it" | Clean code that does not satisfy the Completion Criteria is still wrong. Verify each criterion. |
 | "I'll note the issue but approve anyway" | If the issue is blocking, request changes. Approving with known problems is not reviewing. |
 | "I read the code, that's enough" | Reading is not verifying. Run commands and check output programmatically. |
+| "The wireframes are too different" | Fidelity level adjusts tolerance. Low-fidelity compares structure, not pixels. |
+| "Visual comparison is subjective" | Structured categories with defined severities. High-severity issues are objective structural mismatches. |
+| "Screenshots didn't capture correctly" | Infrastructure failure = review failure. Fix capture, don't skip the gate. |
+| "The visual differences are minor" | Minor is a severity judgment. Document findings, score them, let the severity guide the verdict. |
 
 ## Red Flags
 
@@ -38,6 +42,7 @@ Beyond the core 5 perspectives (Security, Performance, Architecture, Correctness
 | **Concurrency** | Race conditions, deadlocks, transaction isolation | Multi-threaded or async code |
 | **API Contract** | Breaking changes, versioning, backwards compatibility | Public API modifications |
 | **Design System** | Token usage, component conventions, visual consistency | Frontend component changes |
+| **Visual Fidelity** | AI vision comparison of built output vs design reference | Units where `detect-visual-gate.sh` returns true (frontend/design discipline, design_ref/wireframe fields, UI file changes, UI terms in spec) |
 
 ### Activation
 

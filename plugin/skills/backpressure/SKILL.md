@@ -158,6 +158,40 @@ hooks:
 - Update vulnerable packages
 - Consider security implications
 
+### 6. Visual Fidelity Backpressure
+
+Visual fidelity backpressure uses AI vision to compare built output against design references. Unlike the other backpressure types (which run shell commands), this one is orchestrated by the reviewer agent using screenshot capture and vision comparison.
+
+**How it works:**
+
+1. **Gate detection** (`detect-visual-gate.sh`) — A 5-point heuristic determines if the unit produces user-visible output. Any single match activates the gate:
+   - Unit discipline is `frontend` or `design`
+   - Unit has a `design_ref:` field in frontmatter
+   - Unit has a `wireframe:` field in frontmatter
+   - Changed files include UI extensions (`.tsx`, `.jsx`, `.vue`, `.svelte`, `.html`, `.css`, `.scss`)
+   - Unit spec body mentions UI terms (page, view, screen, component, layout, dashboard, form)
+
+2. **Reference resolution** (`resolve-design-ref.sh`) — Resolves the design reference using a 3-level priority hierarchy:
+   - **External design** (`design_ref:` field) — fidelity: **high** (pixel-close match expected)
+   - **Previous iteration** (`iterates_on` screenshots) — fidelity: **medium** (structural similarity)
+   - **Wireframe** (`wireframe:` field) — fidelity: **low** (layout/structure only)
+
+3. **Screenshot capture** (`capture-screenshots.sh`) — Pluggable capture system with two providers:
+   - **Playwright** — Headless Chromium capture from a URL or static HTML at multiple breakpoints (default: 375, 768, 1280)
+   - **Manual** — Copies pre-captured images with correct naming and manifest
+
+4. **Vision comparison** — The reviewer agent reads reference and built screenshots side-by-side, applies the fidelity-appropriate prompt (`vision-comparison-prompt.md`), and scores findings by category and severity.
+
+**Effect:** AI cannot ship UI that visually diverges from the design reference.
+
+**AI learns to:**
+- Reproduce design references accurately
+- Match layouts, colors, and typography to design intent
+- Handle responsive breakpoints correctly
+- Fix visual regressions before re-submitting
+
+**Hard gate:** If the visual gate is active and comparison produces high-severity findings, the reviewer MUST issue `REQUEST CHANGES`. Infrastructure failures (capture errors, missing references, dev server down) also block approval — the gate is never silently skipped.
+
 ## Implementing Backpressure
 
 ### In Han Plugins
@@ -339,6 +373,21 @@ AI remembers project patterns:
 "This project uses snake_case for database columns"
 ```
 
+### Pattern 4: Design Fidelity
+
+AI learns to reproduce design references accurately:
+
+```
+Iteration 1: Build UI from spec
+→ Visual fidelity review: layout wrong, colors off
+Iteration 2: Fix layout structure, match color tokens
+→ Visual fidelity review: responsive breakpoint broken
+Iteration 3: Fix mobile layout
+→ All pass, proceed
+```
+
+Over time, the AI preemptively checks design references and matches them during initial implementation.
+
 ## Measuring Backpressure Effectiveness
 
 ### Hook Pass Rates
@@ -379,6 +428,21 @@ Track over time:
 
 ❌ Cryptic error messages
 ✅ Actionable feedback with fix suggestions
+
+### Wireframe Excuse
+
+❌ "It's just a wireframe, visual fidelity doesn't matter"
+✅ Low fidelity still checks structure and layout — only colors and typography are skipped
+
+### Skipping the Visual Gate
+
+❌ Silently skipping visual comparison when infrastructure fails
+✅ Infrastructure failures block approval — fix capture, don't skip the gate
+
+### Ignoring Fidelity Levels
+
+❌ Holding wireframe references to pixel-perfect standards
+✅ Fidelity level adjusts tolerance: high = pixel-close, medium = structural, low = layout only
 
 ## Integration with AI-DLC
 
