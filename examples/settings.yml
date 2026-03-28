@@ -60,3 +60,74 @@ git:
 #     type: slack               # slack | teams | discord
 #     config:
 #       channel: "#dev-updates"
+
+# Infrastructure Stack Configuration (optional)
+# Describes the deployment and operations layers of your project.
+# All layers are optional. An empty stack ({}) is valid.
+# stack:
+#   infrastructure:
+#     - provider: terraform       # terraform | cloudformation | pulumi | none
+#       scope: infra/
+#       state_backend: s3
+#   compute:
+#     - provider: kubernetes      # kubernetes | ecs | lambda | docker-compose | none
+#       managed_by: eks
+#       registry: 123456789.dkr.ecr.us-east-1.amazonaws.com
+#   packaging:
+#     - provider: helm            # helm | kustomize | raw-manifests | none
+#       charts_dir: charts/
+#   pipeline:
+#     - provider: github-actions  # github-actions | gitlab-ci | jenkins | circleci | none
+#       workflows_dir: .github/workflows/
+#   secrets:
+#     - provider: vault           # vault | aws-sm | gcp-sm | env | none
+#   monitoring:
+#     - provider: datadog         # prometheus | datadog | cloudwatch | newrelic | otel | none
+#   alerting:
+#     - provider: pagerduty       # pagerduty | opsgenie | datadog | prometheus-alertmanager | none
+#       routing: backend-team
+#   operations:
+#     runtime: node               # node | python | go | shell (auto-detected if omitted)
+#     scheduled:
+#       - name: cleanup
+#         schedule: "0 3 * * *"
+#         command: node scripts/cleanup.js
+#     reactive:
+#       - name: alert-handler
+#         trigger: webhook
+#         command: node scripts/handle-alert.js
+
+# Quality Gates (backpressure checks)
+# These commands run during execution to ensure code quality.
+# quality_gates:
+#   test:
+#     command: npm test
+#   lint:
+#     command: npx eslint .
+#   typecheck:
+#     command: npx tsc --noEmit
+#   build:
+#     command: npm run build
+#   deploy_validate:
+#     command: ./scripts/validate-deploy.sh
+#   container_build:
+#     command: docker build .
+#   manifest_validate:
+#     command: helm template charts/ | kubeval
+
+# Review Agents
+# Configure which specialized review agents run for this project.
+# review_agents:
+#   security: true                     # default: true
+#   performance: true                  # default: true
+#   architecture: true                 # default: true
+#   correctness: true                  # default: true
+#   test_quality: true                 # default: true
+#   data_integrity: false              # default: false
+#   schema_drift: false                # default: false
+#   accessibility: false               # default: false
+#   api_contract: false                # default: false
+#   design_system: false               # default: false
+#   deployment_safety: false           # default: false
+#   observability_completeness: false  # default: false
+#   infrastructure_correctness: false  # default: false
