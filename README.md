@@ -25,18 +25,17 @@ AI-DLC structures work into four phases — Elaboration, Execution, Operation, a
 /plugin install ai-dlc@thebushidocollective-ai-dlc --scope project
 ```
 
-```bash
-# Or via Han (must be npx, project-scoped)
-npx han plugin install thebushidocollective/ai-dlc --scope project
-```
-
 ### Prerequisites
 
-This plugin uses [Han CLI](https://github.com/thebushidocollective/han) for state management (`han keep` commands).
+This plugin requires [`jq`](https://jqlang.github.io/jq/) (v1.7+) and [`yq`](https://github.com/mikefarah/yq) (mikefarah/Go, v4+) for JSON/YAML parsing.
 
-Install Han first:
 ```bash
-curl -fsSL https://han.guru/install.sh | bash
+# macOS
+brew install jq yq
+
+# Ubuntu/Debian
+sudo apt install jq
+sudo snap install yq
 ```
 
 ## Terminology
@@ -160,7 +159,7 @@ User: /execute
 Context is preserved across sessions:
 
 - **Committed**: Intent, Units, progress in `.ai-dlc/`
-- **Ephemeral**: Current hat, scratchpad in `han keep`
+- **Ephemeral**: Current hat, scratchpad in `.ai-dlc/{slug}/state/`
 
 ### 4. Operate and Reflect
 
@@ -284,17 +283,17 @@ Persisted across sessions, branches, and team members:
 | `unit-{NN}-*.md` | Individual work units with their own criteria |
 | `discovery.md` | Domain discovery notes from elaboration |
 
-### Ephemeral State (`han keep`)
+### Ephemeral State (`.ai-dlc/{slug}/state/`)
 
 Session-scoped, cleared on `/reset`:
 
-| Key | Purpose |
-|-----|---------|
+| File | Purpose |
+|------|---------|
 | `iteration.json` | Current hat, iteration count, status |
 | `scratchpad.md` | Learnings and progress notes |
 | `blockers.md` | Documented blockers |
 
-> **Note:** Both commands and hooks use `han keep` CLI commands (`han keep save`, `han keep load`, `han keep delete`, `han keep list`) for state management.
+> **Note:** State is stored as files in `.ai-dlc/{intent-slug}/state/` and managed via `dlc_state_save`/`dlc_state_load` from `plugin/lib/state.sh`.
 
 ## Customization
 
@@ -370,8 +369,8 @@ These internal skills provide AI-DLC knowledge to the agent (not user-invocable)
 | Problem | Solution |
 |---------|----------|
 | **Invalid iteration.json** | Run `/reset` to clear corrupted state |
-| **Stuck in wrong hat** | Edit `iteration.json` via `han keep load/save` or `/reset` |
-| **Hook not injecting context** | Verify `han` and `jq` are installed and in PATH |
+| **Stuck in wrong hat** | Edit `.ai-dlc/{slug}/state/iteration.json` directly or run `/reset` |
+| **Hook not injecting context** | Verify `jq` and `yq` (mikefarah/Go) are installed and in PATH |
 | **Missing hat instructions** | Check hat file exists in `.ai-dlc/hats/` or plugin's `hats/` |
 | **Orphaned ephemeral state** | Run `/reset` to clear, recommit intent if needed |
 | **Orphaned worktrees** | Run `/cleanup` to remove stale worktrees |
@@ -380,13 +379,13 @@ These internal skills provide AI-DLC knowledge to the agent (not user-invocable)
 
 ```bash
 # View current iteration state
-han keep load --branch iteration.json
+cat .ai-dlc/{intent-slug}/state/iteration.json | jq .
 
 # View scratchpad
-han keep load --branch scratchpad.md
+cat .ai-dlc/{intent-slug}/state/scratchpad.md
 
 # Clear all ephemeral state (same as /reset)
-han keep clear --branch
+rm -rf .ai-dlc/{intent-slug}/state/
 ```
 
 ### Recovery from Context Loss
@@ -394,7 +393,7 @@ han keep clear --branch
 If you `/clear` without running the stop hook:
 
 1. Your committed artifacts (`.ai-dlc/`) are safe
-2. Ephemeral state persists in `han keep`
+2. Ephemeral state persists in `.ai-dlc/{slug}/state/`
 3. Just run `/execute` to continue
 
 ## Development
