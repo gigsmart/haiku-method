@@ -1510,6 +1510,25 @@ git add .ai-dlc/${INTENT_SLUG}/unit-NN-{slug}.md
 git commit -m "elaborate(${INTENT_SLUG}): draft unit-NN-{slug}"
 ```
 
+**Step A.2 — Validate criteria categories by discipline.** After writing each unit, check that its success criteria cover all required categories for its discipline:
+
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+UNIT_DISCIPLINE="{discipline from unit frontmatter}"
+CATEGORIES_JSON=$(get_discipline_categories "$UNIT_DISCIPLINE")
+# Returns e.g.: {"functional":"required","deployable":"required","observable":"required","operable":"required"}
+```
+
+For each category where the value is `"required"`, scan the unit's success criteria to verify at least one criterion addresses that category:
+- **functional**: criteria about correct behavior, expected outputs, user-visible features
+- **deployable**: criteria about deployment, provisioning, artifacts, environment configuration
+- **observable**: criteria about metrics, logging, dashboards, alerts, tracing
+- **operable**: criteria about runbooks, rollback procedures, scaling, operational readiness
+
+If a required category has zero criteria, add at least one criterion for that category before presenting the unit for review. For categories with value `"optional"`, note the gap but do not require criteria — include them only if relevant to the unit's scope. For categories with value `null`, the category does not apply — skip it entirely.
+
+This enforcement ensures that, for example, a `backend` unit always has deployable/observable/operable criteria, while a `backend-library` unit only requires functional criteria.
+
 **Step B — Present the full unit for review.** Read the file you just wrote and display its **complete contents** — every single line including frontmatter, description, technical specification, success criteria, risks, boundaries, and notes. Do NOT summarize, truncate, or show only the title. The user must see exactly what will be committed. Use a fenced code block:
 
 ```
