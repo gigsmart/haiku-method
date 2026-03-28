@@ -1,0 +1,168 @@
+#!/bin/bash
+# parse.sh — JSON and YAML parsing utilities for AI-DLC
+#
+# Thin wrappers around jq and yq (mikefarah/Go) replacing the han parse API.
+# All functions handle errors gracefully (return empty/default, never crash hooks).
+#
+# Usage:
+#   source parse.sh
+#   echo '{"status":"active"}' | dlc_json_get status
+#   dlc_frontmatter_get status intent.md
+
+# Guard against double-sourcing
+if [ -n "${_DLC_PARSE_SOURCED:-}" ]; then
+  return 0 2>/dev/null || exit 0
+fi
+_DLC_PARSE_SOURCED=1
+
+# Source dependency checker
+PARSE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=deps.sh
+source "$PARSE_SCRIPT_DIR/deps.sh"
+
+# ============================================================================
+# JSON Functions (jq wrappers)
+# ============================================================================
+
+# Extract a field from JSON on stdin, with optional default
+# Usage: echo '{"key":"val"}' | dlc_json_get "key" ["default"]
+dlc_json_get() {
+  local field="$1"
+  local default="${2:-}"
+  if [ -n "$default" ]; then
+    jq -r ".$field // \"$default\"" 2>/dev/null || echo "$default"
+  else
+    jq -r ".$field // empty" 2>/dev/null || echo ""
+  fi
+}
+
+# Extract a field from JSON on stdin as raw JSON (arrays/objects preserved)
+# Usage: echo '{"arr":[1,2]}' | dlc_json_get_raw "arr"
+dlc_json_get_raw() {
+  local field="$1"
+  jq ".$field" 2>/dev/null || echo ""
+}
+
+# Set a field in JSON on stdin, output modified JSON to stdout
+# Automatically detects boolean/number/null values for correct JSON typing.
+# Usage: echo '{}' | dlc_json_set "key" "value"
+dlc_json_set() {
+  local field="$1"
+  local value="$2"
+  # Detect JSON literal values (boolean, null, number)
+  if [[ "$value" =~ ^(true|false|null|-?[0-9]+\.?[0-9]*(e[+-]?[0-9]+)?)$ ]]; then
+    jq --argjson v "$value" ".$field = \$v" 2>/dev/null
+  else
+    jq --arg v "$value" ".$field = \$v" 2>/dev/null
+  fi
+}
+
+# Validate JSON on stdin
+# Returns 0 if valid, 1 if invalid. No output on success.
+dlc_json_validate() {
+  jq empty 2>/dev/null
+}
+
+# ============================================================================
+# YAML Functions (yq wrappers)
+# ============================================================================
+
+# Extract a field from YAML on stdin, with optional default
+# Usage: cat file.yml | dlc_yaml_get "key" ["default"]
+dlc_yaml_get() {
+  local field="$1"
+  local default="${2:-}"
+  if [ -n "$default" ]; then
+    yq -r ".$field // \"$default\"" 2>/dev/null || echo "$default"
+  else
+    yq -r ".$field // \"\"" 2>/dev/null || echo ""
+  fi
+}
+
+# Extract a field from YAML on stdin as raw YAML
+# Usage: cat file.yml | dlc_yaml_get_raw "key"
+dlc_yaml_get_raw() {
+  local field="$1"
+  yq ".$field" 2>/dev/null || echo ""
+}
+
+# Update a YAML field in-place in a file
+# Detects .md files (uses --front-matter=process) vs .yml/.yaml (plain yq).
+# Uses tmp+mv for atomic writes.
+# Usage: dlc_yaml_set "key" "value" "file.yml"
+dlc_yaml_set() {
+  local field="$1"
+  local value="$2"
+  local file="$3"
+
+  if [ ! -f "$file" ]; then
+    echo "ai-dlc: dlc_yaml_set: file not found: $file" >&2
+    return 1
+  fi
+
+  local tmp="${file}.tmp.$$"
+  local expr
+  # Detect type for correct YAML encoding
+  if [[ "$value" =~ ^(true|false|null|-?[0-9]+\.?[0-9]*)$ ]]; then
+    expr=".$field = $value"
+  else
+    expr=".$field = \"$value\""
+  fi
+
+  case "$file" in
+    *.md)
+      yq --front-matter=process "$expr" "$file" > "$tmp" 2>/dev/null && mv "$tmp" "$file"
+      ;;
+    *)
+      yq "$expr" "$file" > "$tmp" 2>/dev/null && mv "$tmp" "$file"
+      ;;
+  esac
+}
+
+# Convert YAML on stdin to JSON on stdout
+# Usage: cat file.yml | dlc_yaml_to_json
+dlc_yaml_to_json() {
+  yq -o json 2>/dev/null || echo "{}"
+}
+
+# ============================================================================
+# Frontmatter Functions (markdown-specific)
+# ============================================================================
+
+# Extract a field from markdown frontmatter
+# Usage: dlc_frontmatter_get "status" "intent.md"
+dlc_frontmatter_get() {
+  local field="$1"
+  local file="$2"
+
+  if [ ! -f "$file" ]; then
+    echo ""
+    return 0
+  fi
+
+  yq --front-matter=extract -r ".$field // \"\"" "$file" 2>/dev/null || echo ""
+}
+
+# Update a field in markdown frontmatter in-place
+# Uses tmp+mv for atomic writes.
+# Usage: dlc_frontmatter_set "status" "active" "intent.md"
+dlc_frontmatter_set() {
+  local field="$1"
+  local value="$2"
+  local file="$3"
+
+  if [ ! -f "$file" ]; then
+    echo "ai-dlc: dlc_frontmatter_set: file not found: $file" >&2
+    return 1
+  fi
+
+  local tmp="${file}.tmp.$$"
+  local expr
+  if [[ "$value" =~ ^(true|false|null|-?[0-9]+\.?[0-9]*)$ ]]; then
+    expr=".$field = $value"
+  else
+    expr=".$field = \"$value\""
+  fi
+
+  yq --front-matter=process "$expr" "$file" > "$tmp" 2>/dev/null && mv "$tmp" "$file"
+}

@@ -1,89 +1,108 @@
 #!/bin/bash
-# state.sh — File-based state persistence for AI-DLC
-# Complement to han keep: persists state as readable markdown files
+# state.sh — File-based state management for AI-DLC
+#
+# Replaces han keep with filesystem-backed state.
+# State files live at .ai-dlc/{intent-slug}/state/.
+# All writes are atomic (tmp + mv).
+#
+# Usage:
+#   source state.sh
+#   dlc_state_save "$intent_dir" "iteration.json" "$json_content"
+#   content=$(dlc_state_load "$intent_dir" "iteration.json")
 
-# Write state file with lockfile protection
-# Usage: write_state_file <intent_dir> <filename> <content>
-write_state_file() {
-  local intent_dir="$1" filename="$2" content="$3"
-  local filepath="${intent_dir}/${filename}"
-  local lockfile="${filepath}.lock"
+# Guard against double-sourcing
+if [ -n "${_DLC_STATE_SOURCED:-}" ]; then
+  return 0 2>/dev/null || exit 0
+fi
+_DLC_STATE_SOURCED=1
 
-  # Acquire lock (timeout 10s)
-  local timeout=10
-  while [ -f "$lockfile" ] && [ "$timeout" -gt 0 ]; do
-    sleep 1; timeout=$((timeout - 1))
-  done
-  echo $$ > "$lockfile"
+# Source parse library (which sources deps.sh)
+STATE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=parse.sh
+source "$STATE_SCRIPT_DIR/parse.sh"
 
-  echo "$content" > "$filepath"
-  rm -f "$lockfile"
-}
+# Save state: atomic write (tmp + mv)
+# Usage: dlc_state_save <intent_dir> <key> <content>
+dlc_state_save() {
+  local intent_dir="$1"
+  local key="$2"
+  local content="$3"
+  local state_dir="${intent_dir}/state"
+  local filepath="${state_dir}/${key}"
 
-# Read state file
-# Usage: read_state_file <intent_dir> <filename>
-read_state_file() {
-  local intent_dir="$1" filename="$2"
-  cat "${intent_dir}/${filename}" 2>/dev/null || echo ""
-}
+  mkdir -p "$state_dir" 2>/dev/null || {
+    echo "ai-dlc: dlc_state_save: cannot create state directory: $state_dir" >&2
+    return 1
+  }
 
-# Update a section in a markdown state file (e.g., STATE.md)
-# Finds the section header and replaces content until the next header or EOF
-# Usage: update_state_section <intent_dir> <section_name> <content>
-update_state_section() {
-  local intent_dir="$1" section_name="$2" content="$3"
-  local filepath="${intent_dir}/STATE.md"
-  local lockfile="${filepath}.lock"
-
-  # Acquire lock (timeout 10s)
-  local timeout=10
-  while [ -f "$lockfile" ] && [ "$timeout" -gt 0 ]; do
-    sleep 1; timeout=$((timeout - 1))
-  done
-  echo $$ > "$lockfile"
-
-  if [ ! -f "$filepath" ]; then
-    # File doesn't exist — create with just this section
-    printf "# State\n\n## %s\n%s\n" "$section_name" "$content" > "$filepath"
-    rm -f "$lockfile"
-    return
-  fi
-
-  # Build the updated file:
-  # 1. Everything before the target section header
-  # 2. The new section header + content
-  # 3. Everything from the next same-level header onward
   local tmp="${filepath}.tmp.$$"
-  local in_section=false
-  local found=false
+  printf '%s' "$content" > "$tmp" && mv "$tmp" "$filepath"
+}
 
-  while IFS= read -r line; do
-    if [[ "$line" == "## ${section_name}" ]]; then
-      # Start of our target section — write new content
-      echo "## ${section_name}"
-      echo "$content"
-      in_section=true
-      found=true
-      continue
-    fi
+# Load state: return file contents or empty string if missing
+# Usage: dlc_state_load <intent_dir> <key>
+dlc_state_load() {
+  local intent_dir="$1"
+  local key="$2"
+  cat "${intent_dir}/state/${key}" 2>/dev/null || echo ""
+}
 
-    if $in_section && [[ "$line" =~ ^##\  ]]; then
-      # Hit the next section header — stop skipping
-      in_section=false
-    fi
+# Delete state file
+# Usage: dlc_state_delete <intent_dir> <key>
+dlc_state_delete() {
+  local intent_dir="$1"
+  local key="$2"
+  rm -f "${intent_dir}/state/${key}"
+}
 
-    if ! $in_section; then
-      echo "$line"
-    fi
-  done < "$filepath" > "$tmp"
-
-  # If section wasn't found, append it
-  if ! $found; then
-    echo "" >> "$tmp"
-    echo "## ${section_name}" >> "$tmp"
-    echo "$content" >> "$tmp"
+# List state keys (filenames in state directory)
+# Usage: dlc_state_list <intent_dir>
+dlc_state_list() {
+  local intent_dir="$1"
+  local state_dir="${intent_dir}/state"
+  if [ -d "$state_dir" ]; then
+    ls "$state_dir" 2>/dev/null
   fi
+}
 
-  mv "$tmp" "$filepath"
-  rm -f "$lockfile"
+# Fast YAML scalar extraction from frontmatter (pure bash, no subprocess)
+# Only handles simple "field: value" lines — used for performance-critical paths.
+_state_yaml_get_simple() {
+  local field="$1" default="$2"
+  local in_frontmatter=false value=""
+  while IFS= read -r line; do
+    [[ "$line" == "---" ]] && { $in_frontmatter && break || in_frontmatter=true; continue; }
+    $in_frontmatter || continue
+    if [[ "$line" =~ ^${field}:\ *(.*)$ ]]; then
+      value="${BASH_REMATCH[1]}"
+      value="${value#\"}"
+      value="${value%\"}"
+      value="${value#\'}"
+      value="${value%\'}"
+      break
+    fi
+  done
+  echo "${value:-$default}"
+}
+
+# Find the first active intent directory
+# Scans .ai-dlc/*/intent.md for status: active. Works from any working directory.
+# Returns the full path to the intent directory, or empty string if none found.
+# Usage: dlc_find_active_intent
+dlc_find_active_intent() {
+  local repo_root
+  repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || return 0
+
+  local intent_file
+  for intent_file in "$repo_root"/.ai-dlc/*/intent.md; do
+    [ -f "$intent_file" ] || continue
+    local status
+    status=$(_state_yaml_get_simple "status" "pending" < "$intent_file")
+    if [ "$status" = "active" ]; then
+      dirname "$intent_file"
+      return 0
+    fi
+  done
+
+  echo ""
 }
