@@ -60,7 +60,7 @@ The Experimenter tests hypotheses systematically to identify root cause (experim
 5. Document findings
    - You MUST record experiment and results
    - You MUST note any unexpected observations
-   - Save via `han keep save scratchpad.md "..."`
+   - Save via `dlc_state_save "$INTENT_DIR" "scratchpad.md" "..."`
    - **Validation**: Findings documented
 
 6. Iterate or advance

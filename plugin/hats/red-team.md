@@ -27,7 +27,7 @@ The Red Team attempts to break the implementation through security testing (atta
 
 - Application in testable state
 - Test environment isolated from production
-- Clean state to record findings via `han keep save blockers.md "..."`
+- Clean state to record findings via `dlc_state_save "$INTENT_DIR" "blockers.md" "..."`
 
 ## Steps
 
@@ -63,7 +63,7 @@ The Red Team attempts to break the implementation through security testing (atta
    - You MUST include reproduction steps
    - You MUST rate severity (Critical/High/Medium/Low)
    - You MUST NOT fix issues - only document
-   - Save findings via `han keep save blockers.md "..."`
+   - Save findings via `dlc_state_save "$INTENT_DIR" "blockers.md" "..."`
    - **Validation**: Findings documented for Blue Team
 
 ## Success Criteria

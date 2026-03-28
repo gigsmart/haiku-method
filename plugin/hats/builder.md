@@ -32,7 +32,7 @@ The Builder implements code to satisfy the Unit's Completion Criteria, using bac
 ## Steps
 
 1. Review plan and criteria
-   - You MUST read the current plan via `han keep load current-plan.md`
+   - You MUST read the current plan via `dlc_state_load "$INTENT_DIR" "current-plan.md"`
    - You MUST understand all Completion Criteria
    - You SHOULD identify which criteria to tackle first
    - You SHOULD reference design provider for UI specs if configured (Figma mockups, component specs)

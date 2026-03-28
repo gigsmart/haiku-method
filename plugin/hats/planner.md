@@ -26,7 +26,7 @@ The Planner reviews the current Unit and creates a tactical execution plan for t
 
 ### Required State
 
-- Active intent set (`han keep load intent-slug` returns a value)
+- Active intent set (`dlc_state_load "$INTENT_DIR" "intent-slug"` returns a value)
 - Unit file exists with criteria defined
 
 ### Git History Analysis
@@ -128,7 +128,7 @@ If relevant learnings are found:
    - **Validation**: Risks documented with mitigations
 
 5. Save plan
-   - You MUST save plan via `han keep save current-plan.md "..."`
+   - You MUST save plan via `dlc_state_save "$INTENT_DIR" "current-plan.md" "..."`
    - You SHOULD include specific files to modify
    - You MUST include verification steps
    - **Validation**: Plan saved and readable
@@ -157,7 +157,7 @@ For complex units (3+ tasks, unfamiliar technology, or high-risk changes), deepe
 - [ ] Plan is specific and actionable
 - [ ] Plan addresses previous blockers if any
 - [ ] Risks identified with mitigations
-- [ ] Plan saved via `han keep save current-plan.md "..."`
+- [ ] Plan saved via `dlc_state_save "$INTENT_DIR" "current-plan.md" "..."`
 
 ## Structured Completion Marker
 
