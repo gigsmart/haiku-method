@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.76.2] - 2026-03-28
+
+### Fixed
+
+- ensure intent and unit statuses are reliably set to completed ([1ead6fa](../../commit/1ead6fa))
+
+### Other
+
+- mark remove-hankeep-improve-state as completed ([9510a99](../../commit/9510a99))
+
 ## [1.76.1] - 2026-03-28
 
 ### Added
