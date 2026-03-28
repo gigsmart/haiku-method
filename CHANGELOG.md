@@ -5,18 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.77.0] - 2026-03-28
 
 ### Added
 
-- Visual fidelity backpressure: reviewer captures screenshots and compares against design references using AI vision
-- Pluggable screenshot capture with Playwright (web) and manual (any platform) providers
-- Design reference resolution with 3-level priority hierarchy (external design > previous iteration > wireframe)
-- `design_ref:` and `views:` unit frontmatter fields for explicit design linking and screenshot targeting
-- Auto-detection heuristic for units that produce user-visible output (5-point gate: discipline, design_ref, wireframe, UI file extensions, UI terms in spec)
-- Fidelity-aware comparison with adjustable tolerance (high/medium/low) via structured vision prompt
-- Visual fidelity hard gate: reviewer blocks approval on high-severity visual findings or infrastructure failures
-- Capture interface contract (`capture-interface.md`) defining provider plugin system, manifest schema, and exit codes
+- add visual fidelity review agent with gate detection and comparison orchestration ([ab8da4e](../../commit/ab8da4e))
+- add design reference resolver with 3-level priority hierarchy ([621911a](../../commit/621911a))
+- add pluggable screenshot capture infrastructure ([e160fe5](../../commit/e160fe5))
+
+### Fixed
+
+- resolve merge conflict with main in CHANGELOG.md ([d1fe86b](../../commit/d1fe86b))
+- remove 2>&1 from resolve-design-ref call to prevent stderr/JSON mixing ([32dd1bd](../../commit/32dd1bd))
+
+### Other
+
+- Merge unit-04-documentation into intent branch ([e74dbf1](../../commit/e74dbf1))
+- mark unit-04-documentation as completed ([636f250](../../commit/636f250))
+- add visual fidelity backpressure documentation ([8c003ac](../../commit/8c003ac))
+- mark unit-04-documentation as in_progress ([6ca1c3f](../../commit/6ca1c3f))
+- Merge unit-03-visual-fidelity-agent into intent branch ([ce77303](../../commit/ce77303))
+- mark unit-03-visual-fidelity-agent as completed ([ac10389](../../commit/ac10389))
+- mark unit-03-visual-fidelity-agent as in_progress ([d747a92](../../commit/d747a92))
+- Merge unit-02-design-ref-resolver into intent branch ([e3557a2](../../commit/e3557a2))
+- mark unit-02-design-ref-resolver as completed ([c41d925](../../commit/c41d925))
+- Merge branch 'ai-dlc/design-backpressure/main' into ai-dlc/design-backpressure/02-design-ref-resolver ([f61701d](../../commit/f61701d))
+- mark unit-02-design-ref-resolver as in_progress ([056457a](../../commit/056457a))
+- Merge unit-01-screenshot-infrastructure into intent branch ([37544f7](../../commit/37544f7))
+- mark unit-01-screenshot-infrastructure as completed ([e2fb433](../../commit/e2fb433))
+- mark unit-01-screenshot-infrastructure as in_progress ([9b05513](../../commit/9b05513))
+- draft unit-04-documentation ([0898529](../../commit/0898529))
+- draft unit-03-visual-fidelity-agent ([da9da10](../../commit/da9da10))
+- draft unit-02-design-ref-resolver ([6d9fd67](../../commit/6d9fd67))
+- revise unit-01-screenshot-infrastructure ([4796bb3](../../commit/4796bb3))
+- draft unit-01-screenshot-infrastructure ([0a213a8](../../commit/0a213a8))
+- define intent ([36129b1](../../commit/36129b1))
+- write discovery results ([0f99d01](../../commit/0f99d01))
+- discover domain model ([c6d8c7c](../../commit/c6d8c7c))
+- discover reviewer, builder, backpressure, wireframe, and playwright systems ([df11532](../../commit/df11532))
+- write discovery brief ([ed41865](../../commit/ed41865))
+- initialize discovery log ([4903e8c](../../commit/4903e8c))
 
 ## [1.76.2] - 2026-03-28
 
