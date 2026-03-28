@@ -602,8 +602,10 @@ UNIT_WORKFLOW_NAME=$(dlc_frontmatter_get "workflow" "$UNIT_FILE" 2>/dev/null || 
 if [ -z "$UNIT_WORKFLOW_NAME" ]; then
   UNIT_DISCIPLINE=$(dlc_frontmatter_get "discipline" "$UNIT_FILE" 2>/dev/null || echo "")
   case "$UNIT_DISCIPLINE" in
-    design) UNIT_WORKFLOW_NAME="design" ;;
-    *)      ;;  # fall through to intent-level
+    design)          UNIT_WORKFLOW_NAME="design" ;;
+    infrastructure)  UNIT_WORKFLOW_NAME="default" ;;
+    observability)   UNIT_WORKFLOW_NAME="default" ;;
+    *)               ;;  # fall through to intent-level
   esac
 fi
 
@@ -1289,6 +1291,8 @@ dlc_state_save "$INTENT_DIR" "iteration.json" "$STATE"
 **Builder agent selection by unit discipline:**
 - `frontend` -> `do-frontend-development:presentation-engineer`
 - `backend` -> `general-purpose` with backend context
+- `infrastructure` -> `general-purpose` with infrastructure/IaC context (Terraform, Helm, Dockerfiles, CI/CD pipelines)
+- `observability` -> `general-purpose` with monitoring/observability context (dashboards, alerts, SLOs, logging, tracing)
 - `documentation` -> `do-technical-documentation:documentation-engineer`
 - (other) -> `general-purpose`
 
