@@ -27,6 +27,12 @@ if ! dlc_require_jq || ! dlc_require_yq; then
   run_quality_gates() { return 0; }
   load_providers() { echo '{"spec":null,"ticketing":null,"design":null,"comms":null,"vcsHosting":null,"ciCd":null}'; }
   format_providers_markdown() { echo "### Project Providers"; echo ""; echo "No providers configured (dependencies not available)."; }
+  get_stack_layer() { echo "[]"; }
+  has_stack_provider() { return 1; }
+  get_operations_runtime() { echo "shell"; }
+  get_discipline_categories() { echo '{"functional":"required","deployable":null,"observable":null,"operable":null}'; }
+  is_category_required() { return 1; }
+  is_category_applicable() { return 1; }
   return 0 2>/dev/null || exit 0
 fi
 
@@ -637,4 +643,140 @@ ${merged}
     echo "### Provider Instructions"
     printf '%s' "$instructions_output"
   fi
+}
+
+# ============================================================================
+# Stack Configuration
+# ============================================================================
+
+# Get providers for a stack layer
+# Usage: get_stack_layer <layer_name> [repo_root]
+# Returns: JSON array of provider entries for the given layer, or '[]' if not configured
+# For operations layer, returns the operations object or '{}'
+get_stack_layer() {
+  local layer="$1"
+  local repo_root="${2:-$(find_repo_root)}"
+  local settings
+  settings=$(load_repo_settings "$repo_root")
+
+  if [ "$layer" = "operations" ]; then
+    echo "$settings" | jq -c ".stack.operations // {}"
+  else
+    echo "$settings" | jq -c ".stack.${layer} // []"
+  fi
+}
+
+# Check if a stack layer contains a specific provider
+# Usage: has_stack_provider <layer_name> <provider_name> [repo_root]
+# Returns: 0 if provider exists in layer, 1 otherwise
+has_stack_provider() {
+  local layer="$1"
+  local provider="$2"
+  local repo_root="${3:-$(find_repo_root)}"
+  local providers
+  providers=$(get_stack_layer "$layer" "$repo_root")
+
+  local count
+  count=$(echo "$providers" | jq "[.[] | select(.provider == \"$provider\")] | length" 2>/dev/null || echo "0")
+  [ "$count" -gt 0 ]
+}
+
+# Get the operations runtime (configured or auto-detected)
+# Usage: get_operations_runtime [repo_root]
+# Returns: runtime string (node, python, go, shell)
+get_operations_runtime() {
+  local repo_root="${1:-$(find_repo_root)}"
+  local settings
+  settings=$(load_repo_settings "$repo_root")
+
+  # Check configured runtime first
+  local runtime
+  runtime=$(echo "$settings" | jq -r '.stack.operations.runtime // empty' 2>/dev/null)
+  if [ -n "$runtime" ]; then
+    echo "$runtime"
+    return
+  fi
+
+  # Auto-detect from project files
+  if [ -f "$repo_root/package.json" ]; then
+    echo "node"
+  elif [ -f "$repo_root/setup.py" ] || [ -f "$repo_root/pyproject.toml" ]; then
+    echo "python"
+  elif [ -f "$repo_root/go.mod" ]; then
+    echo "go"
+  else
+    echo "shell"
+  fi
+}
+
+# ============================================================================
+# Discipline-to-Criteria-Category Mapping
+# ============================================================================
+
+# Get required criteria categories for a discipline
+# Usage: get_discipline_categories <discipline>
+# Returns: JSON object with category -> "required" | "optional" | null
+#
+# Disciplines: backend, backend-library, frontend, api, infrastructure,
+#              observability, design, documentation, devops
+#
+# Categories: functional, deployable, observable, operable
+get_discipline_categories() {
+  local discipline="$1"
+  case "$discipline" in
+    backend)
+      echo '{"functional":"required","deployable":"required","observable":"required","operable":"required"}'
+      ;;
+    backend-library)
+      echo '{"functional":"required","deployable":null,"observable":null,"operable":null}'
+      ;;
+    frontend)
+      echo '{"functional":"required","deployable":"required","observable":"optional","operable":"optional"}'
+      ;;
+    api)
+      echo '{"functional":"required","deployable":"required","observable":"required","operable":"optional"}'
+      ;;
+    infrastructure)
+      echo '{"functional":null,"deployable":"required","observable":"required","operable":"required"}'
+      ;;
+    observability)
+      echo '{"functional":null,"deployable":null,"observable":"required","operable":"required"}'
+      ;;
+    design|documentation)
+      echo '{"functional":"required","deployable":null,"observable":null,"operable":null}'
+      ;;
+    devops)
+      echo '{"functional":null,"deployable":"required","observable":null,"operable":"required"}'
+      ;;
+    *)
+      # Default: only functional required
+      echo '{"functional":"required","deployable":null,"observable":null,"operable":null}'
+      ;;
+  esac
+}
+
+# Check if a criteria category is required for a discipline
+# Usage: is_category_required <discipline> <category>
+# Returns: 0 if required, 1 otherwise
+is_category_required() {
+  local discipline="$1"
+  local category="$2"
+  local categories
+  categories=$(get_discipline_categories "$discipline")
+  local value
+  value=$(echo "$categories" | jq -r ".${category} // empty")
+  [ "$value" = "required" ]
+}
+
+# Check if a criteria category is applicable (required or optional) for a discipline
+# Usage: is_category_applicable <discipline> <category>
+# Returns: 0 if required or optional, 1 if null/not applicable
+is_category_applicable() {
+  local discipline="$1"
+  local category="$2"
+  local categories
+  categories=$(get_discipline_categories "$discipline")
+  local value
+  value=$(echo "$categories" | jq -r ".${category} // empty")
+  [ -n "$value" ]
 }
