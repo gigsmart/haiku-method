@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Visual fidelity backpressure: reviewer captures screenshots and compares against design references using AI vision
+- Pluggable screenshot capture with Playwright (web) and manual (any platform) providers
+- Design reference resolution with 3-level priority hierarchy (external design > previous iteration > wireframe)
+- `design_ref:` and `views:` unit frontmatter fields for explicit design linking and screenshot targeting
+- Auto-detection heuristic for units that produce user-visible output (5-point gate: discipline, design_ref, wireframe, UI file extensions, UI terms in spec)
+- Fidelity-aware comparison with adjustable tolerance (high/medium/low) via structured vision prompt
+- Visual fidelity hard gate: reviewer blocks approval on high-severity visual findings or infrastructure failures
+- Capture interface contract (`capture-interface.md`) defining provider plugin system, manifest schema, and exit codes
+
 ## [1.76.1] - 2026-03-28
 
 ### Added
