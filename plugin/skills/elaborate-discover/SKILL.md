@@ -58,6 +58,7 @@ provider_config:
     type: jira
   comms:
     type: slack
+stack_config: {}  # Stack configuration from .ai-dlc/settings.yml (empty object if not configured)
 ```
 
 The markdown body contains:
@@ -107,7 +108,30 @@ Based on the intent description and clarification answers in the brief, identify
 
 6. **External Documentation and Libraries**: Use `WebSearch` and `WebFetch` to research relevant libraries, frameworks, APIs, standards, or prior art. If the intent involves a third-party system, find its documentation and understand its capabilities. If the intent involves a design pattern or technique, research best practices and common pitfalls.
 
-7. **Configured Providers**: If providers are configured in `provider_config`:
+7. **Configured Providers**: If providers are configured in `provider_config` (see below for details).
+
+8. **Deployment Architecture** *(skip for greenfield without deployment surface; skip if `stack_config` is empty or absent in the brief)*: Explore existing deployment and infrastructure configuration:
+   - Dockerfiles, Helm charts, Terraform/OpenTofu, CloudFormation, Kustomize manifests, Pulumi programs
+   - CI/CD pipeline definitions (`.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile`, `.circleci/`)
+   - Deployment environments (dev, staging, production) and promotion strategies
+   - Deployment patterns in use (blue-green, canary, rolling, recreate)
+   - Use `stack_config` from the brief to guide which infrastructure layers to explore
+
+9. **Monitoring & Observability Setup** *(skip for greenfield without deployment surface; skip if `stack_config` is empty or absent in the brief)*: Explore existing monitoring and observability:
+   - Prometheus configs, Grafana dashboards, Datadog monitors, CloudWatch alarms, New Relic configs
+   - Existing metrics, SLOs, SLIs, and alert rules
+   - Structured logging configuration (log levels, formats, aggregation)
+   - Distributed tracing setup (OpenTelemetry, Jaeger, Zipkin, X-Ray)
+   - Map which services are instrumented vs. uninstrumented
+
+10. **Operational Procedures** *(skip for greenfield without deployment surface; skip if `stack_config` is empty or absent in the brief)*: Explore existing operational documentation and tooling:
+    - Runbooks, operational docs, incident response procedures, post-mortem templates
+    - On-call rotation config (PagerDuty, Opsgenie, VictorOps)
+    - Scaling policies, auto-scaling configs, capacity planning docs
+    - Backup and disaster recovery procedures
+    - Note operational gaps relevant to the intent
+
+Configured Providers (continued from item 7): If providers are configured in `provider_config`:
    - **Spec providers** (Notion, Confluence, Google Docs): Search for requirements docs, PRDs, or technical specs related to the intent
    - **Ticketing providers** (Jira, Linear): Search for existing tickets, epics, or stories that relate to or duplicate this work
    - **Design providers** (Figma, Sketch, Adobe XD): Delegate to design analysis subagents (see item 4 in "How to Explore" below) to avoid flooding your context with design data. **Important:** Designers often annotate mockups with callouts, arrows, measurement labels, sticky notes, and descriptive text that convey UX behavior or implementation details. These annotations are **guidance, not part of the design itself** — extract the guidance (interaction notes, spacing rules, state descriptions, edge cases) and incorporate it into findings, but do not treat annotation visuals as UI elements to build.
@@ -288,6 +312,9 @@ After each significant finding (API schema mapped, codebase pattern identified, 
 - `## Architecture Decision: {topic}` — For greenfield/early projects: key architecture choices (frameworks, patterns, structure)
 - `## Technology Choice: {name}` — For greenfield/early projects: technology selection rationale
 - `## Reference Implementation: {name}` — For greenfield/early projects: external reference implementations or prior art informing the design
+- `## Deployment Architecture: {area}` — For deployment infrastructure findings (Dockerfiles, Helm charts, CI/CD, environments)
+- `## Monitoring Setup: {area}` — For monitoring and observability findings (metrics, dashboards, alerts, tracing)
+- `## Operational Procedures: {area}` — For operational documentation findings (runbooks, on-call, scaling, DR)
 
 **Commit immediately after each append to discovery.md:**
 ```bash
