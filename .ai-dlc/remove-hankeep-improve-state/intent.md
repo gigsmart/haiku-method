@@ -1,7 +1,16 @@
 ---
 workflow: default
+git:
+  change_strategy: intent
+  auto_merge: true
+  auto_squash: false
+announcements: []
+passes: []
+active_pass: ""
+iterates_on: ""
 created: 2026-03-14
 status: active
+epic: ""
 ---
 
 # Intent: Remove Han Keep Dependency & Improve Intent State Management
@@ -15,7 +24,7 @@ Used across 32 files (hooks, skills, hats, docs) for persisting state that survi
 
 **What it does:** Stores key-value pairs scoped to a git branch. Under the hood, `han keep` uses git notes or a similar git-native mechanism to attach arbitrary data to branches without polluting the working tree.
 
-**Current usage (~115 references across 32 files):**
+**Current usage (155 references across 32 files):**
 - `han keep save <key> <content>` — persist ephemeral state
 - `han keep load <key> --quiet` — retrieve state
 - `han keep delete <key>` — remove a key
@@ -38,7 +47,7 @@ Used across 32 files (hooks, skills, hats, docs) for persisting state that survi
 | `providers.json` | intent branch | Cached MCP provider discovery |
 
 ### 2. `han parse` — YAML/JSON parsing utility
-Used across 13 files (~145 occurrences) for parsing YAML frontmatter and manipulating JSON. This is a **utility dependency**, not a state dependency.
+Used across 13 files (107 occurrences) for parsing YAML frontmatter and manipulating JSON. This is a **utility dependency**, not a state dependency.
 
 **Current usage:**
 - `han parse yaml <field> -r` — extract YAML field
@@ -57,7 +66,6 @@ Used across 13 files (~145 occurrences) for parsing YAML frontmatter and manipul
 2. **Opaque storage** — `han keep` stores data in a way that's invisible to standard git tools (not in working tree, not easily inspectable).
 3. **Cross-branch complexity** — The `--branch` flag for accessing intent-level state from unit branches adds complexity and potential race conditions.
 4. **Two concerns conflated** — `han keep` (state storage) and `han parse` (YAML/JSON parsing) are unrelated capabilities bundled in one tool.
-5. **`han hook` wrapper** — `hooks.json` uses `han hook wrap-subagent-context` to wrap the subagent context hook. This is a third dependency on the `han` CLI beyond state and parsing.
 
 ---
 
@@ -282,34 +290,16 @@ eval "$(echo "$ITERATION_JSON" | jq -r '@sh "
 
 ---
 
-## Units
-
-### Unit 1: Create `deps.sh` — Dependency Check & Install
-Build `plugin/lib/deps.sh` that validates `jq` (v1.7+) and `yq` (mikefarah/yq v4+) are installed. Provide clear install instructions per platform. Detect wrong `yq` variant (kislyuk vs mikefarah). Run at plugin initialization.
-
-### Unit 2: Create `state.sh` Library
-Build `plugin/lib/state.sh` with file-based state management functions that mirror `han keep` semantics but use `.ai-dlc/{slug}/state/` files.
-
-### Unit 3: Create `parse.sh` Library
-Build `plugin/lib/parse.sh` with JSON/YAML parsing utilities that replace `han parse` using `jq` and `yq` (mikefarah/Go). Include frontmatter operations using `yq --front-matter`.
-
-### Unit 4: Migrate Hooks
-Update `inject-context.sh`, `enforce-iteration.sh`, and `subagent-context.sh` to use `state.sh` and `parse.sh` instead of `han keep` and `han parse`.
-
-### Unit 5: Migrate Skills
-Update all skills that use `han keep` (advance, blockers, completion-criteria, construct, elaborate, execute, fail, operate, reflect, refine, reset, resume) to use the new libraries.
-
-### Unit 6: Migrate Hat Documentation
-Update references in hat markdown files (builder, experimenter, observer, planner, red-team).
-
-### Unit 7: Migrate Config Libraries
-Update `config.sh` to remove `han keep`/`han parse` dependencies. Replace `han hook wrap-subagent-context` in `hooks.json` with a direct hook script.
-
-### Unit 8: Simplify iteration.json
-Remove redundant `unitStates` field, add formal phase enum, reduce parsing overhead.
-
-### Unit 9: Update Documentation
-Update README.md, website docs, paper references to reflect the removal of the `han` dependency and addition of `jq`/`yq` requirements.
+## Success Criteria
+- [ ] Zero references to `han keep`, `han parse`, or `han hook` remain in any plugin file
+- [ ] `plugin/lib/deps.sh` exists and validates `jq` (v1.7+) and `yq` (mikefarah/Go v4+) at plugin load
+- [ ] `plugin/lib/parse.sh` exists with JSON/YAML/frontmatter utility functions wrapping `jq` and `yq`
+- [ ] `plugin/lib/state.sh` exists with file-based state management in `.ai-dlc/{slug}/state/`
+- [ ] All hooks that used `han keep load/save` now read/write state files directly
+- [ ] All hooks that used `han parse json/yaml` now use `jq`/`yq` via parse.sh
+- [ ] `hooks.json` no longer references `han hook wrap-subagent-context`
+- [ ] SessionStart hook runs `dlc_check_deps` and exits cleanly with install instructions if deps missing
+- [ ] All existing plugin functionality works identically after migration
 
 ---
 
