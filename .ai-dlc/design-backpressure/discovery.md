@@ -184,3 +184,37 @@ Screenshots captured during review should be stored for:
 - `{breakpoint}-reference.png` — the design reference used
 - `comparison-report.md` — AI vision analysis results
 
+## Domain Model
+
+### Entities
+
+- **DesignReference** — The source of truth for what the UI should look like. Fields: `type` (external|iteration|wireframe), `path` (file path or URL), `fidelity` (high|medium|low), `breakpoints` (list of viewport widths)
+- **Screenshot** — A captured image of the built output at a specific viewport. Fields: `unit_slug`, `breakpoint` (mobile|tablet|desktop), `viewport_width`, `path` (PNG file path), `captured_at` (ISO timestamp)
+- **ComparisonReport** — AI vision analysis comparing screenshot against design reference. Fields: `unit_slug`, `breakpoint`, `verdict` (pass|fail), `fidelity_score` (0-100), `findings` (list of VisualFinding)
+- **VisualFinding** — A specific visual discrepancy or confirmation. Fields: `category` (layout|color|typography|states|responsive|flow), `severity` (high|medium|low), `description`, `location` (where in the UI), `reference_detail` (what was expected), `actual_detail` (what was found)
+- **ReviewerHat** — Existing entity, gains new Visual Fidelity review step. Fields: existing + `visual_review_enabled` (boolean), `visual_findings` (list of VisualFinding)
+- **Unit** — Existing entity, gains design reference linkage. Fields: existing + `design_ref` (optional path to external design), `wireframe` (existing field), `visual_gate` (boolean, auto-detected)
+
+### Relationships
+
+- Unit has zero or one DesignReference (resolved via priority hierarchy)
+- Unit has many Screenshots (one per breakpoint per review cycle)
+- Unit has one ComparisonReport per review cycle
+- ComparisonReport has many VisualFindings
+- ReviewerHat produces ComparisonReport as part of review delegation
+- Builder consumes ComparisonReport findings as feedback when looped back
+
+### Data Sources
+
+- **Design references** (filesystem): `.ai-dlc/{intent}/mockups/` for wireframes, `.ai-dlc/{intent}/designs/` for external files, previous intent screenshots via `iterates_on`
+- **Built output** (dev server): Playwright connects to `localhost:3000` (or configured port) to capture screenshots
+- **Unit frontmatter** (filesystem): `wireframe:`, `design_ref:`, `discipline:` fields determine visual gate activation
+- **AI vision model** (API): Claude vision capabilities for subjective comparison analysis
+
+### Data Gaps
+
+- **No Playwright infrastructure exists** — needs to be added as a dependency and configured for screenshot capture
+- **No screenshot storage convention** — need to define where screenshots live and how they're versioned
+- **No vision comparison prompt template** — need to design the prompt that guides subjective visual analysis
+- **No auto-detection of "produces UI output"** — need heuristic to determine which units trigger visual gate (discipline check + file extension patterns)
+
