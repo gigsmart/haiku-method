@@ -906,6 +906,52 @@ This unit does NOT handle: hat visualization (unit-03), live monitoring (unit-04
 or timeline replay (unit-05). It only renders the structural hierarchy.
 ```
 
+### Phase 5 (continued): Operations-Aware Unit Creation
+
+**Gate:** Skip this sub-phase entirely if the intent has no deployment surface. An intent has no deployment surface when:
+- It is a library, documentation, design-only, or pure refactor intent
+- Phase 2 ops questions were skipped (no deployment/monitoring/operations answers)
+- No stack config layers are populated in `.ai-dlc/settings.yml`
+
+When the intent DOES have a deployment surface, apply these rules to determine whether to create dedicated ops units or fold ops concerns into feature units:
+
+#### Step 1: Detect deployment surface
+
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+STACK_INFRA=$(get_stack_layer "infrastructure")
+STACK_MONITORING=$(get_stack_layer "monitoring")
+STACK_COMPUTE=$(get_stack_layer "compute")
+
+# Check: does the intent introduce NEW deployable services?
+# (Determined from clarification answers and domain model)
+INTRODUCES_NEW_SERVICES=false  # set true if intent adds new services/APIs/workers
+
+# Check: does the intent require NEW monitoring?
+# (Determined from Phase 2 ops answers)
+REQUIRES_NEW_MONITORING=false  # set true if user indicated new monitoring needed
+```
+
+#### Step 2: Apply auto-creation rules
+
+**Large intents (>2 units) with new deployable services:**
+- **Auto-create a dedicated infrastructure unit** (`discipline: infrastructure`) for IaC, Dockerfiles, Helm charts, Terraform manifests, CI/CD pipeline config. This unit has no `depends_on` — it is foundational. Feature units that deploy should `depends_on` the infrastructure unit.
+- **Auto-create a dedicated observability unit** (`discipline: observability`) for dashboards, alert rules, SLOs, logging config, tracing setup. This unit `depends_on` feature units (it needs to know what to monitor).
+
+**Small intents (1-2 units):**
+- Do NOT create separate infrastructure or observability units — this would be over-engineering for the scope.
+- Instead, **fold ops concerns into existing feature units**: add deployment/monitoring sections to existing unit specs and include deployable/observable success criteria in those units.
+
+**No deployment surface:**
+- Skip entirely. No ops units, no ops frontmatter blocks, no ops criteria. The elaboration flow is 100% unchanged.
+
+#### Step 3: Dependency wiring for auto-created ops units
+
+When infrastructure and observability units are auto-created:
+- Infrastructure unit: `depends_on: []` (foundational — no dependencies)
+- Feature units that deploy: add the infrastructure unit to their `depends_on` list
+- Observability unit: `depends_on` all feature units that emit metrics or logs (needs to know what to monitor)
+
 Present the full unit breakdown to the user and confirm before proceeding.
 
 ---
