@@ -348,7 +348,7 @@ For `owner: agent` operations:
    ```markdown
    ## Execution Result: {operation-name}
 
-   **Status:** {on-track | failed}
+   **Status:** {on-track | pending | failed}
    **Exit Code:** {exit-code}
    **Timestamp:** {timestamp}
 

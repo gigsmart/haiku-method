@@ -152,11 +152,14 @@ Each level is attempted only after the previous level fails. Never skip levels.
    - MUST include `--dry-run` flag for validation
    - Uses Anthropic SDK for AI reasoning ONLY when needed (anomaly analysis, incident triage)
 
-   **c. Operation deployment manifest** (`{operation-name}.deploy.{ext}`):
+   **c. Operation deployment manifest template** (`deploy/{operation-name}.{type}.{ext}` in `operations/deploy/`):
+   - Template manifest created at build time in `.ai-dlc/{intent}/operations/deploy/`
+   - These templates serve as the validation target for the OPERATIONS_READY gate
+   - `/operate --deploy` later regenerates production-ready manifests in the same location
    - Format determined by stack.operations config:
-     - kubernetes → CronJob/Deployment YAML
-     - github-actions → workflow YAML
-     - docker-compose → service definition
+     - kubernetes → CronJob/Deployment YAML (`{name}.cronjob.yaml` or `{name}.deployment.yaml`)
+     - github-actions → workflow YAML (`{name}.workflow.yaml`)
+     - docker-compose → service definition (`{name}.compose.yaml`)
      - none → skip manifest
 
    - You MUST run operation validation: script executes with `--dry-run`, manifest validates
