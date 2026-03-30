@@ -1246,6 +1246,22 @@ flowchart TB
 - **Backward flow is expected:** A dev pass discovering a constraint that sends work back to the design pass is normal iteration, not failure
 - **Traceability is maintained:** All artifacts link together, enabling forward and backward traceability across passes
 
+### Lifecycle Entry Points
+
+The workflow described above assumes greenfield inception — a team starting from scratch with a new idea or requirement. But real teams need multiple ways to enter the AI-DLC lifecycle. Not every feature begins with a blank canvas; some iterate on prior work, and others predate AI-DLC entirely.
+
+| Entry Point | When to Use | What It Produces | Where It Enters the Lifecycle |
+|-------------|-------------|------------------|-------------------------------|
+| **Elaborate** | Starting from scratch with a new idea or requirement | Intent, units, discovery through Mob Elaboration | Inception |
+| **Follow Up** | Iterating on a previous intent that already went through the lifecycle | A new intent linked via `iterates_on` to the prior intent | Inception with prior context |
+| **Adopt** | Reverse-engineering an existing feature that was built outside AI-DLC | Completed intent, units, discovery, and operational plan | Operations (skips Construction since code already exists) |
+
+**Adoption** addresses a common gap: features built before AI-DLC was introduced — or built without it — lack intent artifacts, unit decomposition, and operational plans. Without these artifacts, the feature cannot participate in `/operate` for ongoing operational management or `/followup` for structured iteration. Adoption bridges this gap by reverse-engineering artifacts from the codebase, git history, tests, and CI configuration.
+
+All artifacts produced by adoption carry `status: completed` because the feature already exists. There is no construction phase — the code is already written, tested, and deployed. Instead, adoption analyzes the existing implementation and produces the same artifact structure that elaboration and construction would have created, enabling the feature to enter the lifecycle at the Operations phase. The user confirms the proposed decomposition at multiple gates: intent and unit breakdown, success criteria with traceable test evidence, and operational plan.
+
+This makes adoption the primary on-ramp for teams bringing existing systems under AI-DLC governance. For a concrete example of brownfield context building, see the next section.
+
 ---
 
 ## AI-DLC 2026 in Action: Greenfield Development
@@ -1616,6 +1632,7 @@ For detailed runbooks with system prompts, entry/exit criteria, and failure mode
 
 | Term | Definition |
 |------|------------|
+| **Adoption** | The process of reverse-engineering an existing feature into AI-DLC intent artifacts, enabling operational management and structured iteration without requiring the feature to have been built through AI-DLC's construction phase |
 | **Backpressure** | Quality gates that automatically reject work not meeting criteria, providing feedback for iteration |
 | **Bolt** | Smallest iteration unit in AI-DLC 2026; operates in supervised (HITL), observed (OHOTL), or autonomous (AHOTL) mode |
 | **Completion Criteria** | Programmatically verifiable conditions that define when work is successfully done |
