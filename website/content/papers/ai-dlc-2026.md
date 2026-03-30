@@ -341,9 +341,11 @@ This doesn't mean structure disappears. It means structure changes form—from s
 
 ### Iteration Through Passes
 
-While phases collapse into continuous flow, real product development still involves distinct disciplines—design, product, and engineering—each bringing different expertise to the same intent. The question isn't whether these disciplines contribute sequentially (they often do), but whether that sequence is rigid and lossy (waterfall) or fluid and iterative.
+> **For mature teams, passes are unnecessary.** The ideal AI-DLC workflow handles all requirements, specs, and design in elaboration, then delivers everything in a single execution phase. Need to change something? Do a `/followup` and iterate. Move fast.
 
-AI-DLC 2026 introduces **Passes**: typed iterations through the standard AI-DLC loop (elaborate → units → execute → review), where each pass refines the intent through a different disciplinary lens. The output of one pass becomes the input to the next.
+While the single-pass flow is the goal, teams migrating to AI-DLC from traditional processes may need a transitional structure. **Passes** provide that structure: typed iterations through the standard AI-DLC loop (elaborate → units → execute → review), where each pass refines the intent through a different disciplinary lens. The output of one pass becomes the input to the next.
+
+**Passes will slow you down.** They exist for teams that aren't yet comfortable handling design, product, and engineering concerns in a single elaboration. As teams mature with the methodology, they naturally consolidate passes into a single flow and use `/followup` for iteration instead.
 
 ```mermaid
 flowchart TB
@@ -366,7 +368,6 @@ flowchart TB
         P2 --> P3["Execute"]
         P3 --> P4["Review"]
         P4 -->|"Gaps"| P1
-        P4 -.->|"Design gap"| D1
         P4 -->|"Done"| PART["Behavioral Specs"]
     end
 
@@ -378,12 +379,11 @@ flowchart TB
         E2 --> E3["Execute"]
         E3 --> E4["Review"]
         E4 -->|"Gaps"| E1
-        E4 -.->|"Constraint"| P1
         E4 -->|"Done"| CODE["Working Code"]
     end
 ```
 
-**The key difference from waterfall:** backward arrows are expected, not exceptional. When the dev pass discovers a constraint that invalidates a design assumption, work flows back to the product pass or design pass. This isn't failure—it's the intent iterating at a higher level than a bolt.
+**Passes flow forward, never backward.** If the dev pass discovers something the product pass missed, the dev pass owns it—it iterates within its own loop to resolve the gap. If a fundamental design assumption is wrong, that's a `/followup` intent after the current one completes. This keeps velocity high and avoids the cross-pass coordination overhead that makes waterfall slow.
 
 **Each pass uses the same AI-DLC loop** but with different participants, inputs, and outputs:
 
@@ -393,9 +393,9 @@ flowchart TB
 | **Unit type** | Design units | Acceptance units | Dev units |
 | **Execution mode** | OHOTL (subjective) | HITL (judgment) | AHOTL or HITL |
 | **Output artifact** | High-fidelity designs | Behavioral specs + criteria | Working code |
-| **Feedback flows to** | Itself | Back to Design if gap found | Back to Product if constraint found |
+| **Missed something?** | Iterate within pass | Iterate within pass | Iterate within pass |
 
-**Passes are optional and configurable.** A solo developer building a CLI tool may need only a dev pass. A cross-functional team building a consumer product may use all three. The methodology doesn't prescribe which passes to use—it provides the structure for teams that need them.
+**Passes are optional and a sign of immaturity.** A solo developer building a CLI tool uses a single dev pass (the default). A cross-functional team new to AI-DLC may use design → product → dev passes as training wheels. The goal is to graduate to single-pass elaboration where all disciplines contribute in one conversation.
 
 **Passes preserve the "Everyone Becomes a Builder" principle.** A designer running a design pass uses the same elaborate → execute → review loop as an engineer running a dev pass. The workflow is identical; the discipline and artifacts differ.
 
@@ -666,14 +666,14 @@ email/password registration and OAuth providers for social login.
 
 #### Pass
 
-A **Pass** is a typed iteration through the standard AI-DLC loop (elaborate, decompose into units, execute, review) that refines an Intent through a specific disciplinary lens. Passes are the mechanism by which cross-functional teams contribute to a shared intent without waterfall-style handoffs.
+A **Pass** is a typed iteration through the standard AI-DLC loop (elaborate, decompose into units, execute, review) that refines an Intent through a specific disciplinary lens. Passes are a transitional mechanism for teams migrating to AI-DLC that aren't yet comfortable handling all disciplines in a single elaboration. Mature teams skip passes entirely.
 
 **Each pass follows the same structure:**
 
 1. **Elaborate** — Clarify scope through the pass's disciplinary lens
 2. **Decompose** — Break into discipline-appropriate units
 3. **Execute** — Build artifacts using appropriate operating mode
-4. **Review** — Validate output; feed gaps back to current or previous pass
+4. **Review** — Validate output; iterate within the current pass if gaps are found
 
 **Built-in pass types:**
 
@@ -696,11 +696,13 @@ passes:
     status: pending
 ```
 
-**Passes are optional.** An intent with no `passes` field uses a single implicit dev pass—the current default behavior. Teams add passes when cross-functional iteration is needed.
+**Passes are optional and a sign of immaturity.** An intent with no `passes` field uses a single implicit dev pass—the current default behavior. Teams add passes only when they aren't yet comfortable handling all disciplines in a single elaboration.
 
-**Feedback between passes:** When a later pass discovers issues that require earlier-pass work, the intent iterates backward. The dev pass finding a constraint feeds back to the product pass. The product pass finding a design gap feeds back to the design pass. These backward flows are tracked in pass status and are a normal part of the workflow.
+**Passes flow forward, never backward.** If the dev pass discovers something the product pass missed, the dev pass owns it and iterates within its own loop. If a fundamental assumption is wrong, complete the current intent and use `/followup` to iterate. This keeps velocity high—backward flow between passes is the coordination overhead that makes waterfall slow.
 
 **Pass artifacts persist as context:** Each completed pass produces artifacts (designs, specs, code) that become input context for the next pass. This preserves the institutional knowledge that traditional handoffs lose.
+
+**The maturity goal:** Graduate from multi-pass to single-pass. When your team can handle design, product, and engineering concerns in one elaboration conversation, you've arrived. Passes are training wheels, not the bicycle.
 
 #### Unit
 
@@ -1065,7 +1067,7 @@ Each pass elaboration runs the same Mob Elaboration ritual with different partic
 
 The Execution Phase transforms Units into tested, deployment-ready artifacts through Bolts. This phase progresses through domain modeling, logical design, code generation, and testing—though these steps may be implicit rather than explicit depending on complexity.
 
-**When an intent has multiple passes,** Execution executes one pass at a time. The active pass's units are executed, reviewed, and completed before the next pass begins its elaboration. Feedback from a later pass can reactivate an earlier pass, sending the intent backward for refinement—this is expected iteration, not failure.
+**When an intent has multiple passes,** Execution executes one pass at a time. The active pass's units are executed, reviewed, and completed before the next pass begins its elaboration. If a later pass discovers gaps from an earlier pass, the current pass owns the resolution—it iterates within its own loop. Fundamental misses become `/followup` intents after the current one completes.
 
 **Mode Selection**
 
