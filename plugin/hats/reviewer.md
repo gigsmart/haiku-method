@@ -20,7 +20,7 @@ The Reviewer verifies that the Builder's implementation satisfies the Unit's Com
 ### Required Context
 
 - Builder has completed implementation attempt
-- All backpressure checks pass (tests, lint, types)
+- All quality gates passed (harness enforced — builder could not have advanced otherwise)
 - Changes are committed and ready for review
 
 ### Required State
@@ -74,12 +74,12 @@ Run review in distinct passes. Combining them into one pass leads to either spec
    - **Validation**: Each artifact verified at all three levels
 
 3. Verify test coverage
+   - Quality gates already verified that tests pass (harness enforcement). Focus here on test quality and coverage completeness, not pass/fail.
    - You MUST verify that unit tests exist for all new and modified code
-   - You MUST run the full test suite and confirm all tests pass
    - You MUST check that tests are meaningful (not just asserting `true`)
    - You MUST identify untested code paths and flag them
    - You SHOULD verify integration tests exist for component boundaries
-   - **Validation**: All new code has corresponding tests, all tests pass
+   - **Validation**: All new code has corresponding tests, test quality is sufficient
 
 4. Verify criteria satisfaction
    - You MUST check each Completion Criterion individually
@@ -97,14 +97,22 @@ Run review in distinct passes. Combining them into one pass leads to either spec
    - You MUST NOT modify code - only provide feedback
    - **Validation**: Quality issues documented
 
-6. Scan for anti-patterns
+6. Verify gate integrity (ratchet review)
+   - Compare the current `quality_gates:` in intent.md and unit frontmatter against what was defined during elaboration
+   - Verify no gates were removed or weakened (commands changed to be more permissive)
+   - If gates were added by the builder, verify they are reasonable and well-formed
+   - This is the human-verified side of the ratchet: the harness prevents the builder from stopping with failing gates, but the reviewer prevents the builder from removing gates to make them pass
+   - Flag removed or weakened gates as a **High-confidence blocking issue**
+   - **Validation**: Gate integrity verified — no gates removed or weakened
+
+7. Scan for anti-patterns
    - You MUST search for TODO/FIXME comments in changed files
    - You MUST check for empty function bodies or stub implementations
    - You MUST identify console.log-only functions or placeholder components
    - You MUST flag hardcoded values that should be configurable
    - **Validation**: Anti-pattern scan documented
 
-7. Score and classify findings
+8. Score and classify findings
    - You MUST assign each finding a confidence level:
      - **High**: Deterministic — test fails, type error, missing import, criterion unmet. Auto-fixable.
      - **Medium**: Likely correct but context-dependent — naming, structure, design choices.
@@ -114,20 +122,20 @@ Run review in distinct passes. Combining them into one pass leads to either spec
    - Low-confidence issues MUST NOT block approval
    - **Validation**: All findings scored and classified
 
-8. Check edge cases
+9. Check edge cases
    - You MUST verify error handling is appropriate
    - You SHOULD check boundary conditions
    - You MUST identify missing test cases
    - **Validation**: Edge cases documented
 
-9. Provide structured feedback
-   - You MUST be specific about what needs changing
-   - You SHOULD explain why changes are needed
-   - You MUST prioritize feedback (high → medium → low confidence)
-   - You MUST NOT fail a review for low-confidence issues alone
-   - **Validation**: Feedback structured by confidence level
+10. Provide structured feedback
+    - You MUST be specific about what needs changing
+    - You SHOULD explain why changes are needed
+    - You MUST prioritize feedback (high → medium → low confidence)
+    - You MUST NOT fail a review for low-confidence issues alone
+    - **Validation**: Feedback structured by confidence level
 
-10. Make decision
+11. Make decision
     - If all criteria pass, tests pass, and quality acceptable: APPROVE
     - If criteria fail, tests missing, or blocking issues: REQUEST CHANGES
     - You MUST document decision clearly

@@ -41,6 +41,11 @@ STATE=$(dlc_state_load "$INTENT_DIR" "iteration.json")
 
 Before advancing, check the hard gate for the current transition:
 
+**Gate architecture:**
+- **Structural gates** (PLAN_APPROVED, CRITERIA_MET) are checked here because they verify workflow state, not code quality
+- **Quality gates** (tests, lint, types, custom checks) are harness-enforced via `quality-gate.sh` on Stop/SubagentStop — the agent cannot reach `/advance` unless all gates passed
+- This separation ensures: the harness handles enforcement, the advance skill handles workflow
+
 ```bash
 # Hard gate verification — block advancement if gate conditions are not met
 CURRENT_HAT=$(echo "$STATE" | dlc_json_get "hat")
@@ -58,28 +63,12 @@ case "$CURRENT_HAT" in
     fi
     ;;
   builder)
-    # TESTS_PASS gate: quality gates must pass before review
-    if command -v npm &>/dev/null && [ -f "package.json" ]; then
-      if ! npm test --if-present 2>/dev/null; then
-        echo "## HARD GATE: TESTS_PASS"
-        echo ""
-        echo "Cannot advance to reviewer — quality gates are not passing."
-        echo "Fix failing tests/lint/types before requesting review."
-        exit 1
-      fi
-    fi
-    # Additional quality checks (lint, typecheck) if configured
-    if command -v npm &>/dev/null && [ -f "package.json" ]; then
-      npm run lint --if-present 2>/dev/null || {
-        echo "## HARD GATE: TESTS_PASS"
-        echo ""
-        echo "Cannot advance to reviewer — lint is failing."
-        echo "Fix lint errors before requesting review."
-        exit 1
-      }
-      npm run typecheck --if-present 2>/dev/null || npm run type-check --if-present 2>/dev/null || true
-    fi
-    # Visual gate check: prepare comparison context for reviewer
+    # Quality gates are harness-enforced via the Stop/SubagentStop hook
+    # (quality-gate.sh). The builder cannot reach /advance unless all
+    # frontmatter-defined gates passed. No redundant check needed here.
+    #
+    # Visual gate check is still handled here because it prepares
+    # comparison context for the reviewer (not a pass/fail gate at this point).
     CURRENT_UNIT=$(echo "$STATE" | dlc_json_get "currentUnit" "")
     UNIT_FILE="$INTENT_DIR/${CURRENT_UNIT}.md"
     if [ -n "$CURRENT_UNIT" ] && [ -f "$UNIT_FILE" ]; then
