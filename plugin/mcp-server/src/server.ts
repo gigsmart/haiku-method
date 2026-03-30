@@ -16,7 +16,7 @@ import {
 } from "@ai-dlc/shared";
 import { createSession, getSession } from "./sessions.js";
 import { startHttpServer, setMcpServer, getActualPort } from "./http.js";
-import { generateReviewHtml, type MockupInfo } from "./html.js";
+import { renderReviewPage, type MockupInfo } from "./templates/index.js";
 
 const OpenReviewInput = z.object({
   intent_dir: z.string().describe("Path to the intent directory (e.g., .ai-dlc/my-intent)"),
@@ -168,17 +168,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     // Generate HTML with session ID, mockups, and wireframes
-    session.html = generateReviewHtml(
+    session.html = renderReviewPage({
       intent,
       units,
       criteria,
-      input.review_type,
-      input.target ?? "",
-      session.session_id,
+      reviewType: input.review_type,
+      target: input.target ?? "",
+      sessionId: session.session_id,
       mermaid,
       intentMockups,
-      unitMockups
-    );
+      unitMockups,
+    });
 
     // Start HTTP server (idempotent)
     const port = startHttpServer();
