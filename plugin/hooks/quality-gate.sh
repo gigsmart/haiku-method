@@ -76,7 +76,7 @@ load_gates() {
   local gates
   gates=$(yq --front-matter=extract -o json '.quality_gates // []' "$file" 2>/dev/null || echo "[]")
   # Ensure we got a valid JSON array
-  if ! echo "$gates" | jq 'type == "array"' >/dev/null 2>&1; then
+  if ! echo "$gates" | jq -e 'type == "array"' >/dev/null 2>&1; then
     echo "[]"
     return
   fi
@@ -124,13 +124,12 @@ for i in $(seq 0 $((GATE_COUNT - 1))); do
     GATE_OUTPUT=$($TIMEOUT_CMD 30 bash -c "cd '$REPO_ROOT' && $GATE_CMD" 2>&1) || GATE_EXIT=$?
   else
     # No timeout command available — use background process with kill
-    local tmp_out
     tmp_out=$(mktemp)
     bash -c "cd '$REPO_ROOT' && $GATE_CMD" > "$tmp_out" 2>&1 &
-    local_pid=$!
-    ( sleep 30 && kill "$local_pid" 2>/dev/null ) &
+    bg_pid=$!
+    ( sleep 30 && kill "$bg_pid" 2>/dev/null ) &
     timer_pid=$!
-    wait "$local_pid" 2>/dev/null || GATE_EXIT=$?
+    wait "$bg_pid" 2>/dev/null || GATE_EXIT=$?
     kill "$timer_pid" 2>/dev/null || true
     wait "$timer_pid" 2>/dev/null || true
     GATE_OUTPUT=$(cat "$tmp_out")
