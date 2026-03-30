@@ -76,6 +76,11 @@
 			"$ref": "#/definitions/stackConfig",
 			"description": "Infrastructure stack configuration describing the deployment and operations layers"
 		},
+		"visual_review": {
+			"type": "boolean",
+			"default": false,
+			"description": "Enable browser-based visual review for elaboration gates. Requires the ai-dlc-review MCP server (bundled). When false, review gates use standard AskUserQuestion prompts."
+		},
 		"model_profiles": {
 			"type": "object",
 			"description": "Map hats to model tiers for cost optimization. Defaults to inheriting the session model for all hats.",

@@ -23,6 +23,7 @@ if ! dlc_require_jq || ! dlc_require_yq; then
   get_ai_dlc_config() { echo '{"change_strategy":"unit","elaboration_review":true,"default_branch":"main"}'; }
   export_ai_dlc_config() { export AI_DLC_CHANGE_STRATEGY="unit" AI_DLC_ELABORATION_REVIEW="true" AI_DLC_DEFAULT_BRANCH="main" AI_DLC_AUTO_MERGE="false" AI_DLC_AUTO_SQUASH="false" AI_DLC_VCS="git"; }
   get_config_value() { echo ""; }
+  get_setting_value() { echo ""; }
   load_quality_gates() { echo "{}"; }
   run_quality_gates() { return 0; }
   load_providers() { echo '{"spec":null,"ticketing":null,"design":null,"comms":null,"vcsHosting":null,"ciCd":null}'; }
@@ -260,6 +261,19 @@ get_config_value() {
   config=$(get_ai_dlc_config "$intent_dir" "$repo_root")
 
   echo "$config" | jq -r ".$key // empty"
+}
+
+# Get a top-level setting value from .ai-dlc/settings.yml
+# Unlike get_config_value (which reads VCS config), this reads top-level keys
+# Usage: get_setting_value <key> [repo_root]
+# Example: get_setting_value visual_review
+get_setting_value() {
+  local key="$1"
+  local repo_root="${2:-$(find_repo_root)}"
+  local settings
+  settings=$(load_repo_settings "$repo_root")
+
+  echo "$settings" | jq -r ".$key // empty"
 }
 
 # ============================================================================

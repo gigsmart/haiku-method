@@ -590,12 +590,18 @@ After exploration, present your findings to the user as a **Domain Model**:
 
 **Visual Review (preferred):**
 
-Check if the `ask_user_visual_question` MCP tool is available:
+First, check if visual review is enabled in settings:
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+VISUAL_REVIEW=$(get_setting_value "visual_review")
+```
+
+If `VISUAL_REVIEW` is `true`, check if the `ask_user_visual_question` MCP tool is available:
 ```
 ToolSearch("ask_user_visual_question")
 ```
 
-If found, call it with the domain model as context:
+If both the setting is enabled AND the tool is found, call it with the domain model as context:
 ```
 ask_user_visual_question({
   title: "Domain Model Review",
@@ -615,7 +621,7 @@ Parse the session ID from the response, then poll `get_review_status({session_id
 - If `selectedOptions` includes only `"Looks accurate"` and no `otherText`, proceed
 - Otherwise, treat the response as feedback — explore gaps and re-present
 
-**Fallback (if visual tool not available):**
+**Fallback (if visual review is disabled or tool not available):**
 
 Use `AskUserQuestion` to validate:
 ```json
@@ -1072,12 +1078,18 @@ For each unit:
 
 **Visual Review (preferred):**
 
-Check if the `ask_user_visual_question` MCP tool is available:
+First, check if visual review is enabled in settings:
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+VISUAL_REVIEW=$(get_setting_value "visual_review")
+```
+
+If `VISUAL_REVIEW` is `true`, check if the `ask_user_visual_question` MCP tool is available:
 ```
 ToolSearch("ask_user_visual_question")
 ```
 
-If found, call it with the elaboration summary as context:
+If both the setting is enabled AND the tool is found, call it with the elaboration summary as context:
 ```
 ask_user_visual_question({
   title: "Spec Alignment Gate",
@@ -1093,7 +1105,7 @@ ask_user_visual_question({
 
 Parse the session ID from the response, then poll `get_review_status({session_id})` until `status` is `"answered"`. Read `answers[0].selectedOptions[0]` to determine the user's choice. Check `answers[0].otherText` for any additional notes.
 
-**Fallback (if visual tool not available):**
+**Fallback (if visual review is disabled or tool not available):**
 
 Ask with `AskUserQuestion`:
 ```json
@@ -1598,12 +1610,18 @@ fi
 
 **Visual Review (preferred):**
 
-Check if the `ask_user_visual_question` MCP tool is available:
+First, check if visual review is enabled in settings:
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+VISUAL_REVIEW=$(get_setting_value "visual_review")
+```
+
+If `VISUAL_REVIEW` is `true`, check if the `ask_user_visual_question` MCP tool is available:
 ```
 ToolSearch("ask_user_visual_question")
 ```
 
-If found, call it with the full unit spec as context:
+If both the setting is enabled AND the tool is found, call it with the full unit spec as context:
 ```
 ask_user_visual_question({
   title: "Unit Review: unit-NN-{slug}",
@@ -1619,7 +1637,7 @@ ask_user_visual_question({
 
 Parse the session ID from the response, then poll `get_review_status({session_id})` until `status` is `"answered"`. Read `answers[0].selectedOptions[0]` for the decision and `answers[0].otherText` for feedback notes.
 
-**Fallback (if visual tool not available):**
+**Fallback (if visual review is disabled or tool not available):**
 
 Use `AskUserQuestion`:
 ```json
@@ -1778,12 +1796,18 @@ git commit -m "elaborate(${INTENT_SLUG}): generate frontend and design wireframe
 
 **Visual Review (preferred):**
 
-Check if the `ask_user_visual_question` MCP tool is available:
+First, check if visual review is enabled in settings:
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+VISUAL_REVIEW=$(get_setting_value "visual_review")
+```
+
+If `VISUAL_REVIEW` is `true`, check if the `ask_user_visual_question` MCP tool is available:
 ```
 ToolSearch("ask_user_visual_question")
 ```
 
-If found, call it with wireframe references as context:
+If both the setting is enabled AND the tool is found, call it with wireframe references as context:
 ```
 ask_user_visual_question({
   title: "Wireframe Review",
@@ -1799,7 +1823,7 @@ ask_user_visual_question({
 
 Parse the session ID from the response, then poll `get_review_status({session_id})` until `status` is `"answered"`. Read `answers[0].selectedOptions[0]` for the decision and `answers[0].otherText` for revision notes.
 
-**Fallback (if visual tool not available):**
+**Fallback (if visual review is disabled or tool not available):**
 
 Present all generated wireframes to product for review using `AskUserQuestion`:
 

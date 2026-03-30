@@ -92,24 +92,21 @@ commit_format: "feat({unit}): {summary}"
 # Visual Review (Optional)
 # =============================================================================
 
-# Enable browser-based visual review during elaboration gates.
+# Enable browser-based visual review for elaboration gates.
 #
-# When enabled, the ai-dlc-review MCP server must be registered in your project's
-# .mcp.json (the plugin provides a default at plugin/.mcp.json). The MCP server
-# serves interactive review pages in your browser so you can approve or request
-# changes during elaboration without leaving your workflow.
+# When true, elaboration review gates use the ai-dlc-review MCP server to present
+# interactive review pages in your browser. When false (default), review gates use
+# standard AskUserQuestion terminal prompts.
 #
-# The elaboration skill auto-detects the MCP server via ToolSearch — if the
-# server is running, visual review is used automatically. If not available, it
-# falls back to AskUserQuestion.
+# The MCP server is bundled with the plugin and launched via .mcp.json. This
+# setting controls whether the elaboration skill USES it for review gates —
+# the server itself always launches if registered.
 #
-# To opt in:
-#   1. Register the MCP server: copy plugin/.mcp.json to your project root
-#   2. Ensure bun is installed (https://bun.sh)
-#   3. Set visual_review: true here (documents intent; does not gate the skill)
+# Requires:
+#   1. The ai-dlc-review MCP server registered in .mcp.json (plugin provides default)
+#   2. bun installed (https://bun.sh)
 #
-# To opt out:
-#   Remove plugin/.mcp.json from your project root (or don't register the server)
+# Configure via /setup or set directly here:
 visual_review: false
 
 # =============================================================================
