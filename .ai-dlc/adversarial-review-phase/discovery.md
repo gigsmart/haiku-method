@@ -409,3 +409,43 @@ The adversarial review subagent does not need VCS/CI provider access. It reads s
 
 **Key gap the adversarial review fills:** None of these mechanisms validate spec quality adversarially BEFORE execution begins. Phase 7 does basic structural checks; Phase 7.5 does deep semantic validation.
 
+## Domain Model
+
+### Entities
+
+- **AdversarialReviewSkill**: The forked subagent skill definition (`plugin/skills/elaborate-adversarial-review/SKILL.md`) — Reads brief, analyzes specs adversarially, writes structured findings to results file. Fields: description, context (fork), agent (general-purpose), user-invocable (false), allowed-tools, review categories, anti-rationalization rules
+- **AdversarialReviewBrief**: Input brief file (`.ai-dlc/{slug}/.briefs/elaborate-adversarial-review.md`) — Serialized context for the subagent. Fields: intent_slug, worktree_path, intent_content (full intent.md), unit_contents (all unit files), discovery_summary (key findings from discovery.md)
+- **AdversarialReviewResults**: Output results file (`.ai-dlc/{slug}/.briefs/elaborate-adversarial-review-results.md`) — Structured findings with YAML frontmatter. Fields: status (success/error), findings_count, auto_fixable_count, findings (array of Finding objects)
+- **Finding**: A single adversarial review finding — Fields: id, category (contradiction/hidden-complexity/assumption/dependency/scope/completeness/boundary), confidence (high/medium/low), severity (blocking/warning/suggestion), affected_units, title, description, evidence, suggested_fix, fix_type (spec_edit/add_dependency/remove_unit/add_criterion/reorder/manual), fix_target
+- **Phase7.5Orchestration**: The Phase 7.5 section in elaborate SKILL.md — Writes brief, invokes subagent, reads results, auto-applies high-confidence fixes, presents low-confidence findings to user. Fields: step sequence (gather context, write brief, invoke, read, auto-fix, present, user-fix, commit)
+- **ElaborateSkill**: The existing elaborate orchestrator (`plugin/skills/elaborate/SKILL.md`) — Contains all elaboration phases (0-8). Modified to include Phase 7.5 between Phase 7 and Phase 8
+- **SettingsSchema**: The settings JSON schema (`plugin/schemas/settings.schema.json`) — May be extended with an `adversarial_review` boolean (decision: not initially, always-on by default)
+
+### Relationships
+
+- AdversarialReviewSkill **reads** AdversarialReviewBrief (input)
+- AdversarialReviewSkill **writes** AdversarialReviewResults (output)
+- AdversarialReviewResults **contains many** Finding objects
+- Phase7.5Orchestration **writes** AdversarialReviewBrief
+- Phase7.5Orchestration **invokes** AdversarialReviewSkill (via Agent())
+- Phase7.5Orchestration **reads** AdversarialReviewResults
+- Phase7.5Orchestration **is part of** ElaborateSkill (inserted between Phase 7 and Phase 8)
+- Finding **references** one or more unit files (via affected_units)
+- Finding **may auto-fix** the unit file (when confidence=high and fix_type allows it)
+
+### Data Sources
+
+- **Spec Files** (filesystem):
+  - Available: intent.md frontmatter + body, unit-*.md frontmatter + body, discovery.md
+  - Missing: Nothing — all spec data is available locally
+  - Real sample: YAML frontmatter with `depends_on: [unit-01-setup]`, markdown body with `## Success Criteria` sections
+
+- **Elaboration Conversation** (NOT available to subagent):
+  - The subagent runs in forked context and cannot access the elaboration conversation
+  - This is intentional — the adversarial review should evaluate specs objectively, not be biased by the reasoning that produced them
+
+### Data Gaps
+
+- **No gap in data availability.** The adversarial review subagent has access to all spec files it needs via the filesystem.
+- **Potential gap in context:** The subagent cannot access discovery.md directly if it's large, but the brief can include a summary of key findings. Including the full discovery.md content in the brief would be ideal since the subagent needs to validate specs against discovered reality.
+
