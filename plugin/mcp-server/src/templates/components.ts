@@ -1,4 +1,5 @@
 import type { CriterionItem } from "@ai-dlc/shared";
+import { markdownToHtml } from "@ai-dlc/shared";
 import { escapeHtml, escapeAttr } from "./layout.js";
 import { statusColors } from "./styles.js";
 
@@ -267,29 +268,41 @@ export function renderBreadcrumb(items: { label: string; href?: string }[]): str
   </nav>`;
 }
 
-/** Div with data-markdown attribute, rendered client-side by marked.js. */
+/** Server-side markdown rendering via markdownToHtml(). */
 export function renderMarkdownBlock(id: string, markdown: string): string {
   return `<div id="${escapeAttr(id)}"
-    data-markdown="${escapeAttr(markdown)}"
     class="prose prose-sm dark:prose-invert max-w-none
            prose-code:bg-gray-100 prose-code:dark:bg-gray-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
            prose-pre:bg-gray-100 prose-pre:dark:bg-gray-800 prose-pre:rounded-lg
            prose-table:border-collapse prose-th:border prose-th:border-gray-300 prose-th:dark:border-gray-600 prose-th:px-3 prose-th:py-1.5
            prose-td:border prose-td:border-gray-300 prose-td:dark:border-gray-600 prose-td:px-3 prose-td:py-1.5">
+    ${markdownToHtml(markdown)}
   </div>`;
 }
 
-/** Renders mockups inline as iframes within a card. */
+const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"];
+
+function isImageUrl(url: string): boolean {
+  const ext = url.substring(url.lastIndexOf(".")).toLowerCase();
+  return IMAGE_EXTS.includes(ext);
+}
+
+/** Renders mockups inline — images as <img>, HTML as <iframe>. */
 export function renderMockupEmbeds(mockups: { label: string; url: string }[]): string {
   if (mockups.length === 0) return "";
   return mockups
     .map(
       (m) => `<div class="mt-4">
         <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">${escapeHtml(m.label)}</h4>
-        <iframe src="${escapeAttr(m.url)}"
-                sandbox="allow-scripts allow-same-origin"
-                class="w-full h-[500px] border border-gray-200 dark:border-gray-700 rounded-lg bg-white"
-                title="${escapeAttr(m.label)}"></iframe>
+        ${isImageUrl(m.url)
+          ? `<img src="${escapeAttr(m.url)}"
+                 alt="${escapeAttr(m.label)}"
+                 class="max-w-full h-auto border border-gray-200 dark:border-gray-700 rounded-lg" />`
+          : `<iframe src="${escapeAttr(m.url)}"
+                    sandbox="allow-scripts allow-same-origin"
+                    class="w-full h-[500px] border border-gray-200 dark:border-gray-700 rounded-lg bg-white"
+                    title="${escapeAttr(m.label)}"></iframe>`
+        }
       </div>`,
     )
     .join("");

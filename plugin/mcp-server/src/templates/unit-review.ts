@@ -68,6 +68,12 @@ export function renderUnitReview(
   `;
 
   // Tab 2: Wireframe
+  const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"];
+  function isImageUrl(url: string): boolean {
+    const ext = url.substring(url.lastIndexOf(".")).toLowerCase();
+    return IMAGE_EXTS.includes(ext);
+  }
+
   const hasWireframe = wireframeMockups.length > 0;
   const wireframeContent = hasWireframe
     ? card(`
@@ -81,10 +87,15 @@ export function renderUnitReview(
                 Open in new tab &#8599;
               </a>
             </div>
-            <iframe src="${escapeAttr(m.url)}"
-                    sandbox="allow-scripts allow-same-origin"
-                    class="w-full h-[600px] border border-gray-200 dark:border-gray-700 rounded-lg bg-white"
-                    title="${escapeAttr(m.label)}"></iframe>
+            ${isImageUrl(m.url)
+              ? `<img src="${escapeAttr(m.url)}"
+                     alt="${escapeAttr(m.label)}"
+                     class="max-w-full h-auto border border-gray-200 dark:border-gray-700 rounded-lg" />`
+              : `<iframe src="${escapeAttr(m.url)}"
+                        sandbox="allow-scripts allow-same-origin"
+                        class="w-full h-[600px] border border-gray-200 dark:border-gray-700 rounded-lg bg-white"
+                        title="${escapeAttr(m.label)}"></iframe>`
+            }
           </div>
         `).join("")}
       `)

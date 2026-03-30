@@ -65,6 +65,12 @@ export function renderUnitPage(
   `;
 
   // Tab 2: Wireframe
+  const CLI_IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"];
+  function isImageSrc(src: string): boolean {
+    const ext = src.substring(src.lastIndexOf(".")).toLowerCase();
+    return CLI_IMAGE_EXTS.includes(ext);
+  }
+
   const hasWireframe = mockups.length > 0;
   const wireframeContent = hasWireframe
     ? card(`
@@ -78,10 +84,15 @@ export function renderUnitPage(
                 Open in new tab &#8599;
               </a>
             </div>
-            <iframe src="${escapeAttr(m.src)}"
-                    sandbox="allow-scripts allow-same-origin"
-                    class="w-full h-[600px] border border-gray-200 dark:border-gray-700 rounded-lg bg-white"
-                    title="${escapeAttr(m.label)}"></iframe>
+            ${isImageSrc(m.src)
+              ? `<img src="${escapeAttr(m.src)}"
+                     alt="${escapeAttr(m.label)}"
+                     class="max-w-full h-auto border border-gray-200 dark:border-gray-700 rounded-lg" />`
+              : `<iframe src="${escapeAttr(m.src)}"
+                        sandbox="allow-scripts allow-same-origin"
+                        class="w-full h-[600px] border border-gray-200 dark:border-gray-700 rounded-lg bg-white"
+                        title="${escapeAttr(m.label)}"></iframe>`
+            }
           </div>
         `).join("")}
       `)

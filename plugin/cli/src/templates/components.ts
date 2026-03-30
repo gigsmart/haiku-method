@@ -179,17 +179,29 @@ export function renderMermaidBlock(mermaidCode: string): string {
   </div>`;
 }
 
-/** Renders mockups inline as iframes with relative src paths. */
+const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"];
+
+function isImageSrc(src: string): boolean {
+  const ext = src.substring(src.lastIndexOf(".")).toLowerCase();
+  return IMAGE_EXTS.includes(ext);
+}
+
+/** Renders mockups inline — images as <img>, HTML as <iframe>. */
 export function renderMockupEmbed(mockups: { label: string; src: string }[]): string {
   if (mockups.length === 0) return "";
   return mockups
     .map(
       (m) => `<div class="mt-4">
         <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">${escapeHtml(m.label)}</h4>
-        <iframe src="${escapeAttr(m.src)}"
-                sandbox="allow-scripts allow-same-origin"
-                class="w-full h-[500px] border border-gray-200 dark:border-gray-700 rounded-lg bg-white"
-                title="${escapeAttr(m.label)}"></iframe>
+        ${isImageSrc(m.src)
+          ? `<img src="${escapeAttr(m.src)}"
+                 alt="${escapeAttr(m.label)}"
+                 class="max-w-full h-auto border border-gray-200 dark:border-gray-700 rounded-lg" />`
+          : `<iframe src="${escapeAttr(m.src)}"
+                    sandbox="allow-scripts allow-same-origin"
+                    class="w-full h-[500px] border border-gray-200 dark:border-gray-700 rounded-lg bg-white"
+                    title="${escapeAttr(m.label)}"></iframe>`
+        }
       </div>`,
     )
     .join("");

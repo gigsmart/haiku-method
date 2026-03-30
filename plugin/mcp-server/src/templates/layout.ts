@@ -132,18 +132,7 @@ export function renderLayout(
     });
   </script>
 
-  <!-- Markdown rendering via marked.js -->
-  <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
-  <script>
-    (function() {
-      document.querySelectorAll('[data-markdown]').forEach(function(el) {
-        var md = el.getAttribute('data-markdown');
-        if (md) {
-          el.innerHTML = marked.parse(md);
-        }
-      });
-    })();
-  </script>
+
 </body>
 </html>`;
 }

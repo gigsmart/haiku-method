@@ -23,7 +23,7 @@
     "ai-dlc": {
       "source": {
         "source": "directory",
-        "path": "${CLAUDE_PROJECT_ROOT}"
+        "path": "${CLAUDE_PROJECT_DIR}"
       }
     }
   }

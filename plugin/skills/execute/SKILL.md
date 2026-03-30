@@ -863,7 +863,10 @@ ${TICKET_LINE}
 *Built with [AI-DLC](https://ai-dlc.dev)*" 2>/dev/null || echo "PR may already exist for $UNIT_BRANCH"
 
   WORKTREE_PATH="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
-  [ -d "$WORKTREE_PATH" ] && git worktree remove "$WORKTREE_PATH"
+  if [ -d "$WORKTREE_PATH" ]; then
+    git worktree remove "$WORKTREE_PATH" 2>/dev/null || echo "Warning: failed to remove worktree at $WORKTREE_PATH"
+  fi
+  git worktree prune
 
 elif [ "$AUTO_MERGE" = "true" ]; then
   # Intent strategy: merge unit branch into intent branch (existing behavior)
@@ -877,7 +880,10 @@ elif [ "$AUTO_MERGE" = "true" ]; then
   fi
 
   WORKTREE_PATH="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
-  [ -d "$WORKTREE_PATH" ] && git worktree remove "$WORKTREE_PATH"
+  if [ -d "$WORKTREE_PATH" ]; then
+    git worktree remove "$WORKTREE_PATH" 2>/dev/null || echo "Warning: failed to remove worktree at $WORKTREE_PATH"
+  fi
+  git worktree prune
 fi
 ```
 
@@ -1067,6 +1073,23 @@ git commit -m "status: mark intent ${INTENT_SLUG} as completed"
 4. Output completion summary (same as current Step 5 format from `/advance`)
 
 #### 5c. Delivery Prompt
+
+**Pre-delivery validation:** Verify intent.md status is "completed" before delivering. This is a safety net — Step 5b should have set it, but if it was missed (e.g., stale plugin, skipped step), catch it here.
+
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/parse.sh"
+INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+INTENT_STATUS=$(dlc_frontmatter_get "status" "$INTENT_DIR/intent.md")
+if [ "$INTENT_STATUS" != "completed" ]; then
+  echo "Fixing: intent status '$INTENT_STATUS' → 'completed'"
+  dlc_frontmatter_set "status" "completed" "$INTENT_DIR/intent.md"
+  dlc_check_intent_criteria "$INTENT_DIR"
+  git add "$INTENT_DIR/intent.md"
+  git add "$INTENT_DIR/completion-criteria.md" 2>/dev/null || true
+  git add "$INTENT_DIR/state/completion-criteria.md" 2>/dev/null || true
+  git commit -m "status: mark intent ${INTENT_SLUG} as completed"
+fi
+```
 
 **Gate on change strategy.** The delivery prompt only applies to intent-level strategy, where all unit work merges into a single intent branch that needs delivery. With unit strategy, each unit already has its own PR — there's nothing to deliver as a whole.
 

@@ -232,9 +232,10 @@ EOF
   # Clean up local unit worktree after PR is pushed (work is on remote now)
   UNIT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
   if [ -d "$UNIT_WORKTREE" ]; then
-    git worktree remove "$UNIT_WORKTREE" 2>/dev/null || true
+    git worktree remove "$UNIT_WORKTREE" 2>/dev/null || echo "Warning: failed to remove worktree at $UNIT_WORKTREE"
     echo "Cleaned up unit worktree for ${CURRENT_UNIT}"
   fi
+  git worktree prune
   # Keep the branch — it backs the open PR
 
 elif [ "$AUTO_MERGE" = "true" ]; then
@@ -253,9 +254,10 @@ elif [ "$AUTO_MERGE" = "true" ]; then
   # Clean up unit worktree and branch after merge into intent
   UNIT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
   if [ -d "$UNIT_WORKTREE" ]; then
-    git worktree remove "$UNIT_WORKTREE" 2>/dev/null || true
+    git worktree remove "$UNIT_WORKTREE" 2>/dev/null || echo "Warning: failed to remove worktree at $UNIT_WORKTREE"
     echo "Cleaned up unit worktree for ${CURRENT_UNIT}"
   fi
+  git worktree prune
   git branch -d "ai-dlc/${INTENT_SLUG}/${UNIT_SLUG}" 2>/dev/null || true
   echo "Cleaned up unit branch for ${CURRENT_UNIT}"
 fi
@@ -621,9 +623,10 @@ done
 # Clean up intent worktree — all unit PRs are on the remote
 INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
 if [ -d "$INTENT_WORKTREE" ]; then
-  git worktree remove "$INTENT_WORKTREE" 2>/dev/null || true
+  git worktree remove "$INTENT_WORKTREE" 2>/dev/null || echo "Warning: failed to remove worktree at $INTENT_WORKTREE"
   echo "Cleaned up intent worktree for ${INTENT_SLUG}"
 fi
+git worktree prune
 ```
 
 ```
@@ -706,9 +709,10 @@ EOF
 # Clean up intent worktree after PR is pushed
 INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
 if [ -d "$INTENT_WORKTREE" ]; then
-  git worktree remove "$INTENT_WORKTREE" 2>/dev/null || true
+  git worktree remove "$INTENT_WORKTREE" 2>/dev/null || echo "Warning: failed to remove worktree at $INTENT_WORKTREE"
   echo "Cleaned up intent worktree for ${INTENT_SLUG}"
 fi
+git worktree prune
 # Keep the branch — it backs the open PR
 ```
 
@@ -736,8 +740,9 @@ Clean up intent worktree since all work is committed and pushed:
 # Clean up intent worktree — work is committed on the branch
 INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
 if [ -d "$INTENT_WORKTREE" ]; then
-  git worktree remove "$INTENT_WORKTREE" 2>/dev/null || true
+  git worktree remove "$INTENT_WORKTREE" 2>/dev/null || echo "Warning: failed to remove worktree at $INTENT_WORKTREE"
   echo "Cleaned up intent worktree for ${INTENT_SLUG}"
 fi
+git worktree prune
 # Keep the branch — user may create a PR from it
 ```

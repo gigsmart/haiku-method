@@ -14,11 +14,16 @@ import { renderIntentPage, type MockupRef } from "./templates/intent-page.js";
 import { renderUnitPage } from "./templates/unit-page.js";
 import { renderBreadcrumb } from "./templates/components.js";
 
+const MOCKUP_EXTS = [".html", ".htm", ".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"];
+
 /** Scan a mockups/ directory and return labels + file names. */
 async function scanMockups(dir: string): Promise<string[]> {
   try {
     const entries = await readdir(dir);
-    return entries.filter((f) => f.endsWith(".html")).sort();
+    return entries.filter((f) => {
+      const ext = f.substring(f.lastIndexOf(".")).toLowerCase();
+      return MOCKUP_EXTS.includes(ext);
+    }).sort();
   } catch {
     return [];
   }
@@ -95,7 +100,7 @@ export async function generateSite(
       for (const file of intentMockupFiles) {
         await copyFile(join(intentMockupDir, file), join(mockupsOut, file));
         intentMockups.push({
-          label: basename(file, ".html").replace(/[-_]/g, " "),
+          label: file.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "),
           src: `mockups/${file}`,
         });
       }
@@ -132,7 +137,7 @@ export async function generateSite(
         for (const file of unitMockupFiles) {
           await copyFile(join(unitMockupDir, file), join(mockupsOut, file));
           unitMockups.push({
-            label: basename(file, ".html").replace(/[-_]/g, " "),
+            label: file.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "),
             src: `mockups/${unit.slug}/${file}`,
           });
         }
@@ -153,6 +158,26 @@ export async function generateSite(
         } catch {
           // wireframe file doesn't exist, skip
         }
+      }
+
+      // Fallback: scan intent-level mockups/ for unit-slug-named files
+      if (unitMockups.length === 0) {
+        const mockupsDir = join(intentDir, "mockups");
+        try {
+          const allFiles = await readdir(mockupsDir);
+          const matches = allFiles.filter((f) => {
+            const name = f.substring(0, f.lastIndexOf("."));
+            return name === unit.slug && MOCKUP_EXTS.includes(f.substring(f.lastIndexOf(".")).toLowerCase());
+          });
+          if (matches.length > 0) {
+            const wireframeOut = join(unitsOutDir, "wireframes");
+            await mkdir(wireframeOut, { recursive: true });
+            for (const file of matches.sort()) {
+              await copyFile(join(mockupsDir, file), join(wireframeOut, file));
+              unitMockups.push({ label: "Wireframe", src: `wireframes/${file}` });
+            }
+          }
+        } catch { /* no mockups dir */ }
       }
 
       const unitBody = renderUnitPage(intent, unit, unitCriteria, unitMockups);
