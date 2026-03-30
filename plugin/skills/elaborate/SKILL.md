@@ -1865,6 +1865,198 @@ If PASS or WARN, output the review summary and proceed.
 
 ---
 
+## Phase 7.5: Adversarial Spec Review (Delegated)
+
+**This phase is non-blocking.** It runs an adversarial review of the spec via a delegated subagent, then auto-applies safe fixes and presents remaining findings to the user. The user can always skip findings and proceed to Phase 8.
+
+> **Prerequisites:**
+> - Phase 7 (Spec Review) must complete before Phase 7.5 runs.
+> - If Phase 7 returned FAIL and the user fixed issues, those fixes should be committed before this phase writes its brief (so the brief reflects the fixed state).
+> - Phase 7.5 always proceeds to Phase 8 regardless of findings — it never hard-blocks elaboration.
+
+### Step 1: Gather spec context
+
+Read all spec files that the subagent needs to analyze:
+
+```bash
+INTENT_SLUG="{intent-slug}"
+INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+INTENT_FILE="${INTENT_DIR}/intent.md"
+DISCOVERY_FILE="${INTENT_DIR}/discovery.md"
+
+# Read intent content
+INTENT_CONTENT=$(cat "$INTENT_FILE")
+
+# Read all unit files
+UNIT_CONTENTS=""
+for unit_file in ${INTENT_DIR}/unit-*.md; do
+  [ -f "$unit_file" ] || continue
+  UNIT_CONTENTS="${UNIT_CONTENTS}\n## $(basename "$unit_file")\n\n$(cat "$unit_file")\n\n---\n"
+done
+
+# Read discovery content
+DISCOVERY_CONTENT=$(cat "$DISCOVERY_FILE" 2>/dev/null || echo "No discovery log available")
+```
+
+### Step 2: Write adversarial review brief
+
+Write `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-adversarial-review.md`:
+
+```markdown
+---
+intent_slug: {INTENT_SLUG}
+worktree_path: {absolute path to intent worktree}
+---
+
+# Intent
+
+{Full intent.md content — frontmatter + body}
+
+# Units
+
+{Full content of every unit-*.md file, separated by --- dividers}
+
+# Discovery Context
+
+{Full discovery.md content}
+```
+
+Commit the brief:
+```bash
+git add .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-adversarial-review.md
+git commit -m "elaborate(${INTENT_SLUG}): write adversarial review brief"
+```
+
+### Step 3: Invoke adversarial review subagent
+
+```
+Agent({
+  subagent_type: "general-purpose",
+  description: "elaborate-adversarial-review: {INTENT_SLUG}",
+  prompt: "Run the /ai-dlc:elaborate-adversarial-review skill. Read the skill definition at plugin/skills/elaborate-adversarial-review/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/elaborate-adversarial-review.md as input."
+})
+```
+
+**CRITICAL — DO NOT STOP HERE.** The adversarial review is only one sub-step of elaboration. After the subagent completes, you MUST immediately proceed to Step 4 below. The subagent writes its results to disk — you need to read them, handle findings, and continue to Phase 8 (Handoff). Stopping here means the elaboration is incomplete.
+
+### Step 4: Read results
+
+Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-adversarial-review-results.md`.
+
+- Parse the YAML frontmatter: `status`, `findings_count`, `auto_fixable_count`, `categories_found`
+- If `status: error` — report the error to the user and proceed to Phase 8 (never block elaboration on review failure)
+- If `status: success` and `findings_count: 0` — log that the spec passed adversarial review cleanly and proceed to Phase 8
+- If `status: success` and `findings_count > 0` — proceed to Step 5
+
+### Step 5: Auto-apply high-confidence fixes
+
+Parse the findings YAML from the results body. For each finding, auto-apply when ALL of these conditions are met:
+
+1. `confidence: high`
+2. `fix_type` is one of: `add_dependency`, `add_criterion`, or `spec_edit` (mechanical only)
+3. `fix_type` is NOT `remove_unit` or `manual`
+
+**NEVER auto-apply `remove_unit` or `manual` fix types regardless of confidence level.**
+
+**Definition of mechanical `spec_edit`:** fixing a typo in a field name, correcting a file path, aligning a quoted reference to its source text. Non-mechanical edits (rewriting descriptions, restructuring sections) are NOT auto-applied — present those to the user instead.
+
+For each auto-applied fix:
+- `add_dependency`: edit the target unit's frontmatter `depends_on` field
+- `add_criterion`: append the criterion to the target unit's success criteria list
+- `spec_edit` (mechanical): edit the specific section/field in the target file
+
+Track which findings were auto-applied.
+
+Commit all auto-applied fixes together:
+```bash
+git add .ai-dlc/${INTENT_SLUG}/
+git commit -m "elaborate(${INTENT_SLUG}): auto-apply adversarial review fixes
+
+Applied {N} high-confidence fixes:
+- {F001}: {title}
+- {F002}: {title}
+..."
+```
+
+If no findings qualify for auto-apply, skip the commit and proceed to Step 6.
+
+### Step 6: Present remaining findings to user
+
+Group remaining findings (not auto-applied) by severity and present them:
+
+```markdown
+## Adversarial Review Results
+
+**{findings_count} findings** ({auto_applied_count} auto-applied, {remaining_count} for your review)
+
+### Auto-Applied Fixes
+{For each auto-applied fix:}
+- **{F001}** ({category}): {title} — {what was changed}
+
+### Findings Requiring Decision
+
+#### Blocking
+{For each blocking finding:}
+- **{F003}** ({category}, {confidence} confidence): {title}
+  - {description}
+  - **Suggested fix**: {suggested_fix}
+
+#### Warnings
+{Similar format}
+
+#### Suggestions
+{Similar format}
+```
+
+Use `AskUserQuestion` to let the user decide how to handle remaining findings:
+```json
+{
+  "questions": [{
+    "question": "How should we handle these findings?",
+    "header": "Adversarial Review Findings",
+    "options": [
+      {"label": "Apply all suggested fixes", "description": "Apply all suggested fixes for the findings above"},
+      {"label": "Let me choose", "description": "I'll decide per-finding which to apply"},
+      {"label": "Skip all", "description": "Proceed without addressing these findings"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+If "Apply all suggested fixes": apply all remaining fixes and proceed to Step 7.
+If "Let me choose": present each finding individually with Apply/Skip options, then proceed to Step 7 with the user's selections.
+If "Skip all": skip Step 7 and proceed to Step 8.
+
+If there are no remaining findings (all were auto-applied or none existed), skip the `AskUserQuestion` and proceed to Step 8.
+
+### Step 7: Apply user-approved fixes
+
+For each user-approved fix, apply the suggested change to the target file.
+
+Commit all user-approved fixes together:
+```bash
+git add .ai-dlc/${INTENT_SLUG}/
+git commit -m "elaborate(${INTENT_SLUG}): apply user-approved adversarial review fixes
+
+Applied:
+- {F003}: {title}
+- {F005}: {title}
+..."
+```
+
+### Step 8: Commit final state
+
+Commit any remaining artifacts:
+```bash
+git add .ai-dlc/${INTENT_SLUG}/
+git diff --cached --quiet || git commit -m "elaborate(${INTENT_SLUG}): finalize adversarial review"
+```
+
+Proceed to Phase 8 (Handoff).
+
+---
+
 ## Phase 8: Handoff
 
 Present the elaboration summary:
