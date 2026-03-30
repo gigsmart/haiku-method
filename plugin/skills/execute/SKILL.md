@@ -646,7 +646,7 @@ fi
 
 5. **Select agent type based on hat**:
 
-- `planner` -> `Plan` agent
+- `planner` -> `general-purpose` agent (NOT `Plan` — the planner hat writes its own plan directly, plan mode blocks autonomous execution)
 - `builder` -> discipline-specific agent (see builder agent selection table below)
 - All other hats (`reviewer`, `red-team`, `blue-team`, etc.) -> `general-purpose` agent
 
@@ -760,7 +760,7 @@ fi
 ```
 
 d. Select agent type based on hat:
-   - `planner` -> `Plan` agent
+   - `planner` -> `general-purpose` agent (NOT `Plan` — plan mode blocks autonomous execution)
    - `builder` -> discipline-specific agent (see builder agent selection table below)
    - All other hats (`reviewer`, `red-team`, `blue-team`, etc.) -> `general-purpose` agent
 
@@ -1282,7 +1282,7 @@ dlc_state_save "$INTENT_DIR" "iteration.json" "$STATE"
 
 | Role | Agent Type | Description |
 |------|------------|-------------|
-| `planner` | `Plan` | Creates tactical implementation plan |
+| `planner` | `general-purpose` | Creates tactical implementation plan (NOT `Plan` — plan mode blocks autonomous execution) |
 | `builder` | Based on unit `discipline` | Implements the plan |
 | `reviewer` | `general-purpose` | Verifies completion criteria |
 
