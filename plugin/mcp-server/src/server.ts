@@ -1,5 +1,5 @@
 import { readdir } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -138,9 +138,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (name === "open_review") {
     const input = OpenReviewInput.parse(args);
 
-    // Validate intent_dir stays within .ai-dlc/ to prevent path traversal
-    const normalizedDir = input.intent_dir.replace(/\\/g, "/").replace(/\/+$/, "");
-    if (!normalizedDir.startsWith(".ai-dlc/") && normalizedDir !== ".ai-dlc") {
+    // Validate intent_dir stays within .ai-dlc/ to prevent path traversal.
+    // Use resolve() to handle both relative and absolute paths correctly.
+    const allowedBase = resolve(process.cwd(), ".ai-dlc");
+    const absoluteDir = resolve(process.cwd(), input.intent_dir);
+    if (!absoluteDir.startsWith(allowedBase + "/") && absoluteDir !== allowedBase) {
       return {
         content: [
           {

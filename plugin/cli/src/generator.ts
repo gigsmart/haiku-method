@@ -1,4 +1,4 @@
-import { mkdir, readdir, copyFile } from "node:fs/promises";
+import { mkdir, readdir, copyFile, rm } from "node:fs/promises";
 import { join, basename, resolve } from "node:path";
 import {
   listIntents,
@@ -66,7 +66,8 @@ export async function generateSite(
     totalUnits += units.length;
   }
 
-  // Create output directories
+  // Clean and recreate output directory to remove stale pages from deleted intents
+  await rm(outputDir, { recursive: true, force: true });
   await mkdir(outputDir, { recursive: true });
 
   // Generate index.html

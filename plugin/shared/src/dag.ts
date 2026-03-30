@@ -128,6 +128,18 @@ function escapeMermaidLabel(str: string): string {
 }
 
 /**
+ * Sanitize a string for use as a Mermaid node ID.
+ * Mermaid node IDs must start with a letter and contain only alphanumerics,
+ * underscores, or hyphens. Spaces and other special characters are replaced.
+ */
+function sanitizeMermaidNodeId(slug: string): string {
+  // Replace any character that isn't alphanumeric, underscore, or hyphen with underscore
+  const sanitized = slug.replace(/[^a-zA-Z0-9_-]/g, "_");
+  // Ensure the ID starts with a letter (prefix with 'n' if it starts with a digit or underscore)
+  return /^[a-zA-Z]/.test(sanitized) ? sanitized : `n_${sanitized}`;
+}
+
+/**
  * Generate a Mermaid graph TD definition from a DAG and units.
  */
 export function toMermaidDefinition(
@@ -140,19 +152,20 @@ export function toMermaidDefinition(
   for (const unit of units) {
     const rawLabel = unit.title || unit.slug;
     const label = escapeMermaidLabel(rawLabel);
-    lines.push(`  ${unit.slug}["${label}"]`);
+    const nodeId = sanitizeMermaidNodeId(unit.slug);
+    lines.push(`  ${nodeId}["${label}"]`);
   }
 
   // Edges
   for (const edge of dag.edges) {
-    lines.push(`  ${edge.from} --> ${edge.to}`);
+    lines.push(`  ${sanitizeMermaidNodeId(edge.from)} --> ${sanitizeMermaidNodeId(edge.to)}`);
   }
 
   // Status-based CSS classes
   const statusGroups = new Map<string, string[]>();
   for (const node of dag.nodes) {
     const group = statusGroups.get(node.status) ?? [];
-    group.push(node.id);
+    group.push(sanitizeMermaidNodeId(node.id));
     statusGroups.set(node.status, group);
   }
 
