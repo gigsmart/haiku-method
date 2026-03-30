@@ -361,7 +361,7 @@ Pre-fill from existing `settings.yml` `default_passes` if available.
 
 ## Phase 6: VCS Strategy
 
-Ask the user about their preferred delivery strategy, source branch, and auto-merge behavior.
+Ask the user about their preferred delivery strategy and source branch.
 
 Use `AskUserQuestion`:
 
@@ -375,12 +375,12 @@ Use `AskUserQuestion`:
       "header": "Delivery Strategy",
       "options": [
         {
-          "label": "Review each unit individually",
-          "description": "Each unit opens its own PR/MR. Dependent units wait until their dependencies are merged. Best when you want to validate each piece before moving on."
-        },
-        {
           "label": "Build everything, then open one MR",
           "description": "Units merge into an intent branch as they complete. Dependent units start automatically once their dependencies are done. One final MR for the whole intent."
+        },
+        {
+          "label": "Review each unit individually",
+          "description": "Each unit opens its own PR/MR. Dependent units wait until their dependencies are merged. Best when you want to validate each piece before moving on."
         },
         {
           "label": "Build everything on my default branch",
@@ -424,15 +424,10 @@ Map user selections to config values:
 }
 ```
 
-**Question 3: Auto-merge** *(only if user selected "Build everything, then open one MR")*
-- "Should completed unit branches be automatically merged into the intent branch?"
-- Options:
-  - **Yes (Recommended)** — Auto-merge when unit passes review
-  - **No** — Manual merge after review
-
-Pre-fill from existing `settings.yml` `{vcs}.auto_merge` if available.
-
-Only ask auto-merge if strategy is `intent` ("Build everything, then open one MR"). For `unit` ("Review each unit individually"), merging is the user's responsibility (they merge their own PRs), so skip this question and do not set `auto_merge`. For `trunk` ("Build everything on my default branch"), branches aren't used.
+**Auto-merge** is implicit based on strategy — do NOT ask the user:
+- `intent` strategy → `auto_merge: true` (units auto-merge into the intent branch)
+- `unit` strategy → no `auto_merge` key (user merges their own PRs)
+- `trunk` strategy → no `auto_merge` key (no branches to merge)
 
 ---
 

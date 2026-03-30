@@ -1088,12 +1088,12 @@ Use `AskUserQuestion`:
       "header": "Delivery Strategy",
       "options": [
         {
-          "label": "Review each unit individually",
-          "description": "Each unit opens its own PR/MR. Dependent units wait until their dependencies are merged. Best when you want to validate each piece before moving on."
-        },
-        {
           "label": "Build everything, then open one MR",
           "description": "Units merge into an intent branch as they complete. Dependent units start automatically once their dependencies are done. One final MR for the whole intent."
+        },
+        {
+          "label": "Review each unit individually",
+          "description": "Each unit opens its own PR/MR. Dependent units wait until their dependencies are merged. Best when you want to validate each piece before moving on."
         },
         {
           "label": "Build everything on {DEFAULT_BRANCH}",
@@ -1130,32 +1130,17 @@ Use `AskUserQuestion`:
 }
 ```
 
-**Question 3: Auto-merge** *(only if user selected "Build everything, then open one MR")*
-
-```json
-{
-  "questions": [
-    {
-      "question": "Should completed unit branches auto-merge into the intent branch when approved?",
-      "header": "Auto-merge",
-      "options": [
-        {"label": "Yes (Recommended)", "description": "Automatically merge unit branches into the intent branch when reviewer approves."},
-        {"label": "No", "description": "Manual merge — you decide when to merge. More control, more manual work."}
-      ],
-      "multiSelect": false
-    }
-  ]
-}
-```
-
-**Skip the auto-merge question for "Review each unit individually"** — in unit strategy, each unit creates its own PR and the user is responsible for merging. **Skip for "Build everything on {DEFAULT_BRANCH}"** — no branches to merge.
+**Auto-merge** is implicit based on strategy — do NOT ask the user:
+- `intent` strategy → `auto_merge: true` (units auto-merge into the intent branch)
+- `unit` strategy → no `auto_merge` key (user merges their own PRs)
+- `trunk` strategy → no `auto_merge` key (no branches to merge)
 
 Store the selections. These will be written into the `intent.md` frontmatter in Phase 6 under a `git:` key:
 
 ```yaml
 git:
-  change_strategy: unit    # or intent, trunk
-  auto_merge: true         # only for intent strategy; omit for unit/trunk
+  change_strategy: intent  # or unit, trunk
+  auto_merge: true         # implicit for intent strategy; omit for unit/trunk
   auto_squash: false       # default false, only relevant when auto_merge is true
 ```
 
@@ -1163,15 +1148,13 @@ Map user selections to config values:
 
 | What You Want | Strategy Value |
 |--------------|----------------|
-| Review each unit individually | `unit` |
 | Build everything, then open one MR | `intent` |
+| Review each unit individually | `unit` |
 | Build everything on {DEFAULT_BRANCH} | `trunk` |
 
+- "Build everything, then open one MR" → `intent` + `auto_merge: true`
 - "Review each unit individually" → `unit` (no `auto_merge` key — user merges their own PRs)
-- "Build everything, then open one MR" → `intent`
-- "Build everything on {DEFAULT_BRANCH}" → `trunk`
-- "Yes" auto-merge → `auto_merge: true` (intent strategy only)
-- "No" auto-merge → `auto_merge: false` (intent strategy only)
+- "Build everything on {DEFAULT_BRANCH}" → `trunk` (no `auto_merge` key — no branches)
 
 ### Hybrid Per-Unit Strategy (Optional)
 
