@@ -1,6 +1,6 @@
 ---
 status: in_progress
-hat: builder
+hat: reviewer
 last_updated: "2026-03-30T14:55:00Z"
 depends_on:
   - unit-02-visual-question-tool
