@@ -88,7 +88,7 @@ export function renderIntentReview(
     ${mermaid ? card(`
       ${sectionHeading("Dependency Graph")}
       <div class="overflow-x-auto p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-        <pre class="mermaid">${escapeHtml(mermaid)}</pre>
+        <pre class="mermaid">${mermaid}</pre>
       </div>
     `) : ""}
 
