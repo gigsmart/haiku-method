@@ -643,11 +643,10 @@ Before writing artifacts, create a dedicated branch so commits don't land on the
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-CONFIG=$(get_ai_dlc_config "$REPO_ROOT/.ai-dlc")
+CONFIG=$(get_ai_dlc_config "" "$REPO_ROOT")
 DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
 
 ADOPT_BRANCH="ai-dlc/${SLUG}/main"
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 if ! git rev-parse --verify "$ADOPT_BRANCH" >/dev/null 2>&1; then
   git checkout -b "$ADOPT_BRANCH"
