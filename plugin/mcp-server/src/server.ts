@@ -14,9 +14,11 @@ import {
   buildDAG,
   toMermaidDefinition,
 } from "@ai-dlc/shared";
-import { createSession, getSession } from "./sessions.js";
+import { createSession, createQuestionSession, getSession } from "./sessions.js";
+import type { QuestionDef } from "./sessions.js";
 import { startHttpServer, setMcpServer, getActualPort } from "./http.js";
 import { renderReviewPage, type MockupInfo } from "./templates/index.js";
+import { renderQuestionPage } from "./templates/question-form.js";
 
 const OpenReviewInput = z.object({
   intent_dir: z.string().describe("Path to the intent directory (e.g., .ai-dlc/my-intent)"),
@@ -26,6 +28,17 @@ const OpenReviewInput = z.object({
 
 const GetReviewStatusInput = z.object({
   session_id: z.string().describe("The review session ID"),
+});
+
+const AskVisualQuestionInput = z.object({
+  questions: z.array(z.object({
+    question: z.string().describe("The question text"),
+    header: z.string().optional().describe("Optional header/subtitle for the question"),
+    options: z.array(z.string()).describe("Answer options to choose from"),
+    multiSelect: z.boolean().optional().describe("Allow multiple selections (default: single)"),
+  })).describe("Array of questions to present"),
+  context: z.string().optional().describe("Optional markdown context to display above questions"),
+  title: z.string().optional().describe("Optional page title (default: 'Question')"),
 });
 
 const server = new Server(
@@ -84,6 +97,35 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           },
         },
         required: ["session_id"],
+      },
+    },
+    {
+      name: "ask_user_visual_question",
+      description:
+        "Ask the user one or more questions via a rich HTML page in the browser. " +
+        "Renders questions with selectable options (radio or checkbox) and an optional 'Other' field. " +
+        "The user's answers are pushed back as a channel event.",
+      inputSchema: {
+        type: "object" as const,
+        properties: {
+          questions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                question: { type: "string", description: "The question text" },
+                header: { type: "string", description: "Optional header/subtitle" },
+                options: { type: "array", items: { type: "string" }, description: "Answer options" },
+                multiSelect: { type: "boolean", description: "Allow multiple selections" },
+              },
+              required: ["question", "options"],
+            },
+            description: "Questions to present to the user",
+          },
+          context: { type: "string", description: "Optional markdown context above questions" },
+          title: { type: "string", description: "Optional page title" },
+        },
+        required: ["questions"],
       },
     },
   ],
@@ -254,6 +296,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       };
     }
 
+    if (session.session_type === "question") {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              {
+                session_id: session.session_id,
+                session_type: session.session_type,
+                status: session.status,
+                answers: session.answers,
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    }
+
     return {
       content: [
         {
@@ -270,6 +332,53 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             null,
             2
           ),
+        },
+      ],
+    };
+  }
+
+  if (name === "ask_user_visual_question") {
+    const input = AskVisualQuestionInput.parse(args);
+    const title = input.title ?? "Question";
+    const context = input.context ?? "";
+    const questions: QuestionDef[] = input.questions;
+
+    // Create question session
+    const session = createQuestionSession({
+      title,
+      questions,
+      context,
+      html: "",
+    });
+
+    // Render HTML
+    session.html = renderQuestionPage({
+      title,
+      questions,
+      context,
+      sessionId: session.session_id,
+    });
+
+    // Start HTTP server (idempotent)
+    const port = startHttpServer();
+    const questionUrl = `http://127.0.0.1:${port}/question/${session.session_id}`;
+
+    // Open browser
+    try {
+      const cmd =
+        process.platform === "darwin"
+          ? ["open", questionUrl]
+          : ["xdg-open", questionUrl];
+      Bun.spawn(cmd, { stdio: ["ignore", "ignore", "ignore"] });
+    } catch (err) {
+      console.error("Failed to open browser:", err);
+    }
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: `Question page opened: ${questionUrl}\nSession ID: ${session.session_id}\nQuestions: ${questions.length}`,
         },
       ],
     };

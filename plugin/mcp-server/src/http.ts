@@ -1,6 +1,7 @@
 import { join, resolve, extname } from "node:path";
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { getSession, updateSession } from "./sessions.js";
+import { getSession, updateSession, updateQuestionSession } from "./sessions.js";
+import type { QuestionAnswer } from "./sessions.js";
 
 let httpServer: ReturnType<typeof Bun.serve> | null = null;
 let actualPort: number | null = null;
@@ -18,7 +19,7 @@ export function getActualPort(): number | null {
 
 function handleReviewGet(sessionId: string): Response {
   const session = getSession(sessionId);
-  if (!session) {
+  if (!session || session.session_type !== "review") {
     return new Response("Session not found", { status: 404 });
   }
   return new Response(session.html, {
@@ -31,7 +32,7 @@ async function handleDecidePost(
   req: Request
 ): Promise<Response> {
   const session = getSession(sessionId);
-  if (!session) {
+  if (!session || session.session_type !== "review") {
     return new Response("Session not found", { status: 404 });
   }
 
@@ -91,7 +92,7 @@ async function handleMockupGet(
   filePath: string
 ): Promise<Response> {
   const session = getSession(sessionId);
-  if (!session) {
+  if (!session || session.session_type !== "review") {
     return new Response("Session not found", { status: 404 });
   }
 
@@ -122,7 +123,7 @@ async function handleWireframeGet(
   filePath: string
 ): Promise<Response> {
   const session = getSession(sessionId);
-  if (!session) {
+  if (!session || session.session_type !== "review") {
     return new Response("Session not found", { status: 404 });
   }
 
@@ -145,6 +146,54 @@ async function handleWireframeGet(
   } catch {
     return new Response("Not found", { status: 404 });
   }
+}
+
+function handleQuestionGet(sessionId: string): Response {
+  const session = getSession(sessionId);
+  if (!session || session.session_type !== "question") {
+    return new Response("Session not found", { status: 404 });
+  }
+  return new Response(session.html, {
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
+}
+
+async function handleQuestionAnswerPost(
+  sessionId: string,
+  req: Request
+): Promise<Response> {
+  const session = getSession(sessionId);
+  if (!session || session.session_type !== "question") {
+    return new Response("Session not found", { status: 404 });
+  }
+
+  const body = (await req.json()) as { answers: QuestionAnswer[] };
+
+  updateQuestionSession(sessionId, {
+    status: "answered",
+    answers: body.answers,
+  });
+
+  // Push channel notification to Claude Code
+  if (mcpServer) {
+    try {
+      await mcpServer.notification({
+        method: "notifications/claude/channel" as any,
+        params: {
+          content: JSON.stringify(body.answers),
+          meta: {
+            response_type: "question_answers",
+            session_id: sessionId,
+            question_count: body.answers.length,
+          },
+        },
+      } as any);
+    } catch (err) {
+      console.error("Failed to push channel notification:", err);
+    }
+  }
+
+  return Response.json({ ok: true });
 }
 
 function handleRequest(req: Request): Response | Promise<Response> {
@@ -173,6 +222,18 @@ function handleRequest(req: Request): Response | Promise<Response> {
   const wireframeMatch = path.match(/^\/wireframe\/([^/]+)\/(.+)$/);
   if (wireframeMatch && req.method === "GET") {
     return handleWireframeGet(wireframeMatch[1], wireframeMatch[2]);
+  }
+
+  // GET /question/:sessionId
+  const questionMatch = path.match(/^\/question\/([^/]+)$/);
+  if (questionMatch && req.method === "GET") {
+    return handleQuestionGet(questionMatch[1]);
+  }
+
+  // POST /question/:sessionId/answer
+  const questionAnswerMatch = path.match(/^\/question\/([^/]+)\/answer$/);
+  if (questionAnswerMatch && req.method === "POST") {
+    return handleQuestionAnswerPost(questionAnswerMatch[1], req);
   }
 
   return new Response("Not Found", { status: 404 });
