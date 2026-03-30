@@ -1,7 +1,7 @@
 {
   "name": "ai-dlc",
   "private": true,
-  "workspaces": ["website", "plugin/shared", "plugin/mcp-server", "plugin/cli"],
+  "workspaces": ["website"],
   "scripts": {
     "build": "bun run --filter '*' build",
     "dev": "bun run --cwd website dev",

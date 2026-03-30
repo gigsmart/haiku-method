@@ -588,35 +588,6 @@ After exploration, present your findings to the user as a **Domain Model**:
 - {proposed solution for each gap}
 ```
 
-**Visual Review (preferred):**
-
-Check if the `ask_user_visual_question` MCP tool is available:
-```
-ToolSearch("ask_user_visual_question")
-```
-
-If found, call it with the domain model as context:
-```
-ask_user_visual_question({
-  title: "Domain Model Review",
-  context: "{The full domain model markdown you just presented — Entities, Relationships, Data Sources, Data Gaps sections}",
-  questions: [{
-    question: "Does this domain model accurately capture the system? Are there entities, relationships, or data sources I'm missing?",
-    header: "Domain Model",
-    options: ["Looks accurate", "Missing entities", "Wrong relationships", "Missing data sources"],
-    multiSelect: true
-  }]
-})
-```
-
-Parse the session ID from the response, then poll `get_review_status({session_id})` until `status` is `"answered"`. Read the `answers[0]`:
-- `selectedOptions` contains the user's choices (e.g., `["Looks accurate"]`)
-- `otherText` contains free-text input if the user typed additional notes
-- If `selectedOptions` includes only `"Looks accurate"` and no `otherText`, proceed
-- Otherwise, treat the response as feedback — explore gaps and re-present
-
-**Fallback (if visual tool not available):**
-
 Use `AskUserQuestion` to validate:
 ```json
 {
@@ -1070,32 +1041,7 @@ For each unit:
 {workflow name}
 ```
 
-**Visual Review (preferred):**
-
-Check if the `ask_user_visual_question` MCP tool is available:
-```
-ToolSearch("ask_user_visual_question")
-```
-
-If found, call it with the elaboration summary as context:
-```
-ask_user_visual_question({
-  title: "Spec Alignment Gate",
-  context: "{The full elaboration summary markdown you just presented — Intent, Domain Model, Data Sources, Units, Workflow sections}",
-  questions: [{
-    question: "Does this intent and unit breakdown generally align with what you want built? (You'll review each unit in detail when we write the specs.)",
-    header: "Alignment",
-    options: ["Looks right", "Wrong breakdown", "Wrong direction"],
-    multiSelect: false
-  }]
-})
-```
-
-Parse the session ID from the response, then poll `get_review_status({session_id})` until `status` is `"answered"`. Read `answers[0].selectedOptions[0]` to determine the user's choice. Check `answers[0].otherText` for any additional notes.
-
-**Fallback (if visual tool not available):**
-
-Ask with `AskUserQuestion`:
+Then ask with `AskUserQuestion`:
 ```json
 {
   "questions": [{
@@ -1110,8 +1056,6 @@ Ask with `AskUserQuestion`:
   }]
 }
 ```
-
-**For both paths, apply the same routing:**
 
 - **"Looks right"**: Proceed to Phase 6
 - **"Wrong breakdown"**: Discuss what needs to change, revise units in Phase 5, and re-present
@@ -1594,34 +1538,8 @@ if [ -f "$WIREFRAME" ]; then
 fi
 ```
 
-**Step D — Ask for approval:**
+**Step D — Ask for approval** using `AskUserQuestion`:
 
-**Visual Review (preferred):**
-
-Check if the `ask_user_visual_question` MCP tool is available:
-```
-ToolSearch("ask_user_visual_question")
-```
-
-If found, call it with the full unit spec as context:
-```
-ask_user_visual_question({
-  title: "Unit Review: unit-NN-{slug}",
-  context: "{The full unit spec markdown you displayed in Step B — include the intent title as a breadcrumb header above the unit content, e.g., '# Intent: {intent title}\n\n' followed by the complete unit file contents}",
-  questions: [{
-    question: "Does this unit spec give a builder enough detail to build the right thing?",
-    header: "Unit NN",
-    options: ["Approved", "Needs changes", "Rethink unit"],
-    multiSelect: false
-  }]
-})
-```
-
-Parse the session ID from the response, then poll `get_review_status({session_id})` until `status` is `"answered"`. Read `answers[0].selectedOptions[0]` for the decision and `answers[0].otherText` for feedback notes.
-
-**Fallback (if visual tool not available):**
-
-Use `AskUserQuestion`:
 ```json
 {
   "questions": [{
@@ -1636,8 +1554,6 @@ Use `AskUserQuestion`:
   }]
 }
 ```
-
-**For both paths, apply the same routing:**
 
 - **Approved**: Move to the next unit. (The unit is already committed from Step A.1 or the most recent revision commit.)
 - **Needs changes**: Discuss feedback, update the unit file, then **commit the revision with the user's reasoning in the commit body**:
@@ -1776,31 +1692,6 @@ git commit -m "elaborate(${INTENT_SLUG}): generate frontend and design wireframe
 
 ### Step 6: Product review gate
 
-**Visual Review (preferred):**
-
-Check if the `ask_user_visual_question` MCP tool is available:
-```
-ToolSearch("ask_user_visual_question")
-```
-
-If found, call it with wireframe references as context:
-```
-ask_user_visual_question({
-  title: "Wireframe Review",
-  context: "{Build a markdown summary listing each wireframe file with its unit name and path. For each wireframe, include:\n- Unit name and slug\n- Wireframe file path: `.ai-dlc/${INTENT_SLUG}/mockups/unit-NN-{slug}-wireframe.html`\n- Brief description of what the wireframe covers\n\nNote: The user should have the wireframes open in browser tabs from Step 5.}",
-  questions: [{
-    question: "I've generated low-fidelity wireframes for the frontend and design units. Review the screen structure, flow, and placeholder copy. How do they look?",
-    header: "Wireframes",
-    options: ["Approved", "Needs revision", "Skip wireframes"],
-    multiSelect: false
-  }]
-})
-```
-
-Parse the session ID from the response, then poll `get_review_status({session_id})` until `status` is `"answered"`. Read `answers[0].selectedOptions[0]` for the decision and `answers[0].otherText` for revision notes.
-
-**Fallback (if visual tool not available):**
-
 Present all generated wireframes to product for review using `AskUserQuestion`:
 
 ```json
@@ -1817,8 +1708,6 @@ Present all generated wireframes to product for review using `AskUserQuestion`:
   }]
 }
 ```
-
-**For both paths, apply the same routing:**
 
 - **Approved**: Proceed to Phase 6.5.
 - **Needs revision**: Discuss feedback, update the wireframe HTML files directly, commit the revision, and re-present for review. Loop until approved.
