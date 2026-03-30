@@ -646,7 +646,7 @@ fi
 
 5. **Select agent type based on hat**:
 
-- `planner` -> `Plan` agent
+- `planner` -> `general-purpose` agent (NOT `Plan` — the planner hat writes its own plan directly, plan mode blocks autonomous execution)
 - `builder` -> discipline-specific agent (see builder agent selection table below)
 - All other hats (`reviewer`, `red-team`, `blue-team`, etc.) -> `general-purpose` agent
 
@@ -760,7 +760,7 @@ fi
 ```
 
 d. Select agent type based on hat:
-   - `planner` -> `Plan` agent
+   - `planner` -> `general-purpose` agent (NOT `Plan` — plan mode blocks autonomous execution)
    - `builder` -> discipline-specific agent (see builder agent selection table below)
    - All other hats (`reviewer`, `red-team`, `blue-team`, etc.) -> `general-purpose` agent
 
@@ -1052,11 +1052,38 @@ Mark intent complete:
 ```bash
 STATE=$(echo "$STATE" | dlc_json_set "status" "completed")
 dlc_state_save "$INTENT_DIR" "iteration.json" "$STATE"
+
+# Update intent.md frontmatter status so it persists in git
+source "${CLAUDE_PLUGIN_ROOT}/lib/parse.sh"
+dlc_frontmatter_set "status" "completed" "$INTENT_DIR/intent.md"
+# Check off intent-level completion criteria checkboxes
+dlc_check_intent_criteria "$INTENT_DIR"
+git add "$INTENT_DIR/intent.md"
+git add "$INTENT_DIR/completion-criteria.md" 2>/dev/null || true
+git add "$INTENT_DIR/state/completion-criteria.md" 2>/dev/null || true
+git commit -m "status: mark intent ${INTENT_SLUG} as completed"
 ```
 
 4. Output completion summary (same as current Step 5 format from `/advance`)
 
 #### 5c. Delivery Prompt
+
+**Pre-delivery validation:** Verify intent.md status is "completed" before delivering. This is a safety net — Step 5b should have set it, but if it was missed (e.g., stale plugin, skipped step), catch it here.
+
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/parse.sh"
+INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+INTENT_STATUS=$(dlc_frontmatter_get "status" "$INTENT_DIR/intent.md")
+if [ "$INTENT_STATUS" != "completed" ]; then
+  echo "Fixing: intent status '$INTENT_STATUS' → 'completed'"
+  dlc_frontmatter_set "status" "completed" "$INTENT_DIR/intent.md"
+  dlc_check_intent_criteria "$INTENT_DIR"
+  git add "$INTENT_DIR/intent.md"
+  git add "$INTENT_DIR/completion-criteria.md" 2>/dev/null || true
+  git add "$INTENT_DIR/state/completion-criteria.md" 2>/dev/null || true
+  git commit -m "status: mark intent ${INTENT_SLUG} as completed"
+fi
+```
 
 **Gate on change strategy.** The delivery prompt only applies to intent-level strategy, where all unit work merges into a single intent branch that needs delivery. With unit strategy, each unit already has its own PR — there's nothing to deliver as a whole.
 
@@ -1272,7 +1299,7 @@ dlc_state_save "$INTENT_DIR" "iteration.json" "$STATE"
 
 | Role | Agent Type | Description |
 |------|------------|-------------|
-| `planner` | `Plan` | Creates tactical implementation plan |
+| `planner` | `general-purpose` | Creates tactical implementation plan (NOT `Plan` — plan mode blocks autonomous execution) |
 | `builder` | Based on unit `discipline` | Implements the plan |
 | `reviewer` | `general-purpose` | Verifies completion criteria |
 

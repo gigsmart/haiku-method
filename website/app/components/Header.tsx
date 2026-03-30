@@ -98,12 +98,10 @@ export function Header() {
 						{/* Primary nav links */}
 						{primaryNavItems.map((item) => {
 							const isActive = isActivePrimaryItem(item)
-							// Find matching mega menu category for this item
-							const megaCategory = navigation.find((cat) =>
-								cat.sections.some((section) =>
-									section.items.some((si) => si.href === item.href),
-								) || cat.href === item.href
-							)
+							// Only "Docs" gets a mega menu dropdown; other items are plain links
+							const megaCategory = item.title === "Docs"
+								? { title: "Docs", href: "/docs/", sections: navigation.flatMap(c => c.sections), featured: navigation[0].featured }
+								: null
 
 							if (megaCategory) {
 								// Render as mega menu trigger

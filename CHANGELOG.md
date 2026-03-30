@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.82.3] - 2026-03-30
+
+### Fixed
+
+- add pre-delivery safety net for intent.md status ([22b8553](../../commit/22b8553))
+
+## [1.82.2] - 2026-03-30
+
+### Fixed
+
+- update intent.md status on Teams path completion ([eff7c9e](../../commit/eff7c9e))
+
+## [1.82.1] - 2026-03-30
+
+### Fixed
+
+- prevent planner hat from entering plan mode, reorder strategy options, remove auto-merge question ([1aa04c3](../../commit/1aa04c3))
+
+## [1.82.0] - 2026-03-30
+
+### Added
+
+- story-driven home page and plugin lifecycle guides ([df4d4ad](../../commit/df4d4ad))
+
+## [1.81.1] - 2026-03-30
+
+### Fixed
+
+- make intent strategy the default option, remove auto-merge question ([2b81ab5](../../commit/2b81ab5))
+
 ## [1.81.0] - 2026-03-30
 
 ### Added

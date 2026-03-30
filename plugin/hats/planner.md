@@ -97,6 +97,10 @@ If relevant learnings are found:
 3. Incorporate key insights into the plan
 4. Reference the learning file in the plan for traceability
 
+## CRITICAL: No Plan Mode
+
+**NEVER use `EnterPlanMode` or spawn a `Plan` subagent.** The planner hat IS the planning step — write the plan directly as a markdown document saved via `dlc_state_save`. Using Claude Code's built-in plan mode blocks autonomous execution and requires user approval, defeating the purpose of the planner hat.
+
 ## Steps
 
 1. Review current state

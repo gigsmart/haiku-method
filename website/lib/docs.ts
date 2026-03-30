@@ -70,34 +70,42 @@ export function getAllDocs(): DocPage[] {
 	})
 }
 
-// Define which docs belong to which section
+// Define which docs belong to which section — organized around the toolkit groups
 const sectionDefinitions: { title: string; slugs: string[] }[] = [
 	{
 		title: "Getting Started",
-		slugs: ["index", "quick-start", "installation"],
+		slugs: ["installation", "quick-start", "checklist-first-intent"],
 	},
 	{
 		title: "Core Concepts",
-		slugs: ["hats", "concepts", "workflows"],
+		slugs: ["hats", "workflows", "concepts"],
 	},
 	{
-		title: "Integration",
-		slugs: ["providers", "cowork"],
+		title: "Before You Build",
+		slugs: ["providers", "stack-config", "cowork"],
 	},
 	{
-		title: "Adoption",
+		title: "While You Build",
+		slugs: ["index"],
+	},
+	{
+		title: "After You Build",
+		slugs: ["operations-guide", "operation-schema"],
+	},
+	{
+		title: "Role Guides",
 		slugs: [
-			"adoption-roadmap",
 			"guide-developer",
+			"guide-designer",
 			"guide-tech-lead",
 			"guide-manager",
 			"guide-ai",
 		],
 	},
 	{
-		title: "Checklists",
+		title: "Adoption",
 		slugs: [
-			"checklist-first-intent",
+			"adoption-roadmap",
 			"checklist-team-onboarding",
 			"assessment",
 		],
