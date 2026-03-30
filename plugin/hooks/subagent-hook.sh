@@ -80,6 +80,16 @@ if [ -n "$PERMISSION_MODE" ]; then
   UPDATED_INPUT=$(echo "$UPDATED_INPUT" | jq --arg mode "$PERMISSION_MODE" '.mode = $mode' 2>/dev/null)
 fi
 
+# Override Plan agent type to general-purpose (plan mode blocks autonomous execution)
+# Belt-and-suspenders: text instructions in planner.md and execute/SKILL.md say "don't use Plan",
+# but this harness-level override catches any case where a Plan subagent is launched anyway.
+if [ "$IS_AGENT_TOOL" = true ]; then
+  SUBAGENT_TYPE=$(echo "$UPDATED_INPUT" | jq -r '.subagent_type // ""' 2>/dev/null || echo "")
+  if [ "$SUBAGENT_TYPE" = "Plan" ]; then
+    UPDATED_INPUT=$(echo "$UPDATED_INPUT" | jq '.subagent_type = "general-purpose"' 2>/dev/null)
+  fi
+fi
+
 # Output JSON with updatedInput — do NOT set permissionDecision
 jq -n --argjson input "$UPDATED_INPUT" '{
   hookSpecificOutput: {

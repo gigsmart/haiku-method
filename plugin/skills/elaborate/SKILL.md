@@ -1387,6 +1387,12 @@ git add .ai-dlc/${INTENT_SLUG}/intent.md
 git commit -m "elaborate(${INTENT_SLUG}): set quality gates"
 ```
 
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
+aidlc_telemetry_init
+aidlc_record_intent_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}"
+```
+
 ### 3. Write and review each `unit-NN-{slug}.md` individually:
 
 **Process each unit one at a time.** Write the file, present it for review, iterate until approved, then move to the next unit. Do NOT batch-write all units.

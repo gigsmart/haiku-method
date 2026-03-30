@@ -145,8 +145,16 @@ for i in $(seq 0 $((GATE_COUNT - 1))); do
     # repo path contains a single quote (e.g. /home/user/it's-a-project/).
     GATE_OUTPUT=$($TIMEOUT_CMD 30 bash -c 'cd "$1" && eval "$2"' _ "$REPO_ROOT" "$GATE_CMD" 2>&1) || GATE_EXIT=$?
   else
-    # No timeout command available — use background process with kill
+    # No timeout command available — use background process with kill.
+    # Register a trap to clean up both the gate process and the timer subshell
+    # if the hook itself is killed (e.g. by CC's 120s hook timeout). Without this
+    # trap, the timer subshell ( sleep 30 && kill ... ) becomes an orphan and
+    # self-terminates only after the sleep expires — harmless but untidy.
     tmp_out=$(mktemp)
+    bg_pid=""
+    timer_pid=""
+    _gate_cleanup() { kill "$bg_pid" "$timer_pid" 2>/dev/null || true; rm -f "$tmp_out"; }
+    trap _gate_cleanup EXIT INT TERM HUP
     bash -c 'cd "$1" && eval "$2"' _ "$REPO_ROOT" "$GATE_CMD" > "$tmp_out" 2>&1 &
     bg_pid=$!
     ( sleep 30 && kill "$bg_pid" 2>/dev/null ) &
@@ -154,6 +162,7 @@ for i in $(seq 0 $((GATE_COUNT - 1))); do
     wait "$bg_pid" 2>/dev/null || GATE_EXIT=$?
     kill "$timer_pid" 2>/dev/null || true
     wait "$timer_pid" 2>/dev/null || true
+    trap - EXIT INT TERM HUP  # Remove gate-scoped trap after clean completion
     GATE_OUTPUT=$(cat "$tmp_out")
     rm -f "$tmp_out"
   fi
@@ -166,8 +175,10 @@ for i in $(seq 0 $((GATE_COUNT - 1))); do
 
   if [ "$GATE_EXIT" -ne 0 ]; then
     ALL_PASSED=false
-    # Truncate output to 500 chars
-    TRUNCATED_OUTPUT=$(printf '%s' "$GATE_OUTPUT" | head -c 500)
+    # Truncate output to 500 characters.
+    # Bash string slicing (${var:0:N}) counts Unicode characters, not bytes —
+    # safe for multibyte UTF-8 output where head -c 500 would split a char boundary.
+    TRUNCATED_OUTPUT="${GATE_OUTPUT:0:500}"
     FAILURES=$(echo "$FAILURES" | jq \
       --arg name "$GATE_NAME" \
       --arg cmd "$GATE_CMD" \

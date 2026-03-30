@@ -13,7 +13,7 @@ export {
 	FuelGauge,
 } from "./NestedLoops"
 export { ProgressBar } from "./ProgressBar"
-export { Tollbooth, GateCards } from "./QualityGate"
+export { Tollbooth, GateCards, QualityGateLifecycle } from "./QualityGate"
 export { SectionNav } from "./SectionNav"
 export {
 	SpecComparison,
