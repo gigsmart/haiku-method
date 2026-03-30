@@ -18,24 +18,24 @@ export function Tollbooth() {
 				Enforced by <code className="text-amber-500">quality-gate.sh</code> on every Stop — the agent cannot bypass these.
 			</p>
 
-			{/* Pass lanes */}
+			{/* Pass lanes — gate names come from quality_gates: frontmatter, these are illustrative examples */}
 			<div className="mb-6 grid gap-4 sm:grid-cols-3">
 				<TollLane
 					icon="&#x2705;"
-					label="Tests"
+					label="tests"
 					desc="All pass"
 					variant="pass"
 				/>
 				<TollLane
 					icon="&#x2705;"
-					label="Types"
+					label="build"
 					desc="No errors"
 					variant="pass"
 				/>
 				<TollLane
 					icon="&#x2705;"
-					label="Linting"
-					desc="Clean code"
+					label="lint"
+					desc="No violations"
 					variant="pass"
 				/>
 			</div>
@@ -48,14 +48,14 @@ export function Tollbooth() {
 			<div className="mt-5 grid gap-4 sm:grid-cols-3">
 				<TollLane
 					icon="&#x274C;"
-					label="Tests"
+					label="tests"
 					desc="Failures!"
 					variant="fail"
 				/>
-				<TollLane icon="&#x274C;" label="Types" desc="Errors!" variant="fail" />
+				<TollLane icon="&#x274C;" label="build" desc="Errors!" variant="fail" />
 				<TollLane
 					icon="&#x274C;"
-					label="Linting"
+					label="lint"
 					desc="Issues!"
 					variant="fail"
 				/>

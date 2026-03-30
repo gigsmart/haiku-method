@@ -1361,8 +1361,8 @@ export default function Home() {
 						forceOpen={isRef}
 					>
 						<p className="mb-3">
-							Nine hooks form the automated safety system. Each fires at a
-							specific point in the Claude Code lifecycle.
+							Eight hooks (plus one support script) form the automated safety
+							system. Each fires at a specific point in the Claude Code lifecycle.
 						</p>
 						<div className="space-y-2">
 							{[
