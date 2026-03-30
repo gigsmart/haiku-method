@@ -100,7 +100,11 @@ if [ -n "$CURRENT_UNIT" ]; then
   UNIT_GATES=$(load_gates "$UNIT_FILE")
 fi
 
-# Merge gates additively
+# Merge gates additively.
+# jq -s slurps multiple top-level JSON values from stdin as separate inputs —
+# INTENT_GATES and UNIT_GATES are two complete JSON arrays, newline-separated.
+# jq -s wraps them in an outer array (.[0] and .[1]), then + concatenates them.
+# The newline separator is intentional; it is NOT string concatenation.
 ALL_GATES=$(jq -s '.[0] + .[1]' <<< "${INTENT_GATES}
 ${UNIT_GATES}")
 
@@ -133,11 +137,13 @@ for i in $(seq 0 $((GATE_COUNT - 1))); do
   GATE_OUTPUT=""
   GATE_EXIT=0
   if [ -n "$TIMEOUT_CMD" ]; then
-    GATE_OUTPUT=$($TIMEOUT_CMD 30 bash -c "cd '$REPO_ROOT' && $GATE_CMD" 2>&1) || GATE_EXIT=$?
+    # Pass REPO_ROOT as a positional arg to avoid single-quote injection if the
+    # repo path contains a single quote (e.g. /home/user/it's-a-project/).
+    GATE_OUTPUT=$($TIMEOUT_CMD 30 bash -c 'cd "$1" && eval "$2"' _ "$REPO_ROOT" "$GATE_CMD" 2>&1) || GATE_EXIT=$?
   else
     # No timeout command available — use background process with kill
     tmp_out=$(mktemp)
-    bash -c "cd '$REPO_ROOT' && $GATE_CMD" > "$tmp_out" 2>&1 &
+    bash -c 'cd "$1" && eval "$2"' _ "$REPO_ROOT" "$GATE_CMD" > "$tmp_out" 2>&1 &
     bg_pid=$!
     ( sleep 30 && kill "$bg_pid" 2>/dev/null ) &
     timer_pid=$!
