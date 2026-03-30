@@ -59,7 +59,11 @@ case "$HAT" in
   *) exit 0 ;;
 esac
 
-# Early exit: completed or blocked status
+# Early exit: completed or blocked status.
+# "completed" means the unit is done — no need to enforce gates post-completion.
+# "blocked" means the builder hit an escalation blocker and cannot proceed; enforcing
+# gates would trap the agent on stop when the unit is intentionally stalled. Gates are
+# re-enforced once the unit transitions out of blocked and the builder resumes work.
 case "$STATUS" in
   completed|blocked) exit 0 ;;
 esac

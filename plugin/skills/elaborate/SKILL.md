@@ -1352,7 +1352,12 @@ If the user selects **"Let me choose"**, present each gate individually and coll
 
 After the user confirms (options 1 or 2), inform them how to customize individual commands if needed:
 
-> Gates confirmed. To modify a gate command (e.g., change `npm test` to `npm test -- --coverage`), edit the `quality_gates:` field in `.ai-dlc/{intent-slug}/intent.md` directly after this step. Gates are written as a YAML list: `- name: tests\n  command: npm test -- --coverage`.
+> Gates confirmed. To modify a gate command (e.g., change `npm test` to `npm test -- --coverage`), edit the `quality_gates:` field in `.ai-dlc/{intent-slug}/intent.md` directly after this step. Gates are written as a YAML list:
+>
+> ```yaml
+> - name: tests
+>   command: npm test -- --coverage
+> ```
 
 If no candidates were found in discovery, inform the user:
 
