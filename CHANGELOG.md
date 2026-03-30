@@ -5,6 +5,83 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.82.7] - 2026-03-30
+
+### Added
+
+- add ask_user_visual_question MCP tool ([d085656](../../commit/d085656))
+- wire up packaging, /dashboard skill, and workspace resolution ([79c058a](../../commit/79c058a))
+- add static dashboard generator ([e641de2](../../commit/e641de2))
+- replace monolithic html.ts with template system ([9ae83bb](../../commit/9ae83bb))
+- add mermaid rendering, dark mode, inline mockups ([f7b145e](../../commit/f7b145e))
+- add MCP channel server for visual review ([998e834](../../commit/998e834))
+- add @ai-dlc/shared parser package ([b89bd64](../../commit/b89bd64))
+
+### Fixed
+
+- server-side markdown rendering and wireframe fallback resolution ([d608bc6](../../commit/d608bc6))
+- don't escape mermaid content in intent review template ([8b6a9f2](../../commit/8b6a9f2))
+
+### Other
+
+- Visual Review Full Integration & Bug Fixes ([8f8372f](../../commit/8f8372f))
+- mark intent visual-review-integration as completed ([9aabca3](../../commit/9aabca3))
+- Merge unit-03-wire-elaboration into intent branch ([cfdf4e7](../../commit/cfdf4e7))
+- mark unit-03-wire-elaboration as completed ([1fd1c94](../../commit/1fd1c94))
+- advance hat for unit-03-wire-elaboration (builder → reviewer) ([9d50a6b](../../commit/9d50a6b))
+- wire visual review into 4 elaboration review boundaries ([f7585a1](../../commit/f7585a1))
+- advance hat for unit-03-wire-elaboration (planner → builder) ([931c935](../../commit/931c935))
+- mark unit-03-wire-elaboration as in_progress, hat: planner ([ad8c8e1](../../commit/ad8c8e1))
+- Merge unit-02-visual-question-tool into intent branch ([a00b248](../../commit/a00b248))
+- mark unit-02-visual-question-tool as completed ([cf9f201](../../commit/cf9f201))
+- advance hat for unit-02-visual-question-tool (builder → reviewer) ([bfb97a6](../../commit/bfb97a6))
+- advance hat for unit-02-visual-question-tool (planner → builder) ([f674324](../../commit/f674324))
+- mark unit-02-visual-question-tool as in_progress, hat: planner ([7917b35](../../commit/7917b35))
+- Merge unit-01-fix-rendering into intent branch ([a318e76](../../commit/a318e76))
+- mark unit-01-fix-rendering as completed ([05cf0f4](../../commit/05cf0f4))
+- advance hat for unit-01-fix-rendering (builder → reviewer) ([1782a04](../../commit/1782a04))
+- Merge branch 'ai-dlc/visual-review/main' into ai-dlc/visual-review-integration/01-fix-rendering ([77a14b2](../../commit/77a14b2))
+- advance hat for unit-01-fix-rendering (planner → builder) ([934b6da](../../commit/934b6da))
+- mark unit-01-fix-rendering as in_progress, hat: planner ([17cd77e](../../commit/17cd77e))
+- initialize execution for visual-review-integration ([66a76d1](../../commit/66a76d1))
+- draft unit-03-wire-elaboration ([e8f9470](../../commit/e8f9470))
+- draft unit-02-visual-question-tool ([e8a0f85](../../commit/e8a0f85))
+- draft unit-01-fix-rendering ([a3dc53c](../../commit/a3dc53c))
+- define intent ([62e0aa1](../../commit/62e0aa1))
+- write discovery results ([c850f00](../../commit/c850f00))
+- complete domain discovery ([708fda2](../../commit/708fda2))
+- write discovery brief ([97a1d91](../../commit/97a1d91))
+- initialize discovery log ([d502fa3](../../commit/d502fa3))
+- mark visual-review intent as completed ([bc24f07](../../commit/bc24f07))
+- Merge unit-05-plugin-packaging into intent branch ([88cf8b0](../../commit/88cf8b0))
+- mark unit-05-plugin-packaging as completed ([3a5ecdc](../../commit/3a5ecdc))
+- mark unit-05-plugin-packaging as in_progress ([25c67db](../../commit/25c67db))
+- Merge unit-04-static-dashboard into intent branch ([891b102](../../commit/891b102))
+- mark unit-04-static-dashboard as completed ([259580a](../../commit/259580a))
+- mark unit-04-static-dashboard as in_progress ([21c04d9](../../commit/21c04d9))
+- Merge unit-03-review-ui into intent branch ([5fe1a05](../../commit/5fe1a05))
+- mark unit-03-review-ui as completed ([28f0296](../../commit/28f0296))
+- Merge branch 'ai-dlc/visual-review/main' into ai-dlc/visual-review/03-review-ui ([38c1117](../../commit/38c1117))
+- mark unit-03-review-ui as in_progress ([cd64720](../../commit/cd64720))
+- Merge unit-02-mcp-channel-server into intent branch ([1c9d12e](../../commit/1c9d12e))
+- mark unit-02-mcp-channel-server as completed ([917f15d](../../commit/917f15d))
+- Merge branch 'ai-dlc/visual-review/main' into ai-dlc/visual-review/02-mcp-channel-server ([c291aa0](../../commit/c291aa0))
+- mark unit-02-mcp-channel-server as in_progress ([63146d2](../../commit/63146d2))
+- Merge unit-01-shared-parser into intent branch ([9c4dc87](../../commit/9c4dc87))
+- mark unit-01-shared-parser as completed ([b9a334e](../../commit/b9a334e))
+- mark unit-01-shared-parser as in_progress ([ca55b6b](../../commit/ca55b6b))
+- finalize elaboration artifacts ([91056ce](../../commit/91056ce))
+- draft unit-05-plugin-packaging ([8b0892e](../../commit/8b0892e))
+- draft unit-04-static-dashboard ([e50768f](../../commit/e50768f))
+- draft unit-03-review-ui ([46b1c3c](../../commit/46b1c3c))
+- draft unit-02-mcp-channel-server ([b0c3e63](../../commit/b0c3e63))
+- draft unit-01-shared-parser ([dc13517](../../commit/dc13517))
+- define intent ([b0c465d](../../commit/b0c465d))
+- write discovery results ([3d48977](../../commit/3d48977))
+- complete domain discovery with mockups and domain model ([e859ca0](../../commit/e859ca0))
+- write discovery brief ([32ba608](../../commit/32ba608))
+- initialize discovery log ([ce2cd14](../../commit/ce2cd14))
+
 ## [1.82.6] - 2026-03-30
 
 ### Fixed
