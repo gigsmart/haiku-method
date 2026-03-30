@@ -1,6 +1,6 @@
 ---
 status: in_progress
-hat: planner
+hat: builder
 last_updated: "2026-03-30T08:32:00Z"
 depends_on: []
 branch: ai-dlc/visual-review-integration/01-fix-rendering
