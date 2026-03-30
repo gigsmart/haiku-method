@@ -1,0 +1,11 @@
+{
+  "name": "@ai-dlc/mcp-server",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@ai-dlc/shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.28.0",
+    "zod": "^3.23.0"
+  }
+}
