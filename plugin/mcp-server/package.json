@@ -1,0 +1,18 @@
+{
+  "name": "@ai-dlc/mcp-server",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-dlc/shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.28.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "typescript": "^5.7.0"
+  }
+}
