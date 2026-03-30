@@ -144,15 +144,26 @@ Don't just specify what should work - specify what should fail:
 
 ### Quality Gates
 
-Quality gates are automated criteria that every change must pass:
+Quality gates are automated checks that the AI harness mechanically enforces — the agent **cannot stop** until all gates pass. They are defined in YAML frontmatter on the intent and each unit, auto-detected during elaboration, and enforced on every Stop/SubagentStop event via the `quality-gate.sh` hook.
 
-```markdown
-## Quality Gates
-- [ ] All tests pass (`bun test`)
-- [ ] No TypeScript errors (`tsc --noEmit`)
-- [ ] No lint warnings (`biome check`)
-- [ ] Coverage > 80%
+```yaml
+# intent.md or unit-*.md frontmatter
+quality_gates:
+  - name: tests
+    command: bun test
+  - name: typecheck
+    command: tsc --noEmit
+  - name: lint
+    command: biome check
 ```
+
+**Key properties:**
+
+- **Harness-enforced** — The agent is mechanically blocked from stopping if any gate fails. This is not advisory; it is structural.
+- **Auto-detected** — During elaboration, the discovery skill inspects repo tooling (`package.json`, `go.mod`, `pyproject.toml`, `Cargo.toml`) and proposes appropriate gates for confirmation.
+- **Additive (ratchet)** — Gates are merged additively: unit gates add to intent gates. Builders can add gates but never remove them. The reviewer verifies gate integrity.
+- **Scoped to building** — Only building hats (builder, implementer, refactorer) are enforced. Planner, reviewer, and designer hats skip enforcement silently.
+
 
 ## Backpressure
 

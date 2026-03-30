@@ -276,6 +276,37 @@ Prescriptive workflows create an intelligence ceiling—like consulting a board 
 
 The philosophy can be summarized as: **"Better to fail predictably than succeed unpredictably."** Each failure is data. Each iteration refines the approach. The skill shifts from directing AI step-by-step to writing criteria and tests that converge toward correct solutions.
 
+#### Harness-Enforced Quality Gates
+
+Backpressure, as described above, is a principle. AI-DLC 2026 implements it as **harness-enforced quality gates**: structured, frontmatter-driven checks that the harness runs on every Stop event. The agent cannot stop — cannot advance, cannot hand off, cannot declare work complete — until all gates pass.
+
+Gates are declared in YAML frontmatter on the intent and each unit:
+
+```yaml
+# intent.md frontmatter
+quality_gates:
+  - name: tests
+    command: bun test
+  - name: typecheck
+    command: tsc --noEmit
+  - name: lint
+    command: biome check
+```
+
+**The harness, not the agent, enforces these gates.** When a building agent attempts to stop, the `quality-gate.sh` hook fires, reads the active intent's and unit's frontmatter, executes each gate command, and emits a structured block decision if any gate fails. The agent sees the failure output and is forced to fix the issue before it can proceed. This is qualitatively different from asking an AI to "run the tests" — the agent cannot rationalize its way around a failing hook.
+
+**Four properties make this robust:**
+
+1. **Auto-detection during elaboration.** The discovery skill inspects repo tooling (`package.json`, `go.mod`, `pyproject.toml`, `Cargo.toml`, `bun.lock`) and proposes appropriate gates at elaboration time. The human confirms or adjusts before construction begins.
+
+2. **Additive merge with ratchet.** Intent-level gates and unit-level gates are merged additively — unit gates add to intent gates, never replace them. During construction, gates are add-only. The reviewer hat verifies gate integrity as part of its review: any gate removal triggers a request-changes decision. This is the ratchet effect: quality standards can only move forward.
+
+3. **Scoped enforcement.** Only building hats (builder, implementer, refactorer) are gate-enforced. Planner, reviewer, and designer hats skip enforcement silently — they have different objectives and should not be blocked by failing tests mid-review.
+
+4. **Loop prevention.** The harness provides a `stop_hook_active` flag to prevent re-entrance loops in nested subagent scenarios. The guard is deliberate: a subagent that already blocked once is allowed to stop on the second attempt, preventing deadlock.
+
+This mechanism closes the gap between "quality gates as guidelines" and "quality gates as structural constraints." The gates are not a checklist for the agent to work through — they are an exit condition the harness controls.
+
 #### Visual and Design Backpressure
 
 The backpressure principle extends beyond code quality into **design quality**. Just as tests, linters, and type checks reject non-conforming code, visual fidelity gates reject implementations that drift from design intent.
@@ -341,11 +372,9 @@ This doesn't mean structure disappears. It means structure changes form—from s
 
 ### Iteration Through Passes
 
-> **For mature teams, passes are unnecessary.** The ideal AI-DLC workflow handles all requirements, specs, and design in elaboration, then delivers everything in a single execution phase. Need to change something? Do a `/followup` and iterate. Move fast.
+While phases collapse into continuous flow, real product development still involves distinct disciplines—design, product, and engineering—each bringing different expertise to the same intent. The question isn't whether these disciplines contribute sequentially (they often do), but whether that sequence is rigid and lossy (waterfall) or fluid and iterative.
 
-While the single-pass flow is the goal, teams migrating to AI-DLC from traditional processes may need a transitional structure. **Passes** provide that structure: typed iterations through the standard AI-DLC loop (elaborate → units → execute → review), where each pass refines the intent through a different disciplinary lens. The output of one pass becomes the input to the next.
-
-**Passes will slow you down.** They exist for teams that aren't yet comfortable handling design, product, and engineering concerns in a single elaboration. As teams mature with the methodology, they naturally consolidate passes into a single flow and use `/followup` for iteration instead.
+AI-DLC 2026 introduces **Passes**: typed iterations through the standard AI-DLC loop (elaborate → units → execute → review), where each pass refines the intent through a different disciplinary lens. The output of one pass becomes the input to the next.
 
 ```mermaid
 flowchart TB
@@ -368,6 +397,7 @@ flowchart TB
         P2 --> P3["Execute"]
         P3 --> P4["Review"]
         P4 -->|"Gaps"| P1
+        P4 -.->|"Design gap"| D1
         P4 -->|"Done"| PART["Behavioral Specs"]
     end
 
@@ -379,11 +409,12 @@ flowchart TB
         E2 --> E3["Execute"]
         E3 --> E4["Review"]
         E4 -->|"Gaps"| E1
+        E4 -.->|"Constraint"| P1
         E4 -->|"Done"| CODE["Working Code"]
     end
 ```
 
-**Passes flow forward, never backward.** If the dev pass discovers something the product pass missed, the dev pass owns it—it iterates within its own loop to resolve the gap. If a fundamental design assumption is wrong, that's a `/followup` intent after the current one completes. This keeps velocity high and avoids the cross-pass coordination overhead that makes waterfall slow.
+**The key difference from waterfall:** backward arrows are expected, not exceptional. When the dev pass discovers a constraint that invalidates a design assumption, work flows back to the product pass or design pass. This isn't failure—it's the intent iterating at a higher level than a bolt.
 
 **Each pass uses the same AI-DLC loop** but with different participants, inputs, and outputs:
 
@@ -393,9 +424,9 @@ flowchart TB
 | **Unit type** | Design units | Acceptance units | Dev units |
 | **Execution mode** | OHOTL (subjective) | HITL (judgment) | AHOTL or HITL |
 | **Output artifact** | High-fidelity designs | Behavioral specs + criteria | Working code |
-| **Missed something?** | Iterate within pass | Iterate within pass | Iterate within pass |
+| **Feedback flows to** | Itself | Back to Design if gap found | Back to Product if constraint found |
 
-**Passes are optional and a sign of immaturity.** A solo developer building a CLI tool uses a single dev pass (the default). A cross-functional team new to AI-DLC may use design → product → dev passes as training wheels. The goal is to graduate to single-pass elaboration where all disciplines contribute in one conversation.
+**Passes are optional and configurable.** A solo developer building a CLI tool may need only a dev pass. A cross-functional team building a consumer product may use all three. The methodology doesn't prescribe which passes to use—it provides the structure for teams that need them.
 
 **Passes preserve the "Everyone Becomes a Builder" principle.** A designer running a design pass uses the same elaborate → execute → review loop as an engineer running a dev pass. The workflow is identical; the discipline and artifacts differ.
 
@@ -666,14 +697,14 @@ email/password registration and OAuth providers for social login.
 
 #### Pass
 
-A **Pass** is a typed iteration through the standard AI-DLC loop (elaborate, decompose into units, execute, review) that refines an Intent through a specific disciplinary lens. Passes are a transitional mechanism for teams migrating to AI-DLC that aren't yet comfortable handling all disciplines in a single elaboration. Mature teams skip passes entirely.
+A **Pass** is a typed iteration through the standard AI-DLC loop (elaborate, decompose into units, execute, review) that refines an Intent through a specific disciplinary lens. Passes are the mechanism by which cross-functional teams contribute to a shared intent without waterfall-style handoffs.
 
 **Each pass follows the same structure:**
 
 1. **Elaborate** — Clarify scope through the pass's disciplinary lens
 2. **Decompose** — Break into discipline-appropriate units
 3. **Execute** — Build artifacts using appropriate operating mode
-4. **Review** — Validate output; iterate within the current pass if gaps are found
+4. **Review** — Validate output; feed gaps back to current or previous pass
 
 **Built-in pass types:**
 
@@ -696,13 +727,11 @@ passes:
     status: pending
 ```
 
-**Passes are optional and a sign of immaturity.** An intent with no `passes` field uses a single implicit dev pass—the current default behavior. Teams add passes only when they aren't yet comfortable handling all disciplines in a single elaboration.
+**Passes are optional.** An intent with no `passes` field uses a single implicit dev pass—the current default behavior. Teams add passes when cross-functional iteration is needed.
 
-**Passes flow forward, never backward.** If the dev pass discovers something the product pass missed, the dev pass owns it and iterates within its own loop. If a fundamental assumption is wrong, complete the current intent and use `/followup` to iterate. This keeps velocity high—backward flow between passes is the coordination overhead that makes waterfall slow.
+**Feedback between passes:** When a later pass discovers issues that require earlier-pass work, the intent iterates backward. The dev pass finding a constraint feeds back to the product pass. The product pass finding a design gap feeds back to the design pass. These backward flows are tracked in pass status and are a normal part of the workflow.
 
 **Pass artifacts persist as context:** Each completed pass produces artifacts (designs, specs, code) that become input context for the next pass. This preserves the institutional knowledge that traditional handoffs lose.
-
-**The maturity goal:** Graduate from multi-pass to single-pass. When your team can handle design, product, and engineering concerns in one elaboration conversation, you've arrived. Passes are training wheels, not the bicycle.
 
 #### Unit
 
@@ -1067,7 +1096,7 @@ Each pass elaboration runs the same Mob Elaboration ritual with different partic
 
 The Execution Phase transforms Units into tested, deployment-ready artifacts through Bolts. This phase progresses through domain modeling, logical design, code generation, and testing—though these steps may be implicit rather than explicit depending on complexity.
 
-**When an intent has multiple passes,** Execution executes one pass at a time. The active pass's units are executed, reviewed, and completed before the next pass begins its elaboration. If a later pass discovers gaps from an earlier pass, the current pass owns the resolution—it iterates within its own loop. Fundamental misses become `/followup` intents after the current one completes.
+**When an intent has multiple passes,** Execution executes one pass at a time. The active pass's units are executed, reviewed, and completed before the next pass begins its elaboration. Feedback from a later pass can reactivate an earlier pass, sending the intent backward for refinement—this is expected iteration, not failure.
 
 **Mode Selection**
 

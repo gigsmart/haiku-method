@@ -14,6 +14,7 @@ import {
 	FlowNode,
 	FuelGauge,
 	GateCards,
+	QualityGateLifecycle,
 	HatArrow,
 	HatCard,
 	HatExplainer,
@@ -566,7 +567,7 @@ export default function Home() {
 							<div className="pl-5">
 								<span className="font-semibold text-blue-500">hooks/</span>{" "}
 								<span className="text-gray-400">
-									-- 8 lifecycle hooks (.sh)
+									-- 9 lifecycle hooks (.sh)
 								</span>
 							</div>
 							<div className="pl-5">
@@ -1119,10 +1120,32 @@ export default function Home() {
 						className="mb-2 text-gray-500 dark:text-gray-400"
 					>
 						Inside each unit, the AI cycles through hats. Each hat has one job.
-						Quality gates stand between them.
+						Quality gates stand between them — every time the Builder finishes a session, it must pass the gates before stopping.
 					</motion.p>
 
 					<HatRotation />
+
+					<motion.div
+						{...fadeIn}
+						className="mt-4 rounded-xl border border-cyan-200 bg-cyan-50/30 p-4 dark:border-cyan-800 dark:bg-cyan-950/10"
+					>
+						<div className="mb-2 flex items-center gap-2">
+							<span className="text-base">&#x1F6A7;</span>
+							<span className="text-sm font-bold text-cyan-600 dark:text-cyan-300">
+								Quality gates fire on every Builder stop
+							</span>
+						</div>
+						<p className="text-xs text-gray-500 dark:text-gray-400">
+							The gates were detected from your repo tooling during{" "}
+							<code className="text-amber-500">/elaborate</code> and saved to{" "}
+							<code className="text-amber-500">intent.md</code> frontmatter. The
+							harness reads them and runs each command synchronously —{" "}
+							<strong className="text-gray-700 dark:text-gray-300">
+								the agent literally cannot stop until all pass.
+							</strong>{" "}
+							Builders can add unit-specific gates but cannot remove existing ones.
+						</p>
+					</motion.div>
 
 					<motion.div {...fadeIn} className="mt-6 grid gap-4 sm:grid-cols-2">
 						<div className="rounded-lg border border-green-200 bg-green-50/50 p-4 dark:border-green-800 dark:bg-green-950/10">
@@ -1281,17 +1304,35 @@ export default function Home() {
 						{...fadeIn}
 						className="mb-2 text-gray-500 dark:text-gray-400"
 					>
-						Every time the AI tries to advance from one hat to the next, it must
-						pass through a gate. No exceptions.
+						Every time the AI tries to stop, it must pass through a gate. Quality
+						gates are harness-enforced — defined in frontmatter, run by hooks, no exceptions.
 					</motion.p>
 
 					<Tollbooth />
+
+					{/* Quality Gate Lifecycle */}
+					<motion.h4
+						{...fadeIn}
+						className="mt-10 mb-1 text-base font-bold text-cyan-400"
+					>
+						How Quality Gates Work: Detection → Definition → Enforcement
+					</motion.h4>
+					<motion.p
+						{...fadeIn}
+						className="mb-3 text-sm text-gray-500 dark:text-gray-400"
+					>
+						Quality gates aren&apos;t hardcoded. They&apos;re discovered from your
+						repo, written into version-controlled frontmatter, and enforced
+						mechanically by the harness — all without any manual configuration.
+					</motion.p>
+
+					<QualityGateLifecycle />
 
 					<motion.p
 						{...fadeIn}
 						className="mt-6 mb-2 text-gray-700 dark:text-gray-300"
 					>
-						Three hard gates stand between hats. The AI cannot bypass them:
+						Three hard gates stand between hats. The harness enforces them mechanically — the agent cannot bypass them:
 					</motion.p>
 
 					<GateCards />
@@ -1320,8 +1361,8 @@ export default function Home() {
 						forceOpen={isRef}
 					>
 						<p className="mb-3">
-							Eight hooks form the automated safety system. Each fires at a
-							specific point in the Claude Code lifecycle.
+							Eight hooks (plus one support script) form the automated safety
+							system. Each fires at a specific point in the Claude Code lifecycle.
 						</p>
 						<div className="space-y-2">
 							{[
@@ -1354,6 +1395,11 @@ export default function Home() {
 									name: "context-monitor.sh",
 									trigger: "Post-tool-use",
 									desc: "Monitors context window usage. Warns at 35% remaining.",
+								},
+								{
+									name: "quality-gate.sh",
+									trigger: "Session end (sync)",
+									desc: "Harness-enforced quality gates. Reads quality_gates: from intent and unit frontmatter, runs each gate command, and blocks the agent from stopping if any fail. Only enforced on building hats.",
 								},
 								{
 									name: "enforce-iteration.sh",

@@ -1330,6 +1330,7 @@ iterates_on: ""  # Slug of the previous intent this iterates on (set by /followu
 created: {ISO date}
 status: active
 epic: ""  # Ticketing provider epic key (auto-populated if ticketing provider configured)
+quality_gates: []  # Detected from project tooling during discovery; e.g., [{name: tests, command: "npm test"}]
 ---
 
 # {Intent Title}
@@ -1381,6 +1382,73 @@ aidlc_telemetry_init
 aidlc_record_intent_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}"
 ```
 
+### 2.5. Confirm Quality Gates
+
+After writing intent.md and before writing units, confirm quality gates detected during discovery.
+
+**Step A — Read discovery results.** Check `discovery.md` for the `## Quality Gate Candidates` section:
+
+```bash
+DISCOVERY_FILE=".ai-dlc/${INTENT_SLUG}/discovery.md"
+```
+
+Read the file and look for the `## Quality Gate Candidates` section. Parse the detected gates table.
+
+**Step B — Present gates to user.** If quality gate candidates were found, use `AskUserQuestion` to present them:
+
+> **Quality Gate Candidates Detected**
+>
+> The following quality gates were detected from your project tooling:
+>
+> | Name | Command | Source |
+> |------|---------|--------|
+> | {name} | {command} | {source file} |
+> | ... | ... | ... |
+>
+> How would you like to proceed?
+> 1. **Use all detected gates** — All gates above will run during construction
+> 2. **Let me choose** — Pick which gates to include
+> 3. **Skip quality gates** — No gates will be enforced (you can add them later)
+
+If the user selects **"Let me choose"**, present each gate individually and collect their selections.
+
+After the user confirms (options 1 or 2), inform them how to customize individual commands if needed:
+
+> Gates confirmed. To modify a gate command (e.g., change `npm test` to `npm test -- --coverage`), edit the `quality_gates:` field in `.ai-dlc/{intent-slug}/intent.md` directly after this step. Gates are written as a YAML list:
+>
+> ```yaml
+> - name: tests
+>   command: npm test -- --coverage
+> ```
+
+If no candidates were found in discovery, inform the user:
+
+> No quality gates were auto-detected from project tooling. You can add custom gates later by editing the `quality_gates:` field in intent.md frontmatter. Proceeding with `quality_gates: []`.
+
+**Step C — Update intent.md frontmatter.** Write the confirmed gates to intent.md using `yq`:
+
+```bash
+# yq accepts JSON-style objects in expressions; output is always clean YAML (keys unquoted, no JSON braces).
+# For selected gates (example with two gates):
+yq -i '.quality_gates = [{"name": "tests", "command": "npm test"}, {"name": "lint", "command": "npm run lint"}]' .ai-dlc/${INTENT_SLUG}/intent.md
+
+# Or if user skipped / no gates detected:
+yq -i '.quality_gates = []' .ai-dlc/${INTENT_SLUG}/intent.md
+```
+
+**Step D — Commit.**
+
+```bash
+git add .ai-dlc/${INTENT_SLUG}/intent.md
+git commit -m "elaborate(${INTENT_SLUG}): set quality gates"
+```
+
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
+aidlc_telemetry_init
+aidlc_record_intent_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}"
+```
+
 ### 3. Write and review each `unit-NN-{slug}.md` individually:
 
 **Process each unit one at a time.** Write the file, present it for review, iterate until approved, then move to the next unit. Do NOT batch-write all units.
@@ -1398,6 +1466,7 @@ workflow: ""  # Per-unit workflow override (optional — omit or leave empty to 
 ticket: ""  # Ticketing provider ticket key (auto-populated if ticketing provider configured)
 design_ref: ""  # Optional: path to external design file (PNG/JPG/HTML) or directory. Activates visual fidelity gate with high fidelity.
 views: []  # Optional: list of views/routes this unit produces (e.g., ["/", "/about"]). Used for screenshot capture targeting.
+# quality_gates: []  # Optional: unit-specific gates added by builders during construction
 # git:                         # Optional: per-unit VCS override (only include when unit has an override)
 #   change_strategy: ""        # Overrides intent-level strategy for this unit (e.g., "unit" for foundational units)
 # --- Operations frontmatter (OPTIONAL — only include when unit has deployment surface) ---
@@ -1450,6 +1519,12 @@ misinterpret what to build.}
 ## Notes
 {Implementation hints, context, pitfalls to avoid}
 ```
+
+> **Quality gates in units:** Builders may add unit-level `quality_gates:` entries to a unit's
+> frontmatter during construction (e.g., a migration dry-run check specific to that unit).
+> Unit gates are enforced *in addition to* intent-level gates. Gates are additive —
+> the quality-gate hook reads both intent and unit frontmatter each time. Reviewers
+> should verify no intent-level gates were removed.
 
 **Operations frontmatter blocks** (`deployment:`, `monitoring:`, `operations:`) are **optional** — only include them when the unit has a deployment surface. To determine applicability, check the unit's discipline against config.sh helpers:
 
