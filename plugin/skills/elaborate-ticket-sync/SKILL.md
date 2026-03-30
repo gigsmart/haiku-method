@@ -170,7 +170,7 @@ None — this unit can start immediately.
 {if unit has wireframe field in the brief}
 Low-fidelity wireframe available at `.ai-dlc/{intent-slug}/{wireframe-path}`.
 Shows approved screen structure, flow, and placeholder copy.
-Apply full visual design during construction.
+Apply full visual design during execution.
 
 {if unit does not have wireframe — omit this section entirely}
 

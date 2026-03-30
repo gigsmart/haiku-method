@@ -16,7 +16,7 @@ fi
 _DLC_PARSE_SOURCED=1
 
 # Source dependency checker
-PARSE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PARSE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 # shellcheck source=deps.sh
 source "$PARSE_SCRIPT_DIR/deps.sh"
 

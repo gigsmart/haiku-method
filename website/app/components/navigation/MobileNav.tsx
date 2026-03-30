@@ -1,6 +1,6 @@
 "use client"
 
-import { navigation } from "@/lib/navigation"
+import { navigation, primaryNavItems } from "@/lib/navigation"
 import Link from "next/link"
 import { useState } from "react"
 
@@ -17,6 +17,18 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 	const toggleCategory = (title: string) => {
 		setExpandedCategory((prev) => (prev === title ? null : title))
 	}
+
+	// Primary links that don't have mega menu categories
+	const standaloneLinks = primaryNavItems.filter(
+		(item) =>
+			!navigation.some(
+				(cat) =>
+					cat.href === item.href ||
+					cat.sections.some((section) =>
+						section.items.some((si) => si.href === item.href),
+					),
+			),
+	)
 
 	return (
 		<div className="fixed inset-0 z-40 md:hidden">
@@ -57,6 +69,24 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 
 				{/* Navigation */}
 				<nav className="px-4 py-6">
+					{/* Standalone primary links */}
+					{standaloneLinks.length > 0 && (
+						<ul className="mb-4 space-y-1">
+							{standaloneLinks.map((item) => (
+								<li key={item.href}>
+									<Link
+										href={item.href}
+										onClick={onClose}
+										className="block rounded-lg px-3 py-2 font-medium transition hover:bg-gray-100 dark:hover:bg-gray-800"
+									>
+										{item.title}
+									</Link>
+								</li>
+							))}
+						</ul>
+					)}
+
+					{/* Expandable mega menu categories */}
 					<ul className="space-y-2">
 						{navigation.map((category) => (
 							<li key={category.title}>
@@ -144,7 +174,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 					{/* Quick links */}
 					<div className="mt-8 border-t border-gray-200 pt-6 dark:border-gray-800">
 						<Link
-							href="/start-here/"
+							href="/docs/installation/"
 							onClick={onClose}
 							className="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3 font-medium text-white transition hover:from-blue-700 hover:to-purple-700"
 						>
@@ -159,10 +189,10 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 									strokeLinecap="round"
 									strokeLinejoin="round"
 									strokeWidth={2}
-									d="M13 10V3L4 14h7v7l9-11h-7z"
+									d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
 								/>
 							</svg>
-							Start Here
+							Install AI-DLC
 						</Link>
 					</div>
 

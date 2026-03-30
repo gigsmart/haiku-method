@@ -79,6 +79,20 @@ case "$CURRENT_HAT" in
       }
       npm run typecheck --if-present 2>/dev/null || npm run type-check --if-present 2>/dev/null || true
     fi
+    # Visual gate check: prepare comparison context for reviewer
+    CURRENT_UNIT=$(echo "$STATE" | dlc_json_get "currentUnit" "")
+    UNIT_FILE="$INTENT_DIR/${CURRENT_UNIT}.md"
+    if [ -n "$CURRENT_UNIT" ] && [ -f "$UNIT_FILE" ]; then
+      PLUGIN_DIR="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$(readlink -f "$0")")")}"
+      VISUAL_GATE_RESULT=$(bash "$PLUGIN_DIR/lib/detect-visual-gate.sh" --unit-file "$UNIT_FILE" 2>/dev/null || echo "VISUAL_GATE=false")
+      if [ "$VISUAL_GATE_RESULT" = "VISUAL_GATE=true" ]; then
+        UNIT_SLUG="${CURRENT_UNIT#unit-}"
+        bash "$PLUGIN_DIR/lib/run-visual-comparison.sh" \
+          --intent-slug "$INTENT_SLUG" \
+          --unit-slug "$CURRENT_UNIT" \
+          --intent-dir "$INTENT_DIR" 2>/dev/null || true
+      fi
+    fi
     ;;
   reviewer)
     # CRITERIA_MET gate: each criterion must have PASS with evidence
@@ -318,7 +332,7 @@ if (READY_COUNT > 0) {
   state.hat = workflow[2] || "builder";  // Reset to builder (index 2 in default workflow)
   state.currentUnit = null;  // Will be set by /execute when it picks next unit
   // dlc_state_save "$INTENT_DIR" "iteration.json" '<updated JSON>'
-  return `Unit completed. ${READY_COUNT} more unit(s) ready. Continuing construction...`;
+  return `Unit completed. ${READY_COUNT} more unit(s) ready. Continuing execution...`;
 }
 
 // BLOCKED - No ready units, human must intervene
@@ -459,7 +473,7 @@ MAX_ITERATIONS=50
 if [ "$ITERATION" -ge "$MAX_ITERATIONS" ]; then
   echo "## Safety Limit Reached"
   echo ""
-  echo "Construction has reached ${MAX_ITERATIONS} iterations without completing."
+  echo "Execution has reached ${MAX_ITERATIONS} iterations without completing."
   echo "This likely indicates poorly specified criteria or a systematic issue."
   echo ""
   echo "**Action required:** Review the intent and unit specs, then run \`/execute\` to resume."
@@ -478,7 +492,7 @@ dlc_state_save "$INTENT_DIR" "iteration.json" '<updated JSON with hat and iterat
 
 Output:
 ```
-Advanced to **{nextHat}** hat. Continuing construction...
+Advanced to **{nextHat}** hat. Continuing execution...
 ```
 
 ### Step 5: Completion Summary (When All Units Done)
@@ -613,7 +627,7 @@ fi
 ```
 
 ```
-All unit PRs have been created during construction. Review and merge them individually.
+All unit PRs have been created during execution. Review and merge them individually.
 
 To clean up:
   /reset

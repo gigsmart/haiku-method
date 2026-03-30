@@ -1,11 +1,11 @@
 ---
-description: Refine intent or unit specs mid-construction without losing progress
+description: Refine intent or unit specs mid-execution without losing progress
 argument-hint: "[unit-slug]"
 ---
 
 # AI-DLC Refine
 
-You are refining an AI-DLC intent or unit specification mid-construction. Your job is to collaborate with the user to amend specs without destroying in-flight progress.
+You are refining an AI-DLC intent or unit specification mid-execution. Your job is to collaborate with the user to amend specs without destroying in-flight progress.
 
 ---
 

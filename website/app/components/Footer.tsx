@@ -3,9 +3,9 @@ import Link from "next/link"
 
 export function Footer() {
 	const columns = [
-		footerNavigation.learn,
-		footerNavigation.implement,
-		footerNavigation.tools,
+		footerNavigation.getStarted,
+		footerNavigation.reference,
+		footerNavigation.guides,
 		footerNavigation.resources,
 	]
 

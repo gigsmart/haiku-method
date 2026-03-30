@@ -39,6 +39,15 @@
 			"default": "ascii",
 			"description": "Format for UI mockups generated during elaboration. 'ascii' produces text-based wireframes in markdown code blocks. 'html' produces self-contained HTML files written to .ai-dlc/{intent-slug}/mockups/."
 		},
+		"default_passes": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"enum": ["design", "product", "dev"]
+			},
+			"default": [],
+			"description": "Default iteration passes for new intents. Empty array means single dev pass (the default). Example: ['design', 'dev'] for design-then-dev workflow."
+		},
 		"quality_gates": {
 			"$ref": "#/definitions/qualityGatesConfig",
 			"description": "Quality gates (backpressure checks) to run during execution. When configured, these replace the default backpressure behavior."

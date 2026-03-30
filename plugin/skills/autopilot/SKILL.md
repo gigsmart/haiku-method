@@ -25,7 +25,7 @@ argument-hint: "<feature description>"
 User: /autopilot Add a dark mode toggle to the settings page
 AI: Starting autonomous lifecycle...
   Phase 1: Elaboration (/elaborate in autonomous mode)
-  Phase 2: Construction (/execute for each unit)
+  Phase 2: Execution (/execute for each unit)
   Phase 3: Delivery (PR/MR creation)
 AI: Done! PR #42 created. [summary]
 ```
@@ -105,7 +105,7 @@ Invoke `/elaborate` with the provided feature description in autonomous mode:
    ```
 4. **If 5 or fewer units:** Continue automatically.
 
-### Step 3: Construction Phase
+### Step 3: Execution Phase
 
 For each unit in dependency order, invoke `/execute`:
 

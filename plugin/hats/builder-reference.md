@@ -58,10 +58,10 @@ If a finding seems incorrect given the fidelity level, note it in your commit me
 
 ## Provider Sync Details
 
-- If a `ticket` field exists in the current unit's frontmatter, **SHOULD** update the ticket status to **In Progress** using the ticketing provider's MCP tools
-- If the unit is completed successfully, **SHOULD** update the ticket to **Done**
-- If the unit is blocked, **SHOULD** flag the ticket as **Blocked** and add the blocker description as a comment
-- If MCP tools are unavailable, skip silently — never block building on ticket updates
+- If a `ticket` field exists in the current unit's frontmatter, you MUST update the ticket status to **In Progress** using the ticketing provider's MCP tools (shown in the provider hints at session start). Use the provider's comment/transition tools to set the status.
+- If the unit is completed successfully, you MUST update the ticket to **Done**.
+- If the unit is blocked, you MUST flag the ticket as **Blocked** and add the blocker description as a comment.
+- If MCP tools are unavailable or the call fails, log the failure in the scratchpad but do not block building.
 
 ## Infrastructure & Deployment Implementation
 

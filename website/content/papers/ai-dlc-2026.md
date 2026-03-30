@@ -276,6 +276,26 @@ Prescriptive workflows create an intelligence ceiling—like consulting a board 
 
 The philosophy can be summarized as: **"Better to fail predictably than succeed unpredictably."** Each failure is data. Each iteration refines the approach. The skill shifts from directing AI step-by-step to writing criteria and tests that converge toward correct solutions.
 
+#### Visual and Design Backpressure
+
+The backpressure principle extends beyond code quality into **design quality**. Just as tests, linters, and type checks reject non-conforming code, visual fidelity gates reject implementations that drift from design intent.
+
+**Activation heuristics.** Visual backpressure activates automatically when signals suggest it matters: the unit's discipline is `frontend` or `design`, the spec references design artifacts, or the changeset touches UI files. This avoids burdening backend-only units with irrelevant gates.
+
+**Design reference resolution.** When visual comparison activates, the system resolves a reference image through a 3-level priority:
+
+1. **External design tool** — Figma export, Sketch asset, or equivalent (highest fidelity)
+2. **Previous iteration** — Screenshot from the last successful Bolt (continuity check)
+3. **Wireframe** — Rough layout from elaboration artifacts (minimum bar)
+
+If no reference exists, the gate logs a warning rather than blocking — the absence of a reference is itself a signal worth surfacing.
+
+**Screenshot capture.** Implementation screenshots are captured through pluggable infrastructure. Playwright-based capture is the default for web interfaces; teams can substitute manual capture, native screenshot tools, or device-specific harnesses. The mechanism is secondary to the principle: the Bolt must produce a visual artifact for comparison.
+
+**Vision-model comparison.** An AI vision model compares the captured screenshot against the resolved reference, evaluating layout fidelity, color accuracy, component presence, and responsive behavior. The comparison produces a structured verdict — pass, warn, or fail — with annotated differences. A failing verdict feeds back into the Bolt loop exactly like a failing test: the builder receives the comparison output and iterates.
+
+This extends backpressure from the dimensions AI handles well (tests, types, lint) into the dimension where autonomous agents historically struggle: **visual fidelity**. The gate doesn't prescribe how to build the UI — it rejects implementations that don't match the agreed design.
+
 ### Embrace the Collapsing SDLC
 
 Traditional SDLC phases existed because iteration was expensive. Each handoff between analyst → architect → developer → tester → operations lost context, added latency, and created opportunities for misalignment. Sequential phases with approval gates were an economic optimization for a world of expensive iteration.
@@ -323,7 +343,7 @@ This doesn't mean structure disappears. It means structure changes form—from s
 
 While phases collapse into continuous flow, real product development still involves distinct disciplines—design, product, and engineering—each bringing different expertise to the same intent. The question isn't whether these disciplines contribute sequentially (they often do), but whether that sequence is rigid and lossy (waterfall) or fluid and iterative.
 
-AI-DLC 2026 introduces **Passes**: typed iterations through the standard AI-DLC loop (elaborate → units → construct → review), where each pass refines the intent through a different disciplinary lens. The output of one pass becomes the input to the next.
+AI-DLC 2026 introduces **Passes**: typed iterations through the standard AI-DLC loop (elaborate → units → execute → review), where each pass refines the intent through a different disciplinary lens. The output of one pass becomes the input to the next.
 
 ```mermaid
 flowchart TB
@@ -332,7 +352,7 @@ flowchart TB
     subgraph DP["DESIGN PASS"]
         direction LR
         D1["Elaborate"] --> D2["Design Units"]
-        D2 --> D3["Construct"]
+        D2 --> D3["Execute"]
         D3 --> D4["Review"]
         D4 -->|"Gaps"| D1
         D4 -->|"Done"| DART["Design Artifacts"]
@@ -343,7 +363,7 @@ flowchart TB
     subgraph PP["PRODUCT PASS"]
         direction LR
         P1["Elaborate"] --> P2["Acceptance Units"]
-        P2 --> P3["Construct"]
+        P2 --> P3["Execute"]
         P3 --> P4["Review"]
         P4 -->|"Gaps"| P1
         P4 -.->|"Design gap"| D1
@@ -355,7 +375,7 @@ flowchart TB
     subgraph EP["DEV PASS"]
         direction LR
         E1["Elaborate"] --> E2["Dev Units"]
-        E2 --> E3["Construct"]
+        E2 --> E3["Execute"]
         E3 --> E4["Review"]
         E4 -->|"Gaps"| E1
         E4 -.->|"Constraint"| P1
@@ -371,13 +391,13 @@ flowchart TB
 |---|---|---|---|
 | **Who elaborates** | Design + Product | Product (reviewing designs) | Product + Design + Dev |
 | **Unit type** | Design units | Acceptance units | Dev units |
-| **Construction mode** | OHOTL (subjective) | HITL (judgment) | AHOTL or HITL |
+| **Execution mode** | OHOTL (subjective) | HITL (judgment) | AHOTL or HITL |
 | **Output artifact** | High-fidelity designs | Behavioral specs + criteria | Working code |
 | **Feedback flows to** | Itself | Back to Design if gap found | Back to Product if constraint found |
 
 **Passes are optional and configurable.** A solo developer building a CLI tool may need only a dev pass. A cross-functional team building a consumer product may use all three. The methodology doesn't prescribe which passes to use—it provides the structure for teams that need them.
 
-**Passes preserve the "Everyone Becomes a Builder" principle.** A designer running a design pass uses the same elaborate → construct → review loop as an engineer running a dev pass. The workflow is identical; the discipline and artifacts differ.
+**Passes preserve the "Everyone Becomes a Builder" principle.** A designer running a design pass uses the same elaborate → execute → review loop as an engineer running a dev pass. The workflow is identical; the discipline and artifacts differ.
 
 ### Context Is Abundant—Use It Wisely
 
@@ -402,6 +422,20 @@ Research shows model performance degrades when context windows exceed 40-60% uti
 - **Simple loops** with clear objectives over complex orchestrations
 
 The best workflows aren't complex orchestrations—they're simple loops with clear objectives and rich, relevant context.
+
+#### Operational Context Economy
+
+The theoretical warning about the "dumb zone" requires practical techniques for managing context budget during execution. Left unmanaged, context fills with stale instructions, redundant references, and upfront-loaded material that crowds out the information the agent actually needs mid-task.
+
+**Context budget monitoring.** Automated warnings fire at configurable utilization thresholds (e.g., 60%, 80%) so the harness — or the human — can take corrective action before performance degrades. A Bolt approaching its context ceiling is a signal to prune, summarize, or split work, not to push through.
+
+**Reference companion files.** Static reference material — style guides, API schemas, coding conventions — that would otherwise consume prompt tokens can be extracted into companion files on disk. The agent reads them on demand rather than carrying them in every prompt. This converts persistent context overhead into on-demand file reads, freeing budget for dynamic reasoning.
+
+**Lazy injection.** Learnings from previous Bolts, design references, and domain context are loaded only when the current hat's work makes them relevant, not upfront at Bolt start. A builder hat working on database migrations does not need the design system tokens that the next unit's designer hat will require. Deferring injection until the point of use keeps the active context lean.
+
+**Role-scoped context.** In hat-based workflows, each hat receives only the context relevant to its role. The reviewer hat gets the diff and completion criteria, not the full elaboration history. The test-writer hat gets the spec and existing test patterns, not the implementation plan. Scoping context to the active role directly counters the "more tools = dumber agent" phenomenon.
+
+These techniques operationalize the principle above: abundant context is an asset only when curated. Filling the window indiscriminately produces the same degradation as having too little context — the signal drowns in noise.
 
 ### Memory Providers Expand Knowledge
 
@@ -537,7 +571,7 @@ In traditional development, "design" and "build" are distinct phases requiring d
 
 This is democratization, not elimination. A designer who could previously only create mockups can now ship working code. A backend engineer who avoided frontend can now build full features. Everyone gains capabilities; no one loses their value. **Your expertise makes you a better director of AI—not a victim of it.**
 
-**The Operator Multiplier.** AI is a force multiplier, not an equalizer. A junior with AI produces more work; an experienced operator with AI produces superior systems. The difference lies in steering: recognizing architectural debt before it accumulates, catching edge cases the tests don't cover, knowing when the AI's suggestion is a local optimum. High-quality output still requires experienced judgment—either directly or through Mob Construction patterns where seasoned builders guide the overall direction.
+**The Operator Multiplier.** AI is a force multiplier, not an equalizer. A junior with AI produces more work; an experienced operator with AI produces superior systems. The difference lies in steering: recognizing architectural debt before it accumulates, catching edge cases the tests don't cover, knowing when the AI's suggestion is a local optimum. High-quality output still requires experienced judgment—either directly or through Mob Execution patterns where seasoned builders guide the overall direction.
 
 ### Streamline Responsibilities
 
@@ -585,7 +619,7 @@ graph TB
         PA --> U["📦 Units"]
     end
 
-    subgraph Construction["🔨 Construction"]
+    subgraph Execution["🔨 Execution"]
         U --> B["⚡ Bolts"]
         B --> D["📦 Deployment Units"]
     end
@@ -632,13 +666,13 @@ email/password registration and OAuth providers for social login.
 
 #### Pass
 
-A **Pass** is a typed iteration through the standard AI-DLC loop (elaborate, decompose into units, construct, review) that refines an Intent through a specific disciplinary lens. Passes are the mechanism by which cross-functional teams contribute to a shared intent without waterfall-style handoffs.
+A **Pass** is a typed iteration through the standard AI-DLC loop (elaborate, decompose into units, execute, review) that refines an Intent through a specific disciplinary lens. Passes are the mechanism by which cross-functional teams contribute to a shared intent without waterfall-style handoffs.
 
 **Each pass follows the same structure:**
 
 1. **Elaborate** — Clarify scope through the pass's disciplinary lens
 2. **Decompose** — Break into discipline-appropriate units
-3. **Construct** — Build artifacts using appropriate operating mode
+3. **Execute** — Build artifacts using appropriate operating mode
 4. **Review** — Validate output; feed gaps back to current or previous pass
 
 **Built-in pass types:**
@@ -940,9 +974,9 @@ flowchart TB
         I1 --> I2 --> I3 --> I4 --> I5
     end
 
-    Inception --> Construction
+    Inception --> Execution
 
-    subgraph Construction["🔨 CONSTRUCTION"]
+    subgraph Execution["🔨 EXECUTION"]
         direction TB
         C1{"Select Mode"}
         C2["🧑‍💻 Supervised"]
@@ -954,7 +988,7 @@ flowchart TB
         C3 --> C4
     end
 
-    Construction --> Operations
+    Execution --> Operations
 
     subgraph Operations["📊 OPERATIONS"]
         direction TB
@@ -1023,19 +1057,19 @@ For intents requiring cross-functional iteration, Mob Elaboration also defines t
 
 1. **Design pass elaboration:** Design and product stakeholders define design units—screens, flows, components, interactions. Output: design artifacts that become input context for the product pass.
 2. **Product pass elaboration:** Product reviews completed designs, writes acceptance criteria, identifies behavioral gaps and edge cases. Output: annotated designs and behavioral specs that become input context for the dev pass.
-3. **Dev pass elaboration:** The full cross-functional team (product, design, dev) elaborates dev units using design artifacts and behavioral specs as input. Output: dev units ready for construction.
+3. **Dev pass elaboration:** The full cross-functional team (product, design, dev) elaborates dev units using design artifacts and behavioral specs as input. Output: dev units ready for execution.
 
 Each pass elaboration runs the same Mob Elaboration ritual with different participants and inputs. The intent stays the same throughout—passes refine it through different lenses.
 
-#### Construction Phase
+#### Execution Phase
 
-The Construction Phase transforms Units into tested, deployment-ready artifacts through Bolts. This phase progresses through domain modeling, logical design, code generation, and testing—though these steps may be implicit rather than explicit depending on complexity.
+The Execution Phase transforms Units into tested, deployment-ready artifacts through Bolts. This phase progresses through domain modeling, logical design, code generation, and testing—though these steps may be implicit rather than explicit depending on complexity.
 
-**When an intent has multiple passes,** Construction executes one pass at a time. The active pass's units are constructed, reviewed, and completed before the next pass begins its elaboration. Feedback from a later pass can reactivate an earlier pass, sending the intent backward for refinement—this is expected iteration, not failure.
+**When an intent has multiple passes,** Execution executes one pass at a time. The active pass's units are executed, reviewed, and completed before the next pass begins its elaboration. Feedback from a later pass can reactivate an earlier pass, sending the intent backward for refinement—this is expected iteration, not failure.
 
 **Mode Selection**
 
-The first decision in Construction is mode selection for each Bolt:
+The first decision in Execution is mode selection for each Bolt:
 
 | Choose Supervised (HITL) When... | Choose Autonomous (AHOTL) When... |
 |----------------------------------|-----------------------------------|
@@ -1045,7 +1079,7 @@ The first decision in Construction is mode selection for each Bolt:
 | Creative or UX-focused work | Mechanical transformations |
 | Foundational decisions | Batch operations |
 
-**Supervised Construction (HITL)**
+**Supervised Execution (HITL)**
 
 For novel domains, architectural decisions, or high-judgment work:
 
@@ -1056,7 +1090,7 @@ For novel domains, architectural decisions, or high-judgment work:
 5. AI generates tests; developer validates scenarios and edge cases
 6. Iterate until acceptance criteria met with human checkpoint at each step
 
-**Autonomous Construction (AHOTL)**
+**Autonomous Execution (AHOTL)**
 
 For well-defined tasks with programmatic verification:
 
@@ -1104,7 +1138,7 @@ When all criteria pass:
 - Checks for edge cases not covered by tests
 - Approves for integration or requests changes
 
-**Mob Construction Ritual**
+**Mob Execution Ritual**
 
 For complex systems requiring multiple Units built in parallel:
 
@@ -1117,7 +1151,7 @@ For complex systems requiring multiple Units built in parallel:
 
 #### Operations Phase
 
-The Operations Phase manages ongoing operational tasks after construction completes. Rather than treating operations as an external concern, AI-DLC models operational work as file-based specs that live alongside the code they support.
+The Operations Phase manages ongoing operational tasks after execution completes. Rather than treating operations as an external concern, AI-DLC models operational work as file-based specs that live alongside the code they support.
 
 **Operations as Specs:**
 
@@ -1164,7 +1198,7 @@ A unified interface manages all operational tasks:
 
 Operations track state in `.ai-dlc/{intent}/state/operation-status.json`, recording last run time, status (`on-track`, `needs-attention`, `failed`, `pending`, `torn-down`), deployment state, and target platform. This enables the Integrator to validate operational readiness across units.
 
-**Integration with Construction:**
+**Integration with Execution:**
 
 The Builder hat produces operation specs during its production phase when the work requires ongoing maintenance. The Reviewer hat validates operational readiness as part of its review. The Integration skill checks for cross-unit conflicts — schedule collisions, trigger overlaps, and shared resource references — ensuring operations compose correctly across the intent.
 
@@ -1211,6 +1245,22 @@ flowchart TB
 - **Passes enable cross-functional iteration:** The same loop runs for design, product, and dev—each refining the intent through a different lens
 - **Backward flow is expected:** A dev pass discovering a constraint that sends work back to the design pass is normal iteration, not failure
 - **Traceability is maintained:** All artifacts link together, enabling forward and backward traceability across passes
+
+### Lifecycle Entry Points
+
+The workflow described above assumes greenfield inception — a team starting from scratch with a new idea or requirement. But real teams need multiple ways to enter the AI-DLC lifecycle. Not every feature begins with a blank canvas; some iterate on prior work, and others predate AI-DLC entirely.
+
+| Entry Point | When to Use | What It Produces | Where It Enters the Lifecycle |
+|-------------|-------------|------------------|-------------------------------|
+| **Elaborate** | Starting from scratch with a new idea or requirement | Intent, units, discovery through Mob Elaboration | Inception |
+| **Follow Up** | Iterating on a previous intent that already went through the lifecycle | A new intent linked via `iterates_on` to the prior intent | Inception with prior context |
+| **Adopt** | Reverse-engineering an existing feature that was built outside AI-DLC | Completed intent, units, discovery, and operational plan | Operations (skips Construction since code already exists) |
+
+**Adoption** addresses a common gap: features built before AI-DLC was introduced — or built without it — lack intent artifacts, unit decomposition, and operational plans. Without these artifacts, the feature cannot participate in `/operate` for ongoing operational management or `/followup` for structured iteration. Adoption bridges this gap by reverse-engineering artifacts from the codebase, git history, tests, and CI configuration.
+
+All artifacts produced by adoption carry `status: completed` because the feature already exists. There is no construction phase — the code is already written, tested, and deployed. Instead, adoption analyzes the existing implementation and produces the same artifact structure that elaboration and construction would have created, enabling the feature to enter the lifecycle at the Operations phase. The user confirms the proposed decomposition at multiple gates: intent and unit breakdown, success criteria with traceable test evidence, and operational plan.
+
+This makes adoption the primary on-ramp for teams bringing existing systems under AI-DLC governance. For a concrete example of brownfield context building, see the next section.
 
 ---
 
@@ -1307,9 +1357,9 @@ Completion Criteria:
 | unit-03-api | Autonomous (AHOTL) | Standard REST patterns, clear criteria |
 | unit-04-frontend | Supervised (HITL) | UX decisions, accessibility judgment |
 
-### Construction Phase
+### Execution Phase
 
-**Unit 3 (API Integration) assigned for construction as Autonomous Bolt.**
+**Unit 3 (API Integration) assigned for execution as Autonomous Bolt.**
 
 Rationale for autonomous mode:
 
@@ -1342,7 +1392,7 @@ Rationale for autonomous mode:
 
 ### Operations Phase
 
-During construction, the Builder created operation specs for ongoing maintenance of the recommendation engine:
+During execution, the Builder created operation specs for ongoing maintenance of the recommendation engine:
 
 **`.ai-dlc/rec-engine/operations/scale-api.md`** — Reactive, agent-owned:
 
@@ -1493,6 +1543,33 @@ The pattern has evolved from simple single-agent loops to hat-based orchestratio
 
 Teams can customize hat behavior through configuration files, defining custom hats with specific triggers, events, and instructions tailored to their workflows.
 
+### Named Workflows
+
+Hat-based orchestration becomes concrete through **named workflows**—predefined hat sequences that encode proven execution patterns. Each workflow defines which hats execute in what order, giving a Bolt its internal rhythm.
+
+| Workflow | Hat Sequence | Purpose |
+|----------|-------------|---------|
+| **default** | planner → builder → reviewer | Standard execution cycle for most units |
+| **adversarial** | red-team → blue-team | Security-focused testing — red team attempts to break the implementation, blue team hardens it |
+| **design** | planner → designer → reviewer | Visual/UX-focused execution for design-discipline units |
+| **hypothesis** | observer → hypothesizer → experimenter → analyst | Scientific debugging and investigation methodology |
+| **tdd** | test-writer → implementer → refactorer | Test-driven development with explicit Red-Green-Refactor phases |
+
+Workflows are configurable per-unit via the `workflow` frontmatter field. When omitted, a unit inherits the intent-level workflow; when the intent also omits it, the `default` workflow applies.
+
+```yaml
+# unit-03-auth-hardening.md frontmatter
+---
+status: pending
+workflow: adversarial
+depends_on: [unit-02-auth-api]
+---
+```
+
+**Workflow selection follows the same principle as mode selection:** choose the workflow that matches the nature of the work, not a one-size-fits-all process. A security-sensitive unit benefits from `adversarial`; a unit investigating a production anomaly benefits from `hypothesis`; a unit with strong test-first requirements benefits from `tdd`.
+
+**Custom workflows** can be defined when the built-in set does not fit. A team might define a `docs` workflow (researcher → writer → editor) or a `migration` workflow (analyzer → migrator → validator). The mechanism is the same: an ordered sequence of hats, each with its own instructions and completion signal, executed within the Bolt loop.
+
 **→ See the [Autonomous Bolt Runbook](./ai-dlc-2026/runbooks/construction/autonomous-bolt) for implementation templates, safety configuration, and the Many Hats orchestration pattern.**
 
 **→ See the [Han Runbook](./ai-dlc-2026/runbooks/tooling/han) for Claude Code-native implementation with the `ai-dlc` plugin.**
@@ -1555,6 +1632,7 @@ For detailed runbooks with system prompts, entry/exit criteria, and failure mode
 
 | Term | Definition |
 |------|------------|
+| **Adoption** | The process of reverse-engineering an existing feature into AI-DLC intent artifacts, enabling operational management and structured iteration without requiring the feature to have been built through AI-DLC's construction phase |
 | **Backpressure** | Quality gates that automatically reject work not meeting criteria, providing feedback for iteration |
 | **Bolt** | Smallest iteration unit in AI-DLC 2026; operates in supervised (HITL), observed (OHOTL), or autonomous (AHOTL) mode |
 | **Completion Criteria** | Programmatically verifiable conditions that define when work is successfully done |
@@ -1565,11 +1643,11 @@ For detailed runbooks with system prompts, entry/exit criteria, and failure mode
 | **Integrator** | Final validation hat that runs conditionally based on VCS strategy; validates auto-merged state (trunk) or creates single PR (intent); skipped for unit/bolt strategies |
 | **Intent** | High-level statement of purpose with completion criteria that serves as starting point for decomposition |
 | **Memory Provider** | Source of persistent context (files, git, tickets, ADRs, runbooks) accessible to AI agents |
-| **Mob Construction** | Collaborative ritual where multiple teams build Units in parallel with AI assistance |
+| **Mob Execution** | Collaborative ritual where multiple teams build Units in parallel with AI assistance |
 | **Mob Elaboration** | Collaborative ritual where humans and AI decompose Intent into Units with Completion Criteria |
 | **OHOTL** | Observed Human-on-the-Loop: human watches AI work in real-time with ability to intervene; synchronous awareness with asynchronous control; used for creative, subjective, or training scenarios |
 | **Operation** | A file-based operational task spec (`.md` with YAML frontmatter) defining scheduled, reactive, or process-type work with agent or human ownership; stored in `.ai-dlc/{intent}/operations/` |
-| **Pass** | A typed iteration through the standard AI-DLC loop (elaborate, units, construct, review) that refines an Intent through a specific disciplinary lens (design, product, dev); passes are optional and configurable; output of one pass becomes input to the next |
+| **Pass** | A typed iteration through the standard AI-DLC loop (elaborate, units, execute, review) that refines an Intent through a specific disciplinary lens (design, product, dev); passes are optional and configurable; output of one pass becomes input to the next |
 | **Quality Gate** | Automated check (tests, types, lint, security) that provides pass/fail feedback |
 | **Ralph Wiggum Pattern** | Autonomous loop methodology: try, fail, learn, iterate until success criteria met |
 | **Stack Config** | Infrastructure stack configuration in `.ai-dlc/settings.yml` describing deployment, compute, monitoring, alerting, and operations layers |

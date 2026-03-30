@@ -35,9 +35,13 @@ The Builder implements code to satisfy the Unit's Completion Criteria, using bac
    - You MUST read the current plan via `dlc_state_load "$INTENT_DIR" "current-plan.md"`
    - You MUST understand all Completion Criteria
    - You SHOULD identify which criteria to tackle first
-   - You SHOULD reference design provider for UI specs if configured (Figma mockups, component specs)
-   - You SHOULD reference spec provider for API contracts if configured (endpoint definitions, data schemas)
    - **Validation**: Can enumerate what needs to be built
+
+   #### Provider Sync
+
+   Check the provider context injected at session start. If a design provider is listed, you MUST use its MCP tools (shown in the provider hints column) to fetch relevant design specs before implementing UI components. If a spec provider is listed, you MUST use its MCP tools to fetch API contracts, endpoint definitions, and data schemas before implementing integrations. If no providers are configured, proceed without them.
+
+   If MCP tools are unavailable or the call fails, log the failure in the scratchpad but do not block building.
 
 #### Reference Material
 
@@ -315,7 +319,7 @@ When building cannot proceed, output this structured block instead:
 
 ### Version-Aware Building
 
-Track changes for rollback capability during construction:
+Track changes for rollback capability during execution:
 
 1. **Commit frequently** — each working increment gets its own commit. This creates rollback points.
 2. **Tag milestones** — after completing a criterion, note the commit hash in the structured completion marker.

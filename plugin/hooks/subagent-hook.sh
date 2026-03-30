@@ -1,12 +1,14 @@
 #!/bin/bash
-# subagent-hook.sh - PreToolUse hook for Task|Skill
+# subagent-hook.sh - PreToolUse hook for Agent|Task|Skill
 #
-# Combines two responsibilities:
-# 1. Context injection (wraps prompt with AI-DLC context via subagent-context.sh)
-# 2. Permission mode injection (ensures subagents inherit parent's permission mode)
+# Injects AI-DLC context into subagent prompts by:
+# 1. Reading the PreToolUse payload from stdin
+# 2. Running subagent-context.sh to generate markdown context
+# 3. Wrapping context in <subagent-context> tags
+# 4. Prepending to the original prompt (Agent/Task) or args (Skill)
+# 5. Outputting JSON with updatedInput (no permissionDecision)
 #
-# The permission_mode field from the hook payload is injected into the Task tool's
-# updatedInput, ensuring subagents run with the same permission level as the parent session.
+# Also injects permission_mode into Agent/Task tool_input when present.
 
 set -e
 
@@ -16,36 +18,72 @@ source "${PLUGIN_ROOT}/lib/parse.sh"
 # Read hook payload once
 PAYLOAD=$(cat)
 
-# Extract tool name - only inject mode for Task/Agent, not Skill
+# Extract tool name
 TOOL_NAME=$(echo "$PAYLOAD" | dlc_json_get "tool_name")
 
-# Run the standard context wrapper (subagent-context.sh reads from stdin)
-CONTEXT_RESULT=$(echo "$PAYLOAD" | bash "${PLUGIN_ROOT}/hooks/subagent-context.sh" 2>/dev/null || echo "")
-
-# Skip mode injection for Skill calls
-if [ "$TOOL_NAME" = "Skill" ]; then
-  [ -n "$CONTEXT_RESULT" ] && echo "$CONTEXT_RESULT"
-  exit 0
+# Determine target field: prompt for Agent/Task, args for Skill
+IS_AGENT_TOOL=false
+TARGET_FIELD="args"
+if [ "$TOOL_NAME" = "Agent" ] || [ "$TOOL_NAME" = "Task" ]; then
+  IS_AGENT_TOOL=true
+  TARGET_FIELD="prompt"
 fi
 
-# Extract permission_mode from hook payload
-PERMISSION_MODE=$(echo "$PAYLOAD" | dlc_json_get "permission_mode")
-
-# If no permission mode to inject, pass through context result
-if [ -z "$PERMISSION_MODE" ]; then
-  [ -n "$CONTEXT_RESULT" ] && echo "$CONTEXT_RESULT"
-  exit 0
-fi
-
-# If context wrapping produced output, inject mode into its updatedInput
-if [ -n "$CONTEXT_RESULT" ]; then
-  echo "$CONTEXT_RESULT" | jq --arg mode "$PERMISSION_MODE" \
-    '.hookSpecificOutput.updatedInput.mode = $mode'
-  exit 0
-fi
-
-# No context to wrap, but still inject mode into the original tool_input
+# Extract the original tool_input and the target field value
 TOOL_INPUT=$(echo "$PAYLOAD" | dlc_json_get_raw "tool_input")
 [ -z "$TOOL_INPUT" ] || [ "$TOOL_INPUT" = "null" ] && TOOL_INPUT="{}"
-echo "$TOOL_INPUT" | jq --arg mode "$PERMISSION_MODE" \
-  '. + {mode: $mode}' | jq '{hookSpecificOutput: {hookEventName: "PreToolUse", updatedInput: .}}'
+
+ORIGINAL_VALUE=$(echo "$TOOL_INPUT" | jq -r ".${TARGET_FIELD} // \"\"" 2>/dev/null || echo "")
+
+# For Agent/Task, skip if no prompt to inject into
+if [ "$IS_AGENT_TOOL" = true ] && [ -z "$ORIGINAL_VALUE" ]; then
+  exit 0
+fi
+
+# Skip if context already injected
+if echo "$ORIGINAL_VALUE" | grep -q '<subagent-context>' 2>/dev/null; then
+  exit 0
+fi
+
+# Run subagent-context.sh to generate markdown context
+# NOTE: Do NOT pipe stdin to it — it reads state from filesystem
+CONTEXT_OUTPUT=$(bash "${PLUGIN_ROOT}/hooks/subagent-context.sh" 2>/dev/null || echo "")
+
+# Extract permission_mode from hook payload (for Agent/Task only)
+PERMISSION_MODE=""
+if [ "$IS_AGENT_TOOL" = true ]; then
+  PERMISSION_MODE=$(echo "$PAYLOAD" | dlc_json_get "permission_mode")
+fi
+
+# If no context and no permission_mode to inject, exit silently
+if [ -z "$CONTEXT_OUTPUT" ] && [ -z "$PERMISSION_MODE" ]; then
+  exit 0
+fi
+
+# Start with the original tool_input
+UPDATED_INPUT="$TOOL_INPUT"
+
+# Inject context if present
+if [ -n "$CONTEXT_OUTPUT" ]; then
+  # Wrap context in tags and prepend to original value
+  WRAPPED_CONTEXT="<subagent-context>
+${CONTEXT_OUTPUT}
+</subagent-context>
+
+"
+  MODIFIED_VALUE="${WRAPPED_CONTEXT}${ORIGINAL_VALUE}"
+  UPDATED_INPUT=$(echo "$UPDATED_INPUT" | jq --arg val "$MODIFIED_VALUE" ".${TARGET_FIELD} = \$val" 2>/dev/null)
+fi
+
+# Inject permission_mode if present (Agent/Task only)
+if [ -n "$PERMISSION_MODE" ]; then
+  UPDATED_INPUT=$(echo "$UPDATED_INPUT" | jq --arg mode "$PERMISSION_MODE" '.mode = $mode' 2>/dev/null)
+fi
+
+# Output JSON with updatedInput — do NOT set permissionDecision
+jq -n --argjson input "$UPDATED_INPUT" '{
+  hookSpecificOutput: {
+    hookEventName: "PreToolUse",
+    updatedInput: $input
+  }
+}'

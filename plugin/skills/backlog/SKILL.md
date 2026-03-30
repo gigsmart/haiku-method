@@ -23,7 +23,7 @@ argument-hint: "[add|list|review|promote] [description]"
 **User-facing command** - Manage a lightweight backlog of ideas, observations, and future work that aren't ready for full elaboration yet. Inspired by GSD's backlog system.
 
 Use this when you notice something that should be done later but don't want to break flow:
-- A tech debt item spotted during construction
+- A tech debt item spotted during execution
 - A feature idea that came up in conversation
 - A bug noticed but unrelated to the current intent
 - An improvement suggestion from a review

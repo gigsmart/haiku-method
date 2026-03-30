@@ -27,55 +27,68 @@ export interface NavCategory {
 }
 
 /**
+ * Primary navigation items (top-level links without mega menu)
+ */
+export const primaryNavItems: NavItem[] = [
+	{
+		title: "How It Works",
+		href: "/",
+		description: "The story-driven lifecycle guide",
+	},
+	{
+		title: "Install",
+		href: "/docs/installation/",
+		description: "Get AI-DLC running in your project",
+	},
+	{
+		title: "Docs",
+		href: "/docs/",
+		description: "Reference documentation",
+	},
+	{
+		title: "Paper",
+		href: "/paper/",
+		description: "Academic deep dive into the methodology",
+	},
+	{
+		title: "Blog",
+		href: "/blog/",
+		description: "Updates and insights",
+	},
+	{
+		title: "Changelog",
+		href: "/changelog/",
+		description: "What's new in AI-DLC",
+	},
+]
+
+/**
  * Main navigation categories with mega menu content
+ *
+ * The home page covers "understanding" so the mega menu focuses on "doing".
  */
 export const navigation: NavCategory[] = [
 	{
-		title: "Overview",
-		href: "/",
+		title: "Get Started",
+		href: "/docs/installation/",
 		sections: [
 			{
 				title: "Get Started",
 				items: [
 					{
-						title: "Home",
-						href: "/",
-						description: "Introduction to AI-DLC",
+						title: "Installation",
+						href: "/docs/installation/",
+						description: "Install the Claude Code plugin",
 					},
 					{
-						title: "Start Here",
-						href: "/start-here/",
-						description: "Guided onboarding for new users",
+						title: "Quick Start",
+						href: "/docs/quick-start/",
+						description: "Your first AI-DLC session",
 					},
 					{
-						title: "The Paper",
-						href: "/paper/",
-						description: "Read the complete AI-DLC methodology",
-					},
-					{
-						title: "Big Picture",
-						href: "/big-picture/",
-						description: "Interactive visualization of the methodology",
-					},
-				],
-			},
-			{
-				title: "Reference",
-				items: [
-					{
-						title: "Why AI-DLC?",
-						href: "/about/",
-						description: "The evolution of software development",
-					},
-					{
-						title: "Glossary",
-						href: "/glossary/",
-						description: "AI-DLC terminology and definitions",
-					},
-					{
-						title: "Blog",
-						href: "/blog/",
-						description: "Updates and insights",
+						title: "First Intent Checklist",
+						href: "/docs/checklist-first-intent/",
+						description: "Checklist for your first intent",
 					},
 				],
 			},
@@ -83,39 +96,50 @@ export const navigation: NavCategory[] = [
 		featured: {
 			title: "New to AI-DLC?",
 			description:
-				"Start with the guided onboarding, or read the paper to understand the full methodology.",
-			href: "/start-here/",
+				"Start with the home page guide to understand the methodology, then install the plugin to try it.",
+			href: "/",
 		},
 	},
 	{
-		title: "Learn",
+		title: "Reference",
 		href: "/docs/",
 		sections: [
 			{
-				title: "Core Concepts",
+				title: "Reference",
 				items: [
 					{
-						title: "Introduction",
+						title: "Docs Index",
 						href: "/docs/",
-						description: "What is AI-DLC and why it matters",
+						description: "All documentation in one place",
 					},
 					{
 						title: "Hats",
 						href: "/docs/hats/",
-						description: "Role-based focus for every phase of development",
-					},
-					{
-						title: "Key Concepts",
-						href: "/docs/concepts/",
-						description: "Units, Intents, Modes, and more",
+						description: "Role-based focus for every phase",
 					},
 					{
 						title: "Workflows",
 						href: "/docs/workflows/",
 						description: "How hats flow in different scenarios",
 					},
+					{
+						title: "Providers",
+						href: "/docs/providers/",
+						description: "Ticketing, design, spec, and comms integrations",
+					},
+					{
+						title: "Operations",
+						href: "/docs/operations-guide/",
+						description: "Post-build operations and deployment",
+					},
 				],
 			},
+		],
+	},
+	{
+		title: "Guides",
+		href: "/docs/guide-developer/",
+		sections: [
 			{
 				title: "Role Guides",
 				items: [
@@ -139,138 +163,49 @@ export const navigation: NavCategory[] = [
 						href: "/docs/guide-manager/",
 						description: "Tracking progress and metrics",
 					},
-				],
-			},
-		],
-		featured: {
-			title: "Quick Start",
-			description:
-				"Get up and running with AI-DLC in under 10 minutes with our guided tutorial.",
-			href: "/docs/quick-start/",
-		},
-	},
-	{
-		title: "Implement",
-		href: "/docs/installation/",
-		sections: [
-			{
-				title: "Setup",
-				items: [
 					{
-						title: "Installation",
-						href: "/docs/installation/",
-						description: "Install the Claude Code plugin",
-					},
-					{
-						title: "Quick Start",
-						href: "/docs/quick-start/",
-						description: "Your first AI-DLC session",
-					},
-					{
-						title: "Adoption Roadmap",
-						href: "/docs/adoption-roadmap/",
-						description: "Rolling out AI-DLC to your team",
-					},
-				],
-			},
-			{
-				title: "Examples",
-				items: [
-					{
-						title: "Feature Example",
-						href: "/docs/example-feature/",
-						description: "Building a new feature end-to-end",
-					},
-					{
-						title: "Bugfix Example",
-						href: "/docs/example-bugfix/",
-						description: "Fixing a bug with AI-DLC",
-					},
-				],
-			},
-			{
-				title: "Checklists",
-				items: [
-					{
-						title: "First Intent",
-						href: "/docs/checklist-first-intent/",
-						description: "Checklist for your first unit",
-					},
-					{
-						title: "Team Onboarding",
-						href: "/docs/checklist-team-onboarding/",
-						description: "Onboard your team to AI-DLC",
+						title: "For AI Agents",
+						href: "/docs/guide-ai/",
+						description: "Autonomous operation with AI-DLC",
 					},
 				],
 			},
 		],
-	},
-	{
-		title: "Tools",
-		href: "/tools/mode-selector/",
-		sections: [
-			{
-				title: "Interactive Tools",
-				items: [
-					{
-						title: "Mode Selector",
-						href: "/tools/mode-selector/",
-						description: "Find the right mode for your task",
-					},
-					{
-						title: "Workflow Visualizer",
-						href: "/workflows/",
-						description: "See hat transitions in action",
-					},
-					{
-						title: "Big Picture Diagram",
-						href: "/big-picture/",
-						description: "Interactive methodology overview",
-					},
-				],
-			},
-			{
-				title: "Templates",
-				items: [
-					{
-						title: "Intent Template",
-						href: "/templates/intent-template.md",
-						description: "Template for defining intents",
-					},
-					{
-						title: "Unit Template",
-						href: "/templates/unit-template.md",
-						description: "Template for unit documentation",
-					},
-					{
-						title: "Settings Template",
-						href: "/templates/settings-template.yml",
-						description: "Claude Code settings for AI-DLC",
-					},
-				],
-			},
-			{
-				title: "Assessment",
-				items: [
-					{
-						title: "Readiness Assessment",
-						href: "/docs/assessment/",
-						description: "Is your team ready for AI-DLC?",
-					},
-				],
-			},
-		],
-		featured: {
-			title: "Mode Selector Tool",
-			description:
-				"Answer a few questions to find the right AI-DLC mode for your current task.",
-			href: "/tools/mode-selector/",
-		},
 	},
 	{
 		title: "Resources",
-		href: "/docs/community/",
+		href: "/paper/",
 		sections: [
+			{
+				title: "Resources",
+				items: [
+					{
+						title: "The Paper",
+						href: "/paper/",
+						description: "Full methodology with research and production lessons",
+					},
+					{
+						title: "Blog",
+						href: "/blog/",
+						description: "Updates and insights",
+					},
+					{
+						title: "Templates",
+						href: "/templates/",
+						description: "Intent, unit, and settings templates",
+					},
+					{
+						title: "Glossary",
+						href: "/glossary/",
+						description: "AI-DLC terminology and definitions",
+					},
+					{
+						title: "Changelog",
+						href: "/changelog/",
+						description: "What's new in AI-DLC",
+					},
+				],
+			},
 			{
 				title: "Community",
 				items: [
@@ -280,34 +215,14 @@ export const navigation: NavCategory[] = [
 						description: "Join the AI-DLC community",
 					},
 					{
-						title: "Changelog",
-						href: "/changelog/",
-						description: "What's new in AI-DLC",
-					},
-					{
 						title: "GitHub",
 						href: "https://github.com/thebushidocollective/ai-dlc",
 						description: "Source code and discussions",
 					},
-				],
-			},
-			{
-				title: "Related Projects",
-				items: [
 					{
 						title: "H•AI•K•U Method",
 						href: "https://haikumethod.ai",
 						description: "Parent methodology for human-AI collaboration",
-					},
-					{
-						title: "Han Plugin Marketplace",
-						href: "https://han.guru",
-						description: "Claude Code plugin ecosystem",
-					},
-					{
-						title: "Anthropic",
-						href: "https://anthropic.com",
-						description: "Creators of Claude",
 					},
 				],
 			},
@@ -316,51 +231,52 @@ export const navigation: NavCategory[] = [
 ]
 
 /**
- * Footer navigation - simplified sitemap structure
+ * Footer navigation - simplified sitemap structure matching mega menu sections
  */
 export const footerNavigation = {
-	learn: {
-		title: "Learn",
-		items: [
-			{ title: "Why AI-DLC?", href: "/about/" },
-			{ title: "Introduction", href: "/docs/" },
-			{ title: "Hats", href: "/docs/hats/" },
-			{ title: "Key Concepts", href: "/docs/concepts/" },
-			{ title: "Workflows", href: "/docs/workflows/" },
-		],
-	},
-	implement: {
-		title: "Implement",
+	getStarted: {
+		title: "Get Started",
 		items: [
 			{ title: "Installation", href: "/docs/installation/" },
 			{ title: "Quick Start", href: "/docs/quick-start/" },
+			{ title: "First Intent Checklist", href: "/docs/checklist-first-intent/" },
 			{ title: "Feature Example", href: "/docs/example-feature/" },
 			{ title: "Bugfix Example", href: "/docs/example-bugfix/" },
-			{ title: "Adoption Roadmap", href: "/docs/adoption-roadmap/" },
 		],
 	},
-	tools: {
-		title: "Tools",
+	reference: {
+		title: "Reference",
 		items: [
-			{ title: "Mode Selector", href: "/tools/mode-selector/" },
-			{ title: "Workflow Visualizer", href: "/workflows/" },
-			{ title: "Big Picture", href: "/big-picture/" },
-			{ title: "Templates", href: "/templates/" },
+			{ title: "Documentation", href: "/docs/" },
+			{ title: "Hats", href: "/docs/hats/" },
+			{ title: "Workflows", href: "/docs/workflows/" },
+			{ title: "Key Concepts", href: "/docs/concepts/" },
+			{ title: "Providers", href: "/docs/providers/" },
+			{ title: "Operations", href: "/docs/operations-guide/" },
+		],
+	},
+	guides: {
+		title: "Guides",
+		items: [
+			{ title: "For Developers", href: "/docs/guide-developer/" },
+			{ title: "For Designers", href: "/docs/guide-designer/" },
+			{ title: "For Tech Leads", href: "/docs/guide-tech-lead/" },
+			{ title: "For Managers", href: "/docs/guide-manager/" },
+			{ title: "For AI Agents", href: "/docs/guide-ai/" },
 		],
 	},
 	resources: {
 		title: "Resources",
 		items: [
 			{ title: "The Paper", href: "/paper/" },
-			{ title: "Community", href: "/docs/community/" },
 			{ title: "Blog", href: "/blog/" },
 			{ title: "Changelog", href: "/changelog/" },
+			{ title: "Glossary", href: "/glossary/" },
 			{
 				title: "GitHub",
 				href: "https://github.com/thebushidocollective/ai-dlc",
 			},
 			{ title: "H•AI•K•U Method", href: "https://haikumethod.ai" },
-			{ title: "Han Plugins", href: "https://han.guru" },
 		],
 	},
 }
@@ -375,14 +291,14 @@ export const bottomNavItems = [
 		icon: "home",
 	},
 	{
-		title: "Learn",
+		title: "Docs",
 		href: "/docs/",
 		icon: "book",
 	},
 	{
-		title: "Tools",
-		href: "/tools/mode-selector/",
-		icon: "tool",
+		title: "Install",
+		href: "/docs/installation/",
+		icon: "download",
 	},
 	{
 		title: "Menu",

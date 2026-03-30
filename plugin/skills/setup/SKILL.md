@@ -327,9 +327,41 @@ Ask the user about their preferred workflow intensity:
 
 ---
 
+## Phase 5b: Default Iteration Passes
+
+Ask the user about their default cross-functional iteration passes for new intents. Most teams only need a single dev pass.
+
+Use `AskUserQuestion`:
+
+```json
+{
+  "questions": [{
+    "question": "What iteration passes should new intents use by default?",
+    "header": "Default Iteration Passes",
+    "options": [
+      {"label": "Dev only", "description": "Single pass — elaborate and build (default for most work)"},
+      {"label": "Design + Dev", "description": "Design pass produces artifacts, then dev pass builds from them"},
+      {"label": "Design + Product + Dev", "description": "Full cross-functional: design artifacts → product specs → working code"},
+      {"label": "Product + Dev", "description": "Product defines acceptance criteria, then dev builds"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+Map selections to `default_passes` in settings.yml:
+- "Dev only" → `default_passes: []`
+- "Design + Dev" → `default_passes: [design, dev]`
+- "Design + Product + Dev" → `default_passes: [design, product, dev]`
+- "Product + Dev" → `default_passes: [product, dev]`
+
+Pre-fill from existing `settings.yml` `default_passes` if available.
+
+---
+
 ## Phase 6: VCS Strategy
 
-Ask the user about their preferred delivery strategy, source branch, and auto-merge behavior.
+Ask the user about their preferred delivery strategy and source branch.
 
 Use `AskUserQuestion`:
 
@@ -343,12 +375,12 @@ Use `AskUserQuestion`:
       "header": "Delivery Strategy",
       "options": [
         {
-          "label": "Review each unit individually",
-          "description": "Each unit opens its own PR/MR. Dependent units wait until their dependencies are merged. Best when you want to validate each piece before moving on."
-        },
-        {
           "label": "Build everything, then open one MR",
           "description": "Units merge into an intent branch as they complete. Dependent units start automatically once their dependencies are done. One final MR for the whole intent."
+        },
+        {
+          "label": "Review each unit individually",
+          "description": "Each unit opens its own PR/MR. Dependent units wait until their dependencies are merged. Best when you want to validate each piece before moving on."
         },
         {
           "label": "Build everything on my default branch",
@@ -392,15 +424,10 @@ Map user selections to config values:
 }
 ```
 
-**Question 3: Auto-merge** *(only if user selected "Build everything, then open one MR")*
-- "Should completed unit branches be automatically merged into the intent branch?"
-- Options:
-  - **Yes (Recommended)** — Auto-merge when unit passes review
-  - **No** — Manual merge after review
-
-Pre-fill from existing `settings.yml` `{vcs}.auto_merge` if available.
-
-Only ask auto-merge if strategy is `intent` ("Build everything, then open one MR"). For `unit` ("Review each unit individually"), merging is the user's responsibility (they merge their own PRs), so skip this question and do not set `auto_merge`. For `trunk` ("Build everything on my default branch"), branches aren't used.
+**Auto-merge** is implicit based on strategy — do NOT ask the user:
+- `intent` strategy → `auto_merge: true` (units auto-merge into the intent branch)
+- `unit` strategy → no `auto_merge` key (user merges their own PRs)
+- `trunk` strategy → no `auto_merge` key (no branches to merge)
 
 ---
 
@@ -417,6 +444,9 @@ git:  # or jj:
   default_branch: main
   auto_merge: true
   elaboration_review: true
+
+# Only include if non-default (non-empty)
+default_passes: [design, dev]
 
 # Only include providers that were confirmed
 providers:
@@ -461,6 +491,7 @@ Display a final summary:
 | Default Branch | main |
 | Change Strategy | unit |
 | Auto-merge | yes |
+| Default Passes | dev only |
 | Ticketing | jira (PROJ) |
 | Spec | confluence (TEAM) |
 | Design | — |

@@ -85,8 +85,9 @@ Run review in distinct passes. Combining them into one pass leads to either spec
    - You MUST check each Completion Criterion individually
    - You MUST run verification commands, not just read code
    - You MUST NOT assume - verify programmatically
-   - You SHOULD cross-reference spec provider for requirement accuracy if configured
-   - You SHOULD cross-reference design provider for visual/UX compliance if configured. When comparing implementation to designs, match colors against the project's named color tokens (design tokens, CSS custom properties, theme variables) — not raw hex values. If the design contains annotations (callouts, arrows, measurement labels, descriptive text), treat them as implementation guidance that should have been followed, not UI elements that should have been rendered.
+   - If a spec provider is configured (check session start context), you MUST cross-reference it for requirement accuracy using its MCP tools.
+   - If a design provider is configured (check session start context), you MUST cross-reference it for visual/UX compliance using its MCP tools. When comparing implementation to designs, match colors against the project's named color tokens (design tokens, CSS custom properties, theme variables) — not raw hex values. If the design contains annotations (callouts, arrows, measurement labels, descriptive text), treat them as implementation guidance that should have been followed, not UI elements that should have been rendered.
+   - If MCP tools are unavailable or the call fails, log the failure but do not block the review.
    - **Validation**: Each criterion marked pass/fail with evidence
 
 5. Review code quality
@@ -135,12 +136,14 @@ Run review in distinct passes. Combining them into one pass leads to either spec
     - **Validation**: Clear approve/reject with rationale
 
 #### Provider Sync — Review Outcome
-- If a `ticket` field exists in the reviewed unit's frontmatter:
-  - **SHOULD** add the review outcome as a ticket comment (approved/rejected + summary)
-  - If **approving**: update ticket to **Done**
-  - If **rejecting**: keep ticket as **In Progress**, add rejection feedback as comment
-- **MAY** post a summary of the review outcome to the comms provider (if configured)
-- If MCP tools are unavailable, skip silently — never block review on provider sync
+
+Check the provider context injected at session start for configured providers and their MCP tool hints.
+
+- If a `ticket` field exists in the reviewed unit's frontmatter, you MUST use the ticketing provider's MCP tools to add a comment with the review outcome (approved/rejected + summary).
+  - If **approving**: update ticket status to **Done** via the provider's transition tools.
+  - If **rejecting**: keep ticket as **In Progress**, add rejection feedback as a ticket comment.
+- If a comms provider is configured, you MAY post a summary of the review outcome to the configured channel using the comms provider's MCP tools.
+- If MCP tools are unavailable or the call fails, log the failure but do not block the review.
 
 ### Chain-of-Verification (CoVe)
 
@@ -211,10 +214,10 @@ Reviewer (Master)
 Additional domain-specific agents (Data Integrity, Schema Drift, etc.) are defined in `reviewer-reference.md` and activate based on changed file patterns.
 
 **Visual Fidelity agent process:**
-1. Run `run-visual-comparison.sh` to prepare screenshot pairs and comparison context
-2. Read `comparison-context.json` from the output directory
-3. For each screenshot pair: read both images (ref + built) using the Read tool
-4. Apply the vision comparison prompt (`vision-comparison-prompt.md`) with the resolved fidelity level
+1. Load `comparison-context.json` from `.ai-dlc/{intent}/screenshots/{unit}/` — this file is prepared by the advance skill during the builder-to-reviewer transition, so it should already exist when the reviewer starts
+2. If `comparison-context.json` is missing or contains an `error` field, fall back to running `run-visual-comparison.sh` directly to prepare screenshot pairs and comparison context
+3. For each screenshot pair listed in the context: read both images (ref + built) using the Read tool
+4. Apply the vision comparison prompt (path in the context JSON's `prompt_template` field) with the resolved fidelity level from the context's `fidelity` field
 5. Parse findings and update `comparison-report.md` with verdict and categorized findings
 6. Return findings to the master reviewer for consolidation
 

@@ -47,7 +47,7 @@ You are the **Elaborator** starting the AI-DLC Mob Elaboration ritual. Your job 
 3. **Success Criteria** - How do we know when it's done?
 4. **Units** - Independent pieces of work (for complex intents), each with enough technical detail that a builder with zero prior context builds the right thing
 
-Then you'll write these as files in `.ai-dlc/{intent-slug}/` for the construction phase.
+Then you'll write these as files in `.ai-dlc/{intent-slug}/` for the execution phase.
 
 **CRITICAL PRINCIPLE: Elaboration is not a quick phase.** The purpose of elaboration is to build such deep understanding of the domain that the resulting spec is unambiguous. If a builder could misinterpret a unit and build the wrong thing, the elaboration is not done. Do NOT close this phase until you have a clear, specific, technically-grounded spec validated by the user.
 
@@ -114,7 +114,7 @@ If the user invoked this with a slug argument:
 1. Check if `.ai-dlc/{slug}/intent.md` exists
 2. If it exists, check the intent and unit statuses:
    - **Skip if intent status is `completed`**: Tell the user "Intent `{slug}` is already completed. Run `/elaborate` without a slug to start a new intent." Then stop.
-   - **Skip if ANY unit has status `in_progress` or `completed`**: Construction has already started — elaboration would conflict with in-flight work. Tell the user "Intent `{slug}` already has units in progress or completed. Use `/resume {slug}` to continue construction or `/execute` to resume the build loop." Then stop.
+   - **Skip if ANY unit has status `in_progress` or `completed`**: Execution has already started — elaboration would conflict with in-flight work. Tell the user "Intent `{slug}` already has units in progress or completed. Use `/resume {slug}` to continue execution or `/execute` to resume the build loop." Then stop.
    - **Only proceed if ALL units have `status: pending`** (no work has begun yet):
 3. If all units are pending — **assume the user wants to modify the existing intent**:
    - Read ALL files in `.ai-dlc/{slug}/` directory
@@ -1088,12 +1088,12 @@ Use `AskUserQuestion`:
       "header": "Delivery Strategy",
       "options": [
         {
-          "label": "Review each unit individually",
-          "description": "Each unit opens its own PR/MR. Dependent units wait until their dependencies are merged. Best when you want to validate each piece before moving on."
-        },
-        {
           "label": "Build everything, then open one MR",
           "description": "Units merge into an intent branch as they complete. Dependent units start automatically once their dependencies are done. One final MR for the whole intent."
+        },
+        {
+          "label": "Review each unit individually",
+          "description": "Each unit opens its own PR/MR. Dependent units wait until their dependencies are merged. Best when you want to validate each piece before moving on."
         },
         {
           "label": "Build everything on {DEFAULT_BRANCH}",
@@ -1130,32 +1130,17 @@ Use `AskUserQuestion`:
 }
 ```
 
-**Question 3: Auto-merge** *(only if user selected "Build everything, then open one MR")*
-
-```json
-{
-  "questions": [
-    {
-      "question": "Should completed unit branches auto-merge into the intent branch when approved?",
-      "header": "Auto-merge",
-      "options": [
-        {"label": "Yes (Recommended)", "description": "Automatically merge unit branches into the intent branch when reviewer approves."},
-        {"label": "No", "description": "Manual merge — you decide when to merge. More control, more manual work."}
-      ],
-      "multiSelect": false
-    }
-  ]
-}
-```
-
-**Skip the auto-merge question for "Review each unit individually"** — in unit strategy, each unit creates its own PR and the user is responsible for merging. **Skip for "Build everything on {DEFAULT_BRANCH}"** — no branches to merge.
+**Auto-merge** is implicit based on strategy — do NOT ask the user:
+- `intent` strategy → `auto_merge: true` (units auto-merge into the intent branch)
+- `unit` strategy → no `auto_merge` key (user merges their own PRs)
+- `trunk` strategy → no `auto_merge` key (no branches to merge)
 
 Store the selections. These will be written into the `intent.md` frontmatter in Phase 6 under a `git:` key:
 
 ```yaml
 git:
-  change_strategy: unit    # or intent, trunk
-  auto_merge: true         # only for intent strategy; omit for unit/trunk
+  change_strategy: intent  # or unit, trunk
+  auto_merge: true         # implicit for intent strategy; omit for unit/trunk
   auto_squash: false       # default false, only relevant when auto_merge is true
 ```
 
@@ -1163,15 +1148,13 @@ Map user selections to config values:
 
 | What You Want | Strategy Value |
 |--------------|----------------|
-| Review each unit individually | `unit` |
 | Build everything, then open one MR | `intent` |
+| Review each unit individually | `unit` |
 | Build everything on {DEFAULT_BRANCH} | `trunk` |
 
+- "Build everything, then open one MR" → `intent` + `auto_merge: true`
 - "Review each unit individually" → `unit` (no `auto_merge` key — user merges their own PRs)
-- "Build everything, then open one MR" → `intent`
-- "Build everything on {DEFAULT_BRANCH}" → `trunk`
-- "Yes" auto-merge → `auto_merge: true` (intent strategy only)
-- "No" auto-merge → `auto_merge: false` (intent strategy only)
+- "Build everything on {DEFAULT_BRANCH}" → `trunk` (no `auto_merge` key — no branches)
 
 ### Hybrid Per-Unit Strategy (Optional)
 
@@ -1231,32 +1214,25 @@ Map selections to the `announcements` array in intent.md frontmatter:
 
 ## Phase 5.95: Iteration Passes
 
-Ask the user if this intent needs multi-phase iteration across disciplines. Most intents only need a single dev pass (the default). Cross-functional teams building user-facing features may benefit from design and product passes before dev.
+Read the project's configured default passes from `.ai-dlc/settings.yml`:
 
-Use `AskUserQuestion`:
-```json
-{
-  "questions": [{
-    "question": "Does this intent need cross-functional iteration passes?",
-    "header": "Iteration Passes",
-    "options": [
-      {"label": "Dev only", "description": "Single pass — elaborate and build (default for most work)"},
-      {"label": "Design + Dev", "description": "Design pass produces artifacts, then dev pass builds from them"},
-      {"label": "Design + Product + Dev", "description": "Full cross-functional: design artifacts → product specs → working code"},
-      {"label": "Product + Dev", "description": "Product defines acceptance criteria, then dev builds"}
-    ],
-    "multiSelect": false
-  }]
-}
+```bash
+DEFAULT_PASSES=$(yq -r '.default_passes // [] | join(",")' .ai-dlc/settings.yml 2>/dev/null || echo "")
 ```
 
-Map selections to the `passes` array in intent.md frontmatter:
-- "Dev only" → `[]` (empty — single implicit dev pass, the default)
-- "Design + Dev" → `[design, dev]`
-- "Design + Product + Dev" → `[design, product, dev]`
-- "Product + Dev" → `[product, dev]`
+**If `DEFAULT_PASSES` is empty or contains fewer than 2 entries** (which includes the common "dev only" default): skip this phase entirely. Set `passes: []` and `active_pass: ""` in the intent frontmatter. Do not ask the user.
 
-When passes are configured, set `active_pass` to the first pass in the list. The units elaborated in this session belong to the active pass. When construction completes the active pass, the next pass will trigger a new elaboration cycle for its discipline-specific units.
+**If `DEFAULT_PASSES` has 2 or more entries**: apply them directly. Set `passes` to the configured array and `active_pass` to the first entry. Do not ask the user — the default was configured at setup time.
+
+Map configured values to the `passes` array in intent.md frontmatter:
+- Empty or single entry → `passes: []` (empty — single implicit dev pass, the default)
+- `[design, dev]` → `passes: [design, dev]`
+- `[design, product, dev]` → `passes: [design, product, dev]`
+- `[product, dev]` → `passes: [product, dev]`
+
+When passes are configured with 2+ entries, set `active_pass` to the first pass in the list. The units elaborated in this session belong to the active pass. When execution completes the active pass, the next pass will trigger a new elaboration cycle for its discipline-specific units.
+
+> **Override:** To use different passes for a specific intent, the user can configure `passes` in the intent-level settings override at `.ai-dlc/{intent}/settings.yml`.
 
 ---
 
@@ -1590,7 +1566,7 @@ fi
 
 The intent slug is derived from the `.ai-dlc/{intent-slug}/` directory path — no separate state save is needed.
 
-**Note:** Do NOT save `iteration.json` here. Construction state (hat, iteration count, workflow, status) is initialized by `/execute` when the build loop starts. Elaboration only writes the spec artifacts.
+**Note:** Do NOT save `iteration.json` here. Execution state (hat, iteration count, workflow, status) is initialized by `/execute` when the build loop starts. Elaboration only writes the spec artifacts.
 
 ### 5. Commit any remaining artifacts on intent branch:
 
@@ -1820,7 +1796,7 @@ git commit -m "elaborate(${INTENT_SLUG}): sync tickets to provider"
 
 ## Phase 7: Spec Review
 
-Before construction begins, run an automated spec review to catch issues early.
+Before execution begins, run an automated spec review to catch issues early.
 
 Launch a review subagent:
 
@@ -1859,7 +1835,7 @@ Agent({
     ## Output
 
     Report findings as:
-    - **PASS**: Spec is ready for construction
+    - **PASS**: Spec is ready for execution
     - **WARN**: Issues found but not blocking (list them)
     - **FAIL**: Critical issues that must be fixed (list them)
 
@@ -1909,7 +1885,7 @@ IS_COWORK="${CLAUDE_CODE_IS_COWORK:-}"
     "question": "How would you like to proceed?",
     "header": "Handoff",
     "options": [
-      {"label": "Construct", "description": "Start the autonomous build loop now"},
+      {"label": "Execute", "description": "Start the autonomous build loop now"},
       {"label": "Open PR/MR for review", "description": "Create a pull/merge request for spec review before building"}
     ],
     "multiSelect": false
@@ -1940,7 +1916,7 @@ The artifacts have already been written to `.ai-dlc/{intent-slug}/` in the worki
 
 **Note:** If the user connected via **local folder**, skip the question entirely — just tell them the artifacts are written and ready to commit (see "If local folder" below).
 
-### If Construct (CLI only):
+### If Execute (CLI only):
 
 Tell the user:
 
@@ -1948,7 +1924,7 @@ Tell the user:
 To start the autonomous build loop:
   /execute
 
-The construction phase will iterate through each unit, using quality gates
+The execution phase will iterate through each unit, using quality gates
 (tests, types, lint) as backpressure until all success criteria are met.
 
 Note: All AI-DLC work happens in the worktree at .ai-dlc/worktrees/{intent-slug}/
@@ -1957,7 +1933,7 @@ Your main working directory stays clean on the main branch.
 
 ### If PR/MR for review:
 
-**IMPORTANT:** Do NOT include "Closes", "Fixes", or "Resolves" issue references in the PR body. This is a spec review PR — merging it must not auto-close the linked issue. The issue stays open until construction is complete.
+**IMPORTANT:** Do NOT include "Closes", "Fixes", or "Resolves" issue references in the PR body. This is a spec review PR — merging it must not auto-close the linked issue. The issue stays open until execution is complete.
 
 1. Push the intent branch to remote:
 

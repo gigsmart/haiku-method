@@ -129,7 +129,7 @@ Returning to **{prevHat}** hat.
 
 **Reason:** {reason}
 
-Continuing construction with the previous hat...
+Continuing execution with the previous hat...
 ```
 
 ## Guard

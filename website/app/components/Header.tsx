@@ -1,6 +1,6 @@
 "use client"
 
-import { navigation } from "@/lib/navigation"
+import { navigation, primaryNavItems } from "@/lib/navigation"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -60,14 +60,14 @@ export function Header() {
 		setOpenCategory(null)
 	}, [])
 
-	const isActiveCategory = (category: (typeof navigation)[0]) => {
-		if (category.title === "Overview") {
-			return (
-				pathname === "/" ||
-				pathname === "/about/" ||
-				pathname === "/big-picture/"
-			)
+	const isActivePrimaryItem = (item: (typeof primaryNavItems)[0]) => {
+		if (item.href === "/") {
+			return pathname === "/"
 		}
+		return pathname === item.href || pathname.startsWith(item.href.replace(/\/$/, ""))
+	}
+
+	const isActiveCategory = (category: (typeof navigation)[0]) => {
 		// Check if any section item matches the current path
 		return category.sections.some((section) =>
 			section.items.some(
@@ -93,46 +93,72 @@ export function Header() {
 						AI-DLC
 					</Link>
 
-					{/* Desktop Navigation */}
+					{/* Desktop Navigation — Primary links + mega menu trigger */}
 					<div className="hidden items-center gap-1 md:flex">
-						{navigation.map((category) => {
-							const isActive = isActiveCategory(category)
-							const isOpen = openCategory === category.title
+						{/* Primary nav links */}
+						{primaryNavItems.map((item) => {
+							const isActive = isActivePrimaryItem(item)
+							// Find matching mega menu category for this item
+							const megaCategory = navigation.find((cat) =>
+								cat.sections.some((section) =>
+									section.items.some((si) => si.href === item.href),
+								) || cat.href === item.href
+							)
 
-							return (
-								<div
-									key={category.title}
-									className="relative"
-									onMouseEnter={() => handleMouseEnter(category.title)}
-									onMouseLeave={handleMouseLeave}
-								>
-									<button
-										type="button"
-										className={`flex items-center gap-1 rounded-lg px-3 py-2 transition ${
-											isActive || isOpen
-												? "bg-gray-100 font-medium text-gray-900 dark:bg-gray-800 dark:text-white"
-												: "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-white"
-										}`}
-										aria-expanded={isOpen}
-										aria-haspopup="true"
+							if (megaCategory) {
+								// Render as mega menu trigger
+								const isOpen = openCategory === megaCategory.title
+
+								return (
+									<div
+										key={item.title}
+										className="relative"
+										onMouseEnter={() => handleMouseEnter(megaCategory.title)}
+										onMouseLeave={handleMouseLeave}
 									>
-										{category.title}
-										<svg
-											className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
-											fill="none"
-											viewBox="0 0 24 24"
-											stroke="currentColor"
-											aria-hidden="true"
+										<button
+											type="button"
+											className={`flex items-center gap-1 rounded-lg px-3 py-2 transition ${
+												isActive || isOpen
+													? "bg-gray-100 font-medium text-gray-900 dark:bg-gray-800 dark:text-white"
+													: "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-white"
+											}`}
+											aria-expanded={isOpen}
+											aria-haspopup="true"
 										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M19 9l-7 7-7-7"
-											/>
-										</svg>
-									</button>
-								</div>
+											{item.title}
+											<svg
+												className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+												aria-hidden="true"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M19 9l-7 7-7-7"
+												/>
+											</svg>
+										</button>
+									</div>
+								)
+							}
+
+							// Render as plain link
+							return (
+								<Link
+									key={item.title}
+									href={item.href}
+									className={`rounded-lg px-3 py-2 transition ${
+										isActive
+											? "bg-gray-100 font-medium text-gray-900 dark:bg-gray-800 dark:text-white"
+											: "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-white"
+									}`}
+								>
+									{item.title}
+								</Link>
 							)
 						})}
 

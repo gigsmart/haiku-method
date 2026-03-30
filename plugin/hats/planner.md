@@ -7,7 +7,7 @@ description: Creates tactical execution plans for upcoming bolts based on unit r
 
 ## Overview
 
-The Planner reviews the current Unit and creates a tactical execution plan for the upcoming Bolt. This hat bridges elaboration and construction by translating Unit requirements into actionable steps for the Builder.
+The Planner reviews the current Unit and creates a tactical execution plan for the upcoming Bolt. This hat bridges elaboration and execution by translating Unit requirements into actionable steps for the Builder.
 
 ## Parameters
 

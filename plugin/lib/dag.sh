@@ -10,7 +10,7 @@
 # ---
 
 # Source configuration system and foundation libraries
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 # shellcheck source=config.sh
 source "$SCRIPT_DIR/config.sh"
 # shellcheck source=state.sh
@@ -33,8 +33,9 @@ _yaml_get_array() {
     [[ "$line" == "---" ]] && { $in_frontmatter && break || in_frontmatter=true; continue; }
     $in_frontmatter || continue
     # Check for inline array: depends_on: [unit-01, unit-02]
-    if [[ "$line" =~ ^${field}:\ *\[(.+)\]$ ]]; then
-      result="${BASH_REMATCH[1]}"
+    if [[ "$line" == ${field}:*"["*"]" ]]; then
+      result="${line#*\[}"
+      result="${result%\]}"
       result="${result//,/ }"  # Replace commas with spaces
       result="${result//\"/}"  # Remove quotes
       result="${result//\'/}"
@@ -49,8 +50,8 @@ _yaml_get_array() {
     fi
     # Check for array items: - unit-01
     if $in_array; then
-      if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*(.+)$ ]]; then
-        local item="${BASH_REMATCH[1]}"
+      if [[ "$line" =~ ^[[:space:]]*-[[:space:]] ]]; then
+        local item="${line#*- }"
         item="${item//\"/}"
         item="${item//\'/}"
         result="$result $item"
@@ -124,8 +125,9 @@ parse_unit_change_strategy() {
       continue
     fi
     if $in_git; then
-      if [[ "$line" =~ ^[[:space:]]+change_strategy:\ *(.*)$ ]]; then
-        value="${BASH_REMATCH[1]}"
+      if [[ "$line" == *change_strategy:* ]]; then
+        value="${line#*change_strategy:}"
+        value="${value# }"
         value="${value#\"}"
         value="${value%\"}"
         value="${value#\'}"
@@ -491,8 +493,9 @@ update_unit_status() {
     local unit_basename
     unit_basename=$(basename "$unit_file" .md)
     local intent_slug=""
-    if [[ "$real_path" =~ /\.ai-dlc/([^/]+)/ ]]; then
-      intent_slug="${BASH_REMATCH[1]}"
+    local after_ai_dlc="${real_path#*/.ai-dlc/}"
+    if [ "$after_ai_dlc" != "$real_path" ]; then
+      intent_slug="${after_ai_dlc%%/*}"
     fi
     aidlc_record_unit_status_change "$intent_slug" "$unit_basename" "$old_status" "$new_status"
   fi
@@ -707,19 +710,23 @@ discover_branch_intents() {
     if [[ "$line" == "branch refs/heads/ai-dlc/"* ]]; then
       local branch="${line#branch refs/heads/}"
       # Only intent-level branches (ai-dlc/slug/main)
-      if [[ "$branch" =~ ^ai-dlc/([^/]+)/main$ ]]; then
-        local slug="${BASH_REMATCH[1]}"
+      case "$branch" in
+      ai-dlc/*/main)
+        local slug="${branch#ai-dlc/}"
+        slug="${slug%/main}"
         # Read intent.md from the branch
         local intent_content
         intent_content=$(git show "$branch:.ai-dlc/$slug/intent.md" 2>/dev/null) || continue
-        local status
-        status=$(echo "$intent_content" | _yaml_get_simple "status" "active")
-        [ "$status" != "active" ] && continue
+        local intent_status
+        intent_status=$(echo "$intent_content" | _yaml_get_simple "status" "active")
+        [ "$intent_status" != "active" ] && continue
         local workflow
         workflow=$(echo "$intent_content" | _yaml_get_simple "workflow" "default")
         echo "$slug|$workflow|worktree|$branch"
         seen_slugs="$seen_slugs $slug"
-      fi
+        ;;
+      *) ;;
+      esac
     fi
   done < <(git worktree list --porcelain 2>/dev/null)
 
@@ -727,16 +734,21 @@ discover_branch_intents() {
   while IFS= read -r branch; do
     [ -z "$branch" ] && continue
     # Only intent-level branches (ai-dlc/slug/main)
-    [[ "$branch" =~ ^ai-dlc/([^/]+)/main$ ]] || continue
-    local slug="${BASH_REMATCH[1]}"
+    case "$branch" in
+    ai-dlc/*/main)
+      local slug="${branch#ai-dlc/}"
+      slug="${slug%/main}"
+      ;;
+    *) continue ;;
+    esac
     # Skip if already seen in worktree
     [[ "$seen_slugs" == *" $slug"* ]] && continue
     # Read intent.md from the branch
     local intent_content
     intent_content=$(git show "$branch:.ai-dlc/$slug/intent.md" 2>/dev/null) || continue
-    local status
-    status=$(echo "$intent_content" | _yaml_get_simple "status" "active")
-    [ "$status" != "active" ] && continue
+    local intent_status
+    intent_status=$(echo "$intent_content" | _yaml_get_simple "status" "active")
+    [ "$intent_status" != "active" ] && continue
     local workflow
     workflow=$(echo "$intent_content" | _yaml_get_simple "workflow" "default")
     echo "$slug|$workflow|local|$branch"
@@ -748,16 +760,21 @@ discover_branch_intents() {
     while IFS= read -r branch; do
       [ -z "$branch" ] && continue
       # Only intent-level branches (origin/ai-dlc/slug/main)
-      [[ "$branch" =~ ^origin/ai-dlc/([^/]+)/main$ ]] || continue
-      local slug="${BASH_REMATCH[1]}"
+      case "$branch" in
+      origin/ai-dlc/*/main)
+        local slug="${branch#origin/ai-dlc/}"
+        slug="${slug%/main}"
+        ;;
+      *) continue ;;
+      esac
       # Skip if already seen
       [[ "$seen_slugs" == *" $slug"* ]] && continue
       # Read intent.md from the remote branch
       local intent_content
       intent_content=$(git show "$branch:.ai-dlc/$slug/intent.md" 2>/dev/null) || continue
-      local status
-      status=$(echo "$intent_content" | _yaml_get_simple "status" "active")
-      [ "$status" != "active" ] && continue
+      local intent_status
+      intent_status=$(echo "$intent_content" | _yaml_get_simple "status" "active")
+      [ "$intent_status" != "active" ] && continue
       local workflow
       workflow=$(echo "$intent_content" | _yaml_get_simple "workflow" "default")
       echo "$slug|$workflow|remote|$branch"

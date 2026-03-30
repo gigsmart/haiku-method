@@ -167,31 +167,21 @@ If `CLAUDE_CODE_IS_COWORK=1`, stop immediately with the message above. Do NOT pr
 
 **CRITICAL: The orchestrator MUST run in the intent worktree, not the main working directory.**
 
-Before loading state, discover all active intents from both the filesystem and `ai-dlc/*` branches:
+Before loading state, discover all active intents from `ai-dlc/*` branches:
 
 ```bash
 # Source DAG library for branch discovery
 source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
 
-declare -A ACTIVE_INTENTS  # slug -> "source" (filesystem|worktree|local)
+# Discover active intents from branches (worktrees, local, remote)
+declare -A ACTIVE_INTENTS  # slug -> "source"
 
-# 1. Check filesystem (current directory)
-for intent_file in .ai-dlc/*/intent.md; do
-  [ -f "$intent_file" ] || continue
-  dir=$(dirname "$intent_file")
-  slug=$(basename "$dir")
-  status=$(_yaml_get_simple "status" "active" < "$intent_file")
-  [ "$status" = "active" ] && ACTIVE_INTENTS[$slug]="filesystem"
-done
-
-# 2. Check ai-dlc/* branches (worktrees and local branches)
 while IFS='|' read -r slug workflow source branch; do
   [ -z "$slug" ] && continue
-  # Don't overwrite filesystem entries (they take display priority)
-  [ -z "${ACTIVE_INTENTS[$slug]}" ] && ACTIVE_INTENTS[$slug]="$source"
-done < <(discover_branch_intents false)
+  ACTIVE_INTENTS[$slug]="$source"
+done < <(discover_branch_intents true)
 
-# 3. Handle results
+# Handle results
 if [ ${#ACTIVE_INTENTS[@]} -eq 0 ]; then
   echo "No active AI-DLC intent found."
   echo ""
@@ -210,8 +200,6 @@ elif [ ${#ACTIVE_INTENTS[@]} -gt 1 ]; then
     echo "- **$slug** (${ACTIVE_INTENTS[$slug]})"
   done
   echo ""
-  # Use AskUserQuestion with the discovered intents as options
-  # (execute will present these dynamically)
   echo "Use /execute <slug> to specify which intent to execute."
   exit 0
 fi

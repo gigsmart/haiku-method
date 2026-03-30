@@ -103,8 +103,8 @@ for img in "${IMAGE_FILES[@]}"; do
     bp_name="$(breakpoint_name "$bp")"
 
     # Match pattern: {breakpoint-name}-{view}
-    if [[ "$name" =~ ^${bp_name}-(.+)$ ]]; then
-      view="${BASH_REMATCH[1]}"
+    if [[ "$name" == ${bp_name}-* ]]; then
+      view="${name#${bp_name}-}"
       out_filename="${PREFIX}${bp_name}-${view}.${ext}"
       cp "$img" "$OUTPUT_DIR/$out_filename"
       SCREENSHOTS_JSON=$(echo "$SCREENSHOTS_JSON" | jq --argjson bp "$bp" --arg view "$view" --arg path "$out_filename" \
@@ -116,8 +116,8 @@ for img in "${IMAGE_FILES[@]}"; do
     fi
 
     # Match pattern: {width}-{view}
-    if [[ "$name" =~ ^${bp}-(.+)$ ]]; then
-      view="${BASH_REMATCH[1]}"
+    if [[ "$name" == ${bp}-* ]]; then
+      view="${name#${bp}-}"
       out_filename="${PREFIX}${bp_name}-${view}.${ext}"
       cp "$img" "$OUTPUT_DIR/$out_filename"
       SCREENSHOTS_JSON=$(echo "$SCREENSHOTS_JSON" | jq --argjson bp "$bp" --arg view "$view" --arg path "$out_filename" \

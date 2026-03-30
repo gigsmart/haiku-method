@@ -12,7 +12,7 @@
 #   change_strategy=$(echo "$config" | jq -r '.change_strategy')
 
 # Source foundation libraries
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 source "$SCRIPT_DIR/deps.sh"
 source "$SCRIPT_DIR/parse.sh"
 source "$SCRIPT_DIR/state.sh"

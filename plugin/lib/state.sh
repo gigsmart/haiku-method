@@ -17,7 +17,7 @@ fi
 _DLC_STATE_SOURCED=1
 
 # Source parse library (which sources deps.sh)
-STATE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+STATE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 # shellcheck source=parse.sh
 source "$STATE_SCRIPT_DIR/parse.sh"
 
@@ -86,8 +86,9 @@ _state_yaml_get_simple() {
   while IFS= read -r line; do
     [[ "$line" == "---" ]] && { $in_frontmatter && break || in_frontmatter=true; continue; }
     $in_frontmatter || continue
-    if [[ "$line" =~ ^${field}:\ *(.*)$ ]]; then
-      value="${BASH_REMATCH[1]}"
+    if [[ "$line" == ${field}:* ]]; then
+      value="${line#${field}:}"
+      value="${value# }"
       value="${value#\"}"
       value="${value%\"}"
       value="${value#\'}"
@@ -109,9 +110,9 @@ dlc_find_active_intent() {
   local intent_file
   for intent_file in "$repo_root"/.ai-dlc/*/intent.md; do
     [ -f "$intent_file" ] || continue
-    local status
-    status=$(_state_yaml_get_simple "status" "pending" < "$intent_file")
-    if [ "$status" = "active" ]; then
+    local intent_status
+    intent_status=$(_state_yaml_get_simple "status" "pending" < "$intent_file")
+    if [ "$intent_status" = "active" ]; then
       dirname "$intent_file"
       return 0
     fi

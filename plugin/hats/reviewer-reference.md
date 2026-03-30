@@ -44,7 +44,7 @@ Beyond the core 5 perspectives (Security, Performance, Architecture, Correctness
 | **Concurrency** | Race conditions, deadlocks, transaction isolation | Multi-threaded or async code |
 | **API Contract** | Breaking changes, versioning, backwards compatibility | Public API modifications |
 | **Design System** | Token usage, component conventions, visual consistency | Frontend component changes |
-| **Visual Fidelity** | AI vision comparison of built output vs design reference | Units where `detect-visual-gate.sh` returns true (frontend/design discipline, design_ref/wireframe fields, UI file changes, UI terms in spec) |
+| **Visual Fidelity** | AI vision comparison of built output vs design reference. Load `comparison-context.json` from `.ai-dlc/{intent}/screenshots/{unit}/` (prepared by the advance skill during builder-to-reviewer transition). | Units where `detect-visual-gate.sh` returns true (frontend/design discipline, design_ref/wireframe fields, UI file changes, UI terms in spec) |
 
 ### Activation
 

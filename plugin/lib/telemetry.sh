@@ -66,8 +66,12 @@ aidlc_telemetry_init() {
     # Extract version with pure bash (avoid jq dependency)
     local line
     while IFS= read -r line; do
-      if [[ "$line" =~ \"version\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
-        _AIDLC_TELEMETRY_VERSION="${BASH_REMATCH[1]}"
+      if [[ "$line" == *'"version"'*':'*'"'* ]]; then
+        # Extract value between quotes after the colon
+        local _tmp="${line#*\"version\"}"
+        _tmp="${_tmp#*:}"
+        _tmp="${_tmp#*\"}"
+        _AIDLC_TELEMETRY_VERSION="${_tmp%%\"*}"
         break
       fi
     done < "$plugin_json"
