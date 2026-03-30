@@ -1540,6 +1540,7 @@ Hat-based orchestration becomes concrete through **named workflows**—predefine
 | **design** | planner → designer → reviewer | Visual/UX-focused execution for design-discipline units |
 | **hypothesis** | observer → hypothesizer → experimenter → analyst | Scientific debugging and investigation methodology |
 | **tdd** | test-writer → implementer → refactorer | Test-driven development with explicit Red-Green-Refactor phases |
+| **bdd** | planner → acceptance-test-writer → builder → reviewer | Behavior-Driven Development — acceptance tests written before implementation |
 
 Workflows are configurable per-unit via the `workflow` frontmatter field. When omitted, a unit inherits the intent-level workflow; when the intent also omits it, the `default` workflow applies.
 
