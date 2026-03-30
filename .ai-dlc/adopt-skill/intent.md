@@ -9,7 +9,7 @@ passes: []
 active_pass: ""
 iterates_on: ""
 created: 2026-03-29
-status: active
+status: completed
 epic: ""
 ---
 
@@ -74,20 +74,20 @@ The agent uses a pragmatic blend for unit decomposition: starting from actual gi
 
 ## Success Criteria
 
-- [ ] `plugin/skills/adopt/SKILL.md` exists with valid frontmatter (`description`, `user-invocable: true`, `argument-hint`, `allowed-tools`)
-- [ ] Running `/adopt` without arguments prompts the user to describe the feature being adopted
-- [ ] Running `/adopt` with a feature description triggers codebase exploration (code analysis + git history cross-referencing)
-- [ ] The adopted intent is written to `.ai-dlc/{slug}/intent.md` with `status: completed` and all required frontmatter fields
-- [ ] Unit files are generated as `unit-NN-{slug}.md` with `status: completed`, pragmatically decomposed from actual code structure and git history
-- [ ] `discovery.md` is generated with domain knowledge from the reverse-engineering exploration
-- [ ] Success criteria on each unit are reverse-engineered from existing test files and CI configuration
-- [ ] An operational plan is auto-generated with valid operation specs in `.ai-dlc/{slug}/operations/`
-- [ ] The adopted intent is usable as a `/followup` target (valid `iterates_on` reference)
-- [ ] The adopted intent is usable with `/operate` (valid operation specs exist)
-- [ ] The paper documents the adopt concept if not already present
-- [ ] Generated unit boundaries match actual domain boundaries in the codebase — units do not arbitrarily split tightly-coupled code or merge unrelated concerns
-- [ ] Generated success criteria reference specific test files or CI checks that verify each criterion — no criteria without traceable evidence
-- [ ] User reviews and confirms the proposed intent, units, and operational plan before artifacts are finalized (interactive confirmation gates)
+- [x] `plugin/skills/adopt/SKILL.md` exists with valid frontmatter (`description`, `user-invocable: true`, `argument-hint`, `allowed-tools`)
+- [x] Running `/adopt` without arguments prompts the user to describe the feature being adopted
+- [x] Running `/adopt` with a feature description triggers codebase exploration (code analysis + git history cross-referencing)
+- [x] The adopted intent is written to `.ai-dlc/{slug}/intent.md` with `status: completed` and all required frontmatter fields
+- [x] Unit files are generated as `unit-NN-{slug}.md` with `status: completed`, pragmatically decomposed from actual code structure and git history
+- [x] `discovery.md` is generated with domain knowledge from the reverse-engineering exploration
+- [x] Success criteria on each unit are reverse-engineered from existing test files and CI configuration
+- [x] An operational plan is auto-generated with valid operation specs in `.ai-dlc/{slug}/operations/`
+- [x] The adopted intent is usable as a `/followup` target (valid `iterates_on` reference)
+- [x] The adopted intent is usable with `/operate` (valid operation specs exist)
+- [x] The paper documents the adopt concept if not already present
+- [x] Generated unit boundaries match actual domain boundaries in the codebase — units do not arbitrarily split tightly-coupled code or merge unrelated concerns
+- [x] Generated success criteria reference specific test files or CI checks that verify each criterion — no criteria without traceable evidence
+- [x] User reviews and confirms the proposed intent, units, and operational plan before artifacts are finalized (interactive confirmation gates)
 
 ## Context
 
