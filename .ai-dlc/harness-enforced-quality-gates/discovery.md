@@ -184,13 +184,13 @@ Can modify via `updatedInput` — completely replaces original input.
 
 This means nested subagents MIGHT trigger gates on their first stop, but `stop_hook_active=true` on retry lets them through. The key protection: the builder gets blocked until gates pass, and the builder is the one who can fix things.
 
-## Architecture Decision: Two Hook Files → One
+## Architecture Decision: Single Hook File Migration
 
-Currently two hook registration files exist:
-- `plugin/.claude-plugin/hooks.json` — PreToolUse + PostToolUse (native CC hooks)
-- `plugin/hooks/hooks.json` — Above + SessionStart/Stop/SubagentStop (han-delegated)
-
-Migration should **consolidate into a single `plugin/.claude-plugin/hooks.json`** that contains ALL hooks as native CC hooks. Delete `plugin/hooks/hooks.json` and `plugin/han-plugin.yml`.
+The canonical hook location for CC plugins is `plugin/hooks/hooks.json` (NOT `.claude-plugin/hooks.json` — that was legacy/wrong and is already deleted). The current `hooks/hooks.json` already has all hooks. Migration:
+1. Replace `han hook run ai-dlc inject-context` → `bash "${CLAUDE_PLUGIN_ROOT}/hooks/inject-context.sh"`
+2. Replace `han hook run ai-dlc iterate --async` → `bash "${CLAUDE_PLUGIN_ROOT}/hooks/enforce-iteration.sh"` (and remove `async: true` if we want blocking)
+3. Add new quality-gate.sh hook for Stop/SubagentStop
+4. Delete `plugin/han-plugin.yml` (no longer needed)
 
 ## Architecture Decision: Quality Gate Hook Design
 
