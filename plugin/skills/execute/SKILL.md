@@ -1052,6 +1052,16 @@ Mark intent complete:
 ```bash
 STATE=$(echo "$STATE" | dlc_json_set "status" "completed")
 dlc_state_save "$INTENT_DIR" "iteration.json" "$STATE"
+
+# Update intent.md frontmatter status so it persists in git
+source "${CLAUDE_PLUGIN_ROOT}/lib/parse.sh"
+dlc_frontmatter_set "status" "completed" "$INTENT_DIR/intent.md"
+# Check off intent-level completion criteria checkboxes
+dlc_check_intent_criteria "$INTENT_DIR"
+git add "$INTENT_DIR/intent.md"
+git add "$INTENT_DIR/completion-criteria.md" 2>/dev/null || true
+git add "$INTENT_DIR/state/completion-criteria.md" 2>/dev/null || true
+git commit -m "status: mark intent ${INTENT_SLUG} as completed"
 ```
 
 4. Output completion summary (same as current Step 5 format from `/advance`)
