@@ -180,17 +180,52 @@ export default function Home() {
 						</CastCard>
 					</div>
 
-					{/* Hatted agents — collapsed by default */}
-					<DeepDive
-						title="The Hatted Agents — Claude's specialist roles"
-						forceOpen={isRef}
+					{/* Hatted agents — full-width card with expandable detail */}
+					<motion.div
+						{...fadeIn}
+						className="mt-6 rounded-xl border border-amber-200 bg-white p-6 dark:border-amber-800/50 dark:bg-gray-900"
 					>
-						<p className="mb-6 italic text-gray-500 dark:text-gray-400">
-							When it&rsquo;s time to build, Claude spawns specialist agents —
-							each wearing a different hat.
-						</p>
+						<div className="mb-4 flex items-start gap-4">
+							<span className="text-4xl">&#x1F3A9;</span>
+							<div className="flex-1">
+								<h3 className="text-lg font-bold text-amber-400">
+									The Hatted Agents
+								</h3>
+								<p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+									When it&rsquo;s time to build, Claude spawns fresh specialist agents — each wearing a different &ldquo;hat&rdquo; that defines their role. A hat is a set of injected instructions that tells the agent how to behave, what gates to pass, and when to hand off.
+								</p>
+								<div className="mt-3 flex flex-wrap gap-2">
+									{["Planner", "Builder", "Reviewer", "Designer", "Red Team", "Blue Team", "Test Writer", "Implementer", "Refactorer", "Observer", "Hypothesizer", "Experimenter", "Analyst"].map((hat) => (
+										<span
+											key={hat}
+											className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+										>
+											{hat}
+										</span>
+									))}
+								</div>
+							</div>
+						</div>
 
-						<HatExplainer />
+						<details className="group">
+							<summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-violet-500 hover:text-violet-400">
+								<svg
+									className="h-4 w-4 transition-transform group-open:rotate-90"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M9 5l7 7-7 7"
+									/>
+								</svg>
+								See all workflows and hat details
+							</summary>
+							<div className="mt-5 border-t border-gray-200 pt-5 dark:border-gray-700">
+								<HatExplainer />
 
 						{/* Workflow groups */}
 						<WorkflowGroup
@@ -337,7 +372,9 @@ export default function Home() {
 								},
 							]}
 						/>
-					</DeepDive>
+							</div>
+						</details>
+					</motion.div>
 
 					{/* Supporting cast */}
 					<div className="mt-8 grid gap-5 sm:grid-cols-3">
