@@ -6,8 +6,6 @@ git:
 
 visual_review: false
 
-workflow_mode: autonomous
-
 providers:
   ticketing:
     type: github-issues
