@@ -1,6 +1,6 @@
 ---
-status: in_progress
-last_updated: "2026-03-31T05:22:51Z"
+status: completed
+last_updated: "2026-03-31T13:15:27Z"
 depends_on:
   - unit-01-quick-skill-rewrite # Routing text references /quick [workflow] syntax — ship after the feature exists
 branch: ai-dlc/quick-mode-workflows/02-intelligent-routing
