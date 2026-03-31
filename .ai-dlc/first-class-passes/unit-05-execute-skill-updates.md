@@ -1,7 +1,7 @@
 ---
 status: pending
 last_updated: ""
-depends_on: [unit-01-pass-definitions, unit-03-pass-context-injection]
+depends_on: [unit-01-pass-definitions, unit-02-hat-augmentation, unit-03-pass-context-injection]
 branch: ai-dlc/first-class-passes/05-execute-skill-updates
 discipline: backend
 pass: ""
