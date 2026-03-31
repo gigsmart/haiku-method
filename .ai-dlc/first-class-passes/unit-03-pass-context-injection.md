@@ -1,6 +1,6 @@
 ---
-status: in_progress
-last_updated: "2026-03-31T20:14:31Z"
+status: completed
+last_updated: "2026-03-31T21:05:22Z"
 depends_on: [unit-01-pass-definitions, unit-02-hat-augmentation]
 branch: ai-dlc/first-class-passes/03-pass-context-injection
 discipline: backend
@@ -9,7 +9,7 @@ workflow: ""
 ticket: ""
 design_ref: ""
 views: []
-hat: reviewer
+hat: ""
 ---
 
 # unit-03-pass-context-injection
