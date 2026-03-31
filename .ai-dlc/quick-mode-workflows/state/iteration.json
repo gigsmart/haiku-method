@@ -1,1 +1,10 @@
-{"iteration":1,"hat":"builder","workflowName":"default","workflow":["planner","builder","reviewer"],"status":"active","teamName":"ai-dlc-quick-mode-workflows","currentUnit":"unit-01-quick-skill-rewrite"}
+{
+	"iteration": 1,
+	"hat": "builder",
+	"workflowName": "default",
+	"workflow": ["planner", "builder", "reviewer"],
+	"status": "active",
+	"teamName": "ai-dlc-quick-mode-workflows",
+	"currentUnit": "unit-01-quick-skill-rewrite",
+	"phase": "execution"
+}
