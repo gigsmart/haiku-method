@@ -1,6 +1,6 @@
 ---
-status: pending
-last_updated: ""
+status: in_progress
+last_updated: "2026-03-31T21:06:57Z"
 depends_on: [unit-01-pass-definitions, unit-02-hat-augmentation, unit-03-pass-context-injection]
 branch: ai-dlc/first-class-passes/05-execute-skill-updates
 discipline: backend
@@ -9,6 +9,7 @@ workflow: ""
 ticket: ""
 design_ref: ""
 views: []
+hat: planner
 ---
 
 # unit-05-execute-skill-updates
