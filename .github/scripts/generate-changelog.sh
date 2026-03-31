@@ -1,11 +1,13 @@
 #!/bin/bash
 set -e
 
-# Feature-level changelog generator.
-# Uses PR merges as the primary unit of change instead of individual commits.
-# Direct-to-main commits appear only if they are feat/fix/breaking.
+# Script to generate CHANGELOG.md based on git commit history
+# Usage: ./generate-changelog.sh <path> <new_version> <old_version>
 #
-# Usage: ./generate-changelog.sh <path> <new_version> [old_version]
+# Arguments:
+#   path: Path to the directory (e.g., "." for root plugin)
+#   new_version: The new version being released (e.g., "1.2.3")
+#   old_version: The previous version (e.g., "1.2.2") - optional, will auto-detect from plugin.json
 
 PATH_DIR="$1"
 NEW_VERSION="$2"
@@ -27,135 +29,79 @@ if [ -z "$OLD_VERSION" ]; then
 	fi
 fi
 
-# Determine git range from last version bump
+# Determine git range: from the last version bump commit to HEAD
+# This ensures each version only includes commits new since the previous release
 GIT_RANGE=""
 if [ -n "$OLD_VERSION" ]; then
-	LAST_BUMP_COMMIT=$(git log --all --grep="bump version.*-> $(echo "$OLD_VERSION" | sed 's/\./\\./g')" --format="%H" -1 2>/dev/null || true)
+	# Find the commit that bumped TO the old version (e.g., "bump version X -> 1.16.0")
+	LAST_BUMP_COMMIT=$(git log --all --grep="bump version.*-> $OLD_VERSION" --format="%H" -1 2>/dev/null || true)
 	if [ -n "$LAST_BUMP_COMMIT" ]; then
 		GIT_RANGE="$LAST_BUMP_COMMIT..HEAD"
 	fi
 fi
-[ -z "$GIT_RANGE" ] && GIT_RANGE="HEAD"
 
-FEATURES=""
-FIXES=""
-BREAKING=""
-CHANGED=""
+# Fallback: if no bump commit found, use all commits (first release scenario)
+if [ -z "$GIT_RANGE" ]; then
+	GIT_RANGE="HEAD"
+fi
 
-add_entry() {
-	local category="$1"
-	local entry="$2"
-	case "$category" in
-		breaking) BREAKING="${BREAKING:+$BREAKING\n}$entry" ;;
-		feature)  FEATURES="${FEATURES:+$FEATURES\n}$entry" ;;
-		fix)      FIXES="${FIXES:+$FIXES\n}$entry" ;;
-		changed)  CHANGED="${CHANGED:+$CHANGED\n}$entry" ;;
-	esac
-}
-
-# Categorize by conventional commit prefix in the raw title
-categorize() {
-	local title="$1"
-	local entry="$2"
-
-	if echo "$title" | grep -qiE 'BREAKING CHANGE|^[a-z]+(\([^)]+\))?!:'; then
-		add_entry breaking "$entry"
-	elif echo "$title" | grep -qiE '^fix(\([^)]+\))?:'; then
-		add_entry fix "$entry"
-	elif echo "$title" | grep -qiE '^refactor(\([^)]+\))?:|^chore(\([^)]+\))?:'; then
-		add_entry changed "$entry"
-	else
-		add_entry feature "$entry"
-	fi
-}
-
-# Strip conventional commit prefix, branch-name artifacts, and capitalize
-clean_title() {
-	local raw="$1"
-	local cleaned
-
-	# Remove conventional commit prefix (feat(scope): , fix!: , intent: , etc.)
-	cleaned=$(echo "$raw" | sed -E 's/^(feat|fix|refactor|chore|docs|ci|test|perf|style|build|intent)(\([^)]+\))?!?:[[:space:]]*//')
-
-	# Remove branch-name artifacts (Ai dlc/..., trailing /main)
-	cleaned=$(echo "$cleaned" | sed -E 's|^[Aa]i[ -]?[Dd][Ll][Cc]/||' | sed -E 's|/main$||' | sed -E 's|^[Ff]eat/||')
-
-	# Humanize remaining slashes/hyphens if it still looks like a branch name
-	if echo "$cleaned" | grep -qE '^[a-z0-9-]+(/[a-z0-9-]+)+$'; then
-		cleaned=$(echo "$cleaned" | tr '/-' ' ')
-	fi
-
-	# Capitalize first letter
-	cleaned="$(echo "${cleaned:0:1}" | tr '[:lower:]' '[:upper:]')${cleaned:1}"
-
-	echo "$cleaned"
-}
-
-# --- Pass 1: Merge commits (PR-level entries) ---
-# Pass 1: Merge commits (PR-level entries) — intentionally not filtered by PATH_DIR
-# since PRs are a repo-level concept and their titles describe the overall change.
-MERGE_HASHES=$(git log "$GIT_RANGE" --merges --first-parent --format="%h" 2>/dev/null || true)
-
-for hash in $MERGE_HASHES; do
-	subject=$(git log -1 --format="%s" "$hash")
-	body=$(git log -1 --format="%b" "$hash" | head -1 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
-
-	# Skip noise
-	echo "$subject" | grep -qiE '\[skip ci\]|bump version|Merge unit-|Merge branch .* into' && continue
-	echo "$subject" | grep -qiE '^Revert |^Reapply ' && continue
-
-	if echo "$subject" | grep -q "Merge pull request"; then
-		pr_num=$(echo "$subject" | grep -oE '#[0-9]+' | head -1)
-	if echo "$subject" | grep -q "Merge pull request"; then
-		pr_num=$(echo "$subject" | grep -oE '#[0-9]+' | head -1)
-		if [ -z "$body" ]; then
-			continue  # skip PRs with no description
-		fi
-	
-	else
-		pr_num=""
-		title="$subject"
-	fi
-
-	[ -z "$title" ] && continue
-
-	cleaned=$(clean_title "$title")
-	[ -z "$cleaned" ] && continue
-
-	entry="- ${cleaned}${pr_num:+ ($pr_num)}"
-	categorize "$title" "$entry"
-done
-
-# --- Pass 2: Direct-to-main commits (not part of any PR) ---
-# Only feat, fix, and breaking — skip chores, state tracking, etc.
-while IFS='|' read -r hash subject; do
-	[ -z "$hash" ] && continue
-
-	cleaned=$(clean_title "$subject")
-	entry="- ${cleaned}"
-MERGE_HASHES=$(git log "$GIT_RANGE" --merges --first-parent --format="%h" 2>/dev/null || true)
-	if echo "$subject" | grep -qE '^[a-z]+(\([^)]+\))?!:'; then
-		add_entry breaking "$entry"
-	elif echo "$subject" | grep -qE '^feat(\([^)]+\))?:'; then
-		add_entry feature "$entry"
-	elif echo "$subject" | grep -qE '^fix(\([^)]+\))?:'; then
-		add_entry fix "$entry"
-	fi
-	# Intentionally skip chore, refactor, docs, state tracking for direct commits
-done < <(git log $GIT_RANGE --no-merges --first-parent --pretty=format:"%h|%s" -- "$PATH_DIR" ':!website' ':!.ai-dlc' 2>/dev/null \
+# Get commits for this path, excluding noise
+# Filters: version bumps, merge commits, AI-DLC state tracking, reverts of reverts
+COMMITS=$(git log $GIT_RANGE --no-merges --pretty=format:"%h|%s|%an|%ad" --date=short -- "$PATH_DIR" ':!website' ':!.ai-dlc' 2>/dev/null \
 	| grep -v "\[skip ci\]" \
+	| grep -v "chore(release):" \
 	| grep -v "chore(plugin): bump" \
-	| grep -v "^[a-f0-9]*|Revert " \
-	| grep -v "^[a-f0-9]*|Reapply " \
+	| grep -v "^[a-f0-9]*|status: " \
+	| grep -v "^[a-f0-9]*|state: " \
+	| grep -v "^[a-f0-9]*|Merge unit-" \
+	| grep -v "^[a-f0-9]*|Revert \"Reapply " \
+	| grep -v "^[a-f0-9]*|Reapply \"" \
 	|| true)
 
-# --- Check if anything was found ---
-if [ -z "$FEATURES" ] && [ -z "$FIXES" ] && [ -z "$BREAKING" ] && [ -z "$CHANGED" ]; then
-	echo "No notable changes found for $PATH_DIR in range $GIT_RANGE"
+if [ -z "$COMMITS" ]; then
+	echo "No commits found for $PATH_DIR in range $GIT_RANGE"
 	exit 0
 fi
 
-# --- Generate changelog ---
+# Parse commits into categories
+FEATURES=""
+FIXES=""
+REFACTORS=""
+CHORES=""
+BREAKING=""
+OTHER=""
+
+COMMITS_FILE=$(mktemp)
+printf '%s\n' "$COMMITS" > "$COMMITS_FILE"
+
+while IFS='|' read -r hash subject _author _date; do
+	# Skip empty lines
+	[ -z "$hash" ] && continue
+
+	# Remove scope from subject for cleaner display
+	CLEAN_SUBJECT=$(echo "$subject" | sed -E 's/^[a-z]+(\([^)]+\))?!?: //')
+
+	# Format entry
+	ENTRY="- $CLEAN_SUBJECT ([$hash](../../commit/$hash))"
+
+	# Categorize commit (use newline only between entries, not before first)
+	if echo "$subject" | grep -qE '^[a-z]+(\([^)]+\))?!:' || echo "$subject" | grep -q 'BREAKING CHANGE'; then
+		[ -n "$BREAKING" ] && BREAKING="$BREAKING\n$ENTRY" || BREAKING="$ENTRY"
+	elif echo "$subject" | grep -qE '^feat(\([^)]+\))?:'; then
+		[ -n "$FEATURES" ] && FEATURES="$FEATURES\n$ENTRY" || FEATURES="$ENTRY"
+	elif echo "$subject" | grep -qE '^fix(\([^)]+\))?:'; then
+		[ -n "$FIXES" ] && FIXES="$FIXES\n$ENTRY" || FIXES="$ENTRY"
+	elif echo "$subject" | grep -qE '^refactor(\([^)]+\))?:'; then
+		[ -n "$REFACTORS" ] && REFACTORS="$REFACTORS\n$ENTRY" || REFACTORS="$ENTRY"
+	elif echo "$subject" | grep -qE '^chore(\([^)]+\))?:'; then
+		[ -n "$CHORES" ] && CHORES="$CHORES\n$ENTRY" || CHORES="$ENTRY"
+	else
+		[ -n "$OTHER" ] && OTHER="$OTHER\n$ENTRY" || OTHER="$ENTRY"
+	fi
+done < "$COMMITS_FILE"
+rm -f "$COMMITS_FILE"
+
+# Generate changelog header
 {
 	echo "# Changelog"
 	echo ""
@@ -168,28 +114,68 @@ fi
 	echo ""
 } >"$TEMP_FILE"
 
+# Add breaking changes section if any
 if [ -n "$BREAKING" ]; then
-	{ echo "### BREAKING CHANGES"; echo ""; echo -e "$BREAKING"; echo ""; } >>"$TEMP_FILE"
+	{
+		echo "### BREAKING CHANGES"
+		echo ""
+		echo -e "$BREAKING"
+		echo ""
+	} >>"$TEMP_FILE"
 fi
+
+# Add features section if any
 if [ -n "$FEATURES" ]; then
-	{ echo "### Added"; echo ""; echo -e "$FEATURES"; echo ""; } >>"$TEMP_FILE"
+	{
+		echo "### Added"
+		echo ""
+		echo -e "$FEATURES"
+		echo ""
+	} >>"$TEMP_FILE"
 fi
-if [ -n "$CHANGED" ]; then
-	{ echo "### Changed"; echo ""; echo -e "$CHANGED"; echo ""; } >>"$TEMP_FILE"
-fi
+
+# Add fixes section if any
 if [ -n "$FIXES" ]; then
-	{ echo "### Fixed"; echo ""; echo -e "$FIXES"; echo ""; } >>"$TEMP_FILE"
+	{
+		echo "### Fixed"
+		echo ""
+		echo -e "$FIXES"
+		echo ""
+	} >>"$TEMP_FILE"
 fi
 
-# Append old entries (strip header and [Unreleased] section)
+# Add refactors section if any
+if [ -n "$REFACTORS" ]; then
+	{
+		echo "### Changed"
+		echo ""
+		echo -e "$REFACTORS"
+		echo ""
+	} >>"$TEMP_FILE"
+fi
+
+# Add other changes if any
+if [ -n "$OTHER" ]; then
+	{
+		echo "### Other"
+		echo ""
+		echo -e "$OTHER"
+		echo ""
+	} >>"$TEMP_FILE"
+fi
+
+# If existing changelog exists, append old entries (excluding the header and [Unreleased] section)
 if [ -f "$CHANGELOG_FILE" ]; then
-	tail -n +7 "$CHANGELOG_FILE" 2>/dev/null \
-		| sed '/^## \[Unreleased\]/,/^## \[/{ /^## \[Unreleased\]/d; /^## \[/!d; }' >>"$TEMP_FILE" || true
+	# Skip header (first 6 lines), then strip any [Unreleased] section
+	# (its commits are now captured in the new version's range)
+	tail -n +7 "$CHANGELOG_FILE" 2>/dev/null | sed '/^## \[Unreleased\]/,/^## \[/{ /^## \[Unreleased\]/d; /^## \[/!d; }' >>"$TEMP_FILE" || true
 fi
 
-# Clean up consecutive blank lines and ensure single trailing newline
+# Remove consecutive blank lines and ensure single trailing newline
 perl -i -0777 -pe 's/\n\n\n+/\n\n/g' "$TEMP_FILE"
 printf '%s\n' "$(cat "$TEMP_FILE")" >"$TEMP_FILE"
 
+# Move temp file to final location
 mv "$TEMP_FILE" "$CHANGELOG_FILE"
+
 echo "Changelog generated at $CHANGELOG_FILE"

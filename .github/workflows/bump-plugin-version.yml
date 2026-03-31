@@ -100,7 +100,7 @@ jobs:
 
           # Generate changelog
           chmod +x .github/scripts/generate-changelog.sh
-          .github/scripts/generate-changelog.sh "." "$NEW_VERSION" "$CURRENT_VERSION"
+          bash .github/scripts/generate-changelog.sh "." "$NEW_VERSION" "$CURRENT_VERSION"
 
           echo "old_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
