@@ -1,0 +1,16 @@
+git:
+  change_strategy: intent
+  default_branch: main
+  auto_merge: true
+  elaboration_review: true
+
+visual_review: false
+
+workflow_mode: autonomous
+
+providers:
+  ticketing:
+    type: github-issues
+
+review_agents:
+  accessibility: true
