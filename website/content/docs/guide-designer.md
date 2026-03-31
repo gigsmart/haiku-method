@@ -15,6 +15,8 @@ Design work intersects with AI-DLC at several key points:
 3. **Review Phase** - Validating implementations match design intent
 4. **Iteration** - Providing feedback that guides refinements
 
+When an intent uses multipass, designers are the primary participants in the **design pass** -- running the full elaborate, execute, and review loop focused on design artifacts like mockups, prototypes, and component specs. The output of the design pass becomes input to subsequent product and dev passes. See [Passes](/docs/concepts/#pass) for details.
+
 ## Writing Design Completion Criteria
 
 The most impactful thing you can do is write clear, verifiable design criteria. Vague specs lead to back-and-forth; precise specs let AI build correctly the first time.

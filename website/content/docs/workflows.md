@@ -364,6 +364,20 @@ The Test Writer doesn't just write any tests - it writes the tests that would ha
 | Performance work | Hypothesis | Data-driven optimization |
 | Refactoring | TDD | Tests provide safety net |
 
+## Passes and Workflow Constraints
+
+When an intent uses [passes](/docs/concepts/#pass), each pass restricts which workflows are available. If a unit requests a workflow that the active pass doesn't support, the pass's default workflow is used instead.
+
+| Pass | Available Workflows | Default |
+|------|---------------------|---------|
+| `design` | `design` | `design` |
+| `product` | `default`, `bdd` | `default` |
+| `dev` | `default`, `tdd`, `adversarial`, `bdd` | `default` |
+
+For example, requesting `tdd` during a design pass automatically falls back to the `design` workflow. This ensures the right methodology is applied at the right time.
+
+When no passes are configured (the default), all workflows are available without restriction.
+
 ## Per-Unit Workflows
 
 Different units within a single intent can use different workflows. This is useful when an intent spans multiple concerns -- for example, a feature that involves both UI design and backend logic.

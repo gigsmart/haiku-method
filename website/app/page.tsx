@@ -522,6 +522,15 @@ export default function Home() {
 						{...fadeIn}
 						className="mt-8 mb-4 text-center text-gray-500 dark:text-gray-400"
 					>
+						For cross-functional teams, <strong>passes</strong> let design,
+						product, and dev each run this loop independently -- the output of
+						one becomes the input to the next.
+					</motion.p>
+
+					<motion.p
+						{...fadeIn}
+						className="mt-4 mb-4 text-center text-gray-500 dark:text-gray-400"
+					>
 						Most features follow this full cycle. But there are shortcuts:
 					</motion.p>
 

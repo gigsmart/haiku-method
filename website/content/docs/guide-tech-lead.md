@@ -152,6 +152,17 @@ Criteria met: 5/5
 [Copy from unit files or link to them]
 ```
 
+**Configuring passes:**
+
+For teams that want cross-functional iteration by default, configure `default_passes` in `.ai-dlc/settings.yml` so new intents automatically include design, product, and dev passes:
+
+```yaml
+# .ai-dlc/settings.yml
+default_passes: [design, product, dev]
+```
+
+Without this, intents default to a single dev pass. See [Passes](/docs/concepts/#pass) for how passes work.
+
 ### What NOT to Standardize
 
 Allow individual flexibility on:

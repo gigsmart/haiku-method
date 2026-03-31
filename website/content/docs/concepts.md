@@ -86,6 +86,44 @@ active_pass: "design"
 
 When all units in a pass complete, the intent transitions to the next pass automatically. Units belong to a specific pass via their `pass:` frontmatter field.
 
+#### Workflow Constraints
+
+Each pass restricts which workflows are available during its execution. If a workflow is requested that the active pass doesn't support, the pass's default workflow is used instead.
+
+| Pass | Available Workflows | Default Workflow |
+|------|---------------------|------------------|
+| `design` | `design` | `design` |
+| `product` | `default`, `bdd` | `default` |
+| `dev` | `default`, `tdd`, `adversarial`, `bdd` | `default` |
+
+This prevents mismatches -- you won't accidentally run TDD during a design pass.
+
+#### Pass-Backs
+
+When a later pass discovers issues that require earlier-pass work, the intent iterates backward:
+
+1. `active_pass` is set backward to the target pass (e.g., dev to product, product to design)
+2. New units are created alongside existing completed ones
+3. Forward progression resumes after the pass-back is resolved
+
+Pass-backs are triggered by reviewer recommendation or user decision. They represent normal cross-disciplinary iteration -- for example, a dev pass discovering a technical constraint that invalidates a design assumption sends work back to the design pass for correction.
+
+#### Customization
+
+The pass system supports two customization mechanisms:
+
+- **Augment built-in passes:** Create `.ai-dlc/passes/{name}.md` where `{name}` matches a built-in pass (e.g., `design`, `product`, `dev`). Your instructions are appended to the built-in instructions under a "Project Augmentation" heading.
+- **Define custom passes:** Create `.ai-dlc/passes/{name}.md` with a name that doesn't match any built-in pass. The custom pass is used directly.
+
+To set default passes for all new intents in a project, configure `default_passes` in `.ai-dlc/settings.yml`:
+
+```yaml
+# .ai-dlc/settings.yml
+default_passes: [design, product, dev]
+```
+
+For deeper theory on how passes fit into the methodology, see the [Iteration Through Passes](https://ai-dlc.dev/papers/ai-dlc-2026/#iteration-through-passes) section of the paper.
+
 ### Unit Dependencies (DAG)
 
 Units can declare dependencies, forming a Directed Acyclic Graph:
@@ -378,6 +416,8 @@ Design Pass → Product Pass → Dev Pass
 ```
 
 When dev discovers a technical constraint that changes the product spec, the intent moves back to the product pass. When product finds a design gap, it moves back to the design pass. This is normal iteration.
+
+For the full theoretical treatment of passes, see the [Iteration Through Passes](https://ai-dlc.dev/papers/ai-dlc-2026/#iteration-through-passes) section of the paper.
 
 ## Operations Phase
 
