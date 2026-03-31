@@ -144,15 +144,26 @@ Don't just specify what should work - specify what should fail:
 
 ### Quality Gates
 
-Quality gates are automated criteria that every change must pass:
+Quality gates are automated checks that the AI harness mechanically enforces — the agent **cannot stop** until all gates pass. They are defined in YAML frontmatter on the intent and each unit, auto-detected during elaboration, and enforced on every Stop/SubagentStop event via the `quality-gate.sh` hook.
 
-```markdown
-## Quality Gates
-- [ ] All tests pass (`bun test`)
-- [ ] No TypeScript errors (`tsc --noEmit`)
-- [ ] No lint warnings (`biome check`)
-- [ ] Coverage > 80%
+```yaml
+# intent.md or unit-*.md frontmatter
+quality_gates:
+  - name: tests
+    command: bun test
+  - name: typecheck
+    command: tsc --noEmit
+  - name: lint
+    command: biome check
 ```
+
+**Key properties:**
+
+- **Harness-enforced** — The agent is mechanically blocked from stopping if any gate fails. This is not advisory; it is structural.
+- **Auto-detected** — During elaboration, the discovery skill inspects repo tooling (`package.json`, `go.mod`, `pyproject.toml`, `Cargo.toml`) and proposes appropriate gates for confirmation.
+- **Additive (ratchet)** — Gates are merged additively: unit gates add to intent gates. Builders can add gates but never remove them. The reviewer verifies gate integrity.
+- **Scoped to building** — Only building hats (builder, implementer, refactorer) are enforced. Planner, reviewer, and designer hats skip enforcement silently.
+
 
 ## Backpressure
 
@@ -188,27 +199,6 @@ AI iterates until all constraints are satisfied.
 > "Better to fail predictably than succeed unpredictably."
 
 Each failure is data. Each iteration refines the approach. The skill shifts from directing AI step-by-step to writing criteria and tests that converge toward correct solutions.
-
-### Pre-Delivery Review
-
-While backpressure gates validate during construction and the Reviewer hat checks each unit individually, the **pre-delivery review** examines the full composed diff before any PR is created.
-
-This catches issues that only become visible when all units are combined:
-
-- **Cross-unit naming inconsistencies** — different conventions across units
-- **Dead code from merge ordering** — imports or functions made redundant by later units
-- **Integration seams** — incompatible interfaces or conflicting patterns between units
-- **Security issues in aggregate** — vulnerabilities that emerge from the interaction of changes
-
-The pre-delivery review is a **hard gate**. If HIGH-confidence issues are found, the affected units are sent back to the builder via the `/fail` mechanism. The existing retry limit (3 attempts) prevents infinite loops.
-
-**Three-layer quality model:**
-
-| Layer | Scope | When | What |
-|-------|-------|------|------|
-| Backpressure | Per-file | During build | Tests, lint, types |
-| Reviewer hat | Per-unit | After build | Criteria, quality, security |
-| Pre-delivery review | Full intent | Before PR | Cross-unit composition |
 
 ## Operating Modes
 
@@ -343,7 +333,7 @@ Persisted across sessions, branches, and team members:
 | `intent.md` | What we're building, overall criteria |
 | `unit-*.md` | Individual units with their criteria |
 
-### Ephemeral State
+### Ephemeral State (`han keep`)
 
 Session-scoped, cleared on `/reset`:
 
@@ -358,14 +348,8 @@ Session-scoped, cleared on `/reset`:
 If you `/clear` without the stop hook:
 
 1. Committed artifacts (`.ai-dlc/`) are safe
-2. Ephemeral state persists in the state directory
+2. Ephemeral state persists in `han keep`
 3. Run `/execute` to continue
-
-### Telemetry
-
-AI-DLC emits structured OpenTelemetry events at key lifecycle boundaries: intent creation, hat transitions, quality gate results, review decisions, and delivery. These events enable teams to measure methodology effectiveness — bolt counts per unit, review rejection rates, quality gate pass rates, and cycle times.
-
-Telemetry is opt-in (`CLAUDE_CODE_ENABLE_TELEMETRY=1`) and fail-silent. See [Stack Configuration](/docs/stack-config/) for the full event catalog.
 
 ## Iteration Through Passes
 

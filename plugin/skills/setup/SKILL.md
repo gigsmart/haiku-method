@@ -121,6 +121,7 @@ Use `ToolSearch` to discover available MCP providers. Run **all probes in parall
 Also check:
 - If `DETECTED_HOSTING` is `github` and `gh` CLI exists (`command -v gh`), suggest `github-issues` as a zero-config ticketing option
 - Use `ListMcpResourcesTool` as a secondary signal for available MCP servers
+- Probe for the `ask_user_visual_question` MCP tool via `ToolSearch("ask_user_visual_question")` — store whether it was found as `DETECTED_VISUAL_REVIEW` (`true` if found, `false` otherwise)
 
 Build a detection results map:
 
@@ -160,6 +161,11 @@ If existing settings differ from detection, show both:
 | Ticketing | jira | existing settings (detected: linear) |
 ```
 
+Include the visual review detection in the table:
+```
+| Visual Review | enabled / disabled | MCP tool detected / existing settings |
+```
+
 Then ask a **single confirmation question**:
 
 Use `AskUserQuestion`:
@@ -167,6 +173,32 @@ Use `AskUserQuestion`:
 - Options: "Yes, looks good" / "Need to adjust"
 
 If **"Need to adjust"** → ask follow-up questions for each category they want to change. Use `AskUserQuestion` with the valid enum values from the settings schema for each provider type.
+
+---
+
+## Phase 3b: Visual Review Configuration
+
+Ask the user whether to enable browser-based visual review for elaboration gates. Default to `DETECTED_VISUAL_REVIEW` (true if the MCP tool was found in Phase 2, false otherwise). If existing settings already have `visual_review` set, use that as the default instead.
+
+Use `AskUserQuestion`:
+```json
+{
+  "questions": [{
+    "question": "Enable browser-based visual review for elaboration gates? (Requires the ai-dlc-review MCP server, which is bundled with the plugin.)",
+    "header": "Visual Review",
+    "options": [
+      {"label": "Enable", "description": "Use the browser-based review UI at elaboration gates"},
+      {"label": "Disable", "description": "Use standard terminal-based AskUserQuestion prompts at elaboration gates"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+- If the MCP tool was detected, append `(MCP server detected)` to the Enable description.
+- If NOT detected, append `(MCP server NOT detected — ensure ai-dlc-review is registered in .mcp.json)` to the Enable description.
+
+Store the result as `VISUAL_REVIEW_ENABLED` (`true` or `false`).
 
 ---
 
@@ -445,6 +477,9 @@ git:  # or jj:
   auto_merge: true
   elaboration_review: true
 
+# Visual review: browser-based review UI for elaboration gates
+visual_review: true  # or false
+
 # Only include if non-default (non-empty)
 default_passes: [design, dev]
 
@@ -464,6 +499,7 @@ providers:
 
 Rules:
 - Only include `git:` or `jj:` — not both — based on `DETECTED_VCS`
+- Set `visual_review` to the value of `VISUAL_REVIEW_ENABLED` from Phase 3b
 - Only include provider sections for providers the user confirmed
 - Preserve any `instructions:` fields from existing settings
 - Preserve any fields not covered by this wizard (e.g., custom `config` keys)
@@ -491,6 +527,7 @@ Display a final summary:
 | Default Branch | main |
 | Change Strategy | unit |
 | Auto-merge | yes |
+| Visual Review | enabled / disabled |
 | Default Passes | dev only |
 | Ticketing | jira (PROJ) |
 | Spec | confluence (TEAM) |

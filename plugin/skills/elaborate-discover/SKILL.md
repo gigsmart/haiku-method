@@ -131,6 +131,27 @@ Based on the intent description and clarification answers in the brief, identify
     - Backup and disaster recovery procedures
     - Note operational gaps relevant to the intent
 
+11. **Quality Gate Candidates**: Detect project tooling that can serve as automated quality gates during construction. Examine project configuration files to identify test runners, linters, type checkers, and other verification commands.
+
+    **Detection heuristics:**
+
+    | File | Condition | Gate |
+    |------|-----------|------|
+    | `package.json` | `scripts.test` exists | `{name: "tests", command: "npm test"}` |
+    | `package.json` | `scripts.lint` exists | `{name: "lint", command: "npm run lint"}` |
+    | `package.json` | `scripts.typecheck` or `scripts.type-check` exists | `{name: "typecheck", command: "npm run typecheck"}` (use actual key) |
+    | `bun.lockb` or `bun.lock` | exists alongside `package.json` | Replace `npm` → `bun` in all above commands (`bun.lockb` = binary format pre-1.1.12; `bun.lock` = text format 1.1.12+) |
+    | `go.mod` | exists | `{name: "tests", command: "go test ./..."}`, `{name: "vet", command: "go vet ./..."}` |
+    | `pyproject.toml` | `[tool.pytest]` or `[project.scripts]` with pytest | `{name: "tests", command: "pytest"}` |
+    | `pyproject.toml` | `[tool.ruff]` | `{name: "lint", command: "ruff check ."}` |
+    | `pyproject.toml` | `[tool.mypy]` | `{name: "typecheck", command: "mypy ."}` |
+    | `Cargo.toml` | exists | `{name: "tests", command: "cargo test"}`, `{name: "lint", command: "cargo clippy"}` |
+    | `Makefile` | has `test:` target | `{name: "tests", command: "make test"}` |
+
+    Append findings to `discovery.md` under `## Quality Gate Candidates` using the standard section header. Include a table of detected gates with name, command, and source file, plus a recommended `quality_gates:` YAML block.
+
+    If no tooling is detected, still write the section noting "No quality gate candidates detected from project tooling."
+
 Configured Providers (continued from item 7): If providers are configured in `provider_config`:
    - **Spec providers** (Notion, Confluence, Google Docs): Search for requirements docs, PRDs, or technical specs related to the intent
    - **Ticketing providers** (Jira, Linear): Search for existing tickets, epics, or stories that relate to or duplicate this work
@@ -315,6 +336,7 @@ After each significant finding (API schema mapped, codebase pattern identified, 
 - `## Deployment Architecture: {area}` — For deployment infrastructure findings (Dockerfiles, Helm charts, CI/CD, environments)
 - `## Monitoring Setup: {area}` — For monitoring and observability findings (metrics, dashboards, alerts, tracing)
 - `## Operational Procedures: {area}` — For operational documentation findings (runbooks, on-call, scaling, DR)
+- `## Quality Gate Candidates` — Detected project tooling that can serve as automated quality gates
 
 **Commit immediately after each append to discovery.md:**
 ```bash

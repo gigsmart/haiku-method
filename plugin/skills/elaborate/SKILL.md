@@ -55,6 +55,43 @@ Then you'll write these as files in `.ai-dlc/{intent-slug}/` for the execution p
 
 ---
 
+## Autonomous Mode (invoked from `/autopilot`)
+
+When elaboration is invoked from `/autopilot`, it runs in **autonomous mode**. The feature description has already been provided by the user. The goal is to produce a complete, high-quality spec with **minimal or zero user interaction** — make reasonable decisions instead of asking questions.
+
+**How to detect:** If the conversation context shows that `/autopilot` invoked this skill, you are in autonomous mode. Do not ask the user to confirm this — just operate accordingly.
+
+**Autonomous defaults per phase:**
+
+| Phase | Interactive behavior | Autonomous behavior |
+|---|---|---|
+| **1 (Gather Intent)** | Ask "What do you want to build?" | Use the feature description from `/autopilot`. Do NOT ask. |
+| **2 (Clarify Requirements)** | Ask 2-4 clarification questions | **Skip entirely.** Infer requirements from the feature description and domain discovery. The description from autopilot is assumed to be sufficient for well-understood features. |
+| **2 (Deployment/Ops)** | Ask deployment target, monitoring, ops questions | **Skip.** Default to "Existing infrastructure" / "Use existing monitoring" / "Standard ops". If the codebase has no deployment surface, skip as usual. |
+| **2.5 (Domain Model validation)** | Ask user to confirm domain model accuracy | **Auto-approve.** Log the domain model for reference but do not ask. Discovery is still mandatory — only the confirmation prompt is skipped. |
+| **3 (Workflow selection)** | Show options and ask user to choose | **Use the recommended workflow.** Run the recommendation logic, then apply it directly without asking. |
+| **4 (Success Criteria)** | Ask about NFRs, then confirm criteria list | **Generate criteria and auto-approve.** Derive NFRs from the domain model and codebase patterns. Do NOT ask for confirmation. |
+| **5.5 (Cross-cutting concerns)** | Ask per concern: foundation unit vs convention | **Decide autonomously.** If the concern requires shared code → foundation unit. If it's a pattern → convention. Do NOT ask. |
+| **5.75 (Spec Alignment Gate)** | Ask user to confirm overall direction | **Auto-approve.** Skip the alignment question. |
+| **5.8 (Git Strategy)** | Ask delivery strategy, source branch, hybrid | **Default to intent strategy** (`change_strategy: intent`, `auto_merge: true`) from the repo's default branch. No hybrid overrides. Do NOT ask. |
+| **5.9 (Announcements)** | Ask what announcement formats to generate | **Default to `[changelog]`.** Do NOT ask. |
+| **6 (Per-unit review)** | Present each unit and ask for approval | **Auto-approve each unit.** Still write and commit each unit, still display them in the output, but do NOT ask for approval. Move to the next unit immediately. |
+| **6.25 (Wireframe review)** | Ask product to review wireframes | **Auto-approve.** Still generate wireframes, but skip the review gate. |
+| **7 (Spec Review)** | Ask user on FAIL findings | **Auto-fix FAIL findings** without asking. If auto-fix is not possible (genuine ambiguity about what the user wants), STOP and return control to autopilot with a clear error. |
+| **8 (Handoff)** | Ask how to proceed | **Do NOT ask.** Return control to the autopilot caller. Do not offer Execute/PR options — autopilot handles next steps. |
+
+**When to pause even in autonomous mode:**
+
+Autonomous mode is NOT "ignore all problems." STOP and return control to autopilot (with a clear explanation) if:
+
+1. **Domain discovery reveals fundamental ambiguity** — the feature description is too vague to determine what entities, APIs, or systems are involved, and guessing wrong would mean building the wrong thing entirely.
+2. **Spec review finds unfixable FAIL issues** — critical problems (circular dependencies, missing core requirements) that require human judgment to resolve.
+3. **The codebase contradicts the feature description** — e.g., the user asked to "add dark mode" but the app has no theming system and no CSS framework, making the approach entirely unclear.
+
+In all other cases, make the best decision and keep moving. Autopilot is for well-understood features — the user chose it because they trust the AI to make reasonable calls.
+
+---
+
 ## Phase 0 (Pre-check): Environment Check
 
 Before any elaboration, verify the working environment:
@@ -588,6 +625,41 @@ After exploration, present your findings to the user as a **Domain Model**:
 - {proposed solution for each gap}
 ```
 
+**Visual Review (preferred):**
+
+First, check if visual review is enabled in settings:
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+VISUAL_REVIEW=$(get_setting_value "visual_review")
+```
+
+If `VISUAL_REVIEW` is `true`, check if the `ask_user_visual_question` MCP tool is available:
+```
+ToolSearch("ask_user_visual_question")
+```
+
+If both the setting is enabled AND the tool is found, call it with the domain model as context:
+```
+ask_user_visual_question({
+  title: "Domain Model Review",
+  context: "{The full domain model markdown you just presented — Entities, Relationships, Data Sources, Data Gaps sections}",
+  questions: [{
+    question: "Does this domain model accurately capture the system? Are there entities, relationships, or data sources I'm missing?",
+    header: "Domain Model",
+    options: ["Looks accurate", "Missing entities", "Wrong relationships", "Missing data sources"],
+    multiSelect: true
+  }]
+})
+```
+
+Parse the session ID from the response, then poll `get_review_status({session_id})` until `status` is `"answered"`. Read the `answers[0]`:
+- `selectedOptions` contains the user's choices (e.g., `["Looks accurate"]`)
+- `otherText` contains free-text input if the user typed additional notes
+- If `selectedOptions` includes only `"Looks accurate"` and no `otherText`, proceed
+- Otherwise, treat the response as feedback — explore gaps and re-present
+
+**Fallback (if visual review is disabled or tool not available):**
+
 Use `AskUserQuestion` to validate:
 ```json
 {
@@ -1041,7 +1113,38 @@ For each unit:
 {workflow name}
 ```
 
-Then ask with `AskUserQuestion`:
+**Visual Review (preferred):**
+
+First, check if visual review is enabled in settings:
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+VISUAL_REVIEW=$(get_setting_value "visual_review")
+```
+
+If `VISUAL_REVIEW` is `true`, check if the `ask_user_visual_question` MCP tool is available:
+```
+ToolSearch("ask_user_visual_question")
+```
+
+If both the setting is enabled AND the tool is found, call it with the elaboration summary as context:
+```
+ask_user_visual_question({
+  title: "Spec Alignment Gate",
+  context: "{The full elaboration summary markdown you just presented — Intent, Domain Model, Data Sources, Units, Workflow sections}",
+  questions: [{
+    question: "Does this intent and unit breakdown generally align with what you want built? (You'll review each unit in detail when we write the specs.)",
+    header: "Alignment",
+    options: ["Looks right", "Wrong breakdown", "Wrong direction"],
+    multiSelect: false
+  }]
+})
+```
+
+Parse the session ID from the response, then poll `get_review_status({session_id})` until `status` is `"answered"`. Read `answers[0].selectedOptions[0]` to determine the user's choice. Check `answers[0].otherText` for any additional notes.
+
+**Fallback (if visual review is disabled or tool not available):**
+
+Ask with `AskUserQuestion`:
 ```json
 {
   "questions": [{
@@ -1056,6 +1159,8 @@ Then ask with `AskUserQuestion`:
   }]
 }
 ```
+
+**For both paths, apply the same routing:**
 
 - **"Looks right"**: Proceed to Phase 6
 - **"Wrong breakdown"**: Discuss what needs to change, revise units in Phase 5, and re-present
@@ -1274,6 +1379,7 @@ iterates_on: ""  # Slug of the previous intent this iterates on (set by /followu
 created: {ISO date}
 status: active
 epic: ""  # Ticketing provider epic key (auto-populated if ticketing provider configured)
+quality_gates: []  # Detected from project tooling during discovery; e.g., [{name: tests, command: "npm test"}]
 ---
 
 # {Intent Title}
@@ -1325,6 +1431,73 @@ aidlc_telemetry_init
 aidlc_record_intent_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}"
 ```
 
+### 2.5. Confirm Quality Gates
+
+After writing intent.md and before writing units, confirm quality gates detected during discovery.
+
+**Step A — Read discovery results.** Check `discovery.md` for the `## Quality Gate Candidates` section:
+
+```bash
+DISCOVERY_FILE=".ai-dlc/${INTENT_SLUG}/discovery.md"
+```
+
+Read the file and look for the `## Quality Gate Candidates` section. Parse the detected gates table.
+
+**Step B — Present gates to user.** If quality gate candidates were found, use `AskUserQuestion` to present them:
+
+> **Quality Gate Candidates Detected**
+>
+> The following quality gates were detected from your project tooling:
+>
+> | Name | Command | Source |
+> |------|---------|--------|
+> | {name} | {command} | {source file} |
+> | ... | ... | ... |
+>
+> How would you like to proceed?
+> 1. **Use all detected gates** — All gates above will run during construction
+> 2. **Let me choose** — Pick which gates to include
+> 3. **Skip quality gates** — No gates will be enforced (you can add them later)
+
+If the user selects **"Let me choose"**, present each gate individually and collect their selections.
+
+After the user confirms (options 1 or 2), inform them how to customize individual commands if needed:
+
+> Gates confirmed. To modify a gate command (e.g., change `npm test` to `npm test -- --coverage`), edit the `quality_gates:` field in `.ai-dlc/{intent-slug}/intent.md` directly after this step. Gates are written as a YAML list:
+>
+> ```yaml
+> - name: tests
+>   command: npm test -- --coverage
+> ```
+
+If no candidates were found in discovery, inform the user:
+
+> No quality gates were auto-detected from project tooling. You can add custom gates later by editing the `quality_gates:` field in intent.md frontmatter. Proceeding with `quality_gates: []`.
+
+**Step C — Update intent.md frontmatter.** Write the confirmed gates to intent.md using `yq`:
+
+```bash
+# yq accepts JSON-style objects in expressions; output is always clean YAML (keys unquoted, no JSON braces).
+# For selected gates (example with two gates):
+yq -i '.quality_gates = [{"name": "tests", "command": "npm test"}, {"name": "lint", "command": "npm run lint"}]' .ai-dlc/${INTENT_SLUG}/intent.md
+
+# Or if user skipped / no gates detected:
+yq -i '.quality_gates = []' .ai-dlc/${INTENT_SLUG}/intent.md
+```
+
+**Step D — Commit.**
+
+```bash
+git add .ai-dlc/${INTENT_SLUG}/intent.md
+git commit -m "elaborate(${INTENT_SLUG}): set quality gates"
+```
+
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
+aidlc_telemetry_init
+aidlc_record_intent_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}"
+```
+
 ### 3. Write and review each `unit-NN-{slug}.md` individually:
 
 **Process each unit one at a time.** Write the file, present it for review, iterate until approved, then move to the next unit. Do NOT batch-write all units.
@@ -1342,6 +1515,7 @@ workflow: ""  # Per-unit workflow override (optional — omit or leave empty to 
 ticket: ""  # Ticketing provider ticket key (auto-populated if ticketing provider configured)
 design_ref: ""  # Optional: path to external design file (PNG/JPG/HTML) or directory. Activates visual fidelity gate with high fidelity.
 views: []  # Optional: list of views/routes this unit produces (e.g., ["/", "/about"]). Used for screenshot capture targeting.
+# quality_gates: []  # Optional: unit-specific gates added by builders during construction
 # git:                         # Optional: per-unit VCS override (only include when unit has an override)
 #   change_strategy: ""        # Overrides intent-level strategy for this unit (e.g., "unit" for foundational units)
 # --- Operations frontmatter (OPTIONAL — only include when unit has deployment surface) ---
@@ -1394,6 +1568,12 @@ misinterpret what to build.}
 ## Notes
 {Implementation hints, context, pitfalls to avoid}
 ```
+
+> **Quality gates in units:** Builders may add unit-level `quality_gates:` entries to a unit's
+> frontmatter during construction (e.g., a migration dry-run check specific to that unit).
+> Unit gates are enforced *in addition to* intent-level gates. Gates are additive —
+> the quality-gate hook reads both intent and unit frontmatter each time. Reviewers
+> should verify no intent-level gates were removed.
 
 **Operations frontmatter blocks** (`deployment:`, `monitoring:`, `operations:`) are **optional** — only include them when the unit has a deployment surface. To determine applicability, check the unit's discipline against config.sh helpers:
 
@@ -1538,8 +1718,40 @@ if [ -f "$WIREFRAME" ]; then
 fi
 ```
 
-**Step D — Ask for approval** using `AskUserQuestion`:
+**Step D — Ask for approval:**
 
+**Visual Review (preferred):**
+
+First, check if visual review is enabled in settings:
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+VISUAL_REVIEW=$(get_setting_value "visual_review")
+```
+
+If `VISUAL_REVIEW` is `true`, check if the `ask_user_visual_question` MCP tool is available:
+```
+ToolSearch("ask_user_visual_question")
+```
+
+If both the setting is enabled AND the tool is found, call it with the full unit spec as context:
+```
+ask_user_visual_question({
+  title: "Unit Review: unit-NN-{slug}",
+  context: "{The full unit spec markdown you displayed in Step B — include the intent title as a breadcrumb header above the unit content, e.g., '# Intent: {intent title}\n\n' followed by the complete unit file contents}",
+  questions: [{
+    question: "Does this unit spec give a builder enough detail to build the right thing?",
+    header: "Unit NN",
+    options: ["Approved", "Needs changes", "Rethink unit"],
+    multiSelect: false
+  }]
+})
+```
+
+Parse the session ID from the response, then poll `get_review_status({session_id})` until `status` is `"answered"`. Read `answers[0].selectedOptions[0]` for the decision and `answers[0].otherText` for feedback notes.
+
+**Fallback (if visual review is disabled or tool not available):**
+
+Use `AskUserQuestion`:
 ```json
 {
   "questions": [{
@@ -1554,6 +1766,8 @@ fi
   }]
 }
 ```
+
+**For both paths, apply the same routing:**
 
 - **Approved**: Move to the next unit. (The unit is already committed from Step A.1 or the most recent revision commit.)
 - **Needs changes**: Discuss feedback, update the unit file, then **commit the revision with the user's reasoning in the commit body**:
@@ -1692,6 +1906,37 @@ git commit -m "elaborate(${INTENT_SLUG}): generate frontend and design wireframe
 
 ### Step 6: Product review gate
 
+**Visual Review (preferred):**
+
+First, check if visual review is enabled in settings:
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+VISUAL_REVIEW=$(get_setting_value "visual_review")
+```
+
+If `VISUAL_REVIEW` is `true`, check if the `ask_user_visual_question` MCP tool is available:
+```
+ToolSearch("ask_user_visual_question")
+```
+
+If both the setting is enabled AND the tool is found, call it with wireframe references as context:
+```
+ask_user_visual_question({
+  title: "Wireframe Review",
+  context: "{Build a markdown summary listing each wireframe file with its unit name and path. For each wireframe, include:\n- Unit name and slug\n- Wireframe file path: `.ai-dlc/${INTENT_SLUG}/mockups/unit-NN-{slug}-wireframe.html`\n- Brief description of what the wireframe covers\n\nNote: The user should have the wireframes open in browser tabs from Step 5.}",
+  questions: [{
+    question: "I've generated low-fidelity wireframes for the frontend and design units. Review the screen structure, flow, and placeholder copy. How do they look?",
+    header: "Wireframes",
+    options: ["Approved", "Needs revision", "Skip wireframes"],
+    multiSelect: false
+  }]
+})
+```
+
+Parse the session ID from the response, then poll `get_review_status({session_id})` until `status` is `"answered"`. Read `answers[0].selectedOptions[0]` for the decision and `answers[0].otherText` for revision notes.
+
+**Fallback (if visual review is disabled or tool not available):**
+
 Present all generated wireframes to product for review using `AskUserQuestion`:
 
 ```json
@@ -1708,6 +1953,8 @@ Present all generated wireframes to product for review using `AskUserQuestion`:
   }]
 }
 ```
+
+**For both paths, apply the same routing:**
 
 - **Approved**: Proceed to Phase 6.5.
 - **Needs revision**: Discuss feedback, update the wireframe HTML files directly, commit the revision, and re-present for review. Loop until approved.

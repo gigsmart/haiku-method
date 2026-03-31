@@ -19,58 +19,67 @@ epic: ""
 
 The Visual Review & Intent Dashboard (visual-review) shipped an MCP channel server with a review UI and static dashboard, but adoption is incomplete and the rendering has bugs:
 
-1. **Review boundaries don't use the visual review channel.** Discovery confirmation, UI-related discussions, and other approval points still use the terminal-based `AskUserQuestion` tool. The visual review MCP was built to replace these interactions with a rich browser-based experience, but the elaboration and construction skills haven't been wired to use it at every review boundary.
+1. **Markdown rendering is completely non-functional.** `renderMarkdownBlock()` stores raw markdown in a `data-markdown` HTML attribute for client-side rendering via marked.js CDN. Newlines get normalized in attributes, CDN scripts can fail silently, and large content may truncate. The result: raw markdown shows everywhere instead of formatted HTML.
 
-2. **No general-purpose visual question tool.** The MCP server only exposes `open_review` for spec review. There's no `ask_user_visual_question` tool that can replace arbitrary `AskUserQuestion` calls with a rendered HTML page — meaning any review point that isn't a formal spec review still falls back to the terminal.
+2. **Wireframes never display.** Units lack the `wireframe:` frontmatter field (never populated during construction), the `mockups/` directory is empty when wireframe generation is skipped, and there is no fallback scan by filename convention. The wireframe tab exists in the UI but always says "No wireframe available."
 
-3. **Markdown rendering bugs.** The review UI has formatting issues where markdown content is not properly rendered — broken formatting, missing styling, or raw markdown appearing instead of formatted HTML.
+3. **No general-purpose visual question tool.** The MCP server only exposes `open_review` for spec review. There is no tool that can replace `AskUserQuestion` with a rich browser-based experience for arbitrary review decisions.
 
-4. **Mockups and designs not displayed.** Wireframe references and mockup images are not showing up in the review UI. Units with `wireframe:` frontmatter or mockup files in `mockups/` directories are not being resolved and embedded in the review page.
+4. **Elaboration review boundaries still use terminal.** Domain model confirmation, spec alignment, unit review, and wireframe review all fall back to `AskUserQuestion` in the terminal.
 
 ## Solution
 
-Extend the visual-review MCP server and integrate it across all AI-DLC review boundaries:
+Fix bugs and extend the visual-review MCP server for full elaboration review integration:
 
-1. **Add `ask_user_visual_question` MCP tool** — A general-purpose tool that renders any question/context as a rich HTML page with response options. This becomes the visual replacement for `AskUserQuestion` at all review boundaries, not just formal spec reviews.
+1. **Fix markdown rendering** — Switch from client-side marked.js CDN to server-side `markdownToHtml()` (already exists in `plugin/shared/src/markdown.ts`). Remove the fragile `data-markdown` attribute pattern. Apply the fix to both MCP server templates and static dashboard CLI templates.
 
-2. **Wire all review boundaries** — Update elaboration skills (discovery confirmation, elaboration review, wireframe review) and construction skills (reviewer hat, integration) to use the visual review channel instead of `AskUserQuestion` for approval decisions.
+2. **Fix wireframe display** — Add fallback wireframe resolution: scan `mockups/` directory by filename convention (e.g., `unit-01-*-wireframe.html`) when the `wireframe:` frontmatter field is empty. Also serve image files (.png, .jpg, .svg).
 
-3. **Fix markdown rendering** — Diagnose and fix the markdown-to-HTML conversion pipeline so all content (problem statements, technical specs, criteria lists, code blocks) renders correctly in the review UI.
+3. **Add `ask_user_visual_question` MCP tool** — A new tool alongside `open_review` that mirrors `AskUserQuestion`'s schema (questions array with options, multiSelect, header) rendered as rich HTML. Uses the same HTTP server, session store, and channel notification infrastructure.
 
-4. **Fix mockup/wireframe display** — Ensure wireframe HTML files and mockup images referenced by units are properly resolved, embedded, or linked in the review page.
+4. **Wire 4 elaboration review boundaries** — Update the elaborate skill instructions so Domain Model validation, Spec Alignment Gate, Per-unit review, and Wireframe review use the visual question tool instead of `AskUserQuestion`.
 
-## Previous Intent Reference
+## Domain Model
 
-This intent iterates on **Visual Review & Intent Dashboard** (`visual-review`).
+### Entities
+- **VisualQuestion** — MCP tool input: questions array (options, multiSelect, header), optional context markdown
+- **QuestionSession** — Session type: extends ReviewSession with question data and user's selected answers
+- **ReviewSession** — Existing: intent_dir, intent_slug, review_type, target, status, decision, feedback, html
+- **ChannelEvent** — Existing: `notifications/claude/channel` with content + meta
 
-### What was built previously
-- **unit-01-shared-parser**: TypeScript parsing library for intent.md, unit-*.md, discovery.md (completed)
-- **unit-02-mcp-channel-server**: MCP channel server with stdio transport and `open_review` tool (completed)
-- **unit-03-review-ui**: Browser-based review UI with Tailwind CSS + Mermaid.js (completed)
-- **unit-04-static-dashboard**: CLI tool generating static HTML site for intent browsing (completed)
-- **unit-05-plugin-packaging**: Plugin packaging and `/dashboard` skill wiring (completed)
+### Relationships
+- VisualQuestion creates one QuestionSession (1:1)
+- QuestionSession produces one ChannelEvent when user submits (1:1)
+- Both QuestionSession and ReviewSession share HTTP server, session store, channel notifications
 
-### What this iteration changes
-- Adds a new `ask_user_visual_question` MCP tool for general-purpose visual questions
-- Wires all AI-DLC review boundaries to use the visual channel instead of `AskUserQuestion`
-- Fixes markdown rendering bugs in the review UI
-- Fixes mockup/wireframe display issues so designs appear in review pages
+### Data Sources
+- **MCP Server** (`plugin/mcp-server/`): Server class, tool handlers, session store (Map), HTTP server (Bun.serve on port 8789)
+- **Templates** (`plugin/mcp-server/src/templates/`): HTML rendering functions as TypeScript string literals
+- **Shared Parser** (`plugin/shared/src/markdown.ts`): `markdownToHtml()` using marked.parse()
+- **Elaboration Skills** (`plugin/skills/elaborate/SKILL.md`): 4 review boundary AskUserQuestion call sites
+
+### Data Gaps
+- Channel event `meta` field needs a richer schema for question answers (selected options + free text per question)
+- Skill files are static markdown — wiring requires modifying instruction text
 
 ## Success Criteria
-- [ ] MCP server exposes `ask_user_visual_question` tool that renders arbitrary questions with context as HTML
-- [ ] `ask_user_visual_question` supports options (single-select, multi-select) and free-text responses
-- [ ] Discovery confirmation during elaboration uses visual review channel instead of `AskUserQuestion`
-- [ ] Wireframe review during elaboration uses visual review channel
-- [ ] Reviewer hat approval during construction uses visual review channel
-- [ ] All markdown content in review UI renders correctly (headings, lists, code blocks, tables, bold/italic)
-- [ ] Unit wireframe references resolve and display in the review UI (both HTML wireframes and image mockups)
-- [ ] Mockup images from `mockups/` directories are embedded or linked in the review page
+- [ ] MCP server exposes `ask_user_visual_question` tool that accepts questions array (with options, multiSelect, header) and optional context markdown
+- [ ] `ask_user_visual_question` renders a rich HTML page with radio buttons (single-select) or checkboxes (multi-select) for each question's options
+- [ ] "Other" free-text option is always available for each question
+- [ ] User's answers flow back to Claude Code via `notifications/claude/channel` event with structured response in meta
+- [ ] All markdown content in review UI renders correctly — server-side via `markdownToHtml()` instead of client-side CDN
+- [ ] Problem, Solution, Technical Spec, Domain Model sections render with proper headings, lists, code blocks, tables, bold/italic
+- [ ] Unit wireframes resolve and display via mockups/ directory scan fallback when `wireframe:` frontmatter is empty
+- [ ] Mockup images (.png, .jpg, .svg) in mockups/ directory are served and displayed alongside HTML wireframes
 - [ ] Existing `open_review` tool continues to work unchanged
-- [ ] Visual question responses flow back to the agent via channel events
+- [ ] Static dashboard CLI also uses server-side markdown rendering
+- [ ] Visual question page loads in under 500ms on localhost
+- [ ] All interactive elements (radio buttons, checkboxes, submit) are keyboard-navigable with ARIA labels
 
 ## Context
-- The visual-review intent is currently active with all 5 units completed — code is built but the intent branch hasn't been fully merged yet
-- The MCP Channel protocol uses `notifications/claude/channel` events for bidirectional communication
-- The review UI is plain HTML + Tailwind CSS CDN + Mermaid.js CDN (no framework)
-- The shared parser library uses gray-matter for frontmatter and marked for markdown
+- This iterates on the visual-review intent (all 5 units completed, code on `ai-dlc/visual-review/main` branch)
+- The MCP Channel protocol uses `notifications/claude/channel` events
+- The review UI is plain HTML + Tailwind CSS CDN + Mermaid.js CDN
+- The shared parser uses gray-matter for frontmatter and marked for markdown
 - Bun is the runtime for the MCP server
+- The `markdownToHtml()` function already exists and works — just needs to be called server-side in templates instead of relying on client-side CDN

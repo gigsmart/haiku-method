@@ -27,3 +27,7 @@ hypothesis:
 tdd:
   description: Test-Driven Development
   hats: [test-writer, implementer, refactorer, reviewer]
+
+bdd:
+  description: Behavior-Driven Development with acceptance tests first
+  hats: [planner, acceptance-test-writer, builder, reviewer]

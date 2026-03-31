@@ -18,6 +18,11 @@ The primary hub for AI-DLC development:
 - Contribute code and documentation
 - Review and discuss pull requests
 
+**Han Plugin Ecosystem**
+- [github.com/thebushidocollective/han](https://github.com/thebushidocollective/han)
+- The broader plugin marketplace
+- Validation hooks, framework plugins, discipline agents, MCP bridges
+
 ### Discussions
 
 Use GitHub Discussions for:
@@ -64,10 +69,23 @@ Share your custom configurations:
 ### The AI-DLC Paper
 
 The foundational methodology document:
-- [AI-DLC Paper](https://ai-dlc.dev/paper/)
+- [AI-DLC Paper](https://han.guru/papers/ai-dlc-2026)
 - Full background and rationale
 - Research references
 - Adoption guidance
+
+### Han Ecosystem
+
+AI-DLC is part of Han, a plugin marketplace for Claude Code:
+
+- **Website:** [han.guru](https://han.guru)
+- **Core:** Foundation plugins and quality principles
+- **Validation:** Language and tool validation hooks
+- **Frameworks:** Framework-specific plugins (React, Next.js, Rails, etc.)
+- **Languages:** Language-specific plugins (TypeScript, Go, Rust, etc.)
+- **Disciplines:** Specialized agent plugins (frontend, backend, security, etc.)
+- **Bridges:** MCP server integrations
+- **Bushido:** Quality principles and engineering virtues
 
 ### Related Projects
 

@@ -396,25 +396,6 @@ When `/execute` processes each unit, it resolves the unit's workflow independent
 
 This means a single intent can have some units flowing through Planner → Designer → Reviewer while others go through Planner → Builder → Reviewer, each progressing through their own hat sequence.
 
-## Quality Gates in the Delivery Pipeline
-
-Every workflow includes quality gates at multiple levels:
-
-1. **Build-time backpressure** — tests, lint, and type checks must pass before the builder can advance
-2. **Per-unit review** — the Reviewer hat validates completion criteria and code quality for each unit
-3. **Integration validation** — for multi-unit intents, the Integrator verifies cross-unit compatibility
-4. **Pre-delivery review** — the full composed diff is reviewed before creating the PR
-
-If the pre-delivery review finds HIGH-confidence issues, the affected units are returned to the builder via `/fail`. This ensures the PR that reaches human reviewers (or automated review bots) is already clean.
-
-```text
-Build → [Backpressure] → Review → [Integration] → [Pre-Delivery Review] → PR
-  ↑         fail ↓          ↑          fail ↓              fail ↓
-  └─────────────┘           └──────────────┘               │
-                                                           ↓
-                                                    Back to Builder
-```
-
 ## Operation and Reflection
 
 Operation and reflection are not workflow selections -- they are separate lifecycle phases that run after construction completes. Use `/operate` to enter the Operation phase and `/reflect` to enter the Reflection phase. These phases have their own hat sequences and are invoked independently of whichever workflow was used during execution. See the [Operations Guide](/docs/operations-guide/) for details on defining and managing operational tasks.

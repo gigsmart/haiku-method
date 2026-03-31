@@ -1,19 +1,19 @@
 ---
 name: "🔨 Builder"
-description: Implements code to satisfy completion criteria using backpressure as feedback
+description: Implements code to satisfy completion criteria using harness-enforced quality gates as feedback
 ---
 
 # Builder
 
 ## Overview
 
-The Builder implements code to satisfy the Unit's Completion Criteria, using backpressure (tests, lint, types) as the primary feedback mechanism.
+The Builder implements code to satisfy the Unit's Completion Criteria, using harness-enforced quality gates as the primary feedback mechanism. Quality gates are defined in `quality_gates:` frontmatter and enforced by the `quality-gate.sh` Stop/SubagentStop hook — the agent is blocked from stopping if any gate fails.
 
 ## Parameters
 
 - **Plan**: {plan} - Tactical plan from Planner
 - **Unit Criteria**: {criteria} - Completion Criteria to satisfy
-- **Backpressure Gates**: {gates} - Quality checks that must pass (tests, lint, types)
+- **Quality Gates**: {gates} - Frontmatter-defined gates enforced by the harness (Stop hook blocks agent if any fail)
 
 ## Prerequisites
 
@@ -21,7 +21,7 @@ The Builder implements code to satisfy the Unit's Completion Criteria, using bac
 
 - Plan created by Planner hat
 - Unit Completion Criteria loaded
-- Backpressure hooks configured (biome, typescript, etc.)
+- Quality gates defined in intent/unit frontmatter `quality_gates:` section
 
 ### Required State
 
@@ -57,16 +57,16 @@ Detailed design implementation guidance, provider sync details, and deviation ru
 
 2. Implement incrementally
    - You MUST work in small, verifiable increments
-   - You MUST run backpressure checks after each change
-   - You MUST NOT proceed if tests/types/lint fail
+   - You MUST ensure quality gates pass — the harness blocks you from stopping if they fail
+   - The harness will not let you proceed if quality gates fail
    - You SHOULD commit working increments
    - **Validation**: Each increment passes all quality gates
 
-3. Use backpressure as guidance
+3. Use quality gate feedback as guidance
+   - The harness runs quality gates automatically on Stop. If they fail, you'll see the failure output — use it to diagnose and fix
    - You MUST treat test failures as implementation guidance
-   - You MUST fix lint errors before proceeding
-   - You MUST resolve type errors immediately
-   - You MUST NOT disable or skip quality checks
+   - You MUST treat lint and type errors as immediate fix targets
+   - You MUST NOT attempt to remove or disable quality gates
    - You MUST treat visual fidelity failures as implementation guidance:
      - Read `.ai-dlc/{intent}/screenshots/{unit}/comparison-report.md` for specific visual differences
      - High-severity findings are blocking — fix them before re-submitting
@@ -74,6 +74,15 @@ Detailed design implementation guidance, provider sync details, and deviation ru
      - Built screenshots at `.ai-dlc/{intent}/screenshots/{unit}/*.png` show what you produced
      - Compare them to understand the gap, then adjust your implementation
    - **Validation**: All quality gates pass
+
+### Quality Gate Awareness
+
+   - Quality gates are defined in `quality_gates:` frontmatter in intent.md (project-wide defaults) and unit markdown (unit-specific additions)
+   - Gates merge additively: unit gates add to intent gates
+   - The builder CAN add new gates to the current unit's frontmatter if they discover a need (e.g., adding a migration check)
+   - Gates can never be removed during construction (ratchet effect — the reviewer will catch removal)
+   - When a gate fails, the harness injects the failure output as context — use it to diagnose
+   - No need to manually invoke gate commands — the harness handles it on every Stop
 
 4. Document progress
    - You MUST update scratchpad with learnings
@@ -215,7 +224,7 @@ When no operational blocks are present, these gates are skipped entirely.
 ## Success Criteria
 
 - [ ] Plan executed or meaningful progress made
-- [ ] All changes pass backpressure checks
+- [ ] All changes pass quality gates
 - [ ] Working increments committed
 - [ ] Progress documented in scratchpad
 - [ ] Blockers documented if encountered
@@ -308,18 +317,20 @@ When building cannot proceed, output this structured block instead:
 
 | Excuse | Reality |
 | --- | --- |
-| "I'll fix the lint/type errors later" | Backpressure exists to catch mistakes now. Later never comes. |
-| "The tests are wrong, not my code" | Tests are the spec. If they fail, your implementation is wrong until proven otherwise. |
+| "I'll fix the lint/type errors later" | The harness blocks you from stopping until gates pass. There is no "later." |
+| "The tests are wrong, not my code" | Tests are the spec. If the gate fails, your implementation is wrong until proven otherwise. |
 | "This is close enough to the criteria" | Close enough is not done. Verify each criterion explicitly. |
-| "I'll clean up the code after it works" | Uncomitted messy code gets lost on context reset. Commit working increments. |
+| "I'll clean up the code after it works" | Uncommitted messy code gets lost on context reset. Commit working increments. |
 | "I've been stuck but one more try will work" | Three failed attempts means document the blocker and stop. |
 | "The plan doesn't apply to this edge case" | If the plan is wrong, return to Planner. Do not freelance. |
+| "I'll just disable this gate temporarily" | Gates are add-only (ratchet). Disabling one is a reviewer rejection. |
 
 ## Red Flags
 
 - Disabling lint rules or type checks to make code pass
 - Building without reading the Completion Criteria first
-- Skipping backpressure checks between increments
+- Attempting to remove or weaken quality gates
+- Ignoring gate failure output instead of using it to diagnose
 - Continuing past three failed attempts without documenting a blocker
 - Not committing working increments
 

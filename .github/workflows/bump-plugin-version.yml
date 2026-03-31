@@ -16,6 +16,10 @@ env:
 permissions:
   contents: write
 
+concurrency:
+  group: version-bump
+  cancel-in-progress: false
+
 jobs:
   bump-version:
     runs-on: ubuntu-latest
@@ -28,7 +32,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.BUMP_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Pull latest changes
         run: |

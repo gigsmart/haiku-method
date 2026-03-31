@@ -51,8 +51,6 @@ Verifies implementation satisfies completion criteria with code review and testi
 - Provides specific, actionable feedback prioritized by severity
 - Makes a clear APPROVE or REQUEST CHANGES decision with rationale
 
-> **Note:** The Reviewer hat operates at the unit level — it validates one unit at a time within its worktree. For intent-strategy intents (where all units merge into a single PR), an additional **pre-delivery review** gate examines the full composed diff before the PR is created. This catches cross-unit issues that per-unit review cannot see. See [Core Concepts](/docs/concepts/) for details.
-
 ## Hypothesis Hats
 
 Used in the hypothesis workflow for systematic bug investigation: **Observer -> Hypothesizer -> Experimenter -> Analyst**. This workflow applies the scientific method to debugging.

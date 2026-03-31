@@ -14,6 +14,11 @@ Get AI-DLC running in your project and complete your first feature. AI-DLC is th
 /plugin install ai-dlc@thebushidocollective-ai-dlc --scope project
 ```
 
+**Option 2: Via Han**
+```bash
+npx han plugin install thebushidocollective/ai-dlc --scope project
+```
+
 ## The Two Commands You Need
 
 AI-DLC uses just two main commands:
@@ -105,5 +110,5 @@ Once your intent is complete, manage ongoing operational tasks with `/operate`. 
 
 - [Core Concepts](/docs/concepts/) - Understand intents, units, and hats
 - [Workflows](/docs/workflows/) - Learn about TDD, adversarial, and hypothesis workflows
-- [Installation](/docs/installation/) - Detailed setup and configuration
+- [Installation](/docs/installation/) - Detailed setup including Han CLI
 - [Operations Guide](/docs/operations-guide/) - Manage ongoing operational tasks

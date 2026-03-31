@@ -75,6 +75,17 @@ Over iterations, the AI learns:
 
 This creates intrinsic motivation for quality, not extrinsic compliance.
 
+## Quality Gates vs. Backpressure
+
+Quality gates and backpressure are related but distinct enforcement mechanisms:
+
+- **Quality gates** (`quality_gates:` in frontmatter): Hard enforcement. Defined per-intent and per-unit. Run by `quality-gate.sh` on Stop/SubagentStop. The agent is mechanically blocked from stopping if any gate fails. Gates are add-only during construction (ratchet effect). The reviewer verifies gate integrity.
+- **Backpressure** (Stop hooks in `.claude/settings.json`): Soft guidance during development. Project-level hooks that run on every Stop. Not tied to AI-DLC frontmatter. Useful for project-wide checks that don't need per-intent/per-unit configuration.
+
+Quality gates are a **subset** of backpressure that has been promoted to hard, frontmatter-driven enforcement. Backpressure is the broader concept; quality gates are the AI-DLC-specific mechanism within it.
+
+Both can coexist: a project might have quality gates for tests/lint/types (per-intent, harness-enforced) AND backpressure hooks for additional checks (project-wide, advisory).
+
 ## Types of Backpressure
 
 ### 1. Test Backpressure
@@ -203,6 +214,26 @@ Visual fidelity backpressure uses AI vision to compare built output against desi
 **Hard gate:** If the visual gate is active and comparison produces high-severity findings, the reviewer MUST issue `REQUEST CHANGES`. Infrastructure failures (capture errors, missing references, dev server down) also block approval — the gate is never silently skipped.
 
 ## Implementing Backpressure
+
+### In AI-DLC Frontmatter (Preferred)
+
+For AI-DLC projects, prefer defining gates in `quality_gates:` frontmatter rather than raw Stop hooks. Frontmatter gates get:
+- Per-intent and per-unit scoping
+- Additive merging (unit gates add to intent gates)
+- Ratchet enforcement (add-only during construction)
+- Reviewer verification (gate integrity check)
+- Automatic enforcement during building hats only
+
+```yaml
+# In intent.md or unit-*.md frontmatter
+quality_gates:
+  - name: tests
+    command: bun test
+  - name: lint
+    command: biome check
+  - name: typecheck
+    command: tsc --noEmit
+```
 
 ### In Claude Code Hooks
 
@@ -454,19 +485,20 @@ Track over time:
 
 ### During Building (OHOTL)
 
-Backpressure guides autonomous work:
+Quality gates block Stop mechanically. Backpressure (if configured separately) provides additional guidance:
 1. AI writes code
-2. Stop hook runs checks
-3. Failures → AI fixes in next iteration
-4. Passes → Work complete
+2. On Stop, `quality-gate.sh` runs all frontmatter-defined gates
+3. If any gate fails → agent is blocked, sees failure output, fixes in next iteration
+4. If all gates pass → Stop succeeds, work continues
+5. Additional backpressure hooks (project-level) run alongside for advisory checks
 
 ### During Review (HITL)
 
-Backpressure pre-filters issues:
-1. AI ensures backpressure passes
-2. Human reviews only quality-verified code
-3. Reduces human burden
-4. Focuses review on design/logic, not style
+Quality gates already passed — the builder could not have advanced otherwise:
+1. Reviewer focuses on criteria satisfaction, code quality, and gate integrity
+2. Reviewer verifies no gates were removed or weakened (ratchet review)
+3. Human reviews quality-verified code — reduces burden
+4. Focuses review on design/logic, not pass/fail
 
 ### Iteration Efficiency
 

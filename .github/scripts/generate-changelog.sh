@@ -45,8 +45,18 @@ if [ -z "$GIT_RANGE" ]; then
 	GIT_RANGE="HEAD"
 fi
 
-# Get commits for this path, excluding version bump commits and website changes
-COMMITS=$(git log $GIT_RANGE --pretty=format:"%h|%s|%an|%ad" --date=short -- "$PATH_DIR" ':!website' 2>/dev/null | grep -v "\[skip ci\]" | grep -v "chore(release):" | grep -v "chore(plugin): bump" || true)
+# Get commits for this path, excluding noise
+# Filters: version bumps, merge commits, AI-DLC state tracking, reverts of reverts
+COMMITS=$(git log $GIT_RANGE --no-merges --pretty=format:"%h|%s|%an|%ad" --date=short -- "$PATH_DIR" ':!website' ':!.ai-dlc' 2>/dev/null \
+	| grep -v "\[skip ci\]" \
+	| grep -v "chore(release):" \
+	| grep -v "chore(plugin): bump" \
+	| grep -v "^[a-f0-9]*|status: " \
+	| grep -v "^[a-f0-9]*|state: " \
+	| grep -v "^[a-f0-9]*|Merge unit-" \
+	| grep -v "^[a-f0-9]*|Revert \"Reapply " \
+	| grep -v "^[a-f0-9]*|Reapply \"" \
+	|| true)
 
 if [ -z "$COMMITS" ]; then
 	echo "No commits found for $PATH_DIR in range $GIT_RANGE"

@@ -81,6 +81,8 @@ if [ -n "$PERMISSION_MODE" ]; then
 fi
 
 # Override Plan agent type to general-purpose (plan mode blocks autonomous execution)
+# Belt-and-suspenders: text instructions in planner.md and execute/SKILL.md say "don't use Plan",
+# but this harness-level override catches any case where a Plan subagent is launched anyway.
 if [ "$IS_AGENT_TOOL" = true ]; then
   SUBAGENT_TYPE=$(echo "$UPDATED_INPUT" | jq -r '.subagent_type // ""' 2>/dev/null || echo "")
   if [ "$SUBAGENT_TYPE" = "Plan" ]; then

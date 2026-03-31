@@ -52,9 +52,11 @@ AI-DLC is distributed as a Claude Code plugin. Install it with:
 
 Then start using the hat commands to structure your workflow.
 
-## Built on Bushido Principles
+## Part of Han
 
-We believe AI-assisted development deserves the same rigor and discipline as traditional software engineering — just with new tools and methods. AI-DLC is built on Bushido principles: quality, honor, and mastery.
+AI-DLC is part of the [Han plugin ecosystem](https://han.guru) for Claude Code. Han provides a curated marketplace of plugins built on Bushido principles: quality, honor, and mastery.
+
+We believe AI-assisted development deserves the same rigor and discipline as traditional software engineering - just with new tools and methods.
 
 ## What's Next
 

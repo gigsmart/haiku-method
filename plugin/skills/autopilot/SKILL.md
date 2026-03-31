@@ -78,11 +78,14 @@ fi
 
 ### Step 2: Elaboration Phase
 
-Invoke `/elaborate` with the provided feature description in autonomous mode:
+Invoke `/elaborate` with the provided feature description. Because this is `/autopilot`, elaborate will run in **autonomous mode** (defined in elaborate's "Autonomous Mode" section). This means:
 
-- Pass the feature description as the argument to `/elaborate`
-- Minimize user interaction — make reasonable decisions during elaboration where possible
-- The elaboration phase will produce intent definition, success criteria, domain model, and unit decomposition in `.ai-dlc/{intent-slug}/`
+- Clarification questions are **skipped** — requirements are inferred from the feature description and codebase discovery
+- Domain model, workflow, success criteria, git strategy, and unit specs are **auto-approved** — no user confirmation prompts
+- Per-unit review is **auto-approved** — units are written and committed without waiting for user feedback
+- Elaborate only pauses if it encounters **genuine ambiguity** that could lead to building the wrong thing
+
+Pass the feature description as the argument to `/elaborate`. The elaboration phase will produce intent definition, success criteria, domain model, and unit decomposition in `.ai-dlc/{intent-slug}/`.
 
 **After elaboration completes, apply guardrails:**
 

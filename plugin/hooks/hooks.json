@@ -39,7 +39,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "",
+        "matcher": ".*",
         "hooks": [
           {
             "type": "command",
@@ -65,6 +65,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/quality-gate.sh\"",
+            "timeout": 120
+          },
+          {
+            "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/enforce-iteration.sh\"",
             "async": true
           }
@@ -74,6 +79,11 @@
     "SubagentStop": [
       {
         "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/quality-gate.sh\"",
+            "timeout": 120
+          },
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/enforce-iteration.sh\"",

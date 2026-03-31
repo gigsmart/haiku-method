@@ -9,7 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Phase 7.5 Adversarial Spec Review in elaboration workflow — subagent-based adversarial review that challenges assumptions, finds contradictions, stress-tests dependencies, and suggests fixes before handoff to execution
+- Autonomous elaboration mode: `/elaborate` now runs non-interactively when invoked from `/autopilot`, skipping clarification questions, auto-approving domain models/units/wireframes, and only pausing on genuine ambiguity
+- Visual review & intent dashboard: browser-based review UI, `ask_user_visual_question` MCP tool, `/dashboard` skill, `@ai-dlc/shared` parser library, static dashboard generator
+- `visual_review` opt-in setting in `settings.yml` (default: `false`) gates all visual review tooling
+- MCP channel server (`claude/channel`) with `open_review`, `get_review_status`, and `ask_user_visual_question` tools
+- Elaboration wiring: 4 review boundaries use visual review with `AskUserQuestion` fallback
+
+### Fixed
+
+- Session IDs use `crypto.randomUUID()` instead of predictable sequential integers
+- XSS via `innerHTML` in Mermaid theme toggle fixed (use `textContent`)
+- Mermaid `securityLevel: 'loose'` removed; labels now HTML-escaped
+- Cycle detection added to DAG topological sort
+- Symlink-safe path traversal checks using `realpath()`
+- POST body validation added with Zod schemas
+- Session memory leak: 30-min TTL and 100-session cap
+- `intent_dir` validated to `.ai-dlc/` prefix before filesystem access
+- Fragile port detection uses only `EADDRINUSE` error code
+- Parse errors now emit console warnings instead of failing silently
+- `markdownToHtml` no longer uses unsafe type cast
+
 
 ## [1.83.3] - 2026-03-30
 
@@ -17,110 +36,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Revert "Reapply "intent: Visual Review Full Integration & Bug Fixes"" ([6e15a68](../../commit/6e15a68))
 
-## [1.83.2] - 2026-03-30
+### Changed
 
-### Other
-
-- Reapply "intent: Visual Review Full Integration & Bug Fixes" ([1ba3762](../../commit/1ba3762))
-
-## [1.83.1] - 2026-03-30
-
-### Other
-
-- Revert "intent: Visual Review Full Integration & Bug Fixes" ([774716e](../../commit/774716e))
-
-## [1.83.0] - 2026-03-30
-
-### Added
-
-- add pre-delivery code review gate and OTel instrumentation ([7c03c50](../../commit/7c03c50))
-
-## [1.82.7] - 2026-03-30
-
-### Added
-
-- add ask_user_visual_question MCP tool ([d085656](../../commit/d085656))
-- wire up packaging, /dashboard skill, and workspace resolution ([79c058a](../../commit/79c058a))
-- add static dashboard generator ([e641de2](../../commit/e641de2))
-- replace monolithic html.ts with template system ([9ae83bb](../../commit/9ae83bb))
-- add mermaid rendering, dark mode, inline mockups ([f7b145e](../../commit/f7b145e))
-- add MCP channel server for visual review ([998e834](../../commit/998e834))
-- add @ai-dlc/shared parser package ([b89bd64](../../commit/b89bd64))
-
-### Fixed
-
-- server-side markdown rendering and wireframe fallback resolution ([d608bc6](../../commit/d608bc6))
-- don't escape mermaid content in intent review template ([8b6a9f2](../../commit/8b6a9f2))
-
-### Other
-
-- Visual Review Full Integration & Bug Fixes ([8f8372f](../../commit/8f8372f))
-- mark intent visual-review-integration as completed ([9aabca3](../../commit/9aabca3))
-- Merge unit-03-wire-elaboration into intent branch ([cfdf4e7](../../commit/cfdf4e7))
-- mark unit-03-wire-elaboration as completed ([1fd1c94](../../commit/1fd1c94))
-- advance hat for unit-03-wire-elaboration (builder → reviewer) ([9d50a6b](../../commit/9d50a6b))
-- wire visual review into 4 elaboration review boundaries ([f7585a1](../../commit/f7585a1))
-- advance hat for unit-03-wire-elaboration (planner → builder) ([931c935](../../commit/931c935))
-- mark unit-03-wire-elaboration as in_progress, hat: planner ([ad8c8e1](../../commit/ad8c8e1))
-- Merge unit-02-visual-question-tool into intent branch ([a00b248](../../commit/a00b248))
-- mark unit-02-visual-question-tool as completed ([cf9f201](../../commit/cf9f201))
-- advance hat for unit-02-visual-question-tool (builder → reviewer) ([bfb97a6](../../commit/bfb97a6))
-- advance hat for unit-02-visual-question-tool (planner → builder) ([f674324](../../commit/f674324))
-- mark unit-02-visual-question-tool as in_progress, hat: planner ([7917b35](../../commit/7917b35))
-- Merge unit-01-fix-rendering into intent branch ([a318e76](../../commit/a318e76))
-- mark unit-01-fix-rendering as completed ([05cf0f4](../../commit/05cf0f4))
-- advance hat for unit-01-fix-rendering (builder → reviewer) ([1782a04](../../commit/1782a04))
-- Merge branch 'ai-dlc/visual-review/main' into ai-dlc/visual-review-integration/01-fix-rendering ([77a14b2](../../commit/77a14b2))
-- advance hat for unit-01-fix-rendering (planner → builder) ([934b6da](../../commit/934b6da))
-- mark unit-01-fix-rendering as in_progress, hat: planner ([17cd77e](../../commit/17cd77e))
-- initialize execution for visual-review-integration ([66a76d1](../../commit/66a76d1))
-- draft unit-03-wire-elaboration ([e8f9470](../../commit/e8f9470))
-- draft unit-02-visual-question-tool ([e8a0f85](../../commit/e8a0f85))
-- draft unit-01-fix-rendering ([a3dc53c](../../commit/a3dc53c))
-- define intent ([62e0aa1](../../commit/62e0aa1))
-- write discovery results ([c850f00](../../commit/c850f00))
-- complete domain discovery ([708fda2](../../commit/708fda2))
-- write discovery brief ([97a1d91](../../commit/97a1d91))
-- initialize discovery log ([d502fa3](../../commit/d502fa3))
-- mark visual-review intent as completed ([bc24f07](../../commit/bc24f07))
-- Merge unit-05-plugin-packaging into intent branch ([88cf8b0](../../commit/88cf8b0))
-- mark unit-05-plugin-packaging as completed ([3a5ecdc](../../commit/3a5ecdc))
-- mark unit-05-plugin-packaging as in_progress ([25c67db](../../commit/25c67db))
-- Merge unit-04-static-dashboard into intent branch ([891b102](../../commit/891b102))
-- mark unit-04-static-dashboard as completed ([259580a](../../commit/259580a))
-- mark unit-04-static-dashboard as in_progress ([21c04d9](../../commit/21c04d9))
-- Merge unit-03-review-ui into intent branch ([5fe1a05](../../commit/5fe1a05))
-- mark unit-03-review-ui as completed ([28f0296](../../commit/28f0296))
-- Merge branch 'ai-dlc/visual-review/main' into ai-dlc/visual-review/03-review-ui ([38c1117](../../commit/38c1117))
-- mark unit-03-review-ui as in_progress ([cd64720](../../commit/cd64720))
-- Merge unit-02-mcp-channel-server into intent branch ([1c9d12e](../../commit/1c9d12e))
-- mark unit-02-mcp-channel-server as completed ([917f15d](../../commit/917f15d))
-- Merge branch 'ai-dlc/visual-review/main' into ai-dlc/visual-review/02-mcp-channel-server ([c291aa0](../../commit/c291aa0))
-- mark unit-02-mcp-channel-server as in_progress ([63146d2](../../commit/63146d2))
-- Merge unit-01-shared-parser into intent branch ([9c4dc87](../../commit/9c4dc87))
-- mark unit-01-shared-parser as completed ([b9a334e](../../commit/b9a334e))
-- mark unit-01-shared-parser as in_progress ([ca55b6b](../../commit/ca55b6b))
-- finalize elaboration artifacts ([91056ce](../../commit/91056ce))
-- draft unit-05-plugin-packaging ([8b0892e](../../commit/8b0892e))
-- draft unit-04-static-dashboard ([e50768f](../../commit/e50768f))
-- draft unit-03-review-ui ([46b1c3c](../../commit/46b1c3c))
-- draft unit-02-mcp-channel-server ([b0c3e63](../../commit/b0c3e63))
-- draft unit-01-shared-parser ([dc13517](../../commit/dc13517))
-- define intent ([b0c465d](../../commit/b0c465d))
-- write discovery results ([3d48977](../../commit/3d48977))
-- complete domain discovery with mockups and domain model ([e859ca0](../../commit/e859ca0))
-- write discovery brief ([32ba608](../../commit/32ba608))
-- initialize discovery log ([ce2cd14](../../commit/ce2cd14))
-
-## [1.82.6] - 2026-03-30
-
-### Fixed
-
-- add git worktree prune and error logging to all worktree cleanup sites ([e8fa1ee](../../commit/e8fa1ee))
-
-## [1.82.5] - 2026-03-30
+- Update plugin source path variable to CLAUDE_PROJECT_DIR
 
 ## [1.82.4] - 2026-03-30
+
+### Changed
+
+- Add project config, sync rules, and visual-review intent
 
 ## [1.82.3] - 2026-03-30
 

@@ -859,7 +859,7 @@ if [ "$EFFECTIVE_CS" = "unit" ]; then
   TICKET_LINE=""
   [ -n "$UNIT_TICKET" ] && TICKET_LINE="Closes ${UNIT_TICKET}"
 
-  gh pr create \
+  PR_URL=$(gh pr create \
     --base "$DEFAULT_BRANCH" \
     --head "$UNIT_BRANCH" \
     --title "unit: ${UNIT_NAME}" \
@@ -870,7 +870,7 @@ Part of intent: ${INTENT_SLUG}
 ${TICKET_LINE}
 
 ---
-*Built with [AI-DLC](https://ai-dlc.dev)*" 2>/dev/null || echo "PR may already exist for $UNIT_BRANCH"
+*Built with [AI-DLC](https://ai-dlc.dev)*" 2>&1) || echo "PR may already exist for $UNIT_BRANCH"
 
   source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
   aidlc_telemetry_init
@@ -1277,7 +1277,7 @@ done
 3. Create PR/MR:
 
 ```bash
-gh pr create \
+PR_URL=$(gh pr create \
   --title "${INTENT_TITLE}" \
   --base "$DEFAULT_BRANCH" \
   --head "$INTENT_BRANCH" \
@@ -1298,7 +1298,7 @@ $(printf "%b" "${TICKET_REFS}")
 ---
 *Built with [AI-DLC](https://ai-dlc.dev)*
 EOF
-)"
+)" 2>&1)
 
 # Record delivery telemetry
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
