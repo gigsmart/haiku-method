@@ -83,3 +83,66 @@ Passes currently exist as a scheduling/metadata concept only -- they control whi
 6. **Settings schema hardcodes pass enum** -- can't add custom pass types
 7. **Paper-implementation mismatch** on pass frontmatter format
 
+## Codebase Pattern: Hat Resolution and Context Injection
+
+### Current Hat Resolution Pattern
+
+Both `inject-context.sh` (SessionStart hook) and `subagent-context.sh` (SubagentPrompt hook) use the same override pattern:
+
+**inject-context.sh (lines 615-665):**
+```bash
+# Resolution order: 1) User override (.ai-dlc/hats/), 2) Plugin built-in (hats/)
+HAT_FILE=""
+if [ -f ".ai-dlc/hats/${HAT}.md" ]; then
+  HAT_FILE=".ai-dlc/hats/${HAT}.md"
+elif [ -n "$PLUGIN_ROOT" ] && [ -f "${PLUGIN_ROOT}/hats/${HAT}.md" ]; then
+  HAT_FILE="${PLUGIN_ROOT}/hats/${HAT}.md"
+fi
+```
+
+**subagent-context.sh (lines 186-214):**
+```bash
+if [ -f ".ai-dlc/hats/${HAT}.md" ]; then
+  HAT_FILE=".ai-dlc/hats/${HAT}.md"
+elif [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hats/${HAT}.md" ]; then
+  HAT_FILE="${CLAUDE_PLUGIN_ROOT}/hats/${HAT}.md"
+fi
+```
+
+**Problem:** This is a pure override pattern -- if `.ai-dlc/hats/builder.md` exists, it completely replaces `plugin/hats/builder.md`. The user must copy the entire canonical hat definition just to add a few lines.
+
+### Desired Pattern (from intent description)
+
+The new pattern should be **augmentation, not override**:
+1. Plugin hat definitions are canonical (always loaded)
+2. Project `.ai-dlc/hats/{hat}.md` with matching name **appends** instructions
+3. Project `.ai-dlc/hats/{hat}.md` with a new name is a custom hat (no plugin equivalent)
+
+This matches how workflows already work -- `plugin/workflows.yml` provides defaults, `.ai-dlc/workflows.yml` can override/add entries. But for hats, we want append, not replace.
+
+### Context Injection Insertion Point
+
+Both hooks build context output as sequential echo statements. The hat injection is near the end:
+- `inject-context.sh`: lines 627-665 (hat instructions section)
+- `subagent-context.sh`: lines 185-215 (hat instructions section)
+
+The pass context should be injected AFTER the hat instructions, as an additional context block. This is where pass definition instructions would go.
+
+### Current Workflow Loading Pattern
+
+Workflows use a merge pattern in `inject-context.sh` (lines 65-119):
+1. Parse plugin workflows first
+2. Parse project workflows (override or add by name)
+3. Build merged workflow list
+
+This is the precedent for the pass definition loading pattern.
+
+### Provider Loading Pattern
+
+Config.sh `load_provider_instructions()` (lines 374-412) uses a three-tier merge:
+1. Built-in default (`plugin/providers/{category}.md`)
+2. Inline instructions from settings.yml
+3. Project override from `.ai-dlc/providers/{type}.md`
+
+Each tier appends; nothing is replaced. This is closest to the desired hat/pass augmentation pattern.
+
