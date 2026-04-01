@@ -803,7 +803,50 @@ export default function Home() {
 									<strong>Dependencies</strong> -- Package manifest analysis,
 									version constraints
 								</li>
+								<li>
+									<strong>Project knowledge artifacts</strong> -- Synthesizes
+									what it finds into persistent knowledge files (design tokens,
+									architecture patterns, conventions, domain terms) so every
+									future intent starts with context instead of from scratch
+								</li>
 							</ul>
+						</DeepDive>
+
+						{/* Deep Dive: Greenfield Design Direction */}
+						<DeepDive
+							title="Deep Dive: Greenfield Projects -- Choosing a Design Direction"
+							forceOpen={isRef}
+						>
+							<p className="mb-3">
+								For brand-new projects, there&rsquo;s an extra step before
+								building starts. The AI opens a visual picker in your browser
+								where you choose a <strong>design direction</strong>.
+							</p>
+							<div className="mb-3 grid gap-2 sm:grid-cols-2">
+								{[
+									{ name: "Brutalist", desc: "High contrast, raw borders, monospace" },
+									{ name: "Editorial", desc: "Magazine layouts, serif headings, whitespace" },
+									{ name: "Dense / Utilitarian", desc: "Packed info, dark theme, keyboard-first" },
+									{ name: "Playful / Warm", desc: "Rounded corners, vibrant colors, soft shadows" },
+								].map((a) => (
+									<div
+										key={a.name}
+										className="rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-950"
+									>
+										<div className="text-sm font-semibold">{a.name}</div>
+										<div className="text-xs text-gray-500 dark:text-gray-400">
+											{a.desc}
+										</div>
+									</div>
+								))}
+							</div>
+							<p className="text-xs text-gray-500 dark:text-gray-400">
+								You can also tune parameters like density, expressiveness, shape
+								language, and color mood. The result is a{" "}
+								<strong>design blueprint</strong> that feeds into wireframe
+								generation and hat context -- so your wireframes carry the
+								chosen aesthetic instead of generic gray boxes.
+							</p>
 						</DeepDive>
 
 						{/* Exchange 4 */}
