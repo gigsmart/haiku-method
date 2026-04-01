@@ -1081,6 +1081,37 @@ sequenceDiagram
 - Measurement criteria traced to business intent
 - Suggested Bolts with mode recommendations
 - Pass structure (if multi-phase iteration is needed)
+- Knowledge artifacts capturing project intelligence (design, architecture, product, conventions, domain)
+
+**Project Knowledge Layer**
+
+Elaboration begins not with a blank slate but with accumulated project intelligence. AI-DLC maintains a **Knowledge Layer** — a set of structured artifacts in `.ai-dlc/knowledge/` that persist across intents and capture what the project *is*, distinct from what any single intent *builds*.
+
+Five artifact types form the knowledge layer:
+
+| Artifact | What It Captures |
+|----------|-----------------|
+| **design** | Visual language, component patterns, design tokens, layout conventions |
+| **architecture** | System structure, module boundaries, data flow, technology choices |
+| **product** | Business rules, user personas, domain vocabulary, feature inventory |
+| **conventions** | Coding standards, naming patterns, file organization, tooling configuration |
+| **domain** | Domain model, entity relationships, bounded contexts, ubiquitous language |
+
+For **brownfield projects**, knowledge artifacts are populated via automated synthesis — a subagent scans the codebase, samples representative files, and distills patterns into structured artifacts with confidence scores. This happens early in elaboration (before domain discovery) so that subsequent phases build on existing project context rather than re-discovering it.
+
+For **greenfield projects**, knowledge artifacts begin as empty scaffolds and are seeded through the Design Direction phase, where the team selects a visual archetype and tunes design parameters to establish the project's aesthetic foundation before any implementation begins.
+
+Knowledge artifacts serve as persistent, cross-intent context. Every hat in the execution workflow reads relevant knowledge artifacts, ensuring that the fifth intent built in a project benefits from everything learned during the first four. This is a practical extension of the Memory Providers principle: the project's own accumulated knowledge becomes a first-class memory layer.
+
+**Design Direction**
+
+Greenfield projects face a cold-start problem: there are no existing patterns to learn from, and design decisions made in the first intent shape everything that follows. AI-DLC addresses this through a **Design Direction** phase during elaboration.
+
+When elaborating a greenfield or early-stage project without existing design knowledge, the workflow presents a design direction picker — a visual interface where the team selects from design archetypes (e.g., Brutalist, Editorial, Dense/Utilitarian, Playful/Warm) and tunes parameters like density, border treatment, color temperature, and typographic contrast. The selection produces a **design blueprint** — a structured artifact that defines the project's visual language in terms specific enough to guide wireframe generation and inform builder context.
+
+The design blueprint feeds into the knowledge layer as the `design` artifact, where it persists across intents. Subsequent elaboration cycles inherit the established design direction rather than re-deciding it, providing visual continuity across features. The blueprint also flows into wireframe generation and hat context, ensuring that design decisions made during inception propagate through construction.
+
+This phase is skipped for established projects where a design knowledge artifact already exists — the existing patterns are sufficient to guide new work.
 
 **Multi-Pass Elaboration**
 
@@ -1091,6 +1122,15 @@ For intents requiring cross-functional iteration, Mob Elaboration also defines t
 3. **Dev pass elaboration:** The full cross-functional team (product, design, dev) elaborates dev units using design artifacts and behavioral specs as input. Output: dev units ready for execution.
 
 Each pass elaboration runs the same Mob Elaboration ritual with different participants and inputs. The intent stays the same throughout—passes refine it through different lenses.
+
+**Elaboration Phase Ordering**
+
+Within a single elaboration cycle, work proceeds through a defined sequence of phases. The core phases (intent capture, clarification, domain discovery, decomposition, criteria definition) are augmented by two context-building phases that fire conditionally:
+
+- **Knowledge Bootstrap (Phase 2.3):** Fires before domain discovery. For brownfield projects, synthesizes knowledge artifacts from the existing codebase. For greenfield projects, writes scaffold artifacts. This ensures domain discovery can build on accumulated project intelligence rather than starting from zero.
+- **Design Direction (Phase 2.75):** Fires after domain discovery, before workflow selection. For greenfield or early-stage projects without design knowledge, presents the design direction picker. For established projects, skipped — existing design knowledge is sufficient.
+
+Both phases are automatic and require no explicit invocation. They integrate into the elaboration flow as conditional steps that activate based on project maturity and existing knowledge state.
 
 #### Execution Phase
 
@@ -1498,7 +1538,7 @@ Generated: .ai-dlc/rec-engine/operations/rollback-deployment.deploy.yaml
 
 ### Key Difference: Context Building
 
-Before Inception, AI must understand the existing codebase. This analysis can itself be an Autonomous Bolt:
+Before Inception, AI must understand the existing codebase. AI-DLC automates this through the Knowledge Bootstrap phase of elaboration, which synthesizes knowledge artifacts from the codebase — scanning for architectural patterns, design conventions, domain models, and coding standards. These artifacts persist in `.ai-dlc/knowledge/` and inform all subsequent elaboration and execution. For teams that need deeper analysis, this context building can also be an explicit Autonomous Bolt:
 
 **Autonomous context building:**
 
@@ -1672,10 +1712,14 @@ For detailed runbooks with system prompts, entry/exit criteria, and failure mode
 | **Completion Criteria** | Programmatically verifiable conditions that define when work is successfully done |
 | **Completion Promise** | Signal (e.g., COMPLETE, BLOCKED) that autonomous execution has finished |
 | **Context Budget** | Available attention capacity in AI context window; quality degrades when overloaded |
+| **Design Blueprint** | A structured artifact produced by the Design Direction phase that defines a project's visual language — archetype, parameters, component patterns — and seeds the design knowledge artifact |
+| **Design Direction** | Elaboration phase (2.75) where greenfield or early-stage projects select a visual archetype and tune design parameters, producing a design blueprint that guides wireframe generation and builder context |
 | **HITL** | Human-in-the-Loop: human validates each significant step before AI proceeds; used for novel, high-risk, or foundational work |
 | **AHOTL** | Autonomous Human-on-the-Loop: human defines criteria and reviews output; AI operates autonomously within boundaries; used for well-defined, programmatically verifiable work |
 | **Integrator** | Final validation hat that runs conditionally based on VCS strategy; validates auto-merged state (trunk) or creates single PR (intent); skipped for unit/bolt strategies |
 | **Intent** | High-level statement of purpose with completion criteria that serves as starting point for decomposition |
+| **Knowledge Artifact** | A structured file in `.ai-dlc/knowledge/` capturing project intelligence in one of five types: design, architecture, product, conventions, domain; persists across intents |
+| **Knowledge Layer** | The collection of knowledge artifacts that accumulate project intelligence over time, serving as persistent cross-intent context for elaboration and execution |
 | **Memory Provider** | Source of persistent context (files, git, tickets, ADRs, runbooks) accessible to AI agents |
 | **Mob Execution** | Collaborative ritual where multiple teams build Units in parallel with AI assistance |
 | **Mob Elaboration** | Collaborative ritual where humans and AI decompose Intent into Units with Completion Criteria |

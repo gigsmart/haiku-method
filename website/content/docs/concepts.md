@@ -103,6 +103,34 @@ This enables:
 - **Fan-in**: Units wait for all dependencies before starting
 - **Maximum parallelism**: Ready units start immediately
 
+### Project Knowledge Layer
+
+AI-DLC accumulates project intelligence in a **Knowledge Layer** -- structured artifacts in `.ai-dlc/knowledge/` that persist across intents. Five artifact types capture what the project *is*:
+
+| Artifact | What It Captures |
+|----------|-----------------|
+| **design** | Visual language, component patterns, design tokens |
+| **architecture** | System structure, module boundaries, technology choices |
+| **product** | Business rules, user personas, domain vocabulary |
+| **conventions** | Coding standards, naming patterns, file organization |
+| **domain** | Domain model, entity relationships, bounded contexts |
+
+Knowledge artifacts are populated automatically during elaboration:
+- **Brownfield projects:** A synthesis subagent scans the codebase and distills patterns into artifacts
+- **Greenfield projects:** Scaffold artifacts are created, then seeded via the Design Direction picker
+
+All four execution hats read relevant knowledge artifacts, so the fifth intent in a project benefits from everything learned during the first four.
+
+### Design Direction
+
+For greenfield or early-stage projects, elaboration includes a **Design Direction** phase where the team selects a visual archetype and tunes parameters. The available archetypes (Brutalist, Editorial, Dense/Utilitarian, Playful/Warm) and tunable parameters (density, border treatment, color temperature, typographic contrast) produce a **design blueprint** that:
+
+- Seeds the `design` knowledge artifact for the project
+- Guides wireframe generation during elaboration
+- Provides design context to all hats during execution
+
+This phase is skipped for established projects where design knowledge already exists.
+
 ## Completion Criteria
 
 Completion Criteria are the most important concept in AI-DLC. They define success in measurable, verifiable terms.

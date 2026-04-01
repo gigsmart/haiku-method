@@ -274,6 +274,26 @@ Be explicit about what NOT to do:
 - [ ] Success/error confirmations
 ```
 
+## Design Direction (Greenfield Projects)
+
+When starting a new project (or one without established design patterns), elaboration includes a **Design Direction** step. A visual picker presents design archetypes and tunable parameters:
+
+**Archetypes:**
+- **Brutalist** - High contrast, raw borders, asymmetric grids, monospace type
+- **Editorial** - Magazine layouts, strong typography, generous whitespace
+- **Dense/Utilitarian** - Compact layouts, data-rich, efficient use of space
+- **Playful/Warm** - Rounded elements, vibrant colors, friendly typography
+
+**Tunable Parameters:**
+- Density, border treatment, color temperature, typographic contrast, and more
+
+The selection produces a **design blueprint** that:
+- Seeds the project's design knowledge artifact (persists across all intents)
+- Guides wireframe generation during elaboration
+- Provides design context to all execution hats
+
+**As a designer, this is your opportunity to set the visual foundation before any code is written.** The blueprint captures your design direction in structured terms that AI can apply consistently across features. For established projects, this step is skipped -- the existing design patterns serve as the guide.
+
 ## Collaboration Tips
 
 ### Async Collaboration
