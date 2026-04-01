@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.82.11] - 2026-04-01
+
+Looking at the commits since 1.82.10, there is only one feature:
+
+**Commits analyzed:**
+- feat: AI-synthesized changelog and full version backfill (scripts, workflow automation, changelog regeneration)
+
+This is purely an internal tooling improvement — it doesn't change plugin functionality or user behavior. Following the rule to "skip noise" unless it changes user behavior, there are **no user-facing changes to document** for 1.82.11.
+
+If you'd like to document the internal improvement, one minimal option would be:
+
+```
+### Changed
+- Changelog generation is now AI-synthesized for consistency across release notes.
+```
+
+But strictly speaking, this is a tooling-only patch with no user-facing changes.
+
 ## [1.83.1] - 2026-03-30
 
 ### Fixed
