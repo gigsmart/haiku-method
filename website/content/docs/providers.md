@@ -14,7 +14,7 @@ Providers connect AI-DLC to external systems your team already uses — ticketin
 |----------|---------|----------------|
 | **ticketing** | Track work as tickets/issues linked to units | Jira, Linear, GitHub Issues, GitLab Issues |
 | **spec** | Pull requirements and acceptance criteria | Notion, Confluence, Google Docs |
-| **design** | Reference designs and component specs | Figma |
+| **design** | Reference designs and component specs | Canva, OpenPencil, Pencil, Penpot, Excalidraw, Figma |
 | **comms** | Post status updates and notifications | Slack, Teams, Discord |
 | **VCS hosting** | Auto-detected from git remote | GitHub, GitLab, Bitbucket |
 | **CI/CD** | Auto-detected from repo config files | GitHub Actions, GitLab CI, Jenkins, CircleCI |
@@ -44,7 +44,7 @@ providers:
       - Link each ticket to the specific AC page it covers
 
   design:
-    type: figma
+    type: auto          # auto-detects from MCP tools; or set explicitly
     instructions: |
       - Only reference designs marked "Ready for Dev"
 
@@ -139,11 +139,17 @@ Providers work through MCP (Model Context Protocol) tool servers. For each provi
 | GitHub Issues | `gh issue` (built-in) |
 | Notion | `mcp__*notion*` |
 | Confluence | `mcp__*confluence*` |
-| Figma | `mcp__*figma*` |
+| Canva | `mcp__*Canva*` |
+| Figma | `mcp__*figma*` or `mcp__*Figma*` |
+| OpenPencil | `mcp__*openpencil*` or `mcp__*open_pencil*` |
+| Pencil | `mcp__*pencil*` |
+| Penpot | `mcp__*penpot*` |
+| Excalidraw | `mcp__*excalidraw*` or `mcp__*Excalidraw*` |
 | Slack | `mcp__*slack*` |
 
 ## Next Steps
 
+- **[Design Providers Guide](/docs/guide-design-providers/)** — Detailed setup for all 6 design providers
 - **[Quick Start](/docs/quick-start/)** — Get started with AI-DLC
 - **[Workflows](/docs/workflows/)** — Understand the hat-based workflow system
 - **[Cowork Mode](/docs/cowork/)** — Work on repos remotely without local checkout

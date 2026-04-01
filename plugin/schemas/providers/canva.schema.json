@@ -5,17 +5,19 @@
 	"description": "Provider-specific configuration for Canva design provider",
 	"type": "object",
 	"properties": {
-		"team_id": {
-			"type": "string",
-			"description": "Canva team ID"
-		},
 		"brand_kit_id": {
 			"type": "string",
-			"description": "Canva brand kit ID"
+			"description": "Canva Brand Kit ID for consistent branding"
 		},
-		"folder_id": {
+		"default_folder": {
 			"type": "string",
-			"description": "Canva folder ID"
+			"description": "Default Canva folder path for organizing designs"
+		},
+		"export_format": {
+			"type": "string",
+			"enum": ["png", "jpg", "pdf"],
+			"default": "png",
+			"description": "Default export format for design assets"
 		}
 	},
 	"additionalProperties": false

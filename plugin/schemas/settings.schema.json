@@ -89,6 +89,11 @@
 			"default": "editorial",
 			"description": "Default design archetype for autonomous mode elaboration when no design knowledge exists."
 		},
+		"knowledge_refresh": {
+			"type": "boolean",
+			"default": true,
+			"description": "Re-synthesize knowledge artifacts after intent integration completes. Captures patterns established by the intent for use in subsequent intents. Set to false to skip the post-integrate refresh step."
+		},
 		"model_profiles": {
 			"type": "object",
 			"description": "Map hats to model tiers for cost optimization. Defaults to inheriting the session model for all hats.",
@@ -141,7 +146,7 @@
 				},
 				"design": {
 					"$ref": "#/definitions/designProviderEntry",
-					"description": "Design tool provider (Figma)"
+					"description": "Design tool provider (Canva, Figma, OpenPencil, Pencil, Penpot, Excalidraw)"
 				},
 				"comms": {
 					"$ref": "#/definitions/commsProviderEntry",

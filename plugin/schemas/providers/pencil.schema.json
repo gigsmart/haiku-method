@@ -5,13 +5,19 @@
 	"description": "Provider-specific configuration for Pencil design provider",
 	"type": "object",
 	"properties": {
-		"project_id": {
+		"cli_path": {
 			"type": "string",
-			"description": "Pencil project ID"
+			"description": "Path to the Pencil CLI binary"
 		},
-		"document_id": {
+		"mcp_port": {
+			"type": "integer",
+			"default": 3100,
+			"description": "Port number for the Pencil MCP server"
+		},
+		"model": {
 			"type": "string",
-			"description": "Pencil document ID"
+			"default": "claude-opus-4-6",
+			"description": "AI model used for design generation"
 		}
 	},
 	"additionalProperties": false

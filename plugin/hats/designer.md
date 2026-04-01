@@ -1,6 +1,6 @@
 ---
 name: "🎨 Designer"
-description: Ingests existing designs or generates wireframes, producing structured design specs for downstream hats
+description: Produces structured design specs — via provider-native design tools when available, or through design ingestion and wireframe generation
 ---
 
 # Designer
@@ -14,6 +14,8 @@ The Designer produces structured design specifications that downstream hats (Bui
 3. **Generation** — No designs exist. The hat falls back to generating low-fidelity wireframes via the `elaborate-wireframes` skill.
 
 The core deliverable is always a `design-spec.md` — a structured, token-efficient document that captures layout, components, states, copy, and gaps. This is what downstream hats read, not raw screenshots.
+
+When a **design provider** is available (Canva, Figma, OpenPencil, Pencil, Penpot, Excalidraw), the hat also creates designs natively using provider MCP tools or CLI. Provider-native artifacts are saved to `.ai-dlc/{intent}/designs/` and PNG exports to `mockups/` for visual review. When no provider is available, the hat uses text-based design specs and HTML wireframes — existing behavior is fully preserved.
 
 ## Parameters
 
@@ -75,6 +77,38 @@ If `DESIGN_KNOWLEDGE` is empty, proceed with the survey below (component librari
 
 **Knowledge freshness:** Knowledge artifacts have a `last_updated` timestamp in their frontmatter. If the artifact is older than 90 days, treat its guidance as potentially outdated — the codebase may have evolved. Note any discrepancies you observe between the knowledge and actual code patterns.
 
+#### 1b. Discover Design Provider
+
+Check if a design provider is available by reading the injected context:
+
+1. Look for the **Design** row in the `### Project Providers` table injected by the SessionStart hook
+2. If a design provider is listed:
+   - Note the provider type (e.g., `canva`, `figma`, `openpencil`, `pencil`, `penpot`, `excalidraw`)
+   - Read the `### Design Provider Capabilities` section for the provider's capability flags
+   - Use `ToolSearch` with the provider's MCP hint pattern to verify tools are actually available in this session
+   - If MCP tools are found: record `PROVIDER_AVAILABLE=true` and the provider type for use in downstream steps
+   - If MCP tools are NOT found: log a warning ("Design provider configured but MCP tools not found — falling back to text-based specs") and proceed with existing behavior
+3. If no design provider is configured: proceed with existing behavior (text specs + HTML wireframes via `elaborate-wireframes`)
+
+**CRITICAL:** Provider discovery determines the path through subsequent steps. When `PROVIDER_AVAILABLE=true`, you gain additional creation capabilities but ALL existing steps still apply — provider-native design creation supplements, not replaces, the design spec.
+
+#### 1c. Load Provider Design Tokens
+
+**Skip this step if `PROVIDER_AVAILABLE=false` or the provider lacks the `design_tokens` capability** (check the capabilities JSON from step 1b).
+
+When the active provider supports design tokens, query the provider's token vocabulary before starting design work:
+
+- **Canva**: Use `list-brand-kits` to retrieve brand colors, fonts, and logos
+- **Figma**: Use style/variable reading tools to extract design tokens
+- **OpenPencil**: Use `get_variables` to retrieve design variables
+- **Pencil**: Use `get_variables` to retrieve design variables
+- **Penpot**: Extract CSS custom properties from the design system
+- **Excalidraw**: No design token support — skip
+
+If tokens are retrieved, merge them with any existing design knowledge from step 1a. Provider tokens take precedence over knowledge-synthesized tokens when both exist for the same property (e.g., if knowledge says `--color-primary: #3B82F6` but the provider's brand kit says `#2563EB`, use the provider's value).
+
+Document the token source in the design spec: `tokens_source: provider | knowledge | none`.
+
 ### 2. Acquire design assets (if needed)
 
 This step only applies to **design tool pull** mode. Skip for ingestion and generation.
@@ -84,6 +118,39 @@ This step only applies to **design tool pull** mode. Skip for ingestion and gene
 - You SHOULD organize into subfolders if the design file has clear section groupings
 - You MUST NOT attempt to pull the entire design file at once — work frame by frame
 - **Validation**: Screenshots saved to `designs/`, count matches expected screens
+
+### 2a. Create designs in provider (provider-native path)
+
+**Skip this step if `PROVIDER_AVAILABLE=false`.** This step applies when a design provider is available AND the mode is **generation** or the user wants new designs created. Skip for pure **ingestion** mode where designs already exist.
+
+When a design provider is available, create designs natively instead of (or in addition to) generating HTML wireframes:
+
+1. **Prepare design brief**: From the unit specs, domain model, and design knowledge/tokens (steps 1a-1c), compose a structured design brief for each unit
+
+2. **Create designs using provider tools**:
+
+   - **Canva**: Use `generate-design-structured` with the unit spec as structured input. For refinements, use transactional editing: `start-editing-transaction` → `perform-editing-operations` → `commit-editing-transaction`. Access brand kit tokens via `list-brand-kits` for design system alignment.
+   - **Figma**: Use Figma Write MCP tools to create frames and components. Use Framelink MCP for reading existing designs as reference. Access styles and variables for token alignment.
+   - **OpenPencil**: Use the layered MCP workflow: `design_skeleton` → `design_content` → `design_refine`. Or CLI: `op design --prompt "{spec}" --out {path}.op`. Access design variables for token alignment.
+   - **Pencil**: Use MCP `batch_design` for canvas manipulation. Or use CLI interactive shell for scripted creation. Use `get_variables` for design system token access.
+   - **Penpot**: Use Penpot MCP to create design elements in the open canvas. Access design tokens as CSS custom properties.
+   - **Excalidraw**: Use Excalidraw MCP for hand-drawn style wireframes and diagrams. Good for rapid iteration and architecture diagrams.
+
+3. **Save provider-native artifacts** to `.ai-dlc/{intent}/designs/`:
+   - File-based providers: Save native format files — `.op` (OpenPencil), `.pen` (Pencil), `.excalidraw` (Excalidraw)
+   - Cloud-only providers (Canva, Figma, Penpot): No local file — the URI reference serves as the artifact
+
+4. **Export PNG previews** to `.ai-dlc/{intent}/mockups/` for visual review:
+   - **Canva**: `export-design` with PNG format
+   - **Figma**: Figma export tools
+   - **OpenPencil**: `export_nodes` with PNG format
+   - **Pencil**: `export_nodes` with PNG format
+   - **Penpot**: Penpot export tool
+   - **Excalidraw**: Export to PNG
+
+5. **Continue to step 3**: The exported PNGs are analyzed via subagents just like any other design asset. This ensures the spec extraction process is consistent regardless of how designs were created.
+
+- **Validation**: Provider-native artifacts saved (or URI recorded), PNG exports generated, ready for subagent analysis
 
 ### 3. Analyze designs via subagents
 
@@ -249,12 +316,20 @@ Aggregate all subagent output into the final design spec document.
 - You MUST incorporate user feedback on the design spec
 - You SHOULD iterate until the user approves — the spec is the contract for downstream hats
 - You MUST update unit frontmatter with a `design_spec: true` field for each unit that has design coverage
+- When provider-native artifacts were created in step 2a, you MUST update unit frontmatter `design_ref` to point to the artifact:
+  - **Canva**: `design_ref: canva://design/{id}` (design ID from the created design)
+  - **Figma**: `design_ref: figma://{file_key}/{node_id}` (from the created file/frame)
+  - **OpenPencil**: `design_ref: .ai-dlc/{intent}/designs/unit-{NN}-{slug}.op`
+  - **Pencil**: `design_ref: .ai-dlc/{intent}/designs/unit-{NN}-{slug}.pen`
+  - **Penpot**: `design_ref: penpot://{project_id}/{file_id}` (from the created file)
+  - **Excalidraw**: `design_ref: .ai-dlc/{intent}/designs/unit-{NN}-{slug}.excalidraw`
 - You MUST commit all artifacts:
   - `designs/design-manifest.md`
   - `design-spec.md`
-  - `mockups/` wireframes (if any were generated)
-  - Updated unit files
-- **Validation**: User approves design spec, all artifacts committed
+  - `designs/*.op`, `*.pen`, `*.excalidraw` (provider-native files, if any)
+  - `mockups/` wireframes and PNG exports (if any were generated)
+  - Updated unit files (including `design_ref` updates)
+- **Validation**: User approves design spec, all artifacts committed, design_ref set for provider-native units
 
 ## Success Criteria
 

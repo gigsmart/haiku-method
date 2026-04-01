@@ -5,13 +5,21 @@
 	"description": "Provider-specific configuration for OpenPencil design provider",
 	"type": "object",
 	"properties": {
-		"project_id": {
+		"cli_path": {
 			"type": "string",
-			"description": "OpenPencil project ID"
+			"description": "Path to the OpenPencil CLI binary"
 		},
-		"document_id": {
+		"default_export_target": {
 			"type": "string",
-			"description": "OpenPencil document ID"
+			"enum": ["react", "vue", "svelte", "html", "flutter", "swiftui", "compose", "react-native"],
+			"default": "react",
+			"description": "Default framework target for code export"
+		},
+		"mcp_transport": {
+			"type": "string",
+			"enum": ["stdio", "http"],
+			"default": "stdio",
+			"description": "MCP server transport protocol"
 		}
 	},
 	"additionalProperties": false

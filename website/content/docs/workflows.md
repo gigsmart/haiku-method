@@ -209,6 +209,10 @@ reference design tokens, responsive breakpoints defined,
 accessibility contrast ratios met. Ready for implementation."
 ```
 
+### Design Providers
+
+The design workflow integrates with AI-DLC's [design providers](/docs/guide-design-providers/) — Canva, Figma, OpenPencil, Pencil, Penpot, and Excalidraw. When a design provider is configured, the designer hat automatically pulls existing designs and component specs, and stores design references (e.g., `figma://file-key#node=1:42`) in unit frontmatter for use by subsequent implementation workflows.
+
 ### Philosophy
 
 The design workflow separates design decisions from implementation. This is useful when an intent contains units that need design exploration before code is written. Pair it with the default workflow for implementation units in the same intent using per-unit workflows.

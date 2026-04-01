@@ -447,6 +447,16 @@ When dev discovers a technical constraint that changes the product spec, the int
 
 For the full theoretical treatment of passes, see the [Iteration Through Passes](https://ai-dlc.dev/papers/ai-dlc-2026/#iteration-through-passes) section of the paper.
 
+## Design Providers
+
+AI-DLC supports six design providers that connect your workflow to external design tools: **Canva**, **Figma**, **OpenPencil**, **Pencil**, **Penpot**, and **Excalidraw**. Providers are detected automatically from available MCP tools or configured explicitly in `.ai-dlc/settings.yml`.
+
+Each provider has different capabilities — some support components and prototyping (Figma, Penpot), others offer AI-powered design generation (Canva, OpenPencil, Pencil), and all support reading, writing, and exporting designs. During elaboration, the design provider pulls relevant mockups and component specs. During execution, builders reference design specs and reviewers cross-check implementations.
+
+Design references use provider-specific URI schemes (e.g., `figma://file-key#node=1:42`) stored in unit frontmatter, enabling automatic resolution during execution.
+
+See the [Design Providers Guide](/docs/guide-design-providers/) for setup instructions, capability details, and configuration for each provider.
+
 ## Operations Phase
 
 After construction and integration complete, many features require ongoing maintenance — scheduled jobs, reactive responses to production events, or periodic human reviews. The operations phase provides a structured way to define and manage these tasks using `/ai-dlc:operate`. Operations are defined as spec files alongside the code and tracked through the same state system as the rest of AI-DLC.

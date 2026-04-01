@@ -356,7 +356,7 @@ _provider_mcp_hint() {
     canva)        echo 'mcp__*Canva*' ;;
     figma)        echo 'mcp__*figma*|mcp__*Figma*' ;;
     openpencil)   echo 'mcp__*openpencil*|mcp__*open_pencil*' ;;
-    pencil)       echo 'mcp__*pencil*' ;;
+    pencil)       echo 'mcp__pencil__*|mcp__*_pencil__*' ;;
     penpot)       echo 'mcp__*penpot*' ;;
     excalidraw)   echo 'mcp__*excalidraw*|mcp__*Excalidraw*' ;;
     slack)        echo 'mcp__*slack*' ;;
@@ -453,9 +453,6 @@ detect_design_provider() {
         case "$CLAUDE_MCP_TOOL_LIST" in
           *$pattern*) echo "$provider"; return ;;
         esac
-      elif command -v "$provider" >/dev/null 2>&1; then
-        echo "$provider"
-        return
       fi
     done
     unset IFS

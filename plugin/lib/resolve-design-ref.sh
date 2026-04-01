@@ -160,14 +160,14 @@ _generate_export_instructions() {
     canva)
       local design_id="${source#canva://}"
       design_id="${design_id#design/}"
-      tool_name="mcp__claude_ai_Canva__export-design"
+      tool_name="<use ToolSearch to find export tool>"
       parameters="design_id: \"$design_id\"
 format: \"png\""
       ;;
     figma)
       local file_key="${source#figma://}"
       file_key="${file_key#file/}"
-      tool_name="figma_mcp_export"
+      tool_name="<use ToolSearch to find export tool>"
       parameters="file_key: \"$file_key\"
 format: \"png\""
       ;;
@@ -187,26 +187,30 @@ format: \"png\""
       ;;
     penpot)
       local penpot_path="${source#penpot://}"
-      tool_name="penpot_mcp_export"
+      tool_name="<use ToolSearch to find export tool>"
       parameters="path: \"$penpot_path\"
 format: \"png\""
       ;;
     excalidraw)
       local scene_path="$source"
       [[ "$source" == excalidraw://* ]] && scene_path="${source#excalidraw://}"
-      tool_name="excalidraw_mcp_export"
+      tool_name="<use ToolSearch to find export tool>"
       parameters="path: \"$scene_path\"
 format: \"png\""
       ;;
   esac
 
+  # Helper: produce a YAML-safe double-quoted string value via jq JSON encoding.
+  # JSON strings are valid YAML double-quoted scalars (YAML 1.2 is a JSON superset).
+  _yaml_str() { printf '%s' "$1" | jq -Rs '.'; }
+
   {
     printf -- '---\n'
-    printf 'tool: "%s"\n' "$tool_name"
-    printf 'mcp_hint: "%s"\n' "$mcp_hint"
-    printf 'provider: "%s"\n' "$provider"
-    printf 'source_uri: "%s"\n' "$source"
-    printf 'output_path: "%s"\n' "$output_path"
+    printf 'tool: %s\n'        "$(_yaml_str "$tool_name")"
+    printf 'mcp_hint: %s\n'    "$(_yaml_str "$mcp_hint")"
+    printf 'provider: %s\n'    "$(_yaml_str "$provider")"
+    printf 'source_uri: %s\n'  "$(_yaml_str "$source")"
+    printf 'output_path: %s\n' "$(_yaml_str "$output_path")"
     printf 'timeout: %s\n' "$timeout"
     printf -- '---\n\n'
     cat <<'EOF'

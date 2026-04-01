@@ -1162,7 +1162,7 @@ For **brownfield projects**, knowledge artifacts are populated via automated syn
 
 For **greenfield projects**, knowledge artifacts begin as empty scaffolds and are seeded through the Design Direction phase, where the team selects a visual archetype and tunes design parameters to establish the project's aesthetic foundation before any implementation begins.
 
-Knowledge artifacts serve as persistent, cross-intent context. Every hat in the execution workflow reads relevant knowledge artifacts, ensuring that the fifth intent built in a project benefits from everything learned during the first four. This is a practical extension of the Memory Providers principle: the project's own accumulated knowledge becomes a first-class memory layer.
+Knowledge artifacts are refreshed at two points in the lifecycle: during elaboration (before domain discovery, so that subsequent phases build on existing context) and after integration (when an intent completes and all units have been merged). The post-integrate refresh is what closes the greenfield gap — the first intent builds the foundational codebase patterns, and the refresh captures them as knowledge artifacts before the next intent begins. This ensures that the fifth intent built in a project benefits from everything established by the first four. Every hat in the execution workflow reads relevant knowledge artifacts, making the project's accumulated intelligence a first-class memory layer — a practical extension of the Memory Providers principle.
 
 **Design Direction**
 
@@ -1188,7 +1188,7 @@ Each pass elaboration runs the same Mob Elaboration ritual with different partic
 
 Within a single elaboration cycle, work proceeds through a defined sequence of phases. The core phases (intent capture, clarification, domain discovery, decomposition, criteria definition) are augmented by two context-building phases that fire conditionally:
 
-- **Knowledge Bootstrap (Phase 2.3):** Fires before domain discovery. For brownfield projects, synthesizes knowledge artifacts from the existing codebase. For greenfield projects, writes scaffold artifacts. This ensures domain discovery can build on accumulated project intelligence rather than starting from zero.
+- **Knowledge Bootstrap (Phase 2.3):** Fires before domain discovery. For brownfield projects, synthesizes knowledge artifacts from the existing codebase. For greenfield projects, writes scaffold artifacts. This ensures domain discovery can build on accumulated project intelligence rather than starting from zero. A complementary **post-integrate refresh** runs after each intent completes, re-synthesizing knowledge from the merged codebase so that the next intent's bootstrap phase starts with current artifacts.
 - **Design Direction (Phase 2.75):** Fires after domain discovery, before workflow selection. For greenfield or early-stage projects without design knowledge, presents the design direction picker. For established projects, skipped — existing design knowledge is sufficient.
 
 Both phases are automatic and require no explicit invocation. They integrate into the elaboration flow as conditional steps that activate based on project maturity and existing knowledge state.

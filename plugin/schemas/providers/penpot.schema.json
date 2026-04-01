@@ -5,17 +5,19 @@
 	"description": "Provider-specific configuration for Penpot design provider",
 	"type": "object",
 	"properties": {
+		"instance_url": {
+			"type": "string",
+			"format": "uri",
+			"description": "URL of the Penpot instance"
+		},
 		"project_id": {
 			"type": "string",
 			"description": "Penpot project ID"
 		},
-		"team_id": {
-			"type": "string",
-			"description": "Penpot team ID"
-		},
-		"file_id": {
-			"type": "string",
-			"description": "Penpot file ID"
+		"mcp_port": {
+			"type": "integer",
+			"default": 4401,
+			"description": "Port number for the Penpot MCP server"
 		}
 	},
 	"additionalProperties": false

@@ -73,13 +73,28 @@ case "$CURRENT_HAT" in
     UNIT_FILE="$INTENT_DIR/${CURRENT_UNIT}.md"
     if [ -n "$CURRENT_UNIT" ] && [ -f "$UNIT_FILE" ]; then
       PLUGIN_DIR="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$(readlink -f "$0")")")}"
-      VISUAL_GATE_RESULT=$(bash "$PLUGIN_DIR/lib/detect-visual-gate.sh" --unit-file "$UNIT_FILE" 2>/dev/null || echo "VISUAL_GATE=false")
-      if [ "$VISUAL_GATE_RESULT" = "VISUAL_GATE=true" ]; then
+      VISUAL_GATE_RESULT=$(bash "$PLUGIN_DIR/lib/detect-visual-gate.sh" --unit-file "$UNIT_FILE" 2>/dev/null || echo "VISUAL_GATE=false SCORE=0")
+      # Parse gate result: "VISUAL_GATE=true|false SCORE=N [NEEDS_EXPORT=true] [MODE=present_for_review]"
+      VISUAL_GATE_ACTIVE=false
+      case "$VISUAL_GATE_RESULT" in VISUAL_GATE=true*) VISUAL_GATE_ACTIVE=true ;; esac
+      if [ "$VISUAL_GATE_ACTIVE" = "true" ]; then
         UNIT_SLUG="${CURRENT_UNIT#unit-}"
-        bash "$PLUGIN_DIR/lib/run-visual-comparison.sh" \
+        COMPARISON_RESULT=$(bash "$PLUGIN_DIR/lib/run-visual-comparison.sh" \
           --intent-slug "$INTENT_SLUG" \
           --unit-slug "$CURRENT_UNIT" \
-          --intent-dir "$INTENT_DIR" 2>/dev/null || true
+          --intent-dir "$INTENT_DIR" 2>/dev/null || echo "")
+        # Parse comparison output for reviewer handoff context
+        NEEDS_EXPORT=false
+        case "$COMPARISON_RESULT" in *NEEDS_EXPORT=true*) NEEDS_EXPORT=true ;; esac
+        VISUAL_MODE=""
+        case "$COMPARISON_RESULT" in *MODE=present_for_review*) VISUAL_MODE="present_for_review" ;; esac
+        # Log for reviewer context — these do not block advancement
+        if [ "$NEEDS_EXPORT" = "true" ]; then
+          echo "ai-dlc: advance: visual comparison requires agent export — reviewer will handle" >&2
+        fi
+        if [ "$VISUAL_MODE" = "present_for_review" ]; then
+          echo "ai-dlc: advance: visual comparison in present-for-review mode — reviewer will handle" >&2
+        fi
       fi
     fi
     ;;
@@ -660,6 +675,75 @@ if ! git diff --cached --quiet 2>/dev/null; then
   git commit -m "status: reconcile intent and unit statuses before delivery"
 fi
 ```
+
+### Post-Integrate Knowledge Refresh
+
+After integration passes and before delivery, refresh knowledge artifacts so the next intent benefits from what this intent established. This is especially valuable for greenfield and early-stage projects where the first few intents create the foundational patterns.
+
+**Gate:** Skip this step if `knowledge_refresh` is explicitly set to `false` in `.ai-dlc/settings.yml`:
+
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+KNOWLEDGE_REFRESH=$(get_setting_value "knowledge_refresh")
+KNOWLEDGE_REFRESH="${KNOWLEDGE_REFRESH:-true}"
+```
+
+If `KNOWLEDGE_REFRESH` is `"false"`, skip to Pre-Delivery Code Review.
+
+**Step 1: Gather context for synthesis brief**
+
+```bash
+source "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh"
+KNOWLEDGE_COUNT=$(dlc_knowledge_list | wc -l | tr -d ' ')
+PROJECT_MATURITY=$(detect_project_maturity)
+```
+
+Always run the refresh — even when knowledge artifacts already exist, the intent may have changed the codebase in ways that update them. The synthesis skill is idempotent.
+
+**Step 2: Write the synthesis brief**
+
+Write `.ai-dlc/${INTENT_SLUG}/.briefs/knowledge-refresh.md`:
+
+```markdown
+---
+intent_slug: {INTENT_SLUG}
+worktree_path: {absolute path to intent worktree}
+project_maturity: {PROJECT_MATURITY}
+existing_knowledge: [{list of existing artifact types from dlc_knowledge_list}]
+post_integrate: true
+---
+
+# Post-Integrate Knowledge Refresh
+
+Re-synthesize knowledge artifacts from the merged codebase after intent completion.
+This captures patterns established or changed by the intent for use in subsequent intents.
+```
+
+**Step 3: Invoke synthesis subagent**
+
+```javascript
+Agent({
+  subagent_type: "general-purpose",
+  description: `knowledge-refresh: ${intentSlug}`,
+  prompt: `
+    Read the skill definition at plugin/skills/elaborate/subskills/knowledge-synthesize/SKILL.md first,
+    then execute it with the brief file at .ai-dlc/${intentSlug}/.briefs/knowledge-refresh.md as input.
+
+    This is a post-integrate refresh — the codebase now contains all work from the completed intent.
+    Overwrite existing artifacts with fresh synthesis from the current codebase state.
+  `,
+  run_in_background: true
+})
+```
+
+**Run in background** — knowledge refresh should not block delivery. The artifacts will be committed when the subagent completes. If the subagent finishes before delivery completes, commit the results:
+
+```bash
+git add .ai-dlc/knowledge/ .ai-dlc/${INTENT_SLUG}/.briefs/knowledge-refresh*.md
+git diff --cached --quiet || git commit -m "knowledge: refresh artifacts after ${INTENT_SLUG} integration"
+```
+
+If the subagent is still running when delivery completes, that's fine — the artifacts will be committed in a follow-up. The next elaboration will pick them up regardless.
 
 ### Pre-Delivery Code Review (Delegated)
 

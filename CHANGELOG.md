@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.83.0] - 2026-04-01
+
+### Added
+- Subscribe to changelog and blog updates via RSS, Atom, and JSON feeds
+- Release-notes skill for accessing release information
+
+### Fixed
+- Feed generation now properly escapes URLs in XML and formats Atom dates correctly
+
 ## [1.82.13] - 2026-04-01
 
 ### Changed
