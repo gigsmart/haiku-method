@@ -4,7 +4,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "command -v bun >/dev/null 2>&1 || { echo 'Error: Bun is required but not installed. Install it with: curl -fsSL https://bun.sh/install | bash' >&2; exit 1; }; exec bun run --cwd \"${CLAUDE_PLUGIN_ROOT}/mcp-server\" src/server.ts"
+        "cd \"${CLAUDE_PLUGIN_ROOT}/mcp-server\" && exec npx tsx src/server.ts"
       ]
     }
   }

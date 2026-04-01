@@ -21,12 +21,6 @@
 			"$ref": "#/definitions/providersConfig",
 			"description": "External system providers for spec, ticketing, design, and comms"
 		},
-		"workflow_mode": {
-			"type": "string",
-			"enum": ["interactive", "autonomous"],
-			"default": "interactive",
-			"description": "interactive: pause for user approval at key decision points. autonomous: proceed automatically, only pause on blockers."
-		},
 		"granularity": {
 			"type": "string",
 			"enum": ["coarse", "standard", "fine"],

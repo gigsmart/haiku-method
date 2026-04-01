@@ -106,10 +106,12 @@ jobs:
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Commit version bump
+        id: commit
         run: |
           # Check if there are any changes to commit
           if git diff --quiet; then
             echo "No version changes to commit"
+            echo "released=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -126,8 +128,55 @@ jobs:
             echo "Rebase conflict detected - another workflow likely pushed first"
             echo "Aborting rebase and exiting cleanly (next push will retry)"
             git rebase --abort 2>/dev/null || true
+            echo "released=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
           # Push the rebased commit
           git push origin main
+          echo "released=true" >> $GITHUB_OUTPUT
+
+      - name: Create and push git tag
+        if: steps.commit.outputs.released == 'true'
+        run: |
+          TAG="v${{ steps.bump-version.outputs.new_version }}"
+          git tag -f "$TAG"
+          git push -f origin "$TAG"
+
+      - name: Package plugin
+        if: steps.commit.outputs.released == 'true'
+        run: |
+          VERSION="${{ steps.bump-version.outputs.new_version }}"
+          zip -r "ai-dlc-plugin-${VERSION}.zip" plugin/ \
+            -x "plugin/node_modules/*" \
+            -x "plugin/*/node_modules/*" \
+            -x "plugin/*/.tsbuildinfo"
+
+      - name: Extract release notes
+        if: steps.commit.outputs.released == 'true'
+        run: |
+          VERSION="${{ steps.bump-version.outputs.new_version }}"
+          # Extract changelog section for this version
+          awk -v ver="$VERSION" '
+            /^## \[/ {
+              if (found) exit
+              if (index($0, "[" ver "]") > 0) { found=1; next }
+            }
+            found { print }
+          ' CHANGELOG.md > /tmp/release-notes.md
+          # Convert relative commit links to absolute URLs for release context
+          sed -i "s|../../commit/|https://github.com/${{ github.repository }}/commit/|g" /tmp/release-notes.md
+
+      - name: Create GitHub Release
+        if: steps.commit.outputs.released == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.bump-version.outputs.new_version }}"
+          TAG="v${VERSION}"
+          # Delete existing release on retry to ensure idempotency
+          gh release delete "$TAG" -y 2>/dev/null || true
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes-file /tmp/release-notes.md \
+            "ai-dlc-plugin-${VERSION}.zip#AI-DLC Plugin (zip)"

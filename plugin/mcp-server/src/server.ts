@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process"
 import { readdir } from "node:fs/promises"
 import { join, resolve } from "node:path"
 import {
@@ -314,7 +315,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 		})
 
 		// Start HTTP server (idempotent)
-		const port = startHttpServer()
+		const port = await startHttpServer()
 		const reviewUrl = `http://127.0.0.1:${port}/review/${session.session_id}`
 
 		// Open browser
@@ -323,7 +324,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 				process.platform === "darwin"
 					? ["open", reviewUrl]
 					: ["xdg-open", reviewUrl]
-			Bun.spawn(cmd, { stdio: ["ignore", "ignore", "ignore"] })
+			spawn(cmd[0], cmd.slice(1), { stdio: "ignore", detached: true }).unref()
 		} catch (err) {
 			console.error("Failed to open browser:", err)
 		}
@@ -418,7 +419,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 		})
 
 		// Start HTTP server (idempotent)
-		const port = startHttpServer()
+		const port = await startHttpServer()
 		const questionUrl = `http://127.0.0.1:${port}/question/${session.session_id}`
 
 		// Open browser
@@ -427,7 +428,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 				process.platform === "darwin"
 					? ["open", questionUrl]
 					: ["xdg-open", questionUrl]
-			Bun.spawn(cmd, { stdio: ["ignore", "ignore", "ignore"] })
+			spawn(cmd[0], cmd.slice(1), { stdio: "ignore", detached: true }).unref()
 		} catch (err) {
 			console.error("Failed to open browser:", err)
 		}

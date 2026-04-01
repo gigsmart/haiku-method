@@ -1,11 +1,12 @@
-import { realpath } from "node:fs/promises"
+import { createServer, type Server as HttpServer } from "node:http"
+import { readFile, realpath } from "node:fs/promises"
 import { extname, join, resolve } from "node:path"
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js"
 import { z } from "zod"
 import { getSession, updateQuestionSession, updateSession } from "./sessions.js"
 import type { QuestionAnswer } from "./sessions.js"
 
-let httpServer: ReturnType<typeof Bun.serve> | null = null
+let httpServer: HttpServer | null = null
 let actualPort: number | null = null
 
 /** Dependency-injected MCP server reference */
@@ -115,19 +116,16 @@ async function handleMockupGet(
 	}
 
 	try {
-		const file = Bun.file(resolved)
-		if (!(await file.exists())) {
-			return new Response("Not found", { status: 404 })
-		}
 		// Symlink-safe check: ensure resolved real path stays within base dir
 		const realResolved = await realpath(resolved).catch(() => null)
 		const realBase = await realpath(mockupsDir).catch(() => resolve(mockupsDir))
 		if (!realResolved || !realResolved.startsWith(realBase)) {
 			return new Response("Forbidden", { status: 403 })
 		}
+		const data = await readFile(resolved)
 		const ext = extname(resolved).toLowerCase()
 		const contentType = MIME_TYPES[ext] ?? "application/octet-stream"
-		return new Response(file, {
+		return new Response(data, {
 			headers: { "Content-Type": contentType },
 		})
 	} catch {
@@ -152,10 +150,6 @@ async function handleWireframeGet(
 	}
 
 	try {
-		const file = Bun.file(resolved)
-		if (!(await file.exists())) {
-			return new Response("Not found", { status: 404 })
-		}
 		// Symlink-safe check: ensure resolved real path stays within base dir
 		const realResolved = await realpath(resolved).catch(() => null)
 		const realBase = await realpath(session.intent_dir).catch(() =>
@@ -164,9 +158,10 @@ async function handleWireframeGet(
 		if (!realResolved || !realResolved.startsWith(realBase)) {
 			return new Response("Forbidden", { status: 403 })
 		}
+		const data = await readFile(resolved)
 		const ext = extname(resolved).toLowerCase()
 		const contentType = MIME_TYPES[ext] ?? "application/octet-stream"
-		return new Response(file, {
+		return new Response(data, {
 			headers: { "Content-Type": contentType },
 		})
 	} catch {
@@ -281,22 +276,18 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	return new Response("Not Found", { status: 404 })
 }
 
-export function startHttpServer(): number {
+export async function startHttpServer(): Promise<number> {
 	if (httpServer && actualPort !== null) {
 		return actualPort
 	}
 
 	const basePort = Number.parseInt(process.env.AI_DLC_REVIEW_PORT ?? "8789", 10)
-	let port = basePort
 	const maxAttempts = 10
 
 	for (let i = 0; i < maxAttempts; i++) {
+		const port = basePort + i
 		try {
-			httpServer = Bun.serve({
-				port,
-				hostname: "127.0.0.1",
-				fetch: handleRequest,
-			})
+			await listenOnPort(port)
 			actualPort = port
 			console.error(`Review HTTP server listening on http://127.0.0.1:${port}`)
 			return port
@@ -306,7 +297,6 @@ export function startHttpServer(): number {
 				"code" in err &&
 				(err as NodeJS.ErrnoException).code === "EADDRINUSE"
 			) {
-				port++
 				continue
 			}
 			throw err
@@ -316,4 +306,62 @@ export function startHttpServer(): number {
 	throw new Error(
 		`Could not find available port (tried ${basePort}-${basePort + maxAttempts - 1})`,
 	)
+}
+
+function listenOnPort(port: number): Promise<void> {
+	return new Promise((resolve, reject) => {
+		const server = createServer(async (req, res) => {
+			// Build a Web API Request from the incoming Node request
+			const url = `http://127.0.0.1:${port}${req.url ?? "/"}`
+			const headers = new Headers()
+			for (const [key, value] of Object.entries(req.headers)) {
+				if (value) {
+					if (Array.isArray(value)) {
+						for (const v of value) headers.append(key, v)
+					} else {
+						headers.set(key, value)
+					}
+				}
+			}
+
+			let body: ArrayBuffer | null = null
+			if (req.method !== "GET" && req.method !== "HEAD") {
+				const chunks: Buffer[] = []
+				for await (const chunk of req) {
+					chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk)
+				}
+				const buf = Buffer.concat(chunks)
+				body = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
+			}
+
+			const webRequest = new Request(url, {
+				method: req.method ?? "GET",
+				headers,
+				body,
+			})
+
+			try {
+				const webResponse = await handleRequest(webRequest)
+				res.writeHead(
+					webResponse.status,
+					Object.fromEntries(webResponse.headers.entries()),
+				)
+				const responseBody = await webResponse.arrayBuffer()
+				res.end(Buffer.from(responseBody))
+			} catch (err) {
+				console.error("HTTP handler error:", err)
+				res.writeHead(500)
+				res.end("Internal Server Error")
+			}
+		})
+
+		server.once("error", (err) => {
+			reject(err)
+		})
+
+		server.listen(port, "127.0.0.1", () => {
+			httpServer = server
+			resolve()
+		})
+	})
 }
