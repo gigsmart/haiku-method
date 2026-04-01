@@ -10,7 +10,8 @@ workflow: ""
 ticket: ""
 design_ref: ""
 views: []
-hat: reviewer
+hat: builder
+retries: 1
 ---
 
 # unit-02-design-ref-resolution
