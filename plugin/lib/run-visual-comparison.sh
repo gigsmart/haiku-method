@@ -348,10 +348,94 @@ dlc_run_visual_comparison() {
   local ref_rc=$?
 
   if [ $ref_rc -ne 0 ]; then
-    echo "ai-dlc: visual-comparison: reference resolution failed" >&2
-    echo "$ref_json" >&2
+    echo "ai-dlc: visual-comparison: reference resolution failed — checking for Mode A" >&2
 
-    # Write failure context
+    # ── Mode A: Present-for-review ──────────────────────────────────────
+    # When no design_ref exists but a design provider IS configured and
+    # provider-native files are among the changed files, enter present-for-review mode.
+    local design_provider=""
+    if [ -f "$VISUAL_SCRIPT_DIR/config.sh" ]; then
+      # shellcheck source=config.sh
+      source "$VISUAL_SCRIPT_DIR/config.sh"
+      local providers_json
+      providers_json=$(load_providers "$repo_root" 2>/dev/null || echo '{}')
+      design_provider=$(echo "$providers_json" | jq -r '.design.type // empty')
+    fi
+
+    if [ -n "$design_provider" ]; then
+      # Check for provider-native files in changed files
+      local provider_files=""
+      local normalized_files
+      normalized_files=$(echo "$changed_files" | tr ',' '\n')
+      while IFS= read -r _file; do
+        _file=$(echo "$_file" | xargs)
+        [ -z "$_file" ] && continue
+        local _ext="${_file##*.}"
+        _ext=$(echo "$_ext" | tr '[:upper:]' '[:lower:]')
+        case "$_ext" in
+          op|pen|excalidraw|fig)
+            provider_files="${provider_files:+$provider_files,}$_file"
+            ;;
+        esac
+      done <<< "$normalized_files"
+
+      if [ -n "$provider_files" ]; then
+        echo "ai-dlc: visual-comparison: Mode A — present-for-review (provider=$design_provider)" >&2
+
+        # Build design files JSON array
+        local design_files_json="[]"
+        local IFS=','
+        for pf in $provider_files; do
+          design_files_json=$(echo "$design_files_json" | jq --arg f "$pf" '. + [$f]')
+        done
+        unset IFS
+
+        local presentation_ctx="New design files from **$design_provider** provider detected. These files need visual review by a human."
+
+        jq -n \
+          --arg mode "present_for_review" \
+          --arg design_provider "$design_provider" \
+          --argjson design_files "$design_files_json" \
+          --arg presentation_context "$presentation_ctx" \
+          --arg output_dir "$output_dir" \
+          '{
+            mode: $mode,
+            design_provider: $design_provider,
+            design_files: $design_files,
+            presentation_context: $presentation_context,
+            output_dir: $output_dir
+          }' > "$output_dir/comparison-context.json"
+
+        cat > "$output_dir/comparison-report.md" << REPORT
+---
+verdict: pending_review
+mode: present_for_review
+design_provider: $design_provider
+---
+
+# Visual Fidelity Report: $unit_slug
+
+## Summary
+
+Verdict: **PENDING HUMAN REVIEW** (present-for-review mode)
+Design provider: $design_provider
+
+New provider-native design files were found but no design_ref exists for comparison.
+The reviewer agent should export these files to PNG and present them to the user
+via \`ask_user_visual_question\` for visual review approval.
+
+## Design Files
+
+$(echo "$provider_files" | tr ',' '\n' | sed 's/^/- /')
+REPORT
+
+        echo "VISUAL_GATE=true MODE=present_for_review"
+        return 0
+      fi
+    fi
+
+    # No Mode A conditions met — write standard failure context
+    echo "$ref_json" >&2
     jq -n \
       --arg error "reference_resolution_failed" \
       --arg details "$ref_json" \
@@ -365,6 +449,55 @@ dlc_run_visual_comparison() {
   ref_type=$(echo "$ref_json" | jq -r '.type')
 
   echo "ai-dlc: visual-comparison: reference resolved — type=$ref_type, fidelity=$fidelity" >&2
+
+  # ── Step 2a: Check needs_agent_export ────────────────────────────────────
+  local needs_agent_export
+  needs_agent_export=$(echo "$ref_json" | jq -r '.needs_agent_export')
+  local export_instructions
+  export_instructions=$(echo "$ref_json" | jq -r '.export_instructions // empty')
+
+  if [ "$needs_agent_export" = "true" ]; then
+    echo "ai-dlc: visual-comparison: reference requires agent export — writing pending context" >&2
+
+    jq -n \
+      --arg mode "pending_agent_export" \
+      --arg fidelity "$fidelity" \
+      --arg ref_type "$ref_type" \
+      --arg export_instructions "$export_instructions" \
+      --arg output_dir "$output_dir" \
+      '{
+        mode: $mode,
+        fidelity: $fidelity,
+        reference_type: $ref_type,
+        export_instructions: $export_instructions,
+        output_dir: $output_dir
+      }' > "$output_dir/comparison-context.json"
+
+    cat > "$output_dir/comparison-report.md" << REPORT
+---
+verdict: pending_agent_export
+fidelity: $fidelity
+reference_type: $ref_type
+---
+
+# Visual Fidelity Report: $unit_slug
+
+## Summary
+
+Verdict: **PENDING AGENT EXPORT**
+The design reference requires provider MCP tools to export to PNG before comparison can proceed.
+
+## Instructions for Reviewer Agent
+
+1. Read the export instructions at: \`$export_instructions\`
+2. Execute the MCP tool call described in the instructions
+3. Save the exported PNG to the path specified in the instructions
+4. Re-run \`run-visual-comparison.sh\` or proceed with manual comparison
+REPORT
+
+    echo "VISUAL_GATE=true NEEDS_EXPORT=true"
+    return 0
+  fi
 
   # Reference screenshots are already generated by resolve-design-ref.sh
   # Verify they exist
@@ -450,6 +583,30 @@ dlc_run_visual_comparison() {
   local prompt_path="$VISUAL_SCRIPT_DIR/vision-comparison-prompt.md"
 
   _write_comparison_context "$output_dir" "$fidelity" "$ref_type" "$pairs" "$prompt_path"
+
+  # ── Mode B: Threshold prompting for provider design refs ──────────────
+  local ref_provider
+  ref_provider=$(echo "$ref_json" | jq -r '.provider // empty')
+  if [ "$ref_type" = "external" ] && [ -n "$ref_provider" ]; then
+    echo "ai-dlc: visual-comparison: Mode B — adding threshold prompting (provider=$ref_provider)" >&2
+
+    # Patch comparison-context.json to add threshold fields
+    local tmp_ctx
+    tmp_ctx=$(jq \
+      --arg provider "$ref_provider" \
+      '. + {
+        threshold_prompt: true,
+        design_provider: $provider,
+        threshold_options: [
+          "Acceptable - matches design intent",
+          "Minor issues - proceed with notes",
+          "Significant mismatch - needs rework",
+          "Update design ref to match implementation"
+        ]
+      }' "$output_dir/comparison-context.json")
+    echo "$tmp_ctx" > "$output_dir/comparison-context.json"
+  fi
+
   _write_pending_report "$output_dir" "$unit_slug" "$fidelity" "$ref_type" "$pair_count"
 
   if [ "$dry_run" = "true" ]; then

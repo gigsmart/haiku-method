@@ -2,7 +2,7 @@
 # detect-visual-gate.sh — Visual gate auto-detection for AI-DLC
 #
 # Determines whether a unit should trigger visual fidelity review
-# using a 5-point heuristic. Any single match activates the gate.
+# using a 6-point heuristic. Any single match activates the gate.
 #
 # Heuristics:
 #   1. Unit discipline is frontend or design
@@ -10,6 +10,11 @@
 #   3. Unit has wireframe: field in frontmatter
 #   4. Changed files include UI extensions (.tsx, .jsx, .vue, .svelte, .html, .css, .scss)
 #   5. Unit spec body mentions UI terms (page, view, screen, component, layout, dashboard, form)
+#   6. Changed files include provider-native design files (.op, .pen, .excalidraw, .fig)
+#
+# Output: VISUAL_GATE=true|false SCORE=N
+#   The boolean is the primary signal; the score provides granularity.
+#   Heuristics 1-5 contribute 1 point each; heuristic 6 contributes 2 points.
 #
 # Usage (CLI):
 #   detect-visual-gate.sh --unit-file <path> --changed-files <file-list>
@@ -33,6 +38,9 @@ source "$DETECT_SCRIPT_DIR/parse.sh"
 
 # UI file extensions that trigger the visual gate
 readonly _VISUAL_GATE_UI_EXTENSIONS="tsx jsx vue svelte html css scss"
+
+# Provider-native design file extensions (weighted higher — strong design signal)
+readonly _VISUAL_GATE_PROVIDER_EXTENSIONS="op pen excalidraw fig"
 
 # UI terms in spec body that trigger the visual gate (case-insensitive word boundaries)
 readonly _VISUAL_GATE_UI_TERMS="page|view|screen|component|layout|dashboard|form"
@@ -130,6 +138,35 @@ _check_spec_body() {
   return 1
 }
 
+# Heuristic 6: Check if changed files include provider-native design files
+# Returns 0 if any provider-native file found, 1 if not
+_check_provider_native_files() {
+  local changed_files="$1"
+
+  [ -z "$changed_files" ] && return 1
+
+  local file ext
+  local normalized
+  normalized=$(echo "$changed_files" | tr ',' '\n')
+
+  while IFS= read -r file; do
+    file=$(echo "$file" | xargs) # trim whitespace
+    [ -z "$file" ] && continue
+
+    # Extract extension (lowercase)
+    ext="${file##*.}"
+    ext=$(echo "$ext" | tr '[:upper:]' '[:lower:]')
+
+    for provider_ext in $_VISUAL_GATE_PROVIDER_EXTENSIONS; do
+      if [ "$ext" = "$provider_ext" ]; then
+        return 0
+      fi
+    done
+  done <<< "$normalized"
+
+  return 1
+}
+
 # ============================================================================
 # Main Detection
 # ============================================================================
@@ -137,7 +174,8 @@ _check_spec_body() {
 # Detect whether the visual gate should be active for a unit.
 #
 # Usage: dlc_detect_visual_gate --unit-file <path> [--changed-files <list>]
-# Output: VISUAL_GATE=true or VISUAL_GATE=false to stdout
+# Output: VISUAL_GATE=true SCORE=N or VISUAL_GATE=false SCORE=0 to stdout
+#   Heuristics 1-5 contribute 1 point each; heuristic 6 contributes 2 points.
 # Exit: 0 always (detection itself does not fail)
 dlc_detect_visual_gate() {
   local unit_file=""
@@ -154,14 +192,15 @@ dlc_detect_visual_gate() {
         echo "  --unit-file <path>        Path to unit markdown file (required)"
         echo "  --changed-files <list>    Comma-separated file list or file with one path per line"
         echo ""
-        echo "Output: VISUAL_GATE=true or VISUAL_GATE=false"
+        echo "Output: VISUAL_GATE=true|false SCORE=N"
         echo ""
         echo "Any single heuristic match activates the gate:"
-        echo "  1. discipline: frontend or design"
-        echo "  2. design_ref: field present"
-        echo "  3. wireframe: field present"
-        echo "  4. Changed files include UI extensions"
-        echo "  5. Spec body mentions UI terms"
+        echo "  1. discipline: frontend or design (1 point)"
+        echo "  2. design_ref: field present (1 point)"
+        echo "  3. wireframe: field present (1 point)"
+        echo "  4. Changed files include UI extensions (1 point)"
+        echo "  5. Spec body mentions UI terms (1 point)"
+        echo "  6. Changed files include provider-native design files (2 points)"
         return 0
         ;;
       *)
@@ -178,7 +217,7 @@ dlc_detect_visual_gate() {
 
   if [ ! -f "$unit_file" ]; then
     echo "ai-dlc: detect-visual-gate: unit file not found: $unit_file" >&2
-    echo "VISUAL_GATE=false"
+    echo "VISUAL_GATE=false SCORE=0"
     return 0
   fi
 
@@ -187,33 +226,39 @@ dlc_detect_visual_gate() {
     changed_files=$(cat "$changed_files")
   fi
 
-  # Run heuristics — any match activates
+  # Run all heuristics and accumulate score
+  local score=0
+
   if _check_discipline "$unit_file"; then
-    echo "VISUAL_GATE=true"
-    return 0
+    score=$((score + 1))
   fi
 
   if _check_design_ref "$unit_file"; then
-    echo "VISUAL_GATE=true"
-    return 0
+    score=$((score + 1))
   fi
 
   if _check_wireframe "$unit_file"; then
-    echo "VISUAL_GATE=true"
-    return 0
+    score=$((score + 1))
   fi
 
   if _check_changed_files "$changed_files"; then
-    echo "VISUAL_GATE=true"
-    return 0
+    score=$((score + 1))
   fi
 
   if _check_spec_body "$unit_file"; then
-    echo "VISUAL_GATE=true"
-    return 0
+    score=$((score + 1))
   fi
 
-  echo "VISUAL_GATE=false"
+  # Heuristic 6: provider-native files (weighted 2 points)
+  if _check_provider_native_files "$changed_files"; then
+    score=$((score + 2))
+  fi
+
+  if [ "$score" -gt 0 ]; then
+    echo "VISUAL_GATE=true SCORE=$score"
+  else
+    echo "VISUAL_GATE=false SCORE=0"
+  fi
   return 0
 }
 
