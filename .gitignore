@@ -5,6 +5,7 @@ node_modules/
 .next/
 out/
 dist/
+!plugin/mcp-server/dist/
 
 # IDE
 .idea/
