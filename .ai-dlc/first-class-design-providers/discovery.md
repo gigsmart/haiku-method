@@ -244,3 +244,49 @@ These tools serve the visual review and design direction flows. No tools current
 *Penpot requires browser for canvas operations (plugin runs in browser context)
 **Figma Official MCP requires Figma Desktop for write operations
 
+## Codebase Pattern: Current Design Integration Points
+
+Four integration points need design provider support. Here is their current state:
+
+### 1. Elaboration Phase (elaborate-wireframes skill)
+
+**Current:** The elaborate-wireframes skill (`plugin/skills/elaborate-wireframes/SKILL.md`) accepts `design_provider_type` in its brief frontmatter but only uses it to add HTML comments referencing design system components (e.g., `<!-- DS: ButtonPrimary -->`). The wireframe is always generated as self-contained HTML, never delegated to an external design tool.
+
+**Gap:** No code path exists to delegate wireframe generation to an external design tool. The `design_provider_type` field is informational only.
+
+**What's needed:** When a design provider is available and capable of wireframe generation, the skill should be able to create wireframes in the provider's native format (e.g., a Canva design, an OpenPencil .op file, an Excalidraw diagram) instead of or alongside the HTML wireframe.
+
+### 2. Execution Phase (designer hat)
+
+**Current:** The designer hat (`plugin/hats/designer.md`) loads design knowledge via `knowledge.sh`, surveys design resources, and produces `design-spec.md`. It can invoke the `elaborate-wireframes` skill for HTML wireframes. No code interacts with external design tool MCP servers.
+
+**Gap:** The designer hat has no awareness of available design tool MCP tools. It cannot create designs in Figma, Canva, OpenPencil, etc.
+
+**What's needed:** The designer hat should discover available design tool MCP tools and use them to create higher-fidelity design artifacts. The design-spec.md should reference provider-native design files.
+
+### 3. Visual Review Integration (ask_user_visual_question MCP tool)
+
+**Current:** The MCP server's `ask_user_visual_question` tool presents HTML pages with questions. The `open_review` tool serves visual review pages that can display mockup files from `.ai-dlc/{intent}/mockups/`. Screenshot comparison is handled by `run-visual-comparison.sh` which orchestrates gate detection, reference resolution, and screenshot pairing.
+
+**Gap:** Two modes described in the brief aren't fully realized:
+- **Present-for-review (creating from scratch):** Design provider creates artifact -> present to user for review. This flow works for HTML wireframes (via mockups directory) but not for provider-native formats.
+- **Auto-compare against design_ref:** `resolve-design-ref.sh` handles this for files on disk, but provider URIs (`figma://file/xxx`) are explicitly stubbed (line 118: "provider URI not yet supported").
+
+**What's needed:**
+- Provider-native design files need to be exportable to PNG for visual comparison
+- `resolve-design-ref.sh` needs to handle provider URIs by calling the provider's export tool
+- Review pages need to be able to embed or link to provider-native design views
+
+### 4. Design Reference Resolution (resolve-design-ref.sh)
+
+**Current:** Three-level hierarchy resolves to local files only. `_resolve_design_ref_field()` (line 106-158) checks for `design_ref:` in unit frontmatter. Provider URIs matching `^[a-z]+://` are detected but return error: "provider URI not yet supported" (line 117-119).
+
+Supported formats: png, jpg, html, webp, directory. Does NOT support: `.op`, `.pen`, `.excalidraw`, `.fig`, or any provider-native format.
+
+**Gap:** Cannot resolve provider URIs or native design file formats to screenshots for comparison.
+
+**What's needed:**
+- URI scheme handlers for each provider (e.g., `canva://design/{id}`, `figma://file/{key}`, `excalidraw://{id}`)
+- Native format handlers that call provider export APIs to get PNG/SVG output
+- Registration mechanism so new providers can plug in resolution logic
+
