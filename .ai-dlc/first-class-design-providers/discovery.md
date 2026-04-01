@@ -116,3 +116,131 @@ The AI-DLC MCP server (`plugin/mcp-server/src/server.ts`) currently exposes 4 to
 
 These tools serve the visual review and design direction flows. No tools currently wrap external design tool MCP servers or provide a unified design abstraction.
 
+## External Research: Design Tool MCP Ecosystem
+
+### 1. Canva MCP
+
+**Status:** Production-ready, available as Claude platform connector
+**Transport:** Remote HTTP (canva.dev hosted)
+**Authentication:** Per-user Canva account required
+**Available in this project:** YES — already connected via `mcp__claude_ai_Canva__*` tools (37 tools observed in deferred tool list)
+
+**Key Capabilities:**
+- `generate-design` / `generate-design-structured` — Create designs from text prompts
+- `start-editing-transaction` / `perform-editing-operations` / `commit-editing-transaction` — Transactional editing workflow
+- `get-design` / `get-design-content` / `get-design-pages` — Read design structure
+- `get-design-thumbnail` — Get visual preview
+- `export-design` — Export to PNG/JPG/PDF/PPTX/MP4
+- `search-designs` — Discovery of existing designs
+- `list-brand-kits` — Access brand tokens
+- `create-design-from-candidate` — Programmatic design creation
+- `comment-on-design` / `list-comments` / `list-replies` — Collaboration
+
+**Strengths:** Fully headless, template-based, brand kit management, multi-format export
+**Limitations:** Commercial service (requires Canva account), template-driven (less suited for precise pixel-level wireframes), Pro required for resize
+
+### 2. OpenPencil (ZSeven-W/openpencil)
+
+**Status:** Open-source (MIT), active development
+**Transport:** stdio and HTTP MCP server
+**File Format:** `.op` JSON format
+**CLI:** `op design`, `op insert`, `op export`
+**Export Targets:** React, Vue, Svelte, HTML, Flutter, SwiftUI, Compose, React Native (8 targets)
+
+**Key Capabilities:**
+- MCP server with stdio/HTTP transports for agent integration
+- Design-as-Code: prompts generate UI directly on live canvas
+- Concurrent Agent Teams support
+- `.op` file manipulation via CLI
+- Code export to 8 frontend frameworks
+- Modular SDK: `pen-core`, `pen-codegen`, `pen-figma`, `pen-renderer`
+
+**Strengths:** Open source, headless CLI, multi-framework export, Design-as-Code paradigm
+**Limitations:** Newer project, smaller community than Figma/Penpot, separate from open-pencil/open-pencil (namespace confusion)
+
+### 3. OpenPencil (open-pencil/open-pencil)
+
+**Status:** Open-source, AI-native design editor
+**Transport:** stdio and HTTP MCP server (90+ tools)
+**File Format:** `.fig` file compatibility
+**Desktop App:** ~7MB Tauri v2 app (macOS signed, Windows, Linux)
+
+**Key Capabilities:**
+- 90+ MCP tools across two transports
+- Read/write `.fig` files headlessly
+- Headless CLI for inspect, search, analyze, render
+- AI-native with Figma file compatibility
+
+**Strengths:** Figma file compatibility, extensive MCP tool surface, cross-platform desktop app
+**Limitations:** Different project from ZSeven's openpencil, .fig format focus
+
+### 4. Pencil.dev
+
+**Status:** Commercial, free tier available
+**Transport:** MCP server (port 3100 default)
+**File Format:** `.pen` JSON format
+**CLI:** `@pencil.dev/cli` with headless editor engine
+
+**Key Capabilities:**
+- Same MCP tools as desktop app and IDE extension
+- Headless CLI runs full editor engine without GUI
+- Interactive shell for direct MCP tool calls
+- Batch processing of multiple designs
+- Export to PNG/JPEG/WEBP/PDF
+- Deep IDE integration (VS Code, Cursor, Claude Code)
+
+**Strengths:** Mature tooling, headless CLI with full engine, interactive shell for scripting, IDE integration
+**Limitations:** Commercial product (though currently free), potential future pricing changes
+
+### 5. Penpot
+
+**Status:** Open-source (MPL-2.0), 45K+ GitHub stars, official MCP server
+**Transport:** HTTP (`localhost:4401/mcp`), legacy SSE, WebSocket (plugin connection on port 4402)
+**Architecture:** MCP server <-> Penpot Plugin (WebSocket) <-> Penpot Plugin API
+**Installation:** npm install + bootstrap + load plugin in Penpot
+
+**Key Capabilities:**
+- Design data retrieval and modification
+- Create new design elements
+- Design-to-design, code-to-design, design-to-code workflows
+- Design tokens accessible as code
+- Programmable canvas
+- Self-hostable (important for enterprise)
+
+**Strengths:** Open source with massive community, self-hostable, design-as-code philosophy
+**Limitations:** Requires browser session for canvas operations (Penpot Plugin runs in browser), WebSocket bridge adds complexity, MCP repo archived (merged into main Penpot repo as of Feb 2026)
+
+### 6. Figma
+
+**Status:** Multiple MCP implementations available
+**Implementations:**
+- **Figma Official MCP** — First-party, supports VS Code, Cursor, Windsurf, Claude Code. Tools: `generate_figma_design` (Claude Code exclusive as of Feb 2026), live UI capture.
+- **Framelink MCP** (14K stars) — Read-only, free, works with any Figma account. Tools: `get_figma_data` (layout/styling), `download_figma_images` (assets).
+- **Figma Write Server** — Full write access, 24 tool categories, requires Figma Desktop app.
+- **Figsor** — 45+ tools, AI SVG generation.
+
+**Key Capabilities:**
+- Read design structure, styling, layout
+- Download image assets
+- Write/modify designs (Write Server, Official MCP)
+- Generate designs from live UI (Official MCP, Claude Code only)
+- AI SVG generation (Figsor)
+
+**Strengths:** Industry standard, multiple MCP options, massive ecosystem, design-to-code mature
+**Limitations:** Read-only in free tier (Framelink), Write Server requires Desktop app, some features Claude-Code-exclusive
+
+### Provider Capability Matrix
+
+| Provider | Headless | MCP | Read | Write | Export | Open Source | File Format |
+|----------|----------|-----|------|-------|--------|-------------|-------------|
+| Canva | Yes | Remote | Yes | Yes (transactional) | PNG/JPG/PDF/PPTX | No | Proprietary |
+| OpenPencil (ZS) | Yes | stdio/HTTP | Yes | Yes | 8 frameworks | Yes (MIT) | .op JSON |
+| OpenPencil (OP) | Yes | stdio/HTTP (90+) | Yes | Yes | Yes | Yes | .fig |
+| Pencil.dev | Yes | stdio/HTTP | Yes | Yes | PNG/JPEG/WEBP/PDF | No | .pen JSON |
+| Penpot | Partial* | HTTP/WS | Yes | Yes | Yes | Yes (MPL-2.0) | SVG-native |
+| Figma (Official) | Partial** | Remote | Yes | Yes | PNG/SVG | No | Proprietary |
+| Figma (Framelink) | Yes | stdio | Yes | No | PNG | Yes (OSS) | Proprietary |
+
+*Penpot requires browser for canvas operations (plugin runs in browser context)
+**Figma Official MCP requires Figma Desktop for write operations
+
