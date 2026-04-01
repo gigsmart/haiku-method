@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.82.12] - 2026-04-01
+
+### Fixed
+- Agent teams created during a unit are now properly cleaned up when the unit completes.
+
 ## [1.82.11] - 2026-04-01
 
 Looking at the commits since 1.82.10, there is only one feature:
