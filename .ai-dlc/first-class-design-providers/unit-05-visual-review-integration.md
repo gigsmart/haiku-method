@@ -11,7 +11,7 @@ workflow: ""
 ticket: ""
 design_ref: ""
 views: []
-hat: builder
+hat: reviewer
 ---
 
 # unit-05-visual-review-integration
