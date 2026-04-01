@@ -200,13 +200,17 @@ format: \"png\""
       ;;
   esac
 
+  # Helper: produce a YAML-safe double-quoted string value via jq JSON encoding.
+  # JSON strings are valid YAML double-quoted scalars (YAML 1.2 is a JSON superset).
+  _yaml_str() { printf '%s' "$1" | jq -Rs '.'; }
+
   {
     printf -- '---\n'
-    printf 'tool: "%s"\n' "$tool_name"
-    printf 'mcp_hint: "%s"\n' "$mcp_hint"
-    printf 'provider: "%s"\n' "$provider"
-    printf 'source_uri: "%s"\n' "$source"
-    printf 'output_path: "%s"\n' "$output_path"
+    printf 'tool: %s\n'        "$(_yaml_str "$tool_name")"
+    printf 'mcp_hint: %s\n'    "$(_yaml_str "$mcp_hint")"
+    printf 'provider: %s\n'    "$(_yaml_str "$provider")"
+    printf 'source_uri: %s\n'  "$(_yaml_str "$source")"
+    printf 'output_path: %s\n' "$(_yaml_str "$output_path")"
     printf 'timeout: %s\n' "$timeout"
     printf -- '---\n\n'
     cat <<'EOF'

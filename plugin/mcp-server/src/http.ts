@@ -189,6 +189,20 @@ async function handleQuestionImageGet(
 		return new Response("Forbidden", { status: 403 })
 	}
 
+	// Defense-in-depth: if a base directory was recorded at session creation,
+	// ensure the resolved real path stays within it (mirrors handleMockupGet pattern)
+	if (session.imageBaseDir) {
+		try {
+			const realResolved = await realpath(imagePath).catch(() => null)
+			const realBase = await realpath(session.imageBaseDir).catch(() => resolve(session.imageBaseDir))
+			if (!realResolved || !realResolved.startsWith(realBase + "/") && realResolved !== realBase) {
+				return new Response("Forbidden", { status: 403 })
+			}
+		} catch {
+			return new Response("Forbidden", { status: 403 })
+		}
+	}
+
 	try {
 		const data = await readFile(imagePath)
 		const ext = extname(imagePath).toLowerCase()

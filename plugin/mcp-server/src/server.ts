@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process"
 import { readdir } from "node:fs/promises"
-import { join, resolve } from "node:path"
+import { dirname, join, resolve } from "node:path"
 import {
 	buildDAG,
 	parseAllUnits,
@@ -563,12 +563,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 		const questions: QuestionDef[] = input.questions
 		const imagePaths = input.image_paths ?? []
 
+		// Derive base directory for path validation (defense-in-depth in the HTTP handler)
+		const imageBaseDir = imagePaths.length > 0 ? dirname(resolve(imagePaths[0])) : undefined
+
 		// Create question session
 		const session = createQuestionSession({
 			title,
 			questions,
 			context,
 			imagePaths,
+			imageBaseDir,
 			html: "",
 		})
 

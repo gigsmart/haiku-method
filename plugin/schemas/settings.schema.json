@@ -132,7 +132,7 @@
 				},
 				"design": {
 					"$ref": "#/definitions/designProviderEntry",
-					"description": "Design tool provider (Figma)"
+					"description": "Design tool provider (Canva, Figma, OpenPencil, Pencil, Penpot, Excalidraw)"
 				},
 				"comms": {
 					"$ref": "#/definitions/commsProviderEntry",

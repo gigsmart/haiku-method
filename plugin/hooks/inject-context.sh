@@ -746,8 +746,8 @@ else
   echo "\`\`\`"
 fi
 
-# Designer hat: inject design provider capabilities for tool discovery
-if [ "$HAT" = "designer" ]; then
+# Designer and reviewer hats: inject design provider capabilities for tool discovery
+if [ "$HAT" = "designer" ] || [ "$HAT" = "reviewer" ]; then
   _DESIGN_PROVIDER_TYPE=""
   if type load_providers &>/dev/null; then
     _DESIGN_PROVIDERS_JSON=$(load_providers)

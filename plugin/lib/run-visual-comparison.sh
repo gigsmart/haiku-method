@@ -606,7 +606,9 @@ REPORT
           "Update design ref to match implementation"
         ]
       }' "$output_dir/comparison-context.json")
-    echo "$tmp_ctx" > "$output_dir/comparison-context.json"
+    local _ctx_tmp
+    _ctx_tmp=$(mktemp)
+    echo "$tmp_ctx" > "$_ctx_tmp" && mv "$_ctx_tmp" "$output_dir/comparison-context.json"
   fi
 
   _write_pending_report "$output_dir" "$unit_slug" "$fidelity" "$ref_type" "$pair_count"

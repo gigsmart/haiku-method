@@ -356,7 +356,7 @@ _provider_mcp_hint() {
     canva)        echo 'mcp__*Canva*' ;;
     figma)        echo 'mcp__*figma*|mcp__*Figma*' ;;
     openpencil)   echo 'mcp__*openpencil*|mcp__*open_pencil*' ;;
-    pencil)       echo 'mcp__*pencil*' ;;
+    pencil)       echo 'mcp__pencil__*|mcp__*_pencil__*' ;;
     penpot)       echo 'mcp__*penpot*' ;;
     excalidraw)   echo 'mcp__*excalidraw*|mcp__*Excalidraw*' ;;
     slack)        echo 'mcp__*slack*' ;;

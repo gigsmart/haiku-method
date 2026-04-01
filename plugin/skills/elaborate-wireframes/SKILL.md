@@ -139,7 +139,7 @@ These providers don't have generate capability — the decision logic in step 2 
 For each unit where provider generation succeeded:
 
 1. Create designs directory: `mkdir -p .ai-dlc/{intent-slug}/designs/`
-2. Save native artifact to `.ai-dlc/{intent-slug}/designs/unit-{NN}-{slug}-wireframe.{ext}` (extension depends on provider: `.canva` for Canva design IDs, `.op` for OpenPencil, `.pen` for Pencil)
+2. Save native artifact reference: for OpenPencil use `.ai-dlc/{intent-slug}/designs/unit-{NN}-{slug}-wireframe.op`, for Pencil use `.ai-dlc/{intent-slug}/designs/unit-{NN}-{slug}-wireframe.pen`; for Canva, the design ID is a cloud reference — store as URI in the unit frontmatter directly (e.g., `design_ref: canva://{design_id}`) rather than a local file
 3. Save PNG export to `.ai-dlc/{intent-slug}/mockups/unit-{NN}-{slug}-wireframe.png`
 4. Track per-unit results: `PROVIDER_SUCCEEDED[unit]=true`, `NATIVE_REFS[unit]={native ref path or URI}`
 
