@@ -1828,7 +1828,7 @@ If the user selects **"Let me choose"**:
 }
 ```
 
-If the user selects "Exclude some", they type gate names via the "Other" free-text option. Parse the names and remove those gates from the list.
+If the user selects "Exclude some", ask a follow-up: "Type the names of gates to exclude (comma-separated):" and wait for their response. Parse the names and remove those gates from the list.
 
 After the user confirms (options 1 or 2), note:
 
