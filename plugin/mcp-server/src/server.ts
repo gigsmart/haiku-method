@@ -64,6 +64,13 @@ const AskVisualQuestionInput = z.object({
 		.string()
 		.optional()
 		.describe("Optional page title (default: 'Question')"),
+	image_paths: z
+		.array(z.string())
+		.optional()
+		.describe(
+			"Optional array of local image file paths to display alongside the questions. " +
+				"Images are displayed in pairs (ref on left, built on right) for visual comparison.",
+		),
 })
 
 const PickDesignDirectionInput = z.object({
@@ -203,6 +210,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 						description: "Optional markdown context above questions",
 					},
 					title: { type: "string", description: "Optional page title" },
+					image_paths: {
+						type: "array",
+						items: { type: "string" },
+						description:
+							"Optional local image file paths to display alongside questions",
+					},
 				},
 				required: ["questions"],
 			},
@@ -548,14 +561,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 		const title = input.title ?? "Question"
 		const context = input.context ?? ""
 		const questions: QuestionDef[] = input.questions
+		const imagePaths = input.image_paths ?? []
 
 		// Create question session
 		const session = createQuestionSession({
 			title,
 			questions,
 			context,
+			imagePaths,
 			html: "",
 		})
+
+		// Build image URLs for the template (served via /question-image/:sessionId/:index)
+		const imageUrls = imagePaths.map(
+			(_, i) => `/question-image/${session.session_id}/${i}`,
+		)
 
 		// Render HTML
 		session.html = renderQuestionPage({
@@ -563,6 +583,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 			questions,
 			context,
 			sessionId: session.session_id,
+			imageUrls,
 		})
 
 		// Start HTTP server (idempotent)
@@ -584,7 +605,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 			content: [
 				{
 					type: "text" as const,
-					text: `Question page opened: ${questionUrl}\nSession ID: ${session.session_id}\nQuestions: ${questions.length}`,
+					text: `Question page opened: ${questionUrl}\nSession ID: ${session.session_id}\nQuestions: ${questions.length}${imagePaths.length > 0 ? `\nImages: ${imagePaths.length}` : ""}`,
 				},
 			],
 		}

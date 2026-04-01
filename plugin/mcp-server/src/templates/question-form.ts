@@ -7,10 +7,11 @@ export interface QuestionPageData {
   questions: QuestionDef[];
   context: string;
   sessionId: string;
+  imageUrls?: string[];
 }
 
 export function renderQuestionPage(data: QuestionPageData): string {
-  const { title, questions, context, sessionId } = data;
+  const { title, questions, context, sessionId, imageUrls } = data;
 
   let bodyContent = "";
 
@@ -19,6 +20,41 @@ export function renderQuestionPage(data: QuestionPageData): string {
     bodyContent += card(
       sectionHeading("Context", 2) + renderMarkdownBlock("question-context", context),
     );
+  }
+
+  // Image comparison block
+  if (imageUrls && imageUrls.length > 0) {
+    let imageContent = sectionHeading("Visual Comparison", 2);
+
+    if (imageUrls.length >= 2) {
+      // Pair images side-by-side (ref on left, built on right)
+      for (let i = 0; i < imageUrls.length; i += 2) {
+        imageContent += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">`;
+        imageContent += `<div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Reference</p>
+          <img src="${escapeAttr(imageUrls[i])}" alt="Reference image ${Math.floor(i / 2) + 1}"
+               class="w-full rounded-lg border border-gray-200 dark:border-gray-700">
+        </div>`;
+        if (i + 1 < imageUrls.length) {
+          imageContent += `<div>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Built Output</p>
+            <img src="${escapeAttr(imageUrls[i + 1])}" alt="Built output image ${Math.floor(i / 2) + 1}"
+                 class="w-full rounded-lg border border-gray-200 dark:border-gray-700">
+          </div>`;
+        }
+        imageContent += "</div>";
+      }
+    } else {
+      // Single image display
+      for (let i = 0; i < imageUrls.length; i++) {
+        imageContent += `<div class="mb-4">
+          <img src="${escapeAttr(imageUrls[i])}" alt="Image ${i + 1}"
+               class="w-full rounded-lg border border-gray-200 dark:border-gray-700">
+        </div>`;
+      }
+    }
+
+    bodyContent += card(imageContent);
   }
 
   // Question form

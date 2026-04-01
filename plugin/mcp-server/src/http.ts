@@ -169,6 +169,38 @@ async function handleWireframeGet(
 	}
 }
 
+async function handleQuestionImageGet(
+	sessionId: string,
+	index: number,
+): Promise<Response> {
+	const session = getSession(sessionId)
+	if (!session || session.session_type !== "question") {
+		return new Response("Session not found", { status: 404 })
+	}
+
+	const imagePaths = session.imagePaths ?? []
+	if (index < 0 || index >= imagePaths.length) {
+		return new Response("Image index out of range", { status: 404 })
+	}
+
+	const imagePath = imagePaths[index]
+	// Validate the path is absolute to prevent path traversal
+	if (!imagePath.startsWith("/")) {
+		return new Response("Forbidden", { status: 403 })
+	}
+
+	try {
+		const data = await readFile(imagePath)
+		const ext = extname(imagePath).toLowerCase()
+		const contentType = MIME_TYPES[ext] ?? "application/octet-stream"
+		return new Response(data, {
+			headers: { "Content-Type": contentType },
+		})
+	} catch {
+		return new Response("Not found", { status: 404 })
+	}
+}
+
 function handleQuestionGet(sessionId: string): Response {
 	const session = getSession(sessionId)
 	if (!session || session.session_type !== "question") {
@@ -344,6 +376,17 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	const directionSelectMatch = path.match(/^\/direction\/([^/]+)\/select$/)
 	if (directionSelectMatch && req.method === "POST") {
 		return handleDirectionSelectPost(directionSelectMatch[1], req)
+	}
+
+	// GET /question-image/:sessionId/:index — serve images for question sessions
+	const questionImageMatch = path.match(
+		/^\/question-image\/([^/]+)\/(\d+)$/,
+	)
+	if (questionImageMatch && req.method === "GET") {
+		return handleQuestionImageGet(
+			questionImageMatch[1],
+			Number.parseInt(questionImageMatch[2], 10),
+		)
 	}
 
 	// GET /question/:sessionId
