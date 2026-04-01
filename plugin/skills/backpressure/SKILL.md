@@ -191,7 +191,7 @@ Visual fidelity backpressure uses AI vision to compare built output against desi
    - Unit has a `wireframe:` field in frontmatter
    - Changed files include UI extensions (`.tsx`, `.jsx`, `.vue`, `.svelte`, `.html`, `.css`, `.scss`)
    - Unit spec body mentions UI terms (page, view, screen, component, layout, dashboard, form)
-   - Provider-native design files (`.op`, `.pen`, `.excalidraw`, `.fig`) exist in the intent designs directory (contributes 2 score points)
+   - Changed files include provider-native design files (`.op`, `.pen`, `.excalidraw`, `.fig`) (contributes 2 score points)
 
 2. **Reference resolution** (`resolve-design-ref.sh`) — Resolves the design reference using a 3-level priority hierarchy:
    - **External design** (`design_ref:` field) — fidelity: **high** (pixel-close match expected)
