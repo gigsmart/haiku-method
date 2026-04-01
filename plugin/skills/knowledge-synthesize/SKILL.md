@@ -52,9 +52,9 @@ Check `project_maturity` from the brief:
 | **early** | Shallow scan — sample 3-5 files per pattern, set `confidence: low` on most findings. |
 | **established** | Full deep scan — sample 5-10 files per pattern, produce high-confidence artifacts. |
 
-### Greenfield Path (skip to Step 5)
+### Greenfield Path (skip to Step 3, go directly to Step 4)
 
-For greenfield projects, write scaffold artifacts for all 5 types using the templates in Step 4, but with empty section bodies and a note: "No patterns detected — project is greenfield."
+For greenfield projects, skip Step 3 (scanning). Instead, go directly to Step 4 and write scaffold artifacts for all 5 types using the templates there, but with empty section bodies and a note: "No patterns detected — project is greenfield."
 
 Set frontmatter on each scaffold:
 ```yaml
@@ -63,7 +63,7 @@ confidence: low
 project_maturity: greenfield
 ```
 
-Then skip directly to Step 5 (Write Results).
+After writing all 5 scaffold artifacts via Step 4, proceed to Step 5 (Write Results).
 
 ### Early / Established Path (continue to Step 3)
 
@@ -254,13 +254,19 @@ ARTIFACT_EOF
 )"
 ```
 
-If `CLAUDE_PLUGIN_ROOT` is not set, locate knowledge.sh by searching for the plugin directory:
+If `CLAUDE_PLUGIN_ROOT` is not set, locate knowledge.sh relative to the worktree's plugin directory:
 
 ```bash
-KNOWLEDGE_LIB=$(find / -path "*/plugin/lib/knowledge.sh" -print -quit 2>/dev/null)
-if [ -n "$KNOWLEDGE_LIB" ]; then
-  source "$KNOWLEDGE_LIB"
-fi
+# Try common locations in order
+for candidate in \
+  "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh" \
+  "$(git rev-parse --show-toplevel 2>/dev/null)/plugin/lib/knowledge.sh" \
+  ; do
+  if [ -f "$candidate" ]; then
+    source "$candidate"
+    break
+  fi
+done
 ```
 
 ### Artifact Templates
@@ -402,7 +408,7 @@ Each artifact must conform to the schema from unit-01. Required frontmatter fiel
 
 ## Step 5: Write Results
 
-Write the results file to `.ai-dlc/{intent-slug}/.briefs/knowledge-synthesize-results.md`:
+Use the `Write` tool (not Bash) to write the results file to `.ai-dlc/{intent-slug}/.briefs/knowledge-synthesize-results.md`:
 
 ```markdown
 ---
