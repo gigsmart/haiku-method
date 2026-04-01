@@ -164,10 +164,14 @@ Clean up the targeted unit's team agents before exiting (if Agent Teams are enab
 If `AGENT_TEAMS_ENABLED` is set:
 
 ```javascript
+  // Note: to: "*" broadcasts to all teammates but excludes the sender (this lead agent),
+  // so the lead will not receive its own shutdown_request and will continue to TeamDelete.
   SendMessage({
     to: "*",
     message: { type: "shutdown_request", reason: "Unit complete" }
   })
+  // Note: If no active team exists (e.g., prior run crashed before TeamCreate), TeamDelete
+  // is a no-op. No manual error handling is needed; proceed normally.
   TeamDelete()
 ```
 
@@ -295,6 +299,8 @@ If `AGENT_TEAMS_ENABLED` is set:
 1. Broadcast `shutdown_request` to all teammates so they exit gracefully:
 
 ```javascript
+// Note: to: "*" broadcasts to all teammates but excludes the sender (this lead agent),
+// so the lead will not receive its own shutdown_request and will continue to step 2.
 SendMessage({
   to: "*",
   message: { type: "shutdown_request", reason: "Unit complete" }
@@ -304,6 +310,8 @@ SendMessage({
 2. Call `TeamDelete` to release team resources:
 
 ```javascript
+// Note: If no active team exists (e.g., prior run crashed before TeamCreate), TeamDelete
+// is a no-op. No manual error handling is needed; proceed to Step 2e/2f normally.
 TeamDelete()
 ```
 
@@ -409,7 +417,8 @@ AGENT_TEAMS_ENABLED="${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}"
 If `AGENT_TEAMS_ENABLED` is set and `READY_COUNT > 0` after completing a unit:
 
 1. Read `teamName` from `iteration.json`
-2. Recreate the team (it was deleted in Step 2d-1 cleanup):
+2. Read `intentTitle` from the `title` field in `intent.md` frontmatter
+3. Recreate the team (it was deleted in Step 2d-1 cleanup):
 
 ```javascript
 TeamCreate({
@@ -418,12 +427,12 @@ TeamCreate({
 })
 ```
 
-3. For each newly ready unit:
+4. For each newly ready unit:
    - Set `hat: planner` and `retries: 0` in unit frontmatter
    - Create unit worktree
    - Mark unit as `in_progress`
    - Spawn planner teammate via Task with `team_name` and `name`
-4. Commit updated unit frontmatter
+5. Commit updated unit frontmatter
 
 This replaces the sequential "loop back to builder" behavior when Agent Teams is active. Instead of the lead picking up the next unit sequentially, newly unblocked units are spawned as parallel teammates immediately.
 
