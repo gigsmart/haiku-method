@@ -70,6 +70,11 @@ resolve_pass_definition() {
 load_pass_instructions() {
   local pass_name="$1"
 
+  # Validate pass name is a simple identifier (no path traversal)
+  if [[ ! "$pass_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+    return 1
+  fi
+
   local plugin_root="${CLAUDE_PLUGIN_ROOT:-${PASS_SCRIPT_DIR}/../..}"
   local builtin="${plugin_root}/passes/${pass_name}.md"
 
