@@ -1,7 +1,7 @@
 ---
 status: pending
 last_updated: ""
-depends_on: [unit-03-direction-picker-mcp]
+depends_on: [unit-01-knowledge-infrastructure, unit-03-direction-picker-mcp]
 branch: ai-dlc/design-direction-system/04-archetype-library
 discipline: backend
 pass: ""
