@@ -2169,6 +2169,13 @@ If no frontend or design units exist, skip to Phase 6.5.
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
 PROVIDERS=$(load_providers)
 DESIGN_TYPE=$(echo "$PROVIDERS" | jq -r '.design.type // empty')
+if [ -n "$DESIGN_TYPE" ]; then
+  DESIGN_CAPS=$(get_provider_capabilities "$DESIGN_TYPE")
+  DESIGN_MCP_HINT=$(_provider_mcp_hint "$DESIGN_TYPE")
+else
+  DESIGN_CAPS=""
+  DESIGN_MCP_HINT=""
+fi
 ```
 
 ### Step 3: Write wireframes brief
@@ -2181,6 +2188,8 @@ intent_slug: {INTENT_SLUG}
 worktree_path: {absolute path to intent worktree}
 intent_title: {Intent Title from intent.md}
 design_provider_type: {DESIGN_TYPE or empty}
+design_provider_capabilities: {DESIGN_CAPS JSON or empty if no provider}
+design_provider_mcp_hint: {DESIGN_MCP_HINT or empty if no provider}
 design_blueprint_path: {${WORKTREE_PATH}/.ai-dlc/${INTENT_SLUG}/design-blueprint.md if it exists, or empty}
 ---
 
