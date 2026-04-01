@@ -19,6 +19,8 @@ Companion to the Reviewer hat. Loaded on-demand for discipline checks and parall
 | "Visual comparison is subjective" | Structured categories with defined severities. High-severity issues are objective structural mismatches. |
 | "Screenshots didn't capture correctly" | Infrastructure failure = review failure. Fix capture, don't skip the gate. |
 | "The visual differences are minor" | Minor is a severity judgment. Document findings, score them, let the severity guide the verdict. |
+| "The export failed, let's skip visual review" | Export failure is a blocking issue, not a skip condition. Fix the export or request changes. |
+| "The design is in a provider tool, we can't compare" | Use the needs_agent_export flow to export first via MCP tools, then compare. |
 
 ## Red Flags
 
@@ -44,7 +46,7 @@ Beyond the core 5 perspectives (Security, Performance, Architecture, Correctness
 | **Concurrency** | Race conditions, deadlocks, transaction isolation | Multi-threaded or async code |
 | **API Contract** | Breaking changes, versioning, backwards compatibility | Public API modifications |
 | **Design System** | Token usage, component conventions, visual consistency | Frontend component changes |
-| **Visual Fidelity** | AI vision comparison of built output vs design reference. Load `comparison-context.json` from `.ai-dlc/{intent}/screenshots/{unit}/` (prepared by the advance skill during builder-to-reviewer transition). | Units where `detect-visual-gate.sh` returns true (frontend/design discipline, design_ref/wireframe fields, UI file changes, UI terms in spec) |
+| **Visual Fidelity** | AI vision comparison of built output vs design reference. Three modes: **Standard** (screenshot pair comparison), **Pending agent export** (provider MCP export needed before comparison), **Present-for-review** (new provider designs shown to user). Load `comparison-context.json` from `.ai-dlc/{intent}/screenshots/{unit}/` (prepared by the advance skill during builder-to-reviewer transition). Provider-native design files (.op, .pen, .excalidraw, .fig) increase gate score. | Units where `detect-visual-gate.sh` returns true (frontend/design discipline, design_ref/wireframe fields, UI file changes, UI terms in spec, provider-native design files) |
 
 ### Activation
 

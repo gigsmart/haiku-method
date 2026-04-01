@@ -244,17 +244,43 @@ Reviewer (Master)
 
 Additional domain-specific agents (Data Integrity, Schema Drift, etc.) are defined in `reviewer-reference.md` and activate based on changed file patterns.
 
-**Visual Fidelity agent process:**
-1. Load `comparison-context.json` from `.ai-dlc/{intent}/screenshots/{unit}/` — this file is prepared by the advance skill during the builder-to-reviewer transition, so it should already exist when the reviewer starts
-2. If `comparison-context.json` is missing or contains an `error` field, fall back to running `run-visual-comparison.sh` directly to prepare screenshot pairs and comparison context
-3. For each screenshot pair listed in the context: read both images (ref + built) using the Read tool
-4. Apply the vision comparison prompt (path in the context JSON's `prompt_template` field) with the resolved fidelity level from the context's `fidelity` field
-5. Parse findings and update `comparison-report.md` with verdict and categorized findings
-6. Return findings to the master reviewer for consolidation
+**Visual Fidelity agent process (three modes):**
+
+The comparison-context.json file (prepared by the advance skill during the builder-to-reviewer transition) determines which mode applies. Load it from `.ai-dlc/{intent}/screenshots/{unit}/`.
+
+**Standard mode** (no `mode` field, or `mode` absent): comparison-context.json has screenshot pairs.
+1. For each screenshot pair listed in the context: read both images (ref + built) using the Read tool
+2. Apply the vision comparison prompt (path in the context JSON's `prompt_template` field) with the resolved fidelity level from the context's `fidelity` field
+3. If `threshold_prompt` is `true` in the context (Mode B — provider design refs), present the comparison to the user via `ask_user_visual_question` with the `threshold_options` from the context and the screenshot pairs as `image_paths`. Respect the user's verdict:
+   - "Acceptable" or "Minor issues" → PASS (note any issues)
+   - "Significant mismatch" → FAIL, issue REQUEST CHANGES
+   - "Update design ref to match implementation" → update the unit's `design_ref` frontmatter: `dlc_frontmatter_set "design_ref" "<built-screenshot-path>" "$unit_file"` and PASS
+4. Parse findings and update `comparison-report.md` with verdict and categorized findings
+5. Return findings to the master reviewer for consolidation
+
+**Pending agent export mode** (`mode: "pending_agent_export"`): The design reference requires provider MCP tools to export to PNG.
+1. Read the `export_instructions` path from the context
+2. Parse the instructions file (YAML frontmatter has `tool`, `provider`, `source_uri`, `output_path`)
+3. Execute the MCP tool call (use `ToolSearch` to find the tool, then call it)
+4. Save the exported PNG to the `output_path` specified in the instructions
+5. Re-run the visual comparison by calling `run-visual-comparison.sh` (the reference is now cached as a PNG)
+6. Continue with Standard mode processing on the new context
+7. If the export fails (MCP tool error, provider unavailable), MUST issue `Decision: REQUEST CHANGES` with export failure details
+
+**Present-for-review mode** (`mode: "present_for_review"`): New design files exist but no design_ref for comparison.
+1. Read `design_files` array from the context — these are provider-native files
+2. Export each to PNG using the design provider's MCP export tools (check the `design_provider` field for which provider)
+3. Call `ask_user_visual_question` with the exported PNGs as `image_paths` and presentation context from `presentation_context`
+4. If user approves the designs, PASS the visual fidelity check
+5. If user rejects, issue `Decision: REQUEST CHANGES` with user feedback
+
+If `comparison-context.json` is missing or contains an `error` field, fall back to running `run-visual-comparison.sh` directly.
 
 **Visual Fidelity hard gate:**
 - If visual gate is active and comparison produces high-severity findings: reviewer MUST issue `Decision: REQUEST CHANGES`
 - If visual gate is active but infrastructure fails (capture error, reference resolution error, dev server down): reviewer MUST issue `Decision: REQUEST CHANGES` with infrastructure failure details
+- If provider export fails (MCP tool error): reviewer MUST issue `Decision: REQUEST CHANGES` with export failure details — export failure is a blocking issue, not a skip condition
+- If threshold prompting is active, reviewer MUST present comparison to user and respect their verdict
 - The visual gate is NEVER silently skipped when it should be active
 
 **How to delegate:**
@@ -285,7 +311,7 @@ When the review is complete, emit exactly one of the following markers as the fi
 **Criteria:** {met}/{total} satisfied
 **Tests:** {pass}/{total} passing
 **Findings:** {high} high, {medium} medium, {low} low confidence
-**Visual Fidelity:** PASS|N/A — {findings_count} findings ({high} high, {medium} medium, {low} low)
+**Visual Fidelity:** PASS|FAIL|PENDING_EXPORT|PRESENTED|N/A — provider: {name|none}, fidelity: {level}, findings: {count}
 **Anti-patterns:** none | {count} found (non-blocking)
 
 ### Verified Truths
@@ -307,7 +333,7 @@ aidlc_record_review_decision "${INTENT_SLUG}" "${UNIT_SLUG}" "approved" "${FINDI
 **Unit:** {unit name}
 **Criteria:** {met}/{total} satisfied
 **Blocking Issues:** {count}
-**Visual Fidelity:** PASS|FAIL|N/A — {findings_count} findings ({high} high, {medium} medium, {low} low)
+**Visual Fidelity:** PASS|FAIL|PENDING_EXPORT|PRESENTED|N/A — provider: {name|none}, fidelity: {level}, findings: {count}
 
 ### High-Confidence Issues (MUST fix)
 1. {issue} — {evidence}

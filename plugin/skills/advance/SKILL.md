@@ -73,13 +73,28 @@ case "$CURRENT_HAT" in
     UNIT_FILE="$INTENT_DIR/${CURRENT_UNIT}.md"
     if [ -n "$CURRENT_UNIT" ] && [ -f "$UNIT_FILE" ]; then
       PLUGIN_DIR="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$(readlink -f "$0")")")}"
-      VISUAL_GATE_RESULT=$(bash "$PLUGIN_DIR/lib/detect-visual-gate.sh" --unit-file "$UNIT_FILE" 2>/dev/null || echo "VISUAL_GATE=false")
-      if [ "$VISUAL_GATE_RESULT" = "VISUAL_GATE=true" ]; then
+      VISUAL_GATE_RESULT=$(bash "$PLUGIN_DIR/lib/detect-visual-gate.sh" --unit-file "$UNIT_FILE" 2>/dev/null || echo "VISUAL_GATE=false SCORE=0")
+      # Parse gate result: "VISUAL_GATE=true|false SCORE=N [NEEDS_EXPORT=true] [MODE=present_for_review]"
+      VISUAL_GATE_ACTIVE=false
+      case "$VISUAL_GATE_RESULT" in VISUAL_GATE=true*) VISUAL_GATE_ACTIVE=true ;; esac
+      if [ "$VISUAL_GATE_ACTIVE" = "true" ]; then
         UNIT_SLUG="${CURRENT_UNIT#unit-}"
-        bash "$PLUGIN_DIR/lib/run-visual-comparison.sh" \
+        COMPARISON_RESULT=$(bash "$PLUGIN_DIR/lib/run-visual-comparison.sh" \
           --intent-slug "$INTENT_SLUG" \
           --unit-slug "$CURRENT_UNIT" \
-          --intent-dir "$INTENT_DIR" 2>/dev/null || true
+          --intent-dir "$INTENT_DIR" 2>/dev/null || echo "")
+        # Parse comparison output for reviewer handoff context
+        NEEDS_EXPORT=false
+        case "$COMPARISON_RESULT" in *NEEDS_EXPORT=true*) NEEDS_EXPORT=true ;; esac
+        VISUAL_MODE=""
+        case "$COMPARISON_RESULT" in *MODE=present_for_review*) VISUAL_MODE="present_for_review" ;; esac
+        # Log for reviewer context — these do not block advancement
+        if [ "$NEEDS_EXPORT" = "true" ]; then
+          echo "ai-dlc: advance: visual comparison requires agent export — reviewer will handle" >&2
+        fi
+        if [ "$VISUAL_MODE" = "present_for_review" ]; then
+          echo "ai-dlc: advance: visual comparison in present-for-review mode — reviewer will handle" >&2
+        fi
       fi
     fi
     ;;
