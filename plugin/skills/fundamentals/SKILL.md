@@ -162,8 +162,12 @@ planner → builder → reviewer
 
 ### Hat Transitions
 
-- `/ai-dlc:advance` - Move to next hat in workflow (handles completion at the last hat)
-- `/ai-dlc:fail` - Return to previous hat (e.g., reviewer finds issues)
+Hat transitions are performed by reading and executing the internal skill definitions directly:
+
+- **Advance** (move to next hat): Read `plugin/skills/execute/subskills/advance/SKILL.md` and execute it
+- **Fail** (return to previous hat): Read `plugin/skills/execute/subskills/fail/SKILL.md` and execute it
+
+These are internal skills (`user-invocable: false`) — not registered slash commands.
 
 ### Custom Workflows
 
@@ -274,8 +278,8 @@ AI-DLC provides slash commands:
 
 - `/ai-dlc:elaborate` - Start mob elaboration
 - `/ai-dlc:execute` - Run autonomous execution loop
-- `/ai-dlc:advance` - Next hat (internal)
-- `/ai-dlc:fail` - Previous hat (internal)
+- advance (internal) - Read `plugin/skills/execute/subskills/advance/SKILL.md` and execute it
+- fail (internal) - Read `plugin/skills/execute/subskills/fail/SKILL.md` and execute it
 - `/ai-dlc:resume` - Resume lost intent
 - `/ai-dlc:reset` - Clear state
 

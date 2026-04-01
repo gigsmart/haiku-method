@@ -977,7 +977,7 @@ When all units complete:
 
 #### 5a. Run Integration Validation
 
-Before shutting down the team, run the `/ai-dlc:integrate` skill as a teammate on the **intent worktree** (not a unit worktree). Integration is implemented as an internal skill (see `plugin/skills/execute/subskills/integrate/SKILL.md`), not a hat.
+Before shutting down the team, read `plugin/skills/execute/subskills/integrate/SKILL.md` and execute it as a teammate on the **intent worktree** (not a unit worktree). Integration is implemented as an internal skill, not a hat.
 
 ```bash
 # Check if integration has already passed

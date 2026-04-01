@@ -374,8 +374,8 @@ Reference criteria to guide implementation:
 Verify each criterion is satisfied:
 1. Load criteria
 2. Check each one
-3. If all satisfied → `/ai-dlc:advance`
-4. If any missing → `/ai-dlc:fail` with specific feedback
+3. If all satisfied → read `plugin/skills/execute/subskills/advance/SKILL.md` and execute it
+4. If any missing → read `plugin/skills/execute/subskills/fail/SKILL.md` and execute it with specific feedback
 
 ## Summary
 
