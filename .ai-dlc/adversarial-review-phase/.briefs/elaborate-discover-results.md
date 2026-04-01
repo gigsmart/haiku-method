@@ -8,7 +8,7 @@ error_message: ""
 ## Domain Model Summary
 
 ### Entities
-- **AdversarialReviewSkill**: Forked subagent skill (`plugin/skills/elaborate-adversarial-review/SKILL.md`) — Reads brief, performs adversarial analysis of specs, writes structured findings. Fields: description, context (fork), agent (general-purpose), user-invocable (false), allowed-tools, review categories, anti-rationalization rules
+- **AdversarialReviewSkill**: Forked subagent skill (`plugin/skills/elaborate/subskills/adversarial-review/SKILL.md`) — Reads brief, performs adversarial analysis of specs, writes structured findings. Fields: description, context (fork), agent (general-purpose), user-invocable (false), allowed-tools, review categories, anti-rationalization rules
 - **AdversarialReviewBrief**: Input brief (`.ai-dlc/{slug}/.briefs/elaborate-adversarial-review.md`) — Serialized intent, units, and discovery context for the subagent
 - **AdversarialReviewResults**: Output results (`.ai-dlc/{slug}/.briefs/elaborate-adversarial-review-results.md`) — Structured findings with YAML status + finding array
 - **Finding**: Single review finding — Fields: id, category, confidence (high/medium/low), severity, affected_units, title, description, evidence, suggested_fix, fix_type, fix_target

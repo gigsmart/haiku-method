@@ -3,10 +3,10 @@
 ## Bolt 1 — First Iteration
 
 ### Unit Summary
-Create `plugin/skills/elaborate-adversarial-review/SKILL.md` — a forked subagent skill that reads elaboration spec artifacts and produces structured findings challenging spec quality, consistency, and completeness.
+Create `plugin/skills/elaborate/subskills/adversarial-review/SKILL.md` — a forked subagent skill that reads elaboration spec artifacts and produces structured findings challenging spec quality, consistency, and completeness.
 
 ### Completion Criteria (7 total, 0 satisfied)
-1. [ ] Skill file exists at `plugin/skills/elaborate-adversarial-review/SKILL.md` with correct frontmatter (`context: fork`, `agent: general-purpose`, `user-invocable: false`)
+1. [ ] Skill file exists at `plugin/skills/elaborate/subskills/adversarial-review/SKILL.md` with correct frontmatter (`context: fork`, `agent: general-purpose`, `user-invocable: false`)
 2. [ ] Allowed tools are Read, Write, Glob, Grep, Bash only (no AskUserQuestion, no web tools, no MCP)
 3. [ ] Skill defines all 7 analysis passes (contradiction, hidden-complexity, assumption, dependency, scope, completeness, boundary)
 4. [ ] Skill defines the structured finding format with all required fields (id, category, confidence, severity, affected_units, title, description, evidence, suggested_fix, fix_type, fix_target)
@@ -48,9 +48,9 @@ Studied three existing subagent skills to extract the canonical pattern:
 
 #### Task 1: Create skill directory and SKILL.md with frontmatter
 **Targets criteria:** 1, 2
-**Files to create:** `plugin/skills/elaborate-adversarial-review/SKILL.md`
+**Files to create:** `plugin/skills/elaborate/subskills/adversarial-review/SKILL.md`
 **Steps:**
-1. Create directory `plugin/skills/elaborate-adversarial-review/`
+1. Create directory `plugin/skills/elaborate/subskills/adversarial-review/`
 2. Write SKILL.md with YAML frontmatter:
    - `description: (Internal) Autonomous adversarial spec review for AI-DLC elaboration`
    - `context: fork`

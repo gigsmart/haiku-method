@@ -177,7 +177,7 @@ If `AGENT_TEAMS_ENABLED` is set, delete the team to release all agent resources:
   echo "**Next steps:**"
   echo "- Run \`/ai-dlc:execute\` to continue with the next ready unit"
   echo "- Run \`/ai-dlc:execute <unit-name>\` to target another specific unit"
-  echo "- Run \`/ai-dlc:advance\` if all units are complete"
+  echo "- Read \`plugin/skills/execute/subskills/advance/SKILL.md\` and execute it if all units are complete"
   exit 0
 fi
 ```
@@ -423,7 +423,7 @@ This replaces the sequential "loop back to builder" behavior when Agent Teams is
 
 When `ALL_COMPLETE` is true and `state.integratorComplete` is not true, run integration validation instead of marking the intent completed.
 
-**Integration is NOT a per-unit hat** — it does not appear in the workflow sequence. It runs once on the merged intent branch after all units pass their per-unit workflows. It is implemented as the internal `/ai-dlc:integrate` skill (see `plugin/skills/integrate/SKILL.md`).
+**Integration is NOT a per-unit hat** — it does not appear in the workflow sequence. It runs once on the merged intent branch after all units pass their per-unit workflows. It is implemented as the internal `/ai-dlc:integrate` skill (see `plugin/skills/execute/subskills/integrate/SKILL.md`).
 
 1. Set state to indicate integration is running:
 
@@ -439,7 +439,7 @@ Task({
   subagent_type: "general-purpose",
   description: `integrate: ${intentSlug}`,
   prompt: `
-    Run the /ai-dlc:integrate skill for intent ${intentSlug}.
+    Read the skill definition at plugin/skills/execute/subskills/integrate/SKILL.md first, then execute it for intent ${intentSlug}.
 
     ## CRITICAL: Work on Intent Branch
     **Worktree path:** .ai-dlc/worktrees/${intentSlug}/

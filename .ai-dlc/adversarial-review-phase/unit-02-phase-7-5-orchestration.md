@@ -96,7 +96,7 @@ git commit -m "elaborate(${INTENT_SLUG}): write adversarial review brief"
 Agent({
   subagent_type: "general-purpose",
   description: "elaborate-adversarial-review: {INTENT_SLUG}",
-  prompt: "Run the /ai-dlc:elaborate-adversarial-review skill. Read the skill definition at plugin/skills/elaborate-adversarial-review/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/elaborate-adversarial-review.md as input."
+  prompt: "Run the /ai-dlc:elaborate-adversarial-review skill. Read the skill definition at plugin/skills/elaborate/subskills/adversarial-review/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/elaborate-adversarial-review.md as input."
 })
 ```
 

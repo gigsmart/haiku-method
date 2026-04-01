@@ -144,7 +144,7 @@ Builders: read section headers for an overview, then dive into specific sections
 | plugin/hooks/subagent-context.sh | 300 | Subagent context scoping |
 | plugin/skills/construct/SKILL.md | 1117 | Core construction loop |
 | plugin/skills/elaborate/SKILL.md | ~900 | Mob elaboration workflow |
-| plugin/skills/advance/SKILL.md | ~150 | Hat progression + merge |
+| plugin/skills/execute/subskills/advance/SKILL.md | ~150 | Hat progression + merge |
 
 ### What Must Change for Git-Optional
 1. han keep needs a file-based fallback (folder mode)

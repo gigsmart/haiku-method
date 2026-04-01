@@ -27,13 +27,13 @@ backend - This unit will be executed by general-purpose agents.
 - **Finding**: Structured finding object with 7 categories and confidence scoring
 
 ## Data Sources
-- **Existing subagent skills** (filesystem): Read `plugin/skills/elaborate-discover/SKILL.md`, `plugin/skills/elaborate-wireframes/SKILL.md`, and `plugin/skills/elaborate-ticket-sync/SKILL.md` to match the established pattern (frontmatter structure, brief/results format, section layout, allowed-tools pattern)
+- **Existing subagent skills** (filesystem): Read `plugin/skills/elaborate/subskills/discover/SKILL.md`, `plugin/skills/elaborate/subskills/wireframes/SKILL.md`, and `plugin/skills/elaborate/subskills/ticket-sync/SKILL.md` to match the established pattern (frontmatter structure, brief/results format, section layout, allowed-tools pattern)
 - **Reviewer hat confidence scoring** (filesystem): Read `plugin/hats/reviewer.md` for the high/medium/low confidence pattern and how it gates decisions
 - **Red Team hat adversarial mindset** (filesystem): Read `plugin/hats/red-team.md` for the adversarial mindset and systematic enumeration approach (note: the anti-rationalization rules in this skill are original, not borrowed from the red-team hat)
 
 ## Technical Specification
 
-Create `plugin/skills/elaborate-adversarial-review/SKILL.md` with:
+Create `plugin/skills/elaborate/subskills/adversarial-review/SKILL.md` with:
 
 ### Frontmatter
 ```yaml
@@ -110,7 +110,7 @@ allowed-tools:
    - **Low**: Subjective — alternative approaches, nice-to-have criteria, stylistic boundary preferences
 
 ## Success Criteria
-- [ ] Skill file exists at `plugin/skills/elaborate-adversarial-review/SKILL.md` with correct frontmatter (`context: fork`, `agent: general-purpose`, `user-invocable: false`)
+- [ ] Skill file exists at `plugin/skills/elaborate/subskills/adversarial-review/SKILL.md` with correct frontmatter (`context: fork`, `agent: general-purpose`, `user-invocable: false`)
 - [ ] Allowed tools are Read, Write, Glob, Grep, Bash only (no AskUserQuestion, no web tools, no MCP)
 - [ ] Skill defines all 7 analysis passes (contradiction, hidden-complexity, assumption, dependency, scope, completeness, boundary)
 - [ ] Skill defines the structured finding format with all required fields (id, category, confidence, severity, affected_units, title, description, evidence, suggested_fix, fix_type, fix_target)

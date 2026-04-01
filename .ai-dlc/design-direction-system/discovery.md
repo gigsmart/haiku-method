@@ -103,7 +103,7 @@ Key conventions:
 - Design manifest at `.ai-dlc/{intent}/designs/design-manifest.md`
 - Uses `elaborate-wireframes` skill for visual wireframe generation
 
-### Wireframe System (`plugin/skills/elaborate-wireframes/SKILL.md`)
+### Wireframe System (`plugin/skills/elaborate/subskills/wireframes/SKILL.md`)
 
 Wireframes are:
 - Self-contained HTML files (no JS, no external deps)

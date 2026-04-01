@@ -28,7 +28,7 @@ backend - This unit will be executed by backend-focused agents.
 ## Data Sources
 - **Unit-03 MCP tool**: The `pick_design_direction` tool's input schema defines the data shape archetypes must conform to
 - **`plugin/lib/knowledge.sh`** (from unit-01): `dlc_knowledge_write()` for seeding `design.md`
-- **Wireframe skill patterns** (`plugin/skills/elaborate-wireframes/SKILL.md`): CSS patterns that the blueprint tokens need to replace
+- **Wireframe skill patterns** (`plugin/skills/elaborate/subskills/wireframes/SKILL.md`): CSS patterns that the blueprint tokens need to replace
 
 ## Technical Specification
 

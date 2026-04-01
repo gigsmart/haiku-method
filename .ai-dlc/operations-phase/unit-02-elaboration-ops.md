@@ -58,7 +58,7 @@ Skip these questions when:
 - The intent is pure refactoring with no deployment surface change
 - Stack config is empty (`stack: {}`)
 
-### 2. Phase 2.5 Discovery: Operations Context (`plugin/skills/elaborate-discover/SKILL.md`)
+### 2. Phase 2.5 Discovery: Operations Context (`plugin/skills/elaborate/subskills/discover/SKILL.md`)
 
 Add new discovery section headers for the discovery subagent to populate:
 

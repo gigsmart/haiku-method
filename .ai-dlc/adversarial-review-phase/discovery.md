@@ -140,7 +140,7 @@ Phase 7.5 slots between Phase 7 (Spec Review) and Phase 8 (Handoff). This is a c
 
 ## Codebase Pattern: Integration Skill Cross-Unit Validation
 
-The integrate skill (`plugin/skills/integrate/SKILL.md`) validates cross-unit interactions POST-execution:
+The integrate skill (`plugin/skills/execute/subskills/integrate/SKILL.md`) validates cross-unit interactions POST-execution:
 - Verifies merged state integrity
 - Runs full backpressure suite (tests, lint, types)
 - Checks intent-level success criteria
@@ -218,7 +218,7 @@ Phase 7 currently uses an inline Agent() call with a prompt — no separate skil
 
 ### Option B: Dedicated skill file (like elaborate-discover)
 
-Create `plugin/skills/elaborate-adversarial-review/SKILL.md` with its own brief/results pattern. This:
+Create `plugin/skills/elaborate/subskills/adversarial-review/SKILL.md` with its own brief/results pattern. This:
 
 - Follows the established subagent delegation pattern (discover, wireframes, ticket-sync)
 - Has its own `allowed-tools` list (needs Read, Write, Glob, Grep, Bash for file analysis)
@@ -233,7 +233,7 @@ Create `plugin/skills/elaborate-adversarial-review/SKILL.md` with its own brief/
 
 Files to create/modify:
 
-1. **NEW: `plugin/skills/elaborate-adversarial-review/SKILL.md`** — The adversarial review subagent skill
+1. **NEW: `plugin/skills/elaborate/subskills/adversarial-review/SKILL.md`** — The adversarial review subagent skill
    - `context: fork`, `agent: general-purpose`, `user-invocable: false`
    - Reads brief from `.ai-dlc/{slug}/.briefs/elaborate-adversarial-review.md`
    - Writes results to `.ai-dlc/{slug}/.briefs/elaborate-adversarial-review-results.md`
@@ -413,7 +413,7 @@ The adversarial review subagent does not need VCS/CI provider access. It reads s
 
 ### Entities
 
-- **AdversarialReviewSkill**: The forked subagent skill definition (`plugin/skills/elaborate-adversarial-review/SKILL.md`) — Reads brief, analyzes specs adversarially, writes structured findings to results file. Fields: description, context (fork), agent (general-purpose), user-invocable (false), allowed-tools, review categories, anti-rationalization rules
+- **AdversarialReviewSkill**: The forked subagent skill definition (`plugin/skills/elaborate/subskills/adversarial-review/SKILL.md`) — Reads brief, analyzes specs adversarially, writes structured findings to results file. Fields: description, context (fork), agent (general-purpose), user-invocable (false), allowed-tools, review categories, anti-rationalization rules
 - **AdversarialReviewBrief**: Input brief file (`.ai-dlc/{slug}/.briefs/elaborate-adversarial-review.md`) — Serialized context for the subagent. Fields: intent_slug, worktree_path, intent_content (full intent.md), unit_contents (all unit files), discovery_summary (key findings from discovery.md)
 - **AdversarialReviewResults**: Output results file (`.ai-dlc/{slug}/.briefs/elaborate-adversarial-review-results.md`) — Structured findings with YAML frontmatter. Fields: status (success/error), findings_count, auto_fixable_count, findings (array of Finding objects)
 - **Finding**: A single adversarial review finding — Fields: id, category (contradiction/hidden-complexity/assumption/dependency/scope/completeness/boundary), confidence (high/medium/low), severity (blocking/warning/suggestion), affected_units, title, description, evidence, suggested_fix, fix_type (spec_edit/add_dependency/remove_unit/add_criterion/reorder/manual), fix_target

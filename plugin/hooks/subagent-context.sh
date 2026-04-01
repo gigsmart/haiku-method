@@ -353,7 +353,7 @@ if [ -n "${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}" ]; then
   echo ""
   echo "You are a **teammate** in an Agent Teams session."
   echo "- Report completion/issues to team lead via SendMessage"
-  echo "- Do NOT call /ai-dlc:execute, /ai-dlc:advance, or /ai-dlc:fail — the lead handles orchestration"
+  echo "- Do NOT call /ai-dlc:execute, or read/execute the advance or fail skill definitions directly — the lead handles orchestration"
   echo "- Use TaskUpdate to mark shared tasks as completed when done"
   echo "- Coordinate with other teammates through the team lead"
   echo ""

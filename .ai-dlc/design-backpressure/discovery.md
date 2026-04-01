@@ -51,7 +51,7 @@ Builder treats all quality gate failures as implementation guidance:
 
 ## Codebase Pattern: Hard Gates in Advance Skill
 
-Three hard gates in `plugin/skills/advance/SKILL.md`:
+Three hard gates in `plugin/skills/execute/subskills/advance/SKILL.md`:
 
 | Gate | Transition | What It Checks |
 |------|-----------|----------------|
@@ -77,7 +77,7 @@ Backpressure = automated enforcement that blocks progress until quality passes. 
 
 ## Codebase Pattern: Wireframe System
 
-Elaboration Phase 6.25 generates low-fidelity HTML wireframes via `plugin/skills/elaborate-wireframes/SKILL.md`:
+Elaboration Phase 6.25 generates low-fidelity HTML wireframes via `plugin/skills/elaborate/subskills/wireframes/SKILL.md`:
 
 - **Storage:** `.ai-dlc/{intent-slug}/mockups/unit-{NN}-{slug}-wireframe.html`
 - **Format:** Self-contained HTML5, no JS, no custom fonts, gray/white only

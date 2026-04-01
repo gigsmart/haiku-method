@@ -185,7 +185,7 @@ Task: {TASK_DESCRIPTION}
 {hat-specific instructions — see section D below}
 
 Work directly in the current working directory. Do NOT create worktrees.
-Do NOT use /ai-dlc:advance or /ai-dlc:fail — just complete your work and report results.
+Do NOT read or execute the advance or fail skill definitions directly — just complete your work and report results.
 ```
 
 **Hat context injection (always explicit):** Always inject hat context directly into the subagent prompt — do not rely on hooks firing for Agent-spawned subagents. Read the hat file directly:

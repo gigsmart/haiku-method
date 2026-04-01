@@ -21,20 +21,20 @@ backend - Skill implementation (markdown-defined workflow logic + shell discover
 
 ## Domain Entities
 - **Elaborate Skill** (`plugin/skills/elaborate/SKILL.md`): The main elaboration orchestrator.
-- **Elaborate-Discover Skill** (`plugin/skills/elaborate-discover/SKILL.md`): Autonomous discovery subagent.
+- **Elaborate-Discover Skill** (`plugin/skills/elaborate/subskills/discover/SKILL.md`): Autonomous discovery subagent.
 - **Intent Frontmatter**: Where `quality_gates:` gets written.
 - **Repo Tooling**: Package managers, test runners, linters, type checkers detected from project files.
 
 ## Data Sources
 - `plugin/skills/elaborate/SKILL.md` — elaborate skill (Phase 6 writes intent.md)
-- `plugin/skills/elaborate-discover/SKILL.md` — discovery skill (Phase 2 explores repo)
+- `plugin/skills/elaborate/subskills/discover/SKILL.md` — discovery skill (Phase 2 explores repo)
 - Project files that indicate tooling: `package.json`, `Makefile`, `go.mod`, `pyproject.toml`, `Cargo.toml`, `composer.json`, `Gemfile`, `build.gradle`, `pom.xml`, `deno.json`, `bun.lockb`
 
 ## Technical Specification
 
 ### Part 1: Discovery — Detect Repo Tooling
 
-In `plugin/skills/elaborate-discover/SKILL.md`, add a new exploration step to the "What to Explore" section. The discovery subagent should detect quality gate candidates by examining project files.
+In `plugin/skills/elaborate/subskills/discover/SKILL.md`, add a new exploration step to the "What to Explore" section. The discovery subagent should detect quality gate candidates by examining project files.
 
 **Detection heuristics:**
 

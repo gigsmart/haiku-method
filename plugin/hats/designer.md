@@ -97,7 +97,7 @@ If `DESIGN_KNOWLEDGE` is empty, proceed with the survey below (component librari
 - You SHOULD document design decisions
 - You MUST specify responsive behavior
 - You MUST define interaction states (default, hover, focus, active, disabled, error, loading, empty)
-- You SHOULD use the `elaborate-wireframes` skill to generate visual wireframes when helpful
+- You SHOULD use the `elaborate/subskills/wireframes` skill to generate visual wireframes when helpful
 - You MUST save any generated wireframes to `.ai-dlc/{intent}/mockups/`
 - **Validation**: Design ready for implementation
 

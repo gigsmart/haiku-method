@@ -22,13 +22,13 @@ backend - This unit will be executed by backend-focused agents.
 
 ## Domain Entities
 - **ElaborateSkill**: The existing `plugin/skills/elaborate/SKILL.md` that gets a new phase
-- **ElaborateWireframesSkill**: The existing `plugin/skills/elaborate-wireframes/SKILL.md` that gets blueprint awareness
+- **ElaborateWireframesSkill**: The existing `plugin/skills/elaborate/subskills/wireframes/SKILL.md` that gets blueprint awareness
 - **DesignBlueprint**: The `.ai-dlc/{slug}/design-blueprint.md` artifact from unit-04
 - **KnowledgeArtifact**: Persistent knowledge files from `.ai-dlc/knowledge/`
 
 ## Data Sources
 - **`plugin/skills/elaborate/SKILL.md`**: The main elaboration skill to modify
-- **`plugin/skills/elaborate-wireframes/SKILL.md`**: The wireframe generation skill to modify
+- **`plugin/skills/elaborate/subskills/wireframes/SKILL.md`**: The wireframe generation skill to modify
 - **`plugin/lib/knowledge.sh`** (unit-01): Knowledge read/write API
 - **`plugin/lib/config.sh`**: `detect_project_maturity()` for greenfield gating
 - **MCP server** (unit-03): `pick_design_direction` tool
@@ -73,7 +73,7 @@ If synthesis is needed:
    Agent({
      subagent_type: "general-purpose",
      description: "knowledge-synthesize: {INTENT_SLUG}",
-     prompt: "Read the skill definition at plugin/skills/knowledge-synthesize/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/knowledge-synthesize.md as input."
+     prompt: "Read the skill definition at plugin/skills/elaborate/subskills/knowledge-synthesize/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/knowledge-synthesize.md as input."
    })
    ```
 3. Read results from `.ai-dlc/{intent-slug}/.briefs/knowledge-synthesize-results.md`
@@ -188,7 +188,7 @@ This is a small addition to the brief template — it enriches discovery with ex
 
 ### 3. Styled Wireframes (elaborate-wireframes skill update)
 
-Update `plugin/skills/elaborate-wireframes/SKILL.md` to produce styled wireframes when a design blueprint exists.
+Update `plugin/skills/elaborate/subskills/wireframes/SKILL.md` to produce styled wireframes when a design blueprint exists.
 
 **Changes to the wireframe brief:**
 

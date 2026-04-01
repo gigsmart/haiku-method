@@ -127,4 +127,4 @@ This unit updates execute skill logic ONLY. It does NOT:
 ## Notes
 
 - The `find_ready_units_for_pass` function already exists and is well-tested in dag.sh. The main change is calling it instead of `find_ready_units`.
-- The advance skill (`plugin/skills/advance/SKILL.md`) may also need awareness of passes when determining if the intent is complete. Check if the existing pass transition code in execute (Step 5c) is sufficient or if advance needs updates too.
+- The advance skill (`plugin/skills/execute/subskills/advance/SKILL.md`) may also need awareness of passes when determining if the intent is complete. Check if the existing pass transition code in execute (Step 5c) is sufficient or if advance needs updates too.

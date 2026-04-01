@@ -83,7 +83,7 @@ Missing from schema:
 - Per-discipline workflows can be specified: `workflow: design` for design units (auto-set)
 - Elaboration drives unit decomposition by discipline boundaries
 
-**Discovery Subagent** (`plugin/skills/elaborate-discover/SKILL.md`):
+**Discovery Subagent** (`plugin/skills/elaborate/subskills/discover/SKILL.md`):
 - Spawned during Phase 2.5 to autonomously explore domain
 - Writes findings to `discovery.md` with standardized section headers:
   - `## API Schema: {name}`
@@ -129,7 +129,7 @@ Missing from elaboration:
 ### Key Files
 
 - `plugin/skills/elaborate/SKILL.md` — Phase 2 clarification and Phase 5 decomposition sections
-- `plugin/skills/elaborate-discover/SKILL.md` — Discovery section headers
+- `plugin/skills/elaborate/subskills/discover/SKILL.md` — Discovery section headers
 - `website/content/papers/ai-dlc-2026.md` — Lines 1116-1167 define operations phase conceptually
 
 ### Integration Points
@@ -297,7 +297,7 @@ Missing:
 
 ### Current State
 
-**Integrate Skill** (`plugin/skills/integrate/SKILL.md`):
+**Integrate Skill** (`plugin/skills/execute/subskills/integrate/SKILL.md`):
 - Runs after all units complete and are merged
 - Intent-level validation (all units work together)
 - Verifies:
@@ -331,7 +331,7 @@ Missing:
 
 ### Key Files
 
-- `plugin/skills/integrate/SKILL.md` — Steps 1-6 (verify merge, backpressure, criteria, integration, emergent issues, decision)
+- `plugin/skills/execute/subskills/integrate/SKILL.md` — Steps 1-6 (verify merge, backpressure, criteria, integration, emergent issues, decision)
 
 ### Integration Points
 
@@ -819,7 +819,7 @@ User: /operate
 
 ### Elaboration (3 files)
 4. `plugin/skills/elaborate/SKILL.md` — Phase 2 ops questions, Phase 5 ops decomposition
-5. `plugin/skills/elaborate-discover/SKILL.md` — Add ops discovery section headers
+5. `plugin/skills/elaborate/subskills/discover/SKILL.md` — Add ops discovery section headers
 6. (New file) `plugin/skills/elaborate-operations/SKILL.md` — Operations-specific elaboration guidance
 
 ### Builder (3 files)
@@ -833,7 +833,7 @@ User: /operate
 12. (New file) `plugin/hats/operations-reviewer.md` — Specialized review for operations units
 
 ### Integration (1 file)
-13. `plugin/skills/integrate/SKILL.md` — Add cross-unit deployment/observability verification
+13. `plugin/skills/execute/subskills/integrate/SKILL.md` — Add cross-unit deployment/observability verification
 
 ### Execution (3 files)
 14. `plugin/skills/execute/SKILL.md` — Add DEPLOYABLE, OBSERVABLE, OPERATIONS_READY gates

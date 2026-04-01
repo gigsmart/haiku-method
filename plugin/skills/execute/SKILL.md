@@ -63,7 +63,7 @@ If you encounter ambiguity:
 
 If truly blocked (cannot proceed without user input):
 1. Document the blocker clearly in `dlc_state_save "$INTENT_DIR" "blockers.md"`
-2. Stop the loop naturally (don't call /ai-dlc:advance)
+2. Stop the loop naturally (don't read or execute the advance skill definition)
 3. The Stop hook will alert the user that human intervention is required
 
 ## Implementation
@@ -977,7 +977,7 @@ When all units complete:
 
 #### 5a. Run Integration Validation
 
-Before shutting down the team, run the `/ai-dlc:integrate` skill as a teammate on the **intent worktree** (not a unit worktree). Integration is implemented as an internal skill (see `plugin/skills/integrate/SKILL.md`), not a hat.
+Before shutting down the team, read `plugin/skills/execute/subskills/integrate/SKILL.md` and execute it as a teammate on the **intent worktree** (not a unit worktree). Integration is implemented as an internal skill, not a hat.
 
 ```bash
 # Check if integration has already passed
@@ -1024,7 +1024,7 @@ Task({
   team_name: `ai-dlc-${intentSlug}`,
 
   prompt: `
-    Run the /ai-dlc:integrate skill for intent ${intentSlug}.
+    Read the skill definition at plugin/skills/execute/subskills/integrate/SKILL.md first, then execute it for intent ${intentSlug}.
 
     ## CRITICAL: Work on Intent Branch
     **Worktree path:** .ai-dlc/worktrees/${intentSlug}/
@@ -1277,10 +1277,10 @@ aidlc_record_delivery_review "${INTENT_SLUG}" "rejected" "${ISSUE_COUNT}"
 
 For each affected unit with HIGH findings:
 - Identify the unit slug from the affected file paths
-- Call `/ai-dlc:fail` with the reason: "Pre-delivery review found issues: {description}"
+- Read the skill definition at `plugin/skills/execute/subskills/fail/SKILL.md` and execute it with the reason: "Pre-delivery review found issues: {description}"
 - The fail mechanism will revert the unit's hat to builder and re-enter the build loop
 
-**After calling /ai-dlc:fail, STOP.** Do not proceed to delivery. The execution loop will resume with the builder addressing the findings.
+**After executing the fail skill, STOP.** Do not proceed to delivery. The execution loop will resume with the builder addressing the findings.
 
 **Gate on change strategy.** The delivery prompt only applies to intent-level strategy, where all unit work merges into a single intent branch that needs delivery. With unit strategy, each unit already has its own PR — there's nothing to deliver as a whole.
 
@@ -1571,8 +1571,8 @@ The subagent automatically receives AI-DLC context (hat instructions, intent, wo
 #### Step 4: Handle Subagent Result
 
 Based on the subagent's response:
-- **Success/Complete**: Call `/ai-dlc:advance` to move to next role (or complete intent if all done)
-- **Issues found** (reviewer): Call `/ai-dlc:fail` to return to builder
+- **Success/Complete**: Read the skill definition at `plugin/skills/execute/subskills/advance/SKILL.md` and execute it to move to next role (or complete intent if all done)
+- **Issues found** (reviewer): Read the skill definition at `plugin/skills/execute/subskills/fail/SKILL.md` and execute it to return to builder
 - **Blocked**: Document and stop loop for user intervention
 
 When `/ai-dlc:advance` marks the intent complete (all units done + integration passed), proceed to Step 5.

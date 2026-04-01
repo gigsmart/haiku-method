@@ -27,7 +27,7 @@ The subagent follows the established brief-write-invoke-read pattern used by ela
 ## Domain Model
 
 ### Entities
-- **AdversarialReviewSkill**: Forked subagent skill (`plugin/skills/elaborate-adversarial-review/SKILL.md`) — reads brief, analyzes specs adversarially, writes structured findings
+- **AdversarialReviewSkill**: Forked subagent skill (`plugin/skills/elaborate/subskills/adversarial-review/SKILL.md`) — reads brief, analyzes specs adversarially, writes structured findings
 - **AdversarialReviewBrief**: Input brief (`.ai-dlc/{slug}/.briefs/elaborate-adversarial-review.md`) — serialized intent, units, and discovery context
 - **AdversarialReviewResults**: Output results (`.ai-dlc/{slug}/.briefs/elaborate-adversarial-review-results.md`) — structured findings with YAML status + finding array
 - **Finding**: Single review finding — id, category, confidence, severity, affected_units, title, description, evidence, suggested_fix, fix_type, fix_target
@@ -46,7 +46,7 @@ The subagent follows the established brief-write-invoke-read pattern used by ela
 - None. All spec data is locally available to the subagent.
 
 ## Success Criteria
-- [ ] New skill file exists at `plugin/skills/elaborate-adversarial-review/SKILL.md` with `context: fork`, `agent: general-purpose`, `user-invocable: false`
+- [ ] New skill file exists at `plugin/skills/elaborate/subskills/adversarial-review/SKILL.md` with `context: fork`, `agent: general-purpose`, `user-invocable: false`
 - [ ] Skill follows the brief-write-invoke-read pattern consistent with elaborate-discover, elaborate-wireframes, and elaborate-ticket-sync
 - [ ] Subagent reads intent.md, all unit-*.md files, and discovery.md — produces structured findings in YAML format
 - [ ] Each finding includes: id, category (7 types), confidence (high/medium/low), severity, affected_units, title, description, evidence, suggested_fix, fix_type, fix_target

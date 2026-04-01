@@ -14,7 +14,7 @@ Expand the integration skill to validate cross-unit deployment compatibility, mo
 
 ## Technical Specification
 
-### 1. Integration Skill Extension (`plugin/skills/integrate/SKILL.md`)
+### 1. Integration Skill Extension (`plugin/skills/execute/subskills/integrate/SKILL.md`)
 
 Add new verification steps after existing integration checks:
 

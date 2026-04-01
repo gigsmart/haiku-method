@@ -24,14 +24,14 @@ backend - Modifying skill and hat markdown instructions.
 - **Builder Reference** (`plugin/hats/builder-reference.md`): Extended reference material for builder.
 - **Reviewer Hat** (`plugin/hats/reviewer.md`): Instructions for the review role. Currently verifies hardcoded test/lint/type checks.
 - **Reviewer Reference** (`plugin/hats/reviewer-reference.md`): Extended reference material for reviewer.
-- **Advance Skill** (`plugin/skills/advance/SKILL.md`): Currently contains hardcoded TESTS_PASS gate logic.
+- **Advance Skill** (`plugin/skills/execute/subskills/advance/SKILL.md`): Currently contains hardcoded TESTS_PASS gate logic.
 
 ## Data Sources
 - `plugin/hats/builder.md` — builder hat with backpressure section (~lines 61-76)
 - `plugin/hats/builder-reference.md` — builder extended reference
 - `plugin/hats/reviewer.md` — reviewer hat with gate verification
 - `plugin/hats/reviewer-reference.md` — reviewer extended reference
-- `plugin/skills/advance/SKILL.md` — advance skill with hardcoded TESTS_PASS gate (~lines 48-99)
+- `plugin/skills/execute/subskills/advance/SKILL.md` — advance skill with hardcoded TESTS_PASS gate (~lines 48-99)
 - `plugin/skills/backpressure/SKILL.md` — backpressure skill documentation
 
 ## Technical Specification
@@ -70,7 +70,7 @@ In `plugin/hats/reviewer.md`, update the verification section to:
 
 ### Part 3: Update Advance Skill
 
-In `plugin/skills/advance/SKILL.md`, update the hard gate logic:
+In `plugin/skills/execute/subskills/advance/SKILL.md`, update the hard gate logic:
 
 1. **Remove TESTS_PASS gate**: The advance skill's hardcoded TESTS_PASS check (running `npm test`, `npm run lint`, `npx tsc --noEmit`) is now redundant — the quality-gate.sh hook enforces frontmatter-defined gates before the agent can even call `/advance`. Remove or replace with a note that gates are harness-enforced.
 

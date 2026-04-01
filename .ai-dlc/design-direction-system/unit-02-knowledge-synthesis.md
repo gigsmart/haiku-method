@@ -32,9 +32,9 @@ backend - This unit will be executed by backend-focused agents.
 
 ## Technical Specification
 
-### Skill File: `plugin/skills/knowledge-synthesize/SKILL.md`
+### Skill File: `plugin/skills/elaborate/subskills/knowledge-synthesize/SKILL.md`
 
-A fork-context skill (not user-invocable). Invoked via `Agent()` subagent delegation from the elaborate skill (Phase 2.3). The calling skill passes a brief file path and the subagent reads the skill definition at `plugin/skills/knowledge-synthesize/SKILL.md` before executing — following the same pattern as `elaborate-discover` and `elaborate-wireframes`.
+A fork-context skill (not user-invocable). Invoked via `Agent()` subagent delegation from the elaborate skill (Phase 2.3). The calling skill passes a brief file path and the subagent reads the skill definition at `plugin/skills/elaborate/subskills/knowledge-synthesize/SKILL.md` before executing — following the same pattern as `elaborate-discover` and `elaborate-wireframes`.
 
 **Frontmatter:**
 ```yaml
@@ -214,7 +214,7 @@ git commit -m "knowledge: synthesize project knowledge artifacts"
 ```
 
 ## Success Criteria
-- [ ] `plugin/skills/knowledge-synthesize/SKILL.md` exists with fork-context skill definition
+- [ ] `plugin/skills/elaborate/subskills/knowledge-synthesize/SKILL.md` exists with fork-context skill definition
 - [ ] Design synthesis correctly detects CSS/Tailwind tokens, component libraries, and layout patterns from established codebases
 - [ ] Architecture synthesis correctly identifies tech stack, module boundaries, and infrastructure from project config files
 - [ ] Product synthesis extracts project description and infers product purpose from README and app structure
