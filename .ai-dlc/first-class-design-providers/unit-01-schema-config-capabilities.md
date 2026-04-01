@@ -1,6 +1,6 @@
 ---
-status: pending
-last_updated: ""
+status: in_progress
+last_updated: "2026-04-01T19:01:48Z"
 depends_on: []
 branch: ai-dlc/first-class-design-providers/01-schema-config-capabilities
 discipline: backend
@@ -9,6 +9,7 @@ workflow: ""
 ticket: ""
 design_ref: ""
 views: []
+hat: planner
 ---
 
 # unit-01-schema-config-capabilities
