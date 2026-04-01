@@ -173,13 +173,26 @@ dlc_knowledge_write() {
     return 1
   fi
 
-  # Validate frontmatter: content must start with ---
+  # Validate frontmatter: content must start with --- and contain required fields
   local first_line
   first_line=$(printf '%s' "$content" | head -n 1)
   if [ "$first_line" != "---" ]; then
     echo "ai-dlc: knowledge: content must begin with YAML frontmatter (---)" >&2
     return 1
   fi
+
+  # Extract frontmatter block (between first and second ---)
+  local frontmatter
+  frontmatter=$(printf '%s' "$content" | sed -n '2,/^---$/p' | sed '$d')
+
+  # Validate required frontmatter fields: type, version, created
+  local field
+  for field in type version created; do
+    if ! printf '%s\n' "$frontmatter" | grep -q "^${field}:"; then
+      echo "ai-dlc: knowledge: frontmatter missing required field: $field" >&2
+      return 1
+    fi
+  done
 
   local kdir
   kdir=$(dlc_knowledge_dir) || return 1
@@ -225,24 +238,29 @@ dlc_knowledge_update_section() {
 
   # Check if section exists in the file
   if printf '%s\n' "$current" | grep -q "^## ${section}$"; then
-    # Replace existing section
-    printf '%s\n' "$current" | awk -v section="$section" -v replacement="$new_content" '
-      BEGIN { in_section = 0; replaced = 0 }
+    # Replace existing section using temp file for multi-line safety.
+    # Awk's -v flag cannot handle literal newlines, so we write
+    # new_content to a temp file and use getline to read it in awk.
+    local content_tmp="${filepath}.content.$$"
+    printf '%s\n' "$new_content" > "$content_tmp"
+
+    printf '%s\n' "$current" | awk -v section="$section" -v cfile="$content_tmp" '
+      BEGIN { in_section = 0 }
       /^## / {
         if (in_section) {
-          # We hit the next section — emit replacement then continue
           in_section = 0
         }
         if ($0 == "## " section) {
           in_section = 1
-          replaced = 1
           print $0
-          print replacement
+          while ((getline line < cfile) > 0) print line
+          close(cfile)
           next
         }
       }
       !in_section { print }
     ' > "$tmp" && mv "$tmp" "$filepath"
+    rm -f "$content_tmp"
   else
     # Append new section at end of file
     {
