@@ -8,6 +8,18 @@
 		"file_path": {
 			"type": "string",
 			"description": "Path to .excalidraw file or directory"
+		},
+		"mcp_mode": {
+			"type": "string",
+			"enum": ["remote", "local"],
+			"default": "remote",
+			"description": "Whether to use the remote Excalidraw service or a local instance"
+		},
+		"style": {
+			"type": "string",
+			"enum": ["hand-drawn", "architect", "artist", "cartoonist"],
+			"default": "hand-drawn",
+			"description": "Default drawing style for generated designs"
 		}
 	},
 	"additionalProperties": false

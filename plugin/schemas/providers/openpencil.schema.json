@@ -12,6 +12,22 @@
 		"document_id": {
 			"type": "string",
 			"description": "OpenPencil document ID"
+		},
+		"cli_path": {
+			"type": "string",
+			"description": "Path to the OpenPencil CLI binary"
+		},
+		"default_export_target": {
+			"type": "string",
+			"enum": ["react", "vue", "svelte", "html", "flutter", "swiftui", "compose", "react-native"],
+			"default": "react",
+			"description": "Default framework target for code export"
+		},
+		"mcp_transport": {
+			"type": "string",
+			"enum": ["stdio", "http"],
+			"default": "stdio",
+			"description": "MCP server transport protocol"
 		}
 	},
 	"additionalProperties": false

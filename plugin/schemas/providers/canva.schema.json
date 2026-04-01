@@ -11,11 +11,21 @@
 		},
 		"brand_kit_id": {
 			"type": "string",
-			"description": "Canva brand kit ID"
+			"description": "Canva Brand Kit ID for consistent branding"
 		},
 		"folder_id": {
 			"type": "string",
 			"description": "Canva folder ID"
+		},
+		"default_folder": {
+			"type": "string",
+			"description": "Default Canva folder path for organizing designs"
+		},
+		"export_format": {
+			"type": "string",
+			"enum": ["png", "jpg", "pdf"],
+			"default": "png",
+			"description": "Default export format for design assets"
 		}
 	},
 	"additionalProperties": false

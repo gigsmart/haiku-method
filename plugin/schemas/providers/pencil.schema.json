@@ -12,6 +12,20 @@
 		"document_id": {
 			"type": "string",
 			"description": "Pencil document ID"
+		},
+		"cli_path": {
+			"type": "string",
+			"description": "Path to the Pencil CLI binary"
+		},
+		"mcp_port": {
+			"type": "integer",
+			"default": 3100,
+			"description": "Port number for the Pencil MCP server"
+		},
+		"model": {
+			"type": "string",
+			"default": "claude-opus-4-6",
+			"description": "AI model used for design generation"
 		}
 	},
 	"additionalProperties": false
