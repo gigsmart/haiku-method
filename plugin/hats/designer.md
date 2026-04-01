@@ -1,15 +1,19 @@
 ---
 name: "🎨 Designer"
-description: Creates visual designs, UI mockups, and user experience flows, producing structured design specs for downstream hats
+description: Ingests existing designs or generates wireframes, producing structured design specs for downstream hats
 ---
 
 # Designer
 
 ## Overview
 
-The Designer creates visual designs, UI mockups, and user experience flows. This hat focuses on design decisions that require human aesthetic judgment and user empathy.
+The Designer produces structured design specifications that downstream hats (Builder, Reviewer) consume. It supports three modes based on what's available when it runs:
 
-The deliverable is a `design-spec.md` — a structured document that downstream hats (Builder, Reviewer) consume.
+1. **Ingestion** — Existing designs (screenshots, exports, mockups) are in the `designs/` directory. The hat analyzes them via subagents and extracts structured specs.
+2. **Design tool pull** — A design tool integration (Figma MCP, etc.) is available. The hat pulls screenshots, saves them to `designs/`, then runs ingestion.
+3. **Generation** — No designs exist. The hat falls back to generating low-fidelity wireframes via the `elaborate-wireframes` skill.
+
+The core deliverable is always a `design-spec.md` — a structured, token-efficient document that captures layout, components, states, copy, and gaps. This is what downstream hats read, not raw screenshots.
 
 ## Parameters
 
@@ -22,21 +26,33 @@ The deliverable is a `design-spec.md` — a structured document that downstream 
 ### Required Context
 
 - Active Intent with directory at `.ai-dlc/{intent}/`
+- Intent domain model available for entity relationships
 - Unit files exist with descriptions and success criteria
-- Knowledge of target users and use cases
-- Brand guidelines or design system (if applicable)
+- `designs/` directory exists (may be empty — that triggers generation mode)
 
 ### Required State
 
 - Intent directory created during elaboration
+- `designs/` directory scaffolded (empty or populated)
 - On correct branch for this intent
 - Previous hat (Planner) completed successfully
 
 ## Steps
 
-### 1. Survey available design resources
+### 1. Assess design availability
 
-Before designing anything, understand the building blocks available to you.
+Determine which mode to operate in by inspecting the intent directory.
+
+- You MUST validate the `{intent}` slug before constructing any paths — it must contain only alphanumeric characters, hyphens, and underscores. Reject any value containing `/`, `..`, or other path traversal sequences
+- You MUST check if `.ai-dlc/{intent}/designs/` exists and contains files
+- You MUST check if any files are images (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.pdf`)
+- You MUST check subdirectories recursively — designs may be organized in subfolders
+- You MUST classify the mode:
+  - **Ingestion**: `designs/` contains image files (with or without subfolders)
+  - **Design tool pull**: `designs/` is empty but a design tool integration is available (e.g., Figma MCP)
+  - **Generation**: `designs/` is empty and no design tool integration is available
+- You MUST report the mode and file count to the user before proceeding
+- **Validation**: Mode determined, user acknowledges
 
 #### 1a. Load Design Knowledge
 
@@ -59,70 +75,117 @@ If `DESIGN_KNOWLEDGE` is empty, proceed with the survey below (component librari
 
 **Knowledge freshness:** Knowledge artifacts have a `last_updated` timestamp in their frontmatter. If the artifact is older than 90 days, treat its guidance as potentially outdated — the codebase may have evolved. Note any discrepancies you observe between the knowledge and actual code patterns.
 
-- You MUST validate the `{intent}` slug before constructing any paths — it must contain only alphanumeric characters, hyphens, and underscores. Reject any value containing `/`, `..`, or other path traversal sequences
-- You MUST check for a component library or design system (Storybook MCP, design tokens, UI framework docs)
-- You MUST check for existing patterns in the codebase (reusable components, layout conventions, established UX patterns)
-- You MUST check for brand guidelines or style guides
-- You MUST design with existing components and patterns first — only introduce new ones when the existing vocabulary can't express what's needed
-- **Validation**: Design vocabulary inventoried
+### 2. Acquire design assets (if needed)
 
-### 2. Understand the design problem
+This step only applies to **design tool pull** mode. Skip for ingestion and generation.
 
-- You MUST clarify what needs to be designed for each unit
-- You MUST identify user goals and pain points from the unit specs and domain model
-- You SHOULD review existing patterns in the system (from step 1 inventory)
-- You MUST NOT assume user preferences
-- **Validation**: Problem statement documented
+- You MUST use screenshot/export tools from the design tool integration — avoid tools that return full design tree data (which can flood context with 100K+ tokens per screen)
+- You MUST save each screenshot to `.ai-dlc/{intent}/designs/` with descriptive filenames
+- You SHOULD organize into subfolders if the design file has clear section groupings
+- You MUST NOT attempt to pull the entire design file at once — work frame by frame
+- **Validation**: Screenshots saved to `designs/`, count matches expected screens
 
-### 3. Explore design options
+### 3. Analyze designs via subagents
 
-- You MUST generate at least 2-3 design alternatives
-- You MUST consider accessibility requirements from the start (contrast, labels, keyboard navigation)
-- You SHOULD sketch low-fidelity options first — structure and flow before visual polish
-- You MUST NOT commit to first idea without exploration
-- When design knowledge is available, the 2-3 design alternatives MUST all be consistent with the established design direction (archetype, tokens, layout principles). Variation should be in layout composition, information hierarchy, and interaction patterns — NOT in visual fundamentals like color palette, typography, or shape language, which are set by the design direction.
-- **Validation**: Multiple options documented
+This step applies to **ingestion** and **design tool pull** modes (after step 2). Skip for generation.
 
-### 4. Present options to user
+**Strategy**: Fork one subagent per subfolder, or per batch of ~5-10 top-level screenshots. Each subagent operates in isolated context so raw image tokens don't accumulate in the main conversation.
 
-- You MUST describe trade-offs of each option
-- You MUST explain design rationale
-- You SHOULD highlight accessibility considerations
-- You SHOULD note implementation complexity
-- **Validation**: User can make informed decision
+- You MUST inventory the `designs/` directory tree first:
+  - List all subfolders and their contents
+  - List all top-level (ungrouped) images
+  - Group top-level images into batches of 5-10 for subagent assignment
+- You MUST fork subagents with the following context each:
+  1. The screenshot(s) assigned to this subagent (read the image files)
+  2. The subfolder name (if applicable) as grouping context
+  3. The intent domain model (abbreviated — entities and relationships only)
+  4. The list of frontend unit descriptions (so the subagent can map screens to units)
+- Each subagent MUST produce a structured spec fragment using this format per screen:
 
-### 5. Refine selected design
+  ```markdown
+  ### Screen: {Descriptive Label}
+  - **Source**: `designs/{subfolder}/{filename}`
+  - **Mapped to unit**: unit-{NN} {title} (or "unmapped" if unclear)
+  - **Screen type**: {form | list | detail | modal | empty state | error state | flow step | dashboard | settings | other}
+  - **Layout**: {brief structural description — column count, major sections, positioning}
+  - **Components**:
+    - {Component description} — {location on screen}
+  - **States visible**: {what state this screen represents — e.g., "filled form before submit", "empty list", "error on field X"}
+  - **Copy text**:
+    - Heading: "{exact text from screenshot}"
+    - Body: "{exact text}"
+    - Button: "{exact text}"
+  - **Interaction notes**: {any implied interactions — toggles, expandable sections, navigation targets}
+  - **Annotations vs UI**: {any designer annotations identified and extracted as guidance, NOT as UI elements}
+  - **Gaps**: {missing states not shown — e.g., "no error state shown", "loading state not designed"}
+  ```
 
-- You MUST incorporate user feedback
-- You SHOULD document design decisions
-- You MUST specify responsive behavior
-- You MUST define interaction states (default, hover, focus, active, disabled, error, loading, empty)
-- You SHOULD use the `elaborate-wireframes` skill to generate visual wireframes when helpful
-- You MUST save any generated wireframes to `.ai-dlc/{intent}/mockups/`
-- **Validation**: Design ready for implementation
+- You MUST wait for all subagents to complete before proceeding
+- You MUST NOT read screenshot images in the main conversation context — that's what subagents are for
+- **Validation**: Spec fragments received from all subagents
 
-### 6. Verify state coverage
+### 4. Map screens to units
 
-Before writing the final spec, systematically check for missing states.
+After subagent analysis, create the mapping between screens and units.
 
-- You MUST check each unit's success criteria against the screens/flows you've designed
+- You MUST review each subagent's unit mapping suggestions
+- You MUST present the proposed mapping to the user:
+  ```
+  unit-01 (Login flow) ← screen-login.png, screen-otp-entry.png
+  unit-02 (Dashboard)  ← designs/dashboard/main.png, designs/dashboard/empty.png
+  unmapped             ← designs/misc/unknown-screen.png
+  ```
+- You MUST ask the user to confirm or correct the mapping
+- You MUST resolve any unmapped screens — ask the user what they relate to, or mark as out-of-scope
+- You SHOULD flag units that have NO screens mapped to them — these are gap candidates
+- **Validation**: Every screen mapped to a unit (or marked out-of-scope), user confirmed
+
+### 5. Identify design gaps
+
+- You MUST check each frontend unit's success criteria against the screens mapped to it
 - You MUST flag missing states. Common gaps:
   - Empty states (no data yet)
   - Loading states
   - Error states (validation, network, permission)
   - Offline/degraded states
-  - Responsive variants
+  - Responsive variants (if applicable)
   - Edge cases (long text, zero counts, maximum counts)
-- You MUST address each gap: design it now, or mark as out of scope for this iteration
-- **Validation**: All states accounted for or explicitly scoped out
+- You MUST present gaps to the user with a clear list:
+  ```
+  unit-01 (Login flow):
+    ✅ Happy path — covered by screen-login.png
+    ⚠️  Error/retry — no design provided
+    ⚠️  Network error — no design provided
+
+  unit-02 (Dashboard):
+    ✅ Populated — covered
+    ⚠️  Empty state (new user) — no design provided
+  ```
+- You MUST ask the user how to handle gaps:
+  - **Provide designs later** — note in spec as pending
+  - **Generate wireframes** — use elaborate-wireframes for gap screens only
+  - **Skip** — mark as out of scope for this iteration
+- **Validation**: All gaps identified and disposition decided
+
+### 6. Generate wireframes (generation mode OR gap fills)
+
+This step runs in **generation** mode (no designs at all) or for specific gap fills from step 5.
+
+- You MUST follow the `elaborate-wireframes` skill process for wireframe creation
+- You MUST save wireframes to `.ai-dlc/{intent}/mockups/` (NOT `designs/` — keep sources separate)
+- You MUST analyze generated wireframes through the same subagent process as step 3
+- **Validation**: Wireframes generated and analyzed
 
 ### 7. Assemble design spec
 
-- You MUST write `.ai-dlc/{intent}/design-spec.md`:
+Aggregate all subagent output into the final design spec document.
+
+- You MUST write `.ai-dlc/{intent}/design-spec.md` with this structure:
 
   ```markdown
   ---
   intent: {intent_slug}
+  design_source: existing | tool-pull | generated | mixed
   screen_count: {N}
   gap_count: {N}
   units_covered: [unit-01, unit-02, ...]
@@ -132,83 +195,143 @@ Before writing the final spec, systematically check for missing states.
 
   ## Summary
 
-  {1-2 paragraph overview of the designs and major patterns}
+  {1-2 paragraph overview of what the designs cover, the source, and major patterns observed}
 
   ## Unit: {Unit Title} (unit-{NN})
 
   ### Screens
 
-  #### Screen: {Descriptive Label}
-  - **Screen type**: {form | list | detail | modal | empty state | error state
-    | flow step | dashboard | settings | other}
-  - **Layout**: {structural description — columns, sections, positioning}
-  - **Components**:
-    - {Component description} -- {location on screen}
-  - **States**: {what states this screen covers}
-  - **Copy text**:
-    - Heading: "{exact text}"
-    - Button: "{exact text}"
-  - **Interaction notes**: {interactions, navigation targets}
-  - **Accessibility**: {a11y requirements for this screen}
+  {Aggregated spec fragments from subagents for this unit, ordered by user flow}
 
   ### Design Gaps
 
-  - {Gap description} -- {disposition: designed | out of scope}
+  - {Gap description} — {disposition: pending | wireframed | skipped}
 
   ### Flow Notes
 
   - {Navigation between screens}
-  - {State transitions}
+  - {Conditional logic observed}
+  - {State transitions implied by the designs}
 
-  ## Cross-Cutting Observations
+  ## Unmapped Observations
 
-  {Shared components, design system usage, patterns across units}
+  {Anything noticed across designs that doesn't map to a specific unit — e.g., consistent patterns, shared components, design system usage}
   ```
 
-- You MUST document spacing, colors (by named tokens — never raw hex), and typography
-- You MUST specify accessibility requirements (contrast, labels, keyboard navigation)
-- You MUST include responsive breakpoints
-- If wireframes were generated in `mockups/`, you MUST write `.ai-dlc/{intent}/designs/design-manifest.md` indexing them
-- **Validation**: design-spec.md written, specs sufficient for implementation
+- You MUST also write `.ai-dlc/{intent}/designs/design-manifest.md`:
 
-### 8. Finalize
+  ```markdown
+  ---
+  generated_at: {ISO timestamp}
+  source: {figma | sketch | export | unknown}
+  screen_count: {N}
+  ---
 
-- You MUST present the design spec to the user for review
-- You MUST incorporate feedback and iterate until approved — the spec is the contract for downstream hats
+  # Design Manifest
+
+  ## Directory Structure
+
+  {Tree listing of designs/ showing all files and subfolders}
+
+  ## Screen Index
+
+  | File | Label | Mapped Unit | Screen Type |
+  |------|-------|-------------|-------------|
+  | `designs/profile/view.png` | Profile View | unit-03 | detail |
+  | `designs/profile/edit.png` | Profile Edit | unit-03 | form |
+  ```
+
+- You MUST present the assembled design spec to the user for review
+- **Validation**: design-spec.md written, user reviewed
+
+### 8. Refine and finalize
+
+- You MUST incorporate user feedback on the design spec
+- You SHOULD iterate until the user approves — the spec is the contract for downstream hats
 - You MUST update unit frontmatter with a `design_spec: true` field for each unit that has design coverage
-- You MUST commit all artifacts
+- You MUST commit all artifacts:
+  - `designs/design-manifest.md`
+  - `design-spec.md`
+  - `mockups/` wireframes (if any were generated)
+  - Updated unit files
 - **Validation**: User approves design spec, all artifacts committed
 
 ## Success Criteria
 
-- [ ] Design system and existing patterns surveyed before designing
-- [ ] User problem clearly understood
-- [ ] Multiple design options explored
-- [ ] User approved final direction
-- [ ] State coverage systematically verified (empty, loading, error, responsive)
-- [ ] `design-spec.md` written with structured specs per unit
-- [ ] Accessibility requirements specified
-- [ ] Responsive behavior defined
+- [ ] Design availability assessed and mode determined
+- [ ] All designs analyzed via subagents (no raw images in main context)
+- [ ] Screens mapped to units with user confirmation
+- [ ] Design gaps identified with dispositions decided
+- [ ] Accessibility requirements specified (contrast, labels, keyboard navigation)
+- [ ] Responsive behavior defined or flagged as a gap
 - [ ] Colors referenced by named tokens — never raw hex
-- [ ] Interaction states specified (default, hover, focus, error, disabled, loading, empty)
+- [ ] `design-spec.md` written with structured specs per unit
+- [ ] `designs/design-manifest.md` auto-generated
+- [ ] User approved the final design spec
 - [ ] All artifacts committed
 
 ## Error Handling
 
-### Error: Requirements Too Vague
+### Error: designs/ Directory Missing
 
-**Symptoms**: Cannot design without clearer requirements
+**Symptoms**: The intent directory exists but `designs/` was never created during elaboration.
 
 **Resolution**:
+1. You MUST create the directory: `.ai-dlc/{intent}/designs/`
+2. You MUST ask the user whether they have designs to provide or want to generate wireframes
+3. You MUST NOT assume generation mode without asking — the user may need a moment to export screenshots
 
-1. You MUST ask clarifying questions
-2. You SHOULD propose example scenarios
-3. You MAY create rough sketches to elicit feedback
-4. Document assumptions for user confirmation
+### Error: Screenshots Are Unreadable
+
+**Symptoms**: Subagent reports that an image is too small, blurry, cropped, or otherwise cannot be meaningfully analyzed.
+
+**Resolution**:
+1. You MUST report which specific files are problematic
+2. You MUST ask the user to provide better exports for those screens
+3. You MUST NOT guess at content from unreadable images
+4. You MAY proceed with remaining readable screenshots and return to problematic ones later
+
+### Error: Screens Don't Map to Any Unit
+
+**Symptoms**: Multiple screenshots don't correspond to any defined unit. Could mean units are missing or designs are for a different scope.
+
+**Resolution**:
+1. You MUST present the unmapped screens to the user
+2. You MUST ask whether new units need to be created or the screens are out of scope
+3. You MUST NOT create new units without user approval
+4. You SHOULD flag this as a possible scope mismatch between designs and intent
+
+### Error: Subagent Returns Incomplete Spec
+
+**Symptoms**: A subagent's spec fragment is missing required fields or is too shallow to be useful.
+
+**Resolution**:
+1. You MUST retry the subagent with more specific instructions
+2. You SHOULD include an example spec fragment from a successful subagent as reference
+3. You MUST NOT include shallow specs in the final design-spec.md — quality matters more than speed
+
+### Error: Too Many Screenshots (200+)
+
+**Symptoms**: The `designs/` directory contains a very large number of screenshots, making per-screen subagents impractical.
+
+**Resolution**:
+1. You MUST group by subfolder first — if the user organized into subfolders, each subfolder becomes one subagent batch
+2. If no subfolders, you MUST ask the user to group them: "There are {N} screenshots — can you organize them into subfolders by area?"
+3. You SHOULD process in waves — analyze the first batch, present to user, then continue
+4. You MUST NOT attempt to fork 200 individual subagents
+
+### Error: Design Tool Integration Unavailable
+
+**Symptoms**: Design tool MCP/integration fails or is not configured, but user wanted pull mode.
+
+**Resolution**:
+1. You MUST inform the user that the design tool integration is not available
+2. You MUST suggest the fallback: export screenshots manually and drop them in `designs/`
+3. You MUST NOT block on the integration — the manual screenshot path always works
 
 ### Error: Conflicting Constraints
 
-**Symptoms**: Brand guidelines conflict with accessibility or usability
+**Symptoms**: Brand guidelines conflict with accessibility or usability.
 
 **Resolution**:
 
@@ -219,51 +342,40 @@ Before writing the final spec, systematically check for missing states.
 
 ### Error: Design System Gaps
 
-**Symptoms**: Needed components don't exist in design system
+**Symptoms**: Needed components don't exist in the project's design system.
 
 **Resolution**:
-
-1. You MUST document what's missing
-2. You SHOULD propose new components following system patterns
+1. You MUST document what's missing in the design spec gaps section
+2. You SHOULD propose new components following existing system patterns
 3. You MAY suggest temporary solutions
-4. Flag for design system team review
-
-### Error: Technical Feasibility Unknown
-
-**Symptoms**: Unsure if design can be implemented
-
-**Resolution**:
-
-1. You MUST flag uncertainty to user
-2. You SHOULD consult with Builder hat
-3. You MAY propose simpler alternative
-4. Document technical questions for engineering review
+4. Flag for design system review
 
 ## Anti-Rationalization
 
 | Excuse | Reality |
 | --- | --- |
+| "I'll just read the screenshots inline" | That floods your context with image tokens. Use subagents — that's the whole point of step 3. |
 | "The first design idea is good enough" | Exploring alternatives is how you find the right design. Commit to exploration. |
 | "Accessibility can be added later" | Retrofitting accessibility is always harder. Design it in from the start. |
 | "Users will figure it out" | If you have to say that, the UX is unclear. |
 | "We don't need responsive specs for this" | Every interface will be viewed on unexpected screen sizes. |
 | "The color looks close enough" | Use named tokens, not visual approximation. Close enough creates inconsistency. |
-| "The designs cover all the states" | They almost never do. Check systematically for empty, loading, error, and edge cases. |
+| "I'll skip the gap analysis — the designs look complete" | Designs almost never cover every state. Check systematically. |
 
 ## Red Flags
 
+- Reading screenshot images in the main conversation instead of delegating to subagents
 - Presenting only one design option without exploring alternatives
 - Skipping accessibility requirements in the design spec
 - Using raw hex colors instead of named design tokens
 - Not specifying interaction states (hover, focus, error, disabled)
-- Making design decisions without presenting trade-offs to the user
-- Skipping state coverage verification
-- Designing new components when existing ones would work
+- Producing a design spec with no gap analysis
+- Skipping the screen-to-unit mapping confirmation step
 
 **All of these mean: STOP and re-read the unit's Completion Criteria.**
 
 ## Related Hats
 
 - **Planner**: Creates tactical plan for units (predecessor)
-- **Builder**: Will implement the designs (successor)
-- **Reviewer**: Will verify implementation matches design spec
+- **Builder**: Implements from design spec (successor)
+- **Reviewer**: Verifies implementation matches design spec
