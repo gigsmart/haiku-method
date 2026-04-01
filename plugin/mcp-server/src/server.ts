@@ -15,10 +15,11 @@ import {
 } from "@modelcontextprotocol/sdk/types.js"
 import { z } from "zod"
 import { getActualPort, setMcpServer, startHttpServer } from "./http.js"
-import { createQuestionSession, createSession, getSession } from "./sessions.js"
-import type { QuestionDef } from "./sessions.js"
+import { createDesignDirectionSession, createQuestionSession, createSession, getSession } from "./sessions.js"
+import type { DesignArchetypeData, DesignParameterData, QuestionDef } from "./sessions.js"
 import { type MockupInfo, renderReviewPage } from "./templates/index.js"
 import { renderQuestionPage } from "./templates/question-form.js"
+import { renderDesignDirectionPage } from "./templates/design-direction.js"
 
 const OpenReviewInput = z.object({
 	intent_dir: z
@@ -62,6 +63,45 @@ const AskVisualQuestionInput = z.object({
 		.string()
 		.optional()
 		.describe("Optional page title (default: 'Question')"),
+})
+
+const PickDesignDirectionInput = z.object({
+	intent_slug: z.string().describe("The intent slug this direction applies to"),
+	archetypes: z
+		.array(
+			z.object({
+				name: z.string().describe("Archetype name"),
+				description: z.string().describe("Brief description of this archetype"),
+				preview_html: z
+					.string()
+					.describe("HTML snippet to render as a preview"),
+				default_parameters: z
+					.record(z.number())
+					.describe("Default parameter values for this archetype"),
+			}),
+		)
+		.describe("Array of design archetypes to choose from"),
+	parameters: z
+		.array(
+			z.object({
+				name: z.string().describe("Parameter key name"),
+				label: z.string().describe("Human-readable label"),
+				description: z.string().describe("Description of what this parameter controls"),
+				min: z.number().describe("Minimum value"),
+				max: z.number().describe("Maximum value"),
+				step: z.number().describe("Step increment"),
+				default: z.number().describe("Default value"),
+				labels: z.object({
+					low: z.string().describe("Label for the low end"),
+					high: z.string().describe("Label for the high end"),
+				}),
+			}),
+		)
+		.describe("Array of tunable parameters"),
+	title: z
+		.string()
+		.optional()
+		.describe("Optional page title (default: 'Design Direction')"),
 })
 
 const server = new Server(
@@ -164,6 +204,93 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 					title: { type: "string", description: "Optional page title" },
 				},
 				required: ["questions"],
+			},
+		},
+		{
+			name: "pick_design_direction",
+			description:
+				"Open a browser-based visual picker for choosing a design direction. " +
+				"Presents archetype cards with preview HTML and tunable parameter sliders. " +
+				"The user's selection is pushed back as a channel event.",
+			inputSchema: {
+				type: "object" as const,
+				properties: {
+					intent_slug: {
+						type: "string",
+						description: "The intent slug this direction applies to",
+					},
+					archetypes: {
+						type: "array",
+						items: {
+							type: "object",
+							properties: {
+								name: { type: "string", description: "Archetype name" },
+								description: {
+									type: "string",
+									description: "Brief description",
+								},
+								preview_html: {
+									type: "string",
+									description: "HTML preview snippet",
+								},
+								default_parameters: {
+									type: "object",
+									additionalProperties: { type: "number" },
+									description: "Default parameter values",
+								},
+							},
+							required: [
+								"name",
+								"description",
+								"preview_html",
+								"default_parameters",
+							],
+						},
+						description: "Design archetypes to choose from",
+					},
+					parameters: {
+						type: "array",
+						items: {
+							type: "object",
+							properties: {
+								name: { type: "string", description: "Parameter key" },
+								label: { type: "string", description: "Display label" },
+								description: {
+									type: "string",
+									description: "What this controls",
+								},
+								min: { type: "number" },
+								max: { type: "number" },
+								step: { type: "number" },
+								default: { type: "number" },
+								labels: {
+									type: "object",
+									properties: {
+										low: { type: "string" },
+										high: { type: "string" },
+									},
+									required: ["low", "high"],
+								},
+							},
+							required: [
+								"name",
+								"label",
+								"description",
+								"min",
+								"max",
+								"step",
+								"default",
+								"labels",
+							],
+						},
+						description: "Tunable parameters",
+					},
+					title: {
+						type: "string",
+						description: "Optional page title",
+					},
+				},
+				required: ["intent_slug", "archetypes", "parameters"],
 			},
 		},
 	],
@@ -374,6 +501,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 			}
 		}
 
+		if (session.session_type === "design_direction") {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: JSON.stringify(
+							{
+								session_id: session.session_id,
+								session_type: session.session_type,
+								status: session.status,
+								selection: session.selection,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			}
+		}
+
 		return {
 			content: [
 				{
@@ -437,6 +584,53 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 				{
 					type: "text" as const,
 					text: `Question page opened: ${questionUrl}\nSession ID: ${session.session_id}\nQuestions: ${questions.length}`,
+				},
+			],
+		}
+	}
+
+	if (name === "pick_design_direction") {
+		const input = PickDesignDirectionInput.parse(args)
+		const title = input.title ?? "Design Direction"
+		const archetypes: DesignArchetypeData[] = input.archetypes
+		const parameters: DesignParameterData[] = input.parameters
+
+		// Create design direction session
+		const session = createDesignDirectionSession({
+			intent_slug: input.intent_slug,
+			archetypes,
+			parameters,
+			html: "",
+		})
+
+		// Render HTML
+		session.html = renderDesignDirectionPage({
+			title,
+			archetypes,
+			parameters,
+			sessionId: session.session_id,
+		})
+
+		// Start HTTP server (idempotent)
+		const port = startHttpServer()
+		const directionUrl = `http://127.0.0.1:${port}/direction/${session.session_id}`
+
+		// Open browser
+		try {
+			const cmd =
+				process.platform === "darwin"
+					? ["open", directionUrl]
+					: ["xdg-open", directionUrl]
+			Bun.spawn(cmd, { stdio: ["ignore", "ignore", "ignore"] })
+		} catch (err) {
+			console.error("Failed to open browser:", err)
+		}
+
+		return {
+			content: [
+				{
+					type: "text" as const,
+					text: `Design direction picker opened: ${directionUrl}\nSession ID: ${session.session_id}\nArchetypes: ${archetypes.length}\nParameters: ${parameters.length}`,
 				},
 			],
 		}

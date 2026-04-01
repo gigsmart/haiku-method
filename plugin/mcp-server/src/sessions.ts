@@ -35,7 +35,36 @@ export interface QuestionSession {
   html: string;
 }
 
-const sessions = new Map<string, ReviewSession | QuestionSession>();
+export interface DesignArchetypeData {
+  name: string;
+  description: string;
+  preview_html: string;
+  default_parameters: Record<string, number>;
+}
+
+export interface DesignParameterData {
+  name: string;
+  label: string;
+  description: string;
+  min: number;
+  max: number;
+  step: number;
+  default: number;
+  labels: { low: string; high: string };
+}
+
+export interface DesignDirectionSession {
+  session_type: "design_direction";
+  session_id: string;
+  intent_slug: string;
+  archetypes: DesignArchetypeData[];
+  parameters: DesignParameterData[];
+  status: "pending" | "answered";
+  selection: { archetype: string; parameters: Record<string, number> } | null;
+  html: string;
+}
+
+const sessions = new Map<string, ReviewSession | QuestionSession | DesignDirectionSession>();
 
 // Cap total in-memory sessions and apply a 30-minute TTL to prevent unbounded growth
 const MAX_SESSIONS = 100;
@@ -95,7 +124,24 @@ export function createQuestionSession(
   return session;
 }
 
-export function getSession(sessionId: string): ReviewSession | QuestionSession | undefined {
+export function createDesignDirectionSession(
+  params: Omit<DesignDirectionSession, "session_type" | "session_id" | "status" | "selection">
+): DesignDirectionSession {
+  evictSessions();
+  const session_id = crypto.randomUUID();
+  const session: DesignDirectionSession = {
+    ...params,
+    session_type: "design_direction",
+    session_id,
+    status: "pending",
+    selection: null,
+  };
+  sessions.set(session_id, session);
+  sessionCreatedAt.set(session_id, Date.now());
+  return session;
+}
+
+export function getSession(sessionId: string): ReviewSession | QuestionSession | DesignDirectionSession | undefined {
   return sessions.get(sessionId);
 }
 
@@ -115,6 +161,16 @@ export function updateQuestionSession(
 ): QuestionSession | undefined {
   const session = sessions.get(sessionId);
   if (!session || session.session_type !== "question") return undefined;
+  Object.assign(session, updates);
+  return session;
+}
+
+export function updateDesignDirectionSession(
+  sessionId: string,
+  updates: Partial<Pick<DesignDirectionSession, "status" | "selection">>
+): DesignDirectionSession | undefined {
+  const session = sessions.get(sessionId);
+  if (!session || session.session_type !== "design_direction") return undefined;
   Object.assign(session, updates);
   return session;
 }

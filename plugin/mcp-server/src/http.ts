@@ -2,7 +2,7 @@ import { realpath } from "node:fs/promises"
 import { extname, join, resolve } from "node:path"
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js"
 import { z } from "zod"
-import { getSession, updateQuestionSession, updateSession } from "./sessions.js"
+import { getSession, updateDesignDirectionSession, updateQuestionSession, updateSession } from "./sessions.js"
 import type { QuestionAnswer } from "./sessions.js"
 
 let httpServer: ReturnType<typeof Bun.serve> | null = null
@@ -238,6 +238,79 @@ async function handleQuestionAnswerPost(
 	return Response.json({ ok: true })
 }
 
+function handleDirectionGet(sessionId: string): Response {
+	const session = getSession(sessionId)
+	if (!session || session.session_type !== "design_direction") {
+		return new Response("Session not found", { status: 404 })
+	}
+	return new Response(session.html, {
+		headers: { "Content-Type": "text/html; charset=utf-8" },
+	})
+}
+
+async function handleDirectionSelectPost(
+	sessionId: string,
+	req: Request,
+): Promise<Response> {
+	const session = getSession(sessionId)
+	if (!session || session.session_type !== "design_direction") {
+		return Response.json(
+			{ error: "Session not found or expired" },
+			{ status: 404 },
+		)
+	}
+
+	if (session.status === "answered") {
+		return Response.json(
+			{ error: "Direction already selected for this session" },
+			{ status: 409 },
+		)
+	}
+
+	let body: { archetype: string; parameters: Record<string, number> }
+	try {
+		const DirectionSelectSchema = z.object({
+			archetype: z.string(),
+			parameters: z.record(z.number()),
+		})
+		body = DirectionSelectSchema.parse(await req.json())
+	} catch {
+		return Response.json({ error: "Invalid request body" }, { status: 400 })
+	}
+
+	updateDesignDirectionSession(sessionId, {
+		status: "answered",
+		selection: { archetype: body.archetype, parameters: body.parameters },
+	})
+
+	// Push channel notification to Claude Code
+	if (mcpServer) {
+		try {
+			await mcpServer.notification({
+				// biome-ignore lint/suspicious/noExplicitAny: Claude channel API not typed
+				method: "notifications/claude/channel" as any,
+				params: {
+					content: JSON.stringify({
+						archetype: body.archetype,
+						parameters: body.parameters,
+					}),
+					meta: {
+						response_type: "design_direction_selection",
+						session_id: sessionId,
+						intent_slug: session.intent_slug,
+						archetype: body.archetype,
+					},
+				},
+				// biome-ignore lint/suspicious/noExplicitAny: Claude channel API not typed
+			} as any)
+		} catch (err) {
+			console.error("Failed to push channel notification:", err)
+		}
+	}
+
+	return Response.json({ ok: true })
+}
+
 function handleRequest(req: Request): Response | Promise<Response> {
 	const url = new URL(req.url)
 	const path = url.pathname
@@ -264,6 +337,18 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	const wireframeMatch = path.match(/^\/wireframe\/([^/]+)\/(.+)$/)
 	if (wireframeMatch && req.method === "GET") {
 		return handleWireframeGet(wireframeMatch[1], wireframeMatch[2])
+	}
+
+	// GET /direction/:sessionId
+	const directionMatch = path.match(/^\/direction\/([^/]+)$/)
+	if (directionMatch && req.method === "GET") {
+		return handleDirectionGet(directionMatch[1])
+	}
+
+	// POST /direction/:sessionId/select
+	const directionSelectMatch = path.match(/^\/direction\/([^/]+)\/select$/)
+	if (directionSelectMatch && req.method === "POST") {
+		return handleDirectionSelectPost(directionSelectMatch[1], req)
 	}
 
 	// GET /question/:sessionId
