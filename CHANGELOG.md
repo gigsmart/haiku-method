@@ -5,960 +5,934 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.82.10] - 2026-04-01
+## [1.83.1] - 2026-03-30
 
 ### Fixed
-
-- commit rebuilt MCP server bundle in CI version bump ([f11546b](../../commit/f11546b))
-
-## [1.82.9] - 2026-04-01
-
-### Fixed
-
-- include MCP server bundle in distribution ([f368628](../../commit/f368628))
+- Reverted Visual Review full integration pending further development.
 
 ## [1.82.8] - 2026-04-01
 
 ### Added
+- /ai-dlc:review skill for pre-delivery code review with automated fix loop, integrated into quick mode
 
-- add pre-delivery review and PR delivery to quick mode ([0c57db3](../../commit/0c57db3))
-- add /ai-dlc:review — pre-delivery code review with fix loop ([f46414f](../../commit/f46414f))
-
-### Fixed
-
-- clarify exclude-some gate selection follow-up instruction ([8cc6738](../../commit/8cc6738))
-- handle 5+ quality gates and guard setup completion ([d8d7315](../../commit/d8d7315))
-- address all PR review findings ([019a1ab](../../commit/019a1ab))
-- improve quality gates question formatting in elaborate ([99e4a68](../../commit/99e4a68))
-- run /ai-dlc:setup automatically if settings.yml is missing ([a321d39](../../commit/a321d39))
-- standardize on PR terminology across all skills and docs ([70162e1](../../commit/70162e1))
-- reduce elaboration verbosity by removing setup concerns ([6e67402](../../commit/6e67402))
-- resolve merge conflict in elaborate SKILL.md ([dac14e5](../../commit/dac14e5))
+### Changed
+- Automatic setup now runs if settings.yml is missing
+- Quality gates handling improved with clearer formatting and support for 5+ gates
+- Elaboration now less verbose with simplified setup concerns
+- PR terminology standardized across skills and documentation
 
 ## [1.82.7] - 2026-04-01
 
 ### Fixed
-
-- detect CPU architecture for yq binary download ([ed3a63a](../../commit/ed3a63a))
-- remove committed build artifact, use bun in CI, fix yq install on apt-get ([8cbaf94](../../commit/8cbaf94))
-- make plugin install reliable without npm install ([9a98dac](../../commit/9a98dac))
+- Plugin installation is now more reliable and no longer requires npm
+- CPU architecture is automatically detected for cross-platform binary dependency support
 
 ## [1.82.6] - 2026-04-01
 
 ### Added
+- Knowledge synthesis and design direction system with archetype library and visual picker for elaboration bootstrapping
+- Three new elaboration phases: 2.3 (Knowledge Bootstrap), 2.75 (Design Direction), 7.5 (Adversarial Review), plus autonomous elaboration mode for /autopilot
+- /adopt skill to reverse-engineer existing code into AI-DLC intent artifacts
+- Dynamic pass definitions allowing custom passes in construction pipeline
+- Quality gates with visual review interface, intent dashboard, and mermaid-enabled MCP server
+- BDD workflow with acceptance-test-writer hat for behavior-driven elaboration
 
-- add blueprint-aware styled wireframes to elaborate-wireframes skill ([b63074b](../../commit/b63074b))
-- add design_blueprint_path to wireframe brief template in Phase 6.25 ([27e085b](../../commit/27e085b))
-- add Phase 2.3 (Knowledge Bootstrap) and Phase 2.75 (Design Direction) to elaborate skill ([8e7666b](../../commit/8e7666b))
-- add archetype library with 4 archetypes, parameters, and blueprint generation ([a1cec5a](../../commit/a1cec5a))
-- add pick_design_direction MCP tool with browser-based visual picker ([7b249ad](../../commit/7b249ad))
-- integrate knowledge artifact loading into all four hats ([0a024aa](../../commit/0a024aa))
-- add knowledge-synthesize fork-context skill ([8c43474](../../commit/8c43474))
-- add knowledge artifact filesystem API library ([eb3bcf8](../../commit/eb3bcf8))
-- add pass-aware execution to execute skill ([6677336](../../commit/6677336))
-- inject pass context into construction pipeline hooks ([f0d41d3](../../commit/f0d41d3))
-- add GitHub releases, tags, and plugin zip artifacts to version bump workflow ([3df3905](../../commit/3df3905))
-- make Phase 5.95 interactive with pass validation ([3f8178a](../../commit/3f8178a))
-- remove hardcoded pass enum from settings schema and add dynamic pass discovery ([08a7fe1](../../commit/08a7fe1))
-- replace hat override pattern with augmentation pattern ([2c9ea03](../../commit/2c9ea03))
-- add first-class pass definitions and resolution library ([060c64a](../../commit/060c64a))
-- add task routing heuristics to inject-context hook ([880b25e](../../commit/880b25e))
-- rewrite quick mode skill with workflow-aware hat loop ([78040ef](../../commit/78040ef))
-- rewrite changelog generator to use PR-level entries ([5362a5b](../../commit/5362a5b))
-- add Phase 7.5 (Adversarial Spec Review) to elaborate SKILL.md ([f833992](../../commit/f833992))
-- add elaborate-adversarial-review subagent skill ([c8ac9f4](../../commit/c8ac9f4))
-- add autonomous elaboration mode for /autopilot ([09f4308](../../commit/09f4308))
-- improve designer hat and add BDD workflow with acceptance-test-writer hat ([d15c80c](../../commit/d15c80c))
-- gate visual review on settings.yml configuration ([5826823](../../commit/5826823))
-- visual review & intent dashboard ([b032d62](../../commit/b032d62))
-- add pre-delivery code review gate and OTel instrumentation ([7c03c50](../../commit/7c03c50))
-- add ask_user_visual_question MCP tool ([d085656](../../commit/d085656))
-- wire up packaging, /dashboard skill, and workspace resolution ([79c058a](../../commit/79c058a))
-- add static dashboard generator ([e641de2](../../commit/e641de2))
-- replace monolithic html.ts with template system ([9ae83bb](../../commit/9ae83bb))
-- add mermaid rendering, dark mode, inline mockups ([f7b145e](../../commit/f7b145e))
-- add MCP channel server for visual review ([998e834](../../commit/998e834))
-- add @ai-dlc/shared parser package ([b89bd64](../../commit/b89bd64))
-- update hats and skills for harness-enforced quality gates ([cf5312c](../../commit/cf5312c))
-- add /adopt skill for reverse-engineering existing features into AI-DLC ([0f3da4b](../../commit/0f3da4b))
-- add quality-gate stop hook ([b187ff3](../../commit/b187ff3))
+### Removed
+- workflow_mode setting — /autopilot is now autonomous by definition
 
-### Fixed
+## [1.82.5] - 2026-03-30
 
-- use whole-line grep match for section detection in knowledge.sh ([36799f8](../../commit/36799f8))
-- add path traversal validation to load_pass_instructions ([97e65c6](../../commit/97e65c6))
-- address PR review — JSON output, path validation, misleading comment ([a34d40e](../../commit/a34d40e))
-- add jq dep check and filter scaffold artifacts from discovery brief ([f591f86](../../commit/f591f86))
-- address final PR review feedback ([f79e06c](../../commit/f79e06c))
-- address PR review feedback on design-direction-system ([bb4abed](../../commit/bb4abed))
-- clean up knowledge template syntax in discovery brief ([56b3de6](../../commit/56b3de6))
-- handle non-hex colors and add missing button in editorial preview ([cc890d5](../../commit/cc890d5))
-- improve greenfield flow clarity and knowledge.sh discovery ([18f6bbc](../../commit/18f6bbc))
-- resolve multi-line content failure in dlc_knowledge_update_section ([9cf756f](../../commit/9cf756f))
-- make tag and release creation idempotent on workflow retries ([ed1fc76](../../commit/ed1fc76))
-- replace Bun runtime dependency with Node.js APIs in MCP server ([4294cc4](../../commit/4294cc4))
-- update remaining spawn-logic prose to reference hat augmentation ([4350302](../../commit/4350302))
-- address PR review feedback on quick mode and routing heuristics ([1c36881](../../commit/1c36881))
-- resolve all biome lint errors ([f93cc22](../../commit/f93cc22))
-- cross-check intent status against main before listing ([bda5c2d](../../commit/bda5c2d))
-- correct false-positive path replacements in hooks ([4f93e9b](../../commit/4f93e9b))
-- render changelog links on website and fix CI herestring error ([c30f400](../../commit/c30f400))
-- address PR review feedback on adversarial review phase ([6a1774b](../../commit/6a1774b))
-- remove dead CURRENT_BRANCH var and fix get_ai_dlc_config path in Phase 6 ([b459bcd](../../commit/b459bcd))
-- address review feedback on visual review setup config ([bbd0aaf](../../commit/bbd0aaf))
-- prevent empty PR when /adopt runs on default branch ([8d1e5dc](../../commit/8d1e5dc))
-- restore PR_URL capture in advance/SKILL.md intent delivery path ([684909f](../../commit/684909f))
-- remove stale CHANGELOG entry for telemetry.sh (library was restored) ([554c2b0](../../commit/554c2b0))
-- restore telemetry calls stripped from skills and hats ([6d31262](../../commit/6d31262))
-- restore telemetry.sh — incorrectly deleted during review fixes ([7efcb86](../../commit/7efcb86))
-- resolve UNIT_COUNT and INTENT_TITLE variable ordering bugs ([32ad620](../../commit/32ad620))
-- address remaining review issues — lock files, DAG slugs, path validation, dashboard cleanup ([badbee3](../../commit/badbee3))
-- resolve merge conflict in elaborate/SKILL.md — add missing telemetry blocks and worktree fixes from main ([d744286](../../commit/d744286))
-- address all review notes — security, XSS, session IDs, DAG cycles, CHANGELOG ([4604a2b](../../commit/4604a2b))
-- server-side markdown rendering and wireframe fallback resolution ([d608bc6](../../commit/d608bc6))
-- address all remaining review highlights ([7b78fdc](../../commit/7b78fdc))
-- add git worktree prune and error logging to all worktree cleanup sites ([e8fa1ee](../../commit/e8fa1ee))
-- address all outstanding review issues and expand quality gate lifecycle in website ([4c3a2fb](../../commit/4c3a2fb))
-- revert planner agent type from Plan back to general-purpose ([6c94b6a](../../commit/6c94b6a))
-- address final review suggestions on harness-enforced quality gates ([4addf5b](../../commit/4addf5b))
-- don't escape mermaid content in intent review template ([8b6a9f2](../../commit/8b6a9f2))
-- revert planner hat to general-purpose; fill in Phase 6 operation loop body ([c02ad7e](../../commit/c02ad7e))
-- clarify yq JSON-style expression syntax in elaborate Step C ([28f1a48](../../commit/28f1a48))
-- address new review suggestions from re-review ([8b2a267](../../commit/8b2a267))
-- address remaining review notes — Phase 7 PR spec, telemetry, unit worktree note ([9696708](../../commit/9696708))
-- address review issues in /adopt skill and paper ([7d9f32f](../../commit/7d9f32f))
-- address review feedback on harness-enforced quality gates ([97af606](../../commit/97af606))
-- update intent.md status on Teams path completion ([4569deb](../../commit/4569deb))
-- resolve two bugs in quality-gate.sh ([d901754](../../commit/d901754))
+Looking at the single commit provided (chore: update plugin source path variable), this is internal infrastructure maintenance that doesn't affect user-facing functionality. Per the rules to skip noise and focus on what users can DO differently, there are no sections with content for this version.
 
-### Changed
+**No changelog entry** (no user-facing changes in this version)
 
-- remove workflow_mode setting — autopilot is autonomous by definition ([269e285](../../commit/269e285))
-- use fully-qualified /ai-dlc:name command references ([94bbc6f](../../commit/94bbc6f))
-
-### Other
-
-- Apply suggestions from code review ([bf1b153](../../commit/bf1b153))
-- Revert "intent: Visual Review Full Integration & Bug Fixes" ([774716e](../../commit/774716e))
-- wire visual review into 4 elaboration review boundaries ([f7585a1](../../commit/f7585a1))
-- integrate quality gate detection and confirmation flow ([be64bb6](../../commit/be64bb6))
-
-## [1.83.0] - 2026-03-30
+## [1.82.4] - 2026-03-30
 
 ### Added
-
-- Add pre-delivery code review gate and OTel instrumentation
-
-## [1.82.7] - 2026-03-30
-
-### Fixed
-
-- Remove all Han references from documentation
-
-## [1.82.6] - 2026-03-30
-
-### Fixed
-
-- Add git worktree prune and error logging to all worktree cleanup sites
+- Visual-review intent to structure collaborative design and UX review workflows
+- Sync rules documenting consistency requirements between paper, plugin, and website components
 
 ## [1.82.3] - 2026-03-30
 
-### Added
-
-- Add Operations stage to Act 5 on home page
-
 ### Fixed
 
-- Add pre-delivery safety net for intent.md status
+- Intent status is now validated before delivery to catch configuration issues early.
 
 ## [1.82.2] - 2026-03-30
 
 ### Fixed
+- Intent status now correctly updates when Teams path completes
 
-- Update intent.md status on Teams path completion
-- Reframe passes as transitional, not recommended
-- Hatted agents as proper card with expandable detail
-- Reframe spec comparison as vibe coding vs spec-driven vs elaboration
-- Collapse hat section into expandable deep dive
+### Removed
+- Standalone HTML guides (content now available on website)
 
 ## [1.82.1] - 2026-03-30
 
 ### Fixed
-
-- Only Docs nav item triggers mega menu dropdown
-- Prevent planner hat from entering plan mode, reorder strategy options, remove auto-merge question
+- Planner hat no longer incorrectly enters plan mode, strategy options are properly ordered, and intent strategy no longer prompts for auto-merge confirmation.
 
 ## [1.82.0] - 2026-03-30
 
 ### Added
-
-- Story-driven home page and plugin lifecycle guides
+- Story-driven home page and plugin lifecycle guides provide intuitive introduction to the AI-DLC methodology and workflow.
 
 ## [1.81.1] - 2026-03-30
 
 ### Fixed
 
-- Make intent strategy the default option, remove auto-merge question
+- Intent strategy is now the default workflow, eliminating the auto-merge confirmation prompt.
 
 ## [1.81.0] - 2026-03-30
 
 ### Added
+- Passes are now configurable, letting you customize which disciplinary lenses (design, product, dev) iterate in your workflows.
 
-- Rename Construction Phase to Execution Phase, add configurable default passes
+### Changed
+- Construction Phase is now called Execution Phase.
 
 ## [1.80.1] - 2026-03-30
 
 ### Fixed
-
-- Remove han dependency from plugin hooks
+- Plugin hooks no longer depend on external han library, reducing potential failure points and improving reliability.
 
 ## [1.80.0] - 2026-03-29
 
 ### Added
-
-- Add harness framing to website/paper and update CI review workflow
+- Harness framework documentation in the methodology paper and website, explaining how the plugin execution model works.
 
 ## [1.79.2] - 2026-03-29
 
 ### Fixed
 
-- Remove remaining han-plugin references from skills
+- Removed outdated han-plugin references from skill documentation.
 
 ## [1.79.1] - 2026-03-29
 
+```markdown
 ### Fixed
-
-- Resolve 3 functional bugs and clean up 27+ stale legacy references
+- Advance skill now properly evaluates completion gates against the actual plan file
+- Resume skill correctly parses YAML frontmatter in unit specifications
+- Haiku utility can now be called standalone with automatic state dependency resolution
+```
 
 ## [1.79.0] - 2026-03-29
 
 ### Added
-
-- Full AI-DLC Operations Phase (steps 5-9) (#104)
+- Infrastructure and operations as a workflow discipline: Elaborate now guides you through infrastructure questions and auto-creates operations units alongside feature work
+- Operations construction phase that builds and validates deployment and infrastructure configurations during the execution flow
+- Operational readiness reviews that validate infrastructure and deployment completeness before shipping
+- Stack configuration schema with quality gates for defining infrastructure patterns and architectural standards
 
 ## [1.78.1] - 2026-03-29
 
 ### Fixed
-
-- Address post-merge review bugs from PR #105 (#106)
+- Fixed visual-fidelity issues identified in code review
 
 ## [1.78.0] - 2026-03-28
 
 ### Added
 
-- Check off completion criteria checkboxes on unit/intent completion
+- Completion criteria checkboxes automatically check off when a unit or intent is completed, keeping your workflow state synchronized with task progress.
 
 ## [1.77.2] - 2026-03-28
 
 ### Fixed
-
-- Grant write permissions to Claude interactive workflow
+- Interactive workflow mode now has write permissions enabled.
 
 ## [1.77.1] - 2026-03-28
 
 ### Fixed
-
-- Grant write permissions to Claude code review workflow
+- Code review workflow now has the necessary permissions to write and apply changes when reviewing code.
 
 ## [1.77.0] - 2026-03-28
 
 ### Added
+- Visual fidelity review agent with gate detection and comparison orchestration for automated design quality assessment, including backpressure documentation for integration workflows
+- Design reference resolver that intelligently locates design system components using a 3-level priority hierarchy
+- Pluggable screenshot capture infrastructure enabling flexible image acquisition across different design tools
 
-- Visual fidelity backpressure — design as a hard gate (#105)
+### Fixed
+- Prevent stderr/JSON mixing in design reference resolution calls
 
 ## [1.76.2] - 2026-03-28
 
 ### Fixed
 
-- Ensure intent and unit statuses are reliably set to completed
+- Intent and unit completion statuses are now reliably set when work finishes.
 
 ## [1.76.1] - 2026-03-28
 
-### Added
-
-- Remove han CLI dependency & improve state management (#103)
+### Changed
+- Plugin no longer depends on han CLI; core state management and hook utilities are now built into the plugin via foundation libraries
+- Simplified iteration.json state schema with improved phase validation
 
 ## [1.76.0] - 2026-03-28
 
 ### Added
-
-- Add subagent-hook, context preflight, hard gates, DOT flowcharts
+- Enforce quality checks with hard gates that must pass before unit completion.
+- Automatically delegate work to specialized subagents using configurable hooks.
+- Generate DOT flowcharts to visualize intent and unit workflows.
+- Validate execution context with preflight checks before running workflows.
 
 ## [1.75.1] - 2026-03-28
 
-### Fixed
+I need more details to write a meaningful changelog entry. The commit message "comprehensive review fixes after PR merge barrage" is too generic—it doesn't specify what was actually fixed.
 
-- Comprehensive review fixes after PR merge barrage
+Can you provide either:
+1. **The actual file changes** from that commit (what was modified/fixed), or
+2. **Specific issues addressed** (e.g., "fixed edge case in advance skill", "improved error handling in execute", etc.)
+
+Without knowing the concrete improvements, I can't write user-facing bullets that explain what they can now do differently.
 
 ## [1.75.0] - 2026-03-27
 
+```markdown
 ### Added
-
-- Add multi-judge critique debate for high-stakes reviews (#81)
+- Code reviews now support multi-judge critique debate for high-stakes decisions.
+```
 
 ## [1.74.2] - 2026-03-27
 
 ### Fixed
-
-- Use plain git for conflict resolution (claude-code-action doesn't support push events)
+- Fixed CI pipeline conflict resolution to properly handle push events.
 
 ## [1.74.1] - 2026-03-27
 
 ### Fixed
-
-- Use Agent tool for context:fork skill invocations
+- Context:fork skill invocations during elaboration now use the Agent tool for improved execution reliability
 
 ## [1.74.0] - 2026-03-27
 
 ### Added
-
-- Add schema drift detection (#73)
+- Schema drift detection for database changes during code review
 
 ## [1.73.0] - 2026-03-27
 
 ### Added
+- Use /autopilot skill to run complete autonomous feature lifecycles from elaboration through delivery.
 
-- Add /autopilot skill for full autonomous feature lifecycle (#70)
+### Changed
+- /execute is now the primary execution skill; /construct is deprecated.
 
 ## [1.72.0] - 2026-03-27
 
 ### Added
 
-- Add structured completion markers for deterministic review outcomes (#46)
+- Reviewers can now use structured completion markers to mark deterministic review outcomes with confidence-based feedback.
 
 ## [1.71.0] - 2026-03-27
 
 ### Added
-
-- Add node repair operator and structured completion marker (#24)
+- Builder includes a node repair operator and structured completion markers for improved construction reliability and state tracking.
 
 ## [1.70.1] - 2026-03-27
 
 ### Fixed
-
-- Use direct_prompt with matrix strategy for conflict resolution
+- Improved conflict resolution in continuous integration builds using matrix strategy.
 
 ## [1.70.0] - 2026-03-27
 
 ### Added
-
-- Add git history analysis to inform planning decisions (#76)
+- The planner now analyzes git history to provide more informed planning recommendations.
 
 ## [1.68.1] - 2026-03-27
 
-### Added
+### Fixed
+- Shell scripts are now executable after installation, eliminating permission errors.
 
-- Add workflow mode and granularity tuning (#62)
-- Add reflect integration lifecycle (#49)
+### Added
+- Workflow mode selection and granularity tuning options to customize AI-DLC iteration behavior.
+- Documentation for integrating Reflect into the Compound skill workflow.
 
 ## [1.68.0] - 2026-03-27
 
+```markdown
 ### Added
 
-- Add DOT flowchart process authority guideline (#47)
+- DOT flowchart guidelines for visualizing process authority during the construction phase.
+```
 
 ## [1.67.0] - 2026-03-27
 
 ### Added
-
-- Add model profiles for cost-optimized hat routing (#45)
+- Model profiles for cost-optimized hat routing with improved configuration resolution
 
 ## [1.66.0] - 2026-03-27
 
 ### Added
+- Planning process now retrieves relevant learnings before generating plans, with improved search capabilities
 
-- Add learning retrieval before planning (#31)
+### Fixed
+- Restored Structured Completion Marker section that was accidentally removed
 
 ## [1.64.0] - 2026-03-27
 
-### Added
+### Fixed
+- Restored missing Two-Stage Review, conflict resolution, CoVe, and Specialized Pre-Delivery Reviews sections in reviewer hat
 
-- Add parallel review perspectives for multi-file units (#29)
+### Added
+- Parallel review perspectives for multi-file units enable concurrent reviews from multiple disciplinary angles
 
 ## [1.63.0] - 2026-03-27
 
 ### Added
-
-- Add anti-rationalization tables and red flags to all 13 hats (#28)
-- Add goal-backward verification and three-level artifact checks (#26)
+- Three-level artifact checking in reviews validates content, reasoning, and structural integrity
+- Goal-backward verification ensures work aligns with original intent throughout development
+- Anti-rationalization tables and red flags across all hats identify biased reasoning patterns
+- Confidence scoring system enables granular quality assessment during review cycles
+- Enhanced anti-pattern detection and specialized review modes for deeper code analysis
 
 ## [1.62.3] - 2026-03-27
 
 ### Fixed
+- Conflict resolution in automated workflows now requests manual review instead of taking automatic action, improving reliability when handling merge conflicts.
 
-- Use @claude mention bot for conflict resolution instead of direct action
+## [1.62.2] - 2026-03-27
+
+### Changed
+- Documentation terminology updated throughout to reflect current plugin naming, removing references to legacy terms.
+
+## [1.62.1] - 2026-03-27
+
+### Fixed
+
+- Conflict resolver polling now operates correctly during workflow execution.
 
 ## [1.62.0] - 2026-03-27
 
 ### Added
+- Customize elaboration phases for your project using .ai-dlc/ELABORATION.md configuration files
+- Configure external rule files using a data-driven pattern
 
-- Add data-driven configuration pattern (#99)
+## [1.61.1] - 2026-03-27
+
+This commit is CI infrastructure work without user-facing implications, so there are no changelog entries for it. Per your rules, this qualifies as "noise" that should be skipped.
+
+If this workflow enables a user-visible feature or changes how conflict resolution works in the plugin itself, please clarify and I can write an entry.
 
 ## [1.61.0] - 2026-03-27
 
-### Added
-
-- Add two-stage review (spec compliance then code quality) (#51)
+### Changed
+- Reviewer hat now validates spec compliance first (including test coverage requirements), then assesses code quality in a separate stage.
 
 ## [1.60.0] - 2026-03-27
 
 ### Added
+- Visual brainstorming companion guidance during the elaboration phase
 
-- Add visual brainstorming companion guidance (#53)
+### Fixed
+- Brainstorm storage path to prevent collisions with mockups directory
 
 ## [1.59.1] - 2026-03-27
 
-### Fixed
-
-- Add allowed_bots to claude-code-review workflow
+This version contains only CI infrastructure updates with no user-facing changes to report.
 
 ## [1.59.0] - 2026-03-27
 
 ### Added
-
-- Add context budget monitor hook (#33)
+- Context budget monitoring warns when context usage approaches limits at 35% and 25% remaining, helping you manage token usage during long sessions.
 
 ## [1.58.2] - 2026-03-27
 
-### Added
-
-- Extract reference material to companion file (#25)
+### Changed
+- Builder now reduces token consumption by approximately 35% by extracting reference materials to a companion file.
 
 ## [1.58.1] - 2026-03-27
 
-### Added
-
-- Extract reference material to companion file (#30)
+### Changed
+- Reduced token consumption during code reviews by extracting reference material to a companion file.
 
 ## [1.58.0] - 2026-03-27
 
 ### Added
-
-- Add structured completion markers (#32)
+- Structured completion markers explicitly control when the workflow transitions between hats, replacing implicit transition logic with deterministic gating.
 
 ## [1.57.0] - 2026-03-27
 
 ### Added
 
-- Add confidence-scored findings and anti-pattern scan (#27)
+- Code reviews now include confidence-scored findings and automated anti-pattern detection.
 
 ## [1.56.1] - 2026-03-27
 
-### Added
-
-- Lazy learnings pointer replaces eager injection (#34)
+### Changed
+- Session token consumption is reduced through optimized hook lazy loading
 
 ## [1.56.0] - 2026-03-27
 
 ### Added
 
-- Add /compound skill for capturing structured learnings (#35)
+- Capture learnings from the current session as structured solution files with the new `/compound` skill.
 
 ## [1.55.0] - 2026-03-27
 
 ### Added
-
-- Add anti-patterns guidance for completion criteria (#36)
+- Use anti-patterns guidance when writing completion criteria to avoid common mistakes that over-constrain or inappropriately restrict agent output.
 
 ## [1.54.0] - 2026-03-27
 
 ### Added
-
-- Add /pressure-testing skill for hat evaluation (#37)
+- Added `/pressure-testing` skill for test-driven development with quality gate validation.
 
 ## [1.53.1] - 2026-03-27
 
 ### Added
 
-- Disable-model-invocation on infrequently-used skills (#38)
+- You can now disable model invocation in the reflect, resume, and operate skills to prevent unintended model calls during execution.
 
 ## [1.53.0] - 2026-03-27
 
 ### Added
-
-- Add wave-based parallel execution (#55)
+- Execute multiple units within an intent in parallel waves, automatically coordinating dependencies and sequencing units for optimal throughput.
 
 ## [1.52.0] - 2026-03-27
 
 ### Added
-
-- Add structured session handoff for bolt continuity (#56)
+- Sessions now resume with structured handoff to maintain context and progress across bolts.
 
 ## [1.51.2] - 2026-03-27
 
-### Fixed
-
-- Allow bot actors in Claude Code mention workflow
+No user-facing changes to document. The only commit (CI workflow fix) doesn't affect plugin functionality or user experience.
 
 ## [1.51.1] - 2026-03-27
 
-### Added
-
-- Role-scoped subagent context (#39)
+### Changed
+- Review operations now consume fewer tokens due to optimized subagent context scoping
 
 ## [1.51.0] - 2026-03-27
 
 ### Added
-
-- Add brownfield codebase mapping to discovery (#40)
+- Discovery phase now supports brownfield codebase mapping to help you understand existing code architecture when elaborating new intents.
 
 ## [1.50.0] - 2026-03-27
 
 ### Added
-
-- Aggregate compound learnings into reflection (#41)
+- Aggregate learnings from compound work into structured reflection outputs for project documentation and review.
 
 ## [1.49.0] - 2026-03-27
 
 ### Added
-
-- Add hard-gate synchronization points (#43)
+- Workflows now enforce quality gates at hard-gate synchronization points during critical phase transitions.
 
 ## [1.48.0] - 2026-03-27
 
 ### Added
-
-- Add automated spec review before construction (#44)
+- Elaboration now includes automated specification review before advancing to construction.
 
 ## [1.47.0] - 2026-03-27
 
 ### Added
 
-- Add verification-before-completion requirement (#52)
+- Builder now requires verification of completion criteria before marking units complete.
 
 ## [1.46.0] - 2026-03-27
 
 ### Added
-
-- Add /seed skill for forward-looking ideas (#58)
+- Use the `/seed` skill to capture forward-looking ideas and define conditions for when they should be revisited.
 
 ## [1.45.0] - 2026-03-27
 
-### Added
+### Changed
 
-- Add comprehensive pre-delivery checklist (#98)
+- Reviewer now uses specialized review agents to provide comprehensive pre-delivery checks instead of a static checklist
 
 ## [1.44.3] - 2026-03-27
 
 ### Added
-
-- Interpolate default branch name into elaboration git strategy questions (#101)
+- Git strategy questions now show your actual default branch name, and you can configure which remote to use for detection.
 
 ## [1.44.2] - 2026-03-27
 
 ### Added
+- Claude Code Review workflow for conducting code reviews directly within Claude Code.
 
-- Add Claude Code GitHub Workflow (#102)
+### Changed
+- Improved Claude PR Assistant workflow with enhanced pull request management capabilities.
+
+## [1.44.1] - 2026-03-27
+
+This commit appears to be a CI infrastructure change (adding a bot workflow) with no user-facing impact. Based on your guidelines to focus on "what a plugin user can now DO differently" and to skip infrastructure noise, there are no sections to include in this changelog entry.
+
+If you'd like me to document this in the changelog anyway, or if I'm misunderstanding what this bot workflow does for end users, please clarify.
 
 ## [1.44.0] - 2026-03-27
 
 ### Added
 
-- Add file-based state persistence (#60)
+- Plugin state now persists to disk with lockfile protection, enabling safe multi-session workflows.
 
 ## [1.43.0] - 2026-03-27
 
 ### Added
-
-- Add prompt injection guard and workflow enforcement hooks (#61)
+- Safely execute untrusted or generated prompts with built-in prompt injection guards
+- Configure workflow enforcement hooks to control tool execution and maintain process discipline
 
 ## [1.42.0] - 2026-03-27
 
 ### Added
-
-- Add /quick mode for trivial tasks (#63)
+- Use `/quick` mode to skip full elaboration for trivial tasks.
 
 ## [1.41.0] - 2026-03-27
 
 ### Added
-
-- Add no-verify parallel commit strategy for agent teams (#64)
+- Agent teams can now use a parallel commit strategy with no-verify enabled to speed up concurrent builds.
 
 ## [1.40.0] - 2026-03-27
 
 ### Added
-
-- Add catalog of specialized review agents (#67)
+- Specialized review agents organized by domain, enabling more targeted feedback based on codebase expertise.
 
 ## [1.39.0] - 2026-03-27
 
 ### Added
-
-- Add /backlog skill for parking lot ideas (#68)
+- You can now use `/backlog` to capture and organize parking lot ideas during development.
 
 ## [1.38.0] - 2026-03-27
 
 ### Added
 
-- Add /ideate skill for adversarial improvement ideas (#69)
+- Generate improvement suggestions with adversarial review using the new `/ideate` skill.
 
 ## [1.37.0] - 2026-03-27
 
 ### Added
-
-- Add plan deepening with parallel research agents (#71)
+- Run parallel research agents to deepen plans and explore multiple angles simultaneously
 
 ## [1.36.0] - 2026-03-27
 
 ### Added
-
-- Add spec flow analysis (#77)
+- Spec flow analysis during elaboration helps identify specification gaps before implementation.
 
 ## [1.35.0] - 2026-03-27
 
 ### Added
-
-- Add per-project review agent configuration (#78)
+- Customize review agent configuration on a per-project basis to align code review behavior with your team's standards.
 
 ## [1.34.0] - 2026-03-27
 
 ### Added
 
-- Add chain-of-verification (CoVe) for evidence-based reviews (#83)
+- Reviewer now uses chain-of-verification (CoVe) methodology to provide evidence-based code reviews grounded in systematic analysis.
 
 ## [1.33.0] - 2026-03-27
 
 ### Added
-
-- Add relevance-ranked learning search (#94)
+- Search for learning materials in the planner and get results ranked by relevance using multiple signals to quickly find applicable guidance.
 
 ## [1.32.0] - 2026-03-27
 
 ### Added
 
-- Add version-aware building with rollback guidance (#95)
+- Builder automatically detects version incompatibilities and provides rollback guidance during builds.
 
 ## [1.31.0] - 2026-03-27
 
 ### Added
-
-- Add rule-based decision filtering (#96)
+- The planner now uses rule-based filtering to automatically select the best approach for your task.
 
 ## [1.30.0] - 2026-03-27
 
 ### Added
-
-- Document master + overrides configuration precedence pattern (#97)
+- Configuration documentation now explains the precedence pattern for master and override settings, allowing you to correctly configure layered settings.
 
 ## [1.29.0] - 2026-03-26
 
 ### Added
 
-- Add last_updated timestamp to unit frontmatter (#12)
+- Units now include a last_updated timestamp in their frontmatter, allowing you to track when each unit was last modified.
 
 ## [1.28.2] - 2026-03-26
 
 ### Fixed
-
-- Commit unit/intent status changes to git (#17)
+- Unit and intent status changes are now committed to git automatically, ensuring all workflow state transitions are tracked in version control.
 
 ## [1.28.1] - 2026-03-26
 
-### Added
-
-- Add clear workflow mode labels and guidance (#15)
+### Changed
+- Strategy options documentation now explains each choice from the user's perspective, making it clearer when to use each strategy.
 
 ## [1.28.0] - 2026-03-26
 
 ### Added
-
-- Auto-cleanup worktrees at completion milestones (#23)
+- Automatic cleanup of temporary git worktrees at completion milestones, eliminating manual cleanup steps after intent completion.
 
 ## [1.27.0] - 2026-03-26
 
 ### Added
 
-- Add design-specific unit template sections (#19)
+- Design-specific unit template sections to guide structured documentation of design requirements during intent elaboration.
 
 ## [1.26.0] - 2026-03-26
 
-### Added
-
-- Add /followup skill for post-completion changes (#14)
+### Changed
+- `/followup` now creates linked iteration intents to maintain continuity across intent iterations.
 
 ## [1.25.0] - 2026-03-26
 
 ### Added
-
-- Include design units in wireframe generation (#18)
+- Wireframes now include design units during the elaboration phase for more complete design specifications.
 
 ## [1.24.0] - 2026-03-26
 
 ### Added
-
-- Add design-focused success criteria guidance (#20)
+- Receive design-focused guidance when defining success criteria during the elaborate phase.
 
 ## [1.23.0] - 2026-03-26
 
 ### Added
 
-- Auto-route discipline: design to design workflow (#21)
+- Design discipline now automatically routes to a design-focused workflow.
 
 ## [1.22.0] - 2026-03-26
 
 ### Added
 
-- Detect and remove merged worktrees (#11)
+- Plugin now automatically detects and removes worktrees once their changes are merged.
 
 ## [1.21.0] - 2026-03-26
 
 ### Added
+- Workflow execution events are now reported to OpenTelemetry, enabling integration with observability platforms and monitoring tools.
 
-- Add OTEL reporting for AI-DLC workflow events (#16)
+## [1.20.16] - 2026-03-11
 
-## [1.20.17] - 2026-03-23
+### Changed
+- Documentation rebrand with no user-facing changes
+
+## [1.20.15] - 2026-03-11
 
 ### Added
+- Test-driven development workflow for building features from tests first
+- Learnings from completed intents are automatically loaded into new workflows
 
-- Add intent: Remove han dependency & improve state management (#9)
+### Changed
+- Integration workflows now run autonomously without manual intervention
+
+## [1.20.14] - 2026-03-10
+
+### Removed
+- Operator and Reflector hats and their associated workflows have been removed from the available workflow options.
 
 ## [1.20.13] - 2026-03-10
 
-### Added
-
-- Fix source error for claude marketplace (#8)
+### Fixed
+- Plugin can now be properly discovered and installed via the Claude Code marketplace
 
 ## [1.20.12] - 2026-03-10
 
 ### Fixed
+- Unit strategy automations no longer ask for auto-merge confirmation during setup.
 
-- Skip auto-merge question for unit strategy
+### Changed
+- Simplified plugin source configuration.
+
+## [1.20.11] - 2026-03-09
+
+### Changed
+- Restructured plugin directory and marketplace configuration
+
+## [1.20.10] - 2026-03-09
+
+### Added
+- `/reflect` skill for reflection phase—review and learn from completed work
+- `/operate` skill for operation phase—maintain and iterate on deployed systems
+- AI-DLC integrates with HAIKU software development methodology
+
+### Changed
+- Construction phase renamed to Execution throughout plugin and documentation
+
+## [1.20.9] - 2026-03-09
+
+### Added
+- Plugin can be downloaded as a zip archive
+
+### Changed
+- Marketplace now uses path-based source configuration
+
+## [1.20.8] - 2026-03-06
+
+### Changed
+- H·AI·K·U is now discoverable in the plugin marketplace with full description
 
 ## [1.20.7] - 2026-03-06
 
+This commit updates `.gitignore`, which is infrastructure maintenance with no user-facing changes. There are no changelog entries to report for version 1.20.7.
+
+## [1.20.6] - 2026-03-05
+
 ### Fixed
 
-- Resolve worktree paths from main repo root, add cleanup
+- Plugin now correctly resolves worktree paths relative to the main repository root instead of the worktree directory, preventing path resolution errors when using git worktrees.
 
 ## [1.20.5] - 2026-03-04
 
+```markdown
 ### Fixed
 
-- Prevent elaboration review PR from closing linked issues
+- Review pull requests created during elaboration no longer close linked issues when merged.
+```
 
 ## [1.20.4] - 2026-03-04
 
 ### Fixed
-
-- Skip delivery prompt for unit-based change strategy
+- Unit-based change strategy no longer prompts for delivery confirmation, streamlining the workflow.
 
 ## [1.20.3] - 2026-03-04
 
 ### Fixed
-
-- Enforce full unit display during elaboration review
-
-## [1.20.2] - 2026-03-04
-
-### Fixed
-
-- Add continuation signals after fork subagent invocations
+- Elaboration review now displays complete unit content without truncation.
 
 ## [1.20.1] - 2026-03-04
 
 ### Fixed
 
-- Add strict ASCII wireframe alignment rules to discovery skill
+- Discovery skill now enforces strict alignment rules for ASCII wireframes, improving consistency and accuracy during domain exploration.
 
 ## [1.20.0] - 2026-03-04
 
 ### Added
 
-- Extract elaborate phases into fork subagent skills
+- Elaborate phases can now be run independently as fork subagent skills, giving you granular control over which phases to execute.
 
 ## [1.19.2] - 2026-03-04
 
 ### Fixed
+- Worktree directories are now automatically added to gitignore, preventing temporary work from being accidentally committed.
 
-- Enforce gitignore for .ai-dlc/worktrees before worktree creation
+## [1.19.1] - 2026-03-03
+
+### Fixed
+- Elaboration workflow is now unified, removing the complexity of managing separate elaborator agent and elaboration-start skill components.
 
 ## [1.19.0] - 2026-03-03
 
 ### Added
+- Changelog page on the website for viewing release history
 
-- Split elaborate into orchestrator + elaborator agent, add changelog page, update docs
+### Changed
+- Elaborate workflow now orchestrates multiple agents for better intent specification
 
 ## [1.18.0] - 2026-03-03
 
 ### Added
 
-- Add greenfield project detection and UI mockup generation
+- Detect greenfield projects and automatically generate UI mockups for rapid design exploration.
 
 ## [1.17.2] - 2026-03-02
 
 ### Fixed
-
-- Scope changelog generation to only include commits since previous version
+- Changelog generation now includes only commits since the previous version for more accurate release notes
 
 ## [1.17.1] - 2026-03-02
 
 ### Fixed
 
-- Create intent worktree before discovery to avoid artifacts on main
+- Intent discovery now creates a worktree before running, preventing temporary artifacts from appearing on the main branch.
 
 ## [1.17.0] - 2026-03-02
 
 ### Added
-
-- Allow agent invocation of elaborate, resume, and refine skills
+- Agents can now invoke elaborate, resume, and refine skills, enabling automated AI-DLC workflows.
 
 ## [1.16.0] - 2026-03-02
 
-### Added
+Based on the commit details, here's the changelog entry for version 1.16.0:
 
-- Discovery scratchpad, design subagents, hybrid change strategy
+### Added
+- Discovery scratchpad automatically captures elaboration findings to `discovery.md` during domain discovery, reducing context window pressure while keeping detailed findings accessible to subagents and the intent worktree
+- Parallel design analysis via dedicated subagents during elaboration for faster, context-efficient Figma and design file processing
+- Hybrid per-unit change strategy support, allowing mixed strategies within a single intent—foundational units can use direct-to-main while remaining units merge to the intent branch
 
 ## [1.15.0] - 2026-02-25
 
 ### Added
-
-- Per-unit workflows with design discipline support
+- Per-unit workflows enable different workflow configurations for each unit, with built-in support for design discipline phases.
 
 ## [1.14.0] - 2026-02-25
 
 ### Added
-
-- Add design asset handling, color matching, and annotation awareness
+- Handle design assets directly in your workflows for easier design integration
+- Automatically match and apply colors from design specifications
+- Leverage design annotations to guide code generation and specifications
 
 ## [1.13.0] - 2026-02-25
 
 ### Added
-
-- Cowork-aware handoff with local folder and zip options
+- Handoff now supports cowork-aware modes with options to share work as a local folder or zip file for easier collaboration.
 
 ## [1.12.0] - 2026-02-25
 
-### Added
-
-- Block /reset, /refine, /setup, /resume in cowork mode
+### Changed
+- Slash commands `/reset`, `/refine`, `/setup`, and `/resume` are now blocked in cowork mode to prevent conflicting simultaneous operations.
 
 ## [1.11.0] - 2026-02-25
 
-### Added
-
-- Block /construct in cowork mode
+### Changed
+- The `/construct` command is now unavailable in cowork mode to prevent mode conflicts during collaborative work.
 
 ## [1.10.0] - 2026-02-25
 
+```markdown
 ### Added
 
-- Improve cowork mode with CLAUDE_CODE_IS_COWORK detection and Explore subagents
+- Cowork mode now automatically detects multi-agent collaboration environments, improving coordination when multiple Claude Code instances work together.
+- Exploration tasks now delegate to specialized Explore subagents for faster codebase discovery and analysis.
+```
 
 ## [1.9.0] - 2026-02-25
 
 ### Added
+- Wireframe generation phase for visual design exploration and iteration in development workflows
 
-- Add wireframe generation phase and move worktrees into project
+### Changed
+- Worktrees are now automatically created within project directories for better isolation and organization
 
 ## [1.8.3] - 2026-02-24
 
 ### Fixed
+- Ticket descriptions now display with improved formatting and structure for better readability.
 
-- Improve ticket description formatting and structure
+## [1.8.2] - 2026-02-24
+
+### Changed
+- Reference skills are now internal-only and cannot be invoked directly
 
 ## [1.8.1] - 2026-02-24
 
-### Added
+I don't see a "more provider settings" commit in the recent history. Can you provide the commit hash or clarify which changes you're referring to for version 1.8.1? That way I can see the actual code changes and write an accurate changelog entry.
 
-- Unit targeting, enriched change strategies, remove bolt strategy
+## [1.8.0] - 2026-02-24
+
+### Added
+- Execute specific units without running the entire intent
+
+### Changed
+- Change strategies now provide more options for managing workflow iterations
+
+### Removed
+- Bolt change strategy has been removed; use the intent strategy instead
 
 ## [1.7.0] - 2026-02-20
 
 ### Added
+- Completion announcements signal when tasks meet their completion criteria.
+- Risk descriptions let you document potential issues identified during elaboration.
+- Iteration caps set a maximum limit on how many times a bolt can cycle.
+- Explicit bolt terminology clarifies the iteration cycle concept throughout the plugin.
 
-- Add completion announcements, risk descriptions, iteration cap, and bolt terminology
+## [1.6.3] - 2026-02-20
+
+### Changed
+- Simplified skill definitions and hook configurations by removing mode references
+
+## [1.6.2] - 2026-02-20
+
+### Removed
+- Mode selection from elaboration and construction phases.
 
 ## [1.6.1] - 2026-02-20
 
 ### Fixed
-
-- Move iteration.json initialization from elaboration to construction
+- Iteration state is now correctly initialized during construction instead of elaboration, ensuring proper workflow sequencing from project inception through delivery.
 
 ## [1.6.0] - 2026-02-20
 
 ### Added
 
-- Add NFR prompts, cross-cutting concerns, integrator hat, delivery prompts, and /refine skill
+- **Integrator hat**: Validate cross-cutting concerns after merging all units within an intent.
+- **/refine skill**: Refine intent or unit specifications mid-execution without losing progress.
+- **Non-functional requirement guidance**: Enhanced prompts to help you specify and validate non-functional requirements and cross-cutting concerns.
+- **Delivery phase guidance**: Improved prompts for planning and executing the delivery phase.
 
 ## [1.5.0] - 2026-02-20
 
 ### Added
-
-- Add /setup skill and enforce ticket creation during elaboration
+- New `/setup` skill automates initial project configuration.
+- Elaboration now enforces ticket creation for all work before execution can begin.
 
 ## [1.4.5] - 2026-02-20
 
 ### Fixed
 
-- Make testing non-negotiable, remove per-intent testing config
+- Testing requirements are now mandatory for all intents and cannot be configured per-intent.
 
 ## [1.4.4] - 2026-02-20
 
 ### Fixed
 
-- Make subagent context hook load state from correct branch
+- Subagents now load context state from the correct branch when executing work.
 
 ## [1.4.3] - 2026-02-15
 
 ### Fixed
 
-- Namespace intent branches as ai-dlc/{slug}
+- Intent branches are now prefixed with `ai-dlc/` to prevent naming conflicts and improve branch organization.
 
 ## [1.4.2] - 2026-02-15
 
 ### Fixed
-
-- Remove elaborator from construction workflows and improve intent discovery
+- Construction workflows now skip the elaborator phase and intent discovery has been improved.
 
 ## [1.4.1] - 2026-02-13
 
 ### Fixed
-
-- Update plugin install commands to use Claude Code native /plugin CLI
+- Plugin installation now uses Claude Code's native `/plugin` CLI for streamlined setup.
 
 ## [1.4.0] - 2026-02-13
 
 ### Added
-
-- Add provider integration, cowork support, and three-tier instruction merge
+- Integrate external providers to customize how agents access memory, data, and external services
+- Enable coworking mode for team-based and collaborative AI-DLC workflows
+- Instructions now merge hierarchically across global, project, and local levels so local customizations take precedence
 
 ## [1.3.0] - 2026-02-13
 
 ### Added
+- Configure memory providers to customize where and how AI-DLC state is stored.
+- Collaborate with team members through cowork support for multi-user development workflows.
 
-- Providers, cowork support, and plugin reorganization
+### Changed
+- Plugin structure reorganized for improved modularity and maintainability.
+
+## [1.2.2] - 2026-02-12
+
+### Changed
+- Intent configuration is now consolidated into intent.md frontmatter, eliminating the need for a separate intent.yaml file.
 
 ## [1.2.1] - 2026-02-12
 
 ### Fixed
 
-- Session retrospective — branch ordering, team mode hats, workflow transitions, merge strategy
+- Session retrospectives now correctly handle branch ordering and workflow transitions
+- Team mode hats now function properly in multi-agent workflows
+- Merge strategy now executes as configured
 
 ## [1.2.0] - 2026-02-11
 
 ### Added
+- Domain discovery during elaboration helps you systematically explore your problem space before constructing solutions
+- Specification validation during elaboration catches design issues early in the inception phase
+- Deep research capabilities help you gather comprehensive context about relevant technologies and approaches
 
-- Add domain discovery, spec validation, and deep research to elaboration
+## [1.1.2] - 2026-02-11
+
+I need more detail about what changed in the settings. The commit message "update settings" doesn't reveal what a plugin user can now do differently.
+
+Can you clarify:
+- What settings were added, changed, or removed?
+- What's the user-facing impact? (e.g., new configuration option, default behavior change, etc.)
+
+Once I understand that, I'll write the changelog entry.
 
 ## [1.1.1] - 2026-02-11
 
 ### Added
+- Agent Teams with intent-level modes and dynamic hat discovery
+- Interactive workflow visualizer on documentation website
+- Website responsive layout and dark mode
 
-- Add automatic version bump and changelog pipeline (#3)
-- Optimize session start hook performance (#1)
-- Fix scroll spy, theme toggle, and remove trailing slashes
-- Improve paper typography and add designer guide
-- Transform AI-DLC into comprehensive methodology site
-- Add interactive workflow visualizer
-- Add interactive Big Picture methodology diagram
-- Add SEO feeds, sitemap, and structured data
-- Add responsive layout, dark mode, and core pages
-- Migrate AI-DLC plugin to repository root
-- Initial repository setup
+### Changed
+- Construction workflows now use Agent Teams by default
 
 ### Fixed
-
-- Simplify version bump to direct push (#6)
-- Use PR-based merge for version bump workflow (#4)
-- Remove duplicate H1 headers from docs pages
-- Remove 2026 from landing page hero
+- Session startup performance optimized

@@ -59,8 +59,13 @@ jobs:
             echo "Detected: PATCH (fix/chore/other)"
           fi
 
+      - name: Install Claude CLI
+        run: npm install -g @anthropic-ai/claude-code
+
       - name: Bump version
         id: bump-version
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
           BUMP_TYPE="${{ steps.bump-type.outputs.type }}"
           PLUGIN_JSON="plugin/.claude-plugin/plugin.json"
@@ -98,7 +103,7 @@ jobs:
           jq --arg version "$NEW_VERSION" '.metadata.version = $version' "$MARKETPLACE_JSON" > "$MARKETPLACE_JSON.tmp"
           mv "$MARKETPLACE_JSON.tmp" "$MARKETPLACE_JSON"
 
-          # Generate changelog
+          # Generate changelog (uses Claude CLI if available, falls back to commit list)
           chmod +x .github/scripts/generate-changelog.sh
           bash .github/scripts/generate-changelog.sh "." "$NEW_VERSION" "$CURRENT_VERSION"
 

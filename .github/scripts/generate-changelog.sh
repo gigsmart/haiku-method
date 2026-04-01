@@ -1,13 +1,13 @@
 #!/bin/bash
 set -e
 
-# Script to generate CHANGELOG.md based on git commit history
+# Generates a user-facing changelog entry using Claude CLI to synthesize
+# commit-level changes into a concise, understandable summary.
+#
 # Usage: ./generate-changelog.sh <path> <new_version> <old_version>
 #
-# Arguments:
-#   path: Path to the directory (e.g., "." for root plugin)
-#   new_version: The new version being released (e.g., "1.2.3")
-#   old_version: The previous version (e.g., "1.2.2") - optional, will auto-detect from plugin.json
+# Env: CLAUDE_CODE_OAUTH_TOKEN (optional — falls back to commit-list if unset)
+# Requires: claude CLI (npm install -g @anthropic-ai/claude-code), jq
 
 PATH_DIR="$1"
 NEW_VERSION="$2"
@@ -15,7 +15,6 @@ OLD_VERSION="$3"
 
 if [ -z "$PATH_DIR" ] || [ -z "$NEW_VERSION" ]; then
 	echo "Usage: $0 <path> <new_version> [old_version]"
-	echo "Example: $0 . 1.2.3"
 	exit 1
 fi
 
@@ -29,33 +28,29 @@ if [ -z "$OLD_VERSION" ]; then
 	fi
 fi
 
-# Determine git range: from the last version bump commit to HEAD
-# This ensures each version only includes commits new since the previous release
+# Determine git range
 GIT_RANGE=""
 if [ -n "$OLD_VERSION" ]; then
-	# Find the commit that bumped TO the old version (e.g., "bump version X -> 1.16.0")
 	LAST_BUMP_COMMIT=$(git log --all --grep="bump version.*-> $OLD_VERSION" --format="%H" -1 2>/dev/null || true)
 	if [ -n "$LAST_BUMP_COMMIT" ]; then
 		GIT_RANGE="$LAST_BUMP_COMMIT..HEAD"
 	fi
 fi
 
-# Fallback: if no bump commit found, use all commits (first release scenario)
 if [ -z "$GIT_RANGE" ]; then
 	GIT_RANGE="HEAD"
 fi
 
-# Get commits for this path, excluding noise
-# Filters: version bumps, merge commits, AI-DLC state tracking, reverts of reverts
-COMMITS=$(git log $GIT_RANGE --no-merges --pretty=format:"%h|%s|%an|%ad" --date=short -- "$PATH_DIR" ':!website' ':!.ai-dlc' 2>/dev/null \
+# Collect raw commit subjects (filtered)
+COMMITS=$(git log $GIT_RANGE --no-merges --pretty=format:"%s" -- "$PATH_DIR" ':!website' ':!.ai-dlc' 2>/dev/null \
 	| grep -v "\[skip ci\]" \
 	| grep -v "chore(release):" \
 	| grep -v "chore(plugin): bump" \
-	| grep -v "^[a-f0-9]*|status: " \
-	| grep -v "^[a-f0-9]*|state: " \
-	| grep -v "^[a-f0-9]*|Merge unit-" \
-	| grep -v "^[a-f0-9]*|Revert \"Reapply " \
-	| grep -v "^[a-f0-9]*|Reapply \"" \
+	| grep -v "^status: " \
+	| grep -v "^state: " \
+	| grep -v "^Merge unit-" \
+	| grep -v "^Revert \"Reapply " \
+	| grep -v "^Reapply \"" \
 	|| true)
 
 if [ -z "$COMMITS" ]; then
@@ -63,45 +58,61 @@ if [ -z "$COMMITS" ]; then
 	exit 0
 fi
 
-# Parse commits into categories
-FEATURES=""
-FIXES=""
-REFACTORS=""
-CHORES=""
-BREAKING=""
-OTHER=""
+DIFF_STAT=$(git diff --stat "$GIT_RANGE" -- "$PATH_DIR" ':!website' ':!.ai-dlc' 2>/dev/null || true)
 
-COMMITS_FILE=$(mktemp)
-printf '%s\n' "$COMMITS" > "$COMMITS_FILE"
+# ---- Synthesize with Claude CLI ----
+CHANGELOG_ENTRY=""
+if command -v claude >/dev/null 2>&1; then
+	PROMPT="Write a changelog entry for version $NEW_VERSION of the AI-DLC plugin — a Claude Code plugin for structured software development.
 
-while IFS='|' read -r hash subject _author _date; do
-	# Skip empty lines
-	[ -z "$hash" ] && continue
+Rules:
+- Keep a Changelog format: ### Added, ### Changed, ### Fixed, ### Removed (only sections that apply)
+- Each bullet: 1 sentence, plain English, focused on what the user can now DO differently
+- Group related commits into single bullets (5 commits fixing review feedback = 1 bullet about the feature)
+- Skip noise: merge fixes, PR review iterations, terminology passes — unless they change user behavior
+- Maximum 5-7 bullets total. Fewer is better. No filler.
+- No commit hashes, no links, no file paths
+- Output ONLY the markdown sections (### Added, etc.) — no version header, no preamble
 
-	# Remove scope from subject for cleaner display
-	CLEAN_SUBJECT=$(echo "$subject" | sed -E 's/^[a-z]+(\([^)]+\))?!?: //')
+Commits since last release:
+$COMMITS
 
-	# Format entry
-	ENTRY="- $CLEAN_SUBJECT ([$hash](../../commit/$hash))"
+Diff stat:
+$DIFF_STAT"
 
-	# Categorize commit (use newline only between entries, not before first)
-	if echo "$subject" | grep -qE '^[a-z]+(\([^)]+\))?!:' || echo "$subject" | grep -q 'BREAKING CHANGE'; then
-		[ -n "$BREAKING" ] && BREAKING="$BREAKING\n$ENTRY" || BREAKING="$ENTRY"
-	elif echo "$subject" | grep -qE '^feat(\([^)]+\))?:'; then
-		[ -n "$FEATURES" ] && FEATURES="$FEATURES\n$ENTRY" || FEATURES="$ENTRY"
-	elif echo "$subject" | grep -qE '^fix(\([^)]+\))?:'; then
-		[ -n "$FIXES" ] && FIXES="$FIXES\n$ENTRY" || FIXES="$ENTRY"
-	elif echo "$subject" | grep -qE '^refactor(\([^)]+\))?:'; then
-		[ -n "$REFACTORS" ] && REFACTORS="$REFACTORS\n$ENTRY" || REFACTORS="$ENTRY"
-	elif echo "$subject" | grep -qE '^chore(\([^)]+\))?:'; then
-		[ -n "$CHORES" ] && CHORES="$CHORES\n$ENTRY" || CHORES="$ENTRY"
-	else
-		[ -n "$OTHER" ] && OTHER="$OTHER\n$ENTRY" || OTHER="$ENTRY"
-	fi
-done < "$COMMITS_FILE"
-rm -f "$COMMITS_FILE"
+	CHANGELOG_ENTRY=$(echo "$PROMPT" | claude --print --model haiku 2>/dev/null || true)
+fi
 
-# Generate changelog header
+# ---- Fallback: simple commit list ----
+if [ -z "$CHANGELOG_ENTRY" ]; then
+	echo "Claude CLI unavailable — falling back to commit-list format"
+
+	FEATURES=""
+	FIXES=""
+	OTHER=""
+
+	while IFS= read -r subject; do
+		[ -z "$subject" ] && continue
+		CLEAN=$(echo "$subject" | sed -E 's/^[a-z]+(\([^)]+\))?!?: //')
+		ENTRY="- $CLEAN"
+
+		if echo "$subject" | grep -qE '^feat(\([^)]+\))?:'; then
+			[ -n "$FEATURES" ] && FEATURES="$FEATURES\n$ENTRY" || FEATURES="$ENTRY"
+		elif echo "$subject" | grep -qE '^fix(\([^)]+\))?:'; then
+			[ -n "$FIXES" ] && FIXES="$FIXES\n$ENTRY" || FIXES="$ENTRY"
+		else
+			[ -n "$OTHER" ] && OTHER="$OTHER\n$ENTRY" || OTHER="$ENTRY"
+		fi
+	done <<< "$COMMITS"
+
+	CHANGELOG_ENTRY=""
+	[ -n "$FEATURES" ] && CHANGELOG_ENTRY="### Added\n\n$(echo -e "$FEATURES")\n"
+	[ -n "$FIXES" ] && CHANGELOG_ENTRY="${CHANGELOG_ENTRY}\n### Fixed\n\n$(echo -e "$FIXES")\n"
+	[ -n "$OTHER" ] && CHANGELOG_ENTRY="${CHANGELOG_ENTRY}\n### Changed\n\n$(echo -e "$OTHER")\n"
+	CHANGELOG_ENTRY=$(echo -e "$CHANGELOG_ENTRY")
+fi
+
+# ---- Build changelog ----
 {
 	echo "# Changelog"
 	echo ""
@@ -112,70 +123,18 @@ rm -f "$COMMITS_FILE"
 	echo ""
 	echo "## [$NEW_VERSION] - $(date +%Y-%m-%d)"
 	echo ""
+	echo "$CHANGELOG_ENTRY"
+	echo ""
 } >"$TEMP_FILE"
 
-# Add breaking changes section if any
-if [ -n "$BREAKING" ]; then
-	{
-		echo "### BREAKING CHANGES"
-		echo ""
-		echo -e "$BREAKING"
-		echo ""
-	} >>"$TEMP_FILE"
-fi
-
-# Add features section if any
-if [ -n "$FEATURES" ]; then
-	{
-		echo "### Added"
-		echo ""
-		echo -e "$FEATURES"
-		echo ""
-	} >>"$TEMP_FILE"
-fi
-
-# Add fixes section if any
-if [ -n "$FIXES" ]; then
-	{
-		echo "### Fixed"
-		echo ""
-		echo -e "$FIXES"
-		echo ""
-	} >>"$TEMP_FILE"
-fi
-
-# Add refactors section if any
-if [ -n "$REFACTORS" ]; then
-	{
-		echo "### Changed"
-		echo ""
-		echo -e "$REFACTORS"
-		echo ""
-	} >>"$TEMP_FILE"
-fi
-
-# Add other changes if any
-if [ -n "$OTHER" ]; then
-	{
-		echo "### Other"
-		echo ""
-		echo -e "$OTHER"
-		echo ""
-	} >>"$TEMP_FILE"
-fi
-
-# If existing changelog exists, append old entries (excluding the header and [Unreleased] section)
+# Append old entries (skip header)
 if [ -f "$CHANGELOG_FILE" ]; then
-	# Skip header (first 6 lines), then strip any [Unreleased] section
-	# (its commits are now captured in the new version's range)
 	tail -n +7 "$CHANGELOG_FILE" 2>/dev/null | sed '/^## \[Unreleased\]/,/^## \[/{ /^## \[Unreleased\]/d; /^## \[/!d; }' >>"$TEMP_FILE" || true
 fi
 
-# Remove consecutive blank lines and ensure single trailing newline
+# Clean up formatting
 perl -i -0777 -pe 's/\n\n\n+/\n\n/g' "$TEMP_FILE"
 printf '%s\n' "$(cat "$TEMP_FILE")" >"$TEMP_FILE"
 
-# Move temp file to final location
 mv "$TEMP_FILE" "$CHANGELOG_FILE"
-
 echo "Changelog generated at $CHANGELOG_FILE"
