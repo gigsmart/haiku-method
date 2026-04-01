@@ -611,7 +611,7 @@ Scan the codebase and synthesize knowledge artifacts for: domain, architecture, 
 Agent({
   subagent_type: "general-purpose",
   description: "knowledge-synthesize: {INTENT_SLUG}",
-  prompt: "Run the /ai-dlc:knowledge-synthesize skill. Read the skill definition at plugin/skills/elaborate/subskills/knowledge-synthesize/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/knowledge-synthesize.md as input."
+  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/knowledge-synthesize/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/knowledge-synthesize.md as input."
 })
 ```
 
@@ -714,7 +714,7 @@ git commit -m "elaborate(${INTENT_SLUG}): write discovery brief"
 Agent({
   subagent_type: "general-purpose",
   description: "elaborate-discover: {INTENT_SLUG}",
-  prompt: "Run the /ai-dlc:elaborate-discover skill. Read the skill definition at plugin/skills/elaborate/subskills/discover/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/elaborate-discover.md as input."
+  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/discover/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/elaborate-discover.md as input."
 })
 ```
 
@@ -2261,7 +2261,7 @@ git commit -m "elaborate(${INTENT_SLUG}): write wireframes brief"
 Agent({
   subagent_type: "general-purpose",
   description: "elaborate-wireframes: {INTENT_SLUG}",
-  prompt: "Run the /ai-dlc:elaborate-wireframes skill. Read the skill definition at plugin/skills/elaborate/subskills/wireframes/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/elaborate-wireframes.md as input."
+  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/wireframes/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/elaborate-wireframes.md as input."
 })
 ```
 
@@ -2411,7 +2411,7 @@ git commit -m "elaborate(${INTENT_SLUG}): write ticket sync brief"
 Agent({
   subagent_type: "general-purpose",
   description: "elaborate-ticket-sync: {INTENT_SLUG}",
-  prompt: "Run the /ai-dlc:elaborate-ticket-sync skill. Read the skill definition at plugin/skills/elaborate/subskills/ticket-sync/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/elaborate-ticket-sync.md as input."
+  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/ticket-sync/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/elaborate-ticket-sync.md as input."
 })
 ```
 
@@ -2558,7 +2558,7 @@ git commit -m "elaborate(${INTENT_SLUG}): write adversarial review brief"
 Agent({
   subagent_type: "general-purpose",
   description: "elaborate-adversarial-review: {INTENT_SLUG}",
-  prompt: "Run the /ai-dlc:elaborate-adversarial-review skill. Read the skill definition at plugin/skills/elaborate/subskills/adversarial-review/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/elaborate-adversarial-review.md as input."
+  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/adversarial-review/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/elaborate-adversarial-review.md as input."
 })
 ```
 
