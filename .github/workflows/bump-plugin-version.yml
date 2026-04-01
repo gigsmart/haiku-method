@@ -105,6 +105,15 @@ jobs:
           echo "old_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build MCP server bundle
+        run: bun run --cwd plugin/mcp-server build
+
       - name: Commit version bump
         id: commit
         run: |
@@ -115,8 +124,8 @@ jobs:
             exit 0
           fi
 
-          # Add version files and changelog
-          git add plugin/.claude-plugin/plugin.json .claude-plugin/marketplace.json CHANGELOG.md
+          # Add version files, changelog, and rebuilt MCP server bundle
+          git add plugin/.claude-plugin/plugin.json .claude-plugin/marketplace.json CHANGELOG.md plugin/mcp-server/dist/server.mjs
 
           # Create commit message
           COMMIT_MSG="chore(plugin): bump version ${{ steps.bump-version.outputs.old_version }} -> ${{ steps.bump-version.outputs.new_version }} [skip ci]"
@@ -142,18 +151,6 @@ jobs:
           TAG="v${{ steps.bump-version.outputs.new_version }}"
           git tag -f "$TAG"
           git push -f origin "$TAG"
-
-      - name: Setup Bun
-        if: steps.commit.outputs.released == 'true'
-        uses: oven-sh/setup-bun@v2
-
-      - name: Install dependencies
-        if: steps.commit.outputs.released == 'true'
-        run: bun install --frozen-lockfile
-
-      - name: Build MCP server bundle
-        if: steps.commit.outputs.released == 'true'
-        run: bun run --cwd plugin/mcp-server build
 
       - name: Package plugin
         if: steps.commit.outputs.released == 'true'
