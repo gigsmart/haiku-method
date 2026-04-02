@@ -109,7 +109,7 @@ hku_migrate_legacy_intent() {
   # 5. Replace old path with a symlink to the new location for backward compat
   #    Rename the original to a backup first, then point the original path to new
   mv "${old_dir}" "${old_dir}.pre-haiku-backup"
-  ln -sf "${new_dir}" "${old_dir}"
+  ln -sf "../.haiku/intents/${slug}" "${old_dir}"
   echo "haiku: intent ${slug} migrated from .ai-dlc/ to .haiku/intents/" >&2
 }
 ```
@@ -147,7 +147,7 @@ Pass → Stage name mapping:
 After frontmatter migration, add two new fields reflecting migration state:
 
 ```yaml
-migrated_from: .ai-dlc/{slug}/    # provenance
+migrated_from: .ai-dlc/{intent-slug}/    # provenance
 migration_date: <current-date>    # set to the current date at migration runtime (not hardcoded)
 ```
 
@@ -270,7 +270,7 @@ Written to `.haiku/intents/{intent-slug}/knowledge/MIGRATION-PLAN.md` (scope: in
 name: migration-plan
 scope: intent
 location: .haiku/intents/{intent-slug}/knowledge/MIGRATION-PLAN.md
-migrated_from: .ai-dlc/{slug}/
+migrated_from: .ai-dlc/{intent-slug}/
 migration_date: <current-date>    # set at migration runtime
 ---
 

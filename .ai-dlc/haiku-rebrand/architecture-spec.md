@@ -404,11 +404,11 @@ When running in continuous mode: `stage: ""` (all stage definitions merged, no a
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/studio.sh"
 
-# Returns comma-separated stage names, or "" for single-stage
+# Returns comma-separated stage names, or "" in legacy mode (no settings file)
 STAGES=$(resolve_active_stages)
 ```
 
-`resolve_active_stages` reads `studio:` from settings.yml, validates the studio and all its stages exist, and returns the stage list. Returns `""` when no studio is configured.
+`resolve_active_stages` reads `studio:` from settings.yml, validates the studio and all its stages exist, and returns the stage list. Returns `""` in legacy mode (no `.haiku/settings.yml` exists — pre-H·AI·K·U state).
 
 ### Stage Resolution (within a studio)
 
@@ -497,7 +497,7 @@ A company adds a security stage to the software studio:
 name: security
 description: Threat modeling and penetration testing
 hats: [threat-modeler, red-team, blue-team, reviewer]
-review: external
+review: [external, ask]
 unit_types: [security, backend]
 inputs:
   - stage: product
