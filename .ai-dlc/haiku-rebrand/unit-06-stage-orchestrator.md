@@ -235,7 +235,7 @@ hku_stage_units() {
 - [ ] Review gates behave correctly: auto advances, ask pauses, external creates review
 - [ ] State tracking correctly reports stage status
 - [ ] `/haiku:elaborate` and `/haiku:execute` work as backward-compat aliases
-- [ ] Intents without `studio:` field default to software studio
+- [ ] Intents without `studio:` field default to ideation studio
 
 ## Risks
 
