@@ -104,13 +104,28 @@ Same pattern — replace hat file reads with stage section extraction. Subagents
 Replace `resolve_hat()` (or equivalent) with:
 
 ```bash
-# Resolve hat instructions from the active stage
+# Resolve hat instructions from the active stage.
+# Falls back to the ideation studio's "research" stage for projects with no
+# stage configured (legacy projects before migration). This ensures the
+# backwards-compat guarantee holds: agents always have hat context even
+# on unmigrated projects — it just comes from ideation/research defaults.
 hku_resolve_hat_instructions() {
   local hat_name="$1"
-  local stage_name="$2"
-  local studio_name="$3"
+  local stage_name="${2:-}"
+  local studio_name="${3:-ideation}"
   local stage_file
-  stage_file=$(hku_resolve_stage "$stage_name" "$studio_name")
+
+  # Primary: resolve from the active stage if one is configured
+  if [[ -n "$stage_name" ]]; then
+    stage_file=$(hku_resolve_stage "$stage_name" "$studio_name")
+  fi
+
+  # Fallback: if no stage is configured (legacy project with no settings file),
+  # use the ideation studio's "research" stage for general-purpose hat context.
+  if [[ -z "$stage_file" || ! -f "$stage_file" ]]; then
+    stage_file=$(hku_resolve_stage "research" "ideation")
+  fi
+
   hku_extract_hat_section "$stage_file" "$hat_name"
 }
 
@@ -147,6 +162,7 @@ Grep for skills that reference hats or workflows:
 
 - If a project has `.haiku/hats/` custom hat files (project-level overrides), check for those as a fallback before reading from STAGE.md. This preserves the ability to customize hat behavior.
 - The `workflow:` field in unit frontmatter remains accepted but is ignored — the stage determines the hat sequence.
+- **Legacy projects (no `.haiku/settings.yml`)**: `hku_resolve_hat_instructions` falls back to the ideation studio's `research` stage when no active stage is configured. This means agents on unmigrated projects still have hat context — it comes from general-purpose ideation defaults rather than software-specific hat files. The `architecture-spec.md` backwards-compat guarantee (elaboration/execution flows unchanged) is upheld because the agent context is equivalent to before: a general-purpose builder/reviewer posture.
 
 ### Deletion Verification
 
@@ -176,6 +192,7 @@ grep -r 'available_workflows' plugin/ --include='*.md'                 # 0 resul
 - [ ] Workflow selection sub-skill removed or deprecated
 - [ ] Hat transitions in execute/advance skills use stage hat sequence
 - [ ] Backward compat: `.haiku/hats/` project-level overrides still checked as fallback
+- [ ] `hku_resolve_hat_instructions` falls back to ideation studio `research` stage when no active stage is configured (legacy projects without `.haiku/settings.yml` always have hat context)
 
 ## Risks
 

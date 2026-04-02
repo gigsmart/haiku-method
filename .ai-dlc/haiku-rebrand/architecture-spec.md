@@ -602,7 +602,8 @@ Document all identified threats with:
 ## Backwards Compatibility
 
 **Legacy mode (no studio configured) MUST work identically to the current system.** This means:
-- No `studio:` in settings → `stages: []`, `active_stage: ""`
+- No `.haiku/settings.yml` at all → `stages: []`, `active_stage: ""`
+  (Omitting `studio:` in an existing settings file defaults to `ideation` — see Settings Schema)
 - Sub-skills use built-in defaults when no stage definition is available
 - No STAGE.md or outputs/ files are read
 - The elaboration and execution flows are unchanged from the current working system
