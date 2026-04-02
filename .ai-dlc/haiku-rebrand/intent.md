@@ -40,10 +40,11 @@ Rebrand AI-DLC to H·AI·K·U and implement a studio/stage/persistence architect
 - **Studio** — named lifecycle template. Declares stage order and persistence type. Lives in `plugin/studios/{name}/STUDIO.md` or `.haiku/studios/{name}/STUDIO.md`.
 - **Stage** — lifecycle phase with hats, review mode, requires/produces contract. Lives in `studios/{name}/stages/{stage}/STAGE.md`.
 - **Persistence Adapter** — how work is saved/versioned/delivered. Git adapter is the default for software.
-- **Intent** — what's being built. Lives in `.haiku/{slug}/intent.md`.
-- **Unit** — discrete piece of work within a stage. Lives in `.haiku/{slug}/stages/{stage}/units/`.
+- **Intent** — what's being built. Lives in `.haiku/intents/{name}/intent.md`.
+- **Unit** — discrete piece of work within a stage. Lives in `.haiku/intents/{name}/stages/{stage}/units/`.
 - **Bolt** — one cycle through a stage's hat sequence.
-- **Knowledge Pool** — project-level accumulated knowledge in `.haiku/knowledge/`.
+- **Global Knowledge** — project-level accumulated knowledge in `.haiku/knowledge/`. Persists across intents. Synthesized from codebase.
+- **Intent Knowledge** — per-intent accumulated knowledge in `.haiku/intents/{name}/knowledge/`. Each stage writes its findings here. The `produces:` field in STAGE.md names knowledge artifacts, and the stage body guides what to collect.
 - **Review Gate** — auto | ask | external. Controls what happens after a stage completes.
 
 ### Relationships
@@ -62,6 +63,8 @@ Rebrand AI-DLC to H·AI·K·U and implement a studio/stage/persistence architect
 - Website: `website/` (Next.js 15 static site)
 - Paper: `website/content/papers/ai-dlc-2026.md`
 - Settings: `.ai-dlc/settings.yml` (→ `.haiku/settings.yml`)
+- Global knowledge: `.haiku/knowledge/` (project-level)
+- Intent knowledge: `.haiku/intents/{name}/knowledge/` (per-intent, per-stage)
 - Architecture spec: `plugin/skills/elaborate/STUDIO-SPEC.md`
 - Architecture viz: `~/Downloads/haiku-architecture-v1.html`
 

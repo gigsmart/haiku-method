@@ -65,48 +65,79 @@ Studio → Stages → Units → Bolts
 plugin/studios/software/
 ├── STUDIO.md                                # Pipeline definition
 └── stages/
+    ├── inception/
+    │   ├── STAGE.md                         # Hats, review mode, requires/produces, guidance
+    │   └── knowledge/
+    │       └── discovery.md                 # Knowledge guide: what to discover, expected sections
     ├── design/
-    │   ├── STAGE.md                         # Stage structural metadata
-    │   └── phases/
-    │       ├── ELABORATION.md               # Elaboration behavior
-    │       └── EXECUTION.md                 # Construction behavior
+    │   ├── STAGE.md                         # Hats, guidance, criteria, per-hat sections
+    │   └── knowledge/
+    │       └── design.md                    # Knowledge guide
     ├── product/
     │   ├── STAGE.md
-    │   └── phases/
-    │       ├── ELABORATION.md
-    │       └── EXECUTION.md
-    └── dev/
+    │   └── knowledge/
+    │       └── product.md
+    ├── development/
+    │   ├── STAGE.md
+    │   └── knowledge/
+    │       └── architecture.md
+    ├── operations/
+    │   ├── STAGE.md
+    │   └── knowledge/
+    │       └── operations.md
+    └── security/
         ├── STAGE.md
-        └── phases/
-            ├── ELABORATION.md
-            └── EXECUTION.md
+        └── knowledge/
+            └── threat-model.md
+```
+
+### Intent directory (.haiku/intents/{name}/)
+
+```
+.haiku/intents/my-feature/
+├── intent.md                                # Problem, solution, domain model, criteria
+├── knowledge/                               # Populated by stages as they complete
+│   ├── discovery.md                         ← inception wrote this (guided by stage's knowledge/discovery.md)
+│   ├── design.md                            ← design stage wrote this
+│   └── architecture.md                      ← development stage wrote this
+├── stages/
+│   ├── inception/
+│   │   ├── state.json
+│   │   └── units/
+│   ├── design/
+│   │   ├── state.json
+│   │   └── units/
+│   │       └── unit-01-wireframes.md
+│   └── development/
+│       ├── state.json
+│       └── units/
+│           ├── unit-01-auth-api.md
+│           └── unit-02-frontend.md
+└── state.json                               # { active_stage, mode, studio }
 ```
 
 ### Project-level (custom or override)
 
 ```
-.ai-dlc/studios/
+.haiku/studios/
 ├── software/                                # Override built-in software studio
-│   ├── STUDIO.md                            # Override stage list to include security
+│   ├── STUDIO.md                            # Override stage list to include security-hardening
 │   └── stages/
-│       └── security/                        # Add a custom stage
+│       └── security-hardening/              # Custom stage
 │           ├── STAGE.md
-│           └── phases/
-│               ├── ELABORATION.md
-│               └── EXECUTION.md
+│           └── knowledge/
+│               └── pen-test-report.md       # Knowledge guide
 └── hardware/                                # Entirely custom studio
     ├── STUDIO.md
     └── stages/
         ├── pcb-design/
         │   ├── STAGE.md
-        │   └── phases/
-        │       ├── ELABORATION.md
-        │       └── EXECUTION.md
+        │   └── knowledge/
+        │       └── schematic.md
         └── firmware/
             ├── STAGE.md
-            └── phases/
-                ├── ELABORATION.md
-                └── EXECUTION.md
+            └── knowledge/
+                └── firmware-spec.md
 ```
 
 ## File Schemas

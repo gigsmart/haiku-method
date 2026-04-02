@@ -79,6 +79,96 @@ These artifacts capture the full architecture design and are included in this in
 - **`architecture-spec.md`** — Full technical specification: file structure, STAGE.md schema, FSM model, execution model, settings, resolution logic, custom stage/studio examples, migration path, backwards compatibility guarantees.
 - **`architecture-viz.html`** — Interactive HTML visualization: core lifecycle loop, stage anatomy, software studio pipeline with hats/review/outputs grid, ideation studio (default), marketing studio example, persistence layer comparison, continuous vs discrete modes, knowledge pools, full hierarchy diagram.
 
+## Architecture Decision: Knowledge Architecture
+
+Two knowledge layers, both with frontmatter-structured documents:
+
+### Global Knowledge (.haiku/knowledge/)
+Project-level. Persists across intents. Synthesized from the codebase.
+- `design.md` — design tokens, component patterns, design system
+- `architecture.md` — tech stack, module boundaries, data flow patterns
+- `product.md` — user personas, product principles, business rules
+- `conventions.md` — code style, testing philosophy, PR process
+- `domain.md` — glossary, entity model, domain constraints
+
+### Intent Knowledge (.haiku/intents/{name}/knowledge/)
+Per-intent. Accumulated as stages complete. Each stage writes its findings here.
+- `discovery.md` — domain exploration (produced by inception/research stage)
+- `design.md` — design decisions, tokens, wireframe rationale (produced by design stage)
+- `product.md` — behavioral specs, acceptance criteria decisions (produced by product stage)
+- `architecture.md` — implementation decisions, patterns established (produced by development stage)
+- `threat-model.md` — attack surface, mitigations (produced by security stage)
+
+### Knowledge Guides in STAGE.md
+Each stage defines its knowledge outputs as frontmatter docs within the stage directory. These are templates with frontmatter that guide the agent on what knowledge to collect and how to structure it:
+
+```
+plugin/studios/software/stages/inception/
+├── STAGE.md
+└── knowledge/
+    └── discovery.md          # Frontmatter template: what to discover, how to structure findings
+```
+
+The knowledge template's frontmatter defines:
+```yaml
+---
+name: discovery
+description: Domain exploration findings
+output_path: knowledge/discovery.md    # Where to write in the intent directory
+required: true                          # Must produce this by stage completion
+schema:                                 # Expected sections
+  - "## Domain Model"
+  - "## Data Sources"
+  - "## Architecture"
+  - "## Quality Gate Candidates"
+---
+
+# Discovery Knowledge Guide
+
+When exploring the domain for this intent, document:
+- Every entity and its fields...
+- Every API endpoint and its behavior...
+{guidance for what to collect}
+```
+
+This means the stage's knowledge directory contains GUIDES (templates), and the intent's knowledge directory contains OUTPUTS (populated by the agent during the stage). The `produces:` field in STAGE.md maps to these knowledge guides.
+
+### Directory Structure
+
+```
+.haiku/
+├── settings.yml
+├── knowledge/                          # Global (project-level)
+│   ├── design.md
+│   ├── architecture.md
+│   ├── product.md
+│   ├── conventions.md
+│   └── domain.md
+├── studios/                            # Custom/override studios
+└── intents/
+    └── {name}/
+        ├── intent.md
+        ├── knowledge/                  # Intent-scoped (per-stage outputs)
+        │   ├── discovery.md            ← inception wrote this
+        │   ├── design.md              ← design stage wrote this
+        │   └── threat-model.md        ← security stage wrote this
+        ├── stages/
+        │   ├── inception/
+        │   │   ├── state.json
+        │   │   └── units/
+        │   ├── design/
+        │   │   ├── state.json
+        │   │   └── units/
+        │   │       ├── unit-01-wireframes.md
+        │   │       └── unit-02-tokens.md
+        │   └── development/
+        │       ├── state.json
+        │       └── units/
+        │           ├── unit-01-auth-api.md
+        │           └── unit-02-frontend.md
+        └── state.json                  # { active_stage, mode, studio }
+```
+
 ## Rename Map (from exploration agent)
 
 ### Directories and files to rename

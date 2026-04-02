@@ -24,18 +24,26 @@ backend - Stage definition files with structured frontmatter and instructional b
 ### Ideation Studio Stages
 
 - `plugin/studios/ideation/stages/research/STAGE.md`
+- `plugin/studios/ideation/stages/research/knowledge/findings.md` (knowledge guide)
 - `plugin/studios/ideation/stages/create/STAGE.md`
+- `plugin/studios/ideation/stages/create/knowledge/artifacts.md` (knowledge guide)
 - `plugin/studios/ideation/stages/review/STAGE.md`
 - `plugin/studios/ideation/stages/deliver/STAGE.md`
 
 ### Software Studio Stages
 
 - `plugin/studios/software/stages/inception/STAGE.md`
+- `plugin/studios/software/stages/inception/knowledge/discovery.md` (knowledge guide)
 - `plugin/studios/software/stages/design/STAGE.md`
+- `plugin/studios/software/stages/design/knowledge/design.md` (knowledge guide)
 - `plugin/studios/software/stages/product/STAGE.md`
+- `plugin/studios/software/stages/product/knowledge/product.md` (knowledge guide)
 - `plugin/studios/software/stages/development/STAGE.md`
+- `plugin/studios/software/stages/development/knowledge/architecture.md` (knowledge guide)
 - `plugin/studios/software/stages/operations/STAGE.md`
+- `plugin/studios/software/stages/operations/knowledge/operations.md` (knowledge guide)
 - `plugin/studios/software/stages/security/STAGE.md`
+- `plugin/studios/software/stages/security/knowledge/threat-model.md` (knowledge guide)
 
 ## Technical Specification
 
@@ -49,6 +57,7 @@ name: <stage-name>
 description: <one-line description>
 hats: [<ordered list of hat roles>]
 review_mode: auto | ask | external
+unit_types: [<disciplines of units this stage creates>]
 requires: [<artifact names from prior stages>]
 produces: [<artifact names for subsequent stages>]
 ---
@@ -69,6 +78,44 @@ produces: [<artifact names for subsequent stages>]
 
 <When this stage is done>
 ```
+
+### Knowledge Guides
+
+Each stage that produces knowledge artifacts includes a `knowledge/` directory with frontmatter template files. These guide the agent on what to collect and how to structure the output:
+
+```
+plugin/studios/software/stages/inception/
+├── STAGE.md
+└── knowledge/
+    └── discovery.md       # Template with frontmatter guiding what to discover
+```
+
+Each knowledge guide follows this format:
+
+```yaml
+---
+name: discovery
+description: Domain exploration findings for this intent
+output_path: knowledge/discovery.md
+required: true
+sections:
+  - "## Domain Model"
+  - "## Data Sources"
+  - "## Architecture"
+  - "## Quality Gate Candidates"
+---
+
+# Discovery Guide
+
+When exploring the domain, document:
+- Every entity and its fields
+- Every API endpoint and its behavior
+...
+```
+
+The `output_path` is relative to the intent directory (`.haiku/intents/{name}/`). The `sections` field lists expected headings — the adversarial review checks that all required sections are present. The body provides collection guidance.
+
+When a stage runs, the agent reads the knowledge guide templates and writes populated versions to `.haiku/intents/{name}/knowledge/{name}.md`.
 
 ### Ideation Studio Stages
 
