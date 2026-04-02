@@ -282,7 +282,7 @@ User chooses "discrete" during elaboration:
 GATHER → DISCOVER → │ ELABORATE │ → │ ELABORATE │ → │ ELABORATE │ → DELIVER
                     │     ↓     │   │     ↓     │   │     ↓     │
                     │  EXECUTE  │   │  EXECUTE  │   │  EXECUTE  │
-                    │  design   │   │  product  │   │   dev     │
+                    │  design   │   │  product  │   │development│
                     └──────────┘   └──────────┘   └──────────┘
                          │              │              │
                     built artifacts → built artifacts → built artifacts
@@ -394,7 +394,7 @@ stage: design                    # Which stage created this unit
 ---
 ```
 
-When no studio is configured: `stage: ""`.
+When running in continuous mode: `stage: ""` (all stage definitions merged, no active stage).
 
 ## Resolution Logic
 

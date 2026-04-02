@@ -43,9 +43,9 @@ Not "single-stage vs multi-stage." Both modes run through the same stages. Conti
 
 Git is the software studio's persistence adapter, not a system-level assumption. The studio declares `persistence: { type: git, delivery: pull-request }`. Other studios use other adapters.
 
-### Architecture Decision: Product Review is External
+### Architecture Decision: Product Review is `[external, ask]`
 
-The product stage's review gate is `external` — it's the go/no-go decision boundary where the team decides whether to actually build the thing.
+The product stage's review gate is `review: [external, ask]` — the first element (`external`) is the default gate for normal `/haiku:run` runs, serving as the go/no-go decision boundary where the team decides whether to actually build the thing. The `ask` element gives autopilot a valid non-blocking path: `/haiku:autopilot` selects `ask` (the most permissive non-`external` option) and overrides it to `auto`, so autopilot can proceed without a hard external gate while the full external review option remains available for human-driven workflows. The same pattern applies to the security stage.
 
 ## Codebase Context
 

@@ -110,7 +110,7 @@ Studio -> Stage -> Unit -> Bolt
 | Intent | Work Items | `.haiku/intents/{slug}/intent.md` | new/SKILL.md, run/SKILL.md |
 | Unit | Work Decomposition | `.haiku/intents/{slug}/stages/{stage}/units/unit-NN-*.md` | orchestrator.sh (plan phase) |
 | Bolt | Iteration Cycles | `iteration` field in iteration.json | orchestrator.sh (build phase) |
-| Review Gate | Quality Checkpoints | `review_mode:` in STAGE.md | orchestrator.sh (gate phase) |
+| Review Gate | Quality Checkpoints | `review:` in STAGE.md | orchestrator.sh (gate phase) |
 | Persistence | Work Persistence | `plugin/lib/adapters/*.sh` | persistence.sh |
 | Knowledge Pool | Accumulated Context | `.haiku/knowledge/` | knowledge.sh |
 | Completion Criteria | Exit Conditions | criteria in unit frontmatter, hard-gated | parse.sh |

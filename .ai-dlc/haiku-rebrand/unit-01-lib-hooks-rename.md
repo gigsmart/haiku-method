@@ -21,7 +21,7 @@ backend - Shell script identifier and path reference replacement across the libr
 
 ## Domain Entities
 
-- `plugin/lib/*.sh` — all library files (config.sh, dag.sh, deps.sh, design-blueprint.sh, detect-visual-gate.sh, hat.sh, knowledge.sh, parse.sh, resolve-design-ref.sh, run-visual-comparison.sh, state.sh, telemetry.sh, stage.sh, studio.sh)
+- `plugin/lib/*.sh` — all library files (config.sh, dag.sh, deps.sh, design-blueprint.sh, detect-visual-gate.sh, hat.sh, knowledge.sh, parse.sh, resolve-design-ref.sh, run-visual-comparison.sh, state.sh, telemetry.sh, stage.sh, studio.sh). Note: `pass.sh` is listed in the guard variable rename table (row: `_DLC_PASS_SOURCED` → `_HKU_PASS_SOURCED`) — if this file still exists in the codebase, include it in the rename pass; if it was already renamed to `stage.sh`, skip that row.
 - `plugin/hooks/*.sh` — all hook files (inject-context.sh, subagent-context.sh, quality-gate.sh, redirect-plan-mode.sh, session-start.sh, stop-hook.sh, enforce-iteration.sh)
 
 ## Technical Specification

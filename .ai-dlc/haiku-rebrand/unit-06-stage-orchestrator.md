@@ -240,7 +240,7 @@ hku_run_plan_phase() {
 - [ ] `/haiku:run` skill exists and advances through stages
 - [ ] `/haiku:run` with explicit stage argument runs that specific stage
 - [ ] `/haiku:run` without stage argument auto-advances to next incomplete stage
-- [ ] `/haiku:autopilot` skill exists and overrides all review gates to auto
+- [ ] `/haiku:autopilot` skill exists and correctly resolves review gates: bare `external` blocks, `ask` is overridden to `auto`, array gates (e.g. `[external, ask]`) select the most permissive non-`external` option and override it to `auto`
 - [ ] The stage loop correctly executes: plan -> build -> adversarial review -> output persistence -> gate
 - [ ] Plan phase resolves qualified inputs (stage + output pairs) from STAGE.md frontmatter
 - [ ] Plan phase loads all resolved input artifacts as context for decomposition

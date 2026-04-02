@@ -181,7 +181,7 @@ _persistence_filesystem_save() {
   # Create timestamped snapshot in versions/
   local version_dir=".haiku/intents/${intent_slug}/versions/$(date +%Y%m%d-%H%M%S)"
   mkdir -p "$version_dir"
-  cp -r ".haiku/intents/${intent_slug}/workspace/"* "$version_dir/"
+  cp -r ".haiku/intents/${intent_slug}/workspace/." "$version_dir/"
   echo "$message" > "${version_dir}/COMMIT_MSG"
 }
 
