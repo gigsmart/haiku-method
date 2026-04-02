@@ -71,7 +71,13 @@ If all stages are complete, transitions to delivery.
 
 #### `/haiku:autopilot` — Fully Autonomous
 
-Same as `/haiku:run` but in continuous mode with all review gates set to `auto` (overrides `ask` and `external` to `auto`). The agent drives everything. The user reviews the final deliverable.
+Same as `/haiku:run` but in continuous mode. Review gate resolution:
+- `auto` gates: advance immediately (unchanged)
+- `ask` gates: overridden to `auto`
+- `external` gates (single value only): **not bypassed** — autopilot blocks and surfaces to the user
+- Array gates (e.g., `[external, ask]`): autopilot selects the most permissive non-`external` option (`ask` → `auto`)
+
+This means stages like `product` and `security` that declare `[external, ask]` will proceed in autopilot via the `ask` path (overridden to `auto`), while any stage with a bare `external` gate remains a hard stop. The user only sees the final deliverable unless a bare `external` gate is encountered.
 
 This replaces the old `/ai-dlc:autopilot` behavior but through the stage pipeline rather than a monolithic elaborate -> execute cycle.
 
@@ -127,9 +133,17 @@ STAGE LOOP:
          - repo → project source tree (already written during build)
 
   5. REVIEW GATE
-     - auto: advance to next stage immediately
-     - ask: pause, present summary, wait for user approval
-     - external: create PR or review request, wait for external approval
+     - Resolve the effective gate mode:
+       - If review is a single value, use it directly
+       - If review is an array, use the first element (default)
+       - In autopilot mode: if array contains a non-external option (ask or auto),
+         select the most permissive non-external option and override ask → auto
+       - In autopilot mode: if review is external (single value or array with no
+         non-external alternative), block and surface the gate to the user
+     - Gate behaviors:
+       - auto: advance to next stage immediately
+       - ask: pause, present summary, wait for user approval
+       - external: create PR or review request, wait for external approval
 ```
 
 ### Mapping Existing Sub-Skills to Plan Phase

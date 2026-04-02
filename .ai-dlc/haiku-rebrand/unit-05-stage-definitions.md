@@ -63,7 +63,7 @@ Each stage follows this structure:
 name: <stage-name>
 description: <one-line description>
 hats: [<ordered list of hat roles>]
-review: auto | ask | external
+review: auto | ask | external | [external, ask] | [external, auto]
 unit_types: [<disciplines of units this stage creates>]
 inputs:
   - stage: <producing-stage>
@@ -271,7 +271,7 @@ inputs:
 name: product
 description: Define behavioral specifications and acceptance criteria
 hats: [product-owner, specification-writer]
-review: external
+review: [external, ask]
 unit_types: [product, backend, frontend]
 inputs:
   - stage: inception
@@ -283,7 +283,7 @@ inputs:
 
 - **product-owner** hat: define user stories, prioritize, make scope decisions
 - **specification-writer** hat: write behavioral specs, define data contracts, specify API contracts
-- Review `external` — this is the go/no-go decision boundary where the team decides whether to actually build the thing. In practice: creates a PR or review request for team approval.
+- Review `[external, ask]` — the default is `external` (go/no-go decision boundary: creates a PR or review request for team approval). In autopilot mode, the orchestrator selects `ask` instead and overrides it to `auto`, so autopilot can proceed without a blocking external gate while the external review option remains available for normal runs.
 - Criteria guidance: behavioral specs per user flow, data contracts defined, API contracts specified, edge cases documented
 - Outputs: `outputs/BEHAVIORAL-SPEC.md` (scope: intent), `outputs/DATA-CONTRACTS.md` (scope: intent)
 
@@ -341,7 +341,7 @@ inputs:
 name: security
 description: Threat modeling, security review, and vulnerability assessment
 hats: [threat-modeler, red-team, blue-team, security-reviewer]
-review: external
+review: [external, ask]
 unit_types: [security, backend]
 inputs:
   - stage: product
@@ -355,7 +355,7 @@ inputs:
 - **red-team** hat: attack surface analysis, injection testing, auth bypass attempts
 - **blue-team** hat: defense verification, security control validation, monitoring coverage
 - **security-reviewer** hat: verify all threats have mitigations, check OWASP Top 10 coverage
-- Review `external` — security findings require team review before the intent ships
+- Review `[external, ask]` — the default is `external` (security findings require team review before the intent ships: creates a PR or review request). In autopilot mode, the orchestrator selects `ask` and overrides it to `auto`, allowing autopilot to proceed after the adversarial review phase completes.
 - This stage is always adversarial — the hat sequence IS the review
 - Criteria guidance: OWASP Top 10 coverage, auth boundary testing, data protection requirements, input validation
 - Outputs: `outputs/THREAT-MODEL.md` (scope: intent), `outputs/VULN-REPORT.md` (scope: intent)

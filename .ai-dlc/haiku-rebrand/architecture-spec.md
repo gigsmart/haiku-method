@@ -193,9 +193,23 @@ Fields:
 | `name` | string | Stage identifier |
 | `description` | string | One-line description |
 | `hats` | string[] | Ordered hat roles for this stage's build phase |
-| `review` | string | Review gate mode: `auto`, `ask`, or `external` |
+| `review` | string \| string[] | Review gate mode: `auto`, `ask`, or `external`. Arrays declare multiple available modes — the first is the default. See Review Gate Resolution below. |
 | `unit_types` | string[] | Disciplines of units this stage creates (e.g., `[design, frontend]`) |
 | `inputs` | object[] | Qualified references to outputs from prior stages (`stage` + `output` pairs) |
+
+#### Review Gate Resolution
+
+When `review` is an array (e.g., `[external, ask]`), the first element is the **default** gate used during normal execution (`/haiku:run`). In autopilot mode, the orchestrator selects the most permissive non-`external` option from the array — `ask` → overridden to `auto`. If the array contains only `external`, autopilot blocks and surfaces the gate to the user rather than silently bypassing it.
+
+| `review` value | `/haiku:run` behavior | `/haiku:autopilot` behavior |
+|---|---|---|
+| `auto` | Advances automatically | Advances automatically |
+| `ask` | Pauses for user approval | Overridden to `auto` |
+| `external` | Creates PR/review request | Blocks — cannot be bypassed |
+| `[external, ask]` | Creates PR/review request (default) | Selects `ask`, overrides to `auto` |
+| `[external, auto]` | Creates PR/review request (default) | Selects `auto`, advances automatically |
+
+This allows stages to express "prefer external review, but autopilot may proceed with a lighter gate" without removing the external review option entirely.
 
 ### Output Doc Schema
 
