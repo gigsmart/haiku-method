@@ -106,8 +106,8 @@ export function Footer() {
 				{/* Bottom section */}
 				<div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-gray-200 pt-8 dark:border-gray-800 md:flex-row">
 					<p className="text-sm text-gray-500 dark:text-gray-400">
-						&copy; {new Date().getFullYear()} The Bushido Collective. MIT
-						License.
+						&copy; {new Date().getFullYear()} The Bushido Collective. Apache
+						2.0 License.
 					</p>
 					<div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
 						<span>
