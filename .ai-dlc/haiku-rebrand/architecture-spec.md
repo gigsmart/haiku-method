@@ -13,7 +13,7 @@ This spec redesigns the system around three concepts:
 
 - **Studio** — a named development lifecycle (the ordered sequence of stages a team follows). Software teams use inception → design → product → development → operations → security. Hardware teams, security-focused teams, or any organization defines their own by dropping files in `.ai-dlc/studios/`.
 - **Stage** — a lifecycle phase that defines its own hats (roles), review mode, and outputs. Each stage runs the same internal loop: elaborate → execute → adversarial review → review gate. One `STAGE.md` per stage contains everything. No separate workflow files, hat directories, or phase files.
-- **Inputs/Outputs** — stages declare inputs (a simple list in STAGE.md frontmatter) and outputs (self-describing frontmatter docs in an `outputs/` directory). Output scopes control persistence: `project` (`.haiku/knowledge/`), `intent` (`.haiku/intents/{name}/knowledge/`), `stage` (working context), `repo` (source tree).
+- **Inputs/Outputs** — stages declare inputs (qualified references in STAGE.md frontmatter, each specifying a producing stage and output name) and outputs (self-describing frontmatter docs in an `outputs/` directory). Inputs are loaded during the plan phase only; during the build phase, each unit's `## References` section declares the specific artifacts its builder needs. Output scopes control persistence: `project` (`.haiku/knowledge/`), `intent` (`.haiku/intents/{name}/knowledge/`), `stage` (working context), `repo` (source tree).
 
 The key insight is that stages aren't just elaboration modes — they're the full lifecycle. Design doesn't just spec wireframes, it builds them. Product doesn't just define criteria, it writes behavioral specs. Each stage completes its own elaborate → execute cycle and produces real artifacts before the next stage begins.
 
@@ -26,7 +26,7 @@ The key insight is that stages aren't just elaboration modes — they're the ful
 - Workflow selection sub-skill — no need to pick a workflow; the stage already knows its hats
 - `phases/ELABORATION.md` and `phases/EXECUTION.md` — the stage body is injected as context; no structured phase files
 - `knowledge/` directory inside stages — replaced by `outputs/` directory with self-describing frontmatter docs
-- `requires:` / `produces:` fields in STAGE.md — replaced by `inputs:` (frontmatter list) and `outputs/` (directory)
+- `requires:` / `produces:` fields in STAGE.md — replaced by `inputs:` (qualified references in frontmatter) and `outputs/` (directory)
 
 ### Architecture visual
 
@@ -174,15 +174,17 @@ description: Visual and interaction design
 hats: [designer, design-reviewer]
 review: ask
 unit_types: [design, frontend]
-inputs: [discovery, intent-spec]
+inputs:
+  - stage: inception
+    output: discovery
 ---
 ```
 
 The body contains free-form documentation about the stage's purpose and philosophy, including per-hat guidance sections.
 
-Inputs are a simple list of output names from prior stages. The orchestrator resolves each name to the persisted location based on the producing stage's output scope.
+Inputs are qualified references that specify both the producing stage and the output name. A bare slug is ambiguous -- two stages could have outputs with the same name. The `stage` + `output` pair together resolve to the exact persisted location. Inputs are loaded during the **plan phase** only (see Input Loading below).
 
-Outputs are defined in the `outputs/` directory alongside STAGE.md — each output is a separate file with self-describing frontmatter (see Output Doc Schema below).
+Outputs are defined in the `outputs/` directory alongside STAGE.md -- each output is a separate file with self-describing frontmatter (see Output Doc Schema below).
 
 Fields:
 
@@ -193,7 +195,7 @@ Fields:
 | `hats` | string[] | Ordered hat roles for this stage's build phase |
 | `review` | string | Review gate mode: `auto`, `ask`, or `external` |
 | `unit_types` | string[] | Disciplines of units this stage creates (e.g., `[design, frontend]`) |
-| `inputs` | string[] | Output names from prior stages this stage needs |
+| `inputs` | object[] | Qualified references to outputs from prior stages (`stage` + `output` pairs) |
 
 ### Output Doc Schema
 
@@ -275,10 +277,10 @@ GATHER → DISCOVER → │ ELABORATE │ → │ ELABORATE │ → │ ELABORAT
 Each stage transition:
 1. Reads `stages/{name}/STAGE.md` for structural metadata (hats, inputs, guidance)
 2. Reads `stages/{name}/outputs/*.md` for output definitions (scope, format, location)
-3. Resolves inputs from prior stage outputs via scope-based locations
-4. Runs the invariant elaboration core parameterized by the stage's metadata
-5. Executes the stage's units (bolt cycles guided by STAGE.md hat sections)
-6. Writes outputs to scope-based locations — these become inputs for the next stage
+3. **Plan phase**: Resolves qualified inputs from prior stage outputs and loads them as decomposition context
+4. Runs the invariant elaboration core parameterized by the stage's metadata; populates each unit's `## References` section
+5. **Build phase**: Executes the stage's units (bolt cycles guided by STAGE.md hat sections); each builder reads only its unit's `## References`, not the full input set
+6. Writes outputs to scope-based locations -- these become inputs for the next stage
 
 ### The Collapse Operation
 
@@ -303,10 +305,10 @@ Hats (planner, builder, reviewer, designer, etc.) are generic workers defined in
 |-------|--------|-------------|-------------|
 | 1. Hat | STAGE.md `## {hat-name}` section | Always read | Always read |
 | 2. Outputs | Stage's `outputs/` directory definitions | Merged | Active stage only |
-| 3. Inputs | Resolved from prior stage outputs | N/A | Read for active stage |
+| 3. References | Unit's `## References` section | Always read | Always read |
 | 4. Unit | `.haiku/{slug}/stages/{stage}/units/unit-NN-*.md` | Always read | Always read |
 
-In single-stage mode, all stage definitions are merged and hat guidance comes from the combined STAGE.md. In multi-stage mode, the active stage's STAGE.md provides hat-specific guidance and the stage's `inputs:` list drives what prior artifacts are loaded.
+In single-stage mode, all stage definitions are merged and hat guidance comes from the combined STAGE.md. In multi-stage mode, the active stage's STAGE.md provides hat-specific guidance. Stage inputs are loaded during the plan phase for decomposition context. During the build phase, each unit's `## References` section declares which specific artifacts the builder needs -- the full stage input set is NOT injected into builders.
 
 ### Bolt Cycle
 
@@ -315,8 +317,8 @@ Each unit executes through bolt cycles until its criteria are met:
 ```
 Unit → Resolve hat sequence from STAGE.md
          │
-         ├── Planner hat    → reads STAGE.md ## planner + unit spec + inputs
-         ├── Builder hat    → reads STAGE.md ## builder + unit spec + inputs
+         ├── Planner hat    → reads STAGE.md ## planner + unit spec + unit ## References
+         ├── Builder hat    → reads STAGE.md ## builder + unit spec + unit ## References
          ├── Quality gates  → tests, lint, typecheck (backpressure)
          └── Reviewer hat   → reads STAGE.md ## reviewer + criteria + outputs/ defs
                 │
@@ -324,18 +326,23 @@ Unit → Resolve hat sequence from STAGE.md
                 └── Issues found → another bolt cycle
 ```
 
+The planner and builder hats read the unit's `## References` section -- NOT the full stage input set. This keeps builder context focused on what each unit actually needs.
+
 ### Single-Stage Execution
 
 All units execute together in dependency order. Each unit uses its own workflow (design units → design workflow, backend units → default workflow). Hats use built-in instructions only. All workflows are available. When all units complete → deliver.
 
 ### Multi-Stage Execution
 
-Only units tagged with the active stage execute. Hats read the active stage's STAGE.md for guidance. The stage's `inputs:` list drives what prior artifacts are loaded. The reviewer checks stage-specific criteria and verifies required outputs are produced. When all stage units complete, outputs are written to their scope-based locations, and the orchestrator advances to the next stage.
+Only units tagged with the active stage execute. During the plan phase, the orchestrator loads all resolved stage inputs as context for decomposition and criteria definition. During the build phase, each unit's `## References` section drives what artifacts the builder reads -- the full stage input set is not re-loaded. The reviewer checks stage-specific criteria and verifies required outputs are produced. When all stage units complete, outputs are written to their scope-based locations, and the orchestrator advances to the next stage.
 
 ```
 Stage: design
   ├── Filter: units where stage: design
-  ├── Resolve inputs: [discovery, intent-spec] → read from prior output locations
+  ├── Plan phase: resolve inputs [{stage: inception, output: discovery}]
+  │   └── Load resolved artifacts as context for decomposition
+  ├── Decompose into units, populate each unit's ## References
+  ├── Build phase: per unit, builder reads unit ## References (not full inputs)
   ├── Hat guidance: stages/design/STAGE.md ## {hat-name} sections
   ├── Execute bolt cycles per unit
   ├── Write outputs: DESIGN-BRIEF.md (scope: stage), DESIGN-TOKENS.md (scope: intent)
@@ -412,14 +419,33 @@ OUTPUTS_DIR="${STAGE_DIR}/outputs/"
 
 ### Input Resolution
 
-Inputs listed in STAGE.md frontmatter are resolved by finding the matching output definition from a prior stage and reading from its persisted location:
+Inputs listed in STAGE.md frontmatter are qualified references. Each entry specifies the producing stage and output name, so resolution is direct -- no searching across all stages:
 
 ```bash
-# For each input name in STAGE.md inputs: [discovery, intent-spec]
-# 1. Find which prior stage produces an output with that name
-# 2. Read the output's scope and location from the producing stage's outputs/ dir
-# 3. Read the persisted file from the scope-based path
+# For each input in STAGE.md inputs:
+#   - stage: product
+#     output: behavioral-spec
+#
+# 1. Resolve the producing stage's STAGE.md from the studio
+# 2. Read the output definition from that stage's outputs/ dir matching the name
+# 3. Read the persisted file from the output's scope-based location path
 ```
+
+#### Input Loading: Plan Phase Only
+
+Inputs are loaded during the **plan phase** of a stage. The orchestrator reads all resolved input artifacts as context for decomposing work into units and defining criteria. During the **build phase**, the full input set is NOT loaded into each builder agent. Instead, each unit's spec declares a `## References` section listing the specific artifacts that unit's builder needs. This prevents context bloat -- a stage might declare 5 inputs, but a given unit only needs 2 of them.
+
+#### Unit References
+
+During the plan phase, the orchestrator populates each unit's `## References` section based on what the unit actually needs:
+
+```markdown
+## References
+- .haiku/intents/{name}/knowledge/DISCOVERY.md
+- .haiku/intents/{name}/knowledge/BEHAVIORAL-SPEC.md
+```
+
+The builder agent reads ONLY these listed files. This keeps builder context focused and avoids loading irrelevant knowledge artifacts into every build agent.
 
 ## Sub-Skill Parameterization
 
@@ -434,7 +460,7 @@ Sub-skills are generic — they contain no hard-coded knowledge about specific s
 | Reviewer hat | `STAGE.md` → `## {hat-name}` section | Review guidance |
 | Advance | `STAGE.md` → `## Completion Signal` | When to advance |
 | Output writer | `outputs/*.md` → frontmatter | Scope, location, format for each output |
-| Input loader | `STAGE.md` → `inputs:` list | Names of outputs to load from prior stages |
+| Input loader | `STAGE.md` → `inputs:` list | Qualified references (stage + output) to load from prior stages (plan phase only) |
 
 ## Custom Stage Example: Security
 
@@ -460,7 +486,11 @@ description: Threat modeling and penetration testing
 hats: [threat-modeler, red-team, blue-team, reviewer]
 review: external
 unit_types: [security, backend]
-inputs: [behavioral-spec, implementation]
+inputs:
+  - stage: product
+    output: behavioral-spec
+  - stage: development
+    output: code
 ---
 
 # Security Stage

@@ -65,7 +65,9 @@ description: <one-line description>
 hats: [<ordered list of hat roles>]
 review: auto | ask | external
 unit_types: [<disciplines of units this stage creates>]
-inputs: [<output names from prior stages>]
+inputs:
+  - stage: <producing-stage>
+    output: <output-name>
 ---
 
 # <Stage Name>
@@ -85,7 +87,9 @@ inputs: [<output names from prior stages>]
 <When this stage is done>
 ```
 
-No `requires:` or `produces:` fields. Inputs are a simple frontmatter list. Outputs are defined in the `outputs/` directory.
+No `requires:` or `produces:` fields. Inputs are qualified references (stage + output pairs) in frontmatter. A bare slug is ambiguous -- two stages could have outputs with the same name. Outputs are defined in the `outputs/` directory.
+
+Inputs are loaded during the **plan phase** only. During the build phase, each unit declares its own `## References` section (see Unit References below).
 
 ### Output Docs
 
@@ -121,7 +125,7 @@ Output doc fields:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `name` | string | Output identifier (referenced by other stages' `inputs:` lists) |
+| `name` | string | Output identifier (referenced by other stages' `inputs:` as qualified `{stage, output}` pairs) |
 | `location` | string | Path template where the output is persisted |
 | `scope` | string | `project`, `intent`, `stage`, or `repo` |
 | `format` | string | `text`, `code`, or `design` |
@@ -165,7 +169,9 @@ description: Generate the primary deliverable using research insights
 hats: [creator, editor]
 review: ask
 unit_types: [content]
-inputs: [research-brief]
+inputs:
+  - stage: research
+    output: research-brief
 ---
 ```
 
@@ -183,7 +189,9 @@ description: Adversarial quality review of the deliverable
 hats: [critic, fact-checker]
 review: ask
 unit_types: [review]
-inputs: [draft-deliverable]
+inputs:
+  - stage: create
+    output: draft-deliverable
 ---
 ```
 
@@ -201,7 +209,11 @@ description: Finalize and package the deliverable for its audience
 hats: [publisher]
 review: auto
 unit_types: [delivery]
-inputs: [draft-deliverable, review-report]
+inputs:
+  - stage: create
+    output: draft-deliverable
+  - stage: review
+    output: review-report
 ---
 ```
 
@@ -239,7 +251,9 @@ description: Visual and interaction design for user-facing surfaces
 hats: [designer, design-reviewer]
 review: ask
 unit_types: [design, frontend]
-inputs: [discovery]
+inputs:
+  - stage: inception
+    output: discovery
 ---
 ```
 
@@ -259,7 +273,11 @@ description: Define behavioral specifications and acceptance criteria
 hats: [product-owner, specification-writer]
 review: external
 unit_types: [product, backend, frontend]
-inputs: [discovery, design-tokens]
+inputs:
+  - stage: inception
+    output: discovery
+  - stage: design
+    output: design-tokens
 ---
 ```
 
@@ -278,7 +296,11 @@ description: Implement the specification through code
 hats: [planner, builder, reviewer]
 review: ask
 unit_types: [backend, frontend, fullstack]
-inputs: [behavioral-spec, data-contracts]
+inputs:
+  - stage: product
+    output: behavioral-spec
+  - stage: product
+    output: data-contracts
 ---
 ```
 
@@ -298,7 +320,11 @@ description: Deployment, monitoring, and operational readiness
 hats: [ops-engineer, sre]
 review: auto
 unit_types: [ops, backend]
-inputs: [implementation, architecture]
+inputs:
+  - stage: development
+    output: code
+  - stage: development
+    output: architecture
 ---
 ```
 
@@ -317,7 +343,11 @@ description: Threat modeling, security review, and vulnerability assessment
 hats: [threat-modeler, red-team, blue-team, security-reviewer]
 review: external
 unit_types: [security, backend]
-inputs: [behavioral-spec, implementation]
+inputs:
+  - stage: product
+    output: behavioral-spec
+  - stage: development
+    output: code
 ---
 ```
 
@@ -329,6 +359,20 @@ inputs: [behavioral-spec, implementation]
 - This stage is always adversarial — the hat sequence IS the review
 - Criteria guidance: OWASP Top 10 coverage, auth boundary testing, data protection requirements, input validation
 - Outputs: `outputs/THREAT-MODEL.md` (scope: intent), `outputs/VULN-REPORT.md` (scope: intent)
+
+### Unit References
+
+Unit specs get a `## References` section populated during the plan phase. This lists the specific knowledge artifacts the builder agent needs for that unit:
+
+```markdown
+## References
+- .haiku/intents/{name}/knowledge/DISCOVERY.md
+- .haiku/intents/{name}/knowledge/BEHAVIORAL-SPEC.md
+```
+
+The builder agent reads ONLY these files, not the entire knowledge pool or the full stage input set. This is populated during the plan phase based on what the unit actually needs -- derived from the stage's resolved inputs and the unit's specific scope of work.
+
+This prevents context bloat: a stage might declare 5 inputs, but a given unit only needs 2 of them. The plan phase uses the full picture for decomposition; the build phase uses only what each unit requires.
 
 ### Hat Section Content
 
@@ -344,13 +388,13 @@ Each hat section in the STAGE.md body follows this pattern:
 - Artifact types this hat generates
 
 ### Reads
-- What prior artifacts this hat consumes
+- What prior artifacts this hat consumes (from unit's ## References)
 
 ### Anti-patterns
 - What this hat should NOT do
 ```
 
-This replaces the old `plugin/hats/*.md` files — all hat instructions live inline in the stage that uses them.
+This replaces the old `plugin/hats/*.md` files -- all hat instructions live inline in the stage that uses them. During the build phase, hats read the unit's `## References` section for context, not the full stage input set.
 
 ## Success Criteria
 
@@ -361,7 +405,9 @@ This replaces the old `plugin/hats/*.md` files — all hat instructions live inl
 - [ ] Every output doc has `name`, `location`, `scope`, `format`, `required` in frontmatter
 - [ ] Every stage body has sections for each hat defined in frontmatter
 - [ ] Every stage body has `## Criteria Guidance` and `## Completion Signal` sections
-- [ ] Input/output chains are consistent: every `inputs` reference appears as an output `name` in a prior stage's `outputs/` directory
+- [ ] Input/output chains are consistent: every `inputs` entry's `output` name appears as an output `name` in the referenced `stage`'s `outputs/` directory
+- [ ] All `inputs` entries use qualified references (`stage` + `output` pairs), not bare slugs
+- [ ] Hat section `### Reads` subsections reference the unit's `## References` pattern, not the stage input set directly
 - [ ] Software stage review modes match spec: inception=auto, design=ask, product=external, development=ask, operations=auto, security=external
 - [ ] Ideation stage review modes match spec: research=auto, create=ask, review=ask, deliver=auto
 - [ ] Hat sections provide actionable guidance (not just labels)

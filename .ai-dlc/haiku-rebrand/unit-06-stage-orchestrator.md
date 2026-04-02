@@ -84,24 +84,33 @@ STAGE LOOP:
   1. PLAN phase
      - Load stage STAGE.md (hats, inputs, guidance)
      - Load output definitions from outputs/ directory (scope, format, location)
-     - Resolve inputs: for each name in inputs list, find the matching output
-       from a prior stage and read from its persisted location
+     - Resolve qualified inputs: for each {stage, output} pair in inputs list,
+       look up the producing stage's output definition and read from its
+       persisted location
+     - Load ALL resolved input artifacts as context for decomposition
      - If stage has units already (from a prior run): resume
      - If no units: decompose work into units with criteria
        - Uses existing elaborate sub-skills: gather, discover, decompose, criteria
        - Sub-skills are parameterized by the stage definition and resolved inputs
+     - For each unit, populate its ## References section with the specific
+       artifacts that unit's builder will need (subset of resolved inputs)
      - Build dependency graph (DAG)
 
   2. BUILD phase
      - For each unit in dependency order:
        - For each hat in the stage's hat sequence:
          - Load hat guidance from STAGE.md ## {hat-name} section
-         - Inject resolved inputs as context
+         - Load the unit's ## References (NOT the full stage input set)
          - Execute hat (build, review, etc.)
          - Run quality gates (if configured)
        - Check unit completion criteria
        - If criteria met: mark done, advance to next unit
        - If criteria not met: another bolt cycle
+
+  NOTE: The full stage input set is loaded ONLY during the plan phase.
+  During the build phase, each unit's ## References section declares the
+  specific artifacts the builder needs. This prevents context bloat —
+  a stage might declare 5 inputs, but a given unit only needs 2 of them.
 
   3. ADVERSARIAL REVIEW phase
      - Run the stage's final hat(s) as adversarial reviewers
@@ -129,7 +138,7 @@ The plan phase reuses existing elaborate sub-skills, parameterized by stage cont
 
 | Existing Sub-Skill | Plan Phase Role | Stage Parameterization |
 |--------------------|-----------------|-----------------------|
-| gather | Collect context and requirements | Stage's `inputs` list drives what to gather (resolved from prior output locations) |
+| gather | Collect context and requirements | Stage's qualified `inputs` list drives what to gather (resolved from producing stage's output locations) |
 | discover | Explore codebase / problem space | Stage body provides exploration focus |
 | decompose | Break work into units | Stage's hat list and `outputs/` definitions guide decomposition |
 | criteria | Define completion criteria | Stage's `## Criteria Guidance` section |
@@ -147,6 +156,7 @@ The build phase reuses the existing execute loop:
 |-------------------------|----------------------|
 | Hat sequence from workflow | Hat sequence from STAGE.md `hats:` field |
 | Hat instructions from `plugin/hats/*.md` | Hat instructions from STAGE.md `## {hat-name}` body |
+| Input loading per hat | Unit's `## References` section (NOT full stage inputs) |
 | Bolt cycle | Same — iterate hats until criteria met |
 | Quality gates | Same — run between build and review hats |
 | Criteria check | Same — hard-gated on unit criteria |
@@ -200,8 +210,11 @@ hku_stage_units() {
 - [ ] `/haiku:run` without stage argument auto-advances to next incomplete stage
 - [ ] `/haiku:autopilot` skill exists and overrides all review gates to auto
 - [ ] The stage loop correctly executes: plan -> build -> adversarial review -> output persistence -> gate
-- [ ] Plan phase resolves inputs from STAGE.md frontmatter and reads from prior output locations
+- [ ] Plan phase resolves qualified inputs (stage + output pairs) from STAGE.md frontmatter
+- [ ] Plan phase loads all resolved input artifacts as context for decomposition
+- [ ] Plan phase populates each unit's `## References` section with the specific artifacts needed
 - [ ] Plan phase reuses existing elaborate sub-skills parameterized by stage and resolved inputs
+- [ ] Build phase reads each unit's `## References` (not the full stage input set) for builder context
 - [ ] Build phase reuses existing execute bolt loop with hats from STAGE.md
 - [ ] Output persistence writes each output to its scope-based location (project/intent/stage/repo)
 - [ ] Adversarial review verifies all required outputs are produced

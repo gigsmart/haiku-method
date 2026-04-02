@@ -81,11 +81,11 @@ These artifacts capture the full architecture design and are included in this in
 
 ## Architecture Decision: Input/Output Architecture
 
-Stages declare their data flow through two mechanisms: **inputs** (a simple list in STAGE.md frontmatter) and **outputs** (self-describing frontmatter docs in an `outputs/` directory within the stage).
+Stages declare their data flow through two mechanisms: **inputs** (qualified references in STAGE.md frontmatter) and **outputs** (self-describing frontmatter docs in an `outputs/` directory within the stage).
 
 ### Inputs
 
-A simple list in STAGE.md frontmatter. Each name refers to an output produced by a prior stage. No input schema files. No `inputs/` directory.
+Qualified references in STAGE.md frontmatter. Each entry specifies the producing stage and the output name within that stage. A bare slug is ambiguous -- two stages could have outputs with the same name. The `stage` + `output` pair together resolve to the exact persisted location.
 
 ```yaml
 ---
@@ -94,11 +94,33 @@ description: Threat modeling and penetration testing
 hats: [threat-modeler, red-team, blue-team, reviewer]
 review: external
 unit_types: [security, backend]
-inputs: [behavioral-spec, implementation]
+inputs:
+  - stage: product
+    output: behavioral-spec
+  - stage: development
+    output: code
 ---
 ```
 
-The orchestrator resolves each input name to the corresponding output's persisted location.
+The orchestrator resolves each qualified input to the producing stage's output definition, then reads from its persisted location.
+
+### Input Loading: Plan Phase Only
+
+Inputs are loaded during the **plan phase** of a stage, not the build phase. During planning, the orchestrator loads all stage inputs as context for decomposing work into units and defining criteria. During the build phase, individual units declare their own `## References` section listing the specific artifacts the builder needs -- the full input set is NOT loaded into each builder agent.
+
+This prevents context bloat: a stage might declare 5 inputs, but a given unit only needs 2 of them. The plan phase uses the full picture; the build phase uses only what each unit requires.
+
+### Unit References
+
+Unit specs get a `## References` section populated during the plan phase:
+
+```markdown
+## References
+- .haiku/intents/{name}/knowledge/DISCOVERY.md
+- .haiku/intents/{name}/knowledge/BEHAVIORAL-SPEC.md
+```
+
+The builder agent reads ONLY these files, not the entire knowledge pool. This section is populated based on what the unit actually needs, derived from the stage inputs and the unit's specific scope of work.
 
 ### Outputs
 
