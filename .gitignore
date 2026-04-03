@@ -35,6 +35,13 @@ coverage/
 # Generated plugin zip
 website/public/ai-dlc-plugin.zip
 
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+terraform.tfvars
+.terraform.lock.hcl
+
 # AI-DLC worktrees
 .ai-dlc/worktrees/
 .claude/worktrees
