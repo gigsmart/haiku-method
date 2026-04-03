@@ -7,7 +7,7 @@ discipline: devops
 stage: ""
 workflow: ""
 ticket: ""
-hat: builder
+hat: reviewer
 ---
 
 # unit-09-deploy-config
