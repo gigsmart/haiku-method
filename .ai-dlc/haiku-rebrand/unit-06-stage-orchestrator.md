@@ -1,12 +1,13 @@
 ---
-status: pending
-last_updated: ""
+status: in_progress
+last_updated: "2026-04-03T01:58:09Z"
 depends_on: [unit-04-studio-infrastructure, unit-05-stage-definitions]
 branch: ai-dlc/haiku-rebrand/06-stage-orchestrator
 discipline: backend
 stage: ""
 workflow: ""
 ticket: ""
+hat: planner
 ---
 
 # unit-06-stage-orchestrator
