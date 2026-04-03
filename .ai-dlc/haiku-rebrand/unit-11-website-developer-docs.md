@@ -1,6 +1,6 @@
 ---
-status: in_progress
-last_updated: "2026-04-03T02:21:34Z"
+status: completed
+last_updated: "2026-04-03T02:51:57Z"
 depends_on: [unit-10-website-homepage-methodology]
 branch: ai-dlc/haiku-rebrand/11-website-developer-docs
 discipline: documentation
