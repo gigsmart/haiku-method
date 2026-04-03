@@ -801,10 +801,10 @@ export function PaperContent({
 				{/* See it in action callout */}
 				<div className="mt-12 rounded-lg border border-teal-200 bg-teal-50 p-6 dark:border-teal-900 dark:bg-teal-950/30">
 					<h3 className="mb-4 text-lg font-semibold text-teal-900 dark:text-teal-100">
-						See AI-DLC in Action
+						See H·AI·K·U in Action
 					</h3>
 					<p className="mb-4 text-teal-800 dark:text-teal-200">
-						Explore the interactive tools to understand and apply the AI-DLC
+						Explore the interactive tools to understand and apply the H·AI·K·U
 						methodology:
 					</p>
 					<ul className="space-y-2">
@@ -842,7 +842,7 @@ export function PaperContent({
 							>
 								Glossary
 							</Link>{" "}
-							- Quick reference for all AI-DLC terminology
+							- Quick reference for all H·AI·K·U terminology
 						</li>
 					</ul>
 				</div>

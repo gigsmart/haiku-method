@@ -20,6 +20,7 @@ export async function GET() {
 		{ url: `${SITE_URL}/docs/installation/`, changefreq: "monthly", priority: "0.9" },
 		{ url: `${SITE_URL}/blog/`, changefreq: "daily", priority: "0.9" },
 		{ url: `${SITE_URL}/paper/`, changefreq: "monthly", priority: "0.8" },
+		{ url: `${SITE_URL}/how-it-works/`, changefreq: "monthly", priority: "0.8" },
 		{ url: `${SITE_URL}/changelog/`, changefreq: "weekly", priority: "0.7" },
 	]
 

@@ -92,7 +92,7 @@ export default async function BlogPostPage({ params }: Props) {
 				url={postUrl}
 				datePublished={new Date(post.date).toISOString()}
 				authorName={post.author}
-				publisherName="AI-DLC"
+				publisherName="H·AI·K·U"
 				publisherLogo={`${SITE_URL}/logo.png`}
 				image={`${SITE_URL}/og-image.png`}
 			/>

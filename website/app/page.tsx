@@ -56,7 +56,7 @@ const phases = [
 
 const studios = [
 	{
-		name: "AI-DLC",
+		name: "Software",
 		domain: "Software Development",
 		stages: "Inception, Design, Product, Development, Operations, Security",
 		description:
@@ -122,14 +122,14 @@ export default function Home() {
 				<div className="absolute inset-0 -z-10 bg-[radial-gradient(45%_40%_at_50%_40%,rgba(20,184,166,0.08),transparent)]" />
 				<div className="mx-auto max-w-3xl text-center">
 					<h1 className="mb-4 text-5xl font-bold tracking-tight sm:text-6xl">
-						AI-DLC
+						H·AI·K·U
 					</h1>
 					<p className="mb-2 text-lg font-medium text-stone-500 dark:text-stone-400">
-						A H·AI·K·U Profile for Software Development
+						Structured Human-AI Collaboration
 					</p>
 					<p className="mx-auto mb-10 max-w-2xl text-lg text-stone-600 dark:text-stone-400">
-						Structured human-AI collaboration for teams that build software.
-						From intent to deployment — disciplined form, reliable results.
+						A lifecycle orchestration system for any structured work.
+						Studios, stages, and quality gates — disciplined form, reliable results.
 					</p>
 					<div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
 						<Link

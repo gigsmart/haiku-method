@@ -142,7 +142,7 @@ function GateCard({
 
 /**
  * QualityGateLifecycle — shows the three-phase lifecycle of quality gates:
- * 1. Detected automatically during /ai-dlc:elaborate (tooling discovery)
+ * 1. Detected automatically during /haiku:elaborate (tooling discovery)
  * 2. Written to intent.md frontmatter (with optional unit-level additions)
  * 3. Enforced by quality-gate.sh on every Stop during construction
  */
@@ -162,7 +162,7 @@ export function QualityGateLifecycle() {
 						Phase 1
 					</span>
 					<span className="text-sm font-bold text-violet-600 dark:text-violet-300">
-						Auto-Detected During <code className="font-mono">/ai-dlc:elaborate</code>
+						Auto-Detected During <code className="font-mono">/haiku:elaborate</code>
 					</span>
 				</div>
 				<p className="mb-3 text-xs text-stone-500 dark:text-stone-400">

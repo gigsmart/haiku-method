@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 	description:
 		"Find the right AI operating mode for your task. Answer 5 questions to get a recommendation for HITL, OHOTL, or AHOTL.",
 	openGraph: {
-		title: "Mode Selector - AI-DLC",
+		title: "Mode Selector - H·AI·K·U",
 		description:
 			"Find the right AI operating mode for your task. Answer 5 questions to get a recommendation for HITL, OHOTL, or AHOTL.",
 	},
@@ -63,7 +63,7 @@ export default function ModeSelectorPage() {
 					About Operating Modes
 				</h2>
 				<p className="mb-4 text-stone-600 dark:text-stone-400">
-					AI-DLC defines three operating modes that determine the level of human
+					H·AI·K·U defines three operating modes that determine the level of human
 					involvement during AI-assisted work:
 				</p>
 				<ul className="space-y-2 text-stone-600 dark:text-stone-400">

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 const studios = [
 	{
-		name: "AI-DLC",
+		name: "Software",
 		domain: "Software Development",
 		description:
 			"The full software lifecycle with quality enforcement at every stage. Git integration, test suites, CI/CD pipelines, and deployment gates.",
@@ -196,17 +196,17 @@ export default function StudiosPage() {
 			<section className="px-4 py-16">
 				<div className="mx-auto max-w-3xl text-center">
 					<h2 className="mb-3 text-2xl font-bold">
-						Start with AI-DLC
+						Start with Software
 					</h2>
 					<p className="mb-6 text-stone-600 dark:text-stone-400">
-						AI-DLC is the software development studio — the most mature H·AI·K·U
+						The Software studio is the most mature H·AI·K·U
 						profile. Install the Claude Code plugin to try it.
 					</p>
 					<Link
 						href="/docs/installation/"
 						className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-6 py-3 font-medium text-white transition hover:bg-teal-700"
 					>
-						Install AI-DLC
+						Install H·AI·K·U
 						<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
 							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
 						</svg>

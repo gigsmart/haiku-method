@@ -132,12 +132,12 @@ export function BigPictureDiagram() {
 					className="min-w-[600px]"
 					style={{ width: "100%", height: "auto" }}
 					role="img"
-					aria-label="AI-DLC methodology diagram showing the relationship between development phases, hats, operating modes, and core principles"
+					aria-label="H·AI·K·U methodology diagram showing the relationship between lifecycle phases, hats, operating modes, and core principles"
 					onKeyDown={handleKeyDown}
 				>
-					<title>AI-DLC Big Picture Diagram</title>
+					<title>H·AI·K·U Big Picture Diagram</title>
 					<desc>
-						An interactive diagram showing the AI-DLC methodology structure with
+						An interactive diagram showing the H·AI·K·U methodology structure with
 						four layers: Development Phases (Intent, Unit, Bolt, Deploy), Hats
 						(Researcher, Planner, Builder, Reviewer), Operating Modes (HITL,
 						OHOTL, AHOTL), and Core Principles (Backpressure, Completion

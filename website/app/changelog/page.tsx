@@ -7,11 +7,11 @@ const GITHUB_REPO = "https://github.com/TheBushidoCollective/ai-dlc"
 export const metadata: Metadata = {
 	title: "Changelog",
 	description:
-		"What's new in AI-DLC — a complete history of features, fixes, and changes.",
+		"What's new in H·AI·K·U — a complete history of features, fixes, and changes.",
 	openGraph: {
-		title: "AI-DLC Changelog",
+		title: "H·AI·K·U Changelog",
 		description:
-			"What's new in AI-DLC — a complete history of features, fixes, and changes.",
+			"What's new in H·AI·K·U — a complete history of features, fixes, and changes.",
 	},
 }
 
@@ -116,7 +116,7 @@ export default function ChangelogPage() {
 					Changelog
 				</h1>
 				<p className="mt-2 text-lg text-stone-600 dark:text-stone-400">
-					A complete history of features, fixes, and changes in AI-DLC.
+					A complete history of features, fixes, and changes in H·AI·K·U (formerly AI-DLC).
 				</p>
 			</header>
 

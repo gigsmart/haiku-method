@@ -4,11 +4,11 @@ import { WorkflowVisualizer } from "../components/workflow-visualizer"
 export const metadata: Metadata = {
 	title: "Workflow Visualizer",
 	description:
-		"Interactive visualization of AI-DLC workflows showing hat transitions, operating modes, and iteration patterns.",
+		"Interactive visualization of H·AI·K·U workflows showing hat transitions, operating modes, and iteration patterns.",
 	openGraph: {
-		title: "AI-DLC Workflow Visualizer",
+		title: "H·AI·K·U Workflow Visualizer",
 		description:
-			"See how different AI-DLC workflows progress through hats with animated transitions.",
+			"See how different H·AI·K·U workflows progress through hats with animated transitions.",
 	},
 }
 
@@ -25,7 +25,7 @@ export default function WorkflowsPage() {
 						</span>
 					</h1>
 					<p className="text-lg text-stone-600 dark:text-stone-400 max-w-2xl mx-auto">
-						Explore the different AI-DLC workflows and see how hats transition
+						Explore the different H·AI·K·U workflows and see how hats transition
 						through each phase. Click on any hat to see its responsibilities, or
 						press play to watch the workflow animate.
 					</p>

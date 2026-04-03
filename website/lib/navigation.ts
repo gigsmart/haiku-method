@@ -36,6 +36,11 @@ export const primaryNavItems: NavItem[] = [
 		description: "How H·AI·K·U works",
 	},
 	{
+		title: "How It Works",
+		href: "/how-it-works/",
+		description: "Technical deep-dive",
+	},
+	{
 		title: "Studios",
 		href: "/studios/",
 		description: "Domain profiles",
@@ -236,6 +241,7 @@ export const footerNavigation = {
 		title: "Framework",
 		items: [
 			{ title: "Methodology", href: "/methodology/" },
+			{ title: "How It Works", href: "/how-it-works/" },
 			{ title: "Elaboration", href: "/methodology/elaboration/" },
 			{ title: "Execution", href: "/methodology/execution/" },
 			{ title: "Operation", href: "/methodology/operation/" },

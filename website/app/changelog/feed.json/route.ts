@@ -11,9 +11,9 @@ export const revalidate = false
 export async function GET() {
 	const items = getChangelogFeedItems()
 	const feed = generateJsonFeed(items, {
-		title: "AI-DLC Changelog",
+		title: "H·AI·K·U Changelog",
 		feedUrl: `${SITE_URL}/changelog/feed.json`,
-		description: "Release notes and version history for AI-DLC",
+		description: "Release notes and version history for H·AI·K·U",
 	})
 
 	return new Response(JSON.stringify(feed, null, 2), {

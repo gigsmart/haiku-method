@@ -94,7 +94,7 @@ export function Header() {
 						href="/"
 						className="text-xl font-bold tracking-tight transition hover:opacity-80"
 					>
-						AI-DLC
+						H·AI·K·U
 					</Link>
 
 					{/* Desktop Navigation — Primary links + mega menu trigger */}

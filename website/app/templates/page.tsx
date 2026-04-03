@@ -2,9 +2,9 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 export const metadata: Metadata = {
-	title: "Templates - AI-DLC",
+	title: "Templates - H·AI·K·U",
 	description:
-		"Downloadable templates for AI-DLC intents, units, and settings.",
+		"Downloadable templates for H·AI·K·U intents, units, and settings.",
 }
 
 const templates = [
@@ -12,7 +12,7 @@ const templates = [
 		name: "Intent Template",
 		filename: "intent-template.md",
 		description:
-			"Template for creating AI-DLC intent files. Includes sections for description, business context, completion criteria, and unit breakdown.",
+			"Template for creating H·AI·K·U intent files. Includes sections for description, business context, completion criteria, and unit breakdown.",
 		downloadUrl: "/templates/intent-template.md",
 	},
 	{
@@ -26,7 +26,7 @@ const templates = [
 		name: "Settings Template",
 		filename: "settings-template.yml",
 		description:
-			"Configuration template for customizing AI-DLC behavior in your project. Includes workflow selection, operating modes, and quality gate commands.",
+			"Configuration template for customizing H·AI·K·U behavior in your project. Includes workflow selection, operating modes, and quality gate commands.",
 		downloadUrl: "/templates/settings-template.yml",
 	},
 ]
@@ -36,7 +36,7 @@ const examples = [
 		name: "Example Intent",
 		filename: "intent.md",
 		description:
-			"Complete example of an AI-DLC intent for a user authentication system. Shows how to structure a real-world intent.",
+			"Complete example of a H·AI·K·U intent for a user authentication system. Shows how to structure a real-world intent.",
 		downloadUrl: "/templates/ai-dlc-example/intent.md",
 	},
 	{
@@ -100,7 +100,7 @@ export default function TemplatesPage() {
 		<div className="mx-auto max-w-4xl px-4 py-12">
 			<h1 className="mb-4 text-4xl font-bold tracking-tight">Templates</h1>
 			<p className="mb-8 text-lg text-stone-600 dark:text-stone-400">
-				Downloadable templates to help you get started with AI-DLC. Use these as
+				Downloadable templates to help you get started with H·AI·K·U. Use these as
 				starting points for your own intents and units.
 			</p>
 
@@ -129,17 +129,17 @@ export default function TemplatesPage() {
 			<section className="rounded-lg border border-stone-200 bg-stone-50 p-6 dark:border-stone-800 dark:bg-stone-900">
 				<h2 className="mb-4 text-xl font-bold">Quick Setup</h2>
 				<p className="mb-4 text-stone-600 dark:text-stone-400">
-					Create your <code>.ai-dlc/</code> directory and download templates
+					Create your <code>.haiku/</code> directory and download templates
 					with these commands:
 				</p>
 				<div className="overflow-x-auto rounded-lg bg-stone-900 p-4 font-mono text-sm text-stone-100 dark:bg-stone-950">
 					<pre>{`# Create directory
-mkdir -p .ai-dlc
+mkdir -p .haiku
 
 # Download templates
-curl -o .ai-dlc/intent.md https://ai-dlc.dev/templates/intent-template.md
-curl -o .ai-dlc/unit-01.md https://ai-dlc.dev/templates/unit-template.md
-curl -o .ai-dlc/settings.yml https://ai-dlc.dev/templates/settings-template.yml`}</pre>
+curl -o .haiku/intent.md https://ai-dlc.dev/templates/intent-template.md
+curl -o .haiku/unit-01.md https://ai-dlc.dev/templates/unit-template.md
+curl -o .haiku/settings.yml https://ai-dlc.dev/templates/settings-template.yml`}</pre>
 				</div>
 			</section>
 
@@ -153,7 +153,7 @@ curl -o .ai-dlc/settings.yml https://ai-dlc.dev/templates/settings-template.yml`
 						>
 							Quick Start Guide
 						</Link>{" "}
-						- Get up and running with AI-DLC
+						- Get up and running with H·AI·K·U
 					</li>
 					<li>
 						<Link

@@ -52,7 +52,7 @@ const events: HookEvent[] = [
 	},
 	{
 		name: "\u2699\uFE0F subagent-hook",
-		desc: '"Inject AI-DLC context into the new agent so it knows the plan."',
+		desc: '"Inject H·AI·K·U context into the new agent so it knows the plan."',
 		type: "hook",
 	},
 	{
@@ -62,7 +62,7 @@ const events: HookEvent[] = [
 	},
 	{
 		name: "\u2699\uFE0F redirect-plan-mode",
-		desc: '"Use /ai-dlc:elaborate instead -- that\'s the AI-DLC way."',
+		desc: '"Use /haiku:elaborate instead -- that\'s the H·AI·K·U way."',
 		type: "hook",
 	},
 	{
@@ -72,7 +72,7 @@ const events: HookEvent[] = [
 	},
 	{
 		name: "\u2699\uFE0F enforce-iteration",
-		desc: '"Work remains! Call /ai-dlc:execute to continue." -- Ensures nothing falls through the cracks.',
+		desc: '"Work remains! Call /haiku:execute to continue." -- Ensures nothing falls through the cracks.',
 		type: "hook",
 	},
 ]

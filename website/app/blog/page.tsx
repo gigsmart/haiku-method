@@ -3,8 +3,8 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 export const metadata: Metadata = {
-	title: "Blog - AI-DLC",
-	description: "News and updates about AI-DLC and AI-driven development.",
+	title: "Blog - H·AI·K·U",
+	description: "News and updates about H·AI·K·U and structured human-AI collaboration.",
 }
 
 function formatDate(dateString: string): string {
@@ -23,7 +23,7 @@ export default function BlogPage() {
 		<div>
 			<h1 className="mb-4 text-4xl font-bold tracking-tight">Blog</h1>
 			<p className="mb-12 text-lg text-stone-600 dark:text-stone-400">
-				News and updates about AI-DLC and AI-driven development.
+				News and updates about H·AI·K·U and structured human-AI collaboration.
 			</p>
 
 			{posts.length === 0 ? (

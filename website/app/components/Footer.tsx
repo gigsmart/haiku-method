@@ -17,17 +17,17 @@ export function Footer() {
 					{/* Brand column */}
 					<div className="lg:col-span-1">
 						<Link href="/" className="text-xl font-bold tracking-tight">
-							AI-DLC
+							H·AI·K·U
 						</Link>
 						<p className="mt-3 text-sm text-stone-600 dark:text-stone-400">
-							The software development profile of the{" "}
+							Structured human-AI collaboration, powered by the{" "}
 							<a
 								href="https://haikumethod.ai"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="underline hover:text-stone-900 dark:hover:text-white"
 							>
-								H•AI•K•U Method
+								H·AI·K·U Method
 							</a>
 							.
 						</p>

@@ -93,10 +93,10 @@ export function SpecComparison() {
 				</div>
 			</div>
 
-			{/* AI-DLC Elaboration */}
+			{/* H·AI·K·U Elaboration */}
 			<div className="flex flex-col rounded-xl border border-green-200 bg-green-50/50 p-6 dark:border-green-800 dark:bg-green-950/10">
 				<span className="mb-3 block text-4xl">&#x1F3AF;</span>
-				<h3 className="mb-1 text-lg font-bold text-green-500">AI-DLC Elaboration</h3>
+				<h3 className="mb-1 text-lg font-bold text-green-500">H·AI·K·U Elaboration</h3>
 				<span className="mb-4 w-fit rounded-lg bg-green-100 px-2.5 py-0.5 text-[0.7rem] font-semibold text-green-500 dark:bg-green-900/30">
 					no hand-off — co-created
 				</span>
@@ -158,7 +158,7 @@ export function InsightBox() {
 			className="my-10 rounded-xl border-2 border-amber-300/30 bg-white p-7 dark:border-amber-500/20 dark:bg-stone-900"
 		>
 			<div className="mb-3 text-base font-bold text-amber-500">
-				The AI-DLC insight: Autonomy is a function of criteria clarity.
+				The H·AI·K·U insight: Autonomy is a function of criteria clarity.
 			</div>
 			<div className="my-4 rounded-lg border border-stone-200 bg-stone-50 p-3.5 text-center font-mono text-lg font-semibold text-amber-500 dark:border-stone-700 dark:bg-stone-950">
 				Autonomy = f(Criteria Clarity)
@@ -176,7 +176,7 @@ export function InsightBox() {
 				</li>
 			</ul>
 			<p className="mt-4 text-sm text-stone-500 dark:text-stone-400">
-				This is why AI-DLC spends so much time on elaboration. The planning
+				This is why H·AI·K·U spends so much time on elaboration. The planning
 				phase isn&rsquo;t overhead -- it&rsquo;s the thing that makes everything
 				else work.
 			</p>

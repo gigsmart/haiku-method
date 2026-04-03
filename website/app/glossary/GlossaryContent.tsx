@@ -228,7 +228,7 @@ export function GlossaryContent({
 							d="M10 19l-7-7m0 0l7-7m-7 7h18"
 						/>
 					</svg>
-					Read the full AI-DLC paper
+					Read the full H·AI·K·U paper
 				</Link>
 			</div>
 		</>

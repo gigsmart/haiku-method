@@ -61,7 +61,7 @@ export const diagramData: DiagramData = {
 			id: "pass",
 			label: "Pass",
 			description:
-				"A typed iteration (design, product, dev) through the standard AI-DLC loop. Enables cross-functional handoffs within a single intent.",
+				"A typed iteration (design, product, dev) through the standard H·AI·K·U loop. Enables cross-functional handoffs within a single intent.",
 			href: "/paper/#pass",
 			category: "artifact",
 			x: xPos(1, TOP_ROW_COUNT),
@@ -235,7 +235,7 @@ export const diagramData: DiagramData = {
 			id: "state-management",
 			label: "State Management",
 			description:
-				"Two-tier model: Committed artifacts (.ai-dlc/) persist; ephemeral state (han keep) is session-scoped.",
+				"Two-tier model: Committed artifacts (.haiku/) persist; ephemeral state is session-scoped.",
 			href: "/paper/#memory-providers-expand-knowledge",
 			category: "principle",
 			x: xPos(3, 4),
