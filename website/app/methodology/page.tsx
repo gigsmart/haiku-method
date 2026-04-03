@@ -28,6 +28,10 @@ const failureModes = [
 		problem: "No learning loop",
 		consequence: "Same mistakes recur. Teams never compound their experience.",
 	},
+	{
+		problem: "No domain awareness",
+		consequence: "One-size-fits-all workflows. Security teams forced into dev sprints. Designers shoehorned into ticket queues.",
+	},
 ]
 
 const phases = [
@@ -368,7 +372,7 @@ export default function MethodologyPage() {
 								href={phase.href}
 								className={`group rounded-xl border p-5 text-center transition hover:shadow-md ${phase.color}`}
 							>
-								<div className={`mx-auto mb-2 ${phase.textColor}`}>{phase.icon}</div>
+								<div className={`mx-auto mb-2 w-8 ${phase.textColor}`}>{phase.icon}</div>
 								<h3 className={`font-semibold ${phase.textColor}`}>
 									{phase.name}
 								</h3>
