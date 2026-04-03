@@ -1,0 +1,9 @@
+name = "haiku-auth-proxy"
+main = "worker.ts"
+compatibility_date = "2024-12-01"
+
+[vars]
+ALLOWED_ORIGIN = "https://haikumethod.ai"
+
+# Set secrets via: wrangler secret put GITHUB_CLIENT_ID
+#                  wrangler secret put GITHUB_CLIENT_SECRET
