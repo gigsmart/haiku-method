@@ -1,5 +1,5 @@
 ---
-description: Configure AI-DLC for this project — auto-detects VCS, hosting, CI/CD, and MCP providers. Creates or updates .ai-dlc/settings.yml.
+description: Configure H·AI·K·U for this project — auto-detects VCS, hosting, CI/CD, and MCP providers. Creates or updates .haiku/settings.yml.
 disable-model-invocation: true
 allowed-tools:
   - Read
@@ -27,11 +27,11 @@ allowed-tools:
   - "mcp__*__memory"
 ---
 
-# AI-DLC Setup
+# H·AI·K·U Setup
 
-You are the **Setup Assistant** for AI-DLC. Your job is to configure this project's `.ai-dlc/settings.yml` by auto-detecting the environment and confirming settings with the user.
+You are the **Setup Assistant** for H·AI·K·U. Your job is to configure this project's `.haiku/settings.yml` by auto-detecting the environment and confirming settings with the user.
 
-This skill is **idempotent** — re-running `/ai-dlc:setup` preserves existing settings as defaults.
+This skill is **idempotent** — re-running `/haiku:setup` preserves existing settings as defaults.
 
 ---
 
@@ -39,7 +39,7 @@ This skill is **idempotent** — re-running `/ai-dlc:setup` preserves existing s
 
 ```bash
 if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
-  echo "ERROR: /ai-dlc:setup cannot run in cowork mode."
+  echo "ERROR: /haiku:setup cannot run in cowork mode."
   echo "Run this in a full Claude Code CLI session inside your project directory."
   exit 1
 fi
@@ -51,12 +51,12 @@ If `CLAUDE_CODE_IS_COWORK=1`, stop immediately with the message above. Do NOT pr
 
 ### Configuration Precedence
 
-AI-DLC uses a Master + Overrides pattern for configuration:
+H·AI·K·U uses a Master + Overrides pattern for configuration:
 
 | Level | Location | Scope | Precedence |
 |-------|----------|-------|------------|
 | **Global** | `settings.yml` | All intents | Lowest |
-| **Intent** | `.ai-dlc/{intent}/settings.yml` | This intent | Medium |
+| **Intent** | `.haiku/{intent}/settings.yml` | This intent | Medium |
 | **Unit** | Unit frontmatter fields | This unit | Highest |
 
 **Examples:**
@@ -70,9 +70,9 @@ When reading configuration, always resolve in order: unit frontmatter → intent
 
 ## Phase 0: Load Existing Settings
 
-1. Check if `.ai-dlc/settings.yml` exists using the `Read` tool.
+1. Check if `.haiku/settings.yml` exists using the `Read` tool.
    - If it exists, parse the current values — these become the **defaults** for all prompts below.
-   - If `.ai-dlc/` doesn't exist, create it:
+   - If `.haiku/` doesn't exist, create it:
      ```bash
      mkdir -p .ai-dlc
      ```
@@ -249,7 +249,7 @@ Pre-fill all values from existing `settings.yml` if re-running.
 
 ## Phase 4b: Provider Instructions
 
-For each **confirmed provider**, offer to customize how AI-DLC interacts with it. AI-DLC ships with sensible built-in defaults (in `plugin/providers/{category}.md`), but every team is different — custom instructions let projects tailor behavior to their workflow.
+For each **confirmed provider**, offer to customize how H·AI·K·U interacts with it. H·AI·K·U ships with sensible built-in defaults (in `plugin/providers/{category}.md`), but every team is different — custom instructions let projects tailor behavior to their workflow.
 
 ### For each confirmed provider:
 
@@ -259,7 +259,7 @@ For each **confirmed provider**, offer to customize how AI-DLC interacts with it
    ```
    Where `{category}` is `ticketing`, `spec`, `design`, or `comms`.
 
-2. **Check for existing project override** at `.ai-dlc/providers/{type}.md` (e.g., `.ai-dlc/providers/jira.md`). If it exists, read it and show its contents.
+2. **Check for existing project override** at `.haiku/providers/{type}.md` (e.g., `.haiku/providers/jira.md`). If it exists, read it and show its contents.
 
 3. **Show the user the current instructions** (built-in defaults, or existing override if present) and ask:
 
@@ -270,7 +270,7 @@ For each **confirmed provider**, offer to customize how AI-DLC interacts with it
      - **"Customize"** — Create a project override file to tailor behavior
 
 4. **If "Customize"**:
-   - Create `.ai-dlc/providers/{type}.md` with the built-in defaults pre-populated as a starting template:
+   - Create `.haiku/providers/{type}.md` with the built-in defaults pre-populated as a starting template:
      ```markdown
      ---
      category: {category}
@@ -279,25 +279,25 @@ For each **confirmed provider**, offer to customize how AI-DLC interacts with it
 
      {contents of built-in default, body only (after frontmatter)}
      ```
-   - Tell the user: "Created `.ai-dlc/providers/{type}.md` with defaults as a starting point. Edit this file to customize how AI-DLC interacts with {type} for this project."
+   - Tell the user: "Created `.haiku/providers/{type}.md` with defaults as a starting point. Edit this file to customize how H·AI·K·U interacts with {type} for this project."
    - Commit the new override file immediately:
      ```bash
-     git add .ai-dlc/providers/{type}.md && git commit -m "ai-dlc: configure {type} provider"
+     git add .haiku/providers/{type}.md && git commit -m "haiku: configure {type} provider"
      ```
 
 5. **If "Use defaults"** → skip, no file created. The built-in defaults apply automatically.
 
-6. **If an override file already exists** from a previous `/ai-dlc:setup` run, change the question to:
-   - "Project override exists at `.ai-dlc/providers/{type}.md`. Want to keep it, reset to defaults, or remove it?"
+6. **If an override file already exists** from a previous `/haiku:setup` run, change the question to:
+   - "Project override exists at `.haiku/providers/{type}.md`. Want to keep it, reset to defaults, or remove it?"
    - Options:
      - **"Keep as-is"** — Don't touch the existing override
      - **"Reset to defaults"** — Overwrite with current built-in defaults, then commit:
        ```bash
-       git add .ai-dlc/providers/{type}.md && git commit -m "ai-dlc: reset {type} provider to defaults"
+       git add .haiku/providers/{type}.md && git commit -m "haiku: reset {type} provider to defaults"
        ```
      - **"Remove override"** — Delete the file, revert to built-in defaults only, then commit the removal:
        ```bash
-       git rm .ai-dlc/providers/{type}.md && git commit -m "ai-dlc: remove {type} provider override"
+       git rm .haiku/providers/{type}.md && git commit -m "haiku: remove {type} provider override"
        ```
 
 **Skip** this phase for any provider category that has no confirmed provider.
@@ -397,7 +397,7 @@ Use `AskUserQuestion`:
 
 For "Select passes", present a follow-up multi-select with all discovered passes (built-in and project-defined), each showing its description from the pass metadata. For "Custom", ask the user to type a comma-separated list of pass names.
 
-To add custom passes, users can create `.ai-dlc/passes/{name}.md` files before running setup.
+To add custom passes, users can create `.haiku/passes/{name}.md` files before running setup.
 
 Map selections to `default_passes` in settings.yml:
 - "Dev only" → `default_passes: []`
@@ -514,7 +514,7 @@ Map user selections to config values:
 
 ## Phase 7: Write Settings File
 
-1. Read existing `.ai-dlc/settings.yml` via `Read` tool (if it exists) to preserve any manual edits or fields not covered by this wizard.
+1. Read existing `.haiku/settings.yml` via `Read` tool (if it exists) to preserve any manual edits or fields not covered by this wizard.
 
 2. Merge new values over existing. Build the YAML structure:
 
@@ -557,11 +557,11 @@ Rules:
 - Preserve any fields not covered by this wizard (e.g., custom `config` keys)
 - Output must validate against `plugin/schemas/settings.schema.json`
 
-3. Write the file using the `Write` tool to `.ai-dlc/settings.yml`.
+3. Write the file using the `Write` tool to `.haiku/settings.yml`.
 
 4. Commit the settings file immediately:
    ```bash
-   git add .ai-dlc/settings.yml && git commit -m "ai-dlc: configure project settings"
+   git add .haiku/settings.yml && git commit -m "haiku: configure project settings"
    ```
 
 ---
@@ -587,19 +587,19 @@ Display a final summary:
 | Design | — |
 | Comms | slack |
 
-Settings written to `.ai-dlc/settings.yml`.
+Settings written to `.haiku/settings.yml`.
 ```
 
 If any provider override files were created in Phase 4b, list them:
 
 ```
 Provider instruction overrides (edit to customize):
-- `.ai-dlc/providers/jira.md`
-- `.ai-dlc/providers/confluence.md`
+- `.haiku/providers/jira.md`
+- `.haiku/providers/confluence.md`
 ```
 
 Finish with:
 
 ```
-Next: Run `/ai-dlc:elaborate` to start your first intent.
+Next: Run `/haiku:elaborate` to start your first intent.
 ```

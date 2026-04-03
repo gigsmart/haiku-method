@@ -6,19 +6,19 @@ argument-hint: "[topic]"
 
 ## Name
 
-`ai-dlc:compound` - Capture session learnings as structured solution files.
+`haiku:compound` - Capture session learnings as structured solution files.
 
 ## Synopsis
 
 ```
-/ai-dlc:compound [topic]
+/haiku:compound [topic]
 ```
 
 ## Description
 
 **User-facing command** - Extract learnings from the current session and persist them as structured YAML-frontmatter markdown files in `docs/solutions/`.
 
-The compound skill implements a learning-capture loop: after a session of building, debugging, or designing, the developer (or agent) runs `/ai-dlc:compound` to crystallize what was learned into a reusable, searchable knowledge base. This prevents the same problems from being solved twice and builds institutional memory over time.
+The compound skill implements a learning-capture loop: after a session of building, debugging, or designing, the developer (or agent) runs `/haiku:compound` to crystallize what was learned into a reusable, searchable knowledge base. This prevents the same problems from being solved twice and builds institutional memory over time.
 
 ## Implementation
 
@@ -40,7 +40,7 @@ git diff --stat
 Read any relevant artifacts:
 - Recent commit messages for problem/solution signals
 - Modified files for context on what area was worked on
-- Any `.ai-dlc/` state files for intent/unit context
+- Any `.haiku/` state files for intent/unit context
 - Scratchpads and blockers if present
 
 If a `[topic]` argument was provided, use it to focus the analysis on that specific area rather than the full session.
@@ -176,23 +176,23 @@ Other potential learnings detected in this session:
 - {brief description of another learning}
 - {brief description of another learning}
 
-Run `/ai-dlc:compound {topic}` to capture a specific one.
+Run `/haiku:compound {topic}` to capture a specific one.
 ```
 
-## Integration with /ai-dlc:reflect
+## Integration with /haiku:reflect
 
-When `/ai-dlc:reflect` runs after intent completion, it aggregates all compound learnings:
+When `/haiku:reflect` runs after intent completion, it aggregates all compound learnings:
 
-1. **During reflection** — `/ai-dlc:reflect` scans `docs/solutions/` for learnings related to the intent's units, identifies cross-cutting patterns, and includes them in the reflection artifact
+1. **During reflection** — `/haiku:reflect` scans `docs/solutions/` for learnings related to the intent's units, identifies cross-cutting patterns, and includes them in the reflection artifact
 2. **Feedback loop** — Patterns identified during reflection can inform the next intent's planning phase via the Planner's learning retrieval
 3. **Knowledge persistence** — Compound learnings persist in `docs/solutions/` across intents, building institutional knowledge over time
 
 ### Lifecycle
 
 ```
-Build → encounter problem → /ai-dlc:compound captures learning → docs/solutions/{category}/{slug}.md
+Build → encounter problem → /haiku:compound captures learning → docs/solutions/{category}/{slug}.md
                                                                     ↓
-Intent completes → /ai-dlc:reflect aggregates learnings → cross-cutting patterns identified
+Intent completes → /haiku:reflect aggregates learnings → cross-cutting patterns identified
                                                                     ↓
 Next intent → Planner searches docs/solutions/ → incorporates past learnings into plan
 ```

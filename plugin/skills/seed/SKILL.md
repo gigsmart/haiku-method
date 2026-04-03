@@ -7,14 +7,14 @@ argument-hint: "[plant|list|check]"
 
 ## Name
 
-`ai-dlc:seed` - Plant, track, and surface forward-looking ideas at the right moment.
+`haiku:seed` - Plant, track, and surface forward-looking ideas at the right moment.
 
 ## Synopsis
 
 ```
-/ai-dlc:seed plant
-/ai-dlc:seed list
-/ai-dlc:seed check
+/haiku:seed plant
+/haiku:seed list
+/haiku:seed check
 ```
 
 ## Description
@@ -25,7 +25,7 @@ Seeds capture ideas that aren't actionable yet but will become relevant at a fut
 
 ## Seed File Format
 
-Seeds are stored in `.ai-dlc/seeds/{slug}.md`:
+Seeds are stored in `.haiku/seeds/{slug}.md`:
 
 ```yaml
 ---
@@ -46,7 +46,7 @@ status: planted | surfaced | harvested | pruned
 
 ## Implementation
 
-### Command: `/ai-dlc:seed plant`
+### Command: `/haiku:seed plant`
 
 Interactively capture a new seed idea.
 
@@ -59,7 +59,7 @@ Interactively capture a new seed idea.
 3. **Write the seed file**:
 
 ```bash
-SEED_DIR=".ai-dlc/seeds"
+SEED_DIR=".haiku/seeds"
 mkdir -p "$SEED_DIR"
 
 SLUG=$(echo "$TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
@@ -87,19 +87,19 @@ git add "$SEED_FILE" && git commit -m "seed: plant ${SLUG}"
 ```
 Seed planted: {title}
 Trigger: {trigger condition}
-File: .ai-dlc/seeds/{slug}.md
+File: .haiku/seeds/{slug}.md
 ```
 
-### Command: `/ai-dlc:seed list`
+### Command: `/haiku:seed list`
 
 Display all planted seeds grouped by status.
 
 1. **Scan seed directory**:
 
 ```bash
-SEED_DIR=".ai-dlc/seeds"
+SEED_DIR=".haiku/seeds"
 if [ ! -d "$SEED_DIR" ] || [ -z "$(ls -A "$SEED_DIR" 2>/dev/null)" ]; then
-  echo "No seeds planted yet. Use /ai-dlc:seed plant to capture an idea."
+  echo "No seeds planted yet. Use /haiku:seed plant to capture an idea."
   exit 0
 fi
 ```
@@ -132,7 +132,7 @@ fi
 
 Only show sections that have entries.
 
-### Command: `/ai-dlc:seed check`
+### Command: `/haiku:seed check`
 
 Check if any planted seeds should surface based on current context.
 
@@ -140,7 +140,7 @@ Check if any planted seeds should surface based on current context.
 
 ```bash
 # Determine current intent (if any)
-INTENT_DIR=$(ls -d .ai-dlc/*/intent.md 2>/dev/null | head -1 | xargs dirname 2>/dev/null || echo "")
+INTENT_DIR=$(ls -d .haiku/*/intent.md 2>/dev/null | head -1 | xargs dirname 2>/dev/null || echo "")
 if [ -n "$INTENT_DIR" ]; then
   INTENT_CONTENT=$(cat "$INTENT_DIR/intent.md")
 fi
@@ -149,7 +149,7 @@ fi
 2. **Check each planted seed**:
 
 ```bash
-for seed in .ai-dlc/seeds/*.md; do
+for seed in .haiku/seeds/*.md; do
   [ -f "$seed" ] || continue
 
   # Extract frontmatter
@@ -187,7 +187,7 @@ Actions: [Harvest into current intent] [Surface later] [Prune]
 5. **Commit any status changes**:
 
 ```bash
-git add .ai-dlc/seeds/ && git commit -m "seed: check and update seed statuses"
+git add .haiku/seeds/ && git commit -m "seed: check and update seed statuses"
 ```
 
 ## Auto-Surfacing During Elaboration
@@ -196,7 +196,7 @@ During the elaboration phase, the elaborate skill should check for relevant seed
 
 ```bash
 # At the start of elaboration, check for relevant seeds
-SEED_DIR=".ai-dlc/seeds"
+SEED_DIR=".haiku/seeds"
 if [ -d "$SEED_DIR" ]; then
   for seed in "$SEED_DIR"/*.md; do
     [ -f "$seed" ] || continue
@@ -217,18 +217,18 @@ This ensures seeds are not forgotten and surface naturally when the right work b
 
 ### Planting a seed
 ```
-> /ai-dlc:seed plant
+> /haiku:seed plant
 What is your idea? "Add visual dependency graphs for unit DAGs"
 When should this surface? "When working on any intent related to UI, dashboards, or visualization"
 
 Seed planted: Add visual dependency graphs for unit DAGs
 Trigger: When working on any intent related to UI, dashboards, or visualization
-File: .ai-dlc/seeds/add-visual-dependency-graphs-for-unit-dags.md
+File: .haiku/seeds/add-visual-dependency-graphs-for-unit-dags.md
 ```
 
 ### Checking seeds during elaboration
 ```
-> /ai-dlc:seed check
+> /haiku:seed check
 
 A previously planted seed may be relevant:
 

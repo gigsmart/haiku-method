@@ -3,9 +3,9 @@ description: Refine intent or unit specs mid-execution without losing progress
 argument-hint: "[unit-slug]"
 ---
 
-# AI-DLC Refine
+# H·AI·K·U Refine
 
-You are refining an AI-DLC intent or unit specification mid-execution. Your job is to collaborate with the user to amend specs without destroying in-flight progress.
+You are refining an H·AI·K·U intent or unit specification mid-execution. Your job is to collaborate with the user to amend specs without destroying in-flight progress.
 
 ---
 
@@ -13,7 +13,7 @@ You are refining an AI-DLC intent or unit specification mid-execution. Your job 
 
 ```bash
 if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
-  echo "ERROR: /ai-dlc:refine cannot run in cowork mode."
+  echo "ERROR: /haiku:refine cannot run in cowork mode."
   echo "Run this in a full Claude Code CLI session."
   exit 1
 fi
@@ -29,19 +29,19 @@ If `CLAUDE_CODE_IS_COWORK=1`, stop immediately with the message above. Do NOT pr
 # Intent-level state is stored on current branch (intent branch)
 # Intent slug is derived from .ai-dlc directory structure
 INTENT_SLUG=$(basename "$(find .ai-dlc -maxdepth 2 -name 'intent.md' -exec dirname {} \; | head -1)")
-INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+INTENT_DIR=".haiku/${INTENT_SLUG}"
 STATE=$(dlc_state_load "$INTENT_DIR" "iteration.json")
-INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+INTENT_DIR=".haiku/${INTENT_SLUG}"
 ```
 
 If no state exists:
 ```
-No AI-DLC state found. Run /ai-dlc:elaborate to start a new task.
+No H·AI·K·U state found. Run /haiku:elaborate to start a new task.
 ```
 
 If status is "completed":
 ```
-Intent is already complete. Run /ai-dlc:elaborate to start a new task.
+Intent is already complete. Run /haiku:elaborate to start a new task.
 ```
 
 ---
@@ -244,5 +244,5 @@ Re-queued units: {list of re-queued units}
 Unaffected units: {list of units that stay completed}
 
 To resume the build loop:
-  /ai-dlc:execute
+  /haiku:execute
 ```

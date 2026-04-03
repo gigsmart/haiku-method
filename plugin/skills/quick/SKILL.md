@@ -6,7 +6,7 @@ argument-hint: "[workflow-name] <task description>"
 
 # Quick Mode
 
-You are running **Quick Mode** — a streamlined path for trivial tasks that skips full elaboration and unit decomposition. The user has described a small task inline and you will execute it through a hat-based workflow using subagents, producing disciplined work without the overhead of full `/ai-dlc:elaborate`.
+You are running **Quick Mode** — a streamlined path for trivial tasks that skips full elaboration and unit decomposition. The user has described a small task inline and you will execute it through a hat-based workflow using subagents, producing disciplined work without the overhead of full `/haiku:elaborate`.
 
 ---
 
@@ -24,7 +24,7 @@ Tasks that would take a human less than a few minutes:
 
 ## When NOT to Use
 
-Anything that needs multi-unit decomposition, touches multiple subsystems, or involves architectural decisions. If you are unsure, tell the user and suggest `/ai-dlc:elaborate` instead.
+Anything that needs multi-unit decomposition, touches multiple subsystems, or involves architectural decisions. If you are unsure, tell the user and suggest `/haiku:elaborate` instead.
 
 ---
 
@@ -33,9 +33,9 @@ Anything that needs multi-unit decomposition, touches multiple subsystems, or in
 The user invokes quick mode with an optional workflow name and a task description:
 
 ```
-/ai-dlc:quick fix the typo in README.md
-/ai-dlc:quick tdd add input validation to parseConfig
-/ai-dlc:quick adversarial sanitize user input in api/handler.ts
+/haiku:quick fix the typo in README.md
+/haiku:quick tdd add input validation to parseConfig
+/haiku:quick adversarial sanitize user input in api/handler.ts
 ```
 
 **Argument parsing:**
@@ -45,7 +45,7 @@ The user invokes quick mode with an optional workflow name and a task descriptio
 3. Resolve workflows — load workflow definitions from two sources:
    ```bash
    PLUGIN_WORKFLOWS="${CLAUDE_PLUGIN_ROOT}/workflows.yml"
-   PROJECT_WORKFLOWS=".ai-dlc/workflows.yml"
+   PROJECT_WORKFLOWS=".haiku/workflows.yml"
    ```
    Project workflows with the same name **fully replace** plugin workflows (not merge — replace). Build a merged map of all known workflow names.
 4. If the first word matches a known workflow name (case-sensitive), use that workflow and treat the remaining words as the task description.
@@ -63,7 +63,7 @@ Run these three checks in order. If any fails, stop immediately.
 
 ```bash
 if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
-  echo "ERROR: /ai-dlc:quick cannot run in cowork mode."
+  echo "ERROR: /haiku:quick cannot run in cowork mode."
   echo "Quick mode requires a full Claude Code CLI session with file system access."
   exit 1
 fi
@@ -73,14 +73,14 @@ If `CLAUDE_CODE_IS_COWORK=1`, stop immediately. Do NOT proceed.
 
 ### 2b: Active Intent Conflict
 
-Check for conflicting AI-DLC state:
+Check for conflicting H·AI·K·U state:
 
-1. **Orphaned quick artifacts:** If `.ai-dlc/quick/intent.md` exists, a previous quick mode session did not clean up. Offer the user a choice:
-   - Clean up the orphaned artifacts (`rm -rf .ai-dlc/quick/`) and continue
+1. **Orphaned quick artifacts:** If `.haiku/quick/intent.md` exists, a previous quick mode session did not clean up. Offer the user a choice:
+   - Clean up the orphaned artifacts (`rm -rf .haiku/quick/`) and continue
    - Abort so they can inspect the state
-2. **Active intent conflict:** Scan for any `.ai-dlc/*/intent.md` with `status: active`. If one exists (and it's not `.ai-dlc/quick/`), stop and tell the user:
+2. **Active intent conflict:** Scan for any `.haiku/*/intent.md` with `status: active`. If one exists (and it's not `.haiku/quick/`), stop and tell the user:
    > An active intent already exists: `{intent-slug}`. Quick mode cannot run concurrently with an active intent.
-   > Use `/ai-dlc:execute` to continue the existing intent, or complete/close it first.
+   > Use `/haiku:execute` to continue the existing intent, or complete/close it first.
 
 ### 2c: Scope Validation
 
@@ -88,22 +88,22 @@ Before executing, do a quick sanity check:
 
 1. **Read the relevant file(s)** mentioned in the task description.
 2. **Confirm the change is trivial** — if the task turns out to require multi-file architectural changes, new test infrastructure, or design decisions, STOP and tell the user:
-   > This task looks bigger than a quick fix. Consider using `/ai-dlc:elaborate` for proper planning.
+   > This task looks bigger than a quick fix. Consider using `/haiku:elaborate` for proper planning.
 3. If the task is genuinely trivial, proceed.
 
 ---
 
 ## Step 3: Create Quick Artifacts
 
-Create temporary `.ai-dlc/quick/` state so that the existing hook system (`subagent-context.sh`) can inject hat context into subagents.
+Create temporary `.haiku/quick/` state so that the existing hook system (`subagent-context.sh`) can inject hat context into subagents.
 
 ### 3a: Gitignore
 
-Add `.ai-dlc/quick/` to `.gitignore` if not already present:
+Add `.haiku/quick/` to `.gitignore` if not already present:
 
 ```bash
-if ! grep -q '\.ai-dlc/quick/' .gitignore 2>/dev/null; then
-  echo '.ai-dlc/quick/' >> .gitignore
+if ! grep -q '\.haiku/quick/' .gitignore 2>/dev/null; then
+  echo '.haiku/quick/' >> .gitignore
 fi
 ```
 
@@ -111,7 +111,7 @@ fi
 
 ### 3b: Intent File
 
-Create `.ai-dlc/quick/intent.md`:
+Create `.haiku/quick/intent.md`:
 
 ```markdown
 ---
@@ -127,7 +127,7 @@ Quick mode task. Temporary artifact — will be removed after completion.
 
 ### 3c: Iteration State
 
-Create `.ai-dlc/quick/state/iteration.json`:
+Create `.haiku/quick/state/iteration.json`:
 
 ```json
 {
@@ -153,7 +153,7 @@ Execute each hat in order by spawning a subagent.
 
 #### A. Update iteration state
 
-Write the current hat to `.ai-dlc/quick/state/iteration.json` so hooks pick it up:
+Write the current hat to `.haiku/quick/state/iteration.json` so hooks pick it up:
 
 ```json
 {
@@ -192,7 +192,7 @@ Do NOT read or execute the advance or fail skill definitions directly — just c
 
 ```bash
 HAT_FILE="${CLAUDE_PLUGIN_ROOT}/hats/{hat-name}.md"
-[ -f ".ai-dlc/hats/{hat-name}.md" ] && HAT_FILE=".ai-dlc/hats/{hat-name}.md"
+[ -f ".haiku/hats/{hat-name}.md" ] && HAT_FILE=".haiku/hats/{hat-name}.md"
 ```
 
 If the hat file exists, read its contents and append them to the subagent prompt as additional context under a `## Hat Instructions` heading. This makes hat injection deterministic regardless of whether `subagent-context.sh` fires.
@@ -228,7 +228,7 @@ When a reviewer rejects:
 2. If rejection count < 3: Loop back to the most recent building-archetype hat. The building subagent receives the reviewer's findings as additional context.
 3. If rejection count >= 3: Stop the loop and tell the user:
    > Quick mode hit the review cycle limit (3 attempts). This task may be more complex than expected.
-   > Consider using `/ai-dlc:elaborate` for proper planning and decomposition.
+   > Consider using `/haiku:elaborate` for proper planning and decomposition.
 4. After the builder re-implements, resume the workflow from the builder's position (i.e., advance to the reviewer again).
 
 ---
@@ -237,10 +237,10 @@ When a reviewer rejects:
 
 After the hat loop completes successfully (reviewer approved or no reviewer in workflow), run the pre-delivery code review to catch issues before they hit external CI or review bots.
 
-**Invoke `/ai-dlc:review`:**
+**Invoke `/haiku:review`:**
 
 ```
-Skill("ai-dlc:review")
+Skill("haiku:review")
 ```
 
 The review skill:
@@ -308,7 +308,7 @@ $(git diff --stat "${DEFAULT_BRANCH}...HEAD")
 Pre-delivery review: **passed** (multi-agent review)
 
 ---
-*Created via \`/ai-dlc:quick\` with pre-delivery review*
+*Created via \`/haiku:quick\` with pre-delivery review*
 EOF
 )"
 ```
@@ -323,9 +323,9 @@ Run cleanup after delivery (or if delivery was skipped), regardless of outcome. 
 
 1. Remove the temporary quick artifacts:
    ```bash
-   rm -rf .ai-dlc/quick/
+   rm -rf .haiku/quick/
    ```
-2. If a `.ai-dlc/quick/` gitignore entry was added in Step 3a, remove it:
+2. If a `.haiku/quick/` gitignore entry was added in Step 3a, remove it:
    ```bash
    sed -i.bak '/\.ai-dlc\/quick\//d' .gitignore && rm -f .gitignore.bak
    ```
@@ -353,13 +353,13 @@ Output a brief summary:
 
 ## Guardrails
 
-- **Temporary state only.** Quick mode creates `.ai-dlc/quick/` artifacts purely for hook integration. They are always cleaned up — never committed, never persisted.
+- **Temporary state only.** Quick mode creates `.haiku/quick/` artifacts purely for hook integration. They are always cleaned up — never committed, never persisted.
 - **No worktrees.** Work happens in the current working directory on the current branch. Quick mode does NOT create git worktrees.
 - **Subagent delegation.** Each hat phase is executed by a spawned subagent, not by the orchestrator directly. This keeps hat context clean and isolated.
-- **3-cycle limit.** If the reviewer rejects 3 times, quick mode stops and recommends `/ai-dlc:elaborate`. Quick mode is not for tasks that need extensive iteration.
+- **3-cycle limit.** If the reviewer rejects 3 times, quick mode stops and recommends `/haiku:elaborate`. Quick mode is not for tasks that need extensive iteration.
 - **Always delivers via PR.** Quick mode creates a feature branch (if on default branch) and opens a PR. All changes go through the merge process.
-- **Pre-delivery review is mandatory.** `/ai-dlc:review` runs after the hat loop — the same multi-agent review that runs for full intents. Issues are fixed locally before the PR is created.
-- **Scope escape hatch.** If at any point during execution you realize the task is not trivial, stop and recommend `/ai-dlc:elaborate`. Do not silently expand scope.
+- **Pre-delivery review is mandatory.** `/haiku:review` runs after the hat loop — the same multi-agent review that runs for full intents. Issues are fixed locally before the PR is created.
+- **Scope escape hatch.** If at any point during execution you realize the task is not trivial, stop and recommend `/haiku:elaborate`. Do not silently expand scope.
 - **Conflict guard.** Quick mode refuses to start if another active intent exists. Only one intent can be active at a time.
 - **Empty quality gates.** Quick artifacts use `quality_gates: []` — no harness-enforced gates. Verification is handled by the hat workflow itself.
 - **Single session.** Quick mode runs to completion in one session. There is no resume capability — if interrupted, clean up orphaned artifacts and start over.

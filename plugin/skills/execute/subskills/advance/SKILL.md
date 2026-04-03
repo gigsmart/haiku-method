@@ -1,27 +1,27 @@
 ---
-description: (Internal) Advance to the next hat in the AI-DLC workflow
+description: (Internal) Advance to the next hat in the H·AI·K·U workflow
 user-invocable: false
 ---
 
 ## Name
 
-`ai-dlc:advance` - Move to the next hat in the AI-DLC workflow sequence.
+`haiku:advance` - Move to the next hat in the H·AI·K·U workflow sequence.
 
 ## Synopsis
 
 ```
-/ai-dlc:advance
+/haiku:advance
 ```
 
 ## Description
 
-**Internal command** - Called by the AI during `/ai-dlc:execute`, not directly by users.
+**Internal command** - Called by the AI during `/haiku:execute`, not directly by users.
 
 Advances to the next hat in the workflow sequence. For example, in the default workflow:
 - planner -> builder (plan ready, now implement)
 - builder -> reviewer (bolt complete, now review)
 
-**When at the last hat (reviewer)**, `/ai-dlc:advance` handles completion automatically:
+**When at the last hat (reviewer)**, `/haiku:advance` handles completion automatically:
 - If all units complete -> Mark intent as complete
 - If more units ready -> Loop back to builder for next unit
 - If blocked (no ready units) -> Alert user, human intervention required
@@ -31,7 +31,7 @@ Advances to the next hat in the workflow sequence. For example, in the default w
 ### Step 1: Load Current State
 
 ```bash
-# Intent-level state is stored in .ai-dlc/{slug}/state/
+# Intent-level state is stored in .haiku/{slug}/state/
 INTENT_DIR=$(find .ai-dlc -maxdepth 2 -name "intent.md" -exec dirname {} \; | head -1)
 INTENT_SLUG=$(basename "$INTENT_DIR")
 STATE=$(dlc_state_load "$INTENT_DIR" "iteration.json")
@@ -43,7 +43,7 @@ Before advancing, check the hard gate for the current transition:
 
 **Gate architecture:**
 - **Structural gates** (PLAN_APPROVED, CRITERIA_MET) are checked here because they verify workflow state, not code quality
-- **Quality gates** (tests, lint, types, custom checks) are harness-enforced via `quality-gate.sh` on Stop/SubagentStop — the agent cannot reach `/ai-dlc:advance` unless all gates passed
+- **Quality gates** (tests, lint, types, custom checks) are harness-enforced via `quality-gate.sh` on Stop/SubagentStop — the agent cannot reach `/haiku:advance` unless all gates passed
 - This separation ensures: the harness handles enforcement, the advance skill handles workflow
 
 ```bash
@@ -64,7 +64,7 @@ case "$CURRENT_HAT" in
     ;;
   builder)
     # Quality gates are harness-enforced via the Stop/SubagentStop hook
-    # (quality-gate.sh). The builder cannot reach /ai-dlc:advance unless all
+    # (quality-gate.sh). The builder cannot reach /haiku:advance unless all
     # frontmatter-defined gates passed. No redundant check needed here.
     #
     # Visual gate check is still handled here because it prepares
@@ -85,7 +85,7 @@ case "$CURRENT_HAT" in
     ;;
   reviewer)
     # CRITERIA_MET gate: each criterion must have PASS with evidence
-    # This is verified by the reviewer hat itself — if the reviewer calls /ai-dlc:advance,
+    # This is verified by the reviewer hat itself — if the reviewer calls /haiku:advance,
     # it means criteria were evaluated. The structured completion marker is checked here.
     REVIEW_RESULT=$(dlc_state_load "$INTENT_DIR" "review-result.json" 2>/dev/null || echo "")
     if [ -n "$REVIEW_RESULT" ]; then
@@ -175,8 +175,8 @@ If `AGENT_TEAMS_ENABLED` is set, delete the team to release all agent resources:
   echo "The targeted unit has finished its workflow."
   echo ""
   echo "**Next steps:**"
-  echo "- Run \`/ai-dlc:execute\` to continue with the next ready unit"
-  echo "- Run \`/ai-dlc:execute <unit-name>\` to target another specific unit"
+  echo "- Run \`/haiku:execute\` to continue with the next ready unit"
+  echo "- Run \`/haiku:execute <unit-name>\` to target another specific unit"
   echo "- Read \`plugin/skills/execute/subskills/advance/SKILL.md\` and execute it if all units are complete"
   exit 0
 fi
@@ -190,7 +190,7 @@ After marking a unit as completed, merge behavior depends on `change_strategy`:
 # Load config for merge settings
 REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+INTENT_DIR=".haiku/${INTENT_SLUG}"
 CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
 AUTO_MERGE=$(echo "$CONFIG" | jq -r '.auto_merge // "true"')
 AUTO_SQUASH=$(echo "$CONFIG" | jq -r '.auto_squash // "false"')
@@ -230,7 +230,7 @@ Part of intent: ${INTENT_SLUG}
 ${TICKET_LINE}
 
 ---
-*Built with [AI-DLC](https://ai-dlc.dev)*
+*Built with [H·AI·K·U](https://ai-dlc.dev)*
 EOF
 )" 2>&1) || echo "PR may already exist for $UNIT_BRANCH"
 
@@ -241,7 +241,7 @@ EOF
   fi
 
   # Clean up local unit worktree after PR is pushed (work is on remote now)
-  UNIT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
+  UNIT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
   if [ -d "$UNIT_WORKTREE" ]; then
     git worktree remove "$UNIT_WORKTREE" 2>/dev/null || echo "Warning: failed to remove worktree at $UNIT_WORKTREE"
     echo "Cleaned up unit worktree for ${CURRENT_UNIT}"
@@ -266,7 +266,7 @@ elif [ "$AUTO_MERGE" = "true" ]; then
   fi
 
   # Clean up unit worktree and branch after merge into intent
-  UNIT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
+  UNIT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
   if [ -d "$UNIT_WORKTREE" ]; then
     git worktree remove "$UNIT_WORKTREE" 2>/dev/null || echo "Warning: failed to remove worktree at $UNIT_WORKTREE"
     echo "Cleaned up unit worktree for ${CURRENT_UNIT}"
@@ -373,7 +373,7 @@ aidlc_record_intent_completed "${INTENT_SLUG}" "${UNIT_COUNT}"
 if (READY_COUNT > 0) {
   // MORE UNITS READY - Loop back to builder
   state.hat = workflow[2] || "builder";  // Reset to builder (index 2 in default workflow)
-  state.currentUnit = null;  // Will be set by /ai-dlc:execute when it picks next unit
+  state.currentUnit = null;  // Will be set by /haiku:execute when it picks next unit
   // dlc_state_save "$INTENT_DIR" "iteration.json" '<updated JSON>'
   return `Unit completed. ${READY_COUNT} more unit(s) ready. Continuing execution...`;
 }
@@ -404,7 +404,7 @@ If `AGENT_TEAMS_ENABLED` is set and `READY_COUNT > 0` after completing a unit:
 ```javascript
 TeamCreate({
   team_name: teamName,
-  description: `AI-DLC: ${intentTitle}`
+  description: `H·AI·K·U: ${intentTitle}`
 })
 ```
 
@@ -417,13 +417,13 @@ TeamCreate({
 
 This replaces the sequential "loop back to builder" behavior when Agent Teams is active. Instead of the lead picking up the next unit sequentially, newly unblocked units are spawned as parallel teammates immediately.
 
-**Without Agent Teams:** The existing behavior (reset hat to builder, let `/ai-dlc:execute` pick next unit) continues unchanged.
+**Without Agent Teams:** The existing behavior (reset hat to builder, let `/haiku:execute` pick next unit) continues unchanged.
 
 ### Step 2f: Integration Validation (When All Units Complete)
 
 When `ALL_COMPLETE` is true and `state.integratorComplete` is not true, run integration validation instead of marking the intent completed.
 
-**Integration is NOT a per-unit hat** — it does not appear in the workflow sequence. It runs once on the merged intent branch after all units pass their per-unit workflows. It is implemented as the internal `/ai-dlc:integrate` skill (see `plugin/skills/execute/subskills/integrate/SKILL.md`).
+**Integration is NOT a per-unit hat** — it does not appear in the workflow sequence. It runs once on the merged intent branch after all units pass their per-unit workflows. It is implemented as the internal `/haiku:integrate` skill (see `plugin/skills/execute/subskills/integrate/SKILL.md`).
 
 1. Set state to indicate integration is running:
 
@@ -442,11 +442,11 @@ Task({
     Read the skill definition at plugin/skills/execute/subskills/integrate/SKILL.md first, then execute it for intent ${intentSlug}.
 
     ## CRITICAL: Work on Intent Branch
-    **Worktree path:** .ai-dlc/worktrees/${intentSlug}/
+    **Worktree path:** .haiku/worktrees/${intentSlug}/
     **Branch:** ai-dlc/${intentSlug}/main
 
     You MUST:
-    1. cd .ai-dlc/worktrees/${intentSlug}/
+    1. cd .haiku/worktrees/${intentSlug}/
     2. Verify you're on the intent branch (not a unit branch)
     3. This branch contains ALL merged unit work
 
@@ -515,10 +515,10 @@ GLOBAL_FIRST_HAT=$(echo "$INTENT_WORKFLOW_HATS" | jq -r '.[0]')
 STATE=$(echo "$STATE" | dlc_json_set "hat" "${GLOBAL_FIRST_HAT}" | dlc_json_set "integratorComplete" "false")
 dlc_state_save "$INTENT_DIR" "iteration.json" "$STATE"
 
-# Output: "Integration rejected. Re-queued units: {list}. Run /ai-dlc:execute to continue."
+# Output: "Integration rejected. Re-queued units: {list}. Run /haiku:execute to continue."
 ```
 
-The re-queued units will be picked up on the next `/ai-dlc:execute` cycle through the normal DAG-based unit selection.
+The re-queued units will be picked up on the next `/haiku:execute` cycle through the normal DAG-based unit selection.
 
 ### Step 3: Update State
 
@@ -535,7 +535,7 @@ if [ "$ITERATION" -ge "$MAX_ITERATIONS" ]; then
   echo "Execution has reached ${MAX_ITERATIONS} iterations without completing."
   echo "This likely indicates poorly specified criteria or a systematic issue."
   echo ""
-  echo "**Action required:** Review the intent and unit specs, then run \`/ai-dlc:execute\` to resume."
+  echo "**Action required:** Review the intent and unit specs, then run \`/haiku:execute\` to resume."
   STATE=$(echo "$STATE" | dlc_json_set "status" "blocked" | dlc_json_set "iteration" "$ITERATION")
   dlc_state_save "$INTENT_DIR" "iteration.json" "$STATE"
   exit 0
@@ -560,7 +560,7 @@ Advanced to **{nextHat}** hat. Continuing execution...
 
 ### Step 5: Completion Summary (When All Units Done)
 
-When `/ai-dlc:advance` completes the intent (all units done), output:
+When `/haiku:advance` completes the intent (all units done), output:
 
 ```
 ## Intent Complete!
@@ -584,7 +584,7 @@ The intent branch is ready to merge:
 ```bash
 # Load merge config
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+INTENT_DIR=".haiku/${INTENT_SLUG}"
 CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
 DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
 ```
@@ -603,7 +603,7 @@ If the intent has configured `announcements` in its frontmatter, generate each f
 ANNOUNCEMENTS=$(dlc_frontmatter_get "announcements" "$INTENT_DIR/intent.md" 2>/dev/null || echo "[]")
 ```
 
-For each configured format, generate the announcement artifact in `.ai-dlc/{intent-slug}/`:
+For each configured format, generate the announcement artifact in `.haiku/{intent-slug}/`:
 
 | Format | File | Content |
 |--------|------|---------|
@@ -615,7 +615,7 @@ For each configured format, generate the announcement artifact in `.ai-dlc/{inte
 Generate each from the intent's Problem/Solution, completed units, and success criteria. Commit the announcement artifacts:
 
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/
+git add .haiku/${INTENT_SLUG}/
 git commit -m "announce: generate completion announcements for ${INTENT_SLUG}"
 ```
 
@@ -665,7 +665,7 @@ fi
 
 Before creating the PR, run a full multi-agent code review to catch issues locally — eliminating the "push → bot finds issues → fix → repeat" cycle. **This is a hard gate — the PR cannot be created without passing.**
 
-The review is delegated to the `/ai-dlc:review` skill, which runs specialized agents in fresh contexts (no builder bias), reads REVIEW.md + CLAUDE.md for project-specific rules, and auto-fixes HIGH findings in a loop.
+The review is delegated to the `/haiku:review` skill, which runs specialized agents in fresh contexts (no builder bias), reads REVIEW.md + CLAUDE.md for project-specific rules, and auto-fixes HIGH findings in a loop.
 
 **Skip condition:** If all units use unit strategy, each unit already has its own individually-reviewed PR — skip the pre-delivery review.
 
@@ -688,7 +688,7 @@ done
 **If `NEEDS_DELIVERY_REVIEW=true`:** Invoke the review skill.
 
 ```
-Skill("ai-dlc:review")
+Skill("haiku:review")
 ```
 
 The review skill handles the full lifecycle:
@@ -740,7 +740,7 @@ done
 
 ```bash
 # Clean up intent worktree — all unit PRs are on the remote
-INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
+INTENT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}"
 if [ -d "$INTENT_WORKTREE" ]; then
   git worktree remove "$INTENT_WORKTREE" 2>/dev/null || echo "Warning: failed to remove worktree at $INTENT_WORKTREE"
   echo "Cleaned up intent worktree for ${INTENT_SLUG}"
@@ -755,7 +755,7 @@ git worktree prune
 All unit PRs have been created during execution. Review and merge them individually.
 
 To clean up:
-  /ai-dlc:reset
+  /haiku:reset
 ```
 
 **If intent strategy** (or hybrid with non-unit units): Ask the user how to deliver using `AskUserQuestion`:
@@ -820,7 +820,7 @@ ${COMPLETED_UNITS_AS_CHANGE_LIST}
 $(printf "%b" "${TICKET_REFS}")
 
 ---
-*Built with [AI-DLC](https://ai-dlc.dev)*
+*Built with [H·AI·K·U](https://ai-dlc.dev)*
 EOF
 )" 2>&1)
 
@@ -835,7 +835,7 @@ fi
 
 ```bash
 # Clean up intent worktree after PR is pushed
-INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
+INTENT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}"
 if [ -d "$INTENT_WORKTREE" ]; then
   git worktree remove "$INTENT_WORKTREE" 2>/dev/null || echo "Warning: failed to remove worktree at $INTENT_WORKTREE"
   echo "Cleaned up intent worktree for ${INTENT_SLUG}"
@@ -862,14 +862,14 @@ To create PR manually:
   gh pr create --base ${DEFAULT_BRANCH} --head ai-dlc/{intent-slug}/main
 
 To clean up:
-  /ai-dlc:reset
+  /haiku:reset
 ```
 
 Clean up intent worktree since all work is committed and pushed:
 
 ```bash
 # Clean up intent worktree — work is committed on the branch
-INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
+INTENT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}"
 if [ -d "$INTENT_WORKTREE" ]; then
   git worktree remove "$INTENT_WORKTREE" 2>/dev/null || echo "Warning: failed to remove worktree at $INTENT_WORKTREE"
   echo "Cleaned up intent worktree for ${INTENT_SLUG}"

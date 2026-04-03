@@ -1,28 +1,28 @@
 ---
-description: Analyze a completed AI-DLC intent cycle and produce reflection artifacts with learnings, metrics, and recommendations
+description: Analyze a completed H·AI·K·U intent cycle and produce reflection artifacts with learnings, metrics, and recommendations
 argument-hint: "[intent-slug]"
 disable-model-invocation: true
 ---
 
 ## Name
 
-`ai-dlc:reflect` - Reflection phase for analyzing outcomes and capturing learnings.
+`haiku:reflect` - Reflection phase for analyzing outcomes and capturing learnings.
 
 ## Synopsis
 
 ```
-/ai-dlc:reflect [intent-slug]
+/haiku:reflect [intent-slug]
 ```
 
 ## Description
 
-**User-facing command** - Analyze a completed (or nearly completed) AI-DLC execution cycle.
+**User-facing command** - Analyze a completed (or nearly completed) H·AI·K·U execution cycle.
 
 The reflect skill:
 1. Reads all unit specs, execution state, and operational outcomes for the intent
 2. Analyzes the full cycle: execution metrics, what worked, what didn't, patterns
 3. Analyzes session transcripts for tool failures, retries, and process friction
-4. Produces a `reflection.md` artifact in `.ai-dlc/{intent-slug}/`
+4. Produces a `reflection.md` artifact in `.haiku/{intent-slug}/`
 5. Produces `settings-recommendations.md` with concrete project config changes
 6. Presents findings for user validation and augmentation
 7. Offers paths: **Iterate** (create intent v2 with learnings), **Close** (capture org memory and archive), or **Apply** (auto-apply settings recommendations)
@@ -32,7 +32,7 @@ The reflect skill:
 ### Step 0: Load State
 
 ```bash
-# Load AI-DLC state (file-based storage)
+# Load H·AI·K·U state (file-based storage)
 source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
 source "${CLAUDE_PLUGIN_ROOT}/lib/haiku.sh"
@@ -43,14 +43,14 @@ INTENT_SLUG="${1:-$(basename "$(find .ai-dlc -maxdepth 2 -name 'intent.md' -exec
 
 If no intent slug found:
 ```
-No AI-DLC intent found.
-Run /ai-dlc:elaborate to start a new task, or provide an intent slug: /ai-dlc:reflect my-intent
+No H·AI·K·U intent found.
+Run /haiku:elaborate to start a new task, or provide an intent slug: /haiku:reflect my-intent
 ```
 
 ### Step 1: Load Intent and Unit Data
 
 ```bash
-INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+INTENT_DIR=".haiku/${INTENT_SLUG}"
 INTENT_FILE="$INTENT_DIR/intent.md"
 ```
 
@@ -62,9 +62,9 @@ Read the following artifacts:
 
 If `intent.md` does not exist:
 ```
-No intent found at .ai-dlc/{intent-slug}/intent.md
+No intent found at .haiku/{intent-slug}/intent.md
 
-Run /ai-dlc:elaborate to create a new intent.
+Run /haiku:elaborate to create a new intent.
 ```
 
 ### Step 2: Gather Execution Metrics
@@ -210,7 +210,7 @@ Include in the reflection output:
 
 ### Step 4: Produce reflection.md
 
-Write the reflection artifact to `.ai-dlc/{intent-slug}/reflection.md`:
+Write the reflection artifact to `.haiku/{intent-slug}/reflection.md`:
 
 ```markdown
 ---
@@ -258,12 +258,12 @@ status: completed
 Commit the reflection artifact immediately after writing:
 
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/reflection.md && git commit -m "reflect(${INTENT_SLUG}): capture reflection"
+git add .haiku/${INTENT_SLUG}/reflection.md && git commit -m "reflect(${INTENT_SLUG}): capture reflection"
 ```
 
 ### Step 4b: Produce settings-recommendations.md
 
-Based on session analysis and execution patterns, produce concrete settings changes. Write to `.ai-dlc/{intent-slug}/settings-recommendations.md`:
+Based on session analysis and execution patterns, produce concrete settings changes. Write to `.haiku/{intent-slug}/settings-recommendations.md`:
 
 ```markdown
 # Settings Recommendations
@@ -277,7 +277,7 @@ Example:
 - ADD: "When running tests, use --bail to fail fast on first error" (reduces retry loops observed in units 3,5)
 - REMOVE: "Always run full test suite before committing" (gate handles this; instruction caused duplicate runs)
 
-## .ai-dlc/settings.yml Changes
+## .haiku/settings.yml Changes
 {Quality gate configuration changes}
 
 Example:
@@ -289,14 +289,14 @@ quality_gates:
 ```
 
 ## Hat Instruction Updates
-{Specific changes to hat files in .ai-dlc/hats/}
+{Specific changes to hat files in .haiku/hats/}
 
 Example:
 - builder.md: Add "Check existing test patterns before writing new tests" (units 2,4 wrote tests that duplicated fixtures)
 - reviewer.md: Add "Verify import paths resolve before flagging missing modules" (3 false rejections in unit-06)
 
 ## Workflow Adjustments
-{Changes to .ai-dlc/workflows.yml or intent-level workflow choice}
+{Changes to .haiku/workflows.yml or intent-level workflow choice}
 
 Example:
 - For documentation-heavy intents, use workflow: "default" (planner was skipped 6/8 times with adversarial workflow)
@@ -311,7 +311,7 @@ Example:
 Commit the settings recommendations artifact immediately after writing:
 
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/settings-recommendations.md && git commit -m "reflect(${INTENT_SLUG}): document settings recommendations"
+git add .haiku/${INTENT_SLUG}/settings-recommendations.md && git commit -m "reflect(${INTENT_SLUG}): document settings recommendations"
 ```
 
 ### Step 5: Present Findings for Validation
@@ -364,7 +364,7 @@ Create a new version of this intent with learnings pre-loaded.
 ### Option C: Close
 Capture organizational learnings and archive this intent.
 - Distills key learnings into project memory (.claude/memory/)
-- Syncs to H•AI•K•U organizational memory (if workspace configured)
+- Syncs to H·AI·K·U organizational memory (if workspace configured)
 - Archives the intent
 ```
 
@@ -376,9 +376,9 @@ If user chooses to apply settings:
 
 1. **Read `settings-recommendations.md`** and parse each section
 2. **Apply CLAUDE.md changes**: Edit the project's CLAUDE.md file
-3. **Apply settings.yml changes**: Update `.ai-dlc/settings.yml`
-4. **Apply hat changes**: Edit files in `.ai-dlc/hats/`
-5. **Apply workflow changes**: Update `.ai-dlc/workflows.yml`
+3. **Apply settings.yml changes**: Update `.haiku/settings.yml`
+4. **Apply hat changes**: Edit files in `.haiku/hats/`
+5. **Apply workflow changes**: Update `.haiku/workflows.yml`
 6. **Show the diff** before committing:
 ```bash
 git diff --stat
@@ -387,7 +387,7 @@ git diff
 7. **Ask user to confirm** before committing
 8. **Commit**:
 ```bash
-git add CLAUDE.md .ai-dlc/settings.yml .ai-dlc/hats/ .ai-dlc/workflows.yml
+git add CLAUDE.md .haiku/settings.yml .haiku/hats/ .haiku/workflows.yml
 git commit -m "refine: apply reflection recommendations from ${INTENT_SLUG}"
 ```
 
@@ -407,10 +407,10 @@ git tag "ai-dlc/${INTENT_SLUG}/v${CURRENT_VERSION}" 2>/dev/null || true
 ## Intent Archived and Ready for v{NEXT_VERSION}
 
 **Archived:** tag ai-dlc/{intent-slug}/v{CURRENT_VERSION}
-**New intent:** .ai-dlc/{intent-slug}/
+**New intent:** .haiku/{intent-slug}/
 
 The new intent has been seeded with learnings from the reflection.
-Run `/ai-dlc:elaborate` to begin the next iteration with pre-loaded context.
+Run `/haiku:elaborate` to begin the next iteration with pre-loaded context.
 ```
 
 ### Step 7c: Close Path
@@ -439,7 +439,7 @@ Commit the learnings immediately after writing:
 git add .claude/memory/learnings.md && git commit -m "reflect(${INTENT_SLUG}): capture learnings"
 ```
 
-3. **Sync to H•AI•K•U organizational memory** (if workspace configured):
+3. **Sync to H·AI·K·U organizational memory** (if workspace configured):
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/haiku.sh"
@@ -456,7 +456,7 @@ if haiku_is_configured; then
   mkdir -p "$HAIKU_WS/memory/software"
   haiku_memory_write "software/patterns" "$SOFTWARE_PATTERNS" "append"
 
-  echo "Organizational memory synced to H•AI•K•U workspace: $HAIKU_WS"
+  echo "Organizational memory synced to H·AI·K·U workspace: $HAIKU_WS"
 fi
 ```
 
@@ -488,7 +488,7 @@ rm -f "$INTENT_DIR/intent.md.bak"
 **Intent:** {title}
 **Status:** archived
 **Project learnings saved to:** .claude/memory/learnings.md
-{if H•AI•K•U configured: **Org learnings synced to:** {workspace}/memory/}
+{if H·AI·K·U configured: **Org learnings synced to:** {workspace}/memory/}
 
 ### Key Learnings Captured
 {summary of what was written to memory}

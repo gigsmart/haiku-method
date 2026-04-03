@@ -1,5 +1,5 @@
 ---
-description: Generate a static HTML dashboard from .ai-dlc/ data for offline viewing and sharing
+description: Generate a static HTML dashboard from .haiku/ data for offline viewing and sharing
 disable-model-invocation: true
 user-invocable: true
 argument-hint: "[--output <dir>]"
@@ -7,18 +7,18 @@ argument-hint: "[--output <dir>]"
 
 ## Name
 
-`ai-dlc:dashboard` - Generate a static HTML dashboard from AI-DLC intent and unit data.
+`haiku:dashboard` - Generate a static HTML dashboard from H·AI·K·U intent and unit data.
 
 ## Synopsis
 
 ```
-/ai-dlc:dashboard
-/ai-dlc:dashboard --output ./reports/dashboard
+/haiku:dashboard
+/haiku:dashboard --output ./reports/dashboard
 ```
 
 ## Description
 
-**User-facing command** - Generate a self-contained static HTML dashboard from the `.ai-dlc/` directory in the current project.
+**User-facing command** - Generate a self-contained static HTML dashboard from the `.haiku/` directory in the current project.
 
 The dashboard renders all intents, units, DAG visualizations, completion criteria, and status information as static HTML pages suitable for offline viewing, sharing, or archiving.
 
@@ -30,18 +30,18 @@ The dashboard renders all intents, units, DAG visualizations, completion criteri
 
 ### Usage
 
-Run `/ai-dlc:dashboard` to generate the dashboard with default settings:
+Run `/haiku:dashboard` to generate the dashboard with default settings:
 
 ```
-/ai-dlc:dashboard
+/haiku:dashboard
 ```
 
-This generates the site into `.ai-dlc/dashboard/` and reports the output path.
+This generates the site into `.haiku/dashboard/` and reports the output path.
 
 To specify a custom output directory:
 
 ```
-/ai-dlc:dashboard --output ./my-reports/
+/haiku:dashboard --output ./my-reports/
 ```
 
 Then open the generated `index.html` in any browser.
@@ -71,7 +71,7 @@ The review flow:
 
 ### Static Dashboard vs. Review Channel
 
-| Feature | `/ai-dlc:dashboard` | Review Channel |
+| Feature | `/haiku:dashboard` | Review Channel |
 |---------|-------------|----------------|
 | Purpose | Offline viewing & sharing | Interactive review during execution |
 | Output | Static HTML files | Live browser page |
@@ -81,10 +81,10 @@ The review flow:
 ## Tool Call
 
 ```bash
-bun run ${CLAUDE_PLUGIN_ROOT}/cli/src/dashboard.ts --input .ai-dlc/ --output ${OUTPUT_DIR}
+bun run ${CLAUDE_PLUGIN_ROOT}/cli/src/dashboard.ts --input .haiku/ --output ${OUTPUT_DIR}
 ```
 
-Where `${OUTPUT_DIR}` defaults to `.ai-dlc/dashboard/` if not specified by the user.
+Where `${OUTPUT_DIR}` defaults to `.haiku/dashboard/` if not specified by the user.
 
 After generation, report:
 - The output path

@@ -1,5 +1,5 @@
 ---
-description: (Internal) Autonomous wireframe generation for AI-DLC elaboration frontend and design units
+description: (Internal) Autonomous wireframe generation for H·AI·K·U elaboration frontend and design units
 context: fork
 agent: general-purpose
 user-invocable: false
@@ -27,7 +27,7 @@ allowed-tools:
 
 # Elaborate: Wireframe Generation
 
-Autonomous wireframe generation for AI-DLC elaboration frontend and design units. This skill runs as a forked subagent — it reads a brief file from disk, generates low-fidelity HTML wireframes, and writes results to disk.
+Autonomous wireframe generation for H·AI·K·U elaboration frontend and design units. This skill runs as a forked subagent — it reads a brief file from disk, generates low-fidelity HTML wireframes, and writes results to disk.
 
 **You have NO access to `AskUserQuestion`.** All work is fully autonomous. The main elaboration skill will present wireframes to product for review.
 
@@ -35,16 +35,16 @@ Autonomous wireframe generation for AI-DLC elaboration frontend and design units
 
 ## Step 1: Read Brief
 
-Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.ai-dlc/{intent-slug}/.briefs/elaborate-wireframes.md`).
+Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.haiku/{intent-slug}/.briefs/elaborate-wireframes.md`).
 
 Parse YAML frontmatter:
 
 ```yaml
 intent_slug: my-feature
-worktree_path: /path/to/.ai-dlc/worktrees/my-feature
+worktree_path: /path/to/.haiku/worktrees/my-feature
 intent_title: My Feature Title
 design_provider_type: figma  # or empty
-design_blueprint_path: .ai-dlc/my-feature/design-blueprint.md  # or empty if no blueprint
+design_blueprint_path: .haiku/my-feature/design-blueprint.md  # or empty if no blueprint
 ```
 
 The markdown body contains:
@@ -81,7 +81,7 @@ If design mockups exist in the Design Context section:
 
 ```bash
 INTENT_SLUG="{intent_slug from brief}"
-mkdir -p ".ai-dlc/${INTENT_SLUG}/mockups"
+mkdir -p ".haiku/${INTENT_SLUG}/mockups"
 ```
 
 ---
@@ -125,7 +125,7 @@ BP_COMPONENT_GUIDELINES="..."       (from blueprint body)
 ## Step 4: Generate Wireframe HTML Per Frontend or Design Unit
 
 For each frontend or design unit from the brief, create a self-contained HTML file at:
-`.ai-dlc/{intent-slug}/mockups/unit-{NN}-{slug}-wireframe.html`
+`.haiku/{intent-slug}/mockups/unit-{NN}-{slug}-wireframe.html`
 
 Where `{NN}` is the zero-padded unit number and `{slug}` is the unit filename slug.
 
@@ -260,7 +260,7 @@ When a design blueprint exists, wireframes should carry the archetype's spatial 
 <body>
 
 <h1>{Intent Title}</h1>
-<p class="subtitle">Wireframe &mdash; Unit: {Unit Title} &mdash; AI-DLC Elaboration Artifact</p>
+<p class="subtitle">Wireframe &mdash; Unit: {Unit Title} &mdash; H·AI·K·U Elaboration Artifact</p>
 
 <div class="flow">
   <!-- Build screens here -->
@@ -364,7 +364,7 @@ When no design blueprint exists, use the standard gray/white low-fidelity aesthe
 <body>
 
 <h1>{Intent Title}</h1>
-<p class="subtitle">Wireframe &mdash; Unit: {Unit Title} &mdash; AI-DLC Elaboration Artifact</p>
+<p class="subtitle">Wireframe &mdash; Unit: {Unit Title} &mdash; H·AI·K·U Elaboration Artifact</p>
 
 <div class="flow">
   <!-- Build screens here -->
@@ -420,8 +420,8 @@ Read the unit file, find the YAML frontmatter block, add the `wireframe:` field,
 
 ```bash
 INTENT_SLUG="{intent_slug from brief}"
-git add .ai-dlc/${INTENT_SLUG}/mockups/
-git add .ai-dlc/${INTENT_SLUG}/unit-*.md
+git add .haiku/${INTENT_SLUG}/mockups/
+git add .haiku/${INTENT_SLUG}/unit-*.md
 git commit -m "elaborate: add wireframes for ${INTENT_SLUG} frontend and design units"
 ```
 
@@ -429,7 +429,7 @@ git commit -m "elaborate: add wireframes for ${INTENT_SLUG} frontend and design 
 
 ## Step 7: Write Results
 
-Write the results file to `.ai-dlc/{intent-slug}/.briefs/elaborate-wireframes-results.md`:
+Write the results file to `.haiku/{intent-slug}/.briefs/elaborate-wireframes-results.md`:
 
 ```markdown
 ---

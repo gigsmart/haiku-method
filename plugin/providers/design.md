@@ -1,6 +1,6 @@
 ---
 category: design
-description: Default design provider behavior for AI-DLC
+description: Default design provider behavior for H·AI·K·U
 ---
 
 # Design Provider — Default Instructions

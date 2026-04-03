@@ -1,33 +1,33 @@
 ---
-description: Clear all AI-DLC state and start fresh
+description: Clear all H·AI·K·U state and start fresh
 disable-model-invocation: true
 ---
 
 ## Name
 
-`ai-dlc:reset` - Clear AI-DLC state and start fresh.
+`haiku:reset` - Clear H·AI·K·U state and start fresh.
 
 ## Synopsis
 
 ```
-/ai-dlc:reset
+/haiku:reset
 ```
 
 ## Description
 
 **User-facing command** - Run this to abandon current task or start fresh.
 
-Clears all AI-DLC state for the current branch. Use this to:
+Clears all H·AI·K·U state for the current branch. Use this to:
 - Start fresh on a new task
 - Clean up after completing a task
 - Abandon a task that's no longer needed
 
-This clears AI-DLC state and removes worktrees. It does not:
+This clears H·AI·K·U state and removes worktrees. It does not:
 - Undo code changes
 - Delete branches
 - Revert commits
 
-The work you did is preserved in git. Only the AI-DLC workflow state and worktrees are cleared.
+The work you did is preserved in git. Only the H·AI·K·U workflow state and worktrees are cleared.
 
 ## Implementation
 
@@ -35,7 +35,7 @@ The work you did is preserved in git. Only the AI-DLC workflow state and worktre
 
 ```bash
 if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
-  echo "ERROR: /ai-dlc:reset cannot run in cowork mode."
+  echo "ERROR: /haiku:reset cannot run in cowork mode."
   echo "Run this in a full Claude Code CLI session."
   exit 1
 fi
@@ -75,7 +75,7 @@ If `TEAM_NAME` is not empty and `AGENT_TEAMS_ENABLED` is set:
 SendMessage({
   type: "shutdown_request",
   recipient: teammateName,
-  content: "AI-DLC reset requested. Shutting down team."
+  content: "H·AI·K·U reset requested. Shutting down team."
 })
 ```
 
@@ -100,22 +100,22 @@ REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
 
 if [ -n "$INTENT_SLUG" ]; then
   # Remove unit worktrees (pattern: {intent-slug}-{unit-slug})
-  for wt in "${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-"*; do
+  for wt in "${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}-"*; do
     [ -d "$wt" ] && git worktree remove --force "$wt" 2>/dev/null
   done
   # Remove intent worktree
-  [ -d "${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}" ] && \
-    git worktree remove --force "${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}" 2>/dev/null
+  [ -d "${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}" ] && \
+    git worktree remove --force "${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}" 2>/dev/null
 fi
 
 git worktree prune
 ```
 
-### Step 2: Delete All AI-DLC Keys
+### Step 2: Delete All H·AI·K·U Keys
 
 ```bash
 # Clear all state by removing the state directory
-INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+INTENT_DIR=".haiku/${INTENT_SLUG}"
 rm -rf "$INTENT_DIR/state/"
 ```
 
@@ -123,12 +123,12 @@ rm -rf "$INTENT_DIR/state/"
 
 Output:
 ```
-AI-DLC state cleared.
+H·AI·K·U state cleared.
 
 All iteration data, intent, criteria, and notes have been removed.
 Worktrees cleaned up.
 
-To start a new task, run `/ai-dlc:elaborate`.
+To start a new task, run `/haiku:elaborate`.
 ```
 
 ## What Gets Cleared
