@@ -7,7 +7,7 @@ discipline: documentation
 stage: ""
 workflow: ""
 ticket: ""
-hat: builder
+hat: reviewer
 retries: 1
 ---
 
