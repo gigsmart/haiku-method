@@ -6,7 +6,7 @@ depends_on: []
 # Unit: [Unit Name]
 
 <!--
-H·AI·K·U Unit Template
+AI-DLC Unit Template
 Replace bracketed text with your content.
 Delete these comment blocks before use.
 

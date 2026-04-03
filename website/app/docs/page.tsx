@@ -3,8 +3,8 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 export const metadata: Metadata = {
-	title: "Documentation - H\u00b7AI\u00b7K\u00b7U",
-	description: "Learn how to use H\u00b7AI\u00b7K\u00b7U for iterative AI-driven development.",
+	title: "Documentation - AI-DLC",
+	description: "Learn how to use AI-DLC for iterative AI-driven development.",
 }
 
 export default function DocsPage() {
@@ -13,54 +13,54 @@ export default function DocsPage() {
 	return (
 		<div className="max-w-3xl">
 			<h1 className="mb-4 text-4xl font-bold tracking-tight">Documentation</h1>
-			<p className="mb-8 text-lg text-stone-600 dark:text-stone-400">
-				Learn how to use H·AI·K·U to structure your AI-driven development
+			<p className="mb-8 text-lg text-gray-600 dark:text-gray-400">
+				Learn how to use AI-DLC to structure your AI-driven development
 				workflow.
 			</p>
 
 			<div className="prose prose-gray dark:prose-invert max-w-none">
-				<h2>Getting Started</h2>
-				<p>Install the H·AI·K·U plugin in your Claude environment:</p>
-				<div className="not-prose my-4 rounded-lg bg-stone-100 p-4 font-mono text-sm dark:bg-stone-800">
+				<h2>Quick Start</h2>
+				<p>Install the AI-DLC plugin in your Claude Code project:</p>
+				<div className="not-prose my-4 rounded-lg bg-gray-100 p-4 font-mono text-sm dark:bg-gray-800">
 					<div><code>/plugin marketplace add thebushidocollective/ai-dlc</code></div>
-					<div><code>/plugin install haiku@thebushidocollective-ai-dlc --scope project</code></div>
+					<div><code>/plugin install ai-dlc@thebushidocollective-ai-dlc --scope project</code></div>
 				</div>
 
-				<p>Then use the stage commands to structure your workflow:</p>
+				<p>Then use the hat commands to structure your workflow:</p>
 				<ul>
 					<li>
-						<code>/haiku:new</code> - Create a new intent and select a studio
+						<code>/researcher</code> - Switch to research mode
 					</li>
 					<li>
-						<code>/haiku:run</code> - Run the stage pipeline
+						<code>/planner</code> - Switch to planning mode
 					</li>
 					<li>
-						<code>/haiku:execute</code> - Drive unit implementations
+						<code>/builder</code> - Switch to building mode
 					</li>
 					<li>
-						<code>/haiku:review</code> - Pre-delivery code review
+						<code>/reviewer</code> - Switch to review mode
 					</li>
 				</ul>
 
 				<h2>Core Concepts</h2>
 				<p>
-					H·AI·K·U is built around <strong>studios</strong> and{" "}
-					<strong>stages</strong> that guide your work through a structured
-					lifecycle.
+					AI-DLC is built around two core concepts: <strong>hats</strong> and{" "}
+					<strong>units</strong>.
 				</p>
 
-				<h3>Studios</h3>
+				<h3>Hats</h3>
 				<p>
-					Studios are lifecycle templates tailored to different work types
-					(software, design, etc.). Each studio defines the stages and phases
-					appropriate for its domain.
+					Hats represent distinct mindsets and responsibilities. Each hat has a
+					specific purpose and switching between them is intentional. This
+					prevents context drift and ensures each phase of development gets
+					proper attention.
 				</p>
 
-				<h3>Stages</h3>
+				<h3>Units</h3>
 				<p>
-					Stages represent progression through the lifecycle: elaboration,
-					execution, operation, and reflection. Each stage has specific phases
-					that ensure thorough, disciplined delivery.
+					Units are focused pieces of work with clear success criteria. Breaking
+					work into units ensures progress is measurable and momentum is
+					maintained. Each unit goes through all four hat phases.
 				</p>
 
 				{docs.length > 0 && (
@@ -71,12 +71,12 @@ export default function DocsPage() {
 								<li key={doc.slug}>
 									<Link
 										href={`/docs/${doc.slug}/`}
-										className="text-teal-600 hover:underline dark:text-teal-400"
+										className="text-blue-600 hover:underline dark:text-blue-400"
 									>
 										{doc.title}
 									</Link>
 									{doc.description && (
-										<span className="text-stone-600 dark:text-stone-400">
+										<span className="text-gray-600 dark:text-gray-400">
 											{" "}
 											- {doc.description}
 										</span>

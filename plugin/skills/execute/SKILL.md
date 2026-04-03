@@ -1,64 +1,40 @@
 ---
-description: Run the H·AI·K·U execution loop - autonomous build/review cycles until completion. Prefer `/haiku:run` for stage-based workflows.
+description: Run the AI-DLC execution loop - autonomous build/review cycles until completion
 user-invocable: true
 argument-hint: "[intent-slug] [unit-name]"
 ---
 
-## Deprecation Notice
-
-> **This command is a backward-compatibility alias.** For stage-based intents, use `/haiku:run` instead. This command continues to work for legacy intents without studio/stage configuration.
-
-**Stage-based intent detection:** Before running legacy execution, check if the active intent has a `studio:` field:
-
-```bash
-source "$CLAUDE_PLUGIN_ROOT/lib/state.sh"
-local intent_dir=$(hku_find_active_intent)
-if [ -n "$intent_dir" ]; then
-  local studio=$(hku_frontmatter_get "studio" "$intent_dir/intent.md")
-  if [ -n "$studio" ]; then
-    echo "This intent uses the stage-based workflow (studio: $studio)."
-    echo "Delegating to /haiku:run for the build phase..."
-    # Invoke /haiku:run via Skill tool
-    exit 0
-  fi
-fi
-```
-
-If the intent has a `studio:` field, print a deprecation notice and invoke `/haiku:run` via the `Skill` tool. Otherwise, continue with the legacy execution flow below.
-
----
-
 ## Name
 
-`haiku:execute` - Run the autonomous H·AI·K·U execution loop.
+`ai-dlc:execute` - Run the autonomous AI-DLC execution loop.
 
 ## Synopsis
 
 ```
-/haiku:execute [intent-slug] [unit-name]
+/ai-dlc:execute [intent-slug] [unit-name]
 ```
 
 ## Description
 
-**User-facing command** - Continue the H·AI·K·U autonomous execution loop.
+**User-facing command** - Continue the AI-DLC autonomous execution loop.
 
 **Two modes:**
-- `/haiku:execute` — DAG-driven, behavior depends on `change_strategy`
-- `/haiku:execute unit-01-backend` — target a specific unit (precheck deps first)
-- `/haiku:execute my-feature unit-01-backend` — with explicit intent slug
+- `/ai-dlc:execute` — DAG-driven, behavior depends on `change_strategy`
+- `/ai-dlc:execute unit-01-backend` — target a specific unit (precheck deps first)
+- `/ai-dlc:execute my-feature unit-01-backend` — with explicit intent slug
 
 This command resumes work from the current hat and runs until:
-- All units complete (`/haiku:advance` completes the intent automatically)
+- All units complete (`/ai-dlc:advance` completes the intent automatically)
 - User intervention needed (all units blocked)
-- Session exhausted (Stop hook instructs agent to call `/haiku:execute`)
+- Session exhausted (Stop hook instructs agent to call `/ai-dlc:execute`)
 
 **User Flow:**
 ```
-User: /haiku:elaborate           # Once - define intent, criteria, and studio
-User: /haiku:execute             # Kicks off autonomous loop
+User: /ai-dlc:elaborate           # Once - define intent, criteria, and workflow
+User: /ai-dlc:execute             # Kicks off autonomous loop
 ...AI works autonomously across all units...
 ...session exhausts, Stop hook fires...
-Agent: /haiku:execute            # Agent continues (subagents have clean context)
+Agent: /ai-dlc:execute            # Agent continues (subagents have clean context)
 ...repeat until all units complete...
 AI: Intent complete! [summary]
 ```
@@ -67,8 +43,8 @@ AI: Intent complete! [summary]
 - Fully autonomous - Agent continues across units without stopping
 - Subagents have clean context - No `/clear` needed between iterations
 - User intervention - Only required when ALL units are blocked
-- State preserved - Progress saved in `.haiku/intents/{slug}/state/` between sessions
-- Clean context recommended - Run `/clear` before `/haiku:execute` if prior conversation exists
+- State preserved - Progress saved in `.ai-dlc/{slug}/state/` between sessions
+- Clean context recommended - Run `/clear` before `/ai-dlc:execute` if prior conversation exists
 
 **CRITICAL: No Questions During Execution**
 
@@ -86,7 +62,7 @@ If you encounter ambiguity:
 3. Let the reviewer hat catch issues on the next pass
 
 If truly blocked (cannot proceed without user input):
-1. Document the blocker clearly in `hku_state_save "$INTENT_DIR" "blockers.md"`
+1. Document the blocker clearly in `dlc_state_save "$INTENT_DIR" "blockers.md"`
 2. Stop the loop naturally (don't read or execute the advance skill definition)
 3. The Stop hook will alert the user that human intervention is required
 
@@ -96,14 +72,14 @@ If truly blocked (cannot proceed without user input):
 
 Before starting the execution loop, check that the context window is reasonably clear. A full context window means the orchestrator can't manage the build loop effectively.
 
-**Check:** If this is the START of a conversation (no prior messages beyond system prompts and the /haiku:execute invocation), proceed directly.
+**Check:** If this is the START of a conversation (no prior messages beyond system prompts and the /ai-dlc:execute invocation), proceed directly.
 
 **Check:** If there is significant prior conversation context (e.g., elaboration discussion, debugging, etc.), recommend clearing first:
 
 ```
 ⚠️ Your context window has significant prior content. The execution loop works best with a clean context.
 
-Run `/clear` then `/haiku:execute` to start fresh. Your progress is saved in state files — nothing will be lost.
+Run `/clear` then `/ai-dlc:execute` to start fresh. Your progress is saved in state files — nothing will be lost.
 ```
 
 If the user explicitly says to continue anyway, proceed — but note that the execution loop may hit context limits sooner and need more session restarts.
@@ -143,7 +119,7 @@ Hard gates are named checkpoints that MUST be satisfied before the workflow adva
 
 | Gate | Between | Condition | Enforcement |
 |------|---------|-----------|-------------|
-| `PLAN_APPROVED` | planner -> builder | Plan saved to `.haiku/intents/{slug}/state/`, all criteria have planned tasks | Check plan exists and covers all criteria |
+| `PLAN_APPROVED` | planner -> builder | Plan saved to `.ai-dlc/{slug}/state/`, all criteria have planned tasks | Check plan exists and covers all criteria |
 | `TESTS_PASS` | builder -> reviewer | All quality gates (tests, lint, types) pass | Run test suite, verify exit code 0 |
 | `CRITERIA_MET` | reviewer -> advance | Each criterion has PASS with evidence | Parse structured completion marker |
 
@@ -162,7 +138,7 @@ if ! verify_gate "TESTS_PASS"; then
 fi
 ```
 
-Gates are checked by the `/haiku:advance` skill. If a gate fails, advance is blocked and the agent must fix the issue before retrying.
+Gates are checked by the `/ai-dlc:advance` skill. If a gate fails, advance is blocked and the agent must fix the issue before retrying.
 
 **An agent MUST NEVER skip a hard gate.** Hard gates exist to prevent the most common workflow failures:
 - Reviewing code that doesn't compile
@@ -175,12 +151,12 @@ Execution requires full CLI capabilities (file editing, worktrees, test executio
 
 ```bash
 if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
-  echo "ERROR: /haiku:execute cannot run in cowork mode."
+  echo "ERROR: /ai-dlc:execute cannot run in cowork mode."
   echo "Execution requires a full Claude Code CLI session with file system access."
   echo ""
   echo "To continue:"
   echo "  1. Open Claude Code in your project directory"
-  echo "  2. Run /haiku:execute"
+  echo "  2. Run /ai-dlc:execute"
   exit 1
 fi
 ```
@@ -191,7 +167,7 @@ If `CLAUDE_CODE_IS_COWORK=1`, stop immediately with the message above. Do NOT pr
 
 **CRITICAL: The orchestrator MUST run in the intent worktree, not the main working directory.**
 
-Before loading state, discover all active intents from `haiku/*` branches:
+Before loading state, discover all active intents from `ai-dlc/*` branches:
 
 ```bash
 # Source DAG library for branch discovery
@@ -200,16 +176,16 @@ source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
 # Discover active intents from branches (worktrees, local, remote)
 declare -A ACTIVE_INTENTS  # slug -> "source"
 
-while IFS='|' read -r slug studio source branch; do
+while IFS='|' read -r slug workflow source branch; do
   [ -z "$slug" ] && continue
   ACTIVE_INTENTS[$slug]="$source"
 done < <(discover_branch_intents true)
 
 # Handle results
 if [ ${#ACTIVE_INTENTS[@]} -eq 0 ]; then
-  echo "No active H·AI·K·U intent found."
+  echo "No active AI-DLC intent found."
   echo ""
-  echo "Run /haiku:elaborate to start a new task, or /haiku:resume <slug> if you know the intent slug."
+  echo "Run /ai-dlc:elaborate to start a new task, or /ai-dlc:resume <slug> if you know the intent slug."
   exit 0
 fi
 
@@ -224,47 +200,53 @@ elif [ ${#ACTIVE_INTENTS[@]} -gt 1 ]; then
     echo "- **$slug** (${ACTIVE_INTENTS[$slug]})"
   done
   echo ""
-  echo "Use /haiku:execute <slug> to specify which intent to execute."
+  echo "Use /ai-dlc:execute <slug> to specify which intent to execute."
   exit 0
 fi
 
 # Ensure we're in the intent worktree
 REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
-INTENT_BRANCH="haiku/${INTENT_SLUG}/main"
-INTENT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}"
+INTENT_BRANCH="ai-dlc/${INTENT_SLUG}/main"
+INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
 
-mkdir -p "${REPO_ROOT}/.haiku/worktrees"
-
-source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
+mkdir -p "${REPO_ROOT}/.ai-dlc/worktrees"
+if ! grep -q '\.ai-dlc/worktrees/' "${REPO_ROOT}/.gitignore" 2>/dev/null; then
+  echo '.ai-dlc/worktrees/' >> "${REPO_ROOT}/.gitignore"
+  git add "${REPO_ROOT}/.gitignore"
+  git commit -m "chore: gitignore .ai-dlc/worktrees"
+fi
 
 if [ ! -d "$INTENT_WORKTREE" ]; then
-  persistence_create_workspace "$INTENT_SLUG" ""
+  # Always branch off the default branch
+  source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+  DEFAULT_BRANCH=$(resolve_default_branch "auto" "$REPO_ROOT")
+  git worktree add -B "$INTENT_BRANCH" "$INTENT_WORKTREE" "$DEFAULT_BRANCH"
 
   # Record worktree creation telemetry
   source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-  haiku_telemetry_init
-  haiku_record_worktree_event "created" "${INTENT_WORKTREE}"
+  aidlc_telemetry_init
+  aidlc_record_worktree_event "created" "${INTENT_WORKTREE}"
 fi
 
 cd "$INTENT_WORKTREE"
 ```
 
-**Important:** The orchestrator runs in `.haiku/worktrees/{intent-slug}/`, NOT the original repo directory. This keeps main clean and enables parallel intents.
+**Important:** The orchestrator runs in `.ai-dlc/worktrees/{intent-slug}/`, NOT the original repo directory. This keeps main clean and enables parallel intents.
 
 ### Step 0a: Parse Unit Target
 
-If arguments were provided to `/haiku:execute`, disambiguate them:
+If arguments were provided to `/ai-dlc:execute`, disambiguate them:
 
 ```bash
-# Arguments: /haiku:execute [arg1] [arg2]
+# Arguments: /ai-dlc:execute [arg1] [arg2]
 # Disambiguation:
 #   - If arg starts with "unit-" or matches a unit file in INTENT_DIR: treat as unit target
 #   - Otherwise: treat as intent slug
-#   - /haiku:execute my-feature unit-01-backend → intent=my-feature, unit=unit-01-backend
-#   - /haiku:execute unit-01-backend → intent=(auto-detected), unit=unit-01-backend
+#   - /ai-dlc:execute my-feature unit-01-backend → intent=my-feature, unit=unit-01-backend
+#   - /ai-dlc:execute unit-01-backend → intent=(auto-detected), unit=unit-01-backend
 
 TARGET_UNIT=""
-INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
+INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
 
 # Parse argument(s) into TARGET_UNIT
 for arg in "$@"; do
@@ -290,7 +272,7 @@ if [ -n "$TARGET_UNIT" ]; then
     echo "Unit not found: ${TARGET_UNIT}"
     echo ""
     echo "Available units:"
-    for f in "$INTENT_DIR"/stages/*/units/unit-*.md; do
+    for f in "$INTENT_DIR"/unit-*.md; do
       [ -f "$f" ] && echo "  - $(basename "$f" .md)"
     done
     exit 1
@@ -322,9 +304,19 @@ fi
 Ensure the intent branch tracks the remote so teammates can push their unit branches. This applies whether we're in a cloned cowork workspace or a local repo with a remote.
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
-persistence_ensure_tracking "$INTENT_SLUG"
-persistence_sync "$INTENT_SLUG"
+# Verify remote exists and configure upstream tracking
+if git remote get-url origin &>/dev/null; then
+  INTENT_BRANCH="ai-dlc/${INTENT_SLUG}/main"
+
+  # Ensure the intent branch tracks the remote
+  git branch --set-upstream-to=origin/"$INTENT_BRANCH" 2>/dev/null || true
+
+  # Pull latest before starting to pick up teammate work
+  git pull --rebase 2>/dev/null || true
+
+  # Push intent branch to remote so teammates can access it
+  git push -u origin "$INTENT_BRANCH" 2>/dev/null || true
+fi
 ```
 
 ### Step 0c: Provider Sync Check
@@ -337,21 +329,21 @@ PROVIDERS=$(load_providers)
 TICKETING_TYPE=$(echo "$PROVIDERS" | jq -r '.ticketing.type // empty')
 
 if [ -n "$TICKETING_TYPE" ]; then
-  INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
+  INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
   MISSING=""
 
   # Check epic field in intent.md
   if [ -f "$INTENT_DIR/intent.md" ]; then
-    EPIC=$(hku_frontmatter_get "epic" "$INTENT_DIR/intent.md" 2>/dev/null || echo "")
+    EPIC=$(dlc_frontmatter_get "epic" "$INTENT_DIR/intent.md" 2>/dev/null || echo "")
     if [ -z "$EPIC" ]; then
       MISSING="${MISSING}\n- intent.md: epic field is empty"
     fi
   fi
 
   # Check ticket field in each unit file
-  for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
+  for unit_file in "$INTENT_DIR"/unit-*.md; do
     [ -f "$unit_file" ] || continue
-    TICKET=$(hku_frontmatter_get "ticket" "$unit_file" 2>/dev/null || echo "")
+    TICKET=$(dlc_frontmatter_get "ticket" "$unit_file" 2>/dev/null || echo "")
     if [ -z "$TICKET" ]; then
       MISSING="${MISSING}\n- $(basename "$unit_file"): ticket field is empty"
     fi
@@ -362,7 +354,7 @@ if [ -n "$TICKETING_TYPE" ]; then
     echo "> **WARNING: Ticketing provider '${TICKETING_TYPE}' is configured but some ticket fields are empty:**"
     echo -e "$MISSING"
     echo ">"
-    echo "> Consider running \`/haiku:elaborate\` to sync tickets, or populate fields manually."
+    echo "> Consider running \`/ai-dlc:elaborate\` to sync tickets, or populate fields manually."
     echo ""
   fi
 fi
@@ -371,18 +363,18 @@ fi
 ### Step 1: Load State
 
 ```bash
-# Intent-level state is stored in .haiku/intents/{slug}/state/
-INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
-STATE=$(hku_state_load "$INTENT_DIR" "iteration.json")
+# Intent-level state is stored in .ai-dlc/{slug}/state/
+INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+STATE=$(dlc_state_load "$INTENT_DIR" "iteration.json")
 # INTENT_SLUG already derived from Step 0
 ```
 
 If `INTENT_SLUG` is empty (no intent exists at all):
 ```
-No H·AI·K·U state found.
+No AI-DLC state found.
 
-If you have existing intent artifacts in .haiku/, run /haiku:resume to continue.
-Otherwise, run /haiku:elaborate to start a new task.
+If you have existing intent artifacts in .ai-dlc/, run /ai-dlc:resume to continue.
+Otherwise, run /ai-dlc:elaborate to start a new task.
 ```
 
 If `INTENT_SLUG` exists but `STATE` is empty (first execution run — elaboration wrote artifacts but no iteration state):
@@ -390,28 +382,29 @@ If `INTENT_SLUG` exists but `STATE` is empty (first execution run — elaboratio
 Initialize `iteration.json` from the intent artifacts:
 
 ```bash
-INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
+INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
 INTENT_FILE="$INTENT_DIR/intent.md"
 
-# Read stage and studio from intent.md frontmatter
-ACTIVE_STAGE=$(hku_frontmatter_get "active_stage" "$INTENT_FILE" 2>/dev/null || echo "research")
-STUDIO=$(hku_frontmatter_get "studio" "$INTENT_FILE" 2>/dev/null || echo "ideation")
-[ -z "$ACTIVE_STAGE" ] && ACTIVE_STAGE="research"
-[ -z "$STUDIO" ] && STUDIO="ideation"
+# Read workflow from intent.md frontmatter
+WORKFLOW_NAME=$(dlc_frontmatter_get "workflow" "$INTENT_FILE" 2>/dev/null || echo "default")
 
-# Get hat sequence from stage definition
-source "${CLAUDE_PLUGIN_ROOT}/lib/hat.sh"
-STAGE_HATS=$(hku_get_hat_sequence "$ACTIVE_STAGE" "$STUDIO")
-FIRST_HAT=$(echo "$STAGE_HATS" | awk '{print $1}')
+# Resolve workflow to hat sequence
+if [ -f ".ai-dlc/workflows.yml" ]; then
+  WORKFLOW_HATS=$(dlc_frontmatter_get "${WORKFLOW_NAME}" ".ai-dlc/workflows.yml" 2>/dev/null || echo "")
+fi
+if [ -z "$WORKFLOW_HATS" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/workflows.yml" ]; then
+  WORKFLOW_HATS=$(dlc_frontmatter_get "${WORKFLOW_NAME}" "${CLAUDE_PLUGIN_ROOT}/workflows.yml" 2>/dev/null || echo "")
+fi
+FIRST_HAT=$(echo "$WORKFLOW_HATS" | jq -r '.[0]')
 
 # Initialize iteration state
-STATE='{"iteration":1,"hat":"'"${FIRST_HAT}"'","status":"active"}'
-hku_state_save "$INTENT_DIR" "iteration.json" "$STATE"
+STATE='{"iteration":1,"hat":"'"${FIRST_HAT}"'","workflowName":"'"${WORKFLOW_NAME}"'","workflow":'"${WORKFLOW_HATS}"',"status":"active"}'
+dlc_state_save "$INTENT_DIR" "iteration.json" "$STATE"
 ```
 
 If status is "completed":
 ```
-Task already complete! Run /haiku:reset to start a new task.
+Task already complete! Run /ai-dlc:reset to start a new task.
 ```
 
 **Persist or clear targetUnit in state:**
@@ -419,12 +412,12 @@ Task already complete! Run /haiku:reset to start a new task.
 ```bash
 # If targeting: save to state
 if [ -n "$TARGET_UNIT" ]; then
-  STATE=$(echo "$STATE" | hku_json_set "targetUnit" "$TARGET_UNIT")
+  STATE=$(echo "$STATE" | dlc_json_set "targetUnit" "$TARGET_UNIT")
 else
   # Clear any stale targetUnit from previous targeted run
-  STATE=$(echo "$STATE" | hku_json_set "targetUnit" "")
+  STATE=$(echo "$STATE" | dlc_json_set "targetUnit" "")
 fi
-hku_state_save "$INTENT_DIR" "iteration.json" "$STATE"
+dlc_state_save "$INTENT_DIR" "iteration.json" "$STATE"
 ```
 
 ### State Persistence
@@ -473,12 +466,12 @@ update_state_section "$INTENT_DIR" "Current Position" "- **Hat:** builder
 
 ```bash
 AGENT_TEAMS_ENABLED="${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}"
-CHANGE_STRATEGY=$(hku_frontmatter_get "git.change_strategy" "$INTENT_DIR/intent.md" 2>/dev/null || echo "unit")
+CHANGE_STRATEGY=$(dlc_frontmatter_get "git.change_strategy" "$INTENT_DIR/intent.md" 2>/dev/null || echo "unit")
 
 # Pure unit strategy always uses Sequential path (subagent delegation, no team orchestration).
 # Hybrid strategy (intent-level "intent" + some units overriding to "unit") keeps Teams enabled —
 # the intent-level strategy drives orchestration. Per-unit overrides are resolved at merge time
-# by /haiku:advance, not at spawn time.
+# by /ai-dlc:advance, not at spawn time.
 if [ "$CHANGE_STRATEGY" = "unit" ]; then
   AGENT_TEAMS_ENABLED=""
 fi
@@ -527,7 +520,7 @@ source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
 Check if the team already exists before creating:
 
 ```bash
-TEAM_NAME="haiku-${INTENT_SLUG}"
+TEAM_NAME="ai-dlc-${INTENT_SLUG}"
 TEAM_CONFIG="${CLAUDE_CONFIG_DIR}/teams/${TEAM_NAME}/config.json"
 ```
 
@@ -535,16 +528,16 @@ If team config does NOT exist:
 
 ```javascript
 TeamCreate({
-  team_name: `haiku-${intentSlug}`,
-  description: `H·AI·K·U: ${intentTitle}`
+  team_name: `ai-dlc-${intentSlug}`,
+  description: `AI-DLC: ${intentTitle}`
 })
 ```
 
 Save `teamName` to `iteration.json`:
 
 ```bash
-STATE=$(echo "$STATE" | hku_json_set "teamName" "$TEAM_NAME")
-hku_state_save "$INTENT_DIR" "iteration.json" "$STATE"
+STATE=$(echo "$STATE" | dlc_json_set "teamName" "$TEAM_NAME")
+dlc_state_save "$INTENT_DIR" "iteration.json" "$STATE"
 ```
 
 ### Step 3 (Teams): Spawn ALL Ready Units in Parallel
@@ -555,7 +548,7 @@ Loop over ALL ready units from the DAG (not just one):
 source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
 
 # Read active_pass from intent frontmatter for pass-filtered selection
-ACTIVE_PASS=$(hku_frontmatter_get "active_pass" "$INTENT_DIR/intent.md" 2>/dev/null || echo "")
+ACTIVE_PASS=$(dlc_frontmatter_get "active_pass" "$INTENT_DIR/intent.md" 2>/dev/null || echo "")
 
 if [ -n "$ACTIVE_PASS" ]; then
   READY_UNITS=$(find_ready_units_for_pass "$INTENT_DIR" "$ACTIVE_PASS")
@@ -563,19 +556,14 @@ else
   READY_UNITS=$(find_ready_units "$INTENT_DIR")
 fi
 
-# Intent-level hat sequence from stage (default fallback)
-ACTIVE_STAGE=$(hku_frontmatter_get "active_stage" "$INTENT_DIR/intent.md" 2>/dev/null || echo "research")
-STUDIO=$(hku_frontmatter_get "studio" "$INTENT_DIR/intent.md" 2>/dev/null || echo "ideation")
-[ -z "$ACTIVE_STAGE" ] && ACTIVE_STAGE="research"
-[ -z "$STUDIO" ] && STUDIO="ideation"
-source "${CLAUDE_PLUGIN_ROOT}/lib/hat.sh"
-INTENT_STAGE_HATS=$(hku_get_hat_sequence "$ACTIVE_STAGE" "$STUDIO")
+# Intent-level workflow (default fallback)
+INTENT_WORKFLOW_HATS=$(echo "$STATE" | dlc_json_get "workflow")
 
 # If no ready units and active_pass is set, check if the pass is complete
 # (all units for this pass are completed, not just blocked)
 if [ -z "$READY_UNITS" ] && [ -n "$ACTIVE_PASS" ]; then
   PASS_COMPLETE=true
-  for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
+  for unit_file in "$INTENT_DIR"/unit-*.md; do
     [ -f "$unit_file" ] || continue
     unit_pass=$(parse_unit_pass "$unit_file")
     [ "$unit_pass" != "$ACTIVE_PASS" ] && continue
@@ -595,7 +583,7 @@ if [ -z "$READY_UNITS" ] && [ -n "$ACTIVE_PASS" ]; then
 fi
 ```
 
-**Include repo URL for cowork**: If operating in a cloned workspace, include the repo URL in each teammate's prompt: "Repository: `<remote-url>`. Clone and checkout `haiku/<intent-slug>` if you don't have local access." This enables teammates to clone independently in cowork mode.
+**Include repo URL for cowork**: If operating in a cloned workspace, include the repo URL in each teammate's prompt: "Repository: `<remote-url>`. Clone and checkout `ai-dlc/<intent-slug>` if you don't have local access." This enables teammates to clone independently in cowork mode.
 
 ```bash
 # Capture remote URL for teammate prompts
@@ -609,8 +597,8 @@ For EACH ready unit:
 ```bash
 UNIT_NAME=$(basename "$UNIT_FILE" .md)
 UNIT_SLUG="${UNIT_NAME#unit-}"
-UNIT_BRANCH="haiku/${INTENT_SLUG}/${UNIT_SLUG}"
-WORKTREE_PATH="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
+UNIT_BRANCH="ai-dlc/${INTENT_SLUG}/${UNIT_SLUG}"
+WORKTREE_PATH="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
 
 if [ ! -d "$WORKTREE_PATH" ]; then
   # Always branch off the default branch
@@ -620,8 +608,8 @@ if [ ! -d "$WORKTREE_PATH" ]; then
 
   # Record worktree creation telemetry
   source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-  haiku_telemetry_init
-  haiku_record_worktree_event "created" "${WORKTREE_PATH}"
+  aidlc_telemetry_init
+  aidlc_record_worktree_event "created" "${WORKTREE_PATH}"
 fi
 ```
 
@@ -634,33 +622,65 @@ git add "$UNIT_FILE"
 git commit -m "status: mark $(basename "$UNIT_FILE" .md) as in_progress"
 ```
 
-3. **Resolve per-unit hat sequence** — determine the stage for this unit based on its discipline, then get the hat sequence from the stage definition:
+3. **Resolve per-unit workflow** — read the unit's `workflow:` frontmatter field. If present, resolve it to a hat sequence. If absent, check for discipline-based defaults before falling back to the intent-level workflow:
 
 ```bash
-# Determine stage from unit discipline
-UNIT_DISCIPLINE=$(hku_frontmatter_get "discipline" "$UNIT_FILE" 2>/dev/null || echo "")
-UNIT_STAGE="$ACTIVE_STAGE"  # Default to intent-level stage
-case "$UNIT_DISCIPLINE" in
-  design)          UNIT_STAGE="design" ;;
-  infrastructure)  UNIT_STAGE="operations" ;;
-  observability)   UNIT_STAGE="operations" ;;
-  *)               ;;  # use intent-level stage
-esac
+UNIT_WORKFLOW_NAME=$(dlc_frontmatter_get "workflow" "$UNIT_FILE" 2>/dev/null || echo "")
 
-# Get hat sequence from the resolved stage
-UNIT_STAGE_HATS=$(hku_get_hat_sequence "$UNIT_STAGE" "$STUDIO" 2>/dev/null)
-[ -z "$UNIT_STAGE_HATS" ] && UNIT_STAGE_HATS="$INTENT_STAGE_HATS"
+# Discipline-based fallback: auto-route discipline: design → workflow: design
+if [ -z "$UNIT_WORKFLOW_NAME" ]; then
+  UNIT_DISCIPLINE=$(dlc_frontmatter_get "discipline" "$UNIT_FILE" 2>/dev/null || echo "")
+  case "$UNIT_DISCIPLINE" in
+    design)          UNIT_WORKFLOW_NAME="design" ;;
+    infrastructure)  UNIT_WORKFLOW_NAME="default" ;;
+    observability)   UNIT_WORKFLOW_NAME="default" ;;
+    *)               ;;  # fall through to intent-level
+  esac
+fi
 
-FIRST_HAT=$(echo "$UNIT_STAGE_HATS" | awk '{print $1}')
+if [ -n "$UNIT_WORKFLOW_NAME" ]; then
+  # Resolve unit-specific workflow
+  UNIT_WORKFLOW_HATS=""
+  if [ -f ".ai-dlc/workflows.yml" ]; then
+    UNIT_WORKFLOW_HATS=$(dlc_frontmatter_get "${UNIT_WORKFLOW_NAME}.hats" ".ai-dlc/workflows.yml" 2>/dev/null || echo "")
+  fi
+  if [ -z "$UNIT_WORKFLOW_HATS" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/workflows.yml" ]; then
+    UNIT_WORKFLOW_HATS=$(dlc_frontmatter_get "${UNIT_WORKFLOW_NAME}.hats" "${CLAUDE_PLUGIN_ROOT}/workflows.yml" 2>/dev/null || echo "")
+  fi
+  [ -z "$UNIT_WORKFLOW_HATS" ] && UNIT_WORKFLOW_HATS="$INTENT_WORKFLOW_HATS"
+else
+  UNIT_WORKFLOW_HATS="$INTENT_WORKFLOW_HATS"
+fi
+
+# Apply pass-level workflow constraint if active_pass is set
+if [ -n "$ACTIVE_PASS" ] && [ -n "$UNIT_WORKFLOW_NAME" ]; then
+  source "${CLAUDE_PLUGIN_ROOT}/lib/pass.sh"
+  CONSTRAINED_WORKFLOW=$(constrain_workflow "$ACTIVE_PASS" "$UNIT_WORKFLOW_NAME")
+  if [ "$CONSTRAINED_WORKFLOW" != "$UNIT_WORKFLOW_NAME" ]; then
+    echo "Note: Workflow '$UNIT_WORKFLOW_NAME' not available in '$ACTIVE_PASS' pass. Using '$CONSTRAINED_WORKFLOW'."
+    UNIT_WORKFLOW_NAME="$CONSTRAINED_WORKFLOW"
+    # Re-resolve hats for the constrained workflow
+    UNIT_WORKFLOW_HATS=""
+    if [ -f ".ai-dlc/workflows.yml" ]; then
+      UNIT_WORKFLOW_HATS=$(dlc_frontmatter_get "${UNIT_WORKFLOW_NAME}.hats" ".ai-dlc/workflows.yml" 2>/dev/null || echo "")
+    fi
+    if [ -z "$UNIT_WORKFLOW_HATS" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/workflows.yml" ]; then
+      UNIT_WORKFLOW_HATS=$(dlc_frontmatter_get "${UNIT_WORKFLOW_NAME}.hats" "${CLAUDE_PLUGIN_ROOT}/workflows.yml" 2>/dev/null || echo "")
+    fi
+    [ -z "$UNIT_WORKFLOW_HATS" ] && UNIT_WORKFLOW_HATS="$INTENT_WORKFLOW_HATS"
+  fi
+fi
+
+FIRST_HAT=$(echo "$UNIT_WORKFLOW_HATS" | jq -r '.[0]')
 ```
 
 4. **Track unit hat in unit frontmatter** (per-unit hat derived from unit-*.md + DAG):
 
 ```bash
 # Per-unit hat tracking is derived from unit frontmatter status and the DAG.
-# The unit's current hat position is determined by its status field
-# and the stage's hat sequence (determined by discipline).
-hku_frontmatter_set "hat" "${FIRST_HAT}" "$INTENT_DIR/${UNIT_NAME}.md"
+# The unit's current workflow position is determined by its status field
+# and the workflow defined in unit frontmatter or intent-level fallback.
+dlc_frontmatter_set "hat" "${FIRST_HAT}" "$INTENT_DIR/${UNIT_NAME}.md"
 git add "$INTENT_DIR/${UNIT_NAME}.md"
 git commit -m "status: set hat for ${UNIT_NAME}"
 ```
@@ -668,9 +688,9 @@ git commit -m "status: set hat for ${UNIT_NAME}"
 5. **Load hat instructions for the first hat**:
 
 ```bash
-# Load hat instructions from stage-based resolution
+# Load hat instructions using augmentation pattern (plugin hat + project augmentation)
 source "${CLAUDE_PLUGIN_ROOT}/lib/hat.sh"
-HAT_INSTRUCTIONS=$(hku_resolve_hat_instructions "${FIRST_HAT}" "$UNIT_STAGE" "$STUDIO")
+HAT_INSTRUCTIONS=$(load_hat_instructions "${FIRST_HAT}")
 ```
 
 5. **Select agent type based on hat**:
@@ -716,7 +736,7 @@ Task({
   model: MODEL_PROFILE !== "inherit" ? MODEL_PROFILE : undefined,
   description: `${FIRST_HAT}: ${unitName}`,
   name: `${FIRST_HAT}-${unitSlug}`,
-  team_name: `haiku-${intentSlug}`,
+  team_name: `ai-dlc-${intentSlug}`,
 
   prompt: `
     Execute the ${FIRST_HAT} role for unit ${unitName}.
@@ -763,20 +783,20 @@ The lead processes auto-delivered teammate messages. Handle each event type:
 
 When a teammate reports successful completion:
 
-1. Read current hat for this unit from unit frontmatter (`hku_frontmatter_get "hat" "$UNIT_FILE"`)
-2. Read this unit's hat sequence from its stage (determined by discipline)
-3. Find current hat's index in the stage's hat sequence
-4. Determine next hat: `stageHats[currentIndex + 1]`
+1. Read current hat for this unit from unit frontmatter (`dlc_frontmatter_get "hat" "$UNIT_FILE"`)
+2. Read this unit's workflow from unit frontmatter or intent-level fallback
+3. Find current hat's index in the unit's workflow array
+4. Determine next hat: `unitWorkflow[currentIndex + 1]`
 
-**If next hat exists** (not at end of sequence):
+**If next hat exists** (not at end of workflow):
 
-a. Update hat in unit frontmatter: `hku_frontmatter_set "hat" "$nextHat" "$UNIT_FILE"`
+a. Update hat in unit frontmatter: `dlc_frontmatter_set "hat" "$nextHat" "$UNIT_FILE"`
 b. Commit: `git add "$UNIT_FILE" && git commit -m "status: advance hat for $(basename "$UNIT_FILE" .md)"`
-c. Load hat instructions for nextHat from stage:
+c. Load hat instructions for nextHat using augmentation pattern:
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/hat.sh"
-HAT_INSTRUCTIONS=$(hku_resolve_hat_instructions "${nextHat}" "$UNIT_STAGE" "$STUDIO")
+HAT_INSTRUCTIONS=$(load_hat_instructions "${nextHat}")
 ```
 
 d. Select agent type based on hat:
@@ -797,7 +817,7 @@ Task({
   model: MODEL_PROFILE !== "inherit" ? MODEL_PROFILE : undefined,
   description: `${nextHat}: ${unitName}`,
   name: `${nextHat}-${unitSlug}`,
-  team_name: `haiku-${intentSlug}`,
+  team_name: `ai-dlc-${intentSlug}`,
 
   prompt: `
     Execute the ${nextHat} role for unit ${unitName}.
@@ -849,8 +869,8 @@ b. Merge or PR based on effective change strategy:
 # Determine merge behavior based on per-unit or intent-level change strategy
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
 source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
-INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
-CONFIG=$(get_haiku_config "$INTENT_DIR")
+INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
 AUTO_MERGE=$(echo "$CONFIG" | jq -r '.auto_merge // "true"')
 AUTO_SQUASH=$(echo "$CONFIG" | jq -r '.auto_squash // "false"')
 DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
@@ -859,13 +879,13 @@ DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
 UNIT_FILE="$INTENT_DIR/${UNIT_NAME}.md"
 UNIT_CS=$(parse_unit_change_strategy "$UNIT_FILE")
 EFFECTIVE_CS="${UNIT_CS:-$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')}"
-UNIT_BRANCH="haiku/${INTENT_SLUG}/${UNIT_SLUG}"
+UNIT_BRANCH="ai-dlc/${INTENT_SLUG}/${UNIT_SLUG}"
 
 if [ "$EFFECTIVE_CS" = "unit" ]; then
   # Per-unit strategy: create PR to default branch (same as advance/SKILL.md unit path)
   git push -u origin "$UNIT_BRANCH" 2>/dev/null || true
 
-  UNIT_TICKET=$(hku_frontmatter_get "ticket" "$UNIT_FILE" 2>/dev/null || echo "")
+  UNIT_TICKET=$(dlc_frontmatter_get "ticket" "$UNIT_FILE" 2>/dev/null || echo "")
   TICKET_LINE=""
   [ -n "$UNIT_TICKET" ] && TICKET_LINE="Closes ${UNIT_TICKET}"
 
@@ -880,26 +900,26 @@ Part of intent: ${INTENT_SLUG}
 ${TICKET_LINE}
 
 ---
-*Built with [H·AI·K·U](https://haikumethod.ai)*" 2>&1) || echo "PR may already exist for $UNIT_BRANCH"
+*Built with [AI-DLC](https://ai-dlc.dev)*" 2>&1) || echo "PR may already exist for $UNIT_BRANCH"
 
   source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-  haiku_telemetry_init
-  haiku_record_delivery_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}" "${PR_URL}"
+  aidlc_telemetry_init
+  aidlc_record_delivery_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}" "${PR_URL}"
 
-  WORKTREE_PATH="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
+  WORKTREE_PATH="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
   if [ -d "$WORKTREE_PATH" ]; then
     git worktree remove "$WORKTREE_PATH" 2>/dev/null || echo "Warning: failed to remove worktree at $WORKTREE_PATH"
 
     # Record worktree deletion telemetry
     source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-    haiku_telemetry_init
-    haiku_record_worktree_event "deleted" "${WORKTREE_PATH}"
+    aidlc_telemetry_init
+    aidlc_record_worktree_event "deleted" "${WORKTREE_PATH}"
   fi
   git worktree prune
 
 elif [ "$AUTO_MERGE" = "true" ]; then
   # Intent strategy: merge unit branch into intent branch (existing behavior)
-  git checkout "haiku/${INTENT_SLUG}/main"
+  git checkout "ai-dlc/${INTENT_SLUG}/main"
 
   if [ "$AUTO_SQUASH" = "true" ]; then
     git merge --squash "$UNIT_BRANCH"
@@ -908,27 +928,27 @@ elif [ "$AUTO_MERGE" = "true" ]; then
     git merge --no-ff "$UNIT_BRANCH" -m "Merge ${UNIT_NAME} into intent branch"
   fi
 
-  WORKTREE_PATH="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
+  WORKTREE_PATH="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
   if [ -d "$WORKTREE_PATH" ]; then
     git worktree remove "$WORKTREE_PATH" 2>/dev/null || echo "Warning: failed to remove worktree at $WORKTREE_PATH"
 
     # Record worktree deletion telemetry
     source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-    haiku_telemetry_init
-    haiku_record_worktree_event "deleted" "${WORKTREE_PATH}"
+    aidlc_telemetry_init
+    aidlc_record_worktree_event "deleted" "${WORKTREE_PATH}"
   fi
   git worktree prune
 fi
 ```
 
 d. Check DAG for newly unblocked units
-e. For each newly ready unit, spawn at the first hat of its stage:
+e. For each newly ready unit, spawn at `workflow[0]` (first hat):
 
 ```bash
-FIRST_HAT=$(hku_get_hat_sequence "$UNIT_STAGE" "$STUDIO" | awk '{print $1}')
+FIRST_HAT=$(echo "$WORKFLOW_HATS" | jq -r '.[0]')
 ```
 
-Then follow the same spawn logic from Step 3 (use `hku_resolve_hat_instructions` from `hat.sh` for stage-based hat resolution, select agent type, spawn teammate with hat instructions in prompt).
+Then follow the same spawn logic from Step 3 (use `load_hat_instructions` from `hat.sh` for augmented hat resolution, select agent type, spawn teammate with hat instructions in prompt).
 
 #### Teammate Reports Issues (Any Hat)
 
@@ -936,17 +956,17 @@ When a teammate reports issues or rejects the work:
 
 1. Read current hat from unit frontmatter
 2. Determine previous hat: `workflow[currentIndex - 1]`
-3. Increment retry count in unit frontmatter (`hku_frontmatter_get "retries" "$UNIT_FILE"`)
-4. If `retries >= 3`: Mark unit as blocked, document in `hku_state_save "$INTENT_DIR" "blockers.md"`
-5. Otherwise: Update hat in unit frontmatter: `hku_frontmatter_set "hat" "$previousHat" "$UNIT_FILE"`
-6. Load hat instructions for previousHat from stage (`hku_resolve_hat_instructions`)
+3. Increment retry count in unit frontmatter (`dlc_frontmatter_get "retries" "$UNIT_FILE"`)
+4. If `retries >= 3`: Mark unit as blocked, document in `dlc_state_save "$INTENT_DIR" "blockers.md"`
+5. Otherwise: Update hat in unit frontmatter: `dlc_frontmatter_set "hat" "$previousHat" "$UNIT_FILE"`
+6. Load hat instructions for previousHat using augmentation pattern (`load_hat_instructions`)
 7. Spawn teammate at previous hat with the feedback/issues in the prompt
 
 This means ANY hat can reject -- not just the reviewer. A red-team finding issues sends work back to the previous hat.
 
 #### Blocked
 
-1. Document the blocker in `hku_state_save "$INTENT_DIR" "blockers.md"`
+1. Document the blocker in `dlc_state_save "$INTENT_DIR" "blockers.md"`
 2. Check if ALL units are blocked
 3. Before declaring "all blocked," check if the active pass's units are all completed — if so, this is a pass completion, not a blocker. Route to pass transition (Step 5b) instead.
 4. If all blocked (and not a pass-complete scenario), alert user: "All units blocked. Human intervention required."
@@ -961,10 +981,10 @@ Before shutting down the team, read `plugin/skills/execute/subskills/integrate/S
 
 ```bash
 # Check if integration has already passed
-INTEGRATOR_COMPLETE=$(echo "$STATE" | hku_json_get "integratorComplete" "false")
+INTEGRATOR_COMPLETE=$(echo "$STATE" | dlc_json_get "integratorComplete" "false")
 
 # Count total units
-UNIT_COUNT=$(ls -1 "$INTENT_DIR"/stages/*/units/unit-*.md 2>/dev/null | wc -l)
+UNIT_COUNT=$(ls -1 "$INTENT_DIR"/unit-*.md 2>/dev/null | wc -l)
 ```
 
 Skip integration if:
@@ -976,11 +996,11 @@ Note: In hybrid mode (intent-level `intent` + some units overriding to `unit`), 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
 source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
-CONFIG=$(get_haiku_config "$INTENT_DIR")
+CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
 
 # Hybrid-aware check: iterate all units to determine if ALL effectively use "unit" strategy
 ALL_UNIT_STRATEGY=true
-for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
+for unit_file in "$INTENT_DIR"/unit-*.md; do
   [ -f "$unit_file" ] || continue
   UNIT_CS=$(parse_unit_change_strategy "$unit_file")
   EFFECTIVE_CS="${UNIT_CS:-$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')}"
@@ -1001,17 +1021,17 @@ Task({
   subagent_type: "general-purpose",
   description: `integrate: ${intentSlug}`,
   name: `integrate-${intentSlug}`,
-  team_name: `haiku-${intentSlug}`,
+  team_name: `ai-dlc-${intentSlug}`,
 
   prompt: `
     Read the skill definition at plugin/skills/execute/subskills/integrate/SKILL.md first, then execute it for intent ${intentSlug}.
 
     ## CRITICAL: Work on Intent Branch
-    **Worktree path:** .haiku/worktrees/${intentSlug}/
-    **Branch:** haiku/${intentSlug}/main
+    **Worktree path:** .ai-dlc/worktrees/${intentSlug}/
+    **Branch:** ai-dlc/${intentSlug}/main
 
     You MUST:
-    1. cd .haiku/worktrees/${intentSlug}/
+    1. cd .ai-dlc/worktrees/${intentSlug}/
     2. Verify you're on the intent branch (not a unit branch)
     3. This branch contains ALL merged unit work
 
@@ -1058,7 +1078,7 @@ TeamDelete()
 
 ```bash
 # Read pass configuration from intent.md
-INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
+INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
 PASSES=$(grep '^passes:' "$INTENT_DIR/intent.md" | sed 's/passes: *//' | sed 's/\[//;s/\]//' | tr ',' '\n' | sed 's/ //g' | grep -v '^$')
 ACTIVE_PASS=$(grep '^active_pass:' "$INTENT_DIR/intent.md" | sed 's/active_pass: *//' | tr -d '"')
 
@@ -1091,8 +1111,8 @@ fi
 **If a next pass exists:** Do NOT mark intent complete. Instead:
 1. Update `active_pass` in intent.md frontmatter to the next pass
 2. Notify the user with the next pass's description (from `load_pass_metadata`):
-   - If description is available: "The **{active_pass}** pass is complete. The next pass is **{next_pass}** — {NEXT_PASS_DESC}. Run `/haiku:elaborate` to define {next_pass} units using the artifacts from the {active_pass} pass."
-   - If no description: "The **{active_pass}** pass is complete. The next pass is **{next_pass}**. Run `/haiku:elaborate` to define {next_pass} units using the artifacts from the {active_pass} pass."
+   - If description is available: "The **{active_pass}** pass is complete. The next pass is **{next_pass}** — {NEXT_PASS_DESC}. Run `/ai-dlc:elaborate` to define {next_pass} units using the artifacts from the {active_pass} pass."
+   - If no description: "The **{active_pass}** pass is complete. The next pass is **{next_pass}**. Run `/ai-dlc:elaborate` to define {next_pass} units using the artifacts from the {active_pass} pass."
 3. Save state with `status=pass_transition`
 4. Stop execution — the user will re-elaborate for the next pass
 
@@ -1101,14 +1121,14 @@ fi
 Mark intent complete:
 
 ```bash
-STATE=$(echo "$STATE" | hku_json_set "status" "completed")
-hku_state_save "$INTENT_DIR" "iteration.json" "$STATE"
+STATE=$(echo "$STATE" | dlc_json_set "status" "completed")
+dlc_state_save "$INTENT_DIR" "iteration.json" "$STATE"
 
 # Update intent.md frontmatter status so it persists in git
 source "${CLAUDE_PLUGIN_ROOT}/lib/parse.sh"
-hku_frontmatter_set "status" "completed" "$INTENT_DIR/intent.md"
+dlc_frontmatter_set "status" "completed" "$INTENT_DIR/intent.md"
 # Check off intent-level completion criteria checkboxes
-hku_check_intent_criteria "$INTENT_DIR"
+dlc_check_intent_criteria "$INTENT_DIR"
 git add "$INTENT_DIR/intent.md"
 git add "$INTENT_DIR/completion-criteria.md" 2>/dev/null || true
 git add "$INTENT_DIR/state/completion-criteria.md" 2>/dev/null || true
@@ -1116,12 +1136,12 @@ git commit -m "status: mark intent ${INTENT_SLUG} as completed"
 
 # Record intent completion telemetry
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-haiku_telemetry_init
-UNIT_COUNT=$(ls "$INTENT_DIR"/stages/*/units/unit-*.md 2>/dev/null | wc -l | tr -d ' ')
-haiku_record_intent_completed "${INTENT_SLUG}" "${UNIT_COUNT}"
+aidlc_telemetry_init
+UNIT_COUNT=$(ls "$INTENT_DIR"/unit-*.md 2>/dev/null | wc -l | tr -d ' ')
+aidlc_record_intent_completed "${INTENT_SLUG}" "${UNIT_COUNT}"
 ```
 
-4. Output completion summary (same as current Step 5 format from `/haiku:advance`)
+4. Output completion summary (same as current Step 5 format from `/ai-dlc:advance`)
 
 #### Pass-Back Mechanism
 
@@ -1141,17 +1161,17 @@ if [ -n "$PASS_BACK_TARGET" ]; then
   fi
 
   # Update active_pass to the target pass
-  hku_frontmatter_set "active_pass" "$PASS_BACK_TARGET" "$INTENT_DIR/intent.md"
+  dlc_frontmatter_set "active_pass" "$PASS_BACK_TARGET" "$INTENT_DIR/intent.md"
   git add "$INTENT_DIR/intent.md"
   git commit -m "pass-back: revert active_pass to $PASS_BACK_TARGET"
 
   # Save state
-  STATE=$(echo "$STATE" | hku_json_set "status" "pass_back")
-  hku_state_save "$INTENT_DIR" "iteration.json" "$STATE"
+  STATE=$(echo "$STATE" | dlc_json_set "status" "pass_back")
+  dlc_state_save "$INTENT_DIR" "iteration.json" "$STATE"
 
   echo ""
   echo "The current pass discovered issues requiring work in the **${PASS_BACK_TARGET}** pass."
-  echo "Run \`/haiku:elaborate\` to define new units for the ${PASS_BACK_TARGET} pass."
+  echo "Run \`/ai-dlc:elaborate\` to define new units for the ${PASS_BACK_TARGET} pass."
   exit 0
 fi
 ```
@@ -1164,12 +1184,12 @@ The pass-back stops execution immediately. The user must re-elaborate for the ta
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/parse.sh"
-INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
-INTENT_STATUS=$(hku_frontmatter_get "status" "$INTENT_DIR/intent.md")
+INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+INTENT_STATUS=$(dlc_frontmatter_get "status" "$INTENT_DIR/intent.md")
 if [ "$INTENT_STATUS" != "completed" ]; then
   echo "Fixing: intent status '$INTENT_STATUS' → 'completed'"
-  hku_frontmatter_set "status" "completed" "$INTENT_DIR/intent.md"
-  hku_check_intent_criteria "$INTENT_DIR"
+  dlc_frontmatter_set "status" "completed" "$INTENT_DIR/intent.md"
+  dlc_check_intent_criteria "$INTENT_DIR"
   git add "$INTENT_DIR/intent.md"
   git add "$INTENT_DIR/completion-criteria.md" 2>/dev/null || true
   git add "$INTENT_DIR/state/completion-criteria.md" 2>/dev/null || true
@@ -1185,12 +1205,12 @@ Before creating the PR, review the full composed diff to catch cross-unit issues
 # Determine if we need pre-delivery review (intent/hybrid strategy only)
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
 source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
-INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
-CONFIG=$(get_haiku_config "$INTENT_DIR")
+INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
 CHANGE_STRATEGY=$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')
 
 NEEDS_DELIVERY_REVIEW=false
-for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
+for unit_file in "$INTENT_DIR"/unit-*.md; do
   [ -f "$unit_file" ] || continue
   UNIT_CS=$(parse_unit_change_strategy "$unit_file")
   EFFECTIVE_CS="${UNIT_CS:-$CHANGE_STRATEGY}"
@@ -1238,8 +1258,8 @@ DIFF_STAT=$(git diff --stat "${DEFAULT_BRANCH}...HEAD" 2>/dev/null || git diff -
 ```bash
 # Record telemetry
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-haiku_telemetry_init
-haiku_record_delivery_review "${INTENT_SLUG}" "approved" "0"
+aidlc_telemetry_init
+aidlc_record_delivery_review "${INTENT_SLUG}" "approved" "0"
 ```
 
 Proceed to delivery.
@@ -1251,8 +1271,8 @@ Only HIGH-confidence findings block delivery. MEDIUM and LOW findings are noted 
 ```bash
 # Record telemetry
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-haiku_telemetry_init
-haiku_record_delivery_review "${INTENT_SLUG}" "rejected" "${ISSUE_COUNT}"
+aidlc_telemetry_init
+aidlc_record_delivery_review "${INTENT_SLUG}" "rejected" "${ISSUE_COUNT}"
 ```
 
 For each affected unit with HIGH findings:
@@ -1267,13 +1287,13 @@ For each affected unit with HIGH findings:
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
 source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
-INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
-CONFIG=$(get_haiku_config "$INTENT_DIR")
+INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
 CHANGE_STRATEGY=$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')
 
 # Check if ALL units effectively use unit strategy (including hybrid)
 ALL_UNIT_STRATEGY=true
-for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
+for unit_file in "$INTENT_DIR"/unit-*.md; do
   [ -f "$unit_file" ] || continue
   UNIT_CS=$(parse_unit_change_strategy "$unit_file")
   EFFECTIVE_CS="${UNIT_CS:-$CHANGE_STRATEGY}"
@@ -1287,7 +1307,7 @@ done
 All unit PRs have been created during execution. Review and merge them individually.
 
 To clean up:
-  /haiku:reset
+  /ai-dlc:reset
 ```
 
 **If intent strategy** (or hybrid with non-unit units): Ask the user how to deliver using `AskUserQuestion`:
@@ -1311,7 +1331,7 @@ To clean up:
 1. Push intent branch to remote (if not already):
 
 ```bash
-INTENT_BRANCH="haiku/${INTENT_SLUG}/main"
+INTENT_BRANCH="ai-dlc/${INTENT_SLUG}/main"
 git push -u origin "$INTENT_BRANCH" 2>/dev/null || true
 ```
 
@@ -1321,9 +1341,9 @@ git push -u origin "$INTENT_BRANCH" 2>/dev/null || true
 DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
 
 TICKET_REFS=""
-for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
+for unit_file in "$INTENT_DIR"/unit-*.md; do
   [ -f "$unit_file" ] || continue
-  TICKET=$(hku_frontmatter_get "ticket" "$unit_file" 2>/dev/null || echo "")
+  TICKET=$(dlc_frontmatter_get "ticket" "$unit_file" 2>/dev/null || echo "")
   if [ -n "$TICKET" ]; then
     TICKET_REFS="${TICKET_REFS}\nCloses ${TICKET}"
   fi
@@ -1352,14 +1372,14 @@ ${COMPLETED_UNITS_AS_CHANGE_LIST}
 $(printf "%b" "${TICKET_REFS}")
 
 ---
-*Built with [H·AI·K·U](https://haikumethod.ai)*
+*Built with [AI-DLC](https://ai-dlc.dev)*
 EOF
 )" 2>&1)
 
 # Record delivery telemetry
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-haiku_telemetry_init
-haiku_record_delivery_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}" "${PR_URL}"
+aidlc_telemetry_init
+aidlc_record_delivery_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}" "${PR_URL}"
 ```
 
 4. Output the PR URL.
@@ -1367,17 +1387,17 @@ haiku_record_delivery_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}" "${PR_URL}"
 **If manual:**
 
 ```
-Intent branch ready: haiku/{intent-slug}/main → ${DEFAULT_BRANCH}
+Intent branch ready: ai-dlc/{intent-slug}/main → ${DEFAULT_BRANCH}
 
 To merge:
   git checkout ${DEFAULT_BRANCH}
-  git merge --no-ff haiku/{intent-slug}/main
+  git merge --no-ff ai-dlc/{intent-slug}/main
 
 To create PR manually:
-  gh pr create --base ${DEFAULT_BRANCH} --head haiku/{intent-slug}/main
+  gh pr create --base ${DEFAULT_BRANCH} --head ai-dlc/{intent-slug}/main
 
 To clean up:
-  /haiku:reset
+  /ai-dlc:reset
 ```
 
 ### Per-Unit Hat Tracking
@@ -1386,7 +1406,7 @@ Per-unit hat tracking is derived from unit-*.md frontmatter and the DAG, rather 
 
 - `hat`: Current hat for this specific unit (frontmatter field)
 - `retries`: Number of reviewer rejection cycles, max 3 before escalating to blocked (frontmatter field)
-- Stage: Determined by unit's discipline, which resolves the hat sequence from the corresponding STAGE.md
+- Workflow: Resolved from unit frontmatter `workflow:` field, falling back to intent-level workflow
 
 This keeps `iteration.json` small and avoids duplicating state that already lives in the unit files.
 
@@ -1399,7 +1419,7 @@ When Agent Teams are active and multiple units execute in parallel:
 **Post-wave validation:** After a wave of parallel units completes, the orchestrator runs the full validation suite once on the merged result:
 ```bash
 # After merging wave results into intent branch
-git checkout "haiku/${INTENT_SLUG}/main"
+git checkout "ai-dlc/${INTENT_SLUG}/main"
 # Run full pre-commit hooks, lint, tests on merged code
 npm run lint && npm test
 ```
@@ -1408,7 +1428,7 @@ npm run lint && npm test
 
 **Sequential fallback:** When NOT using Agent Teams (single agent), always use normal commits with hooks enabled.
 
-**IMPORTANT:** This only applies to H·AI·K·U parallel agent execution, not to user-facing commits. Final commits (PRs, merges) always run full hooks.
+**IMPORTANT:** This only applies to AI-DLC parallel agent execution, not to user-facing commits. Final commits (PRs, merges) always run full hooks.
 
 ---
 
@@ -1426,12 +1446,12 @@ This prevents conflicts with the parent session and enables true isolation.
 
 ```bash
 # If targeting a specific unit, use it directly; otherwise find next ready unit
-TARGET_UNIT=$(echo "$STATE" | hku_json_get "targetUnit" "")
+TARGET_UNIT=$(echo "$STATE" | dlc_json_get "targetUnit" "")
 if [ -n "$TARGET_UNIT" ]; then
   UNIT_FILE="$INTENT_DIR/${TARGET_UNIT}.md"
 else
   # Read active_pass from intent frontmatter for pass-filtered selection
-  ACTIVE_PASS=$(hku_frontmatter_get "active_pass" "$INTENT_DIR/intent.md" 2>/dev/null || echo "")
+  ACTIVE_PASS=$(dlc_frontmatter_get "active_pass" "$INTENT_DIR/intent.md" 2>/dev/null || echo "")
   if [ -n "$ACTIVE_PASS" ]; then
     READY_UNIT=$(find_ready_units_for_pass "$INTENT_DIR" "$ACTIVE_PASS" | head -1)
     [ -n "$READY_UNIT" ] && UNIT_FILE="$INTENT_DIR/${READY_UNIT}.md"
@@ -1441,8 +1461,8 @@ else
 fi
 UNIT_NAME=$(basename "$UNIT_FILE" .md)  # e.g., unit-01-core-backend
 UNIT_SLUG="${UNIT_NAME#unit-}"  # e.g., 01-core-backend
-UNIT_BRANCH="haiku/${intentSlug}/${UNIT_SLUG}"
-WORKTREE_PATH="${REPO_ROOT}/.haiku/worktrees/${intentSlug}-${UNIT_SLUG}"
+UNIT_BRANCH="ai-dlc/${intentSlug}/${UNIT_SLUG}"
+WORKTREE_PATH="${REPO_ROOT}/.ai-dlc/worktrees/${intentSlug}-${UNIT_SLUG}"
 
 # Create worktree if it doesn't exist
 if [ ! -d "$WORKTREE_PATH" ]; then
@@ -1453,8 +1473,8 @@ if [ ! -d "$WORKTREE_PATH" ]; then
 
   # Record worktree creation telemetry
   source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-  haiku_telemetry_init
-  haiku_record_worktree_event "created" "${WORKTREE_PATH}"
+  aidlc_telemetry_init
+  aidlc_record_worktree_event "created" "${WORKTREE_PATH}"
 fi
 ```
 
@@ -1469,20 +1489,20 @@ This ensures the DAG accurately reflects that work has started on this unit.
 source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
 
 # Update unit status to in_progress in the intent worktree
-# UNIT_FILE points to the file in .haiku/intents/{intent-slug}/
+# UNIT_FILE points to the file in .ai-dlc/{intent-slug}/
 update_unit_status "$UNIT_FILE" "in_progress"
 # Commit the status change so it persists across sessions
 git add "$UNIT_FILE"
 git commit -m "status: mark $(basename "$UNIT_FILE" .md) as in_progress"
 ```
 
-**Track current unit in iteration state** so `/haiku:advance` knows which unit to mark completed:
+**Track current unit in iteration state** so `/ai-dlc:advance` knows which unit to mark completed:
 
 ```bash
 # Update currentUnit in state, e.g., "unit-01-core-backend"
 # Intent-level state saved to current branch (intent branch)
-STATE=$(echo "$STATE" | hku_json_set "currentUnit" "$UNIT_NAME")
-hku_state_save "$INTENT_DIR" "iteration.json" "$STATE"
+STATE=$(echo "$STATE" | dlc_json_set "currentUnit" "$UNIT_NAME")
+dlc_state_save "$INTENT_DIR" "iteration.json" "$STATE"
 ```
 
 #### Step 3: Spawn Subagent
@@ -1525,7 +1545,7 @@ Task({
   model: MODEL_PROFILE !== "inherit" ? MODEL_PROFILE : undefined,
   description: `${state.hat}: ${unit.name}`,
   prompt: `
-    Execute the ${state.hat} role for this H·AI·K·U unit.
+    Execute the ${state.hat} role for this AI-DLC unit.
 
     ## CRITICAL: Work in Worktree
     **Worktree path:** ${WORKTREE_PATH}
@@ -1546,7 +1566,7 @@ Task({
 })
 ```
 
-The subagent automatically receives H·AI·K·U context (hat instructions, intent, workflow rules, unit status) via SubagentPrompt injection.
+The subagent automatically receives AI-DLC context (hat instructions, intent, workflow rules, unit status) via SubagentPrompt injection.
 
 #### Step 4: Handle Subagent Result
 
@@ -1555,20 +1575,20 @@ Based on the subagent's response:
 - **Issues found** (reviewer): Read the skill definition at `plugin/skills/execute/subskills/fail/SKILL.md` and execute it to return to builder
 - **Blocked**: Document and stop loop for user intervention
 
-When `/haiku:advance` marks the intent complete (all units done + integration passed), proceed to Step 5.
+When `/ai-dlc:advance` marks the intent complete (all units done + integration passed), proceed to Step 5.
 
-**Note:** Integration validation is handled by `/haiku:advance` (Step 2e). When all units complete, `/haiku:advance` automatically runs the `/haiku:integrate` skill before marking the intent complete. If integration rejects, `/haiku:advance` re-queues units and the execution loop continues.
+**Note:** Integration validation is handled by `/ai-dlc:advance` (Step 2e). When all units complete, `/ai-dlc:advance` automatically runs the `/ai-dlc:integrate` skill before marking the intent complete. If integration rejects, `/ai-dlc:advance` re-queues units and the execution loop continues.
 
 #### Step 5: Loop Behavior and Delivery
 
 The execution loop is **fully autonomous**. It continues until:
-1. **Complete** - All units done, `/haiku:advance` marks intent complete (after integration passes)
+1. **Complete** - All units done, `/ai-dlc:advance` marks intent complete (after integration passes)
 2. **All units blocked** - No forward progress possible, human must intervene
-3. **Session exhausted** - Stop hook fires, instructs agent to call `/haiku:execute`
+3. **Session exhausted** - Stop hook fires, instructs agent to call `/ai-dlc:execute`
 4. **Targeted unit done** - When `targetUnit` is set, stop after that unit's workflow completes (do NOT auto-continue to next unit)
 
 **CRITICAL:** When `targetUnit` is NOT set, the agent MUST auto-continue between units. Do NOT stop after each unit.
 
-**Targeted unit exception:** When `targetUnit` IS set, stop after the targeted unit's hat cycle completes. `/haiku:advance` handles clearing the `targetUnit` and outputting next-step guidance.
+**Targeted unit exception:** When `targetUnit` IS set, stop after the targeted unit's hat cycle completes. `/ai-dlc:advance` handles clearing the `targetUnit` and outputting next-step guidance.
 
 When the intent is marked complete, present the completion summary and delivery prompt (same as advance/SKILL.md Step 5 — ask user to open PR or handle manually).

@@ -45,7 +45,7 @@ function CopyButton({ code }: { code: string }) {
 		<button
 			type="button"
 			onClick={handleCopy}
-			className="rounded bg-stone-700 px-2 py-0.5 text-xs text-stone-400 transition-colors hover:bg-stone-600 hover:text-white"
+			className="rounded bg-gray-700 px-2 py-0.5 text-xs text-gray-400 transition-colors hover:bg-gray-600 hover:text-white"
 			aria-label="Copy code to clipboard"
 		>
 			{copied ? "Copied!" : "Copy"}
@@ -393,8 +393,8 @@ function TOCItem({
 				onClick={handleClick}
 				className={`block w-full truncate py-1 text-left text-sm ${
 					isActive
-						? "font-medium text-teal-600 dark:text-teal-400"
-						: "text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-white"
+						? "font-medium text-blue-600 dark:text-blue-400"
+						: "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
 				}`}
 				style={{ paddingLeft: `${paddingLeft}px` }}
 			>
@@ -557,9 +557,9 @@ export function PaperContent({
 			const codeText = extractCodeText(child?.props?.children)
 
 			return (
-				<div className="group not-prose relative my-4 overflow-hidden rounded-lg border border-stone-700/50 shadow-xl">
+				<div className="group not-prose relative my-4 overflow-hidden rounded-lg border border-gray-700/50 shadow-xl">
 					{/* Title bar */}
-					<div className="flex items-center justify-between border-b border-stone-600/50 bg-[#1e293b] px-4 py-2 shadow-sm">
+					<div className="flex items-center justify-between border-b border-gray-600/50 bg-[#1e293b] px-4 py-2 shadow-sm">
 						<div className="flex items-center gap-2">
 							{/* macOS-style dots */}
 							<div className="flex gap-1.5">
@@ -568,7 +568,7 @@ export function PaperContent({
 								<span className="h-3 w-3 rounded-full bg-[#27c93f] shadow-sm" />
 							</div>
 							{language && (
-								<span className="ml-3 font-mono text-xs text-stone-400">
+								<span className="ml-3 font-mono text-xs text-gray-400">
 									{language}
 								</span>
 							)}
@@ -611,7 +611,7 @@ export function PaperContent({
 				return (
 					<Link
 						href={href}
-						className="inline-flex items-center gap-1 text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300"
+						className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
 						{...props}
 					>
 						{children}
@@ -640,7 +640,7 @@ export function PaperContent({
 		},
 		blockquote: ({ children, ...props }) => (
 			<blockquote
-				className="border-l-4 border-teal-500 bg-teal-50 pl-4 text-stone-700 dark:bg-teal-950/30 dark:text-stone-300"
+				className="border-l-4 border-blue-500 bg-blue-50 pl-4 text-gray-700 dark:bg-blue-950/30 dark:text-gray-300"
 				{...props}
 			>
 				{children}
@@ -658,8 +658,8 @@ export function PaperContent({
 		return (
 			<div className="flex gap-8">
 				<aside className="hidden w-64 shrink-0 lg:block">
-					<nav className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-800 dark:bg-stone-900">
-						<h2 className="mb-3 font-semibold text-stone-900 dark:text-white">
+					<nav className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
+						<h2 className="mb-3 font-semibold text-gray-900 dark:text-white">
 							Table of Contents
 						</h2>
 						<ul className="space-y-1">
@@ -671,10 +671,10 @@ export function PaperContent({
 				</aside>
 				<article className="prose prose-gray dark:prose-invert min-w-0 flex-1">
 					<div className="animate-pulse space-y-4">
-						<div className="h-6 w-3/4 rounded bg-stone-200 dark:bg-stone-700" />
-						<div className="h-4 w-full rounded bg-stone-200 dark:bg-stone-700" />
-						<div className="h-4 w-5/6 rounded bg-stone-200 dark:bg-stone-700" />
-						<div className="h-4 w-full rounded bg-stone-200 dark:bg-stone-700" />
+						<div className="h-6 w-3/4 rounded bg-gray-200 dark:bg-gray-700" />
+						<div className="h-4 w-full rounded bg-gray-200 dark:bg-gray-700" />
+						<div className="h-4 w-5/6 rounded bg-gray-200 dark:bg-gray-700" />
+						<div className="h-4 w-full rounded bg-gray-200 dark:bg-gray-700" />
 					</div>
 				</article>
 			</div>
@@ -717,8 +717,8 @@ export function PaperContent({
 			<div className="flex gap-8">
 				{/* TOC Sidebar - desktop only */}
 				<aside className="hidden w-64 shrink-0 lg:block">
-					<nav className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-800 dark:bg-stone-900">
-						<h2 className="mb-3 font-semibold text-stone-900 dark:text-white">
+					<nav className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
+						<h2 className="mb-3 font-semibold text-gray-900 dark:text-white">
 							Table of Contents
 						</h2>
 						<ul className="space-y-1">
@@ -726,10 +726,10 @@ export function PaperContent({
 								<TOCItem key={heading.id} heading={heading} activeId={activeId} />
 							))}
 						</ul>
-						<div className="mt-4 border-t border-stone-200 pt-4 dark:border-stone-700">
+						<div className="mt-4 border-t border-gray-200 pt-4 dark:border-gray-700">
 							<Link
 								href="/glossary"
-								className="text-sm text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300"
+								className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
 							>
 								View Glossary
 							</Link>
@@ -739,7 +739,7 @@ export function PaperContent({
 
 				{/* Main content */}
 				<div className="min-w-0 flex-1">
-					<div className="mb-4 rounded-lg border border-teal-200 bg-teal-50 p-3 dark:border-teal-800 dark:bg-teal-900/20">
+					<div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/20">
 						<div className="flex items-center gap-4 text-sm">
 							<span className="flex items-center gap-2">
 								<ins className="diff-added no-underline">added text</ins>
@@ -749,7 +749,7 @@ export function PaperContent({
 							</span>
 						</div>
 					</div>
-					<article className="prose prose-lg dark:prose-invert prose-headings:scroll-mt-20 prose-a:text-teal-600 dark:prose-a:text-teal-400 max-w-none">
+					<article className="prose prose-lg dark:prose-invert prose-headings:scroll-mt-20 prose-a:text-blue-600 dark:prose-a:text-blue-400 max-w-none">
 						<ReactMarkdown
 							remarkPlugins={[remarkGfm]}
 							rehypePlugins={[rehypeRaw, rehypeSlug, rehypeHighlight]}
@@ -768,8 +768,8 @@ export function PaperContent({
 		<div className="flex gap-8">
 			{/* TOC Sidebar - desktop only */}
 			<aside className="hidden w-64 shrink-0 lg:block">
-				<nav className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-800 dark:bg-stone-900">
-					<h2 className="mb-3 font-semibold text-stone-900 dark:text-white">
+				<nav className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
+					<h2 className="mb-3 font-semibold text-gray-900 dark:text-white">
 						Table of Contents
 					</h2>
 					<ul className="space-y-1">
@@ -777,10 +777,10 @@ export function PaperContent({
 							<TOCItem key={heading.id} heading={heading} activeId={activeId} />
 						))}
 					</ul>
-					<div className="mt-4 border-t border-stone-200 pt-4 dark:border-stone-700">
+					<div className="mt-4 border-t border-gray-200 pt-4 dark:border-gray-700">
 						<Link
 							href="/glossary"
-							className="text-sm text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300"
+							className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
 						>
 							View Glossary
 						</Link>
@@ -789,7 +789,7 @@ export function PaperContent({
 			</aside>
 
 			{/* Main content */}
-			<article className="prose prose-gray dark:prose-invert prose-headings:scroll-mt-20 prose-a:text-teal-600 dark:prose-a:text-teal-400 min-w-0 flex-1">
+			<article className="prose prose-gray dark:prose-invert prose-headings:scroll-mt-20 prose-a:text-blue-600 dark:prose-a:text-blue-400 min-w-0 flex-1">
 				<ReactMarkdown
 					remarkPlugins={[remarkGfm]}
 					rehypePlugins={[rehypeRaw, rehypeSlug, rehypeHighlight]}
@@ -799,19 +799,19 @@ export function PaperContent({
 				</ReactMarkdown>
 
 				{/* See it in action callout */}
-				<div className="mt-12 rounded-lg border border-teal-200 bg-teal-50 p-6 dark:border-teal-900 dark:bg-teal-950/30">
-					<h3 className="mb-4 text-lg font-semibold text-teal-900 dark:text-teal-100">
-						See H·AI·K·U in Action
+				<div className="mt-12 rounded-lg border border-blue-200 bg-blue-50 p-6 dark:border-blue-900 dark:bg-blue-950/30">
+					<h3 className="mb-4 text-lg font-semibold text-blue-900 dark:text-blue-100">
+						See AI-DLC in Action
 					</h3>
-					<p className="mb-4 text-teal-800 dark:text-teal-200">
-						Explore the interactive tools to understand and apply the H·AI·K·U
+					<p className="mb-4 text-blue-800 dark:text-blue-200">
+						Explore the interactive tools to understand and apply the AI-DLC
 						methodology:
 					</p>
 					<ul className="space-y-2">
 						<li>
 							<Link
 								href="/big-picture"
-								className="text-teal-700 underline hover:text-teal-900 dark:text-teal-300 dark:hover:text-teal-100"
+								className="text-blue-700 underline hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100"
 							>
 								Big Picture Diagram
 							</Link>{" "}
@@ -820,7 +820,7 @@ export function PaperContent({
 						<li>
 							<Link
 								href="/workflows"
-								className="text-teal-700 underline hover:text-teal-900 dark:text-teal-300 dark:hover:text-teal-100"
+								className="text-blue-700 underline hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100"
 							>
 								Workflow Visualizer
 							</Link>{" "}
@@ -829,7 +829,7 @@ export function PaperContent({
 						<li>
 							<Link
 								href="/tools/mode-selector"
-								className="text-teal-700 underline hover:text-teal-900 dark:text-teal-300 dark:hover:text-teal-100"
+								className="text-blue-700 underline hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100"
 							>
 								Mode Selector Tool
 							</Link>{" "}
@@ -838,11 +838,11 @@ export function PaperContent({
 						<li>
 							<Link
 								href="/glossary"
-								className="text-teal-700 underline hover:text-teal-900 dark:text-teal-300 dark:hover:text-teal-100"
+								className="text-blue-700 underline hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100"
 							>
 								Glossary
 							</Link>{" "}
-							- Quick reference for all H·AI·K·U terminology
+							- Quick reference for all AI-DLC terminology
 						</li>
 					</ul>
 				</div>

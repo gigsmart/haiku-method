@@ -3,8 +3,8 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 export const metadata: Metadata = {
-	title: "Blog - H·AI·K·U",
-	description: "News and updates about H·AI·K·U and structured human-AI collaboration.",
+	title: "Blog - AI-DLC",
+	description: "News and updates about AI-DLC and AI-driven development.",
 }
 
 function formatDate(dateString: string): string {
@@ -22,13 +22,13 @@ export default function BlogPage() {
 	return (
 		<div>
 			<h1 className="mb-4 text-4xl font-bold tracking-tight">Blog</h1>
-			<p className="mb-12 text-lg text-stone-600 dark:text-stone-400">
-				News and updates about H·AI·K·U and structured human-AI collaboration.
+			<p className="mb-12 text-lg text-gray-600 dark:text-gray-400">
+				News and updates about AI-DLC and AI-driven development.
 			</p>
 
 			{posts.length === 0 ? (
-				<div className="rounded-lg border border-stone-200 bg-stone-50 p-8 text-center dark:border-stone-800 dark:bg-stone-900">
-					<p className="text-stone-600 dark:text-stone-400">
+				<div className="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center dark:border-gray-800 dark:bg-gray-900">
+					<p className="text-gray-600 dark:text-gray-400">
 						No blog posts yet. Check back soon!
 					</p>
 				</div>
@@ -37,26 +37,26 @@ export default function BlogPage() {
 					{posts.map((post) => (
 						<article
 							key={post.slug}
-							className="rounded-lg border border-stone-200 p-6 transition hover:border-stone-300 dark:border-stone-800 dark:hover:border-stone-700"
+							className="rounded-lg border border-gray-200 p-6 transition hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700"
 						>
-							<time className="text-sm text-stone-500 dark:text-stone-500">
+							<time className="text-sm text-gray-500 dark:text-gray-500">
 								{formatDate(post.date)}
 							</time>
 							<h2 className="mt-2 text-2xl font-semibold">
 								<Link
 									href={`/blog/${post.slug}/`}
-									className="hover:text-teal-600 dark:hover:text-teal-400"
+									className="hover:text-blue-600 dark:hover:text-blue-400"
 								>
 									{post.title}
 								</Link>
 							</h2>
 							{post.description && (
-								<p className="mt-2 text-stone-600 dark:text-stone-400">
+								<p className="mt-2 text-gray-600 dark:text-gray-400">
 									{post.description}
 								</p>
 							)}
 							{post.author && (
-								<p className="mt-4 text-sm text-stone-500">By {post.author}</p>
+								<p className="mt-4 text-sm text-gray-500">By {post.author}</p>
 							)}
 						</article>
 					))}

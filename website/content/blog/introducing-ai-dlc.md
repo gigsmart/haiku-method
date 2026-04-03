@@ -1,11 +1,11 @@
 ---
-title: Introducing H·AI·K·U
+title: Introducing AI-DLC
 description: A methodology for iterative AI-driven development with hat-based workflows
 date: 2026-02-02
 author: The Bushido Collective
 ---
 
-We're excited to introduce **H·AI·K·U** (formerly AI-DLC), a methodology for structured, iterative software development with AI assistants.
+We're excited to introduce **AI-DLC**, a methodology for structured, iterative software development with AI assistants.
 
 ## The Challenge
 
@@ -15,11 +15,11 @@ Working with AI assistants like Claude has transformed how we write software. Bu
 - How do we ensure quality when development speed increases dramatically?
 - How do we measure progress when traditional metrics no longer apply?
 
-We built H·AI·K·U to address these challenges.
+We built AI-DLC to address these challenges.
 
 ## The Solution
 
-H·AI·K·U introduces two core concepts: **hats** and **units**.
+AI-DLC introduces two core concepts: **hats** and **units**.
 
 ### Hats
 
@@ -43,18 +43,20 @@ Units are focused pieces of work with clear success criteria. Breaking work into
 
 ## Getting Started
 
-H·AI·K·U is distributed as a Claude plugin. Install it with:
+AI-DLC is distributed as a Claude Code plugin. Install it with:
 
 ```
 /plugin marketplace add thebushidocollective/ai-dlc
-/plugin install haiku@thebushidocollective-ai-dlc --scope project
+/plugin install ai-dlc@thebushidocollective-ai-dlc --scope project
 ```
 
 Then start using the hat commands to structure your workflow.
 
-## A Claude Plugin
+## Part of Han
 
-H·AI·K·U is a Claude plugin that works in both Claude Code and Cowork. We believe AI-assisted development deserves the same rigor and discipline as traditional software engineering -- just with new tools and methods.
+AI-DLC is part of the [Han plugin ecosystem](https://han.guru) for Claude Code. Han provides a curated marketplace of plugins built on Bushido principles: quality, honor, and mastery.
+
+We believe AI-assisted development deserves the same rigor and discipline as traditional software engineering - just with new tools and methods.
 
 ## What's Next
 

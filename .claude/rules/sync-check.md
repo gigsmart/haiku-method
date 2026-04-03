@@ -2,14 +2,9 @@
 
 Before completing any work that modifies the plugin, paper, or website, verify cross-component consistency:
 
-## After modifying plugin/studios/ or plugin/studios/*/stages/:
+## After modifying plugin/skills/ or plugin/hats/:
 - [ ] Is the concept documented in the paper?
 - [ ] Does the website docs section reference it (if user-facing)?
-- [ ] Do requires/produces chains form a valid pipeline?
-
-## After modifying plugin/skills/:
-- [ ] Is the CLI reference in the website docs up to date?
-- [ ] Does the skill align with the paper's methodology?
 
 ## After modifying the paper:
 - [ ] Does the plugin implement what the paper describes?
@@ -21,14 +16,11 @@ Before completing any work that modifies the plugin, paper, or website, verify c
 
 ## After adding or renaming terminology:
 - [ ] Updated in paper glossary
-- [ ] Updated in CLAUDE.md terminology table
 - [ ] Updated in plugin fundamentals skill
-- [ ] Updated in all stage/skill files that reference it
+- [ ] Updated in all hat/skill files that reference it
 - [ ] Updated in website docs
 
 ## Terminology reminders:
-- Studio = named lifecycle template (profile implementation), contains stages
-- Stage = lifecycle phase within a studio, contains file-based hats and review gates
-- Hat = behavioral role scoped to a stage (defined as files in `stages/{stage}/hats/`, not standalone)
 - Bolt = iteration cycle (tracked as `iteration` in state), NOT the same as Unit
-- Studio > Stage > Unit > Bolt is the four-layer hierarchy, all distinct concepts
+- Pass = typed disciplinary iteration (design/product/dev), optional and configurable
+- Intent/Unit/Bolt are the three-layer hierarchy, all distinct concepts

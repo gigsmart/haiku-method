@@ -1,6 +1,6 @@
-# H·AI·K·U Settings Template
-# Place this file at: .haiku/settings.yml
-# These settings customize H·AI·K·U behavior for your project.
+# AI-DLC Settings Template
+# Place this file at: .ai-dlc/settings.yml
+# These settings customize AI-DLC behavior for your project.
 
 # =============================================================================
 # Workflow Configuration
@@ -58,8 +58,8 @@ auto_commit: false
 # Artifact Configuration
 # =============================================================================
 
-# Directory for H·AI·K·U artifacts (relative to repo root)
-artifact_directory: .haiku
+# Directory for AI-DLC artifacts (relative to repo root)
+artifact_directory: .ai-dlc
 
 # Include timestamps in artifact filenames
 timestamp_artifacts: false
@@ -94,7 +94,7 @@ commit_format: "feat({unit}): {summary}"
 
 # Enable browser-based visual review for elaboration gates.
 #
-# When true, elaboration review gates use the haiku-review MCP server to present
+# When true, elaboration review gates use the ai-dlc-review MCP server to present
 # interactive review pages in your browser. When false (default), review gates use
 # standard AskUserQuestion terminal prompts.
 #
@@ -103,7 +103,7 @@ commit_format: "feat({unit}): {summary}"
 # the server itself always launches if registered.
 #
 # Requires:
-#   1. The haiku-review MCP server registered in .mcp.json (plugin provides default)
+#   1. The ai-dlc-review MCP server registered in .mcp.json (plugin provides default)
 #   2. bun installed (https://bun.sh)
 #
 # Configure via /setup or set directly here:

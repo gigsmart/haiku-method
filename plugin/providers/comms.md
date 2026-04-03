@@ -1,6 +1,6 @@
 ---
 category: comms
-description: Default comms provider behavior for H·AI·K·U
+description: Default comms provider behavior for AI-DLC
 ---
 
 # Comms Provider — Default Instructions

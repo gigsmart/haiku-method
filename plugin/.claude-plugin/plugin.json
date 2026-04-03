@@ -1,25 +1,23 @@
 {
-  "name": "haiku",
+  "name": "ai-dlc",
   "version": "1.84.0",
-  "description": "H·AI·K·U methodology — universal lifecycle orchestration with hat-based workflows, completion criteria, and automatic context preservation.",
+  "description": "AI-DLC methodology - iterative AI-driven development with hat-based workflows, completion criteria, and automatic context preservation. Software development profile of the H•AI•K•U Method.",
   "author": {
     "name": "The Bushido Collective",
     "url": "https://thebushido.co"
   },
-  "homepage": "https://haikumethod.ai",
+  "homepage": "https://ai-dlc.dev",
   "repository": "https://github.com/thebushidocollective/ai-dlc",
   "license": "Apache-2.0",
   "keywords": [
-    "haiku",
-    "haiku-method",
-    "lifecycle",
-    "orchestration",
+    "ai-dlc",
     "methodology",
     "workflow",
     "iteration",
     "completion-criteria",
     "hat-switching",
     "context-preservation",
-    "human-ai-collaboration"
+    "human-ai-collaboration",
+    "haiku-method"
   ]
 }

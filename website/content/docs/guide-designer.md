@@ -1,14 +1,14 @@
 ---
 title: Designer Guide
-description: Guide for UX/UI designers collaborating on H·AI·K·U projects
+description: Guide for UX/UI designers collaborating on AI-DLC projects
 order: 21
 ---
 
-This guide covers how designers can work effectively within the H·AI·K·U methodology. Whether you're creating design specs, reviewing implementations, or collaborating with AI-assisted development, H·AI·K·U provides structure that benefits the entire team.
+This guide covers how designers can work effectively within the AI-DLC methodology. Whether you're creating design specs, reviewing implementations, or collaborating with AI-assisted development, AI-DLC provides structure that benefits the entire team.
 
-## Your Role in H·AI·K·U
+## Your Role in AI-DLC
 
-Design work intersects with H·AI·K·U at several key points:
+Design work intersects with AI-DLC at several key points:
 
 1. **Intent Definition** - Helping define what success looks like visually
 2. **Completion Criteria** - Specifying measurable design requirements
@@ -137,7 +137,7 @@ When review finds issues, write actionable feedback:
 
 ## Design System Integration
 
-H·AI·K·U works best with a design system. If your team doesn't have one, consider creating:
+AI-DLC works best with a design system. If your team doesn't have one, consider creating:
 
 ### Design Tokens File
 
@@ -298,7 +298,7 @@ The selection produces a **design blueprint** that:
 
 ## Using Design Providers
 
-H·AI·K·U supports six design providers: **Canva**, **Figma**, **OpenPencil**, **Pencil**, **Penpot**, and **Excalidraw**. When a design provider is configured, H·AI·K·U automatically pulls design specs during elaboration, references them during building, and cross-checks implementations during review.
+AI-DLC supports six design providers: **Canva**, **Figma**, **OpenPencil**, **Pencil**, **Penpot**, and **Excalidraw**. When a design provider is configured, AI-DLC automatically pulls design specs during elaboration, references them during building, and cross-checks implementations during review.
 
 ### Choosing a Provider
 
@@ -311,7 +311,7 @@ H·AI·K·U supports six design providers: **Canva**, **Figma**, **OpenPencil**,
 | Penpot | `penpot` | Self-hosted, SVG-native, components |
 | Excalidraw | `excalidraw` | Quick diagrams, architecture sketches |
 
-Or set `type: auto` and H·AI·K·U detects your provider from available MCP tools.
+Or set `type: auto` and AI-DLC detects your provider from available MCP tools.
 
 ### Design References in Units
 
@@ -327,7 +327,7 @@ These references resolve automatically during execution, so builders can pull th
 
 ### Customizing Provider Behavior
 
-Add project-specific design conventions in `.haiku/providers/design.md`:
+Add project-specific design conventions in `.ai-dlc/providers/design.md`:
 
 ```markdown
 ---
@@ -349,7 +349,7 @@ See the [Design Providers Guide](/docs/guide-design-providers/) for full setup i
 
 Since Claude works in sessions, document decisions:
 
-- Keep a `design-decisions.md` file in `.haiku/`
+- Keep a `design-decisions.md` file in `.ai-dlc/`
 - Screenshot Figma comments into the repository
 - Use PR reviews for design feedback
 

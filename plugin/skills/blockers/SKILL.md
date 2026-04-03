@@ -1,6 +1,6 @@
 ---
 name: blockers
-description: Use when documenting blockers in H·AI·K·U workflows. Covers proper blocker documentation, categorization, and how blockers enable productive iteration when stuck.
+description: Use when documenting blockers in AI-DLC workflows. Covers proper blocker documentation, categorization, and how blockers enable productive iteration when stuck.
 user-invocable: false
 allowed-tools:
   - Read
@@ -8,9 +8,9 @@ allowed-tools:
   - Glob
 ---
 
-# H·AI·K·U Blockers
+# AI-DLC Blockers
 
-Blockers are obstacles that prevent progress on a task. In H·AI·K·U, properly documenting blockers is essential for productive iteration—it ensures the next session can address issues directly rather than rediscovering them.
+Blockers are obstacles that prevent progress on a task. In AI-DLC, properly documenting blockers is essential for productive iteration—it ensures the next session can address issues directly rather than rediscovering them.
 
 ## Why Document Blockers
 
@@ -35,7 +35,7 @@ With blocker documentation:
 
 Blockers are a form of knowledge transfer:
 - From current session → next session
-- From current hat → next hat (if `/haiku:fail` called)
+- From current hat → next hat (if `/ai-dlc:fail` called)
 - From AI → human (if intervention needed)
 
 ## Blocker Anatomy
@@ -202,7 +202,7 @@ Need user input on priorities.
 ### Saving Blockers
 
 ```bash
-hku_state_save "$INTENT_DIR" "blockers.md" "$BLOCKER_MARKDOWN"
+dlc_state_save "$INTENT_DIR" "blockers.md" "$BLOCKER_MARKDOWN"
 ```
 
 ## Blocker Resolution
@@ -221,7 +221,7 @@ AI addresses directly:
 "I see there was a blocker with OAuth. Let me try disabling strict mode first..."
 ```
 
-### After `/haiku:fail`
+### After `/ai-dlc:fail`
 
 When reviewer sends back to builder:
 ```markdown
@@ -304,15 +304,15 @@ When a blocker is resolved:
 
 ```bash
 # Option 1: Clear the file
-hku_state_delete "$INTENT_DIR" "blockers.md"
+dlc_state_delete "$INTENT_DIR" "blockers.md"
 
 # Option 2: Update with resolution
-hku_state_save "$INTENT_DIR" "blockers.md" "## Resolved
+dlc_state_save "$INTENT_DIR" "blockers.md" "## Resolved
 
 OAuth issue fixed by disabling strict mode."
 ```
 
-## Integration with H·AI·K·U Hats
+## Integration with AI-DLC Hats
 
 ### Builder Hat
 
@@ -325,7 +325,7 @@ Document blockers, save progress, iterate.
 
 ### Reviewer Hat
 
-Creates blockers when `/haiku:fail`:
+Creates blockers when `/ai-dlc:fail`:
 - Quality issues found
 - Missing functionality
 - Failed criteria

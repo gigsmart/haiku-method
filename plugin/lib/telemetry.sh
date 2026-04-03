@@ -1,8 +1,8 @@
 #!/bin/bash
-# telemetry.sh - OTEL telemetry library for H·AI·K·U
+# telemetry.sh - OTEL telemetry library for AI-DLC
 #
 # Sends structured log events to an OTLP/JSON endpoint via curl.
-# Reports as service.name=haiku.
+# Reports as service.name=ai-dlc.
 #
 # Environment variables:
 #   CLAUDE_CODE_ENABLE_TELEMETRY=1  - Master switch (must be "1" to enable)
@@ -12,43 +12,43 @@
 #
 # Usage:
 #   source telemetry.sh
-#   haiku_telemetry_init
-#   haiku_log_event "haiku.intent.created" "intent_slug=my-feature" "strategy=unit"
+#   aidlc_telemetry_init
+#   aidlc_log_event "ai_dlc.intent.created" "intent_slug=my-feature" "strategy=unit"
 
 # Guard against double-sourcing
-if [ -n "${_HAIKU_TELEMETRY_SOURCED:-}" ]; then
+if [ -n "${_AIDLC_TELEMETRY_SOURCED:-}" ]; then
   return 0 2>/dev/null || exit 0
 fi
-_HAIKU_TELEMETRY_SOURCED=1
+_AIDLC_TELEMETRY_SOURCED=1
 
 # Internal state
-_HAIKU_TELEMETRY_INIT=""
-_HAIKU_TELEMETRY_ENABLED=""
-_HAIKU_TELEMETRY_ENDPOINT=""
-_HAIKU_TELEMETRY_VERSION=""
-_HAIKU_TELEMETRY_CURL_HEADERS=""
+_AIDLC_TELEMETRY_INIT=""
+_AIDLC_TELEMETRY_ENABLED=""
+_AIDLC_TELEMETRY_ENDPOINT=""
+_AIDLC_TELEMETRY_VERSION=""
+_AIDLC_TELEMETRY_CURL_HEADERS=""
 
 # Initialize telemetry (call once per script)
 # Reads env vars, detects plugin version, builds curl header flags.
 # If CLAUDE_CODE_ENABLE_TELEMETRY != "1", all functions become no-ops.
-haiku_telemetry_init() {
-  _HAIKU_TELEMETRY_INIT=1
+aidlc_telemetry_init() {
+  _AIDLC_TELEMETRY_INIT=1
 
   # Master switch
   if [ "${CLAUDE_CODE_ENABLE_TELEMETRY:-}" != "1" ]; then
-    _HAIKU_TELEMETRY_ENABLED=0
+    _AIDLC_TELEMETRY_ENABLED=0
     return 0
   fi
 
-  _HAIKU_TELEMETRY_ENABLED=1
+  _AIDLC_TELEMETRY_ENABLED=1
 
   # Endpoint (default OTLP collector)
-  _HAIKU_TELEMETRY_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}"
+  _AIDLC_TELEMETRY_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}"
   # Strip trailing slash
-  _HAIKU_TELEMETRY_ENDPOINT="${_HAIKU_TELEMETRY_ENDPOINT%/}"
+  _AIDLC_TELEMETRY_ENDPOINT="${_AIDLC_TELEMETRY_ENDPOINT%/}"
 
   # Read plugin version from plugin.json
-  _HAIKU_TELEMETRY_VERSION=""
+  _AIDLC_TELEMETRY_VERSION=""
   local plugin_json=""
   if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json" ]; then
     plugin_json="${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json"
@@ -71,22 +71,22 @@ haiku_telemetry_init() {
         local _tmp="${line#*\"version\"}"
         _tmp="${_tmp#*:}"
         _tmp="${_tmp#*\"}"
-        _HAIKU_TELEMETRY_VERSION="${_tmp%%\"*}"
+        _AIDLC_TELEMETRY_VERSION="${_tmp%%\"*}"
         break
       fi
     done < "$plugin_json"
   fi
-  : "${_HAIKU_TELEMETRY_VERSION:=unknown}"
+  : "${_AIDLC_TELEMETRY_VERSION:=unknown}"
 
   # Parse OTEL_EXPORTER_OTLP_HEADERS into curl -H flags
-  _HAIKU_TELEMETRY_CURL_HEADERS=""
+  _AIDLC_TELEMETRY_CURL_HEADERS=""
   if [ -n "${OTEL_EXPORTER_OTLP_HEADERS:-}" ]; then
     local IFS=','
     for pair in $OTEL_EXPORTER_OTLP_HEADERS; do
       local key="${pair%%=*}"
       local value="${pair#*=}"
       if [ -n "$key" ] && [ -n "$value" ]; then
-        _HAIKU_TELEMETRY_CURL_HEADERS="${_HAIKU_TELEMETRY_CURL_HEADERS} -H ${key}:${value}"
+        _AIDLC_TELEMETRY_CURL_HEADERS="${_AIDLC_TELEMETRY_CURL_HEADERS} -H ${key}:${value}"
       fi
     done
     unset IFS
@@ -95,7 +95,7 @@ haiku_telemetry_init() {
 
 # Get epoch time in nanoseconds (best effort)
 # Falls back to seconds * 1e9 if no nanosecond source available
-_haiku_epoch_nanos() {
+_aidlc_epoch_nanos() {
   # Try GNU date with nanoseconds
   if date +%s%N 2>/dev/null | grep -qE '^[0-9]{19}'; then
     date +%s%N
@@ -108,10 +108,10 @@ _haiku_epoch_nanos() {
 }
 
 # Build OTLP resource attributes JSON array
-_haiku_resource_attributes() {
+_aidlc_resource_attributes() {
   local attrs=""
-  attrs="${attrs}{\"key\":\"service.name\",\"value\":{\"stringValue\":\"haiku\"}}"
-  attrs="${attrs},{\"key\":\"service.version\",\"value\":{\"stringValue\":\"${_HAIKU_TELEMETRY_VERSION}\"}}"
+  attrs="${attrs}{\"key\":\"service.name\",\"value\":{\"stringValue\":\"ai-dlc\"}}"
+  attrs="${attrs},{\"key\":\"service.version\",\"value\":{\"stringValue\":\"${_AIDLC_TELEMETRY_VERSION}\"}}"
 
   # Append OTEL_RESOURCE_ATTRIBUTES if set
   if [ -n "${OTEL_RESOURCE_ATTRIBUTES:-}" ]; then
@@ -130,19 +130,19 @@ _haiku_resource_attributes() {
 }
 
 # Core function: send a structured log event via OTLP/JSON
-# Usage: haiku_log_event <event_name> [key=value ...]
+# Usage: aidlc_log_event <event_name> [key=value ...]
 # All calls are backgrounded and fail silently.
-haiku_log_event() {
+aidlc_log_event() {
   # No-op if not initialized or not enabled
-  if [ "${_HAIKU_TELEMETRY_ENABLED:-0}" != "1" ]; then
+  if [ "${_AIDLC_TELEMETRY_ENABLED:-0}" != "1" ]; then
     return 0
   fi
 
-  local event_name="${1:?haiku_log_event requires an event name}"
+  local event_name="${1:?aidlc_log_event requires an event name}"
   shift
 
   local time_nanos
-  time_nanos=$(_haiku_epoch_nanos)
+  time_nanos=$(_aidlc_epoch_nanos)
 
   # Build log record attributes
   local log_attrs=""
@@ -160,11 +160,11 @@ haiku_log_event() {
   done
 
   local resource_attrs
-  resource_attrs=$(_haiku_resource_attributes)
+  resource_attrs=$(_aidlc_resource_attributes)
 
   local payload
   payload=$(cat <<PAYLOAD_EOF
-{"resourceLogs":[{"resource":{"attributes":${resource_attrs}},"scopeLogs":[{"scope":{"name":"haiku"},"logRecords":[{"timeUnixNano":"${time_nanos}","severityNumber":9,"severityText":"INFO","body":{"stringValue":"${event_name}"},"attributes":[${log_attrs}]}]}]}]}
+{"resourceLogs":[{"resource":{"attributes":${resource_attrs}},"scopeLogs":[{"scope":{"name":"ai-dlc"},"logRecords":[{"timeUnixNano":"${time_nanos}","severityNumber":9,"severityText":"INFO","body":{"stringValue":"${event_name}"},"attributes":[${log_attrs}]}]}]}]}
 PAYLOAD_EOF
 )
 
@@ -175,39 +175,39 @@ PAYLOAD_EOF
     --max-time 5 \
     -X POST \
     -H "Content-Type: application/json" \
-    ${_HAIKU_TELEMETRY_CURL_HEADERS} \
+    ${_AIDLC_TELEMETRY_CURL_HEADERS} \
     -d "$payload" \
-    "${_HAIKU_TELEMETRY_ENDPOINT}/v1/logs" \
+    "${_AIDLC_TELEMETRY_ENDPOINT}/v1/logs" \
     >/dev/null 2>&1 || true) &
 }
 
 # ============================================================================
-# Convenience functions for common H·AI·K·U events
+# Convenience functions for common AI-DLC events
 # ============================================================================
 
 # Intent created
-# Usage: haiku_record_intent_created <slug> <strategy>
-haiku_record_intent_created() {
+# Usage: aidlc_record_intent_created <slug> <strategy>
+aidlc_record_intent_created() {
   local slug="${1:-}" strategy="${2:-}"
-  haiku_log_event "haiku.intent.created" \
+  aidlc_log_event "ai_dlc.intent.created" \
     "intent_slug=${slug}" \
     "strategy=${strategy}"
 }
 
 # Intent completed
-# Usage: haiku_record_intent_completed <slug> <unit_count>
-haiku_record_intent_completed() {
+# Usage: aidlc_record_intent_completed <slug> <unit_count>
+aidlc_record_intent_completed() {
   local slug="${1:-}" unit_count="${2:-}"
-  haiku_log_event "haiku.intent.completed" \
+  aidlc_log_event "ai_dlc.intent.completed" \
     "intent_slug=${slug}" \
     "unit_count=${unit_count}"
 }
 
 # Unit status change
-# Usage: haiku_record_unit_status_change <intent_slug> <unit_slug> <old_status> <new_status>
-haiku_record_unit_status_change() {
+# Usage: aidlc_record_unit_status_change <intent_slug> <unit_slug> <old_status> <new_status>
+aidlc_record_unit_status_change() {
   local intent_slug="${1:-}" unit_slug="${2:-}" old_status="${3:-}" new_status="${4:-}"
-  haiku_log_event "haiku.unit.status_change" \
+  aidlc_log_event "ai_dlc.unit.status_change" \
     "intent_slug=${intent_slug}" \
     "unit_slug=${unit_slug}" \
     "old_status=${old_status}" \
@@ -215,20 +215,20 @@ haiku_record_unit_status_change() {
 }
 
 # Hat transition
-# Usage: haiku_record_hat_transition <intent_slug> <from_hat> <to_hat>
-haiku_record_hat_transition() {
+# Usage: aidlc_record_hat_transition <intent_slug> <from_hat> <to_hat>
+aidlc_record_hat_transition() {
   local intent_slug="${1:-}" from_hat="${2:-}" to_hat="${3:-}"
-  haiku_log_event "haiku.hat.transition" \
+  aidlc_log_event "ai_dlc.hat.transition" \
     "intent_slug=${intent_slug}" \
     "from_hat=${from_hat}" \
     "to_hat=${to_hat}"
 }
 
 # Bolt iteration
-# Usage: haiku_record_bolt_iteration <intent_slug> <unit_slug> <bolt_number> <outcome>
-haiku_record_bolt_iteration() {
+# Usage: aidlc_record_bolt_iteration <intent_slug> <unit_slug> <bolt_number> <outcome>
+aidlc_record_bolt_iteration() {
   local intent_slug="${1:-}" unit_slug="${2:-}" bolt_number="${3:-}" outcome="${4:-}"
-  haiku_log_event "haiku.bolt.iteration" \
+  aidlc_log_event "ai_dlc.bolt.iteration" \
     "intent_slug=${intent_slug}" \
     "unit_slug=${unit_slug}" \
     "bolt_number=${bolt_number}" \
@@ -236,38 +236,38 @@ haiku_record_bolt_iteration() {
 }
 
 # Elaboration complete
-# Usage: haiku_record_elaboration_complete <intent_slug> <unit_count> <has_wireframes>
-haiku_record_elaboration_complete() {
+# Usage: aidlc_record_elaboration_complete <intent_slug> <unit_count> <has_wireframes>
+aidlc_record_elaboration_complete() {
   local intent_slug="${1:-}" unit_count="${2:-}" has_wireframes="${3:-}"
-  haiku_log_event "haiku.elaboration.complete" \
+  aidlc_log_event "ai_dlc.elaboration.complete" \
     "intent_slug=${intent_slug}" \
     "unit_count=${unit_count}" \
     "has_wireframes=${has_wireframes}"
 }
 
 # Followup created
-# Usage: haiku_record_followup_created <intent_slug> <unit_slug>
-haiku_record_followup_created() {
+# Usage: aidlc_record_followup_created <intent_slug> <unit_slug>
+aidlc_record_followup_created() {
   local intent_slug="${1:-}" unit_slug="${2:-}"
-  haiku_log_event "haiku.followup.created" \
+  aidlc_log_event "ai_dlc.followup.created" \
     "intent_slug=${intent_slug}" \
     "unit_slug=${unit_slug}"
 }
 
 # Cleanup run
-# Usage: haiku_record_cleanup <orphaned_count> <merged_count>
-haiku_record_cleanup() {
+# Usage: aidlc_record_cleanup <orphaned_count> <merged_count>
+aidlc_record_cleanup() {
   local orphaned_count="${1:-}" merged_count="${2:-}"
-  haiku_log_event "haiku.cleanup.run" \
+  aidlc_log_event "ai_dlc.cleanup.run" \
     "orphaned_count=${orphaned_count}" \
     "merged_count=${merged_count}"
 }
 
 # Review decision (per-unit reviewer hat)
-# Usage: haiku_record_review_decision <intent_slug> <unit_slug> <decision> <issue_count>
-haiku_record_review_decision() {
+# Usage: aidlc_record_review_decision <intent_slug> <unit_slug> <decision> <issue_count>
+aidlc_record_review_decision() {
   local intent_slug="${1:-}" unit_slug="${2:-}" decision="${3:-}" issue_count="${4:-0}"
-  haiku_log_event "haiku.review.decision" \
+  aidlc_log_event "ai_dlc.review.decision" \
     "intent_slug=${intent_slug}" \
     "unit_slug=${unit_slug}" \
     "decision=${decision}" \
@@ -275,10 +275,10 @@ haiku_record_review_decision() {
 }
 
 # Quality gate result (test/lint/typecheck)
-# Usage: haiku_record_quality_gate <intent_slug> <unit_slug> <gate> <passed>
-haiku_record_quality_gate() {
+# Usage: aidlc_record_quality_gate <intent_slug> <unit_slug> <gate> <passed>
+aidlc_record_quality_gate() {
   local intent_slug="${1:-}" unit_slug="${2:-}" gate="${3:-}" passed="${4:-}"
-  haiku_log_event "haiku.quality_gate.result" \
+  aidlc_log_event "ai_dlc.quality_gate.result" \
     "intent_slug=${intent_slug}" \
     "unit_slug=${unit_slug}" \
     "gate=${gate}" \
@@ -286,40 +286,40 @@ haiku_record_quality_gate() {
 }
 
 # Integration validation result
-# Usage: haiku_record_integration_result <intent_slug> <passed> <issue_count>
-haiku_record_integration_result() {
+# Usage: aidlc_record_integration_result <intent_slug> <passed> <issue_count>
+aidlc_record_integration_result() {
   local intent_slug="${1:-}" passed="${2:-}" issue_count="${3:-0}"
-  haiku_log_event "haiku.integrate.result" \
+  aidlc_log_event "ai_dlc.integrate.result" \
     "intent_slug=${intent_slug}" \
     "passed=${passed}" \
     "issue_count=${issue_count}"
 }
 
 # Pre-delivery code review result
-# Usage: haiku_record_delivery_review <intent_slug> <decision> <issue_count>
-haiku_record_delivery_review() {
+# Usage: aidlc_record_delivery_review <intent_slug> <decision> <issue_count>
+aidlc_record_delivery_review() {
   local intent_slug="${1:-}" decision="${2:-}" issue_count="${3:-0}"
-  haiku_log_event "haiku.delivery.review" \
+  aidlc_log_event "ai_dlc.delivery.review" \
     "intent_slug=${intent_slug}" \
     "decision=${decision}" \
     "issue_count=${issue_count}"
 }
 
 # PR/MR delivery created
-# Usage: haiku_record_delivery_created <intent_slug> <strategy> <pr_url>
-haiku_record_delivery_created() {
+# Usage: aidlc_record_delivery_created <intent_slug> <strategy> <pr_url>
+aidlc_record_delivery_created() {
   local intent_slug="${1:-}" strategy="${2:-}" pr_url="${3:-}"
-  haiku_log_event "haiku.delivery.created" \
+  aidlc_log_event "ai_dlc.delivery.created" \
     "intent_slug=${intent_slug}" \
     "strategy=${strategy}" \
     "pr_url=${pr_url}"
 }
 
 # Hat failure (work sent back to previous hat)
-# Usage: haiku_record_hat_failure <intent_slug> <unit_slug> <from_hat> <to_hat> <reason>
-haiku_record_hat_failure() {
+# Usage: aidlc_record_hat_failure <intent_slug> <unit_slug> <from_hat> <to_hat> <reason>
+aidlc_record_hat_failure() {
   local intent_slug="${1:-}" unit_slug="${2:-}" from_hat="${3:-}" to_hat="${4:-}" reason="${5:-}"
-  haiku_log_event "haiku.hat.failure" \
+  aidlc_log_event "ai_dlc.hat.failure" \
     "intent_slug=${intent_slug}" \
     "unit_slug=${unit_slug}" \
     "from_hat=${from_hat}" \
@@ -328,10 +328,10 @@ haiku_record_hat_failure() {
 }
 
 # Worktree lifecycle event
-# Usage: haiku_record_worktree_event <event> <worktree_path>
-haiku_record_worktree_event() {
+# Usage: aidlc_record_worktree_event <event> <worktree_path>
+aidlc_record_worktree_event() {
   local event="${1:-}" worktree_path="${2:-}"
-  haiku_log_event "haiku.worktree.event" \
+  aidlc_log_event "ai_dlc.worktree.event" \
     "event=${event}" \
     "worktree_path=${worktree_path}"
 }

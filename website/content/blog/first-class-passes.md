@@ -1,17 +1,17 @@
 ---
 title: "First-Class Passes"
-description: "H·AI·K·U now supports typed iteration through disciplinary lenses — design, product, dev — where each pass shapes how hats behave and which workflows are available."
+description: "AI-DLC now supports typed iteration through disciplinary lenses — design, product, dev — where each pass shapes how hats behave and which workflows are available."
 date: 2026-03-31
 author: The Bushido Collective
 ---
 
 Software teams do not build features in a single pass. A designer produces mockups. A product manager writes behavioral specs. A developer implements code. Each discipline looks at the same unit of work through a different lens, producing different artifacts, applying different quality standards, and asking different questions.
 
-H·AI·K·U now models this directly. Passes are first-class.
+AI-DLC now models this directly. Passes are first-class.
 
 ## What Was Missing
 
-H·AI·K·U already had passes as a scheduling concept. You could declare `passes: [design, product, dev]` in an intent, and the DAG scheduler would sequence units accordingly — run design-tagged units first, then product, then dev. But scheduling was all passes did. A builder in a design pass behaved identically to a builder in a dev pass. The same workflows were available. The same instructions applied. The discipline label was cosmetic.
+AI-DLC already had passes as a scheduling concept. You could declare `passes: [design, product, dev]` in an intent, and the DAG scheduler would sequence units accordingly — run design-tagged units first, then product, then dev. But scheduling was all passes did. A builder in a design pass behaved identically to a builder in a dev pass. The same workflows were available. The same instructions applied. The discipline label was cosmetic.
 
 This meant that an agent working a design unit would produce production code instead of wireframes. A product pass builder would jump straight to implementation instead of writing behavioral specs. The system knew *when* to run each pass but not *how* each pass should shape the work.
 
@@ -47,7 +47,7 @@ Pass-backs are also possible. If dev reveals that the design missed an interacti
 
 ## Custom Passes
 
-The three built-in passes are not a closed set. Projects can define custom passes by adding definition files to `.haiku/studios/{studio}/stages/`. A security-focused team might add a `security` pass that constrains work to threat modeling and penetration testing. A data team might add an `analytics` pass that focuses on instrumentation and metric validation. The pass system is extensible because disciplines are not universal.
+The three built-in passes are not a closed set. Projects can define custom passes by adding definition files to `.ai-dlc/passes/`. A security-focused team might add a `security` pass that constrains work to threat modeling and penetration testing. A data team might add an `analytics` pass that focuses on instrumentation and metric validation. The pass system is extensible because disciplines are not universal.
 
 Custom passes declare their own available workflows and default workflow, and their instructions inject into hats just like built-in passes. The settings schema accepts any string for `default_passes` — there is no hardcoded enum to maintain.
 

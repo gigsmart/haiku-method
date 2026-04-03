@@ -1,5 +1,5 @@
 #!/bin/bash
-# capture-screenshots.sh — Screenshot capture dispatcher for H·AI·K·U
+# capture-screenshots.sh — Screenshot capture dispatcher for AI-DLC
 #
 # Routes to the correct capture provider based on --provider flag.
 # See capture-interface.md for the full input/output contract.
@@ -49,13 +49,13 @@ done
 PROVIDER_SCRIPT="$SCRIPT_DIR/capture-${PROVIDER}.sh"
 
 if [ ! -f "$PROVIDER_SCRIPT" ]; then
-  echo "haiku: capture provider not found: $PROVIDER" >&2
-  echo "haiku: available providers:" >&2
+  echo "ai-dlc: capture provider not found: $PROVIDER" >&2
+  echo "ai-dlc: available providers:" >&2
   for p in "$SCRIPT_DIR"/capture-*.sh; do
     pname="$(basename "$p" .sh)"
     pname="${pname#capture-}"
     [ "$pname" = "screenshots" ] && continue
-    echo "haiku:   $pname" >&2
+    echo "ai-dlc:   $pname" >&2
   done
   exit 2
 fi

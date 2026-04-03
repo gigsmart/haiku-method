@@ -186,7 +186,7 @@ export function getAllPapers(): Paper[] {
  * Get the AI-DLC paper (main paper)
  */
 export function getMainPaper(): Paper | null {
-	return getPaperBySlug("haiku-method")
+	return getPaperBySlug("ai-dlc-2026")
 }
 
 /**

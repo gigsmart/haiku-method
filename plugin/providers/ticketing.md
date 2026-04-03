@@ -1,6 +1,6 @@
 ---
 category: ticketing
-description: Default ticketing provider behavior for H·AI·K·U
+description: Default ticketing provider behavior for AI-DLC
 ---
 
 # Ticketing Provider — Default Instructions
@@ -31,11 +31,11 @@ Structure ticket descriptions with these sections (omit any that are empty):
 3. **Dependencies** — blocked-by units with ticket keys if known
 4. **Technical Notes** — implementation guidance, constraints, or architectural notes from the unit file
 
-The goal is a ticket that gives a developer full context without needing to read `.haiku/` files.
+The goal is a ticket that gives a developer full context without needing to read `.ai-dlc/` files.
 
 ## Provider Config
 
-Provider-specific configuration lives under `providers.ticketing.config` in `.haiku/settings.yml`.
+Provider-specific configuration lives under `providers.ticketing.config` in `.ai-dlc/settings.yml`.
 Schema: `${CLAUDE_PLUGIN_ROOT}/schemas/providers/{type}.schema.json`
 
 **Never create top-level provider keys** (e.g., no top-level `jira:` key). All config goes under `providers.ticketing.config`.

@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://haiku.dev/schemas/providers/stack-packaging.schema.json",
+	"$id": "https://ai-dlc.dev/schemas/providers/stack-packaging.schema.json",
 	"title": "Stack Packaging Provider Entry",
 	"description": "Packaging and manifest provider configuration for the stack packaging layer",
 	"type": "object",

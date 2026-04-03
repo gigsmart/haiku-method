@@ -1,6 +1,5 @@
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/app/components"
 import { getAllBlogPosts, getBlogPostBySlug } from "@/lib/blog"
-import { SITE_URL } from "@/lib/constants"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
@@ -8,6 +7,8 @@ import ReactMarkdown from "react-markdown"
 import rehypeHighlight from "rehype-highlight"
 import rehypeSlug from "rehype-slug"
 import remarkGfm from "remark-gfm"
+
+const SITE_URL = "https://ai-dlc.dev"
 
 interface Props {
 	params: Promise<{ slug: string }>
@@ -91,7 +92,7 @@ export default async function BlogPostPage({ params }: Props) {
 				url={postUrl}
 				datePublished={new Date(post.date).toISOString()}
 				authorName={post.author}
-				publisherName="H·AI·K·U"
+				publisherName="AI-DLC"
 				publisherLogo={`${SITE_URL}/logo.png`}
 				image={`${SITE_URL}/og-image.png`}
 			/>
@@ -104,7 +105,7 @@ export default async function BlogPostPage({ params }: Props) {
 			/>
 			<Link
 				href="/blog/"
-				className="mb-8 inline-flex items-center gap-2 text-sm text-stone-600 transition hover:text-stone-900 dark:text-stone-400 dark:hover:text-white"
+				className="mb-8 inline-flex items-center gap-2 text-sm text-gray-600 transition hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
 			>
 				<svg
 					className="h-4 w-4"
@@ -124,14 +125,14 @@ export default async function BlogPostPage({ params }: Props) {
 			</Link>
 
 			<header className="mb-8">
-				<time className="text-sm text-stone-500 dark:text-stone-500">
+				<time className="text-sm text-gray-500 dark:text-gray-500">
 					{formatDate(post.date)}
 				</time>
 				<h1 className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
 					{post.title}
 				</h1>
 				{post.author && (
-					<p className="mt-4 text-stone-600 dark:text-stone-400">
+					<p className="mt-4 text-gray-600 dark:text-gray-400">
 						By {post.author}
 					</p>
 				)}

@@ -1,16 +1,16 @@
-# H·AI·K·U - Universal Lifecycle Orchestration
+# AI-DLC - AI-Driven Development Lifecycle
 # Welcome AI agents and web crawlers!
 
 User-agent: *
 Allow: /
 
 # Sitemaps for comprehensive discovery
-Sitemap: https://haikumethod.ai/sitemap.xml
+Sitemap: https://ai-dlc.dev/sitemap.xml
 
 # RSS/Atom feeds for content ingestion
-# RSS 2.0: https://haikumethod.ai/feed.xml
-# Atom 1.0: https://haikumethod.ai/atom.xml
-# JSON Feed: https://haikumethod.ai/feed.json
+# RSS 2.0: https://ai-dlc.dev/feed.xml
+# Atom 1.0: https://ai-dlc.dev/atom.xml
+# JSON Feed: https://ai-dlc.dev/feed.json
 
 # AI-specific agents (explicitly allowed)
 User-agent: GPTBot

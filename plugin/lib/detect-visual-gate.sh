@@ -1,5 +1,5 @@
 #!/bin/bash
-# detect-visual-gate.sh — Visual gate auto-detection for H·AI·K·U
+# detect-visual-gate.sh — Visual gate auto-detection for AI-DLC
 #
 # Determines whether a unit should trigger visual fidelity review
 # using a 6-point heuristic. Any single match activates the gate.
@@ -21,13 +21,13 @@
 #
 # Usage (sourced):
 #   source detect-visual-gate.sh
-#   hku_detect_visual_gate --unit-file <path> --changed-files <file-list>
+#   dlc_detect_visual_gate --unit-file <path> --changed-files <file-list>
 
 # Guard against double-sourcing
-if [ -n "${_HKU_DETECT_VISUAL_GATE_SOURCED:-}" ]; then
+if [ -n "${_DLC_DETECT_VISUAL_GATE_SOURCED:-}" ]; then
   return 0 2>/dev/null || true
 fi
-_HKU_DETECT_VISUAL_GATE_SOURCED=1
+_DLC_DETECT_VISUAL_GATE_SOURCED=1
 
 DETECT_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -55,7 +55,7 @@ _check_discipline() {
   local unit_file="$1"
 
   local discipline
-  discipline=$(hku_frontmatter_get "discipline" "$unit_file")
+  discipline=$(dlc_frontmatter_get "discipline" "$unit_file")
 
   case "$discipline" in
     frontend|design) return 0 ;;
@@ -69,7 +69,7 @@ _check_design_ref() {
   local unit_file="$1"
 
   local design_ref
-  design_ref=$(hku_frontmatter_get "design_ref" "$unit_file")
+  design_ref=$(dlc_frontmatter_get "design_ref" "$unit_file")
 
   [ -n "$design_ref" ] && return 0
   return 1
@@ -81,7 +81,7 @@ _check_wireframe() {
   local unit_file="$1"
 
   local wireframe
-  wireframe=$(hku_frontmatter_get "wireframe" "$unit_file")
+  wireframe=$(dlc_frontmatter_get "wireframe" "$unit_file")
 
   [ -n "$wireframe" ] && return 0
   return 1
@@ -173,11 +173,11 @@ _check_provider_native_files() {
 
 # Detect whether the visual gate should be active for a unit.
 #
-# Usage: hku_detect_visual_gate --unit-file <path> [--changed-files <list>]
+# Usage: dlc_detect_visual_gate --unit-file <path> [--changed-files <list>]
 # Output: VISUAL_GATE=true SCORE=N or VISUAL_GATE=false SCORE=0 to stdout
 #   Heuristics 1-5 contribute 1 point each; heuristic 6 contributes 2 points.
 # Exit: 0 always (detection itself does not fail)
-hku_detect_visual_gate() {
+dlc_detect_visual_gate() {
   local unit_file=""
   local changed_files=""
 
@@ -204,19 +204,19 @@ hku_detect_visual_gate() {
         return 0
         ;;
       *)
-        echo "haiku: detect-visual-gate: unknown argument: $1" >&2
+        echo "ai-dlc: detect-visual-gate: unknown argument: $1" >&2
         return 1
         ;;
     esac
   done
 
   if [ -z "$unit_file" ]; then
-    echo "haiku: detect-visual-gate: --unit-file is required" >&2
+    echo "ai-dlc: detect-visual-gate: --unit-file is required" >&2
     return 1
   fi
 
   if [ ! -f "$unit_file" ]; then
-    echo "haiku: detect-visual-gate: unit file not found: $unit_file" >&2
+    echo "ai-dlc: detect-visual-gate: unit file not found: $unit_file" >&2
     echo "VISUAL_GATE=false SCORE=0"
     return 0
   fi
@@ -267,7 +267,7 @@ hku_detect_visual_gate() {
 # ============================================================================
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-  hku_check_deps
-  hku_detect_visual_gate "$@"
+  dlc_check_deps
+  dlc_detect_visual_gate "$@"
   exit $?
 fi

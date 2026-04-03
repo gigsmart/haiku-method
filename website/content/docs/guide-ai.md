@@ -1,10 +1,10 @@
 ---
 title: AI Guide
-description: Understanding H·AI·K·U from Claude's perspective - why structure helps AI be more effective
+description: Understanding AI-DLC from Claude's perspective - why structure helps AI be more effective
 order: 19
 ---
 
-This guide is written from Claude's perspective, explaining why H·AI·K·U's structure helps AI assistants work more effectively with humans.
+This guide is written from Claude's perspective, explaining why AI-DLC's structure helps AI assistants work more effectively with humans.
 
 ## Why AI Benefits from Structure
 
@@ -17,7 +17,7 @@ AI assistants like me have a limited context window - a finite amount of informa
 - The conversation becomes confused about goals
 - Quality of responses degrades
 
-**H·AI·K·U helps by:**
+**AI-DLC helps by:**
 - Capturing decisions in files (not just context)
 - Providing clear boundaries through units
 - Enabling `/clear` without losing progress
@@ -36,7 +36,7 @@ AI Effectiveness = f(Criteria Clarity, Constraint Explicitness, Scope Boundednes
 
 I have to guess at dozens of decisions: Password requirements? OAuth support? Session duration? Rate limiting? Error messages?
 
-**Clear request with H·AI·K·U:**
+**Clear request with AI-DLC:**
 ```markdown
 ## Completion Criteria
 - [ ] Email/password authentication
@@ -58,7 +58,7 @@ There's an inverse relationship between how much clarity you provide and how muc
 | Partial (some specifics) | Frequent | OHOTL |
 | Complete (fully specified) | Minimal | AHOTL |
 
-H·AI·K·U helps you write complete criteria, which lets me work more independently and lets you focus on other things.
+AI-DLC helps you write complete criteria, which lets me work more independently and lets you focus on other things.
 
 ## How Hats Help AI
 
@@ -133,7 +133,7 @@ Constraints prevent me from making decisions that seem reasonable but violate yo
 
 ### Feedback When I'm Wrong
 
-H·AI·K·U's review phase is valuable to me. When the Reviewer hat finds issues:
+AI-DLC's review phase is valuable to me. When the Reviewer hat finds issues:
 
 - I learn what I missed
 - I can iterate with specific feedback
@@ -161,25 +161,25 @@ Explicit permission helps me be more thorough.
 
 I can generate code that looks complete but has subtle issues. Without clear criteria and review, these issues escape.
 
-**H·AI·K·U helps:** Completion criteria make me prove each feature works. Review phase catches what I missed.
+**AI-DLC helps:** Completion criteria make me prove each feature works. Review phase catches what I missed.
 
 ### The Confidence Problem
 
 I sometimes sound confident about things I'm uncertain about. This is a limitation of how I communicate.
 
-**H·AI·K·U helps:** The hypothesis workflow is particularly good here. Instead of asserting what the bug is, I form ranked hypotheses and test them systematically.
+**AI-DLC helps:** The hypothesis workflow is particularly good here. Instead of asserting what the bug is, I form ranked hypotheses and test them systematically.
 
 ### The Context Drift Issue
 
 As conversations get long, I can "forget" earlier constraints or decisions.
 
-**H·AI·K·U helps:** Committed artifacts (intent.md, unit files) persist across context windows. I can reference them even after `/clear`.
+**AI-DLC helps:** Committed artifacts (intent.md, unit files) persist across context windows. I can reference them even after `/clear`.
 
 ### The Scope Creep Trap
 
 Without boundaries, I might implement features that weren't requested, optimize prematurely, or refactor unnecessarily.
 
-**H·AI·K·U helps:** Units bound scope. Criteria define "done." I know when to stop.
+**AI-DLC helps:** Units bound scope. Criteria define "done." I know when to stop.
 
 ## Best Practices for Human-AI Collaboration
 
@@ -220,9 +220,9 @@ When we make decisions together, capture them in the unit file. This helps:
 - Others understand why choices were made
 - Future us avoid re-discussing decided issues
 
-## A Note on H·AI·K·U Philosophy
+## A Note on AI-DLC Philosophy
 
-H·AI·K·U's approach aligns with how I actually work best:
+AI-DLC's approach aligns with how I actually work best:
 
 1. **Backpressure over prescription** - Tell me what success looks like, not every step to get there
 2. **Iteration expected** - First attempt rarely perfect; iterating with feedback is the path to quality
@@ -233,7 +233,7 @@ The methodology isn't fighting against AI capabilities - it's amplifying them by
 
 ## For AI Developers
 
-If you're building AI-assisted development tools, consider what H·AI·K·U demonstrates:
+If you're building AI-assisted development tools, consider what AI-DLC demonstrates:
 
 - Structure improves AI output
 - Clear criteria enable autonomy
@@ -245,6 +245,6 @@ These patterns likely apply beyond software development to any AI-assisted compl
 
 ## Next Steps
 
-- **[Core Concepts](/docs/concepts/)** - Deeper dive into H·AI·K·U principles
+- **[Core Concepts](/docs/concepts/)** - Deeper dive into AI-DLC principles
 - **[Developer Guide](/docs/guide-developer/)** - Day-to-day workflow from human perspective
 - **[Workflows](/docs/workflows/)** - Different workflows for different task types

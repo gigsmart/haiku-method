@@ -74,15 +74,11 @@ export function getAllDocs(): DocPage[] {
 const sectionDefinitions: { title: string; slugs: string[] }[] = [
 	{
 		title: "Getting Started",
-		slugs: ["getting-started", "installation", "checklist-first-intent"],
+		slugs: ["installation", "quick-start", "checklist-first-intent"],
 	},
 	{
 		title: "Core Concepts",
-		slugs: ["concepts", "studios", "stages", "persistence"],
-	},
-	{
-		title: "Reference",
-		slugs: ["cli-reference"],
+		slugs: ["hats", "workflows", "concepts"],
 	},
 	{
 		title: "Before You Build",
@@ -105,10 +101,6 @@ const sectionDefinitions: { title: string; slugs: string[] }[] = [
 			"guide-manager",
 			"guide-ai",
 		],
-	},
-	{
-		title: "Migration",
-		slugs: ["migration"],
 	},
 	{
 		title: "Adoption",

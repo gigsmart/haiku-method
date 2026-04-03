@@ -24,7 +24,7 @@ A "shotgun debugging" approach (trying random fixes) would be inefficient and ri
 ## Phase 1: Elaboration
 
 ```
-User: /haiku:elaborate
+User: /ai-dlc:elaborate
 
 I want to fix intermittent 500 errors on checkout. About 2% of
 checkouts fail with database timeout errors. Been happening for
@@ -34,7 +34,7 @@ checkouts fail with database timeout errors. Been happening for
 **AI (Elaborator):** "I'll set this up for hypothesis-driven debugging.
 
 ```markdown
-# .haiku/fix-checkout-500/intent.md
+# .ai-dlc/fix-checkout-500/intent.md
 
 ---
 status: active
@@ -359,7 +359,7 @@ Fix confirmed effective. Proceeding with full rollout."
 **AI:** "Fix verified. Updating intent...
 
 ```markdown
-# .haiku/fix-checkout-500/intent.md
+# .ai-dlc/fix-checkout-500/intent.md
 
 ---
 status: completed

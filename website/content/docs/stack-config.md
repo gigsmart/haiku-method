@@ -1,12 +1,12 @@
 ---
 title: Stack Configuration Reference
-description: Reference for .haiku/settings.yml stack layers — infrastructure, compute, packaging, pipeline, secrets, monitoring, alerting, and operations
+description: Reference for .ai-dlc/settings.yml stack layers — infrastructure, compute, packaging, pipeline, secrets, monitoring, alerting, and operations
 order: 8
 ---
 
-The stack configuration describes your project's infrastructure in `.haiku/settings.yml` under the `stack:` key. H·AI·K·U uses this configuration to generate deployment manifests, validate operations, and tailor advice to your environment.
+The stack configuration describes your project's infrastructure in `.ai-dlc/settings.yml` under the `stack:` key. AI-DLC uses this configuration to generate deployment manifests, validate operations, and tailor advice to your environment.
 
-All layers are optional. An empty stack (`stack: {}`) is valid — H·AI·K·U will infer what it can from project files.
+All layers are optional. An empty stack (`stack: {}`) is valid — AI-DLC will infer what it can from project files.
 
 ## Layer Reference
 
@@ -123,7 +123,7 @@ stack:
 
 **Runtimes:** `node`, `python`, `go`, `shell`
 
-When `runtime` is not specified, H·AI·K·U auto-detects from project files:
+When `runtime` is not specified, AI-DLC auto-detects from project files:
 - `package.json` → `node`
 - `pyproject.toml` or `requirements.txt` → `python`
 - `go.mod` → `go`

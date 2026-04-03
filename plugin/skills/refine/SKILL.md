@@ -3,9 +3,9 @@ description: Refine intent or unit specs mid-execution without losing progress
 argument-hint: "[unit-slug]"
 ---
 
-# H·AI·K·U Refine
+# AI-DLC Refine
 
-You are refining an H·AI·K·U intent or unit specification mid-execution. Your job is to collaborate with the user to amend specs without destroying in-flight progress.
+You are refining an AI-DLC intent or unit specification mid-execution. Your job is to collaborate with the user to amend specs without destroying in-flight progress.
 
 ---
 
@@ -13,7 +13,7 @@ You are refining an H·AI·K·U intent or unit specification mid-execution. Your
 
 ```bash
 if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
-  echo "ERROR: /haiku:refine cannot run in cowork mode."
+  echo "ERROR: /ai-dlc:refine cannot run in cowork mode."
   echo "Run this in a full Claude Code CLI session."
   exit 1
 fi
@@ -27,21 +27,21 @@ If `CLAUDE_CODE_IS_COWORK=1`, stop immediately with the message above. Do NOT pr
 
 ```bash
 # Intent-level state is stored on current branch (intent branch)
-# Intent slug is derived from .haiku directory structure
-INTENT_SLUG=$(basename "$(find .haiku -maxdepth 2 -name 'intent.md' -exec dirname {} \; | head -1)")
-INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
-STATE=$(hku_state_load "$INTENT_DIR" "iteration.json")
-INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
+# Intent slug is derived from .ai-dlc directory structure
+INTENT_SLUG=$(basename "$(find .ai-dlc -maxdepth 2 -name 'intent.md' -exec dirname {} \; | head -1)")
+INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+STATE=$(dlc_state_load "$INTENT_DIR" "iteration.json")
+INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
 ```
 
 If no state exists:
 ```
-No H·AI·K·U state found. Run /haiku:elaborate to start a new task.
+No AI-DLC state found. Run /ai-dlc:elaborate to start a new task.
 ```
 
 If status is "completed":
 ```
-Intent is already complete. Run /haiku:elaborate to start a new task.
+Intent is already complete. Run /ai-dlc:elaborate to start a new task.
 ```
 
 ---
@@ -70,10 +70,10 @@ If "Specific unit" is selected, list available units and ask which one:
 
 ```bash
 # List all units
-for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
+for unit_file in "$INTENT_DIR"/unit-*.md; do
   [ -f "$unit_file" ] || continue
   unit_name=$(basename "$unit_file" .md)
-  status=$(hku_frontmatter_get "status" "$unit_file" 2>/dev/null || echo "pending")
+  status=$(dlc_frontmatter_get "status" "$unit_file" 2>/dev/null || echo "pending")
   echo "- **${unit_name}** (${status})"
 done
 ```
@@ -172,27 +172,24 @@ For each affected unit:
 3. Write the updated file
 
 Update state:
-- For each affected unit, reset `hat` to the first hat in its stage (in unit frontmatter)
+- For each affected unit, reset `hat` to the first hat in the workflow (in unit frontmatter)
 - Clear `currentUnit` in iteration.json
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
-source "${CLAUDE_PLUGIN_ROOT}/lib/hat.sh"
 
 # Re-queue affected units and reset hat tracking in frontmatter
-ACTIVE_STAGE=$(hku_frontmatter_get "active_stage" "$INTENT_DIR/intent.md" 2>/dev/null || echo "development")
-STUDIO=$(hku_frontmatter_get "studio" "$INTENT_DIR/intent.md" 2>/dev/null || echo "software")
-FIRST_HAT=$(hku_get_hat_sequence "$ACTIVE_STAGE" "$STUDIO" | awk '{print $1}')
-[ -z "$FIRST_HAT" ] && FIRST_HAT="planner"
+WORKFLOW_HATS=$(echo "$STATE" | dlc_json_get "workflow")
+FIRST_HAT=$(echo "$WORKFLOW_HATS" | jq -r '.[0]')
 
 for unit_file in $AFFECTED_UNITS; do
   update_unit_status "$unit_file" "pending"
-  hku_frontmatter_set "hat" "${FIRST_HAT}" "$unit_file"
+  dlc_frontmatter_set "hat" "${FIRST_HAT}" "$unit_file"
 done
 
 # Clear currentUnit in iteration.json
-STATE=$(echo "$STATE" | hku_json_set "currentUnit" "")
-hku_state_save "$INTENT_DIR" "iteration.json" "$STATE"
+STATE=$(echo "$STATE" | dlc_json_set "currentUnit" "")
+dlc_state_save "$INTENT_DIR" "iteration.json" "$STATE"
 
 git add "$INTENT_DIR/"
 git commit -m "refine: re-queue affected units for ${INTENT_SLUG}"
@@ -204,24 +201,21 @@ Re-queue only the target unit:
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
-source "${CLAUDE_PLUGIN_ROOT}/lib/hat.sh"
 
 # Re-queue the specific unit
 update_unit_status "$INTENT_DIR/${UNIT_NAME}.md" "pending"
 
 # Reset hat tracking in unit frontmatter
-ACTIVE_STAGE=$(hku_frontmatter_get "active_stage" "$INTENT_DIR/intent.md" 2>/dev/null || echo "development")
-STUDIO=$(hku_frontmatter_get "studio" "$INTENT_DIR/intent.md" 2>/dev/null || echo "software")
-FIRST_HAT=$(hku_get_hat_sequence "$ACTIVE_STAGE" "$STUDIO" | awk '{print $1}')
-[ -z "$FIRST_HAT" ] && FIRST_HAT="planner"
-hku_frontmatter_set "hat" "${FIRST_HAT}" "$INTENT_DIR/${UNIT_NAME}.md"
+WORKFLOW_HATS=$(echo "$STATE" | dlc_json_get "workflow")
+FIRST_HAT=$(echo "$WORKFLOW_HATS" | jq -r '.[0]')
+dlc_frontmatter_set "hat" "${FIRST_HAT}" "$INTENT_DIR/${UNIT_NAME}.md"
 
 # Clear currentUnit if it matches
-CURRENT_UNIT=$(echo "$STATE" | hku_json_get "currentUnit" "")
+CURRENT_UNIT=$(echo "$STATE" | dlc_json_get "currentUnit" "")
 if [ "$CURRENT_UNIT" = "$UNIT_NAME" ]; then
-  STATE=$(echo "$STATE" | hku_json_set "currentUnit" "")
+  STATE=$(echo "$STATE" | dlc_json_set "currentUnit" "")
 fi
-hku_state_save "$INTENT_DIR" "iteration.json" "$STATE"
+dlc_state_save "$INTENT_DIR" "iteration.json" "$STATE"
 
 git add "$INTENT_DIR/"
 git commit -m "refine: re-queue ${UNIT_NAME} for ${INTENT_SLUG}"
@@ -232,8 +226,8 @@ git commit -m "refine: re-queue ${UNIT_NAME} for ${INTENT_SLUG}"
 If `integratorComplete` was set to `true` in `iteration.json`, reset it to `false` since the spec has changed:
 
 ```bash
-STATE=$(echo "$STATE" | hku_json_set "integratorComplete" "false")
-hku_state_save "$INTENT_DIR" "iteration.json" "$STATE"
+STATE=$(echo "$STATE" | dlc_json_set "integratorComplete" "false")
+dlc_state_save "$INTENT_DIR" "iteration.json" "$STATE"
 ```
 
 ---
@@ -250,5 +244,5 @@ Re-queued units: {list of re-queued units}
 Unaffected units: {list of units that stay completed}
 
 To resume the build loop:
-  /haiku:execute
+  /ai-dlc:execute
 ```

@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://haiku.dev/schemas/providers/stack-alerting.schema.json",
+	"$id": "https://ai-dlc.dev/schemas/providers/stack-alerting.schema.json",
 	"title": "Stack Alerting Provider Entry",
 	"description": "Alerting and on-call provider configuration for the stack alerting layer",
 	"type": "object",

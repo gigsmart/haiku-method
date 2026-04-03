@@ -135,7 +135,7 @@ export function ModeSelector() {
 							type="button"
 							onClick={goBack}
 							disabled={currentQuestion === 0}
-							className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-stone-600 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-stone-400 dark:hover:bg-stone-800"
+							className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-800"
 						>
 							<svg
 								className="h-4 w-4"
@@ -158,7 +158,7 @@ export function ModeSelector() {
 							type="button"
 							onClick={goNext}
 							disabled={answers[currentQuestion] === undefined}
-							className="inline-flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-100"
+							className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
 						>
 							{currentQuestion === questions.length - 1
 								? "See Results"
@@ -184,10 +184,10 @@ export function ModeSelector() {
 				<>
 					{/* Results Header */}
 					<div className="mb-8 text-center">
-						<h1 className="mb-2 text-3xl font-bold text-stone-900 dark:text-white">
+						<h1 className="mb-2 text-3xl font-bold text-gray-900 dark:text-white">
 							Your Recommended Mode
 						</h1>
-						<p className="text-stone-600 dark:text-stone-400">
+						<p className="text-gray-600 dark:text-gray-400">
 							Based on your answers, here's the operating mode that best fits
 							your situation.
 						</p>
@@ -212,7 +212,7 @@ export function ModeSelector() {
 						<button
 							type="button"
 							onClick={startOver}
-							className="inline-flex items-center justify-center gap-2 rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50 dark:border-stone-600 dark:text-stone-300 dark:hover:bg-stone-800"
+							className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
 						>
 							<svg
 								className="h-4 w-4"
@@ -235,7 +235,7 @@ export function ModeSelector() {
 							<button
 								type="button"
 								onClick={goBack}
-								className="inline-flex items-center justify-center gap-2 rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50 dark:border-stone-600 dark:text-stone-300 dark:hover:bg-stone-800"
+								className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
 							>
 								<svg
 									className="h-4 w-4"
@@ -257,7 +257,7 @@ export function ModeSelector() {
 							<button
 								type="button"
 								onClick={copyShareUrl}
-								className="inline-flex items-center justify-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-800 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-100"
+								className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
 							>
 								{copied ? (
 									<>

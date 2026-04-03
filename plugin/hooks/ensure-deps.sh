@@ -57,6 +57,6 @@ The following required tools are missing: ${missing[*]}
 Install them now by running:
   ${installer}
 
-Do NOT proceed with any H·AI·K·U workflow until these are installed.
+Do NOT proceed with any AI-DLC workflow until these are installed.
 </must-act>
 EOF

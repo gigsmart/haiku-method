@@ -44,7 +44,7 @@ export function IterationLoop({
 						<polygon
 							points="0 0, 10 3.5, 0 7"
 							fill="currentColor"
-							className="text-stone-400 dark:text-stone-300"
+							className="text-gray-400 dark:text-gray-300"
 						/>
 					</marker>
 					<marker
@@ -70,7 +70,7 @@ export function IterationLoop({
 					stroke="currentColor"
 					strokeWidth="0.5"
 					strokeDasharray="2 1.5"
-					className="text-stone-300 dark:text-stone-400"
+					className="text-gray-300 dark:text-gray-400"
 					markerEnd="url(#arrowhead)"
 				/>
 

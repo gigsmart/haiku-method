@@ -1,10 +1,8 @@
 import { getAllBlogPosts } from "@/lib/blog"
 import { getChangelog } from "@/lib/changelog"
 
-import { SITE_URL } from "@/lib/constants"
-export { SITE_URL }
-
-export const SITE_TITLE = "H·AI·K·U"
+export const SITE_URL = "https://ai-dlc.dev"
+export const SITE_TITLE = "AI-DLC"
 export const SITE_DESCRIPTION =
 	"A methodology for the era of AI-driven software development — built from first principles, not retrofitted from the past"
 

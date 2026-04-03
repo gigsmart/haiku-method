@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://haiku.dev/schemas/providers/google-docs.schema.json",
+	"$id": "https://ai-dlc.dev/schemas/providers/google-docs.schema.json",
 	"title": "Google Docs Provider Config",
 	"description": "Provider-specific configuration for Google Docs spec provider",
 	"type": "object",

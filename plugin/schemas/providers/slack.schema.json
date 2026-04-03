@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://haiku.dev/schemas/providers/slack.schema.json",
+	"$id": "https://ai-dlc.dev/schemas/providers/slack.schema.json",
 	"title": "Slack Provider Config",
 	"description": "Provider-specific configuration for Slack comms provider",
 	"type": "object",

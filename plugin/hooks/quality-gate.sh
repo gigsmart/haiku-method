@@ -1,5 +1,5 @@
 #!/bin/bash
-# quality-gate.sh - Stop/SubagentStop hook for H·AI·K·U quality gates
+# quality-gate.sh - Stop/SubagentStop hook for AI-DLC quality gates
 #
 # Reads quality_gates from intent.md and current unit frontmatter,
 # runs each gate command, and blocks the agent from stopping if any fail.
@@ -16,7 +16,7 @@ source "${PLUGIN_ROOT}/lib/state.sh"
 INPUT=$(cat)
 
 # Early exit: deps
-hku_check_deps || exit 0
+dlc_check_deps || exit 0
 
 # Early exit: stop_hook_active guard
 #
@@ -26,32 +26,32 @@ hku_check_deps || exit 0
 # forever. The implication is that enforcement is one-attempt-only per stop: if the
 # builder triggers a second stop in the same session, all gates are skipped. The
 # reviewer's ratchet check (step 6) is the complementary enforcement for that gap.
-STOP_HOOK_ACTIVE=$(echo "$INPUT" | hku_json_get "stop_hook_active")
+STOP_HOOK_ACTIVE=$(echo "$INPUT" | dlc_json_get "stop_hook_active")
 if [ "$STOP_HOOK_ACTIVE" = "true" ]; then
   exit 0
 fi
 
 # Early exit: no active intent
-INTENT_DIR=$(hku_find_active_intent)
+INTENT_DIR=$(dlc_find_active_intent)
 if [ -z "$INTENT_DIR" ]; then
   exit 0
 fi
 
 # Early exit: no iteration state
-ITERATION_JSON=$(hku_state_load "$INTENT_DIR" "iteration.json")
+ITERATION_JSON=$(dlc_state_load "$INTENT_DIR" "iteration.json")
 if [ -z "$ITERATION_JSON" ]; then
   exit 0
 fi
 
 # Validate JSON
-if ! echo "$ITERATION_JSON" | hku_json_validate; then
+if ! echo "$ITERATION_JSON" | dlc_json_validate; then
   exit 0
 fi
 
 # Extract iteration fields
-HAT=$(echo "$ITERATION_JSON" | hku_json_get "hat")
-STATUS=$(echo "$ITERATION_JSON" | hku_json_get "status")
-CURRENT_UNIT=$(echo "$ITERATION_JSON" | hku_json_get "currentUnit")
+HAT=$(echo "$ITERATION_JSON" | dlc_json_get "hat")
+STATUS=$(echo "$ITERATION_JSON" | dlc_json_get "status")
+CURRENT_UNIT=$(echo "$ITERATION_JSON" | dlc_json_get "currentUnit")
 
 # Early exit: non-building hat
 case "$HAT" in

@@ -11,7 +11,7 @@ export const revalidate = false
 export async function GET() {
 	const items = getCombinedFeedItems()
 	const atom = generateAtom(items, {
-		title: "H·AI·K·U",
+		title: "AI-DLC",
 		selfUrl: `${SITE_URL}/atom.xml`,
 	})
 
