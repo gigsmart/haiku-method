@@ -7,7 +7,8 @@ discipline: documentation
 stage: ""
 workflow: ""
 ticket: ""
-hat: reviewer
+hat: builder
+retries: 1
 ---
 
 # unit-12-claude-md-paper-sync
