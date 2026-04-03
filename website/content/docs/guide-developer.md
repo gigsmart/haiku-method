@@ -1,23 +1,23 @@
 ---
 title: Developer Guide
-description: Day-to-day guide for using AI-DLC as an individual developer
+description: Day-to-day guide for using H·AI·K·U as an individual developer
 order: 16
 ---
 
-This guide covers the day-to-day workflow of using AI-DLC. It assumes you've completed initial setup and are ready to be productive.
+This guide covers the day-to-day workflow of using H·AI·K·U. It assumes you've completed initial setup and are ready to be productive.
 
 ## Daily Workflow
 
 ### Starting a Session
 
 1. **Check your current state**
-   - Look at `.ai-dlc/` for active intents
+   - Look at `.haiku/` for active intents
    - Check which unit you're working on
    - Review any blockers from previous sessions
 
 2. **Load context**
-   - Run `/ai-dlc:execute` if continuing existing work
-   - Run `/ai-dlc:elaborate` if starting new work
+   - Run `/haiku:execute` if continuing existing work
+   - Run `/haiku:elaborate` if starting new work
 
 3. **Announce your hat**
    - Explicitly state which hat you're wearing
@@ -34,7 +34,7 @@ This guide covers the day-to-day workflow of using AI-DLC. It assumes you've com
 ### Ending a Session
 
 1. **Commit your state**
-   - Ensure `.ai-dlc/` files reflect current status
+   - Ensure `.haiku/` files reflect current status
    - Commit work-in-progress with descriptive message
 
 2. **Note where you stopped**
@@ -52,7 +52,7 @@ This guide covers the day-to-day workflow of using AI-DLC. It assumes you've com
 You left off mid-unit or a colleague handed you an intent.
 
 ```
-/ai-dlc:execute
+/haiku:execute
 ```
 
 This loads the intent and current unit state. Review what's been done:
@@ -68,7 +68,7 @@ Then continue from where work stopped.
 You have a new task with no existing intent.
 
 ```
-/ai-dlc:elaborate
+/haiku:elaborate
 ```
 
 This enters Elaborator mode to define the intent collaboratively:
@@ -92,7 +92,7 @@ Solution:
 /clear
 ```
 
-Then `/ai-dlc:execute` to reload from committed state. The hat system ensures your progress is captured in files, not just context.
+Then `/haiku:execute` to reload from committed state. The hat system ensures your progress is captured in files, not just context.
 
 ### Getting Stuck
 
@@ -243,7 +243,7 @@ If you have multiple similar units (e.g., CRUD endpoints), batch them:
 
 ### Embrace Iteration
 
-AI-DLC expects iteration. First pass rarely meets all criteria. That's normal and designed.
+H·AI·K·U expects iteration. First pass rarely meets all criteria. That's normal and designed.
 
 The backpressure principle: Define what success looks like, let Claude figure out how to get there, iterate until all criteria pass.
 
@@ -284,6 +284,6 @@ Signs a unit is too big:
 
 ## Next Steps
 
-- **[Core Concepts](/docs/concepts/)** - Deeper understanding of AI-DLC principles
+- **[Core Concepts](/docs/concepts/)** - Deeper understanding of H·AI·K·U principles
 - **[Workflows](/docs/workflows/)** - Master all four workflow types
 - **[First Intent Checklist](/docs/checklist-first-intent/)** - Step-by-step for your first intent

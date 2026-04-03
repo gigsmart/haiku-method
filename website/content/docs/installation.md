@@ -1,20 +1,20 @@
 ---
 title: Installation
-description: Install AI-DLC in your Claude Code project
+description: Install H·AI·K·U in your Claude Code project
 order: 2
 ---
 
-AI-DLC is distributed as a Claude Code plugin. This guide covers installation methods and prerequisites.
+H·AI·K·U is distributed as a Claude Code plugin. This guide covers installation methods and prerequisites.
 
 ## Prerequisites
 
 ### Claude Code
 
-AI-DLC requires [Claude Code](https://claude.ai/code), Anthropic's AI-powered development environment. Ensure you have Claude Code installed and configured.
+H·AI·K·U requires [Claude Code](https://claude.ai/code), Anthropic's AI-powered development environment. Ensure you have Claude Code installed and configured.
 
 ### Han CLI (Recommended)
 
-AI-DLC uses [Han CLI](https://han.guru) for state management (`han keep` commands). While the plugin works without it, you'll get the best experience with Han installed.
+H·AI·K·U uses [Han CLI](https://han.guru) for state management (`han keep` commands). While the plugin works without it, you'll get the best experience with Han installed.
 
 **Install Han via curl (recommended):**
 
@@ -82,14 +82,14 @@ Add the plugin to your Claude Code settings file manually.
 After installation, verify the plugin is working:
 
 1. Start a new Claude Code session in your project
-2. Type `/ai-dlc:elaborate` - you should see the elaboration flow start
-3. If `/ai-dlc:elaborate` works, your installation is successful
+2. Type `/haiku:new` - you should see the inception flow start
+3. If `/haiku:new` works, your installation is successful
 
 If commands aren't recognized, restart your Claude Code session.
 
 ## Recommended Companion Plugins
 
-AI-DLC works best with backpressure plugins that provide quality gates:
+H·AI·K·U works best with backpressure plugins that provide quality gates:
 
 ### TypeScript Projects
 
@@ -120,13 +120,13 @@ These plugins provide:
 
 ## Project Setup
 
-### Create the AI-DLC Directory
+### Create the H·AI·K·U Directory
 
-AI-DLC stores its artifacts in `.ai-dlc/` at your project root:
+H·AI·K·U stores its artifacts in `.haiku/` at your project root:
 
 ```
 your-project/
-  .ai-dlc/
+  .haiku/
     add-oauth-login/         # Intent directory
       intent.md              # Intent definition
       unit-01-setup.md       # Unit files
@@ -136,18 +136,18 @@ your-project/
   ...
 ```
 
-The directory is created automatically when you run `/ai-dlc:elaborate` for the first time.
+The directory is created automatically when you run `/haiku:new` for the first time.
 
 ### Git Configuration
 
-Add AI-DLC artifacts to version control:
+Add H·AI·K·U artifacts to version control:
 
 ```bash
-# AI-DLC artifacts should be committed
-git add .ai-dlc/
+# H·AI·K·U artifacts should be committed
+git add .haiku/
 ```
 
-The `.ai-dlc/` directory contains:
+The `.haiku/` directory contains:
 - Intent definitions
 - Unit specifications
 - Progress tracking
@@ -156,11 +156,11 @@ These are valuable documentation that should be preserved.
 
 ### Gitignore (Optional)
 
-If you prefer not to commit AI-DLC artifacts:
+If you prefer not to commit H·AI·K·U artifacts:
 
 ```gitignore
 # .gitignore
-.ai-dlc/
+.haiku/
 ```
 
 However, committing is recommended - it provides:
@@ -172,7 +172,7 @@ However, committing is recommended - it provides:
 
 ### Commands Not Recognized
 
-**Symptom:** `/ai-dlc:elaborate` or `/ai-dlc:execute` don't activate
+**Symptom:** `/haiku:new` or `/haiku:run` don't activate
 
 **Solutions:**
 1. Restart Claude Code session
@@ -199,6 +199,7 @@ However, committing is recommended - it provides:
 
 ## Next Steps
 
-- **[Quick Start](/docs/quick-start/)** - Build your first feature with AI-DLC
-- **[Core Concepts](/docs/concepts/)** - Understand intents, units, and hats
-- **[Workflows](/docs/workflows/)** - Learn about different development patterns
+- **[Quick Start](/docs/quick-start/)** - Build your first feature with H·AI·K·U
+- **[Core Concepts](/docs/concepts/)** - Understand intents, units, and stages
+- **[Studios & Stages](/docs/studios/)** - Learn about studios and their stage pipelines
+- **[CLI Reference](/docs/cli-reference/)** - Full command reference

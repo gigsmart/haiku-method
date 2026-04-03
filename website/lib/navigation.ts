@@ -1,5 +1,5 @@
 /**
- * Navigation data structure for AI-DLC website
+ * Navigation data structure for H·AI·K·U website
  */
 
 export interface NavItem {
@@ -74,9 +74,9 @@ export const navigation: NavCategory[] = [
 						description: "Install the Claude Code plugin",
 					},
 					{
-						title: "Quick Start",
-						href: "/docs/quick-start/",
-						description: "Your first AI-DLC session",
+						title: "Getting Started",
+						href: "/docs/getting-started/",
+						description: "Your first H\u00b7AI\u00b7K\u00b7U session",
 					},
 					{
 						title: "First Intent Checklist",
@@ -87,9 +87,9 @@ export const navigation: NavCategory[] = [
 			},
 		],
 		featured: {
-			title: "New to AI-DLC?",
+			title: "New to H\u00b7AI\u00b7K\u00b7U?",
 			description:
-				"Start with the methodology overview to understand how H·AI·K·U works, then install the plugin to try it.",
+				"Start with the methodology overview to understand how H\u00b7AI\u00b7K\u00b7U works, then install the plugin to try it.",
 			href: "/methodology/",
 		},
 	},
@@ -106,14 +106,19 @@ export const navigation: NavCategory[] = [
 						description: "All documentation in one place",
 					},
 					{
-						title: "Hats",
-						href: "/docs/hats/",
-						description: "Role-based focus for every phase",
+						title: "Studios",
+						href: "/docs/studios/",
+						description: "Lifecycle templates for different work types",
 					},
 					{
-						title: "Workflows",
-						href: "/docs/workflows/",
-						description: "How hats flow in different scenarios",
+						title: "Stages",
+						href: "/docs/stages/",
+						description: "Stage-based progression model",
+					},
+					{
+						title: "CLI Reference",
+						href: "/docs/cli-reference/",
+						description: "Complete command reference",
 					},
 					{
 						title: "Providers",
@@ -139,17 +144,17 @@ export const navigation: NavCategory[] = [
 					{
 						title: "For Developers",
 						href: "/docs/guide-developer/",
-						description: "Day-to-day AI-DLC usage",
+						description: "Day-to-day H\u00b7AI\u00b7K\u00b7U usage",
 					},
 					{
 						title: "For Designers",
 						href: "/docs/guide-designer/",
-						description: "UX/UI collaboration with AI-DLC",
+						description: "UX/UI collaboration with H\u00b7AI\u00b7K\u00b7U",
 					},
 					{
 						title: "For Tech Leads",
 						href: "/docs/guide-tech-lead/",
-						description: "Leading an AI-DLC team",
+						description: "Leading a H\u00b7AI\u00b7K\u00b7U team",
 					},
 					{
 						title: "For Managers",
@@ -159,7 +164,7 @@ export const navigation: NavCategory[] = [
 					{
 						title: "For AI Agents",
 						href: "/docs/guide-ai/",
-						description: "Autonomous operation with AI-DLC",
+						description: "Autonomous operation with H\u00b7AI\u00b7K\u00b7U",
 					},
 				],
 			},
@@ -190,12 +195,12 @@ export const navigation: NavCategory[] = [
 					{
 						title: "Glossary",
 						href: "/glossary/",
-						description: "AI-DLC terminology and definitions",
+						description: "H\u00b7AI\u00b7K\u00b7U terminology and definitions",
 					},
 					{
 						title: "Changelog",
 						href: "/changelog/",
-						description: "What's new in AI-DLC",
+						description: "What's new in H\u00b7AI\u00b7K\u00b7U",
 					},
 				],
 			},
@@ -205,7 +210,7 @@ export const navigation: NavCategory[] = [
 					{
 						title: "Community",
 						href: "/docs/community/",
-						description: "Join the AI-DLC community",
+						description: "Join the H\u00b7AI\u00b7K\u00b7U community",
 					},
 					{
 						title: "GitHub",
@@ -242,7 +247,7 @@ export const footerNavigation = {
 		title: "Developers",
 		items: [
 			{ title: "Installation", href: "/docs/installation/" },
-			{ title: "Quick Start", href: "/docs/quick-start/" },
+			{ title: "Getting Started", href: "/docs/getting-started/" },
 			{ title: "Documentation", href: "/docs/" },
 			{ title: "Changelog", href: "/changelog/" },
 		],

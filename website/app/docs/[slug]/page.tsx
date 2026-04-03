@@ -24,12 +24,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 	if (!doc) {
 		return {
-			title: "Page Not Found - AI-DLC",
+			title: "Page Not Found - H\u00b7AI\u00b7K\u00b7U",
 		}
 	}
 
 	return {
-		title: `${doc.title} - AI-DLC`,
+		title: `${doc.title} - H\u00b7AI\u00b7K\u00b7U`,
 		description: doc.description,
 	}
 }

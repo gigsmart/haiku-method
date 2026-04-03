@@ -1,10 +1,10 @@
 ---
 title: "Example: Feature Implementation"
-description: A complete walkthrough of implementing a real feature using AI-DLC
+description: A complete walkthrough of implementing a real feature using H·AI·K·U
 order: 11
 ---
 
-This is a complete, realistic example of using AI-DLC to implement a feature. Follow along to see the methodology in action.
+This is a complete, realistic example of using H·AI·K·U to implement a feature. Follow along to see the methodology in action.
 
 ## The Feature
 
@@ -18,7 +18,7 @@ We're adding a **notification system** to a web application. Users should be abl
 ### Starting the Process
 
 ```
-User: /ai-dlc:elaborate
+User: /haiku:elaborate
 
 I want to add a notification system to our app. Users should
 get notifications for important events and be able to manage them.
@@ -56,7 +56,7 @@ User:
 **AI:** "Based on our discussion, here's the intent:
 
 ```markdown
-# .ai-dlc/add-notifications/intent.md
+# .haiku/add-notifications/intent.md
 
 ---
 status: active
@@ -122,7 +122,7 @@ User: Yes, looks good.
 ### Starting the First Unit
 
 ```
-User: /ai-dlc:execute
+User: /haiku:execute
 ```
 
 ### Planner Hat (HITL)
@@ -457,7 +457,7 @@ With the notification system complete, the Builder defined operations for ongoin
 - **`monitor-delivery-latency`** — A reactive agent operation that alerts when notification delivery exceeds 5 seconds
 - **`review-notification-metrics`** — A monthly human process to review delivery rates, open rates, and preference trends
 
-These operation specs live in `.ai-dlc/notifications/operations/` and are managed with `/ai-dlc:operate notifications`. See the [Operations Guide](/docs/operations-guide/) for details.
+These operation specs live in `.haiku/notifications/operations/` and are managed with `/haiku:operate notifications`. See the [Operations Guide](/docs/operations-guide/) for details.
 
 ## Next Steps
 
