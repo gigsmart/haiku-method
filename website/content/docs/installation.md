@@ -20,7 +20,7 @@ Install directly from within a Claude Code or Cowork session:
 
 ```
 /plugin marketplace add thebushidocollective/ai-dlc
-/plugin install haiku@thebushidocollective-ai-dlc --scope project
+/plugin install haiku --scope project
 ```
 
 ### Method 2: Manual Configuration
@@ -57,34 +57,11 @@ After installation, verify the plugin is working:
 
 If commands aren't recognized, restart your Claude session.
 
-## Recommended Companion Plugins
+## Quality Gates
 
-H·AI·K·U works best with backpressure plugins that provide quality gates. Install companion plugins in your Claude session:
+H·AI·K·U has built-in quality gating -- no external plugins needed. Quality gates are defined in your intent frontmatter and enforced automatically by the `quality-gate` hook during execution. You can configure gates for type checking, linting, testing, and any other validation your project requires.
 
-### TypeScript Projects
-
-```
-/plugin install jutsu-typescript --scope project
-/plugin install jutsu-biome --scope project
-```
-
-### Python Projects
-
-```
-/plugin install jutsu-python --scope project
-/plugin install jutsu-ruff --scope project
-```
-
-### Go Projects
-
-```
-/plugin install jutsu-go --scope project
-```
-
-These plugins provide:
-- **Type checking** that blocks on errors
-- **Linting** that maintains code quality
-- **Formatting** that keeps code consistent
+See [Core Concepts](/docs/concepts/) for details on how quality gates integrate with the stage pipeline.
 
 ## Project Setup
 

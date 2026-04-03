@@ -10,7 +10,7 @@ Get H·AI·K·U running in your project and deliver your first feature. H·AI·K
 
 ```
 /plugin marketplace add thebushidocollective/ai-dlc
-/plugin install haiku@thebushidocollective-ai-dlc --scope project
+/plugin install haiku --scope project
 ```
 
 ## The Two Commands You Need
