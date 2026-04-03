@@ -78,12 +78,9 @@ hku_load_studio_metadata() {
     persistence='{"type":"git","delivery":"pull-request"}'
   fi
 
-  # JSON-escape string values
-  sname="${sname//\"/\\\"}"
-  sdescription="${sdescription//\"/\\\"}"
-
-  printf '{"name":"%s","description":"%s","stages":%s,"persistence":%s}' \
-    "$sname" "$sdescription" "$stages" "$persistence"
+  jq -n --arg name "$sname" --arg description "$sdescription" \
+    --argjson stages "$stages" --argjson persistence "$persistence" \
+    '{"name":$name,"description":$description,"stages":$stages,"persistence":$persistence}'
 }
 
 # Load ordered stage names for a studio

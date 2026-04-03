@@ -190,29 +190,32 @@ hku_persist_stage_outputs() {
   slug=$(basename "$intent_dir")
 
   while IFS= read -r entry; do
-    local scope name
+    local scope name src_file target_dir
     scope=$(echo "$entry" | jq -r '.scope // "stage"')
     name=$(echo "$entry" | jq -r '.name // .file')
 
+    # Resolve the output file written by the build phase
+    src_file="${intent_dir}/stages/${stage_name}/outputs/${name}"
+    [ -f "$src_file" ] || continue
+
     case "$scope" in
       project)
-        local target_dir="${repo_root}/.haiku/knowledge"
+        target_dir="${repo_root}/.haiku/knowledge"
         mkdir -p "$target_dir" 2>/dev/null
+        cp "$src_file" "${target_dir}/${name}" 2>/dev/null || true
         ;;
       intent)
-        local target_dir="${intent_dir}/knowledge"
+        target_dir="${intent_dir}/knowledge"
         mkdir -p "$target_dir" 2>/dev/null
+        cp "$src_file" "${target_dir}/${name}" 2>/dev/null || true
         ;;
       stage)
-        local target_dir="${intent_dir}/stages/${stage_name}"
-        mkdir -p "$target_dir" 2>/dev/null
+        # Stage-scoped outputs stay in place under stages/{stage}/outputs/
         ;;
       repo)
-        # Written during build phase — no-op
-        continue
+        # Written directly to repo during build phase — no-op
         ;;
       *)
-        continue
         ;;
     esac
   done < <(echo "$outputs" | jq -c '.[]')

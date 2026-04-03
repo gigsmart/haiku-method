@@ -33,7 +33,7 @@ _persistence_git_create_workspace() {
   done
 
   local repo_root
-  repo_root=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
+  repo_root=$(git rev-parse --show-toplevel 2>/dev/null || git worktree list --porcelain | head -1 | sed 's/^worktree //')
 
   # Resolve default branch
   local default_branch
@@ -166,7 +166,10 @@ _persistence_git_deliver() {
   if [ -n "$unit_slug" ]; then
     # Merge unit branch into intent branch
     local unit_branch="haiku/${intent_slug}/${unit_slug}"
-    git checkout "haiku/${intent_slug}/main" 2>/dev/null || true
+    git checkout "haiku/${intent_slug}/main" 2>/dev/null || {
+      echo "haiku: git adapter: failed to checkout haiku/${intent_slug}/main — aborting merge of ${unit_slug}" >&2
+      return 1
+    }
 
     if [ "$squash" = "true" ]; then
       git merge --squash "$unit_branch" 2>/dev/null || true
@@ -207,7 +210,7 @@ _persistence_git_cleanup() {
   done
 
   local repo_root
-  repo_root=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
+  repo_root=$(git rev-parse --show-toplevel 2>/dev/null || git worktree list --porcelain | head -1 | sed 's/^worktree //')
 
   if [ -n "$unit_slug" ]; then
     local unit_worktree="${repo_root}/.haiku/worktrees/${intent_slug}-${unit_slug}"

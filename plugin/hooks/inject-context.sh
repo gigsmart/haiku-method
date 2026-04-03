@@ -400,10 +400,9 @@ ACTIVE_STAGE=""
 STUDIO=""
 if [ -n "$INTENT_DIR" ] && [ -f "${INTENT_DIR}/intent.md" ]; then
   ACTIVE_STAGE=$(yaml_get_simple "active_stage" "" < "${INTENT_DIR}/intent.md")
-  STUDIO=$(yaml_get_simple "studio" "software" < "${INTENT_DIR}/intent.md")
+  STUDIO=$(yaml_get_simple "studio" "ideation" < "${INTENT_DIR}/intent.md")
 fi
-[ -z "$ACTIVE_STAGE" ] && ACTIVE_STAGE="development"
-[ -z "$STUDIO" ] && STUDIO="software"
+[ -z "$STUDIO" ] && STUDIO="ideation"
 
 # Get hat sequence from stage
 STAGE_HATS_STR=$(hku_get_hat_sequence "$ACTIVE_STAGE" "$STUDIO" 2>/dev/null | sed 's/ / → /g')
@@ -413,7 +412,7 @@ STAGE_HATS_STR=$(hku_get_hat_sequence "$ACTIVE_STAGE" "$STUDIO" 2>/dev/null | se
 if [ "$STATUS" = "complete" ] || [ "$STATUS" = "completed" ]; then
   echo "## H·AI·K·U: Task Complete"
   echo ""
-  echo "Previous task was completed. Run \`/ai-dlc:reset\` to start a new task."
+  echo "Previous task was completed. Run \`/haiku:reset\` to start a new task."
   exit 0
 fi
 
@@ -540,7 +539,7 @@ fi
 
 # Load and display DAG status (if units exist)
 # INTENT_SLUG and INTENT_DIR already set above
-if [ -n "$INTENT_DIR" ] && [ -d "$INTENT_DIR" ] && ls "$INTENT_DIR"/unit-*.md 1>/dev/null 2>&1; then
+if [ -n "$INTENT_DIR" ] && [ -d "$INTENT_DIR" ] && ls "$INTENT_DIR"/stages/*/units/unit-*.md 1>/dev/null 2>&1; then
     echo "### Unit Status"
     echo ""
 
@@ -584,7 +583,7 @@ if [ -n "$INTENT_DIR" ] && [ -d "$INTENT_DIR" ] && ls "$INTENT_DIR"/unit-*.md 1>
       # Fallback: simple unit list without DAG analysis
       echo "| Unit | Status |"
       echo "|------|--------|"
-      for unit_file in "$INTENT_DIR"/unit-*.md; do
+      for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
         [ -f "$unit_file" ] || continue
         NAME=$(basename "$unit_file" .md)
         STATUS=$(hku_frontmatter_get "status" "$unit_file")

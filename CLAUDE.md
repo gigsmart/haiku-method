@@ -50,7 +50,7 @@ When modifying any component, check if other components need corresponding updat
 | Studio | Profiles section | `plugin/studios/{name}/STUDIO.md` | studio.sh |
 | Stage | Profiles section | `plugin/studios/{name}/stages/{stage}/STAGE.md` with inline hats | stage.sh, orchestrator.sh |
 | Hat | Profiles section | Inline in STAGE.md (not standalone files) | stage.sh |
-| Review Gate | Quality Enforcement | `review_gate:` field in STAGE.md (auto/ask/external) | orchestrator.sh |
+| Review Gate | Quality Enforcement | `review:` field in STAGE.md (auto/ask/external/[external,ask]) | orchestrator.sh |
 | Completion Criteria | Throughout | `quality_gates:` in unit/intent frontmatter, harness-enforced | elaborate, execute, advance, quality-gate.sh |
 | Backpressure | Principles section | Quality gates enforced by harness, not agent | quality-gate.sh, orchestrator.sh |
 | Operating Modes | Operating Modes section | interactive=HITL, /haiku:execute=OHOTL, /haiku:autopilot=AHOTL | execute, autopilot |
