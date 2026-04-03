@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://ai-dlc.dev/schemas/providers/notion.schema.json",
+	"$id": "https://haiku.dev/schemas/providers/notion.schema.json",
 	"title": "Notion Provider Config",
 	"description": "Provider-specific configuration for Notion spec provider",
 	"type": "object",

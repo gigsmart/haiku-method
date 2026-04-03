@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://ai-dlc.dev/schemas/providers/stack-pipeline.schema.json",
+	"$id": "https://haiku.dev/schemas/providers/stack-pipeline.schema.json",
 	"title": "Stack Pipeline Provider Entry",
 	"description": "CI/CD pipeline provider configuration for the stack pipeline layer",
 	"type": "object",
