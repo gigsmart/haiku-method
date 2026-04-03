@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>H·AI·K·U — Platform Gaps Analysis</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --fg: #1c1917;
+    --muted: #78716c;
+    --accent: #0d9488;
+    --accent-bg: #f0fdfa;
+    --border: #e7e5e4;
+    --card-bg: #ffffff;
+    --warn: #d97706;
+    --warn-bg: #fffbeb;
+    --danger: #e11d48;
+    --danger-bg: #fff1f2;
+    --success: #059669;
+    --success-bg: #ecfdf5;
+    --blue: #2563eb;
+    --blue-bg: #eff6ff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c0a09;
+      --fg: #e7e5e4;
+      --muted: #a8a29e;
+      --accent: #2dd4bf;
+      --accent-bg: #042f2e;
+      --border: #292524;
+      --card-bg: #1c1917;
+      --warn: #fbbf24;
+      --warn-bg: #422006;
+      --danger: #fb7185;
+      --danger-bg: #4c0519;
+      --success: #34d399;
+      --success-bg: #022c22;
+      --blue: #60a5fa;
+      --blue-bg: #172554;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.6;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
+  h2 { font-size: 1.5rem; font-weight: 700; margin-top: 3rem; margin-bottom: 1rem; }
+  h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; }
+  p { color: var(--muted); margin-bottom: 0.75rem; }
+  .subtitle { font-size: 1.1rem; color: var(--muted); margin-bottom: 2rem; }
+  .accent { color: var(--accent); }
+
+  .tag {
+    display: inline-block;
+    padding: 0.15em 0.5em;
+    border-radius: 0.25rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .tag-done { background: var(--success-bg); color: var(--success); }
+  .tag-gap { background: var(--danger-bg); color: var(--danger); }
+  .tag-partial { background: var(--warn-bg); color: var(--warn); }
+
+  /* Architecture diagram */
+  .arch {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin: 2rem 0;
+  }
+  .layer {
+    border: 2px solid var(--border);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    position: relative;
+  }
+  .layer-label {
+    position: absolute;
+    top: -0.75rem;
+    left: 1.5rem;
+    background: var(--bg);
+    padding: 0 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+  .layer-done { border-color: var(--success); }
+  .layer-done .layer-label { color: var(--success); }
+  .layer-gap { border-color: var(--danger); border-style: dashed; }
+  .layer-gap .layer-label { color: var(--danger); }
+  .layer-partial { border-color: var(--warn); border-style: dashed; }
+  .layer-partial .layer-label { color: var(--warn); }
+
+  .layer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+  }
+  .block {
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+  }
+  .block-done {
+    background: var(--success-bg);
+    color: var(--success);
+    border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
+  }
+  .block-gap {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px dashed color-mix(in srgb, var(--danger) 40%, transparent);
+  }
+  .block-partial {
+    background: var(--warn-bg);
+    color: var(--warn);
+    border: 1px dashed color-mix(in srgb, var(--warn) 40%, transparent);
+  }
+  .block strong { display: block; font-size: 0.9rem; }
+  .block span { font-size: 0.75rem; opacity: 0.8; }
+
+  /* Flow diagram */
+  .flow {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+  .flow-node {
+    flex: 1;
+    min-width: 140px;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    text-align: center;
+    font-size: 0.85rem;
+  }
+  .flow-node strong { display: block; margin-bottom: 0.25rem; }
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--border);
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+  .flow-arrow-gap { color: var(--danger); }
+
+  /* Gap detail cards */
+  .gap-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  @media (max-width: 768px) { .gap-grid { grid-template-columns: 1fr; } }
+  .gap-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+  }
+  .gap-card h3 { display: flex; align-items: center; gap: 0.5rem; }
+  .gap-card ul { padding-left: 1.25rem; margin-top: 0.5rem; }
+  .gap-card li { font-size: 0.9rem; color: var(--muted); margin-top: 0.25rem; }
+
+  .scenario {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    margin-top: 1rem;
+  }
+  .scenario-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+  .scenario p { font-size: 0.9rem; }
+  .scenario .chain {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .chain-node {
+    padding: 0.3em 0.6em;
+    border-radius: 0.375rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .chain-done { background: var(--success-bg); color: var(--success); }
+  .chain-gap { background: var(--danger-bg); color: var(--danger); }
+  .chain-arrow { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<h1><span class="accent">H·AI·K·U</span> Platform Gaps</h1>
+<p class="subtitle">What exists today vs what's needed for multi-company business operations</p>
+
+<!-- ============================================================ -->
+<!-- CURRENT ARCHITECTURE -->
+<!-- ============================================================ -->
+
+<h2>Current Architecture</h2>
+<p>What H·AI·K·U has today — the single-project, single-agent foundation.</p>
+
+<div class="arch">
+  <!-- Lifecycle Layer -->
+  <div class="layer layer-done">
+    <div class="layer-label">Lifecycle Layer (Done)</div>
+    <div class="layer-grid">
+      <div class="block block-done"><strong>12 Studios</strong><span>Lifecycle templates by domain</span></div>
+      <div class="block block-done"><strong>60 Stages</strong><span>Phases with hats + gates</span></div>
+      <div class="block block-done"><strong>120+ Hats</strong><span>Behavioral roles per stage</span></div>
+      <div class="block block-done"><strong>72 Review Agents</strong><span>Adversarial verification</span></div>
+      <div class="block block-done"><strong>4 Gate Types</strong><span>auto, ask, external, await</span></div>
+      <div class="block block-done"><strong>Cross-Stage Includes</strong><span>Review agents from other stages</span></div>
+    </div>
+  </div>
+
+  <!-- Quality Layer -->
+  <div class="layer layer-done">
+    <div class="layer-label">Quality Layer (Done)</div>
+    <div class="layer-grid">
+      <div class="block block-done"><strong>Quality Gates</strong><span>Stop hook enforcement</span></div>
+      <div class="block block-done"><strong>Backpressure</strong><span>Structural, not behavioral</span></div>
+      <div class="block block-done"><strong>Completion Criteria</strong><span>Verifiable exit conditions</span></div>
+      <div class="block block-done"><strong>Hat Isolation</strong><span>Fresh context per role</span></div>
+    </div>
+  </div>
+
+  <!-- Post-Lifecycle Layer -->
+  <div class="layer layer-done">
+    <div class="layer-label">Post-Lifecycle Layer (Done)</div>
+    <div class="layer-grid">
+      <div class="block block-done"><strong>38 Operations</strong><span>Studio-prescribed tasks</span></div>
+      <div class="block block-done"><strong>26 Reflections</strong><span>Domain-specific analysis</span></div>
+      <div class="block block-done"><strong>Stage Refinement</strong><span>Scoped upstream side-trips</span></div>
+      <div class="block block-done"><strong>Persistence</strong><span>Git + Filesystem adapters</span></div>
+    </div>
+  </div>
+
+  <!-- Orchestration Gap -->
+  <div class="layer layer-gap">
+    <div class="layer-label">Orchestration Layer (Gap)</div>
+    <div class="layer-grid">
+      <div class="block block-gap"><strong>Cross-Intent Triggers</strong><span>Intent A completes &rarr; spawn Intent B</span></div>
+      <div class="block block-gap"><strong>Intent Templates</strong><span>Reusable playbooks with parameters</span></div>
+      <div class="block block-gap"><strong>Cross-Studio Data Flow</strong><span>Stage inputs from other studios</span></div>
+      <div class="block block-gap"><strong>Event Integration</strong><span>Webhooks &rarr; gate advancement</span></div>
+    </div>
+  </div>
+
+  <!-- People Layer Gap -->
+  <div class="layer layer-gap">
+    <div class="layer-label">People Layer (Gap)</div>
+    <div class="layer-grid">
+      <div class="block block-gap"><strong>Role Assignment</strong><span>Who owns which stage</span></div>
+      <div class="block block-gap"><strong>Approval Chains</strong><span>Multi-level, conditional, delegated</span></div>
+      <div class="block block-gap"><strong>Handoff Protocols</strong><span>Cross-team transitions</span></div>
+      <div class="block block-partial"><strong>External Review</strong><span>Binary approve/reject only</span></div>
+    </div>
+  </div>
+
+  <!-- Visibility Layer Gap -->
+  <div class="layer layer-gap">
+    <div class="layer-label">Visibility Layer (Gap)</div>
+    <div class="layer-grid">
+      <div class="block block-gap"><strong>Portfolio Dashboard</strong><span>All intents across all studios</span></div>
+      <div class="block block-gap"><strong>Cross-Studio Metrics</strong><span>Velocity, quality, conversion</span></div>
+      <div class="block block-gap"><strong>Priority / Scheduling</strong><span>Which intents get agent time</span></div>
+      <div class="block block-partial"><strong>Audit Trail</strong><span>Git gives some; filesystem gives none</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- CROSS-INTENT FLOW -->
+<!-- ============================================================ -->
+
+<h2>Gap 1: Cross-Intent Triggers</h2>
+<p>Business processes chain across studios. Today, each intent is an island.</p>
+
+<div class="scenario">
+  <div class="scenario-title">Scenario: New Customer Lifecycle</div>
+  <p>A sales deal closes. Customer success should automatically begin onboarding. But today, someone has to manually create the CS intent.</p>
+  <div class="chain">
+    <span class="chain-node chain-done">Sales: close</span>
+    <span class="chain-arrow">&rarr;</span>
+    <span class="chain-node chain-gap">??? trigger ???</span>
+    <span class="chain-arrow">&rarr;</span>
+    <span class="chain-node chain-done">CS: onboarding</span>
+    <span class="chain-arrow">&rarr;</span>
+    <span class="chain-node chain-done">CS: adoption</span>
+  </div>
+</div>
+
+<div class="scenario">
+  <div class="scenario-title">Scenario: Product to Engineering</div>
+  <p>Product strategy prioritizes a feature. Software studio should receive the roadmap item as an intent seed. No automated handoff exists.</p>
+  <div class="chain">
+    <span class="chain-node chain-done">Product: roadmap</span>
+    <span class="chain-arrow">&rarr;</span>
+    <span class="chain-node chain-gap">??? trigger ???</span>
+    <span class="chain-arrow">&rarr;</span>
+    <span class="chain-node chain-done">Software: inception</span>
+    <span class="chain-arrow">&rarr;</span>
+    <span class="chain-node chain-done">Software: design</span>
+  </div>
+</div>
+
+<div class="scenario">
+  <div class="scenario-title">Scenario: Incident to Prevention</div>
+  <p>Incident postmortem produces action items. These should automatically create compliance or software intents for prevention work.</p>
+  <div class="chain">
+    <span class="chain-node chain-done">Incident: postmortem</span>
+    <span class="chain-arrow">&rarr;</span>
+    <span class="chain-node chain-gap">??? trigger ???</span>
+    <span class="chain-arrow">&rarr;</span>
+    <span class="chain-node chain-done">Software: inception</span>
+  </div>
+  <div class="chain" style="margin-top:0.5rem">
+    <span class="chain-node chain-done">Incident: postmortem</span>
+    <span class="chain-arrow">&rarr;</span>
+    <span class="chain-node chain-gap">??? trigger ???</span>
+    <span class="chain-arrow">&rarr;</span>
+    <span class="chain-node chain-done">Security: reconnaissance</span>
+  </div>
+</div>
+
+<div class="gap-card" style="margin-top:1.5rem; border-color:var(--accent)">
+  <h3><span class="tag tag-done">Proposed Fix</span> Studio-Level Triggers</h3>
+  <p>Add a <code>triggers:</code> section to <code>STUDIO.md</code> that declares what happens when an intent completes.</p>
+  <pre style="margin-top:0.75rem; padding:1rem; background:var(--accent-bg); border-radius:0.5rem; font-size:0.8rem; overflow-x:auto; color:var(--accent)"><code># sales/STUDIO.md
+triggers:
+  on-complete:
+    - studio: customer-success
+      template: new-customer-onboarding
+      map:
+        company: "{{ intent.title }}"
+        deal-context: "{{ stages.close.outputs.handoff }}"
+      condition: "{{ stages.close.outcome == 'won' }}"</code></pre>
+  <p style="font-size:0.85rem; margin-top:0.5rem">Triggers fire after the final stage gate passes. The <code>map:</code> section pipes outputs from the source intent into the target template's parameters. The <code>condition:</code> field prevents triggers when the intent doesn't meet criteria (e.g., lost deals don't trigger onboarding).</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- INTENT TEMPLATES -->
+<!-- ============================================================ -->
+
+<h2>Gap 2: Intent Templates / Playbooks</h2>
+<p>Repeatable processes shouldn't require fresh elaboration every time.</p>
+
+<div class="gap-grid">
+  <div class="gap-card">
+    <h3><span class="tag tag-done">Today</span> Studios</h3>
+    <p>Define the lifecycle: which stages, which hats, which gates.</p>
+    <ul>
+      <li>Studio = lifecycle shape</li>
+      <li>Stage = phase definition</li>
+      <li>Each intent starts from scratch</li>
+    </ul>
+  </div>
+  <div class="gap-card">
+    <h3><span class="tag tag-gap">Missing</span> Intent Templates</h3>
+    <p>Pre-filled intents with standard units, criteria, and references. Instantiate with parameters.</p>
+    <ul>
+      <li>"New Customer Onboarding for {company}"</li>
+      <li>"Quarterly Compliance Evidence Collection"</li>
+      <li>"Product Launch Campaign for {product}"</li>
+      <li>"Incident Response for {service}"</li>
+    </ul>
+  </div>
+</div>
+
+<div class="gap-card" style="margin-top:1.5rem; border-color:var(--accent)">
+  <h3><span class="tag tag-done">Proposed Fix</span> Studio Templates Directory</h3>
+  <p>Add <code>templates/</code> to the studio directory. Each template is a pre-filled intent with parameterized fields.</p>
+  <pre style="margin-top:0.75rem; padding:1rem; background:var(--accent-bg); border-radius:0.5rem; font-size:0.8rem; overflow-x:auto; color:var(--accent)"><code># customer-success/templates/new-customer-onboarding.md
+---
+name: new-customer-onboarding
+studio: customer-success
+parameters:
+  - name: company
+    required: true
+  - name: deal-context
+    required: false
+units:
+  - name: "technical-setup"
+    stage: onboarding
+    criteria:
+      - "{{ company }} environment provisioned and accessible"
+      - "SSO/auth configured and tested"
+  - name: "kickoff-meeting"
+    stage: onboarding
+    criteria:
+      - "Kickoff scheduled with {{ company }} stakeholders"
+      - "Success milestones agreed and documented"
+---</code></pre>
+  <p style="font-size:0.85rem; margin-top:0.5rem">Templates are instantiated via <code>/haiku:new --template new-customer-onboarding --company "Acme Corp"</code>. Parameters fill in the template. Triggers can also instantiate templates automatically.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- CROSS-STUDIO DATA -->
+<!-- ============================================================ -->
+
+<h2>Gap 3: Cross-Studio Data Flow</h2>
+<p>Departments need to share context. Stage inputs only reference outputs within the same studio.</p>
+
+<div class="flow">
+  <div class="flow-node block-done"><strong>Product Strategy</strong>roadmap item</div>
+  <div class="flow-arrow flow-arrow-gap">&rarr; ?</div>
+  <div class="flow-node block-done"><strong>Software</strong>inception inputs</div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-node block-done"><strong>Software</strong>development</div>
+</div>
+
+<div class="flow">
+  <div class="flow-node block-done"><strong>Sales</strong>deal context</div>
+  <div class="flow-arrow flow-arrow-gap">&rarr; ?</div>
+  <div class="flow-node block-done"><strong>Customer Success</strong>onboarding inputs</div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-node block-done"><strong>Customer Success</strong>adoption</div>
+</div>
+
+<div class="flow">
+  <div class="flow-node block-done"><strong>Customer Success</strong>health data</div>
+  <div class="flow-arrow flow-arrow-gap">&rarr; ?</div>
+  <div class="flow-node block-done"><strong>Product Strategy</strong>discovery inputs</div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-node block-done"><strong>Product Strategy</strong>prioritization</div>
+</div>
+
+<div class="gap-card" style="margin-top:1.5rem; border-color:var(--accent)">
+  <h3><span class="tag tag-done">Proposed Fix</span> Cross-Studio Inputs</h3>
+  <p>Extend the stage <code>inputs:</code> schema to reference outputs from other studios via an <code>intent:</code> field.</p>
+  <pre style="margin-top:0.75rem; padding:1rem; background:var(--accent-bg); border-radius:0.5rem; font-size:0.8rem; overflow-x:auto; color:var(--accent)"><code># software/stages/inception/STAGE.md
+inputs:
+  - intent: "{{ triggers.source }}"
+    studio: product-strategy
+    stage: roadmap
+    output: roadmap-item
+  - intent: "{{ triggers.source }}"
+    studio: product-strategy
+    stage: user-research
+    output: research-insights</code></pre>
+  <p style="font-size:0.85rem; margin-top:0.5rem">When an intent is triggered by another studio, the source intent's slug is available via <code>triggers.source</code>. The stage can then pull outputs from that specific intent. For manually created intents, the user specifies which source intent to bind to.</p>
+  <p style="font-size:0.85rem">This also enables a <strong>knowledge graph</strong> — the orchestrator can trace the full chain of intents and their data dependencies across studios.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- PEOPLE LAYER -->
+<!-- ============================================================ -->
+
+<h2>Gap 4: People Layer</h2>
+<p>H·AI·K·U is single-agent. Business operations involve teams, handoffs, and approval chains.</p>
+
+<div class="gap-grid">
+  <div class="gap-card">
+    <h3><span class="tag tag-gap">Missing</span> Role Assignment</h3>
+    <p>Stages need owners — a person or team responsible for driving that stage's work and approving its gate.</p>
+    <ul>
+      <li>Sales proposal: account executive</li>
+      <li>Software security: security team</li>
+      <li>Compliance certify: compliance officer</li>
+    </ul>
+  </div>
+  <div class="gap-card">
+    <h3><span class="tag tag-gap">Missing</span> Approval Chains</h3>
+    <p>Gates are binary approve/reject. Business needs multi-level, conditional, and time-bound approvals.</p>
+    <ul>
+      <li>Team lead &rarr; director &rarr; VP</li>
+      <li>"Approved, but change X first"</li>
+      <li>Auto-escalate if no response in 48h</li>
+    </ul>
+  </div>
+  <div class="gap-card">
+    <h3><span class="tag tag-gap">Missing</span> Handoff Protocols</h3>
+    <p>When one team's studio completes, context must transfer to the next team cleanly.</p>
+    <ul>
+      <li>Sales &rarr; Customer Success handoff</li>
+      <li>Product &rarr; Engineering handoff</li>
+      <li>Context, commitments, expectations</li>
+    </ul>
+  </div>
+  <div class="gap-card">
+    <h3><span class="tag tag-gap">Missing</span> Event-Driven Gates</h3>
+    <p>The <code>await</code> gate is manual. Real business needs webhook-driven advancement.</p>
+    <ul>
+      <li>Email reply received &rarr; advance negotiation</li>
+      <li>Contract signed &rarr; advance close</li>
+      <li>CI pipeline passed &rarr; advance deployment</li>
+    </ul>
+  </div>
+</div>
+
+<div class="gap-card" style="margin-top:1.5rem; border-color:var(--accent)">
+  <h3><span class="tag tag-done">Proposed Fix</span> Stage Ownership + Gate Protocols</h3>
+  <p>Add <code>owner:</code> to STAGE.md and extend the gate schema to support multi-level approval.</p>
+  <pre style="margin-top:0.75rem; padding:1rem; background:var(--accent-bg); border-radius:0.5rem; font-size:0.8rem; overflow-x:auto; color:var(--accent)"><code># software/stages/security/STAGE.md
+owner: security-team
+review: external
+gate-protocol:
+  approvers: [security-lead, ciso]
+  mode: sequential          # sequential | any | all
+  timeout: 48h
+  timeout-action: escalate  # escalate | auto-advance | block
+  conditions:
+    - "no HIGH findings from review agents"
+
+# sales/stages/proposal/STAGE.md
+owner: account-executive
+review: [ask, await]
+gate-protocol:
+  await-event: customer-response
+  webhook: /api/events/customer-reply
+  timeout: 7d
+  timeout-action: escalate</code></pre>
+  <p style="font-size:0.85rem; margin-top:0.5rem"><code>owner:</code> identifies who drives the stage. <code>gate-protocol:</code> extends the simple gate type with multi-level approval, event integration, timeouts, and escalation. The <code>webhook:</code> field enables external events to advance <code>await</code> gates automatically.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- VISIBILITY -->
+<!-- ============================================================ -->
+
+<h2>Gap 5: Portfolio Visibility</h2>
+<p>Leadership running 50 intents across 5 studios needs a single view.</p>
+
+<div class="gap-grid">
+  <div class="gap-card">
+    <h3><span class="tag tag-gap">Missing</span> Portfolio Dashboard</h3>
+    <ul>
+      <li>All active intents by studio and stage</li>
+      <li>Bottleneck detection (work piling up at gates)</li>
+      <li>Health indicators per intent</li>
+      <li>Cross-studio dependency visualization</li>
+    </ul>
+  </div>
+  <div class="gap-card">
+    <h3><span class="tag tag-gap">Missing</span> Cross-Studio Metrics</h3>
+    <ul>
+      <li>Velocity trends across studios</li>
+      <li>Gate pass/fail rates over time</li>
+      <li>Stage duration benchmarks</li>
+      <li>Conversion rates (sales), quality scores (software)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="gap-card" style="margin-top:1.5rem; border-color:var(--accent)">
+  <h3><span class="tag tag-done">Proposed Fix</span> Portfolio API + Dashboard</h3>
+  <p>A <code>/haiku:portfolio</code> skill that aggregates across all intents, plus a web dashboard endpoint.</p>
+  <pre style="margin-top:0.75rem; padding:1rem; background:var(--accent-bg); border-radius:0.5rem; font-size:0.8rem; overflow-x:auto; color:var(--accent)"><code># .haiku/portfolio.json (auto-maintained by orchestrator)
+{
+  "intents": {
+    "acme-onboarding": {
+      "studio": "customer-success",
+      "active_stage": "adoption",
+      "owner": "cs-team",
+      "health": "on-track",
+      "triggered_by": "acme-deal",
+      "stages_complete": 2,
+      "stages_total": 5
+    },
+    "q2-compliance": {
+      "studio": "compliance",
+      "active_stage": "remediate",
+      "owner": "compliance-officer",
+      "health": "at-risk",
+      "blocked_at": "remediate (await: vendor response)",
+      "stages_complete": 2,
+      "stages_total": 5
+    }
+  },
+  "metrics": {
+    "active_intents": 12,
+    "blocked_intents": 3,
+    "avg_stage_duration_days": 4.2,
+    "gate_pass_rate": 0.87
+  }
+}</code></pre>
+  <p style="font-size:0.85rem; margin-top:0.5rem">The orchestrator updates <code>portfolio.json</code> on every stage transition. The web dashboard reads this file. <code>/haiku:portfolio</code> renders a CLI summary. For multi-repo organizations, a central aggregator collects portfolio files across projects.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SUMMARY -->
+<!-- ============================================================ -->
+
+<h2>Summary</h2>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; margin-top:1rem">
+  <div>
+    <h3 style="color:var(--success)">Built (Single-Project Foundation)</h3>
+    <ul style="margin-top:0.5rem">
+      <li>12 studios, 60 stages, 120+ hats</li>
+      <li>72 review agents with cross-stage includes</li>
+      <li>4 review gate types (auto/ask/external/await)</li>
+      <li>38 operation templates, 26 reflection dimensions</li>
+      <li>Stage-scoped refinement for upstream gaps</li>
+      <li>Continuous + discrete execution modes</li>
+      <li>One PR per intent delivery model</li>
+      <li>Quality gates via backpressure</li>
+    </ul>
+  </div>
+  <div>
+    <h3 style="color:var(--danger)">Missing (Multi-Company Platform)</h3>
+    <ul style="margin-top:0.5rem">
+      <li>Cross-intent triggers (intent chains)</li>
+      <li>Intent templates / playbooks</li>
+      <li>Cross-studio data flow</li>
+      <li>Event-driven gate advancement</li>
+      <li>Role assignment and ownership</li>
+      <li>Multi-level approval workflows</li>
+      <li>Cross-team handoff protocols</li>
+      <li>Portfolio dashboard and metrics</li>
+      <li>Priority / resource management</li>
+      <li>Immutable audit trail</li>
+    </ul>
+  </div>
+</div>
+
+<p style="margin-top:2rem; text-align:center; font-size:0.9rem; color:var(--accent); font-weight:600">
+  The lifecycle layer is solid. The orchestration, people, and visibility layers are the gap between a project tool and a business platform.
+</p>
+
+</body>
+</html>

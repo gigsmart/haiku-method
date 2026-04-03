@@ -13,7 +13,7 @@ So we rebuilt the layers. **H·AI·K·U** is what came out the other side.
 
 ## Why H·AI·K·U
 
-The name stands for **H**uman-**AI** **K**nowledge **U**nits — but more importantly, it reflects what the methodology actually does: structures work into disciplined, compact forms. Like the poetry form it echoes, H·AI·K·U values constraint as a creative force. Strict structure. Clear boundaries. Surprising depth within those boundaries.
+The name stands for **H**uman + **AI** **K**nowledge **U**nification — and it reflects what the methodology actually does: unifies human domain expertise with AI execution capability through structured, iterative collaboration. Like the poetry form it echoes, H·AI·K·U values constraint as a creative force. Strict structure. Clear boundaries. Surprising depth within those boundaries.
 
 The core insight that drove the rebrand: **all structured work flows through the same pattern**. A marketing team creating a campaign goes through research, creative, review, and publish. A software team goes through inception, design, development, and operations. A hardware team goes through requirements, PCB design, firmware, and integration testing. The pattern is the same. The domain is the variable.
 
