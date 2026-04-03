@@ -5,6 +5,12 @@ hats: [planner, builder, reviewer]
 review: ask
 unit_types: [backend, frontend, fullstack]
 inputs:
+  - stage: inception
+    output: discovery
+  - stage: design
+    output: design-brief
+  - stage: design
+    output: design-tokens
   - stage: product
     output: behavioral-spec
   - stage: product

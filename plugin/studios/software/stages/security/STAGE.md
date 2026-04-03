@@ -5,10 +5,16 @@ hats: [threat-modeler, red-team, blue-team, security-reviewer]
 review: [external, ask]
 unit_types: [security, backend]
 inputs:
+  - stage: inception
+    output: discovery
   - stage: product
     output: behavioral-spec
+  - stage: product
+    output: data-contracts
   - stage: development
     output: code
+  - stage: development
+    output: architecture
 ---
 
 # Security

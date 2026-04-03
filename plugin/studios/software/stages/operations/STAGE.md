@@ -5,6 +5,10 @@ hats: [ops-engineer, sre]
 review: auto
 unit_types: [ops, backend]
 inputs:
+  - stage: inception
+    output: discovery
+  - stage: product
+    output: behavioral-spec
   - stage: development
     output: code
   - stage: development
