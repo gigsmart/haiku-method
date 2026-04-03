@@ -644,55 +644,117 @@ Implement REST API endpoints for user authentication...
 						<div className="rounded-xl border-2 border-teal-200 bg-teal-50/20 p-6 dark:border-teal-800 dark:bg-teal-950/10">
 							<div className="mb-5 flex items-center gap-3">
 								<code className="rounded-lg bg-teal-100 px-3 py-1.5 text-lg font-bold text-teal-700 dark:bg-teal-900 dark:text-teal-300">/haiku:new</code>
-								<span className="text-stone-500 dark:text-stone-400">Define the work</span>
+								<span className="text-stone-500 dark:text-stone-400">Create an intent and start working</span>
 							</div>
 
-							<div className="grid gap-4 md:grid-cols-4">
-								{[
-									{
-										icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>,
-										label: "Describe",
-										detail: "Tell the AI what you want to accomplish",
-										who: "human",
-									},
-									{
-										icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
-										label: "Discover",
-										detail: "AI explores codebase, docs, and constraints",
-										who: "ai",
-									},
-									{
-										icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>,
-										label: "Decompose",
-										detail: "AI proposes units with criteria. Human refines.",
-										who: "both",
-									},
-									{
-										icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
-										label: "Approve",
-										detail: "Human validates scope, criteria, and approach",
-										who: "human",
-									},
-								].map((step) => (
-									<div key={step.label} className="rounded-lg border border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-stone-950">
-										<div className="mb-2 flex items-center gap-2">
-											<span className="text-teal-600 dark:text-teal-400">{step.icon}</span>
-											<span className="text-sm font-semibold text-stone-900 dark:text-stone-100">{step.label}</span>
+							{/* Phase 1: Intent Setup */}
+							<div className="mb-4">
+								<div className="mb-3 flex items-center gap-2">
+									<span className="rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-bold text-teal-700 dark:bg-teal-900 dark:text-teal-300">Phase 1</span>
+									<span className="text-sm font-semibold text-stone-700 dark:text-stone-300">Intent Setup</span>
+									<span className="text-xs text-stone-400 dark:text-stone-500">~ 30 seconds</span>
+								</div>
+								<div className="grid gap-3 md:grid-cols-3">
+									{[
+										{
+											icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>,
+											label: "Describe",
+											detail: "Tell the AI what you want to accomplish",
+											who: "human",
+										},
+										{
+											icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>,
+											label: "Propose",
+											detail: "AI suggests slug, studio, and mode (continuous/discrete)",
+											who: "ai",
+										},
+										{
+											icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+											label: "Confirm",
+											detail: "Human approves — intent container created (intent.md)",
+											who: "human",
+										},
+									].map((step) => (
+										<div key={step.label} className="rounded-lg border border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-stone-950">
+											<div className="mb-2 flex items-center gap-2">
+												<span className="text-teal-600 dark:text-teal-400">{step.icon}</span>
+												<span className="text-sm font-semibold text-stone-900 dark:text-stone-100">{step.label}</span>
+											</div>
+											<p className="mb-2 text-xs text-stone-600 dark:text-stone-400">{step.detail}</p>
+											<span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
+												step.who === "human" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
+												: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+											}`}>
+												{step.who}
+											</span>
 										</div>
-										<p className="mb-2 text-xs text-stone-600 dark:text-stone-400">{step.detail}</p>
-										<span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
-											step.who === "human" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
-											: step.who === "ai" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-											: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-										}`}>
-											{step.who === "both" ? "collaborative" : step.who}
-										</span>
-									</div>
-								))}
+									))}
+								</div>
 							</div>
 
-							<div className="mt-4 rounded-lg bg-teal-100/50 p-3 text-xs text-teal-800 dark:bg-teal-900/20 dark:text-teal-200">
-								<strong>Output:</strong> An intent directory with <code>intent.md</code>, units with criteria and dependencies, discovery doc, and a workspace initialized by the persistence adapter.
+							{/* Seamless transition arrow */}
+							<div className="my-4 flex items-center justify-center gap-3">
+								<div className="h-px flex-1 bg-gradient-to-r from-transparent to-teal-300 dark:to-teal-700" />
+								<span className="text-xs font-medium text-teal-600 dark:text-teal-400">seamlessly enters</span>
+								<div className="h-px flex-1 bg-gradient-to-l from-transparent to-teal-300 dark:to-teal-700" />
+							</div>
+
+							{/* Phase 2: First Stage */}
+							<div>
+								<div className="mb-3 flex items-center gap-2">
+									<span className="rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-bold text-teal-700 dark:bg-teal-900 dark:text-teal-300">Phase 2</span>
+									<span className="text-sm font-semibold text-stone-700 dark:text-stone-300">First Stage Begins Automatically</span>
+								</div>
+								<div className="grid gap-3 md:grid-cols-4">
+									{[
+										{
+											icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
+											label: "Discover",
+											detail: "AI explores codebase, docs, and constraints",
+											who: "ai",
+										},
+										{
+											icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>,
+											label: "Decompose",
+											detail: "Break intent into units with criteria and dependencies",
+											who: "both",
+										},
+										{
+											icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>,
+											label: "Architecture",
+											detail: "Propose technical approach, identify risks",
+											who: "ai",
+										},
+										{
+											icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+											label: "Approve",
+											detail: "Human validates scope, criteria, and approach",
+											who: "human",
+										},
+									].map((step) => (
+										<div key={step.label} className="rounded-lg border border-teal-200/60 bg-teal-50/40 p-4 dark:border-teal-800/60 dark:bg-teal-950/20">
+											<div className="mb-2 flex items-center gap-2">
+												<span className="text-teal-600 dark:text-teal-400">{step.icon}</span>
+												<span className="text-sm font-semibold text-stone-900 dark:text-stone-100">{step.label}</span>
+											</div>
+											<p className="mb-2 text-xs text-stone-600 dark:text-stone-400">{step.detail}</p>
+											<span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
+												step.who === "human" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
+												: step.who === "ai" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+												: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+											}`}>
+												{step.who === "both" ? "collaborative" : step.who}
+											</span>
+										</div>
+									))}
+								</div>
+								<p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
+									The first stage varies by studio &mdash; inception for software, research for ideation &mdash; but it always does the deep elaboration work: discovery, decomposition, and criteria definition.
+								</p>
+							</div>
+
+							<div className="mt-5 rounded-lg bg-teal-100/50 p-3 text-xs text-teal-800 dark:bg-teal-900/20 dark:text-teal-200">
+								<strong>One seamless flow:</strong> The user never stops between creating the intent and starting work. <code>/haiku:new</code> creates the intent container and immediately enters the first stage &mdash; no separate command needed.
 							</div>
 						</div>
 
@@ -707,7 +769,7 @@ Implement REST API endpoints for user authentication...
 						<div className="rounded-xl border-2 border-indigo-200 bg-indigo-50/20 p-6 dark:border-indigo-800 dark:bg-indigo-950/10">
 							<div className="mb-5 flex items-center gap-3">
 								<code className="rounded-lg bg-indigo-100 px-3 py-1.5 text-lg font-bold text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">/haiku:run</code>
-								<span className="text-stone-500 dark:text-stone-400">Do the work</span>
+								<span className="text-stone-500 dark:text-stone-400">Continue, resume, or run the next stage</span>
 							</div>
 
 							{/* Stage pipeline visualization */}
