@@ -1,7 +1,7 @@
 ---
 name: design-brief
 location: .haiku/intents/{intent-slug}/stages/design/DESIGN-BRIEF.md
-scope: stage
+scope: intent
 format: design
 required: true
 ---
