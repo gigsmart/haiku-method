@@ -19,4 +19,4 @@ FILE=$(echo "$INPUT" | hku_json_get "tool_input.file_path")
 # Warn about source file edits outside hat context
 ITERATION_JSON=$(hku_state_load "$INTENT_DIR" "iteration.json")
 HAT=$(echo "$ITERATION_JSON" | hku_json_get "hat")
-[ -z "$HAT" ] && echo "⚠️ WORKFLOW GUARD: Editing $FILE outside of hat context. Consider running /ai-dlc:execute first."
+[ -z "$HAT" ] && echo "⚠️ WORKFLOW GUARD: Editing $FILE outside of hat context. Consider running /haiku:execute first."

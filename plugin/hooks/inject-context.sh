@@ -93,7 +93,7 @@ if [ "$CURRENT_BRANCH" = "$DEFAULT_BRANCH" ]; then
     # Check if all units are completed
     reconcile_all_done=true
     reconcile_has_units=false
-    for reconcile_unit_file in "$reconcile_dir"/unit-*.md; do
+    for reconcile_unit_file in "$reconcile_dir"/stages/*/units/unit-*.md; do
       [ -f "$reconcile_unit_file" ] || continue
       reconcile_has_units=true
       reconcile_unit_status=$(_state_yaml_get_simple "status" "pending" < "$reconcile_unit_file")
@@ -109,13 +109,13 @@ if [ "$CURRENT_BRANCH" = "$DEFAULT_BRANCH" ]; then
       # Check off intent-level completion criteria checkboxes
       hku_check_intent_criteria "$reconcile_dir"
       # Also check off unit criteria
-      for reconcile_unit_file in "$reconcile_dir"/unit-*.md; do
+      for reconcile_unit_file in "$reconcile_dir"/stages/*/units/unit-*.md; do
         [ -f "$reconcile_unit_file" ] || continue
         hku_check_unit_criteria "$reconcile_unit_file"
       done
       source "${PLUGIN_ROOT}/lib/persistence.sh"
       persistence_save "$(basename "$reconcile_dir")" "status: reconcile $(basename "$reconcile_dir") after merge" \
-        "$reconcile_intent_file" "$reconcile_dir"/unit-*.md \
+        "$reconcile_intent_file" "$reconcile_dir"/stages/*/units/unit-*.md \
         "$reconcile_dir/completion-criteria.md" "$reconcile_dir/state/completion-criteria.md" 2>/dev/null || true
     fi
   done

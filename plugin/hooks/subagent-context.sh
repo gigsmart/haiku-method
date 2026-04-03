@@ -206,7 +206,7 @@ if [ -d "$INTENT_DIR" ] && ls "$INTENT_DIR"/unit-*.md 1>/dev/null 2>&1; then
   fi
 fi
 
-# In team mode, hat instructions are embedded in teammate prompts by /ai-dlc:execute
+# In team mode, hat instructions are embedded in teammate prompts by /haiku:execute
 # Skip here to avoid injecting the orchestrator's hat instead of the per-unit hat
 if [ -z "${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}" ]; then
   # Inject pass instructions before hat instructions (pass sets the lens, hat sets the role)
@@ -350,7 +350,7 @@ if [ -n "${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}" ]; then
   echo ""
   echo "You are a **teammate** in an Agent Teams session."
   echo "- Report completion/issues to team lead via SendMessage"
-  echo "- Do NOT call /ai-dlc:execute, or read/execute the advance or fail skill definitions directly — the lead handles orchestration"
+  echo "- Do NOT call /haiku:execute, or read/execute the advance or fail skill definitions directly — the lead handles orchestration"
   echo "- Use TaskUpdate to mark shared tasks as completed when done"
   echo "- Coordinate with other teammates through the team lead"
   echo ""

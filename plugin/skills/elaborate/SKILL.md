@@ -651,7 +651,7 @@ git commit -m "elaborate(${INTENT_SLUG}): synthesize knowledge from codebase"
 
 **If `KNOWLEDGE_COUNT` is greater than 0:** Skip — knowledge artifacts already exist. No action needed.
 
-> **Post-integrate refresh:** Knowledge artifacts are also refreshed automatically after each intent completes integration (see `/ai-dlc:advance` Step 5, "Post-Integrate Knowledge Refresh"). This means the codebase patterns established by intent N are captured in knowledge artifacts before intent N+1 begins elaboration. For greenfield projects, the first intent creates the foundational patterns (design tokens, architecture, conventions) and the post-integrate refresh captures them — so the second intent starts with real knowledge instead of empty scaffolds.
+> **Post-integrate refresh:** Knowledge artifacts are also refreshed automatically after each intent completes integration (see `/haiku:advance` Step 5, "Post-Integrate Knowledge Refresh"). This means the codebase patterns established by intent N are captured in knowledge artifacts before intent N+1 begins elaboration. For greenfield projects, the first intent creates the foundational patterns (design tokens, architecture, conventions) and the post-integrate refresh captures them — so the second intent starts with real knowledge instead of empty scaffolds.
 
 **CRITICAL — DO NOT STOP HERE.** Knowledge synthesis is just one step. Domain discovery (Phase 2.5) follows and can now build on the synthesized knowledge.
 

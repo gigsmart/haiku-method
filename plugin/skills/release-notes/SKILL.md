@@ -10,14 +10,14 @@ allowed-tools:
 
 ## Name
 
-`ai-dlc:release-notes` — Display the AI-DLC changelog and release notes.
+`haiku:release-notes` — Display the H·AI·K·U changelog and release notes.
 
 ## Synopsis
 
 ```
-/ai-dlc:release-notes              # Show the 5 most recent releases
-/ai-dlc:release-notes --last 10    # Show the 10 most recent releases
-/ai-dlc:release-notes 1.82.13      # Show notes for a specific version
+/haiku:release-notes              # Show the 5 most recent releases
+/haiku:release-notes --last 10    # Show the 10 most recent releases
+/haiku:release-notes 1.82.13      # Show notes for a specific version
 ```
 
 ## Description
