@@ -1,21 +1,21 @@
 ---
-description: (Internal) Return to the previous hat in the AI-DLC workflow (e.g., reviewer finds issues)
+description: (Internal) Return to the previous hat in the H·AI·K·U workflow (e.g., reviewer finds issues)
 user-invocable: false
 ---
 
 ## Name
 
-`ai-dlc:fail` - Return to the previous hat in the AI-DLC workflow.
+`haiku:fail` - Return to the previous hat in the H·AI·K·U workflow.
 
 ## Synopsis
 
 ```
-/ai-dlc:fail
+/haiku:fail
 ```
 
 ## Description
 
-**Internal command** - Called by the AI during `/ai-dlc:execute`, not directly by users.
+**Internal command** - Called by the AI during `/haiku:execute`, not directly by users.
 
 Goes back to the previous hat in the workflow. Typically used when:
 - Reviewer finds issues -> return to builder
@@ -145,5 +145,5 @@ If already at the first hat (planner by default), output:
 ```
 You are at the first hat (planner).
 
-Cannot go back further. Use `/ai-dlc:reset` to start over, or re-elaborate with `/ai-dlc:elaborate <slug>`.
+Cannot go back further. Use `/haiku:reset` to start over, or re-elaborate with `/haiku:elaborate <slug>`.
 ```

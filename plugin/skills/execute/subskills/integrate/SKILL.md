@@ -22,7 +22,7 @@ Unlike the Reviewer hat (which validates individual units), this skill validates
 
 ## Input
 
-This skill is invoked by `/ai-dlc:advance` or `/ai-dlc:execute` when all units are complete. It receives its context via the subagent prompt, including:
+This skill is invoked by `/haiku:advance` or `/haiku:execute` when all units are complete. It receives its context via the subagent prompt, including:
 
 - **Intent slug** - The intent being validated
 - **Worktree path** - Path to the intent worktree (contains all merged unit work)
@@ -106,7 +106,7 @@ This skill is invoked by `/ai-dlc:advance` or `/ai-dlc:execute` when all units a
 
 **Condition**: Only run when any completed unit has an `operations:` block in its frontmatter. If no units have operations blocks, skip this step entirely.
 
-- You MUST read all operation specs in `.ai-dlc/{intent}/operations/` directory
+- You MUST read all operation specs in `.haiku/{intent}/operations/` directory
 - You MUST check for schedule collisions: two scheduled operations running at the same cron time that could conflict (e.g., both writing to the same resource). Parse cron expressions from operation spec frontmatter.
 - You MUST check for overlapping reactive triggers: two reactive operations triggered by the same event but performing conflicting actions
 - You MUST verify operation scripts reference resources that exist in the merged deployment (e.g., database names, service URLs, secret references)
