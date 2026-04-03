@@ -7,7 +7,8 @@ discipline: backend
 stage: ""
 workflow: ""
 ticket: ""
-hat: reviewer
+hat: builder
+retries: 1
 ---
 
 # unit-03-schemas-types-settings
