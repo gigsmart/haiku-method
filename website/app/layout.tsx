@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Script from "next/script"
-import { SITE_DESCRIPTION, SITE_URL } from "@/lib/feed"
+import { SITE_DESCRIPTION, SITE_URL } from "@/lib/constants"
 import {
 	Footer,
 	Header,
@@ -84,7 +84,7 @@ export default function RootLayout({
 			<head>
 				<Script
 					defer
-					data-domain="ai-dlc.dev"
+					data-domain="haikumethod.ai"
 					src="https://plausible.io/js/script.js"
 					strategy="afterInteractive"
 				/>

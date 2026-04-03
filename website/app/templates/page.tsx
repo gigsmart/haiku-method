@@ -19,7 +19,7 @@ const templates = [
 		name: "Unit Template",
 		filename: "unit-template.md",
 		description:
-			"Template for creating unit files. Includes frontmatter for status and dependencies, completion criteria sections, and progress tracking.",
+			"Template for creating unit files. Place under .haiku/intents/{slug}/stages/{stage}/units/. Includes frontmatter for status and dependencies, completion criteria sections, and progress tracking.",
 		downloadUrl: "/templates/unit-template.md",
 	},
 	{
@@ -133,13 +133,15 @@ export default function TemplatesPage() {
 					with these commands:
 				</p>
 				<div className="overflow-x-auto rounded-lg bg-stone-900 p-4 font-mono text-sm text-stone-100 dark:bg-stone-950">
-					<pre>{`# Create directory
-mkdir -p .haiku/intents/my-feature
+					<pre>{`# Create directory structure
+mkdir -p .haiku/intents/my-feature/stages/dev/units
 
 # Download templates
 curl -o .haiku/intents/my-feature/intent.md https://haikumethod.ai/templates/intent-template.md
-curl -o .haiku/intents/my-feature/unit-01.md https://haikumethod.ai/templates/unit-template.md
-curl -o .haiku/settings.yml https://haikumethod.ai/templates/settings-template.yml`}</pre>
+curl -o .haiku/intents/my-feature/stages/dev/units/unit-01.md https://haikumethod.ai/templates/unit-template.md
+curl -o .haiku/settings.yml https://haikumethod.ai/templates/settings-template.yml
+
+# Or just use: /haiku:new`}</pre>
 				</div>
 			</section>
 

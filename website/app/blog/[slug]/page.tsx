@@ -1,5 +1,6 @@
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/app/components"
 import { getAllBlogPosts, getBlogPostBySlug } from "@/lib/blog"
+import { SITE_URL } from "@/lib/constants"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
@@ -7,8 +8,6 @@ import ReactMarkdown from "react-markdown"
 import rehypeHighlight from "rehype-highlight"
 import rehypeSlug from "rehype-slug"
 import remarkGfm from "remark-gfm"
-
-const SITE_URL = "https://ai-dlc.dev"
 
 interface Props {
 	params: Promise<{ slug: string }>

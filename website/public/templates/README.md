@@ -53,10 +53,13 @@ your-project/
   .haiku/
     intents/
       my-feature/
-        intent.md              # Your intent (from template)
-        unit-01-feature.md     # First unit
-        unit-02-feature.md     # Second unit
-    settings.yml               # Optional: project settings
+        intent.md                              # Your intent (from template)
+        stages/
+          {stage}/
+            units/
+              unit-01-feature.md               # First unit
+              unit-02-feature.md               # Second unit
+    settings.yml                               # Optional: project settings
 ```
 
 ### Customizing Settings
@@ -69,20 +72,19 @@ your-project/
 ## Quick Start
 
 ```bash
-# Create .haiku directory
-mkdir -p .haiku
+# Create .haiku directory structure
+mkdir -p .haiku/intents/my-feature/stages/dev/units
 
 # Download templates
-curl -o .haiku/intent.md https://ai-dlc.dev/templates/intent-template.md
-curl -o .haiku/unit-01.md https://ai-dlc.dev/templates/unit-template.md
+curl -o .haiku/intents/my-feature/intent.md https://haikumethod.ai/templates/intent-template.md
+curl -o .haiku/intents/my-feature/stages/dev/units/unit-01.md https://haikumethod.ai/templates/unit-template.md
 
-# Or copy from this directory if you have it locally
-cp templates/intent-template.md .haiku/intent.md
-cp templates/unit-template.md .haiku/unit-01-feature.md
+# Or just use the plugin command:
+# /haiku:new
 ```
 
 ## Learn More
 
-- [H·AI·K·U Documentation](https://ai-dlc.dev/docs/)
-- [Getting Started](https://ai-dlc.dev/docs/getting-started/)
-- [Core Concepts](https://ai-dlc.dev/docs/concepts/)
+- [H·AI·K·U Documentation](https://haikumethod.ai/docs/)
+- [Getting Started](https://haikumethod.ai/docs/getting-started/)
+- [Core Concepts](https://haikumethod.ai/docs/concepts/)

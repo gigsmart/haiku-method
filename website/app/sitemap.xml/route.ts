@@ -1,10 +1,9 @@
 import { getAllBlogPosts } from "@/lib/blog"
+import { SITE_URL } from "@/lib/constants"
 import { getAllDocs } from "@/lib/docs"
 
 export const dynamic = "force-static"
 export const revalidate = false
-
-const SITE_URL = "https://ai-dlc.dev"
 
 function formatDate(date: Date): string {
 	return date.toISOString().split("T")[0]

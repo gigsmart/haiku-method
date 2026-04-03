@@ -1,7 +1,11 @@
 #!/bin/bash
-# pass.sh — Pass definition resolution and metadata for H·AI·K·U
+# pass.sh — Legacy compatibility shim: pass definition resolution and metadata
 #
-# Passes are typed disciplinary iterations (design, product, dev).
+# NOTE: Passes are a legacy concept retained for backward compatibility.
+# The primary model is now studios/stages/phases (see plugin/studios/).
+# Passes provided typed disciplinary iterations (design, product, dev);
+# the stage model subsumes this with collapsible FSM phases.
+#
 # Definitions live in plugin/passes/*.md (built-in) and can be
 # augmented or extended by project files in .haiku/passes/*.md.
 #
