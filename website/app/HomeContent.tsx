@@ -2053,7 +2053,7 @@ export default function HomeContent({
 							</div>
 							<div>
 								<code>
-									/plugin install ai-dlc@thebushidocollective-ai-dlc --scope
+									/plugin install haiku@thebushidocollective-ai-dlc --scope
 									project
 								</code>
 							</div>

@@ -196,7 +196,7 @@ export default function HowItWorksPage() {
 										<strong className="text-stone-900 dark:text-stone-100">Elaboration:</strong> Same interactive process — AI proposes criteria and decomposition, human validates.
 									</p>
 									<p>
-										<strong className="text-stone-900 dark:text-stone-100">Execution:</strong> Human invokes each stage manually with <code className="text-purple-600 dark:text-purple-400">/haiku:run</code>. Within a stage, the AI runs autonomously through that stage&apos;s hat sequence (e.g., planner→builder→reviewer for development, or threat-modeler→red-team→blue-team→reviewer for security), but it stops after the stage completes.
+										<strong className="text-stone-900 dark:text-stone-100">Execution:</strong> Human invokes each stage manually with <code className="text-purple-600 dark:text-purple-400">/haiku:run</code>. Within a stage, the AI runs autonomously through that stage&apos;s hat sequence (e.g., planner→builder→reviewer for development, or threat-modeler→red-team→blue-team→security-reviewer for security), but it stops after the stage completes.
 									</p>
 									<p>
 										<strong className="text-stone-900 dark:text-stone-100">Human re-enters at:</strong> Every stage boundary. The human decides when to proceed, skip stages, or revise previous work. Maximum control over the pipeline.
@@ -358,7 +358,7 @@ export default function HowItWorksPage() {
 								persistence: git | review: external
 							</p>
 							<div className="space-y-2">
-								{["threat-modeler", "red-team", "blue-team", "reviewer"].map((hat, i) => (
+								{["threat-modeler", "red-team", "blue-team", "security-reviewer"].map((hat, i) => (
 									<div key={hat} className="flex items-center gap-3">
 										<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-100 text-xs font-bold text-rose-700 dark:bg-rose-900 dark:text-rose-300">
 											{i + 1}
@@ -922,12 +922,12 @@ Implement REST API endpoints for user authentication...
 							</p>
 							<div className="space-y-1.5">
 								{[
-									{ stage: "inception", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300", gate: "ask", gateLabel: "user approves" },
+									{ stage: "inception", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300", gate: "auto", gateLabel: "auto-advances" },
 									{ stage: "design", color: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300", gate: "ask", gateLabel: "user approves" },
 									{ stage: "product", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300", gate: "external", gateLabel: "team decides: do we build this?" },
 									{ stage: "development", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300", gate: "ask", gateLabel: "user approves" },
 									{ stage: "operations", color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300", gate: "auto", gateLabel: "advances immediately" },
-									{ stage: "security", color: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300", gate: "external", gateLabel: "team signs off" },
+									{ stage: "security", color: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300", gate: "external", gateLabel: "team signs off (ask in autopilot)" },
 								].map((s) => (
 									<div key={s.stage}>
 										<div className="flex items-center gap-2">
