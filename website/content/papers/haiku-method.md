@@ -311,7 +311,13 @@ This principle — enforcement through hooks rather than instructions — applie
 
 ### Configuration
 
-Projects configure H·AI·K·U through a settings file that controls quality gate commands (test, lint, typecheck, build), provider integrations (ticketing, design, specs, communications), unit decomposition granularity, and per-hat model selection. Review agents are defined per-stage within studio definitions, not as global configuration — each stage prescribes the adversarial perspectives relevant to its domain.
+Projects configure H·AI·K·U through a settings file that controls quality gate commands (test, lint, typecheck, build), provider integrations, unit decomposition granularity, and per-hat model selection. Review agents are defined per-stage within studio definitions, not as global configuration — each stage prescribes the adversarial perspectives relevant to its domain.
+
+Providers are bidirectional translation layers, not simple API connectors. Six provider categories exist: ticketing (Jira, Linear, GitHub Issues), spec (Notion, Confluence, Google Docs), design (Figma, Canva, Pencil), comms (Slack, Teams, Discord), CRM (Salesforce, HubSpot), and knowledge (wiki platforms for cross-studio context sharing). Each provider has inbound instructions (how to read provider data and distill it into H·AI·K·U artifacts), outbound instructions (how to translate H·AI·K·U state into the provider's format), and sync behavior (how to discover events and maintain consistency).
+
+The translation is mediated by the AI agent, not by rigid schema mapping. A CRM deal record does not contain H·AI·K·U frontmatter — the agent reads the CRM's native fields and produces H·AI·K·U artifacts. A reflection summary does not get pushed as markdown — the agent translates it into whatever format the knowledge provider's audience expects. This semantic translation is what makes providers work across domains where the external tool's data model bears no resemblance to H·AI·K·U's internal representation.
+
+Providers also serve as the coordination layer for cross-studio work. Because H·AI·K·U is a local CLI tool — not a server — it cannot maintain always-on triggers or shared state. Instead, the provider is the durable layer: a CRM deal closing is visible to any session that polls the CRM. A knowledge article written by the sales studio is readable by the customer success studio via the knowledge provider. Cross-studio data flows through providers, not through shared filesystems.
 
 Configuration follows a three-level precedence: intent-level overrides take priority over project-level settings, which take priority over built-in defaults.
 

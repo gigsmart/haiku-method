@@ -1,0 +1,50 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://haiku.dev/schemas/providers/salesforce.schema.json",
+	"title": "Salesforce CRM Provider Config",
+	"description": "Provider-specific configuration for Salesforce CRM",
+	"type": "object",
+	"properties": {
+		"instance_url": {
+			"type": "string",
+			"description": "Salesforce instance URL (e.g., https://mycompany.my.salesforce.com)"
+		},
+		"pipeline_id": {
+			"type": "string",
+			"description": "Opportunity pipeline/record type to monitor"
+		},
+		"stage_mapping": {
+			"type": "object",
+			"description": "Map Salesforce opportunity stages to H·AI·K·U studio stages",
+			"additionalProperties": {
+				"type": "string"
+			},
+			"examples": [{
+				"Prospecting": "research",
+				"Qualification": "qualification",
+				"Proposal/Price Quote": "proposal",
+				"Negotiation/Review": "negotiation",
+				"Closed Won": "close",
+				"Closed Lost": "close"
+			}]
+		},
+		"sync_activities": {
+			"type": "boolean",
+			"default": true,
+			"description": "Log H·AI·K·U stage transitions as Salesforce activities"
+		},
+		"trigger_on_stage": {
+			"type": "array",
+			"items": { "type": "string" },
+			"description": "Salesforce stages that should surface as intent creation suggestions",
+			"examples": [["Closed Won", "Qualification"]]
+		},
+		"object_type": {
+			"type": "string",
+			"default": "Opportunity",
+			"description": "Salesforce object type to sync (Opportunity, Lead, Case)"
+		}
+	},
+	"required": [],
+	"additionalProperties": false
+}

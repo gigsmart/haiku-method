@@ -157,6 +157,14 @@
 				"comms": {
 					"$ref": "#/definitions/commsProviderEntry",
 					"description": "Communication provider (Slack, Teams, Discord)"
+				},
+				"crm": {
+					"$ref": "#/definitions/crmProviderEntry",
+					"description": "CRM provider (Salesforce, HubSpot)"
+				},
+				"knowledge": {
+					"$ref": "#/definitions/knowledgeProviderEntry",
+					"description": "Knowledge/wiki provider for cross-studio context sharing (Notion, Confluence, Google Docs)"
 				}
 			},
 			"additionalProperties": false
@@ -314,6 +322,72 @@
 				{
 					"if": { "properties": { "type": { "const": "discord" } } },
 					"then": { "properties": { "config": { "$ref": "providers/discord.schema.json" } } }
+				}
+			]
+		},
+		"crmProviderEntry": {
+			"type": "object",
+			"description": "A configured CRM provider",
+			"properties": {
+				"type": {
+					"type": "string",
+					"enum": ["salesforce", "hubspot"],
+					"description": "CRM provider type"
+				},
+				"config": {
+					"type": "object",
+					"description": "Provider-specific configuration — schema determined by provider type"
+				},
+				"instructions": {
+					"type": "string",
+					"description": "Inline provider instructions (merged with built-in defaults and project overrides)"
+				}
+			},
+			"required": ["type"],
+			"additionalProperties": false,
+			"allOf": [
+				{
+					"if": { "properties": { "type": { "const": "salesforce" } } },
+					"then": { "properties": { "config": { "$ref": "providers/salesforce.schema.json" } } }
+				},
+				{
+					"if": { "properties": { "type": { "const": "hubspot" } } },
+					"then": { "properties": { "config": { "$ref": "providers/hubspot.schema.json" } } }
+				}
+			]
+		},
+		"knowledgeProviderEntry": {
+			"type": "object",
+			"description": "A configured knowledge/wiki provider for organizational memory and cross-studio sharing",
+			"properties": {
+				"type": {
+					"type": "string",
+					"enum": ["notion", "confluence", "google-docs"],
+					"description": "Knowledge provider type (same tools as spec, different purpose)"
+				},
+				"config": {
+					"type": "object",
+					"description": "Provider-specific configuration — schema determined by provider type"
+				},
+				"instructions": {
+					"type": "string",
+					"description": "Inline provider instructions (merged with built-in defaults and project overrides)"
+				}
+			},
+			"required": ["type"],
+			"additionalProperties": false,
+			"allOf": [
+				{
+					"if": { "properties": { "type": { "const": "notion" } } },
+					"then": { "properties": { "config": { "$ref": "providers/notion.schema.json" } } }
+				},
+				{
+					"if": { "properties": { "type": { "const": "confluence" } } },
+					"then": { "properties": { "config": { "$ref": "providers/confluence.schema.json" } } }
+				},
+				{
+					"if": { "properties": { "type": { "const": "google-docs" } } },
+					"then": { "properties": { "config": { "$ref": "providers/google-docs.schema.json" } } }
 				}
 			]
 		},

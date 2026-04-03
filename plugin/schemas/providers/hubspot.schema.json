@@ -1,0 +1,41 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://haiku.dev/schemas/providers/hubspot.schema.json",
+	"title": "HubSpot CRM Provider Config",
+	"description": "Provider-specific configuration for HubSpot CRM",
+	"type": "object",
+	"properties": {
+		"pipeline_id": {
+			"type": "string",
+			"description": "HubSpot deal pipeline ID to monitor"
+		},
+		"stage_mapping": {
+			"type": "object",
+			"description": "Map HubSpot deal stages to H·AI·K·U studio stages",
+			"additionalProperties": {
+				"type": "string"
+			},
+			"examples": [{
+				"appointmentscheduled": "research",
+				"qualifiedtobuy": "qualification",
+				"presentationscheduled": "proposal",
+				"decisionmakerboughtin": "negotiation",
+				"closedwon": "close",
+				"closedlost": "close"
+			}]
+		},
+		"sync_activities": {
+			"type": "boolean",
+			"default": true,
+			"description": "Log H·AI·K·U stage transitions as HubSpot activities"
+		},
+		"trigger_on_stage": {
+			"type": "array",
+			"items": { "type": "string" },
+			"description": "HubSpot stages that should surface as intent creation suggestions",
+			"examples": [["closedwon", "qualifiedtobuy"]]
+		}
+	},
+	"required": [],
+	"additionalProperties": false
+}

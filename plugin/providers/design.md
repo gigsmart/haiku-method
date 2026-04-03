@@ -1,7 +1,7 @@
 ---
 name: Design Provider
 category: design
-description: Default design provider behavior for H·AI·K·U
+description: Bidirectional design provider — sync design artifacts and tokens between H·AI·K·U and design tools
 supported_types:
   - canva
   - openpencil
@@ -14,17 +14,36 @@ default_type: auto
 
 # Design Provider — Default Instructions
 
-## During Elaboration
+## Inbound: Provider → H·AI·K·U
+
+### During Elaboration
 - Pull existing designs, components, and mockups relevant to the intent
 - Reference design files in unit Technical Specification sections
-- When generating wireframes (Phase 6.25), reference component names from the design system in HTML comments but maintain low-fidelity aesthetic
+- When generating wireframes, reference component names from the design system in HTML comments but maintain low-fidelity aesthetic
+- Extract design tokens (colors, spacing, typography) as constraints for implementation
 
-## During Building
-- Reference design specs for UI implementation
-- Verify component usage matches design system
+### During Stage Decomposition
+- Pull current design state for stages that consume design outputs
+- Verify designs haven't changed since the design stage completed
 
-## During Review
+### Translation (Provider → H·AI·K·U)
+- Design files → `design_ref` URIs in unit references
+- Design tokens → implementation constraints
+- Component inventory → scope boundary for units
+
+## Outbound: H·AI·K·U → Provider
+
+### During Design Stage
+- Push wireframes and design decisions to the design tool
+- Update component libraries with new patterns
+
+### During Development Stage
+- Push implemented component screenshots for visual diff
+- Update design tool with implementation-driven adjustments
+
+### During Review
 - Cross-reference UI implementation against design specs
+- Push review findings that affect design back to the design tool
 
 ## Provider-Specific Instructions
 

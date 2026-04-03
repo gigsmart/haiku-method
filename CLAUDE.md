@@ -42,7 +42,7 @@ When modifying any component, check if other components need corresponding updat
 - Plugin libraries: `plugin/lib/*.sh`
 - Plugin orchestration: `plugin/lib/orchestrator.sh`, `plugin/lib/stage.sh`, `plugin/lib/studio.sh`
 - Plugin persistence adapters: `plugin/lib/adapters/*.sh`
-- Plugin providers: `plugin/providers/*.md` + `plugin/schemas/providers/*.json`
+- Plugin providers: `plugin/providers/*.md` (bidirectional translation instructions) + `plugin/schemas/providers/*.json`
 - Website docs: `website/content/docs/`
 - Infrastructure: `deploy/terraform/`
 - Changelog: `CHANGELOG.md` (Keep a Changelog format)

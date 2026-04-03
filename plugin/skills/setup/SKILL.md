@@ -117,6 +117,8 @@ Use `ToolSearch` to discover available MCP providers. Run **all probes in parall
 | Spec | `"notion"`, `"confluence"`, `"google docs"` |
 | Design | `"figma"` |
 | Comms | `"slack"`, `"teams"`, `"discord"` |
+| CRM | `"salesforce"`, `"hubspot"` |
+| Knowledge | `"notion"`, `"confluence"`, `"google docs"` (same tools as spec, different purpose) |
 
 Also check:
 - If `DETECTED_HOSTING` is `github` and `gh` CLI exists (`command -v gh`), suggest `github-issues` as a zero-config ticketing option
@@ -131,6 +133,8 @@ Build a detection results map:
 | Spec | e.g., `confluence` | MCP tool found: `mcp__*confluence*` |
 | Design | e.g., `figma` | MCP tool found: `mcp__*figma*` |
 | Comms | e.g., `slack` | MCP tool found: `mcp__*slack*` |
+| CRM | e.g., `salesforce` | MCP tool found: `mcp__*salesforce*` |
+| Knowledge | e.g., `notion` | MCP tool found or same as spec provider |
 
 If existing settings already declare a provider for a category, keep that as the default even if detection found something different.
 
