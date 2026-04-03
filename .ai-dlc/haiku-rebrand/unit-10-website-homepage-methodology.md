@@ -7,7 +7,7 @@ discipline: frontend
 stage: ""
 workflow: ""
 ticket: ""
-hat: planner
+hat: builder
 ---
 
 # unit-10-website-homepage-methodology
