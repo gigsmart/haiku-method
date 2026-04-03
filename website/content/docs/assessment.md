@@ -24,9 +24,9 @@ Score each question from 0-2:
 
 How prepared is your team to adopt H·AI·K·U?
 
-### Question 1: Claude Code Usage
+### Question 1: Claude Usage
 
-**How much is your team currently using Claude Code or similar AI coding assistants?**
+**How much is your team currently using Claude Code, Cowork, or similar AI coding assistants?**
 
 | Score | Answer |
 |-------|--------|

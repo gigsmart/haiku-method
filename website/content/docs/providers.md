@@ -130,7 +130,7 @@ H·AI·K·U will link all tickets to that existing epic instead of creating a ne
 
 ## MCP Requirements
 
-Providers work through MCP (Model Context Protocol) tool servers. For each provider type, you need the corresponding MCP server configured in your Claude Code settings:
+Providers work through MCP (Model Context Protocol) tool servers. For each provider type, you need the corresponding MCP server configured in your Claude settings:
 
 | Provider Type | MCP Tool Pattern |
 |--------------|-----------------|

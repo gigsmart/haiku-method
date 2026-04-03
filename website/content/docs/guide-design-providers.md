@@ -99,7 +99,7 @@ References are stored in unit `design_ref` fields and resolved automatically dur
 
 ### Canva
 
-**MCP server:** Canva MCP (available through Claude Code integrations)
+**MCP server:** Canva MCP (available through Claude integrations)
 
 ```yaml
 providers:

@@ -18,7 +18,7 @@ Before starting team onboarding:
 - [ ] Champion has time allocated for supporting team
 
 ### Team Readiness
-- [ ] All team members have Claude Code access
+- [ ] All team members have Claude Code or Cowork access
 - [ ] Team has capacity for learning curve (not in crunch)
 - [ ] Management supports the adoption
 - [ ] Team is aware H·AI·K·U is coming
@@ -337,7 +337,7 @@ We're introducing H·AI·K·U, a structured methodology for AI-assisted developm
 
 Before the session:
 - Read: [Link to H·AI·K·U docs]
-- Install: Claude Code (if not already)
+- Install: Claude Code or Cowork (if not already)
 
 What to expect:
 - Why we're adopting H·AI·K·U

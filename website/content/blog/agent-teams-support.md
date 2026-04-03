@@ -13,7 +13,7 @@ H·AI·K·U now supports it natively.
 
 H·AI·K·U's construction loop already breaks work into **units** - focused pieces with clear completion criteria, each running in its own git worktree on its own branch. Previously, these units ran as subagents: constrained workers that execute within the parent session and can only report results back to the caller.
 
-Agent Teams changes the game. Instead of subagents, each unit can now run as a **full independent Claude Code session**. The difference matters:
+Agent Teams changes the game. Instead of subagents, each unit can now run as a **full independent Claude session**. The difference matters:
 
 | | Subagents | Agent Teams |
 |---|---|---|
@@ -34,7 +34,7 @@ When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is enabled, the `/haiku:execute` loo
 4. Teammates **communicate findings** through the shared mailbox
 5. When a unit's criteria are satisfied, the teammate marks it complete and the lead advances the workflow
 
-Each teammate automatically receives H·AI·K·U context via hook injection - the current hat instructions, intent, completion criteria, and workflow state. They start with full project context (CLAUDE.md, MCP servers, skills) just like any Claude Code session.
+Each teammate automatically receives H·AI·K·U context via hook injection - the current hat instructions, intent, completion criteria, and workflow state. They start with full project context (CLAUDE.md, MCP servers, skills) just like any Claude session.
 
 ## One Mode for the Entire Intent
 

@@ -43,7 +43,7 @@ Units are focused pieces of work with clear success criteria. Breaking work into
 
 ## Getting Started
 
-H·AI·K·U is distributed as a Claude Code plugin. Install it with:
+H·AI·K·U is distributed as a Claude plugin. Install it with:
 
 ```
 /plugin marketplace add thebushidocollective/ai-dlc
@@ -52,9 +52,9 @@ H·AI·K·U is distributed as a Claude Code plugin. Install it with:
 
 Then start using the hat commands to structure your workflow.
 
-## A Claude Code Plugin
+## A Claude Plugin
 
-H·AI·K·U is a Claude Code plugin. We believe AI-assisted development deserves the same rigor and discipline as traditional software engineering -- just with new tools and methods.
+H·AI·K·U is a Claude plugin that works in both Claude Code and Cowork. We believe AI-assisted development deserves the same rigor and discipline as traditional software engineering -- just with new tools and methods.
 
 ## What's Next
 

@@ -81,11 +81,11 @@ Domain specificity buys you deterministic quality gates. Generic harnesses have 
 
 Anthropic's harnesses use the Claude Agent SDK to orchestrate separate agent processes. Each agent is a distinct subprocess with its own context window, coordinated by the harness through file-based communication. The harness is a separate orchestration layer that manages agents externally.
 
-H·AI·K·U uses Claude Code's plugin system — skills, hooks, and CLAUDE.md rules — to shape behavior *within* a single Claude Code session. Skills provide structured commands (`/haiku:elaborate`, `/haiku:resume`, `/haiku:refine`). Hooks enforce backpressure at tool-call boundaries. CLAUDE.md rules inject context and constraints that persist across the session. When Agent Teams is enabled, the plugin spawns independent teammates, but the orchestration still flows through plugin primitives rather than a separate SDK layer.
+H·AI·K·U uses Claude's plugin system — skills, hooks, and CLAUDE.md rules — to shape behavior *within* a single Claude session (Code or Cowork). Skills provide structured commands (`/haiku:elaborate`, `/haiku:resume`, `/haiku:refine`). Hooks enforce backpressure at tool-call boundaries. CLAUDE.md rules inject context and constraints that persist across the session. When Agent Teams is enabled, the plugin spawns independent teammates, but the orchestration still flows through plugin primitives rather than a separate SDK layer.
 
-This means the harness *is* the development environment. There is no separate system to install, configure, or maintain. You install a plugin and your Claude Code session gains structured workflows, quality gates, and context management. The harness lives where the work happens.
+This means the harness *is* the development environment. There is no separate system to install, configure, or maintain. You install a plugin and your Claude session gains structured workflows, quality gates, and context management. The harness lives where the work happens.
 
-The tradeoff is real. The Agent SDK approach gives you more control over agent orchestration — you can run agents in parallel, manage their lifecycle explicitly, and build custom communication protocols. The plugin approach gives you tighter integration with the developer experience — the harness is invisible until you invoke it, and it enhances rather than replaces the normal Claude Code workflow.
+The tradeoff is real. The Agent SDK approach gives you more control over agent orchestration — you can run agents in parallel, manage their lifecycle explicitly, and build custom communication protocols. The plugin approach gives you tighter integration with the developer experience — the harness is invisible until you invoke it, and it enhances rather than replaces the normal Claude workflow.
 
 Both are valid architectures. They optimize for different things.
 
@@ -120,7 +120,7 @@ Positioning H·AI·K·U as a harness does three things.
 
 **It connects H·AI·K·U to a broader design space.** Anthropic is publishing harness design patterns. Other teams are building their own orchestration systems. The problem of coordinating AI agents through complex, long-running work is not specific to any one tool or methodology. By naming H·AI·K·U as a harness, we join a conversation about what these systems should look like, how they should evolve, and what principles govern their design. The answers matter for everyone building in this space.
 
-H·AI·K·U is a collaborative, SDLC-specialized harness built on Claude Code's plugin primitives. Understanding it as one is the clearest way to understand what it does — and to know when pieces of it should be simplified away.
+H·AI·K·U is a collaborative, SDLC-specialized harness built on Claude's plugin primitives. Understanding it as one is the clearest way to understand what it does — and to know when pieces of it should be simplified away.
 
 ---
 

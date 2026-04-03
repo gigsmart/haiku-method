@@ -14,7 +14,7 @@ Start with one developer on one project. Master the fundamentals before scaling.
 
 Before starting Phase 1, ensure you have:
 
-- **Claude Code installed** and working in your development environment
+- **Claude Code or Cowork installed** and working in your development environment
 - **A real project** - Not a toy project, but something you're actively working on
 - **Dedicated time** - Plan for a learning curve in the first few sessions
 - **An open mindset** - H·AI·K·U may feel slower at first; trust the process

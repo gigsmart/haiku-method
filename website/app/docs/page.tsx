@@ -20,7 +20,7 @@ export default function DocsPage() {
 
 			<div className="prose prose-gray dark:prose-invert max-w-none">
 				<h2>Getting Started</h2>
-				<p>Install the H·AI·K·U plugin in your Claude Code project:</p>
+				<p>Install the H·AI·K·U plugin in your Claude environment:</p>
 				<div className="not-prose my-4 rounded-lg bg-stone-100 p-4 font-mono text-sm dark:bg-stone-800">
 					<div><code>/plugin marketplace add thebushidocollective/ai-dlc</code></div>
 					<div><code>/plugin install haiku@thebushidocollective-ai-dlc --scope project</code></div>

@@ -76,7 +76,7 @@ export const navigation: NavCategory[] = [
 					{
 						title: "Installation",
 						href: "/docs/installation/",
-						description: "Install the Claude Code plugin",
+						description: "Install the Claude plugin",
 					},
 					{
 						title: "Getting Started",

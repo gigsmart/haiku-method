@@ -4,7 +4,7 @@ description: Complete reference for all /haiku:* commands
 order: 30
 ---
 
-Complete reference for all H·AI·K·U commands. Commands are invoked as `/haiku:<command>` in Claude Code.
+Complete reference for all H·AI·K·U commands. Commands are invoked as `/haiku:<command>` in any Claude session (Code or Cowork).
 
 ## Core Commands
 

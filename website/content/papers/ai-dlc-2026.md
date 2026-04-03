@@ -1710,7 +1710,7 @@ depends_on: [unit-02-auth-api]
 
 **→ See the [Autonomous Bolt Runbook](./ai-dlc-2026/runbooks/construction/autonomous-bolt) for implementation templates, safety configuration, and the Many Hats orchestration pattern.**
 
-**→ See the [Tooling Runbook](./ai-dlc-2026/runbooks/tooling/claude-code) for Claude Code-native implementation with the `ai-dlc` plugin.**
+**→ See the [Tooling Runbook](./ai-dlc-2026/runbooks/tooling/claude-code) for Claude-native implementation with the `ai-dlc` plugin (works in Claude Code and Cowork).**
 
 ---
 

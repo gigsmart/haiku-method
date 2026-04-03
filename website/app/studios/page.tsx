@@ -200,7 +200,7 @@ export default function StudiosPage() {
 					</h2>
 					<p className="mb-6 text-stone-600 dark:text-stone-400">
 						The Software studio is the most mature H·AI·K·U
-						profile. Install the Claude Code plugin to try it.
+						profile. Install the Claude plugin to try it.
 					</p>
 					<Link
 						href="/docs/installation/"

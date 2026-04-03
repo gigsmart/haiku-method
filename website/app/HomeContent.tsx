@@ -593,7 +593,7 @@ export default function HomeContent({
 						forceOpen={isRef}
 					>
 						<p className="mb-3">
-							H·AI·K·U is a Claude Code plugin with a well-organized file
+							H·AI·K·U is a Claude plugin with a well-organized file
 							structure. Everything is self-contained.
 						</p>
 						<div className="rounded-lg border border-gray-200 bg-gray-50 p-4 font-mono text-xs leading-relaxed dark:border-gray-700 dark:bg-gray-950">
@@ -1484,7 +1484,7 @@ export default function HomeContent({
 					>
 						<p className="mb-3">
 							Eight hooks (plus one support script) form the automated safety
-							system. Each fires at a specific point in the Claude Code
+							system. Each fires at a specific point in the Claude
 							lifecycle.
 						</p>
 						<div className="space-y-2">

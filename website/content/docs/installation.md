@@ -1,22 +1,22 @@
 ---
 title: Installation
-description: Install H·AI·K·U in your Claude Code project
+description: Install H·AI·K·U in your Claude environment
 order: 2
 ---
 
-H·AI·K·U is distributed as a Claude Code plugin. This guide covers installation methods and prerequisites.
+H·AI·K·U is distributed as a Claude plugin that works in both Claude Code and Cowork. This guide covers installation methods and prerequisites.
 
 ## Prerequisites
 
-### Claude Code
+### Claude Code or Cowork
 
-H·AI·K·U requires [Claude Code](https://claude.ai/code), Anthropic's AI-powered development environment. Ensure you have Claude Code installed and configured.
+H·AI·K·U requires [Claude Code](https://claude.ai/code) or [Claude Cowork](https://claude.ai/cowork), Anthropic's AI-powered development environments. Ensure you have either Claude Code or Cowork installed and configured.
 
 ## Installation Methods
 
-### Method 1: Via Claude Code (Recommended)
+### Method 1: Via Plugin Install (Recommended)
 
-Install directly from within a Claude Code session:
+Install directly from within a Claude Code or Cowork session:
 
 ```
 /plugin marketplace add thebushidocollective/ai-dlc
@@ -25,7 +25,7 @@ Install directly from within a Claude Code session:
 
 ### Method 2: Manual Configuration
 
-Add the plugin to your Claude Code settings file manually.
+Add the plugin to your Claude settings file manually.
 
 **User-level installation** (`~/.claude/settings.json`):
 
@@ -51,15 +51,15 @@ Add the plugin to your Claude Code settings file manually.
 
 After installation, verify the plugin is working:
 
-1. Start a new Claude Code session in your project
+1. Start a new Claude session in your project
 2. Type `/haiku:new` - you should see the inception flow start
 3. If `/haiku:new` works, your installation is successful
 
-If commands aren't recognized, restart your Claude Code session.
+If commands aren't recognized, restart your Claude session.
 
 ## Recommended Companion Plugins
 
-H·AI·K·U works best with backpressure plugins that provide quality gates. Install companion plugins via Claude Code:
+H·AI·K·U works best with backpressure plugins that provide quality gates. Install companion plugins in your Claude session:
 
 ### TypeScript Projects
 
@@ -143,7 +143,7 @@ However, committing is recommended - it provides:
 **Symptom:** `/haiku:new` or `/haiku:run` don't activate
 
 **Solutions:**
-1. Restart Claude Code session
+1. Restart Claude session
 2. Verify plugin is in settings.json
 3. Check for typos in plugin path
 

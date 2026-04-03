@@ -1080,7 +1080,7 @@ Implement REST API endpoints for user authentication...
 						Ready to Try It?
 					</h2>
 					<p className="mb-6 text-stone-600 dark:text-stone-400">
-						Install the Claude Code plugin and run your first intent.
+						Install the Claude plugin and run your first intent.
 					</p>
 					<div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
 						<Link

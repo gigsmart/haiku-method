@@ -999,7 +999,7 @@ Hypothesis:    Observer --> Hypothesizer --> Experimenter --> Analyst
 
 #### AI-DLC Plugin Implementation
 
-The AI-DLC profile is implemented as a Claude Code plugin (the `haiku` plugin). Key implementation details:
+The AI-DLC profile is implemented as a Claude plugin (the `haiku` plugin) that works in both Claude Code and Cowork. Key implementation details:
 
 **Studios as Profiles.** HAIKU profiles are implemented as **studios** — named lifecycle templates stored as `plugin/studios/{name}/STUDIO.md`. Each studio contains **stages** (`plugin/studios/{name}/stages/{stage}/STAGE.md`) that define the lifecycle phases, inline hats, review gates, and artifact contracts.
 
