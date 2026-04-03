@@ -660,6 +660,40 @@ else
   echo "\`\`\`"
 fi
 
+# Designer and reviewer hats: inject design provider capabilities for tool discovery
+if [ "$HAT" = "designer" ] || [ "$HAT" = "reviewer" ]; then
+  _DESIGN_PROVIDER_TYPE=""
+  if type load_providers &>/dev/null; then
+    _DESIGN_PROVIDERS_JSON=$(load_providers)
+    _DESIGN_PROVIDER_TYPE=$(echo "$_DESIGN_PROVIDERS_JSON" | jq -r '.design.type // empty')
+  fi
+
+  if [ -n "$_DESIGN_PROVIDER_TYPE" ]; then
+    echo ""
+    echo "### Design Provider Capabilities"
+    echo ""
+    echo "**Active provider:** $_DESIGN_PROVIDER_TYPE"
+
+    if type get_provider_capabilities &>/dev/null; then
+      _DESIGN_CAPS=$(get_provider_capabilities "$_DESIGN_PROVIDER_TYPE")
+      echo "**Capabilities:** \`$_DESIGN_CAPS\`"
+    fi
+
+    if type _provider_mcp_hint &>/dev/null; then
+      _DESIGN_HINT=$(_provider_mcp_hint "$_DESIGN_PROVIDER_TYPE")
+      echo "**MCP tool pattern:** \`$_DESIGN_HINT\`"
+      echo ""
+      echo "Use \`ToolSearch\` with pattern \`$_DESIGN_HINT\` to discover available design tools."
+    fi
+
+    if type get_provider_uri_scheme &>/dev/null; then
+      _DESIGN_URI_SCHEME=$(get_provider_uri_scheme "$_DESIGN_PROVIDER_TYPE")
+      [ -n "$_DESIGN_URI_SCHEME" ] && echo "**URI scheme:** \`$_DESIGN_URI_SCHEME\`"
+    fi
+    echo ""
+  fi
+fi
+
 # Inject H•AI•K•U organizational memory (if workspace configured)
 if type haiku_is_configured &>/dev/null && haiku_is_configured; then
   ORG_MEMORY=$(haiku_memory_context 100)

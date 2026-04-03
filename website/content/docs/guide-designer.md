@@ -296,6 +296,53 @@ The selection produces a **design blueprint** that:
 
 **As a designer, this is your opportunity to set the visual foundation before any code is written.** The blueprint captures your design direction in structured terms that AI can apply consistently across features. For established projects, this step is skipped -- the existing design patterns serve as the guide.
 
+## Using Design Providers
+
+AI-DLC supports six design providers: **Canva**, **Figma**, **OpenPencil**, **Pencil**, **Penpot**, and **Excalidraw**. When a design provider is configured, AI-DLC automatically pulls design specs during elaboration, references them during building, and cross-checks implementations during review.
+
+### Choosing a Provider
+
+| If you use... | Set `type:` to... | Key strengths |
+|---------------|-------------------|---------------|
+| Canva | `canva` | Brand kits, templates, marketing assets |
+| Figma | `figma` | Components, variables, prototyping |
+| OpenPencil | `openpencil` | Code export to 8 frameworks, design tokens |
+| Pencil | `pencil` | AI generation, lightweight local design |
+| Penpot | `penpot` | Self-hosted, SVG-native, components |
+| Excalidraw | `excalidraw` | Quick diagrams, architecture sketches |
+
+Or set `type: auto` and AI-DLC detects your provider from available MCP tools.
+
+### Design References in Units
+
+When elaboration creates units with design work, it stores references using provider-specific URIs:
+
+```markdown
+---
+design_ref: "figma://abc123#node=1:42"
+---
+```
+
+These references resolve automatically during execution, so builders can pull the exact design spec for their unit.
+
+### Customizing Provider Behavior
+
+Add project-specific design conventions in `.ai-dlc/providers/design.md`:
+
+```markdown
+---
+provider: figma
+type: design
+---
+
+# Design Conventions
+- Only reference frames marked "Ready for Dev"
+- Export at 2x for retina displays
+- Use component variants, not detached instances
+```
+
+See the [Design Providers Guide](/docs/guide-design-providers/) for full setup instructions and capability details for each provider.
+
 ## Collaboration Tips
 
 ### Async Collaboration

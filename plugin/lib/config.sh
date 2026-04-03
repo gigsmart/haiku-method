@@ -358,7 +358,12 @@ _provider_mcp_hint() {
     linear)       echo 'mcp__*linear*' ;;
     github-issues) echo 'gh issue' ;;
     gitlab-issues) echo 'mcp__*gitlab*' ;;
-    figma)        echo 'mcp__*figma*' ;;
+    canva)        echo 'mcp__*Canva*' ;;
+    figma)        echo 'mcp__*figma*|mcp__*Figma*' ;;
+    openpencil)   echo 'mcp__*openpencil*|mcp__*open_pencil*' ;;
+    pencil)       echo 'mcp__pencil__*|mcp__*_pencil__*' ;;
+    penpot)       echo 'mcp__*penpot*' ;;
+    excalidraw)   echo 'mcp__*excalidraw*|mcp__*Excalidraw*' ;;
     slack)        echo 'mcp__*slack*' ;;
     teams)        echo 'mcp__*teams*' ;;
     discord)      echo 'mcp__*discord*' ;;
@@ -430,6 +435,90 @@ detect_vcs_hosting() {
     *gitlab.com*)    echo "gitlab" ;;
     *bitbucket.org*) echo "bitbucket" ;;
     *)               echo "" ;;
+  esac
+}
+
+# Detect design provider from available MCP tools
+# Usage: detect_design_provider [directory]
+# Returns: canva | figma | openpencil | pencil | penpot | excalidraw | ''
+# Priority: canva > figma > openpencil > pencil > penpot > excalidraw
+detect_design_provider() {
+  local dir="${1:-.}"
+  local order="canva figma openpencil pencil penpot excalidraw"
+  for provider in $order; do
+    local hint
+    hint=$(_provider_mcp_hint "$provider")
+    # Split pipe-delimited patterns and check each
+    local IFS='|'
+    for pattern in $hint; do
+      # Check if any MCP tool matching the hint pattern is available
+      # Uses CLAUDE_MCP_TOOL_LIST env var if set, otherwise checks for CLI binaries
+      if [ -n "${CLAUDE_MCP_TOOL_LIST:-}" ]; then
+        # shellcheck disable=SC2254
+        case "$CLAUDE_MCP_TOOL_LIST" in
+          *$pattern*) echo "$provider"; return ;;
+        esac
+      fi
+    done
+    unset IFS
+  done
+  echo ""
+}
+
+# Get capability JSON for a design provider
+# Usage: get_provider_capabilities <provider_type>
+# Returns: JSON object with boolean capability flags
+get_provider_capabilities() {
+  local ptype="$1"
+  case "$ptype" in
+    canva)
+      echo '{"read":true,"write":true,"export":true,"comment":true,"components":false,"variables":false,"prototyping":false,"generate":true}'
+      ;;
+    figma)
+      echo '{"read":true,"write":true,"export":true,"comment":true,"components":true,"variables":true,"prototyping":true,"generate":false}'
+      ;;
+    openpencil)
+      echo '{"read":true,"write":true,"export":true,"comment":false,"components":false,"variables":true,"prototyping":false,"generate":true}'
+      ;;
+    pencil)
+      echo '{"read":true,"write":true,"export":true,"comment":false,"components":false,"variables":true,"prototyping":false,"generate":true}'
+      ;;
+    penpot)
+      echo '{"read":true,"write":true,"export":true,"comment":true,"components":true,"variables":false,"prototyping":true,"generate":false}'
+      ;;
+    excalidraw)
+      echo '{"read":true,"write":true,"export":true,"comment":false,"components":false,"variables":false,"prototyping":false,"generate":false}'
+      ;;
+    *)
+      echo '{}'
+      ;;
+  esac
+}
+
+# Check if a design provider has a specific capability
+# Usage: provider_has_capability <provider_type> <capability>
+# Returns: 0 if true, 1 if false
+provider_has_capability() {
+  local ptype="$1"
+  local capability="$2"
+  local caps
+  caps=$(get_provider_capabilities "$ptype")
+  [ "$(echo "$caps" | jq -r ".$capability // false")" = "true" ]
+}
+
+# Get URI scheme for a design provider
+# Usage: get_provider_uri_scheme <provider_type>
+# Returns: URI prefix string (e.g., 'figma://')
+get_provider_uri_scheme() {
+  local ptype="$1"
+  case "$ptype" in
+    canva)       echo 'canva://' ;;
+    figma)       echo 'figma://' ;;
+    openpencil)  echo 'openpencil://' ;;
+    pencil)      echo 'pencil://' ;;
+    penpot)      echo 'penpot://' ;;
+    excalidraw)  echo 'excalidraw://' ;;
+    *)           echo '' ;;
   esac
 }
 
@@ -545,6 +634,17 @@ load_providers() {
         fi
       fi
     done
+  fi
+
+  # Resolve auto design provider type
+  local design_type
+  design_type=$(echo "$result" | jq -r '.design.type // empty')
+  if [ "$design_type" = "auto" ]; then
+    local detected
+    detected=$(detect_design_provider "$repo_root")
+    if [ -n "$detected" ]; then
+      result=$(echo "$result" | jq --arg t "$detected" '.design.type = $t')
+    fi
   fi
 
   # Source 3: Auto-detect VCS hosting and CI/CD

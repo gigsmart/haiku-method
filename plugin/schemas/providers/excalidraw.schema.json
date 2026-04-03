@@ -1,0 +1,22 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://ai-dlc.dev/schemas/providers/excalidraw.schema.json",
+	"title": "Excalidraw Provider Config",
+	"description": "Provider-specific configuration for Excalidraw design provider",
+	"type": "object",
+	"properties": {
+		"mcp_mode": {
+			"type": "string",
+			"enum": ["remote", "local"],
+			"default": "remote",
+			"description": "Whether to use the remote Excalidraw service or a local instance"
+		},
+		"style": {
+			"type": "string",
+			"enum": ["hand-drawn", "architect", "artist", "cartoonist"],
+			"default": "hand-drawn",
+			"description": "Default drawing style for generated designs"
+		}
+	},
+	"additionalProperties": false
+}

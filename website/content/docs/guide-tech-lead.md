@@ -163,6 +163,24 @@ default_passes: [design, product, dev]
 
 Without this, intents default to a single dev pass. See [Passes](/docs/concepts/#pass) for how passes work.
 
+**Configuring design providers:**
+
+AI-DLC supports six design providers (Canva, Figma, OpenPencil, Pencil, Penpot, Excalidraw). Set `type: auto` for automatic detection from MCP tools, or pin a specific provider:
+
+```yaml
+# .ai-dlc/settings.yml
+providers:
+  design:
+    type: figma
+    config:
+      project_id: "PROJ-123"
+      team_id: "TEAM-456"
+    instructions: |
+      - Only reference designs marked "Ready for Dev"
+```
+
+Each provider has different capabilities — see the [Design Providers Guide](/docs/guide-design-providers/) for the full capability matrix and per-provider configuration options.
+
 ### What NOT to Standardize
 
 Allow individual flexibility on:

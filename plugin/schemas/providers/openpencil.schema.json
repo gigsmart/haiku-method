@@ -1,0 +1,26 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://ai-dlc.dev/schemas/providers/openpencil.schema.json",
+	"title": "OpenPencil Provider Config",
+	"description": "Provider-specific configuration for OpenPencil design provider",
+	"type": "object",
+	"properties": {
+		"cli_path": {
+			"type": "string",
+			"description": "Path to the OpenPencil CLI binary"
+		},
+		"default_export_target": {
+			"type": "string",
+			"enum": ["react", "vue", "svelte", "html", "flutter", "swiftui", "compose", "react-native"],
+			"default": "react",
+			"description": "Default framework target for code export"
+		},
+		"mcp_transport": {
+			"type": "string",
+			"enum": ["stdio", "http"],
+			"default": "stdio",
+			"description": "MCP server transport protocol"
+		}
+	},
+	"additionalProperties": false
+}

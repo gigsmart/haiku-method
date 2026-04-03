@@ -185,12 +185,13 @@ Visual fidelity backpressure uses AI vision to compare built output against desi
 
 **How it works:**
 
-1. **Gate detection** (`detect-visual-gate.sh`) — A 5-point heuristic determines if the unit produces user-visible output. Any single match activates the gate:
+1. **Gate detection** (`detect-visual-gate.sh`) — A 6-point heuristic determines if the unit produces user-visible output. Any single match activates the gate (output: `VISUAL_GATE=true SCORE=N`):
    - Unit discipline is `frontend` or `design`
    - Unit has a `design_ref:` field in frontmatter
    - Unit has a `wireframe:` field in frontmatter
    - Changed files include UI extensions (`.tsx`, `.jsx`, `.vue`, `.svelte`, `.html`, `.css`, `.scss`)
    - Unit spec body mentions UI terms (page, view, screen, component, layout, dashboard, form)
+   - Changed files include provider-native design files (`.op`, `.pen`, `.excalidraw`, `.fig`) (contributes 2 score points)
 
 2. **Reference resolution** (`resolve-design-ref.sh`) — Resolves the design reference using a 3-level priority hierarchy:
    - **External design** (`design_ref:` field) — fidelity: **high** (pixel-close match expected)

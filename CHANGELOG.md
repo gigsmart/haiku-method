@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.84.0] - 2026-04-01
+
+### Added
+- Design provider support — reference design artifacts from Figma, Canva, Excalidraw, OpenPencil, Pencil, and Penpot; the plugin auto-detects and integrates them into your visual review workflows
+- Post-integrate knowledge refresh — knowledge context automatically updates after integration runs
+- Native design provider link resolution — handles both web URLs and native provider links for seamless artifact reference
+
+### Changed
+- Designer hat now leverages design provider artifacts in visual reviews and wireframe elaboration for context-aware feedback
+
+## [1.83.0] - 2026-04-01
+
+### Added
+- Subscribe to changelog and blog updates via RSS, Atom, and JSON feeds
+- Release-notes skill for accessing release information
+
+### Fixed
+- Feed generation now properly escapes URLs in XML and formats Atom dates correctly
+
 ## [1.82.13] - 2026-04-01
 
 ### Changed

@@ -23,6 +23,15 @@ allowed-tools:
   - "mcp__*__describe*"
   - "mcp__*__explain*"
   - "mcp__*__memory"
+  # MCP design provider tools (scoped to known design providers)
+  - "mcp__*canva*__*"
+  - "mcp__*pencil*__*"
+  - "mcp__*openpencil*__*"
+  - "mcp__*penpot*__*"
+  - "mcp__*excalidraw*__*"
+  - "mcp__*figma*__*"
+  # ToolSearch for provider tool discovery
+  - ToolSearch
 ---
 
 # Elaborate: Wireframe Generation
@@ -44,6 +53,8 @@ intent_slug: my-feature
 worktree_path: /path/to/.haiku/worktrees/my-feature
 intent_title: My Feature Title
 design_provider_type: figma  # or empty
+design_provider_capabilities: {"generate":true,"inspect":false,...}  # JSON or empty
+design_provider_mcp_hint: mcp__*canva*  # MCP tool glob pattern or empty
 design_blueprint_path: .haiku/my-feature/design-blueprint.md  # or empty if no blueprint
 ```
 
@@ -74,6 +85,67 @@ If design mockups exist in the Design Context section:
 - **Distinguish annotations from design elements** — designers annotate mockups with callouts, arrows, measurement labels, and descriptive text that describe UX behavior and implementation detail
 - Extract this guidance into wireframe flow notes
 - Do not render annotations as wireframe elements
+
+---
+
+## Step 2.5: Provider Wireframe Dispatch
+
+Read `design_provider_type`, `design_provider_capabilities`, and `design_provider_mcp_hint` from the brief frontmatter.
+
+**Decision logic:**
+
+1. If `design_provider_type` is empty → set `USE_PROVIDER=false`, skip to Step 3
+2. Parse `design_provider_capabilities` JSON; check if `generate` is `true` → if `false`, set `USE_PROVIDER=false`, skip to Step 3
+3. Use `ToolSearch` with the `design_provider_mcp_hint` pattern to verify MCP tools are actually available in this subagent context
+4. If tools NOT found → log warning ("Provider {type} configured but MCP tools not available, falling back to HTML"), set `USE_PROVIDER=false`, skip to Step 3
+5. If tools found → set `USE_PROVIDER=true` and `PROVIDER_TYPE={design_provider_type}`
+
+**When `USE_PROVIDER=true`, for each frontend/design unit:**
+
+### A. Generate via Provider
+
+Dispatch based on `PROVIDER_TYPE`:
+
+**Canva:**
+1. Use `ToolSearch` to find `mcp__*Canva*generate*` or `mcp__*Canva*create*`
+2. Call the generate-design tool with wireframe requirements derived from the unit description and design context
+3. Save the returned design ID; set `NATIVE_REF=canva://{design_id}`
+4. Export PNG: call the export-design tool with format=png
+5. Save PNG to `.haiku/{intent-slug}/mockups/unit-{NN}-{slug}-wireframe.png`
+
+**OpenPencil:**
+1. Use `ToolSearch` to find `mcp__openpencil__design_skeleton`
+2. Call `design_skeleton` to create the initial wireframe structure
+3. Call `design_content` to populate content from unit spec
+4. Call `design_refine` for iteration
+5. Export: call `export_nodes` with format=png
+6. Save PNG to mockups/, set `NATIVE_REF=openpencil://{document_id}`
+
+**Pencil:**
+1. Use `ToolSearch` to find `mcp__pencil__batch_design`
+2. Call `batch_design` to create wireframe elements
+3. Export: call `export_nodes` with format=png
+4. Save PNG to mockups/, set `NATIVE_REF=pencil://{document_id}`
+
+**For providers with `generate: false` (Figma, Penpot, Excalidraw):**
+These providers don't have generate capability — the decision logic in step 2 already skips them. They fall through to HTML wireframe generation.
+
+### B. Save Provider Artifacts
+
+For each unit where provider generation succeeded:
+
+1. Create designs directory: `mkdir -p .haiku/{intent-slug}/designs/`
+2. Save native artifact reference: for OpenPencil use `.haiku/{intent-slug}/designs/unit-{NN}-{slug}-wireframe.op`, for Pencil use `.haiku/{intent-slug}/designs/unit-{NN}-{slug}-wireframe.pen`; for Canva, the design ID is a cloud reference — store as URI in the unit frontmatter directly (e.g., `design_ref: canva://{design_id}`) rather than a local file
+3. Save PNG export to `.haiku/{intent-slug}/mockups/unit-{NN}-{slug}-wireframe.png`
+4. Track per-unit results: `PROVIDER_SUCCEEDED[unit]=true`, `NATIVE_REFS[unit]={native ref path or URI}`
+
+### C. Error Handling
+
+If provider generation fails for any unit:
+
+1. Log the error: "Provider {type} failed for unit-{NN}-{slug}: {error}. Falling back to HTML."
+2. Set `PROVIDER_SUCCEEDED[unit]=false` — this unit will get HTML-only wireframe treatment in Step 4
+3. Continue with remaining units — do not abort the entire batch
 
 ---
 
@@ -123,6 +195,10 @@ BP_COMPONENT_GUIDELINES="..."       (from blueprint body)
 ---
 
 ## Step 4: Generate Wireframe HTML Per Frontend or Design Unit
+
+**This step runs for ALL units regardless of provider status.** HTML wireframes serve as:
+- **Primary output** for units without a provider (or where the provider failed) — same behavior as before
+- **Supplementary output** for units where the provider succeeded — provides a universal browser-viewable version alongside the native artifact
 
 For each frontend or design unit from the brief, create a self-contained HTML file at:
 `.haiku/{intent-slug}/mockups/unit-{NN}-{slug}-wireframe.html`
@@ -404,15 +480,28 @@ When no design blueprint exists, use the standard gray/white low-fidelity aesthe
 
 ---
 
-## Step 5: Add Wireframe Field to Unit Frontmatter
+## Step 5: Update Unit Frontmatter
 
-For each frontend or design unit that received a wireframe, update its frontmatter by adding or replacing the `wireframe:` field:
+For each frontend or design unit that received a wireframe, update its frontmatter. The fields depend on whether a provider generated the wireframe:
+
+**Provider-generated units** (where `PROVIDER_SUCCEEDED[unit]=true`):
+
+```yaml
+design_ref: .haiku/{intent-slug}/designs/unit-{NN}-{slug}-wireframe.{ext}  # or canva://{id} for Canva
+wireframe: mockups/unit-{NN}-{slug}-wireframe.png
+```
+
+`design_ref` points to the provider-native artifact (or provider URI). `wireframe` points to the PNG export for preview.
+
+**HTML-only units** (no provider, or provider failed):
 
 ```yaml
 wireframe: mockups/unit-{NN}-{slug}-wireframe.html
 ```
 
-Read the unit file, find the YAML frontmatter block, add the `wireframe:` field, and write the file back.
+Same as current behavior — no `design_ref` added.
+
+Read the unit file, find the YAML frontmatter block, add or replace the relevant fields, and write the file back.
 
 ---
 
@@ -421,6 +510,7 @@ Read the unit file, find the YAML frontmatter block, add the `wireframe:` field,
 ```bash
 INTENT_SLUG="{intent_slug from brief}"
 git add .haiku/${INTENT_SLUG}/mockups/
+git add .haiku/${INTENT_SLUG}/designs/
 git add .haiku/${INTENT_SLUG}/unit-*.md
 git commit -m "elaborate: add wireframes for ${INTENT_SLUG} frontend and design units"
 ```
@@ -431,15 +521,59 @@ git commit -m "elaborate: add wireframes for ${INTENT_SLUG} frontend and design 
 
 Write the results file to `.haiku/{intent-slug}/.briefs/elaborate-wireframes-results.md`:
 
+**When a provider was used (at least one unit succeeded via provider):**
+
 ```markdown
 ---
 status: success
 error_message: ""
+provider_used: {canva|openpencil|pencil}
 ---
 
 # Wireframe Generation Results
 
-## Wireframes Generated
+## Provider
+
+Used: {provider_name} (native generation)
+Fallback units: {list of units that fell back to HTML, or "none"}
+
+## Native Artifacts Generated
+
+- `designs/unit-{NN}-{slug}-wireframe.{ext}` — {Unit Title} (provider: {provider_name})
+
+## PNG Exports
+
+- `mockups/unit-{NN}-{slug}-wireframe.png` — {Unit Title}
+
+## HTML Wireframes (supplementary)
+
+- `mockups/unit-{NN}-{slug}-wireframe.html` — {Unit Title} ({N} screens)
+
+## Units Updated
+
+- `unit-{NN}-{slug}.md` — added design_ref + wireframe fields (or wireframe only for HTML fallback units)
+
+## Notes
+
+- {observations, ambiguities, provider-specific notes}
+```
+
+**When no provider was used (HTML-only, same as previous behavior):**
+
+```markdown
+---
+status: success
+error_message: ""
+provider_used: html
+---
+
+# Wireframe Generation Results
+
+## Provider
+
+Used: html (no design provider available)
+
+## HTML Wireframes
 
 - `mockups/unit-{NN}-{slug}-wireframe.html` — {Unit Title} ({N} screens: {state list})
 
@@ -452,12 +586,13 @@ error_message: ""
 - {any observations about the wireframes, ambiguities noted, design interpretation decisions}
 ```
 
-If no frontend or design units were in the brief:
+**If no frontend or design units were in the brief:**
 
 ```markdown
 ---
 status: skipped
 error_message: ""
+provider_used: ""
 ---
 
 # Wireframe Generation Results

@@ -95,11 +95,10 @@
 			"default": "editorial",
 			"description": "Default design archetype for autonomous mode elaboration when no design knowledge exists."
 		},
-		"studio": {
-			"type": "string",
-			"description": "The studio (lifecycle template) for this project. Studios define the ordered sequence of stages.",
-			"default": "ideation",
-			"examples": ["ideation", "software"]
+		"knowledge_refresh": {
+			"type": "boolean",
+			"default": true,
+			"description": "Re-synthesize knowledge artifacts after intent integration completes. Captures patterns established by the intent for use in subsequent intents. Set to false to skip the post-integrate refresh step."
 		},
 		"model_profiles": {
 			"type": "object",
@@ -153,7 +152,7 @@
 				},
 				"design": {
 					"$ref": "#/definitions/designProviderEntry",
-					"description": "Design tool provider (Figma)"
+					"description": "Design tool provider (Canva, Figma, OpenPencil, Pencil, Penpot, Excalidraw)"
 				},
 				"comms": {
 					"$ref": "#/definitions/commsProviderEntry",
@@ -242,7 +241,7 @@
 			"properties": {
 				"type": {
 					"type": "string",
-					"enum": ["figma"],
+					"enum": ["canva", "openpencil", "pencil", "penpot", "excalidraw", "figma", "auto"],
 					"description": "Design provider type"
 				},
 				"config": {
@@ -257,6 +256,26 @@
 			"required": ["type"],
 			"additionalProperties": false,
 			"allOf": [
+				{
+					"if": { "properties": { "type": { "const": "canva" } } },
+					"then": { "properties": { "config": { "$ref": "providers/canva.schema.json" } } }
+				},
+				{
+					"if": { "properties": { "type": { "const": "openpencil" } } },
+					"then": { "properties": { "config": { "$ref": "providers/openpencil.schema.json" } } }
+				},
+				{
+					"if": { "properties": { "type": { "const": "pencil" } } },
+					"then": { "properties": { "config": { "$ref": "providers/pencil.schema.json" } } }
+				},
+				{
+					"if": { "properties": { "type": { "const": "penpot" } } },
+					"then": { "properties": { "config": { "$ref": "providers/penpot.schema.json" } } }
+				},
+				{
+					"if": { "properties": { "type": { "const": "excalidraw" } } },
+					"then": { "properties": { "config": { "$ref": "providers/excalidraw.schema.json" } } }
+				},
 				{
 					"if": { "properties": { "type": { "const": "figma" } } },
 					"then": { "properties": { "config": { "$ref": "providers/figma.schema.json" } } }

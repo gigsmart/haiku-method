@@ -1,0 +1,24 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://ai-dlc.dev/schemas/providers/pencil.schema.json",
+	"title": "Pencil Provider Config",
+	"description": "Provider-specific configuration for Pencil design provider",
+	"type": "object",
+	"properties": {
+		"cli_path": {
+			"type": "string",
+			"description": "Path to the Pencil CLI binary"
+		},
+		"mcp_port": {
+			"type": "integer",
+			"default": 3100,
+			"description": "Port number for the Pencil MCP server"
+		},
+		"model": {
+			"type": "string",
+			"default": "claude-opus-4-6",
+			"description": "AI model used for design generation"
+		}
+	},
+	"additionalProperties": false
+}

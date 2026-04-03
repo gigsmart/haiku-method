@@ -204,6 +204,10 @@ Each stage restricts which hats are available during its execution. Hats are def
 | Review | Critic, Fact Checker |
 | Deliver | Publisher |
 
+### Design Providers
+
+The design workflow integrates with H·AI·K·U's [design providers](/docs/guide-design-providers/) — Canva, Figma, OpenPencil, Pencil, Penpot, and Excalidraw. When a design provider is configured, the designer stage automatically pulls existing designs and component specs, and stores design references (e.g., `figma://file-key#node=1:42`) in unit frontmatter for use by subsequent implementation stages.
+
 ## Per-Unit Stage Overrides
 
 Different units within a single intent can override behavior at the unit level. This is useful when an intent spans multiple concerns.

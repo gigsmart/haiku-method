@@ -30,6 +30,8 @@ export interface QuestionSession {
   title: string;
   questions: QuestionDef[];
   context: string;
+  imagePaths: string[];
+  imageBaseDirs?: string[];
   status: "pending" | "answered";
   answers: QuestionAnswer[];
   html: string;
@@ -108,7 +110,7 @@ export function createSession(
 }
 
 export function createQuestionSession(
-  params: Omit<QuestionSession, "session_type" | "session_id" | "status" | "answers">
+  params: Omit<QuestionSession, "session_type" | "session_id" | "status" | "answers"> & { imagePaths?: string[] }
 ): QuestionSession {
   evictSessions();
   const session_id = crypto.randomUUID();
@@ -116,6 +118,7 @@ export function createQuestionSession(
     ...params,
     session_type: "question",
     session_id,
+    imagePaths: params.imagePaths ?? [],
     status: "pending",
     answers: [],
   };

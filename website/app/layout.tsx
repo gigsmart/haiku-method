@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Script from "next/script"
+import { SITE_DESCRIPTION, SITE_URL } from "@/lib/feed"
 import {
 	Footer,
 	Header,
@@ -9,10 +10,7 @@ import {
 } from "./components"
 import "./globals.css"
 
-const SITE_URL = "https://ai-dlc.dev"
 const SITE_TITLE = "AI-DLC — A H·AI·K·U Profile for Software Development"
-const SITE_DESCRIPTION =
-	"The software development profile of the H·AI·K·U universal lifecycle framework — structured human-AI collaboration from intent to deployment"
 
 export const metadata: Metadata = {
 	title: {
@@ -46,9 +44,21 @@ export const metadata: Metadata = {
 	alternates: {
 		canonical: SITE_URL,
 		types: {
-			"application/rss+xml": "/feed.xml",
-			"application/atom+xml": "/atom.xml",
-			"application/feed+json": "/feed.json",
+			"application/rss+xml": [
+				{ url: "/feed.xml", title: "AI-DLC — All" },
+				{ url: "/blog/feed.xml", title: "AI-DLC — Blog" },
+				{ url: "/changelog/feed.xml", title: "AI-DLC — Changelog" },
+			],
+			"application/atom+xml": [
+				{ url: "/atom.xml", title: "AI-DLC — All" },
+				{ url: "/blog/atom.xml", title: "AI-DLC — Blog" },
+				{ url: "/changelog/atom.xml", title: "AI-DLC — Changelog" },
+			],
+			"application/feed+json": [
+				{ url: "/feed.json", title: "AI-DLC — All" },
+				{ url: "/blog/feed.json", title: "AI-DLC — Blog" },
+				{ url: "/changelog/feed.json", title: "AI-DLC — Changelog" },
+			],
 		},
 	},
 	robots: {

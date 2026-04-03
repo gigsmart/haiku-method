@@ -10290,7 +10290,7 @@ var require_dist = __commonJS({
 // src/server.ts
 import { spawn } from "node:child_process";
 import { readdir as readdir2 } from "node:fs/promises";
-import { join as join3, resolve as resolve2 } from "node:path";
+import { dirname, join as join3, resolve as resolve2 } from "node:path";
 
 // ../../node_modules/.bun/marked@15.0.12/node_modules/marked/lib/marked.esm.js
 function _getDefaults() {
@@ -23817,6 +23817,7 @@ function createQuestionSession(params) {
     ...params,
     session_type: "question",
     session_id,
+    imagePaths: params.imagePaths ?? [],
     status: "pending",
     answers: []
   };
@@ -23985,6 +23986,42 @@ async function handleWireframeGet(sessionId, filePath) {
     return new Response("Not found", { status: 404 });
   }
 }
+async function handleQuestionImageGet(sessionId, index) {
+  const session = getSession(sessionId);
+  if (!session || session.session_type !== "question") {
+    return new Response("Session not found", { status: 404 });
+  }
+  const imagePaths = session.imagePaths ?? [];
+  if (index < 0 || index >= imagePaths.length) {
+    return new Response("Image index out of range", { status: 404 });
+  }
+  const imagePath = imagePaths[index];
+  if (!imagePath.startsWith("/")) {
+    return new Response("Forbidden", { status: 403 });
+  }
+  const allowedBaseDir = session.imageBaseDirs?.[index];
+  if (allowedBaseDir) {
+    try {
+      const realResolved = await realpath(imagePath).catch(() => null);
+      const realBase = await realpath(allowedBaseDir).catch(() => resolve(allowedBaseDir));
+      if (!realResolved || !realResolved.startsWith(realBase + "/") && realResolved !== realBase) {
+        return new Response("Forbidden", { status: 403 });
+      }
+    } catch {
+      return new Response("Forbidden", { status: 403 });
+    }
+  }
+  try {
+    const data = await readFile2(imagePath);
+    const ext = extname(imagePath).toLowerCase();
+    const contentType = MIME_TYPES[ext] ?? "application/octet-stream";
+    return new Response(data, {
+      headers: { "Content-Type": contentType }
+    });
+  } catch {
+    return new Response("Not found", { status: 404 });
+  }
+}
 function handleQuestionGet(sessionId) {
   const session = getSession(sessionId);
   if (!session || session.session_type !== "question") {
@@ -24127,6 +24164,15 @@ function handleRequest(req) {
   const directionSelectMatch = path.match(/^\/direction\/([^/]+)\/select$/);
   if (directionSelectMatch && req.method === "POST") {
     return handleDirectionSelectPost(directionSelectMatch[1], req);
+  }
+  const questionImageMatch = path.match(
+    /^\/question-image\/([^/]+)\/(\d+)$/
+  );
+  if (questionImageMatch && req.method === "GET") {
+    return handleQuestionImageGet(
+      questionImageMatch[1],
+      Number.parseInt(questionImageMatch[2], 10)
+    );
   }
   const questionMatch = path.match(/^\/question\/([^/]+)$/);
   if (questionMatch && req.method === "GET") {
@@ -24955,12 +25001,41 @@ function renderReviewPage(data) {
 
 // src/templates/question-form.ts
 function renderQuestionPage(data) {
-  const { title, questions, context, sessionId } = data;
+  const { title, questions, context, sessionId, imageUrls } = data;
   let bodyContent = "";
   if (context) {
     bodyContent += card(
       sectionHeading("Context", 2) + renderMarkdownBlock("question-context", context)
     );
+  }
+  if (imageUrls && imageUrls.length > 0) {
+    let imageContent = sectionHeading("Visual Comparison", 2);
+    if (imageUrls.length >= 2) {
+      for (let i = 0; i < imageUrls.length; i += 2) {
+        imageContent += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">`;
+        imageContent += `<div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Reference</p>
+          <img src="${escapeAttr(imageUrls[i])}" alt="Reference image ${Math.floor(i / 2) + 1}"
+               class="w-full rounded-lg border border-gray-200 dark:border-gray-700">
+        </div>`;
+        if (i + 1 < imageUrls.length) {
+          imageContent += `<div>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Built Output</p>
+            <img src="${escapeAttr(imageUrls[i + 1])}" alt="Built output image ${Math.floor(i / 2) + 1}"
+                 class="w-full rounded-lg border border-gray-200 dark:border-gray-700">
+          </div>`;
+        }
+        imageContent += "</div>";
+      }
+    } else {
+      for (let i = 0; i < imageUrls.length; i++) {
+        imageContent += `<div class="mb-4">
+          <img src="${escapeAttr(imageUrls[i])}" alt="Image ${i + 1}"
+               class="w-full rounded-lg border border-gray-200 dark:border-gray-700">
+        </div>`;
+      }
+    }
+    bodyContent += card(imageContent);
   }
   bodyContent += `<form id="question-form" novalidate>`;
   for (let i = 0; i < questions.length; i++) {
@@ -25300,7 +25375,10 @@ var AskVisualQuestionInput = external_exports.object({
     })
   ).describe("Array of questions to present"),
   context: external_exports.string().optional().describe("Optional markdown context to display above questions"),
-  title: external_exports.string().optional().describe("Optional page title (default: 'Question')")
+  title: external_exports.string().optional().describe("Optional page title (default: 'Question')"),
+  image_paths: external_exports.array(external_exports.string()).optional().describe(
+    "Optional array of local image file paths to display alongside the questions. Images are displayed in pairs (ref on left, built on right) for visual comparison."
+  )
 });
 var PickDesignDirectionInput = external_exports.object({
   intent_slug: external_exports.string().describe("The intent slug this direction applies to"),
@@ -25415,7 +25493,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             type: "string",
             description: "Optional markdown context above questions"
           },
-          title: { type: "string", description: "Optional page title" }
+          title: { type: "string", description: "Optional page title" },
+          image_paths: {
+            type: "array",
+            items: { type: "string" },
+            description: "Optional local image file paths to display alongside questions"
+          }
         },
         required: ["questions"]
       }
@@ -25710,17 +25793,25 @@ Target: ${input.target}` : ""}`
     const title = input.title ?? "Question";
     const context = input.context ?? "";
     const questions = input.questions;
+    const imagePaths = input.image_paths ?? [];
+    const imageBaseDirs = imagePaths.map((p) => dirname(resolve2(p)));
     const session = createQuestionSession({
       title,
       questions,
       context,
+      imagePaths,
+      imageBaseDirs,
       html: ""
     });
+    const imageUrls = imagePaths.map(
+      (_, i) => `/question-image/${session.session_id}/${i}`
+    );
     session.html = renderQuestionPage({
       title,
       questions,
       context,
-      sessionId: session.session_id
+      sessionId: session.session_id,
+      imageUrls
     });
     const port = await startHttpServer();
     const questionUrl = `http://127.0.0.1:${port}/question/${session.session_id}`;
@@ -25736,7 +25827,8 @@ Target: ${input.target}` : ""}`
           type: "text",
           text: `Question page opened: ${questionUrl}
 Session ID: ${session.session_id}
-Questions: ${questions.length}`
+Questions: ${questions.length}${imagePaths.length > 0 ? `
+Images: ${imagePaths.length}` : ""}`
         }
       ]
     };

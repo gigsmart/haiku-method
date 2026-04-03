@@ -1,0 +1,24 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://ai-dlc.dev/schemas/providers/canva.schema.json",
+	"title": "Canva Provider Config",
+	"description": "Provider-specific configuration for Canva design provider",
+	"type": "object",
+	"properties": {
+		"brand_kit_id": {
+			"type": "string",
+			"description": "Canva Brand Kit ID for consistent branding"
+		},
+		"default_folder": {
+			"type": "string",
+			"description": "Default Canva folder path for organizing designs"
+		},
+		"export_format": {
+			"type": "string",
+			"enum": ["png", "jpg", "pdf"],
+			"default": "png",
+			"description": "Default export format for design assets"
+		}
+	},
+	"additionalProperties": false
+}

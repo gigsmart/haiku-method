@@ -1,0 +1,24 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://ai-dlc.dev/schemas/providers/penpot.schema.json",
+	"title": "Penpot Provider Config",
+	"description": "Provider-specific configuration for Penpot design provider",
+	"type": "object",
+	"properties": {
+		"instance_url": {
+			"type": "string",
+			"format": "uri",
+			"description": "URL of the Penpot instance"
+		},
+		"project_id": {
+			"type": "string",
+			"description": "Penpot project ID"
+		},
+		"mcp_port": {
+			"type": "integer",
+			"default": 4401,
+			"description": "Port number for the Penpot MCP server"
+		}
+	},
+	"additionalProperties": false
+}
