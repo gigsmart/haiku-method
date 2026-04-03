@@ -238,15 +238,15 @@ After reading handoff.md on resume, rename it to `handoff-{date}.md` to archive 
 
 ```
 User: /haiku:resume
-AI: Found 1 resumable intent: han-team-platform
+AI: Found 1 resumable intent: user-auth
 
 ## H·AI·K·U Intent Resumed
 
-**Intent:** Han Team Platform
-**Slug:** han-team-platform
+**Intent:** User Auth
+**Slug:** user-auth
 **Workflow:** default
 **Starting Hat:** builder
-**Worktree:** .haiku/worktrees/han-team-platform/
+**Worktree:** .haiku/worktrees/user-auth/
 
 ### Unit Status
 | Unit | Status | Blocked By |
@@ -265,8 +265,8 @@ AI: Found 1 resumable intent: han-team-platform
 ```
 User: /haiku:resume
 AI: Found multiple resumable intents:
-- han-team-platform (software studio, 1/3 completed)
+- user-auth (software studio, 1/3 completed)
 - api-refactor (software studio, 0/5 completed)
 
-Please specify: `/haiku:resume han-team-platform` or `/haiku:resume api-refactor`
+Please specify: `/haiku:resume user-auth` or `/haiku:resume api-refactor`
 ```

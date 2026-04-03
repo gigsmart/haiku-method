@@ -18,11 +18,6 @@ The primary hub for H·AI·K·U development:
 - Contribute code and documentation
 - Review and discuss pull requests
 
-**Han Plugin Ecosystem**
-- [github.com/thebushidocollective/han](https://github.com/thebushidocollective/han)
-- The broader plugin marketplace
-- Validation hooks, framework plugins, discipline agents, MCP bridges
-
 ### Discussions
 
 Use GitHub Discussions for:
@@ -69,23 +64,10 @@ Share your custom configurations:
 ### The H·AI·K·U Paper
 
 The foundational methodology document:
-- [H·AI·K·U Paper](https://han.guru/paper)
+- [H·AI·K·U Paper](https://haikumethod.ai/paper)
 - Full background and rationale
 - Research references
 - Adoption guidance
-
-### Han Ecosystem
-
-H·AI·K·U is part of Han, a plugin marketplace for Claude Code:
-
-- **Website:** [han.guru](https://han.guru)
-- **Core:** Foundation plugins and quality principles
-- **Validation:** Language and tool validation hooks
-- **Frameworks:** Framework-specific plugins (React, Next.js, Rails, etc.)
-- **Languages:** Language-specific plugins (TypeScript, Go, Rust, etc.)
-- **Disciplines:** Specialized agent plugins (frontend, backend, security, etc.)
-- **Bridges:** MCP server integrations
-- **Bushido:** Quality principles and engineering virtues
 
 ### Related Projects
 

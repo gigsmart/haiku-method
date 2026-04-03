@@ -12,28 +12,6 @@ H·AI·K·U is distributed as a Claude Code plugin. This guide covers installati
 
 H·AI·K·U requires [Claude Code](https://claude.ai/code), Anthropic's AI-powered development environment. Ensure you have Claude Code installed and configured.
 
-### Han CLI (Recommended)
-
-H·AI·K·U uses [Han CLI](https://han.guru) for state management (`han keep` commands). While the plugin works without it, you'll get the best experience with Han installed.
-
-**Install Han via curl (recommended):**
-
-```bash
-curl -fsSL https://han.guru/install.sh | bash
-```
-
-**Or via Homebrew:**
-
-```bash
-brew install thebushidocollective/tap/han
-```
-
-**Verify installation:**
-
-```bash
-han --version
-```
-
 ## Installation Methods
 
 ### Method 1: Via Claude Code (Recommended)
@@ -45,15 +23,7 @@ Install directly from within a Claude Code session:
 /plugin install haiku@thebushidocollective-ai-dlc --scope project
 ```
 
-### Method 2: Via Han
-
-If you have Han installed, use the plugin manager (must be npx, project-scoped):
-
-```bash
-npx han plugin install thebushidocollective/ai-dlc --scope project
-```
-
-### Method 3: Manual Configuration
+### Method 2: Manual Configuration
 
 Add the plugin to your Claude Code settings file manually.
 
@@ -89,29 +59,27 @@ If commands aren't recognized, restart your Claude Code session.
 
 ## Recommended Companion Plugins
 
-H·AI·K·U works best with backpressure plugins that provide quality gates:
+H·AI·K·U works best with backpressure plugins that provide quality gates. Install companion plugins via Claude Code:
 
 ### TypeScript Projects
 
-```bash
-npx han plugin install jutsu-typescript --scope project
-npx han plugin install jutsu-biome --scope project
+```
+/plugin install jutsu-typescript --scope project
+/plugin install jutsu-biome --scope project
 ```
 
 ### Python Projects
 
-```bash
-npx han plugin install jutsu-python --scope project
-npx han plugin install jutsu-ruff --scope project
+```
+/plugin install jutsu-python --scope project
+/plugin install jutsu-ruff --scope project
 ```
 
 ### Go Projects
 
-```bash
-npx han plugin install jutsu-go --scope project
 ```
-
-> **Note:** Han plugins follow the same installation pattern. To install via Claude Code directly, use `/plugin marketplace add` and `/plugin install` with the appropriate marketplace identifier for each plugin.
+/plugin install jutsu-go --scope project
+```
 
 These plugins provide:
 - **Type checking** that blocks on errors
@@ -178,15 +146,6 @@ However, committing is recommended - it provides:
 1. Restart Claude Code session
 2. Verify plugin is in settings.json
 3. Check for typos in plugin path
-
-### Han Commands Fail
-
-**Symptom:** `han keep` commands return errors
-
-**Solutions:**
-1. Verify Han is installed: `han --version`
-2. Ensure Han is in PATH
-3. Reinstall: `curl -fsSL https://han.guru/install.sh | bash`
 
 ### Plugin Conflicts
 

@@ -8,17 +8,9 @@ Get H·AI·K·U running in your project and deliver your first feature. H·AI·K
 
 ## Installation
 
-**Option 1: Via Claude Code (recommended)**
-
 ```
 /plugin marketplace add thebushidocollective/ai-dlc
 /plugin install haiku@thebushidocollective-ai-dlc --scope project
-```
-
-**Option 2: Via Han**
-
-```bash
-npx han plugin install thebushidocollective/ai-dlc --scope project
 ```
 
 ## The Two Commands You Need
@@ -133,4 +125,4 @@ If you used AI-DLC before the H·AI·K·U rebrand, see the [Migration Guide](/do
 - [Studios](/docs/studios/) — Learn about lifecycle templates
 - [Stages](/docs/stages/) — Understand the stage-based model
 - [CLI Reference](/docs/cli-reference/) — Complete command reference
-- [Installation](/docs/installation/) — Detailed setup including Han CLI
+- [Installation](/docs/installation/) — Detailed setup

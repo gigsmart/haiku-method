@@ -68,7 +68,7 @@ export default function PrintPaperPage() {
 
 			{/* Print footer */}
 			<footer className="mt-12 border-t-2 border-stone-900 pt-4 text-center text-sm text-stone-600 dark:border-stone-100 dark:text-stone-400">
-				<p>H·AI·K·U - https://han.guru</p>
+				<p>H·AI·K·U - https://haikumethod.ai</p>
 				<p>The Bushido Collective</p>
 			</footer>
 		</div>

@@ -391,12 +391,12 @@ Persisted across sessions, branches, and team members:
 | `intent.md` | What we're building, overall criteria |
 | `unit-*.md` | Individual units with their criteria |
 
-### Ephemeral State (`han keep`)
+### Ephemeral State (`.haiku/{slug}/state/`)
 
 Session-scoped, cleared on `/haiku:reset`:
 
-| Key | Purpose |
-|-----|---------|
+| File | Purpose |
+|------|---------|
 | `iteration.json` | Current hat, iteration count, status |
 | `scratchpad.md` | Learnings and progress notes |
 | `blockers.md` | Documented blockers |
@@ -406,7 +406,7 @@ Session-scoped, cleared on `/haiku:reset`:
 If you `/clear` without the stop hook:
 
 1. Committed artifacts (`.haiku/`) are safe
-2. Ephemeral state persists in `han keep`
+2. Ephemeral state persists in `.haiku/{slug}/state/` files
 3. Run `/haiku:execute` to continue
 
 ## Iteration Through Stages

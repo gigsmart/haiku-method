@@ -8,15 +8,9 @@ Get H·AI·K·U running in your project and complete your first feature.
 
 ## Installation
 
-**Option 1: Via Claude Code (recommended)**
 ```
 /plugin marketplace add thebushidocollective/ai-dlc
 /plugin install haiku@thebushidocollective-ai-dlc --scope project
-```
-
-**Option 2: Via Han**
-```bash
-npx han plugin install thebushidocollective/ai-dlc --scope project
 ```
 
 ## The Two Commands You Need
@@ -112,6 +106,6 @@ Once your intent is complete, manage ongoing operational tasks with `/haiku:oper
 - [Inception & Planning](/docs/elaboration/) - What to expect during `/haiku:new`
 - [Core Concepts](/docs/concepts/) - Understand intents, units, and stages
 - [Studios & Stages](/docs/studios/) - Learn about studios and their stage pipelines
-- [Installation](/docs/installation/) - Detailed setup including Han CLI
+- [Installation](/docs/installation/) - Detailed setup
 - [Operations Guide](/docs/operations-guide/) - Manage ongoing operational tasks
 - [Migration](/docs/migration/) - Migrating from AI-DLC to H·AI·K·U
