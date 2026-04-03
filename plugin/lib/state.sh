@@ -100,15 +100,17 @@ _state_yaml_get_simple() {
 }
 
 # Find the first active intent directory
-# Scans .haiku/*/intent.md for status: active. Works from any working directory.
+# Checks .haiku/intents/*/intent.md (new structure) first, then falls back
+# to .haiku/*/intent.md (legacy structure). Works from any working directory.
 # Returns the full path to the intent directory, or empty string if none found.
 # Usage: hku_find_active_intent
 hku_find_active_intent() {
   local repo_root
   repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || return 0
 
+  # New structure: .haiku/intents/*/intent.md
   local intent_file
-  for intent_file in "$repo_root"/.haiku/*/intent.md; do
+  for intent_file in "$repo_root"/.haiku/intents/*/intent.md; do
     [ -f "$intent_file" ] || continue
     local intent_status
     intent_status=$(_state_yaml_get_simple "status" "pending" < "$intent_file")
@@ -118,5 +120,32 @@ hku_find_active_intent() {
     fi
   done
 
+  # Legacy structure: .haiku/*/intent.md
+  for intent_file in "$repo_root"/.haiku/*/intent.md; do
+    [ -f "$intent_file" ] || continue
+    # Skip directories that are part of the new structure
+    case "$intent_file" in
+      */.haiku/intents/*) continue ;;
+    esac
+    local intent_status
+    intent_status=$(_state_yaml_get_simple "status" "pending" < "$intent_file")
+    if [ "$intent_status" = "active" ]; then
+      dirname "$intent_file"
+      return 0
+    fi
+  done
+
   echo ""
+}
+
+# Get intent mode (continuous | discrete)
+# Usage: hku_get_intent_mode <intent_file>
+# Returns: "continuous" or "discrete" (defaults to "continuous")
+hku_get_intent_mode() {
+  local intent_file="$1"
+  if [ ! -f "$intent_file" ]; then
+    echo "continuous"
+    return 0
+  fi
+  _state_yaml_get_simple "mode" "continuous" < "$intent_file"
 }

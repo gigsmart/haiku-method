@@ -24,8 +24,8 @@ argument-hint: "<feature description>"
 ```
 User: /haiku:autopilot Add a dark mode toggle to the settings page
 AI: Starting autonomous lifecycle...
-  Phase 1: Elaboration (/haiku:elaborate in autonomous mode)
-  Phase 2: Execution (/haiku:execute for each unit)
+  Phase 1: Intent creation (/haiku:new in autonomous mode)
+  Phase 2: Stage loop (/haiku:run with autopilot gate resolution)
   Phase 3: Delivery (PR creation)
 AI: Done! PR #42 created. [summary]
 ```
@@ -75,24 +75,32 @@ if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
 fi
 ```
 
-### Step 2: Elaboration Phase
+### Step 2: Intent Creation Phase
 
-Invoke `/haiku:elaborate` with the provided feature description. Because this is `/haiku:autopilot`, elaborate will run in **autonomous mode** (defined in elaborate's "Autonomous Mode" section). This means:
+Invoke `/haiku:new` with the provided feature description in **autonomous mode**. This means:
 
-- Clarification questions are **skipped** — requirements are inferred from the feature description and codebase discovery
-- Domain model, workflow, success criteria, git strategy, and unit specs are **auto-approved** — no user confirmation prompts
-- Per-unit review is **auto-approved** — units are written and committed without waiting for user feedback
-- Elaborate only pauses if it encounters **genuine ambiguity** that could lead to building the wrong thing
+- Mode is set to `continuous` automatically (no mode question)
+- No confirmation prompts — proceeds immediately
+- The feature description is passed as the argument
 
-Pass the feature description as the argument to `/haiku:elaborate`. The elaboration phase will produce intent definition, success criteria, domain model, and unit decomposition in `.haiku/{intent-slug}/`.
+`/haiku:new` creates the intent workspace at `.haiku/intents/{slug}/` with studio detection, stage configuration, and git branch setup.
 
-**After elaboration completes, apply guardrails:**
+### Step 3: Stage Loop Phase
 
-1. Read the generated unit specs from `.haiku/{intent-slug}/unit-*.md`
-2. Count the number of units
-3. **If more than 5 units:** STOP and present the unit list to the user:
+Invoke `/haiku:run` with autopilot gate resolution (`autopilot=true`). The stage loop handles both planning (old elaboration) and building (old execution) within each stage.
+
+**Gate resolution in autopilot mode:**
+- `auto` gates: advance immediately
+- `ask` gates: overridden to `auto` (no user prompts)
+- `external` (single): blocks, surfaces to user — this is the only gate that pauses autopilot
+- Array gates (e.g., `[external, ask]`): select most permissive non-external option, override ask→auto
+
+**After the plan phase completes within each stage, apply guardrails:**
+
+1. Count the number of units generated
+2. **If more than 5 units:** STOP and present the unit list to the user:
    ```
-   SCOPE CHECK: Elaboration produced {N} units, which exceeds the autopilot threshold of 5.
+   SCOPE CHECK: Planning produced {N} units, which exceeds the autopilot threshold of 5.
 
    Units:
    - unit-01-xxx: ...
@@ -102,25 +110,19 @@ Pass the feature description as the argument to `/haiku:elaborate`. The elaborat
    This may be too complex for fully autonomous execution.
    Options:
    1. Continue with autopilot (I understand the scope)
-   2. Drop to manual mode (I'll run /haiku:execute myself)
-   3. Re-elaborate with narrower scope
+   2. Drop to manual mode (I'll run /haiku:run myself)
+   3. Re-plan with narrower scope
    ```
-4. **If 5 or fewer units:** Continue automatically.
+3. **If 5 or fewer units:** Continue automatically.
 
-### Step 3: Execution Phase
+The build phase proceeds through each unit in DAG order. If any unit hits a blocker:
+```
+AUTOPILOT PAUSED: Unit {unit-name} is blocked.
 
-For each unit in dependency order, invoke `/haiku:execute`:
+Blocker: {description}
 
-- `/haiku:execute` handles the full autonomous build/review cycle per unit
-- Units are executed in DAG order respecting dependencies
-- If any unit hits a blocker that requires human intervention, STOP the autopilot loop and report:
-  ```
-  AUTOPILOT PAUSED: Unit {unit-name} is blocked.
-
-  Blocker: {description}
-
-  Resolve the blocker and run /haiku:autopilot to resume, or /haiku:execute to continue manually.
-  ```
+Resolve the blocker and run /haiku:autopilot to resume, or /haiku:run to continue manually.
+```
 
 ### Step 4: Delivery Phase
 
@@ -175,7 +177,7 @@ Phase summary:
 | No feature description provided | Error message, do not proceed |
 | Cowork mode detected | Error message, do not proceed |
 | Active intent already exists | Warn and ask user to confirm |
-| Elaboration fails | Stop, report error, suggest `/haiku:elaborate` manually |
+| Intent creation fails | Stop, report error, suggest `/haiku:new` manually |
 | More than 5 units generated | Pause, show scope, ask user to confirm |
 | Unit blocked during execution | Pause, report blocker, suggest resolution |
 | All units complete but tests fail | Pause before delivery, report failures |
@@ -185,7 +187,9 @@ Phase summary:
 
 ## Relationship to Other Skills
 
-- **`/haiku:elaborate`** - Used internally for Phase 2 (elaboration). Use standalone for exploratory or complex elaboration.
-- **`/haiku:execute`** - Used internally for Phase 3 (execution). Use standalone for manual unit-by-unit execution.
+- **`/haiku:new`** - Used internally for Phase 2 (intent creation). Use standalone for interactive intent setup.
+- **`/haiku:run`** - Used internally for Phase 3 (stage loop). Use standalone for manual stage-by-stage execution.
+- **`/haiku:elaborate`** - Deprecated alias. Delegates to `/haiku:run` plan phase for stage-based intents.
+- **`/haiku:execute`** - Deprecated alias. Delegates to `/haiku:run` build phase for stage-based intents.
 - **`/haiku:reflect`** - Can be run after autopilot completes to analyze the cycle.
-- **`/haiku:resume`** - If autopilot is interrupted mid-execution, `/haiku:resume` can restore state before re-running `/haiku:execute` or `/haiku:autopilot`.
+- **`/haiku:resume`** - If autopilot is interrupted mid-execution, `/haiku:resume` can restore state before re-running `/haiku:run` or `/haiku:autopilot`.

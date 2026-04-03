@@ -1,5 +1,5 @@
 ---
-description: Start H·AI·K·U mob elaboration to collaboratively define intent, success criteria, and decompose into units. Use when starting a new feature, project, or complex task.
+description: Start H·AI·K·U mob elaboration to collaboratively define intent, success criteria, and decompose into units. Prefer `/haiku:new` + `/haiku:run` for stage-based workflows.
 allowed-tools:
   - Read
   - Write
@@ -38,6 +38,32 @@ allowed-tools:
 ---
 
 # H·AI·K·U Mob Elaboration
+
+## Deprecation Notice
+
+> **This command is a backward-compatibility alias.** For new intents, use `/haiku:new` to create an intent, then `/haiku:run` to advance through stages. This command continues to work for legacy intents without studio/stage configuration.
+
+**Stage-based intent detection:** Before running legacy elaboration, check if the active intent has a `studio:` field in its frontmatter:
+
+```bash
+source "$CLAUDE_PLUGIN_ROOT/lib/state.sh"
+source "$CLAUDE_PLUGIN_ROOT/lib/orchestrator.sh"
+local intent_dir=$(hku_find_active_intent)
+if [ -n "$intent_dir" ]; then
+  local studio=$(hku_frontmatter_get "studio" "$intent_dir/intent.md")
+  if [ -n "$studio" ]; then
+    # Stage-based intent — delegate to /haiku:run plan phase
+    echo "This intent uses the stage-based workflow (studio: $studio)."
+    echo "Delegating to /haiku:run for the plan phase..."
+    # Invoke /haiku:run via Skill tool
+    exit 0
+  fi
+fi
+```
+
+If the intent has a `studio:` field, print a deprecation notice and invoke `/haiku:run` via the `Skill` tool instead. If the intent has no `studio:` field (or no intent exists yet), continue with the legacy elaboration flow below.
+
+---
 
 ## Prerequisite: Project Setup
 

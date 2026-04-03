@@ -1,7 +1,31 @@
 ---
-description: Run the H·AI·K·U execution loop - autonomous build/review cycles until completion
+description: Run the H·AI·K·U execution loop - autonomous build/review cycles until completion. Prefer `/haiku:run` for stage-based workflows.
 user-invocable: true
 argument-hint: "[intent-slug] [unit-name]"
+---
+
+## Deprecation Notice
+
+> **This command is a backward-compatibility alias.** For stage-based intents, use `/haiku:run` instead. This command continues to work for legacy intents without studio/stage configuration.
+
+**Stage-based intent detection:** Before running legacy execution, check if the active intent has a `studio:` field:
+
+```bash
+source "$CLAUDE_PLUGIN_ROOT/lib/state.sh"
+local intent_dir=$(hku_find_active_intent)
+if [ -n "$intent_dir" ]; then
+  local studio=$(hku_frontmatter_get "studio" "$intent_dir/intent.md")
+  if [ -n "$studio" ]; then
+    echo "This intent uses the stage-based workflow (studio: $studio)."
+    echo "Delegating to /haiku:run for the build phase..."
+    # Invoke /haiku:run via Skill tool
+    exit 0
+  fi
+fi
+```
+
+If the intent has a `studio:` field, print a deprecation notice and invoke `/haiku:run` via the `Skill` tool. Otherwise, continue with the legacy execution flow below.
+
 ---
 
 ## Name
