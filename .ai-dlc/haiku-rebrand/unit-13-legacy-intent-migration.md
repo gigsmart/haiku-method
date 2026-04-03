@@ -1,6 +1,6 @@
 ---
-status: in_progress
-last_updated: "2026-04-03T02:21:34Z"
+status: completed
+last_updated: "2026-04-03T02:50:15Z"
 depends_on: [unit-01-lib-hooks-rename, unit-03-schemas-types-settings, unit-04-studio-infrastructure, unit-06-stage-orchestrator]
 branch: ai-dlc/haiku-rebrand/13-legacy-intent-migration
 discipline: backend
