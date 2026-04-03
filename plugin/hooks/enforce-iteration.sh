@@ -175,10 +175,10 @@ else
   echo "No units are ready to work on. All remaining units are blocked."
   echo ""
   echo "**User action required:**"
-  echo "1. Review blockers: read \`.haiku/${INTENT_SLUG}/state/blockers.md\`"
+  echo "1. Review blockers: read \`.haiku/intents/${INTENT_SLUG}/state/blockers.md\`"
   echo "2. Unblock units or resolve dependencies"
   echo "3. Run \`/haiku:execute\` to resume"
   echo ""
 fi
 
-echo "Progress preserved in \`.haiku/${INTENT_SLUG}/state/\`."
+echo "Progress preserved in \`.haiku/intents/${INTENT_SLUG}/state/\`."

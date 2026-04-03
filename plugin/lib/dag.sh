@@ -710,7 +710,7 @@ discover_branch_intents() {
   _intent_completed_on_main() {
     local slug="$1"
     local main_status
-    main_status=$(git show "main:.haiku/$slug/intent.md" 2>/dev/null | _yaml_get_simple "status" "") || return 1
+    main_status=$(git show "main:.haiku/intents/$slug/intent.md" 2>/dev/null | _yaml_get_simple "status" "") || return 1
     [ "$main_status" = "completed" ]
   }
 
@@ -726,7 +726,7 @@ discover_branch_intents() {
         slug="${slug%/main}"
         # Read intent.md from the branch
         local intent_content
-        intent_content=$(git show "$branch:.haiku/$slug/intent.md" 2>/dev/null) || continue
+        intent_content=$(git show "$branch:.haiku/intents/$slug/intent.md" 2>/dev/null) || continue
         local intent_status
         intent_status=$(echo "$intent_content" | _yaml_get_simple "status" "active")
         [ "$intent_status" != "active" ] && continue
@@ -757,7 +757,7 @@ discover_branch_intents() {
     [[ "$seen_slugs" == *" $slug"* ]] && continue
     # Read intent.md from the branch
     local intent_content
-    intent_content=$(git show "$branch:.haiku/$slug/intent.md" 2>/dev/null) || continue
+    intent_content=$(git show "$branch:.haiku/intents/$slug/intent.md" 2>/dev/null) || continue
     local intent_status
     intent_status=$(echo "$intent_content" | _yaml_get_simple "status" "active")
     [ "$intent_status" != "active" ] && continue
@@ -785,7 +785,7 @@ discover_branch_intents() {
       [[ "$seen_slugs" == *" $slug"* ]] && continue
       # Read intent.md from the remote branch
       local intent_content
-      intent_content=$(git show "$branch:.haiku/$slug/intent.md" 2>/dev/null) || continue
+      intent_content=$(git show "$branch:.haiku/intents/$slug/intent.md" 2>/dev/null) || continue
       local intent_status
       intent_status=$(echo "$intent_content" | _yaml_get_simple "status" "active")
       [ "$intent_status" != "active" ] && continue

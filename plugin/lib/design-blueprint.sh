@@ -250,7 +250,7 @@ hku_generate_design_blueprint() {
   # Determine intent directory
   local repo_root intent_dir
   repo_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-  intent_dir="${repo_root}/.haiku/${intent_slug}"
+  intent_dir="${repo_root}/.haiku/intents/${intent_slug}"
 
   if [ ! -d "$intent_dir" ]; then
     echo "haiku: hku_generate_design_blueprint: intent directory not found: $intent_dir" >&2

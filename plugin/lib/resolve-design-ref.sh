@@ -327,7 +327,7 @@ _resolve_iteration_screenshots() {
   [ -z "$iterates_on" ] && return 1
 
   # Search filesystem first
-  local prev_screenshots_dir="$repo_root/.haiku/$iterates_on/screenshots"
+  local prev_screenshots_dir="$repo_root/.haiku/intents/$iterates_on/screenshots"
 
   # Try exact unit slug match
   if [ -d "$prev_screenshots_dir/$unit_slug" ]; then
@@ -367,7 +367,7 @@ _resolve_iteration_screenshots() {
   if git rev-parse --verify "$prev_branch" >/dev/null 2>&1; then
     # Check if screenshots exist on that branch
     local git_screenshots
-    git_screenshots=$(git ls-tree -r --name-only "$prev_branch" -- ".haiku/$iterates_on/screenshots/" 2>/dev/null || echo "")
+    git_screenshots=$(git ls-tree -r --name-only "$prev_branch" -- ".haiku/intents/$iterates_on/screenshots/" 2>/dev/null || echo "")
     if [ -n "$git_screenshots" ]; then
       # Extract screenshots to a temporary location
       local tmp_dir

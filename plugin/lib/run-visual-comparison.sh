@@ -312,7 +312,7 @@ hku_run_visual_comparison() {
 
   local unit_file="$intent_dir/$unit_slug.md"
   if [ -z "$output_dir" ]; then
-    output_dir="$repo_root/.haiku/$intent_slug/screenshots/$unit_slug"
+    output_dir="$repo_root/.haiku/intents/$intent_slug/screenshots/$unit_slug"
   fi
 
   mkdir -p "$output_dir"
