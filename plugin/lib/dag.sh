@@ -224,7 +224,7 @@ find_ready_units() {
     return
   fi
 
-  for unit_file in "$intent_dir"/unit-*.md; do
+  for unit_file in "$intent_dir"/stages/*/units/unit-*.md; do
     [ -f "$unit_file" ] || continue
 
     local unit_status
@@ -252,7 +252,7 @@ find_ready_units_for_pass() {
     return
   fi
 
-  for unit_file in "$intent_dir"/unit-*.md; do
+  for unit_file in "$intent_dir"/stages/*/units/unit-*.md; do
     [ -f "$unit_file" ] || continue
 
     # Filter by pass if active_pass is set
@@ -285,7 +285,7 @@ find_in_progress_units() {
     return
   fi
 
-  for unit_file in "$intent_dir"/unit-*.md; do
+  for unit_file in "$intent_dir"/stages/*/units/unit-*.md; do
     [ -f "$unit_file" ] || continue
 
     local unit_status
@@ -307,7 +307,7 @@ find_blocked_units() {
     return
   fi
 
-  for unit_file in "$intent_dir"/unit-*.md; do
+  for unit_file in "$intent_dir"/stages/*/units/unit-*.md; do
     [ -f "$unit_file" ] || continue
 
     local unit_status
@@ -356,7 +356,7 @@ find_completed_units() {
     return
   fi
 
-  for unit_file in "$intent_dir"/unit-*.md; do
+  for unit_file in "$intent_dir"/stages/*/units/unit-*.md; do
     [ -f "$unit_file" ] || continue
 
     local unit_status
@@ -380,7 +380,7 @@ get_dag_status_table() {
 
   # Check if any unit files exist
   local has_units=false
-  for unit_file in "$intent_dir"/unit-*.md; do
+  for unit_file in "$intent_dir"/stages/*/units/unit-*.md; do
     [ -f "$unit_file" ] && has_units=true && break
   done
 
@@ -392,7 +392,7 @@ get_dag_status_table() {
   echo "| Unit | Status | Blocked By |"
   echo "|------|--------|------------|"
 
-  for unit_file in "$intent_dir"/unit-*.md; do
+  for unit_file in "$intent_dir"/stages/*/units/unit-*.md; do
     [ -f "$unit_file" ] || continue
 
     local name
@@ -518,7 +518,7 @@ get_dag_summary() {
     return
   fi
 
-  for unit_file in "$intent_dir"/unit-*.md; do
+  for unit_file in "$intent_dir"/stages/*/units/unit-*.md; do
     [ -f "$unit_file" ] || continue
 
     local unit_status
@@ -558,7 +558,7 @@ is_dag_complete() {
     return 1
   fi
 
-  for unit_file in "$intent_dir"/unit-*.md; do
+  for unit_file in "$intent_dir"/stages/*/units/unit-*.md; do
     [ -f "$unit_file" ] || continue
 
     local unit_status
@@ -595,7 +595,7 @@ get_recommended_hat() {
 
   # No units? Go to planner (2nd hat, index 1)
   local unit_count=0
-  for f in "$intent_dir"/unit-*.md; do
+  for f in "$intent_dir"/stages/*/units/unit-*.md; do
     [ -f "$f" ] && unit_count=$((unit_count + 1))
   done
 
@@ -657,7 +657,7 @@ validate_dag() {
 
   # Collect all unit names
   local all_units=""
-  for unit_file in "$intent_dir"/unit-*.md; do
+  for unit_file in "$intent_dir"/stages/*/units/unit-*.md; do
     [ -f "$unit_file" ] || continue
     local name
     name=$(basename "$unit_file" .md)
@@ -665,7 +665,7 @@ validate_dag() {
   done
 
   # Check each unit's dependencies (deps is space-separated)
-  for unit_file in "$intent_dir"/unit-*.md; do
+  for unit_file in "$intent_dir"/stages/*/units/unit-*.md; do
     [ -f "$unit_file" ] || continue
 
     local name
