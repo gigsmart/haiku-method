@@ -171,7 +171,7 @@ These are internal skills (`user-invocable: false`) — not registered slash com
 
 ### Stage-Based Hat Resolution
 
-Hats are defined inline in stage STAGE.md files within studios. Each stage has a `hats:` frontmatter field defining the hat sequence, and `## hat-name` sections containing the hat instructions.
+Hats are defined as files in `stages/{stage}/hats/{hat}.md` within studios. Each stage has a `hats:` frontmatter field in STAGE.md defining the hat sequence, and individual hat instruction files in the `hats/` directory.
 
 Studios and their stages live in `plugin/studios/{studio}/stages/{stage}/STAGE.md`. Project-level overrides can be placed in `.haiku/studios/{studio}/stages/{stage}/STAGE.md`.
 

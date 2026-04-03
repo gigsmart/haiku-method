@@ -28,7 +28,7 @@ Before completing any work that modifies the plugin, paper, or website, verify c
 
 ## Terminology reminders:
 - Studio = named lifecycle template (profile implementation), contains stages
-- Stage = lifecycle phase within a studio, contains inline hats and review gates
-- Hat = behavioral role scoped to a stage (defined inline in STAGE.md, not standalone)
+- Stage = lifecycle phase within a studio, contains file-based hats and review gates
+- Hat = behavioral role scoped to a stage (defined as files in `stages/{stage}/hats/`, not standalone)
 - Bolt = iteration cycle (tracked as `iteration` in state), NOT the same as Unit
 - Studio > Stage > Unit > Bolt is the four-layer hierarchy, all distinct concepts

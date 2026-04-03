@@ -17,7 +17,7 @@ When `/haiku:run` executes an intent, it progresses through stages in the order 
 
 ## STAGE.md Schema
 
-Every stage is defined by a `STAGE.md` file with YAML frontmatter and inline hat definitions:
+Every stage is defined by a `STAGE.md` file with YAML frontmatter, plus a `hats/` directory containing per-hat instruction files:
 
 ```yaml
 ---
@@ -57,7 +57,7 @@ A stage can specify multiple review modes as a list (e.g., `[external, ask]`), m
 
 ## Hats Within Stages
 
-Hats are defined inline in the `STAGE.md` body. Each hat section specifies:
+Hats are defined as files in the stage's `hats/` directory (e.g., `stages/development/hats/builder.md`). Each hat file specifies:
 
 - **Focus** — What this hat concentrates on
 - **Produces** — What artifacts or outputs the hat creates
@@ -66,9 +66,21 @@ Hats are defined inline in the `STAGE.md` body. Each hat section specifies:
 
 ### Example: Development Stage Hats
 
-```markdown
-## planner
+The development stage directory contains:
 
+```
+stages/development/
+  STAGE.md
+  hats/
+    planner.md
+    builder.md
+    reviewer.md
+```
+
+Each hat file follows this structure:
+
+**`hats/planner.md`:**
+```markdown
 **Focus:** Read the unit spec and prior stage outputs, plan the implementation
 approach, identify files to modify, assess risks.
 
@@ -80,9 +92,10 @@ verification commands, and risk assessment.
 **Anti-patterns:**
 - Planning without reading the completion criteria
 - Not identifying risks or potential blockers up front
+```
 
-## builder
-
+**`hats/builder.md`:**
+```markdown
 **Focus:** Implement code to satisfy completion criteria, working in small
 verifiable increments.
 
@@ -91,9 +104,10 @@ verifiable increments.
 **Anti-patterns:**
 - Disabling lint, type checks, or test suites to make code pass
 - Continuing past 3 failed attempts without documenting a blocker
+```
 
-## reviewer
-
+**`hats/reviewer.md`:**
+```markdown
 **Focus:** Verify implementation satisfies completion criteria through
 multi-stage review.
 
@@ -157,8 +171,9 @@ Example from inception:
 To add a custom stage to a studio:
 
 1. Create the stage directory: `.haiku/studios/{studio}/stages/{stage}/`
-2. Write `STAGE.md` with frontmatter and hat definitions
-3. Add the stage name to the studio's `stages` list in `STUDIO.md`
+2. Write `STAGE.md` with frontmatter
+3. Create a `hats/` subdirectory with per-hat instruction files
+4. Add the stage name to the studio's `stages` list in `STUDIO.md`
 
 Example custom stage:
 
@@ -175,15 +190,17 @@ inputs:
   - stage: security
     output: threat-model
 ---
+```
 
-# Compliance
+With hat files in the stage's `hats/` directory:
 
-## compliance-auditor
-
+**`hats/compliance-auditor.md`:**
+```markdown
 **Focus:** Verify implementation meets regulatory requirements...
+```
 
-## documentation-writer
-
+**`hats/documentation-writer.md`:**
+```markdown
 **Focus:** Generate compliance documentation...
 ```
 

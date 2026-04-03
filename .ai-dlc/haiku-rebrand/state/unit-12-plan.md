@@ -112,9 +112,9 @@ The haiku-method paper (1453 lines) is already comprehensive. It covers bolts, h
 #### Enrichment 1: AI-DLC Profile Section (Section 6, ~line 945)
 The haiku-method paper's AI-DLC profile section describes hats and workflows that have been dissolved/refactored. Update to reflect the current architecture:
 
-- **Hats** are now defined inline in `STAGE.md` files, not as standalone hat files
+- **Hats** are now defined as files in `stages/{stage}/hats/`, not as standalone hat files
 - **Workflows** have been replaced by the stage orchestrator (orchestrator.sh)
-- The AI-DLC profile now implements **studios** (software, ideation) with **stages** containing inline hats
+- The AI-DLC profile now implements **studios** (software, ideation) with **stages** containing per-stage hat files
 - Add the software studio's stage pipeline: `inception → product → design → development → security → operations`
 - Note the ideation studio: `research → create → review → deliver`
 - Update the "AI-DLC hats" table to note hats are stage-scoped
@@ -126,10 +126,10 @@ Add a subsection after the AI-DLC profile block (~line 994):
 
 The AI-DLC profile is implemented as a Claude Code plugin (the `haiku` plugin). Key implementation details:
 
-**Studios as Profiles.** HAIKU profiles are implemented as **studios** — named lifecycle templates stored as `plugin/studios/{name}/STUDIO.md`. Each studio contains **stages** (`plugin/studios/{name}/stages/{stage}/STAGE.md`) that define the lifecycle phases, inline hats, review gates, and artifact contracts.
+**Studios as Profiles.** HAIKU profiles are implemented as **studios** — named lifecycle templates stored as `plugin/studios/{name}/STUDIO.md`. Each studio contains **stages** (`plugin/studios/{name}/stages/{stage}/`) that define the lifecycle phases, with hats defined as per-stage files in `stages/{stage}/hats/*.md`, review gates, and artifact contracts.
 
 **Stage Orchestration.** The stage orchestrator (`orchestrator.sh`) drives unit execution through the studio's stage pipeline. Each stage defines:
-- Inline hats (behavioral roles scoped to that stage)
+- Hats as files in `stages/{stage}/hats/{hat}.md` (behavioral roles scoped to that stage)
 - Artifact contracts (requires/produces)
 - Review gates (auto, ask, or external)
 

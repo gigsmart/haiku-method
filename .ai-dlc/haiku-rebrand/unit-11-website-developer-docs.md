@@ -133,7 +133,7 @@ How to create and configure stages:
    - Body structure (hat sections, criteria guidance, completion signal)
 
 2. **Hat definitions**
-   - How hats are defined inline in STAGE.md
+   - How hats are defined as files in `stages/{stage}/hats/`
    - Hat section structure (Focus, Produces, Reads, Anti-patterns)
    - The hat sequence as the stage's workflow
 
@@ -193,7 +193,7 @@ Step-by-step migration from AI-DLC to H·AI·K·U:
 4. **Breaking changes**
    - Plugin name change: `ai-dlc` -> `haiku`
    - Command prefix change: `/ai-dlc:` -> `/haiku:`
-   - Hats directory removed (now inline in stages)
+   - Hats directory removed (now per-stage files in `stages/{stage}/hats/`)
    - Workflows file removed (now in studios)
 
 5. **Existing intents**

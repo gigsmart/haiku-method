@@ -68,7 +68,7 @@ Replace the existing AI-DLC terminology table:
 | Intent | Feature / Epic | The overall thing being built |
 | Unit | Ticket / Story | A discrete piece of work within a stage |
 | Bolt | Sprint | The iteration cycle an agent runs within a unit |
-| Hat | (no equivalent) | Role the AI assumes within a stage (defined inline in STAGE.md) |
+| Hat | (no equivalent) | Role the AI assumes within a stage (defined as files in `stages/{stage}/hats/`) |
 | Review Gate | (no equivalent) | Checkpoint between stages: auto, ask, or external |
 
 ### Hierarchy
@@ -175,7 +175,7 @@ Before completing any work that modifies the plugin, paper, or website, verify c
 - Stage = lifecycle phase with hats and review gate
 - Unit = discrete work item within a stage
 - Bolt = iteration cycle within a unit (tracked as `iteration` in state)
-- Hat = role the AI assumes, defined inline in STAGE.md
+- Hat = role the AI assumes, defined as files in `stages/{stage}/hats/`
 - Studio -> Stage -> Unit -> Bolt is the four-layer hierarchy
 ```
 

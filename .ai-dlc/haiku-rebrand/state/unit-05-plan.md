@@ -590,4 +590,4 @@ Hat section content should draw from existing hat files where applicable:
 
 All other hats (researcher, analyst, creator, editor, critic, fact-checker, publisher, architect, decomposer, design-reviewer, product-owner, specification-writer, ops-engineer, sre, threat-modeler, security-reviewer) are new — write from first principles based on the unit-05 spec descriptions.
 
-**Important:** Hat sections in STAGE.md are guidance documents, not procedural scripts. They should NOT include `source` commands, library calls, or bash code blocks. Keep the inline hat sections focused on: Focus, Produces, Reads, Anti-patterns. The detailed procedural content (quality gate hooks, telemetry, provider sync) stays in the skills that orchestrate execution — not in the stage definitions.
+**Important:** Hat files are guidance documents, not procedural scripts. They should NOT include `source` commands, library calls, or bash code blocks. Keep the hat files focused on: Focus, Produces, Reads, Anti-patterns. The detailed procedural content (quality gate hooks, telemetry, provider sync) stays in the skills that orchestrate execution — not in the stage definitions.

@@ -2,7 +2,7 @@
 
 ## Summary
 
-Remove `plugin/hats/` directory and `plugin/workflows.yml`. Hat instructions now live inline in each stage's STAGE.md (already created by unit-05). Workflow definitions are replaced by the stage's `hats:` frontmatter field. Update all hooks, libs, and skills that reference the old hat/workflow system to use the stage-based resolution instead.
+Remove `plugin/hats/` directory and `plugin/workflows.yml`. Hat instructions now live as files in each stage's `hats/` directory (already created by unit-05). Workflow definitions are replaced by the stage's `hats:` frontmatter field. Update all hooks, libs, and skills that reference the old hat/workflow system to use the stage-based resolution instead.
 
 ## Prerequisites Verified
 
@@ -15,7 +15,7 @@ Remove `plugin/hats/` directory and `plugin/workflows.yml`. Hat instructions now
 ### Core Principle
 
 **Old**: Hat files (`plugin/hats/*.md`) are standalone docs → `hat.sh` resolves name to file path → hooks `cat` the file
-**New**: Stage files (`plugin/studios/{studio}/stages/{stage}/STAGE.md`) contain hat sections inline → `hat.sh` resolves via `stage.sh` → hooks extract the `## {hat-name}` section from the active stage's STAGE.md
+**New**: Stage directories contain hat files at `stages/{stage}/hats/{hat}.md` → `hat.sh` resolves via `stage.sh` → hooks read the hat file from the active stage's `hats/` directory
 
 The `hats:` frontmatter in STAGE.md replaces `workflows.yml` entirely — the hat sequence IS the workflow.
 

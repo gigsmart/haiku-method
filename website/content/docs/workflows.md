@@ -191,7 +191,7 @@ Research -> Create -> Review -> Deliver
 
 ## Stages and Hat Constraints
 
-Each stage restricts which hats are available during its execution. Hats are defined inline in the stage's `STAGE.md` file, ensuring the right discipline is applied at the right time.
+Each stage restricts which hats are available during its execution. Hats are defined as per-stage files in `stages/{stage}/hats/{hat}.md`, ensuring the right discipline is applied at the right time.
 
 | Stage | Available Hats |
 |-------|---------------|
@@ -248,14 +248,16 @@ Create project-specific studios in `.haiku/studios/`. Each studio is a directory
       STUDIO.md              # Studio description and configuration
       stages/
         research/
-          STAGE.md           # Stage definition with inline hats
+          STAGE.md           # Stage definition and configuration
+          hats/
+            *.md             # Per-hat instruction files
         implement/
           STAGE.md
         validate/
           STAGE.md
 ```
 
-Each `STAGE.md` defines the hats available in that stage, their sequence, and their behavior. This gives you full control over the workflow without modifying the plugin.
+Each stage directory defines the hats available (via `hats/*.md` files), their sequence (via `STAGE.md` frontmatter), and their behavior. This gives you full control over the workflow without modifying the plugin.
 
 ### Example: Research-First Studio
 

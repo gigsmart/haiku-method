@@ -45,7 +45,7 @@ Create 7 new markdown files in `website/content/docs/`:
 **1d. `stages.md`**
 - What a stage is
 - STAGE.md schema reference (frontmatter: name, description, hats, review, unit_types, inputs)
-- Hat definitions inline in STAGE.md (Focus, Produces, Reads, Anti-patterns)
+- Hat definition files in `stages/{stage}/hats/` (Focus, Produces, Reads, Anti-patterns)
 - Review modes: auto, ask, external
 - requires/produces artifact pipeline (inputs list + outputs/ directory)
 - Creating a custom stage example
@@ -62,7 +62,7 @@ Create 7 new markdown files in `website/content/docs/`:
 - Terminology map: AI-DLC → H·AI·K·U
 - Command map: `/ai-dlc:*` → `/haiku:*`
 - Directory map: `.ai-dlc/` → `.haiku/`
-- Concept map: passes → stages, workflows → studios, hats → inline in stages
+- Concept map: passes → stages, workflows → studios, hats → per-stage files in `hats/`
 - Automatic migration (settings migration on first load, symlinks)
 - Manual steps (.gitignore, CI scripts, team docs)
 - Breaking changes list
@@ -86,7 +86,7 @@ Create 7 new markdown files in `website/content/docs/`:
 - `quick-start.md` — rewrite with `/haiku:new` + `/haiku:run` flow, update all commands/paths. May redirect to getting-started or keep as slimmer version.
 - `installation.md` — update plugin name, commands, paths, verification steps
 - `elaboration.md` — rewrite for stage-based model (inception stage, not standalone "elaborate" phase)
-- `hats.md` — rewrite: hats now live inline in STAGE.md, not standalone. Update to explain hats-within-stages model. Rename/redirect or keep as "understanding hats"
+- `hats.md` — rewrite: hats now live as files in `stages/{stage}/hats/`, not standalone. Update to explain hats-within-stages model. Rename/redirect or keep as "understanding hats"
 - `workflows.md` — rewrite: workflows dissolved into studios. Update to explain studios/stages replace named workflows. Rename/redirect or keep as "understanding studios"
 
 **2b. Medium-impact updates** (terminology replacement + some content adjustment):

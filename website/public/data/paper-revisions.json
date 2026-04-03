@@ -301,8 +301,28 @@
   },
   "haiku-method": {
     "slug": "haiku-method",
-    "currentVersion": "1",
+    "currentVersion": "2",
     "revisions": [
+      {
+        "version": "2",
+        "date": "2026-04-03",
+        "commitHash": "587f132",
+        "fullCommitHash": "587f1320e8101a36508a63da94e78390c2d3d5b8",
+        "commitMessage": "fix(docs): H·AI·K·U works in Claude Code AND Cowork, not Code-only",
+        "stats": {
+          "linesAdded": 1,
+          "linesRemoved": 1
+        },
+        "sectionChanges": [
+          {
+            "section": "AI-DLC: The Software Development Profile",
+            "originalSection": "AI-DLC: The Software Development Profile",
+            "isNew": false,
+            "linesAdded": 1,
+            "linesRemoved": 1
+          }
+        ]
+      },
       {
         "version": "1",
         "date": "2026-04-02",
@@ -751,71 +771,6 @@
         ]
       }
     ],
-    "newSections": [
-      "Acknowledgments & Attribution",
-      "Foundational Work",
-      "Key Influences",
-      "1. Introduction",
-      "The Problem",
-      "HAIKU: Human AI Knowledge Unification",
-      "The 4-Phase Lifecycle",
-      "Who This Is For",
-      "2. The State of the Art",
-      "The Landscape Shift",
-      "The Evidence for Structure",
-      "The \"Vibe Coding\" Moment",
-      "Competing Approaches",
-      "The Protocol Ecosystem",
-      "3. Core Principles",
-      "Reimagine Rather Than Retrofit",
-      "Context Engineering Over Context Stuffing",
-      "Quality Enforcement Over Prescription",
-      "Context Preservation Through Artifacts",
-      "The Workspace: Where Knowledge Lives",
-      "Hierarchical Knowledge",
-      "Memory Layers",
-      "Iterative Refinement Through Bolts",
-      "Human Oversight at Strategic Moments",
-      "Learning Loops",
-      "4. The 4-Phase Lifecycle",
-      "Overview",
-      "Phase 1: Elaboration",
-      "Phase 2: Execution",
-      "Phase 3: Operation",
-      "Phase 4: Reflection",
-      "5. Operating Modes",
-      "Supervised",
-      "Observed",
-      "Autonomous",
-      "Mode Selection",
-      "6. The Profile Model",
-      "Universal Core, Domain Adaptation",
-      "AI-DLC: The Software Development Profile",
-      "SWARM: The Marketing & Sales Profile",
-      "Creating Custom Profiles",
-      "7. Practical Examples",
-      "Example 1: Software Feature Using the AI-DLC Profile",
-      "Example 2: Marketing Campaign Using the SWARM Profile",
-      "Example 3: Strategic Planning Using HAIKU Core",
-      "8. Adoption",
-      "Start Where You Are",
-      "Step 1: Start with Elaboration",
-      "Step 2: Add Execution Structure",
-      "Step 3: Extend into Operation",
-      "Step 4: Close the Loop with Reflection",
-      "Progression Is Natural",
-      "Scaling Across an Organization",
-      "9. Measuring Effectiveness",
-      "Core Metrics",
-      "What Not to Measure",
-      "The DORA Connection",
-      "10. Governance and Compliance",
-      "The Regulatory Landscape",
-      "HAIKU as a Governance Framework",
-      "Quality Gates as Governance-as-Code",
-      "Compliance Patterns",
-      "Glossary",
-      "References"
-    ]
+    "newSections": []
   }
 }

@@ -14,7 +14,7 @@ hat: reviewer
 
 ## Description
 
-Remove the `plugin/hats/` directory and `plugin/workflows.yml` file. Hat instructions now live inline in each stage's STAGE.md. Workflow definitions are replaced by the stage's `hats:` field (the hat sequence IS the workflow). Update all context injection hooks and skills that reference the old hat or workflow system.
+Remove the `plugin/hats/` directory and `plugin/workflows.yml` file. Hat instructions now live as files in each stage's `hats/` directory (e.g., `stages/development/hats/builder.md`). Workflow definitions are replaced by the stage's `hats:` field (the hat sequence IS the workflow). Update all context injection hooks and skills that reference the old hat or workflow system.
 
 ## Discipline
 
@@ -53,11 +53,11 @@ All three are replaced by the stage system:
 
 | Old System | New System |
 |-----------|-----------|
-| `plugin/hats/builder.md` | `STAGE.md ## builder` section in each stage |
-| `plugin/hats/reviewer.md` | `STAGE.md ## reviewer` section in each stage |
-| `plugin/hats/designer.md` | `STAGE.md ## designer` section in the design stage |
+| `plugin/hats/builder.md` | `stages/development/hats/builder.md` |
+| `plugin/hats/reviewer.md` | `stages/development/hats/reviewer.md` |
+| `plugin/hats/designer.md` | `stages/design/hats/designer.md` |
 | `plugin/workflows.yml` workflow sequences | `STAGE.md` frontmatter `hats:` field |
-| `hat.sh` `resolve_hat()` | `stage.sh` `hku_resolve_stage()` + parse hat sections |
+| `hat.sh` `resolve_hat()` | `stage.sh` `hku_resolve_stage()` + read hat files from `hats/` dir |
 
 ### Hook Updates
 
@@ -66,9 +66,9 @@ All three are replaced by the stage system:
 Currently reads the active hat from state and injects `plugin/hats/{hat}.md` content into the agent context. Update to:
 
 1. Read the active stage from intent frontmatter (`active_stage:`)
-2. Resolve the stage's STAGE.md
-3. Extract the `## {hat-name}` section from STAGE.md body
-4. Inject that section as hat context
+2. Resolve the stage directory
+3. Read the hat file from `stages/{stage}/hats/{hat}.md`
+4. Inject that file's content as hat context
 
 ```bash
 # Before:
@@ -78,27 +78,18 @@ if [[ -f "$hat_file" ]]; then
 fi
 
 # After:
-stage_file=$(hku_resolve_stage "$active_stage" "$studio")
-if [[ -f "$stage_file" ]]; then
-  hku_extract_hat_section "$stage_file" "$active_hat"
+stage_dir=$(hku_resolve_stage_dir "$active_stage" "$studio")
+hat_file="${stage_dir}/hats/${active_hat}.md"
+if [[ -f "$hat_file" ]]; then
+  cat "$hat_file"
 fi
 ```
 
-New helper function:
-
-```bash
-# Extract a hat section from a STAGE.md file
-# Reads from ## {hat-name} to the next ## heading or EOF
-hku_extract_hat_section() {
-  local stage_file="$1"
-  local hat_name="$2"
-  # Parse markdown: extract content between ## {hat_name} and next ## heading
-}
-```
+Hat resolution reads the file directly from the `hats/` directory -- no markdown parsing needed.
 
 #### `subagent-context.sh`
 
-Same pattern — replace hat file reads with stage section extraction. Subagents get the same hat context as the main agent.
+Same pattern — replace hat file reads with stage-scoped hat file reads. Subagents get the same hat context as the main agent.
 
 ### Hat Library Update (`plugin/lib/hat.sh`)
 
@@ -127,7 +118,7 @@ hku_resolve_hat_instructions() {
     stage_file=$(hku_resolve_stage "research" "ideation")
   fi
 
-  hku_extract_hat_section "$stage_file" "$hat_name"
+  cat "${stage_dir}/hats/${hat_name}.md"
 }
 
 # Get the hat sequence for a stage (replaces workflow lookup)
@@ -184,9 +175,9 @@ grep -r 'available_workflows' plugin/ --include='*.md'                 # 0 resul
 
 - [ ] `plugin/hats/` directory deleted (all `.md` files removed)
 - [ ] `plugin/workflows.yml` deleted
-- [ ] `inject-context.sh` reads hat instructions from active stage's STAGE.md
-- [ ] `subagent-context.sh` reads hat instructions from active stage's STAGE.md
-- [ ] `hku_extract_hat_section` function exists and correctly parses markdown sections
+- [ ] `inject-context.sh` reads hat instructions from active stage's `hats/` directory
+- [ ] `subagent-context.sh` reads hat instructions from active stage's `hats/` directory
+- [ ] Hat files are read directly from `stages/{stage}/hats/{hat}.md`
 - [ ] `hku_get_hat_sequence` function exists and reads from STAGE.md frontmatter
 - [ ] No remaining references to `plugin/hats/` in any hook or skill file
 - [ ] No remaining references to `plugin/workflows.yml` in any file

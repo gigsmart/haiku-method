@@ -13,7 +13,7 @@ This guide covers migrating from AI-DLC to H·AI·K·U. Most migration is automa
 | AI-DLC | H·AI·K·U | The methodology and plugin name |
 | Workflow | Studio | Named lifecycle templates (default, adversarial, etc. → software, ideation, custom) |
 | Pass | Stage | Typed disciplinary phases (design, product, dev → inception, design, product, development, etc.) |
-| Standalone hats | Hats within stages | Hats are now defined inline in STAGE.md, not as standalone files |
+| Standalone hats | Stage-scoped hats | Hats are now per-stage files in `stages/{stage}/hats/{hat}.md` |
 | `.ai-dlc/` | `.haiku/` | Project directory |
 | `/ai-dlc:*` | `/haiku:*` | Command prefix |
 
@@ -55,7 +55,7 @@ This guide covers migrating from AI-DLC to H·AI·K·U. Most migration is automa
 
 ### Workflows → Studios
 
-AI-DLC's named workflows (default, adversarial, design, hypothesis, TDD) defined hat sequences. H·AI·K·U replaces these with **studios** — lifecycle templates that define stages, each with their own inline hats.
+AI-DLC's named workflows (default, adversarial, design, hypothesis, TDD) defined hat sequences. H·AI·K·U replaces these with **studios** — lifecycle templates that define stages, each with their own per-stage hat files.
 
 | Old Workflow | New Approach |
 |-------------|--------------|
@@ -161,7 +161,7 @@ Intents that were in progress during the migration continue to work:
 
 ## Breaking Changes
 
-1. **Standalone hat files** — `plugin/hats/*.md` are no longer the primary hat definitions. Hats are now defined inline in `STAGE.md` files.
+1. **Standalone hat files** — `plugin/hats/*.md` are no longer the primary hat definitions. Hats are now defined as files in `stages/{stage}/hats/`.
 2. **Workflow selection during elaboration** — Replaced by studio selection during `/haiku:new`.
 3. **`/ai-dlc:elaborate`** — Deprecated. Use `/haiku:new` to create intents, then `/haiku:run` to execute stages.
 4. **Pass-specific workflow constraints** — Replaced by stage-level hat definitions.

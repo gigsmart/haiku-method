@@ -60,7 +60,7 @@ The AI now works through the stages defined by your studio. For the **software s
 3. **Security** — Threat modeling and vulnerability assessment (if applicable)
 4. **Operations** — Deployment and monitoring (if applicable)
 
-Each stage has its own hats (roles) defined inline. The AI transitions through hats automatically, running quality gates at each step.
+Each stage has its own hats (roles) defined as files in the stage's `hats/` directory. The AI transitions through hats automatically, running quality gates at each step.
 
 You can watch, intervene if needed, or let it run.
 
@@ -114,7 +114,7 @@ Once your intent is complete, manage ongoing operational tasks with `/haiku:oper
 If you used AI-DLC before the H·AI·K·U rebrand, see the [Migration Guide](/docs/migration/) for a complete map of changes. The key shifts:
 
 - **Studios** replace workflows — named lifecycle templates that define which stages run
-- **Stages** replace standalone hats — each stage defines its own hats inline
+- **Stages** replace standalone hats — each stage has its own `hats/` directory with per-hat files
 - **Persistence adapters** — git (PRs) or filesystem (local), configured per studio
 - `.haiku/` replaces `.ai-dlc/` as the project directory
 - `/haiku:*` replaces `/ai-dlc:*` as the command prefix

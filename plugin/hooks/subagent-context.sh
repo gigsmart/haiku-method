@@ -2,7 +2,7 @@
 # subagent-context.sh - SubagentPrompt hook for H·AI·K·U
 #
 # Injects role-scoped H·AI·K·U context into subagent prompts:
-# - Hat instructions (from STAGE.md inline sections)
+# - Hat instructions (from stages/{stage}/hats/{hat}.md files)
 # - H·AI·K·U workflow rules (iteration management)
 # - Unit/Bolt context (current unit, status, dependencies)
 # - Intent and completion criteria

@@ -395,7 +395,7 @@ Each hat section in the STAGE.md body follows this pattern:
 - What this hat should NOT do
 ```
 
-This replaces the old `plugin/hats/*.md` files -- all hat instructions live inline in the stage that uses them. During the build phase, hats read the unit's `## References` section for context, not the full stage input set.
+This replaces the old `plugin/hats/*.md` files -- all hat instructions live as files in each stage's `hats/` directory (e.g., `stages/development/hats/builder.md`). During the build phase, hats read the unit's `## References` section for context, not the full stage input set.
 
 ## Success Criteria
 
