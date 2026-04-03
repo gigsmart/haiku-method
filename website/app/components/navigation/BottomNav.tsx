@@ -81,7 +81,7 @@ export function BottomNav({ onMenuClick }: BottomNavProps) {
 	}
 
 	return (
-		<nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-stone-200 bg-white/95 backdrop-blur-sm dark:border-stone-800 dark:bg-stone-950/95 md:hidden">
+		<nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur-sm dark:border-gray-800 dark:bg-gray-950/95 md:hidden">
 			<div className="mx-auto flex max-w-md items-center justify-around px-4 py-2">
 				{navItems.map((item) => (
 					<Link
@@ -89,8 +89,8 @@ export function BottomNav({ onMenuClick }: BottomNavProps) {
 						href={item.href}
 						className={`flex flex-col items-center gap-1 rounded-lg px-4 py-2 transition ${
 							isActive(item.href)
-								? "text-teal-600 dark:text-teal-400"
-								: "text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-white"
+								? "text-blue-600 dark:text-blue-400"
+								: "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
 						}`}
 					>
 						{item.icon}
@@ -102,7 +102,7 @@ export function BottomNav({ onMenuClick }: BottomNavProps) {
 				<button
 					type="button"
 					onClick={onMenuClick}
-					className="flex flex-col items-center gap-1 rounded-lg px-4 py-2 text-stone-500 transition hover:text-stone-900 dark:text-stone-400 dark:hover:text-white"
+					className="flex flex-col items-center gap-1 rounded-lg px-4 py-2 text-gray-500 transition hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
 					aria-label="Open menu"
 				>
 					<svg

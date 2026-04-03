@@ -6,13 +6,13 @@ import { PaperContent } from "./PaperContent"
 import PaperRevisionHistory from "./PaperRevisionHistory"
 
 export const metadata: Metadata = {
-	title: "H·AI·K·U Paper",
+	title: "AI-DLC Paper",
 	description:
-		"The complete H·AI·K·U methodology paper — Human AI Knowledge Unification, a universal framework for structured human-AI collaboration.",
+		"The complete AI-Driven Development Lifecycle methodology paper - a comprehensive guide to AI-native software development.",
 	openGraph: {
-		title: "H·AI·K·U Paper — Human AI Knowledge Unification",
+		title: "AI-DLC Paper - Complete Methodology",
 		description:
-			"A universal framework for disciplined human-AI collaboration across any domain, introducing the 4-phase lifecycle and configurable operating modes.",
+			"A comprehensive methodology reimagining software development for the era of autonomous AI agents.",
 	},
 }
 
@@ -29,19 +29,19 @@ export default function PaperPage() {
 		<PaperChangesProvider sectionChanges={[]}>
 			<div className="mx-auto max-w-7xl px-4 py-8">
 				{/* Header */}
-				<div className="mb-8 border-b border-stone-200 pb-8 dark:border-stone-800">
+				<div className="mb-8 border-b border-gray-200 pb-8 dark:border-gray-800">
 					<div className="flex flex-wrap items-center justify-between gap-4">
 						<div>
-							<h1 className="text-3xl font-bold text-stone-900 dark:text-white md:text-4xl">
+							<h1 className="text-3xl font-bold text-gray-900 dark:text-white md:text-4xl">
 								{paper.title}
 							</h1>
 							{paper.subtitle && (
-								<p className="mt-2 text-xl text-stone-600 dark:text-stone-400">
+								<p className="mt-2 text-xl text-gray-600 dark:text-gray-400">
 									{paper.subtitle}
 								</p>
 							)}
 							{paper.authors && paper.authors.length > 0 && (
-								<p className="mt-2 text-sm text-stone-500 dark:text-stone-500">
+								<p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
 									By {paper.authors.join(", ")} |{" "}
 									{new Date(paper.date).toLocaleDateString("en-US", {
 										year: "numeric",
@@ -56,7 +56,7 @@ export default function PaperPage() {
 								href="/paper/print"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="inline-flex items-center gap-2 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+								className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
 							>
 								<svg
 									className="h-4 w-4"
@@ -79,7 +79,7 @@ export default function PaperPage() {
 
 					{/* Revision History */}
 					<div className="mt-6">
-						<PaperRevisionHistory slug="haiku-method" />
+						<PaperRevisionHistory slug="ai-dlc-2026" />
 					</div>
 				</div>
 

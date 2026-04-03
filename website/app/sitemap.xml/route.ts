@@ -1,9 +1,10 @@
 import { getAllBlogPosts } from "@/lib/blog"
-import { SITE_URL } from "@/lib/constants"
 import { getAllDocs } from "@/lib/docs"
 
 export const dynamic = "force-static"
 export const revalidate = false
+
+const SITE_URL = "https://ai-dlc.dev"
 
 function formatDate(date: Date): string {
 	return date.toISOString().split("T")[0]
@@ -19,7 +20,6 @@ export async function GET() {
 		{ url: `${SITE_URL}/docs/installation/`, changefreq: "monthly", priority: "0.9" },
 		{ url: `${SITE_URL}/blog/`, changefreq: "daily", priority: "0.9" },
 		{ url: `${SITE_URL}/paper/`, changefreq: "monthly", priority: "0.8" },
-		{ url: `${SITE_URL}/how-it-works/`, changefreq: "monthly", priority: "0.8" },
 		{ url: `${SITE_URL}/changelog/`, changefreq: "weekly", priority: "0.7" },
 	]
 

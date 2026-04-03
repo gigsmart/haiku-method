@@ -22,7 +22,7 @@ export function TransitionArrow({
 			>
 				{/* Arrow line */}
 				<motion.div
-					className={`absolute ${isHorizontal ? "h-0.5 top-0 left-0" : "w-0.5 top-0 left-0"} bg-stone-300 dark:bg-stone-600`}
+					className={`absolute ${isHorizontal ? "h-0.5 top-0 left-0" : "w-0.5 top-0 left-0"} bg-gray-300 dark:bg-gray-600`}
 					style={isHorizontal ? { width: "100%" } : { height: "100%" }}
 				/>
 
@@ -53,7 +53,7 @@ export function TransitionArrow({
 				>
 					{isHorizontal ? (
 						<svg
-							className="w-3 h-3 text-stone-400 dark:text-stone-300"
+							className="w-3 h-3 text-gray-400 dark:text-gray-300"
 							fill="currentColor"
 							viewBox="0 0 20 20"
 							aria-hidden="true"
@@ -66,7 +66,7 @@ export function TransitionArrow({
 						</svg>
 					) : (
 						<svg
-							className="w-3 h-3 text-stone-400 dark:text-stone-300"
+							className="w-3 h-3 text-gray-400 dark:text-gray-300"
 							fill="currentColor"
 							viewBox="0 0 20 20"
 							aria-hidden="true"

@@ -6,24 +6,24 @@ disable-model-invocation: true
 
 ## Name
 
-`haiku:operate` - Manage operations — list, execute, deploy, monitor, and teardown operational tasks.
+`ai-dlc:operate` - Manage operations — list, execute, deploy, monitor, and teardown operational tasks.
 
 ## Synopsis
 
 ```
-/haiku:operate                                    # List all operations across all intents
-/haiku:operate {intent}                           # Show status table for intent's operations
-/haiku:operate {intent} {operation}               # Execute or display a specific operation
-/haiku:operate {intent} --deploy [target]         # Generate deployment manifests
-/haiku:operate {intent} --status                  # Show last-run timestamps and health
-/haiku:operate {intent} --teardown               # Remove deployments (preserves specs)
+/ai-dlc:operate                                    # List all operations across all intents
+/ai-dlc:operate {intent}                           # Show status table for intent's operations
+/ai-dlc:operate {intent} {operation}               # Execute or display a specific operation
+/ai-dlc:operate {intent} --deploy [target]         # Generate deployment manifests
+/ai-dlc:operate {intent} --status                  # Show last-run timestamps and health
+/ai-dlc:operate {intent} --teardown               # Remove deployments (preserves specs)
 ```
 
 ## Description
 
 **User-facing command** — Manage operational tasks for completed or in-progress intents.
 
-The operate skill reads per-file operation specs from `.haiku/intents/{intent}/operations/` and provides:
+The operate skill reads per-file operation specs from `.ai-dlc/{intent}/operations/` and provides:
 - **List all** — scan every intent's operations, display grouped overview
 - **Intent overview** — status table with last-run timestamps for one intent
 - **Ad-hoc execution** — run agent-owned scripts or display human checklists
@@ -33,7 +33,7 @@ The operate skill reads per-file operation specs from `.haiku/intents/{intent}/o
 
 ## Operation File Format
 
-Each operation is a `.md` file in `.haiku/intents/{intent}/operations/` with YAML frontmatter:
+Each operation is a `.md` file in `.ai-dlc/{intent}/operations/` with YAML frontmatter:
 
 ```yaml
 ---
@@ -51,13 +51,13 @@ Markdown body: description, runbook, or checklist (for human-owned operations).
 
 **Companion files** (for agent-owned operations):
 - `{name}.ts` / `{name}.py` / `{name}.sh` — executable script matching the runtime
-- `deploy/{name}.{type}.yaml` — deployment manifest, written to `operations/deploy/` by `/haiku:operate --deploy`
+- `deploy/{name}.{type}.yaml` — deployment manifest, written to `operations/deploy/` by `/ai-dlc:operate --deploy`
 
 **Human-owned operations** have no companion script. The `.md` body contains the checklist.
 
 ## Status Persistence
 
-Operation status is stored at `.haiku/intents/{intent}/state/operation-status.json` via `hku_state_save`:
+Operation status is stored at `.ai-dlc/{intent}/state/operation-status.json` via `dlc_state_save`:
 
 ```json
 {
@@ -132,7 +132,7 @@ fi
 If `FLAG_MIGRATE` is set, exit immediately with a "coming soon" message:
 ```bash
 if [ "$FLAG_MIGRATE" = true ]; then
-  echo "haiku: operate: --migrate is not yet implemented" >&2
+  echo "ai-dlc: operate: --migrate is not yet implemented" >&2
   exit 1
 fi
 ```
@@ -140,7 +140,7 @@ fi
 If a flag is set but no `INTENT_SLUG` is provided, display:
 ```
 Error: --deploy, --status, and --teardown require an intent slug.
-Usage: /haiku:operate {intent} --deploy [target]
+Usage: /ai-dlc:operate {intent} --deploy [target]
 ```
 
 ### Step 1: List All Operations
@@ -149,15 +149,15 @@ Scan all intents for operations and display a grouped table.
 
 ```bash
 REPO_ROOT="$(find_repo_root)"
-ALL_INTENTS=$(find "$REPO_ROOT/.haiku" -maxdepth 2 -name "intent.md" -exec dirname {} \; 2>/dev/null)
+ALL_INTENTS=$(find "$REPO_ROOT/.ai-dlc" -maxdepth 2 -name "intent.md" -exec dirname {} \; 2>/dev/null)
 ```
 
 For each intent directory found:
 
-1. Check if `.haiku/intents/{intent}/operations/` directory exists
+1. Check if `.ai-dlc/{intent}/operations/` directory exists
 2. If it exists, read all `.md` files from it
-3. Parse each operation's frontmatter using `hku_frontmatter_get`
-4. Load status from `operation-status.json` via `hku_state_load`
+3. Parse each operation's frontmatter using `dlc_frontmatter_get`
+4. Load status from `operation-status.json` via `dlc_state_load`
 
 Display the grouped table:
 
@@ -180,7 +180,7 @@ If no operations are found across any intent:
 No operations found across any intent.
 
 Operations are created during the Execution phase when units have operational
-requirements. Each operation is a `.md` file in `.haiku/intents/{intent}/operations/`
+requirements. Each operation is a `.md` file in `.ai-dlc/{intent}/operations/`
 with frontmatter defining its type, owner, and schedule.
 
 See the Operation File Format section above for the spec.
@@ -193,15 +193,15 @@ See the Operation File Format section above for the spec.
 Show a status table for all operations within a single intent.
 
 ```bash
-INTENT_DIR="$REPO_ROOT/.haiku/intents/${INTENT_SLUG}"
+INTENT_DIR="$REPO_ROOT/.ai-dlc/${INTENT_SLUG}"
 OPS_DIR="$INTENT_DIR/operations"
 LEGACY_FILE="$INTENT_DIR/operations.md"
 ```
 
 1. Verify `$INTENT_DIR` exists. If not:
    ```
-   Error: Intent directory not found: .haiku/intents/{intent-slug}/
-   Run /haiku:operate to list all intents with operations.
+   Error: Intent directory not found: .ai-dlc/{intent-slug}/
+   Run /ai-dlc:operate to list all intents with operations.
    ```
 
 2. **Check for legacy format.** If `$LEGACY_FILE` exists AND `$OPS_DIR` does not exist, go to **Step 8** (Legacy Compatibility).
@@ -212,7 +212,7 @@ LEGACY_FILE="$INTENT_DIR/operations.md"
    No operations found for intent: {intent-slug}
 
    Operations are created during the Execution phase. Each operation is a
-   `.md` file in `.haiku/intents/{intent-slug}/operations/` with frontmatter
+   `.md` file in `.ai-dlc/{intent-slug}/operations/` with frontmatter
    defining its type, owner, and schedule.
    ```
    **Done.** Stop here.
@@ -220,14 +220,14 @@ LEGACY_FILE="$INTENT_DIR/operations.md"
 4. Read all `.md` files in `$OPS_DIR`
 5. Parse frontmatter for each:
    ```bash
-   NAME=$(hku_frontmatter_get "name" "$op_file")
-   TYPE=$(hku_frontmatter_get "type" "$op_file")
-   OWNER=$(hku_frontmatter_get "owner" "$op_file")
-   SCHEDULE=$(hku_frontmatter_get "schedule" "$op_file")
-   TRIGGER=$(hku_frontmatter_get "trigger" "$op_file")
-   FREQUENCY=$(hku_frontmatter_get "frequency" "$op_file")
+   NAME=$(dlc_frontmatter_get "name" "$op_file")
+   TYPE=$(dlc_frontmatter_get "type" "$op_file")
+   OWNER=$(dlc_frontmatter_get "owner" "$op_file")
+   SCHEDULE=$(dlc_frontmatter_get "schedule" "$op_file")
+   TRIGGER=$(dlc_frontmatter_get "trigger" "$op_file")
+   FREQUENCY=$(dlc_frontmatter_get "frequency" "$op_file")
    ```
-6. Load `operation-status.json` via `hku_state_load "$INTENT_DIR" "operation-status.json"`
+6. Load `operation-status.json` via `dlc_state_load "$INTENT_DIR" "operation-status.json"`
 7. For each operation, extract `last_run` and `status` from the JSON
 
 Display the full status table:
@@ -244,23 +244,23 @@ Display the full status table:
 
 ### Step 3: Ad-Hoc Execute — Determine Owner
 
-When invoked as `/haiku:operate {intent} {operation}`:
+When invoked as `/ai-dlc:operate {intent} {operation}`:
 
 1. Locate the operation spec file:
    ```bash
-   OP_FILE="$REPO_ROOT/.haiku/intents/${INTENT_SLUG}/operations/${OPERATION_NAME}.md"
+   OP_FILE="$REPO_ROOT/.ai-dlc/${INTENT_SLUG}/operations/${OPERATION_NAME}.md"
    ```
    If it does not exist, try matching by the `name` frontmatter field across all `.md` files in the operations directory.
 
 2. If no matching operation found:
    ```
    Error: Operation not found: {operation-name}
-   Run /haiku:operate {intent} to see available operations.
+   Run /ai-dlc:operate {intent} to see available operations.
    ```
 
 3. Read the owner:
    ```bash
-   OWNER=$(hku_frontmatter_get "owner" "$OP_FILE")
+   OWNER=$(dlc_frontmatter_get "owner" "$OP_FILE")
    ```
 
 4. Route:
@@ -273,7 +273,7 @@ For `owner: agent` operations:
 
 1. **Determine the runtime:**
    ```bash
-   RUNTIME=$(hku_frontmatter_get "runtime" "$OP_FILE")
+   RUNTIME=$(dlc_frontmatter_get "runtime" "$OP_FILE")
    if [ -z "$RUNTIME" ]; then
      RUNTIME=$(get_operations_runtime)
    fi
@@ -281,7 +281,7 @@ For `owner: agent` operations:
 
 2. **Find the companion script.** Look in the same directory as the operation spec:
    ```bash
-   OPS_DIR="$REPO_ROOT/.haiku/intents/${INTENT_SLUG}/operations"
+   OPS_DIR="$REPO_ROOT/.ai-dlc/${INTENT_SLUG}/operations"
    SCRIPT=""
    for ext in sh ts py go; do
      if [ -f "$OPS_DIR/${OPERATION_NAME}.$ext" ]; then
@@ -295,7 +295,7 @@ For `owner: agent` operations:
    ```
    Error: No companion script found for agent operation: {operation-name}
    Expected one of: {operation-name}.sh, {operation-name}.ts, {operation-name}.py, {operation-name}.go
-   in .haiku/intents/{intent}/operations/
+   in .ai-dlc/{intent}/operations/
    ```
 
 3. **Execute the script** based on runtime:
@@ -319,7 +319,7 @@ For `owner: agent` operations:
    else                               OP_STATUS="failed"
    fi
 
-   STATUS_JSON=$(hku_state_load "$INTENT_DIR" "operation-status.json" 2>/dev/null || echo '{"operations":{}}')
+   STATUS_JSON=$(dlc_state_load "$INTENT_DIR" "operation-status.json" 2>/dev/null || echo '{"operations":{}}')
    UPDATED=$(echo "$STATUS_JSON" | jq \
      --arg name "$OPERATION_NAME" \
      --arg time "$TIMESTAMP" \
@@ -333,13 +333,13 @@ For `owner: agent` operations:
        "last_exit_code": $exit,
        "last_output": ($output | .[0:2000])
      }) | .operations[$name].deployed //= false | .operations[$name].deploy_target //= null')
-   hku_state_save "$INTENT_DIR" "operation-status.json" "$UPDATED"
+   dlc_state_save "$INTENT_DIR" "operation-status.json" "$UPDATED"
    ```
 
 5. **Commit if files changed:**
    ```bash
    if [ -n "$(git status --porcelain)" ]; then
-     git add ".haiku/intents/${INTENT_SLUG}/"
+     git add ".ai-dlc/${INTENT_SLUG}/"
      git commit -m "operate(${INTENT_SLUG}): execute ${OPERATION_NAME}"
    fi
    ```
@@ -367,9 +367,9 @@ For `owner: human` operations:
 1. **Read the operation spec** and extract the markdown body (everything below the frontmatter):
    ```bash
    BODY=$(sed '1,/^---$/d; 1,/^---$/d' "$OP_FILE")
-   SCHEDULE=$(hku_frontmatter_get "schedule" "$OP_FILE")
-   FREQUENCY=$(hku_frontmatter_get "frequency" "$OP_FILE")
-   TYPE=$(hku_frontmatter_get "type" "$OP_FILE")
+   SCHEDULE=$(dlc_frontmatter_get "schedule" "$OP_FILE")
+   FREQUENCY=$(dlc_frontmatter_get "frequency" "$OP_FILE")
+   TYPE=$(dlc_frontmatter_get "type" "$OP_FILE")
    ```
 
 2. **Display the checklist and schedule:**
@@ -392,19 +392,19 @@ For `owner: human` operations:
 3. **Track presentation** in status:
    ```bash
    TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-   STATUS_JSON=$(hku_state_load "$INTENT_DIR" "operation-status.json" 2>/dev/null || echo '{"operations":{}}')
+   STATUS_JSON=$(dlc_state_load "$INTENT_DIR" "operation-status.json" 2>/dev/null || echo '{"operations":{}}')
    UPDATED=$(echo "$STATUS_JSON" | jq \
      --arg name "$OPERATION_NAME" \
      --arg time "$TIMESTAMP" \
      '.operations[$name] = ((.operations[$name] // {}) | .last_presented = $time | .status = (.status // "pending"))')
-   hku_state_save "$INTENT_DIR" "operation-status.json" "$UPDATED"
+   dlc_state_save "$INTENT_DIR" "operation-status.json" "$UPDATED"
    ```
 
 **Done.** Stop here for human operation mode. Do NOT mark as completed.
 
 ### Step 5: Deploy Mode
 
-When invoked as `/haiku:operate {intent} --deploy [target]`:
+When invoked as `/ai-dlc:operate {intent} --deploy [target]`:
 
 1. **Load stack configuration:**
    ```bash
@@ -413,9 +413,9 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
    OPS_LAYER=$(get_stack_layer "operations")
    ```
 
-2. **Read all agent-owned operations** from `.haiku/intents/{intent}/operations/`:
+2. **Read all agent-owned operations** from `.ai-dlc/{intent}/operations/`:
    ```bash
-   OPS_DIR="$REPO_ROOT/.haiku/intents/${INTENT_SLUG}/operations"
+   OPS_DIR="$REPO_ROOT/.ai-dlc/${INTENT_SLUG}/operations"
    DEPLOY_DIR="$OPS_DIR/deploy"
    mkdir -p "$DEPLOY_DIR"
    ```
@@ -426,10 +426,10 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
 
    First, parse the operation's type from its frontmatter:
    ```bash
-   TYPE=$(hku_frontmatter_get "type" "$op_file")
+   TYPE=$(dlc_frontmatter_get "type" "$op_file")
    ```
 
-   If `$DEPLOY_TARGET` was explicitly provided (e.g., `/haiku:operate myapp --deploy github-actions`), use that for all operations. Otherwise derive from stack config using the `has_stack_provider` helper:
+   If `$DEPLOY_TARGET` was explicitly provided (e.g., `/ai-dlc:operate myapp --deploy github-actions`), use that for all operations. Otherwise derive from stack config using the `has_stack_provider` helper:
 
    ```bash
    # Determine from stack config using has_stack_provider helper
@@ -463,8 +463,8 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
    metadata:
      name: {operation-name}
      labels:
-       app.kubernetes.io/managed-by: haiku
-       haiku/intent: {intent-slug}
+       app.kubernetes.io/managed-by: ai-dlc
+       ai-dlc/intent: {intent-slug}
    spec:
      schedule: "{cron-expression}"
      jobTemplate:
@@ -488,8 +488,8 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
    metadata:
      name: {operation-name}
      labels:
-       app.kubernetes.io/managed-by: haiku
-       haiku/intent: {intent-slug}
+       app.kubernetes.io/managed-by: ai-dlc
+       ai-dlc/intent: {intent-slug}
    spec:
      replicas: 1
      selector:
@@ -522,7 +522,7 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
        steps:
          - uses: actions/checkout@v4
          - name: Run {operation-name}
-           run: {runtime-command} .haiku/intents/{intent}/operations/{name}.{ext}
+           run: {runtime-command} .ai-dlc/{intent}/operations/{name}.{ext}
    ```
 
    > **Note:** GitHub Actions workflows must be in `.github/workflows/` on the default branch to trigger. Copy the generated manifest there and commit to activate.
@@ -535,10 +535,10 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
    services:
      {operation-name}:
        build: .
-       command: {runtime-command} .haiku/intents/{intent}/operations/{name}.{ext}
+       command: {runtime-command} .ai-dlc/{intent}/operations/{name}.{ext}
        labels:
-         haiku.managed-by: "true"
-         haiku.intent: "{intent-slug}"
+         ai-dlc.managed-by: "true"
+         ai-dlc.intent: "{intent-slug}"
    ```
 
    #### systemd (timer + service pair)
@@ -547,7 +547,7 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
 
    ```ini
    [Unit]
-   Description={operation-name} operation (haiku/{intent-slug})
+   Description={operation-name} operation (ai-dlc/{intent-slug})
 
    [Service]
    Type=oneshot
@@ -559,7 +559,7 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
 
    ```ini
    [Unit]
-   Description={operation-name} timer (haiku/{intent-slug})
+   Description={operation-name} timer (ai-dlc/{intent-slug})
 
    [Timer]
    OnCalendar={calendar-expression}
@@ -572,18 +572,18 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
    If target is `none`, skip manifest generation and report:
    ```
    Skipping {operation-name}: no deploy target configured in stack.
-   Configure a compute or pipeline provider in .haiku/settings.yml.
+   Configure a compute or pipeline provider in .ai-dlc/settings.yml.
    ```
 
 5. **Update status** for each deployed operation (using the loop iteration variable `$OP_NAME`, not the ad-hoc `$OPERATION_NAME`):
    ```bash
    OP_NAME=$(basename "$op_file" .md)
-   STATUS_JSON=$(hku_state_load "$INTENT_DIR" "operation-status.json" 2>/dev/null || echo '{"operations":{}}')
+   STATUS_JSON=$(dlc_state_load "$INTENT_DIR" "operation-status.json" 2>/dev/null || echo '{"operations":{}}')
    UPDATED=$(echo "$STATUS_JSON" | jq \
      --arg name "$OP_NAME" \
      --arg target "$TARGET" \
      '.operations[$name] = ((.operations[$name] // {}) + {"deployed": true, "deploy_target": $target})')
-   hku_state_save "$INTENT_DIR" "operation-status.json" "$UPDATED"
+   dlc_state_save "$INTENT_DIR" "operation-status.json" "$UPDATED"
    ```
 
 6. **Report results:**
@@ -594,7 +594,7 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
    |---|---|---|
    | {name} | {target} | {path-to-manifest} |
 
-   Manifests written to `.haiku/intents/{intent}/operations/deploy/`.
+   Manifests written to `.ai-dlc/{intent}/operations/deploy/`.
    Review and apply these manifests to your infrastructure.
    ```
 
@@ -602,14 +602,14 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
 
 ### Step 6: Status Mode
 
-When invoked as `/haiku:operate {intent} --status`:
+When invoked as `/ai-dlc:operate {intent} --status`:
 
 1. **Load status data:**
    ```bash
-   STATUS_JSON=$(hku_state_load "$INTENT_DIR" "operation-status.json" 2>/dev/null || echo '{"operations":{}}')
+   STATUS_JSON=$(dlc_state_load "$INTENT_DIR" "operation-status.json" 2>/dev/null || echo '{"operations":{}}')
    ```
 
-2. **Load operation specs** from `.haiku/intents/{intent}/operations/*.md` to get schedule info
+2. **Load operation specs** from `.ai-dlc/{intent}/operations/*.md` to get schedule info
 
 3. **For each operation, determine if overdue:**
    - If `last_run` is null and type is `scheduled` or `process`, mark as `pending`
@@ -717,7 +717,7 @@ When invoked as `/haiku:operate {intent} --status`:
 
    If no operations have status data:
    ```
-   No operation status data found. Run /haiku:operate {intent} {operation} to execute
+   No operation status data found. Run /ai-dlc:operate {intent} {operation} to execute
    operations and begin tracking status.
    ```
 
@@ -725,7 +725,7 @@ When invoked as `/haiku:operate {intent} --status`:
 
 ### Step 7: Teardown Mode
 
-When invoked as `/haiku:operate {intent} --teardown`:
+When invoked as `/ai-dlc:operate {intent} --teardown`:
 
 1. **Confirm with the user before proceeding.** Teardown is destructive:
    ```markdown
@@ -743,7 +743,7 @@ When invoked as `/haiku:operate {intent} --teardown`:
 
 2. **Load status** to find all deployed operations:
    ```bash
-   STATUS_JSON=$(hku_state_load "$INTENT_DIR" "operation-status.json" 2>/dev/null || echo '{"operations":{}}')
+   STATUS_JSON=$(dlc_state_load "$INTENT_DIR" "operation-status.json" 2>/dev/null || echo '{"operations":{}}')
    DEPLOYED_OPS=$(echo "$STATUS_JSON" | jq -r '.operations | to_entries[] | select(.value.deployed == true) | .key')
    ```
 
@@ -751,16 +751,16 @@ When invoked as `/haiku:operate {intent} --teardown`:
 
    - **k8s-cronjob / k8s-deployment:**
      ```
-     kubectl delete -f .haiku/intents/{intent}/operations/deploy/{name}.cronjob.yaml
+     kubectl delete -f .ai-dlc/{intent}/operations/deploy/{name}.cronjob.yaml
      ```
    - **github-actions:**
      ```
-     Remove workflow file: .haiku/intents/{intent}/operations/deploy/{name}.workflow.yaml
+     Remove workflow file: .ai-dlc/{intent}/operations/deploy/{name}.workflow.yaml
      Delete from .github/workflows/ if copied there.
      ```
    - **docker-compose:**
      ```
-     Remove service from compose file or delete: .haiku/intents/{intent}/operations/deploy/{name}.compose.yaml
+     Remove service from compose file or delete: .ai-dlc/{intent}/operations/deploy/{name}.compose.yaml
      ```
    - **systemd:**
      ```
@@ -771,7 +771,7 @@ When invoked as `/haiku:operate {intent} --teardown`:
 
 4. **Remove manifest files** from the deploy directory:
    ```bash
-   DEPLOY_DIR="$REPO_ROOT/.haiku/intents/${INTENT_SLUG}/operations/deploy"
+   DEPLOY_DIR="$REPO_ROOT/.ai-dlc/${INTENT_SLUG}/operations/deploy"
    if [ -d "$DEPLOY_DIR" ]; then
      rm -rf "$DEPLOY_DIR"
    fi
@@ -786,7 +786,7 @@ When invoked as `/haiku:operate {intent} --teardown`:
         .operations[$name].deployed = false |
         .operations[$name].deploy_target = null')
    done
-   hku_state_save "$INTENT_DIR" "operation-status.json" "$STATUS_JSON"
+   dlc_state_save "$INTENT_DIR" "operation-status.json" "$STATUS_JSON"
    ```
 
 6. **Report:**
@@ -797,7 +797,7 @@ When invoked as `/haiku:operate {intent} --teardown`:
    |---|---|---|
    | {name} | {target} | torn-down |
 
-   Deploy manifests removed from `.haiku/intents/{intent}/operations/deploy/`.
+   Deploy manifests removed from `.ai-dlc/{intent}/operations/deploy/`.
    Operation specs and scripts have been preserved.
    ```
 
@@ -805,13 +805,13 @@ When invoked as `/haiku:operate {intent} --teardown`:
 
 ### Step 8: Legacy Compatibility
 
-If `.haiku/intents/{intent}/operations.md` exists but `.haiku/intents/{intent}/operations/` directory does not:
+If `.ai-dlc/{intent}/operations.md` exists but `.ai-dlc/{intent}/operations/` directory does not:
 
 1. **Display deprecation warning:**
    ```markdown
    > **Warning:** Legacy `operations.md` format detected.
-   > The per-file format in `.haiku/intents/{intent}/operations/` is now preferred.
-   > Run `/haiku:operate {intent} --migrate` to convert automatically. *(coming soon)*
+   > The per-file format in `.ai-dlc/{intent}/operations/` is now preferred.
+   > Run `/ai-dlc:operate {intent} --migrate` to convert automatically. *(coming soon)*
    ```
 
 2. **Parse the legacy format.** Read `operations.md` and extract sections:
@@ -819,8 +819,8 @@ If `.haiku/intents/{intent}/operations.md` exists but `.haiku/intents/{intent}/o
    - Sections: Recurring Tasks, Reactive Tasks, Manual Tasks
 
    ```bash
-   LEGACY_STATUS=$(hku_frontmatter_get "status" "$LEGACY_FILE")
-   LEGACY_CREATED=$(hku_frontmatter_get "created" "$LEGACY_FILE")
+   LEGACY_STATUS=$(dlc_frontmatter_get "status" "$LEGACY_FILE")
+   LEGACY_CREATED=$(dlc_frontmatter_get "created" "$LEGACY_FILE")
    ```
 
 3. **Display the legacy operational overview:**
@@ -843,6 +843,6 @@ If `.haiku/intents/{intent}/operations.md` exists but `.haiku/intents/{intent}/o
 
 4. **Agent and human task handling** works the same as before — parse tasks from the markdown sections, execute agent commands, display human checklists.
 
-5. **Status tracking** still uses `operation-status.json` via `hku_state_save`/`hku_state_load`, same schema as the new format.
+5. **Status tracking** still uses `operation-status.json` via `dlc_state_save`/`dlc_state_load`, same schema as the new format.
 
 **Done.** Stop here for legacy mode.

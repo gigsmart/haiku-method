@@ -1,11 +1,11 @@
-import { SITE_URL } from "@/lib/constants"
-
 export const dynamic = "force-static"
 export const revalidate = false
 
+const SITE_URL = "https://ai-dlc.dev"
+
 export async function GET() {
-	const robotsTxt = `# H·AI·K·U robots.txt
-# https://haikumethod.ai
+	const robotsTxt = `# AI-DLC robots.txt
+# https://ai-dlc.dev
 
 User-agent: *
 Allow: /

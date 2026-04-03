@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://haiku.dev/schemas/providers/stack-infrastructure.schema.json",
+	"$id": "https://ai-dlc.dev/schemas/providers/stack-infrastructure.schema.json",
 	"title": "Stack Infrastructure Provider Entry",
 	"description": "Infrastructure-as-code provider configuration for the stack infrastructure layer",
 	"type": "object",

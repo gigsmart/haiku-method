@@ -70,7 +70,7 @@ export async function parseIntent(
     const filePath = join(intentDir, "intent.md");
     // Only warn for parse errors, not missing files (ENOENT is expected)
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
-      console.warn(`[haiku/shared] Failed to parse ${filePath}:`, err);
+      console.warn(`[ai-dlc/shared] Failed to parse ${filePath}:`, err);
     }
     return null;
   }
@@ -105,7 +105,7 @@ export async function parseUnit(
     };
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
-      console.warn(`[haiku/shared] Failed to parse ${filePath}:`, err);
+      console.warn(`[ai-dlc/shared] Failed to parse ${filePath}:`, err);
     }
     return null;
   }
@@ -158,12 +158,12 @@ export async function parseDiscovery(
 }
 
 /**
- * List all intent directories in the .haiku root.
+ * List all intent directories in the .ai-dlc root.
  * Excludes worktrees/ and settings.yml.
  */
-export async function listIntents(haikuDir: string): Promise<string[]> {
+export async function listIntents(aiDlcDir: string): Promise<string[]> {
   try {
-    const entries = await readdir(haikuDir, { withFileTypes: true });
+    const entries = await readdir(aiDlcDir, { withFileTypes: true });
     return entries
       .filter((e) => e.isDirectory() && !EXCLUDED_ENTRIES.has(e.name))
       .map((e) => e.name)

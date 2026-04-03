@@ -1,6 +1,6 @@
 ---
 name: backpressure
-description: Use when implementing or understanding backpressure in H·AI·K·U workflows. Covers quality gates, Stop hooks, and how automated enforcement guides AI behavior toward quality.
+description: Use when implementing or understanding backpressure in AI-DLC workflows. Covers quality gates, Stop hooks, and how automated enforcement guides AI behavior toward quality.
 user-invocable: false
 allowed-tools:
   - Read
@@ -9,7 +9,7 @@ allowed-tools:
   - Glob
 ---
 
-# H·AI·K·U Backpressure
+# AI-DLC Backpressure
 
 Backpressure is automated enforcement that blocks progress until quality standards are met. Instead of prescribing process steps, backpressure creates natural incentives for quality.
 
@@ -80,9 +80,9 @@ This creates intrinsic motivation for quality, not extrinsic compliance.
 Quality gates and backpressure are related but distinct enforcement mechanisms:
 
 - **Quality gates** (`quality_gates:` in frontmatter): Hard enforcement. Defined per-intent and per-unit. Run by `quality-gate.sh` on Stop/SubagentStop. The agent is mechanically blocked from stopping if any gate fails. Gates are add-only during construction (ratchet effect). The reviewer verifies gate integrity.
-- **Backpressure** (Stop hooks in `.claude/settings.json`): Soft guidance during development. Project-level hooks that run on every Stop. Not tied to H·AI·K·U frontmatter. Useful for project-wide checks that don't need per-intent/per-unit configuration.
+- **Backpressure** (Stop hooks in `.claude/settings.json`): Soft guidance during development. Project-level hooks that run on every Stop. Not tied to AI-DLC frontmatter. Useful for project-wide checks that don't need per-intent/per-unit configuration.
 
-Quality gates are a **subset** of backpressure that has been promoted to hard, frontmatter-driven enforcement. Backpressure is the broader concept; quality gates are the H·AI·K·U-specific mechanism within it.
+Quality gates are a **subset** of backpressure that has been promoted to hard, frontmatter-driven enforcement. Backpressure is the broader concept; quality gates are the AI-DLC-specific mechanism within it.
 
 Both can coexist: a project might have quality gates for tests/lint/types (per-intent, harness-enforced) AND backpressure hooks for additional checks (project-wide, advisory).
 
@@ -216,9 +216,9 @@ Visual fidelity backpressure uses AI vision to compare built output against desi
 
 ## Implementing Backpressure
 
-### In H·AI·K·U Frontmatter (Preferred)
+### In AI-DLC Frontmatter (Preferred)
 
-For H·AI·K·U projects, prefer defining gates in `quality_gates:` frontmatter rather than raw Stop hooks. Frontmatter gates get:
+For AI-DLC projects, prefer defining gates in `quality_gates:` frontmatter rather than raw Stop hooks. Frontmatter gates get:
 - Per-intent and per-unit scoping
 - Additive merging (unit gates add to intent gates)
 - Ratchet enforcement (add-only during construction)
@@ -430,7 +430,7 @@ Over time, the AI preemptively checks design references and matches them during 
 
 ### Hook Pass Rates
 
-Use Claude Code's built-in metrics and session analysis (via `/haiku:reflect`) to track these indicators.
+Use Claude Code's built-in metrics and session analysis (via `/ai-dlc:reflect`) to track these indicators.
 
 Good indicators:
 - First-attempt pass rate increasing over time
@@ -482,7 +482,7 @@ Track over time:
 ❌ Holding wireframe references to pixel-perfect standards
 ✅ Fidelity level adjusts tolerance: high = pixel-close, medium = structural, low = layout only
 
-## Integration with H·AI·K·U
+## Integration with AI-DLC
 
 ### During Building (OHOTL)
 

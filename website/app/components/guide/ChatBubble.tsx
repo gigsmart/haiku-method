@@ -28,9 +28,9 @@ const speakerConfig = {
 	},
 	system: {
 		align: "justify-center" as const,
-		bg: "bg-stone-50 border-stone-200 dark:bg-stone-900/50 dark:border-stone-700",
+		bg: "bg-gray-50 border-gray-200 dark:bg-gray-900/50 dark:border-gray-700",
 		radius: "rounded-2xl",
-		labelColor: "text-stone-500",
+		labelColor: "text-gray-500",
 		icon: "\u2699\uFE0F",
 		defaultLabel: "System",
 	},
@@ -54,7 +54,7 @@ export function ChatBubble({ speaker, label, children }: ChatBubbleProps) {
 					<span>{config.icon}</span>
 					<span>{label || config.defaultLabel}</span>
 				</div>
-				<div className="text-sm leading-relaxed text-stone-700 dark:text-stone-300">
+				<div className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
 					{children}
 				</div>
 			</motion.div>
@@ -93,7 +93,7 @@ interface ExchangeLabelProps {
 
 export function ExchangeLabel({ children }: ExchangeLabelProps) {
 	return (
-		<div className="py-1 text-center text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+		<div className="py-1 text-center text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
 			{children}
 		</div>
 	)

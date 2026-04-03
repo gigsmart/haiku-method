@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://haiku.dev/schemas/providers/stack-compute.schema.json",
+	"$id": "https://ai-dlc.dev/schemas/providers/stack-compute.schema.json",
 	"title": "Stack Compute Provider Entry",
 	"description": "Compute platform provider configuration for the stack compute layer",
 	"type": "object",

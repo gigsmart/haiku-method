@@ -71,14 +71,14 @@ export function SectionNav() {
 					className="group relative flex items-center"
 					aria-label={section.label}
 				>
-					<span className="pointer-events-none absolute right-5 whitespace-nowrap rounded-md border border-stone-200 bg-white px-2.5 py-1 text-xs text-stone-500 opacity-0 transition-opacity group-hover:opacity-100 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-400">
+					<span className="pointer-events-none absolute right-5 whitespace-nowrap rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-500 opacity-0 transition-opacity group-hover:opacity-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
 						{section.label}
 					</span>
 					<span
 						className={`block h-2.5 w-2.5 rounded-full border-2 transition-all duration-300 ${
 							activeSection === section.id
 								? "scale-130 border-amber-400 bg-amber-400"
-								: "border-stone-400 bg-stone-200 hover:border-stone-500 dark:border-stone-600 dark:bg-stone-700 dark:hover:border-stone-400"
+								: "border-gray-400 bg-gray-200 hover:border-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-400"
 						}`}
 					/>
 				</button>

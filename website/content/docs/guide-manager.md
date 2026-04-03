@@ -1,14 +1,14 @@
 ---
 title: Manager Guide
-description: Business case, metrics, and ROI framework for H·AI·K·U adoption
+description: Business case, metrics, and ROI framework for AI-DLC adoption
 order: 18
 ---
 
-This guide helps engineering managers and directors understand H·AI·K·U's business value, measure its impact, and make the case for adoption.
+This guide helps engineering managers and directors understand AI-DLC's business value, measure its impact, and make the case for adoption.
 
-## The Business Case for H·AI·K·U
+## The Business Case for AI-DLC
 
-### The Problem H·AI·K·U Solves
+### The Problem AI-DLC Solves
 
 Traditional AI-assisted development suffers from:
 
@@ -19,7 +19,7 @@ Traditional AI-assisted development suffers from:
 | Unpredictable output | Planning difficulty |
 | Knowledge loss | Onboarding costs, key-person risk |
 
-H·AI·K·U addresses these by providing structure that:
+AI-DLC addresses these by providing structure that:
 - Keeps AI focused on defined objectives
 - Enforces quality checkpoints
 - Creates auditable trails
@@ -48,7 +48,7 @@ H·AI·K·U addresses these by providing structure that:
 
 ### Quality Metrics
 
-These metrics indicate whether H·AI·K·U is improving output quality:
+These metrics indicate whether AI-DLC is improving output quality:
 
 | Metric | Definition | Target Direction |
 |--------|------------|------------------|
@@ -71,11 +71,11 @@ These indicate efficiency impact:
 
 ### Adoption Metrics
 
-These track how well H·AI·K·U is being used:
+These track how well AI-DLC is being used:
 
 | Metric | Definition | Target |
 |--------|------------|--------|
-| **Participation** | % of developers using H·AI·K·U | 100% (where applicable) |
+| **Participation** | % of developers using AI-DLC | 100% (where applicable) |
 | **Workflow variety** | Distribution of workflow types | Appropriate to task types |
 | **Criteria quality** | Assessment of criteria specificity | High |
 | **Hat coverage** | All four hats used per unit | Yes |
@@ -143,7 +143,7 @@ ROI = (Annual Benefit - Annual Cost) / Annual Cost x 100%
 - 20% of time spent on rework at $100/hour = $400,000
 - 3 new hires/year, 2 days saved each at $800/day = $4,800
 
-**With H·AI·K·U achieving:**
+**With AI-DLC achieving:**
 - 20% bug reduction: $20,000 savings
 - 30% rework reduction: $120,000 savings
 - Onboarding improvement: $4,800 savings
@@ -163,13 +163,13 @@ ROI = (Annual Benefit - Annual Cost) / Annual Cost x 100%
 ### Executive Summary Format
 
 ```markdown
-## H·AI·K·U Adoption Proposal
+## AI-DLC Adoption Proposal
 
 ### Opportunity
 [1-2 sentences on the problem you're solving]
 
 ### Solution
-H·AI·K·U provides structured workflows for AI-assisted development,
+AI-DLC provides structured workflows for AI-assisted development,
 improving quality and predictability.
 
 ### Expected Benefits
@@ -190,8 +190,8 @@ expand if successful.
 
 | Objection | Response |
 |-----------|----------|
-| "We don't have time for methodology" | "H·AI·K·U reduces rework time. Initial investment pays back in reduced bug fixing." |
-| "Our team already uses AI effectively" | "H·AI·K·U provides structure to ensure consistent quality. Even good practices benefit from standardization." |
+| "We don't have time for methodology" | "AI-DLC reduces rework time. Initial investment pays back in reduced bug fixing." |
+| "Our team already uses AI effectively" | "AI-DLC provides structure to ensure consistent quality. Even good practices benefit from standardization." |
 | "This adds overhead" | "The overhead is primarily learning curve. After mastery, the artifact creation time is minimal." |
 | "What if developers don't like it?" | "We'll pilot with volunteers first and gather feedback before broader rollout." |
 | "How do we know it works?" | "We'll measure quality and productivity metrics before and after adoption." |
@@ -201,7 +201,7 @@ expand if successful.
 For risk-averse organizations, propose a pilot:
 
 ```markdown
-## H·AI·K·U Pilot Proposal
+## AI-DLC Pilot Proposal
 
 ### Scope
 - Team: [Specify]
@@ -228,7 +228,7 @@ For risk-averse organizations, propose a pilot:
 
 ### Audit Trail
 
-H·AI·K·U naturally creates artifacts useful for compliance:
+AI-DLC naturally creates artifacts useful for compliance:
 
 | Artifact | Contains | Useful For |
 |----------|----------|------------|
@@ -239,7 +239,7 @@ H·AI·K·U naturally creates artifacts useful for compliance:
 
 ### Risk Management
 
-H·AI·K·U mitigates several AI adoption risks:
+AI-DLC mitigates several AI adoption risks:
 
 | Risk | Mitigation |
 |------|------------|
@@ -252,7 +252,7 @@ H·AI·K·U mitigates several AI adoption risks:
 
 For regulated industries:
 
-- **SOC 2**: H·AI·K·U provides change management documentation
+- **SOC 2**: AI-DLC provides change management documentation
 - **HIPAA**: Artifacts demonstrate security considerations were reviewed
 - **PCI DSS**: Adversarial workflow provides security validation evidence
 - **FDA**: Completion criteria support validation documentation
@@ -270,7 +270,7 @@ Budget for:
 
 ### Success Factors
 
-Teams succeed with H·AI·K·U when they have:
+Teams succeed with AI-DLC when they have:
 - [ ] Management support (that's you!)
 - [ ] Dedicated champion
 - [ ] Appropriate project for learning
@@ -297,5 +297,5 @@ Watch for:
 ## Next Steps
 
 - **[Tech Lead Guide](/docs/guide-tech-lead/)** - For your tech leads driving adoption
-- **[Assessment](/docs/assessment/)** - "Is H·AI·K·U Right for Us?" evaluation
+- **[Assessment](/docs/assessment/)** - "Is AI-DLC Right for Us?" evaluation
 - **[Adoption Roadmap](/docs/adoption-roadmap/)** - Full adoption journey

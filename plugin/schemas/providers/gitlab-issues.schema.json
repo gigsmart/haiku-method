@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://haiku.dev/schemas/providers/gitlab-issues.schema.json",
+	"$id": "https://ai-dlc.dev/schemas/providers/gitlab-issues.schema.json",
 	"title": "GitLab Issues Provider Config",
 	"description": "Provider-specific configuration for GitLab Issues ticketing",
 	"type": "object",

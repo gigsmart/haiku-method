@@ -11,9 +11,9 @@ export const revalidate = false
 export async function GET() {
 	const items = getBlogFeedItems()
 	const rss = generateRss(items, {
-		title: "H·AI·K·U Blog",
+		title: "AI-DLC Blog",
 		selfUrl: `${SITE_URL}/blog/feed.xml`,
-		description: "Blog posts from the H·AI·K·U project",
+		description: "Blog posts from the AI-DLC project",
 	})
 
 	return new Response(rss.trim(), { headers: FEED_HEADERS_XML })

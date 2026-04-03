@@ -13,7 +13,7 @@ allowed-tools:
 
 # Knowledge Synthesize
 
-Autonomous knowledge synthesis for H·AI·K·U. This skill runs as a forked subagent — it reads a brief file from disk, scans the codebase, and writes structured knowledge artifacts to `.haiku/knowledge/`.
+Autonomous knowledge synthesis for AI-DLC. This skill runs as a forked subagent — it reads a brief file from disk, scans the codebase, and writes structured knowledge artifacts to `.ai-dlc/knowledge/`.
 
 **You have NO access to `AskUserQuestion`.** All work is fully autonomous. Write artifacts to disk — the calling skill will handle user interaction.
 
@@ -21,13 +21,13 @@ Autonomous knowledge synthesis for H·AI·K·U. This skill runs as a forked suba
 
 ## Step 1: Read Brief
 
-Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.haiku/intents/{intent-slug}/.briefs/knowledge-synthesize.md`).
+Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.ai-dlc/{intent-slug}/.briefs/knowledge-synthesize.md`).
 
 Parse YAML frontmatter:
 
 ```yaml
 intent_slug: my-feature
-worktree_path: /path/to/.haiku/worktrees/my-feature
+worktree_path: /path/to/.ai-dlc/worktrees/my-feature
 project_maturity: established  # greenfield | early | established
 existing_knowledge: [design, architecture]  # already-existing artifact types, may be empty
 ```
@@ -147,7 +147,7 @@ Run 5 passes, one per knowledge artifact type. Each pass scans relevant files, e
 |---------|-------------|
 | `Read("README.md")` | Project description, purpose, features |
 | `Read("CONTRIBUTING.md")` | Project values and contribution guidelines |
-| `Glob(".haiku/intents/*/intent.md")` | Past intent descriptions (feature history) |
+| `Glob(".ai-dlc/*/intent.md")` | Past intent descriptions (feature history) |
 | Root `package.json` `description` field | Package description |
 | `Glob("**/app/**")`, `Glob("**/pages/**")` | User-facing feature structure from routes/pages |
 | `Glob("**/*landing*")`, `Glob("**/*home*")`, `Glob("**/*index*")` | Product positioning pages |
@@ -199,7 +199,7 @@ Run 5 passes, one per knowledge artifact type. Each pass scans relevant files, e
 | Route and endpoint names | Domain vocabulary from URL patterns |
 | `Grep("enum\\s+\\w+", glob: "*.{ts,tsx,java,rs,go}")` | Enum definitions (business states/categories) |
 | `Read("README.md")` | Business context and domain description |
-| `Glob(".haiku/*/discovery.md")` | Prior domain analysis from elaboration |
+| `Glob(".ai-dlc/*/discovery.md")` | Prior domain analysis from elaboration |
 | `Glob("**/*service*")`, `Glob("**/*repository*")`, `Glob("**/*controller*")` | Service layer patterns |
 
 **Extraction targets:**
@@ -226,7 +226,7 @@ CLAUDE_PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$(readlink -f "$0")")
 source "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh"
 
 # Write an artifact (example for design)
-hku_knowledge_write "design" "$(cat <<'ARTIFACT_EOF'
+dlc_knowledge_write "design" "$(cat <<'ARTIFACT_EOF'
 ---
 type: design
 version: 1
@@ -408,7 +408,7 @@ Each artifact must conform to the schema from unit-01. Required frontmatter fiel
 
 ## Step 5: Write Results
 
-Use the `Write` tool (not Bash) to write the results file to `.haiku/intents/{intent-slug}/.briefs/knowledge-synthesize-results.md`:
+Use the `Write` tool (not Bash) to write the results file to `.ai-dlc/{intent-slug}/.briefs/knowledge-synthesize-results.md`:
 
 ```markdown
 ---
@@ -463,8 +463,8 @@ Confidence: {level} — {why this confidence level}
 
 **Commit artifacts after writing:**
 ```bash
-git add .haiku/knowledge/
-git add .haiku/intents/{intent-slug}/.briefs/knowledge-synthesize-results.md
+git add .ai-dlc/knowledge/
+git add .ai-dlc/{intent-slug}/.briefs/knowledge-synthesize-results.md
 git commit -m "knowledge: synthesize project knowledge artifacts"
 ```
 
@@ -484,6 +484,6 @@ If a single pass fails but others succeed, continue with remaining passes and no
 
 ## Idempotency
 
-This skill is idempotent. Running it twice on the same codebase produces the same result. `hku_knowledge_write` overwrites existing artifacts atomically (write to temp, then mv).
+This skill is idempotent. Running it twice on the same codebase produces the same result. `dlc_knowledge_write` overwrites existing artifacts atomically (write to temp, then mv).
 
 Existing knowledge artifacts listed in `existing_knowledge` from the brief are overwritten with fresh synthesis results. The calling skill decides whether to invoke synthesis based on whether re-synthesis is needed.

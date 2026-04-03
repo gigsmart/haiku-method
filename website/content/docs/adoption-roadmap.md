@@ -1,10 +1,10 @@
 ---
 title: Adoption Roadmap
-description: A phased approach to adopting H·AI·K·U, from individual developer to organization-wide
+description: A phased approach to adopting AI-DLC, from individual developer to organization-wide
 order: 15
 ---
 
-Adopting H·AI·K·U is a journey, not a destination. This roadmap provides a phased approach that scales from individual experimentation to organization-wide practice.
+Adopting AI-DLC is a journey, not a destination. This roadmap provides a phased approach that scales from individual experimentation to organization-wide practice.
 
 ## Phase 1: Individual Developer
 
@@ -14,10 +14,10 @@ Start with one developer on one project. Master the fundamentals before scaling.
 
 Before starting Phase 1, ensure you have:
 
-- **Claude Code or Cowork installed** and working in your development environment
+- **Claude Code installed** and working in your development environment
 - **A real project** - Not a toy project, but something you're actively working on
 - **Dedicated time** - Plan for a learning curve in the first few sessions
-- **An open mindset** - H·AI·K·U may feel slower at first; trust the process
+- **An open mindset** - AI-DLC may feel slower at first; trust the process
 
 ### Goals
 
@@ -29,9 +29,9 @@ Before starting Phase 1, ensure you have:
 ### Activities
 
 **First session:**
-1. Install the H·AI·K·U plugin
+1. Install the AI-DLC plugin
 2. Create your first intent with 2-3 units
-3. Work through the first unit using `/haiku:elaborate` and `/haiku:execute`
+3. Work through the first unit using `/ai-dlc:elaborate` and `/ai-dlc:execute`
 4. Complete the full hat cycle
 
 **Subsequent sessions:**
@@ -43,7 +43,7 @@ Before starting Phase 1, ensure you have:
 
 | Metric | Target | How to Measure |
 |--------|--------|----------------|
-| Units completed | 3-5 | Count `.haiku/unit-*.md` files marked complete |
+| Units completed | 3-5 | Count `.ai-dlc/unit-*.md` files marked complete |
 | Hat utilization | All 4 used | Self-observation |
 | Criteria specificity | Improving | Fewer ambiguous criteria per unit |
 | Autonomy achieved | Some AHOTL | At least one Builder phase ran without intervention |
@@ -86,14 +86,14 @@ Before starting Phase 2, ensure:
 
 - [ ] All team members complete at least one unit independently
 - [ ] Establish team conventions for intent/unit organization
-- [ ] Integrate H·AI·K·U into existing workflows (PR reviews, standups)
+- [ ] Integrate AI-DLC into existing workflows (PR reviews, standups)
 - [ ] Create shared understanding of when to use which workflow
 
 ### Rolling Out
 
 **Champion Model (Recommended)**
 
-1. Champion demonstrates H·AI·K·U on a real task in team meeting
+1. Champion demonstrates AI-DLC on a real task in team meeting
 2. Team members pair with champion for their first unit
 3. Team members work independently with champion available for questions
 4. Team reviews first independently-completed units together
@@ -111,7 +111,7 @@ The team should agree on:
 
 | Convention | Options | Recommendation |
 |------------|---------|----------------|
-| Intent file location | Root, `.haiku/`, feature branch | `.haiku/` directory |
+| Intent file location | Root, `.ai-dlc/`, feature branch | `.ai-dlc/` directory |
 | Unit naming | Sequential, descriptive, both | `unit-01-description.md` |
 | Commit strategy | Per unit, per hat, per feature | Per unit (one commit per complete unit) |
 | PR integration | One PR per intent, per unit | Per intent (all units in one PR) |
@@ -145,7 +145,7 @@ The team should agree on:
 
 | Pitfall | Symptom | Solution |
 |---------|---------|----------|
-| Inconsistent adoption | Only champion uses H·AI·K·U | Make it required for specific task types |
+| Inconsistent adoption | Only champion uses AI-DLC | Make it required for specific task types |
 | Convention drift | Everyone does it differently | Document and enforce conventions |
 | Overhead complaints | "This slows me down" | Focus on quality improvements, be patient |
 | Tool blame | "AI made a mistake" | Improve criteria and review process |
@@ -164,40 +164,40 @@ The team should agree on:
 
 ## Phase 3: Organization-Wide
 
-Scale H·AI·K·U across the organization with proper support and governance.
+Scale AI-DLC across the organization with proper support and governance.
 
 ### Prerequisites
 
 Before starting Phase 3, ensure:
 
-- **Multiple successful team adoptions** - At least 2-3 teams using H·AI·K·U effectively
+- **Multiple successful team adoptions** - At least 2-3 teams using AI-DLC effectively
 - **Executive sponsorship** - Leadership understands and supports the methodology
 - **Training resources** - Documentation, examples, champions available
 - **Metrics framework** - Ability to measure and report on adoption
 
 ### Goals
 
-- [ ] H·AI·K·U becomes default methodology for appropriate work types
+- [ ] AI-DLC becomes default methodology for appropriate work types
 - [ ] Training program established for new hires and existing staff
-- [ ] Tooling and automation support H·AI·K·U workflows
+- [ ] Tooling and automation support AI-DLC workflows
 - [ ] Continuous improvement process in place
 
 ### Institutionalization
 
 **Training Program:**
-- Onboarding includes H·AI·K·U introduction
+- Onboarding includes AI-DLC introduction
 - Advanced workshops for workflow selection and custom workflows
 - Champion certification program
 - Regular office hours with experienced practitioners
 
 **Tooling Support:**
-- Project templates include `.haiku/` structure
+- Project templates include `.ai-dlc/` structure
 - CI/CD aware of completion criteria
 - Dashboards track adoption metrics
 - Automated reminders for incomplete units
 
 **Governance:**
-- Guidelines for when H·AI·K·U is required vs. optional
+- Guidelines for when AI-DLC is required vs. optional
 - Quality standards for intents and units
 - Review process for custom workflows
 - Feedback channels for methodology improvements
@@ -228,7 +228,7 @@ Each team owns their intent and units, with dependencies across team boundaries 
 
 | Metric | Target | How to Measure |
 |--------|--------|----------------|
-| Adoption rate | >80% of eligible projects | Automated scanning for `.haiku/` |
+| Adoption rate | >80% of eligible projects | Automated scanning for `.ai-dlc/` |
 | Training completion | 100% of developers | LMS tracking |
 | Quality improvement | Measurable | Bug rates, PR revision counts, test coverage |
 | Developer satisfaction | High | Surveys, retention |
@@ -262,7 +262,7 @@ The timeline for adoption varies by organization size and culture. Here's a gene
 | Phase 2 | 2-3 sprints | 3-6 sprints | 6-12 sprints |
 | Phase 3 | N/A | 6-12 sprints | 12-24 sprints |
 
-**Key principle:** Don't rush. Sustainable adoption takes time. It's better to have one team using H·AI·K·U excellently than five teams using it poorly.
+**Key principle:** Don't rush. Sustainable adoption takes time. It's better to have one team using AI-DLC excellently than five teams using it poorly.
 
 ## Next Steps
 

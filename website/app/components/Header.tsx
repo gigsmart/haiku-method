@@ -87,14 +87,14 @@ export function Header() {
 		<>
 			<header
 				ref={headerRef}
-				className="sticky top-0 z-50 border-b border-stone-200 bg-white/95 backdrop-blur-sm dark:border-stone-800 dark:bg-stone-950/95"
+				className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur-sm dark:border-gray-800 dark:bg-gray-950/95"
 			>
 				<nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
 					<Link
 						href="/"
 						className="text-xl font-bold tracking-tight transition hover:opacity-80"
 					>
-						H·AI·K·U
+						AI-DLC
 					</Link>
 
 					{/* Desktop Navigation — Primary links + mega menu trigger */}
@@ -128,8 +128,8 @@ export function Header() {
 											type="button"
 											className={`flex items-center gap-1 rounded-lg px-3 py-2 transition ${
 												isActive || isOpen
-													? "bg-stone-100 font-medium text-stone-900 dark:bg-stone-800 dark:text-white"
-													: "text-stone-600 hover:bg-stone-50 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-white"
+													? "bg-gray-100 font-medium text-gray-900 dark:bg-gray-800 dark:text-white"
+													: "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-white"
 											}`}
 											aria-expanded={isOpen}
 											aria-haspopup="true"
@@ -161,8 +161,8 @@ export function Header() {
 									href={item.href}
 									className={`rounded-lg px-3 py-2 transition ${
 										isActive
-											? "bg-stone-100 font-medium text-stone-900 dark:bg-stone-800 dark:text-white"
-											: "text-stone-600 hover:bg-stone-50 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-white"
+											? "bg-gray-100 font-medium text-gray-900 dark:bg-gray-800 dark:text-white"
+											: "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-white"
 									}`}
 								>
 									{item.title}
@@ -170,13 +170,13 @@ export function Header() {
 							)
 						})}
 
-						<div className="ml-2 flex items-center gap-2 border-l border-stone-200 pl-4 dark:border-stone-700">
+						<div className="ml-2 flex items-center gap-2 border-l border-gray-200 pl-4 dark:border-gray-700">
 							{/* biome-ignore lint/a11y/useAnchorContent: aria-label provides accessible content */}
 							<a
 								href="https://github.com/thebushidocollective/ai-dlc"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="rounded-lg p-2 text-stone-600 transition hover:bg-stone-100 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-white"
+								className="rounded-lg p-2 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
 								aria-label="GitHub"
 							>
 								<svg

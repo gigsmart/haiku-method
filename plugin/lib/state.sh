@@ -1,20 +1,20 @@
 #!/bin/bash
-# state.sh — File-based state management for H·AI·K·U
+# state.sh — File-based state management for AI-DLC
 #
 # Filesystem-backed state management.
-# State files live at .haiku/intents/{intent-slug}/state/.
+# State files live at .ai-dlc/{intent-slug}/state/.
 # All writes are atomic (tmp + mv).
 #
 # Usage:
 #   source state.sh
-#   hku_state_save "$intent_dir" "iteration.json" "$json_content"
-#   content=$(hku_state_load "$intent_dir" "iteration.json")
+#   dlc_state_save "$intent_dir" "iteration.json" "$json_content"
+#   content=$(dlc_state_load "$intent_dir" "iteration.json")
 
 # Guard against double-sourcing
-if [ -n "${_HKU_STATE_SOURCED:-}" ]; then
+if [ -n "${_DLC_STATE_SOURCED:-}" ]; then
   return 0 2>/dev/null || exit 0
 fi
-_HKU_STATE_SOURCED=1
+_DLC_STATE_SOURCED=1
 
 # Source parse library (which sources deps.sh)
 STATE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
@@ -22,8 +22,8 @@ STATE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 source "$STATE_SCRIPT_DIR/parse.sh"
 
 # Save state: atomic write (tmp + mv)
-# Usage: hku_state_save <intent_dir> <key> <content>
-hku_state_save() {
+# Usage: dlc_state_save <intent_dir> <key> <content>
+dlc_state_save() {
   local intent_dir="$1"
   local key="$2"
   local content="$3"
@@ -31,7 +31,7 @@ hku_state_save() {
   local filepath="${state_dir}/${key}"
 
   mkdir -p "$state_dir" 2>/dev/null || {
-    echo "haiku: hku_state_save: cannot create state directory: $state_dir" >&2
+    echo "ai-dlc: dlc_state_save: cannot create state directory: $state_dir" >&2
     return 1
   }
 
@@ -40,24 +40,24 @@ hku_state_save() {
 }
 
 # Load state: return file contents or empty string if missing
-# Usage: hku_state_load <intent_dir> <key>
-hku_state_load() {
+# Usage: dlc_state_load <intent_dir> <key>
+dlc_state_load() {
   local intent_dir="$1"
   local key="$2"
   cat "${intent_dir}/state/${key}" 2>/dev/null || echo ""
 }
 
 # Delete state file
-# Usage: hku_state_delete <intent_dir> <key>
-hku_state_delete() {
+# Usage: dlc_state_delete <intent_dir> <key>
+dlc_state_delete() {
   local intent_dir="$1"
   local key="$2"
   rm -f "${intent_dir}/state/${key}"
 }
 
 # List state keys (filenames in state directory)
-# Usage: hku_state_list <intent_dir>
-hku_state_list() {
+# Usage: dlc_state_list <intent_dir>
+dlc_state_list() {
   local intent_dir="$1"
   local state_dir="${intent_dir}/state"
   if [ -d "$state_dir" ]; then
@@ -66,13 +66,13 @@ hku_state_list() {
 }
 
 # Validate phase against known enum; return default if unknown
-# Usage: hku_validate_phase <phase> [default]
-hku_validate_phase() {
+# Usage: dlc_validate_phase <phase> [default]
+dlc_validate_phase() {
   local phase="$1" default="${2:-execution}"
   case "$phase" in
     elaboration|execution|operation|reflection|closed) echo "$phase" ;;
     *)
-      [ -n "$phase" ] && echo "haiku: unknown phase '$phase', defaulting to '$default'" >&2
+      [ -n "$phase" ] && echo "ai-dlc: unknown phase '$phase', defaulting to '$default'" >&2
       echo "$default"
       ;;
   esac
@@ -100,33 +100,16 @@ _state_yaml_get_simple() {
 }
 
 # Find the first active intent directory
-# Checks .haiku/intents/*/intent.md (new structure) first, then falls back
-# to .haiku/*/intent.md (legacy structure). Works from any working directory.
+# Scans .ai-dlc/*/intent.md for status: active. Works from any working directory.
 # Returns the full path to the intent directory, or empty string if none found.
-# Usage: hku_find_active_intent
-hku_find_active_intent() {
+# Usage: dlc_find_active_intent
+dlc_find_active_intent() {
   local repo_root
   repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || return 0
 
-  # New structure: .haiku/intents/*/intent.md
   local intent_file
-  for intent_file in "$repo_root"/.haiku/intents/*/intent.md; do
+  for intent_file in "$repo_root"/.ai-dlc/*/intent.md; do
     [ -f "$intent_file" ] || continue
-    local intent_status
-    intent_status=$(_state_yaml_get_simple "status" "pending" < "$intent_file")
-    if [ "$intent_status" = "active" ]; then
-      dirname "$intent_file"
-      return 0
-    fi
-  done
-
-  # Legacy structure: .haiku/*/intent.md
-  for intent_file in "$repo_root"/.haiku/*/intent.md; do
-    [ -f "$intent_file" ] || continue
-    # Skip directories that are part of the new structure
-    case "$intent_file" in
-      */.haiku/intents/*) continue ;;
-    esac
     local intent_status
     intent_status=$(_state_yaml_get_simple "status" "pending" < "$intent_file")
     if [ "$intent_status" = "active" ]; then
@@ -136,16 +119,4 @@ hku_find_active_intent() {
   done
 
   echo ""
-}
-
-# Get intent mode (continuous | discrete)
-# Usage: hku_get_intent_mode <intent_file>
-# Returns: "continuous" or "discrete" (defaults to "continuous")
-hku_get_intent_mode() {
-  local intent_file="$1"
-  if [ ! -f "$intent_file" ]; then
-    echo "continuous"
-    return 0
-  fi
-  _state_yaml_get_simple "mode" "continuous" < "$intent_file"
 }

@@ -1,5 +1,5 @@
 #!/bin/bash
-# run-visual-comparison.sh — Visual fidelity comparison orchestrator for H·AI·K·U
+# run-visual-comparison.sh — Visual fidelity comparison orchestrator for AI-DLC
 #
 # Ties together gate detection, reference resolution, screenshot capture,
 # and prepares comparison context for the reviewer agent's vision analysis.
@@ -14,13 +14,13 @@
 #
 # Usage (sourced):
 #   source run-visual-comparison.sh
-#   hku_run_visual_comparison --intent-slug <slug> --unit-slug <slug> --intent-dir <path>
+#   dlc_run_visual_comparison --intent-slug <slug> --unit-slug <slug> --intent-dir <path>
 
 # Guard against double-sourcing
-if [ -n "${_HKU_RUN_VISUAL_COMPARISON_SOURCED:-}" ]; then
+if [ -n "${_DLC_RUN_VISUAL_COMPARISON_SOURCED:-}" ]; then
   return 0 2>/dev/null || true
 fi
-_HKU_RUN_VISUAL_COMPARISON_SOURCED=1
+_DLC_RUN_VISUAL_COMPARISON_SOURCED=1
 
 VISUAL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -246,10 +246,10 @@ REPORT
 
 # Run the full visual comparison pipeline.
 #
-# Usage: hku_run_visual_comparison [options]
+# Usage: dlc_run_visual_comparison [options]
 # Output: comparison-context.json and comparison-report.md
 # Exit: 0 if gate inactive or PASS, 1 if FAIL or infrastructure error
-hku_run_visual_comparison() {
+dlc_run_visual_comparison() {
   local intent_slug=""
   local unit_slug=""
   local intent_dir=""
@@ -273,7 +273,7 @@ hku_run_visual_comparison() {
         echo "  --unit-slug <slug>    Unit slug (required)"
         echo "  --intent-dir <path>   Path to intent directory (required)"
         echo "  --base-url <url>      Base URL for built output capture"
-        echo "  --output-dir <path>   Output directory (default: .haiku/{intent}/screenshots/{unit})"
+        echo "  --output-dir <path>   Output directory (default: .ai-dlc/{intent}/screenshots/{unit})"
         echo "  --dry-run             Prepare screenshots but skip vision comparison setup"
         echo ""
         echo "Exit codes:"
@@ -282,7 +282,7 @@ hku_run_visual_comparison() {
         return 0
         ;;
       *)
-        echo "haiku: run-visual-comparison: unknown argument: $1" >&2
+        echo "ai-dlc: run-visual-comparison: unknown argument: $1" >&2
         return 1
         ;;
     esac
@@ -290,15 +290,15 @@ hku_run_visual_comparison() {
 
   # Validate required arguments
   if [ -z "$intent_slug" ]; then
-    echo "haiku: run-visual-comparison: --intent-slug is required" >&2
+    echo "ai-dlc: run-visual-comparison: --intent-slug is required" >&2
     return 1
   fi
   if [ -z "$unit_slug" ]; then
-    echo "haiku: run-visual-comparison: --unit-slug is required" >&2
+    echo "ai-dlc: run-visual-comparison: --unit-slug is required" >&2
     return 1
   fi
   if [ -z "$intent_dir" ]; then
-    echo "haiku: run-visual-comparison: --intent-dir is required" >&2
+    echo "ai-dlc: run-visual-comparison: --intent-dir is required" >&2
     return 1
   fi
 
@@ -306,19 +306,19 @@ hku_run_visual_comparison() {
   local repo_root
   repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
   if [ -z "$repo_root" ]; then
-    echo "haiku: run-visual-comparison: not inside a git repository" >&2
+    echo "ai-dlc: run-visual-comparison: not inside a git repository" >&2
     return 1
   fi
 
   local unit_file="$intent_dir/$unit_slug.md"
   if [ -z "$output_dir" ]; then
-    output_dir="$repo_root/.haiku/intents/$intent_slug/screenshots/$unit_slug"
+    output_dir="$repo_root/.ai-dlc/$intent_slug/screenshots/$unit_slug"
   fi
 
   mkdir -p "$output_dir"
 
   # ── Step 1: Gate Detection ──────────────────────────────────────────────
-  echo "haiku: visual-comparison: checking visual gate..." >&2
+  echo "ai-dlc: visual-comparison: checking visual gate..." >&2
 
   # Get changed files for the current branch
   local changed_files=""
@@ -327,30 +327,30 @@ hku_run_visual_comparison() {
   changed_files=$(git diff --name-only "$default_branch"...HEAD 2>/dev/null | tr '\n' ',' || echo "")
 
   local gate_result
-  gate_result=$(hku_detect_visual_gate --unit-file "$unit_file" --changed-files "$changed_files")
+  gate_result=$(dlc_detect_visual_gate --unit-file "$unit_file" --changed-files "$changed_files")
 
   case "$gate_result" in
     VISUAL_GATE=false*)
-      echo "haiku: visual-comparison: visual gate inactive — skipping" >&2
+      echo "ai-dlc: visual-comparison: visual gate inactive — skipping" >&2
       echo "VISUAL_GATE=false"
       return 0
       ;;
   esac
 
-  echo "haiku: visual-comparison: visual gate active" >&2
+  echo "ai-dlc: visual-comparison: visual gate active" >&2
 
   # ── Step 2: Reference Resolution ────────────────────────────────────────
-  echo "haiku: visual-comparison: resolving design reference..." >&2
+  echo "ai-dlc: visual-comparison: resolving design reference..." >&2
 
   local ref_json
-  ref_json=$(hku_resolve_design_ref \
+  ref_json=$(dlc_resolve_design_ref \
     --intent-slug "$intent_slug" \
     --unit-slug "$unit_slug" \
     --intent-dir "$intent_dir")
   local ref_rc=$?
 
   if [ $ref_rc -ne 0 ]; then
-    echo "haiku: visual-comparison: reference resolution failed — checking for Mode A" >&2
+    echo "ai-dlc: visual-comparison: reference resolution failed — checking for Mode A" >&2
 
     # ── Mode A: Present-for-review ──────────────────────────────────────
     # When no design_ref exists but a design provider IS configured and
@@ -378,7 +378,7 @@ hku_run_visual_comparison() {
       done <<< "$normalized_files"
 
       if [ -n "$provider_files" ]; then
-        echo "haiku: visual-comparison: Mode A — present-for-review (provider=$design_provider)" >&2
+        echo "ai-dlc: visual-comparison: Mode A — present-for-review (provider=$design_provider)" >&2
 
         # Build design files JSON array
         local design_files_json="[]"
@@ -446,7 +446,7 @@ REPORT
   fidelity=$(echo "$ref_json" | jq -r '.fidelity')
   ref_type=$(echo "$ref_json" | jq -r '.type')
 
-  echo "haiku: visual-comparison: reference resolved — type=$ref_type, fidelity=$fidelity" >&2
+  echo "ai-dlc: visual-comparison: reference resolved — type=$ref_type, fidelity=$fidelity" >&2
 
   # ── Step 2a: Check needs_agent_export ────────────────────────────────────
   local needs_agent_export
@@ -455,7 +455,7 @@ REPORT
   export_instructions=$(echo "$ref_json" | jq -r '.export_instructions // empty')
 
   if [ "$needs_agent_export" = "true" ]; then
-    echo "haiku: visual-comparison: reference requires agent export — writing pending context" >&2
+    echo "ai-dlc: visual-comparison: reference requires agent export — writing pending context" >&2
 
     jq -n \
       --arg mode "pending_agent_export" \
@@ -505,7 +505,7 @@ REPORT
   done
 
   if [ "$ref_count" -eq 0 ]; then
-    echo "haiku: visual-comparison: no reference screenshots found in $output_dir" >&2
+    echo "ai-dlc: visual-comparison: no reference screenshots found in $output_dir" >&2
     jq -n \
       --arg error "no_reference_screenshots" \
       --arg output_dir "$output_dir" \
@@ -514,11 +514,11 @@ REPORT
     return 1
   fi
 
-  echo "haiku: visual-comparison: found $ref_count reference screenshot(s)" >&2
+  echo "ai-dlc: visual-comparison: found $ref_count reference screenshot(s)" >&2
 
   # ── Step 3: Capture Built Output ────────────────────────────────────────
   if [ -n "$base_url" ]; then
-    echo "haiku: visual-comparison: capturing built output from $base_url..." >&2
+    echo "ai-dlc: visual-comparison: capturing built output from $base_url..." >&2
 
     # Derive routes from resolved reference views so built and ref captures cover the same views.
     # View names map back to routes: "home" -> "/", anything else -> "/<view>".
@@ -537,7 +537,7 @@ REPORT
       --url "$base_url" \
       $routes_arg 2>&1; then
 
-      echo "haiku: visual-comparison: built output capture failed" >&2
+      echo "ai-dlc: visual-comparison: built output capture failed" >&2
       jq -n \
         --arg error "capture_failed" \
         --arg base_url "$base_url" \
@@ -546,13 +546,13 @@ REPORT
       return 1
     fi
 
-    echo "haiku: visual-comparison: built output captured" >&2
+    echo "ai-dlc: visual-comparison: built output captured" >&2
   else
-    echo "haiku: visual-comparison: no --base-url provided, expecting built screenshots already in $output_dir" >&2
+    echo "ai-dlc: visual-comparison: no --base-url provided, expecting built screenshots already in $output_dir" >&2
   fi
 
   # ── Step 4: Build Screenshot Pairs ──────────────────────────────────────
-  echo "haiku: visual-comparison: building screenshot pairs..." >&2
+  echo "ai-dlc: visual-comparison: building screenshot pairs..." >&2
 
   local pairs
   pairs=$(_build_screenshot_pairs "$output_dir")
@@ -563,8 +563,8 @@ REPORT
   if [ "$pair_count" -eq 0 ]; then
     # No built screenshots to compare — this may be normal if base-url wasn't provided
     # and built screenshots haven't been captured yet
-    echo "haiku: visual-comparison: no screenshot pairs found" >&2
-    echo "haiku: visual-comparison: reference screenshots are ready; built screenshots needed for comparison" >&2
+    echo "ai-dlc: visual-comparison: no screenshot pairs found" >&2
+    echo "ai-dlc: visual-comparison: reference screenshots are ready; built screenshots needed for comparison" >&2
 
     # Still write context so the reviewer knows what to do
     local prompt_path="$VISUAL_SCRIPT_DIR/vision-comparison-prompt.md"
@@ -575,7 +575,7 @@ REPORT
     return 0
   fi
 
-  echo "haiku: visual-comparison: found $pair_count screenshot pair(s)" >&2
+  echo "ai-dlc: visual-comparison: found $pair_count screenshot pair(s)" >&2
 
   # ── Step 5: Prepare Comparison Context ──────────────────────────────────
   local prompt_path="$VISUAL_SCRIPT_DIR/vision-comparison-prompt.md"
@@ -586,7 +586,7 @@ REPORT
   local ref_provider
   ref_provider=$(echo "$ref_json" | jq -r '.provider // empty')
   if [ "$ref_type" = "external" ] && [ -n "$ref_provider" ]; then
-    echo "haiku: visual-comparison: Mode B — adding threshold prompting (provider=$ref_provider)" >&2
+    echo "ai-dlc: visual-comparison: Mode B — adding threshold prompting (provider=$ref_provider)" >&2
 
     # Patch comparison-context.json to add threshold fields
     local tmp_ctx
@@ -610,13 +610,13 @@ REPORT
   _write_pending_report "$output_dir" "$unit_slug" "$fidelity" "$ref_type" "$pair_count"
 
   if [ "$dry_run" = "true" ]; then
-    echo "haiku: visual-comparison: dry run — screenshots captured, skipping vision setup" >&2
+    echo "ai-dlc: visual-comparison: dry run — screenshots captured, skipping vision setup" >&2
     echo "VISUAL_GATE=true"
     return 0
   fi
 
-  echo "haiku: visual-comparison: comparison context prepared at $output_dir/comparison-context.json" >&2
-  echo "haiku: visual-comparison: reviewer agent will perform vision analysis" >&2
+  echo "ai-dlc: visual-comparison: comparison context prepared at $output_dir/comparison-context.json" >&2
+  echo "ai-dlc: visual-comparison: reviewer agent will perform vision analysis" >&2
   echo "VISUAL_GATE=true"
   return 0
 }
@@ -626,7 +626,7 @@ REPORT
 # ============================================================================
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-  hku_check_deps
-  hku_run_visual_comparison "$@"
+  dlc_check_deps
+  dlc_run_visual_comparison "$@"
   exit $?
 fi

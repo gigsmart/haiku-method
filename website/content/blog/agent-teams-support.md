@@ -1,19 +1,19 @@
 ---
-title: "H·AI·K·U Meets Agent Teams"
-description: "H·AI·K·U's construction loop now leverages Claude Code's Agent Teams, turning each unit of work into an independent teammate with its own context, worktree, and permission model."
+title: "AI-DLC Meets Agent Teams"
+description: "AI-DLC's construction loop now leverages Claude Code's Agent Teams, turning each unit of work into an independent teammate with its own context, worktree, and permission model."
 date: 2026-02-05
 author: The Bushido Collective
 ---
 
 Claude Code recently shipped [Agent Teams](https://code.claude.com/docs/en/agent-teams) - an experimental feature that coordinates multiple independent Claude Code instances working together. Each teammate gets its own context window, can message other teammates directly, and shares a task list for self-coordination.
 
-H·AI·K·U now supports it natively.
+AI-DLC now supports it natively.
 
-## Why Agent Teams Matter for H·AI·K·U
+## Why Agent Teams Matter for AI-DLC
 
-H·AI·K·U's construction loop already breaks work into **units** - focused pieces with clear completion criteria, each running in its own git worktree on its own branch. Previously, these units ran as subagents: constrained workers that execute within the parent session and can only report results back to the caller.
+AI-DLC's construction loop already breaks work into **units** - focused pieces with clear completion criteria, each running in its own git worktree on its own branch. Previously, these units ran as subagents: constrained workers that execute within the parent session and can only report results back to the caller.
 
-Agent Teams changes the game. Instead of subagents, each unit can now run as a **full independent Claude session**. The difference matters:
+Agent Teams changes the game. Instead of subagents, each unit can now run as a **full independent Claude Code session**. The difference matters:
 
 | | Subagents | Agent Teams |
 |---|---|---|
@@ -22,11 +22,11 @@ Agent Teams changes the game. Instead of subagents, each unit can now run as a *
 | **Coordination** | Parent manages everything | Shared task list, self-coordination |
 | **Isolation** | Runs within parent session | Fully independent session |
 
-For H·AI·K·U, this means a builder teammate working on the backend can message the reviewer teammate about an architectural decision. A test writer can ask the planner for clarification on acceptance criteria. Teammates collaborate like a real team, not just workers reporting to a manager.
+For AI-DLC, this means a builder teammate working on the backend can message the reviewer teammate about an architectural decision. A test writer can ask the planner for clarification on acceptance criteria. Teammates collaborate like a real team, not just workers reporting to a manager.
 
 ## How It Works
 
-When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is enabled, the `/haiku:execute` loop operates as a team:
+When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is enabled, the `/ai-dlc:execute` loop operates as a team:
 
 1. The **lead session** reads the DAG of units and their dependencies
 2. For each ready unit, the lead **spawns a teammate** in that unit's git worktree
@@ -34,17 +34,17 @@ When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is enabled, the `/haiku:execute` loo
 4. Teammates **communicate findings** through the shared mailbox
 5. When a unit's criteria are satisfied, the teammate marks it complete and the lead advances the workflow
 
-Each teammate automatically receives H·AI·K·U context via hook injection - the current hat instructions, intent, completion criteria, and workflow state. They start with full project context (CLAUDE.md, MCP servers, skills) just like any Claude session.
+Each teammate automatically receives AI-DLC context via hook injection - the current hat instructions, intent, completion criteria, and workflow state. They start with full project context (CLAUDE.md, MCP servers, skills) just like any Claude Code session.
 
 ## One Mode for the Entire Intent
 
-To make Agent Teams work cleanly with H·AI·K·U, we moved the operating mode from individual hats to the **intent level**.
+To make Agent Teams work cleanly with AI-DLC, we moved the operating mode from individual hats to the **intent level**.
 
 Previously, each hat carried its own mode. A builder defaulted to OHOTL, a reviewer to HITL. This scattered autonomy decisions across hat definitions and made it impossible to give a consistent permission model to teammates.
 
-Now you choose your mode once during `/haiku:elaborate`. That single decision controls the permission model of every teammate spawned during construction:
+Now you choose your mode once during `/ai-dlc:elaborate`. That single decision controls the permission model of every teammate spawned during construction:
 
-| H·AI·K·U Mode | Agent Teams Mode | What Happens |
+| AI-DLC Mode | Agent Teams Mode | What Happens |
 |---|---|---|
 | **HITL** | `plan` | Teammate plans, lead approves before any implementation |
 | **OHOTL** | `acceptEdits` | Teammate works autonomously, lead can intervene |
@@ -53,7 +53,7 @@ Now you choose your mode once during `/haiku:elaborate`. That single decision co
 The mode is stored in the intent file and inherited by the entire workflow:
 
 ```yaml
-# .haiku/intents/my-feature/intent.md
+# .ai-dlc/my-feature/intent.md
 ---
 workflow: default
 mode: OHOTL
@@ -77,7 +77,7 @@ description: Implements code to satisfy completion criteria using backpressure a
 ---
 ```
 
-During `/haiku:elaborate`, the system discovers available hats dynamically by reading all hat files rather than referencing a hardcoded table. Drop a new hat file into the `hats/` directory with proper frontmatter and it becomes available for workflows immediately.
+During `/ai-dlc:elaborate`, the system discovers available hats dynamically by reading all hat files rather than referencing a hardcoded table. Drop a new hat file into the `hats/` directory with proper frontmatter and it becomes available for workflows immediately.
 
 All thirteen built-in hats now describe themselves:
 
@@ -100,7 +100,7 @@ All thirteen built-in hats now describe themselves:
 Custom workflows reference hats by slug. The system resolves them at runtime:
 
 ```yaml
-# .haiku/studios/adversarial/STUDIO.md
+# .ai-dlc/workflows.yml
 adversarial:
   description: Security-focused build with attack/defend cycles
   hats: [planner, builder, red-team, blue-team, reviewer]
@@ -108,7 +108,7 @@ adversarial:
 
 ## The Elaboration Flow
 
-The `/haiku:elaborate` command now asks three questions that shape the entire construction loop:
+The `/ai-dlc:elaborate` command now asks three questions that shape the entire construction loop:
 
 1. **What are you building?** Define the intent and completion criteria
 2. **What workflow fits?** Choose from dynamically discovered workflows and hats
@@ -128,14 +128,14 @@ Enable Agent Teams in your Claude Code settings:
 }
 ```
 
-Install or update the H·AI·K·U plugin:
+Install or update the AI-DLC plugin:
 
 ```
 /plugin marketplace add thebushidocollective/ai-dlc
-/plugin install haiku@thebushidocollective-ai-dlc --scope project
+/plugin install ai-dlc@thebushidocollective-ai-dlc --scope project
 ```
 
-Then run `/haiku:elaborate` to define an intent with a mode, and `/haiku:execute` to start the team.
+Then run `/ai-dlc:elaborate` to define an intent with a mode, and `/ai-dlc:execute` to start the team.
 
 The changes are backwards-compatible. Without Agent Teams enabled, the construction loop uses subagents as before. Existing intents without a `mode` field default to OHOTL.
 

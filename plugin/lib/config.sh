@@ -1,14 +1,14 @@
 #!/bin/bash
-# config.sh - H·AI·K·U Configuration System (Shell Version)
+# config.sh - AI-DLC Configuration System (Shell Version)
 #
 # Provides configuration loading with precedence:
 # 1. Intent frontmatter (highest priority)
-# 2. Repo settings (.haiku/settings.yml)
+# 2. Repo settings (.ai-dlc/settings.yml)
 # 3. Built-in defaults (lowest priority)
 #
 # Usage:
 #   source config.sh
-#   config=$(get_haiku_config "$intent_dir")
+#   config=$(get_ai_dlc_config "$intent_dir")
 #   change_strategy=$(echo "$config" | jq -r '.change_strategy')
 
 # Source foundation libraries
@@ -16,13 +16,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 source "$SCRIPT_DIR/deps.sh"
 source "$SCRIPT_DIR/parse.sh"
 source "$SCRIPT_DIR/state.sh"
-source "$SCRIPT_DIR/migrate.sh"
 
 # Guard: ensure dependencies are available (config.sh relies on jq and yq)
-if ! hku_require_jq || ! hku_require_yq; then
+if ! dlc_require_jq || ! dlc_require_yq; then
   # Define stub functions so sourcing scripts don't get undefined-function errors
-  get_haiku_config() { echo '{"change_strategy":"unit","elaboration_review":true,"default_branch":"main"}'; }
-  export_haiku_config() { export HAIKU_CHANGE_STRATEGY="unit" HAIKU_ELABORATION_REVIEW="true" HAIKU_DEFAULT_BRANCH="main" HAIKU_AUTO_MERGE="false" HAIKU_AUTO_SQUASH="false" HAIKU_VCS="git"; }
+  get_ai_dlc_config() { echo '{"change_strategy":"unit","elaboration_review":true,"default_branch":"main"}'; }
+  export_ai_dlc_config() { export AI_DLC_CHANGE_STRATEGY="unit" AI_DLC_ELABORATION_REVIEW="true" AI_DLC_DEFAULT_BRANCH="main" AI_DLC_AUTO_MERGE="false" AI_DLC_AUTO_SQUASH="false" AI_DLC_VCS="git"; }
   get_config_value() { echo ""; }
   get_setting_value() { echo ""; }
   load_quality_gates() { echo "{}"; }
@@ -39,9 +38,9 @@ if ! hku_require_jq || ! hku_require_yq; then
 fi
 
 # Default configuration values
-HAIKU_DEFAULT_CHANGE_STRATEGY="unit"
-HAIKU_DEFAULT_ELABORATION_REVIEW="true"
-HAIKU_DEFAULT_BRANCH="auto"
+AI_DLC_DEFAULT_CHANGE_STRATEGY="unit"
+AI_DLC_DEFAULT_ELABORATION_REVIEW="true"
+AI_DLC_DEFAULT_BRANCH="auto"
 
 # Detect which VCS is being used
 # Usage: detect_vcs [directory]
@@ -123,16 +122,12 @@ resolve_default_branch() {
   echo "main"
 }
 
-# Load repo settings from .haiku/settings.yml
+# Load repo settings from .ai-dlc/settings.yml
 # Usage: load_repo_settings [repo_root]
 # Returns: JSON object with git/jj config or '{}'
 load_repo_settings() {
   local repo_root="${1:-$(find_repo_root)}"
-
-  # Run migration if needed (idempotent)
-  hku_migrate_all "$repo_root" 2>/dev/null
-
-  local settings_file="$repo_root/.haiku/settings.yml"
+  local settings_file="$repo_root/.ai-dlc/settings.yml"
 
   if [ ! -f "$settings_file" ]; then
     echo "{}"
@@ -140,7 +135,7 @@ load_repo_settings() {
   fi
 
   # Parse YAML to JSON
-  hku_yaml_to_json < "$settings_file"
+  dlc_yaml_to_json < "$settings_file"
 }
 
 # Load intent overrides from intent.md frontmatter
@@ -172,10 +167,10 @@ load_intent_overrides() {
   echo "$result"
 }
 
-# Get merged H·AI·K·U configuration
-# Usage: get_haiku_config [intent_dir] [repo_root]
+# Get merged AI-DLC configuration
+# Usage: get_ai_dlc_config [intent_dir] [repo_root]
 # Returns: JSON object with complete VcsConfig
-get_haiku_config() {
+get_ai_dlc_config() {
   local intent_dir="${1:-}"
   local repo_root="${2:-$(find_repo_root)}"
   local vcs
@@ -186,9 +181,9 @@ get_haiku_config() {
   local config
   config=$(cat <<EOF
 {
-  "change_strategy": "$HAIKU_DEFAULT_CHANGE_STRATEGY",
-  "elaboration_review": $HAIKU_DEFAULT_ELABORATION_REVIEW,
-  "default_branch": "$HAIKU_DEFAULT_BRANCH"
+  "change_strategy": "$AI_DLC_DEFAULT_CHANGE_STRATEGY",
+  "elaboration_review": $AI_DLC_DEFAULT_ELABORATION_REVIEW,
+  "default_branch": "$AI_DLC_DEFAULT_BRANCH"
 }
 EOF
 )
@@ -228,31 +223,31 @@ EOF
 }
 
 # Export config as environment variables
-# Usage: export_haiku_config [intent_dir] [repo_root]
-# Sets: HAIKU_CHANGE_STRATEGY, HAIKU_ELABORATION_REVIEW, HAIKU_DEFAULT_BRANCH, etc.
-export_haiku_config() {
+# Usage: export_ai_dlc_config [intent_dir] [repo_root]
+# Sets: AI_DLC_CHANGE_STRATEGY, AI_DLC_ELABORATION_REVIEW, AI_DLC_DEFAULT_BRANCH, etc.
+export_ai_dlc_config() {
   local intent_dir="${1:-}"
   local repo_root="${2:-}"
   local config
-  config=$(get_haiku_config "$intent_dir" "$repo_root")
+  config=$(get_ai_dlc_config "$intent_dir" "$repo_root")
 
-  export HAIKU_CHANGE_STRATEGY
-  HAIKU_CHANGE_STRATEGY=$(echo "$config" | jq -r '.change_strategy')
+  export AI_DLC_CHANGE_STRATEGY
+  AI_DLC_CHANGE_STRATEGY=$(echo "$config" | jq -r '.change_strategy')
 
-  export HAIKU_ELABORATION_REVIEW
-  HAIKU_ELABORATION_REVIEW=$(echo "$config" | jq -r '.elaboration_review')
+  export AI_DLC_ELABORATION_REVIEW
+  AI_DLC_ELABORATION_REVIEW=$(echo "$config" | jq -r '.elaboration_review')
 
-  export HAIKU_DEFAULT_BRANCH
-  HAIKU_DEFAULT_BRANCH=$(echo "$config" | jq -r '.default_branch')
+  export AI_DLC_DEFAULT_BRANCH
+  AI_DLC_DEFAULT_BRANCH=$(echo "$config" | jq -r '.default_branch')
 
-  export HAIKU_AUTO_MERGE
-  HAIKU_AUTO_MERGE=$(echo "$config" | jq -r '.auto_merge // "false"')
+  export AI_DLC_AUTO_MERGE
+  AI_DLC_AUTO_MERGE=$(echo "$config" | jq -r '.auto_merge // "false"')
 
-  export HAIKU_AUTO_SQUASH
-  HAIKU_AUTO_SQUASH=$(echo "$config" | jq -r '.auto_squash // "false"')
+  export AI_DLC_AUTO_SQUASH
+  AI_DLC_AUTO_SQUASH=$(echo "$config" | jq -r '.auto_squash // "false"')
 
-  export HAIKU_VCS
-  HAIKU_VCS=$(detect_vcs "$repo_root")
+  export AI_DLC_VCS
+  AI_DLC_VCS=$(detect_vcs "$repo_root")
 }
 
 # Get a specific config value
@@ -263,12 +258,12 @@ get_config_value() {
   local intent_dir="${2:-}"
   local repo_root="${3:-}"
   local config
-  config=$(get_haiku_config "$intent_dir" "$repo_root")
+  config=$(get_ai_dlc_config "$intent_dir" "$repo_root")
 
   echo "$config" | jq -r ".$key // empty"
 }
 
-# Get a top-level setting value from .haiku/settings.yml
+# Get a top-level setting value from .ai-dlc/settings.yml
 # Unlike get_config_value (which reads VCS config), this reads top-level keys
 # Usage: get_setting_value <key> [repo_root]
 # Example: get_setting_value visual_review
@@ -285,7 +280,7 @@ get_setting_value() {
 # Quality Gates Configuration
 # ============================================================================
 
-# Load quality gates from .haiku/settings.yml
+# Load quality gates from .ai-dlc/settings.yml
 # Usage: load_quality_gates [repo_root]
 # Returns: JSON object with gate configs or '{}' if none configured
 load_quality_gates() {
@@ -403,17 +398,17 @@ load_provider_instructions() {
 ${inline_instructions}"
   fi
 
-  # Tier 3: Project override from .haiku/providers/{type}.md
+  # Tier 3: Project override from .ai-dlc/providers/{type}.md
   local repo_root
   repo_root=$(find_repo_root 2>/dev/null || echo "")
   if [[ -n "$repo_root" ]]; then
-    local override="${repo_root}/.haiku/providers/${type}.md"
+    local override="${repo_root}/.ai-dlc/providers/${type}.md"
     if [[ -f "$override" ]]; then
       local override_body
       override_body=$(awk '/^---$/{n++; next} n>=2' "$override")
       merged="${merged}
 
-### Project Override (from .haiku/providers/${type}.md)
+### Project Override (from .ai-dlc/providers/${type}.md)
 ${override_body}"
     fi
   fi
@@ -558,10 +553,10 @@ detect_project_maturity() {
 
   # Count source files excluding scaffolding
   # Excludes: *.md, *.json, *.yml, *.yaml, *.lock, *.toml, LICENSE*, Dockerfile*,
-  #           .github/*, .gitlab-ci*, .circleci/*, .haiku/*
+  #           .github/*, .gitlab-ci*, .circleci/*, .ai-dlc/*
   local source_file_count
   source_file_count=$(git -C "$dir" ls-files 2>/dev/null \
-    | grep -cvE '\.(md|json|ya?ml|lock|toml)$|^LICENSE|^Dockerfile|^\.github/|^\.gitlab-ci|^\.circleci/|^\.haiku/' \
+    | grep -cvE '\.(md|json|ya?ml|lock|toml)$|^LICENSE|^Dockerfile|^\.github/|^\.gitlab-ci|^\.circleci/|^\.ai-dlc/' \
     2>/dev/null || true)
   : "${source_file_count:=0}"
 
@@ -619,9 +614,9 @@ load_providers() {
 
   # Source 2: Cached providers from filesystem state
   local cached _intent_dir
-  _intent_dir=$(hku_find_active_intent)
+  _intent_dir=$(dlc_find_active_intent)
   cached=""
-  [ -n "$_intent_dir" ] && cached=$(hku_state_load "$_intent_dir" "providers.json")
+  [ -n "$_intent_dir" ] && cached=$(dlc_state_load "$_intent_dir" "providers.json")
   if [ -n "$cached" ] && [ "$cached" != "null" ]; then
     for key in spec ticketing design comms; do
       local current
@@ -684,7 +679,7 @@ format_providers_markdown() {
   if [ "$has_any" = "false" ]; then
     echo "### Project Providers"
     echo ""
-    echo "No providers configured. Use \`ToolSearch\` to discover available MCP tools, or configure providers in \`.haiku/settings.yml\`."
+    echo "No providers configured. Use \`ToolSearch\` to discover available MCP tools, or configure providers in \`.ai-dlc/settings.yml\`."
     return
   fi
 
@@ -728,7 +723,7 @@ format_providers_markdown() {
   done
 
   echo ""
-  echo "> **Tip:** Configure providers in \`.haiku/settings.yml\` under \`providers:\` to enable automatic ticket sync and spec references."
+  echo "> **Tip:** Configure providers in \`.ai-dlc/settings.yml\` under \`providers:\` to enable automatic ticket sync and spec references."
 
   # Provider Instructions section - merged from three tiers
   local has_instructions=false

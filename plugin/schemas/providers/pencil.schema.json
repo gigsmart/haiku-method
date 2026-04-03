@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://haikumethod.ai/schemas/providers/pencil.schema.json",
+	"$id": "https://ai-dlc.dev/schemas/providers/pencil.schema.json",
 	"title": "Pencil Provider Config",
 	"description": "Provider-specific configuration for Pencil design provider",
 	"type": "object",

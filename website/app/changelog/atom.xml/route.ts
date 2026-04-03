@@ -11,9 +11,9 @@ export const revalidate = false
 export async function GET() {
 	const items = getChangelogFeedItems()
 	const atom = generateAtom(items, {
-		title: "H·AI·K·U Changelog",
+		title: "AI-DLC Changelog",
 		selfUrl: `${SITE_URL}/changelog/atom.xml`,
-		description: "Release notes and version history for H·AI·K·U",
+		description: "Release notes and version history for AI-DLC",
 	})
 
 	return new Response(atom.trim(), { headers: FEED_HEADERS_ATOM })

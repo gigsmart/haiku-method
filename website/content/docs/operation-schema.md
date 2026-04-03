@@ -1,15 +1,15 @@
 ---
 title: Operation File Reference
-description: Schema reference for .haiku/{intent}/operations/*.md operation spec files
+description: Schema reference for .ai-dlc/{intent}/operations/*.md operation spec files
 order: 9
 ---
 
-This is the complete reference for operation spec files — the Markdown files that define operational tasks in H·AI·K·U.
+This is the complete reference for operation spec files — the Markdown files that define operational tasks in AI-DLC.
 
 ## File Location
 
 ```
-.haiku/{intent}/operations/{name}.md
+.ai-dlc/{intent}/operations/{name}.md
 ```
 
 The filename (minus `.md`) serves as the operation identifier and must match the `name` field in frontmatter.
@@ -40,7 +40,7 @@ The Markdown body serves different purposes depending on ownership:
 
 **Agent-owned:** Describes what the companion script does — its logic, expected behavior, and any constraints. This serves as documentation and context for the AI when executing.
 
-**Human-owned:** Contains a checklist that `/haiku:operate` presents to the human. Use standard Markdown task list syntax:
+**Human-owned:** Contains a checklist that `/ai-dlc:operate` presents to the human. Use standard Markdown task list syntax:
 
 ```markdown
 - [ ] Step one
@@ -64,7 +64,7 @@ The runtime (set per-operation or via stack config) determines which companion f
 
 ## Status Schema
 
-Operation status is tracked in `.haiku/{intent}/state/operation-status.json`. Each operation has an entry keyed by name:
+Operation status is tracked in `.ai-dlc/{intent}/state/operation-status.json`. Each operation has an entry keyed by name:
 
 ```json
 {
@@ -99,7 +99,7 @@ Operation status is tracked in `.haiku/{intent}/state/operation-status.json`. Ea
 ### Scheduled Agent Operation
 
 ```markdown
-<!-- .haiku/auth-system/operations/rotate-secrets.md -->
+<!-- .ai-dlc/auth-system/operations/rotate-secrets.md -->
 ---
 name: rotate-secrets
 type: scheduled
@@ -123,7 +123,7 @@ With companion script `rotate-secrets.ts` in the same directory.
 ### Reactive Agent Operation
 
 ```markdown
-<!-- .haiku/api-service/operations/scale-on-load.md -->
+<!-- .ai-dlc/api-service/operations/scale-on-load.md -->
 ---
 name: scale-on-load
 type: reactive
@@ -146,7 +146,7 @@ With companion script `scale-on-load.sh` in the same directory.
 ### Process Human Operation
 
 ```markdown
-<!-- .haiku/platform/operations/quarterly-security-review.md -->
+<!-- .ai-dlc/platform/operations/quarterly-security-review.md -->
 ---
 name: quarterly-security-review
 type: process
@@ -163,7 +163,7 @@ frequency: quarterly
 - [ ] Document findings and file tickets for remediation
 ```
 
-When invoked with `/haiku:operate platform quarterly-security-review`, the checklist is presented for the human to work through. Progress is tracked in the status file.
+When invoked with `/ai-dlc:operate platform quarterly-security-review`, the checklist is presented for the human to work through. Progress is tracked in the status file.
 
 ## Next Steps
 

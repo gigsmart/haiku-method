@@ -1,5 +1,5 @@
 ---
-description: (Internal) Autonomous adversarial spec review for H·AI·K·U elaboration
+description: (Internal) Autonomous adversarial spec review for AI-DLC elaboration
 context: fork
 agent: general-purpose
 user-invocable: false
@@ -13,7 +13,7 @@ allowed-tools:
 
 # Elaborate: Adversarial Spec Review
 
-Autonomous adversarial review of intent and unit specifications for H·AI·K·U elaboration. This skill runs as a forked subagent -- it reads a brief file from disk, performs systematic adversarial analysis of spec artifacts, and writes structured findings to disk.
+Autonomous adversarial review of intent and unit specifications for AI-DLC elaboration. This skill runs as a forked subagent -- it reads a brief file from disk, performs systematic adversarial analysis of spec artifacts, and writes structured findings to disk.
 
 **You have NO access to `AskUserQuestion`.** All work is fully autonomous. Write findings to disk -- the main elaboration skill will present results to the user.
 
@@ -21,13 +21,13 @@ Autonomous adversarial review of intent and unit specifications for H·AI·K·U 
 
 ## Step 1: Read Brief
 
-Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.haiku/intents/{intent-slug}/.briefs/elaborate-adversarial-review.md`).
+Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.ai-dlc/{intent-slug}/.briefs/elaborate-adversarial-review.md`).
 
 Parse YAML frontmatter for structured inputs:
 
 ```yaml
 intent_slug: my-feature
-worktree_path: /path/to/.haiku/worktrees/my-feature
+worktree_path: /path/to/.ai-dlc/worktrees/my-feature
 ```
 
 The markdown body contains:
@@ -46,9 +46,9 @@ cd "{worktree_path}"
 After reading the brief, verify the spec artifacts exist on disk. Use `Glob` to find all unit files:
 
 ```bash
-glob(".haiku/intents/{intent_slug}/stages/*/units/unit-*.md")
-glob(".haiku/intents/{intent_slug}/intent.md")
-glob(".haiku/intents/{intent_slug}/discovery.md")
+glob(".ai-dlc/{intent_slug}/unit-*.md")
+glob(".ai-dlc/{intent_slug}/intent.md")
+glob(".ai-dlc/{intent_slug}/discovery.md")
 ```
 
 Read each file via the `Read` tool. The brief body provides a fallback if filesystem reads fail, but **always prefer reading from disk** -- the brief may be stale if specs were edited after the brief was written.
@@ -293,7 +293,7 @@ After completing ALL 7 passes and collecting ALL findings, write the results fil
 
 ### Results File Path
 
-`.haiku/intents/{intent_slug}/.briefs/elaborate-adversarial-review-results.md`
+`.ai-dlc/{intent_slug}/.briefs/elaborate-adversarial-review-results.md`
 
 ### Results File Format
 
@@ -338,7 +338,7 @@ categories_found: [list of categories that had at least one finding]
 After writing the results file, commit it:
 
 ```bash
-git add .haiku/intents/${INTENT_SLUG}/.briefs/elaborate-adversarial-review-results.md && git commit -m "elaborate(${INTENT_SLUG}): adversarial review results"
+git add .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-adversarial-review-results.md && git commit -m "elaborate(${INTENT_SLUG}): adversarial review results"
 ```
 
 ---
@@ -372,7 +372,7 @@ categories_found: []
 2. Commit the error results file:
 
 ```bash
-git add .haiku/intents/${INTENT_SLUG}/.briefs/elaborate-adversarial-review-results.md && git commit -m "elaborate(${INTENT_SLUG}): adversarial review results (error)"
+git add .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-adversarial-review-results.md && git commit -m "elaborate(${INTENT_SLUG}): adversarial review results (error)"
 ```
 
 3. Include any partial findings gathered before the error.

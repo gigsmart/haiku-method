@@ -1,26 +1,26 @@
 ---
-description: Remove orphaned and merged H·AI·K·U worktrees
+description: Remove orphaned and merged AI-DLC worktrees
 disable-model-invocation: true
 ---
 
 ## Name
 
-`haiku:cleanup` - Remove orphaned and merged H·AI·K·U worktrees.
+`ai-dlc:cleanup` - Remove orphaned and merged AI-DLC worktrees.
 
 ## Synopsis
 
 ```
-/haiku:cleanup
+/ai-dlc:cleanup
 ```
 
 ## Description
 
 **User-facing command** - Run this to clean up stale worktrees left behind by interrupted sessions.
 
-Scans `.haiku/worktrees/` for worktree directories and removes any that are orphaned (the backing git worktree entry is stale or the directory is left over from a crashed session) or merged (the worktree's branch has already been merged into the default branch).
+Scans `.ai-dlc/worktrees/` for worktree directories and removes any that are orphaned (the backing git worktree entry is stale or the directory is left over from a crashed session) or merged (the worktree's branch has already been merged into the default branch).
 
 This does not:
-- Clear H·AI·K·U state (use `/haiku:reset` for that)
+- Clear AI-DLC state (use `/ai-dlc:reset` for that)
 - Delete unmerged branches or commits
 - Affect active worktrees whose branches have not been merged
 
@@ -30,7 +30,7 @@ This does not:
 
 ```bash
 if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
-  echo "ERROR: /haiku:cleanup cannot run in cowork mode."
+  echo "ERROR: /ai-dlc:cleanup cannot run in cowork mode."
   echo "Run this in a full Claude Code CLI session."
   exit 1
 fi
@@ -42,14 +42,14 @@ If `CLAUDE_CODE_IS_COWORK=1`, stop immediately with the message above. Do NOT pr
 
 ```bash
 REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
-WORKTREES_DIR="${REPO_ROOT}/.haiku/worktrees"
+WORKTREES_DIR="${REPO_ROOT}/.ai-dlc/worktrees"
 
 if [ ! -d "$WORKTREES_DIR" ]; then
-  echo "No .haiku/worktrees/ directory found. Nothing to clean up."
+  echo "No .ai-dlc/worktrees/ directory found. Nothing to clean up."
   exit 0
 fi
 
-# List all directories in .haiku/worktrees/
+# List all directories in .ai-dlc/worktrees/
 DIRS=$(find "$WORKTREES_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
 if [ -z "$DIRS" ]; then
   echo "No worktree directories found. Nothing to clean up."
@@ -108,13 +108,13 @@ done
 Show the user what was found:
 
 ```
-## H·AI·K·U Worktree Cleanup
+## AI-DLC Worktree Cleanup
 
 **Orphaned worktrees:** {count}
 {list of orphaned worktree names, if any}
 
 **Merged worktrees (safe to remove):** {count}
-{list of merged worktree names with branch names, e.g. "slug (haiku/slug/main)"}
+{list of merged worktree names with branch names, e.g. "slug (ai-dlc/slug/main)"}
 
 **Active worktrees:** {count}
 {list of active worktree names, if any}
@@ -137,31 +137,31 @@ No orphaned or merged worktrees found. Everything is clean.
 ```bash
 REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
 
-source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
-
 # Remove orphaned directories (no valid git worktree entry)
 for name in "${ORPHANED[@]}"; do
-  rm -rf "${REPO_ROOT}/.haiku/worktrees/${name}"
+  rm -rf "${REPO_ROOT}/.ai-dlc/worktrees/${name}"
 done
 
 # Remove merged worktrees (if user confirmed)
 for i in "${!MERGED[@]}"; do
   name="${MERGED[$i]}"
   branch="${MERGED_BRANCHES_MAP[$i]}"
-  # Clean up via persistence layer
-  persistence_cleanup "$name"
+  # Remove the worktree (no --force needed since branch is merged)
+  git worktree remove "${REPO_ROOT}/.ai-dlc/worktrees/${name}" 2>/dev/null
+  # Delete the merged branch (safe — git -d refuses if not merged)
+  git branch -d "$branch" 2>/dev/null
   # Clean up the intent spec directory if it exists
-  if [ -d "${REPO_ROOT}/.haiku/intents/${name}" ]; then
+  if [ -d "${REPO_ROOT}/.ai-dlc/${name}" ]; then
     # Ask user before removing spec directory
-    # Use AskUserQuestion: "Remove spec directory .haiku/intents/${name}/?"
+    # Use AskUserQuestion: "Remove spec directory .ai-dlc/${name}/?"
     # If confirmed:
-    rm -rf "${REPO_ROOT}/.haiku/intents/${name}"
+    rm -rf "${REPO_ROOT}/.ai-dlc/${name}"
   fi
 done
 
 # If user chose to force-remove active worktrees too:
 for name in "${FORCE_REMOVE[@]}"; do
-  git worktree remove --force "${REPO_ROOT}/.haiku/worktrees/${name}" 2>/dev/null
+  git worktree remove --force "${REPO_ROOT}/.ai-dlc/worktrees/${name}" 2>/dev/null
 done
 
 # Prune stale git worktree metadata
@@ -170,8 +170,8 @@ git worktree prune
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-haiku_telemetry_init
-haiku_record_cleanup "${#ORPHANED[@]}" "${#MERGED[@]}"
+aidlc_telemetry_init
+aidlc_record_cleanup "${#ORPHANED[@]}" "${#MERGED[@]}"
 ```
 
 ### Step 5: Confirm

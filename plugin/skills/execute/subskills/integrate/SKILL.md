@@ -22,11 +22,11 @@ Unlike the Reviewer hat (which validates individual units), this skill validates
 
 ## Input
 
-This skill is invoked by `/haiku:advance` or `/haiku:execute` when all units are complete. It receives its context via the subagent prompt, including:
+This skill is invoked by `/ai-dlc:advance` or `/ai-dlc:execute` when all units are complete. It receives its context via the subagent prompt, including:
 
 - **Intent slug** - The intent being validated
 - **Worktree path** - Path to the intent worktree (contains all merged unit work)
-- **Intent branch** - The branch name (`haiku/{intent-slug}/main`)
+- **Intent branch** - The branch name (`ai-dlc/{intent-slug}/main`)
 - **Intent-level success criteria** - From `intent.md`
 - **Completed units list** - All units that were built and merged
 
@@ -34,7 +34,7 @@ This skill is invoked by `/haiku:advance` or `/haiku:execute` when all units are
 
 ## Step 1: Verify Merged State Integrity
 
-- You MUST confirm you are on the intent branch (`haiku/{intent-slug}/main`)
+- You MUST confirm you are on the intent branch (`ai-dlc/{intent-slug}/main`)
 - You MUST verify all unit branches have been merged
 - You MUST check for merge conflicts or incomplete merges
 - You MUST run `git log --oneline` to confirm all unit merge commits are present
@@ -106,7 +106,7 @@ This skill is invoked by `/haiku:advance` or `/haiku:execute` when all units are
 
 **Condition**: Only run when any completed unit has an `operations:` block in its frontmatter. If no units have operations blocks, skip this step entirely.
 
-- You MUST read all operation specs in `.haiku/intents/{intent}/operations/` directory
+- You MUST read all operation specs in `.ai-dlc/{intent}/operations/` directory
 - You MUST check for schedule collisions: two scheduled operations running at the same cron time that could conflict (e.g., both writing to the same resource). Parse cron expressions from operation spec frontmatter.
 - You MUST check for overlapping reactive triggers: two reactive operations triggered by the same event but performing conflicting actions
 - You MUST verify operation scripts reference resources that exist in the merged deployment (e.g., database names, service URLs, secret references)
@@ -164,8 +164,8 @@ Full-stack dry-run: PASS (or SKIPPED — no stack config)
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-haiku_telemetry_init
-haiku_record_integration_result "${INTENT_SLUG}" "true" "0"
+aidlc_telemetry_init
+aidlc_record_integration_result "${INTENT_SLUG}" "true" "0"
 ```
 
 ### On REJECT
@@ -198,8 +198,8 @@ Dry-run failures:
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-haiku_telemetry_init
-haiku_record_integration_result "${INTENT_SLUG}" "false" "${ISSUE_COUNT}"
+aidlc_telemetry_init
+aidlc_record_integration_result "${INTENT_SLUG}" "false" "${ISSUE_COUNT}"
 ```
 
 ---

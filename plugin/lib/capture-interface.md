@@ -1,6 +1,6 @@
 # Capture Interface
 
-Pluggable screenshot capture system for H·AI·K·U design backpressure.
+Pluggable screenshot capture system for AI-DLC design backpressure.
 
 ## CLI Arguments
 
@@ -33,7 +33,7 @@ Provider-specific arguments are passed through to the selected provider.
 ## Output Directory Structure
 
 ```
-.haiku/intents/{intent}/screenshots/{unit}/
+.ai-dlc/{intent}/screenshots/{unit}/
 ├── manifest.json
 ├── mobile-home.png
 ├── tablet-home.png

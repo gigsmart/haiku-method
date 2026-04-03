@@ -1,27 +1,27 @@
 ---
 title: Team Onboarding Checklist
-description: Step-by-step checklist for onboarding a team to H·AI·K·U
+description: Step-by-step checklist for onboarding a team to AI-DLC
 order: 22
 ---
 
-This checklist guides you through onboarding an entire team to H·AI·K·U. It's designed for tech leads and engineering managers.
+This checklist guides you through onboarding an entire team to AI-DLC. It's designed for tech leads and engineering managers.
 
 ## Prerequisites
 
 Before starting team onboarding:
 
 ### Champion Readiness
-- [ ] Champion identified (experienced H·AI·K·U user)
+- [ ] Champion identified (experienced AI-DLC user)
 - [ ] Champion has completed 5+ units personally
 - [ ] Champion has used multiple workflow types
 - [ ] Champion can answer common questions
 - [ ] Champion has time allocated for supporting team
 
 ### Team Readiness
-- [ ] All team members have Claude Code or Cowork access
+- [ ] All team members have Claude Code access
 - [ ] Team has capacity for learning curve (not in crunch)
 - [ ] Management supports the adoption
-- [ ] Team is aware H·AI·K·U is coming
+- [ ] Team is aware AI-DLC is coming
 
 ### Project Readiness
 - [ ] Identified first project for team adoption
@@ -34,7 +34,7 @@ Before starting team onboarding:
 ## Phase 1: Setup (Pre-Introduction)
 
 ### Documentation Preparation
-- [ ] H·AI·K·U documentation shared with team
+- [ ] AI-DLC documentation shared with team
 - [ ] Team conventions document drafted
 - [ ] Example intent prepared (from team's domain)
 - [ ] FAQ document ready (anticipate questions)
@@ -42,7 +42,7 @@ Before starting team onboarding:
 ### Tooling Setup
 - [ ] All team members can install the plugin
 - [ ] Any team-specific configuration documented
-- [ ] Slack channel or communication channel for H·AI·K·U questions
+- [ ] Slack channel or communication channel for AI-DLC questions
 
 ### Scheduling
 - [ ] Team introduction session scheduled (60-90 min)
@@ -57,7 +57,7 @@ Before starting team onboarding:
 
 **Agenda (60 minutes):**
 
-- [ ] **Why H·AI·K·U** (10 min)
+- [ ] **Why AI-DLC** (10 min)
   - [ ] Problem statement covered
   - [ ] Benefits explained
   - [ ] Connection to team's work made clear
@@ -143,14 +143,14 @@ For each team member's first independent unit:
 - [ ] No major blockers outstanding
 
 **End of first sprint:**
-- [ ] Team is using H·AI·K·U consistently
+- [ ] Team is using AI-DLC consistently
 - [ ] Conventions are being followed
 - [ ] Quality metrics baseline established
 
 ### Support Structure
 - [ ] Slack channel active with questions
 - [ ] Champion doing regular check-ins
-- [ ] Weekly team sync includes H·AI·K·U discussion
+- [ ] Weekly team sync includes AI-DLC discussion
 - [ ] Issues being documented for improvement
 
 ---
@@ -209,7 +209,7 @@ Document and share team agreements:
 - [ ] Link to unit files in PR description
 
 **Retrospectives:**
-- [ ] H·AI·K·U discussed in retros
+- [ ] AI-DLC discussed in retros
 - [ ] Feedback being collected
 - [ ] Improvements being made
 
@@ -222,7 +222,7 @@ Document and share team agreements:
 
 ## Phase 7: Metrics
 
-### Baseline Metrics (Before H·AI·K·U)
+### Baseline Metrics (Before AI-DLC)
 
 Document current state for comparison:
 
@@ -233,7 +233,7 @@ Document current state for comparison:
 | Test coverage | _____ | _____ |
 | Rework percentage | _____ | _____ |
 
-### Tracking Metrics (After H·AI·K·U)
+### Tracking Metrics (After AI-DLC)
 
 Track these during and after adoption:
 
@@ -301,7 +301,7 @@ Track these during and after adoption:
 **Phase 5-6 (Conventions & Integration) Complete:**
 - [ ] Conventions documented and followed
 - [ ] Process integration complete
-- [ ] Team using H·AI·K·U consistently
+- [ ] Team using AI-DLC consistently
 
 **Phase 7-8 (Metrics & Support) Complete:**
 - [ ] Metrics showing positive or neutral impact
@@ -312,7 +312,7 @@ Track these during and after adoption:
 
 - [ ] 100% of team has completed at least 3 independent units
 - [ ] Team conventions documented and followed
-- [ ] H·AI·K·U integrated with daily processes
+- [ ] AI-DLC integrated with daily processes
 - [ ] Quality metrics maintained or improved
 - [ ] Positive developer feedback (>70%)
 - [ ] Champion support no longer needed daily
@@ -324,11 +324,11 @@ Track these during and after adoption:
 ### Team Introduction Email
 
 ```
-Subject: H·AI·K·U Introduction Session - [Date]
+Subject: AI-DLC Introduction Session - [Date]
 
 Team,
 
-We're introducing H·AI·K·U, a structured methodology for AI-assisted development.
+We're introducing AI-DLC, a structured methodology for AI-assisted development.
 
 **What:** Team introduction session
 **When:** [Date/Time]
@@ -336,11 +336,11 @@ We're introducing H·AI·K·U, a structured methodology for AI-assisted developm
 **Duration:** 60 minutes
 
 Before the session:
-- Read: [Link to H·AI·K·U docs]
-- Install: Claude Code or Cowork (if not already)
+- Read: [Link to AI-DLC docs]
+- Install: Claude Code (if not already)
 
 What to expect:
-- Why we're adopting H·AI·K·U
+- Why we're adopting AI-DLC
 - Live demo from [Champion]
 - Q&A
 - Next steps
@@ -351,7 +351,7 @@ See you there!
 ### Weekly Check-In Agenda
 
 ```
-## H·AI·K·U Weekly Check-In
+## AI-DLC Weekly Check-In
 
 ### Wins
 - What went well this week?
@@ -373,14 +373,14 @@ See you there!
 ### Developer Feedback Survey
 
 ```
-## H·AI·K·U Feedback Survey
+## AI-DLC Feedback Survey
 
-1. How comfortable are you with H·AI·K·U? (1-5)
-2. Is H·AI·K·U improving your work quality? (Yes/No/Too early)
+1. How comfortable are you with AI-DLC? (1-5)
+2. Is AI-DLC improving your work quality? (Yes/No/Too early)
 3. What's working well?
 4. What's frustrating?
-5. Would you recommend H·AI·K·U to another team? (1-10)
-6. What would make H·AI·K·U better for you?
+5. Would you recommend AI-DLC to another team? (1-10)
+6. What would make AI-DLC better for you?
 ```
 
 ---

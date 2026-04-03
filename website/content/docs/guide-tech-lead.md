@@ -1,16 +1,16 @@
 ---
 title: Tech Lead Guide
-description: Guide for tech leads rolling out H·AI·K·U to their teams
+description: Guide for tech leads rolling out AI-DLC to their teams
 order: 17
 ---
 
-This guide is for tech leads responsible for introducing H·AI·K·U to their teams. It covers preparation, rollout strategies, and measuring success.
+This guide is for tech leads responsible for introducing AI-DLC to their teams. It covers preparation, rollout strategies, and measuring success.
 
 ## Preparing for Team Adoption
 
 ### Personal Mastery First
 
-Before introducing H·AI·K·U to your team, you need to be proficient yourself:
+Before introducing AI-DLC to your team, you need to be proficient yourself:
 
 - [ ] Completed at least 5 units personally
 - [ ] Used multiple workflow types
@@ -20,7 +20,7 @@ Before introducing H·AI·K·U to your team, you need to be proficient yourself:
 
 ### Identifying Good First Projects
 
-Not all work is equally suited for H·AI·K·U adoption. Start with projects that:
+Not all work is equally suited for AI-DLC adoption. Start with projects that:
 
 | Characteristic | Why It Helps |
 |----------------|--------------|
@@ -45,7 +45,7 @@ Before the team introduction:
 3. **FAQ document** - Anticipate and answer common questions
 4. **Success story** - Share your own positive experience
 
-## Rolling Out H·AI·K·U
+## Rolling Out AI-DLC
 
 ### The Champion Model (Recommended)
 
@@ -94,14 +94,14 @@ Structure for a 60-minute introduction:
 
 | Time | Activity |
 |------|----------|
-| 0-10 | Why H·AI·K·U: Problem statement and benefits |
+| 0-10 | Why AI-DLC: Problem statement and benefits |
 | 10-30 | Live demo: Complete a small unit end-to-end |
 | 30-45 | Q&A: Address concerns and questions |
 | 45-55 | First steps: How to get started |
 | 55-60 | Commitment: Who's trying it first? |
 
 **Key points to cover:**
-- H·AI·K·U is about structure, not restriction
+- AI-DLC is about structure, not restriction
 - Hat switching feels awkward at first, then becomes natural
 - Quality improvements are the goal, speed follows
 - It's okay to be skeptical - just give it a fair try
@@ -124,7 +124,7 @@ Teams should agree on:
 
 **File organization:**
 ```
-.haiku/
+.ai-dlc/
   intent.md                    # Main intent
   unit-01-description.md       # Sequential + descriptive
   unit-02-description.md
@@ -134,7 +134,7 @@ Teams should agree on:
 ```
 feat(auth): complete unit-01-login-api
 
-H·AI·K·U unit: unit-01-login-api
+AI-DLC unit: unit-01-login-api
 Status: complete
 Criteria met: 5/5
 ```
@@ -154,10 +154,10 @@ Criteria met: 5/5
 
 **Configuring passes:**
 
-For teams that want cross-functional iteration by default, configure `default_passes` in `.haiku/settings.yml` so new intents automatically include design, product, and dev passes:
+For teams that want cross-functional iteration by default, configure `default_passes` in `.ai-dlc/settings.yml` so new intents automatically include design, product, and dev passes:
 
 ```yaml
-# .haiku/settings.yml
+# .ai-dlc/settings.yml
 default_passes: [design, product, dev]
 ```
 
@@ -165,10 +165,10 @@ Without this, intents default to a single dev pass. See [Passes](/docs/concepts/
 
 **Configuring design providers:**
 
-H·AI·K·U supports six design providers (Canva, Figma, OpenPencil, Pencil, Penpot, Excalidraw). Set `type: auto` for automatic detection from MCP tools, or pin a specific provider:
+AI-DLC supports six design providers (Canva, Figma, OpenPencil, Pencil, Penpot, Excalidraw). Set `type: auto` for automatic detection from MCP tools, or pin a specific provider:
 
 ```yaml
-# .haiku/settings.yml
+# .ai-dlc/settings.yml
 providers:
   design:
     type: figma
@@ -191,10 +191,10 @@ Allow individual flexibility on:
 
 ### Documenting Conventions
 
-Create a team H·AI·K·U guide:
+Create a team AI-DLC guide:
 
 ```markdown
-# Team H·AI·K·U Conventions
+# Team AI-DLC Conventions
 
 ## File Structure
 [Your team's conventions]
@@ -208,17 +208,17 @@ Create a team H·AI·K·U guide:
 [Your approach]
 
 ## Review Integration
-[How H·AI·K·U integrates with PR reviews]
+[How AI-DLC integrates with PR reviews]
 ```
 
 ## Integrating with Existing Processes
 
 ### Sprint Planning
 
-**Before H·AI·K·U:**
+**Before AI-DLC:**
 > "This feature will take 3 story points"
 
-**With H·AI·K·U:**
+**With AI-DLC:**
 > "This feature breaks into 4 units. Based on similar past work, we can complete 2-3 units per sprint."
 
 Unit-based estimation benefits:
@@ -238,7 +238,7 @@ Example:
 
 ### Pull Request Reviews
 
-PRs become easier to review with H·AI·K·U:
+PRs become easier to review with AI-DLC:
 
 1. **Context is clear** - Intent and unit files explain the "why"
 2. **Scope is bounded** - Reviewers know what to expect
@@ -252,7 +252,7 @@ Reviewers can focus on:
 
 ### Retrospectives
 
-Add H·AI·K·U-specific discussion:
+Add AI-DLC-specific discussion:
 - Which workflows worked well?
 - Any conventions need adjustment?
 - Quality improvements observed?
@@ -289,7 +289,7 @@ Add H·AI·K·U-specific discussion:
 For larger teams, run a controlled pilot:
 
 1. **Select pilot group** - 2-3 volunteers
-2. **Define success criteria** - What would make H·AI·K·U worth adopting?
+2. **Define success criteria** - What would make AI-DLC worth adopting?
 3. **Time-box the pilot** - 4-6 sprints
 4. **Collect data** - Track metrics above
 5. **Gather feedback** - Interviews with participants
@@ -297,7 +297,7 @@ For larger teams, run a controlled pilot:
 
 ### Reporting to Leadership
 
-When reporting H·AI·K·U adoption:
+When reporting AI-DLC adoption:
 
 **Focus on:**
 - Quality improvements (bugs, rework)
@@ -307,7 +307,7 @@ When reporting H·AI·K·U adoption:
 
 **Avoid:**
 - Claiming time savings too early
-- Attributing all improvements to H·AI·K·U alone
+- Attributing all improvements to AI-DLC alone
 - Overselling autonomy benefits
 
 ## Handling Challenges
@@ -325,14 +325,14 @@ Some team members will be skeptical. This is healthy.
 **Don't:**
 - Force adoption on unwilling developers
 - Dismiss concerns as resistance to change
-- Make H·AI·K·U mandatory before proving value
+- Make AI-DLC mandatory before proving value
 
 ### The Over-Adopter
 
-Some will try to use H·AI·K·U for everything.
+Some will try to use AI-DLC for everything.
 
 **Watch for:**
-- Using H·AI·K·U for trivial tasks (5-minute fixes)
+- Using AI-DLC for trivial tasks (5-minute fixes)
 - Creating intents for every small change
 - Spending more time on process than work
 

@@ -1,5 +1,5 @@
 ---
-description: Generate a static HTML dashboard from .haiku/ data for offline viewing and sharing
+description: Generate a static HTML dashboard from .ai-dlc/ data for offline viewing and sharing
 disable-model-invocation: true
 user-invocable: true
 argument-hint: "[--output <dir>]"
@@ -7,18 +7,18 @@ argument-hint: "[--output <dir>]"
 
 ## Name
 
-`haiku:dashboard` - Generate a static HTML dashboard from H·AI·K·U intent and unit data.
+`ai-dlc:dashboard` - Generate a static HTML dashboard from AI-DLC intent and unit data.
 
 ## Synopsis
 
 ```
-/haiku:dashboard
-/haiku:dashboard --output ./reports/dashboard
+/ai-dlc:dashboard
+/ai-dlc:dashboard --output ./reports/dashboard
 ```
 
 ## Description
 
-**User-facing command** - Generate a self-contained static HTML dashboard from the `.haiku/` directory in the current project.
+**User-facing command** - Generate a self-contained static HTML dashboard from the `.ai-dlc/` directory in the current project.
 
 The dashboard renders all intents, units, DAG visualizations, completion criteria, and status information as static HTML pages suitable for offline viewing, sharing, or archiving.
 
@@ -30,18 +30,18 @@ The dashboard renders all intents, units, DAG visualizations, completion criteri
 
 ### Usage
 
-Run `/haiku:dashboard` to generate the dashboard with default settings:
+Run `/ai-dlc:dashboard` to generate the dashboard with default settings:
 
 ```
-/haiku:dashboard
+/ai-dlc:dashboard
 ```
 
-This generates the site into `.haiku/dashboard/` and reports the output path.
+This generates the site into `.ai-dlc/dashboard/` and reports the output path.
 
 To specify a custom output directory:
 
 ```
-/haiku:dashboard --output ./my-reports/
+/ai-dlc:dashboard --output ./my-reports/
 ```
 
 Then open the generated `index.html` in any browser.
@@ -56,10 +56,10 @@ Then open the generated `index.html` in any browser.
 For interactive, real-time visual reviews (where the agent opens a browser review page and waits for your decision), enable the review channel:
 
 ```bash
-claude --dangerously-load-development-channels server:haiku-review
+claude --dangerously-load-development-channels server:ai-dlc-review
 ```
 
-This starts the `haiku-review` MCP server which provides:
+This starts the `ai-dlc-review` MCP server which provides:
 - `open_review` — opens an interactive review page in your browser
 - `get_review_status` — polls for your approval/rejection decision
 
@@ -71,7 +71,7 @@ The review flow:
 
 ### Static Dashboard vs. Review Channel
 
-| Feature | `/haiku:dashboard` | Review Channel |
+| Feature | `/ai-dlc:dashboard` | Review Channel |
 |---------|-------------|----------------|
 | Purpose | Offline viewing & sharing | Interactive review during execution |
 | Output | Static HTML files | Live browser page |
@@ -81,10 +81,10 @@ The review flow:
 ## Tool Call
 
 ```bash
-bun run ${CLAUDE_PLUGIN_ROOT}/cli/src/dashboard.ts --input .haiku/ --output ${OUTPUT_DIR}
+bun run ${CLAUDE_PLUGIN_ROOT}/cli/src/dashboard.ts --input .ai-dlc/ --output ${OUTPUT_DIR}
 ```
 
-Where `${OUTPUT_DIR}` defaults to `.haiku/dashboard/` if not specified by the user.
+Where `${OUTPUT_DIR}` defaults to `.ai-dlc/dashboard/` if not specified by the user.
 
 After generation, report:
 - The output path

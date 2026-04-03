@@ -1,5 +1,5 @@
 #!/bin/bash
-# capture-manual.sh — Manual screenshot capture provider for H·AI·K·U
+# capture-manual.sh — Manual screenshot capture provider for AI-DLC
 #
 # Validates and copies pre-captured screenshots from an input directory
 # to the output directory with correct naming convention and manifest.
@@ -34,7 +34,7 @@ while [[ $# -gt 0 ]]; do
       exit 0
       ;;
     *)
-      echo "haiku: capture-manual: unknown argument: $1" >&2
+      echo "ai-dlc: capture-manual: unknown argument: $1" >&2
       exit 1
       ;;
   esac
@@ -42,17 +42,17 @@ done
 
 # Validate required arguments
 if [ -z "$INPUT_DIR" ]; then
-  echo "haiku: capture-manual: --input-dir is required" >&2
+  echo "ai-dlc: capture-manual: --input-dir is required" >&2
   exit 1
 fi
 
 if [ -z "$OUTPUT_DIR" ]; then
-  echo "haiku: capture-manual: --output-dir is required" >&2
+  echo "ai-dlc: capture-manual: --output-dir is required" >&2
   exit 1
 fi
 
 if [ ! -d "$INPUT_DIR" ]; then
-  echo "haiku: capture-manual: input directory not found: $INPUT_DIR" >&2
+  echo "ai-dlc: capture-manual: input directory not found: $INPUT_DIR" >&2
   exit 1
 fi
 
@@ -63,7 +63,7 @@ while IFS= read -r -d '' file; do
 done < <(find "$INPUT_DIR" -maxdepth 1 -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.webp" \) -print0 | sort -z)
 
 if [ ${#IMAGE_FILES[@]} -eq 0 ]; then
-  echo "haiku: capture-manual: no image files found in: $INPUT_DIR" >&2
+  echo "ai-dlc: capture-manual: no image files found in: $INPUT_DIR" >&2
   exit 1
 fi
 
@@ -143,7 +143,7 @@ for img in "${IMAGE_FILES[@]}"; do
 done
 
 if [ "$COPIED" -eq 0 ]; then
-  echo "haiku: capture-manual: no images were copied" >&2
+  echo "ai-dlc: capture-manual: no images were copied" >&2
   exit 1
 fi
 
@@ -160,4 +160,4 @@ MANIFEST=$(jq -n \
 
 echo "$MANIFEST" > "$OUTPUT_DIR/manifest.json"
 echo "  manifest: $OUTPUT_DIR/manifest.json"
-echo "haiku: capture-manual: copied $COPIED image(s)"
+echo "ai-dlc: capture-manual: copied $COPIED image(s)"
