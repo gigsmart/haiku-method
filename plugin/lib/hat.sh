@@ -1,9 +1,9 @@
 #!/bin/bash
-# hat.sh — Hat resolution and metadata for AI-DLC
+# hat.sh — Hat resolution and metadata for H·AI·K·U
 #
 # Hats define roles (builder, reviewer, planner, etc.).
 # Definitions live in plugin/hats/*.md (built-in) and can be
-# augmented or extended by project files in .ai-dlc/hats/*.md.
+# augmented or extended by project files in .haiku/hats/*.md.
 #
 # Usage:
 #   source hat.sh
@@ -11,10 +11,10 @@
 #   metadata=$(load_hat_metadata "builder")
 
 # Guard against double-sourcing
-if [ -n "${_DLC_HAT_SOURCED:-}" ]; then
+if [ -n "${_HKU_HAT_SOURCED:-}" ]; then
   return 0 2>/dev/null || exit 0
 fi
-_DLC_HAT_SOURCED=1
+_HKU_HAT_SOURCED=1
 
 # Source configuration system (chains to deps.sh, parse.sh, state.sh)
 HAT_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
@@ -43,7 +43,7 @@ load_hat_instructions() {
   repo_root=$(find_repo_root 2>/dev/null || echo "")
   local project=""
   if [[ -n "$repo_root" ]]; then
-    local project_file="${repo_root}/.ai-dlc/hats/${hat_name}.md"
+    local project_file="${repo_root}/.haiku/hats/${hat_name}.md"
     [[ -f "$project_file" ]] && project="$project_file"
   fi
 
@@ -97,7 +97,7 @@ load_hat_metadata() {
     local repo_root
     repo_root=$(find_repo_root 2>/dev/null || echo "")
     if [[ -n "$repo_root" ]]; then
-      local project_file="${repo_root}/.ai-dlc/hats/${hat_name}.md"
+      local project_file="${repo_root}/.haiku/hats/${hat_name}.md"
       [[ -f "$project_file" ]] && hat_file="$project_file"
     fi
   fi
@@ -108,8 +108,8 @@ load_hat_metadata() {
   fi
 
   local name description
-  name=$(dlc_frontmatter_get "name" "$hat_file")
-  description=$(dlc_frontmatter_get "description" "$hat_file")
+  name=$(hku_frontmatter_get "name" "$hat_file")
+  description=$(hku_frontmatter_get "description" "$hat_file")
 
   # JSON-escape string values
   name="${name//\"/\\\"}"

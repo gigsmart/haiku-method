@@ -5,7 +5,7 @@
 # ---
 # status: pending  # pending | in_progress | completed | blocked
 # depends_on: [unit-01-setup, unit-03-session]
-# branch: ai-dlc/intent/04-auth
+# branch: haiku/intent/04-auth
 # last_updated: 2026-03-26T19:30:00Z  # ISO 8601 UTC timestamp of last status change
 # ---
 
@@ -437,20 +437,20 @@ update_unit_status() {
     return 1
   fi
 
-  # Path validation: ensure file is within .ai-dlc directory to prevent path traversal
+  # Path validation: ensure file is within .haiku directory to prevent path traversal
   local real_path
   real_path=$(realpath "$unit_file" 2>/dev/null) || {
     echo "Error: Cannot resolve path: $unit_file" >&2
     return 1
   }
 
-  # Check that the file is within a .ai-dlc directory
-  if [[ ! "$real_path" =~ /\.ai-dlc/ ]]; then
-    echo "Error: Unit file must be within .ai-dlc directory: $unit_file" >&2
+  # Check that the file is within a .haiku directory
+  if [[ ! "$real_path" =~ /\.haiku/ ]]; then
+    echo "Error: Unit file must be within .haiku directory: $unit_file" >&2
     return 1
   fi
 
-  # Ensure it's a unit file (not arbitrary file in .ai-dlc)
+  # Ensure it's a unit file (not arbitrary file in .haiku)
   local basename
   basename=$(basename "$real_path")
   if [[ ! "$basename" =~ ^unit-.*\.md$ ]]; then
@@ -473,31 +473,31 @@ update_unit_status() {
   old_status=$(parse_unit_status "$unit_file")
 
   # Update status in frontmatter
-  dlc_frontmatter_set "status" "$new_status" "$unit_file"
+  hku_frontmatter_set "status" "$new_status" "$unit_file"
 
   # Update last_updated timestamp
-  dlc_frontmatter_set "last_updated" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$unit_file"
+  hku_frontmatter_set "last_updated" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$unit_file"
 
   # Emit telemetry for unit status change (non-blocking)
-  if [ -z "${_AIDLC_TELEMETRY_INIT:-}" ]; then
+  if [ -z "${_HAIKU_TELEMETRY_INIT:-}" ]; then
     local telemetry_lib="${SCRIPT_DIR}/telemetry.sh"
     if [ -f "$telemetry_lib" ]; then
       # shellcheck source=telemetry.sh
       source "$telemetry_lib"
-      aidlc_telemetry_init
+      haiku_telemetry_init
     fi
   fi
-  if type aidlc_record_unit_status_change &>/dev/null; then
+  if type haiku_record_unit_status_change &>/dev/null; then
     # Extract intent slug and unit slug from the path
-    # Path pattern: .ai-dlc/<intent_slug>/unit-NN-<unit_slug>.md
+    # Path pattern: .haiku/<intent_slug>/unit-NN-<unit_slug>.md
     local unit_basename
     unit_basename=$(basename "$unit_file" .md)
     local intent_slug=""
-    local after_ai_dlc="${real_path#*/.ai-dlc/}"
+    local after_ai_dlc="${real_path#*/.haiku/}"
     if [ "$after_ai_dlc" != "$real_path" ]; then
       intent_slug="${after_ai_dlc%%/*}"
     fi
-    aidlc_record_unit_status_change "$intent_slug" "$unit_basename" "$old_status" "$new_status"
+    haiku_record_unit_status_change "$intent_slug" "$unit_basename" "$old_status" "$new_status"
   fi
 }
 
@@ -708,23 +708,23 @@ discover_branch_intents() {
   _intent_completed_on_main() {
     local slug="$1"
     local main_status
-    main_status=$(git show "main:.ai-dlc/$slug/intent.md" 2>/dev/null | _yaml_get_simple "status" "") || return 1
+    main_status=$(git show "main:.haiku/$slug/intent.md" 2>/dev/null | _yaml_get_simple "status" "") || return 1
     [ "$main_status" = "completed" ]
   }
 
   # 1. Check existing worktrees (highest priority)
-  # Parse git worktree list --porcelain to find ai-dlc/*/main branches
+  # Parse git worktree list --porcelain to find haiku/*/main branches
   while IFS= read -r line; do
-    if [[ "$line" == "branch refs/heads/ai-dlc/"* ]]; then
+    if [[ "$line" == "branch refs/heads/haiku/"* ]]; then
       local branch="${line#branch refs/heads/}"
-      # Only intent-level branches (ai-dlc/slug/main)
+      # Only intent-level branches (haiku/slug/main)
       case "$branch" in
-      ai-dlc/*/main)
-        local slug="${branch#ai-dlc/}"
+      haiku/*/main)
+        local slug="${branch#haiku/}"
         slug="${slug%/main}"
         # Read intent.md from the branch
         local intent_content
-        intent_content=$(git show "$branch:.ai-dlc/$slug/intent.md" 2>/dev/null) || continue
+        intent_content=$(git show "$branch:.haiku/$slug/intent.md" 2>/dev/null) || continue
         local intent_status
         intent_status=$(echo "$intent_content" | _yaml_get_simple "status" "active")
         [ "$intent_status" != "active" ] && continue
@@ -740,13 +740,13 @@ discover_branch_intents() {
     fi
   done < <(git worktree list --porcelain 2>/dev/null)
 
-  # 2. Check local ai-dlc/*/main branches (no worktree)
+  # 2. Check local haiku/*/main branches (no worktree)
   while IFS= read -r branch; do
     [ -z "$branch" ] && continue
-    # Only intent-level branches (ai-dlc/slug/main)
+    # Only intent-level branches (haiku/slug/main)
     case "$branch" in
-    ai-dlc/*/main)
-      local slug="${branch#ai-dlc/}"
+    haiku/*/main)
+      local slug="${branch#haiku/}"
       slug="${slug%/main}"
       ;;
     *) continue ;;
@@ -755,7 +755,7 @@ discover_branch_intents() {
     [[ "$seen_slugs" == *" $slug"* ]] && continue
     # Read intent.md from the branch
     local intent_content
-    intent_content=$(git show "$branch:.ai-dlc/$slug/intent.md" 2>/dev/null) || continue
+    intent_content=$(git show "$branch:.haiku/$slug/intent.md" 2>/dev/null) || continue
     local intent_status
     intent_status=$(echo "$intent_content" | _yaml_get_simple "status" "active")
     [ "$intent_status" != "active" ] && continue
@@ -765,16 +765,16 @@ discover_branch_intents() {
     workflow=$(echo "$intent_content" | _yaml_get_simple "workflow" "default")
     echo "$slug|$workflow|local|$branch"
     seen_slugs="$seen_slugs $slug"
-  done < <(git for-each-ref --format='%(refname:short)' 'refs/heads/ai-dlc/*/main' 2>/dev/null)
+  done < <(git for-each-ref --format='%(refname:short)' 'refs/heads/haiku/*/main' 2>/dev/null)
 
   # 3. Check remote branches (only if include_remote=true)
   if [ "$include_remote" = "true" ]; then
     while IFS= read -r branch; do
       [ -z "$branch" ] && continue
-      # Only intent-level branches (origin/ai-dlc/slug/main)
+      # Only intent-level branches (origin/haiku/slug/main)
       case "$branch" in
-      origin/ai-dlc/*/main)
-        local slug="${branch#origin/ai-dlc/}"
+      origin/haiku/*/main)
+        local slug="${branch#origin/haiku/}"
         slug="${slug%/main}"
         ;;
       *) continue ;;
@@ -783,7 +783,7 @@ discover_branch_intents() {
       [[ "$seen_slugs" == *" $slug"* ]] && continue
       # Read intent.md from the remote branch
       local intent_content
-      intent_content=$(git show "$branch:.ai-dlc/$slug/intent.md" 2>/dev/null) || continue
+      intent_content=$(git show "$branch:.haiku/$slug/intent.md" 2>/dev/null) || continue
       local intent_status
       intent_status=$(echo "$intent_content" | _yaml_get_simple "status" "active")
       [ "$intent_status" != "active" ] && continue
@@ -793,6 +793,6 @@ discover_branch_intents() {
       workflow=$(echo "$intent_content" | _yaml_get_simple "workflow" "default")
       echo "$slug|$workflow|remote|$branch"
       seen_slugs="$seen_slugs $slug"
-    done < <(git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/ai-dlc/*/main' 2>/dev/null)
+    done < <(git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/haiku/*/main' 2>/dev/null)
   fi
 }
