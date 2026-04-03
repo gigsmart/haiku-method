@@ -7,7 +7,7 @@ discipline: backend
 stage: ""
 workflow: ""
 ticket: ""
-hat: builder
+hat: reviewer
 ---
 
 # unit-07-dissolve-hats-workflows

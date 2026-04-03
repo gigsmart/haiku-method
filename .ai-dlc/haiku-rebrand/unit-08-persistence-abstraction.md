@@ -7,7 +7,7 @@ discipline: backend
 stage: ""
 workflow: ""
 ticket: ""
-hat: builder
+hat: reviewer
 ---
 
 # unit-08-persistence-abstraction
