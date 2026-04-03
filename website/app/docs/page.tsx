@@ -13,7 +13,7 @@ export default function DocsPage() {
 	return (
 		<div className="max-w-3xl">
 			<h1 className="mb-4 text-4xl font-bold tracking-tight">Documentation</h1>
-			<p className="mb-8 text-lg text-gray-600 dark:text-gray-400">
+			<p className="mb-8 text-lg text-stone-600 dark:text-stone-400">
 				Learn how to use AI-DLC to structure your AI-driven development
 				workflow.
 			</p>
@@ -21,7 +21,7 @@ export default function DocsPage() {
 			<div className="prose prose-gray dark:prose-invert max-w-none">
 				<h2>Quick Start</h2>
 				<p>Install the AI-DLC plugin in your Claude Code project:</p>
-				<div className="not-prose my-4 rounded-lg bg-gray-100 p-4 font-mono text-sm dark:bg-gray-800">
+				<div className="not-prose my-4 rounded-lg bg-stone-100 p-4 font-mono text-sm dark:bg-stone-800">
 					<div><code>/plugin marketplace add thebushidocollective/ai-dlc</code></div>
 					<div><code>/plugin install ai-dlc@thebushidocollective-ai-dlc --scope project</code></div>
 				</div>
@@ -71,12 +71,12 @@ export default function DocsPage() {
 								<li key={doc.slug}>
 									<Link
 										href={`/docs/${doc.slug}/`}
-										className="text-blue-600 hover:underline dark:text-blue-400"
+										className="text-teal-600 hover:underline dark:text-teal-400"
 									>
 										{doc.title}
 									</Link>
 									{doc.description && (
-										<span className="text-gray-600 dark:text-gray-400">
+										<span className="text-stone-600 dark:text-stone-400">
 											{" "}
 											- {doc.description}
 										</span>

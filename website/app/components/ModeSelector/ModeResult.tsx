@@ -43,10 +43,10 @@ export function ModeResult({
 			<div className={`rounded-2xl border-2 p-8 ${colors.bg} ${colors.border}`}>
 				<div className="mb-4 flex items-center justify-between">
 					<div>
-						<div className="mb-1 text-sm font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+						<div className="mb-1 text-sm font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400">
 							Recommended Mode
 						</div>
-						<h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+						<h2 className="text-3xl font-bold text-stone-900 dark:text-white">
 							{info.fullName}
 						</h2>
 						<div className={`text-lg font-medium ${colors.text}`}>
@@ -54,21 +54,21 @@ export function ModeResult({
 						</div>
 					</div>
 					<div className="text-right">
-						<div className="text-4xl font-bold text-gray-900 dark:text-white">
+						<div className="text-4xl font-bold text-stone-900 dark:text-white">
 							{confidence}%
 						</div>
-						<div className="text-sm text-gray-500 dark:text-gray-400">
+						<div className="text-sm text-stone-500 dark:text-stone-400">
 							confidence
 						</div>
 					</div>
 				</div>
 
-				<p className="text-gray-700 dark:text-gray-300">{info.description}</p>
+				<p className="text-stone-700 dark:text-stone-300">{info.description}</p>
 
 				<div className="mt-6">
 					<Link
 						href={info.docLink}
-						className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
+						className="inline-flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-800 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-100"
 					>
 						Learn more about {info.name}
 						<svg
@@ -90,8 +90,8 @@ export function ModeResult({
 			</div>
 
 			{/* Score Breakdown */}
-			<div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800/50">
-				<h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+			<div className="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-700 dark:bg-stone-800/50">
+				<h3 className="mb-4 text-lg font-semibold text-stone-900 dark:text-white">
 					Score Breakdown
 				</h3>
 				<div className="space-y-4">
@@ -103,8 +103,8 @@ export function ModeResult({
 									<span
 										className={
 											isWinner
-												? "font-semibold text-gray-900 dark:text-white"
-												: "text-gray-600 dark:text-gray-400"
+												? "font-semibold text-stone-900 dark:text-white"
+												: "text-stone-600 dark:text-stone-400"
 										}
 									>
 										{modeInfo[mode].name}
@@ -112,19 +112,19 @@ export function ModeResult({
 									<span
 										className={
 											isWinner
-												? "font-semibold text-gray-900 dark:text-white"
-												: "text-gray-600 dark:text-gray-400"
+												? "font-semibold text-stone-900 dark:text-white"
+												: "text-stone-600 dark:text-stone-400"
 										}
 									>
 										{score}/15 ({percentage}%)
 									</span>
 								</div>
-								<div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
+								<div className="h-2 w-full rounded-full bg-stone-200 dark:bg-stone-700">
 									<div
 										className={`h-2 rounded-full transition-all duration-500 ${
 											isWinner
 												? "bg-gradient-to-r from-blue-600 to-purple-600"
-												: "bg-gray-400 dark:bg-gray-500"
+												: "bg-stone-400 dark:bg-stone-500"
 										}`}
 										style={{ width: `${percentage}%` }}
 									/>
@@ -136,8 +136,8 @@ export function ModeResult({
 			</div>
 
 			{/* Use When Section */}
-			<div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800/50">
-				<h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+			<div className="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-700 dark:bg-stone-800/50">
+				<h3 className="mb-4 text-lg font-semibold text-stone-900 dark:text-white">
 					Use {info.name} When
 				</h3>
 				<ul className="space-y-2">
@@ -161,18 +161,18 @@ export function ModeResult({
 									d="M5 13l4 4L19 7"
 								/>
 							</svg>
-							<span className="text-gray-700 dark:text-gray-300">{item}</span>
+							<span className="text-stone-700 dark:text-stone-300">{item}</span>
 						</li>
 					))}
 				</ul>
 			</div>
 
 			{/* Workflow Diagram */}
-			<div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800/50">
-				<h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+			<div className="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-700 dark:bg-stone-800/50">
+				<h3 className="mb-4 text-lg font-semibold text-stone-900 dark:text-white">
 					{info.name} Workflow
 				</h3>
-				<pre className="overflow-x-auto rounded-lg bg-gray-100 p-4 font-mono text-sm text-gray-800 dark:bg-gray-900 dark:text-gray-200">
+				<pre className="overflow-x-auto rounded-lg bg-stone-100 p-4 font-mono text-sm text-stone-800 dark:bg-stone-900 dark:text-stone-200">
 					{info.diagram}
 				</pre>
 			</div>

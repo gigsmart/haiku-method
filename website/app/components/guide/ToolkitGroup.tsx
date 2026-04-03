@@ -74,14 +74,14 @@ export function ToolkitCard({
 	const c = colorMap[color]
 	return (
 		<div
-			className={`rounded-lg border border-gray-200 border-l-[3px] bg-white p-4 transition-colors hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:hover:border-gray-600 ${c.cardBorder}`}
+			className={`rounded-lg border border-stone-200 border-l-[3px] bg-white p-4 transition-colors hover:border-stone-300 dark:border-stone-700 dark:bg-stone-900 dark:hover:border-stone-600 ${c.cardBorder}`}
 		>
 			<div className={`mb-1 font-mono text-base font-bold ${c.cmd}`}>{cmd}</div>
-			<div className="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200">
+			<div className="mb-2 text-sm font-semibold text-stone-800 dark:text-stone-200">
 				{tagline}
 			</div>
 			{children && (
-				<div className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+				<div className="text-xs leading-relaxed text-stone-500 dark:text-stone-400">
 					{children}
 				</div>
 			)}

@@ -24,7 +24,7 @@ export function NestedLoopsViz() {
 						<div className="text-xs font-semibold text-violet-400">
 							INNER: Bolt
 						</div>
-						<div className="mt-1 text-[0.7rem] text-gray-500 dark:text-gray-400">
+						<div className="mt-1 text-[0.7rem] text-stone-500 dark:text-stone-400">
 							One focused work session
 						</div>
 					</div>
@@ -75,7 +75,7 @@ function PipelineUnit({
 	const colors = {
 		done: "bg-green-500",
 		building: "bg-amber-400",
-		waiting: "bg-gray-300 dark:bg-gray-700",
+		waiting: "bg-stone-300 dark:bg-stone-700",
 	}
 	const statusIcons = {
 		done: "\u2705 Done",
@@ -85,15 +85,15 @@ function PipelineUnit({
 	const textColors = {
 		done: "text-green-500",
 		building: "text-amber-400",
-		waiting: "text-gray-400",
+		waiting: "text-stone-400",
 	}
 
 	return (
-		<div className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-white p-3.5 dark:border-gray-700 dark:bg-gray-900">
-			<span className="min-w-[180px] text-sm font-semibold text-gray-800 dark:text-gray-200 max-sm:w-full">
+		<div className="flex flex-wrap items-center gap-3 rounded-lg border border-stone-200 bg-white p-3.5 dark:border-stone-700 dark:bg-stone-900">
+			<span className="min-w-[180px] text-sm font-semibold text-stone-800 dark:text-stone-200 max-sm:w-full">
 				{name}
 			</span>
-			<div className="h-2.5 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700 max-sm:min-w-[120px]">
+			<div className="h-2.5 flex-1 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700 max-sm:min-w-[120px]">
 				<div
 					className={`h-full rounded-full transition-all duration-1000 ${colors[status]}`}
 					style={{ width: `${pct}%` }}
@@ -149,7 +149,7 @@ export function HatRotation() {
 				<div className="flex flex-col items-center">
 					<div className="w-[140px] rounded-xl border-2 border-green-400/30 bg-green-500/5 p-3 text-center font-semibold text-green-500 dark:bg-green-500/10">
 						&#x2705; Pass
-						<div className="mt-1 text-xs font-normal text-gray-500 dark:text-gray-400">
+						<div className="mt-1 text-xs font-normal text-stone-500 dark:text-stone-400">
 							Unit complete!
 						</div>
 					</div>
@@ -160,7 +160,7 @@ export function HatRotation() {
 				<div className="flex flex-col items-center">
 					<div className="w-[140px] rounded-xl border-2 border-rose-400/30 bg-rose-500/5 p-3 text-center font-semibold text-rose-500 dark:bg-rose-500/10">
 						&#x274C; Fail
-						<div className="mt-1 text-xs font-normal text-gray-500 dark:text-gray-400">
+						<div className="mt-1 text-xs font-normal text-stone-500 dark:text-stone-400">
 							Feedback given
 						</div>
 					</div>
@@ -193,7 +193,7 @@ function HatBox({
 			className={`w-[200px] rounded-xl border-2 p-4 text-center font-semibold ${colorMap[color] || ""}`}
 		>
 			{icon} {label}
-			<div className="mt-1 text-xs font-normal text-gray-500 dark:text-gray-400">
+			<div className="mt-1 text-xs font-normal text-stone-500 dark:text-stone-400">
 				{sub}
 			</div>
 		</div>
@@ -202,8 +202,8 @@ function HatBox({
 
 function ArrowDown() {
 	return (
-		<div className="relative mx-auto h-6 w-0.5 bg-gray-300 dark:bg-gray-600">
-			<div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-x-[5px] border-t-[6px] border-x-transparent border-t-gray-300 dark:border-t-gray-600" />
+		<div className="relative mx-auto h-6 w-0.5 bg-stone-300 dark:bg-stone-600">
+			<div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-x-[5px] border-t-[6px] border-x-transparent border-t-stone-300 dark:border-t-stone-600" />
 		</div>
 	)
 }
@@ -278,28 +278,28 @@ export function FuelGauge() {
 			whileInView={{ opacity: 1, y: 0 }}
 			viewport={{ once: true, margin: "-40px" }}
 			transition={{ duration: 0.5 }}
-			className="my-8 overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
+			className="my-8 overflow-hidden rounded-2xl border border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-900"
 		>
 			{frames.map((frame, i) => (
 				<div
 					key={frame.label}
 					className={`flex items-center gap-4 px-5 py-3.5 ${
 						i < frames.length - 1
-							? "border-b border-gray-100 dark:border-gray-800"
+							? "border-b border-stone-100 dark:border-stone-800"
 							: ""
 					}`}
 				>
 					<span className="min-w-[2rem] text-center text-xl">{frame.icon}</span>
-					<span className="flex-1 text-sm text-gray-700 dark:text-gray-300">
+					<span className="flex-1 text-sm text-stone-700 dark:text-stone-300">
 						{frame.label}
 					</span>
-					<div className="h-3 w-[120px] flex-shrink-0 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700 max-sm:w-[80px]">
+					<div className="h-3 w-[120px] flex-shrink-0 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700 max-sm:w-[80px]">
 						<div
 							className={`h-full rounded-full transition-all duration-[2s] ${frame.color}`}
 							style={{ width: inView ? `${frame.pct}%` : "0%" }}
 						/>
 					</div>
-					<span className="min-w-[50px] text-right text-xs font-semibold text-gray-500 dark:text-gray-400">
+					<span className="min-w-[50px] text-right text-xs font-semibold text-stone-500 dark:text-stone-400">
 						{frame.display}
 					</span>
 				</div>

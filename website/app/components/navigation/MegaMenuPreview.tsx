@@ -20,9 +20,9 @@ export function MegaMenuPreview({
 		<Link
 			href={href}
 			onClick={onItemClick}
-			className="group flex flex-col rounded-xl bg-gradient-to-br from-blue-50 to-purple-50 p-5 transition hover:from-blue-100 hover:to-purple-100 dark:from-blue-950/50 dark:to-purple-950/50 dark:hover:from-blue-950 dark:hover:to-purple-950"
+			className="group flex flex-col rounded-xl bg-gradient-to-br from-teal-50 to-purple-50 p-5 transition hover:from-teal-100 hover:to-purple-100 dark:from-teal-950/50 dark:to-purple-950/50 dark:hover:from-teal-950 dark:hover:to-purple-950"
 		>
-			<div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+			<div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-purple-500 text-white">
 				<svg
 					className="h-5 w-5"
 					fill="none"
@@ -38,13 +38,13 @@ export function MegaMenuPreview({
 					/>
 				</svg>
 			</div>
-			<h4 className="mb-1 font-semibold text-gray-900 dark:text-white">
+			<h4 className="mb-1 font-semibold text-stone-900 dark:text-white">
 				{title}
 			</h4>
-			<p className="mb-3 flex-1 text-sm text-gray-600 dark:text-gray-400">
+			<p className="mb-3 flex-1 text-sm text-stone-600 dark:text-stone-400">
 				{description}
 			</p>
-			<span className="inline-flex items-center text-sm font-medium text-blue-600 group-hover:text-blue-700 dark:text-blue-400 dark:group-hover:text-blue-300">
+			<span className="inline-flex items-center text-sm font-medium text-teal-600 group-hover:text-teal-700 dark:text-teal-400 dark:group-hover:text-teal-300">
 				Get started
 				<svg
 					className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1"

@@ -39,7 +39,7 @@ export function MegaMenu({ category, isOpen, onClose }: MegaMenuProps) {
 	return (
 		<div
 			ref={menuRef}
-			className="absolute left-0 right-0 top-full z-50 border-b border-gray-200 bg-white shadow-lg dark:border-gray-800 dark:bg-gray-950"
+			className="absolute left-0 right-0 top-full z-50 border-b border-stone-200 bg-white shadow-lg dark:border-stone-800 dark:bg-stone-950"
 			role="menu"
 			aria-label={`${category.title} navigation`}
 		>

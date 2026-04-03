@@ -10,9 +10,9 @@ import {
 import "./globals.css"
 
 const SITE_URL = "https://ai-dlc.dev"
-const SITE_TITLE = "AI-DLC - AI-Driven Development Lifecycle"
+const SITE_TITLE = "AI-DLC — A H·AI·K·U Profile for Software Development"
 const SITE_DESCRIPTION =
-	"A methodology for the era of AI-driven software development — built from first principles, not retrofitted from the past"
+	"The software development profile of the H·AI·K·U universal lifecycle framework — structured human-AI collaboration from intent to deployment"
 
 export const metadata: Metadata = {
 	title: {
@@ -92,7 +92,7 @@ export default function RootLayout({
 					offers={{ price: "0", priceCurrency: "USD" }}
 				/>
 			</head>
-			<body className="flex min-h-screen flex-col bg-white text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100">
+			<body className="flex min-h-screen flex-col bg-white text-stone-900 antialiased dark:bg-stone-950 dark:text-stone-100">
 				<ThemeProvider>
 					<Header />
 					<main className="flex-1">{children}</main>

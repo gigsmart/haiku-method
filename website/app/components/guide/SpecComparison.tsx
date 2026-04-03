@@ -18,7 +18,7 @@ export function SpecComparison() {
 				<span className="mb-4 w-fit rounded-lg bg-rose-100 px-2.5 py-0.5 text-[0.7rem] font-semibold text-rose-500 dark:bg-rose-900/30">
 					the bad way
 				</span>
-				<ul className="mb-4 flex-1 space-y-2 text-sm text-gray-500 dark:text-gray-400">
+				<ul className="mb-4 flex-1 space-y-2 text-sm text-stone-500 dark:text-stone-400">
 					<li>
 						<strong className="text-blue-500">Human:</strong> &ldquo;Build me a
 						login page&rdquo;
@@ -44,12 +44,12 @@ export function SpecComparison() {
 				</ul>
 				<div className="rounded-lg bg-rose-100/60 p-3 dark:bg-rose-900/20">
 					<strong className="text-rose-500">Problem:</strong>{" "}
-					<span className="text-sm text-gray-500 dark:text-gray-400">
+					<span className="text-sm text-stone-500 dark:text-stone-400">
 						No definition of &ldquo;done.&rdquo; The AI guesses. You react.
 						Progress is random.
 					</span>
 				</div>
-				<div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
+				<div className="mt-4 flex items-center justify-center gap-2 text-xs text-stone-400">
 					<span className="text-lg">&#x1F500;</span>
 					Tangled loop -- going in circles
 				</div>
@@ -64,12 +64,12 @@ export function SpecComparison() {
 				<span className="mb-4 w-fit rounded-lg bg-amber-100 px-2.5 py-0.5 text-[0.7rem] font-semibold text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
 					better, but still a hand-off
 				</span>
-				<ul className="mb-4 flex-1 space-y-2 text-sm text-gray-500 dark:text-gray-400">
+				<ul className="mb-4 flex-1 space-y-2 text-sm text-stone-500 dark:text-stone-400">
 					<li>
 						Someone writes a detailed spec or PRD
 					</li>
 					<li>
-						Spec is handed to an <strong className="text-gray-700 dark:text-gray-200">AI or developer</strong> to implement
+						Spec is handed to an <strong className="text-stone-700 dark:text-stone-200">AI or developer</strong> to implement
 					</li>
 					<li>
 						Implementer interprets the spec (fills in gaps with assumptions)
@@ -83,11 +83,11 @@ export function SpecComparison() {
 				</ul>
 				<div className="rounded-lg bg-amber-100/60 p-3 dark:bg-amber-900/20">
 					<strong className="text-amber-600 dark:text-amber-400">Problem:</strong>{" "}
-					<span className="text-sm text-gray-500 dark:text-gray-400">
+					<span className="text-sm text-stone-500 dark:text-stone-400">
 						The spec writer and the implementer have different mental models. The hand-off creates gaps that only surface during review.
 					</span>
 				</div>
-				<div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
+				<div className="mt-4 flex items-center justify-center gap-2 text-xs text-stone-400">
 					<span className="text-lg">&#x2195;&#xFE0F;</span>
 					Spec → hand-off → interpretation gap
 				</div>
@@ -100,10 +100,10 @@ export function SpecComparison() {
 				<span className="mb-4 w-fit rounded-lg bg-green-100 px-2.5 py-0.5 text-[0.7rem] font-semibold text-green-500 dark:bg-green-900/30">
 					no hand-off — co-created
 				</span>
-				<ul className="mb-4 flex-1 space-y-2 text-sm text-gray-500 dark:text-gray-400">
+				<ul className="mb-4 flex-1 space-y-2 text-sm text-stone-500 dark:text-stone-400">
 					<li>
 						Human and AI{" "}
-						<strong className="text-gray-700 dark:text-gray-200">
+						<strong className="text-stone-700 dark:text-stone-200">
 							co-create the spec through conversation
 						</strong>{" "}
 						— not a document tossed over a wall
@@ -113,21 +113,21 @@ export function SpecComparison() {
 					</li>
 					<li>
 						Success criteria are{" "}
-						<strong className="text-gray-700 dark:text-gray-200">
+						<strong className="text-stone-700 dark:text-stone-200">
 							machine-verifiable
 						</strong>{" "}
 						— tests, types, performance thresholds the AI can check itself
 					</li>
 					<li>
 						The same system that helped define the spec{" "}
-						<strong className="text-gray-700 dark:text-gray-200">
+						<strong className="text-stone-700 dark:text-stone-200">
 							also builds it
 						</strong>{" "}
 						— shared understanding, zero hand-off
 					</li>
 					<li>
 						Quality gates{" "}
-						<strong className="text-gray-700 dark:text-gray-200">
+						<strong className="text-stone-700 dark:text-stone-200">
 							enforce
 						</strong>{" "}
 						the criteria automatically — work continues until they&rsquo;re met
@@ -135,11 +135,11 @@ export function SpecComparison() {
 				</ul>
 				<div className="rounded-lg bg-green-100/60 p-3 dark:bg-green-900/20">
 					<strong className="text-green-500">Result:</strong>{" "}
-					<span className="text-sm text-gray-500 dark:text-gray-400">
+					<span className="text-sm text-stone-500 dark:text-stone-400">
 						No interpretation gap. The spec is a shared understanding, not a hand-off artifact. Clear criteria = autonomous AI.
 					</span>
 				</div>
-				<div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
+				<div className="mt-4 flex items-center justify-center gap-2 text-xs text-stone-400">
 					<span className="text-lg">&#x2705;</span>
 					Conversation → shared understanding → verified code
 				</div>
@@ -155,15 +155,15 @@ export function InsightBox() {
 			whileInView={{ opacity: 1, y: 0 }}
 			viewport={{ once: true, margin: "-40px" }}
 			transition={{ duration: 0.5 }}
-			className="my-10 rounded-xl border-2 border-amber-300/30 bg-white p-7 dark:border-amber-500/20 dark:bg-gray-900"
+			className="my-10 rounded-xl border-2 border-amber-300/30 bg-white p-7 dark:border-amber-500/20 dark:bg-stone-900"
 		>
 			<div className="mb-3 text-base font-bold text-amber-500">
 				The AI-DLC insight: Autonomy is a function of criteria clarity.
 			</div>
-			<div className="my-4 rounded-lg border border-gray-200 bg-gray-50 p-3.5 text-center font-mono text-lg font-semibold text-amber-500 dark:border-gray-700 dark:bg-gray-950">
+			<div className="my-4 rounded-lg border border-stone-200 bg-stone-50 p-3.5 text-center font-mono text-lg font-semibold text-amber-500 dark:border-stone-700 dark:bg-stone-950">
 				Autonomy = f(Criteria Clarity)
 			</div>
-			<ul className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
+			<ul className="space-y-2 text-sm text-stone-500 dark:text-stone-400">
 				<li>
 					<strong className="text-rose-500">Vague criteria</strong> (&ldquo;make
 					it look good&rdquo;) &rarr; AI keeps asking you questions, can&rsquo;t
@@ -175,7 +175,7 @@ export function InsightBox() {
 					iterates autonomously until done
 				</li>
 			</ul>
-			<p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
+			<p className="mt-4 text-sm text-stone-500 dark:text-stone-400">
 				This is why AI-DLC spends so much time on elaboration. The planning
 				phase isn&rsquo;t overhead -- it&rsquo;s the thing that makes everything
 				else work.
@@ -231,8 +231,8 @@ function CriteriaPair({
 			className={`rounded-xl border p-5 ${
 				variant === "good"
 					? "border-green-200 dark:border-green-800"
-					: "border-gray-200 dark:border-gray-700"
-			} bg-white dark:bg-gray-900`}
+					: "border-stone-200 dark:border-stone-700"
+			} bg-white dark:bg-stone-900`}
 		>
 			<div
 				className={`mb-1.5 text-xs font-semibold uppercase tracking-wider ${
@@ -241,10 +241,10 @@ function CriteriaPair({
 			>
 				{variant === "good" ? "\u2705 Good criterion" : "\u274C Bad criterion"}
 			</div>
-			<div className="mb-1.5 text-sm font-semibold text-gray-800 dark:text-gray-200">
+			<div className="mb-1.5 text-sm font-semibold text-stone-800 dark:text-stone-200">
 				{text}
 			</div>
-			<div className="text-xs text-gray-500 dark:text-gray-400">{reason}</div>
+			<div className="text-xs text-stone-500 dark:text-stone-400">{reason}</div>
 		</div>
 	)
 }

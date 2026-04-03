@@ -105,7 +105,7 @@ export default async function BlogPostPage({ params }: Props) {
 			/>
 			<Link
 				href="/blog/"
-				className="mb-8 inline-flex items-center gap-2 text-sm text-gray-600 transition hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+				className="mb-8 inline-flex items-center gap-2 text-sm text-stone-600 transition hover:text-stone-900 dark:text-stone-400 dark:hover:text-white"
 			>
 				<svg
 					className="h-4 w-4"
@@ -125,14 +125,14 @@ export default async function BlogPostPage({ params }: Props) {
 			</Link>
 
 			<header className="mb-8">
-				<time className="text-sm text-gray-500 dark:text-gray-500">
+				<time className="text-sm text-stone-500 dark:text-stone-500">
 					{formatDate(post.date)}
 				</time>
 				<h1 className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
 					{post.title}
 				</h1>
 				{post.author && (
-					<p className="mt-4 text-gray-600 dark:text-gray-400">
+					<p className="mt-4 text-stone-600 dark:text-stone-400">
 						By {post.author}
 					</p>
 				)}

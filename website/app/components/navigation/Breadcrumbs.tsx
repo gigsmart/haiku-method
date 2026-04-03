@@ -35,6 +35,12 @@ const segmentLabels: Record<string, string> = {
 	"checklist-first-intent": "First Intent Checklist",
 	"checklist-team-onboarding": "Team Onboarding",
 	assessment: "Assessment",
+	methodology: "Methodology",
+	studios: "Studios",
+	elaboration: "Elaboration",
+	execution: "Execution",
+	operation: "Operation",
+	reflection: "Reflection",
 }
 
 function getSegmentLabel(segment: string): string {
@@ -85,7 +91,7 @@ export function Breadcrumbs() {
 	return (
 		<nav
 			aria-label="Breadcrumb"
-			className="mb-6 text-sm text-gray-500 dark:text-gray-400"
+			className="mb-6 text-sm text-stone-500 dark:text-stone-400"
 		>
 			<ol className="flex flex-wrap items-center gap-1">
 				{breadcrumbs.map((item, index) => {
@@ -95,7 +101,7 @@ export function Breadcrumbs() {
 						<li key={item.href} className="flex items-center">
 							{index > 0 && (
 								<svg
-									className="mx-2 h-4 w-4 text-gray-400"
+									className="mx-2 h-4 w-4 text-stone-400"
 									fill="none"
 									viewBox="0 0 24 24"
 									stroke="currentColor"
@@ -111,7 +117,7 @@ export function Breadcrumbs() {
 							)}
 							{isLast ? (
 								<span
-									className="font-medium text-gray-900 dark:text-white"
+									className="font-medium text-stone-900 dark:text-white"
 									aria-current="page"
 								>
 									{item.label}
@@ -119,7 +125,7 @@ export function Breadcrumbs() {
 							) : (
 								<Link
 									href={item.href}
-									className="transition hover:text-gray-900 dark:hover:text-white"
+									className="transition hover:text-stone-900 dark:hover:text-white"
 								>
 									{item.label}
 								</Link>

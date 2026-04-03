@@ -41,14 +41,14 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 			/>
 
 			{/* Panel */}
-			<div className="fixed inset-y-0 right-0 w-full max-w-sm overflow-y-auto bg-white dark:bg-gray-950">
+			<div className="fixed inset-y-0 right-0 w-full max-w-sm overflow-y-auto bg-white dark:bg-stone-950">
 				{/* Header */}
-				<div className="flex items-center justify-between border-b border-gray-200 px-4 py-4 dark:border-gray-800">
+				<div className="flex items-center justify-between border-b border-stone-200 px-4 py-4 dark:border-stone-800">
 					<span className="text-lg font-semibold">Menu</span>
 					<button
 						type="button"
 						onClick={onClose}
-						className="rounded-lg p-2 transition hover:bg-gray-100 dark:hover:bg-gray-800"
+						className="rounded-lg p-2 transition hover:bg-stone-100 dark:hover:bg-stone-800"
 						aria-label="Close menu"
 					>
 						<svg
@@ -78,7 +78,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 									<Link
 										href={item.href}
 										onClick={onClose}
-										className="block rounded-lg px-3 py-2 font-medium transition hover:bg-gray-100 dark:hover:bg-gray-800"
+										className="block rounded-lg px-3 py-2 font-medium transition hover:bg-stone-100 dark:hover:bg-stone-800"
 									>
 										{item.title}
 									</Link>
@@ -94,7 +94,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 								<button
 									type="button"
 									onClick={() => toggleCategory(category.title)}
-									className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left font-medium transition hover:bg-gray-100 dark:hover:bg-gray-800"
+									className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left font-medium transition hover:bg-stone-100 dark:hover:bg-stone-800"
 									aria-expanded={expandedCategory === category.title}
 								>
 									<span>{category.title}</span>
@@ -121,7 +121,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 									<div className="mt-2 space-y-4 pl-3">
 										{category.sections.map((section) => (
 											<div key={section.title}>
-												<h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+												<h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
 													{section.title}
 												</h3>
 												<ul className="space-y-1">
@@ -140,7 +140,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 																				rel: "noopener noreferrer",
 																			}
 																		: {})}
-																	className="block rounded-lg px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+																	className="block rounded-lg px-3 py-2 text-sm text-stone-600 transition hover:bg-stone-100 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-white"
 																>
 																	{item.title}
 																	{isExternal && (
@@ -173,11 +173,11 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 					</ul>
 
 					{/* Quick links */}
-					<div className="mt-8 border-t border-gray-200 pt-6 dark:border-gray-800">
+					<div className="mt-8 border-t border-stone-200 pt-6 dark:border-stone-800">
 						<Link
 							href="/docs/installation/"
 							onClick={onClose}
-							className="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3 font-medium text-white transition hover:from-blue-700 hover:to-purple-700"
+							className="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-teal-600 to-purple-600 px-4 py-3 font-medium text-white transition hover:from-teal-700 hover:to-purple-700"
 						>
 							<svg
 								className="h-5 w-5"
@@ -203,7 +203,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 							href="https://github.com/thebushidocollective/ai-dlc"
 							target="_blank"
 							rel="noopener noreferrer"
-							className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-4 py-3 font-medium transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+							className="flex items-center justify-center gap-2 rounded-lg border border-stone-200 px-4 py-3 font-medium transition hover:bg-stone-50 dark:border-stone-700 dark:hover:bg-stone-800"
 						>
 							<svg
 								className="h-5 w-5"

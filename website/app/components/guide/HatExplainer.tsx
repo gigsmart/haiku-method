@@ -14,10 +14,10 @@ export function HatExplainer() {
 			<span className="mb-3 inline-block rounded-full bg-amber-100 px-2.5 py-0.5 text-[0.7rem] font-bold uppercase tracking-wider text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
 				How It Works
 			</span>
-			<h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+			<h3 className="mb-4 text-lg font-semibold text-stone-900 dark:text-stone-100">
 				What is a &ldquo;Hat&rdquo;?
 			</h3>
-			<p className="mb-4 text-sm text-gray-600 dark:text-gray-300">
+			<p className="mb-4 text-sm text-stone-600 dark:text-stone-300">
 				A hat is a set of{" "}
 				<strong className="text-amber-500">injected instructions</strong> that
 				tells a fresh AI agent how to behave. Here&rsquo;s what actually
@@ -25,7 +25,7 @@ export function HatExplainer() {
 			</p>
 
 			{/* 3-step flow */}
-			<div className="my-5 flex flex-col items-center gap-0 rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-950">
+			<div className="my-5 flex flex-col items-center gap-0 rounded-lg border border-stone-200 bg-white p-5 dark:border-stone-700 dark:bg-stone-950">
 				<Step
 					num={1}
 					title="Claude spawns a fresh agent"
@@ -45,7 +45,7 @@ export function HatExplainer() {
 				/>
 			</div>
 
-			<p className="mt-4 border-t border-gray-200 pt-4 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+			<p className="mt-4 border-t border-stone-200 pt-4 text-sm text-stone-500 dark:border-stone-700 dark:text-stone-400">
 				Think of it like hiring a contractor: you bring someone in{" "}
 				<em>(fresh agent)</em>, hand them a job description{" "}
 				<em>(hat instructions)</em>, and they do exactly that job. When the
@@ -53,19 +53,19 @@ export function HatExplainer() {
 				job description.
 			</p>
 
-			<div className="mt-4 grid gap-4 border-t border-gray-200 pt-4 sm:grid-cols-2 dark:border-gray-700">
+			<div className="mt-4 grid gap-4 border-t border-stone-200 pt-4 sm:grid-cols-2 dark:border-stone-700">
 				<div>
 					<strong className="mb-1 block text-xs text-amber-500">
 						What&rsquo;s in a hat file?
 					</strong>
-					<p className="mb-1 text-xs text-gray-500 dark:text-gray-400">
+					<p className="mb-1 text-xs text-stone-500 dark:text-stone-400">
 						Each hat is a markdown file (
 						<code className="text-amber-500">
 							plugin/hats/&#123;hat-name&#125;.md
 						</code>
 						) that defines:
 					</p>
-					<ul className="list-disc pl-4 text-xs text-gray-500 dark:text-gray-400">
+					<ul className="list-disc pl-4 text-xs text-stone-500 dark:text-stone-400">
 						<li>What the agent MUST do (required steps)</li>
 						<li>What the agent MUST NOT do (boundaries)</li>
 						<li>Quality gates it must pass before finishing</li>
@@ -79,10 +79,10 @@ export function HatExplainer() {
 					<strong className="mb-1 block text-xs text-amber-500">
 						Why fresh agents?
 					</strong>
-					<p className="mb-1 text-xs text-gray-500 dark:text-gray-400">
+					<p className="mb-1 text-xs text-stone-500 dark:text-stone-400">
 						Each hatted agent starts with a clean context window. This means:
 					</p>
-					<ul className="list-disc pl-4 text-xs text-gray-500 dark:text-gray-400">
+					<ul className="list-disc pl-4 text-xs text-stone-500 dark:text-stone-400">
 						<li>No confusion from previous units or hats</li>
 						<li>Full context budget for the current task</li>
 						<li>Failures in one unit don&rsquo;t bleed into another</li>
@@ -100,11 +100,11 @@ function Step({
 }: { num: number; title: string; desc: string }) {
 	return (
 		<div className="flex w-full max-w-md items-center gap-3.5 rounded-lg border border-amber-200/40 bg-amber-50/40 p-3.5 dark:border-amber-700/25 dark:bg-amber-950/10">
-			<span className="flex h-7 w-7 min-w-[1.75rem] items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-gray-900">
+			<span className="flex h-7 w-7 min-w-[1.75rem] items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-stone-900">
 				{num}
 			</span>
-			<span className="text-sm text-gray-600 dark:text-gray-300">
-				<strong className="text-gray-900 dark:text-gray-100">{title}</strong>
+			<span className="text-sm text-stone-600 dark:text-stone-300">
+				<strong className="text-stone-900 dark:text-stone-100">{title}</strong>
 				<br />
 				{desc}
 			</span>

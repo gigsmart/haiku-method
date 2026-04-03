@@ -60,20 +60,20 @@ function DownloadCard({
 	downloadUrl: string
 }) {
 	return (
-		<div className="rounded-lg border border-gray-200 bg-white p-6 transition hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700">
+		<div className="rounded-lg border border-stone-200 bg-white p-6 transition hover:border-stone-300 dark:border-stone-800 dark:bg-stone-900 dark:hover:border-stone-700">
 			<div className="mb-2 flex items-start justify-between">
 				<h3 className="text-lg font-semibold">{name}</h3>
-				<span className="rounded bg-gray-100 px-2 py-1 font-mono text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+				<span className="rounded bg-stone-100 px-2 py-1 font-mono text-xs text-stone-600 dark:bg-stone-800 dark:text-stone-400">
 					{filename}
 				</span>
 			</div>
-			<p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+			<p className="mb-4 text-sm text-stone-600 dark:text-stone-400">
 				{description}
 			</p>
 			<a
 				href={downloadUrl}
 				download
-				className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+				className="inline-flex items-center gap-2 rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"
 			>
 				<svg
 					className="h-4 w-4"
@@ -99,7 +99,7 @@ export default function TemplatesPage() {
 	return (
 		<div className="mx-auto max-w-4xl px-4 py-12">
 			<h1 className="mb-4 text-4xl font-bold tracking-tight">Templates</h1>
-			<p className="mb-8 text-lg text-gray-600 dark:text-gray-400">
+			<p className="mb-8 text-lg text-stone-600 dark:text-stone-400">
 				Downloadable templates to help you get started with AI-DLC. Use these as
 				starting points for your own intents and units.
 			</p>
@@ -115,7 +115,7 @@ export default function TemplatesPage() {
 
 			<section className="mb-12">
 				<h2 className="mb-6 text-2xl font-bold">Examples</h2>
-				<p className="mb-6 text-gray-600 dark:text-gray-400">
+				<p className="mb-6 text-stone-600 dark:text-stone-400">
 					Real-world examples showing how to structure intents and units for a
 					user authentication system.
 				</p>
@@ -126,13 +126,13 @@ export default function TemplatesPage() {
 				</div>
 			</section>
 
-			<section className="rounded-lg border border-gray-200 bg-gray-50 p-6 dark:border-gray-800 dark:bg-gray-900">
+			<section className="rounded-lg border border-stone-200 bg-stone-50 p-6 dark:border-stone-800 dark:bg-stone-900">
 				<h2 className="mb-4 text-xl font-bold">Quick Setup</h2>
-				<p className="mb-4 text-gray-600 dark:text-gray-400">
+				<p className="mb-4 text-stone-600 dark:text-stone-400">
 					Create your <code>.ai-dlc/</code> directory and download templates
 					with these commands:
 				</p>
-				<div className="overflow-x-auto rounded-lg bg-gray-900 p-4 font-mono text-sm text-gray-100 dark:bg-gray-950">
+				<div className="overflow-x-auto rounded-lg bg-stone-900 p-4 font-mono text-sm text-stone-100 dark:bg-stone-950">
 					<pre>{`# Create directory
 mkdir -p .ai-dlc
 
@@ -145,11 +145,11 @@ curl -o .ai-dlc/settings.yml https://ai-dlc.dev/templates/settings-template.yml`
 
 			<section className="mt-12">
 				<h2 className="mb-4 text-xl font-bold">Next Steps</h2>
-				<ul className="space-y-2 text-gray-600 dark:text-gray-400">
+				<ul className="space-y-2 text-stone-600 dark:text-stone-400">
 					<li>
 						<Link
 							href="/docs/quick-start/"
-							className="text-blue-600 hover:underline dark:text-blue-400"
+							className="text-teal-600 hover:underline dark:text-teal-400"
 						>
 							Quick Start Guide
 						</Link>{" "}
@@ -158,7 +158,7 @@ curl -o .ai-dlc/settings.yml https://ai-dlc.dev/templates/settings-template.yml`
 					<li>
 						<Link
 							href="/docs/checklist-first-intent/"
-							className="text-blue-600 hover:underline dark:text-blue-400"
+							className="text-teal-600 hover:underline dark:text-teal-400"
 						>
 							First Intent Checklist
 						</Link>{" "}
@@ -167,7 +167,7 @@ curl -o .ai-dlc/settings.yml https://ai-dlc.dev/templates/settings-template.yml`
 					<li>
 						<Link
 							href="/docs/concepts/"
-							className="text-blue-600 hover:underline dark:text-blue-400"
+							className="text-teal-600 hover:underline dark:text-teal-400"
 						>
 							Core Concepts
 						</Link>{" "}

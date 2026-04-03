@@ -94,10 +94,10 @@ export function GlossaryContent({
 						placeholder="Search terms..."
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
-						className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 pl-10 text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+						className="w-full rounded-lg border border-stone-300 bg-white px-4 py-3 pl-10 text-stone-900 transition focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-stone-700 dark:bg-stone-800 dark:text-white"
 					/>
 					<svg
-						className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+						className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400"
 						fill="none"
 						viewBox="0 0 24 24"
 						stroke="currentColor"
@@ -114,7 +114,7 @@ export function GlossaryContent({
 						<button
 							type="button"
 							onClick={() => setSearchQuery("")}
-							className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+							className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
 							aria-label="Clear search"
 						>
 							<svg
@@ -135,7 +135,7 @@ export function GlossaryContent({
 					)}
 				</div>
 				{filteredTerms && (
-					<p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+					<p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
 						{filteredTerms.length} term{filteredTerms.length !== 1 ? "s" : ""}{" "}
 						found
 					</p>
@@ -152,8 +152,8 @@ export function GlossaryContent({
 							href={hasTerms ? `#letter-${letter}` : undefined}
 							className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium transition ${
 								hasTerms
-									? "bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700"
-									: "cursor-default bg-gray-50 text-gray-300 dark:bg-gray-900 dark:text-gray-700"
+									? "bg-stone-100 text-stone-900 hover:bg-stone-200 dark:bg-stone-800 dark:text-white dark:hover:bg-stone-700"
+									: "cursor-default bg-stone-50 text-stone-300 dark:bg-stone-900 dark:text-stone-700"
 							}`}
 						>
 							{letter}
@@ -164,14 +164,14 @@ export function GlossaryContent({
 
 			{/* Terms by letter */}
 			{displayIndex.length === 0 ? (
-				<p className="py-12 text-center text-gray-500 dark:text-gray-400">
+				<p className="py-12 text-center text-stone-500 dark:text-stone-400">
 					No terms found matching &quot;{searchQuery}&quot;
 				</p>
 			) : (
 				<div className="space-y-8">
 					{displayIndex.map((letter) => (
 						<section key={letter} id={`letter-${letter}`}>
-							<h2 className="sticky top-16 z-10 mb-4 border-b border-gray-200 bg-white pb-2 text-2xl font-bold text-gray-900 dark:border-gray-800 dark:bg-gray-950 dark:text-white">
+							<h2 className="sticky top-16 z-10 mb-4 border-b border-stone-200 bg-white pb-2 text-2xl font-bold text-stone-900 dark:border-stone-800 dark:bg-stone-950 dark:text-white">
 								{letter}
 							</h2>
 							<dl className="space-y-4">
@@ -181,22 +181,22 @@ export function GlossaryContent({
 										<div
 											key={term.slug}
 											id={term.slug}
-											className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
+											className="rounded-lg border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900"
 										>
 											<dt className="flex items-center justify-between">
-												<span className="text-lg font-semibold text-gray-900 dark:text-white">
+												<span className="text-lg font-semibold text-stone-900 dark:text-white">
 													{term.term}
 												</span>
 												{paperAnchor && (
 													<Link
 														href={`/paper/#${paperAnchor}`}
-														className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+														className="text-sm text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300"
 													>
 														See in paper
 													</Link>
 												)}
 											</dt>
-											<dd className="mt-2 text-gray-600 dark:text-gray-400">
+											<dd className="mt-2 text-stone-600 dark:text-stone-400">
 												{term.definition}
 											</dd>
 										</div>
@@ -209,10 +209,10 @@ export function GlossaryContent({
 			)}
 
 			{/* Back to paper link */}
-			<div className="mt-12 border-t border-gray-200 pt-8 dark:border-gray-800">
+			<div className="mt-12 border-t border-stone-200 pt-8 dark:border-stone-800">
 				<Link
 					href="/paper/"
-					className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+					className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300"
 				>
 					<svg
 						className="h-4 w-4"

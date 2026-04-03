@@ -14,7 +14,7 @@ export function MegaMenuSection({
 }: MegaMenuSectionProps) {
 	return (
 		<div>
-			<h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+			<h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
 				{section.title}
 			</h3>
 			<ul className="space-y-1">
@@ -30,9 +30,9 @@ export function MegaMenuSection({
 								{...(isExternal
 									? { target: "_blank", rel: "noopener noreferrer" }
 									: {})}
-								className="group block rounded-lg p-2 transition hover:bg-gray-50 dark:hover:bg-gray-800/50"
+								className="group block rounded-lg p-2 transition hover:bg-stone-50 dark:hover:bg-stone-800/50"
 							>
-								<div className="font-medium text-gray-900 group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
+								<div className="font-medium text-stone-900 group-hover:text-teal-600 dark:text-white dark:group-hover:text-teal-400">
 									{item.title}
 									{isExternal && (
 										<svg
@@ -52,7 +52,7 @@ export function MegaMenuSection({
 									)}
 								</div>
 								{item.description && (
-									<p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+									<p className="mt-0.5 text-sm text-stone-500 dark:text-stone-400">
 										{item.description}
 									</p>
 								)}

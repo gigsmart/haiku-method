@@ -54,15 +54,15 @@ export function ModeExplanation({
 	)
 
 	return (
-		<div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800/50">
-			<h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+		<div className="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-700 dark:bg-stone-800/50">
+			<h3 className="mb-4 text-lg font-semibold text-stone-900 dark:text-white">
 				Why {modeInfo[recommendedMode].name}?
 			</h3>
 
 			<div className="space-y-6">
 				{alignedFactors.length > 0 && (
 					<div>
-						<h4 className="mb-2 text-sm font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+						<h4 className="mb-2 text-sm font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400">
 							Factors supporting this recommendation
 						</h4>
 						<div className="space-y-2">
@@ -87,10 +87,10 @@ export function ModeExplanation({
 										/>
 									</svg>
 									<div>
-										<div className="font-medium text-gray-900 dark:text-white">
+										<div className="font-medium text-stone-900 dark:text-white">
 											{factor.question}
 										</div>
-										<div className="text-sm text-gray-600 dark:text-gray-400">
+										<div className="text-sm text-stone-600 dark:text-stone-400">
 											You selected: {factor.answer}
 											{factor.strength === "strong" && (
 												<span className="ml-2 text-green-600 dark:text-green-400">
@@ -107,7 +107,7 @@ export function ModeExplanation({
 
 				{opposingFactors.length > 0 && (
 					<div>
-						<h4 className="mb-2 text-sm font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+						<h4 className="mb-2 text-sm font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400">
 							Factors suggesting other modes
 						</h4>
 						<div className="space-y-2">
@@ -132,10 +132,10 @@ export function ModeExplanation({
 										/>
 									</svg>
 									<div>
-										<div className="font-medium text-gray-900 dark:text-white">
+										<div className="font-medium text-stone-900 dark:text-white">
 											{factor.question}
 										</div>
-										<div className="text-sm text-gray-600 dark:text-gray-400">
+										<div className="text-sm text-stone-600 dark:text-stone-400">
 											You selected: {factor.answer}
 											<span className="ml-2 text-amber-600 dark:text-amber-400">
 												(suggests {modeInfo[factor.contribution].name})
@@ -145,7 +145,7 @@ export function ModeExplanation({
 								</div>
 							))}
 						</div>
-						<p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+						<p className="mt-3 text-sm text-stone-600 dark:text-stone-400">
 							These factors suggest some aspects of your work might benefit from
 							a different mode. Consider the trade-offs and adjust as needed.
 						</p>

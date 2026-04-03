@@ -20,11 +20,11 @@ export default function WorkflowsPage() {
 				<div className="text-center mb-12">
 					<h1 className="text-4xl font-bold tracking-tight mb-4 sm:text-5xl">
 						Workflow{" "}
-						<span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400">
+						<span className="bg-gradient-to-r from-teal-600 to-purple-600 bg-clip-text text-transparent dark:from-teal-400 dark:to-purple-400">
 							Visualizer
 						</span>
 					</h1>
-					<p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+					<p className="text-lg text-stone-600 dark:text-stone-400 max-w-2xl mx-auto">
 						Explore the different AI-DLC workflows and see how hats transition
 						through each phase. Click on any hat to see its responsibilities, or
 						press play to watch the workflow animate.
@@ -36,11 +36,11 @@ export default function WorkflowsPage() {
 
 				{/* Additional information */}
 				<div className="mt-16 grid gap-8 md:grid-cols-2">
-					<div className="p-6 rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800">
+					<div className="p-6 rounded-xl bg-stone-50 dark:bg-stone-900/50 border border-stone-200 dark:border-stone-800">
 						<h2 className="text-xl font-semibold mb-3">Operating Modes</h2>
-						<div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
+						<div className="space-y-3 text-sm text-stone-600 dark:text-stone-400">
 							<p>
-								<strong className="text-blue-600 dark:text-blue-400">
+								<strong className="text-teal-600 dark:text-teal-400">
 									HITL (Human-in-the-Loop):
 								</strong>{" "}
 								Human validates each step. Used for novel domains, high-risk
@@ -63,14 +63,14 @@ export default function WorkflowsPage() {
 						</div>
 					</div>
 
-					<div className="p-6 rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800">
+					<div className="p-6 rounded-xl bg-stone-50 dark:bg-stone-900/50 border border-stone-200 dark:border-stone-800">
 						<h2 className="text-xl font-semibold mb-3">Iteration Loops</h2>
-						<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+						<p className="text-sm text-stone-600 dark:text-stone-400 mb-4">
 							Each workflow includes an iteration loop that shows what happens
 							when the final review identifies issues or when continued
 							iteration is needed.
 						</p>
-						<ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+						<ul className="space-y-2 text-sm text-stone-600 dark:text-stone-400">
 							<li className="flex items-start gap-2">
 								<span className="text-amber-500">*</span>
 								<span>

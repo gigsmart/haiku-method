@@ -124,7 +124,7 @@ export function BigPictureDiagram() {
 
 			{/* SVG Diagram */}
 			<div
-				className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800"
+				className="overflow-x-auto rounded-xl border border-stone-200 dark:border-stone-800"
 				style={{ backgroundColor: bgColor }}
 			>
 				<svg
@@ -180,20 +180,20 @@ export function BigPictureDiagram() {
 			</div>
 
 			{/* Accessibility instructions */}
-			<p className="mt-2 text-center text-xs text-gray-500 dark:text-gray-400">
+			<p className="mt-2 text-center text-xs text-stone-500 dark:text-stone-400">
 				Use Tab to navigate between nodes. Press Enter or Space to view
 				documentation. Arrow keys navigate within the diagram.
 			</p>
 
 			{/* Mobile stacked view */}
 			<div className="mt-8 block lg:hidden">
-				<h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+				<h3 className="mb-4 text-lg font-semibold text-stone-900 dark:text-white">
 					Quick Navigation
 				</h3>
 				<div className="space-y-6">
 					{diagramData.layers.map((layer) => (
 						<div key={layer.id}>
-							<h4 className="mb-2 text-sm font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+							<h4 className="mb-2 text-sm font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400">
 								{layer.label}
 							</h4>
 							<div className="flex flex-wrap gap-2">
@@ -222,7 +222,7 @@ function LegendItem({ color, label }: { color: string; label: string }) {
 				style={{ backgroundColor: color }}
 				aria-hidden="true"
 			/>
-			<span className="text-gray-600 dark:text-gray-400">{label}</span>
+			<span className="text-stone-600 dark:text-stone-400">{label}</span>
 		</div>
 	)
 }

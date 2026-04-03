@@ -24,7 +24,7 @@ export function DeepDive({ title, children, forceOpen }: DeepDiveProps) {
 			whileInView={{ opacity: 1, y: 0 }}
 			viewport={{ once: true, margin: "-40px" }}
 			transition={{ duration: 0.5 }}
-			className="my-6 overflow-hidden rounded-lg border border-gray-200 border-l-violet-500 border-l-[3px] bg-white dark:border-gray-700 dark:border-l-violet-500 dark:bg-gray-950"
+			className="my-6 overflow-hidden rounded-lg border border-stone-200 border-l-violet-500 border-l-[3px] bg-white dark:border-stone-700 dark:border-l-violet-500 dark:bg-stone-950"
 		>
 			<button
 				type="button"
@@ -34,13 +34,13 @@ export function DeepDive({ title, children, forceOpen }: DeepDiveProps) {
 				<span className="text-base">&#x1F52C;</span>
 				<span className="flex-1">{title}</span>
 				<span
-					className={`text-[0.65rem] text-gray-400 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+					className={`text-[0.65rem] text-stone-400 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
 				>
 					&#x25B6;
 				</span>
 			</button>
 			{open && (
-				<div className="border-t border-gray-200 px-5 py-5 text-sm leading-relaxed text-gray-600 dark:border-gray-700 dark:text-gray-300">
+				<div className="border-t border-stone-200 px-5 py-5 text-sm leading-relaxed text-stone-600 dark:border-stone-700 dark:text-stone-300">
 					{children}
 				</div>
 			)}
