@@ -7,7 +7,7 @@ discipline: documentation
 stage: ""
 workflow: ""
 ticket: ""
-hat: planner
+hat: builder
 ---
 
 # unit-11-website-developer-docs
