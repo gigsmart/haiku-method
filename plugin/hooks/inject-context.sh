@@ -41,6 +41,12 @@ if [ -f "$CONFIG_LIB" ]; then
   source "$CONFIG_LIB"
 fi
 
+# Detect legacy AI-DLC intents (notice only, no auto-migration)
+# migrate.sh is sourced transitively via config.sh above
+if type hku_detect_legacy_intents &>/dev/null; then
+  hku_detect_legacy_intents "$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
+fi
+
 # Source H•AI•K•U workspace integration (opt-in org memory)
 HAIKU_LIB="${PLUGIN_ROOT}/lib/haiku.sh"
 if [ -f "$HAIKU_LIB" ]; then

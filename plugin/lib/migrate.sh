@@ -3,7 +3,8 @@
 #
 # Migrates legacy .ai-dlc/ paths to .haiku/ with backward-compat symlinks.
 # All functions are idempotent — re-running is a no-op if new path exists.
-# Intent directory migration is handled separately (unit-13).
+# Intent migration functions (hku_migrate_legacy_intent, etc.) require
+# state.sh to be sourced first (guaranteed when loaded via config.sh).
 
 # Guard against double-sourcing
 [[ -n "${_HKU_MIGRATE_SOURCED:-}" ]] && return 0
@@ -103,4 +104,182 @@ hku_migrate_all() {
   hku_migrate_knowledge "$project_root"
 
   echo "haiku: migrated project configuration from .ai-dlc/ to .haiku/" >&2
+}
+
+# ============================================================================
+# Intent Directory Migration (Legacy .ai-dlc/{slug}/ → .haiku/intents/{slug}/)
+# ============================================================================
+# Migrates legacy AI-DLC intent directories to the new H·AI·K·U intents
+# structure with frontmatter transformation, unit-to-stage mapping, and
+# backward-compat symlinks.
+
+# Map a pass name to a stage name
+# Usage: _hku_map_pass_to_stage "dev" → echoes "development"
+_hku_map_pass_to_stage() {
+  local pass="$1"
+  case "$pass" in
+    design) echo "design" ;;
+    product) echo "product" ;;
+    dev|backend|frontend|"") echo "development" ;;
+    *) echo "development" ;;
+  esac
+}
+
+# Infer the stage name from a unit file's pass: frontmatter field
+# Usage: hku_infer_stage_from_unit <unit_file>
+hku_infer_stage_from_unit() {
+  local unit_file="$1"
+  local pass=""
+  pass=$(grep -m1 '^pass:' "$unit_file" 2>/dev/null | sed 's/^pass:[[:space:]]*//' | sed 's/^"//' | sed 's/"$//')
+  _hku_map_pass_to_stage "$pass"
+}
+
+# Transform intent frontmatter from legacy AI-DLC to H·AI·K·U format
+# Copies body verbatim, transforms frontmatter fields.
+# Usage: hku_migrate_intent_frontmatter <old_intent_file> <new_intent_file>
+hku_migrate_intent_frontmatter() {
+  local old_file="$1"
+  local new_file="$2"
+  local slug
+  slug=$(basename "$(dirname "$old_file")")
+
+  # Copy the file first (preserves body verbatim)
+  cp "$old_file" "$new_file"
+
+  # Read active_pass and map to stage name
+  local active_pass=""
+  active_pass=$(yq --front-matter=extract -r '.active_pass // ""' "$new_file" 2>/dev/null || echo "")
+  local active_stage=""
+  active_stage=$(_hku_map_pass_to_stage "$active_pass")
+
+  # Runtime migration date
+  local migration_date
+  migration_date=$(date +%Y-%m-%d)
+
+  # Transform frontmatter in-place using yq
+  local tmp="${new_file}.tmp.$$"
+  yq --front-matter=process '
+    del(.passes) |
+    del(.active_pass) |
+    del(.workflow) |
+    .active_stage = "'"$active_stage"'" |
+    .studio = "software" |
+    .mode = "continuous" |
+    .migrated_from = ".ai-dlc/'"$slug"'/" |
+    .migration_date = "'"$migration_date"'"
+  ' "$new_file" > "$tmp" && mv "$tmp" "$new_file"
+}
+
+# Create initial state for a migrated intent
+# Usage: hku_write_intent_state <new_intent_dir> <slug>
+hku_write_intent_state() {
+  local new_dir="$1"
+  local slug="$2"
+  local state_json='{"phase":"execution","hat":"planner","iteration":1,"status":"active","intentSlug":"'"$slug"'"}'
+
+  mkdir -p "${new_dir}/state"
+  if type hku_state_save &>/dev/null; then
+    hku_state_save "$new_dir" "iteration.json" "$state_json"
+  else
+    echo "$state_json" > "${new_dir}/state/iteration.json"
+  fi
+}
+
+# Full physical migration of a legacy AI-DLC intent directory
+# Moves .ai-dlc/{slug}/ → .haiku/intents/{slug}/, transforms frontmatter,
+# maps units to stages, creates backward-compat symlink.
+# Usage: hku_migrate_legacy_intent <project_root> <slug>
+hku_migrate_legacy_intent() {
+  local project_root="$1"
+  local slug="$2"
+  local old_dir="${project_root}/.ai-dlc/${slug}"
+  local new_dir="${project_root}/.haiku/intents/${slug}"
+
+  # Guard: old must exist as a real directory (not symlink)
+  [[ -d "$old_dir" && ! -L "$old_dir" ]] || return 0
+
+  # Guard: new must not exist (idempotent skip)
+  if [[ -e "$new_dir" ]]; then
+    echo "haiku: intent '$slug' already migrated, skipping" >&2
+    return 0
+  fi
+
+  echo "haiku: migrating intent '$slug' from .ai-dlc/ to .haiku/intents/..." >&2
+
+  # Create new directory structure
+  mkdir -p "${new_dir}/knowledge" "${new_dir}/stages" "${new_dir}/state"
+
+  # Migrate intent.md with frontmatter transformation
+  if [[ -f "${old_dir}/intent.md" ]]; then
+    hku_migrate_intent_frontmatter "${old_dir}/intent.md" "${new_dir}/intent.md"
+    echo "haiku:   intent.md — frontmatter transformed" >&2
+  fi
+
+  # Migrate unit-*.md files to stages/{stage}/units/
+  local unit_count=0
+  for unit_file in "${old_dir}"/unit-*.md; do
+    [[ -f "$unit_file" ]] || continue
+    local stage
+    stage=$(hku_infer_stage_from_unit "$unit_file")
+    local unit_name
+    unit_name=$(basename "$unit_file")
+    mkdir -p "${new_dir}/stages/${stage}/units"
+    cp "$unit_file" "${new_dir}/stages/${stage}/units/${unit_name}"
+    echo "haiku:   ${unit_name} → stages/${stage}/units/" >&2
+    unit_count=$((unit_count + 1))
+  done
+
+  # Copy knowledge directory contents if present
+  [[ -d "${old_dir}/knowledge" ]] && cp -R "${old_dir}/knowledge/." "${new_dir}/knowledge/" 2>/dev/null
+
+  # Copy completion-criteria.md if present
+  [[ -f "${old_dir}/completion-criteria.md" ]] && cp "${old_dir}/completion-criteria.md" "${new_dir}/"
+
+  # Copy discovery.md if present
+  [[ -f "${old_dir}/discovery.md" ]] && cp "${old_dir}/discovery.md" "${new_dir}/"
+
+  # Create initial iteration state
+  hku_write_intent_state "$new_dir" "$slug"
+  echo "haiku:   state/iteration.json — created" >&2
+
+  # Backward compat: backup old dir, symlink old path → new path
+  mv "$old_dir" "${old_dir}.pre-haiku-backup"
+  ln -sf "$new_dir" "$old_dir" 2>/dev/null || true
+
+  echo "haiku: migrated intent '$slug' (${unit_count} units). Old dir backed up at .ai-dlc/${slug}.pre-haiku-backup" >&2
+}
+
+# Detect legacy (unmigrated) AI-DLC intents and print a notice
+# Scans .ai-dlc/*/intent.md for active intents, skips symlinks.
+# Detection only — no auto-migration.
+# Usage: hku_detect_legacy_intents [project_root]
+hku_detect_legacy_intents() {
+  local project_root="${1:-.}"
+  local found=()
+
+  for intent_file in "${project_root}"/.ai-dlc/*/intent.md; do
+    [[ -f "$intent_file" ]] || continue
+    local intent_dir
+    intent_dir=$(dirname "$intent_file")
+
+    # Skip symlinks (already migrated)
+    [[ -L "$intent_dir" ]] && continue
+
+    # Only detect active intents
+    local status=""
+    status=$(grep -m1 '^status:' "$intent_file" 2>/dev/null | sed 's/^status:[[:space:]]*//' | sed 's/^"//' | sed 's/"$//')
+    [[ "$status" = "active" ]] || continue
+
+    found+=("$(basename "$intent_dir")")
+  done
+
+  if [[ ${#found[@]} -gt 0 ]]; then
+    echo "" >&2
+    echo "haiku: legacy AI-DLC intents detected:" >&2
+    for slug in "${found[@]}"; do
+      echo "haiku:   - ${slug}" >&2
+    done
+    echo "haiku: run /haiku:migrate to migrate them to H·AI·K·U format" >&2
+    echo "" >&2
+  fi
 }
