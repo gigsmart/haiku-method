@@ -137,6 +137,8 @@ No orphaned or merged worktrees found. Everything is clean.
 ```bash
 REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
 
+source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
+
 # Remove orphaned directories (no valid git worktree entry)
 for name in "${ORPHANED[@]}"; do
   rm -rf "${REPO_ROOT}/.haiku/worktrees/${name}"
@@ -146,10 +148,8 @@ done
 for i in "${!MERGED[@]}"; do
   name="${MERGED[$i]}"
   branch="${MERGED_BRANCHES_MAP[$i]}"
-  # Remove the worktree (no --force needed since branch is merged)
-  git worktree remove "${REPO_ROOT}/.haiku/worktrees/${name}" 2>/dev/null
-  # Delete the merged branch (safe — git -d refuses if not merged)
-  git branch -d "$branch" 2>/dev/null
+  # Clean up via persistence layer
+  persistence_cleanup "$name"
   # Clean up the intent spec directory if it exists
   if [ -d "${REPO_ROOT}/.haiku/${name}" ]; then
     # Ask user before removing spec directory

@@ -137,9 +137,9 @@ if [ -n "$CURRENT_UNIT" ] && [ -f "$INTENT_DIR/${CURRENT_UNIT}.md" ]; then
   update_unit_status "$INTENT_DIR/${CURRENT_UNIT}.md" "completed"
   # Check off completion criteria checkboxes in the unit file
   dlc_check_unit_criteria "$INTENT_DIR/${CURRENT_UNIT}.md"
-  # Commit the status change so it persists across sessions
-  git add "$INTENT_DIR/${CURRENT_UNIT}.md"
-  git commit -m "status: mark ${CURRENT_UNIT} as completed"
+  # Save the status change so it persists across sessions
+  source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
+  persistence_save "$INTENT_SLUG" "status: mark ${CURRENT_UNIT} as completed" "$INTENT_DIR/${CURRENT_UNIT}.md"
 fi
 ```
 
@@ -207,22 +207,17 @@ CHANGE_STRATEGY="${UNIT_CHANGE_STRATEGY:-$(echo "$CONFIG" | jq -r '.change_strat
 UNIT_SLUG="${CURRENT_UNIT#unit-}"
 UNIT_BRANCH="ai-dlc/${INTENT_SLUG}/${UNIT_SLUG}"
 
+source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
+
 if [ "$CHANGE_STRATEGY" = "unit" ]; then
   # Unit strategy: open a PR for the unit branch directly to the default branch
-  git push -u origin "$UNIT_BRANCH" 2>/dev/null || true
-
-  # Get this unit's ticket reference (if any) for the PR body
   UNIT_TICKET=$(dlc_frontmatter_get "ticket" "$INTENT_DIR/${CURRENT_UNIT}.md" 2>/dev/null || echo "")
   TICKET_LINE=""
   if [ -n "$UNIT_TICKET" ]; then
     TICKET_LINE="Closes ${UNIT_TICKET}"
   fi
 
-  PR_URL=$(gh pr create \
-    --base "$DEFAULT_BRANCH" \
-    --head "$UNIT_BRANCH" \
-    --title "unit: ${CURRENT_UNIT}" \
-    --body "$(cat <<EOF
+  PR_BODY="$(cat <<EOF
 ## Unit: ${CURRENT_UNIT}
 
 Part of intent: ${INTENT_SLUG}
@@ -232,7 +227,9 @@ ${TICKET_LINE}
 ---
 *Built with [H·AI·K·U](https://ai-dlc.dev)*
 EOF
-)" 2>&1) || echo "PR may already exist for $UNIT_BRANCH"
+)"
+
+  PR_URL=$(persistence_create_review "$INTENT_SLUG" "${CURRENT_UNIT}" "$PR_BODY" --unit "$UNIT_SLUG")
 
   if [ -n "$PR_URL" ]; then
     source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
@@ -241,42 +238,25 @@ EOF
   fi
 
   # Clean up local unit worktree after PR is pushed (work is on remote now)
-  UNIT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
-  if [ -d "$UNIT_WORKTREE" ]; then
-    git worktree remove "$UNIT_WORKTREE" 2>/dev/null || echo "Warning: failed to remove worktree at $UNIT_WORKTREE"
-    echo "Cleaned up unit worktree for ${CURRENT_UNIT}"
-    source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-    aidlc_telemetry_init
-    aidlc_record_worktree_event "deleted" "${UNIT_WORKTREE}"
-  fi
-  git worktree prune
+  persistence_cleanup "$INTENT_SLUG" --unit "$UNIT_SLUG"
+  echo "Cleaned up unit worktree for ${CURRENT_UNIT}"
+  source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
+  aidlc_telemetry_init
+  aidlc_record_worktree_event "deleted" "${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
   # Keep the branch — it backs the open PR
 
 elif [ "$AUTO_MERGE" = "true" ]; then
   # Intent/trunk strategy: merge unit branch into intent branch
-  # Ensure we're on the intent branch
-  git checkout "ai-dlc/${INTENT_SLUG}/main"
-
-  # Merge unit branch
-  if [ "$AUTO_SQUASH" = "true" ]; then
-    git merge --squash "$UNIT_BRANCH"
-    git commit -m "unit: ${CURRENT_UNIT} completed"
-  else
-    git merge --no-ff "$UNIT_BRANCH" -m "Merge ${CURRENT_UNIT} into intent branch"
-  fi
+  SQUASH_FLAG=""
+  [ "$AUTO_SQUASH" = "true" ] && SQUASH_FLAG="--squash"
+  persistence_deliver "$INTENT_SLUG" --unit "$UNIT_SLUG" $SQUASH_FLAG
 
   # Clean up unit worktree and branch after merge into intent
-  UNIT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
-  if [ -d "$UNIT_WORKTREE" ]; then
-    git worktree remove "$UNIT_WORKTREE" 2>/dev/null || echo "Warning: failed to remove worktree at $UNIT_WORKTREE"
-    echo "Cleaned up unit worktree for ${CURRENT_UNIT}"
-    source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-    aidlc_telemetry_init
-    aidlc_record_worktree_event "deleted" "${UNIT_WORKTREE}"
-  fi
-  git worktree prune
-  git branch -d "ai-dlc/${INTENT_SLUG}/${UNIT_SLUG}" 2>/dev/null || true
-  echo "Cleaned up unit branch for ${CURRENT_UNIT}"
+  persistence_cleanup "$INTENT_SLUG" --unit "$UNIT_SLUG"
+  echo "Cleaned up unit worktree and branch for ${CURRENT_UNIT}"
+  source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
+  aidlc_telemetry_init
+  aidlc_record_worktree_event "deleted" "${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
 fi
 ```
 
@@ -353,10 +333,11 @@ SKIP_INTEGRATOR=false
 dlc_frontmatter_set "status" "completed" "$INTENT_DIR/intent.md"
 # Check off intent-level completion criteria checkboxes
 dlc_check_intent_criteria "$INTENT_DIR"
-git add "$INTENT_DIR/intent.md"
-git add "$INTENT_DIR/completion-criteria.md" 2>/dev/null || true
-git add "$INTENT_DIR/state/completion-criteria.md" 2>/dev/null || true
-git commit -m "status: mark intent ${INTENT_SLUG} as completed"
+source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
+persistence_save "$INTENT_SLUG" "status: mark intent ${INTENT_SLUG} as completed" \
+  "$INTENT_DIR/intent.md" \
+  "$INTENT_DIR/completion-criteria.md" \
+  "$INTENT_DIR/state/completion-criteria.md"
 
 # Record intent completion telemetry
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
@@ -473,10 +454,11 @@ dlc_state_save "$INTENT_DIR" "iteration.json" "$STATE"
 dlc_frontmatter_set "status" "completed" "$INTENT_DIR/intent.md"
 # Check off intent-level completion criteria checkboxes
 dlc_check_intent_criteria "$INTENT_DIR"
-git add "$INTENT_DIR/intent.md"
-git add "$INTENT_DIR/completion-criteria.md" 2>/dev/null || true
-git add "$INTENT_DIR/state/completion-criteria.md" 2>/dev/null || true
-git commit -m "status: mark intent ${INTENT_SLUG} as completed"
+source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
+persistence_save "$INTENT_SLUG" "status: mark intent ${INTENT_SLUG} as completed" \
+  "$INTENT_DIR/intent.md" \
+  "$INTENT_DIR/completion-criteria.md" \
+  "$INTENT_DIR/state/completion-criteria.md"
 
 # Record intent completion telemetry
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"

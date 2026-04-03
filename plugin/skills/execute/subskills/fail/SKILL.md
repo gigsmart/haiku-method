@@ -66,8 +66,8 @@ If any blocker documentation was written to the working tree (not state files), 
 
 ```bash
 if [ -n "$(git status --porcelain)" ]; then
-  git add -A
-  git commit -m "ai-dlc(${INTENT_SLUG}): document blocker"
+  source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
+  persistence_save "${INTENT_SLUG}" "ai-dlc(${INTENT_SLUG}): document blocker"
 fi
 ```
 

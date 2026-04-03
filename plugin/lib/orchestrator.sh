@@ -25,6 +25,8 @@ source "$ORCHESTRATOR_SCRIPT_DIR/state.sh"
 source "$ORCHESTRATOR_SCRIPT_DIR/studio.sh"
 # shellcheck source=stage.sh
 source "$ORCHESTRATOR_SCRIPT_DIR/stage.sh"
+# shellcheck source=persistence.sh
+source "$ORCHESTRATOR_SCRIPT_DIR/persistence.sh"
 
 # Run the full stage loop for a single stage
 # Usage: hku_run_stage <intent_dir> <stage_name> <studio_name> [autopilot]
@@ -214,6 +216,11 @@ hku_persist_stage_outputs() {
         ;;
     esac
   done < <(echo "$outputs" | jq -c '.[]')
+
+  # Save via persistence layer
+  persistence_save "$slug" "haiku: persist stage outputs — ${stage_name}" \
+    "${intent_dir}/stages/${stage_name}/" \
+    "${intent_dir}/knowledge/" 2>/dev/null || true
 
   return 0
 }
