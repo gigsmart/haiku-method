@@ -195,10 +195,10 @@ Update `active_stage:` in intent frontmatter to the next stage:
 local next=$(hku_advance_stage "$intent_dir")
 ```
 
-Commit stage results:
+Save stage results:
 ```bash
-git add .haiku/intents/{slug}/stages/{stage_name}/
-git commit -m "haiku: complete stage — {stage_name}"
+source "$CLAUDE_PLUGIN_ROOT/lib/persistence.sh"
+persistence_save "{slug}" "haiku: complete stage — {stage_name}" ".haiku/intents/{slug}/stages/{stage_name}/"
 ```
 
 ### Step 6: Continue or Finish

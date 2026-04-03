@@ -160,8 +160,10 @@ if [ "$CURRENT_BRANCH" = "$DEFAULT_BRANCH" ]; then
         [ -f "$reconcile_unit_file" ] || continue
         hku_check_unit_criteria "$reconcile_unit_file"
       done
-      git add "$reconcile_intent_file" "$reconcile_dir"/unit-*.md "$reconcile_dir/completion-criteria.md" "$reconcile_dir/state/completion-criteria.md" 2>/dev/null || true
-      git commit -m "status: reconcile $(basename "$reconcile_dir") after merge" 2>/dev/null || true
+      source "${PLUGIN_ROOT}/lib/persistence.sh"
+      persistence_save "$(basename "$reconcile_dir")" "status: reconcile $(basename "$reconcile_dir") after merge" \
+        "$reconcile_intent_file" "$reconcile_dir"/unit-*.md \
+        "$reconcile_dir/completion-criteria.md" "$reconcile_dir/state/completion-criteria.md" 2>/dev/null || true
     fi
   done
 fi

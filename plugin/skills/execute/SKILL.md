@@ -234,17 +234,11 @@ INTENT_BRANCH="ai-dlc/${INTENT_SLUG}/main"
 INTENT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}"
 
 mkdir -p "${REPO_ROOT}/.haiku/worktrees"
-if ! grep -q '\.haiku/worktrees/' "${REPO_ROOT}/.gitignore" 2>/dev/null; then
-  echo '.haiku/worktrees/' >> "${REPO_ROOT}/.gitignore"
-  git add "${REPO_ROOT}/.gitignore"
-  git commit -m "chore: gitignore .haiku/worktrees"
-fi
+
+source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
 
 if [ ! -d "$INTENT_WORKTREE" ]; then
-  # Always branch off the default branch
-  source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-  DEFAULT_BRANCH=$(resolve_default_branch "auto" "$REPO_ROOT")
-  git worktree add -B "$INTENT_BRANCH" "$INTENT_WORKTREE" "$DEFAULT_BRANCH"
+  persistence_create_workspace "$INTENT_SLUG" ""
 
   # Record worktree creation telemetry
   source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
@@ -328,19 +322,9 @@ fi
 Ensure the intent branch tracks the remote so teammates can push their unit branches. This applies whether we're in a cloned cowork workspace or a local repo with a remote.
 
 ```bash
-# Verify remote exists and configure upstream tracking
-if git remote get-url origin &>/dev/null; then
-  INTENT_BRANCH="ai-dlc/${INTENT_SLUG}/main"
-
-  # Ensure the intent branch tracks the remote
-  git branch --set-upstream-to=origin/"$INTENT_BRANCH" 2>/dev/null || true
-
-  # Pull latest before starting to pick up teammate work
-  git pull --rebase 2>/dev/null || true
-
-  # Push intent branch to remote so teammates can access it
-  git push -u origin "$INTENT_BRANCH" 2>/dev/null || true
-fi
+source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
+persistence_ensure_tracking "$INTENT_SLUG"
+persistence_sync "$INTENT_SLUG"
 ```
 
 ### Step 0c: Provider Sync Check

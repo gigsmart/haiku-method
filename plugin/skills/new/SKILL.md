@@ -166,13 +166,12 @@ Create the directory structure:
   state/
 ```
 
-### Step 8: Git Setup
+### Step 8: Persistence Setup
 
 ```bash
-# Create intent branch from current branch
-git checkout -b haiku/{slug}
-git add .haiku/intents/{slug}/
-git commit -m "haiku: new intent — {slug}"
+source "$CLAUDE_PLUGIN_ROOT/lib/persistence.sh"
+persistence_create_workspace "{slug}" "{studio_name}"
+persistence_save "{slug}" "haiku: new intent — {slug}" ".haiku/intents/{slug}/"
 ```
 
 ### Step 9: Next Step
