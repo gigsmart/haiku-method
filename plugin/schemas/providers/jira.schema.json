@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://ai-dlc.dev/schemas/providers/jira.schema.json",
+	"$id": "https://haiku.dev/schemas/providers/jira.schema.json",
 	"title": "Jira Provider Config",
 	"description": "Provider-specific configuration for Jira ticketing",
 	"type": "object",

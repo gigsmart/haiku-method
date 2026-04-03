@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://ai-dlc.dev/schemas/providers/stack-operations.schema.json",
+	"$id": "https://haiku.dev/schemas/providers/stack-operations.schema.json",
 	"title": "Stack Operations Config",
 	"description": "Operations layer configuration defining runtime, scheduled tasks, and reactive handlers",
 	"type": "object",

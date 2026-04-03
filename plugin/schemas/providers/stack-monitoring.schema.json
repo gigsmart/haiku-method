@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://ai-dlc.dev/schemas/providers/stack-monitoring.schema.json",
+	"$id": "https://haiku.dev/schemas/providers/stack-monitoring.schema.json",
 	"title": "Stack Monitoring Provider Entry",
 	"description": "Monitoring provider configuration for the stack monitoring layer",
 	"type": "object",

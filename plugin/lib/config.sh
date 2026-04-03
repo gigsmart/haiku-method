@@ -16,6 +16,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 source "$SCRIPT_DIR/deps.sh"
 source "$SCRIPT_DIR/parse.sh"
 source "$SCRIPT_DIR/state.sh"
+source "$SCRIPT_DIR/migrate.sh"
 
 # Guard: ensure dependencies are available (config.sh relies on jq and yq)
 if ! hku_require_jq || ! hku_require_yq; then
@@ -127,6 +128,10 @@ resolve_default_branch() {
 # Returns: JSON object with git/jj config or '{}'
 load_repo_settings() {
   local repo_root="${1:-$(find_repo_root)}"
+
+  # Run migration if needed (idempotent)
+  hku_migrate_all "$repo_root" 2>/dev/null
+
   local settings_file="$repo_root/.haiku/settings.yml"
 
   if [ ! -f "$settings_file" ]; then
