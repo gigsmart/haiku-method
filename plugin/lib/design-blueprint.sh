@@ -119,7 +119,7 @@ _expressiveness_modifier() {
 
 # Write knowledge file for design decisions
 # Usage: _hku_blueprint_write_knowledge <intent_dir> <knowledge_key> <content>
-# Writes to .haiku/{intent-slug}/knowledge/{key}.md
+# Writes to .haiku/intents/{intent-slug}/knowledge/{key}.md
 _hku_blueprint_write_knowledge() {
   local intent_dir="$1"
   local key="$2"
@@ -143,8 +143,8 @@ _hku_blueprint_write_knowledge() {
 # Parameters JSON shape: {"density": 60, "expressiveness": 80, "shape_language": 10, "color_mood": 30}
 #
 # Writes:
-#   .haiku/{intent_slug}/design-blueprint.md — full blueprint
-#   .haiku/{intent_slug}/knowledge/design.md — knowledge seed
+#   .haiku/intents/{intent_slug}/design-blueprint.md — full blueprint
+#   .haiku/intents/{intent_slug}/knowledge/design.md — knowledge seed
 hku_generate_design_blueprint() {
   local intent_slug="$1"
   local archetype_id="$2"
