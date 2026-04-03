@@ -1,7 +1,7 @@
 #!/bin/bash
 # subagent-hook.sh - PreToolUse hook for Agent|Task|Skill
 #
-# Injects AI-DLC context into subagent prompts by:
+# Injects H·AI·K·U context into subagent prompts by:
 # 1. Reading the PreToolUse payload from stdin
 # 2. Running subagent-context.sh to generate markdown context
 # 3. Wrapping context in <subagent-context> tags

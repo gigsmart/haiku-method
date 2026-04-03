@@ -80,10 +80,10 @@ if [ "$MAX_ITERATIONS" -gt 0 ] && [ "$CURRENT_ITERATION" -ge "$MAX_ITERATIONS" ]
   echo ""
   echo "**Options:**"
   echo "1. Review progress and decide if work is complete"
-  echo "2. Increase limit: edit \`.haiku/{intent-slug}/state/iteration.json\` and set maxIterations"
+  echo "2. Increase limit: edit \`.haiku/intents/{intent-slug}/state/iteration.json\` and set maxIterations"
   echo "3. Reset iteration count: \`/haiku:reset\` and start fresh"
   echo ""
-  echo "Progress preserved in \`.haiku/{intent-slug}/state/\`."
+  echo "Progress preserved in \`.haiku/intents/{intent-slug}/state/\`."
   exit 0
 fi
 

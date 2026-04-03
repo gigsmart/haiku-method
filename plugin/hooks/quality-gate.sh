@@ -1,5 +1,5 @@
 #!/bin/bash
-# quality-gate.sh - Stop/SubagentStop hook for AI-DLC quality gates
+# quality-gate.sh - Stop/SubagentStop hook for H·AI·K·U quality gates
 #
 # Reads quality_gates from intent.md and current unit frontmatter,
 # runs each gate command, and blocks the agent from stopping if any fail.

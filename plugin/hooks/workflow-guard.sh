@@ -1,5 +1,5 @@
 #!/bin/bash
-# workflow-guard.sh — Warn when editing files outside active AI-DLC workflow
+# workflow-guard.sh — Warn when editing files outside active H·AI·K·U workflow
 set -euo pipefail
 
 # Source foundation libraries

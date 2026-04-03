@@ -1,9 +1,9 @@
 #!/bin/bash
-# subagent-context.sh - SubagentPrompt hook for AI-DLC
+# subagent-context.sh - SubagentPrompt hook for H·AI·K·U
 #
-# Injects role-scoped AI-DLC context into subagent prompts:
-# - Hat instructions (from hat file)
-# - AI-DLC workflow rules (iteration management)
+# Injects role-scoped H·AI·K·U context into subagent prompts:
+# - Hat instructions (from STAGE.md inline sections)
+# - H·AI·K·U workflow rules (iteration management)
 # - Unit/Bolt context (current unit, status, dependencies)
 # - Intent and completion criteria
 #
@@ -20,7 +20,7 @@ PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$(readlink -f "$0")")")
 source "${PLUGIN_ROOT}/lib/state.sh"
 hku_check_deps || exit 0
 
-# Check for AI-DLC state
+# Check for H·AI·K·U state
 CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
 INTENT_DIR=$(hku_find_active_intent)
 [ -z "$INTENT_DIR" ] && exit 0
@@ -102,7 +102,7 @@ fi
 # Read intent from filesystem
 INTENT=$(cat "$INTENT_FILE")
 
-echo "## AI-DLC Subagent Context"
+echo "## H·AI·K·U Subagent Context"
 echo ""
 STATUS_LINE="**Iteration:** $ITERATION | **Role:** $HAT | **Stage:** $ACTIVE_STAGE ($STAGE_HATS_STR)"
 if [ -n "$ACTIVE_PASS" ]; then
@@ -257,10 +257,10 @@ if type haiku_is_configured &>/dev/null && haiku_is_configured; then
   fi
 fi
 
-# AI-DLC Workflow Rules (mandatory for all subagents)
+# H·AI·K·U Workflow Rules (mandatory for all subagents)
 echo "---"
 echo ""
-echo "## AI-DLC Workflow Rules"
+echo "## H·AI·K·U Workflow Rules"
 echo ""
 
 # Branch references - useful for build and plan scopes, skip for review

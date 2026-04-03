@@ -2,7 +2,7 @@
 # state.sh — File-based state management for H·AI·K·U
 #
 # Filesystem-backed state management.
-# State files live at .haiku/{intent-slug}/state/.
+# State files live at .haiku/intents/{intent-slug}/state/.
 # All writes are atomic (tmp + mv).
 #
 # Usage:
