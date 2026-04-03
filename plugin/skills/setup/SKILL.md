@@ -56,7 +56,7 @@ H·AI·K·U uses a Master + Overrides pattern for configuration:
 | Level | Location | Scope | Precedence |
 |-------|----------|-------|------------|
 | **Global** | `settings.yml` | All intents | Lowest |
-| **Intent** | `.haiku/{intent}/settings.yml` | This intent | Medium |
+| **Intent** | `.haiku/intents/{intent}/settings.yml` | This intent | Medium |
 | **Unit** | Unit frontmatter fields | This unit | Highest |
 
 **Examples:**

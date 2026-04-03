@@ -22,7 +22,7 @@ The reflect skill:
 1. Reads all unit specs, execution state, and operational outcomes for the intent
 2. Analyzes the full cycle: execution metrics, what worked, what didn't, patterns
 3. Analyzes session transcripts for tool failures, retries, and process friction
-4. Produces a `reflection.md` artifact in `.haiku/{intent-slug}/`
+4. Produces a `reflection.md` artifact in `.haiku/intents/{intent-slug}/`
 5. Produces `settings-recommendations.md` with concrete project config changes
 6. Presents findings for user validation and augmentation
 7. Offers paths: **Iterate** (create intent v2 with learnings), **Close** (capture org memory and archive), or **Apply** (auto-apply settings recommendations)
@@ -50,7 +50,7 @@ Run /haiku:elaborate to start a new task, or provide an intent slug: /haiku:refl
 ### Step 1: Load Intent and Unit Data
 
 ```bash
-INTENT_DIR=".haiku/${INTENT_SLUG}"
+INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
 INTENT_FILE="$INTENT_DIR/intent.md"
 ```
 
@@ -62,7 +62,7 @@ Read the following artifacts:
 
 If `intent.md` does not exist:
 ```
-No intent found at .haiku/{intent-slug}/intent.md
+No intent found at .haiku/intents/{intent-slug}/intent.md
 
 Run /haiku:elaborate to create a new intent.
 ```
@@ -80,7 +80,7 @@ OP_STATUS=$(dlc_state_load "$INTENT_DIR" "operation-status.json" 2>/dev/null || 
 SUMMARY=$(get_dag_summary "$INTENT_DIR")
 
 # Parse per-unit data
-for unit_file in "$INTENT_DIR"/unit-*.md; do
+for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   UNIT_NAME=$(basename "$unit_file" .md)
   UNIT_STATUS=$(parse_unit_status "$unit_file")
   UNIT_SCRATCHPAD=$(dlc_state_load "$INTENT_DIR" "scratchpad.md" 2>/dev/null || echo "")
@@ -210,7 +210,7 @@ Include in the reflection output:
 
 ### Step 4: Produce reflection.md
 
-Write the reflection artifact to `.haiku/{intent-slug}/reflection.md`:
+Write the reflection artifact to `.haiku/intents/{intent-slug}/reflection.md`:
 
 ```markdown
 ---
@@ -258,12 +258,12 @@ status: completed
 Commit the reflection artifact immediately after writing:
 
 ```bash
-git add .haiku/${INTENT_SLUG}/reflection.md && git commit -m "reflect(${INTENT_SLUG}): capture reflection"
+git add .haiku/intents/${INTENT_SLUG}/reflection.md && git commit -m "reflect(${INTENT_SLUG}): capture reflection"
 ```
 
 ### Step 4b: Produce settings-recommendations.md
 
-Based on session analysis and execution patterns, produce concrete settings changes. Write to `.haiku/{intent-slug}/settings-recommendations.md`:
+Based on session analysis and execution patterns, produce concrete settings changes. Write to `.haiku/intents/{intent-slug}/settings-recommendations.md`:
 
 ```markdown
 # Settings Recommendations
@@ -311,7 +311,7 @@ Example:
 Commit the settings recommendations artifact immediately after writing:
 
 ```bash
-git add .haiku/${INTENT_SLUG}/settings-recommendations.md && git commit -m "reflect(${INTENT_SLUG}): document settings recommendations"
+git add .haiku/intents/${INTENT_SLUG}/settings-recommendations.md && git commit -m "reflect(${INTENT_SLUG}): document settings recommendations"
 ```
 
 ### Step 5: Present Findings for Validation
@@ -396,7 +396,7 @@ If user chooses to iterate:
 
 1. **Archive current intent** by tagging:
 ```bash
-git tag "ai-dlc/${INTENT_SLUG}/v${CURRENT_VERSION}" 2>/dev/null || true
+git tag "haiku/${INTENT_SLUG}/v${CURRENT_VERSION}" 2>/dev/null || true
 ```
 
 2. **Seed new intent** with reflection learnings pre-loaded
@@ -406,7 +406,7 @@ git tag "ai-dlc/${INTENT_SLUG}/v${CURRENT_VERSION}" 2>/dev/null || true
 ## Intent Archived and Ready for v{NEXT_VERSION}
 
 **Archived:** tag ai-dlc/{intent-slug}/v{CURRENT_VERSION}
-**New intent:** .haiku/{intent-slug}/
+**New intent:** .haiku/intents/{intent-slug}/
 
 The new intent has been seeded with learnings from the reflection.
 Run `/haiku:elaborate` to begin the next iteration with pre-loaded context.

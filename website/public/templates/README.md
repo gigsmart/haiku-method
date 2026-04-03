@@ -72,15 +72,13 @@ your-project/
 ## Quick Start
 
 ```bash
-# Create .haiku directory structure
-mkdir -p .haiku/intents/my-feature/stages/dev/units
+# Use /haiku:new to create a new intent interactively — it sets up the correct
+# directory structure at .haiku/intents/{slug}/ automatically.
 
-# Download templates
+# Or download templates manually:
+mkdir -p .haiku/intents/my-feature/stages/dev/units
 curl -o .haiku/intents/my-feature/intent.md https://haikumethod.ai/templates/intent-template.md
 curl -o .haiku/intents/my-feature/stages/dev/units/unit-01.md https://haikumethod.ai/templates/unit-template.md
-
-# Or just use the plugin command:
-# /haiku:new
 ```
 
 ## Learn More

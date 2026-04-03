@@ -29,9 +29,9 @@ If `CLAUDE_CODE_IS_COWORK=1`, stop immediately with the message above. Do NOT pr
 # Intent-level state is stored on current branch (intent branch)
 # Intent slug is derived from .ai-dlc directory structure
 INTENT_SLUG=$(basename "$(find .ai-dlc -maxdepth 2 -name 'intent.md' -exec dirname {} \; | head -1)")
-INTENT_DIR=".haiku/${INTENT_SLUG}"
+INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
 STATE=$(dlc_state_load "$INTENT_DIR" "iteration.json")
-INTENT_DIR=".haiku/${INTENT_SLUG}"
+INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
 ```
 
 If no state exists:
@@ -70,7 +70,7 @@ If "Specific unit" is selected, list available units and ask which one:
 
 ```bash
 # List all units
-for unit_file in "$INTENT_DIR"/unit-*.md; do
+for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
   unit_name=$(basename "$unit_file" .md)
   status=$(dlc_frontmatter_get "status" "$unit_file" 2>/dev/null || echo "pending")

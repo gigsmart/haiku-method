@@ -140,7 +140,7 @@ Check if any planted seeds should surface based on current context.
 
 ```bash
 # Determine current intent (if any)
-INTENT_DIR=$(ls -d .haiku/*/intent.md 2>/dev/null | head -1 | xargs dirname 2>/dev/null || echo "")
+INTENT_DIR=$(ls -d .haiku/intents/*/intent.md 2>/dev/null | head -1 | xargs dirname 2>/dev/null || echo "")
 if [ -n "$INTENT_DIR" ]; then
   INTENT_CONTENT=$(cat "$INTENT_DIR/intent.md")
 fi

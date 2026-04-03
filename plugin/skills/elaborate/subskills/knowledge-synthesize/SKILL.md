@@ -21,7 +21,7 @@ Autonomous knowledge synthesis for H·AI·K·U. This skill runs as a forked suba
 
 ## Step 1: Read Brief
 
-Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.haiku/{intent-slug}/.briefs/knowledge-synthesize.md`).
+Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.haiku/intents/{intent-slug}/.briefs/knowledge-synthesize.md`).
 
 Parse YAML frontmatter:
 
@@ -147,7 +147,7 @@ Run 5 passes, one per knowledge artifact type. Each pass scans relevant files, e
 |---------|-------------|
 | `Read("README.md")` | Project description, purpose, features |
 | `Read("CONTRIBUTING.md")` | Project values and contribution guidelines |
-| `Glob(".haiku/*/intent.md")` | Past intent descriptions (feature history) |
+| `Glob(".haiku/intents/*/intent.md")` | Past intent descriptions (feature history) |
 | Root `package.json` `description` field | Package description |
 | `Glob("**/app/**")`, `Glob("**/pages/**")` | User-facing feature structure from routes/pages |
 | `Glob("**/*landing*")`, `Glob("**/*home*")`, `Glob("**/*index*")` | Product positioning pages |
@@ -408,7 +408,7 @@ Each artifact must conform to the schema from unit-01. Required frontmatter fiel
 
 ## Step 5: Write Results
 
-Use the `Write` tool (not Bash) to write the results file to `.haiku/{intent-slug}/.briefs/knowledge-synthesize-results.md`:
+Use the `Write` tool (not Bash) to write the results file to `.haiku/intents/{intent-slug}/.briefs/knowledge-synthesize-results.md`:
 
 ```markdown
 ---
@@ -464,7 +464,7 @@ Confidence: {level} — {why this confidence level}
 **Commit artifacts after writing:**
 ```bash
 git add .haiku/knowledge/
-git add .haiku/{intent-slug}/.briefs/knowledge-synthesize-results.md
+git add .haiku/intents/{intent-slug}/.briefs/knowledge-synthesize-results.md
 git commit -m "knowledge: synthesize project knowledge artifacts"
 ```
 

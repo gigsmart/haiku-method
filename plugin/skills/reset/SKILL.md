@@ -115,7 +115,7 @@ git worktree prune
 
 ```bash
 # Clear all state by removing the state directory
-INTENT_DIR=".haiku/${INTENT_SLUG}"
+INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
 rm -rf "$INTENT_DIR/state/"
 ```
 

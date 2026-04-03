@@ -79,7 +79,7 @@ You are the **Elaborator** starting the H·AI·K·U Mob Elaboration ritual. Your
 3. **Success Criteria** - How do we know when it's done?
 4. **Units** - Independent pieces of work (for complex intents), each with enough technical detail that a builder with zero prior context builds the right thing
 
-Then you'll write these as files in `.haiku/{intent-slug}/` for the execution phase.
+Then you'll write these as files in `.haiku/intents/{intent-slug}/` for the execution phase.
 
 **CRITICAL PRINCIPLE: Elaboration is not a quick phase.** The purpose of elaboration is to build such deep understanding of the domain that the resulting spec is unambiguous. If a builder could misinterpret a unit and build the wrong thing, the elaboration is not done. Do NOT close this phase until you have a clear, specific, technically-grounded spec validated by the user.
 
@@ -216,13 +216,13 @@ Before any elaboration, verify the working environment:
 
 If the user invoked this with a slug argument:
 
-1. Check if `.haiku/{slug}/intent.md` exists
+1. Check if `.haiku/intents/{slug}/intent.md` exists
 2. If it exists, check the intent and unit statuses:
    - **Skip if intent status is `completed`**: Tell the user "Intent `{slug}` is already completed. Run `/haiku:elaborate` without a slug to start a new intent." Then stop.
    - **Skip if ANY unit has status `in_progress` or `completed`**: Execution has already started — elaboration would conflict with in-flight work. Tell the user "Intent `{slug}` already has units in progress or completed. Use `/haiku:resume {slug}` to continue execution or `/haiku:execute` to resume the build loop." Then stop.
    - **Only proceed if ALL units have `status: pending`** (no work has begun yet):
 3. If all units are pending — **assume the user wants to modify the existing intent**:
-   - Read ALL files in `.haiku/{slug}/` directory
+   - Read ALL files in `.haiku/intents/{slug}/` directory
    - **Display FULL file contents** to the user in markdown code blocks (never summarize or truncate):
      ```
      ## Current Intent: {slug}
@@ -258,17 +258,17 @@ If the user invoked this with a slug argument:
 4. Based on their choice:
    - **Modify intent**: Jump to Phase 4 (Success Criteria) with current values pre-filled
    - **Modify units**: Jump to Phase 5 (Decompose) with current units shown
-   - **Start fresh**: Delete `.haiku/{slug}/` and proceed to Phase 1
+   - **Start fresh**: Delete `.haiku/intents/{slug}/` and proceed to Phase 1
    - **Looks good**: Tell them to run `/haiku:execute` to begin
 
 If no slug provided, or the intent doesn't exist, proceed to Phase 1.
 
-**Start fresh cleanup:** When the user chooses "Start fresh", remove the intent worktree and its branch (if they exist from a prior elaboration attempt), then clean up any leftover `.haiku/{slug}/` directory:
+**Start fresh cleanup:** When the user chooses "Start fresh", remove the intent worktree and its branch (if they exist from a prior elaboration attempt), then clean up any leftover `.haiku/intents/{slug}/` directory:
 
 ```bash
 REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
 INTENT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${slug}"
-INTENT_BRANCH="ai-dlc/${slug}/main"
+INTENT_BRANCH="haiku/${slug}/main"
 
 # Remove worktree if it exists
 if [ -d "$INTENT_WORKTREE" ]; then
@@ -285,7 +285,7 @@ git worktree prune
 git branch -D "$INTENT_BRANCH" 2>/dev/null
 
 # Clean up any leftover directory on main (from older elaboration format)
-rm -rf ".haiku/${slug}"
+rm -rf ".haiku/intents/${slug}"
 ```
 
 Then proceed to Phase 1.
@@ -302,8 +302,8 @@ If elaborating an existing intent (slug provided), check its frontmatter for `it
 INTENT_SLUG="{slug}"
 
 # Check if intent.md exists and has iterates_on
-if [ -f ".haiku/${INTENT_SLUG}/intent.md" ]; then
-  ITERATES_ON=$(dlc_frontmatter_get "iterates_on" ".haiku/${INTENT_SLUG}/intent.md" 2>/dev/null || echo "")
+if [ -f ".haiku/intents/${INTENT_SLUG}/intent.md" ]; then
+  ITERATES_ON=$(dlc_frontmatter_get "iterates_on" ".haiku/intents/${INTENT_SLUG}/intent.md" 2>/dev/null || echo "")
 fi
 ```
 
@@ -315,34 +315,34 @@ If `ITERATES_ON` is non-empty, this is an iteration intent. Load the previous in
 PREVIOUS_SLUG="$ITERATES_ON"
 
 # Try filesystem
-if [ -f ".haiku/${PREVIOUS_SLUG}/intent.md" ]; then
-  PREVIOUS_INTENT=$(cat ".haiku/${PREVIOUS_SLUG}/intent.md")
+if [ -f ".haiku/intents/${PREVIOUS_SLUG}/intent.md" ]; then
+  PREVIOUS_INTENT=$(cat ".haiku/intents/${PREVIOUS_SLUG}/intent.md")
   PREVIOUS_SOURCE="filesystem"
 else
   # Fallback: read from intent branch
-  PREVIOUS_INTENT=$(git show "ai-dlc/${PREVIOUS_SLUG}/main:.haiku/${PREVIOUS_SLUG}/intent.md" 2>/dev/null)
+  PREVIOUS_INTENT=$(git show "haiku/${PREVIOUS_SLUG}/main:.haiku/intents/${PREVIOUS_SLUG}/intent.md" 2>/dev/null)
   PREVIOUS_SOURCE="git-branch"
 fi
 
 # Load previous units
 if [ "$PREVIOUS_SOURCE" = "filesystem" ]; then
   PREVIOUS_UNITS=""
-  for unit_file in .haiku/${PREVIOUS_SLUG}/unit-*.md; do
+  for unit_file in .haiku/intents/${PREVIOUS_SLUG}/stages/*/units/unit-*.md; do
     [ -f "$unit_file" ] && PREVIOUS_UNITS="${PREVIOUS_UNITS}$(cat "$unit_file")\n---\n"
   done
 else
   PREVIOUS_UNITS=""
-  git ls-tree --name-only "ai-dlc/${PREVIOUS_SLUG}/main" ".haiku/${PREVIOUS_SLUG}/" 2>/dev/null | \
+  git ls-tree --name-only "haiku/${PREVIOUS_SLUG}/main" ".haiku/intents/${PREVIOUS_SLUG}/" 2>/dev/null | \
     grep 'unit-' | while read -r f; do
-      git show "ai-dlc/${PREVIOUS_SLUG}/main:$f" 2>/dev/null
+      git show "haiku/${PREVIOUS_SLUG}/main:$f" 2>/dev/null
     done
 fi
 
 # Load previous discovery.md if available
 if [ "$PREVIOUS_SOURCE" = "filesystem" ]; then
-  PREVIOUS_DISCOVERY=$(cat ".haiku/${PREVIOUS_SLUG}/discovery.md" 2>/dev/null)
+  PREVIOUS_DISCOVERY=$(cat ".haiku/intents/${PREVIOUS_SLUG}/discovery.md" 2>/dev/null)
 else
-  PREVIOUS_DISCOVERY=$(git show "ai-dlc/${PREVIOUS_SLUG}/main:.haiku/${PREVIOUS_SLUG}/discovery.md" 2>/dev/null)
+  PREVIOUS_DISCOVERY=$(git show "haiku/${PREVIOUS_SLUG}/main:.haiku/intents/${PREVIOUS_SLUG}/discovery.md" 2>/dev/null)
 fi
 ```
 
@@ -472,7 +472,7 @@ Only after confirming the gitignore entry exists:
 ```bash
 INTENT_SLUG="{intent-slug}"
 REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
-INTENT_BRANCH="ai-dlc/${INTENT_SLUG}/main"
+INTENT_BRANCH="haiku/${INTENT_SLUG}/main"
 INTENT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}"
 
 # Guard: abort if worktrees dir is not gitignored
@@ -493,7 +493,7 @@ cd "$INTENT_WORKTREE"
 Now initialize the discovery scratchpad. This file persists elaboration findings to disk so they survive context compaction and are available to builders later.
 
 ```bash
-DISCOVERY_DIR=".haiku/${INTENT_SLUG}"
+DISCOVERY_DIR=".haiku/intents/${INTENT_SLUG}"
 DISCOVERY_FILE="${DISCOVERY_DIR}/discovery.md"
 
 mkdir -p "$DISCOVERY_DIR"
@@ -520,14 +520,14 @@ This file is written directly in the intent worktree on the `ai-dlc/{intent-slug
 Commit the initialized discovery log so the worktree setup is versioned:
 
 ```bash
-git add .haiku/${INTENT_SLUG}/discovery.md
+git add .haiku/intents/${INTENT_SLUG}/discovery.md
 git commit -m "elaborate(${INTENT_SLUG}): initialize discovery log"
 ```
 
 This ensures:
 - Main working directory stays on `main` for other work
 - All discovery findings are written directly on the intent branch
-- All subsequent state operations use the intent branch's `.haiku/{slug}/state/` directory
+- All subsequent state operations use the intent branch's `.haiku/intents/{slug}/state/` directory
 - Multiple intents can run in parallel in separate worktrees
 - Clean separation between main and H·AI·K·U orchestration state
 - Subagents spawn from the intent worktree, not the original repo
@@ -617,7 +617,7 @@ git commit -m "elaborate(${INTENT_SLUG}): scaffold greenfield knowledge artifact
 
 **If `PROJECT_MATURITY` is `early` or `established` AND `KNOWLEDGE_COUNT` is 0:**
 
-1. Write the knowledge synthesis brief to `.haiku/${INTENT_SLUG}/.briefs/knowledge-synthesize.md`:
+1. Write the knowledge synthesis brief to `.haiku/intents/${INTENT_SLUG}/.briefs/knowledge-synthesize.md`:
 
 ```markdown
 ---
@@ -637,15 +637,15 @@ Scan the codebase and synthesize knowledge artifacts for: domain, architecture, 
 Agent({
   subagent_type: "general-purpose",
   description: "knowledge-synthesize: {INTENT_SLUG}",
-  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/knowledge-synthesize/SKILL.md first, then execute it with the brief file at .haiku/{INTENT_SLUG}/.briefs/knowledge-synthesize.md as input."
+  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/knowledge-synthesize/SKILL.md first, then execute it with the brief file at .haiku/intents/{INTENT_SLUG}/.briefs/knowledge-synthesize.md as input."
 })
 ```
 
-3. Read results from `.haiku/${INTENT_SLUG}/.briefs/knowledge-synthesize-results.md`
+3. Read results from `.haiku/intents/${INTENT_SLUG}/.briefs/knowledge-synthesize-results.md`
 4. Commit synthesized knowledge artifacts:
 
 ```bash
-git add .haiku/knowledge/ .haiku/${INTENT_SLUG}/.briefs/knowledge-synthesize*.md
+git add .haiku/knowledge/ .haiku/intents/${INTENT_SLUG}/.briefs/knowledge-synthesize*.md
 git commit -m "elaborate(${INTENT_SLUG}): synthesize knowledge from codebase"
 ```
 
@@ -679,7 +679,7 @@ PROVIDERS=$(load_providers)
 
 Serialize current state into the brief file. Include ALL context the subagent needs — it has no access to your conversation history.
 
-Write `.haiku/${INTENT_SLUG}/.briefs/elaborate-discover.md`:
+Write `.haiku/intents/${INTENT_SLUG}/.briefs/elaborate-discover.md`:
 
 ```markdown
 ---
@@ -732,7 +732,7 @@ Format each remaining artifact as a subsection:}
 Commit the discovery brief immediately after writing it:
 
 ```bash
-git add .haiku/${INTENT_SLUG}/.briefs/elaborate-discover.md
+git add .haiku/intents/${INTENT_SLUG}/.briefs/elaborate-discover.md
 git commit -m "elaborate(${INTENT_SLUG}): write discovery brief"
 ```
 
@@ -742,7 +742,7 @@ git commit -m "elaborate(${INTENT_SLUG}): write discovery brief"
 Agent({
   subagent_type: "general-purpose",
   description: "elaborate-discover: {INTENT_SLUG}",
-  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/discover/SKILL.md first, then execute it with the brief file at .haiku/{INTENT_SLUG}/.briefs/elaborate-discover.md as input."
+  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/discover/SKILL.md first, then execute it with the brief file at .haiku/intents/{INTENT_SLUG}/.briefs/elaborate-discover.md as input."
 })
 ```
 
@@ -750,7 +750,7 @@ Agent({
 
 ### Step 4: Read results
 
-Read `.haiku/${INTENT_SLUG}/.briefs/elaborate-discover-results.md`.
+Read `.haiku/intents/${INTENT_SLUG}/.briefs/elaborate-discover-results.md`.
 
 - Parse the YAML frontmatter `status` field
 - If `status: error` — report the `error_message` to the user and discuss how to proceed
@@ -761,7 +761,7 @@ Read `.haiku/${INTENT_SLUG}/.briefs/elaborate-discover-results.md`.
 After reading the results (regardless of status), commit the discovery artifacts so the exploration work is versioned:
 
 ```bash
-git add .haiku/${INTENT_SLUG}/discovery.md .haiku/${INTENT_SLUG}/.briefs/
+git add .haiku/intents/${INTENT_SLUG}/discovery.md .haiku/intents/${INTENT_SLUG}/.briefs/
 git commit -m "elaborate(${INTENT_SLUG}): complete domain discovery"
 ```
 
@@ -884,7 +884,7 @@ For UI-heavy intents, support visual brainstorming alongside the terminal conver
    echo '<wireframe html>' > /tmp/aidlc-wireframe.html && open /tmp/aidlc-wireframe.html
    ```
 3. **Iterate visually** — After the user reviews, update and reopen. The visual and terminal conversation run in parallel.
-4. **Persist approved visuals** — Save approved wireframes/diagrams to `.haiku/{intent-slug}/brainstorm/`
+4. **Persist approved visuals** — Save approved wireframes/diagrams to `.haiku/intents/{intent-slug}/brainstorm/`
 
 This is most useful during:
 - Phase 2.5 (domain discovery) — architecture diagrams
@@ -932,11 +932,11 @@ dlc_generate_design_blueprint "${INTENT_SLUG}" "${SELECTED_ARCHETYPE}" "${SELECT
 source "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh"
 
 # Read blueprint details
-ARCHETYPE_NAME=$(dlc_frontmatter_get "archetype_name" ".haiku/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || dlc_frontmatter_get "archetype" ".haiku/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || echo "unknown")
+ARCHETYPE_NAME=$(dlc_frontmatter_get "archetype_name" ".haiku/intents/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || dlc_frontmatter_get "archetype" ".haiku/intents/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || echo "unknown")
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # Extract the body (everything after frontmatter) from the blueprint
-BLUEPRINT_BODY=$(sed '1,/^---$/d' ".haiku/${INTENT_SLUG}/design-blueprint.md" | sed '1,/^---$/d')
+BLUEPRINT_BODY=$(sed '1,/^---$/d' ".haiku/intents/${INTENT_SLUG}/design-blueprint.md" | sed '1,/^---$/d')
 
 # Write as properly-structured knowledge artifact
 dlc_knowledge_write "design" "---
@@ -959,7 +959,7 @@ ${BLUEPRINT_BODY}"
 6. Commit:
 
 ```bash
-git add .haiku/${INTENT_SLUG}/design-blueprint.md .haiku/knowledge/design.md
+git add .haiku/intents/${INTENT_SLUG}/design-blueprint.md .haiku/knowledge/design.md
 git commit -m "elaborate(${INTENT_SLUG}): set design direction — ${SELECTED_ARCHETYPE}"
 ```
 
@@ -1212,7 +1212,7 @@ Build the session browser page showing sessions from GraphQL.
 **Good unit description** (builder knows exactly what to build):
 ```
 ## unit-02: Intent Browser and DAG View
-Display all H·AI·K·U Intents (read from `.haiku/*/intent.md` files) as cards showing:
+Display all H·AI·K·U Intents (read from `.haiku/intents/*/intent.md` files) as cards showing:
 - Intent title, status (from frontmatter), studio, operating mode
 - Unit count and completion progress (N of M units completed)
 - Created date and last activity
@@ -1223,8 +1223,8 @@ Clicking an intent navigates to the Intent Detail view which shows:
 - Color coding: pending=gray, in_progress=blue, completed=green, blocked=red
 
 Data sources:
-- Intent metadata: Read `.haiku/{slug}/intent.md` frontmatter via filesystem API
-- Unit metadata: Read `.haiku/{slug}/unit-*.md` frontmatter
+- Intent metadata: Read `.haiku/intents/{slug}/intent.md` frontmatter via filesystem API
+- Unit metadata: Read `.haiku/intents/{slug}/stages/*/units/unit-*.md` frontmatter
 - Live state: Query `dlc_state_load "$INTENT_DIR" "iteration.json"` for current hat and phase
 
 This unit does NOT handle: hat visualization (unit-03), live monitoring (unit-04),
@@ -1630,13 +1630,13 @@ Map the result to the `passes` array in intent.md frontmatter:
 
 When passes are configured with 2+ entries, set `active_pass` to the first pass in the list. The units elaborated in this session belong to the active pass. When execution completes the active pass, the next pass will trigger a new elaboration cycle for its discipline-specific units.
 
-> **Override:** To use different passes for a specific intent, the user can configure `passes` in the intent-level settings override at `.haiku/{intent}/settings.yml`.
+> **Override:** To use different passes for a specific intent, the user can configure `passes` in the intent-level settings override at `.haiku/intents/{intent}/settings.yml`.
 
 ---
 
 ## Phase 6: Write H·AI·K·U Artifacts
 
-Write intent and unit files in `.haiku/{intent-slug}/` (already in the intent worktree since Phase 2.25):
+Write intent and unit files in `.haiku/intents/{intent-slug}/` (already in the intent worktree since Phase 2.25):
 
 ### 1. Verify intent worktree
 
@@ -1649,7 +1649,7 @@ INTENT_WORKTREE="${PROJECT_ROOT}"  # We should already be cd'd into the worktree
 
 # Verify we're on the intent branch
 CURRENT_BRANCH=$(git branch --show-current)
-EXPECTED_BRANCH="ai-dlc/${INTENT_SLUG}/main"
+EXPECTED_BRANCH="haiku/${INTENT_SLUG}/main"
 if [ "$CURRENT_BRANCH" != "$EXPECTED_BRANCH" ]; then
   echo "ERROR: Expected to be on branch $EXPECTED_BRANCH but on $CURRENT_BRANCH"
   echo "The intent worktree should have been created in Phase 2.25."
@@ -1715,7 +1715,7 @@ problem space.}
 Commit the intent definition immediately so it's versioned before unit writing begins:
 
 ```bash
-git add .haiku/${INTENT_SLUG}/intent.md
+git add .haiku/intents/${INTENT_SLUG}/intent.md
 git commit -m "elaborate(${INTENT_SLUG}): define intent"
 ```
 
@@ -1732,7 +1732,7 @@ After writing intent.md and before writing units, confirm quality gates detected
 **Step A — Read discovery results.** Check `discovery.md` for the `## Quality Gate Candidates` section:
 
 ```bash
-DISCOVERY_FILE=".haiku/${INTENT_SLUG}/discovery.md"
+DISCOVERY_FILE=".haiku/intents/${INTENT_SLUG}/discovery.md"
 ```
 
 Read the file and look for the `## Quality Gate Candidates` section. Parse the detected gates table.
@@ -1805,7 +1805,7 @@ If the user selects "Exclude some", ask a follow-up: "Type the names of gates to
 After the user confirms (options 1 or 2), note:
 
 ```
-Gates confirmed. To customize commands later, edit `quality_gates:` in `.haiku/{intent-slug}/intent.md`.
+Gates confirmed. To customize commands later, edit `quality_gates:` in `.haiku/intents/{intent-slug}/intent.md`.
 ```
 
 If no candidates were found in discovery, skip the question and note:
@@ -1820,16 +1820,16 @@ You can add gates later by editing intent.md frontmatter.
 ```bash
 # yq accepts JSON-style objects in expressions; output is always clean YAML (keys unquoted, no JSON braces).
 # For selected gates (example with two gates):
-yq -i '.quality_gates = [{"name": "tests", "command": "npm test"}, {"name": "lint", "command": "npm run lint"}]' .haiku/${INTENT_SLUG}/intent.md
+yq -i '.quality_gates = [{"name": "tests", "command": "npm test"}, {"name": "lint", "command": "npm run lint"}]' .haiku/intents/${INTENT_SLUG}/intent.md
 
 # Or if user skipped / no gates detected:
-yq -i '.quality_gates = []' .haiku/${INTENT_SLUG}/intent.md
+yq -i '.quality_gates = []' .haiku/intents/${INTENT_SLUG}/intent.md
 ```
 
 **Step D — Commit.**
 
 ```bash
-git add .haiku/${INTENT_SLUG}/intent.md
+git add .haiku/intents/${INTENT_SLUG}/intent.md
 git commit -m "elaborate(${INTENT_SLUG}): set quality gates"
 ```
 
@@ -2011,12 +2011,12 @@ design - This unit will be executed by design-focused agents.
 
 For each unit (in dependency order — units with no `depends_on` first):
 
-**Step A — Write the unit file** to `.haiku/{intent-slug}/unit-NN-{slug}.md`.
+**Step A — Write the unit file** to `.haiku/intents/{intent-slug}/unit-NN-{slug}.md`.
 
 **Step A.1 — Commit the draft immediately.** Every write is versioned so the full evolution of each unit is visible in git history:
 
 ```bash
-git add .haiku/${INTENT_SLUG}/unit-NN-{slug}.md
+git add .haiku/intents/${INTENT_SLUG}/unit-NN-{slug}.md
 git commit -m "elaborate(${INTENT_SLUG}): draft unit-NN-{slug}"
 ```
 
@@ -2055,7 +2055,7 @@ This enforcement ensures that, for example, a `backend` unit always has deployab
 
 ```bash
 # Only for frontend or design units — open the wireframe if it exists
-WIREFRAME=".haiku/${INTENT_SLUG}/mockups/unit-NN-{slug}-wireframe.html"
+WIREFRAME=".haiku/intents/${INTENT_SLUG}/mockups/unit-NN-{slug}-wireframe.html"
 if [ -f "$WIREFRAME" ]; then
   open "$WIREFRAME"  # macOS; use xdg-open on Linux
 fi
@@ -2115,7 +2115,7 @@ Use `AskUserQuestion`:
 - **Approved**: Move to the next unit. (The unit is already committed from Step A.1 or the most recent revision commit.)
 - **Needs changes**: Discuss feedback, update the unit file, then **commit the revision with the user's reasoning in the commit body**:
   ```bash
-  git add .haiku/${INTENT_SLUG}/unit-NN-{slug}.md
+  git add .haiku/intents/${INTENT_SLUG}/unit-NN-{slug}.md
   git commit -m "elaborate(${INTENT_SLUG}): revise unit-NN-{slug}
 
   {Summarize the user's feedback that motivated this revision —
@@ -2127,7 +2127,7 @@ Use `AskUserQuestion`:
 
 ### 4. Intent slug is directory-based
 
-The intent slug is derived from the `.haiku/{intent-slug}/` directory path — no separate state save is needed.
+The intent slug is derived from the `.haiku/intents/{intent-slug}/` directory path — no separate state save is needed.
 
 **Note:** Do NOT save `iteration.json` here. Execution state (hat, iteration count, workflow, status) is initialized by `/haiku:execute` when the build loop starts. Elaboration only writes the spec artifacts.
 
@@ -2143,7 +2143,7 @@ git diff --cached --quiet || git commit -m "elaborate(${INTENT_SLUG}): finalize 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
 aidlc_telemetry_init
-UNIT_COUNT=$(ls "$INTENT_DIR"/unit-*.md 2>/dev/null | wc -l | tr -d ' ')
+UNIT_COUNT=$(ls "$INTENT_DIR"/stages/*/units/unit-*.md 2>/dev/null | wc -l | tr -d ' ')
 HAS_WIREFRAMES="false"
 [ -d "$INTENT_DIR/mockups" ] && HAS_WIREFRAMES="true"
 aidlc_record_elaboration_complete "${INTENT_SLUG}" "${UNIT_COUNT}" "${HAS_WIREFRAMES}"
@@ -2169,7 +2169,7 @@ Wireframe generation runs in a forked subagent. The subagent generates low-fidel
 
 ### Step 1: Identify frontend and design units
 
-Scan all `unit-*.md` files in `.haiku/{intent-slug}/`. Collect units where frontmatter contains `discipline: frontend` or `discipline: design`.
+Scan all `unit-*.md` files in `.haiku/intents/{intent-slug}/`. Collect units where frontmatter contains `discipline: frontend` or `discipline: design`.
 
 If no frontend or design units exist, skip to Phase 6.5.
 
@@ -2190,7 +2190,7 @@ fi
 
 ### Step 3: Write wireframes brief
 
-Write `.haiku/${INTENT_SLUG}/.briefs/elaborate-wireframes.md`:
+Write `.haiku/intents/${INTENT_SLUG}/.briefs/elaborate-wireframes.md`:
 
 ```markdown
 ---
@@ -2200,7 +2200,7 @@ intent_title: {Intent Title from intent.md}
 design_provider_type: {DESIGN_TYPE or empty}
 design_provider_capabilities: {DESIGN_CAPS JSON or empty if no provider}
 design_provider_mcp_hint: {DESIGN_MCP_HINT or empty if no provider}
-design_blueprint_path: {${WORKTREE_PATH}/.haiku/${INTENT_SLUG}/design-blueprint.md if it exists, or empty}
+design_blueprint_path: {${WORKTREE_PATH}/.haiku/intents/${INTENT_SLUG}/design-blueprint.md if it exists, or empty}
 ---
 
 # Frontend & Design Units
@@ -2226,7 +2226,7 @@ design_blueprint_path: {${WORKTREE_PATH}/.haiku/${INTENT_SLUG}/design-blueprint.
 Commit the wireframes brief immediately after writing it:
 
 ```bash
-git add .haiku/${INTENT_SLUG}/.briefs/elaborate-wireframes.md
+git add .haiku/intents/${INTENT_SLUG}/.briefs/elaborate-wireframes.md
 git commit -m "elaborate(${INTENT_SLUG}): write wireframes brief"
 ```
 
@@ -2236,7 +2236,7 @@ git commit -m "elaborate(${INTENT_SLUG}): write wireframes brief"
 Agent({
   subagent_type: "general-purpose",
   description: "elaborate-wireframes: {INTENT_SLUG}",
-  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/wireframes/SKILL.md first, then execute it with the brief file at .haiku/{INTENT_SLUG}/.briefs/elaborate-wireframes.md as input."
+  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/wireframes/SKILL.md first, then execute it with the brief file at .haiku/intents/{INTENT_SLUG}/.briefs/elaborate-wireframes.md as input."
 })
 ```
 
@@ -2244,7 +2244,7 @@ Agent({
 
 ### Step 5: Read results
 
-Read `.haiku/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md`.
+Read `.haiku/intents/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md`.
 
 - If `status: skipped` — no frontend or design units found, proceed to Phase 6.5
 - If `status: error` — report the error to the user and discuss how to proceed
@@ -2253,7 +2253,7 @@ Read `.haiku/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md`.
 Commit the wireframe artifacts and results brief:
 
 ```bash
-git add .haiku/${INTENT_SLUG}/mockups/ .haiku/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md
+git add .haiku/intents/${INTENT_SLUG}/mockups/ .haiku/intents/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md
 git commit -m "elaborate(${INTENT_SLUG}): generate frontend and design wireframes"
 ```
 
@@ -2276,7 +2276,7 @@ If both the setting is enabled AND the tool is found, call it with wireframe ref
 ```
 ask_user_visual_question({
   title: "Wireframe Review",
-  context: "{Build a markdown summary listing each wireframe file with its unit name and path. For each wireframe, include:\n- Unit name and slug\n- Wireframe file path: `.haiku/${INTENT_SLUG}/mockups/unit-NN-{slug}-wireframe.html`\n- Brief description of what the wireframe covers\n\nNote: The user should have the wireframes open in browser tabs from Step 5.}",
+  context: "{Build a markdown summary listing each wireframe file with its unit name and path. For each wireframe, include:\n- Unit name and slug\n- Wireframe file path: `.haiku/intents/${INTENT_SLUG}/mockups/unit-NN-{slug}-wireframe.html`\n- Brief description of what the wireframe covers\n\nNote: The user should have the wireframes open in browser tabs from Step 5.}",
   questions: [{
     question: "I've generated low-fidelity wireframes for the frontend and design units. Review the screen structure, flow, and placeholder copy. How do they look?",
     header: "Wireframes",
@@ -2312,7 +2312,7 @@ Present all generated wireframes to product for review using `AskUserQuestion`:
 - **Approved**: Proceed to Phase 6.5.
 - **Needs revision**: Discuss feedback, update the wireframe HTML files directly, commit the revision, and re-present for review. Loop until approved.
   ```bash
-  git add .haiku/${INTENT_SLUG}/mockups/
+  git add .haiku/intents/${INTENT_SLUG}/mockups/
   git commit -m "elaborate(${INTENT_SLUG}): revise wireframes"
   ```
 - **Skip wireframes**: Delete the `mockups/` directory, remove `wireframe:` fields from unit frontmatter, and proceed to Phase 6.5.
@@ -2336,7 +2336,7 @@ If `TICKETING_TYPE` is empty, skip this phase entirely and proceed to Phase 7 (S
 
 ### Step 2: Write ticket sync brief
 
-Read the intent.md and all unit files to gather the data the subagent needs. Write `.haiku/${INTENT_SLUG}/.briefs/elaborate-ticket-sync.md`:
+Read the intent.md and all unit files to gather the data the subagent needs. Write `.haiku/intents/${INTENT_SLUG}/.briefs/elaborate-ticket-sync.md`:
 
 ```markdown
 ---
@@ -2376,7 +2376,7 @@ plugin_root: {CLAUDE_PLUGIN_ROOT}
 Commit the ticket sync brief immediately after writing it:
 
 ```bash
-git add .haiku/${INTENT_SLUG}/.briefs/elaborate-ticket-sync.md
+git add .haiku/intents/${INTENT_SLUG}/.briefs/elaborate-ticket-sync.md
 git commit -m "elaborate(${INTENT_SLUG}): write ticket sync brief"
 ```
 
@@ -2386,7 +2386,7 @@ git commit -m "elaborate(${INTENT_SLUG}): write ticket sync brief"
 Agent({
   subagent_type: "general-purpose",
   description: "elaborate-ticket-sync: {INTENT_SLUG}",
-  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/ticket-sync/SKILL.md first, then execute it with the brief file at .haiku/{INTENT_SLUG}/.briefs/elaborate-ticket-sync.md as input."
+  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/ticket-sync/SKILL.md first, then execute it with the brief file at .haiku/intents/{INTENT_SLUG}/.briefs/elaborate-ticket-sync.md as input."
 })
 ```
 
@@ -2394,7 +2394,7 @@ Agent({
 
 ### Step 4: Read results
 
-Read `.haiku/${INTENT_SLUG}/.briefs/elaborate-ticket-sync-results.md`.
+Read `.haiku/intents/${INTENT_SLUG}/.briefs/elaborate-ticket-sync-results.md`.
 
 - If `status: skipped` — ticketing not configured or MCP tools unavailable, proceed to Phase 7 (Spec Review)
 - If `status: error` — report the errors to the user. If `validation_passed: false`, the subagent already retried. Log the failures and proceed to Phase 7 (Spec Review) (never block elaboration on ticket sync failure)
@@ -2403,7 +2403,7 @@ Read `.haiku/${INTENT_SLUG}/.briefs/elaborate-ticket-sync-results.md`.
 Commit the ticket sync artifacts (updated intent.md and unit files with ticket keys, plus the results brief):
 
 ```bash
-git add .haiku/${INTENT_SLUG}/
+git add .haiku/intents/${INTENT_SLUG}/
 git commit -m "elaborate(${INTENT_SLUG}): sync tickets to provider"
 ```
 
@@ -2423,8 +2423,8 @@ Agent({
     Review the intent and unit specifications for completeness and consistency.
 
     ## Files to Review
-    - .haiku/${intentSlug}/intent.md
-    - .haiku/${intentSlug}/unit-*.md
+    - .haiku/intents/${intentSlug}/intent.md
+    - .haiku/intents/${intentSlug}/stages/*/units/unit-*.md
 
     ## Review Checklist
 
@@ -2480,7 +2480,7 @@ Read all spec files that the subagent needs to analyze:
 
 ```bash
 INTENT_SLUG="{intent-slug}"
-INTENT_DIR=".haiku/${INTENT_SLUG}"
+INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
 INTENT_FILE="${INTENT_DIR}/intent.md"
 DISCOVERY_FILE="${INTENT_DIR}/discovery.md"
 
@@ -2489,7 +2489,7 @@ INTENT_CONTENT=$(cat "$INTENT_FILE")
 
 # Read all unit files
 UNIT_CONTENTS=""
-for unit_file in ${INTENT_DIR}/unit-*.md; do
+for unit_file in ${INTENT_DIR}/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
   UNIT_CONTENTS="${UNIT_CONTENTS}\n## $(basename "$unit_file")\n\n$(cat "$unit_file")\n\n---\n"
 done
@@ -2500,7 +2500,7 @@ DISCOVERY_CONTENT=$(cat "$DISCOVERY_FILE" 2>/dev/null || echo "No discovery log 
 
 ### Step 2: Write adversarial review brief
 
-Write `.haiku/${INTENT_SLUG}/.briefs/elaborate-adversarial-review.md`:
+Write `.haiku/intents/${INTENT_SLUG}/.briefs/elaborate-adversarial-review.md`:
 
 ```markdown
 ---
@@ -2523,7 +2523,7 @@ worktree_path: {absolute path to intent worktree}
 
 Commit the brief:
 ```bash
-git add .haiku/${INTENT_SLUG}/.briefs/elaborate-adversarial-review.md
+git add .haiku/intents/${INTENT_SLUG}/.briefs/elaborate-adversarial-review.md
 git commit -m "elaborate(${INTENT_SLUG}): write adversarial review brief"
 ```
 
@@ -2533,7 +2533,7 @@ git commit -m "elaborate(${INTENT_SLUG}): write adversarial review brief"
 Agent({
   subagent_type: "general-purpose",
   description: "elaborate-adversarial-review: {INTENT_SLUG}",
-  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/adversarial-review/SKILL.md first, then execute it with the brief file at .haiku/{INTENT_SLUG}/.briefs/elaborate-adversarial-review.md as input."
+  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/adversarial-review/SKILL.md first, then execute it with the brief file at .haiku/intents/{INTENT_SLUG}/.briefs/elaborate-adversarial-review.md as input."
 })
 ```
 
@@ -2541,7 +2541,7 @@ Agent({
 
 ### Step 4: Read results
 
-Read `.haiku/${INTENT_SLUG}/.briefs/elaborate-adversarial-review-results.md`.
+Read `.haiku/intents/${INTENT_SLUG}/.briefs/elaborate-adversarial-review-results.md`.
 
 - Parse the YAML frontmatter: `status`, `findings_count`, `auto_fixable_count`, `categories_found`
 - If `status: error` — report the error to the user and proceed to Phase 8 (never block elaboration on review failure)
@@ -2566,7 +2566,7 @@ Track which findings were auto-applied.
 
 Commit all auto-applied fixes together:
 ```bash
-git add .haiku/${INTENT_SLUG}/
+git add .haiku/intents/${INTENT_SLUG}/
 git commit -m "elaborate(${INTENT_SLUG}): auto-apply adversarial review fixes
 
 Applied {N} high-confidence fixes:
@@ -2633,7 +2633,7 @@ For each user-approved fix, apply the suggested change to the target file.
 
 Commit all user-approved fixes together:
 ```bash
-git add .haiku/${INTENT_SLUG}/
+git add .haiku/intents/${INTENT_SLUG}/
 git commit -m "elaborate(${INTENT_SLUG}): apply user-approved adversarial review fixes
 
 Applied:
@@ -2646,7 +2646,7 @@ Applied:
 
 Commit any remaining artifacts:
 ```bash
-git add .haiku/${INTENT_SLUG}/
+git add .haiku/intents/${INTENT_SLUG}/
 git diff --cached --quiet || git commit -m "elaborate(${INTENT_SLUG}): finalize adversarial review"
 ```
 
@@ -2664,7 +2664,7 @@ Elaboration complete!
 Intent Worktree: .haiku/worktrees/{intent-slug}/
 Branch: ai-dlc/{intent-slug}/main
 
-Created: .haiku/{intent-slug}/
+Created: .haiku/intents/{intent-slug}/
 - intent.md (intent and config)
 - unit-01-{name}.md
 - unit-02-{name}.md
@@ -2700,7 +2700,7 @@ IS_COWORK="${CLAUDE_CODE_IS_COWORK:-}"
 
 **If cowork mode** (`IS_COWORK=1`):
 
-The artifacts have already been written to `.haiku/{intent-slug}/` in the working directory. Determine the handoff based on how the user connected to the repo in Phase 0:
+The artifacts have already been written to `.haiku/intents/{intent-slug}/` in the working directory. Determine the handoff based on how the user connected to the repo in Phase 0:
 
 - **If the user pointed to a local folder** — the artifacts are already in their repo. They just need to commit.
 - **If the repo was cloned to a temp workspace** — the user may not have push access. Offer a zip download.
@@ -2743,7 +2743,7 @@ Your main working directory stays clean on the main branch.
 1. Push the intent branch to remote:
 
 ```bash
-INTENT_BRANCH="ai-dlc/${INTENT_SLUG}/main"
+INTENT_BRANCH="haiku/${INTENT_SLUG}/main"
 git push -u origin "$INTENT_BRANCH"
 ```
 
@@ -2752,7 +2752,7 @@ git push -u origin "$INTENT_BRANCH"
 ```bash
 # Determine default branch
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-INTENT_DIR=".haiku/${INTENT_SLUG}"
+INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
 CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
 DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
 
@@ -2813,14 +2813,14 @@ Review the spec with your team. When approved, a developer can run:
 The artifacts are already written in the user's own repo checkout. Just tell them:
 
 ```
-Spec artifacts written to .haiku/{intent-slug}/:
+Spec artifacts written to .haiku/intents/{intent-slug}/:
 - intent.md
 - unit-01-{name}.md
 - unit-02-{name}.md
 ...
 
 These are ready to commit. From your project directory, run:
-  git add .haiku/{intent-slug}/
+  git add .haiku/intents/{intent-slug}/
   git commit -m "elaborate: define intent and units for {intent-slug}"
 
 Then a developer can run `/haiku:execute` in Claude Code to start the build loop.
@@ -2831,7 +2831,7 @@ Then a developer can run `/haiku:execute` in Claude Code to start the build loop
 Package all spec artifacts into a zip file:
 
 ```bash
-INTENT_DIR=".haiku/${INTENT_SLUG}"
+INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
 ZIP_PATH="/tmp/ai-dlc-${INTENT_SLUG}-spec.zip"
 cd "$(git rev-parse --show-toplevel)"
 zip -r "$ZIP_PATH" "$INTENT_DIR"
@@ -2843,7 +2843,7 @@ Tell the user:
 Spec packaged: {ZIP_PATH}
 
 To use this spec:
-1. Unzip into the project root (preserves the .haiku/{intent-slug}/ structure)
+1. Unzip into the project root (preserves the .haiku/intents/{intent-slug}/ structure)
 2. Commit the files
 3. Run /haiku:execute in Claude Code to start the build loop
 ```

@@ -1,5 +1,5 @@
 /**
- * Site-wide constants for AI-DLC website
+ * Site-wide constants for H·AI·K·U website
  */
 
 export const SITE_URL = "https://haikumethod.ai"

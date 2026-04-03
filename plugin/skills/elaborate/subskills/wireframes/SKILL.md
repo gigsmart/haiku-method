@@ -44,7 +44,7 @@ Autonomous wireframe generation for H·AI·K·U elaboration frontend and design 
 
 ## Step 1: Read Brief
 
-Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.haiku/{intent-slug}/.briefs/elaborate-wireframes.md`).
+Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.haiku/intents/{intent-slug}/.briefs/elaborate-wireframes.md`).
 
 Parse YAML frontmatter:
 
@@ -55,7 +55,7 @@ intent_title: My Feature Title
 design_provider_type: figma  # or empty
 design_provider_capabilities: {"generate":true,"inspect":false,...}  # JSON or empty
 design_provider_mcp_hint: mcp__*canva*  # MCP tool glob pattern or empty
-design_blueprint_path: .haiku/my-feature/design-blueprint.md  # or empty if no blueprint
+design_blueprint_path: .haiku/intents/my-feature/design-blueprint.md  # or empty if no blueprint
 ```
 
 The markdown body contains:
@@ -111,7 +111,7 @@ Dispatch based on `PROVIDER_TYPE`:
 2. Call the generate-design tool with wireframe requirements derived from the unit description and design context
 3. Save the returned design ID; set `NATIVE_REF=canva://{design_id}`
 4. Export PNG: call the export-design tool with format=png
-5. Save PNG to `.haiku/{intent-slug}/mockups/unit-{NN}-{slug}-wireframe.png`
+5. Save PNG to `.haiku/intents/{intent-slug}/mockups/unit-{NN}-{slug}-wireframe.png`
 
 **OpenPencil:**
 1. Use `ToolSearch` to find `mcp__openpencil__design_skeleton`
@@ -134,9 +134,9 @@ These providers don't have generate capability — the decision logic in step 2 
 
 For each unit where provider generation succeeded:
 
-1. Create designs directory: `mkdir -p .haiku/{intent-slug}/designs/`
-2. Save native artifact reference: for OpenPencil use `.haiku/{intent-slug}/designs/unit-{NN}-{slug}-wireframe.op`, for Pencil use `.haiku/{intent-slug}/designs/unit-{NN}-{slug}-wireframe.pen`; for Canva, the design ID is a cloud reference — store as URI in the unit frontmatter directly (e.g., `design_ref: canva://{design_id}`) rather than a local file
-3. Save PNG export to `.haiku/{intent-slug}/mockups/unit-{NN}-{slug}-wireframe.png`
+1. Create designs directory: `mkdir -p .haiku/intents/{intent-slug}/designs/`
+2. Save native artifact reference: for OpenPencil use `.haiku/intents/{intent-slug}/designs/unit-{NN}-{slug}-wireframe.op`, for Pencil use `.haiku/intents/{intent-slug}/designs/unit-{NN}-{slug}-wireframe.pen`; for Canva, the design ID is a cloud reference — store as URI in the unit frontmatter directly (e.g., `design_ref: canva://{design_id}`) rather than a local file
+3. Save PNG export to `.haiku/intents/{intent-slug}/mockups/unit-{NN}-{slug}-wireframe.png`
 4. Track per-unit results: `PROVIDER_SUCCEEDED[unit]=true`, `NATIVE_REFS[unit]={native ref path or URI}`
 
 ### C. Error Handling
@@ -153,7 +153,7 @@ If provider generation fails for any unit:
 
 ```bash
 INTENT_SLUG="{intent_slug from brief}"
-mkdir -p ".haiku/${INTENT_SLUG}/mockups"
+mkdir -p ".haiku/intents/${INTENT_SLUG}/mockups"
 ```
 
 ---
@@ -201,7 +201,7 @@ BP_COMPONENT_GUIDELINES="..."       (from blueprint body)
 - **Supplementary output** for units where the provider succeeded — provides a universal browser-viewable version alongside the native artifact
 
 For each frontend or design unit from the brief, create a self-contained HTML file at:
-`.haiku/{intent-slug}/mockups/unit-{NN}-{slug}-wireframe.html`
+`.haiku/intents/{intent-slug}/mockups/unit-{NN}-{slug}-wireframe.html`
 
 Where `{NN}` is the zero-padded unit number and `{slug}` is the unit filename slug.
 
@@ -487,7 +487,7 @@ For each frontend or design unit that received a wireframe, update its frontmatt
 **Provider-generated units** (where `PROVIDER_SUCCEEDED[unit]=true`):
 
 ```yaml
-design_ref: .haiku/{intent-slug}/designs/unit-{NN}-{slug}-wireframe.{ext}  # or canva://{id} for Canva
+design_ref: .haiku/intents/{intent-slug}/designs/unit-{NN}-{slug}-wireframe.{ext}  # or canva://{id} for Canva
 wireframe: mockups/unit-{NN}-{slug}-wireframe.png
 ```
 
@@ -509,9 +509,9 @@ Read the unit file, find the YAML frontmatter block, add or replace the relevant
 
 ```bash
 INTENT_SLUG="{intent_slug from brief}"
-git add .haiku/${INTENT_SLUG}/mockups/
-git add .haiku/${INTENT_SLUG}/designs/
-git add .haiku/${INTENT_SLUG}/unit-*.md
+git add .haiku/intents/${INTENT_SLUG}/mockups/
+git add .haiku/intents/${INTENT_SLUG}/designs/
+git add .haiku/intents/${INTENT_SLUG}/stages/*/units/unit-*.md
 git commit -m "elaborate: add wireframes for ${INTENT_SLUG} frontend and design units"
 ```
 
@@ -519,7 +519,7 @@ git commit -m "elaborate: add wireframes for ${INTENT_SLUG} frontend and design 
 
 ## Step 7: Write Results
 
-Write the results file to `.haiku/{intent-slug}/.briefs/elaborate-wireframes-results.md`:
+Write the results file to `.haiku/intents/{intent-slug}/.briefs/elaborate-wireframes-results.md`:
 
 **When a provider was used (at least one unit succeeded via provider):**
 

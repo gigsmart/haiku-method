@@ -106,7 +106,7 @@ These files are:
 ```
 ┌────────────────────────────────────────────────┐
 │  SessionStart Hook                              │
-│  - Load state from .haiku/{slug}/state/         │
+│  - Load state from .haiku/intents/{slug}/state/         │
 │  - Inject context (hat, intent, criteria)       │
 │  - Display previous learnings                   │
 └────────────────────────────────────────────────┘
@@ -116,7 +116,7 @@ These files are:
 │  Work Phase                                     │
 │  - AI operates with injected context            │
 │  - Backpressure guides quality                  │
-│  - Progress saved to .haiku/{slug}/state/      │
+│  - Progress saved to .haiku/intents/{slug}/state/      │
 └────────────────────────────────────────────────┘
                       │
                       ▼
@@ -233,12 +233,12 @@ To tailor a built-in pass to your project, create `.haiku/passes/{name}.md` wher
 
 ### Scoped Storage
 
-H·AI·K·U uses file-based state persistence in `.haiku/{slug}/state/`:
+H·AI·K·U uses file-based state persistence in `.haiku/intents/{slug}/state/`:
 
 | Scope | Location |
 |-------|----------|
-| Intent state | `.haiku/{slug}/state/` — iteration state, blockers, plans |
-| Intent artifacts | `.haiku/{slug}/` — intent.md, unit files, discovery.md |
+| Intent state | `.haiku/intents/{slug}/state/` — iteration state, blockers, plans |
+| Intent artifacts | `.haiku/intents/{slug}/` — intent.md, unit files, discovery.md |
 | Project config | `.haiku/settings.yml` — project-level settings |
 
 ### State Keys

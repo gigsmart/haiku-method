@@ -31,7 +31,7 @@ Advances to the next hat in the stage's hat sequence. For example, in the develo
 ### Step 1: Load Current State
 
 ```bash
-# Intent-level state is stored in .haiku/{slug}/state/
+# Intent-level state is stored in .haiku/intents/{slug}/state/
 INTENT_DIR=$(find .ai-dlc -maxdepth 2 -name "intent.md" -exec dirname {} \; | head -1)
 INTENT_SLUG=$(basename "$INTENT_DIR")
 STATE=$(dlc_state_load "$INTENT_DIR" "iteration.json")
@@ -205,7 +205,7 @@ After marking a unit as completed, merge behavior depends on `change_strategy`:
 # Load config for merge settings
 REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-INTENT_DIR=".haiku/${INTENT_SLUG}"
+INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
 CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
 AUTO_MERGE=$(echo "$CONFIG" | jq -r '.auto_merge // "true"')
 AUTO_SQUASH=$(echo "$CONFIG" | jq -r '.auto_squash // "false"')
@@ -220,7 +220,7 @@ fi
 CHANGE_STRATEGY="${UNIT_CHANGE_STRATEGY:-$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')}"
 
 UNIT_SLUG="${CURRENT_UNIT#unit-}"
-UNIT_BRANCH="ai-dlc/${INTENT_SLUG}/${UNIT_SLUG}"
+UNIT_BRANCH="haiku/${INTENT_SLUG}/${UNIT_SLUG}"
 
 source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
 
@@ -320,13 +320,13 @@ if (ALL_COMPLETE) {
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
 ALL_UNIT_STRATEGY=true
-for unit_file in "$INTENT_DIR"/unit-*.md; do
+for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
   UNIT_CS=$(parse_unit_change_strategy "$unit_file")
   EFFECTIVE_CS="${UNIT_CS:-$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')}"
   [ "$EFFECTIVE_CS" != "unit" ] && { ALL_UNIT_STRATEGY=false; break; }
 done
-UNIT_COUNT=$(ls -1 "$INTENT_DIR"/unit-*.md 2>/dev/null | wc -l)
+UNIT_COUNT=$(ls -1 "$INTENT_DIR"/stages/*/units/unit-*.md 2>/dev/null | wc -l)
 SKIP_INTEGRATOR=false
 [ "$UNIT_COUNT" -le 1 ] && SKIP_INTEGRATOR=true
 [ "$ALL_UNIT_STRATEGY" = "true" ] && SKIP_INTEGRATOR=true
@@ -357,7 +357,7 @@ persistence_save "$INTENT_SLUG" "status: mark intent ${INTENT_SLUG} as completed
 # Record intent completion telemetry
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
 aidlc_telemetry_init
-UNIT_COUNT=$(ls "$INTENT_DIR"/unit-*.md 2>/dev/null | wc -l | tr -d ' ')
+UNIT_COUNT=$(ls "$INTENT_DIR"/stages/*/units/unit-*.md 2>/dev/null | wc -l | tr -d ' ')
 aidlc_record_intent_completed "${INTENT_SLUG}" "${UNIT_COUNT}"
 ```
 
@@ -439,7 +439,7 @@ Task({
 
     ## CRITICAL: Work on Intent Branch
     **Worktree path:** .haiku/worktrees/${intentSlug}/
-    **Branch:** ai-dlc/${intentSlug}/main
+    **Branch:** haiku/${intentSlug}/main
 
     You MUST:
     1. cd .haiku/worktrees/${intentSlug}/
@@ -478,7 +478,7 @@ persistence_save "$INTENT_SLUG" "status: mark intent ${INTENT_SLUG} as completed
 # Record intent completion telemetry
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
 aidlc_telemetry_init
-UNIT_COUNT=$(ls "$INTENT_DIR"/unit-*.md 2>/dev/null | wc -l | tr -d ' ')
+UNIT_COUNT=$(ls "$INTENT_DIR"/stages/*/units/unit-*.md 2>/dev/null | wc -l | tr -d ' ')
 aidlc_record_intent_completed "${INTENT_SLUG}" "${UNIT_COUNT}"
 
 # Proceed to Step 5 (completion summary)
@@ -584,7 +584,7 @@ The intent branch is ready to merge:
 ```bash
 # Load merge config
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-INTENT_DIR=".haiku/${INTENT_SLUG}"
+INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
 CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
 DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
 ```
@@ -603,7 +603,7 @@ If the intent has configured `announcements` in its frontmatter, generate each f
 ANNOUNCEMENTS=$(dlc_frontmatter_get "announcements" "$INTENT_DIR/intent.md" 2>/dev/null || echo "[]")
 ```
 
-For each configured format, generate the announcement artifact in `.haiku/{intent-slug}/`:
+For each configured format, generate the announcement artifact in `.haiku/intents/{intent-slug}/`:
 
 | Format | File | Content |
 |--------|------|---------|
@@ -615,7 +615,7 @@ For each configured format, generate the announcement artifact in `.haiku/{inten
 Generate each from the intent's Problem/Solution, completed units, and success criteria. Commit the announcement artifacts:
 
 ```bash
-git add .haiku/${INTENT_SLUG}/
+git add .haiku/intents/${INTENT_SLUG}/
 git commit -m "announce: generate completion announcements for ${INTENT_SLUG}"
 ```
 
@@ -631,7 +631,7 @@ source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
 source "${CLAUDE_PLUGIN_ROOT}/lib/parse.sh"
 
 # Verify all units are marked completed
-for unit_file in "$INTENT_DIR"/unit-*.md; do
+for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
   UNIT_STATUS=$(parse_unit_status "$unit_file")
   if [ "$UNIT_STATUS" != "completed" ]; then
@@ -687,7 +687,7 @@ Always run the refresh — even when knowledge artifacts already exist, the inte
 
 **Step 2: Write the synthesis brief**
 
-Write `.ai-dlc/${INTENT_SLUG}/.briefs/knowledge-refresh.md`:
+Write `.haiku/intents/${INTENT_SLUG}/.briefs/knowledge-refresh.md`:
 
 ```markdown
 ---
@@ -712,7 +712,7 @@ Agent({
   description: `knowledge-refresh: ${intentSlug}`,
   prompt: `
     Read the skill definition at plugin/skills/elaborate/subskills/knowledge-synthesize/SKILL.md first,
-    then execute it with the brief file at .ai-dlc/${intentSlug}/.briefs/knowledge-refresh.md as input.
+    then execute it with the brief file at .haiku/intents/${intentSlug}/.briefs/knowledge-refresh.md as input.
 
     This is a post-integrate refresh — the codebase now contains all work from the completed intent.
     Overwrite existing artifacts with fresh synthesis from the current codebase state.
@@ -724,7 +724,7 @@ Agent({
 **Run in background** — knowledge refresh should not block delivery. The artifacts will be committed when the subagent completes. If the subagent finishes before delivery completes, commit the results:
 
 ```bash
-git add .ai-dlc/knowledge/ .ai-dlc/${INTENT_SLUG}/.briefs/knowledge-refresh*.md
+git add .ai-dlc/knowledge/ .haiku/intents/${INTENT_SLUG}/.briefs/knowledge-refresh*.md
 git diff --cached --quiet || git commit -m "knowledge: refresh artifacts after ${INTENT_SLUG} integration"
 ```
 
@@ -746,7 +746,7 @@ CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
 CHANGE_STRATEGY=$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')
 
 NEEDS_DELIVERY_REVIEW=false
-for unit_file in "$INTENT_DIR"/unit-*.md; do
+for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
   UNIT_CS=$(parse_unit_change_strategy "$unit_file")
   EFFECTIVE_CS="${UNIT_CS:-$CHANGE_STRATEGY}"
@@ -797,7 +797,7 @@ CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
 CHANGE_STRATEGY=$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')
 
 ALL_UNIT_STRATEGY=true
-for unit_file in "$INTENT_DIR"/unit-*.md; do
+for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
   UNIT_CS=$(parse_unit_change_strategy "$unit_file")
   EFFECTIVE_CS="${UNIT_CS:-$CHANGE_STRATEGY}"
@@ -848,7 +848,7 @@ To clean up:
 1. Push intent branch to remote (if not already):
 
 ```bash
-INTENT_BRANCH="ai-dlc/${INTENT_SLUG}/main"
+INTENT_BRANCH="haiku/${INTENT_SLUG}/main"
 git push -u origin "$INTENT_BRANCH" 2>/dev/null || true
 ```
 
@@ -858,7 +858,7 @@ git push -u origin "$INTENT_BRANCH" 2>/dev/null || true
 DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
 
 TICKET_REFS=""
-for unit_file in "$INTENT_DIR"/unit-*.md; do
+for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
   TICKET=$(dlc_frontmatter_get "ticket" "$unit_file" 2>/dev/null || echo "")
   if [ -n "$TICKET" ]; then

@@ -45,7 +45,7 @@ Autonomous ticket synchronization for H·AI·K·U elaboration. This skill runs a
 
 ## Step 1: Read Brief
 
-Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.haiku/{intent-slug}/.briefs/elaborate-ticket-sync.md`).
+Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.haiku/intents/{intent-slug}/.briefs/elaborate-ticket-sync.md`).
 
 Parse YAML frontmatter:
 
@@ -168,7 +168,7 @@ None — this unit can start immediately.
 ## Wireframe
 
 {if unit has wireframe field in the brief}
-Low-fidelity wireframe available at `.haiku/{intent-slug}/{wireframe-path}`.
+Low-fidelity wireframe available at `.haiku/intents/{intent-slug}/{wireframe-path}`.
 Shows approved screen structure, flow, and placeholder copy.
 Apply full visual design during execution.
 
@@ -221,7 +221,7 @@ After ticket creation and frontmatter updates, validate:
 1. **Epic check**: Read `intent.md` frontmatter. Check the `epic:` field.
    - If `epic:` is empty or missing → **FAIL**
 
-2. **Ticket check**: Scan all `unit-*.md` files in `.haiku/{intent-slug}/`. Check each file's `ticket:` frontmatter field.
+2. **Ticket check**: Scan all `unit-*.md` files in `.haiku/intents/{intent-slug}/`. Check each file's `ticket:` frontmatter field.
    - If ANY unit has an empty or missing `ticket:` field → **FAIL**
 
 ### On FAIL
@@ -250,7 +250,7 @@ Proceed to writing results.
 
 ## Step 8: Write Results
 
-Write the results file to `.haiku/{intent-slug}/.briefs/elaborate-ticket-sync-results.md`:
+Write the results file to `.haiku/intents/{intent-slug}/.briefs/elaborate-ticket-sync-results.md`:
 
 ```markdown
 ---

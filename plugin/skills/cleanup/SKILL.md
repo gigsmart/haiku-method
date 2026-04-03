@@ -151,11 +151,11 @@ for i in "${!MERGED[@]}"; do
   # Clean up via persistence layer
   persistence_cleanup "$name"
   # Clean up the intent spec directory if it exists
-  if [ -d "${REPO_ROOT}/.haiku/${name}" ]; then
+  if [ -d "${REPO_ROOT}/.haiku/intents/${name}" ]; then
     # Ask user before removing spec directory
-    # Use AskUserQuestion: "Remove spec directory .haiku/${name}/?"
+    # Use AskUserQuestion: "Remove spec directory .haiku/intents/${name}/?"
     # If confirmed:
-    rm -rf "${REPO_ROOT}/.haiku/${name}"
+    rm -rf "${REPO_ROOT}/.haiku/intents/${name}"
   fi
 done
 

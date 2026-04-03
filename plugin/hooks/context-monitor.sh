@@ -41,7 +41,7 @@ if [ "$REMAINING" -le 25 ]; then
 
 **You MUST:**
 1. Commit all working changes NOW
-2. Save state to `.haiku/{intent-slug}/state/`
+2. Save state to `.haiku/intents/{intent-slug}/state/`
 3. Complete current task or signal handoff
 4. Do NOT start new tasks
 

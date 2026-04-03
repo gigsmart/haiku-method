@@ -71,7 +71,7 @@ If a slug was provided as an argument, verify it exists (see sources below). If 
 **A: Check filesystem first (highest priority):**
 
 ```bash
-for intent_file in .haiku/*/intent.md; do
+for intent_file in .haiku/intents/*/intent.md; do
   [ -f "$intent_file" ] || continue
   dir=$(dirname "$intent_file")
   slug=$(basename "$dir")
@@ -103,7 +103,7 @@ git branch -a | grep 'ai-dlc/.*/main$' | sed 's|.*ai-dlc/||;s|/main$||' | sort -
 For each discovered slug, try to read its intent.md from the branch:
 
 ```bash
-git show "ai-dlc/${slug}/main:.haiku/${slug}/intent.md" 2>/dev/null
+git show "haiku/${slug}/main:.haiku/intents/${slug}/intent.md" 2>/dev/null
 ```
 
 **Selection logic:**
@@ -134,25 +134,25 @@ Once the previous intent is selected, load its full context:
 PREVIOUS_SLUG="{selected-slug}"
 
 # Try filesystem first
-if [ -f ".haiku/${PREVIOUS_SLUG}/intent.md" ]; then
-  PREVIOUS_INTENT=$(cat ".haiku/${PREVIOUS_SLUG}/intent.md")
+if [ -f ".haiku/intents/${PREVIOUS_SLUG}/intent.md" ]; then
+  PREVIOUS_INTENT=$(cat ".haiku/intents/${PREVIOUS_SLUG}/intent.md")
   PREVIOUS_SOURCE="filesystem"
 else
   # Fallback: read from git branch
-  PREVIOUS_INTENT=$(git show "ai-dlc/${PREVIOUS_SLUG}/main:.haiku/${PREVIOUS_SLUG}/intent.md" 2>/dev/null)
+  PREVIOUS_INTENT=$(git show "haiku/${PREVIOUS_SLUG}/main:.haiku/intents/${PREVIOUS_SLUG}/intent.md" 2>/dev/null)
   PREVIOUS_SOURCE="git-branch"
 fi
 
 # Load previous units
 if [ "$PREVIOUS_SOURCE" = "filesystem" ]; then
-  for unit_file in .haiku/${PREVIOUS_SLUG}/unit-*.md; do
+  for unit_file in .haiku/intents/${PREVIOUS_SLUG}/stages/*/units/unit-*.md; do
     [ -f "$unit_file" ] && cat "$unit_file"
   done
 else
-  git show "ai-dlc/${PREVIOUS_SLUG}/main" -- ".haiku/${PREVIOUS_SLUG}/unit-*.md" 2>/dev/null || \
-  git ls-tree --name-only "ai-dlc/${PREVIOUS_SLUG}/main" ".haiku/${PREVIOUS_SLUG}/" 2>/dev/null | \
+  git show "haiku/${PREVIOUS_SLUG}/main" -- ".haiku/intents/${PREVIOUS_SLUG}/stages/*/units/unit-*.md" 2>/dev/null || \
+  git ls-tree --name-only "haiku/${PREVIOUS_SLUG}/main" ".haiku/intents/${PREVIOUS_SLUG}/" 2>/dev/null | \
     grep 'unit-' | while read -r f; do
-      git show "ai-dlc/${PREVIOUS_SLUG}/main:$f" 2>/dev/null
+      git show "haiku/${PREVIOUS_SLUG}/main:$f" 2>/dev/null
     done
 fi
 ```
@@ -216,7 +216,7 @@ The user will use the "Other" free-text input to describe the follow-up. Engage 
 
 Generate a slug for the new intent derived from the user's description (e.g., `fix-api-error-handling`, `add-pagination-support`).
 
-Create `.haiku/{new-slug}/intent.md` with the `iterates_on` field:
+Create `.haiku/intents/{new-slug}/intent.md` with the `iterates_on` field:
 
 ```markdown
 ---
@@ -277,7 +277,7 @@ After creating the intent scaffold, invoke `/haiku:elaborate {new-slug}` to let 
 **Slug:** {new-slug}
 **Iterates On:** {previous-slug} ({previous-title})
 
-The intent scaffold has been created at `.haiku/{new-slug}/intent.md`.
+The intent scaffold has been created at `.haiku/intents/{new-slug}/intent.md`.
 Transitioning to elaboration to flesh out the details...
 ```
 

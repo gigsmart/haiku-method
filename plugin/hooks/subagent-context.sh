@@ -169,7 +169,7 @@ if [ -f "$DAG_LIB" ]; then
   source "$DAG_LIB"
 fi
 
-if [ -d "$INTENT_DIR" ] && ls "$INTENT_DIR"/unit-*.md 1>/dev/null 2>&1; then
+if [ -d "$INTENT_DIR" ] && ls "$INTENT_DIR"/stages/*/units/unit-*.md 1>/dev/null 2>&1; then
   echo "### Unit Status"
   echo ""
 
@@ -193,7 +193,7 @@ if [ -d "$INTENT_DIR" ] && ls "$INTENT_DIR"/unit-*.md 1>/dev/null 2>&1; then
     # Fallback: simple unit list with discipline
     echo "| Unit | Status | Discipline |"
     echo "|------|--------|------------|"
-    for unit_file in "$INTENT_DIR"/unit-*.md; do
+    for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
       [ -f "$unit_file" ] || continue
       NAME=$(basename "$unit_file" .md)
       UNIT_STATUS=$(hku_frontmatter_get "status" "$unit_file")

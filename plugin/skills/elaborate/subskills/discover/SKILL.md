@@ -41,7 +41,7 @@ Autonomous domain discovery and technical exploration for H·AI·K·U elaboratio
 
 ## Step 1: Read Brief
 
-Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.haiku/{intent-slug}/.briefs/elaborate-discover.md`).
+Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.haiku/intents/{intent-slug}/.briefs/elaborate-discover.md`).
 
 Parse YAML frontmatter for structured inputs:
 
@@ -213,7 +213,7 @@ Spawn one subagent per design file, in parallel with codebase Explore agents. Wh
 - Append to `discovery.md` under `## Design Analysis: {file name}`
 - **Commit immediately:**
   ```bash
-  git add .haiku/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover design analysis for {file name}"
+  git add .haiku/intents/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover design analysis for {file name}"
   ```
 - If no design MCP tools are discoverable, the subagent reports unavailability — log a warning and continue without design analysis
 
@@ -282,7 +282,7 @@ Spawn one subagent per design file, in parallel with codebase Explore agents. Wh
 
    **Commit immediately after each mockup:**
    ```bash
-   git add .haiku/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover UI mockup for {View Name}"
+   git add .haiku/intents/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover UI mockup for {View Name}"
    ```
 
    **Skip mockups only if:** the intent has no user-facing interface (pure backend, API, data pipeline, infrastructure, etc.).
@@ -340,7 +340,7 @@ After each significant finding (API schema mapped, codebase pattern identified, 
 
 **Commit immediately after each append to discovery.md:**
 ```bash
-git add .haiku/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover {topic}"
+git add .haiku/intents/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover {topic}"
 ```
 
 **After appending to discovery.md, keep only a brief summary in your context** — the full details are safely on disk and will be available to builders. This is the key benefit: your context stays lean for continued exploration while nothing is lost.
@@ -375,14 +375,14 @@ Structure the domain model as:
 
 **Commit the domain model immediately after appending it to discovery.md:**
 ```bash
-git add .haiku/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover domain model"
+git add .haiku/intents/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover domain model"
 ```
 
 ---
 
 ## Step 4: Write Results
 
-Write the results file to `.haiku/{intent-slug}/.briefs/elaborate-discover-results.md`:
+Write the results file to `.haiku/intents/{intent-slug}/.briefs/elaborate-discover-results.md`:
 
 ```markdown
 ---
@@ -429,7 +429,7 @@ error_message: ""
 
 **Commit the results file immediately after writing:**
 ```bash
-git add .haiku/${INTENT_SLUG}/.briefs/elaborate-discover-results.md && git commit -m "elaborate(${INTENT_SLUG}): write discovery results"
+git add .haiku/intents/${INTENT_SLUG}/.briefs/elaborate-discover-results.md && git commit -m "elaborate(${INTENT_SLUG}): write discovery results"
 ```
 
 ---
@@ -441,7 +441,7 @@ If any critical error occurs during exploration (e.g., worktree path doesn't exi
 1. Write the results file with `status: error` and `error_message` describing what went wrong
 2. **Commit the error results file immediately:**
    ```bash
-   git add .haiku/${INTENT_SLUG}/.briefs/elaborate-discover-results.md && git commit -m "elaborate(${INTENT_SLUG}): write discovery results (error)"
+   git add .haiku/intents/${INTENT_SLUG}/.briefs/elaborate-discover-results.md && git commit -m "elaborate(${INTENT_SLUG}): write discovery results (error)"
    ```
 3. Include any partial findings that were gathered before the error
 4. Exit — the main elaborate skill will read the error status and handle it

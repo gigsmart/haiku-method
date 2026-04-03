@@ -82,7 +82,7 @@ Check for conflicting H·AI·K·U state:
 1. **Orphaned quick artifacts:** If `.haiku/quick/intent.md` exists, a previous quick mode session did not clean up. Offer the user a choice:
    - Clean up the orphaned artifacts (`rm -rf .haiku/quick/`) and continue
    - Abort so they can inspect the state
-2. **Active intent conflict:** Scan for any `.haiku/*/intent.md` with `status: active`. If one exists (and it's not `.haiku/quick/`), stop and tell the user:
+2. **Active intent conflict:** Scan for any `.haiku/intents/*/intent.md` with `status: active`. If one exists (and it's not `.haiku/quick/`), stop and tell the user:
    > An active intent already exists: `{intent-slug}`. Quick mode cannot run concurrently with an active intent.
    > Use `/haiku:execute` to continue the existing intent, or complete/close it first.
 

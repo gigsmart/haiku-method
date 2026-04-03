@@ -53,7 +53,7 @@ If no slug provided, scan multiple sources for active intents:
 **A: Check filesystem first (highest priority - source of truth):**
 
 ```bash
-for intent_file in .haiku/*/intent.md; do
+for intent_file in .haiku/intents/*/intent.md; do
   [ -f "$intent_file" ] || continue
   dir=$(dirname "$intent_file")
   slug=$(basename "$dir")
@@ -85,10 +85,10 @@ done
 
 ### Step 2: Load Intent Metadata
 
-Read from `.haiku/{slug}/intent.md`:
+Read from `.haiku/intents/{slug}/intent.md`:
 
 ```bash
-intentFile=".haiku/${slug}/intent.md"
+intentFile=".haiku/intents/${slug}/intent.md"
 studio=$(dlc_frontmatter_get "studio" "$intentFile")
 [ -z "$studio" ] && studio="software"
 active_stage=$(dlc_frontmatter_get "active_stage" "$intentFile")
@@ -106,7 +106,7 @@ Use DAG analysis to determine where to resume:
 source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
 
 # Get recommended hat based on unit states
-starting_hat=$(get_recommended_hat ".haiku/${slug}" "${active_stage}" "${studio}")
+starting_hat=$(get_recommended_hat ".haiku/intents/${slug}" "${active_stage}" "${studio}")
 ```
 
 **Hat selection logic:**
@@ -121,7 +121,7 @@ starting_hat=$(get_recommended_hat ".haiku/${slug}" "${active_stage}" "${studio}
 
 ```bash
 REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
-INTENT_BRANCH="ai-dlc/${slug}/main"
+INTENT_BRANCH="haiku/${slug}/main"
 INTENT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${slug}"
 
 mkdir -p "${REPO_ROOT}/.haiku/worktrees"
@@ -145,7 +145,7 @@ cd "$INTENT_WORKTREE"
 Save to file-based state (intent-level state goes to the intent directory):
 
 ```bash
-# Intent slug is directory-based: .haiku/{slug}/ — no separate save needed
+# Intent slug is directory-based: .haiku/intents/{slug}/ — no separate save needed
 
 # Save iteration state to intent directory
 dlc_state_save "$INTENT_DIR" "iteration.json" "{\"iteration\":1,\"hat\":\"$STARTING_HAT\",\"status\":\"active\"}"
@@ -200,7 +200,7 @@ Note: All H·AI·K·U work happens in the worktree at .haiku/worktrees/{slug}/
 
 When a session ends (context limit, user stops, bolt completes), create a structured handoff file for seamless continuation:
 
-**Create `.haiku/{intent-slug}/handoff.md`:**
+**Create `.haiku/intents/{intent-slug}/handoff.md`:**
 
 ```markdown
 ---
