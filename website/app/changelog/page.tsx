@@ -7,11 +7,11 @@ const GITHUB_REPO = "https://github.com/TheBushidoCollective/ai-dlc"
 export const metadata: Metadata = {
 	title: "Changelog",
 	description:
-		"What's new in AI-DLC — a complete history of features, fixes, and changes.",
+		"What's new in H·AI·K·U — a complete history of features, fixes, and changes.",
 	openGraph: {
-		title: "AI-DLC Changelog",
+		title: "H·AI·K·U Changelog",
 		description:
-			"What's new in AI-DLC — a complete history of features, fixes, and changes.",
+			"What's new in H·AI·K·U — a complete history of features, fixes, and changes.",
 	},
 }
 
@@ -29,16 +29,16 @@ function sectionTypeColor(type: string): string {
 		case "added":
 			return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
 		case "fixed":
-			return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+			return "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400"
 		case "changed":
 			return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
 		default:
-			return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
+			return "bg-stone-100 text-stone-800 dark:bg-stone-800 dark:text-stone-400"
 	}
 }
 
 const linkClasses =
-	"text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+	"text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 hover:underline"
 const commitLinkClasses = `${linkClasses} font-mono text-xs`
 
 function resolveUrl(url: string): string {
@@ -115,14 +115,14 @@ export default function ChangelogPage() {
 				<h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
 					Changelog
 				</h1>
-				<p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
-					A complete history of features, fixes, and changes in AI-DLC.
+				<p className="mt-2 text-lg text-stone-600 dark:text-stone-400">
+					A complete history of features, fixes, and changes in H·AI·K·U (formerly AI-DLC).
 				</p>
 			</header>
 
 			{entries.length === 0 ? (
-				<div className="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center dark:border-gray-800 dark:bg-gray-900">
-					<p className="text-gray-600 dark:text-gray-400">
+				<div className="rounded-lg border border-stone-200 bg-stone-50 p-8 text-center dark:border-stone-800 dark:bg-stone-900">
+					<p className="text-stone-600 dark:text-stone-400">
 						No changelog entries yet.
 					</p>
 				</div>
@@ -137,14 +137,14 @@ export default function ChangelogPage() {
 							<div className="mb-4 flex flex-wrap items-baseline gap-3">
 								<a
 									href={`#v${entry.version}`}
-									className="text-2xl font-bold tracking-tight hover:text-blue-600 dark:hover:text-blue-400"
+									className="text-2xl font-bold tracking-tight hover:text-teal-600 dark:hover:text-teal-400"
 								>
 									v{entry.version}
 								</a>
 								{/* biome-ignore lint/a11y/useAnchorContent: aria-label provides accessible content */}
 								<a
 									href={`${GITHUB_REPO}/releases/tag/v${entry.version}`}
-									className="inline-flex items-center text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400"
+									className="inline-flex items-center text-stone-400 hover:text-teal-600 dark:text-stone-500 dark:hover:text-teal-400"
 									target="_blank"
 									rel="noopener noreferrer"
 									title={`View v${entry.version} on GitHub`}
@@ -159,7 +159,7 @@ export default function ChangelogPage() {
 										<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
 									</svg>
 								</a>
-								<time className="text-sm text-gray-500 dark:text-gray-500">
+								<time className="text-sm text-stone-500 dark:text-stone-500">
 									{formatDate(entry.date)}
 								</time>
 							</div>
@@ -178,9 +178,9 @@ export default function ChangelogPage() {
 													<li
 														// biome-ignore lint/suspicious/noArrayIndexKey: changelog items have no stable unique ID
 														key={index}
-														className="flex gap-2 text-gray-700 dark:text-gray-300"
+														className="flex gap-2 text-stone-700 dark:text-stone-300"
 													>
-														<span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-gray-400 dark:bg-gray-600" />
+														<span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-stone-400 dark:bg-stone-600" />
 														<span>{renderChangelogItem(item)}</span>
 													</li>
 												))}
@@ -189,13 +189,13 @@ export default function ChangelogPage() {
 									))}
 								</div>
 							) : (
-								<p className="text-sm text-gray-500 dark:text-gray-500">
+								<p className="text-sm text-stone-500 dark:text-stone-500">
 									No notable changes.
 								</p>
 							)}
 
 							{entry !== entries[entries.length - 1] && (
-								<div className="mt-8 border-b border-gray-200 dark:border-gray-800" />
+								<div className="mt-8 border-b border-stone-200 dark:border-stone-800" />
 							)}
 						</section>
 					))}

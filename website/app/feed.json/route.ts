@@ -11,7 +11,7 @@ export const revalidate = false
 export async function GET() {
 	const items = getCombinedFeedItems()
 	const feed = generateJsonFeed(items, {
-		title: "AI-DLC",
+		title: "H·AI·K·U",
 		feedUrl: `${SITE_URL}/feed.json`,
 	})
 

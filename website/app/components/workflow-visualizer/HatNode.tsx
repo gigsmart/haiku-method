@@ -49,7 +49,7 @@ export function HatNode({
 				className={`
 					absolute -top-2 -left-2 w-6 h-6 rounded-full
 					flex items-center justify-center text-xs font-bold
-					${isActive ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900" : "bg-gray-300 text-gray-700 dark:bg-gray-700 dark:text-gray-300"}
+					${isActive ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900" : "bg-stone-300 text-stone-700 dark:bg-stone-700 dark:text-stone-300"}
 				`}
 			>
 				{stepNumber + 1}
@@ -59,7 +59,7 @@ export function HatNode({
 			<motion.div
 				className={`
 					w-16 h-16 rounded-full flex items-center justify-center text-3xl
-					bg-white dark:bg-gray-800 shadow-md
+					bg-white dark:bg-stone-800 shadow-md
 					${isActive ? `ring-2 ring-offset-2 ${hat.color.border}` : ""}
 				`}
 				animate={{

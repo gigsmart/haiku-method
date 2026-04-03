@@ -1,11 +1,11 @@
 #!/bin/bash
-# enforce-iteration.sh - Stop hook for AI-DLC
+# enforce-iteration.sh - Stop hook for H·AI·K·U
 #
 # PURPOSE: Rescue mechanism when the execution loop exits unexpectedly.
 #
 # This hook fires when a session ends. It determines the appropriate action:
 # 1. **Work remains** (units ready or in progress):
-#    - Instruct agent to call `/ai-dlc:execute` to continue
+#    - Instruct agent to call `/haiku:execute` to continue
 #    - Subagents have CLEAN CONTEXT - no need for /clear
 # 2. **All complete** (no pending units):
 #    - Intent is done, no action needed
@@ -17,36 +17,36 @@ set -e
 # Source foundation libraries
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$(readlink -f "$0")")")}"
 source "${PLUGIN_ROOT}/lib/state.sh"
-dlc_check_deps || exit 0
+hku_check_deps || exit 0
 
-# Check for AI-DLC state
+# Check for H·AI·K·U state
 CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
 IS_UNIT_BRANCH=false
-if [[ "$CURRENT_BRANCH" == ai-dlc/*/* ]] && [[ "$CURRENT_BRANCH" != ai-dlc/*/main ]]; then
+if [[ "$CURRENT_BRANCH" == haiku/*/* ]] && [[ "$CURRENT_BRANCH" != haiku/*/main ]]; then
   IS_UNIT_BRANCH=true
 fi
 
 # Load iteration state from filesystem
-INTENT_DIR=$(dlc_find_active_intent)
+INTENT_DIR=$(hku_find_active_intent)
 ITERATION_JSON=""
-[ -n "$INTENT_DIR" ] && ITERATION_JSON=$(dlc_state_load "$INTENT_DIR" "iteration.json")
+[ -n "$INTENT_DIR" ] && ITERATION_JSON=$(hku_state_load "$INTENT_DIR" "iteration.json")
 
-# Unit-branch sessions (teammates or subagents) should NOT be told to /ai-dlc:execute
+# Unit-branch sessions (teammates or subagents) should NOT be told to /haiku:execute
 # The orchestrator on the intent branch manages the execution loop
 if [ "$IS_UNIT_BRANCH" = "true" ]; then
-  echo "## AI-DLC: Unit Session Ending"
+  echo "## H·AI·K·U: Unit Session Ending"
   echo ""
   echo "Ensure you committed changes and saved progress."
   exit 0
 fi
 
 if [ -z "$ITERATION_JSON" ]; then
-  # No AI-DLC state - not using the methodology, skip
+  # No H·AI·K·U state - not using the methodology, skip
   exit 0
 fi
 
 # Validate JSON
-if ! echo "$ITERATION_JSON" | dlc_json_validate; then
+if ! echo "$ITERATION_JSON" | hku_json_validate; then
   # Invalid JSON - skip silently
   exit 0
 fi
@@ -70,7 +70,7 @@ if [ "$MAX_ITERATIONS" -gt 0 ] && [ "$CURRENT_ITERATION" -ge "$MAX_ITERATIONS" ]
   echo ""
   echo "---"
   echo ""
-  echo "## AI-DLC: ITERATION LIMIT REACHED"
+  echo "## H·AI·K·U: ITERATION LIMIT REACHED"
   echo ""
   echo "**Iteration:** $CURRENT_ITERATION / $MAX_ITERATIONS (max)"
   echo "**Hat:** $HAT"
@@ -80,10 +80,10 @@ if [ "$MAX_ITERATIONS" -gt 0 ] && [ "$CURRENT_ITERATION" -ge "$MAX_ITERATIONS" ]
   echo ""
   echo "**Options:**"
   echo "1. Review progress and decide if work is complete"
-  echo "2. Increase limit: edit \`.ai-dlc/{intent-slug}/state/iteration.json\` and set maxIterations"
-  echo "3. Reset iteration count: \`/ai-dlc:reset\` and start fresh"
+  echo "2. Increase limit: edit \`.haiku/intents/{intent-slug}/state/iteration.json\` and set maxIterations"
+  echo "3. Reset iteration count: \`/haiku:reset\` and start fresh"
   echo ""
-  echo "Progress preserved in \`.ai-dlc/{intent-slug}/state/\`."
+  echo "Progress preserved in \`.haiku/intents/{intent-slug}/state/\`."
   exit 0
 fi
 
@@ -129,27 +129,29 @@ if [ "$ALL_COMPLETE" = "true" ]; then
   # Auto-reconcile: if all units complete but intent not marked completed, fix it now
   if [ -n "$INTENT_DIR" ] && [ -f "${INTENT_DIR}/intent.md" ]; then
     source "${PLUGIN_ROOT}/lib/parse.sh"
-    INTENT_STATUS=$(dlc_frontmatter_get "status" "${INTENT_DIR}/intent.md" 2>/dev/null || echo "")
+    INTENT_STATUS=$(hku_frontmatter_get "status" "${INTENT_DIR}/intent.md" 2>/dev/null || echo "")
     if [ "$INTENT_STATUS" = "active" ]; then
-      dlc_frontmatter_set "status" "completed" "${INTENT_DIR}/intent.md"
+      hku_frontmatter_set "status" "completed" "${INTENT_DIR}/intent.md"
       # Check off intent-level completion criteria checkboxes
-      dlc_check_intent_criteria "${INTENT_DIR}"
+      hku_check_intent_criteria "${INTENT_DIR}"
       # Also update iteration.json status
       if [ -n "$ITERATION_JSON" ]; then
         UPDATED_STATE=$(echo "$ITERATION_JSON" | jq -c '.status = "completed"')
-        dlc_state_save "$INTENT_DIR" "iteration.json" "$UPDATED_STATE"
+        hku_state_save "$INTENT_DIR" "iteration.json" "$UPDATED_STATE"
       fi
-      git add "${INTENT_DIR}/intent.md" "${INTENT_DIR}/state/iteration.json" "${INTENT_DIR}/completion-criteria.md" "${INTENT_DIR}/state/completion-criteria.md" 2>/dev/null || true
-      git commit -m "status: mark $(basename "$INTENT_DIR") as completed (auto-reconciled)" 2>/dev/null || true
+      source "${PLUGIN_ROOT}/lib/persistence.sh"
+      persistence_save "$(basename "$INTENT_DIR")" "status: mark $(basename "$INTENT_DIR") as completed (auto-reconciled)" \
+        "${INTENT_DIR}/intent.md" "${INTENT_DIR}/state/iteration.json" \
+        "${INTENT_DIR}/completion-criteria.md" "${INTENT_DIR}/state/completion-criteria.md" 2>/dev/null || true
     fi
   fi
-  echo "## AI-DLC: All Units Complete"
+  echo "## H·AI·K·U: All Units Complete"
   echo ""
   echo "All units have been completed. Intent has been marked as completed."
   echo ""
 elif [ "$READY_COUNT" -gt 0 ] || [ "$IN_PROGRESS_COUNT" -gt 0 ]; then
   # Work remains - instruct agent to continue
-  echo "## AI-DLC: Session Exhausted - Continue Execution"
+  echo "## H·AI·K·U: Session Exhausted - Continue Execution"
   echo ""
   echo "**Iteration:** $CURRENT_ITERATION | **Hat:** $HAT"
   echo "**Ready units:** $READY_COUNT | **In progress:** $IN_PROGRESS_COUNT"
@@ -157,26 +159,26 @@ elif [ "$READY_COUNT" -gt 0 ] || [ "$IN_PROGRESS_COUNT" -gt 0 ]; then
   echo "### ACTION REQUIRED"
   echo ""
   if [ -n "$TARGET_UNIT" ]; then
-    echo "Call \`/ai-dlc:execute ${INTENT_SLUG} ${TARGET_UNIT}\` to continue targeted execution."
+    echo "Call \`/haiku:execute ${INTENT_SLUG} ${TARGET_UNIT}\` to continue targeted execution."
   else
-    echo "Call \`/ai-dlc:execute\` to continue the autonomous loop."
+    echo "Call \`/haiku:execute\` to continue the autonomous loop."
   fi
   echo ""
   echo "**Note:** Subagents have clean context. No \`/clear\` needed."
   echo ""
 else
   # Truly blocked - human must intervene
-  echo "## AI-DLC: BLOCKED - Human Intervention Required"
+  echo "## H·AI·K·U: BLOCKED - Human Intervention Required"
   echo ""
   echo "**Iteration:** $CURRENT_ITERATION | **Hat:** $HAT"
   echo ""
   echo "No units are ready to work on. All remaining units are blocked."
   echo ""
   echo "**User action required:**"
-  echo "1. Review blockers: read \`.ai-dlc/${INTENT_SLUG}/state/blockers.md\`"
+  echo "1. Review blockers: read \`.haiku/intents/${INTENT_SLUG}/state/blockers.md\`"
   echo "2. Unblock units or resolve dependencies"
-  echo "3. Run \`/ai-dlc:execute\` to resume"
+  echo "3. Run \`/haiku:execute\` to resume"
   echo ""
 fi
 
-echo "Progress preserved in \`.ai-dlc/${INTENT_SLUG}/state/\`."
+echo "Progress preserved in \`.haiku/intents/${INTENT_SLUG}/state/\`."

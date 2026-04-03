@@ -1,32 +1,29 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "ai-dlc",
-  "description": "AI-DLC — the software development profile of H·AI·K·U. Iterative AI-driven development with git integration, test suites, PR workflows, CI/CD pipelines, and deployment gates.",
+  "name": "haiku",
+  "description": "H·AI·K·U — universal lifecycle orchestration with hat-based workflows, completion criteria, and automatic context preservation.",
   "owner": {
     "name": "The Bushido Collective",
     "email": "hello@thebushido.co"
   },
   "plugins": [
     {
-      "name": "ai-dlc",
-      "description": "AI-DLC methodology - iterative AI-driven development with hat-based workflows, completion criteria, and automatic context preservation",
+      "name": "haiku",
+      "description": "H·AI·K·U methodology - universal lifecycle orchestration with hat-based workflows, completion criteria, and automatic context preservation",
       "source": {
         "source": "url",
         "url": "https://github.com/TheBushidoCollective/ai-dlc.git"
       },
       "category": "Pattern",
       "keywords": [
-        "ai-dlc",
-        "software-development",
-        "haiku-profile",
+        "haiku",
+        "haiku-method",
+        "lifecycle",
+        "orchestration",
         "methodology",
         "workflow",
         "iteration",
-        "git",
-        "ci-cd",
-        "testing",
-        "code-review",
-        "deployment",
+        "completion-criteria",
         "hat-switching",
         "context-preservation",
         "human-ai-collaboration"

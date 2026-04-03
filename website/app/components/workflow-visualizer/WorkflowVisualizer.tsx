@@ -110,7 +110,7 @@ export function WorkflowVisualizer() {
 					<h2 className="text-2xl font-bold mb-2">
 						{activeWorkflow?.name} Workflow
 					</h2>
-					<p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+					<p className="text-stone-600 dark:text-stone-400 max-w-2xl mx-auto">
 						{activeWorkflow?.description}
 					</p>
 				</motion.div>
@@ -143,22 +143,22 @@ export function WorkflowVisualizer() {
 			<HatDetailCard hat={currentHat} step={currentStepData ?? null} />
 
 			{/* Operating mode legend */}
-			<div className="flex flex-wrap justify-center gap-4 pt-4 border-t border-gray-200 dark:border-gray-800">
+			<div className="flex flex-wrap justify-center gap-4 pt-4 border-t border-stone-200 dark:border-stone-800">
 				<div className="flex items-center gap-2">
 					<span className="w-3 h-3 rounded-full bg-blue-500" />
-					<span className="text-sm text-gray-600 dark:text-gray-400">
+					<span className="text-sm text-stone-600 dark:text-stone-400">
 						HITL - Human-in-the-Loop
 					</span>
 				</div>
 				<div className="flex items-center gap-2">
 					<span className="w-3 h-3 rounded-full bg-green-500" />
-					<span className="text-sm text-gray-600 dark:text-gray-400">
+					<span className="text-sm text-stone-600 dark:text-stone-400">
 						OHOTL - Observed Human-on-the-Loop
 					</span>
 				</div>
 				<div className="flex items-center gap-2">
 					<span className="w-3 h-3 rounded-full bg-orange-500" />
-					<span className="text-sm text-gray-600 dark:text-gray-400">
+					<span className="text-sm text-stone-600 dark:text-stone-400">
 						AHOTL - Autonomous Human-on-the-Loop
 					</span>
 				</div>

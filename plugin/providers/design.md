@@ -1,6 +1,7 @@
 ---
 name: Design Provider
 category: design
+description: Default design provider behavior for H·AI·K·U
 supported_types:
   - canva
   - openpencil

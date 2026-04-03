@@ -1,61 +1,31 @@
 ---
 title: Installation
-description: Install AI-DLC in your Claude Code project
+description: Install H·AI·K·U in your Claude environment
 order: 2
 ---
 
-AI-DLC is distributed as a Claude Code plugin. This guide covers installation methods and prerequisites.
+H·AI·K·U is distributed as a Claude plugin that works in both Claude Code and Cowork. This guide covers installation methods and prerequisites.
 
 ## Prerequisites
 
-### Claude Code
+### Claude Code or Cowork
 
-AI-DLC requires [Claude Code](https://claude.ai/code), Anthropic's AI-powered development environment. Ensure you have Claude Code installed and configured.
-
-### Han CLI (Recommended)
-
-AI-DLC uses [Han CLI](https://han.guru) for state management (`han keep` commands). While the plugin works without it, you'll get the best experience with Han installed.
-
-**Install Han via curl (recommended):**
-
-```bash
-curl -fsSL https://han.guru/install.sh | bash
-```
-
-**Or via Homebrew:**
-
-```bash
-brew install thebushidocollective/tap/han
-```
-
-**Verify installation:**
-
-```bash
-han --version
-```
+H·AI·K·U requires [Claude Code](https://claude.ai/code) or [Claude Cowork](https://claude.ai/cowork), Anthropic's AI-powered development environments. Ensure you have either Claude Code or Cowork installed and configured.
 
 ## Installation Methods
 
-### Method 1: Via Claude Code (Recommended)
+### Method 1: Via Plugin Install (Recommended)
 
-Install directly from within a Claude Code session:
+Install directly from within a Claude Code or Cowork session:
 
 ```
 /plugin marketplace add thebushidocollective/ai-dlc
-/plugin install ai-dlc@thebushidocollective-ai-dlc --scope project
+/plugin install haiku --scope project
 ```
 
-### Method 2: Via Han
+### Method 2: Manual Configuration
 
-If you have Han installed, use the plugin manager (must be npx, project-scoped):
-
-```bash
-npx han plugin install thebushidocollective/ai-dlc --scope project
-```
-
-### Method 3: Manual Configuration
-
-Add the plugin to your Claude Code settings file manually.
+Add the plugin to your Claude settings file manually.
 
 **User-level installation** (`~/.claude/settings.json`):
 
@@ -81,52 +51,27 @@ Add the plugin to your Claude Code settings file manually.
 
 After installation, verify the plugin is working:
 
-1. Start a new Claude Code session in your project
-2. Type `/ai-dlc:elaborate` - you should see the elaboration flow start
-3. If `/ai-dlc:elaborate` works, your installation is successful
+1. Start a new Claude session in your project
+2. Type `/haiku:new` - you should see the inception flow start
+3. If `/haiku:new` works, your installation is successful
 
-If commands aren't recognized, restart your Claude Code session.
+If commands aren't recognized, restart your Claude session.
 
-## Recommended Companion Plugins
+## Quality Gates
 
-AI-DLC works best with backpressure plugins that provide quality gates:
+H·AI·K·U has built-in quality gating -- no external plugins needed. Quality gates are defined in your intent frontmatter and enforced automatically by the `quality-gate` hook during execution. You can configure gates for type checking, linting, testing, and any other validation your project requires.
 
-### TypeScript Projects
-
-```bash
-npx han plugin install jutsu-typescript --scope project
-npx han plugin install jutsu-biome --scope project
-```
-
-### Python Projects
-
-```bash
-npx han plugin install jutsu-python --scope project
-npx han plugin install jutsu-ruff --scope project
-```
-
-### Go Projects
-
-```bash
-npx han plugin install jutsu-go --scope project
-```
-
-> **Note:** Han plugins follow the same installation pattern. To install via Claude Code directly, use `/plugin marketplace add` and `/plugin install` with the appropriate marketplace identifier for each plugin.
-
-These plugins provide:
-- **Type checking** that blocks on errors
-- **Linting** that maintains code quality
-- **Formatting** that keeps code consistent
+See [Core Concepts](/docs/concepts/) for details on how quality gates integrate with the stage pipeline.
 
 ## Project Setup
 
-### Create the AI-DLC Directory
+### Create the H·AI·K·U Directory
 
-AI-DLC stores its artifacts in `.ai-dlc/` at your project root:
+H·AI·K·U stores its artifacts in `.haiku/` at your project root:
 
 ```
 your-project/
-  .ai-dlc/
+  .haiku/
     add-oauth-login/         # Intent directory
       intent.md              # Intent definition
       unit-01-setup.md       # Unit files
@@ -136,18 +81,18 @@ your-project/
   ...
 ```
 
-The directory is created automatically when you run `/ai-dlc:elaborate` for the first time.
+The directory is created automatically when you run `/haiku:new` for the first time.
 
 ### Git Configuration
 
-Add AI-DLC artifacts to version control:
+Add H·AI·K·U artifacts to version control:
 
 ```bash
-# AI-DLC artifacts should be committed
-git add .ai-dlc/
+# H·AI·K·U artifacts should be committed
+git add .haiku/
 ```
 
-The `.ai-dlc/` directory contains:
+The `.haiku/` directory contains:
 - Intent definitions
 - Unit specifications
 - Progress tracking
@@ -156,11 +101,11 @@ These are valuable documentation that should be preserved.
 
 ### Gitignore (Optional)
 
-If you prefer not to commit AI-DLC artifacts:
+If you prefer not to commit H·AI·K·U artifacts:
 
 ```gitignore
 # .gitignore
-.ai-dlc/
+.haiku/
 ```
 
 However, committing is recommended - it provides:
@@ -172,21 +117,12 @@ However, committing is recommended - it provides:
 
 ### Commands Not Recognized
 
-**Symptom:** `/ai-dlc:elaborate` or `/ai-dlc:execute` don't activate
+**Symptom:** `/haiku:new` or `/haiku:run` don't activate
 
 **Solutions:**
-1. Restart Claude Code session
+1. Restart Claude session
 2. Verify plugin is in settings.json
 3. Check for typos in plugin path
-
-### Han Commands Fail
-
-**Symptom:** `han keep` commands return errors
-
-**Solutions:**
-1. Verify Han is installed: `han --version`
-2. Ensure Han is in PATH
-3. Reinstall: `curl -fsSL https://han.guru/install.sh | bash`
 
 ### Plugin Conflicts
 
@@ -199,6 +135,7 @@ However, committing is recommended - it provides:
 
 ## Next Steps
 
-- **[Quick Start](/docs/quick-start/)** - Build your first feature with AI-DLC
-- **[Core Concepts](/docs/concepts/)** - Understand intents, units, and hats
-- **[Workflows](/docs/workflows/)** - Learn about different development patterns
+- **[Quick Start](/docs/quick-start/)** - Build your first feature with H·AI·K·U
+- **[Core Concepts](/docs/concepts/)** - Understand intents, units, and stages
+- **[Studios & Stages](/docs/studios/)** - Learn about studios and their stage pipelines
+- **[CLI Reference](/docs/cli-reference/)** - Full command reference

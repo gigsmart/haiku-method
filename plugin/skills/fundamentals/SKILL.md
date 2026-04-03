@@ -1,6 +1,6 @@
 ---
 name: fundamentals
-description: Use when understanding AI-DLC methodology fundamentals. Covers core principles, iteration patterns, hat-based workflows, and the philosophy of human-AI collaboration in software development.
+description: Use when understanding H·AI·K·U methodology fundamentals. Covers core principles, iteration patterns, hat-based workflows, and the philosophy of human-AI collaboration in software development.
 user-invocable: false
 allowed-tools:
   - Read
@@ -8,9 +8,9 @@ allowed-tools:
   - Glob
 ---
 
-# AI-DLC Fundamentals
+# H·AI·K·U Fundamentals
 
-AI-DLC (AI-Driven Development Lifecycle) is a methodology for collaborative human-AI software development. It addresses the fundamental challenge of maintaining productive AI sessions across context window limitations.
+H·AI·K·U (AI-Driven Development Lifecycle) is a methodology for collaborative human-AI software development. It addresses the fundamental challenge of maintaining productive AI sessions across context window limitations.
 
 ## Core Philosophy
 
@@ -27,9 +27,9 @@ Traditional approaches try to work around this by:
 - Better summarization (lossy, loses nuance)
 - Retrieval augmentation (latency, relevance issues)
 
-### The AI-DLC Solution
+### The H·AI·K·U Solution
 
-AI-DLC takes a different approach: **embrace context resets as a feature, not a bug**.
+H·AI·K·U takes a different approach: **embrace context resets as a feature, not a bug**.
 
 Instead of fighting context limits:
 1. **Plan for iterations** - Work in deliberate cycles
@@ -48,7 +48,7 @@ Traditional development processes prescribe steps:
 
 These become checkbox exercises that teams learn to game.
 
-AI-DLC uses **backpressure** instead:
+H·AI·K·U uses **backpressure** instead:
 - Quality gates that **block progress** until satisfied
 - Automated enforcement via hooks
 - The AI learns to satisfy constraints, not follow scripts
@@ -88,17 +88,17 @@ With clear criteria:
 
 Context windows reset. Files persist.
 
-AI-DLC stores state in files:
+H·AI·K·U stores state in files:
 - `intent.md` - What we're building
 - `completion-criteria.md` - How we know it's done
 - `discovery.md` - Domain discovery findings from elaboration
 - `scratchpad.md` - Learnings and notes
 - `blockers.md` - What's blocking progress
-- `iteration.json` - Current hat, iteration count, workflow state
+- `iteration.json` - Current hat, iteration count, status
 
 These files are:
 - Injected at session start (via hooks)
-- Updated during work (via `dlc_state_save`/`dlc_state_load`)
+- Updated during work (via `hku_state_save`/`hku_state_load`)
 - Preserved across `/clear` commands
 
 ## The Iteration Loop
@@ -106,7 +106,7 @@ These files are:
 ```
 ┌────────────────────────────────────────────────┐
 │  SessionStart Hook                              │
-│  - Load state from .ai-dlc/{slug}/state/         │
+│  - Load state from .haiku/intents/{slug}/state/         │
 │  - Inject context (hat, intent, criteria)       │
 │  - Display previous learnings                   │
 └────────────────────────────────────────────────┘
@@ -116,7 +116,7 @@ These files are:
 │  Work Phase                                     │
 │  - AI operates with injected context            │
 │  - Backpressure guides quality                  │
-│  - Progress saved to .ai-dlc/{slug}/state/      │
+│  - Progress saved to .haiku/intents/{slug}/state/      │
 └────────────────────────────────────────────────┘
                       │
                       ▼
@@ -142,13 +142,13 @@ Each iteration:
 
 ## Hat-Based Workflows (Bolts)
 
-Different phases of work require different mindsets. AI-DLC uses "hats" to formalize this.
+Different phases of work require different mindsets. H·AI·K·U uses "hats" to formalize this.
 
-**Terminology mapping:** In the AI-DLC paper, a **Bolt** is the smallest iteration cycle — one pass through the hat workflow for a unit. The plugin implements Bolts as hat sequences: each unit progresses through its workflow hats (e.g., planner → builder → reviewer), with reviewer rejection cycling back to the previous hat. One complete pass = one Bolt. Multiple rejections = multiple Bolts for that unit.
+**Terminology mapping:** In the H·AI·K·U paper, a **Bolt** is the smallest iteration cycle — one pass through the hat sequence for a unit. The plugin implements Bolts as hat sequences defined in stage STAGE.md files: each unit progresses through its stage's hats (e.g., planner → builder → reviewer for the development stage), with reviewer rejection cycling back to the previous hat. One complete pass = one Bolt. Multiple rejections = multiple Bolts for that unit.
 
 ### Default Workflow
 
-Elaboration (`/ai-dlc:elaborate`) is a separate pre-execution phase. The execution workflow starts after elaboration is complete:
+Elaboration (`/haiku:elaborate`) is a separate pre-execution phase. The execution workflow starts after elaboration is complete:
 
 ```
 planner → builder → reviewer
@@ -169,29 +169,19 @@ Hat transitions are performed by reading and executing the internal skill defini
 
 These are internal skills (`user-invocable: false`) — not registered slash commands.
 
-### Custom Workflows
+### Stage-Based Hat Resolution
 
-Teams can define custom workflows in `.ai-dlc/workflows.yml` and custom hats in `.ai-dlc/hats/`:
+Hats are defined as files in `stages/{stage}/hats/{hat}.md` within studios. Each stage has a `hats:` frontmatter field in STAGE.md defining the hat sequence, and individual hat instruction files in the `hats/` directory.
 
-```yaml
-# .ai-dlc/workflows.yml
-research-first:
-  description: Research before building
-  hats: [researcher, architect, builder, reviewer]
-```
+Studios and their stages live in `plugin/studios/{studio}/stages/{stage}/STAGE.md`. Project-level overrides can be placed in `.haiku/studios/{studio}/stages/{stage}/STAGE.md`.
 
-```markdown
-<!-- .ai-dlc/hats/researcher.md -->
----
-name: "🔍 Researcher"
-description: Investigates the problem space before implementing
----
+Project-level hat augmentations can still be placed in `.haiku/hats/{hat-name}.md` — these augment (not replace) the stage-defined hat instructions.
 
-# Researcher
-
-## Overview
-Investigate the problem space before implementing.
-Gather context, explore options, document findings.
+```bash
+# Example: resolve hat instructions for the builder hat in the development stage
+source "${CLAUDE_PLUGIN_ROOT}/lib/hat.sh"
+instructions=$(hku_resolve_hat_instructions "builder" "development" "software")
+hat_sequence=$(hku_get_hat_sequence "development" "software")  # "planner builder reviewer"
 ```
 
 ## Iteration Passes
@@ -208,18 +198,18 @@ Passes are typed disciplinary iterations that focus each unit through a specific
 
 ### Single-Pass vs Multipass
 
-Most work needs only a dev pass — this is the default when `default_passes` is empty (`[]`). Multipass is for cross-functional collaboration where design or product artifacts should precede code. Example: `[design, product, dev]` runs three passes in sequence, each with its own units and workflow.
+Most work needs only a dev pass — this is the default when `default_passes` is empty (`[]`). Multipass is for cross-functional collaboration where design or product artifacts should precede code. Example: `[design, product, dev]` runs three passes in sequence, each with its own units and stage-based hat sequence.
 
 ### Custom Passes
 
-Create a pass definition at `.ai-dlc/passes/{name}.md` with frontmatter and body instructions:
+Create a pass definition at `.haiku/passes/{name}.md` with frontmatter and body instructions:
 
 ```markdown
 ---
 name: accessibility
 description: Accessibility audit and remediation
-available_workflows: [default]
-default_workflow: default
+available_stages: [development]
+default_stage: development
 ---
 
 # Accessibility Pass
@@ -227,15 +217,15 @@ default_workflow: default
 Audit all user-facing components for WCAG 2.1 AA compliance...
 ```
 
-The `available_workflows` field constrains which execution workflows the pass supports. The `default_workflow` is used when the requested workflow is not in the available list.
+The `available_stages` field constrains which execution stages the pass supports. The `default_stage` is used when the requested stage is not in the available list.
 
 ### Augmenting Built-in Passes
 
-To tailor a built-in pass to your project, create `.ai-dlc/passes/{name}.md` where `{name}` matches a built-in pass (e.g., `design`, `product`, `dev`). The project file's body is appended under a `## Project Augmentation` heading when the pass instructions are loaded. This lets you add project-specific guidance without replacing the built-in defaults.
+To tailor a built-in pass to your project, create `.haiku/passes/{name}.md` where `{name}` matches a built-in pass (e.g., `design`, `product`, `dev`). The project file's body is appended under a `## Project Augmentation` heading when the pass instructions are loaded. This lets you add project-specific guidance without replacing the built-in defaults.
 
 ### Configuration
 
-- **Global default:** Set `default_passes` in `.ai-dlc/settings.yml` (e.g., `default_passes: [design, dev]`)
+- **Global default:** Set `default_passes` in `.haiku/settings.yml` (e.g., `default_passes: [design, dev]`)
 - **Per-intent override:** Set `passes` in the intent frontmatter or intent-level `settings.yml`
 - **Empty array** (`[]`) means a single implicit dev pass — the default for most work
 
@@ -243,22 +233,22 @@ To tailor a built-in pass to your project, create `.ai-dlc/passes/{name}.md` whe
 
 ### Scoped Storage
 
-AI-DLC uses file-based state persistence in `.ai-dlc/{slug}/state/`:
+H·AI·K·U uses file-based state persistence in `.haiku/intents/{slug}/state/`:
 
 | Scope | Location |
 |-------|----------|
-| Intent state | `.ai-dlc/{slug}/state/` — iteration state, blockers, plans |
-| Intent artifacts | `.ai-dlc/{slug}/` — intent.md, unit files, discovery.md |
-| Project config | `.ai-dlc/settings.yml` — project-level settings |
+| Intent state | `.haiku/intents/{slug}/state/` — iteration state, blockers, plans |
+| Intent artifacts | `.haiku/intents/{slug}/` — intent.md, unit files, discovery.md |
+| Project config | `.haiku/settings.yml` — project-level settings |
 
 ### State Keys
 
 | Key | Purpose | Written By |
 |-----|---------|------------|
 | `iteration.json` | Hat, iteration count, status | Commands |
-| `intent.md` | What we're building | /ai-dlc:elaborate |
-| `completion-criteria.md` | How we know it's done | /ai-dlc:elaborate |
-| `discovery.md` | Domain discovery findings | /ai-dlc:elaborate |
+| `intent.md` | What we're building | /haiku:elaborate |
+| `completion-criteria.md` | How we know it's done | /haiku:elaborate |
+| `discovery.md` | Domain discovery findings | /haiku:elaborate |
 | `current-plan.md` | Plan for this iteration | Planner hat |
 | `scratchpad.md` | Learnings and notes | AI during work |
 | `blockers.md` | What's blocking progress | AI when stuck |
@@ -267,30 +257,30 @@ AI-DLC uses file-based state persistence in `.ai-dlc/{slug}/state/`:
 
 ### Hooks
 
-AI-DLC uses Claude Code's native hook system:
+H·AI·K·U uses Claude Code's native hook system:
 
 - **SessionStart** - Inject context from state files
 - **Stop** - Enforce iteration pattern, prompt for /clear
 
 ### Commands
 
-AI-DLC provides slash commands:
+H·AI·K·U provides slash commands:
 
-- `/ai-dlc:elaborate` - Start mob elaboration
-- `/ai-dlc:execute` - Run autonomous execution loop
+- `/haiku:elaborate` - Start mob elaboration
+- `/haiku:execute` - Run autonomous execution loop
 - advance (internal) - Read `plugin/skills/execute/subskills/advance/SKILL.md` and execute it
 - fail (internal) - Read `plugin/skills/execute/subskills/fail/SKILL.md` and execute it
-- `/ai-dlc:resume` - Resume lost intent
-- `/ai-dlc:reset` - Clear state
+- `/haiku:resume` - Resume lost intent
+- `/haiku:reset` - Clear state
 
 ### CLI Commands
 
 State is managed via foundation library functions:
 
-- `dlc_state_save "$INTENT_DIR" "<key>" "<content>"` - Persist state
-- `dlc_state_load "$INTENT_DIR" "<key>"` - Retrieve state
-- `dlc_state_list "$INTENT_DIR"` - List keys
-- `dlc_state_delete "$INTENT_DIR" "<key>"` - Remove key
+- `hku_state_save "$INTENT_DIR" "<key>" "<content>"` - Persist state
+- `hku_state_load "$INTENT_DIR" "<key>"` - Retrieve state
+- `hku_state_list "$INTENT_DIR"` - List keys
+- `hku_state_delete "$INTENT_DIR" "<key>"` - Remove key
 
 ## Best Practices
 
@@ -312,8 +302,8 @@ State is managed via foundation library functions:
 
 1. **Advance when done** - Don't linger in a hat
 2. **Fail fast** - If reviewer finds issues, go back immediately
-3. **Respect the workflow** - Don't skip hats
-4. **Customize if needed** - Default workflow isn't mandatory
+3. **Respect the stage's hat sequence** - Don't skip hats
+4. **Customize if needed** - Default stage isn't mandatory
 
 ## Anti-Patterns
 
@@ -339,11 +329,11 @@ State is managed via foundation library functions:
 
 ## Summary
 
-AI-DLC is a methodology that:
+H·AI·K·U is a methodology that:
 1. **Embraces context limits** through deliberate iteration
 2. **Uses backpressure** instead of prescription
 3. **Enables autonomy** through clear completion criteria
 4. **Persists state** in files, not context
-5. **Structures work** through hat-based workflows
+5. **Structures work** through stage-based hat sequences
 
 The result is more productive AI-assisted development with fewer repeated mistakes and clearer progress toward goals.

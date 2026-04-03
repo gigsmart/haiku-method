@@ -1,10 +1,10 @@
 ---
 title: Assessment
-description: Self-assessment to determine if AI-DLC is right for your team
+description: Self-assessment to determine if H·AI·K·U is right for your team
 order: 23
 ---
 
-This self-assessment helps you evaluate whether AI-DLC is a good fit for your team and organization. Answer honestly for accurate guidance.
+This self-assessment helps you evaluate whether H·AI·K·U is a good fit for your team and organization. Answer honestly for accurate guidance.
 
 ## How to Use This Assessment
 
@@ -22,11 +22,11 @@ Score each question from 0-2:
 
 ## Section 1: Team Readiness
 
-How prepared is your team to adopt AI-DLC?
+How prepared is your team to adopt H·AI·K·U?
 
-### Question 1: Claude Code Usage
+### Question 1: Claude Usage
 
-**How much is your team currently using Claude Code or similar AI coding assistants?**
+**How much is your team currently using Claude Code, Cowork, or similar AI coding assistants?**
 
 | Score | Answer |
 |-------|--------|
@@ -78,7 +78,7 @@ How prepared is your team to adopt AI-DLC?
 
 ## Section 2: Work Suitability
 
-How well does your work fit AI-DLC's approach?
+How well does your work fit H·AI·K·U's approach?
 
 ### Question 5: Requirements Clarity
 
@@ -134,7 +134,7 @@ How well does your work fit AI-DLC's approach?
 
 ## Section 3: Organizational Support
 
-Does your organization support AI-DLC adoption?
+Does your organization support H·AI·K·U adoption?
 
 ### Question 9: Management Buy-In
 
@@ -162,7 +162,7 @@ Does your organization support AI-DLC adoption?
 
 ### Question 11: Pilot Opportunity
 
-**Can you identify a low-risk project to pilot AI-DLC?**
+**Can you identify a low-risk project to pilot H·AI·K·U?**
 
 | Score | Answer |
 |-------|--------|
@@ -174,7 +174,7 @@ Does your organization support AI-DLC adoption?
 
 ### Question 12: Champion Availability
 
-**Is there someone who could champion AI-DLC adoption?**
+**Is there someone who could champion H·AI·K·U adoption?**
 
 | Score | Answer |
 |-------|--------|
@@ -205,9 +205,9 @@ Does your organization support AI-DLC adoption?
 
 ### Score: 20-24 - Strong Fit
 
-**AI-DLC is likely a great fit for your team.**
+**H·AI·K·U is likely a great fit for your team.**
 
-Your team is well-positioned to adopt AI-DLC. You have:
+Your team is well-positioned to adopt H·AI·K·U. You have:
 - Existing AI tool usage providing foundation
 - Team openness to new methodologies
 - Work that suits structured approaches
@@ -220,12 +220,12 @@ Your team is well-positioned to adopt AI-DLC. You have:
 
 ### Score: 14-19 - Good Fit with Preparation
 
-**AI-DLC could work well with some preparation.**
+**H·AI·K·U could work well with some preparation.**
 
 You have good foundations but some gaps to address. Look at which sections scored lowest:
 
 **If Team Readiness is low:**
-- Start with education about AI-DLC benefits
+- Start with education about H·AI·K·U benefits
 - Address concerns before formal adoption
 - Consider starting with most receptive team members
 
@@ -246,7 +246,7 @@ You have good foundations but some gaps to address. Look at which sections score
 
 ### Score: 8-13 - Conditional Fit
 
-**AI-DLC may help, but significant preparation needed.**
+**H·AI·K·U may help, but significant preparation needed.**
 
 There are notable gaps that need addressing. Consider:
 
@@ -259,7 +259,7 @@ There are notable gaps that need addressing. Consider:
 **Alternative considerations:**
 - Lighter-weight AI practices might be better starting point
 - Focus on team fundamentals first
-- Revisit AI-DLC in 6-12 months
+- Revisit H·AI·K·U in 6-12 months
 
 **If you proceed anyway:**
 1. Start with one enthusiastic individual
@@ -269,9 +269,9 @@ There are notable gaps that need addressing. Consider:
 
 ### Score: 0-7 - Not Yet Ready
 
-**AI-DLC is likely not the right approach right now.**
+**H·AI·K·U is likely not the right approach right now.**
 
-Your situation has too many obstacles for AI-DLC to succeed. This isn't a judgment - it's about fit.
+Your situation has too many obstacles for H·AI·K·U to succeed. This isn't a judgment - it's about fit.
 
 **Focus instead on:**
 1. Building basic AI assistant familiarity
@@ -296,7 +296,7 @@ Your situation has too many obstacles for AI-DLC to succeed. This isn't a judgme
 - Poor documentation practices
 - Speed prioritized over quality
 
-**Before AI-DLC:**
+**Before H·AI·K·U:**
 - Introduce AI assistants gradually
 - Build documentation habits
 - Demonstrate quality investment value
@@ -311,7 +311,7 @@ Your situation has too many obstacles for AI-DLC to succeed. This isn't a judgme
 - No room for iteration
 
 **Consider:**
-- AI-DLC may not fit your work type
+- H·AI·K·U may not fit your work type
 - Start with specific work that fits better
 - Adapt the methodology to your context
 - Alternative methodologies may be better
@@ -324,7 +324,7 @@ Your situation has too many obstacles for AI-DLC to succeed. This isn't a judgme
 - All projects are high-stakes
 - No potential champion
 
-**Before AI-DLC:**
+**Before H·AI·K·U:**
 - Build business case
 - Identify pilot opportunities
 - Find or develop a champion
@@ -340,7 +340,7 @@ Your situation has too many obstacles for AI-DLC to succeed. This isn't a judgme
 - Building product-market fit first
 - Using AI assistants informally
 - Establishing basic quality practices
-- Adopting AI-DLC when you have product direction
+- Adopting H·AI·K·U when you have product direction
 
 ### For Enterprise
 
@@ -353,9 +353,9 @@ Your situation has too many obstacles for AI-DLC to succeed. This isn't a judgme
 ### For Regulated Industries
 
 Add these questions:
-- Can AI-DLC artifacts support compliance? (Probably yes)
+- Can H·AI·K·U artifacts support compliance? (Probably yes)
 - Do you need special workflows for regulated work? (Consider adversarial)
-- How do you audit AI-assisted development? (AI-DLC helps with this)
+- How do you audit AI-assisted development? (H·AI·K·U helps with this)
 
 ---
 

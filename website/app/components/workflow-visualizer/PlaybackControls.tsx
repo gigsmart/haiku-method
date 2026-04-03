@@ -20,16 +20,16 @@ export function PlaybackControls({
 	onReset,
 }: PlaybackControlsProps) {
 	return (
-		<div className="flex items-center justify-center gap-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
+		<div className="flex items-center justify-center gap-4 p-4 bg-stone-50 dark:bg-stone-900/50 rounded-xl">
 			{/* Reset button */}
 			<button
 				type="button"
 				onClick={onReset}
-				className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+				className="p-2 rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
 				aria-label="Reset"
 			>
 				<svg
-					className="w-5 h-5 text-gray-600 dark:text-gray-400"
+					className="w-5 h-5 text-stone-600 dark:text-stone-400"
 					fill="none"
 					viewBox="0 0 24 24"
 					stroke="currentColor"
@@ -49,11 +49,11 @@ export function PlaybackControls({
 				type="button"
 				onClick={onStepBack}
 				disabled={currentStep === 0}
-				className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+				className="p-2 rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				aria-label="Previous step"
 			>
 				<svg
-					className="w-5 h-5 text-gray-600 dark:text-gray-400"
+					className="w-5 h-5 text-stone-600 dark:text-stone-400"
 					fill="none"
 					viewBox="0 0 24 24"
 					stroke="currentColor"
@@ -72,7 +72,7 @@ export function PlaybackControls({
 			<button
 				type="button"
 				onClick={onPlayPause}
-				className="p-3 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors"
+				className="p-3 rounded-full bg-stone-900 dark:bg-white text-white dark:text-stone-900 hover:bg-stone-700 dark:hover:bg-stone-200 transition-colors"
 				aria-label={isPlaying ? "Pause" : "Play"}
 			>
 				{isPlaying ? (
@@ -101,11 +101,11 @@ export function PlaybackControls({
 				type="button"
 				onClick={onStepForward}
 				disabled={currentStep >= totalSteps - 1}
-				className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+				className="p-2 rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				aria-label="Next step"
 			>
 				<svg
-					className="w-5 h-5 text-gray-600 dark:text-gray-400"
+					className="w-5 h-5 text-stone-600 dark:text-stone-400"
 					fill="none"
 					viewBox="0 0 24 24"
 					stroke="currentColor"
@@ -121,7 +121,7 @@ export function PlaybackControls({
 			</button>
 
 			{/* Step indicator */}
-			<div className="ml-4 px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300">
+			<div className="ml-4 px-3 py-1 bg-stone-200 dark:bg-stone-700 rounded-full text-sm font-medium text-stone-700 dark:text-stone-300">
 				Step {currentStep + 1} of {totalSteps}
 			</div>
 		</div>

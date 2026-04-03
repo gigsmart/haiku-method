@@ -1,7 +1,7 @@
 # Intent: [Feature/Task Name]
 
 <!--
-AI-DLC Intent Template
+H·AI·K·U Intent Template
 Replace bracketed text with your content.
 Delete these comment blocks before use.
 -->

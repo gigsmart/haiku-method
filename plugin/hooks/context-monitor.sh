@@ -12,15 +12,15 @@ set -euo pipefail
 # Source foundation libraries
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$(readlink -f "$0")")")}"
 source "${PLUGIN_ROOT}/lib/parse.sh"
-dlc_check_deps || exit 0
+hku_check_deps || exit 0
 
 # Read hook input from stdin
 INPUT=$(cat)
 
 # Extract conversation stats if available
 # Claude Code provides token usage in the hook payload
-TOTAL_TOKENS=$(echo "$INPUT" | dlc_json_get "total_tokens" "0")
-MAX_TOKENS=$(echo "$INPUT" | dlc_json_get "max_tokens" "200000")
+TOTAL_TOKENS=$(echo "$INPUT" | hku_json_get "total_tokens" "0")
+MAX_TOKENS=$(echo "$INPUT" | hku_json_get "max_tokens" "200000")
 
 # Skip if we can't determine usage
 [ "$TOTAL_TOKENS" = "0" ] && exit 0
@@ -41,7 +41,7 @@ if [ "$REMAINING" -le 25 ]; then
 
 **You MUST:**
 1. Commit all working changes NOW
-2. Save state to `.ai-dlc/{intent-slug}/state/`
+2. Save state to `.haiku/intents/{intent-slug}/state/`
 3. Complete current task or signal handoff
 4. Do NOT start new tasks
 

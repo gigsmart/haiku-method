@@ -1,6 +1,6 @@
 ---
 category: spec
-description: Default spec provider behavior for AI-DLC
+description: Default spec provider behavior for H·AI·K·U
 ---
 
 # Spec Provider — Default Instructions

@@ -1,9 +1,13 @@
 #!/bin/bash
-# pass.sh — Pass definition resolution and metadata for AI-DLC
+# pass.sh — LEGACY COMPATIBILITY SHIM: pass definition resolution and metadata
 #
-# Passes are typed disciplinary iterations (design, product, dev).
+# NOTE: Passes are a legacy concept retained for backward compatibility.
+# The primary model is now studios/stages/phases (see plugin/studios/).
+# Passes provided typed disciplinary iterations (design, product, dev);
+# the stage model subsumes this with collapsible FSM phases.
+#
 # Definitions live in plugin/passes/*.md (built-in) and can be
-# augmented or extended by project files in .ai-dlc/passes/*.md.
+# augmented or extended by project files in .haiku/passes/*.md.
 #
 # Usage:
 #   source pass.sh
@@ -12,10 +16,10 @@
 #   metadata=$(load_pass_metadata "design")
 
 # Guard against double-sourcing
-if [ -n "${_DLC_PASS_SOURCED:-}" ]; then
+if [ -n "${_HKU_PASS_SOURCED:-}" ]; then
   return 0 2>/dev/null || exit 0
 fi
-_DLC_PASS_SOURCED=1
+_HKU_PASS_SOURCED=1
 
 # Source configuration system (chains to deps.sh, parse.sh, state.sh)
 PASS_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
@@ -50,7 +54,7 @@ resolve_pass_definition() {
   local repo_root
   repo_root=$(find_repo_root 2>/dev/null || echo "")
   if [[ -n "$repo_root" ]]; then
-    local project="${repo_root}/.ai-dlc/passes/${pass_name}.md"
+    local project="${repo_root}/.haiku/passes/${pass_name}.md"
     if [[ -f "$project" ]]; then
       echo "$project"
       return 0
@@ -82,7 +86,7 @@ load_pass_instructions() {
   repo_root=$(find_repo_root 2>/dev/null || echo "")
   local project=""
   if [[ -n "$repo_root" ]]; then
-    local project_file="${repo_root}/.ai-dlc/passes/${pass_name}.md"
+    local project_file="${repo_root}/.haiku/passes/${pass_name}.md"
     [[ -f "$project_file" ]] && project="$project_file"
   fi
 
@@ -113,7 +117,7 @@ ${project_body}"
 
 # Load pass metadata as JSON
 # Usage: load_pass_metadata <pass_name>
-# Returns: JSON with name, description, available_workflows, default_workflow
+# Returns: JSON with name, description, available_stages, default_stage
 load_pass_metadata() {
   local pass_name="$1"
 
@@ -123,26 +127,29 @@ load_pass_metadata() {
     return 1
   }
 
-  local name description available_workflows default_workflow
-  name=$(dlc_frontmatter_get "name" "$def_file")
-  description=$(dlc_frontmatter_get "description" "$def_file")
-  available_workflows=$(dlc_frontmatter_get "available_workflows" "$def_file")
-  default_workflow=$(dlc_frontmatter_get "default_workflow" "$def_file")
+  local name description available_stages default_stage
+  name=$(hku_frontmatter_get "name" "$def_file")
+  description=$(hku_frontmatter_get "description" "$def_file")
+  # Support both new (available_stages) and legacy (available_workflows) field names
+  available_stages=$(hku_frontmatter_get "available_stages" "$def_file")
+  [ -z "$available_stages" ] && available_stages=$(hku_frontmatter_get "available_workflows" "$def_file")
+  default_stage=$(hku_frontmatter_get "default_stage" "$def_file")
+  [ -z "$default_stage" ] && default_stage=$(hku_frontmatter_get "default_workflow" "$def_file")
 
-  # Convert YAML array to JSON array: [default, tdd] -> ["default","tdd"]
-  local json_workflows
-  json_workflows=$(echo "$available_workflows" | sed 's/\[//;s/\]//' | tr ',' '\n' | \
+  # Convert YAML array to JSON array: [development, design] -> ["development","design"]
+  local json_stages
+  json_stages=$(echo "$available_stages" | sed 's/\[//;s/\]//' | tr ',' '\n' | \
     sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$' | \
     sed 's/.*/"&"/' | paste -sd ',' - | sed 's/^/[/;s/$/]/')
-  [ -z "$json_workflows" ] && json_workflows="[]"
+  [ -z "$json_stages" ] && json_stages="[]"
 
   # JSON-escape string values
   name="${name//\"/\\\"}"
   description="${description//\"/\\\"}"
-  default_workflow="${default_workflow//\"/\\\"}"
+  default_stage="${default_stage//\"/\\\"}"
 
-  printf '{"name":"%s","description":"%s","available_workflows":%s,"default_workflow":"%s"}' \
-    "$name" "$description" "$json_workflows" "$default_workflow"
+  printf '{"name":"%s","description":"%s","available_stages":%s,"default_stage":"%s"}' \
+    "$name" "$description" "$json_stages" "$default_stage"
 }
 
 # List all available pass names (union of built-in and project passes, deduplicated)
@@ -163,8 +170,8 @@ list_available_passes() {
   # Project passes
   local repo_root
   repo_root=$(find_repo_root 2>/dev/null || echo "")
-  if [[ -n "$repo_root" && -d "${repo_root}/.ai-dlc/passes" ]]; then
-    for f in "${repo_root}/.ai-dlc/passes"/*.md; do
+  if [[ -n "$repo_root" && -d "${repo_root}/.haiku/passes" ]]; then
+    for f in "${repo_root}/.haiku/passes"/*.md; do
       [[ -f "$f" ]] || continue
       local name
       name=$(basename "$f" .md)
@@ -184,29 +191,28 @@ validate_pass_exists() {
   resolve_pass_definition "$pass_name" >/dev/null 2>&1
 }
 
-# Constrain a requested workflow to those available for a pass
-# If the requested workflow is in the pass's available_workflows, return it.
-# Otherwise, return the pass's default_workflow.
-# Usage: constrain_workflow <pass_name> <requested_workflow>
-# Returns: the constrained workflow name
-constrain_workflow() {
+# Constrain a requested stage to those available for a pass
+# If the requested stage is in the pass's available_stages, return it.
+# Otherwise, return the pass's default_stage.
+# Usage: constrain_stage <pass_name> <requested_stage>
+# Returns: the constrained stage name
+constrain_stage() {
   local pass_name="$1"
-  local requested_workflow="$2"
+  local requested_stage="$2"
 
   local def_file
   def_file=$(resolve_pass_definition "$pass_name") || {
     # Pass not found — return requested as-is
-    echo "$requested_workflow"
+    echo "$requested_stage"
     return 1
   }
 
-  # Extract available_workflows array from frontmatter
+  # Extract available_stages (or legacy available_workflows) array from frontmatter
   local available_raw
-  available_raw=$(dlc_frontmatter_get "available_workflows" "$def_file")
+  available_raw=$(hku_frontmatter_get "available_stages" "$def_file")
+  [ -z "$available_raw" ] && available_raw=$(hku_frontmatter_get "available_workflows" "$def_file")
 
-  # Check if requested workflow is in the available list
-  # available_raw is a YAML array like [default, tdd, adversarial, bdd]
-  # Strip brackets and check each element
+  # Check if requested stage is in the available list
   local available_clean
   available_clean="${available_raw#\[}"
   available_clean="${available_clean%\]}"
@@ -216,15 +222,21 @@ constrain_workflow() {
     # Trim whitespace
     item="${item#"${item%%[![:space:]]*}"}"
     item="${item%"${item##*[![:space:]]}"}"
-    if [[ "$item" == "$requested_workflow" ]]; then
-      echo "$requested_workflow"
+    if [[ "$item" == "$requested_stage" ]]; then
+      echo "$requested_stage"
       return 0
     fi
   done
 
   # Not in available list — return default
-  local default_workflow
-  default_workflow=$(dlc_frontmatter_get "default_workflow" "$def_file")
-  echo "$default_workflow"
+  local default_stage
+  default_stage=$(hku_frontmatter_get "default_stage" "$def_file")
+  [ -z "$default_stage" ] && default_stage=$(hku_frontmatter_get "default_workflow" "$def_file")
+  echo "$default_stage"
   return 0
+}
+
+# Backward-compat wrapper
+constrain_workflow() {
+  constrain_stage "$@"
 }

@@ -52,7 +52,7 @@ const events: HookEvent[] = [
 	},
 	{
 		name: "\u2699\uFE0F subagent-hook",
-		desc: '"Inject AI-DLC context into the new agent so it knows the plan."',
+		desc: '"Inject H·AI·K·U context into the new agent so it knows the plan."',
 		type: "hook",
 	},
 	{
@@ -62,7 +62,7 @@ const events: HookEvent[] = [
 	},
 	{
 		name: "\u2699\uFE0F redirect-plan-mode",
-		desc: '"Use /ai-dlc:elaborate instead -- that\'s the AI-DLC way."',
+		desc: '"Use /haiku:elaborate instead -- that\'s the H·AI·K·U way."',
 		type: "hook",
 	},
 	{
@@ -72,7 +72,7 @@ const events: HookEvent[] = [
 	},
 	{
 		name: "\u2699\uFE0F enforce-iteration",
-		desc: '"Work remains! Call /ai-dlc:execute to continue." -- Ensures nothing falls through the cracks.',
+		desc: '"Work remains! Call /haiku:execute to continue." -- Ensures nothing falls through the cracks.',
 		type: "hook",
 	},
 ]
@@ -87,18 +87,18 @@ export function HookTimeline() {
 			className="relative my-8 pl-10"
 		>
 			{/* Vertical line */}
-			<div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
+			<div className="absolute left-4 top-0 bottom-0 w-0.5 bg-stone-200 dark:bg-stone-700" />
 
 			{events.map((event) => (
 				<div key={event.name} className="relative py-3 pl-5">
 					{/* Dot */}
 					<span
-						className={`absolute -left-[0.8rem] top-[1.1rem] block h-2.5 w-2.5 rounded-full border-2 border-white dark:border-gray-950 ${
+						className={`absolute -left-[0.8rem] top-[1.1rem] block h-2.5 w-2.5 rounded-full border-2 border-white dark:border-stone-950 ${
 							event.type === "hook"
 								? "bg-amber-400 shadow-[0_0_8px_rgba(240,180,41,0.3)]"
 								: event.type === "session"
 									? "h-3.5 w-3.5 -left-[0.95rem] bg-blue-500"
-									: "bg-gray-400 dark:bg-gray-600"
+									: "bg-stone-400 dark:bg-stone-600"
 						}`}
 					/>
 					<div
@@ -107,12 +107,12 @@ export function HookTimeline() {
 								? "text-amber-500"
 								: event.type === "session"
 									? "text-blue-500"
-									: "text-gray-700 dark:text-gray-300"
+									: "text-stone-700 dark:text-stone-300"
 						}`}
 					>
 						{event.name}
 					</div>
-					<div className="text-xs text-gray-500 dark:text-gray-400">
+					<div className="text-xs text-stone-500 dark:text-stone-400">
 						{event.desc}
 					</div>
 				</div>

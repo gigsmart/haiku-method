@@ -1,22 +1,22 @@
 ---
-description: Resume work on an existing AI-DLC intent when ephemeral state is lost
+description: Resume work on an existing H·AI·K·U intent when ephemeral state is lost
 argument-hint: "[intent-slug]"
 disable-model-invocation: true
 ---
 
 ## Name
 
-`ai-dlc:resume` - Resume an existing AI-DLC intent.
+`haiku:resume` - Resume an existing H·AI·K·U intent.
 
 ## Synopsis
 
 ```
-/ai-dlc:resume [intent-slug]
+/haiku:resume [intent-slug]
 ```
 
 ## Description
 
-**User-facing command** - Resume work on an intent when ephemeral state (iteration.json) is lost but `.ai-dlc/` artifacts exist.
+**User-facing command** - Resume work on an intent when ephemeral state (iteration.json) is lost but `.haiku/` artifacts exist.
 
 This happens when:
 - Session context was cleared unexpectedly
@@ -26,9 +26,9 @@ This happens when:
 **User Flow:**
 ```
 SessionStart: "Resumable Intents Found: my-feature"
-User: /ai-dlc:resume my-feature
+User: /haiku:resume my-feature
 AI: Initialized state, continuing as builder...
-User: /ai-dlc:execute
+User: /haiku:execute
 ...continues work...
 ```
 
@@ -38,7 +38,7 @@ User: /ai-dlc:execute
 
 ```bash
 if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
-  echo "ERROR: /ai-dlc:resume cannot run in cowork mode."
+  echo "ERROR: /haiku:resume cannot run in cowork mode."
   echo "Run this in a full Claude Code CLI session."
   exit 1
 fi
@@ -53,11 +53,11 @@ If no slug provided, scan multiple sources for active intents:
 **A: Check filesystem first (highest priority - source of truth):**
 
 ```bash
-for intent_file in .ai-dlc/*/intent.md; do
+for intent_file in .haiku/intents/*/intent.md; do
   [ -f "$intent_file" ] || continue
   dir=$(dirname "$intent_file")
   slug=$(basename "$dir")
-  status=$(dlc_frontmatter_get "status" "$intent_file" 2>/dev/null || echo "active")
+  status=$(hku_frontmatter_get "status" "$intent_file" 2>/dev/null || echo "active")
   [ "$status" = "active" ] && echo "$slug"
 done
 ```
@@ -71,8 +71,8 @@ source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
 # Discover from branches (include remote for resume command)
 branch_intents=$(discover_branch_intents true)
 
-# Parse results: slug|workflow|source|branch
-echo "$branch_intents" | while IFS='|' read -r slug workflow source branch; do
+# Parse results: slug|studio|source|branch
+echo "$branch_intents" | while IFS='|' read -r slug studio source branch; do
   [ -z "$slug" ] && continue
   echo "$slug ($source: $branch)"
 done
@@ -81,17 +81,19 @@ done
 **Selection logic:**
 - 1 intent found -> auto-select
 - Multiple intents -> list them and prompt user to specify
-- 0 intents -> error, suggest `/ai-dlc:elaborate`
+- 0 intents -> error, suggest `/haiku:elaborate`
 
 ### Step 2: Load Intent Metadata
 
-Read from `.ai-dlc/{slug}/intent.md`:
+Read from `.haiku/intents/{slug}/intent.md`:
 
 ```bash
-intentFile=".ai-dlc/${slug}/intent.md"
-workflow=$(dlc_frontmatter_get "workflow" "$intentFile")
-[ -z "$workflow" ] && workflow="default"
-title=$(dlc_frontmatter_get "title" "$intentFile")
+intentFile=".haiku/intents/${slug}/intent.md"
+studio=$(hku_frontmatter_get "studio" "$intentFile")
+[ -z "$studio" ] && studio="software"
+active_stage=$(hku_frontmatter_get "active_stage" "$intentFile")
+[ -z "$active_stage" ] && active_stage="development"
+title=$(hku_frontmatter_get "title" "$intentFile")
 [ -z "$title" ] && title="$slug"
 ```
 
@@ -104,7 +106,7 @@ Use DAG analysis to determine where to resume:
 source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
 
 # Get recommended hat based on unit states
-starting_hat=$(get_recommended_hat ".ai-dlc/${slug}" "${workflow}")
+starting_hat=$(get_recommended_hat ".haiku/intents/${slug}" "${active_stage}" "${studio}")
 ```
 
 **Hat selection logic:**
@@ -119,14 +121,14 @@ starting_hat=$(get_recommended_hat ".ai-dlc/${slug}" "${workflow}")
 
 ```bash
 REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
-INTENT_BRANCH="ai-dlc/${slug}/main"
-INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${slug}"
+INTENT_BRANCH="haiku/${slug}/main"
+INTENT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${slug}"
 
-mkdir -p "${REPO_ROOT}/.ai-dlc/worktrees"
-if ! grep -q '\.ai-dlc/worktrees/' "${REPO_ROOT}/.gitignore" 2>/dev/null; then
-  echo '.ai-dlc/worktrees/' >> "${REPO_ROOT}/.gitignore"
+mkdir -p "${REPO_ROOT}/.haiku/worktrees"
+if ! grep -q '\.haiku/worktrees/' "${REPO_ROOT}/.gitignore" 2>/dev/null; then
+  echo '.haiku/worktrees/' >> "${REPO_ROOT}/.gitignore"
   git add "${REPO_ROOT}/.gitignore"
-  git commit -m "chore: gitignore .ai-dlc/worktrees"
+  git commit -m "chore: gitignore .haiku/worktrees"
 fi
 
 if [ ! -d "$INTENT_WORKTREE" ]; then
@@ -143,10 +145,10 @@ cd "$INTENT_WORKTREE"
 Save to file-based state (intent-level state goes to the intent directory):
 
 ```bash
-# Intent slug is directory-based: .ai-dlc/{slug}/ — no separate save needed
+# Intent slug is directory-based: .haiku/intents/{slug}/ — no separate save needed
 
 # Save iteration state to intent directory
-dlc_state_save "$INTENT_DIR" "iteration.json" "{\"iteration\":1,\"hat\":\"$STARTING_HAT\",\"workflowName\":\"$WORKFLOW\",\"workflow\":$WORKFLOW_HATS_JSON,\"status\":\"active\"}"
+hku_state_save "$INTENT_DIR" "iteration.json" "{\"iteration\":1,\"hat\":\"$STARTING_HAT\",\"status\":\"active\"}"
 ```
 
 ### Step 5b: Restore Team (Agent Teams)
@@ -155,7 +157,7 @@ When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is enabled:
 
 ```bash
 AGENT_TEAMS_ENABLED="${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}"
-TEAM_NAME="ai-dlc-${SLUG}"
+TEAM_NAME="haiku-${SLUG}"
 TEAM_CONFIG="${CLAUDE_CONFIG_DIR}/teams/${TEAM_NAME}/config.json"
 ```
 
@@ -167,21 +169,21 @@ If `AGENT_TEAMS_ENABLED` is set:
    - Note: Active teammates may need to be re-spawned if they were shut down
 
 2. **Team does not exist**:
-   - Save `teamName` to `iteration.json` (for `/ai-dlc:execute` to create it)
-   - Note in output: "Team will be created when `/ai-dlc:execute` runs"
+   - Save `teamName` to `iteration.json` (for `/haiku:execute` to create it)
+   - Note in output: "Team will be created when `/haiku:execute` runs"
 
 **Without Agent Teams:** Skip this step. No team management needed.
 
 ### Step 6: Output Confirmation
 
 ```markdown
-## AI-DLC Intent Resumed
+## H·AI·K·U Intent Resumed
 
 **Intent:** {title}
 **Slug:** {slug}
-**Workflow:** {workflow}
+**Studio:** {studio}
 **Starting Hat:** {startingHat}
-**Worktree:** .ai-dlc/worktrees/{slug}/
+**Worktree:** .haiku/worktrees/{slug}/
 **Team:** {teamName} (if Agent Teams enabled)
 
 ### Unit Status
@@ -189,16 +191,16 @@ If `AGENT_TEAMS_ENABLED` is set:
 
 **Summary:** {completed}/{total} units completed
 
-**Next:** Run `/ai-dlc:execute` to continue the execution loop.
+**Next:** Run `/haiku:execute` to continue the execution loop.
 
-Note: All AI-DLC work happens in the worktree at .ai-dlc/worktrees/{slug}/
+Note: All H·AI·K·U work happens in the worktree at .haiku/worktrees/{slug}/
 ```
 
 ### Session Handoff
 
 When a session ends (context limit, user stops, bolt completes), create a structured handoff file for seamless continuation:
 
-**Create `.ai-dlc/{intent-slug}/handoff.md`:**
+**Create `.haiku/intents/{intent-slug}/handoff.md`:**
 
 ```markdown
 ---
@@ -226,7 +228,7 @@ reason: "{why session ended: context_limit | user_stop | bolt_complete}"
 {Decisions made, approaches tried and abandoned, key learnings from this session}
 ```
 
-**On resume:** `/ai-dlc:resume` reads `handoff.md` (if it exists) to restore context before starting the next bolt. This is more structured than relying on state files alone — it captures the narrative of where things stand.
+**On resume:** `/haiku:resume` reads `handoff.md` (if it exists) to restore context before starting the next bolt. This is more structured than relying on state files alone — it captures the narrative of where things stand.
 
 After reading handoff.md on resume, rename it to `handoff-{date}.md` to archive it.
 
@@ -235,16 +237,16 @@ After reading handoff.md on resume, rename it to `handoff-{date}.md` to archive 
 ### Single Intent (Auto-Select)
 
 ```
-User: /ai-dlc:resume
-AI: Found 1 resumable intent: han-team-platform
+User: /haiku:resume
+AI: Found 1 resumable intent: user-auth
 
-## AI-DLC Intent Resumed
+## H·AI·K·U Intent Resumed
 
-**Intent:** Han Team Platform
-**Slug:** han-team-platform
+**Intent:** User Auth
+**Slug:** user-auth
 **Workflow:** default
 **Starting Hat:** builder
-**Worktree:** .ai-dlc/worktrees/han-team-platform/
+**Worktree:** .haiku/worktrees/user-auth/
 
 ### Unit Status
 | Unit | Status | Blocked By |
@@ -255,16 +257,16 @@ AI: Found 1 resumable intent: han-team-platform
 
 **Summary:** 1/3 units completed
 
-**Next:** Run `/ai-dlc:execute` to continue the execution loop.
+**Next:** Run `/haiku:execute` to continue the execution loop.
 ```
 
 ### Multiple Intents (Requires Selection)
 
 ```
-User: /ai-dlc:resume
+User: /haiku:resume
 AI: Found multiple resumable intents:
-- han-team-platform (default workflow, 1/3 completed)
-- api-refactor (tdd workflow, 0/5 completed)
+- user-auth (software studio, 1/3 completed)
+- api-refactor (software studio, 0/5 completed)
 
-Please specify: `/ai-dlc:resume han-team-platform` or `/ai-dlc:resume api-refactor`
+Please specify: `/haiku:resume user-auth` or `/haiku:resume api-refactor`
 ```

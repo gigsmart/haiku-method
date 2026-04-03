@@ -1,21 +1,21 @@
 ---
-description: (Deprecated) Alias for /ai-dlc:execute. Use /ai-dlc:execute instead.
+description: (Deprecated) Alias for /haiku:execute. Use /haiku:execute instead.
 argument-hint: "[intent-slug] [unit-name]"
 user-invocable: true
 ---
 
 ## Deprecation Notice
 
-`/ai-dlc:construct` is **deprecated**. Use `/ai-dlc:execute` instead.
+`/haiku:construct` is **deprecated**. Use `/haiku:execute` instead.
 
-The `/ai-dlc:construct` command has been renamed to `/ai-dlc:execute` to align with the AI-DLC methodology. All functionality is identical.
+The `/haiku:construct` command has been renamed to `/haiku:execute` to align with the H·AI·K·U methodology. All functionality is identical.
 
 ## Behavior
 
 1. Display the following notice to the user:
 
 ```
-DEPRECATION NOTICE: /ai-dlc:construct is deprecated. Use /ai-dlc:execute instead.
+DEPRECATION NOTICE: /haiku:construct is deprecated. Use /haiku:execute instead.
 ```
 
-2. Invoke the `/ai-dlc:execute` skill with the same arguments passed to `/ai-dlc:construct`.
+2. Invoke the `/haiku:execute` skill with the same arguments passed to `/haiku:construct`.

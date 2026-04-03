@@ -1,6 +1,6 @@
 ---
 name: completion-criteria
-description: Use when defining completion criteria for AI-DLC tasks. Covers writing verifiable, specific, and measurable criteria that enable autonomous operation and clear exit conditions.
+description: Use when defining completion criteria for H·AI·K·U tasks. Covers writing verifiable, specific, and measurable criteria that enable autonomous operation and clear exit conditions.
 user-invocable: false
 allowed-tools:
   - Read
@@ -8,9 +8,9 @@ allowed-tools:
   - Glob
 ---
 
-# AI-DLC Completion Criteria
+# H·AI·K·U Completion Criteria
 
-Completion criteria are the foundation of effective AI-DLC workflows. Clear criteria enable autonomy, provide exit conditions, and ensure alignment between human intent and AI execution.
+Completion criteria are the foundation of effective H·AI·K·U workflows. Clear criteria enable autonomy, provide exit conditions, and ensure alignment between human intent and AI execution.
 
 ## Why Criteria Matter
 
@@ -152,7 +152,7 @@ User: "Add Google OAuth to the app"
 ### Step 5: Save
 
 ```bash
-dlc_state_save "$INTENT_DIR" "completion-criteria.md" "$CRITERIA_MARKDOWN"
+hku_state_save "$INTENT_DIR" "completion-criteria.md" "$CRITERIA_MARKDOWN"
 ```
 
 ## Criteria Categories
@@ -351,7 +351,7 @@ hooks:
     command: biome check
 ```
 
-## Integration with AI-DLC
+## Integration with H·AI·K·U
 
 ### During Elaboration
 

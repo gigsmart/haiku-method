@@ -281,7 +281,7 @@ const workflows: Workflow[] = [
 		id: "default",
 		name: "Default",
 		description:
-			"The standard AI-DLC workflow for most development tasks. Human involvement at critical decision points with autonomous building.",
+			"The standard H·AI·K·U workflow for most development tasks. Human involvement at critical decision points with autonomous building.",
 		steps: [
 			{
 				hatId: "elaborator",

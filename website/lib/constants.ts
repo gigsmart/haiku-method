@@ -1,11 +1,11 @@
 /**
- * Site-wide constants for AI-DLC website
+ * Site-wide constants for H·AI·K·U website
  */
 
-export const SITE_URL = "https://ai-dlc.dev"
-export const SITE_NAME = "AI-DLC"
+export const SITE_URL = "https://haikumethod.ai"
+export const SITE_NAME = "H·AI·K·U"
 export const SITE_DESCRIPTION =
-	"A methodology for iterative AI-driven development with hat-based workflows"
+	"The software development profile of the H·AI·K·U universal lifecycle framework"
 export const SITE_AUTHOR = "The Bushido Collective"
 export const GITHUB_URL = "https://github.com/thebushidocollective/ai-dlc"
 

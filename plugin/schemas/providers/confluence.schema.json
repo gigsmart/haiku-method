@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://ai-dlc.dev/schemas/providers/confluence.schema.json",
+	"$id": "https://haiku.dev/schemas/providers/confluence.schema.json",
 	"title": "Confluence Provider Config",
 	"description": "Provider-specific configuration for Confluence spec provider",
 	"type": "object",

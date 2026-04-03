@@ -11,9 +11,9 @@ export const revalidate = false
 export async function GET() {
 	const items = getBlogFeedItems()
 	const atom = generateAtom(items, {
-		title: "AI-DLC Blog",
+		title: "H·AI·K·U Blog",
 		selfUrl: `${SITE_URL}/blog/atom.xml`,
-		description: "Blog posts from the AI-DLC project",
+		description: "Blog posts from the H·AI·K·U project",
 	})
 
 	return new Response(atom.trim(), { headers: FEED_HEADERS_ATOM })

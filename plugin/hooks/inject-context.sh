@@ -1,5 +1,5 @@
 #!/bin/bash
-# inject-context.sh - SessionStart hook for AI-DLC
+# inject-context.sh - SessionStart hook for H·AI·K·U
 #
 # Injects iteration context from filesystem state:
 # - Current hat and instructions (from hats/ directory)
@@ -22,7 +22,7 @@ fi
 # Source foundation libraries
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$(readlink -f "$0")")")}"
 source "${PLUGIN_ROOT}/lib/state.sh"
-dlc_check_deps || exit 0
+hku_check_deps || exit 0
 
 # Cache git branch (used multiple times)
 CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
@@ -41,6 +41,12 @@ if [ -f "$CONFIG_LIB" ]; then
   source "$CONFIG_LIB"
 fi
 
+# Detect legacy AI-DLC intents (notice only, no auto-migration)
+# migrate.sh is sourced transitively via config.sh above
+if type hku_detect_legacy_intents &>/dev/null; then
+  hku_detect_legacy_intents "$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
+fi
+
 # Source H•AI•K•U workspace integration (opt-in org memory)
 HAIKU_LIB="${PLUGIN_ROOT}/lib/haiku.sh"
 if [ -f "$HAIKU_LIB" ]; then
@@ -53,7 +59,7 @@ TELEMETRY_LIB="${PLUGIN_ROOT}/lib/telemetry.sh"
 if [ -f "$TELEMETRY_LIB" ]; then
   # shellcheck source=/dev/null
   source "$TELEMETRY_LIB"
-  aidlc_telemetry_init
+  haiku_telemetry_init
 fi
 
 # Detect project maturity (greenfield / early / established)
@@ -62,61 +68,8 @@ if type detect_project_maturity &>/dev/null; then
   PROJECT_MATURITY=$(detect_project_maturity)
 fi
 
-# Load workflows from plugin (defaults) and project (overrides)
-# Project workflows merge with plugin workflows (project takes precedence)
-PLUGIN_WORKFLOWS="${PLUGIN_ROOT}/workflows.yml"
-PROJECT_WORKFLOWS=".ai-dlc/workflows.yml"
-
-# Parse workflows from YAML file
-# Output format: name|description|hat1,hat2,hat3
-parse_all_workflows() {
-  local file="$1"
-  [ -f "$file" ] || return
-  local content
-  content=$(cat "$file" 2>/dev/null) || return
-  local names
-  names=$(echo "$content" | grep -E '^[a-z][a-z0-9_-]*:' | sed 's/:.*//')
-  for name in $names; do
-    local desc hats
-    desc=$(echo "$content" | dlc_yaml_get "${name}.description")
-    hats=$(echo "$content" | yq ".${name}.hats[]" 2>/dev/null | tr '\n' '|' | sed 's/|$//; s/|/ → /g' || echo "")
-    [ -n "$desc" ] && [ -n "$hats" ] && echo "$name|$desc|$hats"
-  done
-}
-
-# Build merged workflow list (project overrides plugin)
-declare -A WORKFLOWS
-KNOWN_WORKFLOWS=""
-
-# Load plugin workflows first (single file read)
-while IFS='|' read -r name desc hats; do
-  [ -z "$name" ] && continue
-  WORKFLOWS[$name]="$desc|$hats"
-  KNOWN_WORKFLOWS="$KNOWN_WORKFLOWS $name"
-done < <(parse_all_workflows "$PLUGIN_WORKFLOWS")
-
-# Load project workflows (override or add)
-while IFS='|' read -r name desc hats; do
-  [ -z "$name" ] && continue
-  WORKFLOWS[$name]="$desc|$hats"
-  if ! echo "$KNOWN_WORKFLOWS" | grep -qw "$name"; then
-    KNOWN_WORKFLOWS="$KNOWN_WORKFLOWS $name"
-  fi
-done < <(parse_all_workflows "$PROJECT_WORKFLOWS")
-
-# Build formatted workflow list for display
-AVAILABLE_WORKFLOWS=""
-for name in $KNOWN_WORKFLOWS; do
-  details="${WORKFLOWS[$name]}"
-  if [ -n "$details" ]; then
-    desc="${details%%|*}"
-    hats="${details##*|}"
-    AVAILABLE_WORKFLOWS="${AVAILABLE_WORKFLOWS}
-- **$name**: $desc ($hats)"
-  fi
-done
-AVAILABLE_WORKFLOWS="${AVAILABLE_WORKFLOWS#
-}"  # Remove leading newline
+# Source stage and hat libraries for stage-based resolution
+source "${PLUGIN_ROOT}/lib/hat.sh"
 
 # Note: _yaml_get_simple is provided by dag.sh (sourced above)
 # Alias for consistency in this file
@@ -129,7 +82,7 @@ yaml_get_simple() {
 DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@.*/@@' || echo "main")
 if [ "$CURRENT_BRANCH" = "$DEFAULT_BRANCH" ]; then
   REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
-  for reconcile_intent_file in "$REPO_ROOT"/.ai-dlc/*/intent.md; do
+  for reconcile_intent_file in "$REPO_ROOT"/.haiku/intents/*/intent.md; do
     [ -f "$reconcile_intent_file" ] || continue
     reconcile_dir=$(dirname "$reconcile_intent_file")
     reconcile_status=$(_state_yaml_get_simple "status" "pending" < "$reconcile_intent_file")
@@ -140,7 +93,7 @@ if [ "$CURRENT_BRANCH" = "$DEFAULT_BRANCH" ]; then
     # Check if all units are completed
     reconcile_all_done=true
     reconcile_has_units=false
-    for reconcile_unit_file in "$reconcile_dir"/unit-*.md; do
+    for reconcile_unit_file in "$reconcile_dir"/stages/*/units/unit-*.md; do
       [ -f "$reconcile_unit_file" ] || continue
       reconcile_has_units=true
       reconcile_unit_status=$(_state_yaml_get_simple "status" "pending" < "$reconcile_unit_file")
@@ -152,41 +105,43 @@ if [ "$CURRENT_BRANCH" = "$DEFAULT_BRANCH" ]; then
 
     # If has units and all completed, mark intent as completed
     if [ "$reconcile_has_units" = "true" ] && [ "$reconcile_all_done" = "true" ]; then
-      dlc_frontmatter_set "status" "completed" "$reconcile_intent_file"
+      hku_frontmatter_set "status" "completed" "$reconcile_intent_file"
       # Check off intent-level completion criteria checkboxes
-      dlc_check_intent_criteria "$reconcile_dir"
+      hku_check_intent_criteria "$reconcile_dir"
       # Also check off unit criteria
-      for reconcile_unit_file in "$reconcile_dir"/unit-*.md; do
+      for reconcile_unit_file in "$reconcile_dir"/stages/*/units/unit-*.md; do
         [ -f "$reconcile_unit_file" ] || continue
-        dlc_check_unit_criteria "$reconcile_unit_file"
+        hku_check_unit_criteria "$reconcile_unit_file"
       done
-      git add "$reconcile_intent_file" "$reconcile_dir"/unit-*.md "$reconcile_dir/completion-criteria.md" "$reconcile_dir/state/completion-criteria.md" 2>/dev/null || true
-      git commit -m "status: reconcile $(basename "$reconcile_dir") after merge" 2>/dev/null || true
+      source "${PLUGIN_ROOT}/lib/persistence.sh"
+      persistence_save "$(basename "$reconcile_dir")" "status: reconcile $(basename "$reconcile_dir") after merge" \
+        "$reconcile_intent_file" "$reconcile_dir"/stages/*/units/unit-*.md \
+        "$reconcile_dir/completion-criteria.md" "$reconcile_dir/state/completion-criteria.md" 2>/dev/null || true
     fi
   done
 fi
 
-# Check for AI-DLC state
+# Check for H·AI·K·U state
 # Load iteration state from filesystem
-INTENT_DIR=$(dlc_find_active_intent)
+INTENT_DIR=$(hku_find_active_intent)
 ITERATION_JSON=""
 IS_UNIT_BRANCH=false
-[[ "$CURRENT_BRANCH" == ai-dlc/*/* ]] && [[ "$CURRENT_BRANCH" != ai-dlc/*/main ]] && IS_UNIT_BRANCH=true
+[[ "$CURRENT_BRANCH" == haiku/*/* ]] && [[ "$CURRENT_BRANCH" != haiku/*/main ]] && IS_UNIT_BRANCH=true
 if [ -n "$INTENT_DIR" ]; then
-  ITERATION_JSON=$(dlc_state_load "$INTENT_DIR" "iteration.json")
+  ITERATION_JSON=$(hku_state_load "$INTENT_DIR" "iteration.json")
 fi
 
 if [ -z "$ITERATION_JSON" ]; then
   # Greenfield fast-path: skip all scanning for brand new projects
   if [ "$PROJECT_MATURITY" = "greenfield" ]; then
-    echo "## AI-DLC Available (Greenfield Project)"
+    echo "## H·AI·K·U Available (Greenfield Project)"
     echo ""
     echo "**Project maturity:** greenfield"
     echo ""
-    echo "No active AI-DLC task. This looks like a new project — run \`/ai-dlc:elaborate\` to start defining your first intent."
+    echo "No active H·AI·K·U task. This looks like a new project — run \`/haiku:elaborate\` to start defining your first intent."
     echo ""
-    if [ ! -f ".ai-dlc/settings.yml" ]; then
-      echo "> **First time?** Run \`/ai-dlc:setup\` to configure AI-DLC for this project (auto-detects providers, VCS settings, etc.)"
+    if [ ! -f ".haiku/settings.yml" ]; then
+      echo "> **First time?** Run \`/haiku:setup\` to configure H·AI·K·U for this project (auto-detects providers, VCS settings, etc.)"
       echo ""
     fi
     # Inject provider context
@@ -196,11 +151,6 @@ if [ -z "$ITERATION_JSON" ]; then
         echo "$PROVIDERS_MD"
         echo ""
       fi
-    fi
-    if [ -n "$AVAILABLE_WORKFLOWS" ]; then
-      echo "**Available workflows:**"
-      echo "$AVAILABLE_WORKFLOWS"
-      echo ""
     fi
     echo "### Task Routing"
     echo ""
@@ -213,21 +163,11 @@ if [ -z "$ITERATION_JSON" ]; then
     echo "| Tests needed | None or existing pass | New tests required |"
     echo "| Design decisions | None | Any |"
     echo ""
-    echo "**Workflow suggestions:**"
-    echo "- Simple fix/typo/rename → \`/ai-dlc:quick <task>\` (default workflow)"
-    echo "- Bug with unclear cause → \`/ai-dlc:quick hypothesis <task>\`"
-    echo "- UI/UX task → \`/ai-dlc:quick design <task>\`"
-    echo "- Security-sensitive change → \`/ai-dlc:quick adversarial <task>\`"
-    echo "- Logic needing test-first → \`/ai-dlc:quick tdd <task>\`"
-    echo "- New feature / multi-file / architecture → \`/ai-dlc:elaborate\`"
+    echo "**Routing:**"
+    echo "- Simple fix/typo/rename → \`/haiku:quick <task>\`"
+    echo "- New feature / multi-file / architecture → \`/haiku:elaborate\`"
     echo ""
-    echo "**Syntax:** \`/ai-dlc:quick [workflow] <task description>\`"
-    echo ""
-    if [ -n "$AVAILABLE_WORKFLOWS" ]; then
-      echo "See available workflows above. Always confirm your routing suggestion with the user before proceeding."
-    else
-      echo "Always confirm your routing suggestion with the user before proceeding."
-    fi
+    echo "Always confirm your routing suggestion with the user before proceeding."
     echo ""
     exit 0
   fi
@@ -237,36 +177,36 @@ if [ -z "$ITERATION_JSON" ]; then
   declare -A BRANCH_INTENTS
 
   # 1. Check filesystem first (highest priority - source of truth)
-  for intent_file in .ai-dlc/*/intent.md; do
+  for intent_file in .haiku/intents/*/intent.md; do
     [ -f "$intent_file" ] || continue
     dir=$(dirname "$intent_file")
     slug=$(basename "$dir")
     # Use fast yaml extraction (no subprocess)
     status=$(yaml_get_simple "status" "active" < "$intent_file")
     [ "$status" = "active" ] || continue
-    workflow=$(yaml_get_simple "workflow" "default" < "$intent_file")
+    studio=$(yaml_get_simple "studio" "ideation" < "$intent_file")
 
     # Get unit summary if DAG functions are available
     summary=""
     if type get_dag_summary &>/dev/null && [ -d "$dir" ]; then
       summary=$(get_dag_summary "$dir")
     fi
-    FILESYSTEM_INTENTS[$slug]="$workflow|$summary"
+    FILESYSTEM_INTENTS[$slug]="$studio|$summary"
   done
 
   # 2. Discover intents on git branches (local only for performance)
   if type discover_branch_intents &>/dev/null; then
-    while IFS='|' read -r slug workflow source branch; do
+    while IFS='|' read -r slug studio source branch; do
       [ -z "$slug" ] && continue
       # Skip if already found in filesystem
       [ -n "${FILESYSTEM_INTENTS[$slug]}" ] && continue
-      BRANCH_INTENTS[$slug]="$workflow|$source|$branch"
+      BRANCH_INTENTS[$slug]="$studio|$source|$branch"
     done < <(discover_branch_intents false)
   fi
 
   # Build output if any intents found
   if [ ${#FILESYSTEM_INTENTS[@]} -gt 0 ] || [ ${#BRANCH_INTENTS[@]} -gt 0 ]; then
-    echo "## AI-DLC: Resumable Intents Found"
+    echo "## H·AI·K·U: Resumable Intents Found"
     echo ""
 
     # Show filesystem intents first
@@ -274,8 +214,8 @@ if [ -z "$ITERATION_JSON" ]; then
       echo "### In Current Directory"
       echo ""
       for slug in "${!FILESYSTEM_INTENTS[@]}"; do
-        IFS='|' read -r workflow summary <<< "${FILESYSTEM_INTENTS[$slug]}"
-        echo "- **$slug** (workflow: $workflow)"
+        IFS='|' read -r studio summary <<< "${FILESYSTEM_INTENTS[$slug]}"
+        echo "- **$slug**"
         if [ -n "$summary" ]; then
           completed=$(echo "$summary" | sed -n 's/.*completed:\([0-9]*\).*/\1/p')
           pending=$(echo "$summary" | sed -n 's/.*pending:\([0-9]*\).*/\1/p')
@@ -291,13 +231,13 @@ if [ -z "$ITERATION_JSON" ]; then
     declare -A LOCAL_BRANCH_INTENTS
     declare -A REMOTE_BRANCH_INTENTS
     for slug in "${!BRANCH_INTENTS[@]}"; do
-      IFS='|' read -r workflow source branch <<< "${BRANCH_INTENTS[$slug]}"
+      IFS='|' read -r studio source branch <<< "${BRANCH_INTENTS[$slug]}"
       case "$source" in
         worktree|local)
-          LOCAL_BRANCH_INTENTS[$slug]="$workflow|$branch"
+          LOCAL_BRANCH_INTENTS[$slug]="$studio|$branch"
           ;;
         remote)
-          REMOTE_BRANCH_INTENTS[$slug]="$workflow|$branch"
+          REMOTE_BRANCH_INTENTS[$slug]="$studio|$branch"
           ;;
       esac
     done
@@ -306,8 +246,8 @@ if [ -z "$ITERATION_JSON" ]; then
       echo "### On Local Branches (no worktree)"
       echo ""
       for slug in "${!LOCAL_BRANCH_INTENTS[@]}"; do
-        IFS='|' read -r workflow branch <<< "${LOCAL_BRANCH_INTENTS[$slug]}"
-        echo "- **$slug** (workflow: $workflow)"
+        IFS='|' read -r studio branch <<< "${LOCAL_BRANCH_INTENTS[$slug]}"
+        echo "- **$slug**"
         echo "  - *Branch: \`$branch\`*"
       done
       echo ""
@@ -320,10 +260,10 @@ if [ -z "$ITERATION_JSON" ]; then
       echo ""
     fi
 
-    echo "**To resume:** \`/ai-dlc:resume <slug>\` or \`/ai-dlc:resume\` if only one"
+    echo "**To resume:** \`/haiku:resume <slug>\` or \`/haiku:resume\` if only one"
     echo ""
-    if [ ! -f ".ai-dlc/settings.yml" ]; then
-      echo "> **Tip:** Run \`/ai-dlc:setup\` to configure providers and VCS settings. This enables automatic ticket sync during elaboration."
+    if [ ! -f ".haiku/settings.yml" ]; then
+      echo "> **Tip:** Run \`/haiku:setup\` to configure providers and VCS settings. This enables automatic ticket sync during elaboration."
       echo ""
     fi
     # Inject provider context for pre-elaboration awareness
@@ -335,31 +275,25 @@ if [ -z "$ITERATION_JSON" ]; then
       fi
     fi
   else
-    # No AI-DLC state and no resumable intents - show available workflows for /ai-dlc:elaborate
-    if [ -n "$AVAILABLE_WORKFLOWS" ]; then
-      echo "## AI-DLC Available"
+    echo "## H·AI·K·U Available"
+    echo ""
+    if [ -n "$PROJECT_MATURITY" ]; then
+      echo "**Project maturity:** $PROJECT_MATURITY"
       echo ""
-      if [ -n "$PROJECT_MATURITY" ]; then
-        echo "**Project maturity:** $PROJECT_MATURITY"
+    fi
+    echo "No active H·AI·K·U task. Run \`/haiku:elaborate\` to start a new task."
+    echo ""
+    if [ ! -f ".haiku/settings.yml" ]; then
+      echo "> **First time?** Run \`/haiku:setup\` to configure H·AI·K·U for this project (auto-detects providers, VCS settings, etc.)"
+      echo ""
+    fi
+    # Inject provider context
+    if type format_providers_markdown &>/dev/null; then
+      PROVIDERS_MD=$(format_providers_markdown)
+      if [ -n "$PROVIDERS_MD" ]; then
+        echo "$PROVIDERS_MD"
         echo ""
       fi
-      echo "No active AI-DLC task. Run \`/ai-dlc:elaborate\` to start a new task."
-      echo ""
-      if [ ! -f ".ai-dlc/settings.yml" ]; then
-        echo "> **First time?** Run \`/ai-dlc:setup\` to configure AI-DLC for this project (auto-detects providers, VCS settings, etc.)"
-        echo ""
-      fi
-      # Inject provider context
-      if type format_providers_markdown &>/dev/null; then
-        PROVIDERS_MD=$(format_providers_markdown)
-        if [ -n "$PROVIDERS_MD" ]; then
-          echo "$PROVIDERS_MD"
-          echo ""
-        fi
-      fi
-      echo "**Available workflows:**"
-      echo "$AVAILABLE_WORKFLOWS"
-      echo ""
     fi
     echo "### Task Routing"
     echo ""
@@ -372,36 +306,26 @@ if [ -z "$ITERATION_JSON" ]; then
     echo "| Tests needed | None or existing pass | New tests required |"
     echo "| Design decisions | None | Any |"
     echo ""
-    echo "**Workflow suggestions:**"
-    echo "- Simple fix/typo/rename → \`/ai-dlc:quick <task>\` (default workflow)"
-    echo "- Bug with unclear cause → \`/ai-dlc:quick hypothesis <task>\`"
-    echo "- UI/UX task → \`/ai-dlc:quick design <task>\`"
-    echo "- Security-sensitive change → \`/ai-dlc:quick adversarial <task>\`"
-    echo "- Logic needing test-first → \`/ai-dlc:quick tdd <task>\`"
-    echo "- New feature / multi-file / architecture → \`/ai-dlc:elaborate\`"
+    echo "**Routing:**"
+    echo "- Simple fix/typo/rename → \`/haiku:quick <task>\`"
+    echo "- New feature / multi-file / architecture → \`/haiku:elaborate\`"
     echo ""
-    echo "**Syntax:** \`/ai-dlc:quick [workflow] <task description>\`"
-    echo ""
-    if [ -n "$AVAILABLE_WORKFLOWS" ]; then
-      echo "See available workflows above. Always confirm your routing suggestion with the user before proceeding."
-    else
-      echo "Always confirm your routing suggestion with the user before proceeding."
-    fi
+    echo "Always confirm your routing suggestion with the user before proceeding."
     echo ""
   fi
   exit 0
 fi
 
 # Validate JSON syntax
-if ! echo "$ITERATION_JSON" | dlc_json_validate; then
-  echo "Warning: Invalid iteration.json format. Run /ai-dlc:reset to clear state." >&2
+if ! echo "$ITERATION_JSON" | hku_json_validate; then
+  echo "Warning: Invalid iteration.json format. Run /haiku:reset to clear state." >&2
   exit 0
 fi
 
 # Migration: strip deprecated unitStates field
 if echo "$ITERATION_JSON" | jq -e '.unitStates' &>/dev/null; then
   ITERATION_JSON=$(echo "$ITERATION_JSON" | jq 'del(.unitStates)')
-  [ -n "$INTENT_DIR" ] && dlc_state_save "$INTENT_DIR" "iteration.json" "$ITERATION_JSON" 2>/dev/null || true
+  [ -n "$INTENT_DIR" ] && hku_state_save "$INTENT_DIR" "iteration.json" "$ITERATION_JSON" 2>/dev/null || true
 fi
 
 # Single-pass extraction of all iteration state fields (one jq subprocess instead of 10+)
@@ -411,12 +335,10 @@ eval "$(echo "$ITERATION_JSON" | jq -r '@sh "
   ITERATION=\(.iteration // 1)
   HAT=\(.hat // \"planner\")
   STATUS=\(.status // \"active\")
-  WORKFLOW_NAME=\(.workflowName // \"default\")
   CURRENT_UNIT=\(.currentUnit // \"\")
   MAX_ITERATIONS=\(.maxIterations // 0)
   TARGET_UNIT=\(.targetUnit // \"\")
   INTENT_SLUG_STATE=\(.intentSlug // \"\")
-  WORKFLOW_HATS=\((.workflow // [\"planner\",\"builder\",\"reviewer\"]) | tostring)
 "')"
 
 # State migration: add 'phase' field if missing (backward compat with pre-H•AI•K•U state)
@@ -426,12 +348,12 @@ if [ -z "$PHASE" ]; then
     planner) PHASE="elaboration" ;;
     *) PHASE="execution" ;;
   esac
-  ITERATION_JSON=$(echo "$ITERATION_JSON" | dlc_json_set "phase" "$PHASE" || echo "$ITERATION_JSON")
-  [ -n "$INTENT_DIR" ] && dlc_state_save "$INTENT_DIR" "iteration.json" "$ITERATION_JSON" 2>/dev/null || true
+  ITERATION_JSON=$(echo "$ITERATION_JSON" | hku_json_set "phase" "$PHASE" || echo "$ITERATION_JSON")
+  [ -n "$INTENT_DIR" ] && hku_state_save "$INTENT_DIR" "iteration.json" "$ITERATION_JSON" 2>/dev/null || true
 fi
 
 # Validate phase against known enum
-PHASE=$(dlc_validate_phase "$PHASE")
+PHASE=$(hku_validate_phase "$PHASE")
 
 # Check for needsAdvance flag (set by Stop hook to signal iteration should increment)
 # Only advance on 'clear' or 'startup' sources - NOT on 'compact' events.
@@ -447,16 +369,16 @@ PHASE=$(dlc_validate_phase "$PHASE")
 if [ "$NEEDS_ADVANCE" = "true" ] && [ "$SOURCE" != "compact" ]; then
   # Increment iteration and clear the flag
   NEW_ITER=$((ITERATION + 1))
-  ITERATION_JSON=$(echo "$ITERATION_JSON" | dlc_json_set "iteration" "$NEW_ITER")
-  ITERATION_JSON=$(echo "$ITERATION_JSON" | dlc_json_set "needsAdvance" "false")
+  ITERATION_JSON=$(echo "$ITERATION_JSON" | hku_json_set "iteration" "$NEW_ITER")
+  ITERATION_JSON=$(echo "$ITERATION_JSON" | hku_json_set "needsAdvance" "false")
   ITERATION=$NEW_ITER
   NEEDS_ADVANCE="false"
   # Save updated state
-  [ -n "$INTENT_DIR" ] && dlc_state_save "$INTENT_DIR" "iteration.json" "$ITERATION_JSON" 2>/dev/null || true
+  [ -n "$INTENT_DIR" ] && hku_state_save "$INTENT_DIR" "iteration.json" "$ITERATION_JSON" 2>/dev/null || true
 
   # Emit telemetry for bolt iteration advance
-  if type aidlc_log_event &>/dev/null; then
-    aidlc_record_bolt_iteration "$INTENT_SLUG_STATE" "$TARGET_UNIT" "$NEW_ITER" "advanced"
+  if type haiku_log_event &>/dev/null; then
+    haiku_record_bolt_iteration "$INTENT_SLUG_STATE" "$TARGET_UNIT" "$NEW_ITER" "advanced"
   fi
 fi
 
@@ -473,36 +395,31 @@ if [ -n "$ACTIVE_PASS" ]; then
   PASS_INSTRUCTIONS=$(load_pass_instructions "$ACTIVE_PASS")
 fi
 
-# Validate workflow name against known workflows (loaded above from workflows.yml files)
-if ! echo "$KNOWN_WORKFLOWS" | grep -qw "$WORKFLOW_NAME"; then
-  echo "Warning: Unknown workflow '$WORKFLOW_NAME'. Using 'default'." >&2
-  WORKFLOW_NAME="default"
+# Resolve active stage and studio from intent for stage-based hat resolution
+ACTIVE_STAGE=""
+STUDIO=""
+if [ -n "$INTENT_DIR" ] && [ -f "${INTENT_DIR}/intent.md" ]; then
+  ACTIVE_STAGE=$(yaml_get_simple "active_stage" "" < "${INTENT_DIR}/intent.md")
+  STUDIO=$(yaml_get_simple "studio" "ideation" < "${INTENT_DIR}/intent.md")
 fi
+[ -z "$ACTIVE_STAGE" ] && ACTIVE_STAGE="research"
+[ -z "$STUDIO" ] && STUDIO="ideation"
 
-# Constrain workflow to pass's available workflows when active_pass is set
-if [ -n "$ACTIVE_PASS" ]; then
-  CONSTRAINED=$(constrain_workflow "$ACTIVE_PASS" "$WORKFLOW_NAME")
-  if [ "$CONSTRAINED" != "$WORKFLOW_NAME" ]; then
-    echo "Note: Workflow '$WORKFLOW_NAME' not available for '$ACTIVE_PASS' pass; using '$CONSTRAINED'." >&2
-    WORKFLOW_NAME="$CONSTRAINED"
-  fi
-fi
-
-# Format workflow hats as arrow-separated list
-WORKFLOW_HATS_STR=$(echo "$WORKFLOW_HATS" | tr -d '[]"' | sed 's/,/ → /g')
-[ -z "$WORKFLOW_HATS_STR" ] && WORKFLOW_HATS_STR="planner → builder → reviewer"
+# Get hat sequence from stage
+STAGE_HATS_STR=$(hku_get_hat_sequence "$ACTIVE_STAGE" "$STUDIO" 2>/dev/null | sed 's/ / → /g')
+[ -z "$STAGE_HATS_STR" ] && STAGE_HATS_STR="planner → builder → reviewer"
 
 # If task is complete, just show completion message
 if [ "$STATUS" = "complete" ] || [ "$STATUS" = "completed" ]; then
-  echo "## AI-DLC: Task Complete"
+  echo "## H·AI·K·U: Task Complete"
   echo ""
-  echo "Previous task was completed. Run \`/ai-dlc:reset\` to start a new task."
+  echo "Previous task was completed. Run \`/haiku:reset\` to start a new task."
   exit 0
 fi
 
-echo "## AI-DLC Context"
+echo "## H·AI·K·U Context"
 echo ""
-STATUS_LINE="**Iteration:** $ITERATION | **Hat:** $HAT | **Workflow:** $WORKFLOW_NAME ($WORKFLOW_HATS_STR)"
+STATUS_LINE="**Iteration:** $ITERATION | **Hat:** $HAT | **Stage:** $ACTIVE_STAGE ($STAGE_HATS_STR)"
 if [ -n "$ACTIVE_PASS" ]; then
   STATUS_LINE="$STATUS_LINE | **Pass:** $ACTIVE_PASS"
 fi
@@ -530,7 +447,7 @@ if [ -d "$LEARNINGS_DIR" ]; then
     echo ""
     echo "📚 **${LEARNING_COUNT} compound learnings available** in \`docs/solutions/\`."
     echo "The Planner hat will search these automatically before planning."
-    echo "Use \`/ai-dlc:compound\` to capture new learnings."
+    echo "Use \`/haiku:compound\` to capture new learnings."
   fi
 fi
 
@@ -543,12 +460,12 @@ load_all_state_values() {
   fi
 
   # Load intent-level keys
-  STATE_VALUES[current-plan.md]=$(dlc_state_load "$INTENT_DIR" "current-plan.md")
+  STATE_VALUES[current-plan.md]=$(hku_state_load "$INTENT_DIR" "current-plan.md")
 
   # Load unit-level keys
-  STATE_VALUES[blockers.md]=$(dlc_state_load "$INTENT_DIR" "blockers.md")
-  STATE_VALUES[scratchpad.md]=$(dlc_state_load "$INTENT_DIR" "scratchpad.md")
-  STATE_VALUES[next-prompt.md]=$(dlc_state_load "$INTENT_DIR" "next-prompt.md")
+  STATE_VALUES[blockers.md]=$(hku_state_load "$INTENT_DIR" "blockers.md")
+  STATE_VALUES[scratchpad.md]=$(hku_state_load "$INTENT_DIR" "scratchpad.md")
+  STATE_VALUES[next-prompt.md]=$(hku_state_load "$INTENT_DIR" "next-prompt.md")
 }
 
 # Derive intent slug from directory
@@ -580,7 +497,7 @@ if [ -n "$INTENT_DIR" ] && [ -f "${INTENT_DIR}/discovery.md" ]; then
   if [ "$DISCOVERY_COUNT" -gt 0 ]; then
     echo "### Discovery Log"
     echo ""
-    echo "**${DISCOVERY_COUNT} sections** of elaboration findings available in \`.ai-dlc/${INTENT_SLUG}/discovery.md\`"
+    echo "**${DISCOVERY_COUNT} sections** of elaboration findings available in \`.haiku/intents/${INTENT_SLUG}/discovery.md\`"
     echo ""
   fi
 fi
@@ -623,7 +540,7 @@ fi
 
 # Load and display DAG status (if units exist)
 # INTENT_SLUG and INTENT_DIR already set above
-if [ -n "$INTENT_DIR" ] && [ -d "$INTENT_DIR" ] && ls "$INTENT_DIR"/unit-*.md 1>/dev/null 2>&1; then
+if [ -n "$INTENT_DIR" ] && [ -d "$INTENT_DIR" ] && ls "$INTENT_DIR"/stages/*/units/unit-*.md 1>/dev/null 2>&1; then
     echo "### Unit Status"
     echo ""
 
@@ -667,10 +584,10 @@ if [ -n "$INTENT_DIR" ] && [ -d "$INTENT_DIR" ] && ls "$INTENT_DIR"/unit-*.md 1>
       # Fallback: simple unit list without DAG analysis
       echo "| Unit | Status |"
       echo "|------|--------|"
-      for unit_file in "$INTENT_DIR"/unit-*.md; do
+      for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
         [ -f "$unit_file" ] || continue
         NAME=$(basename "$unit_file" .md)
-        STATUS=$(dlc_frontmatter_get "status" "$unit_file")
+        STATUS=$(hku_frontmatter_get "status" "$unit_file")
         [ -z "$STATUS" ] && STATUS="pending"
         echo "| $NAME | $STATUS |"
       done
@@ -680,7 +597,7 @@ fi
 
 # Display Agent Teams status if enabled
 if [ -n "${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}" ]; then
-  TEAM_NAME="ai-dlc-${INTENT_SLUG}"
+  TEAM_NAME="haiku-${INTENT_SLUG}"
   TEAM_CONFIG="${CLAUDE_CONFIG_DIR}/teams/${TEAM_NAME}/config.json"
   if [ -f "$TEAM_CONFIG" ]; then
     echo "### Agent Teams"
@@ -691,12 +608,9 @@ if [ -n "${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}" ]; then
   fi
 fi
 
-# Load hat instructions using augmentation pattern (plugin hat + project augmentation)
-# shellcheck source=/dev/null
-source "${PLUGIN_ROOT}/lib/hat.sh"
-
-INSTRUCTIONS=$(load_hat_instructions "$HAT")
-HAT_META=$(load_hat_metadata "$HAT" 2>/dev/null || echo "{}")
+# Load hat instructions from stage-based resolution
+INSTRUCTIONS=$(hku_resolve_hat_instructions "$HAT" "$ACTIVE_STAGE" "$STUDIO")
+HAT_META=$(load_hat_metadata "$HAT" "$ACTIVE_STAGE" "$STUDIO" 2>/dev/null || echo "{}")
 NAME=$(printf '%s' "$HAT_META" | sed -n 's/.*"name":"\([^"]*\)".*/\1/p')
 DESC=$(printf '%s' "$HAT_META" | sed -n 's/.*"description":"\([^"]*\)".*/\1/p')
 
@@ -732,7 +646,7 @@ else
   # No hat file found - show generic message
   echo "**$HAT** (Custom hat - no instructions found)"
   echo ""
-  echo "Create a hat definition at \`.ai-dlc/hats/${HAT}.md\` with:"
+  echo "Create a hat definition at \`.haiku/hats/${HAT}.md\` with:"
   echo ""
   echo "\`\`\`markdown"
   echo "---"
@@ -809,9 +723,9 @@ echo "You MUST work on a dedicated branch for this unit:"
 echo ""
 echo "\`\`\`bash"
 echo "# Create if not exists:"
-echo "git checkout -b ai-dlc/{intent-slug}/{unit-number}-{unit-slug}"
+echo "git checkout -b haiku/{intent-slug}/{unit-number}-{unit-slug}"
 echo "# Or use worktrees for parallel work:"
-echo "git worktree add ../{unit-slug} ai-dlc/{intent-slug}/{unit-number}-{unit-slug}"
+echo "git worktree add ../{unit-slug} haiku/{intent-slug}/{unit-number}-{unit-slug}"
 echo "\`\`\`"
 echo ""
 echo "You MUST NOT work directly on main/master. This isolates work and prevents conflicts."
@@ -821,8 +735,8 @@ echo ""
 echo "Before every stop, you MUST:"
 echo ""
 echo "1. **Commit working changes**: \`git add -A && git commit\`"
-echo "2. **Save scratchpad**: save to \`.ai-dlc/{intent-slug}/state/scratchpad.md\`"
-echo "3. **Write next prompt**: save to \`.ai-dlc/{intent-slug}/state/next-prompt.md\`"
+echo "2. **Save scratchpad**: save to \`.haiku/intents/{intent-slug}/state/scratchpad.md\`"
+echo "3. **Write next prompt**: save to \`.haiku/intents/{intent-slug}/state/next-prompt.md\`"
 echo ""
 echo "The next-prompt.md should contain what to continue with in the next iteration."
 echo "Without this, progress may be lost if the session ends."
@@ -831,15 +745,15 @@ echo "### Never Stop Arbitrarily"
 echo ""
 echo "- You MUST NOT stop mid-bolt without saving state"
 echo "- If you need user input, use \`AskUserQuestion\` tool"
-echo "- If blocked, document in \`.ai-dlc/{intent-slug}/state/blockers.md\`"
+echo "- If blocked, document in \`.haiku/intents/{intent-slug}/state/blockers.md\`"
 echo ""
 
 # Check branch naming convention (informational only)
 # Note: CURRENT_BRANCH already cached at top of script
 if [ -n "$CURRENT_BRANCH" ] && [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "master" ]; then
-  if ! echo "$CURRENT_BRANCH" | grep -qE '^ai-dlc/[a-z0-9-]+/(main|[0-9]+-[a-z0-9-]+)$'; then
-    echo "> **WARNING:** Current branch \`$CURRENT_BRANCH\` doesn't follow AI-DLC convention."
-    echo "> Expected: \`ai-dlc/{intent-slug}/main\` or \`ai-dlc/{intent-slug}/{unit-number}-{unit-slug}\`"
+  if ! echo "$CURRENT_BRANCH" | grep -qE '^haiku/[a-z0-9-]+/(main|[0-9]+-[a-z0-9-]+)$'; then
+    echo "> **WARNING:** Current branch \`$CURRENT_BRANCH\` doesn't follow H·AI·K·U convention."
+    echo "> Expected: \`haiku/{intent-slug}/main\` or \`haiku/{intent-slug}/{unit-number}-{unit-slug}\`"
     echo "> Create correct branch before proceeding."
     echo ""
   fi
@@ -850,7 +764,7 @@ fi
 
 echo "---"
 echo ""
-echo "**Commands:** \`/ai-dlc:execute\` (continue loop) | \`/ai-dlc:construct\` (deprecated alias) | \`/ai-dlc:reset\` (abandon task)"
+echo "**Commands:** \`/haiku:execute\` (continue loop) | \`/haiku:construct\` (deprecated alias) | \`/haiku:reset\` (abandon task)"
 echo ""
 echo "> **No file changes?** If this hat's work is complete but no files were modified,"
 echo "> save findings to scratchpad and read \`plugin/skills/execute/subskills/advance/SKILL.md\` then execute it to continue."

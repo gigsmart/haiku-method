@@ -1,5 +1,5 @@
 #!/bin/bash
-# haiku.sh - H•AI•K•U Workspace Integration for AI-DLC
+# haiku.sh - H·AI·K·U Workspace Integration
 #
 # Detects and reads from an organization's H•AI•K•U workspace.
 # This is opt-in: only activates if .haiku.yml exists in the project

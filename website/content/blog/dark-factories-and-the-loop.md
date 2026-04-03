@@ -1,6 +1,6 @@
 ---
 title: "Dark Factories and the Loop"
-description: "The dark factory isn't a system you build. It's a knob you turn. AI-DLC treats full autonomy as a point-in-time decision, not an architectural commitment."
+description: "The dark factory isn't a system you build. It's a knob you turn. H·AI·K·U treats full autonomy as a point-in-time decision, not an architectural commitment."
 date: 2026-02-20
 author: The Bushido Collective
 ---
@@ -38,13 +38,13 @@ This is the bookend model. Humans at the front cover (write the spec) and maybe 
 
 ## Humans on the Loop
 
-AI-DLC takes a different position.
+H·AI·K·U takes a different position.
 
-In AI-DLC, **humans don't write code either**. That's the same as StrongDM. The AI plans, builds, and reviews. Backpressure — tests, linting, type checks — enforces quality automatically. Completion criteria define done. The agent works through hat-based workflows (planner, builder, reviewer) autonomously.
+In H·AI·K·U, **humans don't write code either**. That's the same as StrongDM. The AI plans, builds, and reviews. Backpressure — tests, linting, type checks — enforces quality automatically. Completion criteria define done. The agent works through hat-based workflows (planner, builder, reviewer) autonomously.
 
 The difference is where the human *can* exist.
 
-AI-DLC is built for **humans on the loop**. The architecture supports observation and intervention at every boundary — between hats, between units, between iterations. But none of it is required. You can:
+H·AI·K·U is built for **humans on the loop**. The architecture supports observation and intervention at every boundary — between hats, between units, between iterations. But none of it is required. You can:
 
 - **Watch every decision** — Run in plan mode, approve each hat transition
 - **Observe passively** — Let it run, step in when something looks wrong
@@ -66,7 +66,7 @@ The level isn't a property of the team. It's a property of the moment.
 
 StrongDM architecturally committed to one point on the spectrum. That's a valid choice for their context — a mature product with known domains, strong behavioral test infrastructure, and a team that has internalized the patterns. But it's a commitment. You can't easily dial it back for a piece of work that needs more oversight.
 
-AI-DLC lets you slide freely along the entire spectrum without changing your tools, your process, or your artifacts. The same intent file, the same unit specs, the same completion criteria, the same hat workflow — whether a human is watching or not.
+H·AI·K·U lets you slide freely along the entire spectrum without changing your tools, your process, or your artifacts. The same intent file, the same unit specs, the same completion criteria, the same hat workflow — whether a human is watching or not.
 
 ## The Paradigm Shift
 
@@ -98,15 +98,15 @@ The future isn't dark factories vs. human-supervised development. It's **adaptiv
 
 Here's what we see coming:
 
-**Specification is the new implementation.** As implementation becomes automated, the ability to precisely describe *what should exist* — with clear completion criteria, non-functional requirements, risk analysis, and cross-cutting concerns — becomes the highest-leverage skill. This isn't a demotion from "real engineering." It's the recognition that the hard part of software was never typing the code. AI-DLC's elaboration phase exists precisely because of this: specification is hard enough to deserve its own structured, collaborative process.
+**Specification is the new implementation.** As implementation becomes automated, the ability to precisely describe *what should exist* — with clear completion criteria, non-functional requirements, risk analysis, and cross-cutting concerns — becomes the highest-leverage skill. This isn't a demotion from "real engineering." It's the recognition that the hard part of software was never typing the code. H·AI·K·U's elaboration phase exists precisely because of this: specification is hard enough to deserve its own structured, collaborative process.
 
 **Backpressure replaces review.** Code review is a human bottleneck that StrongDM correctly identified as eliminable. But the replacement isn't "trust the AI" — it's automated quality gates that block progress until satisfied. Tests, linting, type checks, security scans. The AI learns to satisfy these constraints not because a process document says to, but because the system won't let it proceed otherwise. This is backpressure, and it works at every level of autonomy.
 
-**Context resets become a feature.** StrongDM built cxdb — an entire database for conversation histories — to solve the context window problem. AI-DLC takes the opposite approach: embrace context resets. Store state in files (intent, criteria, scratchpad, iteration state), inject it at session start, work in deliberate iterations. No custom infrastructure. The repo *is* the memory.
+**Context resets become a feature.** StrongDM built cxdb — an entire database for conversation histories — to solve the context window problem. H·AI·K·U takes the opposite approach: embrace context resets. Store state in files (intent, criteria, scratchpad, iteration state), inject it at session start, work in deliberate iterations. No custom infrastructure. The repo *is* the memory.
 
-**Teams of agents, not monolithic agents.** A single agent with a massive context window will always lose to a team of focused agents with clean contexts. AI-DLC's construction loop already breaks work into units with independent worktrees. With Agent Teams support, each unit becomes an independent session with its own context, coordinating through a shared task list. The architecture scales without architectural changes.
+**Teams of agents, not monolithic agents.** A single agent with a massive context window will always lose to a team of focused agents with clean contexts. H·AI·K·U's construction loop already breaks work into units with independent worktrees. With Agent Teams support, each unit becomes an independent session with its own context, coordinating through a shared task list. The architecture scales without architectural changes.
 
-**The methodology is the moat, not the tooling.** StrongDM's approach is locked to their custom infrastructure (Attractor, cxdb, Digital Twin Universe). AI-DLC is tool-agnostic markdown files. The methodology — hats, iterations, backpressure, completion criteria, DAG-based unit decomposition — transfers to any AI coding tool. When a better agent arrives, the methodology adapts. The tooling is replaceable. The discipline isn't.
+**The methodology is the moat, not the tooling.** StrongDM's approach is locked to their custom infrastructure (Attractor, cxdb, Digital Twin Universe). H·AI·K·U is tool-agnostic markdown files. The methodology — hats, iterations, backpressure, completion criteria, DAG-based unit decomposition — transfers to any AI coding tool. When a better agent arrives, the methodology adapts. The tooling is replaceable. The discipline isn't.
 
 ## The Knob, Not the Switch
 
@@ -114,7 +114,7 @@ Level 5 is real. Dark factories produce real software. StrongDM proved it.
 
 But the future isn't a binary choice between "human writes code" and "human disappears." It's a spectrum, and the best systems let you move along it freely.
 
-AI-DLC is that spectrum. Define your intent with rigor. Decompose it into units with clear criteria. Let the agents execute through structured workflows with automated quality gates. Watch closely, or don't. The system works either way.
+H·AI·K·U is that spectrum. Define your intent with rigor. Decompose it into units with clear criteria. Let the agents execute through structured workflows with automated quality gates. Watch closely, or don't. The system works either way.
 
 The dark factory is a point-in-time decision, not an identity.
 

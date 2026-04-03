@@ -9,11 +9,11 @@ import { GlossaryContent } from "./GlossaryContent"
 export const metadata: Metadata = {
 	title: "Glossary",
 	description:
-		"Complete glossary of AI-DLC terminology - Intent, Pass, Unit, Bolt, HITL, OHOTL, AHOTL, Backpressure, and more.",
+		"Complete glossary of H·AI·K·U terminology - Intent, Pass, Unit, Bolt, HITL, OHOTL, AHOTL, Backpressure, and more.",
 	openGraph: {
-		title: "AI-DLC Glossary",
+		title: "H·AI·K·U Glossary",
 		description:
-			"Quick reference for all AI-DLC methodology terms and concepts.",
+			"Quick reference for all H·AI·K·U methodology terms and concepts.",
 	},
 }
 
@@ -26,11 +26,11 @@ export default function GlossaryPage() {
 		<div className="mx-auto max-w-4xl px-4 py-8">
 			{/* Header */}
 			<div className="mb-8">
-				<h1 className="text-3xl font-bold text-gray-900 dark:text-white md:text-4xl">
-					AI-DLC Glossary
+				<h1 className="text-3xl font-bold text-stone-900 dark:text-white md:text-4xl">
+					H·AI·K·U Glossary
 				</h1>
-				<p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
-					Quick reference for all AI-DLC terminology and concepts.
+				<p className="mt-2 text-lg text-stone-600 dark:text-stone-400">
+					Quick reference for all H·AI·K·U terminology and concepts.
 				</p>
 			</div>
 

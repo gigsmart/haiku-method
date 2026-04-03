@@ -1,13 +1,13 @@
 ---
 title: "Quick Mode and Autopilot"
-description: "Two new operating modes for AI-DLC — quick mode for trivial tasks with full hat discipline, and autopilot for autonomous feature delivery with strategic human checkpoints."
+description: "Two new operating modes for H·AI·K·U — quick mode for trivial tasks with full hat discipline, and autopilot for autonomous feature delivery with strategic human checkpoints."
 date: 2026-03-31
 author: The Bushido Collective
 ---
 
 In [Dark Factories and the Loop](/blog/dark-factories-and-the-loop), we argued that autonomy is a knob, not an architecture. The same harness, the same hats, the same backpressure — you just choose how much you are watching. That was the principle. This week, we shipped the two ends of that knob.
 
-**Quick mode** handles trivial tasks with full hat discipline. **Autopilot** handles autonomous feature delivery with strategic human checkpoints. Together with the existing `/elaborate` and `/execute` manual flow, AI-DLC now covers the full spectrum from 30-second fixes to unattended multi-unit builds.
+**Quick mode** handles trivial tasks with full hat discipline. **Autopilot** handles autonomous feature delivery with strategic human checkpoints. Together with the existing `/elaborate` and `/execute` manual flow, H·AI·K·U now covers the full spectrum from 30-second fixes to unattended multi-unit builds.
 
 ## The Problem with the Old `/quick`
 
@@ -25,11 +25,11 @@ The key design decisions:
 
 **Intelligent routing.** When users describe tasks without a slash command, the system assesses scope using heuristic signals — files touched, nature of the change, whether tests are needed, whether design decisions are involved. It then suggests `/quick` or `/elaborate`. The user always confirms. The system recommends; it does not decide.
 
-**Temporary artifacts.** Quick mode creates a `.ai-dlc/quick/` directory with minimal intent state so the existing hook system can inject hat context. This directory is cleaned up after completion and never committed. The hook infrastructure does not know or care that the task is "quick" — it sees intent state and behaves normally. No special cases, no bypasses.
+**Temporary artifacts.** Quick mode creates a `.haiku/quick/` directory with minimal intent state so the existing hook system can inject hat context. This directory is cleaned up after completion and never committed. The hook infrastructure does not know or care that the task is "quick" — it sees intent state and behaves normally. No special cases, no bypasses.
 
 **Builder/reviewer cycle.** Builder hats produce one commit per cycle. If the reviewer rejects, work loops back to the builder. After three failed cycles, quick mode stops and recommends `/elaborate` — the task was not trivial after all. This is scope detection through execution rather than upfront estimation.
 
-**Pre-delivery review.** Every quick mode PR goes through `/ai-dlc:review` before PR creation. The review skill catches issues locally before external CI or review bots see the work. No shortcuts on the way out.
+**Pre-delivery review.** Every quick mode PR goes through `/haiku:review` before PR creation. The review skill catches issues locally before external CI or review bots see the work. No shortcuts on the way out.
 
 **Six named workflows.** Default, TDD, adversarial, design, hypothesis, BDD — each with a different hat sequence tuned for a different kind of task. `/quick tdd` runs test-first. `/quick adversarial` adds a skeptical reviewer. `/quick design` includes design consideration. The workflow shapes the discipline; the discipline runs at full strength regardless of task size.
 
@@ -37,7 +37,7 @@ The result: a task that used to bypass all quality infrastructure now runs throu
 
 ## Autopilot
 
-At the other end of the spectrum, `/ai-dlc:autopilot <description>` runs the entire AI-DLC lifecycle in a single command. Elaborate, plan, execute all units, deliver via PR.
+At the other end of the spectrum, `/haiku:autopilot <description>` runs the entire H·AI·K·U lifecycle in a single command. Elaborate, plan, execute all units, deliver via PR.
 
 Autopilot operates in AHOTL mode — Autonomous, Human on the Loop. The agent elaborates requirements from the description and the codebase, decomposes into units, executes each unit through the full builder/reviewer cycle, and delivers the result. No clarification questions. No manual approvals per unit. Backpressure quality gates are the primary enforcement mechanism.
 

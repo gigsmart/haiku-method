@@ -16,14 +16,14 @@ allowed-tools:
   - TaskGet
 ---
 
-# AI-DLC Pre-Delivery Review
+# H·AI·K·U Pre-Delivery Review
 
 Fresh-context, multi-agent code review of the full diff against the base branch. Catches issues locally before external review bots or CI see the PR — eliminating the "push → bot finds issues → fix → push → repeat" cycle.
 
 This skill can be invoked:
-- **Standalone** — `/ai-dlc:review` on any branch with uncommitted or committed changes
-- **From execute** — called automatically by `/ai-dlc:advance` before PR creation (intent/hybrid strategy)
-- **From quick mode** — called automatically by `/ai-dlc:quick` after the hat loop completes
+- **Standalone** — `/haiku:review` on any branch with uncommitted or committed changes
+- **From execute** — called automatically by `/haiku:advance` before PR creation (intent/hybrid strategy)
+- **From quick mode** — called automatically by `/haiku:quick` after the hat loop completes
 
 ---
 
@@ -32,9 +32,9 @@ This skill can be invoked:
 ### Determine diff target
 
 ```bash
-# If inside an AI-DLC intent worktree, use the intent's base branch
+# If inside an H·AI·K·U intent worktree, use the intent's base branch
 INTENT_DIR=""
-for dir in .ai-dlc/*/; do
+for dir in .haiku/*/; do
   [ -f "${dir}intent.md" ] && INTENT_DIR="$dir" && break
 done
 
@@ -294,7 +294,7 @@ Present the review results:
 
 ## Step 5: Return Result
 
-When called from `/ai-dlc:advance` (as a subagent), return a structured result:
+When called from `/haiku:advance` (as a subagent), return a structured result:
 
 ```yaml
 status: approved | needs_attention | aborted
@@ -313,7 +313,7 @@ When called standalone, the report from Step 4 is the final output.
 
 ## Standalone Usage
 
-When invoked directly via `/ai-dlc:review`:
+When invoked directly via `/haiku:review`:
 
 1. Run Steps 0-4 as described above
 2. After the review completes (**APPROVED** or **NEEDS ATTENTION** where the user chose "Proceed anyway"), ask:

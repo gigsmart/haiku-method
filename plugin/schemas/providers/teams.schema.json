@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://ai-dlc.dev/schemas/providers/teams.schema.json",
+	"$id": "https://haiku.dev/schemas/providers/teams.schema.json",
 	"title": "Microsoft Teams Provider Config",
 	"description": "Provider-specific configuration for Microsoft Teams comms provider",
 	"type": "object",

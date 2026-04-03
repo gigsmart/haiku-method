@@ -4,7 +4,7 @@ description: Configure and use design providers — Canva, Figma, OpenPencil, Pe
 order: 10
 ---
 
-AI-DLC supports six design providers, each connecting your workflow to a different design tool through MCP (Model Context Protocol). Design providers enable automatic design reference resolution, component spec lookups, and asset exports during elaboration and execution.
+H·AI·K·U supports six design providers, each connecting your workflow to a different design tool through MCP (Model Context Protocol). Design providers enable automatic design reference resolution, component spec lookups, and asset exports during elaboration and execution.
 
 ## Supported Providers
 
@@ -19,7 +19,7 @@ AI-DLC supports six design providers, each connecting your workflow to a differe
 
 ## Configuration
 
-Set your design provider in `.ai-dlc/settings.yml`:
+Set your design provider in `.haiku/settings.yml`:
 
 ```yaml
 providers:
@@ -36,7 +36,7 @@ providers:
 
 ### Auto-Detection
 
-Set `type: auto` (the default) and AI-DLC detects your provider from available MCP tools:
+Set `type: auto` (the default) and H·AI·K·U detects your provider from available MCP tools:
 
 ```yaml
 providers:
@@ -57,7 +57,7 @@ The first matching provider wins. If no MCP tools are detected, design provider 
 
 ## Capability Reference
 
-Not all providers support the same operations. AI-DLC checks capabilities before attempting provider-specific actions.
+Not all providers support the same operations. H·AI·K·U checks capabilities before attempting provider-specific actions.
 
 | Capability | Canva | Figma | OpenPencil | Pencil | Penpot | Excalidraw |
 |------------|-------|-------|------------|--------|--------|------------|
@@ -99,7 +99,7 @@ References are stored in unit `design_ref` fields and resolved automatically dur
 
 ### Canva
 
-**MCP server:** Canva MCP (available through Claude Code integrations)
+**MCP server:** Canva MCP (available through Claude integrations)
 
 ```yaml
 providers:
@@ -108,7 +108,7 @@ providers:
     config:
       team_id: "your-team-id"
       brand_kit_id: "your-brand-kit-id"
-      default_folder: "AI-DLC Designs"
+      default_folder: "H·AI·K·U Designs"
       export_format: png        # png, jpg, or pdf
 ```
 
@@ -122,7 +122,7 @@ providers:
 | `default_folder` | Default folder path for new designs |
 | `export_format` | Export format: `png` (default), `jpg`, or `pdf` |
 
-**How AI-DLC uses Canva:**
+**How H·AI·K·U uses Canva:**
 
 - Creates designs using brand kit styling
 - Organizes designs into the configured folder
@@ -151,7 +151,7 @@ providers:
 | `team_id` | Figma team ID |
 | `file_key` | Primary design file key |
 
-**How AI-DLC uses Figma:**
+**How H·AI·K·U uses Figma:**
 
 - References design specs for implementation
 - Accesses components, variables, and styles through the Figma API
@@ -182,7 +182,7 @@ providers:
 | `default_export_target` | Framework target: `react` (default), `vue`, `svelte`, `html`, `flutter`, `swiftui`, `compose`, `react-native` |
 | `mcp_transport` | MCP transport: `stdio` (default) or `http` |
 
-**How AI-DLC uses OpenPencil:**
+**How H·AI·K·U uses OpenPencil:**
 
 - Creates designs with `design_skeleton` → `design_content` → `design_refine`
 - Reads and writes design tokens via `get_variables` / `set_variables`
@@ -213,7 +213,7 @@ providers:
 | `mcp_port` | MCP server port (default: `3100`) |
 | `model` | AI model for generation (default: `claude-opus-4-6`) |
 
-**How AI-DLC uses Pencil:**
+**How H·AI·K·U uses Pencil:**
 
 - Creates designs with `batch_design` for efficient multi-element creation
 - Uses `get_guidelines` to understand design system constraints
@@ -244,7 +244,7 @@ providers:
 | `file_id` | Penpot file ID |
 | `mcp_port` | MCP server port (default: `4401`) |
 
-**How AI-DLC uses Penpot:**
+**How H·AI·K·U uses Penpot:**
 
 - Accesses designs through the configured instance
 - Leverages Penpot's native component and library system
@@ -272,7 +272,7 @@ providers:
 | `mcp_mode` | Mode: `remote` (default) or `local` |
 | `style` | Drawing style: `hand-drawn` (default), `architect`, `artist`, `cartoonist` |
 
-**How AI-DLC uses Excalidraw:**
+**How H·AI·K·U uses Excalidraw:**
 
 - Creates quick diagrams and architecture sketches
 - Applies the configured drawing style consistently
@@ -295,7 +295,7 @@ The reviewer cross-references UI implementation against design specs from the pr
 
 ### Graceful Degradation
 
-Design provider interactions are advisory. If MCP tools aren't available for a configured provider, AI-DLC skips the integration silently. Missing providers never block your workflow.
+Design provider interactions are advisory. If MCP tools aren't available for a configured provider, H·AI·K·U skips the integration silently. Missing providers never block your workflow.
 
 ## Three-Tier Instructions
 
@@ -303,7 +303,7 @@ Design provider behavior is customized through three tiers of instructions, merg
 
 1. **Built-in defaults** — Ship with the plugin. Cover universal behaviors for each provider.
 2. **Inline instructions** — The `instructions:` field in your settings.yml.
-3. **Project overrides** — Markdown file at `.ai-dlc/providers/design.md`.
+3. **Project overrides** — Markdown file at `.haiku/providers/design.md`.
 
 Later tiers supplement earlier ones. For detailed customization, create a project-level override:
 
@@ -328,6 +328,6 @@ type: design
 ## Next Steps
 
 - **[Providers](/docs/providers/)** — Overview of all provider categories
-- **[Designer Guide](/docs/guide-designer/)** — Working with design in AI-DLC
+- **[Designer Guide](/docs/guide-designer/)** — Working with design in H·AI·K·U
 - **[Workflows](/docs/workflows/)** — The design workflow and per-unit workflows
 - **[Tech Lead Guide](/docs/guide-tech-lead/)** — Configuring providers for your team

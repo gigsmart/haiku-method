@@ -26,7 +26,7 @@ export function HatDetailCard({ hat, step }: HatDetailCardProps) {
 				>
 					<div className="flex items-start gap-4">
 						{/* Emoji */}
-						<div className="w-14 h-14 rounded-full bg-white dark:bg-gray-800 shadow-md flex items-center justify-center text-3xl flex-shrink-0">
+						<div className="w-14 h-14 rounded-full bg-white dark:bg-stone-800 shadow-md flex items-center justify-center text-3xl flex-shrink-0">
 							{hat.emoji}
 						</div>
 
@@ -41,13 +41,13 @@ export function HatDetailCard({ hat, step }: HatDetailCardProps) {
 							</div>
 
 							{/* Step description */}
-							<p className="text-gray-700 dark:text-gray-300 mb-4">
+							<p className="text-stone-700 dark:text-stone-300 mb-4">
 								{step.description}
 							</p>
 
 							{/* Responsibilities */}
 							<div>
-								<h4 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">
+								<h4 className="text-sm font-semibold text-stone-600 dark:text-stone-400 mb-2">
 									Responsibilities
 								</h4>
 								<ul className="space-y-1">
@@ -57,7 +57,7 @@ export function HatDetailCard({ hat, step }: HatDetailCardProps) {
 											initial={{ opacity: 0, x: -10 }}
 											animate={{ opacity: 1, x: 0 }}
 											transition={{ delay: index * 0.1 }}
-											className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400"
+											className="flex items-start gap-2 text-sm text-stone-600 dark:text-stone-400"
 										>
 											<svg
 												className={`w-4 h-4 mt-0.5 flex-shrink-0 ${hat.color.text} dark:${hat.color.textDark}`}
@@ -88,9 +88,9 @@ export function HatDetailCard({ hat, step }: HatDetailCardProps) {
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
 					exit={{ opacity: 0 }}
-					className="p-6 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30"
+					className="p-6 rounded-2xl border-2 border-dashed border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/30"
 				>
-					<p className="text-center text-gray-500 dark:text-gray-400">
+					<p className="text-center text-stone-500 dark:text-stone-400">
 						Click on a hat to see its details, or press play to see the workflow
 						in action.
 					</p>

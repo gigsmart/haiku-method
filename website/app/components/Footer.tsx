@@ -3,31 +3,31 @@ import Link from "next/link"
 
 export function Footer() {
 	const columns = [
-		footerNavigation.getStarted,
-		footerNavigation.reference,
+		footerNavigation.framework,
+		footerNavigation.developers,
 		footerNavigation.guides,
 		footerNavigation.resources,
 	]
 
 	return (
-		<footer className="border-t border-gray-200 bg-gray-50 pb-20 dark:border-gray-800 dark:bg-gray-900 md:pb-0">
+		<footer className="border-t border-stone-200 bg-stone-50 pb-20 dark:border-stone-800 dark:bg-stone-900 md:pb-0">
 			<div className="mx-auto max-w-6xl px-4 py-12">
 				{/* Main footer content */}
 				<div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
 					{/* Brand column */}
 					<div className="lg:col-span-1">
 						<Link href="/" className="text-xl font-bold tracking-tight">
-							AI-DLC
+							H·AI·K·U
 						</Link>
-						<p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-							The software development profile of the{" "}
+						<p className="mt-3 text-sm text-stone-600 dark:text-stone-400">
+							Structured human-AI collaboration, powered by the{" "}
 							<a
 								href="https://haikumethod.ai"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="underline hover:text-gray-900 dark:hover:text-white"
+								className="underline hover:text-stone-900 dark:hover:text-white"
 							>
-								H•AI•K•U Method
+								H·AI·K·U Method
 							</a>
 							.
 						</p>
@@ -38,7 +38,7 @@ export function Footer() {
 								href="https://github.com/thebushidocollective/ai-dlc"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white"
+								className="rounded-lg p-2 text-stone-500 transition hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-white"
 								aria-label="GitHub"
 							>
 								<svg
@@ -60,7 +60,7 @@ export function Footer() {
 					{/* Navigation columns */}
 					{columns.map((column) => (
 						<div key={column.title}>
-							<h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+							<h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
 								{column.title}
 							</h3>
 							<ul className="space-y-2">
@@ -75,7 +75,7 @@ export function Footer() {
 												{...(isExternal
 													? { target: "_blank", rel: "noopener noreferrer" }
 													: {})}
-												className="text-sm text-gray-600 transition hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+												className="text-sm text-stone-600 transition hover:text-stone-900 dark:text-stone-400 dark:hover:text-white"
 											>
 												{item.title}
 												{isExternal && (
@@ -104,19 +104,19 @@ export function Footer() {
 				</div>
 
 				{/* Bottom section */}
-				<div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-gray-200 pt-8 dark:border-gray-800 md:flex-row">
-					<p className="text-sm text-gray-500 dark:text-gray-400">
+				<div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-stone-200 pt-8 dark:border-stone-800 md:flex-row">
+					<p className="text-sm text-stone-500 dark:text-stone-400">
 						&copy; {new Date().getFullYear()} The Bushido Collective. MIT
 						License.
 					</p>
-					<div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+					<div className="flex flex-wrap items-center gap-4 text-sm text-stone-500 dark:text-stone-400">
 						<span>
 							Built with{" "}
 							<a
 								href="https://nextjs.org"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="underline hover:text-gray-900 dark:hover:text-white"
+								className="underline hover:text-stone-900 dark:hover:text-white"
 							>
 								Next.js
 							</a>
@@ -128,7 +128,7 @@ export function Footer() {
 								href="https://anthropic.com"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="underline hover:text-gray-900 dark:hover:text-white"
+								className="underline hover:text-stone-900 dark:hover:text-white"
 							>
 								Claude
 							</a>

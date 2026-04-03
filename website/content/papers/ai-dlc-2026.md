@@ -5,6 +5,8 @@ description: "A comprehensive methodology reimagining software development for t
 date: "2026-01-21"
 authors: ["Raja SP", "The Bushido Collective"]
 tags: ["methodology", "autonomous-agents", "ai-development", "sdlc", "hotl", "hitl"]
+archived: true
+superseded_by: "haiku-method"
 ---
 
 ## Acknowledgments & Attribution
@@ -474,17 +476,17 @@ Pass-backs are triggered by reviewer recommendation or user decision. They repre
 
 #### Single-Pass Default
 
-Intents with no `passes` configured (or `passes: []` with empty `active_pass`) use a single implicit dev pass. The pass system adds zero overhead until multi-pass iteration is needed. Projects configure their default pass structure via `default_passes` in `.ai-dlc/settings.yml`.
+Intents with no `passes` configured (or `passes: []` with empty `active_pass`) use a single implicit dev pass. The pass system adds zero overhead until multi-pass iteration is needed. Projects configure their default pass structure via `default_passes` in `.haiku/settings.yml`.
 
 #### Pass Customization
 
 The pass system uses an augmentation pattern shared with hats:
 
-- **Augment built-in passes:** Create `.ai-dlc/passes/{name}.md` where `{name}` matches a built-in pass. The project file's instructions are appended under a "Project Augmentation" heading — the built-in instructions are preserved, not replaced.
-- **Define custom passes:** Create `.ai-dlc/passes/{name}.md` with a name that does not match any built-in pass. The custom pass's instructions are used directly.
-- **Configure defaults:** Set `default_passes` in `.ai-dlc/settings.yml` to control which passes new intents receive by default.
+- **Augment built-in passes:** Create `.haiku/studios/{studio}/stages/{name}/STAGE.md` where `{name}` matches a built-in pass. The project file's instructions are appended under a "Project Augmentation" heading — the built-in instructions are preserved, not replaced.
+- **Define custom passes:** Create `.haiku/studios/{studio}/stages/{name}/STAGE.md` with a name that does not match any built-in pass. The custom pass's instructions are used directly.
+- **Configure defaults:** Set `default_passes` in `.haiku/settings.yml` to control which passes new intents receive by default.
 
-This same augmentation pattern applies to hats: plugin-provided hats are canonical, and project-level files in `.ai-dlc/hats/` augment them rather than replacing them.
+This same augmentation pattern applies to hats: plugin-provided hats are canonical, and project-level files in `.haiku/hats/` augment them rather than replacing them.
 
 ### Context Is Abundant—Use It Wisely
 
@@ -784,13 +786,13 @@ The `passes` field lists the ordered sequence of disciplinary lenses. The `activ
 
 **Workflow constraints:** Each pass declares which named workflows are available during its execution. The design pass allows only the `design` workflow. The product pass allows `default` and `bdd`. The dev pass allows `default`, `tdd`, `adversarial`, and `bdd`. When a requested workflow is not in the active pass's `available_workflows`, the pass's `default_workflow` is used instead. This prevents mismatches like running TDD during a design pass.
 
-**Passes are optional — zero overhead by default.** An intent with no `passes` configured (or `passes: []` with empty `active_pass`) uses a single implicit dev pass. The pass system is invisible until multi-pass iteration is needed. Projects configure their default pass structure via `default_passes` in `.ai-dlc/settings.yml`.
+**Passes are optional — zero overhead by default.** An intent with no `passes` configured (or `passes: []` with empty `active_pass`) uses a single implicit dev pass. The pass system is invisible until multi-pass iteration is needed. Projects configure their default pass structure via `default_passes` in `.haiku/settings.yml`.
 
 **The pass loop:** Execution runs one pass at a time. When the active pass's units are complete, `active_pass` advances to the next pass in the array, and a new elaboration cycle begins for that pass's discipline-specific units. The loop is: elaborate -> execute -> (advance pass) -> elaborate -> execute -> ... -> all passes done.
 
 **Pass-backs:** When a later pass discovers issues that require earlier-pass work, `active_pass` is set backward to the target pass. Re-elaboration occurs (new units are created alongside existing completed ones), and forward progression resumes after the pass-back is resolved. Pass-backs are triggered by reviewer recommendation or user decision — they represent normal cross-disciplinary iteration, not failure.
 
-**Pass customization:** Projects can augment built-in passes by creating `.ai-dlc/passes/{name}.md` — the project file's instructions are appended under a "Project Augmentation" heading, not replaced. Projects can also define entirely custom passes by creating a pass file with a name that does not match any built-in pass. This same augmentation pattern applies to hats: plugin-provided hats are canonical, and project-level hats in `.ai-dlc/hats/` augment them.
+**Pass customization:** Projects can augment built-in passes by creating `.haiku/studios/{studio}/stages/{name}/STAGE.md` — the project file's instructions are appended under a "Project Augmentation" heading, not replaced. Projects can also define entirely custom passes by creating a pass file with a name that does not match any built-in pass. This same augmentation pattern applies to hats: plugin-provided hats are canonical, and project-level hats in `.haiku/hats/` augment them.
 
 **Pass artifacts persist as context:** Each completed pass produces artifacts (designs, specs, code) that become input context for the next pass. This preserves the institutional knowledge that traditional handoffs lose.
 
@@ -863,8 +865,9 @@ In this example:
 Units use a numerical index prefix followed by a meaningful slug:
 
 ```
-.ai-dlc/
-└── add-oauth-login/
+.haiku/
+└── intents/
+    └── add-oauth-login/
     ├── intent.md
     ├── unit-01-setup-provider.md
     ├── unit-02-callback-handler.md
@@ -1146,7 +1149,7 @@ sequenceDiagram
 
 **Project Knowledge Layer**
 
-Elaboration begins not with a blank slate but with accumulated project intelligence. AI-DLC maintains a **Knowledge Layer** — a set of structured artifacts in `.ai-dlc/knowledge/` that persist across intents and capture what the project *is*, distinct from what any single intent *builds*.
+Elaboration begins not with a blank slate but with accumulated project intelligence. AI-DLC maintains a **Knowledge Layer** — a set of structured artifacts in `.haiku/knowledge/` that persist across intents and capture what the project *is*, distinct from what any single intent *builds*.
 
 Five artifact types form the knowledge layer:
 
@@ -1287,7 +1290,7 @@ The Operations Phase manages ongoing operational tasks after execution completes
 
 **Operations as Specs:**
 
-Operations are defined as Markdown files with YAML frontmatter in `.ai-dlc/{intent}/operations/`. Each operation spec declares its type, ownership model, and execution parameters:
+Operations are defined as Markdown files with YAML frontmatter in `.haiku/intents/{intent}/operations/`. Each operation spec declares its type, ownership model, and execution parameters:
 
 ```markdown
 ---
@@ -1315,20 +1318,20 @@ request rate, and apply scaling via kubectl.
 - **Agent-owned** — Automated scripts with companion files (`.ts`, `.py`, `.sh`). AI executes these autonomously within defined boundaries.
 - **Human-owned** — Checklist-based runbooks. AI presents the checklist and tracks completion, but humans perform the work.
 
-**The `/ai-dlc:operate` Command:**
+**The `/haiku:operate` Command:**
 
 A unified interface manages all operational tasks:
 
-- `/ai-dlc:operate` — List all operations across intents
-- `/ai-dlc:operate {intent}` — Status table for one intent's operations
-- `/ai-dlc:operate {intent} {operation}` — Execute an agent script or display a human checklist
-- `/ai-dlc:operate {intent} --deploy [target]` — Generate deployment manifests (Kubernetes CronJob, GitHub Actions, Docker Compose, systemd)
-- `/ai-dlc:operate {intent} --status` — Health check with timestamps
-- `/ai-dlc:operate {intent} --teardown` — Remove deployments while preserving specs
+- `/haiku:operate` — List all operations across intents
+- `/haiku:operate {intent}` — Status table for one intent's operations
+- `/haiku:operate {intent} {operation}` — Execute an agent script or display a human checklist
+- `/haiku:operate {intent} --deploy [target]` — Generate deployment manifests (Kubernetes CronJob, GitHub Actions, Docker Compose, systemd)
+- `/haiku:operate {intent} --status` — Health check with timestamps
+- `/haiku:operate {intent} --teardown` — Remove deployments while preserving specs
 
 **Status Persistence:**
 
-Operations track state in `.ai-dlc/{intent}/state/operation-status.json`, recording last run time, status (`on-track`, `needs-attention`, `failed`, `pending`, `torn-down`), deployment state, and target platform. This enables the Integrator to validate operational readiness across units.
+Operations track state in `.haiku/intents/{intent}/state/operation-status.json`, recording last run time, status (`on-track`, `needs-attention`, `failed`, `pending`, `torn-down`), deployment state, and target platform. This enables the Integrator to validate operational readiness across units.
 
 **Integration with Execution:**
 
@@ -1336,7 +1339,7 @@ The Builder hat produces operation specs during its production phase when the wo
 
 **Stack Configuration:**
 
-Operations integrate with the project's infrastructure stack defined in `.ai-dlc/settings.yml`. The `stack.operations` layer declares the runtime environment (auto-detected from project files when not specified), scheduled task configuration, and reactive handler setup. This allows `/ai-dlc:operate --deploy` to generate platform-appropriate manifests.
+Operations integrate with the project's infrastructure stack defined in `.haiku/settings.yml`. The `stack.operations` layer declares the runtime environment (auto-detected from project files when not specified), scheduled task configuration, and reactive handler setup. This allows `/haiku:operate --deploy` to generate platform-appropriate manifests.
 
 ---
 
@@ -1388,7 +1391,7 @@ The workflow described above assumes greenfield inception — a team starting fr
 | **Follow Up** | Iterating on a previous intent that already went through the lifecycle | A new intent linked via `iterates_on` to the prior intent | Inception with prior context |
 | **Adopt** | Reverse-engineering an existing feature that was built outside AI-DLC | Completed intent, units, discovery, and operational plan | Operations (skips Construction since code already exists) |
 
-**Adoption** addresses a common gap: features built before AI-DLC was introduced — or built without it — lack intent artifacts, unit decomposition, and operational plans. Without these artifacts, the feature cannot participate in `/ai-dlc:operate` for ongoing operational management or `/ai-dlc:followup` for structured iteration. Adoption bridges this gap by reverse-engineering artifacts from the codebase, git history, tests, and CI configuration.
+**Adoption** addresses a common gap: features built before AI-DLC was introduced — or built without it — lack intent artifacts, unit decomposition, and operational plans. Without these artifacts, the feature cannot participate in `/haiku:operate` for ongoing operational management or `/haiku:followup` for structured iteration. Adoption bridges this gap by reverse-engineering artifacts from the codebase, git history, tests, and CI configuration.
 
 All artifacts produced by adoption carry `status: completed` because the feature already exists. There is no construction phase — the code is already written, tested, and deployed. Instead, adoption analyzes the existing implementation and produces the same artifact structure that elaboration and construction would have created, enabling the feature to enter the lifecycle at the Operations phase. The user confirms the proposed decomposition at multiple gates: intent and unit breakdown, success criteria with traceable test evidence, and operational plan.
 
@@ -1528,7 +1531,7 @@ Rationale for autonomous mode:
 
 During execution, the Builder created operation specs for ongoing maintenance of the recommendation engine:
 
-**`.ai-dlc/rec-engine/operations/scale-api.md`** — Reactive, agent-owned:
+**`.haiku/intents/rec-engine/operations/scale-api.md`** — Reactive, agent-owned:
 
 ```markdown
 ---
@@ -1543,7 +1546,7 @@ Scale API replicas when latency exceeds threshold.
 Check current load, compute target replicas, apply via kubectl.
 ```
 
-**`.ai-dlc/rec-engine/operations/rollback-deployment.md`** — Reactive, agent-owned:
+**`.haiku/intents/rec-engine/operations/rollback-deployment.md`** — Reactive, agent-owned:
 
 ```markdown
 ---
@@ -1557,7 +1560,7 @@ Roll back to previous deployment version.
 Capture current version, kubectl rollout undo, verify health.
 ```
 
-**`.ai-dlc/rec-engine/operations/review-recommendation-quality.md`** — Process, human-owned:
+**`.haiku/intents/rec-engine/operations/review-recommendation-quality.md`** — Process, human-owned:
 
 ```markdown
 ---
@@ -1574,10 +1577,10 @@ frequency: quarterly
 - [ ] Document decision in ADR
 ```
 
-**Managing operations with `/ai-dlc:operate`:**
+**Managing operations with `/haiku:operate`:**
 
 ```
-$ /ai-dlc:operate rec-engine
+$ /haiku:operate rec-engine
 ┌─────────────────────────────────┬──────────┬───────┬────────────┐
 │ Operation                       │ Type     │ Owner │ Status     │
 ├─────────────────────────────────┼──────────┼───────┼────────────┤
@@ -1586,9 +1589,9 @@ $ /ai-dlc:operate rec-engine
 │ review-recommendation-quality   │ process  │ human │ pending    │
 └─────────────────────────────────┴──────────┴───────┴────────────┘
 
-$ /ai-dlc:operate rec-engine --deploy k8s-deployment
-Generated: .ai-dlc/rec-engine/operations/scale-api.deploy.yaml
-Generated: .ai-dlc/rec-engine/operations/rollback-deployment.deploy.yaml
+$ /haiku:operate rec-engine --deploy k8s-deployment
+Generated: .haiku/intents/rec-engine/operations/scale-api.deploy.yaml
+Generated: .haiku/intents/rec-engine/operations/rollback-deployment.deploy.yaml
 ```
 
 ---
@@ -1599,7 +1602,7 @@ Generated: .ai-dlc/rec-engine/operations/rollback-deployment.deploy.yaml
 
 ### Key Difference: Context Building
 
-Before Inception, AI must understand the existing codebase. AI-DLC automates this through the Knowledge Bootstrap phase of elaboration, which synthesizes knowledge artifacts from the codebase — scanning for architectural patterns, design conventions, domain models, and coding standards. These artifacts persist in `.ai-dlc/knowledge/` and inform all subsequent elaboration and execution. For teams that need deeper analysis, this context building can also be an explicit Autonomous Bolt:
+Before Inception, AI must understand the existing codebase. AI-DLC automates this through the Knowledge Bootstrap phase of elaboration, which synthesizes knowledge artifacts from the codebase — scanning for architectural patterns, design conventions, domain models, and coding standards. These artifacts persist in `.haiku/knowledge/` and inform all subsequent elaboration and execution. For teams that need deeper analysis, this context building can also be an explicit Autonomous Bolt:
 
 **Autonomous context building:**
 
@@ -1707,7 +1710,7 @@ depends_on: [unit-02-auth-api]
 
 **→ See the [Autonomous Bolt Runbook](./ai-dlc-2026/runbooks/construction/autonomous-bolt) for implementation templates, safety configuration, and the Many Hats orchestration pattern.**
 
-**→ See the [Han Runbook](./ai-dlc-2026/runbooks/tooling/han) for Claude Code-native implementation with the `ai-dlc` plugin.**
+**→ See the [Tooling Runbook](./ai-dlc-2026/runbooks/tooling/claude-code) for Claude-native implementation with the `ai-dlc` plugin (works in Claude Code and Cowork).**
 
 ---
 
@@ -1779,17 +1782,17 @@ For detailed runbooks with system prompts, entry/exit criteria, and failure mode
 | **AHOTL** | Autonomous Human-on-the-Loop: human defines criteria and reviews output; AI operates autonomously within boundaries; used for well-defined, programmatically verifiable work |
 | **Integrator** | Final validation hat that runs conditionally based on VCS strategy; validates auto-merged state (trunk) or creates single PR (intent); skipped for unit/bolt strategies |
 | **Intent** | High-level statement of purpose with completion criteria that serves as starting point for decomposition |
-| **Knowledge Artifact** | A structured file in `.ai-dlc/knowledge/` capturing project intelligence in one of five types: design, architecture, product, conventions, domain; persists across intents |
+| **Knowledge Artifact** | A structured file in `.haiku/knowledge/` capturing project intelligence in one of five types: design, architecture, product, conventions, domain; persists across intents |
 | **Knowledge Layer** | The collection of knowledge artifacts that accumulate project intelligence over time, serving as persistent cross-intent context for elaboration and execution |
 | **Memory Provider** | Source of persistent context (files, git, tickets, ADRs, runbooks) accessible to AI agents |
 | **Mob Execution** | Collaborative ritual where multiple teams build Units in parallel with AI assistance |
 | **Mob Elaboration** | Collaborative ritual where humans and AI decompose Intent into Units with Completion Criteria |
 | **OHOTL** | Observed Human-on-the-Loop: human watches AI work in real-time with ability to intervene; synchronous awareness with asynchronous control; used for creative, subjective, or training scenarios |
-| **Operation** | A file-based operational task spec (`.md` with YAML frontmatter) defining scheduled, reactive, or process-type work with agent or human ownership; stored in `.ai-dlc/{intent}/operations/` |
+| **Operation** | A file-based operational task spec (`.md` with YAML frontmatter) defining scheduled, reactive, or process-type work with agent or human ownership; stored in `.haiku/intents/{intent}/operations/` |
 | **Pass** | A typed iteration through the standard AI-DLC loop (elaborate, units, execute, review) that refines an Intent through a specific disciplinary lens; defined as frontmatter-enabled markdown files with instructions and workflow constraints; three built-in passes (design, product, dev) can be augmented or extended by project-level definitions; passes are optional (zero overhead when unused) and configurable via `default_passes` in settings; output of one pass becomes input to the next |
 | **Quality Gate** | Automated check (tests, types, lint, security) that provides pass/fail feedback |
 | **Ralph Wiggum Pattern** | Autonomous loop methodology: try, fail, learn, iterate until success criteria met |
-| **Stack Config** | Infrastructure stack configuration in `.ai-dlc/settings.yml` describing deployment, compute, monitoring, alerting, and operations layers |
+| **Stack Config** | Infrastructure stack configuration in `.haiku/settings.yml` describing deployment, compute, monitoring, alerting, and operations layers |
 | **Unit** | Cohesive, independently deployable work element derived from an Intent; named with numerical prefix + slug (e.g., `unit-01-setup-auth`); can declare dependencies via `depends_on` forming a DAG |
 | **Unit DAG** | Directed Acyclic Graph of unit dependencies enabling parallel execution (fan-out) and convergence (fan-in) |
 

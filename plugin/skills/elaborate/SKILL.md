@@ -1,5 +1,5 @@
 ---
-description: Start AI-DLC mob elaboration to collaboratively define intent, success criteria, and decompose into units. Use when starting a new feature, project, or complex task.
+description: Start H·AI·K·U mob elaboration to collaboratively define intent, success criteria, and decompose into units. Prefer `/haiku:new` + `/haiku:run` for stage-based workflows.
 allowed-tools:
   - Read
   - Write
@@ -37,23 +37,49 @@ allowed-tools:
   - "mcp__*__add*comment*"
 ---
 
-# AI-DLC Mob Elaboration
+# H·AI·K·U Mob Elaboration
 
-## Prerequisite: Project Setup
+## Deprecation Notice
 
-**Before doing anything else**, check if `.ai-dlc/settings.yml` exists using the `Glob` tool (pattern: `.ai-dlc/settings.yml`). If it does **not** exist, you MUST run `/ai-dlc:setup` via the `Skill` tool **immediately** and wait for it to complete before continuing. Do NOT proceed with elaboration until setup is done — the settings file is required for correct workflow behavior.
+> **This command is a backward-compatibility alias.** For new intents, use `/haiku:new` to create an intent, then `/haiku:run` to advance through stages. This command continues to work for legacy intents without studio/stage configuration.
+
+**Stage-based intent detection:** Before running legacy elaboration, check if the active intent has a `studio:` field in its frontmatter:
+
+```bash
+source "$CLAUDE_PLUGIN_ROOT/lib/state.sh"
+source "$CLAUDE_PLUGIN_ROOT/lib/orchestrator.sh"
+local intent_dir=$(hku_find_active_intent)
+if [ -n "$intent_dir" ]; then
+  local studio=$(hku_frontmatter_get "studio" "$intent_dir/intent.md")
+  if [ -n "$studio" ]; then
+    # Stage-based intent — delegate to /haiku:run plan phase
+    echo "This intent uses the stage-based workflow (studio: $studio)."
+    echo "Delegating to /haiku:run for the plan phase..."
+    # Invoke /haiku:run via Skill tool
+    exit 0
+  fi
+fi
+```
+
+If the intent has a `studio:` field, print a deprecation notice and invoke `/haiku:run` via the `Skill` tool instead. If the intent has no `studio:` field (or no intent exists yet), continue with the legacy elaboration flow below.
 
 ---
 
-**Project customization:** Before starting, check for `.ai-dlc/ELABORATION.md`. If it exists, read it and incorporate its guidance throughout the elaboration process. This file contains project-specific domain context, required discovery areas, compliance requirements, and team conventions that supplement these skill instructions.
+## Prerequisite: Project Setup
 
-You are the **Elaborator** starting the AI-DLC Mob Elaboration ritual. Your job is to collaboratively define:
+**Before doing anything else**, check if `.haiku/settings.yml` exists using the `Glob` tool (pattern: `.haiku/settings.yml`). If it does **not** exist, you MUST run `/haiku:setup` via the `Skill` tool **immediately** and wait for it to complete before continuing. Do NOT proceed with elaboration until setup is done — the settings file is required for correct workflow behavior.
+
+---
+
+**Project customization:** Before starting, check for `.haiku/ELABORATION.md`. If it exists, read it and incorporate its guidance throughout the elaboration process. This file contains project-specific domain context, required discovery areas, compliance requirements, and team conventions that supplement these skill instructions.
+
+You are the **Elaborator** starting the H·AI·K·U Mob Elaboration ritual. Your job is to collaboratively define:
 1. The **Intent** - What are we building and why?
 2. **Domain Model** - What entities, data sources, and systems are involved?
 3. **Success Criteria** - How do we know when it's done?
 4. **Units** - Independent pieces of work (for complex intents), each with enough technical detail that a builder with zero prior context builds the right thing
 
-Then you'll write these as files in `.ai-dlc/{intent-slug}/` for the execution phase.
+Then you'll write these as files in `.haiku/intents/{intent-slug}/` for the execution phase.
 
 **CRITICAL PRINCIPLE: Elaboration is not a quick phase.** The purpose of elaboration is to build such deep understanding of the domain that the resulting spec is unambiguous. If a builder could misinterpret a unit and build the wrong thing, the elaboration is not done. Do NOT close this phase until you have a clear, specific, technically-grounded spec validated by the user.
 
@@ -61,22 +87,22 @@ Then you'll write these as files in `.ai-dlc/{intent-slug}/` for the execution p
 
 ---
 
-## Autonomous Mode (invoked from `/ai-dlc:autopilot`)
+## Autonomous Mode (invoked from `/haiku:autopilot`)
 
-When elaboration is invoked from `/ai-dlc:autopilot`, it runs in **autonomous mode**. The feature description has already been provided by the user. The goal is to produce a complete, high-quality spec with **minimal or zero user interaction** — make reasonable decisions instead of asking questions.
+When elaboration is invoked from `/haiku:autopilot`, it runs in **autonomous mode**. The feature description has already been provided by the user. The goal is to produce a complete, high-quality spec with **minimal or zero user interaction** — make reasonable decisions instead of asking questions.
 
-**How to detect:** If the conversation context shows that `/ai-dlc:autopilot` invoked this skill, you are in autonomous mode. Do not ask the user to confirm this — just operate accordingly.
+**How to detect:** If the conversation context shows that `/haiku:autopilot` invoked this skill, you are in autonomous mode. Do not ask the user to confirm this — just operate accordingly.
 
 **Autonomous defaults per phase:**
 
 | Phase | Interactive behavior | Autonomous behavior |
 |---|---|---|
-| **1 (Gather Intent)** | Ask "What do you want to build?" | Use the feature description from `/ai-dlc:autopilot`. Do NOT ask. |
+| **1 (Gather Intent)** | Ask "What do you want to build?" | Use the feature description from `/haiku:autopilot`. Do NOT ask. |
 | **2 (Clarify Requirements)** | Ask 2-4 clarification questions | **Skip entirely.** Infer requirements from the feature description and domain discovery. The description from autopilot is assumed to be sufficient for well-understood features. |
 | **2 (Deployment/Ops)** | Discovered from codebase (no questions asked) | **Same behavior.** Discovery is always autonomous — no change needed. |
 | **2.3 (Knowledge Bootstrap)** | Synthesize knowledge from codebase | **Run silently.** Invoke the knowledge synthesis subagent (or write greenfield scaffolds) without asking the user. No interaction needed. |
 | **2.5 (Domain Model validation)** | Ask user to confirm domain model accuracy | **Auto-approve.** Log the domain model for reference but do not ask. Discovery is still mandatory — only the confirmation prompt is skipped. |
-| **2.75 (Design Direction)** | Present design direction picker | **Auto-select Editorial** with default parameters. Skip the picker UI. The default archetype can be overridden via `default_archetype` in `.ai-dlc/settings.yml`. |
+| **2.75 (Design Direction)** | Present design direction picker | **Auto-select Editorial** with default parameters. Skip the picker UI. The default archetype can be overridden via `default_archetype` in `.haiku/settings.yml`. |
 | **3 (Workflow selection)** | Show options and ask user to choose | **Use the recommended workflow.** Run the recommendation logic, then apply it directly without asking. |
 | **4 (Success Criteria)** | Ask about NFRs, then confirm criteria list | **Generate criteria and auto-approve.** Derive NFRs from the domain model and codebase patterns. Do NOT ask for confirmation. |
 | **5.5 (Cross-cutting concerns)** | Always create foundation units (no question asked) | **Same behavior.** Foundation units are always created autonomously — no change needed. |
@@ -116,37 +142,37 @@ Before any elaboration, verify the working environment:
    PROJECT_MATURITY=$(detect_project_maturity)
    ```
    Values: `greenfield` (brand new, 0-3 commits or minimal source files), `early` (some code but still small), `established` (mature codebase). This value gates Phase 2.5 exploration behavior.
-1c. **Check for project setup**: If `.ai-dlc/settings.yml` does not exist, the project has not been configured yet. Run `/ai-dlc:setup` first so that providers, delivery strategy, announcements, and other project-level settings are established before elaboration begins.
+1c. **Check for project setup**: If `.haiku/settings.yml` does not exist, the project has not been configured yet. Run `/haiku:setup` first so that providers, delivery strategy, announcements, and other project-level settings are established before elaboration begins.
    ```bash
-   if [ ! -f ".ai-dlc/settings.yml" ]; then
-     echo "No .ai-dlc/settings.yml found. Running /ai-dlc:setup first..."
+   if [ ! -f ".haiku/settings.yml" ]; then
+     echo "No .haiku/settings.yml found. Running /haiku:setup first..."
    fi
    ```
    If the file is missing, invoke the setup skill:
    ```
-   Skill("ai-dlc:setup")
+   Skill("haiku:setup")
    ```
    After setup completes, verify the settings file was created:
    ```bash
-   if [ ! -f ".ai-dlc/settings.yml" ]; then
-     echo "Setup was not completed. Please run /ai-dlc:setup before elaborating."
+   if [ ! -f ".haiku/settings.yml" ]; then
+     echo "Setup was not completed. Please run /haiku:setup before elaborating."
      exit 1
    fi
    ```
-   If the file still doesn't exist (user cancelled or setup failed), stop and tell the user to run `/ai-dlc:setup` first. Do not proceed without configuration.
+   If the file still doesn't exist (user cancelled or setup failed), stop and tell the user to run `/haiku:setup` first. Do not proceed without configuration.
 
    **In autonomous mode:** If settings.yml is missing during autopilot, use all defaults without running setup — create a minimal settings file with sensible defaults instead of blocking:
    ```bash
-   mkdir -p .ai-dlc
-   cat > .ai-dlc/settings.yml << 'SETTINGS_EOF'
+   mkdir -p .haiku
+   cat > .haiku/settings.yml << 'SETTINGS_EOF'
    git:
      change_strategy: intent
      default_branch: auto
      auto_merge: true
    default_announcements: [changelog]
    SETTINGS_EOF
-   git add .ai-dlc/settings.yml
-   git commit -m "ai-dlc: initialize default settings"
+   git add .haiku/settings.yml
+   git commit -m "haiku: initialize default settings"
    ```
 
 2. If **not cowork** (`IS_COWORK` is empty) **and in a repo** (`IN_REPO` is `true`): proceed to Phase 0 (Existing Intent Check) below.
@@ -174,13 +200,13 @@ Before any elaboration, verify the working environment:
       - Ask the user: "What repository should this work target?" If VCS MCP tools are available (e.g., GitHub MCP), offer discovered repos as options.
       - Clone directly — the user's home directory credentials (SSH keys, git credential helpers, `gh`/`glab` auth) are typically available:
         ```bash
-        WORKSPACE="/tmp/ai-dlc-workspace-<slug>"
+        WORKSPACE="/tmp/haiku-workspace-<slug>"
         git clone <url> "$WORKSPACE" 2>&1
         ```
       - **If clone fails** (authentication error, permission denied) — tell the user the clone failed and show the error output. Ask them to ensure their git credentials are configured (e.g., SSH keys in `~/.ssh`, `gh auth login`, `glab auth login`, or a git credential helper) and to grant the cowork session access to their home directory if they haven't already. Then retry once.
         - If it still fails, surface the error clearly and let the user troubleshoot. Do not loop.
       - **Enter the clone**: `cd "$WORKSPACE"`
-   d. **Proceed normally** — from this point the working directory is a git repo with `.ai-dlc/settings.yml`, providers config, and all project context. No special cowork paths needed.
+   d. **Proceed normally** — from this point the working directory is a git repo with `.haiku/settings.yml`, providers config, and all project context. No special cowork paths needed.
 
 **Key principle:** Cloning the repo eliminates the cowork problem surface. Once cloned, all hooks, config loading, and provider discovery work identically to being in a real repo.
 
@@ -190,13 +216,13 @@ Before any elaboration, verify the working environment:
 
 If the user invoked this with a slug argument:
 
-1. Check if `.ai-dlc/{slug}/intent.md` exists
+1. Check if `.haiku/intents/{slug}/intent.md` exists
 2. If it exists, check the intent and unit statuses:
-   - **Skip if intent status is `completed`**: Tell the user "Intent `{slug}` is already completed. Run `/ai-dlc:elaborate` without a slug to start a new intent." Then stop.
-   - **Skip if ANY unit has status `in_progress` or `completed`**: Execution has already started — elaboration would conflict with in-flight work. Tell the user "Intent `{slug}` already has units in progress or completed. Use `/ai-dlc:resume {slug}` to continue execution or `/ai-dlc:execute` to resume the build loop." Then stop.
+   - **Skip if intent status is `completed`**: Tell the user "Intent `{slug}` is already completed. Run `/haiku:elaborate` without a slug to start a new intent." Then stop.
+   - **Skip if ANY unit has status `in_progress` or `completed`**: Execution has already started — elaboration would conflict with in-flight work. Tell the user "Intent `{slug}` already has units in progress or completed. Use `/haiku:resume {slug}` to continue execution or `/haiku:execute` to resume the build loop." Then stop.
    - **Only proceed if ALL units have `status: pending`** (no work has begun yet):
 3. If all units are pending — **assume the user wants to modify the existing intent**:
-   - Read ALL files in `.ai-dlc/{slug}/` directory
+   - Read ALL files in `.haiku/intents/{slug}/` directory
    - **Display FULL file contents** to the user in markdown code blocks (never summarize or truncate):
      ```
      ## Current Intent: {slug}
@@ -223,7 +249,7 @@ If the user invoked this with a slug argument:
          {"label": "Modify intent", "description": "Review and update the intent definition"},
          {"label": "Modify units", "description": "Adjust the unit breakdown"},
          {"label": "Start fresh", "description": "Delete and re-elaborate from scratch"},
-         {"label": "Looks good", "description": "Proceed to /ai-dlc:execute as-is"}
+         {"label": "Looks good", "description": "Proceed to /haiku:execute as-is"}
        ],
        "multiSelect": false
      }]
@@ -232,17 +258,17 @@ If the user invoked this with a slug argument:
 4. Based on their choice:
    - **Modify intent**: Jump to Phase 4 (Success Criteria) with current values pre-filled
    - **Modify units**: Jump to Phase 5 (Decompose) with current units shown
-   - **Start fresh**: Delete `.ai-dlc/{slug}/` and proceed to Phase 1
-   - **Looks good**: Tell them to run `/ai-dlc:execute` to begin
+   - **Start fresh**: Delete `.haiku/intents/{slug}/` and proceed to Phase 1
+   - **Looks good**: Tell them to run `/haiku:execute` to begin
 
 If no slug provided, or the intent doesn't exist, proceed to Phase 1.
 
-**Start fresh cleanup:** When the user chooses "Start fresh", remove the intent worktree and its branch (if they exist from a prior elaboration attempt), then clean up any leftover `.ai-dlc/{slug}/` directory:
+**Start fresh cleanup:** When the user chooses "Start fresh", remove the intent worktree and its branch (if they exist from a prior elaboration attempt), then clean up any leftover `.haiku/intents/{slug}/` directory:
 
 ```bash
 REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
-INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${slug}"
-INTENT_BRANCH="ai-dlc/${slug}/main"
+INTENT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${slug}"
+INTENT_BRANCH="haiku/${slug}/main"
 
 # Remove worktree if it exists
 if [ -d "$INTENT_WORKTREE" ]; then
@@ -250,7 +276,7 @@ if [ -d "$INTENT_WORKTREE" ]; then
 fi
 
 # Remove any unit worktrees for this intent
-for wt in "${REPO_ROOT}/.ai-dlc/worktrees/${slug}-"*; do
+for wt in "${REPO_ROOT}/.haiku/worktrees/${slug}-"*; do
   [ -d "$wt" ] && git worktree remove --force "$wt" 2>/dev/null
 done
 git worktree prune
@@ -259,7 +285,7 @@ git worktree prune
 git branch -D "$INTENT_BRANCH" 2>/dev/null
 
 # Clean up any leftover directory on main (from older elaboration format)
-rm -rf ".ai-dlc/${slug}"
+rm -rf ".haiku/intents/${slug}"
 ```
 
 Then proceed to Phase 1.
@@ -276,8 +302,8 @@ If elaborating an existing intent (slug provided), check its frontmatter for `it
 INTENT_SLUG="{slug}"
 
 # Check if intent.md exists and has iterates_on
-if [ -f ".ai-dlc/${INTENT_SLUG}/intent.md" ]; then
-  ITERATES_ON=$(dlc_frontmatter_get "iterates_on" ".ai-dlc/${INTENT_SLUG}/intent.md" 2>/dev/null || echo "")
+if [ -f ".haiku/intents/${INTENT_SLUG}/intent.md" ]; then
+  ITERATES_ON=$(hku_frontmatter_get "iterates_on" ".haiku/intents/${INTENT_SLUG}/intent.md" 2>/dev/null || echo "")
 fi
 ```
 
@@ -289,34 +315,34 @@ If `ITERATES_ON` is non-empty, this is an iteration intent. Load the previous in
 PREVIOUS_SLUG="$ITERATES_ON"
 
 # Try filesystem
-if [ -f ".ai-dlc/${PREVIOUS_SLUG}/intent.md" ]; then
-  PREVIOUS_INTENT=$(cat ".ai-dlc/${PREVIOUS_SLUG}/intent.md")
+if [ -f ".haiku/intents/${PREVIOUS_SLUG}/intent.md" ]; then
+  PREVIOUS_INTENT=$(cat ".haiku/intents/${PREVIOUS_SLUG}/intent.md")
   PREVIOUS_SOURCE="filesystem"
 else
   # Fallback: read from intent branch
-  PREVIOUS_INTENT=$(git show "ai-dlc/${PREVIOUS_SLUG}/main:.ai-dlc/${PREVIOUS_SLUG}/intent.md" 2>/dev/null)
+  PREVIOUS_INTENT=$(git show "haiku/${PREVIOUS_SLUG}/main:.haiku/intents/${PREVIOUS_SLUG}/intent.md" 2>/dev/null)
   PREVIOUS_SOURCE="git-branch"
 fi
 
 # Load previous units
 if [ "$PREVIOUS_SOURCE" = "filesystem" ]; then
   PREVIOUS_UNITS=""
-  for unit_file in .ai-dlc/${PREVIOUS_SLUG}/unit-*.md; do
+  for unit_file in .haiku/intents/${PREVIOUS_SLUG}/stages/*/units/unit-*.md; do
     [ -f "$unit_file" ] && PREVIOUS_UNITS="${PREVIOUS_UNITS}$(cat "$unit_file")\n---\n"
   done
 else
   PREVIOUS_UNITS=""
-  git ls-tree --name-only "ai-dlc/${PREVIOUS_SLUG}/main" ".ai-dlc/${PREVIOUS_SLUG}/" 2>/dev/null | \
+  git ls-tree --name-only "haiku/${PREVIOUS_SLUG}/main" ".haiku/intents/${PREVIOUS_SLUG}/" 2>/dev/null | \
     grep 'unit-' | while read -r f; do
-      git show "ai-dlc/${PREVIOUS_SLUG}/main:$f" 2>/dev/null
+      git show "haiku/${PREVIOUS_SLUG}/main:$f" 2>/dev/null
     done
 fi
 
 # Load previous discovery.md if available
 if [ "$PREVIOUS_SOURCE" = "filesystem" ]; then
-  PREVIOUS_DISCOVERY=$(cat ".ai-dlc/${PREVIOUS_SLUG}/discovery.md" 2>/dev/null)
+  PREVIOUS_DISCOVERY=$(cat ".haiku/intents/${PREVIOUS_SLUG}/discovery.md" 2>/dev/null)
 else
-  PREVIOUS_DISCOVERY=$(git show "ai-dlc/${PREVIOUS_SLUG}/main:.ai-dlc/${PREVIOUS_SLUG}/discovery.md" 2>/dev/null)
+  PREVIOUS_DISCOVERY=$(git show "haiku/${PREVIOUS_SLUG}/main:.haiku/intents/${PREVIOUS_SLUG}/discovery.md" 2>/dev/null)
 fi
 ```
 
@@ -343,11 +369,11 @@ This intent iterates on **{previous title}** (`{previous-slug}`).
 **Store this context** — it will be referenced in Phase 2, Phase 2.5, and Phase 5. Save to state:
 
 ```bash
-dlc_state_save "$INTENT_DIR" "previous-intent-context" "{JSON summary of previous intent}"
+hku_state_save "$INTENT_DIR" "previous-intent-context" "{JSON summary of previous intent}"
 ```
 
 **When `iterates_on` is set, the following phases are modified:**
-- **Phase 1**: Skip the "What do you want to build?" question — the intent scaffold already has a Problem/Solution from `/ai-dlc:followup`. Instead, present the existing description and ask if the user wants to refine it.
+- **Phase 1**: Skip the "What do you want to build?" question — the intent scaffold already has a Problem/Solution from `/haiku:followup`. Instead, present the existing description and ask if the user wants to refine it.
 - **Phase 2**: Use previous intent context to ask more targeted clarifying questions. Focus on what's *different* from the previous intent, not re-establishing the full domain.
 - **Phase 2.5**: Shorten or skip domain discovery — the previous intent already explored the domain. Focus discovery on *new* areas or changes only.
 - **Phase 5**: Reference previous units to understand what exists. Suggest units that modify, extend, or fix what was previously built.
@@ -356,7 +382,7 @@ dlc_state_save "$INTENT_DIR" "previous-intent-context" "{JSON summary of previou
 
 ## Phase 1: Gather Intent
 
-**If `iterates_on` is set:** The intent was created by `/ai-dlc:followup` and already has a Problem/Solution section. Present the existing description to the user and ask if they want to refine it:
+**If `iterates_on` is set:** The intent was created by `/haiku:followup` and already has a Problem/Solution section. Present the existing description to the user and ask if they want to refine it:
 
 ```json
 {
@@ -413,7 +439,7 @@ Continue asking until you can articulate back to the user, in your own words, ex
 - Existing infrastructure config (Dockerfiles, Helm charts, Terraform, CI/CD pipelines)
 - Existing monitoring setup (Prometheus, Grafana, Datadog, alert rules, SLOs)
 - Existing operational procedures (runbooks, on-call configs, scaling policies)
-- Stack config layers from `.ai-dlc/settings.yml`
+- Stack config layers from `.haiku/settings.yml`
 
 The discovery subagent writes findings to `discovery.md` under standardized sections (`## Deployment Architecture`, `## Monitoring Setup`, `## Operational Procedures`). These findings feed into Phase 5 (auto-creation of infrastructure/observability units) and Phase 6 (unit frontmatter ops blocks).
 
@@ -427,15 +453,15 @@ Before beginning technical exploration, create the intent worktree and initializ
 
 **CRITICAL — Step 1: Gitignore worktrees directory (MUST run before creating any worktree)**
 
-You MUST ensure `.ai-dlc/worktrees/` is in `.gitignore` BEFORE creating the worktree. Run this as a **separate Bash command** first:
+You MUST ensure `.haiku/worktrees/` is in `.gitignore` BEFORE creating the worktree. Run this as a **separate Bash command** first:
 
 ```bash
 REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
-mkdir -p "${REPO_ROOT}/.ai-dlc/worktrees"
-if ! grep -q '\.ai-dlc/worktrees/' "${REPO_ROOT}/.gitignore" 2>/dev/null; then
-  echo '.ai-dlc/worktrees/' >> "${REPO_ROOT}/.gitignore"
+mkdir -p "${REPO_ROOT}/.haiku/worktrees"
+if ! grep -q '\.haiku/worktrees/' "${REPO_ROOT}/.gitignore" 2>/dev/null; then
+  echo '.haiku/worktrees/' >> "${REPO_ROOT}/.gitignore"
   git add "${REPO_ROOT}/.gitignore"
-  git commit -m "chore: gitignore .ai-dlc/worktrees"
+  git commit -m "chore: gitignore .haiku/worktrees"
 fi
 ```
 
@@ -446,12 +472,12 @@ Only after confirming the gitignore entry exists:
 ```bash
 INTENT_SLUG="{intent-slug}"
 REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
-INTENT_BRANCH="ai-dlc/${INTENT_SLUG}/main"
-INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
+INTENT_BRANCH="haiku/${INTENT_SLUG}/main"
+INTENT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}"
 
 # Guard: abort if worktrees dir is not gitignored
-if ! grep -q '\.ai-dlc/worktrees/' "${REPO_ROOT}/.gitignore" 2>/dev/null; then
-  echo "ERROR: .ai-dlc/worktrees/ is not in .gitignore. Run Step 1 first." >&2
+if ! grep -q '\.haiku/worktrees/' "${REPO_ROOT}/.gitignore" 2>/dev/null; then
+  echo "ERROR: .haiku/worktrees/ is not in .gitignore. Run Step 1 first." >&2
   exit 1
 fi
 
@@ -467,7 +493,7 @@ cd "$INTENT_WORKTREE"
 Now initialize the discovery scratchpad. This file persists elaboration findings to disk so they survive context compaction and are available to builders later.
 
 ```bash
-DISCOVERY_DIR=".ai-dlc/${INTENT_SLUG}"
+DISCOVERY_DIR=".haiku/intents/${INTENT_SLUG}"
 DISCOVERY_FILE="${DISCOVERY_DIR}/discovery.md"
 
 mkdir -p "$DISCOVERY_DIR"
@@ -489,21 +515,21 @@ Builders: read section headers for an overview, then dive into specific sections
 DISCOVERY_EOF
 ```
 
-This file is written directly in the intent worktree on the `ai-dlc/{intent-slug}/main` branch. No artifacts touch `main`.
+This file is written directly in the intent worktree on the `haiku/{intent-slug}/main` branch. No artifacts touch `main`.
 
 Commit the initialized discovery log so the worktree setup is versioned:
 
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/discovery.md
+git add .haiku/intents/${INTENT_SLUG}/discovery.md
 git commit -m "elaborate(${INTENT_SLUG}): initialize discovery log"
 ```
 
 This ensures:
 - Main working directory stays on `main` for other work
 - All discovery findings are written directly on the intent branch
-- All subsequent state operations use the intent branch's `.ai-dlc/{slug}/state/` directory
+- All subsequent state operations use the intent branch's `.haiku/intents/{slug}/state/` directory
 - Multiple intents can run in parallel in separate worktrees
-- Clean separation between main and AI-DLC orchestration state
+- Clean separation between main and H·AI·K·U orchestration state
 - Subagents spawn from the intent worktree, not the original repo
 
 ---
@@ -518,8 +544,8 @@ Before domain discovery, check whether knowledge artifacts already exist. If thi
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
 source "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh"
 PROJECT_MATURITY=$(detect_project_maturity)
-HAS_DESIGN_KNOWLEDGE=$(dlc_knowledge_exists "design" && echo "true" || echo "false")
-KNOWLEDGE_COUNT=$(dlc_knowledge_list | wc -l | tr -d ' ')
+HAS_DESIGN_KNOWLEDGE=$(hku_knowledge_exists "design" && echo "true" || echo "false")
+KNOWLEDGE_COUNT=$(hku_knowledge_list | wc -l | tr -d ' ')
 ```
 
 ### Step 2: Knowledge Synthesis (first elaboration or missing knowledge)
@@ -535,7 +561,7 @@ source "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh"
 
 SCAFFOLD_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-dlc_knowledge_write "domain" "$(cat <<SCAFFOLD_EOF
+hku_knowledge_write "domain" "$(cat <<SCAFFOLD_EOF
 ---
 type: domain
 version: 1
@@ -560,7 +586,7 @@ project_maturity: greenfield
 SCAFFOLD_EOF
 )"
 
-dlc_knowledge_write "product" "$(cat <<SCAFFOLD_EOF
+hku_knowledge_write "product" "$(cat <<SCAFFOLD_EOF
 ---
 type: product
 version: 1
@@ -585,13 +611,13 @@ project_maturity: greenfield
 SCAFFOLD_EOF
 )"
 
-git add .ai-dlc/knowledge/
+git add .haiku/knowledge/
 git commit -m "elaborate(${INTENT_SLUG}): scaffold greenfield knowledge artifacts"
 ```
 
 **If `PROJECT_MATURITY` is `early` or `established` AND `KNOWLEDGE_COUNT` is 0:**
 
-1. Write the knowledge synthesis brief to `.ai-dlc/${INTENT_SLUG}/.briefs/knowledge-synthesize.md`:
+1. Write the knowledge synthesis brief to `.haiku/intents/${INTENT_SLUG}/.briefs/knowledge-synthesize.md`:
 
 ```markdown
 ---
@@ -611,21 +637,21 @@ Scan the codebase and synthesize knowledge artifacts for: domain, architecture, 
 Agent({
   subagent_type: "general-purpose",
   description: "knowledge-synthesize: {INTENT_SLUG}",
-  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/knowledge-synthesize/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/knowledge-synthesize.md as input."
+  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/knowledge-synthesize/SKILL.md first, then execute it with the brief file at .haiku/intents/{INTENT_SLUG}/.briefs/knowledge-synthesize.md as input."
 })
 ```
 
-3. Read results from `.ai-dlc/${INTENT_SLUG}/.briefs/knowledge-synthesize-results.md`
+3. Read results from `.haiku/intents/${INTENT_SLUG}/.briefs/knowledge-synthesize-results.md`
 4. Commit synthesized knowledge artifacts:
 
 ```bash
-git add .ai-dlc/knowledge/ .ai-dlc/${INTENT_SLUG}/.briefs/knowledge-synthesize*.md
+git add .haiku/knowledge/ .haiku/intents/${INTENT_SLUG}/.briefs/knowledge-synthesize*.md
 git commit -m "elaborate(${INTENT_SLUG}): synthesize knowledge from codebase"
 ```
 
 **If `KNOWLEDGE_COUNT` is greater than 0:** Skip — knowledge artifacts already exist. No action needed.
 
-> **Post-integrate refresh:** Knowledge artifacts are also refreshed automatically after each intent completes integration (see `/ai-dlc:advance` Step 5, "Post-Integrate Knowledge Refresh"). This means the codebase patterns established by intent N are captured in knowledge artifacts before intent N+1 begins elaboration. For greenfield projects, the first intent creates the foundational patterns (design tokens, architecture, conventions) and the post-integrate refresh captures them — so the second intent starts with real knowledge instead of empty scaffolds.
+> **Post-integrate refresh:** Knowledge artifacts are also refreshed automatically after each intent completes integration (see `/haiku:advance` Step 5, "Post-Integrate Knowledge Refresh"). This means the codebase patterns established by intent N are captured in knowledge artifacts before intent N+1 begins elaboration. For greenfield projects, the first intent creates the foundational patterns (design tokens, architecture, conventions) and the post-integrate refresh captures them — so the second intent starts with real knowledge instead of empty scaffolds.
 
 **CRITICAL — DO NOT STOP HERE.** Knowledge synthesis is just one step. Domain discovery (Phase 2.5) follows and can now build on the synthesized knowledge.
 
@@ -653,7 +679,7 @@ PROVIDERS=$(load_providers)
 
 Serialize current state into the brief file. Include ALL context the subagent needs — it has no access to your conversation history.
 
-Write `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-discover.md`:
+Write `.haiku/intents/${INTENT_SLUG}/.briefs/elaborate-discover.md`:
 
 ```markdown
 ---
@@ -679,16 +705,16 @@ provider_config: {JSON of PROVIDERS object}
 
 {For each knowledge artifact that exists (from Phase 2.3 or prior intents),
 include its full content here. Load the list of artifacts via
-`dlc_knowledge_list` and read each one via `dlc_knowledge_read "$type"`.
+`hku_knowledge_list` and read each one via `hku_knowledge_read "$type"`.
 
 **Filter out scaffold artifacts:** Before including an artifact, check its
-frontmatter confidence level via `dlc_frontmatter_get "confidence"`. Skip
+frontmatter confidence level via `hku_frontmatter_get "confidence"`. Skip
 any artifact with `confidence: low` — these are greenfield scaffolds with
 no real content. Also skip artifacts whose body sections contain only
 placeholder text like `(none yet)`.
 
 ```bash
-CONFIDENCE=$(dlc_frontmatter_get "confidence" ".ai-dlc/knowledge/${artifact_type}.md" 2>/dev/null || echo "")
+CONFIDENCE=$(hku_frontmatter_get "confidence" ".haiku/knowledge/${artifact_type}.md" 2>/dev/null || echo "")
 if [ "$CONFIDENCE" = "low" ]; then
   continue  # Skip low-confidence scaffolds in discovery brief
 fi
@@ -706,7 +732,7 @@ Format each remaining artifact as a subsection:}
 Commit the discovery brief immediately after writing it:
 
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-discover.md
+git add .haiku/intents/${INTENT_SLUG}/.briefs/elaborate-discover.md
 git commit -m "elaborate(${INTENT_SLUG}): write discovery brief"
 ```
 
@@ -716,7 +742,7 @@ git commit -m "elaborate(${INTENT_SLUG}): write discovery brief"
 Agent({
   subagent_type: "general-purpose",
   description: "elaborate-discover: {INTENT_SLUG}",
-  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/discover/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/elaborate-discover.md as input."
+  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/discover/SKILL.md first, then execute it with the brief file at .haiku/intents/{INTENT_SLUG}/.briefs/elaborate-discover.md as input."
 })
 ```
 
@@ -724,7 +750,7 @@ Agent({
 
 ### Step 4: Read results
 
-Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-discover-results.md`.
+Read `.haiku/intents/${INTENT_SLUG}/.briefs/elaborate-discover-results.md`.
 
 - Parse the YAML frontmatter `status` field
 - If `status: error` — report the `error_message` to the user and discuss how to proceed
@@ -735,7 +761,7 @@ Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-discover-results.md`.
 After reading the results (regardless of status), commit the discovery artifacts so the exploration work is versioned:
 
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/discovery.md .ai-dlc/${INTENT_SLUG}/.briefs/
+git add .haiku/intents/${INTENT_SLUG}/discovery.md .haiku/intents/${INTENT_SLUG}/.briefs/
 git commit -m "elaborate(${INTENT_SLUG}): complete domain discovery"
 ```
 
@@ -858,7 +884,7 @@ For UI-heavy intents, support visual brainstorming alongside the terminal conver
    echo '<wireframe html>' > /tmp/aidlc-wireframe.html && open /tmp/aidlc-wireframe.html
    ```
 3. **Iterate visually** — After the user reviews, update and reopen. The visual and terminal conversation run in parallel.
-4. **Persist approved visuals** — Save approved wireframes/diagrams to `.ai-dlc/{intent-slug}/brainstorm/`
+4. **Persist approved visuals** — Save approved wireframes/diagrams to `.haiku/intents/{intent-slug}/brainstorm/`
 
 This is most useful during:
 - Phase 2.5 (domain discovery) — architecture diagrams
@@ -875,7 +901,7 @@ For greenfield and early-stage projects without existing design knowledge, prese
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh"
-HAS_DESIGN_KNOWLEDGE=$(dlc_knowledge_exists "design" && echo "true" || echo "false")
+HAS_DESIGN_KNOWLEDGE=$(hku_knowledge_exists "design" && echo "true" || echo "false")
 ```
 
 ### Step 2: Design Direction (greenfield/early only)
@@ -897,7 +923,7 @@ Try calling `pick_design_direction` with the archetype and parameter data. If th
 source "${CLAUDE_PLUGIN_ROOT}/lib/design-blueprint.sh"
 SELECTED_ARCHETYPE="{archetype id from picker}"
 SELECTED_PARAMS='{JSON parameters from picker}'
-dlc_generate_design_blueprint "${INTENT_SLUG}" "${SELECTED_ARCHETYPE}" "${SELECTED_PARAMS}"
+hku_generate_design_blueprint "${INTENT_SLUG}" "${SELECTED_ARCHETYPE}" "${SELECTED_PARAMS}"
 ```
 
 5. Seed the design knowledge artifact from the blueprint:
@@ -906,14 +932,14 @@ dlc_generate_design_blueprint "${INTENT_SLUG}" "${SELECTED_ARCHETYPE}" "${SELECT
 source "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh"
 
 # Read blueprint details
-ARCHETYPE_NAME=$(dlc_frontmatter_get "archetype_name" ".ai-dlc/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || dlc_frontmatter_get "archetype" ".ai-dlc/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || echo "unknown")
+ARCHETYPE_NAME=$(hku_frontmatter_get "archetype_name" ".haiku/intents/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || hku_frontmatter_get "archetype" ".haiku/intents/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || echo "unknown")
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # Extract the body (everything after frontmatter) from the blueprint
-BLUEPRINT_BODY=$(sed '1,/^---$/d' ".ai-dlc/${INTENT_SLUG}/design-blueprint.md" | sed '1,/^---$/d')
+BLUEPRINT_BODY=$(sed '1,/^---$/d' ".haiku/intents/${INTENT_SLUG}/design-blueprint.md" | sed '1,/^---$/d')
 
 # Write as properly-structured knowledge artifact
-dlc_knowledge_write "design" "---
+hku_knowledge_write "design" "---
 type: design
 version: 1
 created: ${TIMESTAMP}
@@ -933,7 +959,7 @@ ${BLUEPRINT_BODY}"
 6. Commit:
 
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/design-blueprint.md .ai-dlc/knowledge/design.md
+git add .haiku/intents/${INTENT_SLUG}/design-blueprint.md .haiku/knowledge/design.md
 git commit -m "elaborate(${INTENT_SLUG}): set design direction — ${SELECTED_ARCHETYPE}"
 ```
 
@@ -963,7 +989,7 @@ Use the default parameters for the chosen archetype (no slider tuning in termina
 
 **Skip condition:** If `PROJECT_MATURITY` is `established`, or if `HAS_DESIGN_KNOWLEDGE` is already `true`, skip the design direction picker entirely. Existing design knowledge (from prior intents, synthesis, or manual setup) is already available.
 
-**Autonomous mode behavior:** In autonomous mode, skip the picker UI entirely. Auto-select **Editorial** with default parameters (the most conventional and broadly appropriate archetype). This default can be overridden via `default_archetype` in `.ai-dlc/settings.yml`:
+**Autonomous mode behavior:** In autonomous mode, skip the picker UI entirely. Auto-select **Editorial** with default parameters (the most conventional and broadly appropriate archetype). This default can be overridden via `default_archetype` in `.haiku/settings.yml`:
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
@@ -978,115 +1004,54 @@ After knowledge bootstrap (Phase 2.3) and optional design direction:
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh"
-DOMAIN_KNOWLEDGE=$(dlc_knowledge_read "domain" 2>/dev/null || echo "")
-PRODUCT_KNOWLEDGE=$(dlc_knowledge_read "product" 2>/dev/null || echo "")
-DESIGN_KNOWLEDGE=$(dlc_knowledge_read "design" 2>/dev/null || echo "")
+DOMAIN_KNOWLEDGE=$(hku_knowledge_read "domain" 2>/dev/null || echo "")
+PRODUCT_KNOWLEDGE=$(hku_knowledge_read "product" 2>/dev/null || echo "")
+DESIGN_KNOWLEDGE=$(hku_knowledge_read "design" 2>/dev/null || echo "")
 ```
 
 If domain or product knowledge exists, carry it forward as additional context for Phase 3 (Workflow Selection), Phase 4 (Success Criteria), and Phase 5 (Decomposition). This enriches unit specs with domain vocabulary and business rules already captured in knowledge artifacts.
 
 ---
 
-## Phase 3: Discover Hats and Select Workflow
+## Phase 3: Select Studio and Stage
 
-### Step 1: Discover Available Hats
+### Step 1: Discover Available Studios and Stages
 
-Use `dlc_frontmatter_get` to read all available hat definitions dynamically:
-
-```bash
-# List all hats from plugin directory
-for hat_file in "${CLAUDE_PLUGIN_ROOT}/hats/"*.md; do
-  [ -f "$hat_file" ] || continue
-  slug=$(basename "$hat_file" .md)
-  name=$(dlc_frontmatter_get "name" "$hat_file" 2>/dev/null)
-  desc=$(dlc_frontmatter_get "description" "$hat_file" 2>/dev/null)
-  echo "- **${name:-$slug}** (\`$slug\`): $desc"
-done
-
-# Also check for project-local hat overrides
-for hat_file in .ai-dlc/hats/*.md; do
-  [ -f "$hat_file" ] || continue
-  slug=$(basename "$hat_file" .md)
-  name=$(dlc_frontmatter_get "name" "$hat_file" 2>/dev/null)
-  desc=$(dlc_frontmatter_get "description" "$hat_file" 2>/dev/null)
-  echo "- **${name:-$slug}** (\`$slug\`): $desc [project override]"
-done
-```
-
-Display the available hats to the user so they can see what's available for workflow composition.
-
-### Step 2: Discover Available Workflows
-
-Read workflows from plugin defaults and project overrides:
+List studios and their stages from the plugin directory:
 
 ```bash
-# Plugin workflows (defaults)
-cat "${CLAUDE_PLUGIN_ROOT}/workflows.yml"
+source "${CLAUDE_PLUGIN_ROOT}/lib/studio.sh"
+source "${CLAUDE_PLUGIN_ROOT}/lib/stage.sh"
+source "${CLAUDE_PLUGIN_ROOT}/lib/hat.sh"
 
-# Project workflow overrides (if any)
-[ -f ".ai-dlc/workflows.yml" ] && cat ".ai-dlc/workflows.yml"
+# List all studios
+for studio_dir in "${CLAUDE_PLUGIN_ROOT}/studios/"*/; do
+  [ -d "$studio_dir" ] || continue
+  studio=$(basename "$studio_dir")
+  echo "## Studio: $studio"
+  # List stages in this studio
+  for stage_file in "$studio_dir"stages/*/STAGE.md; do
+    [ -f "$stage_file" ] || continue
+    stage=$(basename "$(dirname "$stage_file")")
+    hats=$(hku_get_hat_sequence "$stage" "$studio" 2>/dev/null)
+    echo "- **$stage**: $hats"
+  done
+done
 ```
 
-### Step 3: Select or Compose Workflow
+Display the available studios, stages, and their hat sequences.
 
-This step has three parts: show what's available, make a recommendation, then let the user decide.
+### Step 2: Select Studio
 
-#### 3a. Preflight — Display Available Options
+Analyze the intent to determine the best studio:
+- **software** — for code, APIs, infrastructure, and technical implementation
+- **ideation** — for research, content creation, and non-code deliverables
 
-First, show the user all predefined workflows (from Step 2) and available hats (from Step 1) so they have full visibility before any recommendation:
+Present your recommendation with reasoning and let the user confirm via `AskUserQuestion`.
 
-```markdown
-## Available Workflows
+### Step 3: Stage is Automatic
 
-{List each predefined workflow with its hat sequence, from Step 2}
-
-## Available Hats
-
-{List each hat with its slug and one-line description, from Step 1}
-```
-
-#### 3b. Recommendation — Suggest the Best Fit
-
-Analyze the intent against the available options. Consider:
-- What phases does this intent actually need? (Not every intent needs planning — a pure refactor might skip straight to builder.)
-- Does the domain suggest specialized hats? (Security-sensitive work benefits from red-team/blue-team. Bug investigations benefit from observer/hypothesizer.)
-- Keep it minimal — every hat adds an iteration cycle. Don't add hats "just in case."
-
-Present your recommendation with reasoning:
-
-```markdown
-## Recommendation
-
-**{workflow name or "Custom"}**: {hats as arrows}
-
-{1-2 sentences explaining why this fits the intent. Reference specific aspects of what the user described.}
-```
-
-The recommendation can be a predefined workflow or a custom composition — whichever best fits. If suggesting a custom sequence, explain what each hat contributes to this specific intent.
-
-#### 3c. User Decides
-
-Use `AskUserQuestion` with the predefined workflows as options. Do NOT hardcode options — use the workflows discovered in Step 2:
-
-```json
-{
-  "questions": [{
-    "question": "Which workflow would you like to use?",
-    "header": "Workflow",
-    "options": [
-      {"label": "{recommended} (Recommended)", "description": "{hats as arrows}"},
-      {"label": "{workflow2}", "description": "{hats as arrows}"},
-      {"label": "{workflow3}", "description": "{hats as arrows}"},
-      {"label": "Custom", "description": "Tell me which hats to use and in what order"}
-    ],
-    "multiSelect": false
-  }]
-}
-```
-
-If your recommendation is a custom composition, include it as the first option with "(Recommended)". The predefined workflows still appear as alternatives.
-
-If the user selects "Custom", ask them to specify which hats to include and in what order.
+The stage is determined by the execution phase — stages within a studio run in sequence. The first stage is set automatically. No user selection needed for stage.
 
 ---
 
@@ -1209,25 +1174,23 @@ Do NOT ask the user whether to decompose. Assess the complexity from the domain 
 
 2. **Units MUST NOT span domains.** A unit has exactly one discipline (frontend, backend, api, documentation, devops, design, etc.). No unit should mix frontend and backend work, or API and documentation, etc. If a feature needs both a backend endpoint and a frontend view, those are two units — the frontend unit `depends_on` the backend unit.
 
-3. **Design work is its own unit.** If a feature needs UI/UX design work (mockups, component design, interaction flows), create a separate unit with `discipline: design` and `workflow: design`. The design workflow runs `planner → designer → reviewer`. Frontend implementation units should `depends_on` the design unit so builders have finalized designs to implement against. This also enables a human to own the design unit while AI handles other units.
+3. **Design work is its own unit.** If a feature needs UI/UX design work (mockups, component design, interaction flows), create a separate unit with `discipline: design`. The design stage runs `designer → design-reviewer`. Frontend implementation units should `depends_on` the design unit so builders have finalized designs to implement against. This also enables a human to own the design unit while AI handles other units.
 
-**Per-unit workflow suggestions:** Different units may benefit from different workflows based on their discipline or risk profile. When decomposing, suggest an appropriate workflow for each unit:
+**Per-unit stage routing:** Different units route to different stages based on their discipline. The stage determines the hat sequence:
 
-| Discipline / Concern | Suggested Workflow | Rationale |
+| Discipline / Concern | Stage | Hat Sequence |
 |---|---|---|
-| `backend`, `api`, `devops`, `documentation` | `default` (planner → builder → reviewer) | Standard implementation cycle |
-| `design` | `design` (planner → designer → reviewer) | Design artifacts need design hat, not builder |
-| `infrastructure` | `default` (planner → builder → reviewer) | IaC provisioning follows standard plan-build-review |
-| `observability` | `default` (planner → builder → reviewer) | Monitoring/alerting setup follows standard plan-build-review |
-| Security-sensitive units | `adversarial` (planner → builder → red-team → blue-team → reviewer) | Adversarial testing for auth, crypto, data handling |
-| Test-driven units | `tdd` (test-writer → implementer → refactorer → reviewer) | Red-Green-Refactor cycle for high-correctness code |
-| Units without a clear workflow need | (omit `workflow:` field) | Inherits the intent-level workflow |
+| `backend`, `api`, `fullstack` | `development` | planner → builder → reviewer |
+| `design` | `design` | designer → design-reviewer |
+| `infrastructure`, `observability` | `operations` | ops-engineer → sre |
+| `product` | `product` | product-owner → specification-writer |
+| Security-sensitive units | `security` | threat-modeler → red-team → blue-team → security-reviewer |
 
-Set the `workflow:` frontmatter field on units that need a non-default workflow. Omit it (or leave empty) for units that should use the intent-level workflow.
+The discipline-to-stage mapping is automatic — no manual configuration needed.
 
 **Auto-routing rules:**
-- When generating a unit with `discipline: design`, automatically set `workflow: design` in the frontmatter. This ensures design units always route through the design workflow (`planner → designer → reviewer`) instead of accidentally inheriting the intent-level workflow.
-- When generating a unit with `discipline: infrastructure` or `discipline: observability`, the default workflow applies — no `workflow:` override is needed (omit or leave empty). Do not require the user to specify this manually.
+- When generating a unit with `discipline: design`, the execution engine automatically routes it through the `design` stage.
+- When generating a unit with `discipline: infrastructure` or `discipline: observability`, the execution engine automatically routes it through the `operations` stage.
 
 Define each unit with **enough detail that a builder with zero prior context builds the right thing**:
 
@@ -1249,8 +1212,8 @@ Build the session browser page showing sessions from GraphQL.
 **Good unit description** (builder knows exactly what to build):
 ```
 ## unit-02: Intent Browser and DAG View
-Display all AI-DLC Intents (read from `.ai-dlc/*/intent.md` files) as cards showing:
-- Intent title, status (from frontmatter), workflow type, operating mode
+Display all H·AI·K·U Intents (read from `.haiku/intents/*/intent.md` files) as cards showing:
+- Intent title, status (from frontmatter), studio, operating mode
 - Unit count and completion progress (N of M units completed)
 - Created date and last activity
 
@@ -1260,9 +1223,9 @@ Clicking an intent navigates to the Intent Detail view which shows:
 - Color coding: pending=gray, in_progress=blue, completed=green, blocked=red
 
 Data sources:
-- Intent metadata: Read `.ai-dlc/{slug}/intent.md` frontmatter via filesystem API
-- Unit metadata: Read `.ai-dlc/{slug}/unit-*.md` frontmatter
-- Live state: Query `dlc_state_load "$INTENT_DIR" "iteration.json"` for current hat and phase
+- Intent metadata: Read `.haiku/intents/{slug}/intent.md` frontmatter via filesystem API
+- Unit metadata: Read `.haiku/intents/{slug}/stages/*/units/unit-*.md` frontmatter
+- Live state: Query `hku_state_load "$INTENT_DIR" "iteration.json"` for current hat and phase
 
 This unit does NOT handle: hat visualization (unit-03), live monitoring (unit-04),
 or timeline replay (unit-05). It only renders the structural hierarchy.
@@ -1273,7 +1236,7 @@ or timeline replay (unit-05). It only renders the structural hierarchy.
 **Gate:** Skip this sub-phase entirely if the intent has no deployment surface. An intent has no deployment surface when:
 - It is a library, documentation, design-only, or pure refactor intent
 - Domain discovery found no deployment architecture, monitoring setup, or operational procedures
-- No stack config layers are populated in `.ai-dlc/settings.yml`
+- No stack config layers are populated in `.haiku/settings.yml`
 
 When the intent DOES have a deployment surface, apply these rules to determine whether to create dedicated ops units or fold ops concerns into feature units:
 
@@ -1388,8 +1351,8 @@ For each unit:
   - Depends on: {dependencies or "none"}
   - Builds: {specific components/modules/endpoints}
 
-### Workflow
-{workflow name}
+### Studio
+{studio name}
 ```
 
 **Visual Review (preferred):**
@@ -1574,7 +1537,7 @@ Units selected get `git: { change_strategy: unit }` in their frontmatter (Phase 
 
 ## Phase 5.9: Completion Announcements
 
-Read the default announcements from project settings — **do NOT ask the user**. This is a project-level preference configured during `/ai-dlc:setup`.
+Read the default announcements from project settings — **do NOT ask the user**. This is a project-level preference configured during `/haiku:setup`.
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
@@ -1599,7 +1562,7 @@ Source the pass library and read configured defaults:
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/pass.sh"
-DEFAULT_PASSES=$(yq -r '.default_passes // [] | join(",")' .ai-dlc/settings.yml 2>/dev/null || echo "")
+DEFAULT_PASSES=$(yq -r '.default_passes // [] | join(",")' .haiku/settings.yml 2>/dev/null || echo "")
 ```
 
 **If `DEFAULT_PASSES` is empty or contains fewer than 2 entries** (which includes the common "dev only" default): skip this phase entirely. Set `passes: []` and `active_pass: ""` in the intent frontmatter. Do not ask the user.
@@ -1625,9 +1588,9 @@ If fewer than 2 valid passes remain after validation, fall back to single-pass b
 
 For each valid pass, call `load_pass_metadata` and build a summary table:
 
-| Pass | Description | Available Workflows |
+| Pass | Description | Available Stages |
 |---|---|---|
-| `{name}` | `{description}` | `{available_workflows}` |
+| `{name}` | `{description}` | `{available_stages}` |
 
 Display this table as context before asking.
 
@@ -1667,13 +1630,13 @@ Map the result to the `passes` array in intent.md frontmatter:
 
 When passes are configured with 2+ entries, set `active_pass` to the first pass in the list. The units elaborated in this session belong to the active pass. When execution completes the active pass, the next pass will trigger a new elaboration cycle for its discipline-specific units.
 
-> **Override:** To use different passes for a specific intent, the user can configure `passes` in the intent-level settings override at `.ai-dlc/{intent}/settings.yml`.
+> **Override:** To use different passes for a specific intent, the user can configure `passes` in the intent-level settings override at `.haiku/intents/{intent}/settings.yml`.
 
 ---
 
-## Phase 6: Write AI-DLC Artifacts
+## Phase 6: Write H·AI·K·U Artifacts
 
-Write intent and unit files in `.ai-dlc/{intent-slug}/` (already in the intent worktree since Phase 2.25):
+Write intent and unit files in `.haiku/intents/{intent-slug}/` (already in the intent worktree since Phase 2.25):
 
 ### 1. Verify intent worktree
 
@@ -1686,7 +1649,7 @@ INTENT_WORKTREE="${PROJECT_ROOT}"  # We should already be cd'd into the worktree
 
 # Verify we're on the intent branch
 CURRENT_BRANCH=$(git branch --show-current)
-EXPECTED_BRANCH="ai-dlc/${INTENT_SLUG}/main"
+EXPECTED_BRANCH="haiku/${INTENT_SLUG}/main"
 if [ "$CURRENT_BRANCH" != "$EXPECTED_BRANCH" ]; then
   echo "ERROR: Expected to be on branch $EXPECTED_BRANCH but on $CURRENT_BRANCH"
   echo "The intent worktree should have been created in Phase 2.25."
@@ -1697,7 +1660,8 @@ fi
 ### 2. Write `intent.md`:
 ```markdown
 ---
-workflow: {workflow-name}
+studio: {studio-name}
+active_stage: {first-stage-name}
 git:
   change_strategy: {unit|intent|trunk}
   auto_merge: {true|false}
@@ -1705,7 +1669,7 @@ git:
 announcements: []  # e.g., [changelog, release-notes, social-posts, blog-draft]
 passes: []  # Validated pass names in order — empty for single-pass (default dev)
 active_pass: ""  # Current pass being worked on — set to first pass during elaboration, auto-managed by advance
-iterates_on: ""  # Slug of the previous intent this iterates on (set by /ai-dlc:followup, leave empty for new intents)
+iterates_on: ""  # Slug of the previous intent this iterates on (set by /haiku:followup, leave empty for new intents)
 created: {ISO date}
 status: active
 epic: ""  # Ticketing provider epic key (auto-populated if ticketing provider configured)
@@ -1751,14 +1715,14 @@ problem space.}
 Commit the intent definition immediately so it's versioned before unit writing begins:
 
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/intent.md
+git add .haiku/intents/${INTENT_SLUG}/intent.md
 git commit -m "elaborate(${INTENT_SLUG}): define intent"
 ```
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-aidlc_telemetry_init
-aidlc_record_intent_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}"
+haiku_telemetry_init
+haiku_record_intent_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}"
 ```
 
 ### 2.5. Confirm Quality Gates
@@ -1768,7 +1732,7 @@ After writing intent.md and before writing units, confirm quality gates detected
 **Step A — Read discovery results.** Check `discovery.md` for the `## Quality Gate Candidates` section:
 
 ```bash
-DISCOVERY_FILE=".ai-dlc/${INTENT_SLUG}/discovery.md"
+DISCOVERY_FILE=".haiku/intents/${INTENT_SLUG}/discovery.md"
 ```
 
 Read the file and look for the `## Quality Gate Candidates` section. Parse the detected gates table.
@@ -1841,7 +1805,7 @@ If the user selects "Exclude some", ask a follow-up: "Type the names of gates to
 After the user confirms (options 1 or 2), note:
 
 ```
-Gates confirmed. To customize commands later, edit `quality_gates:` in `.ai-dlc/{intent-slug}/intent.md`.
+Gates confirmed. To customize commands later, edit `quality_gates:` in `.haiku/intents/{intent-slug}/intent.md`.
 ```
 
 If no candidates were found in discovery, skip the question and note:
@@ -1856,23 +1820,23 @@ You can add gates later by editing intent.md frontmatter.
 ```bash
 # yq accepts JSON-style objects in expressions; output is always clean YAML (keys unquoted, no JSON braces).
 # For selected gates (example with two gates):
-yq -i '.quality_gates = [{"name": "tests", "command": "npm test"}, {"name": "lint", "command": "npm run lint"}]' .ai-dlc/${INTENT_SLUG}/intent.md
+yq -i '.quality_gates = [{"name": "tests", "command": "npm test"}, {"name": "lint", "command": "npm run lint"}]' .haiku/intents/${INTENT_SLUG}/intent.md
 
 # Or if user skipped / no gates detected:
-yq -i '.quality_gates = []' .ai-dlc/${INTENT_SLUG}/intent.md
+yq -i '.quality_gates = []' .haiku/intents/${INTENT_SLUG}/intent.md
 ```
 
 **Step D — Commit.**
 
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/intent.md
+git add .haiku/intents/${INTENT_SLUG}/intent.md
 git commit -m "elaborate(${INTENT_SLUG}): set quality gates"
 ```
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-aidlc_telemetry_init
-aidlc_record_intent_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}"
+haiku_telemetry_init
+haiku_record_intent_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}"
 ```
 
 ### 3. Write and review each `unit-NN-{slug}.md` individually:
@@ -1885,10 +1849,10 @@ aidlc_record_intent_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}"
 status: pending
 last_updated: ""  # ISO 8601 UTC timestamp of last status change (auto-populated)
 depends_on: []
-branch: ai-dlc/{intent-slug}/NN-{unit-slug}
+branch: haiku/{intent-slug}/NN-{unit-slug}
 discipline: {discipline}  # frontend, backend, api, documentation, devops, design, etc.
 pass: ""  # Set to active pass during elaboration — empty for single-pass intents
-workflow: ""  # Per-unit workflow override (optional — omit or leave empty to use intent-level workflow). Auto-set to "design" when discipline is "design".
+stage: ""  # Per-unit stage override (optional — auto-determined from discipline). Auto-set to "design" when discipline is "design".
 ticket: ""  # Ticketing provider ticket key (auto-populated if ticketing provider configured)
 design_ref: ""  # Optional: path to external design file (PNG/JPG/HTML) or directory. Activates visual fidelity gate with high fidelity.
 views: []  # Optional: list of views/routes this unit produces (e.g., ["/", "/about"]). Used for screenshot capture targeting.
@@ -1980,7 +1944,7 @@ When a unit has `discipline: design`, use this template instead of the standard 
 ---
 status: pending
 depends_on: []
-branch: ai-dlc/{intent-slug}/NN-{unit-slug}
+branch: haiku/{intent-slug}/NN-{unit-slug}
 discipline: design
 pass: ""  # Set to active pass during elaboration — empty for single-pass intents
 workflow: ""  # Per-unit workflow override (optional — omit or leave empty to use intent-level workflow)
@@ -2047,12 +2011,12 @@ design - This unit will be executed by design-focused agents.
 
 For each unit (in dependency order — units with no `depends_on` first):
 
-**Step A — Write the unit file** to `.ai-dlc/{intent-slug}/unit-NN-{slug}.md`.
+**Step A — Write the unit file** to `.haiku/intents/{intent-slug}/unit-NN-{slug}.md`.
 
 **Step A.1 — Commit the draft immediately.** Every write is versioned so the full evolution of each unit is visible in git history:
 
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/unit-NN-{slug}.md
+git add .haiku/intents/${INTENT_SLUG}/unit-NN-{slug}.md
 git commit -m "elaborate(${INTENT_SLUG}): draft unit-NN-{slug}"
 ```
 
@@ -2091,7 +2055,7 @@ This enforcement ensures that, for example, a `backend` unit always has deployab
 
 ```bash
 # Only for frontend or design units — open the wireframe if it exists
-WIREFRAME=".ai-dlc/${INTENT_SLUG}/mockups/unit-NN-{slug}-wireframe.html"
+WIREFRAME=".haiku/intents/${INTENT_SLUG}/mockups/unit-NN-{slug}-wireframe.html"
 if [ -f "$WIREFRAME" ]; then
   open "$WIREFRAME"  # macOS; use xdg-open on Linux
 fi
@@ -2151,7 +2115,7 @@ Use `AskUserQuestion`:
 - **Approved**: Move to the next unit. (The unit is already committed from Step A.1 or the most recent revision commit.)
 - **Needs changes**: Discuss feedback, update the unit file, then **commit the revision with the user's reasoning in the commit body**:
   ```bash
-  git add .ai-dlc/${INTENT_SLUG}/unit-NN-{slug}.md
+  git add .haiku/intents/${INTENT_SLUG}/unit-NN-{slug}.md
   git commit -m "elaborate(${INTENT_SLUG}): revise unit-NN-{slug}
 
   {Summarize the user's feedback that motivated this revision —
@@ -2163,37 +2127,37 @@ Use `AskUserQuestion`:
 
 ### 4. Intent slug is directory-based
 
-The intent slug is derived from the `.ai-dlc/{intent-slug}/` directory path — no separate state save is needed.
+The intent slug is derived from the `.haiku/intents/{intent-slug}/` directory path — no separate state save is needed.
 
-**Note:** Do NOT save `iteration.json` here. Execution state (hat, iteration count, workflow, status) is initialized by `/ai-dlc:execute` when the build loop starts. Elaboration only writes the spec artifacts.
+**Note:** Do NOT save `iteration.json` here. Execution state (hat, iteration count, workflow, status) is initialized by `/haiku:execute` when the build loop starts. Elaboration only writes the spec artifacts.
 
 ### 5. Commit any remaining artifacts on intent branch:
 
 Intent and unit files were committed individually during steps 2 and 3. This catch-all commit picks up any remaining artifacts (briefs, state files, etc.):
 
 ```bash
-git add .ai-dlc/
+git add .haiku/
 git diff --cached --quiet || git commit -m "elaborate(${INTENT_SLUG}): finalize elaboration artifacts"
 ```
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-aidlc_telemetry_init
-UNIT_COUNT=$(ls "$INTENT_DIR"/unit-*.md 2>/dev/null | wc -l | tr -d ' ')
+haiku_telemetry_init
+UNIT_COUNT=$(ls "$INTENT_DIR"/stages/*/units/unit-*.md 2>/dev/null | wc -l | tr -d ' ')
 HAS_WIREFRAMES="false"
 [ -d "$INTENT_DIR/mockups" ] && HAS_WIREFRAMES="true"
-aidlc_record_elaboration_complete "${INTENT_SLUG}" "${UNIT_COUNT}" "${HAS_WIREFRAMES}"
+haiku_record_elaboration_complete "${INTENT_SLUG}" "${UNIT_COUNT}" "${HAS_WIREFRAMES}"
 ```
 
 ### 5b. Push artifacts to remote (cowork)
 
-If the orchestrator is in a temporary workspace (`/tmp/ai-dlc-workspace-*`):
+If the orchestrator is in a temporary workspace (`/tmp/haiku-workspace-*`):
 
 ```bash
 git push -u origin "$INTENT_BRANCH"
 ```
 
-This ensures builders can pull the intent branch when working remotely. Note in the handoff: "Artifacts pushed to `ai-dlc/{intent-slug}/main` branch on remote."
+This ensures builders can pull the intent branch when working remotely. Note in the handoff: "Artifacts pushed to `haiku/{intent-slug}/main` branch on remote."
 
 ---
 
@@ -2205,7 +2169,7 @@ Wireframe generation runs in a forked subagent. The subagent generates low-fidel
 
 ### Step 1: Identify frontend and design units
 
-Scan all `unit-*.md` files in `.ai-dlc/{intent-slug}/`. Collect units where frontmatter contains `discipline: frontend` or `discipline: design`.
+Scan all `unit-*.md` files in `.haiku/intents/{intent-slug}/`. Collect units where frontmatter contains `discipline: frontend` or `discipline: design`.
 
 If no frontend or design units exist, skip to Phase 6.5.
 
@@ -2226,7 +2190,7 @@ fi
 
 ### Step 3: Write wireframes brief
 
-Write `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-wireframes.md`:
+Write `.haiku/intents/${INTENT_SLUG}/.briefs/elaborate-wireframes.md`:
 
 ```markdown
 ---
@@ -2236,7 +2200,7 @@ intent_title: {Intent Title from intent.md}
 design_provider_type: {DESIGN_TYPE or empty}
 design_provider_capabilities: {DESIGN_CAPS JSON or empty if no provider}
 design_provider_mcp_hint: {DESIGN_MCP_HINT or empty if no provider}
-design_blueprint_path: {${WORKTREE_PATH}/.ai-dlc/${INTENT_SLUG}/design-blueprint.md if it exists, or empty}
+design_blueprint_path: {${WORKTREE_PATH}/.haiku/intents/${INTENT_SLUG}/design-blueprint.md if it exists, or empty}
 ---
 
 # Frontend & Design Units
@@ -2262,7 +2226,7 @@ design_blueprint_path: {${WORKTREE_PATH}/.ai-dlc/${INTENT_SLUG}/design-blueprint
 Commit the wireframes brief immediately after writing it:
 
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-wireframes.md
+git add .haiku/intents/${INTENT_SLUG}/.briefs/elaborate-wireframes.md
 git commit -m "elaborate(${INTENT_SLUG}): write wireframes brief"
 ```
 
@@ -2272,7 +2236,7 @@ git commit -m "elaborate(${INTENT_SLUG}): write wireframes brief"
 Agent({
   subagent_type: "general-purpose",
   description: "elaborate-wireframes: {INTENT_SLUG}",
-  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/wireframes/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/elaborate-wireframes.md as input."
+  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/wireframes/SKILL.md first, then execute it with the brief file at .haiku/intents/{INTENT_SLUG}/.briefs/elaborate-wireframes.md as input."
 })
 ```
 
@@ -2280,7 +2244,7 @@ Agent({
 
 ### Step 5: Read results
 
-Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md`.
+Read `.haiku/intents/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md`.
 
 - If `status: skipped` — no frontend or design units found, proceed to Phase 6.5
 - If `status: error` — report the error to the user and discuss how to proceed
@@ -2289,7 +2253,7 @@ Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md`.
 Commit the wireframe artifacts and results brief:
 
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/mockups/ .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md
+git add .haiku/intents/${INTENT_SLUG}/mockups/ .haiku/intents/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md
 git commit -m "elaborate(${INTENT_SLUG}): generate frontend and design wireframes"
 ```
 
@@ -2312,7 +2276,7 @@ If both the setting is enabled AND the tool is found, call it with wireframe ref
 ```
 ask_user_visual_question({
   title: "Wireframe Review",
-  context: "{Build a markdown summary listing each wireframe file with its unit name and path. For each wireframe, include:\n- Unit name and slug\n- Wireframe file path: `.ai-dlc/${INTENT_SLUG}/mockups/unit-NN-{slug}-wireframe.html`\n- Brief description of what the wireframe covers\n\nNote: The user should have the wireframes open in browser tabs from Step 5.}",
+  context: "{Build a markdown summary listing each wireframe file with its unit name and path. For each wireframe, include:\n- Unit name and slug\n- Wireframe file path: `.haiku/intents/${INTENT_SLUG}/mockups/unit-NN-{slug}-wireframe.html`\n- Brief description of what the wireframe covers\n\nNote: The user should have the wireframes open in browser tabs from Step 5.}",
   questions: [{
     question: "I've generated low-fidelity wireframes for the frontend and design units. Review the screen structure, flow, and placeholder copy. How do they look?",
     header: "Wireframes",
@@ -2348,7 +2312,7 @@ Present all generated wireframes to product for review using `AskUserQuestion`:
 - **Approved**: Proceed to Phase 6.5.
 - **Needs revision**: Discuss feedback, update the wireframe HTML files directly, commit the revision, and re-present for review. Loop until approved.
   ```bash
-  git add .ai-dlc/${INTENT_SLUG}/mockups/
+  git add .haiku/intents/${INTENT_SLUG}/mockups/
   git commit -m "elaborate(${INTENT_SLUG}): revise wireframes"
   ```
 - **Skip wireframes**: Delete the `mockups/` directory, remove `wireframe:` fields from unit frontmatter, and proceed to Phase 6.5.
@@ -2372,7 +2336,7 @@ If `TICKETING_TYPE` is empty, skip this phase entirely and proceed to Phase 7 (S
 
 ### Step 2: Write ticket sync brief
 
-Read the intent.md and all unit files to gather the data the subagent needs. Write `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-ticket-sync.md`:
+Read the intent.md and all unit files to gather the data the subagent needs. Write `.haiku/intents/${INTENT_SLUG}/.briefs/elaborate-ticket-sync.md`:
 
 ```markdown
 ---
@@ -2412,7 +2376,7 @@ plugin_root: {CLAUDE_PLUGIN_ROOT}
 Commit the ticket sync brief immediately after writing it:
 
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-ticket-sync.md
+git add .haiku/intents/${INTENT_SLUG}/.briefs/elaborate-ticket-sync.md
 git commit -m "elaborate(${INTENT_SLUG}): write ticket sync brief"
 ```
 
@@ -2422,7 +2386,7 @@ git commit -m "elaborate(${INTENT_SLUG}): write ticket sync brief"
 Agent({
   subagent_type: "general-purpose",
   description: "elaborate-ticket-sync: {INTENT_SLUG}",
-  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/ticket-sync/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/elaborate-ticket-sync.md as input."
+  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/ticket-sync/SKILL.md first, then execute it with the brief file at .haiku/intents/{INTENT_SLUG}/.briefs/elaborate-ticket-sync.md as input."
 })
 ```
 
@@ -2430,7 +2394,7 @@ Agent({
 
 ### Step 4: Read results
 
-Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-ticket-sync-results.md`.
+Read `.haiku/intents/${INTENT_SLUG}/.briefs/elaborate-ticket-sync-results.md`.
 
 - If `status: skipped` — ticketing not configured or MCP tools unavailable, proceed to Phase 7 (Spec Review)
 - If `status: error` — report the errors to the user. If `validation_passed: false`, the subagent already retried. Log the failures and proceed to Phase 7 (Spec Review) (never block elaboration on ticket sync failure)
@@ -2439,7 +2403,7 @@ Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-ticket-sync-results.md`.
 Commit the ticket sync artifacts (updated intent.md and unit files with ticket keys, plus the results brief):
 
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/
+git add .haiku/intents/${INTENT_SLUG}/
 git commit -m "elaborate(${INTENT_SLUG}): sync tickets to provider"
 ```
 
@@ -2459,8 +2423,8 @@ Agent({
     Review the intent and unit specifications for completeness and consistency.
 
     ## Files to Review
-    - .ai-dlc/${intentSlug}/intent.md
-    - .ai-dlc/${intentSlug}/unit-*.md
+    - .haiku/intents/${intentSlug}/intent.md
+    - .haiku/intents/${intentSlug}/stages/*/units/unit-*.md
 
     ## Review Checklist
 
@@ -2516,7 +2480,7 @@ Read all spec files that the subagent needs to analyze:
 
 ```bash
 INTENT_SLUG="{intent-slug}"
-INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
+INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
 INTENT_FILE="${INTENT_DIR}/intent.md"
 DISCOVERY_FILE="${INTENT_DIR}/discovery.md"
 
@@ -2525,7 +2489,7 @@ INTENT_CONTENT=$(cat "$INTENT_FILE")
 
 # Read all unit files
 UNIT_CONTENTS=""
-for unit_file in ${INTENT_DIR}/unit-*.md; do
+for unit_file in ${INTENT_DIR}/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
   UNIT_CONTENTS="${UNIT_CONTENTS}\n## $(basename "$unit_file")\n\n$(cat "$unit_file")\n\n---\n"
 done
@@ -2536,7 +2500,7 @@ DISCOVERY_CONTENT=$(cat "$DISCOVERY_FILE" 2>/dev/null || echo "No discovery log 
 
 ### Step 2: Write adversarial review brief
 
-Write `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-adversarial-review.md`:
+Write `.haiku/intents/${INTENT_SLUG}/.briefs/elaborate-adversarial-review.md`:
 
 ```markdown
 ---
@@ -2559,7 +2523,7 @@ worktree_path: {absolute path to intent worktree}
 
 Commit the brief:
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-adversarial-review.md
+git add .haiku/intents/${INTENT_SLUG}/.briefs/elaborate-adversarial-review.md
 git commit -m "elaborate(${INTENT_SLUG}): write adversarial review brief"
 ```
 
@@ -2569,7 +2533,7 @@ git commit -m "elaborate(${INTENT_SLUG}): write adversarial review brief"
 Agent({
   subagent_type: "general-purpose",
   description: "elaborate-adversarial-review: {INTENT_SLUG}",
-  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/adversarial-review/SKILL.md first, then execute it with the brief file at .ai-dlc/{INTENT_SLUG}/.briefs/elaborate-adversarial-review.md as input."
+  prompt: "Read the skill definition at plugin/skills/elaborate/subskills/adversarial-review/SKILL.md first, then execute it with the brief file at .haiku/intents/{INTENT_SLUG}/.briefs/elaborate-adversarial-review.md as input."
 })
 ```
 
@@ -2577,7 +2541,7 @@ Agent({
 
 ### Step 4: Read results
 
-Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-adversarial-review-results.md`.
+Read `.haiku/intents/${INTENT_SLUG}/.briefs/elaborate-adversarial-review-results.md`.
 
 - Parse the YAML frontmatter: `status`, `findings_count`, `auto_fixable_count`, `categories_found`
 - If `status: error` — report the error to the user and proceed to Phase 8 (never block elaboration on review failure)
@@ -2602,7 +2566,7 @@ Track which findings were auto-applied.
 
 Commit all auto-applied fixes together:
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/
+git add .haiku/intents/${INTENT_SLUG}/
 git commit -m "elaborate(${INTENT_SLUG}): auto-apply adversarial review fixes
 
 Applied {N} high-confidence fixes:
@@ -2669,7 +2633,7 @@ For each user-approved fix, apply the suggested change to the target file.
 
 Commit all user-approved fixes together:
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/
+git add .haiku/intents/${INTENT_SLUG}/
 git commit -m "elaborate(${INTENT_SLUG}): apply user-approved adversarial review fixes
 
 Applied:
@@ -2682,7 +2646,7 @@ Applied:
 
 Commit any remaining artifacts:
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/
+git add .haiku/intents/${INTENT_SLUG}/
 git diff --cached --quiet || git commit -m "elaborate(${INTENT_SLUG}): finalize adversarial review"
 ```
 
@@ -2697,17 +2661,18 @@ Present the elaboration summary:
 ```
 Elaboration complete!
 
-Intent Worktree: .ai-dlc/worktrees/{intent-slug}/
-Branch: ai-dlc/{intent-slug}/main
+Intent Worktree: .haiku/worktrees/{intent-slug}/
+Branch: haiku/{intent-slug}/main
 
-Created: .ai-dlc/{intent-slug}/
+Created: .haiku/intents/{intent-slug}/
 - intent.md (intent and config)
 - unit-01-{name}.md
 - unit-02-{name}.md
 ...
 - mockups/unit-NN-{name}-wireframe.html  (if wireframes generated)
 
-Workflow: {workflowName}
+Studio: {studioName}
+Stage: {stageName}
 Next hat: {next-hat}
 ```
 
@@ -2735,7 +2700,7 @@ IS_COWORK="${CLAUDE_CODE_IS_COWORK:-}"
 
 **If cowork mode** (`IS_COWORK=1`):
 
-The artifacts have already been written to `.ai-dlc/{intent-slug}/` in the working directory. Determine the handoff based on how the user connected to the repo in Phase 0:
+The artifacts have already been written to `.haiku/intents/{intent-slug}/` in the working directory. Determine the handoff based on how the user connected to the repo in Phase 0:
 
 - **If the user pointed to a local folder** — the artifacts are already in their repo. They just need to commit.
 - **If the repo was cloned to a temp workspace** — the user may not have push access. Offer a zip download.
@@ -2762,12 +2727,12 @@ Tell the user:
 
 ```
 To start the autonomous build loop:
-  /ai-dlc:execute
+  /haiku:execute
 
 The execution phase will iterate through each unit, using quality gates
 (tests, types, lint) as backpressure until all success criteria are met.
 
-Note: All AI-DLC work happens in the worktree at .ai-dlc/worktrees/{intent-slug}/
+Note: All H·AI·K·U work happens in the worktree at .haiku/worktrees/{intent-slug}/
 Your main working directory stays clean on the main branch.
 ```
 
@@ -2778,7 +2743,7 @@ Your main working directory stays clean on the main branch.
 1. Push the intent branch to remote:
 
 ```bash
-INTENT_BRANCH="ai-dlc/${INTENT_SLUG}/main"
+INTENT_BRANCH="haiku/${INTENT_SLUG}/main"
 git push -u origin "$INTENT_BRANCH"
 ```
 
@@ -2787,15 +2752,15 @@ git push -u origin "$INTENT_BRANCH"
 ```bash
 # Determine default branch
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
-CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
+INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
+CONFIG=$(get_haiku_config "$INTENT_DIR")
 DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
 
 # Read intent.md for PR body content
 INTENT_FILE="$INTENT_DIR/intent.md"
 
 gh pr create \
-  --title "[AI-DLC Spec] ${INTENT_TITLE}" \
+  --title "[H·AI·K·U Spec] ${INTENT_TITLE}" \
   --base "$DEFAULT_BRANCH" \
   --head "$INTENT_BRANCH" \
   --body "$(cat <<EOF
@@ -2815,7 +2780,7 @@ ${SUCCESS_CRITERIA_SECTION}
 ${UNIT_BREAKDOWN}
 
 ---
-*This is an AI-DLC spec review PR. Approve and run \`/ai-dlc:execute\` to begin the autonomous build loop.*
+*This is an H·AI·K·U spec review PR. Approve and run \`/haiku:execute\` to begin the autonomous build loop.*
 EOF
 )"
 ```
@@ -2825,7 +2790,7 @@ EOF
 ```bash
 # Clean up elaboration worktree — spec is on the remote branch now
 REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
-INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
+INTENT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}"
 if [ -d "$INTENT_WORKTREE" ]; then
   git worktree remove "$INTENT_WORKTREE" 2>/dev/null || echo "Warning: failed to remove worktree at $INTENT_WORKTREE"
   echo "Cleaned up elaboration worktree for ${INTENT_SLUG}"
@@ -2840,7 +2805,7 @@ git worktree prune
 Spec PR created: {PR_URL}
 
 Review the spec with your team. When approved, a developer can run:
-  /ai-dlc:execute
+  /haiku:execute
 ```
 
 ### If local folder (cowork — no question needed):
@@ -2848,17 +2813,17 @@ Review the spec with your team. When approved, a developer can run:
 The artifacts are already written in the user's own repo checkout. Just tell them:
 
 ```
-Spec artifacts written to .ai-dlc/{intent-slug}/:
+Spec artifacts written to .haiku/intents/{intent-slug}/:
 - intent.md
 - unit-01-{name}.md
 - unit-02-{name}.md
 ...
 
 These are ready to commit. From your project directory, run:
-  git add .ai-dlc/{intent-slug}/
+  git add .haiku/intents/{intent-slug}/
   git commit -m "elaborate: define intent and units for {intent-slug}"
 
-Then a developer can run `/ai-dlc:execute` in Claude Code to start the build loop.
+Then a developer can run `/haiku:execute` in Claude Code to start the build loop.
 ```
 
 ### If Download as zip (cowork):
@@ -2866,8 +2831,8 @@ Then a developer can run `/ai-dlc:execute` in Claude Code to start the build loo
 Package all spec artifacts into a zip file:
 
 ```bash
-INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
-ZIP_PATH="/tmp/ai-dlc-${INTENT_SLUG}-spec.zip"
+INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
+ZIP_PATH="/tmp/haiku-${INTENT_SLUG}-spec.zip"
 cd "$(git rev-parse --show-toplevel)"
 zip -r "$ZIP_PATH" "$INTENT_DIR"
 ```
@@ -2878,7 +2843,7 @@ Tell the user:
 Spec packaged: {ZIP_PATH}
 
 To use this spec:
-1. Unzip into the project root (preserves the .ai-dlc/{intent-slug}/ structure)
+1. Unzip into the project root (preserves the .haiku/intents/{intent-slug}/ structure)
 2. Commit the files
-3. Run /ai-dlc:execute in Claude Code to start the build loop
+3. Run /haiku:execute in Claude Code to start the build loop
 ```

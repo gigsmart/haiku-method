@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 	description:
 		"Find the right AI operating mode for your task. Answer 5 questions to get a recommendation for HITL, OHOTL, or AHOTL.",
 	openGraph: {
-		title: "Mode Selector - AI-DLC",
+		title: "Mode Selector - H·AI·K·U",
 		description:
 			"Find the right AI operating mode for your task. Answer 5 questions to get a recommendation for HITL, OHOTL, or AHOTL.",
 	},
@@ -17,18 +17,18 @@ function ModeSelectorLoading() {
 	return (
 		<div className="mx-auto max-w-2xl animate-pulse">
 			<div className="mb-8">
-				<div className="mb-2 h-4 w-32 rounded bg-gray-200 dark:bg-gray-700" />
-				<div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700" />
+				<div className="mb-2 h-4 w-32 rounded bg-stone-200 dark:bg-stone-700" />
+				<div className="h-2 w-full rounded-full bg-stone-200 dark:bg-stone-700" />
 			</div>
 			<div className="mb-6">
-				<div className="mb-2 h-8 w-3/4 rounded bg-gray-200 dark:bg-gray-700" />
-				<div className="h-4 w-full rounded bg-gray-200 dark:bg-gray-700" />
+				<div className="mb-2 h-8 w-3/4 rounded bg-stone-200 dark:bg-stone-700" />
+				<div className="h-4 w-full rounded bg-stone-200 dark:bg-stone-700" />
 			</div>
 			<div className="space-y-3">
 				{[1, 2, 3].map((i) => (
 					<div
 						key={i}
-						className="h-24 w-full rounded-xl border-2 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800"
+						className="h-24 w-full rounded-xl border-2 border-stone-200 bg-stone-50 dark:border-stone-700 dark:bg-stone-800"
 					/>
 				))}
 			</div>
@@ -41,10 +41,10 @@ export default function ModeSelectorPage() {
 		<div className="px-4 py-12 sm:py-16">
 			{/* Page Header */}
 			<div className="mx-auto mb-12 max-w-2xl text-center">
-				<h1 className="mb-4 text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl">
+				<h1 className="mb-4 text-4xl font-bold tracking-tight text-stone-900 dark:text-white sm:text-5xl">
 					Mode Selector
 				</h1>
-				<p className="text-lg text-gray-600 dark:text-gray-400">
+				<p className="text-lg text-stone-600 dark:text-stone-400">
 					Answer 5 questions to find the right operating mode for your task. Get
 					a recommendation for <span className="font-medium">HITL</span>,{" "}
 					<span className="font-medium">OHOTL</span>, or{" "}
@@ -58,35 +58,35 @@ export default function ModeSelectorPage() {
 			</Suspense>
 
 			{/* Footer Info */}
-			<div className="mx-auto mt-16 max-w-2xl border-t border-gray-200 pt-8 dark:border-gray-800">
-				<h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+			<div className="mx-auto mt-16 max-w-2xl border-t border-stone-200 pt-8 dark:border-stone-800">
+				<h2 className="mb-4 text-lg font-semibold text-stone-900 dark:text-white">
 					About Operating Modes
 				</h2>
-				<p className="mb-4 text-gray-600 dark:text-gray-400">
-					AI-DLC defines three operating modes that determine the level of human
+				<p className="mb-4 text-stone-600 dark:text-stone-400">
+					H·AI·K·U defines three operating modes that determine the level of human
 					involvement during AI-assisted work:
 				</p>
-				<ul className="space-y-2 text-gray-600 dark:text-gray-400">
+				<ul className="space-y-2 text-stone-600 dark:text-stone-400">
 					<li>
-						<strong className="text-gray-900 dark:text-white">HITL</strong>{" "}
+						<strong className="text-stone-900 dark:text-white">HITL</strong>{" "}
 						(Human-in-the-Loop) - Human validates each step before AI proceeds
 					</li>
 					<li>
-						<strong className="text-gray-900 dark:text-white">OHOTL</strong>{" "}
+						<strong className="text-stone-900 dark:text-white">OHOTL</strong>{" "}
 						(Observed Human-on-the-Loop) - Human watches and can intervene
 						anytime
 					</li>
 					<li>
-						<strong className="text-gray-900 dark:text-white">AHOTL</strong>{" "}
+						<strong className="text-stone-900 dark:text-white">AHOTL</strong>{" "}
 						(Autonomous Human-on-the-Loop) - AI operates autonomously within
 						boundaries
 					</li>
 				</ul>
-				<p className="mt-4 text-gray-600 dark:text-gray-400">
+				<p className="mt-4 text-stone-600 dark:text-stone-400">
 					Learn more in the{" "}
 					<a
 						href="/docs/concepts/"
-						className="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+						className="text-teal-600 underline hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300"
 					>
 						Core Concepts documentation
 					</a>

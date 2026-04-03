@@ -1,5 +1,5 @@
 ---
-description: Reverse-engineer an existing feature into AI-DLC intent artifacts for /ai-dlc:operate and /ai-dlc:followup
+description: Reverse-engineer an existing feature into H·AI·K·U intent artifacts for /haiku:operate and /haiku:followup
 user-invocable: true
 argument-hint: "[feature-description]"
 allowed-tools:
@@ -17,29 +17,29 @@ allowed-tools:
 
 ## Name
 
-`ai-dlc:adopt` - Reverse-engineer an existing feature into AI-DLC intent artifacts.
+`haiku:adopt` - Reverse-engineer an existing feature into H·AI·K·U intent artifacts.
 
 ## Synopsis
 
 ```
-/ai-dlc:adopt [feature-description]
+/haiku:adopt [feature-description]
 ```
 
 ## Description
 
-**User-facing command** - Adopt an existing, already-built feature into the AI-DLC artifact system. Instead of building something new (like `/ai-dlc:elaborate`), this skill analyzes code that already exists and produces `intent.md`, `unit-NN-*.md`, `discovery.md`, and `operations/` files that describe it retroactively.
+**User-facing command** - Adopt an existing, already-built feature into the H·AI·K·U artifact system. Instead of building something new (like `/haiku:elaborate`), this skill analyzes code that already exists and produces `intent.md`, `unit-NN-*.md`, `discovery.md`, and `operations/` files that describe it retroactively.
 
 This addresses scenarios where:
-- A feature was built before AI-DLC was adopted and now needs operational management via `/ai-dlc:operate`
-- A feature needs a follow-up iteration via `/ai-dlc:followup` but has no intent artifacts to iterate on
+- A feature was built before H·AI·K·U was adopted and now needs operational management via `/haiku:operate`
+- A feature needs a follow-up iteration via `/haiku:followup` but has no intent artifacts to iterate on
 - The team wants to document an existing system's architecture in a structured, machine-readable format
-- A complex feature needs to be understood by new team members through its AI-DLC artifacts
+- A complex feature needs to be understood by new team members through its H·AI·K·U artifacts
 
 **What this produces:**
 - An `intent.md` with `status: completed` describing the problem, solution, and domain model
 - One or more `unit-NN-*.md` files with `status: completed` reconstructing the logical work units
 - A `discovery.md` with exploration findings about the codebase
-- Optional `operations/` directory with operation spec files for `/ai-dlc:operate`
+- Optional `operations/` directory with operation spec files for `/haiku:operate`
 
 **What this does NOT do:**
 - Modify any existing code
@@ -47,12 +47,12 @@ This addresses scenarios where:
 - Run tests or builds
 - Deploy anything
 
-**Key behavior:** All generated artifacts have `status: completed` since the feature already exists. The adopted intent is fully compatible with `/ai-dlc:followup` (to iterate on it) and `/ai-dlc:operate` (to manage its operations).
+**Key behavior:** All generated artifacts have `status: completed` since the feature already exists. The adopted intent is fully compatible with `/haiku:followup` (to iterate on it) and `/haiku:operate` (to manage its operations).
 
 **User Flow:**
 ```
-User: /ai-dlc:adopt
-AI: What existing feature would you like to adopt into AI-DLC?
+User: /haiku:adopt
+AI: What existing feature would you like to adopt into H·AI·K·U?
 User: The authentication system — it's in src/auth/ and was built over the last few months
 AI: I'll explore the codebase to understand the auth system...
     [spawns 5 parallel Explore subagents]
@@ -63,8 +63,8 @@ User: Yes, but split the OAuth unit into two — one for Google, one for GitHub
 AI: Updated. Here are the reconstructed success criteria from your tests...
     [presents criteria with test file references]
 User: Looks good
-AI: Artifacts written to .ai-dlc/auth-system/. What would you like to do next?
-    1. Run /ai-dlc:operate auth-system
+AI: Artifacts written to .haiku/intents/auth-system/. What would you like to do next?
+    1. Run /haiku:operate auth-system
     2. Open PR for review
     3. Show file paths
 ```
@@ -77,7 +77,7 @@ AI: Artifacts written to .ai-dlc/auth-system/. What would you like to do next?
 
 ```bash
 if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
-  echo "ERROR: /ai-dlc:adopt cannot run in cowork mode."
+  echo "ERROR: /haiku:adopt cannot run in cowork mode."
   echo "Run this in a full Claude Code CLI session."
   exit 1
 fi
@@ -90,7 +90,7 @@ If `CLAUDE_CODE_IS_COWORK=1`, stop immediately. Do NOT proceed.
 ```bash
 IN_REPO=$(git rev-parse --git-dir 2>/dev/null && echo "true" || echo "false")
 if [ "$IN_REPO" != "true" ]; then
-  echo "ERROR: /ai-dlc:adopt must be run inside a git repository."
+  echo "ERROR: /haiku:adopt must be run inside a git repository."
   exit 1
 fi
 ```
@@ -122,8 +122,8 @@ If a slug can be derived from the argument, verify it doesn't conflict with an e
 if [ -n "$FEATURE_DESCRIPTION" ]; then
   # Generate candidate slug from description (apply same truncation as Phase 1)
   CANDIDATE_SLUG=$(echo "$FEATURE_DESCRIPTION" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//' | cut -c1-50)
-  if [ -d "$REPO_ROOT/.ai-dlc/$CANDIDATE_SLUG" ]; then
-    echo "WARNING: Intent directory .ai-dlc/$CANDIDATE_SLUG already exists."
+  if [ -d "$REPO_ROOT/.haiku/intents/$CANDIDATE_SLUG" ]; then
+    echo "WARNING: Intent directory .haiku/intents/$CANDIDATE_SLUG already exists."
     echo "Phase 1 will prompt for how to handle this conflict."
   fi
 fi
@@ -140,7 +140,7 @@ If no argument was provided, ask the user:
 ```json
 {
   "questions": [{
-    "question": "What existing feature would you like to adopt into AI-DLC?",
+    "question": "What existing feature would you like to adopt into H·AI·K·U?",
     "header": "Feature Description",
     "options": [],
     "multiSelect": false
@@ -198,7 +198,7 @@ SLUG=$(echo "$FEATURE_DESCRIPTION" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-
 Validate the slug doesn't conflict with existing intents:
 
 ```bash
-if [ -d "$REPO_ROOT/.ai-dlc/$SLUG" ]; then
+if [ -d "$REPO_ROOT/.haiku/intents/$SLUG" ]; then
   # Conflict detected — ask user how to proceed
 fi
 ```
@@ -208,7 +208,7 @@ If a conflict is detected, use `AskUserQuestion` to resolve it:
 ```json
 {
   "questions": [{
-    "question": "An intent already exists at .ai-dlc/{SLUG}/. How would you like to proceed?",
+    "question": "An intent already exists at .haiku/{SLUG}/. How would you like to proceed?",
     "header": "Slug Conflict",
     "options": [
       {"label": "Enter a different slug", "description": "I'll provide an alternative name for this adoption"},
@@ -643,10 +643,10 @@ Before writing artifacts, create a dedicated branch so commits don't land on the
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-CONFIG=$(get_ai_dlc_config "" "$REPO_ROOT")
+CONFIG=$(get_haiku_config "" "$REPO_ROOT")
 DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
 
-ADOPT_BRANCH="ai-dlc/${SLUG}/main"
+ADOPT_BRANCH="haiku/${SLUG}/main"
 
 if ! git rev-parse --verify "$ADOPT_BRANCH" >/dev/null 2>&1; then
   git checkout -b "$ADOPT_BRANCH"
@@ -658,7 +658,7 @@ fi
 ### Create Intent Directory
 
 ```bash
-INTENT_DIR="$REPO_ROOT/.ai-dlc/${SLUG}"
+INTENT_DIR="$REPO_ROOT/.haiku/intents/${SLUG}"
 mkdir -p "$INTENT_DIR"
 mkdir -p "$INTENT_DIR/operations"
 ```
@@ -669,7 +669,8 @@ Write the intent file with `status: completed`:
 
 ```markdown
 ---
-workflow: default
+studio: software
+active_stage: development
 git:
   change_strategy: unit
   auto_merge: false
@@ -707,17 +708,17 @@ status: completed
 
 ## Context
 {Background, constraints, and decisions from the adoption process.
-Note that this intent was created via /ai-dlc:adopt to retroactively document
+Note that this intent was created via /haiku:adopt to retroactively document
 an existing feature.}
 
-Adopted on {ISO date} via `/ai-dlc:adopt`.
+Adopted on {ISO date} via `/haiku:adopt`.
 ```
 
-Use `dlc_frontmatter_set` to ensure frontmatter is correctly written:
+Use `hku_frontmatter_set` to ensure frontmatter is correctly written:
 
 ```bash
-dlc_frontmatter_set "status" "completed" "$INTENT_DIR/intent.md"
-dlc_frontmatter_set "created" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$INTENT_DIR/intent.md"
+hku_frontmatter_set "status" "completed" "$INTENT_DIR/intent.md"
+hku_frontmatter_set "created" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$INTENT_DIR/intent.md"
 
 # Extract the intent title from the H1 heading for use in Phase 7 handoff
 INTENT_TITLE=$(grep -m1 '^# ' "$INTENT_DIR/intent.md" | sed 's/^# //')
@@ -769,11 +770,11 @@ Describes the implementation as-built, not as-planned.}
 {Additional context — e.g., "Adopted from existing code in src/auth/".}
 ```
 
-Use `dlc_frontmatter_set` for each unit:
+Use `hku_frontmatter_set` for each unit:
 
 ```bash
-dlc_frontmatter_set "status" "completed" "$INTENT_DIR/unit-NN-${UNIT_SLUG}.md"
-dlc_frontmatter_set "last_updated" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$INTENT_DIR/unit-NN-${UNIT_SLUG}.md"
+hku_frontmatter_set "status" "completed" "$INTENT_DIR/unit-NN-${UNIT_SLUG}.md"
+hku_frontmatter_set "last_updated" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$INTENT_DIR/unit-NN-${UNIT_SLUG}.md"
 ```
 
 ### Write `discovery.md`
@@ -789,7 +790,7 @@ status: completed
 
 # Discovery Log: {Intent Title}
 
-Exploration findings from /ai-dlc:adopt reverse-engineering process.
+Exploration findings from /haiku:adopt reverse-engineering process.
 
 ## Module Map
 {Synthesized code path analysis from Subagent 1}
@@ -816,13 +817,13 @@ If operations were approved in Phase 5, write each spec to `$INTENT_DIR/operatio
 
 ```bash
 for op in "${OPERATIONS[@]}"; do
-  OP_NAME=$(echo "$op" | dlc_json_get "name")
-  OP_TYPE=$(echo "$op" | dlc_json_get "type")
-  OP_OWNER=$(echo "$op" | dlc_json_get "owner")
-  OP_RUNTIME=$(echo "$op" | dlc_json_get "runtime")
-  OP_SCHEDULE=$(echo "$op" | dlc_json_get "schedule")
-  OP_TRIGGER=$(echo "$op" | dlc_json_get "trigger")
-  OP_FREQUENCY=$(echo "$op" | dlc_json_get "frequency")
+  OP_NAME=$(echo "$op" | hku_json_get "name")
+  OP_TYPE=$(echo "$op" | hku_json_get "type")
+  OP_OWNER=$(echo "$op" | hku_json_get "owner")
+  OP_RUNTIME=$(echo "$op" | hku_json_get "runtime")
+  OP_SCHEDULE=$(echo "$op" | hku_json_get "schedule")
+  OP_TRIGGER=$(echo "$op" | hku_json_get "trigger")
+  OP_FREQUENCY=$(echo "$op" | hku_json_get "frequency")
   OP_FILE="$INTENT_DIR/operations/${OP_NAME}.md"
 
   # Write the spec file with frontmatter and body
@@ -862,7 +863,7 @@ OPEOF
     cat > "$SCRIPT_FILE" <<SCRIPTEOF
 #!/usr/bin/env ${OP_RUNTIME}
 # Companion script for operation: ${OP_NAME}
-# Generated by /ai-dlc:adopt — fill in implementation from codebase analysis
+# Generated by /haiku:adopt — fill in implementation from codebase analysis
 SCRIPTEOF
   fi
 done
@@ -873,8 +874,8 @@ Each operation spec file follows the format specified in Phase 5 with valid fron
 ### Commit All Artifacts
 
 ```bash
-git add .ai-dlc/${SLUG}/
-git commit -m "adopt(${SLUG}): reverse-engineer existing feature into AI-DLC artifacts"
+git add .haiku/intents/${SLUG}/
+git commit -m "adopt(${SLUG}): reverse-engineer existing feature into H·AI·K·U artifacts"
 ```
 
 ### Record Telemetry
@@ -886,16 +887,16 @@ After committing, derive counts from the approved artifacts and emit telemetry s
 UNIT_COUNT=$(find "$INTENT_DIR" -maxdepth 1 -name "unit-*.md" | wc -l | tr -d ' ')
 
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-aidlc_telemetry_init
-aidlc_record_intent_created "${SLUG}" "adopt"
-aidlc_record_intent_completed "${SLUG}" "${UNIT_COUNT}"
+haiku_telemetry_init
+haiku_record_intent_created "${SLUG}" "adopt"
+haiku_record_intent_completed "${SLUG}" "${UNIT_COUNT}"
 ```
 
 ### Save State
 
 ```bash
 # OP_COUNT is already set from the Phase 5 synthesis step (0 if operations were skipped)
-dlc_state_save "$INTENT_DIR" "adopt-metadata.json" "{
+hku_state_save "$INTENT_DIR" "adopt-metadata.json" "{
   \"adopted_on\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
   \"feature_description\": \"${FEATURE_DESCRIPTION}\",
   \"unit_count\": ${UNIT_COUNT},
@@ -916,22 +917,22 @@ dlc_state_save "$INTENT_DIR" "adopt-metadata.json" "{
 **Status:** completed
 **Units:** {N} (all completed)
 **Operations:** {M} generated
-**Discovery:** Written to .ai-dlc/{slug}/discovery.md
+**Discovery:** Written to .haiku/intents/{slug}/discovery.md
 
 ### Artifacts Created
 | File | Description |
 |------|-------------|
-| `.ai-dlc/{slug}/intent.md` | Intent definition with domain model |
-| `.ai-dlc/{slug}/unit-01-{name}.md` | {brief description} |
-| `.ai-dlc/{slug}/unit-02-{name}.md` | {brief description} |
+| `.haiku/intents/{slug}/intent.md` | Intent definition with domain model |
+| `.haiku/intents/{slug}/unit-01-{name}.md` | {brief description} |
+| `.haiku/intents/{slug}/unit-02-{name}.md` | {brief description} |
 | ... | ... |
-| `.ai-dlc/{slug}/discovery.md` | Exploration findings |
-| `.ai-dlc/{slug}/operations/{name}.md` | {operation description} |
+| `.haiku/intents/{slug}/discovery.md` | Exploration findings |
+| `.haiku/intents/{slug}/operations/{name}.md` | {operation description} |
 | ... | ... |
 
 This intent is now compatible with:
-- `/ai-dlc:followup {slug}` — to iterate on this feature
-- `/ai-dlc:operate {slug}` — to manage its operational tasks
+- `/haiku:followup {slug}` — to iterate on this feature
+- `/haiku:operate {slug}` — to manage its operational tasks
 ```
 
 ### Offer Next Steps
@@ -942,7 +943,7 @@ This intent is now compatible with:
     "question": "What would you like to do next?",
     "header": "Next Steps",
     "options": [
-      {"label": "Run /ai-dlc:operate", "description": "Manage operational tasks for {slug}"},
+      {"label": "Run /haiku:operate", "description": "Manage operational tasks for {slug}"},
       {"label": "Open PR", "description": "Create a pull request with the adoption artifacts for review"},
       {"label": "Show file paths", "description": "Just show me the file paths — I'll take it from here"}
     ],
@@ -953,33 +954,33 @@ This intent is now compatible with:
 
 Execute the chosen option:
 
-- **Run /ai-dlc:operate**: Invoke `/ai-dlc:operate {slug}` via the Skill tool
+- **Run /haiku:operate**: Invoke `/haiku:operate {slug}` via the Skill tool
 - **Open PR**: The adoption artifacts are already committed to the `$ADOPT_BRANCH` branch (created in Phase 6). Push and open a PR against the default branch:
 
   ```bash
   git push -u origin "$ADOPT_BRANCH"
 
   gh pr create \
-    --title "[AI-DLC Adopt] ${INTENT_TITLE}" \
+    --title "[H·AI·K·U Adopt] ${INTENT_TITLE}" \
     --base "$DEFAULT_BRANCH" \
     --head "$ADOPT_BRANCH" \
     --body "$(cat <<EOF
   ## Adoption: ${INTENT_TITLE}
 
-  Reverse-engineered from existing codebase via \`/ai-dlc:adopt\`.
+  Reverse-engineered from existing codebase via \`/haiku:adopt\`.
 
   **Slug:** \`${SLUG}\`
   **Units:** ${UNIT_COUNT}
   **Operations:** ${OP_COUNT}
 
   ### Artifacts
-  - \`.ai-dlc/${SLUG}/intent.md\`
-  - \`.ai-dlc/${SLUG}/unit-NN-{name}.md\` (${UNIT_COUNT} files)
-  - \`.ai-dlc/${SLUG}/discovery.md\`
-  $([ "${OP_COUNT}" -gt 0 ] && echo "- \`.ai-dlc/${SLUG}/operations/\` (${OP_COUNT} files)")
+  - \`.haiku/intents/${SLUG}/intent.md\`
+  - \`.haiku/intents/${SLUG}/unit-NN-{name}.md\` (${UNIT_COUNT} files)
+  - \`.haiku/intents/${SLUG}/discovery.md\`
+  $([ "${OP_COUNT}" -gt 0 ] && echo "- \`.haiku/intents/${SLUG}/operations/\` (${OP_COUNT} files)")
 
   ---
-  *Generated by \`/ai-dlc:adopt\`. Run \`/ai-dlc:followup ${SLUG}\` or \`/ai-dlc:operate ${SLUG}\` after merge.*
+  *Generated by \`/haiku:adopt\`. Run \`/haiku:followup ${SLUG}\` or \`/haiku:operate ${SLUG}\` after merge.*
   EOF
   )"
   ```
@@ -990,7 +991,7 @@ Execute the chosen option:
 ### Adopting an Authentication System
 
 ```
-User: /ai-dlc:adopt authentication system
+User: /haiku:adopt authentication system
 AI: I'll explore the codebase to understand the authentication system.
 
     Where does this feature live in the codebase?
@@ -1047,18 +1048,18 @@ AI: No operational surface detected — skipping operations.
     What would you like to do next?
 User: Show file paths
 
-AI: .ai-dlc/authentication-system/intent.md
-    .ai-dlc/authentication-system/unit-01-auth-models.md
-    .ai-dlc/authentication-system/unit-02-jwt-middleware.md
-    .ai-dlc/authentication-system/unit-03-oauth-providers.md
-    .ai-dlc/authentication-system/unit-04-session-management.md
-    .ai-dlc/authentication-system/discovery.md
+AI: .haiku/authentication-system/intent.md
+    .haiku/authentication-system/unit-01-auth-models.md
+    .haiku/authentication-system/unit-02-jwt-middleware.md
+    .haiku/authentication-system/unit-03-oauth-providers.md
+    .haiku/authentication-system/unit-04-session-management.md
+    .haiku/authentication-system/discovery.md
 ```
 
 ### Adopting a Feature with Operations
 
 ```
-User: /ai-dlc:adopt billing pipeline
+User: /haiku:adopt billing pipeline
 AI: Where does this feature live?
 User: src/billing/, and there are cron jobs in scripts/billing/
 
@@ -1074,10 +1075,10 @@ AI: [Explores codebase]
     Approve these operations?
 User: Approve operations
 
-AI: Artifacts written to .ai-dlc/billing-pipeline/.
-    Includes 3 operation specs in .ai-dlc/billing-pipeline/operations/.
+AI: Artifacts written to .haiku/billing-pipeline/.
+    Includes 3 operation specs in .haiku/billing-pipeline/operations/.
 
     What would you like to do next?
-User: Run /ai-dlc:operate
-AI: [Invokes /ai-dlc:operate billing-pipeline]
+User: Run /haiku:operate
+AI: [Invokes /haiku:operate billing-pipeline]
 ```

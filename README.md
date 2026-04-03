@@ -1,12 +1,12 @@
-# AI-DLC
+# H·AI·K·U
 
-AI-DLC methodology plugin for Claude Code. Provides iterative AI-driven development with convention-based artifacts, hat-based workflows, and automatic context preservation.
+H·AI·K·U methodology plugin for Claude Code. Provides universal lifecycle orchestration with convention-based artifacts, hat-based workflows, and automatic context preservation.
 
 ## Overview
 
-AI-DLC (AI-Driven Development Lifecycle) is a methodology for collaborative human-AI software development. It addresses the fundamental challenge of maintaining productive AI sessions across context window limitations through **committed artifacts** and **ephemeral state**.
+H·AI·K·U (Human-AI Kinetic Unity) is a methodology for collaborative human-AI development. It addresses the fundamental challenge of maintaining productive AI sessions across context window limitations through **committed artifacts** and **ephemeral state**.
 
-AI-DLC structures work into four phases — Elaboration, Execution, Operation, and Reflection — implemented with software-specific tooling: git worktrees, automated tests/lint/types as quality gates, pull requests, and deployment workflows.
+H·AI·K·U structures work into four phases — Elaboration, Execution, Operation, and Reflection — implemented with tooling like git worktrees, automated quality gates, pull requests, and deployment workflows.
 
 **Key Principles:**
 
@@ -15,14 +15,14 @@ AI-DLC structures work into four phases — Elaboration, Execution, Operation, a
 - **Completion criteria enable autonomy** - Clear criteria = less human oversight needed
 - **Artifacts are memory** - Intent and progress persist in committed files
 
-> **Learn More:** Read the full [AI-DLC Paper](https://ai-dlc.dev/papers/ai-dlc-2026) for the complete methodology, including runbooks for reimagining the SDLC, roles, and adoption paths.
+> **Learn More:** Read the full [H·AI·K·U Paper](https://haikumethod.ai/papers/ai-dlc-2026) for the complete methodology, including runbooks for reimagining the SDLC, roles, and adoption paths.
 
 ## Installation
 
 ```
 # Install via Claude Code
 /plugin marketplace add thebushidocollective/ai-dlc
-/plugin install ai-dlc@thebushidocollective-ai-dlc --scope project
+/plugin install haiku@thebushidocollective-ai-dlc --scope project
 ```
 
 ### Prerequisites
@@ -49,10 +49,10 @@ sudo snap install yq
 
 ## The Unit Model
 
-AI-DLC organizes work into **Intents** and **Units**:
+H·AI·K·U organizes work into **Intents** and **Units**:
 
 ```
-.ai-dlc/
+.haiku/intents/
   add-oauth-login/              # Intent (slugified name)
     intent.md                   # Intent definition
     unit-01-setup-provider.md   # Unit 1
@@ -100,7 +100,7 @@ Break work into discrete units with rich frontmatter:
 ---
 status: completed
 depends_on: []
-branch: ai-dlc/add-oauth-login/01-setup-provider
+branch: haiku/add-oauth-login/01-setup-provider
 discipline: backend
 workflow: ""
 ticket: PROJ-123
@@ -125,25 +125,25 @@ Used environment variables for credentials as per security guidelines.
 ### 1. Start with Elaboration
 
 ```
-User: /ai-dlc:elaborate
+User: /haiku:elaborate
 ```
 
 Work with the AI to define:
 
 - **Workflow** - Which development pattern to use
-- **Intent** - What you're building (saved to `.ai-dlc/{slug}/intent.md`)
+- **Intent** - What you're building (saved to `.haiku/intents/{slug}/intent.md`)
 - **Units** - How to break down the work
 - **Completion Criteria** - How you'll know it's done
 
 ### 2. Run the Execution Loop
 
 ```
-User: /ai-dlc:execute
+User: /haiku:execute
 ```
 
 The AI autonomously:
 
-- Creates a branch following conventions (`ai-dlc/{intent}/{unit-number}-{unit-slug}`)
+- Creates a branch following conventions (`haiku/{intent}/{unit-number}-{unit-slug}`)
 - Executes the current hat's responsibilities
 - Uses backpressure (tests, lint, types) to guide work
 - Updates unit frontmatter as work progresses
@@ -152,51 +152,51 @@ The AI autonomously:
 ### 3. Continue After Each Session
 
 ```
-Stop hook: "Run /ai-dlc:execute to continue"
-User: /ai-dlc:execute
+Stop hook: "Run /haiku:execute to continue"
+User: /haiku:execute
 ```
 
 Context is preserved across sessions:
 
-- **Committed**: Intent, Units, progress in `.ai-dlc/`
-- **Ephemeral**: Current hat, scratchpad in `.ai-dlc/{slug}/state/`
+- **Committed**: Intent, Units, progress in `.haiku/intents/`
+- **Ephemeral**: Current hat, scratchpad in `.haiku/intents/{slug}/state/`
 
 ### 4. Operate and Reflect
 
 After execution completes:
 
 ```
-User: /ai-dlc:operate    # Execute operational tasks (deployments, config, etc.)
-User: /ai-dlc:reflect    # Analyze the cycle — capture learnings and recommendations
+User: /haiku:operate    # Execute operational tasks (deployments, config, etc.)
+User: /haiku:reflect    # Analyze the cycle — capture learnings and recommendations
 ```
 
 ## User Commands
 
 | Command | Purpose |
 |---------|---------|
-| `/ai-dlc:elaborate` | Mob elaboration - define intent, units, and criteria |
-| `/ai-dlc:execute` | Run the autonomous execution loop |
-| `/ai-dlc:operate` | Manage operational tasks for a completed intent |
-| `/ai-dlc:reflect` | Analyze a completed cycle, capture learnings |
-| `/ai-dlc:refine` | Amend intent or unit specs mid-execution |
-| `/ai-dlc:resume` | Resume an intent when ephemeral state is lost |
-| `/ai-dlc:setup` | Configure AI-DLC for the project (auto-detects VCS, CI/CD, providers) |
-| `/ai-dlc:reset` | Abandon current unit and clear ephemeral state |
-| `/ai-dlc:cleanup` | Remove orphaned AI-DLC worktrees |
+| `/haiku:elaborate` | Mob elaboration - define intent, units, and criteria |
+| `/haiku:execute` | Run the autonomous execution loop |
+| `/haiku:operate` | Manage operational tasks for a completed intent |
+| `/haiku:reflect` | Analyze a completed cycle, capture learnings |
+| `/haiku:refine` | Amend intent or unit specs mid-execution |
+| `/haiku:resume` | Resume an intent when ephemeral state is lost |
+| `/haiku:setup` | Configure H·AI·K·U for the project (auto-detects VCS, CI/CD, providers) |
+| `/haiku:reset` | Abandon current unit and clear ephemeral state |
+| `/haiku:cleanup` | Remove orphaned H·AI·K·U worktrees |
 
 ## Conventions
 
 ### Branch Naming
 
 ```
-ai-dlc/{intent-slug}/{unit-number}-{unit-slug}
+haiku/{intent-slug}/{unit-number}-{unit-slug}
 ```
 
 Examples:
 
-- `ai-dlc/add-oauth-login/01-setup-provider`
-- `ai-dlc/fix-memory-leak/01-identify-source`
-- `ai-dlc/refactor-api/02-extract-service`
+- `haiku/add-oauth-login/01-setup-provider`
+- `haiku/fix-memory-leak/01-identify-source`
+- `haiku/refactor-api/02-extract-service`
 
 ### File Naming
 
@@ -230,7 +230,7 @@ Examples:
 
 ## Named Workflows
 
-Select a workflow during `/ai-dlc:elaborate`:
+Select a workflow during `/haiku:elaborate`:
 
 | Workflow | Description | Hats |
 |----------|-------------|------|
@@ -269,11 +269,11 @@ All hats follow the [Agent SOP format](https://github.com/strands-agents/agent-s
 | Experimenter | Test hypotheses systematically |
 | Analyst | Evaluate results and implement fix |
 
-> **Note:** Cross-cutting integration validation runs automatically after all units are merged (via the internal `/ai-dlc:integrate` skill), not as a hat in the per-unit workflow. It verifies that units work together and intent-level success criteria are met.
+> **Note:** Cross-cutting integration validation runs automatically after all units are merged (via the internal `/haiku:integrate` skill), not as a hat in the per-unit workflow. It verifies that units work together and intent-level success criteria are met.
 
 ## State Management
 
-### Committed Artifacts (`.ai-dlc/`)
+### Committed Artifacts (`.haiku/intents/`)
 
 Persisted across sessions, branches, and team members:
 
@@ -283,9 +283,9 @@ Persisted across sessions, branches, and team members:
 | `unit-{NN}-*.md` | Individual work units with their own criteria |
 | `discovery.md` | Domain discovery notes from elaboration |
 
-### Ephemeral State (`.ai-dlc/{slug}/state/`)
+### Ephemeral State (`.haiku/intents/{slug}/state/`)
 
-Session-scoped, cleared on `/ai-dlc:reset`:
+Session-scoped, cleared on `/haiku:reset`:
 
 | File | Purpose |
 |------|---------|
@@ -293,7 +293,7 @@ Session-scoped, cleared on `/ai-dlc:reset`:
 | `scratchpad.md` | Learnings and progress notes |
 | `blockers.md` | Documented blockers |
 
-> **Note:** State is stored as files in `.ai-dlc/{intent-slug}/state/` and managed via `dlc_state_save`/`dlc_state_load` from `plugin/lib/state.sh`.
+> **Note:** State is stored as files in `.haiku/intents/{intent-slug}/state/` and managed via `hku_state_save`/`hku_state_load` from `plugin/lib/state.sh`.
 
 ## Customization
 
@@ -301,17 +301,17 @@ Session-scoped, cleared on `/ai-dlc:reset`:
 
 Hats are resolved in this order:
 
-1. **Project override**: `.ai-dlc/hats/{hat}.md` (in your repo)
+1. **Project override**: `.haiku/hats/{hat}.md` (in your repo)
 2. **Plugin built-in**: `hats/{hat}.md`
 
 This allows you to customize any hat while falling back to defaults.
 
 ### Custom Hats
 
-Create `.ai-dlc/hats/` in your project to override or add hats:
+Create `.haiku/hats/` in your project to override or add hats:
 
 ```markdown
-<!-- .ai-dlc/hats/researcher.md -->
+<!-- .haiku/hats/researcher.md -->
 ---
 name: "Researcher"
 description: "Investigate before implementing."
@@ -344,7 +344,7 @@ Investigate before implementing. Research existing solutions and make recommenda
 
 ### Custom Workflows
 
-Create `.ai-dlc/workflows.yml` to define custom workflows:
+Create `.haiku/workflows.yml` to define custom workflows:
 
 ```yaml
 workflows:
@@ -355,7 +355,7 @@ workflows:
 
 ## Reference Skills
 
-These internal skills provide AI-DLC knowledge to the agent (not user-invocable):
+These internal skills provide H·AI·K·U knowledge to the agent (not user-invocable):
 
 - `fundamentals` - Core principles and philosophy
 - `completion-criteria` - Writing effective criteria
@@ -368,33 +368,33 @@ These internal skills provide AI-DLC knowledge to the agent (not user-invocable)
 
 | Problem | Solution |
 |---------|----------|
-| **Invalid iteration.json** | Run `/ai-dlc:reset` to clear corrupted state |
-| **Stuck in wrong hat** | Edit `.ai-dlc/{slug}/state/iteration.json` directly or run `/ai-dlc:reset` |
+| **Invalid iteration.json** | Run `/haiku:reset` to clear corrupted state |
+| **Stuck in wrong hat** | Edit `.haiku/intents/{slug}/state/iteration.json` directly or run `/haiku:reset` |
 | **Hook not injecting context** | Verify `jq` and `yq` (mikefarah/Go) are installed and in PATH |
-| **Missing hat instructions** | Check hat file exists in `.ai-dlc/hats/` or plugin's `hats/` |
-| **Orphaned ephemeral state** | Run `/ai-dlc:reset` to clear, recommit intent if needed |
-| **Orphaned worktrees** | Run `/ai-dlc:cleanup` to remove stale worktrees |
+| **Missing hat instructions** | Check hat file exists in `.haiku/hats/` or plugin's `hats/` |
+| **Orphaned ephemeral state** | Run `/haiku:reset` to clear, recommit intent if needed |
+| **Orphaned worktrees** | Run `/haiku:cleanup` to remove stale worktrees |
 
 ### Manual State Inspection
 
 ```bash
 # View current iteration state
-cat .ai-dlc/{intent-slug}/state/iteration.json | jq .
+cat .haiku/intents/{intent-slug}/state/iteration.json | jq .
 
 # View scratchpad
-cat .ai-dlc/{intent-slug}/state/scratchpad.md
+cat .haiku/intents/{intent-slug}/state/scratchpad.md
 
-# Clear all ephemeral state (same as /ai-dlc:reset)
-rm -rf .ai-dlc/{intent-slug}/state/
+# Clear all ephemeral state (same as /haiku:reset)
+rm -rf .haiku/intents/{intent-slug}/state/
 ```
 
 ### Recovery from Context Loss
 
 If you `/clear` without running the stop hook:
 
-1. Your committed artifacts (`.ai-dlc/`) are safe
-2. Ephemeral state persists in `.ai-dlc/{slug}/state/`
-3. Just run `/ai-dlc:execute` to continue
+1. Your committed artifacts (`.haiku/intents/`) are safe
+2. Ephemeral state persists in `.haiku/intents/{slug}/state/`
+3. Just run `/haiku:execute` to continue
 
 ## Development
 
@@ -414,9 +414,9 @@ bun run format
 
 ## Learn More
 
-### The AI-DLC Paper
+### The H·AI·K·U Paper
 
-This plugin implements the [AI-DLC methodology](https://ai-dlc.dev/papers/ai-dlc-2026). The paper covers:
+This plugin implements the [H·AI·K·U methodology](https://haikumethod.ai/papers/ai-dlc-2026). The paper covers:
 
 - Core principles and philosophy
 - Reimagining the SDLC for AI collaboration

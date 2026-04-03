@@ -7,12 +7,12 @@ argument-hint: "[area]"
 
 ## Name
 
-`ai-dlc:ideate` - Surface adversarially-filtered improvement ideas from the codebase.
+`haiku:ideate` - Surface adversarially-filtered improvement ideas from the codebase.
 
 ## Synopsis
 
 ```
-/ai-dlc:ideate [area]
+/haiku:ideate [area]
 ```
 
 ## Description
@@ -169,7 +169,7 @@ If no area was specified and the codebase is large, append a suggestion:
 ```markdown
 ---
 
-**Tip:** Run `/ai-dlc:ideate {area}` to deep-dive into a specific area for more targeted ideas.
+**Tip:** Run `/haiku:ideate {area}` to deep-dive into a specific area for more targeted ideas.
 ```
 
 ### Step 6: Offer Next Steps
@@ -179,8 +179,8 @@ After presenting results, offer:
 ```markdown
 ### Next Steps
 
-- **Elaborate**: Pick an idea and run `/ai-dlc:elaborate` to plan it as an AI-DLC intent
-- **Deep-dive**: Run `/ai-dlc:ideate {sub-area}` to explore a specific area further
+- **Elaborate**: Pick an idea and run `/haiku:elaborate` to plan it as an H·AI·K·U intent
+- **Deep-dive**: Run `/haiku:ideate {sub-area}` to explore a specific area further
 - **Discard**: If none of these resonate, that's a valid outcome — the adversarial filter may have been too lenient
 ```
 

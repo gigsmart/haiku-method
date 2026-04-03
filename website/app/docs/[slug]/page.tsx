@@ -24,12 +24,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 	if (!doc) {
 		return {
-			title: "Page Not Found - AI-DLC",
+			title: "Page Not Found - H\u00b7AI\u00b7K\u00b7U",
 		}
 	}
 
 	return {
-		title: `${doc.title} - AI-DLC`,
+		title: `${doc.title} - H\u00b7AI\u00b7K\u00b7U`,
 		description: doc.description,
 	}
 }
@@ -47,7 +47,7 @@ export default async function DocPage({ params }: Props) {
 			<div className="mb-8 lg:hidden">
 				<Link
 					href="/docs/"
-					className="inline-flex items-center gap-2 text-sm text-gray-600 transition hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+					className="inline-flex items-center gap-2 text-sm text-stone-600 transition hover:text-stone-900 dark:text-stone-400 dark:hover:text-white"
 				>
 					<svg
 						className="h-4 w-4"
@@ -70,7 +70,7 @@ export default async function DocPage({ params }: Props) {
 			<header className="mb-8">
 				<h1 className="text-4xl font-bold tracking-tight">{doc.title}</h1>
 				{doc.description && (
-					<p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
+					<p className="mt-2 text-lg text-stone-600 dark:text-stone-400">
 						{doc.description}
 					</p>
 				)}

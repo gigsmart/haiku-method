@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://ai-dlc.dev/schemas/providers/excalidraw.schema.json",
+	"$id": "https://haikumethod.ai/schemas/providers/excalidraw.schema.json",
 	"title": "Excalidraw Provider Config",
 	"description": "Provider-specific configuration for Excalidraw design provider",
 	"type": "object",

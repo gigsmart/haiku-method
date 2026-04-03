@@ -1,6 +1,6 @@
 ---
 title: "Design as a First-Class Concern"
-description: "AI-DLC now includes a design direction system and persistent project knowledge layer, making visual design and domain understanding part of the methodology — not an afterthought."
+description: "H·AI·K·U now includes a design direction system and persistent project knowledge layer, making visual design and domain understanding part of the methodology — not an afterthought."
 date: 2026-04-01
 author: The Bushido Collective
 ---
@@ -9,7 +9,7 @@ Every AI-generated interface looks the same. Sidebar on the left. Header across 
 
 This is not a model capability problem. Models can produce wildly different visual outputs given the right constraints. The problem is that nothing in the workflow injects those constraints. Design decisions happen during construction — if they happen at all — which means the agent reaches for whatever patterns are most statistically common in its training data. Every project gets the same look because no system told the agent to think about aesthetics before writing the first line of code.
 
-AI-DLC now does.
+H·AI·K·U now does.
 
 ## Design Direction
 
@@ -31,7 +31,7 @@ The design direction system solves the "every project looks the same" problem. T
 
 Before this change, the second feature you built knew nothing about the first. Design decisions, architecture patterns, domain understanding, coding conventions — all of it lived in the agent's expired context window. Each new intent was a blank slate.
 
-The project knowledge layer makes intelligence persistent. Five artifact types — `design.md`, `architecture.md`, `product.md`, `conventions.md`, `domain.md` — live in `.ai-dlc/knowledge/` and accumulate across intents. The design direction system seeds the first one. Subsequent intents read and extend all of them.
+The project knowledge layer makes intelligence persistent. Five artifact types — `design.md`, `architecture.md`, `product.md`, `conventions.md`, `domain.md` — live in `.haiku/knowledge/` and accumulate across intents. The design direction system seeds the first one. Subsequent intents read and extend all of them.
 
 Each hat loads the knowledge relevant to its discipline. The designer hat gets design knowledge. The builder gets architecture, conventions, and domain knowledge. The planner gets product, domain, and architecture knowledge. The reviewer checks compliance against documented patterns. Knowledge is not dumped wholesale into every context — it is routed to where it is useful.
 
@@ -55,13 +55,13 @@ The archetype system ensures that accumulated knowledge starts from a real desig
 
 The conventional AI workflow treats design as something you fix after the code exists. Generate the feature, look at it, adjust the CSS, iterate. Design is reactive — a correction applied to defaults the agent chose without guidance.
 
-AI-DLC inverts this. Design direction is established during elaboration, before any unit is decomposed, before any builder writes a line of code. The blueprint is an input to construction, not an output of it. By the time the agent generates a component, it already knows the density target, the shape language, the color mood, and the typography scale.
+H·AI·K·U inverts this. Design direction is established during elaboration, before any unit is decomposed, before any builder writes a line of code. The blueprint is an input to construction, not an output of it. By the time the agent generates a component, it already knows the density target, the shape language, the color mood, and the typography scale.
 
 This is the same principle that makes passes work: the right discipline at the right time produces better outcomes than applying all disciplines simultaneously. Design belongs in elaboration. Architecture belongs in elaboration. Domain understanding belongs in elaboration. These are the decisions that *shape* implementation. Making them explicit and early means the builder operates with constraints instead of defaults.
 
 The knowledge layer extends this principle across time. Design direction is forethought for the first intent. Accumulated knowledge is forethought for every intent after that.
 
-Projects should not converge on the same look. Agents should not forget what they learned. AI-DLC now ensures neither happens.
+Projects should not converge on the same look. Agents should not forget what they learned. H·AI·K·U now ensures neither happens.
 
 ---
 

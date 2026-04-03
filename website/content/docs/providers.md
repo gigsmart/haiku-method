@@ -1,12 +1,12 @@
 ---
 title: Providers
-description: Connect AI-DLC to Jira, Notion, Figma, Slack, and other external tools
+description: Connect H·AI·K·U to Jira, Notion, Figma, Slack, and other external tools
 order: 10
 ---
 
 # Providers
 
-Providers connect AI-DLC to external systems your team already uses — ticketing, specs, design tools, and communication channels. When configured, AI-DLC automatically syncs work across these systems during elaboration and execution.
+Providers connect H·AI·K·U to external systems your team already uses — ticketing, specs, design tools, and communication channels. When configured, H·AI·K·U automatically syncs work across these systems during elaboration and execution.
 
 ## Provider Categories
 
@@ -23,7 +23,7 @@ VCS hosting and CI/CD are detected automatically — you don't need to configure
 
 ## Configuration
 
-Add a `providers` section to your `.ai-dlc/settings.yml`:
+Add a `providers` section to your `.haiku/settings.yml`:
 
 ```yaml
 providers:
@@ -64,7 +64,7 @@ Each provider entry has three fields:
 
 ### During Elaboration
 
-When you run `/ai-dlc:elaborate`, AI-DLC uses providers to enrich the process:
+When you run `/haiku:elaborate`, H·AI·K·U uses providers to enrich the process:
 
 1. **Spec provider** — Searches for existing requirements, PRDs, and design docs related to your intent
 2. **Design provider** — Pulls relevant mockups and component specs
@@ -84,7 +84,7 @@ Hats interact with providers as they work:
 
 ### Graceful Degradation
 
-Provider interactions are advisory (**SHOULD**, not **MUST**). If MCP tools aren't available for a configured provider, AI-DLC skips the integration silently and continues working. Missing providers never block your workflow.
+Provider interactions are advisory (**SHOULD**, not **MUST**). If MCP tools aren't available for a configured provider, H·AI·K·U skips the integration silently and continues working. Missing providers never block your workflow.
 
 ## Three-Tier Instruction Merge
 
@@ -92,11 +92,11 @@ Provider instructions are merged from three sources, with later tiers supplement
 
 1. **Built-in defaults** — Ship with the plugin. Cover universal behaviors like DAG-to-blocked-by mapping for ticketing.
 2. **Inline instructions** — The `instructions:` field in your settings.yml. Project-specific rules.
-3. **Project overrides** — Markdown files at `.ai-dlc/providers/{type}.md` for detailed conventions.
+3. **Project overrides** — Markdown files at `.haiku/providers/{type}.md` for detailed conventions.
 
 ### Example: Project-Level Override
 
-Create `.ai-dlc/providers/jira.md` for detailed Jira conventions:
+Create `.haiku/providers/jira.md` for detailed Jira conventions:
 
 ```markdown
 ---
@@ -126,11 +126,11 @@ epic: "PROJ-123"
 ---
 ```
 
-AI-DLC will link all tickets to that existing epic instead of creating a new one. If `epic` is left empty, a new epic is created automatically.
+H·AI·K·U will link all tickets to that existing epic instead of creating a new one. If `epic` is left empty, a new epic is created automatically.
 
 ## MCP Requirements
 
-Providers work through MCP (Model Context Protocol) tool servers. For each provider type, you need the corresponding MCP server configured in your Claude Code settings:
+Providers work through MCP (Model Context Protocol) tool servers. For each provider type, you need the corresponding MCP server configured in your Claude settings:
 
 | Provider Type | MCP Tool Pattern |
 |--------------|-----------------|
@@ -150,6 +150,6 @@ Providers work through MCP (Model Context Protocol) tool servers. For each provi
 ## Next Steps
 
 - **[Design Providers Guide](/docs/guide-design-providers/)** — Detailed setup for all 6 design providers
-- **[Quick Start](/docs/quick-start/)** — Get started with AI-DLC
+- **[Quick Start](/docs/quick-start/)** — Get started with H·AI·K·U
 - **[Workflows](/docs/workflows/)** — Understand the hat-based workflow system
 - **[Cowork Mode](/docs/cowork/)** — Work on repos remotely without local checkout

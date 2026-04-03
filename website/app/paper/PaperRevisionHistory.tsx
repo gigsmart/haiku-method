@@ -111,8 +111,8 @@ export default function PaperRevisionHistory({
 
 	if (loading) {
 		return (
-			<div className="animate-pulse rounded-lg bg-gray-100 p-4 dark:bg-gray-800">
-				<div className="h-4 w-1/4 rounded bg-gray-200 dark:bg-gray-700" />
+			<div className="animate-pulse rounded-lg bg-stone-100 p-4 dark:bg-stone-800">
+				<div className="h-4 w-1/4 rounded bg-stone-200 dark:bg-stone-700" />
 			</div>
 		)
 	}
@@ -149,18 +149,18 @@ export default function PaperRevisionHistory({
 	}
 
 	return (
-		<div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+		<div className="overflow-hidden rounded-lg border border-stone-200 dark:border-stone-700">
 			{/* Collapsed Header */}
 			<button
 				type="button"
 				onClick={() => setIsExpanded(!isExpanded)}
-				className="flex w-full items-center justify-between bg-gray-50 px-4 py-3 text-left transition hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700/50"
+				className="flex w-full items-center justify-between bg-stone-50 px-4 py-3 text-left transition hover:bg-stone-100 dark:bg-stone-800 dark:hover:bg-stone-700/50"
 			>
 				<div className="flex items-center gap-3">
-					<span className="text-sm font-medium text-gray-900 dark:text-white">
+					<span className="text-sm font-medium text-stone-900 dark:text-white">
 						v{data.currentVersion}
 					</span>
-					<span className="text-sm text-gray-500 dark:text-gray-400">
+					<span className="text-sm text-stone-500 dark:text-stone-400">
 						{latestRevision.date}
 					</span>
 					{totalChanges > 0 && (
@@ -183,7 +183,7 @@ export default function PaperRevisionHistory({
 				</div>
 				<svg
 					aria-hidden="true"
-					className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+					className={`h-4 w-4 text-stone-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
 					fill="none"
 					viewBox="0 0 24 24"
 					stroke="currentColor"
@@ -199,8 +199,8 @@ export default function PaperRevisionHistory({
 
 			{/* Compare Mode Banner */}
 			{compareVersion && (
-				<div className="flex items-center justify-between border-t border-blue-200 bg-blue-50 px-4 py-2 dark:border-blue-800 dark:bg-blue-900/30">
-					<span className="text-sm text-blue-700 dark:text-blue-300">
+				<div className="flex items-center justify-between border-t border-teal-200 bg-teal-50 px-4 py-2 dark:border-teal-800 dark:bg-teal-900/30">
+					<span className="text-sm text-teal-700 dark:text-teal-300">
 						{isLoadingCompare ? (
 							"Loading comparison..."
 						) : (
@@ -213,7 +213,7 @@ export default function PaperRevisionHistory({
 					<button
 						type="button"
 						onClick={() => setCompareVersion(null)}
-						className="text-xs text-blue-600 hover:underline dark:text-blue-400"
+						className="text-xs text-teal-600 hover:underline dark:text-teal-400"
 					>
 						Exit compare
 					</button>
@@ -222,12 +222,12 @@ export default function PaperRevisionHistory({
 
 			{/* Expanded Content */}
 			{isExpanded && (
-				<div className="border-t border-gray-200 dark:border-gray-700">
+				<div className="border-t border-stone-200 dark:border-stone-700">
 					{/* What's New Section */}
 					{latestRevision && totalChanges > 0 && (
-						<div className="bg-white px-4 py-4 dark:bg-gray-900">
+						<div className="bg-white px-4 py-4 dark:bg-stone-900">
 							<div className="mb-3 flex items-center justify-between">
-								<h4 className="text-sm font-medium text-gray-900 dark:text-white">
+								<h4 className="text-sm font-medium text-stone-900 dark:text-white">
 									What's New in v{data.currentVersion}
 								</h4>
 								<div className="flex items-center gap-2 text-xs">
@@ -314,12 +314,12 @@ export default function PaperRevisionHistory({
 								)}
 
 							{/* Links */}
-							<div className="flex items-center gap-4 border-t border-gray-100 pt-2 text-xs text-gray-500 dark:border-gray-800 dark:text-gray-400">
+							<div className="flex items-center gap-4 border-t border-stone-100 pt-2 text-xs text-stone-500 dark:border-stone-800 dark:text-stone-400">
 								<a
 									href={`https://github.com/thebushidocollective/ai-dlc/commits/main/website/content/papers/${slug}.md`}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-300"
+									className="flex items-center gap-1 hover:text-stone-700 dark:hover:text-stone-300"
 								>
 									<svg
 										aria-hidden="true"
@@ -337,23 +337,23 @@ export default function PaperRevisionHistory({
 
 					{/* Previous Versions with Compare buttons */}
 					{olderRevisions.length > 0 && (
-						<div className="border-t border-gray-200 dark:border-gray-700">
-							<div className="bg-gray-50 px-4 py-2 dark:bg-gray-800/50">
-								<span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+						<div className="border-t border-stone-200 dark:border-stone-700">
+							<div className="bg-stone-50 px-4 py-2 dark:bg-stone-800/50">
+								<span className="text-xs font-medium text-stone-500 dark:text-stone-400">
 									Compare with Previous Version
 								</span>
 							</div>
-							<div className="divide-y divide-gray-100 dark:divide-gray-800">
+							<div className="divide-y divide-stone-100 dark:divide-stone-800">
 								{olderRevisions.map((revision) => (
 									<div
 										key={revision.commitHash}
-										className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/30"
+										className="flex items-center justify-between px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800/30"
 									>
 										<div className="flex items-center gap-3">
-											<span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+											<span className="text-sm font-medium text-stone-700 dark:text-stone-300">
 												v{revision.version}
 											</span>
-											<span className="text-xs text-gray-500 dark:text-gray-400">
+											<span className="text-xs text-stone-500 dark:text-stone-400">
 												{revision.date}
 											</span>
 											<div className="flex items-center gap-1 text-xs">
@@ -375,8 +375,8 @@ export default function PaperRevisionHistory({
 											disabled={isLoadingCompare}
 											className={`rounded px-3 py-1 text-xs transition-colors ${
 												compareVersion === revision.version
-													? "bg-blue-600 text-white"
-													: "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+													? "bg-teal-600 text-white"
+													: "bg-stone-100 text-stone-700 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
 											} disabled:opacity-50`}
 										>
 											{compareVersion === revision.version

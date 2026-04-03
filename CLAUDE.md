@@ -1,4 +1,6 @@
-# AI-DLC Project
+# H·AI·K·U Project
+
+H·AI·K·U = Human AI Knowledge Unification — a universal lifecycle framework for structured AI-assisted work.
 
 Three-component project: **plugin** (Claude Code plugin), **paper** (methodology spec), **website** (Next.js 15 static site).
 
@@ -13,51 +15,72 @@ When modifying any component, check if other components need corresponding updat
 | Change Type | Paper | Plugin | Website |
 |---|---|---|---|
 | New skill | Mention in relevant section | Primary | Update docs if user-facing |
-| New hat/workflow | Document in Construction section | Primary | Update docs |
+| New studio | Document in Profiles section | Primary | Update docs |
+| New stage | Document in relevant profile | Primary | Update docs |
+| New hat (in stage) | Document in relevant profile | Add `hats/{hat}.md` file in stage directory | Update docs if user-facing |
 | New lifecycle phase | Document as new section | Implement | Update docs |
 | Terminology change | Update all references | Update all references | Update all references |
 | New principle | Document in Principles section | Implement if applicable | Update if referenced |
 | Concept refinement | Update definition | Update implementation | Update docs |
+| New persistence adapter | Document in Context Preservation | Implement in lib/adapters/ | Update docs if user-facing |
 
 ## Key File Locations
 
-- Paper: `website/content/papers/ai-dlc-2026.md`
+- Paper: `website/content/papers/haiku-method.md`
 - Plugin metadata: `plugin/.claude-plugin/plugin.json`
 - Plugin skills: `plugin/skills/*/SKILL.md`
-- Plugin hats: `plugin/hats/*.md`
-- Plugin workflows: `plugin/workflows.yml`
+- Plugin studios: `plugin/studios/*/STUDIO.md`
+- Plugin stages: `plugin/studios/*/stages/*/STAGE.md`
+- Plugin hats: `plugin/studios/*/stages/*/hats/*.md`
 - Plugin hooks: `plugin/hooks/*.sh` + `plugin/.claude-plugin/hooks.json`
 - Plugin libraries: `plugin/lib/*.sh`
+- Plugin orchestration: `plugin/lib/orchestrator.sh`, `plugin/lib/stage.sh`, `plugin/lib/studio.sh`
+- Plugin persistence adapters: `plugin/lib/adapters/*.sh`
 - Plugin providers: `plugin/providers/*.md` + `plugin/schemas/providers/*.json`
 - Website docs: `website/content/docs/`
+- Infrastructure: `deploy/terraform/`
 - Changelog: `CHANGELOG.md` (Keep a Changelog format)
 
 ## Concept-to-Implementation Mapping
 
 | Concept | Paper Section | Plugin Implementation | Key Files |
 |---|---|---|---|
-| Intent | Inception phase | `.ai-dlc/{slug}/intent.md` | elaborate/SKILL.md |
-| Unit | Inception phase | `.ai-dlc/{slug}/unit-NN-*.md` | elaborate/SKILL.md, dag.sh |
-| Bolt | Construction phase | `iteration` field in iteration.json | execute/SKILL.md, advance/SKILL.md |
-| Pass | Iteration Through Passes | `passes:`/`active_pass:` in intent, `pass:` in unit | elaborate (Phase 5.95), execute (Step 5c), dag.sh |
-| Completion Criteria | Throughout | criteria in unit frontmatter, hard-gated | elaborate, execute, advance |
-| Backpressure | Principles section | Quality gates in builder/reviewer hats | builder.md, reviewer.md |
-| Operating Modes | HITL/OHOTL/AHOTL section | interactive=HITL, /ai-dlc:execute=OHOTL, /ai-dlc:autopilot=AHOTL | execute, autopilot |
-| Workflows | Named Workflows section | plugin/workflows.yml, 5 named workflows | workflows.yml, hats/*.md |
-| Hard Gates | Construction phase | exit code enforcement in /ai-dlc:advance | advance/SKILL.md |
-| Providers | Memory Providers section | plugin/schemas/providers/*.json, plugin/providers/*.md | config.sh, hats |
-| Operations | Operations phase | /ai-dlc:operate skill | operate/SKILL.md |
+| Intent | Elaboration phase | `.haiku/intents/{slug}/intent.md` | elaborate/SKILL.md |
+| Unit | Elaboration phase | `.haiku/intents/{slug}/stages/{stage}/units/unit-NN-*.md` | elaborate/SKILL.md, dag.sh |
+| Bolt | Execution phase | `iteration` field in iteration.json | execute/SKILL.md, orchestrator.sh |
+| Studio | Profiles section | `plugin/studios/{name}/STUDIO.md` | studio.sh |
+| Stage | Profiles section | `plugin/studios/{name}/stages/{stage}/STAGE.md` | stage.sh, orchestrator.sh |
+| Hat | Profiles section | `plugin/studios/{name}/stages/{stage}/hats/{hat}.md` | hat.sh, stage.sh |
+| Review Gate | Quality Enforcement | `review:` field in STAGE.md (auto/ask/external/[external,ask]) | orchestrator.sh |
+| Completion Criteria | Throughout | `quality_gates:` in unit/intent frontmatter, harness-enforced | elaborate, execute, advance, quality-gate.sh |
+| Backpressure | Principles section | Quality gates enforced by harness, not agent | quality-gate.sh, orchestrator.sh |
+| Operating Modes | Operating Modes section | interactive=HITL, /haiku:execute=OHOTL, /haiku:autopilot=AHOTL | execute, autopilot |
+| Hard Gates | Execution phase | exit code enforcement in quality-gate.sh | orchestrator.sh |
+| Persistence | Context Preservation | `plugin/lib/adapters/*.sh` (filesystem, git) | config.sh, adapters/ |
+| Providers | Memory Providers section | `plugin/schemas/providers/*.json`, `plugin/providers/*.md` | config.sh |
+| Operations | Operation phase | /haiku:operate skill | operate/SKILL.md |
 
-## AI-DLC Terminology (CRITICAL)
+## H·AI·K·U Terminology (CRITICAL)
 
-| AI-DLC Term | Agile Equivalent | Description |
+| H·AI·K·U Term | Agile Equivalent | Description |
 |---|---|---|
 | Intent | Feature / Epic | The overall thing being built |
 | Unit | Ticket / Story | A discrete piece of work within an intent |
 | Bolt | Sprint | The iteration cycle an agent runs within a unit |
-| Pass | (no equivalent) | Typed iteration through a disciplinary lens (design/product/dev) |
+| Studio | (no equivalent) | A named lifecycle template (profile implementation) containing stages |
+| Stage | (no equivalent) | A lifecycle phase within a studio, containing hats and review gates |
+| Hat | Role | A behavioral role scoped to a stage, defined in `hats/{hat}.md` files within the stage directory |
+| Review Gate | Quality Gate | A checkpoint between stages (auto, ask, or external) |
 
-Bolt is NOT interchangeable with Unit. Bolt = the timeframe/cycle. Unit = the work itself.
+### Hierarchy
+
+```
+Studio > Stage > Unit > Bolt
+```
+
+- **Studio** is NOT the same as Stage. Studio = the lifecycle template. Stage = a phase within it.
+- **Unit** is NOT the same as Bolt. Unit = the work itself. Bolt = the iteration cycle within a unit.
+- **Hat** is always scoped to a Stage, defined in `stages/{stage}/hats/{hat}.md` files. Project-level augmentation: `.haiku/studios/{studio}/stages/{stage}/hats/{hat}.md`.
 
 ## Version Management
 

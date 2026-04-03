@@ -1,5 +1,5 @@
 #!/bin/bash
-# resolve-design-ref.sh — Design reference resolver for AI-DLC
+# resolve-design-ref.sh — Design reference resolver for H·AI·K·U
 #
 # Resolves which design reference to use for a unit's visual fidelity
 # comparison. Implements a 3-level priority hierarchy:
@@ -15,13 +15,13 @@
 #
 # Usage (sourced):
 #   source resolve-design-ref.sh
-#   dlc_resolve_design_ref --intent-slug <slug> --unit-slug <slug> --intent-dir <path>
+#   hku_resolve_design_ref --intent-slug <slug> --unit-slug <slug> --intent-dir <path>
 
 # Guard against double-sourcing
-if [ -n "${_DLC_RESOLVE_DESIGN_REF_SOURCED:-}" ]; then
+if [ -n "${_HKU_RESOLVE_DESIGN_REF_SOURCED:-}" ]; then
   return 0 2>/dev/null || true
 fi
-_DLC_RESOLVE_DESIGN_REF_SOURCED=1
+_HKU_RESOLVE_DESIGN_REF_SOURCED=1
 
 RESOLVE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -39,9 +39,9 @@ source "$RESOLVE_SCRIPT_DIR/config.sh"
 # Discover views for a unit from available sources.
 # Priority: explicit views: frontmatter > directory contents > filename inference > ["main"]
 #
-# Usage: dlc_discover_views <unit_file> [source_path]
+# Usage: hku_discover_views <unit_file> [source_path]
 # Output: JSON array of view names to stdout
-dlc_discover_views() {
+hku_discover_views() {
   local unit_file="$1"
   local source_path="${2:-}"
 
@@ -240,7 +240,7 @@ _resolve_design_ref_field() {
   local repo_root="$2"
 
   local design_ref
-  design_ref=$(dlc_frontmatter_get "design_ref" "$unit_file")
+  design_ref=$(hku_frontmatter_get "design_ref" "$unit_file")
 
   [ -z "$design_ref" ] && return 1
 
@@ -250,7 +250,7 @@ _resolve_design_ref_field() {
     _uri_provider=$(_parse_provider_uri "$design_ref" | head -1)
 
     if [ -z "$_uri_provider" ]; then
-      echo "ai-dlc: resolve-design-ref: unrecognized provider URI scheme: $design_ref" >&2
+      echo "haiku: resolve-design-ref: unrecognized provider URI scheme: $design_ref" >&2
       return 1
     fi
 
@@ -271,7 +271,7 @@ _resolve_design_ref_field() {
 
   # Verify file/directory exists
   if [ ! -e "$resolved_path" ]; then
-    echo "ai-dlc: resolve-design-ref: design_ref path not found: $resolved_path" >&2
+    echo "haiku: resolve-design-ref: design_ref path not found: $resolved_path" >&2
     return 1
   fi
 
@@ -292,7 +292,7 @@ _resolve_design_ref_field() {
       excalidraw) format="excalidraw" ;;
       fig)  format="fig" ;;
       *)
-        echo "ai-dlc: resolve-design-ref: unsupported design_ref format: $ext" >&2
+        echo "haiku: resolve-design-ref: unsupported design_ref format: $ext" >&2
         return 1
         ;;
     esac
@@ -322,12 +322,12 @@ _resolve_iteration_screenshots() {
   local repo_root="$3"
 
   local iterates_on
-  iterates_on=$(dlc_frontmatter_get "iterates_on" "$intent_file")
+  iterates_on=$(hku_frontmatter_get "iterates_on" "$intent_file")
 
   [ -z "$iterates_on" ] && return 1
 
   # Search filesystem first
-  local prev_screenshots_dir="$repo_root/.ai-dlc/$iterates_on/screenshots"
+  local prev_screenshots_dir="$repo_root/.haiku/intents/$iterates_on/screenshots"
 
   # Try exact unit slug match
   if [ -d "$prev_screenshots_dir/$unit_slug" ]; then
@@ -363,11 +363,11 @@ _resolve_iteration_screenshots() {
   fi
 
   # Git branch fallback: try to find screenshots on the previous intent's branch
-  local prev_branch="ai-dlc/$iterates_on/main"
+  local prev_branch="haiku/$iterates_on/main"
   if git rev-parse --verify "$prev_branch" >/dev/null 2>&1; then
     # Check if screenshots exist on that branch
     local git_screenshots
-    git_screenshots=$(git ls-tree -r --name-only "$prev_branch" -- ".ai-dlc/$iterates_on/screenshots/" 2>/dev/null || echo "")
+    git_screenshots=$(git ls-tree -r --name-only "$prev_branch" -- ".haiku/intents/$iterates_on/screenshots/" 2>/dev/null || echo "")
     if [ -n "$git_screenshots" ]; then
       # Extract screenshots to a temporary location
       local tmp_dir
@@ -422,7 +422,7 @@ _resolve_wireframe() {
   local repo_root="$2"
 
   local wireframe
-  wireframe=$(dlc_frontmatter_get "wireframe" "$unit_file")
+  wireframe=$(hku_frontmatter_get "wireframe" "$unit_file")
 
   [ -z "$wireframe" ] && return 1
 
@@ -433,7 +433,7 @@ _resolve_wireframe() {
   fi
 
   if [ ! -f "$resolved_path" ]; then
-    echo "ai-dlc: resolve-design-ref: wireframe file not found: $resolved_path" >&2
+    echo "haiku: resolve-design-ref: wireframe file not found: $resolved_path" >&2
     return 1
   fi
 
@@ -451,9 +451,9 @@ _resolve_wireframe() {
 # Generate reference screenshots from the resolved source.
 # Uses unit-01's capture infrastructure with ref- prefix.
 #
-# Usage: dlc_generate_ref_screenshots <source_path> <source_format> <output_dir>
+# Usage: hku_generate_ref_screenshots <source_path> <source_format> <output_dir>
 # Returns: 0 on success, 1 on failure
-dlc_generate_ref_screenshots() {
+hku_generate_ref_screenshots() {
   local source_path="$1"
   local source_format="$2"
   local output_dir="$3"
@@ -504,7 +504,7 @@ dlc_generate_ref_screenshots() {
       return 0
       ;;
     *)
-      echo "ai-dlc: resolve-design-ref: unsupported format for screenshot generation: $source_format" >&2
+      echo "haiku: resolve-design-ref: unsupported format for screenshot generation: $source_format" >&2
       return 1
       ;;
   esac
@@ -518,10 +518,10 @@ dlc_generate_ref_screenshots() {
 # Implements 3-level priority hierarchy, generates reference screenshots,
 # and outputs JSON metadata to stdout.
 #
-# Usage: dlc_resolve_design_ref --intent-slug <slug> --unit-slug <slug> --intent-dir <path>
+# Usage: hku_resolve_design_ref --intent-slug <slug> --unit-slug <slug> --intent-dir <path>
 # Output: JSON to stdout
 # Exit: 0 on success, 1 on failure
-dlc_resolve_design_ref() {
+hku_resolve_design_ref() {
   local intent_slug=""
   local unit_slug=""
   local intent_dir=""
@@ -546,7 +546,7 @@ dlc_resolve_design_ref() {
         return 0
         ;;
       *)
-        echo "ai-dlc: resolve-design-ref: unknown argument: $1" >&2
+        echo "haiku: resolve-design-ref: unknown argument: $1" >&2
         return 1
         ;;
     esac
@@ -554,15 +554,15 @@ dlc_resolve_design_ref() {
 
   # Validate required arguments
   if [ -z "$intent_slug" ]; then
-    echo "ai-dlc: resolve-design-ref: --intent-slug is required" >&2
+    echo "haiku: resolve-design-ref: --intent-slug is required" >&2
     return 1
   fi
   if [ -z "$unit_slug" ]; then
-    echo "ai-dlc: resolve-design-ref: --unit-slug is required" >&2
+    echo "haiku: resolve-design-ref: --unit-slug is required" >&2
     return 1
   fi
   if [ -z "$intent_dir" ]; then
-    echo "ai-dlc: resolve-design-ref: --intent-dir is required" >&2
+    echo "haiku: resolve-design-ref: --intent-dir is required" >&2
     return 1
   fi
 
@@ -570,7 +570,7 @@ dlc_resolve_design_ref() {
   local repo_root
   repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
   if [ -z "$repo_root" ]; then
-    echo "ai-dlc: resolve-design-ref: not inside a git repository" >&2
+    echo "haiku: resolve-design-ref: not inside a git repository" >&2
     return 1
   fi
 
@@ -578,7 +578,7 @@ dlc_resolve_design_ref() {
   local unit_file="$intent_dir/$unit_slug.md"
 
   if [ ! -f "$unit_file" ]; then
-    echo "ai-dlc: resolve-design-ref: unit file not found: $unit_file" >&2
+    echo "haiku: resolve-design-ref: unit file not found: $unit_file" >&2
     return 1
   fi
 
@@ -597,22 +597,22 @@ dlc_resolve_design_ref() {
   if ! _resolve_design_ref_field "$unit_file" "$repo_root"; then
     if ! _resolve_iteration_screenshots "$intent_file" "$unit_slug" "$repo_root"; then
       if ! _resolve_wireframe "$unit_file" "$repo_root"; then
-        echo "ai-dlc: resolve-design-ref: no design reference found for unit '$unit_slug'." >&2
-        echo "ai-dlc: Add a \`design_ref:\` field to unit frontmatter, ensure \`iterates_on\` has prior screenshots, or generate wireframes during elaboration." >&2
+        echo "haiku: resolve-design-ref: no design reference found for unit '$unit_slug'." >&2
+        echo "haiku: Add a \`design_ref:\` field to unit frontmatter, ensure \`iterates_on\` has prior screenshots, or generate wireframes during elaboration." >&2
         return 1
       fi
     fi
   fi
 
   # Handle provider URI and native format exports
-  local output_dir="$repo_root/.ai-dlc/$intent_slug/screenshots/$unit_slug"
+  local output_dir="$repo_root/.haiku/intents/$intent_slug/screenshots/$unit_slug"
   if [ "$_RESOLVED_FORMAT" = "provider-uri" ] || [[ "$_RESOLVED_FORMAT" =~ ^(op|pen|excalidraw|fig)$ ]]; then
     mkdir -p "$output_dir"
 
     # Read current bolt iteration to invalidate cache across bolts
     local current_iteration="0"
     local iter_json
-    iter_json=$(dlc_state_load "$intent_dir" "iteration.json" 2>/dev/null)
+    iter_json=$(hku_state_load "$intent_dir" "iteration.json" 2>/dev/null)
     if [ -n "$iter_json" ]; then
       current_iteration=$(echo "$iter_json" | jq -r '.iteration // 0' 2>/dev/null || echo "0")
     fi
@@ -658,20 +658,20 @@ dlc_resolve_design_ref() {
         _generate_export_instructions "$_RESOLVED_PROVIDER" "${_RESOLVED_FROM:-$_RESOLVED_SOURCE}" "$cached_path" "$instructions_path"
         _NEEDS_AGENT_EXPORT=true
         _EXPORT_INSTRUCTIONS="$instructions_path"
-        echo "ai-dlc: resolve-design-ref: generated export instructions at $instructions_path" >&2
-        echo "ai-dlc: resolve-design-ref: agent must execute export before visual comparison" >&2
+        echo "haiku: resolve-design-ref: generated export instructions at $instructions_path" >&2
+        echo "haiku: resolve-design-ref: agent must execute export before visual comparison" >&2
       fi
     fi
   fi
 
   # Discover views
   local views
-  views=$(dlc_discover_views "$unit_file" "$_RESOLVED_SOURCE")
+  views=$(hku_discover_views "$unit_file" "$_RESOLVED_SOURCE")
 
   # Generate reference screenshots (skip for pending agent exports)
   if [ "$_NEEDS_AGENT_EXPORT" = "false" ]; then
-    if ! dlc_generate_ref_screenshots "$_RESOLVED_SOURCE" "$_RESOLVED_FORMAT" "$output_dir" >&2; then
-      echo "ai-dlc: resolve-design-ref: failed to generate reference screenshots from $_RESOLVED_SOURCE" >&2
+    if ! hku_generate_ref_screenshots "$_RESOLVED_SOURCE" "$_RESOLVED_FORMAT" "$output_dir" >&2; then
+      echo "haiku: resolve-design-ref: failed to generate reference screenshots from $_RESOLVED_SOURCE" >&2
       # Clean up any temp dir created by the git branch fallback
       if [ -n "$_RESOLVED_TMP_DIR" ]; then
         rm -rf "$_RESOLVED_TMP_DIR"
@@ -716,7 +716,7 @@ dlc_resolve_design_ref() {
 
 # When invoked directly (not sourced), run the resolver
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-  dlc_check_deps
-  dlc_resolve_design_ref "$@"
+  hku_check_deps
+  hku_resolve_design_ref "$@"
   exit $?
 fi

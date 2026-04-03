@@ -1,5 +1,5 @@
 ---
-description: (Internal) Autonomous ticket sync for AI-DLC elaboration — creates epics, tickets, and DAG links
+description: (Internal) Autonomous ticket sync for H·AI·K·U elaboration — creates epics, tickets, and DAG links
 context: fork
 agent: general-purpose
 user-invocable: false
@@ -37,7 +37,7 @@ allowed-tools:
 
 # Elaborate: Ticket Sync
 
-Autonomous ticket synchronization for AI-DLC elaboration. This skill runs as a forked subagent — it reads a brief file from disk, creates epics and tickets in the ticketing provider, maps the unit DAG to blocked-by relationships, and writes results to disk.
+Autonomous ticket synchronization for H·AI·K·U elaboration. This skill runs as a forked subagent — it reads a brief file from disk, creates epics and tickets in the ticketing provider, maps the unit DAG to blocked-by relationships, and writes results to disk.
 
 **You have NO access to `AskUserQuestion`.** All work is fully autonomous.
 
@@ -45,13 +45,13 @@ Autonomous ticket synchronization for AI-DLC elaboration. This skill runs as a f
 
 ## Step 1: Read Brief
 
-Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.ai-dlc/{intent-slug}/.briefs/elaborate-ticket-sync.md`).
+Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.haiku/intents/{intent-slug}/.briefs/elaborate-ticket-sync.md`).
 
 Parse YAML frontmatter:
 
 ```yaml
 intent_slug: my-feature
-worktree_path: /path/to/.ai-dlc/worktrees/my-feature
+worktree_path: /path/to/.haiku/worktrees/my-feature
 ticketing_type: jira  # jira | linear | github | gitlab | or empty
 ticketing_config:
   project_key: PROJ
@@ -168,7 +168,7 @@ None — this unit can start immediately.
 ## Wireframe
 
 {if unit has wireframe field in the brief}
-Low-fidelity wireframe available at `.ai-dlc/{intent-slug}/{wireframe-path}`.
+Low-fidelity wireframe available at `.haiku/intents/{intent-slug}/{wireframe-path}`.
 Shows approved screen structure, flow, and placeholder copy.
 Apply full visual design during execution.
 
@@ -179,7 +179,7 @@ Apply full visual design during execution.
 {include any implementation guidance, constraints, or architectural notes from the unit description in the brief — omit this section if no technical detail beyond the criteria}
 ```
 
-Omit sections that have no content. The goal is a ticket that gives a developer full context without reading the `.ai-dlc/` files.
+Omit sections that have no content. The goal is a ticket that gives a developer full context without reading the `.haiku/` files.
 
 **Every unit ticket MUST be linked to the intent epic** (unless `ticketing_config.epic_link` is explicitly `"none"`). The epic is the single parent that groups all unit work. This applies regardless of provider: Jira epic links, Linear parent issues, GitHub milestones/tracked-by, GitLab epic associations.
 
@@ -208,7 +208,7 @@ Then commit:
 
 ```bash
 INTENT_SLUG="{intent_slug from brief}"
-git add .ai-dlc/
+git add .haiku/
 git commit -m "elaborate: sync tickets for ${INTENT_SLUG}"
 ```
 
@@ -221,7 +221,7 @@ After ticket creation and frontmatter updates, validate:
 1. **Epic check**: Read `intent.md` frontmatter. Check the `epic:` field.
    - If `epic:` is empty or missing → **FAIL**
 
-2. **Ticket check**: Scan all `unit-*.md` files in `.ai-dlc/{intent-slug}/`. Check each file's `ticket:` frontmatter field.
+2. **Ticket check**: Scan all `unit-*.md` files in `.haiku/intents/{intent-slug}/`. Check each file's `ticket:` frontmatter field.
    - If ANY unit has an empty or missing `ticket:` field → **FAIL**
 
 ### On FAIL
@@ -250,7 +250,7 @@ Proceed to writing results.
 
 ## Step 8: Write Results
 
-Write the results file to `.ai-dlc/{intent-slug}/.briefs/elaborate-ticket-sync-results.md`:
+Write the results file to `.haiku/intents/{intent-slug}/.briefs/elaborate-ticket-sync-results.md`:
 
 ```markdown
 ---

@@ -1,5 +1,5 @@
 ---
-description: (Internal) Autonomous domain discovery and technical exploration for AI-DLC elaboration
+description: (Internal) Autonomous domain discovery and technical exploration for H·AI·K·U elaboration
 context: fork
 agent: general-purpose
 user-invocable: false
@@ -33,7 +33,7 @@ allowed-tools:
 
 # Elaborate: Domain Discovery
 
-Autonomous domain discovery and technical exploration for AI-DLC elaboration. This skill runs as a forked subagent — it reads a brief file from disk, performs deep exploration, and writes results to disk.
+Autonomous domain discovery and technical exploration for H·AI·K·U elaboration. This skill runs as a forked subagent — it reads a brief file from disk, performs deep exploration, and writes results to disk.
 
 **You have NO access to `AskUserQuestion`.** All work is fully autonomous. Persist findings to disk — the main elaboration skill will present results to the user.
 
@@ -41,13 +41,13 @@ Autonomous domain discovery and technical exploration for AI-DLC elaboration. Th
 
 ## Step 1: Read Brief
 
-Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.ai-dlc/{intent-slug}/.briefs/elaborate-discover.md`).
+Read the brief file passed as the first argument. The brief is at the path provided (e.g., `.haiku/intents/{intent-slug}/.briefs/elaborate-discover.md`).
 
 Parse YAML frontmatter for structured inputs:
 
 ```yaml
 intent_slug: my-feature
-worktree_path: /path/to/.ai-dlc/worktrees/my-feature
+worktree_path: /path/to/.haiku/worktrees/my-feature
 project_maturity: established  # greenfield | early | established
 provider_config:
   design:
@@ -58,7 +58,7 @@ provider_config:
     type: jira
   comms:
     type: slack
-stack_config: {}  # Stack configuration from .ai-dlc/settings.yml (empty object if not configured)
+stack_config: {}  # Stack configuration from .haiku/settings.yml (empty object if not configured)
 ```
 
 The markdown body contains:
@@ -188,7 +188,7 @@ Agent({
 Agent({
   description: "Analyze design: {file name}",
   subagent_type: "general-purpose",
-  prompt: "Analyze a design file for AI-DLC elaboration.
+  prompt: "Analyze a design file for H·AI·K·U elaboration.
 
     ## Instructions
     1. Use ToolSearch to discover design MCP tools (e.g., 'figma', 'sketch', 'design')
@@ -213,7 +213,7 @@ Spawn one subagent per design file, in parallel with codebase Explore agents. Wh
 - Append to `discovery.md` under `## Design Analysis: {file name}`
 - **Commit immediately:**
   ```bash
-  git add .ai-dlc/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover design analysis for {file name}"
+  git add .haiku/intents/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover design analysis for {file name}"
   ```
 - If no design MCP tools are discoverable, the subagent reports unavailability — log a warning and continue without design analysis
 
@@ -282,7 +282,7 @@ Spawn one subagent per design file, in parallel with codebase Explore agents. Wh
 
    **Commit immediately after each mockup:**
    ```bash
-   git add .ai-dlc/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover UI mockup for {View Name}"
+   git add .haiku/intents/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover UI mockup for {View Name}"
    ```
 
    **Skip mockups only if:** the intent has no user-facing interface (pure backend, API, data pipeline, infrastructure, etc.).
@@ -340,7 +340,7 @@ After each significant finding (API schema mapped, codebase pattern identified, 
 
 **Commit immediately after each append to discovery.md:**
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover {topic}"
+git add .haiku/intents/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover {topic}"
 ```
 
 **After appending to discovery.md, keep only a brief summary in your context** — the full details are safely on disk and will be available to builders. This is the key benefit: your context stays lean for continued exploration while nothing is lost.
@@ -375,14 +375,14 @@ Structure the domain model as:
 
 **Commit the domain model immediately after appending it to discovery.md:**
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover domain model"
+git add .haiku/intents/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover domain model"
 ```
 
 ---
 
 ## Step 4: Write Results
 
-Write the results file to `.ai-dlc/{intent-slug}/.briefs/elaborate-discover-results.md`:
+Write the results file to `.haiku/intents/{intent-slug}/.briefs/elaborate-discover-results.md`:
 
 ```markdown
 ---
@@ -429,7 +429,7 @@ error_message: ""
 
 **Commit the results file immediately after writing:**
 ```bash
-git add .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-discover-results.md && git commit -m "elaborate(${INTENT_SLUG}): write discovery results"
+git add .haiku/intents/${INTENT_SLUG}/.briefs/elaborate-discover-results.md && git commit -m "elaborate(${INTENT_SLUG}): write discovery results"
 ```
 
 ---
@@ -441,7 +441,7 @@ If any critical error occurs during exploration (e.g., worktree path doesn't exi
 1. Write the results file with `status: error` and `error_message` describing what went wrong
 2. **Commit the error results file immediately:**
    ```bash
-   git add .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-discover-results.md && git commit -m "elaborate(${INTENT_SLUG}): write discovery results (error)"
+   git add .haiku/intents/${INTENT_SLUG}/.briefs/elaborate-discover-results.md && git commit -m "elaborate(${INTENT_SLUG}): write discovery results (error)"
    ```
 3. Include any partial findings that were gathered before the error
 4. Exit — the main elaborate skill will read the error status and handle it

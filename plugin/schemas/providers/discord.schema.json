@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://ai-dlc.dev/schemas/providers/discord.schema.json",
+	"$id": "https://haiku.dev/schemas/providers/discord.schema.json",
 	"title": "Discord Provider Config",
 	"description": "Provider-specific configuration for Discord comms provider",
 	"type": "object",

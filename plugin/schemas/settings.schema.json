@@ -1,12 +1,12 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://ai-dlc.dev/schemas/ai-dlc-settings.schema.json",
-	"title": "AI-DLC Settings",
-	"description": "Configuration schema for .ai-dlc/settings.yml files that configure AI-DLC behavior including VCS strategy",
+	"$id": "https://haiku.dev/schemas/haiku-settings.schema.json",
+	"title": "H·AI·K·U Settings",
+	"description": "Configuration schema for .haiku/settings.yml files that configure H·AI·K·U behavior including VCS strategy",
 	"type": "object",
 	"_override_pattern": {
 		"type": "string",
-		"description": "AI-DLC supports a Master + Overrides configuration pattern. Global settings in settings.yml apply to all intents. Per-intent overrides in .ai-dlc/{intent}/settings.yml take precedence. Per-unit overrides in unit frontmatter take highest precedence. Precedence: unit frontmatter > intent settings > global settings."
+		"description": "H·AI·K·U supports a Master + Overrides configuration pattern. Global settings in settings.yml apply to all intents. Per-intent overrides in .haiku/{intent}/settings.yml take precedence. Per-unit overrides in unit frontmatter take highest precedence. Precedence: unit frontmatter > intent settings > global settings."
 	},
 	"properties": {
 		"git": {
@@ -27,11 +27,17 @@
 			"default": "standard",
 			"description": "coarse: fewer, larger units with minimal process. standard: balanced unit decomposition. fine: many small units with detailed specs."
 		},
+		"studio": {
+			"type": "string",
+			"enum": ["ideation", "software"],
+			"default": "ideation",
+			"description": "The studio (lifecycle template) for this project. Studios define stage order and persistence type."
+		},
 		"mockup_format": {
 			"type": "string",
 			"enum": ["ascii", "html"],
 			"default": "ascii",
-			"description": "Format for UI mockups generated during elaboration. 'ascii' produces text-based wireframes in markdown code blocks. 'html' produces self-contained HTML files written to .ai-dlc/{intent-slug}/mockups/."
+			"description": "Format for UI mockups generated during elaboration. 'ascii' produces text-based wireframes in markdown code blocks. 'html' produces self-contained HTML files written to .haiku/{intent-slug}/mockups/."
 		},
 		"default_announcements": {
 			"type": "array",
@@ -48,7 +54,7 @@
 				"type": "string"
 			},
 			"default": [],
-			"description": "Default iteration passes for new intents. Each name must have a definition file in plugin/passes/ (built-in) or .ai-dlc/passes/ (custom). Empty array means single dev pass (the default). Built-in passes: design, product, dev. Custom passes: create .ai-dlc/passes/{name}.md."
+			"description": "Default iteration passes for new intents. Each name must have a definition file in plugin/passes/ (built-in) or .haiku/passes/ (custom). Empty array means single dev pass (the default). Built-in passes: design, product, dev. Custom passes: create .haiku/passes/{name}.md."
 		},
 		"quality_gates": {
 			"$ref": "#/definitions/qualityGatesConfig",
@@ -81,7 +87,7 @@
 		"visual_review": {
 			"type": "boolean",
 			"default": false,
-			"description": "Enable browser-based visual review for elaboration gates. Requires the ai-dlc-review MCP server (bundled). When false, review gates use standard AskUserQuestion prompts."
+			"description": "Enable browser-based visual review for elaboration gates. Requires the haiku-review MCP server (bundled). When false, review gates use standard AskUserQuestion prompts."
 		},
 		"default_archetype": {
 			"type": "string",

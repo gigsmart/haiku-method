@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Script from "next/script"
-import { SITE_DESCRIPTION, SITE_URL } from "@/lib/feed"
+import { SITE_DESCRIPTION, SITE_URL } from "@/lib/constants"
 import {
 	Footer,
 	Header,
@@ -10,20 +10,20 @@ import {
 } from "./components"
 import "./globals.css"
 
-const SITE_TITLE = "AI-DLC - AI-Driven Development Lifecycle"
+const SITE_TITLE = "H·AI·K·U — Structured Human-AI Collaboration"
 
 export const metadata: Metadata = {
 	title: {
 		default: SITE_TITLE,
-		template: "%s - AI-DLC",
+		template: "%s - H·AI·K·U",
 	},
 	description: SITE_DESCRIPTION,
 	metadataBase: new URL(SITE_URL),
 	openGraph: {
-		title: "AI-DLC",
+		title: "H·AI·K·U",
 		description: SITE_DESCRIPTION,
 		url: SITE_URL,
-		siteName: "AI-DLC",
+		siteName: "H·AI·K·U",
 		type: "website",
 		locale: "en_US",
 		images: [
@@ -31,13 +31,13 @@ export const metadata: Metadata = {
 				url: "/og-image.png",
 				width: 1200,
 				height: 630,
-				alt: "AI-DLC - AI-Driven Development Lifecycle",
+				alt: "H·AI·K·U — Structured Human-AI Collaboration",
 			},
 		],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "AI-DLC",
+		title: "H·AI·K·U",
 		description: SITE_DESCRIPTION,
 		images: ["/og-image.png"],
 	},
@@ -45,19 +45,19 @@ export const metadata: Metadata = {
 		canonical: SITE_URL,
 		types: {
 			"application/rss+xml": [
-				{ url: "/feed.xml", title: "AI-DLC — All" },
-				{ url: "/blog/feed.xml", title: "AI-DLC — Blog" },
-				{ url: "/changelog/feed.xml", title: "AI-DLC — Changelog" },
+				{ url: "/feed.xml", title: "H·AI·K·U — All" },
+				{ url: "/blog/feed.xml", title: "H·AI·K·U — Blog" },
+				{ url: "/changelog/feed.xml", title: "H·AI·K·U — Changelog" },
 			],
 			"application/atom+xml": [
-				{ url: "/atom.xml", title: "AI-DLC — All" },
-				{ url: "/blog/atom.xml", title: "AI-DLC — Blog" },
-				{ url: "/changelog/atom.xml", title: "AI-DLC — Changelog" },
+				{ url: "/atom.xml", title: "H·AI·K·U — All" },
+				{ url: "/blog/atom.xml", title: "H·AI·K·U — Blog" },
+				{ url: "/changelog/atom.xml", title: "H·AI·K·U — Changelog" },
 			],
 			"application/feed+json": [
-				{ url: "/feed.json", title: "AI-DLC — All" },
-				{ url: "/blog/feed.json", title: "AI-DLC — Blog" },
-				{ url: "/changelog/feed.json", title: "AI-DLC — Changelog" },
+				{ url: "/feed.json", title: "H·AI·K·U — All" },
+				{ url: "/blog/feed.json", title: "H·AI·K·U — Blog" },
+				{ url: "/changelog/feed.json", title: "H·AI·K·U — Changelog" },
 			],
 		},
 	},
@@ -84,17 +84,17 @@ export default function RootLayout({
 			<head>
 				<Script
 					defer
-					data-domain="ai-dlc.dev"
+					data-domain="haikumethod.ai"
 					src="https://plausible.io/js/script.js"
 					strategy="afterInteractive"
 				/>
 				<WebSiteJsonLd
-					name="AI-DLC"
+					name="H·AI·K·U"
 					url={SITE_URL}
 					description={SITE_DESCRIPTION}
 				/>
 				<SoftwareApplicationJsonLd
-					name="AI-DLC"
+					name="H·AI·K·U"
 					description={SITE_DESCRIPTION}
 					url={SITE_URL}
 					applicationCategory="DeveloperApplication"
@@ -102,7 +102,7 @@ export default function RootLayout({
 					offers={{ price: "0", priceCurrency: "USD" }}
 				/>
 			</head>
-			<body className="flex min-h-screen flex-col bg-white text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100">
+			<body className="flex min-h-screen flex-col bg-white text-stone-900 antialiased dark:bg-stone-950 dark:text-stone-100">
 				<ThemeProvider>
 					<Header />
 					<main className="flex-1">{children}</main>

@@ -2,9 +2,9 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
 export const metadata: Metadata = {
-	title: "Start Here - AI-DLC",
+	title: "Start Here - H·AI·K·U",
 	description:
-		"Everything you need to understand AI-DLC and start using it in your projects.",
+		"Everything you need to understand H·AI·K·U and start using it in your projects.",
 	alternates: {
 		canonical: "/docs/installation/",
 	},

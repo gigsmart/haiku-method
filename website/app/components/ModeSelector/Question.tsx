@@ -16,10 +16,10 @@ export function Question({
 	return (
 		<div className="space-y-6">
 			<div>
-				<h2 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">
+				<h2 className="mb-2 text-2xl font-bold text-stone-900 dark:text-white">
 					{question.title}
 				</h2>
-				<p className="text-gray-600 dark:text-gray-400">
+				<p className="text-stone-600 dark:text-stone-400">
 					{question.description}
 				</p>
 			</div>
@@ -36,7 +36,7 @@ export function Question({
 							className={`w-full rounded-xl border-2 p-4 text-left transition-all ${
 								isSelected
 									? "border-blue-600 bg-blue-50 dark:border-blue-400 dark:bg-blue-950/30"
-									: "border-gray-200 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:border-gray-600 dark:hover:bg-gray-800/50"
+									: "border-stone-200 hover:border-stone-300 hover:bg-stone-50 dark:border-stone-700 dark:hover:border-stone-600 dark:hover:bg-stone-800/50"
 							}`}
 						>
 							<div className="flex items-start gap-4">
@@ -44,7 +44,7 @@ export function Question({
 									className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
 										isSelected
 											? "border-blue-600 bg-blue-600 dark:border-blue-400 dark:bg-blue-400"
-											: "border-gray-300 dark:border-gray-600"
+											: "border-stone-300 dark:border-stone-600"
 									}`}
 								>
 									{isSelected && (
@@ -69,7 +69,7 @@ export function Question({
 										className={`font-medium ${
 											isSelected
 												? "text-blue-900 dark:text-blue-100"
-												: "text-gray-900 dark:text-white"
+												: "text-stone-900 dark:text-white"
 										}`}
 									>
 										{option.label}
@@ -78,7 +78,7 @@ export function Question({
 										className={`mt-1 text-sm ${
 											isSelected
 												? "text-blue-700 dark:text-blue-300"
-												: "text-gray-500 dark:text-gray-400"
+												: "text-stone-500 dark:text-stone-400"
 										}`}
 									>
 										{option.description}

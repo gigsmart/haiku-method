@@ -26,10 +26,10 @@ export function DocsSidebar({ navigation }: DocsSidebarProps) {
 			<nav className="space-y-6">
 				{navigation.map((section) => (
 					<div key={section.title}>
-						<h4 className="mb-2 font-semibold text-gray-900 dark:text-white">
+						<h4 className="mb-2 font-semibold text-stone-900 dark:text-white">
 							{section.title}
 						</h4>
-						<ul className="space-y-1 border-l border-gray-200 dark:border-gray-800">
+						<ul className="space-y-1 border-l border-stone-200 dark:border-stone-800">
 							{section.items.map((item) => {
 								const isActive = pathname === item.href
 								return (
@@ -38,8 +38,8 @@ export function DocsSidebar({ navigation }: DocsSidebarProps) {
 											href={item.href}
 											className={`-ml-px block border-l-2 py-1 pl-4 text-sm transition ${
 												isActive
-													? "border-blue-500 font-medium text-blue-600 dark:text-blue-400"
-													: "border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-900 dark:text-gray-400 dark:hover:border-gray-700 dark:hover:text-white"
+													? "border-teal-500 font-medium text-teal-600 dark:text-teal-400"
+													: "border-transparent text-stone-600 hover:border-stone-300 hover:text-stone-900 dark:text-stone-400 dark:hover:border-stone-700 dark:hover:text-white"
 											}`}
 										>
 											{item.title}

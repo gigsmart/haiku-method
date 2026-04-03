@@ -1,27 +1,22 @@
 ---
 title: Community
-description: Join the AI-DLC community - resources, support, and contribution opportunities
+description: Join the H·AI·K·U community - resources, support, and contribution opportunities
 order: 14
 ---
 
-AI-DLC is an open methodology built by practitioners for practitioners. Join us in evolving how humans and AI build software together.
+H·AI·K·U is an open methodology built by practitioners for practitioners. Join us in evolving how humans and AI build software together.
 
 ## Get Involved
 
 ### GitHub
 
-The primary hub for AI-DLC development:
+The primary hub for H·AI·K·U development:
 
-**AI-DLC Plugin Repository**
+**H·AI·K·U Plugin Repository**
 - [github.com/thebushidocollective/ai-dlc](https://github.com/thebushidocollective/ai-dlc)
 - Report bugs and request features
 - Contribute code and documentation
 - Review and discuss pull requests
-
-**Han Plugin Ecosystem**
-- [github.com/thebushidocollective/han](https://github.com/thebushidocollective/han)
-- The broader plugin marketplace
-- Validation hooks, framework plugins, discipline agents, MCP bridges
 
 ### Discussions
 
@@ -52,47 +47,34 @@ Help improve the docs:
 ### Code
 
 Contribute to the plugin:
-- Fix bugs in hat logic
-- Add new workflows
+- Fix bugs in stage/studio logic
+- Add new studios or stages
 - Improve error handling
 - Add tests
 
-### Custom Hats and Workflows
+### Custom Studios and Stages
 
 Share your custom configurations:
-- Specialized hats for your domain
-- Workflow patterns that worked well
+- Specialized studios for your domain
+- Stage patterns that worked well
 - Integration examples
 
 ## Resources
 
-### The AI-DLC Paper
+### The H·AI·K·U Paper
 
 The foundational methodology document:
-- [AI-DLC Paper](https://han.guru/papers/ai-dlc-2026)
+- [H·AI·K·U Paper](https://haikumethod.ai/paper)
 - Full background and rationale
 - Research references
 - Adoption guidance
 
-### Han Ecosystem
-
-AI-DLC is part of Han, a plugin marketplace for Claude Code:
-
-- **Website:** [han.guru](https://han.guru)
-- **Core:** Foundation plugins and quality principles
-- **Validation:** Language and tool validation hooks
-- **Frameworks:** Framework-specific plugins (React, Next.js, Rails, etc.)
-- **Languages:** Language-specific plugins (TypeScript, Go, Rust, etc.)
-- **Disciplines:** Specialized agent plugins (frontend, backend, security, etc.)
-- **Bridges:** MCP server integrations
-- **Bushido:** Quality principles and engineering virtues
-
 ### Related Projects
 
-Projects that influenced or complement AI-DLC:
+Projects that influenced or complement H·AI·K·U:
 
 **Methodology Foundations:**
-- [Raja SP's AI-DLC Method Definition](https://aws.amazon.com/blogs/devops/ai-driven-development-life-cycle/) - AWS DevOps Blog
+- [Raja SP's H·AI·K·U Method Definition](https://aws.amazon.com/blogs/devops/ai-driven-development-life-cycle/) - AWS DevOps Blog
 - [Ralph Wiggum Technique](https://ghuntley.com/ralph/) - Geoffrey Huntley
 
 **Tools:**
@@ -103,7 +85,7 @@ Projects that influenced or complement AI-DLC:
 
 ### Blog
 
-Follow the AI-DLC blog for:
+Follow the H·AI·K·U blog for:
 - Feature announcements
 - Methodology updates
 - Community highlights
@@ -122,7 +104,7 @@ Watch the GitHub repository for releases:
 
 ### Getting Help
 
-1. **Documentation** - Check the docs first: [ai-dlc.dev/docs](/docs/)
+1. **Documentation** - Check the docs first: [haiku.software/docs](/docs/)
 2. **Search Issues** - Someone may have had the same question
 3. **Ask in Discussions** - Community help for general questions
 4. **Open an Issue** - For bugs and specific problems
@@ -130,7 +112,7 @@ Watch the GitHub repository for releases:
 ### Reporting Bugs
 
 When reporting bugs, include:
-- AI-DLC version
+- H·AI·K·U version
 - Claude Code version
 - Steps to reproduce
 - Expected vs actual behavior
@@ -145,7 +127,7 @@ When requesting features:
 
 ## License
 
-AI-DLC is open source under the Apache 2.0 license:
+H·AI·K·U is open source under the Apache 2.0 license:
 - Use commercially
 - Modify and distribute
 - Patent protection
@@ -155,16 +137,16 @@ AI-DLC is open source under the Apache 2.0 license:
 
 ## Acknowledgments
 
-AI-DLC builds on work from:
+H·AI·K·U builds on work from:
 
-- **Raja SP (AWS)** - Original AI-DLC methodology
+- **Raja SP (AWS)** - Original H·AI·K·U methodology
 - **Geoffrey Huntley** - Ralph Wiggum technique
 - **Boris Cherny & Anthropic** - Production implementation patterns
 - **Steve Wilson (OWASP)** - HITL/HOTL governance frameworks
 - **HumanLayer** - 12 Factor Agents principles
 - **The Claude Code community** - Feedback and real-world testing
 
-Thank you to all contributors who help evolve AI-DLC.
+Thank you to all contributors who help evolve H·AI·K·U.
 
 ## Code of Conduct
 
@@ -176,6 +158,6 @@ We follow the [Contributor Covenant](https://www.contributor-covenant.org/):
 
 ## Next Steps
 
-- **[Installation](/docs/installation/)** - Get started with AI-DLC
+- **[Installation](/docs/installation/)** - Get started with H·AI·K·U
 - **[Quick Start](/docs/quick-start/)** - Build your first feature
 - **[GitHub](https://github.com/thebushidocollective/ai-dlc)** - Contribute to the project

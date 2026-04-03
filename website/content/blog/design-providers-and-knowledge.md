@@ -1,6 +1,6 @@
 ---
 title: "Design Providers and Knowledge Synthesis"
-description: "AI-DLC gains first-class integration with six design tools and a persistent knowledge system that gives agents institutional memory across features."
+description: "H·AI·K·U gains first-class integration with six design tools and a persistent knowledge system that gives agents institutional memory across features."
 date: 2026-04-01
 author: The Bushido Collective
 ---
@@ -13,15 +13,15 @@ Knowledge synthesis gives agents a snapshot of the project to build from. Design
 
 ## The Amnesia Problem
 
-AI-DLC's construction loop breaks work into intents and units, each running in focused context windows with clear completion criteria. This structure is load-bearing — it prevents the model from losing coherence across large tasks. But it also means that each new intent starts fresh. The agent that built your authentication flow last week and the agent building your dashboard today share no memory of what happened between them.
+H·AI·K·U's construction loop breaks work into intents and units, each running in focused context windows with clear completion criteria. This structure is load-bearing — it prevents the model from losing coherence across large tasks. But it also means that each new intent starts fresh. The agent that built your authentication flow last week and the agent building your dashboard today share no memory of what happened between them.
 
 The practical consequences compound. Design tokens get reinvented with slightly different values. Component patterns diverge across features. API conventions drift. The codebase develops the signature of a project built by a rotating team with no shared documentation — because that is exactly what it is.
 
 ## Knowledge Synthesis
 
-The `/ai-dlc:knowledge-synthesize` skill addresses this directly. It scans the codebase during elaboration and extracts structured knowledge artifacts — design tokens from CSS and theme files, component usage patterns from the UI layer, layout principles from existing screens, and the rationale behind decisions where it can be inferred.
+The `/haiku:knowledge-synthesize` skill addresses this directly. It scans the codebase during elaboration and extracts structured knowledge artifacts — design tokens from CSS and theme files, component usage patterns from the UI layer, layout principles from existing screens, and the rationale behind decisions where it can be inferred.
 
-The skill produces five artifact types: design, architecture, product, conventions, and domain. Each artifact is written to `.ai-dlc/knowledge/` and persists across intents. When the designer hat starts up, it loads design knowledge before creating anything. When the builder hat starts up, it loads technical patterns. When the reviewer hat evaluates output, it validates against established conventions.
+The skill produces five artifact types: design, architecture, product, conventions, and domain. Each artifact is written to `.haiku/knowledge/` and persists across intents. When the designer hat starts up, it loads design knowledge before creating anything. When the builder hat starts up, it loads technical patterns. When the reviewer hat evaluates output, it validates against established conventions.
 
 The skill is a codebase scan — it reads existing files, extracts patterns, and writes a structured snapshot. It runs in two places: during elaboration (when starting a new intent) and after integration (when an intent completes and all units have been merged). The post-integrate refresh is what closes the loop for greenfield projects. Intent 1 builds the foundation — design tokens, component library, architecture. After integration passes, synthesis re-runs on the merged codebase and captures those patterns as knowledge artifacts. Intent 2 starts elaboration, finds real knowledge instead of empty scaffolds, and builds on what intent 1 established.
 
@@ -33,21 +33,21 @@ The skill is also maturity-aware. Greenfield projects get scaffold artifacts wit
 
 Knowledge synthesis solves the memory problem. Design providers solve the tool problem.
 
-Previously, AI-DLC's relationship with design was indirect. Designs existed as screenshots in a folder. The agent analyzed them via vision, extracted specs, and built from those specs. The design tool itself — Figma, Canva, whatever the team uses — was external to the workflow. If the agent needed to create wireframes, it generated HTML. If it needed to compare built output against a design, it compared screenshots.
+Previously, H·AI·K·U's relationship with design was indirect. Designs existed as screenshots in a folder. The agent analyzed them via vision, extracted specs, and built from those specs. The design tool itself — Figma, Canva, whatever the team uses — was external to the workflow. If the agent needed to create wireframes, it generated HTML. If it needed to compare built output against a design, it compared screenshots.
 
-AI-DLC now integrates natively with six design tools: **Canva**, **Figma**, **OpenPencil**, **Pencil.dev**, **Penpot**, and **Excalidraw**. Each is supported through a capability-based provider abstraction that maps tool-specific MCP operations to a unified interface.
+H·AI·K·U now integrates natively with six design tools: **Canva**, **Figma**, **OpenPencil**, **Pencil.dev**, **Penpot**, and **Excalidraw**. Each is supported through a capability-based provider abstraction that maps tool-specific MCP operations to a unified interface.
 
 The integration touches three phases of the workflow:
 
 **Elaboration.** When breaking an intent into units, the wireframe generation skill can now create wireframes directly in the team's design tool. If Canva is configured, it creates a Canva design. If OpenPencil is available, it produces an `.op` file. HTML wireframes remain the fallback when no provider is configured — existing behavior is fully preserved.
 
-**Design.** The designer hat discovers the active provider at startup, loads its design tokens (brand colors, fonts, spacing from the tool's own system), and creates native design artifacts. A `design_ref` field in each unit's frontmatter points to the provider-native artifact — a `canva://design/abc123` URI, a `.ai-dlc/{intent}/designs/unit-01-login.op` file path, or a Figma file reference. The agent works in the tool, not around it.
+**Design.** The designer hat discovers the active provider at startup, loads its design tokens (brand colors, fonts, spacing from the tool's own system), and creates native design artifacts. A `design_ref` field in each unit's frontmatter points to the provider-native artifact — a `canva://design/abc123` URI, a `.haiku/intents/{intent}/designs/unit-01-login.op` file path, or a Figma file reference. The agent works in the tool, not around it.
 
 **Review.** The reviewer hat resolves `design_ref` values to PNG exports for visual comparison. The resolution system handles provider URIs, local native files, and cloud-only references through a unified pipeline. When a provider-native design exists, the visual fidelity gate expects a closer match than it would for an HTML wireframe — the reference is higher quality, so the standard rises to match.
 
 ### Auto-Detection
 
-When the design provider is set to `auto` (the default), AI-DLC detects which design MCP tools are available in the current session and selects the best provider based on a priority order. A team that has the Canva MCP connected gets Canva integration automatically. A team with OpenPencil gets OpenPencil. No configuration required — though explicit configuration is supported for teams that want to pin a specific tool.
+When the design provider is set to `auto` (the default), H·AI·K·U detects which design MCP tools are available in the current session and selects the best provider based on a priority order. A team that has the Canva MCP connected gets Canva integration automatically. A team with OpenPencil gets OpenPencil. No configuration required — though explicit configuration is supported for teams that want to pin a specific tool.
 
 ### Graceful Degradation
 

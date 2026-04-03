@@ -8,8 +8,8 @@ import remarkGfm from "remark-gfm"
 import { PrintButton } from "./PrintButton"
 
 export const metadata: Metadata = {
-	title: "AI-DLC Paper - Print Version",
-	description: "Print-friendly version of the AI-DLC methodology paper.",
+	title: "H·AI·K·U Paper - Print Version",
+	description: "Print-friendly version of the H·AI·K·U methodology paper.",
 	robots: {
 		index: false,
 		follow: false,
@@ -26,17 +26,17 @@ export default function PrintPaperPage() {
 	return (
 		<div className="print-page mx-auto max-w-4xl px-8 py-12">
 			{/* Print header */}
-			<header className="mb-8 border-b-2 border-gray-900 pb-6 dark:border-gray-100">
-				<h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+			<header className="mb-8 border-b-2 border-stone-900 pb-6 dark:border-stone-100">
+				<h1 className="text-3xl font-bold text-stone-900 dark:text-white">
 					{paper.title}
 				</h1>
 				{paper.subtitle && (
-					<p className="mt-2 text-xl text-gray-700 dark:text-gray-300">
+					<p className="mt-2 text-xl text-stone-700 dark:text-stone-300">
 						{paper.subtitle}
 					</p>
 				)}
 				{paper.authors && (
-					<p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+					<p className="mt-4 text-sm text-stone-600 dark:text-stone-400">
 						{paper.authors.join(", ")} |{" "}
 						{new Date(paper.date).toLocaleDateString("en-US", {
 							year: "numeric",
@@ -50,7 +50,7 @@ export default function PrintPaperPage() {
 			{/* Print button (hidden in print) */}
 			<div className="mb-8 print:hidden">
 				<PrintButton />
-				<p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+				<p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
 					Use your browser&apos;s print dialog to save as PDF. Set margins to
 					&quot;Minimum&quot; for best results.
 				</p>
@@ -67,8 +67,8 @@ export default function PrintPaperPage() {
 			</article>
 
 			{/* Print footer */}
-			<footer className="mt-12 border-t-2 border-gray-900 pt-4 text-center text-sm text-gray-600 dark:border-gray-100 dark:text-gray-400">
-				<p>AI-DLC - https://ai-dlc.dev</p>
+			<footer className="mt-12 border-t-2 border-stone-900 pt-4 text-center text-sm text-stone-600 dark:border-stone-100 dark:text-stone-400">
+				<p>H·AI·K·U - https://haikumethod.ai</p>
 				<p>The Bushido Collective</p>
 			</footer>
 		</div>

@@ -1,21 +1,21 @@
 ---
-description: (Internal) Return to the previous hat in the AI-DLC workflow (e.g., reviewer finds issues)
+description: (Internal) Return to the previous hat in the H·AI·K·U workflow (e.g., reviewer finds issues)
 user-invocable: false
 ---
 
 ## Name
 
-`ai-dlc:fail` - Return to the previous hat in the AI-DLC workflow.
+`haiku:fail` - Return to the previous hat in the H·AI·K·U workflow.
 
 ## Synopsis
 
 ```
-/ai-dlc:fail
+/haiku:fail
 ```
 
 ## Description
 
-**Internal command** - Called by the AI during `/ai-dlc:execute`, not directly by users.
+**Internal command** - Called by the AI during `/haiku:execute`, not directly by users.
 
 Goes back to the previous hat in the workflow. Typically used when:
 - Reviewer finds issues -> return to builder
@@ -29,7 +29,7 @@ If already at the first hat (planner by default), this command is blocked.
 
 ```bash
 # Intent-level state is stored on current branch (intent branch)
-STATE=$(dlc_state_load "$INTENT_DIR" "iteration.json")
+STATE=$(hku_state_load "$INTENT_DIR" "iteration.json")
 ```
 
 ### Step 2: Determine Previous Hat
@@ -57,7 +57,7 @@ Before updating state, save the reason for failing:
 ```bash
 # Append to blockers (unit-level state - saved to current branch)
 REASON="Reviewer found issues: [describe issues]"
-dlc_state_save "$INTENT_DIR" "blockers.md" "$REASON"
+hku_state_save "$INTENT_DIR" "blockers.md" "$REASON"
 ```
 
 ### Step 3a: Commit Blocker Documentation
@@ -66,8 +66,8 @@ If any blocker documentation was written to the working tree (not state files), 
 
 ```bash
 if [ -n "$(git status --porcelain)" ]; then
-  git add -A
-  git commit -m "ai-dlc(${INTENT_SLUG}): document blocker"
+  source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
+  persistence_save "${INTENT_SLUG}" "haiku(${INTENT_SLUG}): document blocker"
 fi
 ```
 
@@ -77,14 +77,14 @@ fi
 # Update hat to previous hat
 # Intent-level state saved to current branch (intent branch)
 # state.hat = prevHat
-dlc_state_save "$INTENT_DIR" "iteration.json" '<updated JSON with hat set to previous>'
+hku_state_save "$INTENT_DIR" "iteration.json" '<updated JSON with hat set to previous>'
 ```
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-aidlc_telemetry_init
-aidlc_record_hat_transition "${INTENT_SLUG}" "${CURRENT_HAT}" "${PREVIOUS_HAT}"
-aidlc_record_hat_failure "${INTENT_SLUG}" "${UNIT_SLUG}" "${CURRENT_HAT}" "${PREVIOUS_HAT}" "${REASON}"
+haiku_telemetry_init
+haiku_record_hat_transition "${INTENT_SLUG}" "${CURRENT_HAT}" "${PREVIOUS_HAT}"
+haiku_record_hat_failure "${INTENT_SLUG}" "${UNIT_SLUG}" "${CURRENT_HAT}" "${PREVIOUS_HAT}" "${REASON}"
 ```
 
 ### Step 4b: Re-spawn Teammate (Agent Teams)
@@ -97,11 +97,11 @@ AGENT_TEAMS_ENABLED="${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}"
 
 If `AGENT_TEAMS_ENABLED` is set:
 
-1. Read retry count from unit frontmatter (`dlc_frontmatter_get "retries" "$UNIT_FILE"`)
+1. Read retry count from unit frontmatter (`hku_frontmatter_get "retries" "$UNIT_FILE"`)
 2. Increment retries in unit frontmatter
 3. Check retry limit:
    - If `retries >= 3`: Mark unit as blocked, save blocker documentation
-   - If `retries < 3`: Update hat in unit frontmatter: `dlc_frontmatter_set "hat" "builder" "$UNIT_FILE"`
+   - If `retries < 3`: Update hat in unit frontmatter: `hku_frontmatter_set "hat" "builder" "$UNIT_FILE"`
 4. Spawn new builder teammate with reviewer feedback:
 
 ```javascript
@@ -109,7 +109,7 @@ Task({
   subagent_type: getAgentForDiscipline(unit.discipline),
   description: `builder (retry): ${unitName}`,
   name: `builder-${unitSlug}-retry${retries}`,
-  team_name: `ai-dlc-${intentSlug}`,
+  team_name: `haiku-${intentSlug}`,
 
   prompt: `
     Re-execute the builder role for unit ${unitName}.
@@ -145,5 +145,5 @@ If already at the first hat (planner by default), output:
 ```
 You are at the first hat (planner).
 
-Cannot go back further. Use `/ai-dlc:reset` to start over, or re-elaborate with `/ai-dlc:elaborate <slug>`.
+Cannot go back further. Use `/haiku:reset` to start over, or re-elaborate with `/haiku:elaborate <slug>`.
 ```
