@@ -1,5 +1,5 @@
 #!/bin/bash
-# capture-playwright.sh — Playwright screenshot capture provider for AI-DLC
+# capture-playwright.sh — Playwright screenshot capture provider for H·AI·K·U
 #
 # Captures screenshots using headless Chromium via Playwright.
 # Supports both URL mode (live server) and static HTML mode (file://).
@@ -43,7 +43,7 @@ while [[ $# -gt 0 ]]; do
       exit 0
       ;;
     *)
-      echo "ai-dlc: capture-playwright: unknown argument: $1" >&2
+      echo "haiku: capture-playwright: unknown argument: $1" >&2
       exit 1
       ;;
   esac
@@ -51,37 +51,37 @@ done
 
 # Validate: either --url or --static must be provided
 if [ -z "$URL" ] && [ -z "$STATIC" ]; then
-  echo "ai-dlc: capture-playwright: either --url or --static must be provided" >&2
+  echo "haiku: capture-playwright: either --url or --static must be provided" >&2
   exit 1
 fi
 
 if [ -n "$URL" ] && [ -n "$STATIC" ]; then
-  echo "ai-dlc: capture-playwright: --url and --static are mutually exclusive" >&2
+  echo "haiku: capture-playwright: --url and --static are mutually exclusive" >&2
   exit 1
 fi
 
 # Validate --output-dir
 if [ -z "$OUTPUT_DIR" ]; then
-  echo "ai-dlc: capture-playwright: --output-dir is required" >&2
+  echo "haiku: capture-playwright: --output-dir is required" >&2
   exit 1
 fi
 
 # Validate --static file exists
 if [ -n "$STATIC" ] && [ ! -f "$STATIC" ]; then
-  echo "ai-dlc: capture-playwright: static file not found: $STATIC" >&2
+  echo "haiku: capture-playwright: static file not found: $STATIC" >&2
   exit 1
 fi
 
 # Check Node.js availability
 if ! command -v node >/dev/null 2>&1; then
-  echo "ai-dlc: capture-playwright: node is required but not found in PATH" >&2
+  echo "haiku: capture-playwright: node is required but not found in PATH" >&2
   exit 3
 fi
 
 # Check Playwright availability
 if ! node -e "require('playwright')" 2>/dev/null; then
-  echo "ai-dlc: capture-playwright: playwright is not installed" >&2
-  echo "ai-dlc: install with: npm install playwright" >&2
+  echo "haiku: capture-playwright: playwright is not installed" >&2
+  echo "haiku: install with: npm install playwright" >&2
   exit 3
 fi
 

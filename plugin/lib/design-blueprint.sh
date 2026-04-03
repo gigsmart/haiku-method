@@ -1,5 +1,5 @@
 #!/bin/bash
-# design-blueprint.sh — Design blueprint generation for AI-DLC
+# design-blueprint.sh — Design blueprint generation for H·AI·K·U
 #
 # Reads archetype data from plugin/data/archetypes.json, applies parameter
 # adjustments via linear interpolation, and writes a design-blueprint.md
@@ -7,13 +7,13 @@
 #
 # Usage:
 #   source design-blueprint.sh
-#   dlc_generate_design_blueprint "my-intent" "brutalist" '{"density":60,"expressiveness":80,"shape_language":10,"color_mood":30}'
+#   hku_generate_design_blueprint "my-intent" "brutalist" '{"density":60,"expressiveness":80,"shape_language":10,"color_mood":30}'
 
 # Guard against double-sourcing
-if [ -n "${_DLC_DESIGN_BLUEPRINT_SOURCED:-}" ]; then
+if [ -n "${_HKU_DESIGN_BLUEPRINT_SOURCED:-}" ]; then
   return 0 2>/dev/null || exit 0
 fi
-_DLC_DESIGN_BLUEPRINT_SOURCED=1
+_HKU_DESIGN_BLUEPRINT_SOURCED=1
 
 # Source foundation libraries
 BLUEPRINT_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
@@ -23,10 +23,10 @@ source "$BLUEPRINT_SCRIPT_DIR/deps.sh"
 source "$BLUEPRINT_SCRIPT_DIR/parse.sh"
 
 # Validate jq dependency (required for archetype JSON processing)
-dlc_require_jq || return 1
+hku_require_jq || return 1
 
 # Resolve path to archetypes.json relative to this script
-_DLC_ARCHETYPES_JSON="${BLUEPRINT_SCRIPT_DIR}/../data/archetypes.json"
+_HKU_ARCHETYPES_JSON="${BLUEPRINT_SCRIPT_DIR}/../data/archetypes.json"
 
 # Linear interpolation: map a 0-100 parameter value to a target range
 # Usage: _lerp <value_0_100> <min_output> <max_output>
@@ -118,16 +118,16 @@ _expressiveness_modifier() {
 }
 
 # Write knowledge file for design decisions
-# Usage: _dlc_blueprint_write_knowledge <intent_dir> <knowledge_key> <content>
-# Writes to .ai-dlc/{intent-slug}/knowledge/{key}.md
-_dlc_blueprint_write_knowledge() {
+# Usage: _hku_blueprint_write_knowledge <intent_dir> <knowledge_key> <content>
+# Writes to .haiku/{intent-slug}/knowledge/{key}.md
+_hku_blueprint_write_knowledge() {
   local intent_dir="$1"
   local key="$2"
   local content="$3"
   local knowledge_dir="${intent_dir}/knowledge"
 
   mkdir -p "$knowledge_dir" 2>/dev/null || {
-    echo "ai-dlc: _dlc_blueprint_write_knowledge: cannot create knowledge directory: $knowledge_dir" >&2
+    echo "haiku: _hku_blueprint_write_knowledge: cannot create knowledge directory: $knowledge_dir" >&2
     return 1
   }
 
@@ -138,36 +138,36 @@ _dlc_blueprint_write_knowledge() {
 
 # Generate a design blueprint from archetype and parameters
 #
-# Usage: dlc_generate_design_blueprint <intent_slug> <archetype_id> <parameters_json>
+# Usage: hku_generate_design_blueprint <intent_slug> <archetype_id> <parameters_json>
 #
 # Parameters JSON shape: {"density": 60, "expressiveness": 80, "shape_language": 10, "color_mood": 30}
 #
 # Writes:
-#   .ai-dlc/{intent_slug}/design-blueprint.md — full blueprint
-#   .ai-dlc/{intent_slug}/knowledge/design.md — knowledge seed
-dlc_generate_design_blueprint() {
+#   .haiku/{intent_slug}/design-blueprint.md — full blueprint
+#   .haiku/{intent_slug}/knowledge/design.md — knowledge seed
+hku_generate_design_blueprint() {
   local intent_slug="$1"
   local archetype_id="$2"
   local params_json="$3"
 
   # Validate inputs
   if [ -z "$intent_slug" ] || [ -z "$archetype_id" ] || [ -z "$params_json" ]; then
-    echo "ai-dlc: dlc_generate_design_blueprint: usage: dlc_generate_design_blueprint <intent_slug> <archetype_id> <parameters_json>" >&2
+    echo "haiku: hku_generate_design_blueprint: usage: hku_generate_design_blueprint <intent_slug> <archetype_id> <parameters_json>" >&2
     return 1
   fi
 
   # Check archetypes data file exists
-  if [ ! -f "$_DLC_ARCHETYPES_JSON" ]; then
-    echo "ai-dlc: dlc_generate_design_blueprint: archetypes.json not found at $_DLC_ARCHETYPES_JSON" >&2
+  if [ ! -f "$_HKU_ARCHETYPES_JSON" ]; then
+    echo "haiku: hku_generate_design_blueprint: archetypes.json not found at $_HKU_ARCHETYPES_JSON" >&2
     return 1
   fi
 
   # Validate archetype exists
   local archetype
-  archetype=$(jq -r --arg id "$archetype_id" '.archetypes[] | select(.id == $id)' "$_DLC_ARCHETYPES_JSON" 2>/dev/null)
+  archetype=$(jq -r --arg id "$archetype_id" '.archetypes[] | select(.id == $id)' "$_HKU_ARCHETYPES_JSON" 2>/dev/null)
   if [ -z "$archetype" ] || [ "$archetype" = "null" ]; then
-    echo "ai-dlc: dlc_generate_design_blueprint: unknown archetype '$archetype_id'" >&2
-    echo "ai-dlc: available archetypes: $(jq -r '.archetypes[].id' "$_DLC_ARCHETYPES_JSON" | tr '\n' ', ')" >&2
+    echo "haiku: hku_generate_design_blueprint: unknown archetype '$archetype_id'" >&2
+    echo "haiku: available archetypes: $(jq -r '.archetypes[].id' "$_HKU_ARCHETYPES_JSON" | tr '\n' ', ')" >&2
     return 1
   fi
 
@@ -250,11 +250,11 @@ dlc_generate_design_blueprint() {
   # Determine intent directory
   local repo_root intent_dir
   repo_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-  intent_dir="${repo_root}/.ai-dlc/${intent_slug}"
+  intent_dir="${repo_root}/.haiku/${intent_slug}"
 
   if [ ! -d "$intent_dir" ]; then
-    echo "ai-dlc: dlc_generate_design_blueprint: intent directory not found: $intent_dir" >&2
-    echo "ai-dlc: creating directory..." >&2
+    echo "haiku: hku_generate_design_blueprint: intent directory not found: $intent_dir" >&2
+    echo "haiku: creating directory..." >&2
     mkdir -p "$intent_dir"
   fi
 
@@ -327,7 +327,7 @@ The color palette is based on the **${archetype_name}** archetype, adjusted for 
 - **Border:** \`${color_border}\` — dividers, input borders, and card outlines
 BLUEPRINT
 
-  echo "ai-dlc: design blueprint written to ${blueprint_file}" >&2
+  echo "haiku: design blueprint written to ${blueprint_file}" >&2
 
   # Seed knowledge
   local knowledge_content
@@ -362,8 +362,8 @@ ${archetype_desc}
 **Expressiveness:** ${expressiveness_note}
 "
 
-  _dlc_blueprint_write_knowledge "$intent_dir" "design" "$knowledge_content"
-  echo "ai-dlc: knowledge seeded to ${intent_dir}/knowledge/design.md" >&2
+  _hku_blueprint_write_knowledge "$intent_dir" "design" "$knowledge_content"
+  echo "haiku: knowledge seeded to ${intent_dir}/knowledge/design.md" >&2
 
   return 0
 }

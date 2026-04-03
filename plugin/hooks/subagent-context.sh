@@ -18,18 +18,18 @@ set -e
 # Source foundation libraries
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$(readlink -f "$0")")")}"
 source "${PLUGIN_ROOT}/lib/state.sh"
-dlc_check_deps || exit 0
+hku_check_deps || exit 0
 
 # Check for AI-DLC state
 CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
-INTENT_DIR=$(dlc_find_active_intent)
+INTENT_DIR=$(hku_find_active_intent)
 [ -z "$INTENT_DIR" ] && exit 0
 INTENT_SLUG=$(basename "$INTENT_DIR")
-ITERATION_JSON=$(dlc_state_load "$INTENT_DIR" "iteration.json")
+ITERATION_JSON=$(hku_state_load "$INTENT_DIR" "iteration.json")
 [ -z "$ITERATION_JSON" ] && exit 0
 
 IS_UNIT_BRANCH=false
-if [[ "$CURRENT_BRANCH" == ai-dlc/*/* ]] && [[ "$CURRENT_BRANCH" != ai-dlc/*/main ]]; then
+if [[ "$CURRENT_BRANCH" == haiku/*/* ]] && [[ "$CURRENT_BRANCH" != haiku/*/main ]]; then
   IS_UNIT_BRANCH=true
 fi
 
@@ -116,7 +116,7 @@ CONFIG_LIB="${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
 if [ -f "$CONFIG_LIB" ]; then
   # shellcheck source=/dev/null
   source "$CONFIG_LIB" 2>/dev/null
-  export_ai_dlc_config 2>/dev/null
+  export_haiku_config 2>/dev/null
   PROVIDERS_MD=$(format_providers_markdown 2>/dev/null)
   if [ -n "$PROVIDERS_MD" ]; then
     echo "$PROVIDERS_MD"
@@ -146,7 +146,7 @@ if [ -f "${INTENT_DIR}/discovery.md" ]; then
   if [ -n "$DISCOVERY_HEADERS" ]; then
     echo "### Discovery Log"
     echo ""
-    echo "Elaboration findings available in \`.ai-dlc/${INTENT_SLUG}/discovery.md\`:"
+    echo "Elaboration findings available in \`.haiku/${INTENT_SLUG}/discovery.md\`:"
     echo ""
     echo "$DISCOVERY_HEADERS"
     echo ""
@@ -196,9 +196,9 @@ if [ -d "$INTENT_DIR" ] && ls "$INTENT_DIR"/unit-*.md 1>/dev/null 2>&1; then
     for unit_file in "$INTENT_DIR"/unit-*.md; do
       [ -f "$unit_file" ] || continue
       NAME=$(basename "$unit_file" .md)
-      UNIT_STATUS=$(dlc_frontmatter_get "status" "$unit_file")
+      UNIT_STATUS=$(hku_frontmatter_get "status" "$unit_file")
       [ -z "$UNIT_STATUS" ] && UNIT_STATUS="pending"
-      DISCIPLINE=$(dlc_frontmatter_get "discipline" "$unit_file")
+      DISCIPLINE=$(hku_frontmatter_get "discipline" "$unit_file")
       [ -z "$DISCIPLINE" ] && DISCIPLINE="-"
       echo "| $NAME | $UNIT_STATUS | $DISCIPLINE |"
     done
@@ -271,12 +271,12 @@ REPO_ROOT=$(git worktree list --porcelain 2>/dev/null | head -1 | sed 's/^worktr
 if [ "$CONTEXT_SCOPE" != "review" ]; then
   echo "### Branch References"
   echo ""
-  echo "- **Intent branch:** \`ai-dlc/${INTENT_SLUG}/main\`"
-  echo "- **Intent worktree:** \`${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}/\`"
+  echo "- **Intent branch:** \`haiku/${INTENT_SLUG}/main\`"
+  echo "- **Intent worktree:** \`${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}/\`"
   echo ""
   echo "To access intent-level state from a unit branch:"
   echo "\`\`\`bash"
-  echo "cat .ai-dlc/${INTENT_SLUG}/state/<key>"
+  echo "cat .haiku/${INTENT_SLUG}/state/<key>"
   echo "\`\`\`"
   echo ""
 fi
@@ -290,10 +290,10 @@ if [ "$CONTEXT_SCOPE" = "build" ] || [ "$CONTEXT_SCOPE" = "full" ]; then
   echo ""
   echo "\`\`\`bash"
   echo "# Load previous context from state files"
-  echo "cat .ai-dlc/${INTENT_SLUG}/state/current-plan.md 2>/dev/null || true"
-  echo "cat .ai-dlc/${INTENT_SLUG}/state/scratchpad.md 2>/dev/null || true"
-  echo "cat .ai-dlc/${INTENT_SLUG}/state/blockers.md 2>/dev/null || true"
-  echo "cat .ai-dlc/${INTENT_SLUG}/state/next-prompt.md 2>/dev/null || true"
+  echo "cat .haiku/${INTENT_SLUG}/state/current-plan.md 2>/dev/null || true"
+  echo "cat .haiku/${INTENT_SLUG}/state/scratchpad.md 2>/dev/null || true"
+  echo "cat .haiku/${INTENT_SLUG}/state/blockers.md 2>/dev/null || true"
+  echo "cat .haiku/${INTENT_SLUG}/state/next-prompt.md 2>/dev/null || true"
   echo "\`\`\`"
   echo ""
   echo "These are scoped to YOUR branch. Read them to understand prior work on this unit."
@@ -305,7 +305,7 @@ if [ "$CONTEXT_SCOPE" = "build" ] || [ "$CONTEXT_SCOPE" = "full" ]; then
   echo "Working outside a worktree will cause conflicts with the parent session."
   echo ""
   echo "After entering your worktree, verify:"
-  echo "1. You are in \`${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-{unit-slug}/\`"
+  echo "1. You are in \`${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}-{unit-slug}/\`"
   echo "2. You are on the correct unit branch (\`git branch --show-current\`)"
   echo "3. You loaded unit-scoped state (see Bootstrap above)"
   echo ""
@@ -316,10 +316,10 @@ if [ "$CONTEXT_SCOPE" = "build" ] || [ "$CONTEXT_SCOPE" = "full" ]; then
   echo "### Before Stopping"
   echo ""
   echo "1. **Commit changes**: \`git add -A && git commit\`"
-  echo "2. **Save scratchpad** (unit-scoped): save to \`.ai-dlc/${INTENT_SLUG}/state/scratchpad.md\`"
-  echo "3. **Write next prompt** (unit-scoped): save to \`.ai-dlc/${INTENT_SLUG}/state/next-prompt.md\`"
+  echo "2. **Save scratchpad** (unit-scoped): save to \`.haiku/${INTENT_SLUG}/state/scratchpad.md\`"
+  echo "3. **Write next prompt** (unit-scoped): save to \`.haiku/${INTENT_SLUG}/state/next-prompt.md\`"
   echo ""
-  echo "**Note:** Unit-level state (scratchpad.md, next-prompt.md, blockers.md) is saved to \`.ai-dlc/${INTENT_SLUG}/state/\`."
+  echo "**Note:** Unit-level state (scratchpad.md, next-prompt.md, blockers.md) is saved to \`.haiku/${INTENT_SLUG}/state/\`."
   echo "Intent-level state (iteration.json, intent.md, etc.) is managed by the orchestrator on main."
   echo ""
   echo "### Resilience (CRITICAL)"
@@ -344,7 +344,7 @@ echo "- \`🛑 Blocked:\` When genuinely stuck after rescue attempts"
 echo "- \`❓ Decision needed:\` Use \`AskUserQuestion\` for user input"
 echo ""
 echo "Output status messages directly - users see them in real-time."
-echo "Document blockers in \`.ai-dlc/${INTENT_SLUG}/state/blockers.md\` for persistence (unit-scoped)."
+echo "Document blockers in \`.haiku/${INTENT_SLUG}/state/blockers.md\` for persistence (unit-scoped)."
 echo ""
 
 # Team communication instructions (Agent Teams mode)

@@ -12,13 +12,13 @@ set -e
 # Source foundation libraries
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$(readlink -f "$0")")")}"
 source "${PLUGIN_ROOT}/lib/parse.sh"
-dlc_check_deps || exit 0
+hku_check_deps || exit 0
 
 # Read stdin to get PreToolUse payload
 HOOK_INPUT=$(cat)
 
 # Extract tool name
-TOOL_NAME=$(echo "$HOOK_INPUT" | dlc_json_get "tool_name")
+TOOL_NAME=$(echo "$HOOK_INPUT" | hku_json_get "tool_name")
 
 # Only intercept EnterPlanMode
 if [ "$TOOL_NAME" != "EnterPlanMode" ]; then
