@@ -1,12 +1,13 @@
 ---
-status: pending
-last_updated: ""
+status: in_progress
+last_updated: "2026-04-03T01:18:04Z"
 depends_on: [unit-01-lib-hooks-rename]
 branch: ai-dlc/haiku-rebrand/03-schemas-types-settings
 discipline: backend
 stage: ""
 workflow: ""
 ticket: ""
+hat: planner
 ---
 
 # unit-03-schemas-types-settings
