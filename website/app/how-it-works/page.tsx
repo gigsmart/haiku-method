@@ -931,19 +931,65 @@ Implement REST API endpoints for user authentication...
 						</div>
 					</div>
 
-					{/* Legend */}
-					<div className="mt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-stone-500 dark:text-stone-400">
-						<div className="flex items-center gap-1.5">
-							<span className="h-2 w-2 rounded-full bg-green-400" />
-							<span>auto — advances immediately</span>
+					{/* Review Modes Explained */}
+					<div className="mt-8 rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950">
+						<h3 className="mb-4 font-semibold text-stone-900 dark:text-stone-100">
+							Review Modes Explained
+						</h3>
+						<p className="mb-4 text-sm text-stone-600 dark:text-stone-400">
+							Each stage declares a review mode that controls what happens at its boundary. These modes enable everything from fully autonomous pipelines to multi-person handoff workflows.
+						</p>
+						<div className="grid gap-4 md:grid-cols-3">
+							<div className="rounded-lg border-2 border-green-200 bg-green-50/30 p-4 dark:border-green-800 dark:bg-green-950/10">
+								<div className="mb-2 flex items-center gap-2">
+									<span className="h-3 w-3 rounded-full bg-green-400" />
+									<span className="text-sm font-bold text-green-700 dark:text-green-300">auto</span>
+								</div>
+								<p className="mb-2 text-xs font-medium text-stone-700 dark:text-stone-300">
+									No human needed
+								</p>
+								<p className="text-xs text-stone-600 dark:text-stone-400">
+									The AI verifies all criteria are met and advances immediately. Used for stages where machines can fully validate quality — tests pass or they don&apos;t.
+								</p>
+								<div className="mt-3 rounded bg-green-100 p-2 text-[10px] text-green-700 dark:bg-green-900/30 dark:text-green-300">
+									Example: operations stage — deployment config either validates or it doesn&apos;t
+								</div>
+							</div>
+							<div className="rounded-lg border-2 border-amber-200 bg-amber-50/30 p-4 dark:border-amber-800 dark:bg-amber-950/10">
+								<div className="mb-2 flex items-center gap-2">
+									<span className="h-3 w-3 rounded-full bg-amber-400" />
+									<span className="text-sm font-bold text-amber-700 dark:text-amber-300">ask</span>
+								</div>
+								<p className="mb-2 text-xs font-medium text-stone-700 dark:text-stone-300">
+									Same user confirms
+								</p>
+								<p className="text-xs text-stone-600 dark:text-stone-400">
+									The pipeline pauses and presents the output for the current user to review. An internal checkpoint — the person driving the work validates before moving on.
+								</p>
+								<div className="mt-3 rounded bg-amber-100 p-2 text-[10px] text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+									Example: &ldquo;Does this design look right before we build it?&rdquo;
+								</div>
+							</div>
+							<div className="rounded-lg border-2 border-rose-200 bg-rose-50/30 p-4 dark:border-rose-800 dark:bg-rose-950/10">
+								<div className="mb-2 flex items-center gap-2">
+									<span className="h-3 w-3 rounded-full bg-rose-400" />
+									<span className="text-sm font-bold text-rose-700 dark:text-rose-300">external</span>
+								</div>
+								<p className="mb-2 text-xs font-medium text-stone-700 dark:text-stone-300">
+									Different person or team reviews
+								</p>
+								<p className="text-xs text-stone-600 dark:text-stone-400">
+									The pipeline fully stops and waits for sign-off from someone outside the current session. Enables handoffs — a designer finishes, a tech lead reviews, an engineer picks up the next stage.
+								</p>
+								<div className="mt-3 rounded bg-rose-100 p-2 text-[10px] text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
+									Example: product owner approves the spec before engineering starts
+								</div>
+							</div>
 						</div>
-						<div className="flex items-center gap-1.5">
-							<span className="h-2 w-2 rounded-full bg-amber-400" />
-							<span>ask — user approves to proceed</span>
-						</div>
-						<div className="flex items-center gap-1.5">
-							<span className="h-2 w-2 rounded-full bg-rose-400" />
-							<span>external — team review required</span>
+						<div className="mt-4 rounded-lg bg-purple-50 p-4 dark:bg-purple-950/20">
+							<p className="text-xs text-purple-800 dark:text-purple-200">
+								<strong>Discrete mode and handoffs:</strong> In discrete mode, every stage transition is effectively external — the user explicitly invokes each stage with <code>/haiku:run</code>. This naturally supports team workflows where different people own different stages. A designer runs inception and design, then hands off to an engineer who runs development.
+							</p>
 						</div>
 					</div>
 				</div>
