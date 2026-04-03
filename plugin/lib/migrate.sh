@@ -244,7 +244,7 @@ hku_migrate_legacy_intent() {
 
   # Backward compat: backup old dir, symlink old path → new path
   mv "$old_dir" "${old_dir}.pre-haiku-backup"
-  ln -sf "$new_dir" "$old_dir" 2>/dev/null || true
+  ln -sf "../.haiku/intents/${slug}" "$old_dir" 2>/dev/null || true
 
   echo "haiku: migrated intent '$slug' (${unit_count} units). Old dir backed up at .ai-dlc/${slug}.pre-haiku-backup" >&2
 }
