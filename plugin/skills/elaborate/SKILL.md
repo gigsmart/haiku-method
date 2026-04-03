@@ -515,7 +515,7 @@ Builders: read section headers for an overview, then dive into specific sections
 DISCOVERY_EOF
 ```
 
-This file is written directly in the intent worktree on the `ai-dlc/{intent-slug}/main` branch. No artifacts touch `main`.
+This file is written directly in the intent worktree on the `haiku/{intent-slug}/main` branch. No artifacts touch `main`.
 
 Commit the initialized discovery log so the worktree setup is versioned:
 
@@ -1849,7 +1849,7 @@ aidlc_record_intent_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}"
 status: pending
 last_updated: ""  # ISO 8601 UTC timestamp of last status change (auto-populated)
 depends_on: []
-branch: ai-dlc/{intent-slug}/NN-{unit-slug}
+branch: haiku/{intent-slug}/NN-{unit-slug}
 discipline: {discipline}  # frontend, backend, api, documentation, devops, design, etc.
 pass: ""  # Set to active pass during elaboration — empty for single-pass intents
 stage: ""  # Per-unit stage override (optional — auto-determined from discipline). Auto-set to "design" when discipline is "design".
@@ -1944,7 +1944,7 @@ When a unit has `discipline: design`, use this template instead of the standard 
 ---
 status: pending
 depends_on: []
-branch: ai-dlc/{intent-slug}/NN-{unit-slug}
+branch: haiku/{intent-slug}/NN-{unit-slug}
 discipline: design
 pass: ""  # Set to active pass during elaboration — empty for single-pass intents
 workflow: ""  # Per-unit workflow override (optional — omit or leave empty to use intent-level workflow)
@@ -2157,7 +2157,7 @@ If the orchestrator is in a temporary workspace (`/tmp/ai-dlc-workspace-*`):
 git push -u origin "$INTENT_BRANCH"
 ```
 
-This ensures builders can pull the intent branch when working remotely. Note in the handoff: "Artifacts pushed to `ai-dlc/{intent-slug}/main` branch on remote."
+This ensures builders can pull the intent branch when working remotely. Note in the handoff: "Artifacts pushed to `haiku/{intent-slug}/main` branch on remote."
 
 ---
 
@@ -2662,7 +2662,7 @@ Present the elaboration summary:
 Elaboration complete!
 
 Intent Worktree: .haiku/worktrees/{intent-slug}/
-Branch: ai-dlc/{intent-slug}/main
+Branch: haiku/{intent-slug}/main
 
 Created: .haiku/intents/{intent-slug}/
 - intent.md (intent and config)

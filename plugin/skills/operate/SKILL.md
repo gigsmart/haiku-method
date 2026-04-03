@@ -149,7 +149,7 @@ Scan all intents for operations and display a grouped table.
 
 ```bash
 REPO_ROOT="$(find_repo_root)"
-ALL_INTENTS=$(find "$REPO_ROOT/.ai-dlc" -maxdepth 2 -name "intent.md" -exec dirname {} \; 2>/dev/null)
+ALL_INTENTS=$(find "$REPO_ROOT/.haiku" -maxdepth 2 -name "intent.md" -exec dirname {} \; 2>/dev/null)
 ```
 
 For each intent directory found:
@@ -463,8 +463,8 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
    metadata:
      name: {operation-name}
      labels:
-       app.kubernetes.io/managed-by: ai-dlc
-       ai-dlc/intent: {intent-slug}
+       app.kubernetes.io/managed-by: haiku
+       haiku/intent: {intent-slug}
    spec:
      schedule: "{cron-expression}"
      jobTemplate:
@@ -488,8 +488,8 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
    metadata:
      name: {operation-name}
      labels:
-       app.kubernetes.io/managed-by: ai-dlc
-       ai-dlc/intent: {intent-slug}
+       app.kubernetes.io/managed-by: haiku
+       haiku/intent: {intent-slug}
    spec:
      replicas: 1
      selector:
@@ -537,8 +537,8 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
        build: .
        command: {runtime-command} .haiku/intents/{intent}/operations/{name}.{ext}
        labels:
-         ai-dlc.managed-by: "true"
-         ai-dlc.intent: "{intent-slug}"
+         haiku.managed-by: "true"
+         haiku.intent: "{intent-slug}"
    ```
 
    #### systemd (timer + service pair)
@@ -547,7 +547,7 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
 
    ```ini
    [Unit]
-   Description={operation-name} operation (ai-dlc/{intent-slug})
+   Description={operation-name} operation (haiku/{intent-slug})
 
    [Service]
    Type=oneshot
@@ -559,7 +559,7 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
 
    ```ini
    [Unit]
-   Description={operation-name} timer (ai-dlc/{intent-slug})
+   Description={operation-name} timer (haiku/{intent-slug})
 
    [Timer]
    OnCalendar={calendar-expression}

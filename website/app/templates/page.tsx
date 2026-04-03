@@ -37,14 +37,14 @@ const examples = [
 		filename: "intent.md",
 		description:
 			"Complete example of a H·AI·K·U intent for a user authentication system. Shows how to structure a real-world intent.",
-		downloadUrl: "/templates/ai-dlc-example/intent.md",
+		downloadUrl: "/templates/haiku-example/intent.md",
 	},
 	{
 		name: "Example Unit",
 		filename: "unit-01-registration.md",
 		description:
 			"Example of a completed unit file for user registration. Shows proper completion criteria, quality gates, and progress logging.",
-		downloadUrl: "/templates/ai-dlc-example/unit-01-registration.md",
+		downloadUrl: "/templates/haiku-example/unit-01-registration.md",
 	},
 ]
 

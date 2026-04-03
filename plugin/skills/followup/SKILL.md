@@ -97,7 +97,7 @@ done
 Look for intent branches in git that may have been cleaned up from the filesystem but still have history:
 
 ```bash
-git branch -a | grep 'ai-dlc/.*/main$' | sed 's|.*ai-dlc/||;s|/main$||' | sort -u
+git branch -a | grep 'haiku/.*/main$' | sed 's|.*haiku/||;s|/main$||' | sort -u
 ```
 
 For each discovered slug, try to read its intent.md from the branch:

@@ -122,8 +122,8 @@ If a slug can be derived from the argument, verify it doesn't conflict with an e
 if [ -n "$FEATURE_DESCRIPTION" ]; then
   # Generate candidate slug from description (apply same truncation as Phase 1)
   CANDIDATE_SLUG=$(echo "$FEATURE_DESCRIPTION" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//' | cut -c1-50)
-  if [ -d "$REPO_ROOT/.haiku/$CANDIDATE_SLUG" ]; then
-    echo "WARNING: Intent directory .haiku/$CANDIDATE_SLUG already exists."
+  if [ -d "$REPO_ROOT/.haiku/intents/$CANDIDATE_SLUG" ]; then
+    echo "WARNING: Intent directory .haiku/intents/$CANDIDATE_SLUG already exists."
     echo "Phase 1 will prompt for how to handle this conflict."
   fi
 fi
@@ -198,7 +198,7 @@ SLUG=$(echo "$FEATURE_DESCRIPTION" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-
 Validate the slug doesn't conflict with existing intents:
 
 ```bash
-if [ -d "$REPO_ROOT/.haiku/$SLUG" ]; then
+if [ -d "$REPO_ROOT/.haiku/intents/$SLUG" ]; then
   # Conflict detected — ask user how to proceed
 fi
 ```

@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://ai-dlc.dev/schemas/providers/penpot.schema.json",
+	"$id": "https://haikumethod.ai/schemas/providers/penpot.schema.json",
 	"title": "Penpot Provider Config",
 	"description": "Provider-specific configuration for Penpot design provider",
 	"type": "object",

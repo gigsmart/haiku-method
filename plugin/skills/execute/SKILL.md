@@ -191,7 +191,7 @@ If `CLAUDE_CODE_IS_COWORK=1`, stop immediately with the message above. Do NOT pr
 
 **CRITICAL: The orchestrator MUST run in the intent worktree, not the main working directory.**
 
-Before loading state, discover all active intents from `ai-dlc/*` branches:
+Before loading state, discover all active intents from `haiku/*` branches:
 
 ```bash
 # Source DAG library for branch discovery
@@ -595,7 +595,7 @@ if [ -z "$READY_UNITS" ] && [ -n "$ACTIVE_PASS" ]; then
 fi
 ```
 
-**Include repo URL for cowork**: If operating in a cloned workspace, include the repo URL in each teammate's prompt: "Repository: `<remote-url>`. Clone and checkout `ai-dlc/<intent-slug>` if you don't have local access." This enables teammates to clone independently in cowork mode.
+**Include repo URL for cowork**: If operating in a cloned workspace, include the repo URL in each teammate's prompt: "Repository: `<remote-url>`. Clone and checkout `haiku/<intent-slug>` if you don't have local access." This enables teammates to clone independently in cowork mode.
 
 ```bash
 # Capture remote URL for teammate prompts
@@ -1367,14 +1367,14 @@ aidlc_record_delivery_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}" "${PR_URL}"
 **If manual:**
 
 ```
-Intent branch ready: ai-dlc/{intent-slug}/main → ${DEFAULT_BRANCH}
+Intent branch ready: haiku/{intent-slug}/main → ${DEFAULT_BRANCH}
 
 To merge:
   git checkout ${DEFAULT_BRANCH}
-  git merge --no-ff ai-dlc/{intent-slug}/main
+  git merge --no-ff haiku/{intent-slug}/main
 
 To create PR manually:
-  gh pr create --base ${DEFAULT_BRANCH} --head ai-dlc/{intent-slug}/main
+  gh pr create --base ${DEFAULT_BRANCH} --head haiku/{intent-slug}/main
 
 To clean up:
   /haiku:reset

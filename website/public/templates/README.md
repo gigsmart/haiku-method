@@ -32,7 +32,7 @@ Configuration template for customizing H·AI·K·U behavior in your project:
 
 ## Example
 
-The [ai-dlc-example/](./ai-dlc-example/) directory shows a complete example of a H·AI·K·U intent for a user authentication system:
+The [haiku-example/](./haiku-example/) directory shows a complete example of a H·AI·K·U intent for a user authentication system:
 
 - `intent.md` - Overall authentication intent
 - `unit-01-registration.md` - Example completed unit

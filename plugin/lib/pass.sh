@@ -1,5 +1,5 @@
 #!/bin/bash
-# pass.sh — Legacy compatibility shim: pass definition resolution and metadata
+# pass.sh — LEGACY COMPATIBILITY SHIM: pass definition resolution and metadata
 #
 # NOTE: Passes are a legacy concept retained for backward compatibility.
 # The primary model is now studios/stages/phases (see plugin/studios/).

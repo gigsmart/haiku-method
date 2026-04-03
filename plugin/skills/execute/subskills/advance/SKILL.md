@@ -90,10 +90,10 @@ case "$CURRENT_HAT" in
         case "$COMPARISON_RESULT" in *MODE=present_for_review*) VISUAL_MODE="present_for_review" ;; esac
         # Log for reviewer context — these do not block advancement
         if [ "$NEEDS_EXPORT" = "true" ]; then
-          echo "ai-dlc: advance: visual comparison requires agent export — reviewer will handle" >&2
+          echo "haiku: advance: visual comparison requires agent export — reviewer will handle" >&2
         fi
         if [ "$VISUAL_MODE" = "present_for_review" ]; then
-          echo "ai-dlc: advance: visual comparison in present-for-review mode — reviewer will handle" >&2
+          echo "haiku: advance: visual comparison in present-for-review mode — reviewer will handle" >&2
         fi
       fi
     fi
