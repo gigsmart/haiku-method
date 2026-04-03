@@ -69,20 +69,15 @@ your-project/
 ## Quick Start
 
 ```bash
-# Create .haiku directory
-mkdir -p .haiku
-
-# Download templates
-curl -o .haiku/intent.md https://ai-dlc.dev/templates/intent-template.md
-curl -o .haiku/unit-01.md https://ai-dlc.dev/templates/unit-template.md
-
-# Or copy from this directory if you have it locally
-cp templates/intent-template.md .haiku/intent.md
-cp templates/unit-template.md .haiku/unit-01-feature.md
+# Use /haiku:new to create a new intent interactively — it sets up the correct
+# directory structure at .haiku/intents/{slug}/ automatically.
+# Or download templates manually:
+curl -o intent.md https://haikumethod.ai/templates/intent-template.md
+curl -o unit-template.md https://haikumethod.ai/templates/unit-template.md
 ```
 
 ## Learn More
 
-- [H·AI·K·U Documentation](https://ai-dlc.dev/docs/)
-- [Getting Started](https://ai-dlc.dev/docs/getting-started/)
-- [Core Concepts](https://ai-dlc.dev/docs/concepts/)
+- [H·AI·K·U Documentation](https://haikumethod.ai/docs/)
+- [Getting Started](https://haikumethod.ai/docs/getting-started/)
+- [Core Concepts](https://haikumethod.ai/docs/concepts/)

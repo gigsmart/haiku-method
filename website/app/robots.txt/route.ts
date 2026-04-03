@@ -1,11 +1,11 @@
 export const dynamic = "force-static"
 export const revalidate = false
 
-const SITE_URL = "https://ai-dlc.dev"
+const SITE_URL = "https://haikumethod.ai"
 
 export async function GET() {
 	const robotsTxt = `# H·AI·K·U robots.txt
-# https://ai-dlc.dev
+# https://haikumethod.ai
 
 User-agent: *
 Allow: /

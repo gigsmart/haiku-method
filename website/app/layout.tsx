@@ -84,7 +84,7 @@ export default function RootLayout({
 			<head>
 				<Script
 					defer
-					data-domain="ai-dlc.dev"
+					data-domain="haikumethod.ai"
 					src="https://plausible.io/js/script.js"
 					strategy="afterInteractive"
 				/>

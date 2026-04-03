@@ -8,7 +8,7 @@ import rehypeHighlight from "rehype-highlight"
 import rehypeSlug from "rehype-slug"
 import remarkGfm from "remark-gfm"
 
-const SITE_URL = "https://ai-dlc.dev"
+const SITE_URL = "https://haikumethod.ai"
 
 interface Props {
 	params: Promise<{ slug: string }>

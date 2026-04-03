@@ -4,7 +4,7 @@ import { getAllDocs } from "@/lib/docs"
 export const dynamic = "force-static"
 export const revalidate = false
 
-const SITE_URL = "https://ai-dlc.dev"
+const SITE_URL = "https://haikumethod.ai"
 
 function formatDate(date: Date): string {
 	return date.toISOString().split("T")[0]

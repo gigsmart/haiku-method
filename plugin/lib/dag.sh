@@ -577,8 +577,8 @@ is_dag_complete() {
 # Returns: hat name (planner, builder, reviewer, etc.)
 get_recommended_hat() {
   local intent_dir="$1"
-  local stage_name="${2:-development}"
-  local studio_name="${3:-software}"
+  local stage_name="${2:-research}"
+  local studio_name="${3:-ideation}"
 
   # Get hat sequence from stage definition
   # shellcheck source=hat.sh
