@@ -1,0 +1,16 @@
+{
+  "name": "haiku-auth-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "functions-framework --target=authProxy"
+  },
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

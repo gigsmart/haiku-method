@@ -7,18 +7,9 @@ terraform {
       version = "~> 5.0"
     }
   }
-
-  # Terraform Cloud for remote state and VCS-triggered runs
-  cloud {
-    organization = "bushido-collective"
-
-    workspaces {
-      name = "ai-dlc"
-    }
-  }
 }
 
 provider "google" {
-  # Credentials via GOOGLE_CREDENTIALS or Workload Identity
-  # Project set via variable
+  project = var.gcp_project_id
+  # Auth via GOOGLE_APPLICATION_CREDENTIALS env var or gcloud ADC
 }

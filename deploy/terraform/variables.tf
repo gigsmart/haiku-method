@@ -42,17 +42,51 @@ variable "mcp_domain_verify_txt" {
 }
 
 # -----------------------------------------------------------------------------
-# Auth Proxy Subdomain (optional — disabled by default)
+# Auth Proxy (optional — disabled by default)
 # -----------------------------------------------------------------------------
 
-variable "enable_auth_proxy_dns" {
-  description = "Whether to create auth proxy subdomain DNS records"
+variable "enable_auth_proxy" {
+  description = "Whether to deploy the auth proxy Cloud Function and DNS"
   type        = bool
   default     = false
 }
 
-variable "auth_proxy_dns_value" {
-  description = "Cloudflare Workers CNAME target for auth.haikumethod.ai"
+variable "gcp_region" {
+  description = "GCP region for Cloud Functions"
   type        = string
+  default     = "us-central1"
+}
+
+variable "auth_proxy_allowed_origin" {
+  description = "CORS allowed origin for the auth proxy (e.g., https://haikumethod.ai)"
+  type        = string
+  default     = "https://haikumethod.ai"
+}
+
+variable "github_oauth_client_id" {
+  description = "GitHub OAuth App client ID"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "github_oauth_client_secret" {
+  description = "GitHub OAuth App client secret"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "gitlab_oauth_client_id" {
+  description = "GitLab OAuth App client ID"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "gitlab_oauth_client_secret" {
+  description = "GitLab OAuth App client secret"
+  type        = string
+  sensitive   = true
   default     = ""
 }

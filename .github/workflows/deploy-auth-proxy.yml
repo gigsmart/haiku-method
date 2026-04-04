@@ -5,28 +5,43 @@ on:
     branches: [main]
     paths:
       - "deploy/auth-proxy/**"
+      - "deploy/terraform/modules/auth-proxy/**"
   workflow_dispatch: {}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy to Cloudflare Workers
+    name: Deploy via Terraform
     steps:
       - uses: actions/checkout@v4
 
-      - uses: cloudflare/wrangler-action@v3
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Build function source
+        working-directory: deploy/auth-proxy
+        run: |
+          npm ci
+          npm run build
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          workingDirectory: deploy/auth-proxy
-          secrets: |
-            HAIKU_GITHUB_OAUTH_CLIENT_ID
-            HAIKU_GITHUB_OAUTH_CLIENT_SECRET
-            HAIKU_GITLAB_OAUTH_CLIENT_ID
-            HAIKU_GITLAB_OAUTH_CLIENT_SECRET
-            ALLOWED_ORIGIN
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Terraform Init
+        working-directory: deploy/terraform
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: deploy/terraform
+        run: terraform apply -auto-approve
         env:
-          HAIKU_GITHUB_OAUTH_CLIENT_ID: ${{ vars.NEXT_PUBLIC_HAIKU_GITHUB_OAUTH_CLIENT_ID }}
-          HAIKU_GITHUB_OAUTH_CLIENT_SECRET: ${{ secrets.HAIKU_GITHUB_OAUTH_CLIENT_SECRET }}
-          HAIKU_GITLAB_OAUTH_CLIENT_ID: ${{ vars.NEXT_PUBLIC_HAIKU_GITLAB_OAUTH_CLIENT_ID }}
-          HAIKU_GITLAB_OAUTH_CLIENT_SECRET: ${{ secrets.HAIKU_GITLAB_OAUTH_CLIENT_SECRET }}
-          ALLOWED_ORIGIN: ${{ vars.HAIKU_AUTH_ALLOWED_ORIGIN || 'https://haikumethod.ai' }}
+          TF_VAR_gcp_project_id: waldrip-net
+          TF_VAR_domain: ${{ vars.HAIKU_DOMAIN || 'haikumethod.ai' }}
+          TF_VAR_enable_auth_proxy: "true"
+          TF_VAR_auth_proxy_allowed_origin: ${{ vars.HAIKU_AUTH_ALLOWED_ORIGIN || 'https://haikumethod.ai' }}
+          TF_VAR_github_oauth_client_id: ${{ vars.NEXT_PUBLIC_HAIKU_GITHUB_OAUTH_CLIENT_ID }}
+          TF_VAR_github_oauth_client_secret: ${{ secrets.HAIKU_GITHUB_OAUTH_CLIENT_SECRET }}
+          TF_VAR_gitlab_oauth_client_id: ${{ vars.NEXT_PUBLIC_HAIKU_GITLAB_OAUTH_CLIENT_ID }}
+          TF_VAR_gitlab_oauth_client_secret: ${{ secrets.HAIKU_GITLAB_OAUTH_CLIENT_SECRET }}
+          TF_VAR_enable_mcp_dns: "false"

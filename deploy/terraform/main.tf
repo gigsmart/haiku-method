@@ -17,7 +17,25 @@ module "dns" {
   mcp_dns_value  = var.mcp_dns_value
   mcp_verify_txt = var.mcp_domain_verify_txt
 
-  # Auth proxy subdomain → Cloudflare Workers
-  enable_auth_proxy_dns = var.enable_auth_proxy_dns
-  auth_proxy_dns_value  = var.auth_proxy_dns_value
+  # Auth proxy subdomain
+  enable_auth_proxy_dns = var.enable_auth_proxy
+  auth_proxy_dns_value  = var.enable_auth_proxy ? "${module.auth_proxy[0].function_url}." : ""
+}
+
+# -----------------------------------------------------------------------------
+# Auth Proxy — Cloud Function for OAuth code→token exchange
+# -----------------------------------------------------------------------------
+
+module "auth_proxy" {
+  count  = var.enable_auth_proxy ? 1 : 0
+  source = "./modules/auth-proxy"
+
+  project_id     = var.gcp_project_id
+  region         = var.gcp_region
+  allowed_origin = var.auth_proxy_allowed_origin
+
+  github_oauth_client_id     = var.github_oauth_client_id
+  github_oauth_client_secret = var.github_oauth_client_secret
+  gitlab_oauth_client_id     = var.gitlab_oauth_client_id
+  gitlab_oauth_client_secret = var.gitlab_oauth_client_secret
 }

@@ -1,8 +1,6 @@
-# Auth proxy subdomain → Cloudflare Workers
+# Auth proxy subdomain → GCP Cloud Function (Cloud Run)
 # The auth proxy handles OAuth code→token exchange for the browse feature.
-# Cloudflare Workers custom domains require a proxied CNAME — but since
-# DNS is on GCP (not Cloudflare), we CNAME to the workers.dev subdomain
-# and configure the custom domain in the Cloudflare Workers dashboard.
+# Cloud Run provides a *.run.app URL; we CNAME auth.domain to it.
 
 resource "google_dns_record_set" "auth" {
   count        = var.enable_auth_proxy_dns ? 1 : 0
