@@ -1,8 +1,7 @@
-// H·AI·K·U Browse — OAuth flows for GitHub and GitLab
+// H·AI·K·U Browse — OAuth Authorization Code flow for GitHub and GitLab
 //
-// GitHub: Authorization Code flow via a lightweight proxy worker
-//   (GitHub doesn't support implicit grant for OAuth Apps)
-// GitLab: Implicit grant flow (token returned directly in URL fragment)
+// Both providers use Authorization Code flow with a proxy for token exchange.
+// Callback URL pattern: /auth/{provider}/callback/
 
 const STORAGE_PREFIX = "haiku-browse:"
 const AUTH_PROXY_URL = process.env.NEXT_PUBLIC_HAIKU_AUTH_PROXY_URL || "https://auth.haikumethod.ai"
@@ -13,7 +12,7 @@ export interface AuthConfig {
 	clientId: string
 }
 
-// Well-known OAuth client IDs — set via env or hardcoded for the hosted instance
+// Per-provider OAuth client IDs — set via env vars
 const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_HAIKU_GITHUB_OAUTH_CLIENT_ID || ""
 const GITLAB_CLIENT_ID = process.env.NEXT_PUBLIC_HAIKU_GITLAB_OAUTH_CLIENT_ID || ""
 
@@ -60,11 +59,12 @@ export function startOAuthFlow(config: AuthConfig, returnPath: string): void {
 	sessionStorage.setItem(`${STORAGE_PREFIX}oauth-state`, state)
 	sessionStorage.setItem(`${STORAGE_PREFIX}oauth-return`, returnPath)
 	sessionStorage.setItem(`${STORAGE_PREFIX}oauth-host`, config.host)
+	sessionStorage.setItem(`${STORAGE_PREFIX}oauth-provider`, config.provider)
 
-	const redirectUri = `${window.location.origin}/browse/auth/callback/`
+	// Provider-specific callback URL: /auth/{provider}/callback/
+	const redirectUri = `${window.location.origin}/auth/${config.provider}/callback/`
 
 	if (config.provider === "github") {
-		// GitHub: Authorization Code flow (proxy exchanges the code)
 		const params = new URLSearchParams({
 			client_id: config.clientId,
 			redirect_uri: redirectUri,
@@ -73,11 +73,10 @@ export function startOAuthFlow(config: AuthConfig, returnPath: string): void {
 		})
 		window.location.href = `https://github.com/login/oauth/authorize?${params}`
 	} else {
-		// GitLab: Implicit grant flow (token in URL fragment)
 		const params = new URLSearchParams({
 			client_id: config.clientId,
 			redirect_uri: redirectUri,
-			response_type: "token",
+			response_type: "code",
 			scope: "read_repository read_api",
 			state,
 		})
@@ -86,7 +85,7 @@ export function startOAuthFlow(config: AuthConfig, returnPath: string): void {
 }
 
 /** Handle the OAuth callback — call this on the callback page */
-export async function handleOAuthCallback(): Promise<{
+export async function handleOAuthCallback(provider: string): Promise<{
 	success: boolean
 	host: string
 	returnPath: string
@@ -95,30 +94,20 @@ export async function handleOAuthCallback(): Promise<{
 	const savedState = sessionStorage.getItem(`${STORAGE_PREFIX}oauth-state`)
 	const returnPath = sessionStorage.getItem(`${STORAGE_PREFIX}oauth-return`) || "/browse/"
 	const host = sessionStorage.getItem(`${STORAGE_PREFIX}oauth-host`) || ""
+	const savedProvider = sessionStorage.getItem(`${STORAGE_PREFIX}oauth-provider`) || ""
 
 	// Clean up session storage
 	sessionStorage.removeItem(`${STORAGE_PREFIX}oauth-state`)
 	sessionStorage.removeItem(`${STORAGE_PREFIX}oauth-return`)
 	sessionStorage.removeItem(`${STORAGE_PREFIX}oauth-host`)
+	sessionStorage.removeItem(`${STORAGE_PREFIX}oauth-provider`)
 
-	// Check for GitLab implicit grant (token in hash fragment)
-	if (window.location.hash) {
-		const hashParams = new URLSearchParams(window.location.hash.slice(1))
-		const accessToken = hashParams.get("access_token")
-		const state = hashParams.get("state")
-
-		if (!accessToken) {
-			return { success: false, host, returnPath, error: "No access token in callback" }
-		}
-		if (state !== savedState) {
-			return { success: false, host, returnPath, error: "State mismatch — possible CSRF attack" }
-		}
-
-		setToken(host, accessToken)
-		return { success: true, host, returnPath }
+	// Verify provider matches
+	if (provider !== savedProvider) {
+		return { success: false, host, returnPath, error: `Provider mismatch: expected ${savedProvider}, got ${provider}` }
 	}
 
-	// Check for GitHub authorization code (code in query params)
+	// Extract authorization code from query params
 	const urlParams = new URLSearchParams(window.location.search)
 	const code = urlParams.get("code")
 	const state = urlParams.get("state")
@@ -133,11 +122,12 @@ export async function handleOAuthCallback(): Promise<{
 	}
 
 	// Exchange the code for a token via the auth proxy
+	// Both GitHub and GitLab use the same pattern: POST /{provider}/token
 	try {
-		const res = await fetch(`${AUTH_PROXY_URL}/github/token`, {
+		const res = await fetch(`${AUTH_PROXY_URL}/${provider}/token`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ code }),
+			body: JSON.stringify({ code, host }),
 		})
 
 		if (!res.ok) {
