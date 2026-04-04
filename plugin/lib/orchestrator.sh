@@ -228,9 +228,104 @@ hku_persist_stage_outputs() {
   return 0
 }
 
+# Resolve the gate protocol (timeout, escalation) for a stage
+# Usage: hku_get_gate_protocol <stage_name> <studio_name>
+# Returns: JSON gate-protocol object or "{}" if none defined
+hku_get_gate_protocol() {
+  local stage_name="$1"
+  local studio_name="$2"
+
+  local metadata
+  metadata=$(hku_load_stage_metadata "$stage_name" "$studio_name")
+  echo "$metadata" | jq -c '.["gate-protocol"] // {}'
+}
+
+# Record when a gate was entered (for timeout tracking)
+# Usage: hku_record_gate_entered <intent_dir> <stage_name>
+hku_record_gate_entered() {
+  local intent_dir="$1"
+  local stage_name="$2"
+  local timestamp
+  timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+  local gate_state
+  gate_state=$(hku_state_load "$intent_dir" "gate-state.json" 2>/dev/null || echo '{}')
+  gate_state=$(echo "$gate_state" | jq \
+    --arg stage "$stage_name" \
+    --arg time "$timestamp" \
+    '.[$stage] = {"entered": $time, "resolved": null}')
+  hku_state_save "$intent_dir" "gate-state.json" "$gate_state"
+}
+
+# Check if a gate has timed out
+# Usage: hku_check_gate_timeout <intent_dir> <stage_name> <studio_name>
+# Returns: "ok" | "timed_out"
+# Side effect: if timed out, emits telemetry and returns the timeout-action
+hku_check_gate_timeout() {
+  local intent_dir="$1"
+  local stage_name="$2"
+  local studio_name="$3"
+
+  local protocol
+  protocol=$(hku_get_gate_protocol "$stage_name" "$studio_name")
+
+  local timeout
+  timeout=$(echo "$protocol" | jq -r '.timeout // empty')
+
+  # No timeout configured
+  if [ -z "$timeout" ]; then
+    echo "ok"
+    return 0
+  fi
+
+  # Parse timeout duration to seconds
+  local timeout_seconds=0
+  case "$timeout" in
+    *h) timeout_seconds=$(( ${timeout%h} * 3600 )) ;;
+    *d) timeout_seconds=$(( ${timeout%d} * 86400 )) ;;
+    *m) timeout_seconds=$(( ${timeout%m} * 60 )) ;;
+    *)  timeout_seconds="$timeout" ;;
+  esac
+
+  # Check when the gate was entered
+  local gate_state
+  gate_state=$(hku_state_load "$intent_dir" "gate-state.json" 2>/dev/null || echo '{}')
+  local entered
+  entered=$(echo "$gate_state" | jq -r ".[\"$stage_name\"].entered // empty")
+
+  if [ -z "$entered" ]; then
+    echo "ok"
+    return 0
+  fi
+
+  # Compare timestamps
+  local now_epoch entered_epoch elapsed
+  now_epoch=$(date -u +%s)
+  entered_epoch=$(date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$entered" +%s 2>/dev/null || date -u -d "$entered" +%s 2>/dev/null || echo 0)
+  elapsed=$(( now_epoch - entered_epoch ))
+
+  if [ "$elapsed" -gt "$timeout_seconds" ]; then
+    local action
+    action=$(echo "$protocol" | jq -r '.["timeout-action"] // "block"')
+
+    # Emit telemetry
+    source "${ORCHESTRATOR_SCRIPT_DIR}/telemetry.sh" 2>/dev/null || true
+    if type haiku_record_gate_timeout >/dev/null 2>&1; then
+      local slug
+      slug=$(basename "$intent_dir")
+      haiku_record_gate_timeout "$slug" "$stage_name" "$action"
+    fi
+
+    echo "$action"
+    return 0
+  fi
+
+  echo "ok"
+}
+
 # Resolve the effective review gate mode
 # Usage: hku_resolve_review_gate <intent_dir> <stage_name> <studio_name> [autopilot]
-# Returns: 0 = advance (auto), 1 = pause (ask), 2 = block (external)
+# Returns: 0 = advance (auto), 1 = pause (ask), 2 = block (external), 3 = await
 hku_resolve_review_gate() {
   local intent_dir="$1"
   local stage_name="$2"

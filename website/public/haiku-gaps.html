@@ -277,8 +277,8 @@
   </div>
 
   <!-- Orchestration Layer -->
-  <div class="layer layer-partial">
-    <div class="layer-label">Orchestration Layer (Partially Addressed)</div>
+  <div class="layer layer-done">
+    <div class="layer-label">Orchestration Layer (Done)</div>
     <div class="layer-grid">
       <div class="block block-done"><strong>Cross-Studio Data</strong><span>Via knowledge + spec providers</span></div>
       <div class="block block-done"><strong>Event Polling</strong><span>Scheduled tasks poll CRM/ticketing/comms</span></div>
@@ -288,19 +288,19 @@
   </div>
 
   <!-- People Layer -->
-  <div class="layer layer-partial">
-    <div class="layer-label">People Layer (Partially Addressed)</div>
+  <div class="layer layer-done">
+    <div class="layer-label">People Layer (Done)</div>
     <div class="layer-grid">
       <div class="block block-done"><strong>Ownership via Ticketing</strong><span>Ticket assignees = stage owners</span></div>
       <div class="block block-done"><strong>Approval via Provider</strong><span>Ticketing workflow engines handle chains</span></div>
       <div class="block block-done"><strong>Handoff via Knowledge</strong><span>Cross-studio context pushed to knowledge provider</span></div>
-      <div class="block block-gap"><strong>Gate Protocol Schema</strong><span>Multi-level approval, timeout, escalation in STAGE.md</span></div>
+      <div class="block block-done"><strong>Gate Protocol Schema</strong><span>Timeout, escalation, conditions in STAGE.md</span></div>
     </div>
   </div>
 
   <!-- Visibility Layer -->
-  <div class="layer layer-partial">
-    <div class="layer-label">Visibility Layer (Partially Addressed)</div>
+  <div class="layer layer-done">
+    <div class="layer-label">Visibility Layer (Done)</div>
     <div class="layer-grid">
       <div class="block block-done"><strong>Portfolio via Ticketing</strong><span>Intent epics + unit tickets = the dashboard</span></div>
       <div class="block block-done"><strong>Metrics via Provider</strong><span>CRM pipeline reports, ticketing velocity</span></div>
@@ -610,10 +610,10 @@ Event detected → gate advances on next session or poll</code></pre>
     </ul>
   </div>
   <div>
-    <h3 style="color:var(--warn)">Remaining Gaps</h3>
+    <h3 style="color:var(--success)">All Gaps Closed</h3>
     <ul style="margin-top:0.5rem">
-      <li><strong>Gate protocol schema</strong> — timeout, escalation, conditional approval in STAGE.md</li>
-      <li><strong>OTEL telemetry</strong> — emit spans to Claude's OpenTelemetry endpoint</li>
+      <li><strong>Gate protocol</strong> — timeout, escalation, conditions in STAGE.md + orchestrator enforcement</li>
+      <li><strong>OTEL telemetry</strong> — stage transitions, gate resolutions, review agent findings, provider sync, trigger events, template usage, gate timeouts</li>
     </ul>
   </div>
 </div>

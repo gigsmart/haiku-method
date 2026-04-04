@@ -51,6 +51,7 @@ review-agents-include:
 | `unit_types` | list | Which unit types this stage processes |
 | `inputs` | list | Artifacts required from prior stages |
 | `review-agents-include` | list | Review agents from other stages to include during adversarial review |
+| `gate-protocol` | object | Timeout, escalation, and conditions for the review gate (optional) |
 
 ### Review Modes
 
@@ -64,6 +65,28 @@ review-agents-include:
 A stage can specify multiple review modes as a list (e.g., `[external, ask]`), meaning it uses external review first, with ask as fallback.
 
 The `await` gate is distinct from `external` — `external` pushes work for review by another person; `await` blocks because the ball is in someone else's court entirely (a customer needs to respond, a third-party approval needs to come through, a pipeline needs to finish).
+
+### Gate Protocol
+
+Stages can define a `gate-protocol:` to control timeout and escalation behavior:
+
+```yaml
+gate-protocol:
+  timeout: 48h              # duration before timeout action triggers
+  timeout-action: escalate  # escalate | auto-advance | block
+  escalation: comms         # provider category to notify on timeout
+  conditions:               # pre-conditions to pass the gate
+    - "no HIGH findings from review agents"
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `timeout` | duration | Time before timeout fires (`48h`, `7d`, `30m`) |
+| `timeout-action` | enum | `escalate` (notify), `auto-advance` (skip), `block` (keep waiting) |
+| `escalation` | string | Provider category to notify on timeout |
+| `conditions` | list | Pre-conditions that must be true before the gate can pass |
+
+The `/haiku:triggers` skill checks gate timeouts during each poll cycle.
 
 ## Hats Within Stages
 

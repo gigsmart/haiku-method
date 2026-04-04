@@ -335,3 +335,105 @@ haiku_record_worktree_event() {
     "event=${event}" \
     "worktree_path=${worktree_path}"
 }
+
+# ============================================================================
+# Stage-level telemetry (added for multi-stage lifecycle)
+# ============================================================================
+
+# Stage started
+# Usage: haiku_record_stage_started <intent_slug> <studio> <stage_name>
+haiku_record_stage_started() {
+  local intent_slug="${1:-}" studio="${2:-}" stage_name="${3:-}"
+  haiku_log_event "haiku.stage.started" \
+    "intent_slug=${intent_slug}" \
+    "studio=${studio}" \
+    "stage=${stage_name}"
+}
+
+# Stage completed
+# Usage: haiku_record_stage_completed <intent_slug> <studio> <stage_name> <unit_count>
+haiku_record_stage_completed() {
+  local intent_slug="${1:-}" studio="${2:-}" stage_name="${3:-}" unit_count="${4:-}"
+  haiku_log_event "haiku.stage.completed" \
+    "intent_slug=${intent_slug}" \
+    "studio=${studio}" \
+    "stage=${stage_name}" \
+    "unit_count=${unit_count}"
+}
+
+# Review gate resolved
+# Usage: haiku_record_gate_resolved <intent_slug> <stage_name> <gate_type> <outcome>
+# outcome: advanced | paused | blocked | awaiting | timed_out | escalated
+haiku_record_gate_resolved() {
+  local intent_slug="${1:-}" stage_name="${2:-}" gate_type="${3:-}" outcome="${4:-}"
+  haiku_log_event "haiku.gate.resolved" \
+    "intent_slug=${intent_slug}" \
+    "stage=${stage_name}" \
+    "gate_type=${gate_type}" \
+    "outcome=${outcome}"
+}
+
+# Review agent finding
+# Usage: haiku_record_review_agent_finding <intent_slug> <stage> <agent_name> <severity> <count>
+haiku_record_review_agent_finding() {
+  local intent_slug="${1:-}" stage="${2:-}" agent_name="${3:-}" severity="${4:-}" count="${5:-1}"
+  haiku_log_event "haiku.review_agent.finding" \
+    "intent_slug=${intent_slug}" \
+    "stage=${stage}" \
+    "agent=${agent_name}" \
+    "severity=${severity}" \
+    "count=${count}"
+}
+
+# Stage-scoped refinement (upstream side-trip)
+# Usage: haiku_record_stage_refinement <intent_slug> <current_stage> <target_stage> <reason>
+haiku_record_stage_refinement() {
+  local intent_slug="${1:-}" current_stage="${2:-}" target_stage="${3:-}" reason="${4:-}"
+  haiku_log_event "haiku.stage.refinement" \
+    "intent_slug=${intent_slug}" \
+    "current_stage=${current_stage}" \
+    "target_stage=${target_stage}" \
+    "reason=${reason}"
+}
+
+# Trigger event (from /haiku:triggers polling)
+# Usage: haiku_record_trigger_event <provider> <event_type> <intent_slug> <action>
+haiku_record_trigger_event() {
+  local provider="${1:-}" event_type="${2:-}" intent_slug="${3:-}" action="${4:-}"
+  haiku_log_event "haiku.trigger.event" \
+    "provider=${provider}" \
+    "event_type=${event_type}" \
+    "intent_slug=${intent_slug}" \
+    "action=${action}"
+}
+
+# Template instantiation
+# Usage: haiku_record_template_used <studio> <template_name> <intent_slug>
+haiku_record_template_used() {
+  local studio="${1:-}" template_name="${2:-}" intent_slug="${3:-}"
+  haiku_log_event "haiku.template.used" \
+    "studio=${studio}" \
+    "template=${template_name}" \
+    "intent_slug=${intent_slug}"
+}
+
+# Provider sync event
+# Usage: haiku_record_provider_sync <category> <type> <direction> <item_count>
+haiku_record_provider_sync() {
+  local category="${1:-}" type="${2:-}" direction="${3:-}" item_count="${4:-0}"
+  haiku_log_event "haiku.provider.sync" \
+    "category=${category}" \
+    "type=${type}" \
+    "direction=${direction}" \
+    "item_count=${item_count}"
+}
+
+# Gate timeout/escalation
+# Usage: haiku_record_gate_timeout <intent_slug> <stage> <action>
+haiku_record_gate_timeout() {
+  local intent_slug="${1:-}" stage="${2:-}" action="${3:-}"
+  haiku_log_event "haiku.gate.timeout" \
+    "intent_slug=${intent_slug}" \
+    "stage=${stage}" \
+    "action=${action}"
+}
