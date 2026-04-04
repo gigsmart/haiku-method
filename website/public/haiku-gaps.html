@@ -305,7 +305,7 @@
       <div class="block block-done"><strong>Portfolio via Ticketing</strong><span>Intent epics + unit tickets = the dashboard</span></div>
       <div class="block block-done"><strong>Metrics via Provider</strong><span>CRM pipeline reports, ticketing velocity</span></div>
       <div class="block block-done"><strong>Audit Trail via Git</strong><span>Commits, PRs, review approvals</span></div>
-      <div class="block block-gap"><strong>Unified Portfolio View</strong><span>/haiku:portfolio aggregating across all intents</span></div>
+      <div class="block block-done"><strong>Portfolio Browse</strong><span>/browse — local + remote workspace explorer with OAuth</span></div>
     </div>
   </div>
 </div>
@@ -554,19 +554,22 @@ Event detected → gate advances on next session or poll</code></pre>
 </div>
 
 <div class="gap-card" style="margin-top:1.5rem; border-color:var(--accent)">
-  <h3><span class="tag tag-done">Solution</span> Providers + /haiku:portfolio</h3>
-  <p>The ticketing provider's boards and CRM's pipeline views are the primary portfolio dashboards. A <code>/haiku:portfolio</code> skill can additionally query providers and aggregate a CLI summary of all active intents across studios.</p>
-  <pre style="margin-top:0.75rem; padding:1rem; background:var(--accent-bg); border-radius:0.5rem; font-size:0.8rem; overflow-x:auto; color:var(--accent)"><code># /haiku:portfolio queries providers, not local files
-→ Ticketing: list all H·AI·K·U epics, show stage/status
-→ CRM: list all active deals, show pipeline stage
-→ Knowledge: list recent cross-studio handoffs
+  <h3><span class="tag tag-done">Solution</span> /browse + Providers</h3>
+  <p>The <code>/browse</code> feature is a hosted SPA that renders H·AI·K·U workspaces from any source:</p>
+  <pre style="margin-top:0.75rem; padding:1rem; background:var(--accent-bg); border-radius:0.5rem; font-size:0.8rem; overflow-x:auto; color:var(--accent)"><code># Local — drag and drop a project folder
+/browse → reads .haiku/ via File System Access API
 
-# Output: unified view
-Active Intents:
-  [software] feature-x    — development (3/6 stages)  Jira: PROJ-42
-  [sales]    acme-deal     — negotiation (await)       SF: 006abc
-  [cs]       acme-onboard  — adoption (2/5 stages)     Jira: CS-18</code></pre>
-  <p style="font-size:0.85rem; margin-top:0.5rem"><strong>Remaining gap:</strong> Intent templates for automating repeatable processes. Everything else is provider-mediated.</p>
+# Remote — connect to any Git provider
+/browse/git?repo=github.com/org/repo → GitHub REST API
+/browse/git?repo=gitlab.com/group/project → GitLab REST API
+
+# Auth — SPA OAuth for private repos
+/auth/github/callback → code exchange via GCP Cloud Function
+/auth/gitlab/callback → code exchange via GCP Cloud Function
+
+# Views: Portfolio → Intent → Stage → Unit
+# Same components for local and remote — only the data source differs</code></pre>
+  <p style="font-size:0.85rem; margin-top:0.5rem">Ticketing provider boards remain the primary operational dashboard. <code>/browse</code> adds artifact-level visibility — dive into intent specs, unit criteria, stage outputs — directly from the browser.</p>
 </div>
 
 <!-- ============================================================ -->
@@ -592,16 +595,18 @@ Active Intents:
     </ul>
   </div>
   <div>
-    <h3 style="color:var(--success)">Solved via Providers</h3>
+    <h3 style="color:var(--success)">Solved via Providers + Browse</h3>
     <ul style="margin-top:0.5rem">
       <li>Cross-studio data flow (knowledge provider)</li>
       <li>Event-driven gates (scheduled task polling)</li>
       <li>Role assignment (ticketing provider)</li>
       <li>Approval chains (provider workflows)</li>
       <li>Handoff protocols (knowledge provider)</li>
-      <li>Portfolio visibility (ticketing + CRM)</li>
+      <li>Portfolio visibility (ticketing + CRM + /browse)</li>
       <li>Cross-studio metrics (provider reporting)</li>
       <li>Audit trail (git + provider history)</li>
+      <li>Workspace browse (local + GitHub/GitLab with OAuth)</li>
+      <li>Auth proxy (GCP Cloud Function, Terraform-managed)</li>
     </ul>
   </div>
   <div>
@@ -609,8 +614,6 @@ Active Intents:
     <ul style="margin-top:0.5rem">
       <li><strong>Intent templates</strong> — parameterized playbooks for repeatable processes</li>
       <li><strong>Gate protocol schema</strong> — timeout, escalation, conditional approval in STAGE.md</li>
-      <li><strong>/haiku:portfolio</strong> — CLI aggregation across providers</li>
-      <li><strong>/haiku:triggers</strong> — scheduled polling skill for provider events</li>
     </ul>
   </div>
 </div>

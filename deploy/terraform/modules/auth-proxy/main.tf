@@ -140,23 +140,11 @@ resource "google_cloudfunctions2_function" "auth_proxy" {
   }
 }
 
-# Grant the default compute service account access to secrets
-resource "google_project_iam_member" "secret_accessor" {
-  project = var.project_id
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${var.project_id}@appspot.gserviceaccount.com"
-}
-
-# Also grant the compute service account
-resource "google_project_iam_member" "compute_secret_accessor" {
-  project = var.project_id
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${data.google_project.current.number}-compute@developer.gserviceaccount.com"
-}
-
-data "google_project" "current" {
-  project_id = var.project_id
-}
+# NOTE: The compute service account (xxx-compute@developer.gserviceaccount.com)
+# needs roles/secretmanager.secretAccessor granted manually — our Terraform SA
+# doesn't have projectIamAdmin permissions.
+# Run: gcloud projects add-iam-policy-binding PROJECT \
+#   --member="serviceAccount:COMPUTE_SA" --role="roles/secretmanager.secretAccessor"
 
 # Allow unauthenticated access (public OAuth endpoint)
 resource "google_cloud_run_v2_service_iam_member" "public" {
