@@ -1,0 +1,26 @@
+name: Deploy Auth Proxy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "deploy/auth-proxy/**"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to Cloudflare Workers
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: deploy/auth-proxy
+          secrets: |
+            HAIKU_GITHUB_OAUTH_CLIENT_ID
+            HAIKU_GITHUB_OAUTH_CLIENT_SECRET
+        env:
+          HAIKU_GITHUB_OAUTH_CLIENT_ID: ${{ vars.NEXT_PUBLIC_HAIKU_GITHUB_OAUTH_CLIENT_ID }}
+          HAIKU_GITHUB_OAUTH_CLIENT_SECRET: ${{ secrets.HAIKU_GITHUB_OAUTH_CLIENT_SECRET }}
