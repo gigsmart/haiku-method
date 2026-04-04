@@ -16,4 +16,8 @@ module "dns" {
   enable_mcp_dns = var.enable_mcp_dns
   mcp_dns_value  = var.mcp_dns_value
   mcp_verify_txt = var.mcp_domain_verify_txt
+
+  # Auth proxy subdomain → Cloudflare Workers
+  enable_auth_proxy_dns = var.enable_auth_proxy_dns
+  auth_proxy_dns_value  = var.auth_proxy_dns_value
 }

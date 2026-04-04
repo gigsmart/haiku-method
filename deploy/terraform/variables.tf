@@ -40,3 +40,19 @@ variable "mcp_domain_verify_txt" {
   type        = string
   default     = ""
 }
+
+# -----------------------------------------------------------------------------
+# Auth Proxy Subdomain (optional — disabled by default)
+# -----------------------------------------------------------------------------
+
+variable "enable_auth_proxy_dns" {
+  description = "Whether to create auth proxy subdomain DNS records"
+  type        = bool
+  default     = false
+}
+
+variable "auth_proxy_dns_value" {
+  description = "Cloudflare Workers CNAME target for auth.haikumethod.ai"
+  type        = string
+  default     = ""
+}

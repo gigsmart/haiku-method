@@ -38,3 +38,16 @@ variable "mcp_verify_txt" {
   type        = string
   default     = ""
 }
+
+# Auth proxy subdomain
+variable "enable_auth_proxy_dns" {
+  description = "Whether to create auth proxy subdomain DNS records"
+  type        = bool
+  default     = false
+}
+
+variable "auth_proxy_dns_value" {
+  description = "DNS CNAME target for auth proxy subdomain (e.g., haiku-auth-proxy.your-account.workers.dev.)"
+  type        = string
+  default     = ""
+}
