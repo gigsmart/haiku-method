@@ -2,13 +2,14 @@
 
 import { navigation, primaryNavItems } from "@/lib/navigation"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { ThemeToggle } from "./ThemeToggle"
 import { BottomNav, MegaMenu, MobileNav } from "./navigation"
 
 export function Header() {
 	const pathname = usePathname()
+	const router = useRouter()
 	const [openCategory, setOpenCategory] = useState<string | null>(null)
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 	const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -126,6 +127,7 @@ export function Header() {
 									>
 										<button
 											type="button"
+											onClick={() => router.push(item.href)}
 											className={`flex items-center gap-1 rounded-lg px-3 py-2 transition ${
 												isActive || isOpen
 													? "bg-stone-100 font-medium text-stone-900 dark:bg-stone-800 dark:text-white"

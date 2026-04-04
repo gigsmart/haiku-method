@@ -25,15 +25,15 @@ export interface Paper {
 
 /**
  * Generate a slug from heading text (matches rehype-slug/github-slugger behavior)
- * github-slugger does NOT collapse multiple hyphens, so "Phases & Rituals" becomes "phases--rituals"
+ * github-slugger replaces each space individually and does NOT collapse multiple
+ * hyphens, so "Phases & Rituals" becomes "phases--rituals"
  */
 function slugify(text: string): string {
 	return text
 		.toLowerCase()
 		.trim()
 		.replace(/[^\w\s-]/g, "") // Remove non-word chars except spaces and hyphens
-		.replace(/\s+/g, "-") // Replace spaces with hyphens
-		// Note: Do NOT collapse multiple hyphens - github-slugger preserves them
+		.replace(/ /g, "-") // Replace each space individually (matches github-slugger)
 }
 
 /**

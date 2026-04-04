@@ -306,11 +306,11 @@
       {
         "version": "2",
         "date": "2026-04-03",
-        "commitHash": "df05e94",
-        "fullCommitHash": "df05e9463c1fae88f20e555cbc93779875b96018",
-        "commitMessage": "feat: per-stage review agents, fix continuous mode, one PR per intent",
+        "commitHash": "3bd6a16",
+        "fullCommitHash": "3bd6a16ff51f61ce41a703d073488ada96b20bc3",
+        "commitMessage": "feat: bidirectional providers, CRM + knowledge categories",
         "stats": {
-          "linesAdded": 204,
+          "linesAdded": 207,
           "linesRemoved": 998
         },
         "sectionChanges": [
@@ -564,7 +564,7 @@
             "section": "Configuration",
             "originalSection": "Configuration",
             "isNew": true,
-            "linesAdded": 5,
+            "linesAdded": 11,
             "linesRemoved": 0
           },
           {
