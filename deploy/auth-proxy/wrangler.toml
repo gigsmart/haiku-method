@@ -2,13 +2,14 @@ name = "haiku-auth-proxy"
 main = "worker.ts"
 compatibility_date = "2024-12-01"
 
-[vars]
-ALLOWED_ORIGIN = "https://haikumethod.ai"
-
-# Custom domain: auth.haikumethod.ai
-routes = [
-  { pattern = "auth.haikumethod.ai/*", zone_name = "haikumethod.ai" }
-]
-
-# Set secrets via: wrangler secret put HAIKU_GITHUB_OAUTH_CLIENT_ID
-#                  wrangler secret put HAIKU_GITHUB_OAUTH_CLIENT_SECRET
+# ALLOWED_ORIGIN and custom domain are configured per-deployment:
+# - Production: auth.haikumethod.ai → haikumethod.ai
+# - Fork: haiku-auth.jasonwaldrip.dev → fork's site URL
+#
+# Set ALLOWED_ORIGIN via wrangler secret or Cloudflare dashboard.
+# Set custom domain via Cloudflare Workers > Triggers > Custom Domains.
+#
+# Secrets (set via CI or wrangler secret put):
+#   HAIKU_GITHUB_OAUTH_CLIENT_ID
+#   HAIKU_GITHUB_OAUTH_CLIENT_SECRET
+#   ALLOWED_ORIGIN
