@@ -319,6 +319,13 @@ Gate resolution based on the stage's `review:` field in STAGE.md:
 - **`external`** (return 2): Push branch and create PR/MR for external review, block until resolved
 - **`await`** (return 3): Stage work is complete but an external event must occur before advancing (e.g., customer response, CI result, stakeholder decision). Record what is being awaited and block. The user resumes with `/haiku:run` when the event has occurred.
 
+**Gate protocol:** If the stage defines `gate-protocol:` in its STAGE.md frontmatter, apply these additional behaviors:
+- **`timeout`**: If the gate has been entered for longer than the specified duration (e.g., `48h`, `7d`), execute the `timeout-action`
+- **`timeout-action`**: `escalate` (notify via the provider specified in `escalation`), `auto-advance` (skip the gate), or `block` (keep waiting, default)
+- **`conditions`**: Pre-conditions that must be true before the gate can pass (e.g., "no HIGH findings from review agents")
+
+Timeout checking is performed by `/haiku:triggers` during scheduled polling, not inline during `/haiku:run`. The run skill records `gate_entered_at` — the trigger skill checks elapsed time.
+
 ### Step 5: Advance Stage
 
 Once the review gate passes (immediately for `auto`, after approval for `ask`, after external review for `external`), advance to the next stage:

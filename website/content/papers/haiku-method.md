@@ -155,7 +155,7 @@ A stage declares five things:
 
 Each stage executes through a fixed five-step loop:
 
-1. **Decompose** — Resolve inputs from prior stages. If the stage has no units yet, decompose the work into discrete units with completion criteria and a dependency graph. If upstream outputs are found to be insufficient, the agent surfaces the gap to the human — stage-backs are always human-initiated.
+1. **Decompose** — Resolve inputs from prior stages, checking freshness metadata for staleness. If the stage has no units yet, decompose the work into discrete units with completion criteria and a dependency graph. If an upstream output has a small gap (e.g., a missing screen in a design brief), the agent can run a *stage-scoped refinement* — a targeted side-trip that adds a single unit to the upstream stage, executes it through that stage's hats, and persists the updated output, all without resetting the current stage's progress. Full stage-backs (resetting `active_stage` to a prior stage) are always human-initiated.
 2. **Execute** — For each unit in dependency order, run the bolt loop: cycle through the hat sequence. Each hat runs in isolation, produces output for the next hat, and quality gates verify the result.
 3. **Adversarial review** — Spawn the stage's review agents in parallel. Each agent evaluates the stage's work against its specific mandate (correctness, security, accessibility, etc.). Agents from other stages included via `review-agents-include` run alongside the stage's own agents. High-severity findings trigger targeted fixes before the stage can proceed.
 4. **Persist** — Save stage outputs to their declared scope.
