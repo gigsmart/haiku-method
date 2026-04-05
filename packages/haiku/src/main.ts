@@ -23,7 +23,14 @@ if (cmd === "mcp") {
 			console.error(`haiku hook ${hookName}: ${err.message}`)
 			process.exit(1)
 		})
+} else if (cmd === "migrate") {
+	import("./migrate.js")
+		.then((m) => m.runMigrate(args))
+		.catch((err) => {
+			console.error(`haiku migrate: ${err.message}`)
+			process.exit(1)
+		})
 } else {
-	console.error("Usage: haiku <mcp|hook> [args...]")
+	console.error("Usage: haiku <mcp|hook|migrate> [args...]")
 	process.exit(1)
 }
