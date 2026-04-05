@@ -12628,11 +12628,11 @@ function _catch(innerType, catchValue) {
     catchValue: typeof catchValue === "function" ? catchValue : () => catchValue
   });
 }
-function pipe(in_, out) {
+function pipe(in_, out4) {
   return new ZodPipe({
     type: "pipe",
     in: in_,
-    out
+    out: out4
     // ...util.normalizeParams(params),
   });
 }
@@ -26655,15 +26655,1265 @@ var init_redirect_plan_mode = __esm({
   }
 });
 
+// src/hooks/context-monitor.ts
+import { existsSync as existsSync4, readFileSync as readFileSync3, appendFileSync } from "node:fs";
+import { join as join7 } from "node:path";
+async function contextMonitor(input, _pluginRoot) {
+  const totalTokens = Number(input.total_tokens ?? 0);
+  const maxTokens = Number(input.max_tokens ?? 0);
+  if (totalTokens === 0 || maxTokens === 0) return;
+  const remaining = Math.floor((maxTokens - totalTokens) * 100 / maxTokens);
+  const sessionId = process.env.CLAUDE_SESSION_ID ?? "unknown";
+  const debounceFile = join7("/tmp", `context-monitor-${sessionId}`);
+  let debounceContent = "";
+  if (existsSync4(debounceFile)) {
+    debounceContent = readFileSync3(debounceFile, "utf8");
+  }
+  if (remaining <= 25) {
+    if (!debounceContent.includes("25")) {
+      appendFileSync(debounceFile, "25\n");
+      process.stderr.write(
+        `\u26A0\uFE0F CONTEXT CRITICAL (\u226425% remaining)
+
+**You MUST:**
+1. Commit all working changes NOW
+2. Save state to \`.haiku/intents/{intent-slug}/state/\`
+3. Complete current task or signal handoff
+4. Do NOT start new tasks
+
+Quality degrades severely at low context. Wrap up.
+`
+      );
+      process.exit(2);
+    }
+  } else if (remaining <= 35) {
+    if (!debounceContent.includes("35")) {
+      appendFileSync(debounceFile, "35\n");
+      process.stderr.write(
+        `\u26A0\uFE0F CONTEXT WARNING (\u226435% remaining)
+
+**Recommended:**
+- Finish current task, avoid starting new ones
+- Commit working changes frequently
+- Consider saving state for session handoff
+- Keep responses concise
+`
+      );
+      process.exit(2);
+    }
+  }
+}
+var init_context_monitor = __esm({
+  "src/hooks/context-monitor.ts"() {
+    "use strict";
+  }
+});
+
+// src/hooks/utils.ts
+import { existsSync as existsSync5, readFileSync as readFileSync4, readdirSync as readdirSync4, statSync, writeFileSync as writeFileSync3, mkdirSync as mkdirSync2 } from "node:fs";
+import { join as join8, dirname as dirname2 } from "node:path";
+import { execSync } from "node:child_process";
+function readFrontmatterField(filePath, field) {
+  if (!existsSync5(filePath)) return "";
+  const content = readFileSync4(filePath, "utf8");
+  const match = content.match(new RegExp(`^${field}:\\s*(.+)$`, "m"));
+  return match ? match[1].trim().replace(/^["']|["']$/g, "") : "";
+}
+function findActiveIntent2() {
+  let repoRoot;
+  try {
+    repoRoot = execSync("git rev-parse --show-toplevel", { encoding: "utf8" }).trim();
+  } catch {
+    repoRoot = process.cwd();
+  }
+  const intentsDir = join8(repoRoot, ".haiku", "intents");
+  if (!existsSync5(intentsDir)) return null;
+  const dirs = readdirSync4(intentsDir);
+  for (const d of dirs) {
+    const intentFile = join8(intentsDir, d, "intent.md");
+    if (!existsSync5(intentFile)) continue;
+    const status = readFrontmatterField(intentFile, "status");
+    if (status === "active") {
+      return join8(intentsDir, d);
+    }
+  }
+  return null;
+}
+function stateLoad(intentDir2, key) {
+  const filePath = join8(intentDir2, "state", key);
+  if (!existsSync5(filePath)) return "";
+  return readFileSync4(filePath, "utf8");
+}
+function stateSave(intentDir2, key, content) {
+  const stateDir = join8(intentDir2, "state");
+  if (!existsSync5(stateDir)) mkdirSync2(stateDir, { recursive: true });
+  writeFileSync3(join8(stateDir, key), content);
+}
+function isUnitBranch(branch) {
+  if (!branch) return false;
+  const parts = branch.split("/");
+  return parts.length >= 3 && parts[0] === "haiku" && parts[2] !== "main";
+}
+function getCurrentBranch() {
+  try {
+    return execSync("git branch --show-current", { encoding: "utf8" }).trim();
+  } catch {
+    return "";
+  }
+}
+function getRepoRoot() {
+  try {
+    return execSync("git rev-parse --show-toplevel", { encoding: "utf8" }).trim();
+  } catch {
+    return process.cwd();
+  }
+}
+function isValidJson(s) {
+  try {
+    JSON.parse(s);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function findUnitFiles(intentDir2) {
+  const results = [];
+  const stagesDir = join8(intentDir2, "stages");
+  if (!existsSync5(stagesDir)) return results;
+  for (const stage of readdirSync4(stagesDir)) {
+    const unitsDir = join8(stagesDir, stage, "units");
+    if (!existsSync5(unitsDir) || !statSync(unitsDir).isDirectory()) continue;
+    for (const file of readdirSync4(unitsDir)) {
+      if (file.startsWith("unit-") && file.endsWith(".md")) {
+        results.push(join8(unitsDir, file));
+      }
+    }
+  }
+  return results;
+}
+function readFrontmatterArray(filePath, field) {
+  if (!existsSync5(filePath)) return [];
+  const content = readFileSync4(filePath, "utf8");
+  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!fmMatch) return [];
+  const frontmatter = fmMatch[1];
+  const lines = frontmatter.split("\n");
+  let inField = false;
+  let currentItem = {};
+  const items = [];
+  for (const line of lines) {
+    if (line.match(new RegExp(`^${field}:`))) {
+      if (line.match(/\[\s*\]/)) return [];
+      inField = true;
+      continue;
+    }
+    if (inField) {
+      if (!line.startsWith(" ") && !line.startsWith("	") && line.trim() !== "") {
+        break;
+      }
+      const itemStart = line.match(/^\s+-\s+(.*)/);
+      if (itemStart) {
+        if (Object.keys(currentItem).length > 0) {
+          items.push(currentItem);
+        }
+        currentItem = {};
+        const kv = itemStart[1].match(/^(\w+):\s*(.+)/);
+        if (kv) {
+          currentItem[kv[1]] = kv[2].replace(/^["']|["']$/g, "");
+        }
+      } else {
+        const kv = line.match(/^\s+(\w+):\s*(.+)/);
+        if (kv) {
+          currentItem[kv[1]] = kv[2].replace(/^["']|["']$/g, "");
+        }
+      }
+    }
+  }
+  if (Object.keys(currentItem).length > 0) {
+    items.push(currentItem);
+  }
+  return items;
+}
+function setFrontmatterField2(filePath, field, value) {
+  if (!existsSync5(filePath)) return;
+  let content = readFileSync4(filePath, "utf8");
+  const regex = new RegExp(`^(${field}:)\\s*.+$`, "m");
+  if (regex.test(content)) {
+    content = content.replace(regex, `$1 ${value}`);
+  } else {
+    content = content.replace(/^---$/m, `${field}: ${value}
+---`);
+  }
+  writeFileSync3(filePath, content);
+}
+function checkAllCriteria(filePath, section) {
+  if (!existsSync5(filePath)) return;
+  let content = readFileSync4(filePath, "utf8");
+  if (!section) {
+    content = content.replace(/- \[ \]/g, "- [x]");
+  } else {
+    const lines = content.split("\n");
+    let inSection = false;
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].startsWith("## ")) {
+        inSection = lines[i].includes(section);
+      }
+      if (inSection) {
+        lines[i] = lines[i].replace(/- \[ \]/g, "- [x]");
+      }
+    }
+    content = lines.join("\n");
+  }
+  writeFileSync3(filePath, content);
+}
+function checkIntentCriteria(intentDir2) {
+  const intentFile = join8(intentDir2, "intent.md");
+  if (existsSync5(intentFile)) {
+    const content = readFileSync4(intentFile, "utf8");
+    if (content.includes("## Success Criteria")) {
+      checkAllCriteria(intentFile, "Success Criteria");
+    } else if (content.includes("## Completion Criteria")) {
+      checkAllCriteria(intentFile, "Completion Criteria");
+    }
+  }
+  for (const f of [join8(intentDir2, "completion-criteria.md"), join8(intentDir2, "state", "completion-criteria.md")]) {
+    if (existsSync5(f)) checkAllCriteria(f);
+  }
+}
+var init_utils = __esm({
+  "src/hooks/utils.ts"() {
+    "use strict";
+  }
+});
+
+// src/hooks/enforce-iteration.ts
+import { basename as basename3 } from "node:path";
+function out(s) {
+  process.stdout.write(s + "\n");
+}
+async function enforceIteration(_input, _pluginRoot) {
+  const currentBranch = getCurrentBranch();
+  const onUnitBranch = isUnitBranch(currentBranch);
+  const intentDir2 = findActiveIntent2();
+  let iterationJson = "";
+  if (intentDir2) {
+    iterationJson = stateLoad(intentDir2, "iteration.json");
+  }
+  if (onUnitBranch) {
+    out("## H\xB7AI\xB7K\xB7U: Unit Session Ending");
+    out("");
+    out("Ensure you committed changes and saved progress.");
+    return;
+  }
+  if (!iterationJson) {
+    return;
+  }
+  if (!isValidJson(iterationJson)) {
+    return;
+  }
+  const state = JSON.parse(iterationJson);
+  const status = state.status ?? "active";
+  const currentIteration = Number(state.iteration ?? 1);
+  const hat = state.hat ?? "builder";
+  const maxIterations = Number(state.maxIterations ?? 0);
+  const targetUnit = state.targetUnit ?? "";
+  if (status === "complete" || status === "completed") {
+    return;
+  }
+  if (maxIterations > 0 && currentIteration >= maxIterations) {
+    out("");
+    out("---");
+    out("");
+    out("## H\xB7AI\xB7K\xB7U: ITERATION LIMIT REACHED");
+    out("");
+    out(`**Iteration:** ${currentIteration} / ${maxIterations} (max)`);
+    out(`**Hat:** ${hat}`);
+    out("");
+    out("The maximum iteration limit has been reached. This is a safety mechanism");
+    out("to prevent infinite loops.");
+    out("");
+    out("**Options:**");
+    out("1. Review progress and decide if work is complete");
+    out("2. Increase limit: edit `.haiku/intents/{intent-slug}/state/iteration.json` and set maxIterations");
+    out("3. Reset iteration count: `/haiku:reset` and start fresh");
+    out("");
+    out("Progress preserved in `.haiku/intents/{intent-slug}/state/`.");
+    return;
+  }
+  const intentSlug = intentDir2 ? basename3(intentDir2) : "";
+  let readyCount = 0;
+  let inProgressCount = 0;
+  let allComplete = false;
+  if (intentSlug && intentDir2) {
+    const unitFiles = findUnitFiles(intentDir2);
+    let pending = 0;
+    let completed = 0;
+    let blocked = 0;
+    for (const uf of unitFiles) {
+      const unitStatus = readFrontmatterField(uf, "status") || "pending";
+      switch (unitStatus) {
+        case "completed":
+          completed++;
+          break;
+        case "in_progress":
+          inProgressCount++;
+          break;
+        case "blocked":
+          blocked++;
+          break;
+        case "pending": {
+          pending++;
+          readyCount++;
+          break;
+        }
+        default:
+          pending++;
+          break;
+      }
+    }
+    if (readyCount === 0 && inProgressCount === 0 && pending === 0 && blocked === 0 && unitFiles.length > 0) {
+      allComplete = true;
+    }
+    if (completed > 0 && completed === unitFiles.length) {
+      allComplete = true;
+    }
+  }
+  out("");
+  out("---");
+  out("");
+  if (allComplete) {
+    if (intentDir2) {
+      const intentFile = `${intentDir2}/intent.md`;
+      const intentStatus = readFrontmatterField(intentFile, "status");
+      if (intentStatus === "active") {
+        setFrontmatterField2(intentFile, "status", "completed");
+        checkIntentCriteria(intentDir2);
+        if (iterationJson) {
+          const updatedState = { ...state, status: "completed" };
+          stateSave(intentDir2, "iteration.json", JSON.stringify(updatedState));
+        }
+      }
+    }
+    out("## H\xB7AI\xB7K\xB7U: All Units Complete");
+    out("");
+    out("All units have been completed. Intent has been marked as completed.");
+    out("");
+  } else if (readyCount > 0 || inProgressCount > 0) {
+    out("## H\xB7AI\xB7K\xB7U: Session Exhausted - Continue Execution");
+    out("");
+    out(`**Iteration:** ${currentIteration} | **Hat:** ${hat}`);
+    out(`**Ready units:** ${readyCount} | **In progress:** ${inProgressCount}`);
+    out("");
+    out("### ACTION REQUIRED");
+    out("");
+    if (targetUnit) {
+      out(`Call \`/haiku:execute ${intentSlug} ${targetUnit}\` to continue targeted execution.`);
+    } else {
+      out("Call `/haiku:execute` to continue the autonomous loop.");
+    }
+    out("");
+    out("**Note:** Subagents have clean context. No `/clear` needed.");
+    out("");
+  } else {
+    out("## H\xB7AI\xB7K\xB7U: BLOCKED - Human Intervention Required");
+    out("");
+    out(`**Iteration:** ${currentIteration} | **Hat:** ${hat}`);
+    out("");
+    out("No units are ready to work on. All remaining units are blocked.");
+    out("");
+    out("**User action required:**");
+    out(`1. Review blockers: read \`.haiku/intents/${intentSlug}/state/blockers.md\``);
+    out("2. Unblock units or resolve dependencies");
+    out("3. Run `/haiku:execute` to resume");
+    out("");
+  }
+  out(`Progress preserved in \`.haiku/intents/${intentSlug}/state/\`.`);
+}
+var init_enforce_iteration = __esm({
+  "src/hooks/enforce-iteration.ts"() {
+    "use strict";
+    init_utils();
+  }
+});
+
+// src/hooks/ensure-deps.ts
+async function ensureDeps(_input, _pluginRoot) {
+}
+var init_ensure_deps = __esm({
+  "src/hooks/ensure-deps.ts"() {
+    "use strict";
+  }
+});
+
+// src/hooks/quality-gate.ts
+import { execSync as execSync2 } from "node:child_process";
+function getJsonField(json, field) {
+  try {
+    const obj = JSON.parse(json);
+    return String(obj[field] ?? "");
+  } catch {
+    return "";
+  }
+}
+async function qualityGate(input, _pluginRoot) {
+  if (input.stop_hook_active === true || input.stop_hook_active === "true") {
+    return;
+  }
+  const intentDir2 = findActiveIntent2();
+  if (!intentDir2) return;
+  const iterationJson = stateLoad(intentDir2, "iteration.json");
+  if (!iterationJson) return;
+  if (!isValidJson(iterationJson)) return;
+  const hat = getJsonField(iterationJson, "hat");
+  const status = getJsonField(iterationJson, "status");
+  const currentUnit = getJsonField(iterationJson, "currentUnit");
+  if (!["builder", "implementer", "refactorer"].includes(hat)) return;
+  if (status === "completed" || status === "blocked") return;
+  const intentGates = readFrontmatterArray(`${intentDir2}/intent.md`, "quality_gates");
+  let unitGates = [];
+  if (currentUnit) {
+    const unitFile = `${intentDir2}/${currentUnit}.md`;
+    unitGates = readFrontmatterArray(unitFile, "quality_gates");
+  }
+  const allGates = [...intentGates, ...unitGates];
+  if (allGates.length === 0) return;
+  const repoRoot = getRepoRoot();
+  const failures = [];
+  let allPassed = true;
+  for (let i = 0; i < allGates.length; i++) {
+    const gate = allGates[i];
+    const gateName = gate.name ?? `gate-${i}`;
+    const gateCmd = gate.command ?? "";
+    if (!gateCmd) continue;
+    let gateOutput = "";
+    let gateExit = 0;
+    try {
+      gateOutput = execSync2(gateCmd, {
+        cwd: repoRoot,
+        encoding: "utf8",
+        timeout: 3e4,
+        stdio: ["pipe", "pipe", "pipe"]
+      });
+    } catch (err) {
+      const execErr = err;
+      gateExit = execErr.status ?? 1;
+      gateOutput = (execErr.stdout ?? "") + (execErr.stderr ?? "");
+    }
+    if (gateExit !== 0) {
+      allPassed = false;
+      const truncatedOutput = gateOutput.slice(0, 500);
+      failures.push({
+        name: gateName,
+        command: gateCmd,
+        exit_code: gateExit,
+        output: truncatedOutput
+      });
+    }
+  }
+  if (allPassed) return;
+  let reason = "Quality gate(s) failed:";
+  for (const f of failures) {
+    reason += `
+- ${f.name}: command '${f.command}' exited ${f.exit_code}`;
+    if (f.output) {
+      reason += `, output: ${f.output}`;
+    }
+  }
+  const response = { decision: "block", reason };
+  process.stdout.write(JSON.stringify(response));
+}
+var init_quality_gate = __esm({
+  "src/hooks/quality-gate.ts"() {
+    "use strict";
+    init_utils();
+  }
+});
+
+// src/hooks/subagent-context.ts
+import { existsSync as existsSync6, readFileSync as readFileSync5 } from "node:fs";
+import { join as join9, basename as basename4 } from "node:path";
+import { execSync as execSync3 } from "node:child_process";
+function out2(s) {
+  process.stdout.write(s + "\n");
+}
+function readHatInstructions(hatName, stageName, studioName, pluginRoot) {
+  const projectHatFile = join9(process.cwd(), ".haiku", "studios", studioName, "stages", stageName, "hats", `${hatName}.md`);
+  const pluginHatFile = join9(pluginRoot, "studios", studioName, "stages", stageName, "hats", `${hatName}.md`);
+  let hatFile = "";
+  if (existsSync6(projectHatFile)) {
+    hatFile = projectHatFile;
+  } else if (existsSync6(pluginHatFile)) {
+    hatFile = pluginHatFile;
+  }
+  if (!hatFile) return "";
+  const content = readFileSync5(hatFile, "utf8");
+  const parts = content.split("---");
+  if (parts.length >= 3) {
+    return parts.slice(2).join("---").trim();
+  }
+  return content;
+}
+function readHatMetadata(hatName, stageName, studioName, pluginRoot) {
+  const projectHatFile = join9(process.cwd(), ".haiku", "studios", studioName, "stages", stageName, "hats", `${hatName}.md`);
+  const pluginHatFile = join9(pluginRoot, "studios", studioName, "stages", stageName, "hats", `${hatName}.md`);
+  let hatFile = "";
+  if (existsSync6(projectHatFile)) hatFile = projectHatFile;
+  else if (existsSync6(pluginHatFile)) hatFile = pluginHatFile;
+  if (!hatFile) return { name: "", description: "" };
+  return {
+    name: readFrontmatterField(hatFile, "name"),
+    description: readFrontmatterField(hatFile, "description")
+  };
+}
+function getHatSequence(stageName, studioName, pluginRoot) {
+  const stageFile = join9(pluginRoot, "studios", studioName, "stages", stageName, "STAGE.md");
+  const projectStageFile = join9(process.cwd(), ".haiku", "studios", studioName, "stages", stageName, "STAGE.md");
+  let targetFile = "";
+  if (existsSync6(projectStageFile)) targetFile = projectStageFile;
+  else if (existsSync6(stageFile)) targetFile = stageFile;
+  if (!targetFile) return "planner \u2192 builder \u2192 reviewer";
+  const content = readFileSync5(targetFile, "utf8");
+  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!fmMatch) return "planner \u2192 builder \u2192 reviewer";
+  const fm = fmMatch[1];
+  const hats = [];
+  let inHats = false;
+  for (const line of fm.split("\n")) {
+    if (line.match(/^hats:/)) {
+      inHats = true;
+      continue;
+    }
+    if (inHats) {
+      if (!line.startsWith(" ") && !line.startsWith("	") && line.trim() !== "") break;
+      const m2 = line.match(/^\s+-\s+(.+)/);
+      if (m2) hats.push(m2[1].trim().replace(/^["']|["']$/g, ""));
+    }
+  }
+  return hats.length > 0 ? hats.join(" \u2192 ") : "planner \u2192 builder \u2192 reviewer";
+}
+function getRepoRootFromWorktree() {
+  try {
+    const output = execSync3("git worktree list --porcelain", { encoding: "utf8" });
+    const first = output.split("\n")[0];
+    return first.replace(/^worktree /, "");
+  } catch {
+    try {
+      return execSync3("git rev-parse --show-toplevel", { encoding: "utf8" }).trim();
+    } catch {
+      return process.cwd();
+    }
+  }
+}
+async function generateSubagentContext(_input, pluginRoot) {
+  const currentBranch = getCurrentBranch();
+  const intentDir2 = findActiveIntent2();
+  if (!intentDir2) return;
+  const intentSlug = basename4(intentDir2);
+  const iterationJson = stateLoad(intentDir2, "iteration.json");
+  if (!iterationJson) return;
+  if (!isValidJson(iterationJson)) return;
+  const state = JSON.parse(iterationJson);
+  const iteration = Number(state.iteration ?? 1);
+  const hat = state.hat ?? "";
+  const status = state.status ?? "active";
+  if (status === "completed" || !hat) return;
+  const intentFile = join9(intentDir2, "intent.md");
+  let activeStage = readFrontmatterField(intentFile, "active_stage") || "development";
+  let studio = readFrontmatterField(intentFile, "studio") || "software";
+  const activePass = readFrontmatterField(intentFile, "active_pass");
+  const stageHatsStr = getHatSequence(activeStage, studio, pluginRoot);
+  let contextScope;
+  switch (hat) {
+    case "reviewer":
+    case "red-team":
+    case "blue-team":
+      contextScope = "review";
+      break;
+    case "builder":
+    case "implementer":
+    case "refactorer":
+      contextScope = "build";
+      break;
+    case "planner":
+      contextScope = "plan";
+      break;
+    default:
+      contextScope = "full";
+      break;
+  }
+  out2("## H\xB7AI\xB7K\xB7U Subagent Context");
+  out2("");
+  let statusLine = `**Iteration:** ${iteration} | **Role:** ${hat} | **Stage:** ${activeStage} (${stageHatsStr})`;
+  if (activePass) {
+    statusLine += ` | **Pass:** ${activePass}`;
+  }
+  out2(statusLine);
+  out2("");
+  if (existsSync6(intentFile)) {
+    const intentContent = readFileSync5(intentFile, "utf8");
+    out2("### Intent");
+    out2("");
+    out2(intentContent);
+    out2("");
+  }
+  const criteriaFile = join9(intentDir2, "completion-criteria.md");
+  if (existsSync6(criteriaFile)) {
+    const criteria = readFileSync5(criteriaFile, "utf8");
+    out2("### Completion Criteria");
+    out2("");
+    out2(criteria);
+    out2("");
+  }
+  const discoveryFile = join9(intentDir2, "discovery.md");
+  if (existsSync6(discoveryFile)) {
+    const discoveryContent = readFileSync5(discoveryFile, "utf8");
+    const headers = discoveryContent.split("\n").filter((l) => l.startsWith("## "));
+    if (headers.length > 0) {
+      out2("### Discovery Log");
+      out2("");
+      out2(`Elaboration findings available in \`.haiku/intents/${intentSlug}/discovery.md\`:`);
+      out2("");
+      for (const h of headers) out2(h);
+      out2("");
+      out2("*Read the full file for detailed findings.*");
+      out2("");
+    }
+  }
+  const unitFiles = findUnitFiles(intentDir2);
+  if (unitFiles.length > 0) {
+    out2("### Unit Status");
+    out2("");
+    out2("| Unit | Status | Discipline |");
+    out2("|------|--------|------------|");
+    for (const uf of unitFiles) {
+      const name = basename4(uf, ".md");
+      const unitStatus = readFrontmatterField(uf, "status") || "pending";
+      const discipline = readFrontmatterField(uf, "discipline") || "-";
+      out2(`| ${name} | ${unitStatus} | ${discipline} |`);
+    }
+    out2("");
+  }
+  if (!process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS) {
+    const instructions = readHatInstructions(hat, activeStage, studio, pluginRoot);
+    const hatMeta = readHatMetadata(hat, activeStage, studio, pluginRoot);
+    out2(`### Current Role: ${hat}`);
+    out2("");
+    if (instructions) {
+      out2(`**${hatMeta.name || hat}**`);
+      out2("");
+      out2(instructions);
+      out2("");
+    } else {
+      out2(`**${hat}** orchestrates work by spawning discipline-specific agents based on unit requirements.`);
+      out2("");
+    }
+  }
+  out2("---");
+  out2("");
+  out2("## H\xB7AI\xB7K\xB7U Workflow Rules");
+  out2("");
+  const repoRoot = getRepoRootFromWorktree();
+  if (contextScope !== "review") {
+    out2("### Branch References");
+    out2("");
+    out2(`- **Intent branch:** \`haiku/${intentSlug}/main\``);
+    out2(`- **Intent worktree:** \`${repoRoot}/.haiku/worktrees/${intentSlug}/\``);
+    out2("");
+    out2("To access intent-level state from a unit branch:");
+    out2("```bash");
+    out2(`cat .haiku/intents/${intentSlug}/state/<key>`);
+    out2("```");
+    out2("");
+  }
+  if (contextScope === "build" || contextScope === "full") {
+    out2("### Bootstrap (MANDATORY)");
+    out2("");
+    out2("Your spawn prompt tells you which worktree and branch to use.");
+    out2("After entering your unit worktree, load unit-scoped state:");
+    out2("");
+    out2("```bash");
+    out2("# Load previous context from state files");
+    out2(`cat .haiku/intents/${intentSlug}/state/current-plan.md 2>/dev/null || true`);
+    out2(`cat .haiku/intents/${intentSlug}/state/scratchpad.md 2>/dev/null || true`);
+    out2(`cat .haiku/intents/${intentSlug}/state/blockers.md 2>/dev/null || true`);
+    out2(`cat .haiku/intents/${intentSlug}/state/next-prompt.md 2>/dev/null || true`);
+    out2("```");
+    out2("");
+    out2("These are scoped to YOUR branch. Read them to understand prior work on this unit.");
+    out2("");
+    out2("### Worktree Isolation");
+    out2("");
+    out2("All bolt work MUST happen in an isolated worktree.");
+    out2("Working outside a worktree will cause conflicts with the parent session.");
+    out2("");
+    out2("After entering your worktree, verify:");
+    out2(`1. You are in \`${repoRoot}/.haiku/worktrees/${intentSlug}-{unit-slug}/\``);
+    out2("2. You are on the correct unit branch (`git branch --show-current`)");
+    out2("3. You loaded unit-scoped state (see Bootstrap above)");
+    out2("");
+  }
+  if (contextScope === "build" || contextScope === "full") {
+    out2("### Before Stopping");
+    out2("");
+    out2("1. **Commit changes**: `git add -A && git commit`");
+    out2(`2. **Save scratchpad** (unit-scoped): save to \`.haiku/intents/${intentSlug}/state/scratchpad.md\``);
+    out2(`3. **Write next prompt** (unit-scoped): save to \`.haiku/intents/${intentSlug}/state/next-prompt.md\``);
+    out2("");
+    out2(`**Note:** Unit-level state (scratchpad.md, next-prompt.md, blockers.md) is saved to \`.haiku/intents/${intentSlug}/state/\`.`);
+    out2("Intent-level state (iteration.json, intent.md, etc.) is managed by the orchestrator on main.");
+    out2("");
+    out2("### Resilience (CRITICAL)");
+    out2("");
+    out2("Bolts MUST attempt to rescue before declaring blocked:");
+    out2("");
+    out2("1. **Commit early, commit often** - Don't wait until the end");
+    out2("2. **If changes disappear** - Investigate, recreate, commit immediately");
+    out2("3. **If on wrong branch** - Switch to correct branch and continue");
+    out2("4. **If tests fail** - Fix and retry, don't give up");
+    out2("5. **Only declare blocked** after 3+ genuine rescue attempts");
+    out2("");
+  }
+  out2("### Communication");
+  out2("");
+  out2("**Notify users of important events:**");
+  out2("");
+  out2("- `\u{1F680} Starting:` When beginning significant work");
+  out2("- `\u2705 Completed:` When a milestone is reached");
+  out2("- `\u26A0\uFE0F Issue:` When something needs attention but isn't blocking");
+  out2("- `\u{1F6D1} Blocked:` When genuinely stuck after rescue attempts");
+  out2("- `\u2753 Decision needed:` Use `AskUserQuestion` for user input");
+  out2("");
+  out2("Output status messages directly - users see them in real-time.");
+  out2(`Document blockers in \`.haiku/intents/${intentSlug}/state/blockers.md\` for persistence (unit-scoped).`);
+  out2("");
+  if (process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS) {
+    out2("### Team Communication");
+    out2("");
+    out2("You are a **teammate** in an Agent Teams session.");
+    out2("- Report completion/issues to team lead via SendMessage");
+    out2("- Do NOT call /haiku:execute, or read/execute the advance or fail skill definitions directly \u2014 the lead handles orchestration");
+    out2("- Use TaskUpdate to mark shared tasks as completed when done");
+    out2("- Coordinate with other teammates through the team lead");
+    out2("");
+  }
+}
+var init_subagent_context = __esm({
+  "src/hooks/subagent-context.ts"() {
+    "use strict";
+    init_utils();
+  }
+});
+
+// src/hooks/subagent-hook.ts
+async function subagentHook(input, pluginRoot) {
+  const toolName = input.tool_name;
+  const isAgentTool = toolName === "Agent" || toolName === "Task";
+  const targetField = isAgentTool ? "prompt" : "args";
+  let toolInput = input.tool_input ?? {};
+  if (!toolInput || typeof toolInput !== "object") toolInput = {};
+  const originalValue = String(toolInput[targetField] ?? "");
+  if (isAgentTool && !originalValue) return;
+  if (originalValue.includes("<subagent-context>")) return;
+  const contextOutput = await generateSubagentContextString(pluginRoot);
+  const permissionMode = isAgentTool ? input.permission_mode ?? "" : "";
+  if (!contextOutput && !permissionMode) return;
+  let updatedInput = { ...toolInput };
+  if (contextOutput) {
+    const wrappedContext = `<subagent-context>
+${contextOutput}
+</subagent-context>
+
+`;
+    const modifiedValue = wrappedContext + originalValue;
+    updatedInput[targetField] = modifiedValue;
+  }
+  if (permissionMode) {
+    updatedInput.mode = permissionMode;
+  }
+  if (isAgentTool) {
+    const subagentType = updatedInput.subagent_type ?? "";
+    if (subagentType === "Plan") {
+      updatedInput.subagent_type = "general-purpose";
+    }
+  }
+  const response = {
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      updatedInput
+    }
+  };
+  process.stdout.write(JSON.stringify(response));
+}
+async function generateSubagentContextString(pluginRoot) {
+  let captured = "";
+  const origWrite = process.stdout.write.bind(process.stdout);
+  process.stdout.write = ((chunk) => {
+    captured += typeof chunk === "string" ? chunk : chunk.toString();
+    return true;
+  });
+  try {
+    await generateSubagentContext({}, pluginRoot);
+  } catch {
+  } finally {
+    process.stdout.write = origWrite;
+  }
+  return captured;
+}
+var init_subagent_hook = __esm({
+  "src/hooks/subagent-hook.ts"() {
+    "use strict";
+    init_subagent_context();
+  }
+});
+
+// src/hooks/inject-context.ts
+import { existsSync as existsSync7, readFileSync as readFileSync6, readdirSync as readdirSync6 } from "node:fs";
+import { join as join10, basename as basename5 } from "node:path";
+import { execSync as execSync4 } from "node:child_process";
+function out3(s) {
+  process.stdout.write(s + "\n");
+}
+function getHatSequence2(stageName, studioName, pluginRoot) {
+  const stageFile = join10(pluginRoot, "studios", studioName, "stages", stageName, "STAGE.md");
+  const projectStageFile = join10(process.cwd(), ".haiku", "studios", studioName, "stages", stageName, "STAGE.md");
+  let targetFile = "";
+  if (existsSync7(projectStageFile)) targetFile = projectStageFile;
+  else if (existsSync7(stageFile)) targetFile = stageFile;
+  if (!targetFile) return "planner \u2192 builder \u2192 reviewer";
+  const content = readFileSync6(targetFile, "utf8");
+  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!fmMatch) return "planner \u2192 builder \u2192 reviewer";
+  const fm = fmMatch[1];
+  const hats = [];
+  let inHats = false;
+  for (const line of fm.split("\n")) {
+    if (line.match(/^hats:/)) {
+      inHats = true;
+      continue;
+    }
+    if (inHats) {
+      if (!line.startsWith(" ") && !line.startsWith("	") && line.trim() !== "") break;
+      const m2 = line.match(/^\s+-\s+(.+)/);
+      if (m2) hats.push(m2[1].trim().replace(/^["']|["']$/g, ""));
+    }
+  }
+  return hats.length > 0 ? hats.join(" \u2192 ") : "planner \u2192 builder \u2192 reviewer";
+}
+function readHatInstructions2(hatName, stageName, studioName, pluginRoot) {
+  const projectHatFile = join10(process.cwd(), ".haiku", "studios", studioName, "stages", stageName, "hats", `${hatName}.md`);
+  const pluginHatFile = join10(pluginRoot, "studios", studioName, "stages", stageName, "hats", `${hatName}.md`);
+  let hatFile = "";
+  if (existsSync7(projectHatFile)) hatFile = projectHatFile;
+  else if (existsSync7(pluginHatFile)) hatFile = pluginHatFile;
+  if (!hatFile) return "";
+  const content = readFileSync6(hatFile, "utf8");
+  const parts = content.split("---");
+  if (parts.length >= 3) {
+    return parts.slice(2).join("---").trim();
+  }
+  return content;
+}
+function readHatMetadata2(hatName, stageName, studioName, pluginRoot) {
+  const projectHatFile = join10(process.cwd(), ".haiku", "studios", studioName, "stages", stageName, "hats", `${hatName}.md`);
+  const pluginHatFile = join10(pluginRoot, "studios", studioName, "stages", stageName, "hats", `${hatName}.md`);
+  let hatFile = "";
+  if (existsSync7(projectHatFile)) hatFile = projectHatFile;
+  else if (existsSync7(pluginHatFile)) hatFile = pluginHatFile;
+  if (!hatFile) return { name: "", description: "" };
+  return {
+    name: readFrontmatterField(hatFile, "name"),
+    description: readFrontmatterField(hatFile, "description")
+  };
+}
+function outputTaskRouting() {
+  out3("### Task Routing");
+  out3("");
+  out3("When a user describes a task without a slash command, assess scope and suggest a path:");
+  out3("");
+  out3("| Signal | Quick | Elaborate |");
+  out3("|--------|-------|-----------|");
+  out3("| Files touched | 1-2 files | 3+ files or cross-cutting |");
+  out3("| Nature | Typo, rename, config, lint fix | New feature, refactor, architecture |");
+  out3("| Tests needed | None or existing pass | New tests required |");
+  out3("| Design decisions | None | Any |");
+  out3("");
+  out3("**Routing:**");
+  out3("- Simple fix/typo/rename \u2192 `/haiku:quick <task>`");
+  out3("- New feature / multi-file / architecture \u2192 `/haiku:elaborate`");
+  out3("");
+  out3("Always confirm your routing suggestion with the user before proceeding.");
+  out3("");
+}
+function outputSetupHint() {
+  if (!existsSync7(join10(process.cwd(), ".haiku", "settings.yml"))) {
+    out3("> **First time?** Run `/haiku:setup` to configure H\xB7AI\xB7K\xB7U for this project (auto-detects providers, VCS settings, etc.)");
+    out3("");
+  }
+}
+function getDefaultBranch() {
+  try {
+    const ref = execSync4("git symbolic-ref refs/remotes/origin/HEAD", { encoding: "utf8" }).trim();
+    return ref.split("/").pop() ?? "main";
+  } catch {
+    return "main";
+  }
+}
+async function injectContext(input, pluginRoot) {
+  const source = input.source ?? "startup";
+  const currentBranch = getCurrentBranch();
+  const repoRoot = getRepoRoot();
+  const defaultBranch = getDefaultBranch();
+  if (currentBranch === defaultBranch) {
+    const intentsDir = join10(repoRoot, ".haiku", "intents");
+    if (existsSync7(intentsDir)) {
+      for (const slug of readdirSync6(intentsDir)) {
+        const intentFile = join10(intentsDir, slug, "intent.md");
+        if (!existsSync7(intentFile)) continue;
+        const reconcileStatus = readFrontmatterField(intentFile, "status");
+        if (reconcileStatus !== "active") continue;
+        const unitFiles = findUnitFiles(join10(intentsDir, slug));
+        if (unitFiles.length === 0) continue;
+        let allDone = true;
+        for (const uf of unitFiles) {
+          const unitStatus = readFrontmatterField(uf, "status");
+          if (unitStatus !== "completed") {
+            allDone = false;
+            break;
+          }
+        }
+        if (allDone) {
+          setFrontmatterField2(intentFile, "status", "completed");
+          checkIntentCriteria(join10(intentsDir, slug));
+        }
+      }
+    }
+  }
+  const intentDir2 = findActiveIntent2();
+  let iterationJson = "";
+  if (intentDir2) {
+    iterationJson = stateLoad(intentDir2, "iteration.json");
+  }
+  if (!iterationJson) {
+    const intentsDir = join10(repoRoot, ".haiku", "intents");
+    const filesystemIntents = [];
+    if (existsSync7(intentsDir)) {
+      for (const slug of readdirSync6(intentsDir)) {
+        const intentFile = join10(intentsDir, slug, "intent.md");
+        if (!existsSync7(intentFile)) continue;
+        const status2 = readFrontmatterField(intentFile, "status");
+        if (status2 !== "active") continue;
+        const unitFiles = findUnitFiles(join10(intentsDir, slug));
+        let completed = 0;
+        for (const uf of unitFiles) {
+          if (readFrontmatterField(uf, "status") === "completed") completed++;
+        }
+        const summary = unitFiles.length > 0 ? `${completed}/${unitFiles.length} completed` : "";
+        filesystemIntents.push({ slug, summary });
+      }
+    }
+    if (filesystemIntents.length > 0) {
+      out3("## H\xB7AI\xB7K\xB7U: Resumable Intents Found");
+      out3("");
+      out3("### In Current Directory");
+      out3("");
+      for (const intent of filesystemIntents) {
+        out3(`- **${intent.slug}**`);
+        if (intent.summary) {
+          out3(`  - Units: ${intent.summary}`);
+        }
+      }
+      out3("");
+      out3("**To resume:** `/haiku:resume <slug>` or `/haiku:resume` if only one");
+      out3("");
+      if (!existsSync7(join10(process.cwd(), ".haiku", "settings.yml"))) {
+        out3("> **Tip:** Run `/haiku:setup` to configure providers and VCS settings. This enables automatic ticket sync during elaboration.");
+        out3("");
+      }
+    } else {
+      out3("## H\xB7AI\xB7K\xB7U Available");
+      out3("");
+      out3("No active H\xB7AI\xB7K\xB7U task. Run `/haiku:elaborate` to start a new task.");
+      out3("");
+      outputSetupHint();
+      outputTaskRouting();
+    }
+    return;
+  }
+  if (!isValidJson(iterationJson)) {
+    process.stderr.write("Warning: Invalid iteration.json format. Run /haiku:reset to clear state.\n");
+    return;
+  }
+  let state = JSON.parse(iterationJson);
+  if ("unitStates" in state) {
+    delete state.unitStates;
+    if (intentDir2) {
+      stateSave(intentDir2, "iteration.json", JSON.stringify(state));
+    }
+  }
+  let phase = state.phase ?? "";
+  const needsAdvance = state.needsAdvance === true;
+  let iteration = Number(state.iteration ?? 1);
+  const hat = state.hat ?? "planner";
+  const status = state.status ?? "active";
+  const currentUnit = state.currentUnit ?? "";
+  const maxIterations = Number(state.maxIterations ?? 0);
+  const targetUnit = state.targetUnit ?? "";
+  const intentSlugState = state.intentSlug ?? "";
+  if (!phase) {
+    phase = hat === "planner" ? "elaboration" : "execution";
+    state.phase = phase;
+    if (intentDir2) {
+      stateSave(intentDir2, "iteration.json", JSON.stringify(state));
+    }
+  }
+  if (needsAdvance && source !== "compact") {
+    const newIter = iteration + 1;
+    state.iteration = newIter;
+    state.needsAdvance = false;
+    iteration = newIter;
+    if (intentDir2) {
+      stateSave(intentDir2, "iteration.json", JSON.stringify(state));
+    }
+  }
+  let activeStage = "";
+  let studio = "";
+  let activePass = "";
+  if (intentDir2 && existsSync7(join10(intentDir2, "intent.md"))) {
+    activeStage = readFrontmatterField(join10(intentDir2, "intent.md"), "active_stage");
+    studio = readFrontmatterField(join10(intentDir2, "intent.md"), "studio");
+    activePass = readFrontmatterField(join10(intentDir2, "intent.md"), "active_pass");
+  }
+  if (!activeStage) activeStage = "research";
+  if (!studio) studio = "ideation";
+  const stageHatsStr = getHatSequence2(activeStage, studio, pluginRoot);
+  const intentSlug = intentDir2 ? basename5(intentDir2) : "";
+  if (status === "complete" || status === "completed") {
+    out3("## H\xB7AI\xB7K\xB7U: Task Complete");
+    out3("");
+    out3("Previous task was completed. Run `/haiku:reset` to start a new task.");
+    return;
+  }
+  out3("## H\xB7AI\xB7K\xB7U Context");
+  out3("");
+  let statusLine = `**Iteration:** ${iteration} | **Hat:** ${hat} | **Stage:** ${activeStage} (${stageHatsStr})`;
+  if (activePass) {
+    statusLine += ` | **Pass:** ${activePass}`;
+  }
+  out3(statusLine);
+  out3("");
+  const learningsDir = join10(process.cwd(), "docs", "solutions");
+  if (existsSync7(learningsDir)) {
+    try {
+      const files = readdirSync6(learningsDir).filter((f) => f.endsWith(".md"));
+      if (files.length > 0) {
+        out3("");
+        out3(`\u{1F4DA} **${files.length} compound learnings available** in \`docs/solutions/\`.`);
+        out3("The Planner hat will search these automatically before planning.");
+        out3("Use `/haiku:compound` to capture new learnings.");
+      }
+    } catch {
+    }
+  }
+  if (intentDir2 && existsSync7(join10(intentDir2, "intent.md"))) {
+    out3("### Intent");
+    out3("");
+    out3(readFileSync6(join10(intentDir2, "intent.md"), "utf8"));
+    out3("");
+  }
+  if (intentDir2 && existsSync7(join10(intentDir2, "completion-criteria.md"))) {
+    out3("### Completion Criteria");
+    out3("");
+    out3(readFileSync6(join10(intentDir2, "completion-criteria.md"), "utf8"));
+    out3("");
+  }
+  if (intentDir2 && existsSync7(join10(intentDir2, "discovery.md"))) {
+    const discoveryContent = readFileSync6(join10(intentDir2, "discovery.md"), "utf8");
+    const sectionCount = discoveryContent.split("\n").filter((l) => l.startsWith("## ")).length;
+    if (sectionCount > 0) {
+      out3("### Discovery Log");
+      out3("");
+      out3(`**${sectionCount} sections** of elaboration findings available in \`.haiku/intents/${intentSlug}/discovery.md\``);
+      out3("");
+    }
+  }
+  const plan = intentDir2 ? stateLoad(intentDir2, "current-plan.md") : "";
+  const blockers = intentDir2 ? stateLoad(intentDir2, "blockers.md") : "";
+  const scratchpad = intentDir2 ? stateLoad(intentDir2, "scratchpad.md") : "";
+  const nextPrompt = intentDir2 ? stateLoad(intentDir2, "next-prompt.md") : "";
+  if (plan) {
+    out3("### Current Plan");
+    out3("");
+    out3(plan);
+    out3("");
+  }
+  if (blockers) {
+    out3("### Previous Blockers");
+    out3("");
+    out3(blockers);
+    out3("");
+  }
+  if (scratchpad) {
+    out3("### Learnings from Previous Iteration");
+    out3("");
+    out3(scratchpad);
+    out3("");
+  }
+  if (nextPrompt) {
+    out3("### Continue With");
+    out3("");
+    out3(nextPrompt);
+    out3("");
+  }
+  if (intentDir2) {
+    const unitFiles = findUnitFiles(intentDir2);
+    if (unitFiles.length > 0) {
+      out3("### Unit Status");
+      out3("");
+      out3("| Unit | Status |");
+      out3("|------|--------|");
+      let completed = 0;
+      let inProgress = 0;
+      let pending = 0;
+      let blocked = 0;
+      let ready = 0;
+      for (const uf of unitFiles) {
+        const name = basename5(uf, ".md");
+        const unitStatus = readFrontmatterField(uf, "status") || "pending";
+        out3(`| ${name} | ${unitStatus} |`);
+        switch (unitStatus) {
+          case "completed":
+            completed++;
+            break;
+          case "in_progress":
+            inProgress++;
+            break;
+          case "blocked":
+            blocked++;
+            break;
+          case "pending":
+          default:
+            pending++;
+            ready++;
+            break;
+        }
+      }
+      out3("");
+      const total = completed + inProgress + pending + blocked;
+      out3(`**Summary:** ${completed} completed, ${inProgress} in_progress, ${pending} pending (${blocked} blocked), ${ready} ready`);
+      out3("");
+    }
+  }
+  if (process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS && intentSlug) {
+    const teamName = `haiku-${intentSlug}`;
+    const configDir = process.env.CLAUDE_CONFIG_DIR ?? "";
+    if (configDir) {
+      const teamConfig = join10(configDir, "teams", teamName, "config.json");
+      if (existsSync7(teamConfig)) {
+        out3("### Agent Teams");
+        out3("");
+        out3(`**Team:** \`${teamName}\``);
+        out3("**Mode:** Parallel execution enabled");
+        out3("");
+      }
+    }
+  }
+  const instructions = readHatInstructions2(hat, activeStage, studio, pluginRoot);
+  const hatMeta = readHatMetadata2(hat, activeStage, studio, pluginRoot);
+  out3("### Current Hat Instructions");
+  out3("");
+  if (instructions) {
+    if (hatMeta.description) {
+      out3(`**${hatMeta.name || hat}** \u2014 ${hatMeta.description}`);
+    } else {
+      out3(`**${hatMeta.name || hat}**`);
+    }
+    out3("");
+    out3(instructions);
+  } else {
+    out3(`**${hat}** (Custom hat - no instructions found)`);
+    out3("");
+    out3(`Create a hat definition at \`.haiku/hats/${hat}.md\` with:`);
+    out3("");
+    out3("```markdown");
+    out3("---");
+    out3('name: "Your Hat Name"');
+    out3('description: "What this hat does"');
+    out3("---");
+    out3("");
+    out3("# Hat Name");
+    out3("");
+    out3("Instructions for this hat...");
+    out3("```");
+  }
+  out3("");
+  out3("---");
+  out3("");
+  out3("## Iteration Management (Required for ALL Hats)");
+  out3("");
+  out3("### Branch Per Unit (MANDATORY)");
+  out3("");
+  out3("You MUST work on a dedicated branch for this unit:");
+  out3("");
+  out3("```bash");
+  out3("# Create if not exists:");
+  out3("git checkout -b haiku/{intent-slug}/{unit-number}-{unit-slug}");
+  out3("# Or use worktrees for parallel work:");
+  out3("git worktree add ../{unit-slug} haiku/{intent-slug}/{unit-number}-{unit-slug}");
+  out3("```");
+  out3("");
+  out3("You MUST NOT work directly on main/master. This isolates work and prevents conflicts.");
+  out3("");
+  out3("### Before Stopping (MANDATORY)");
+  out3("");
+  out3("Before every stop, you MUST:");
+  out3("");
+  out3("1. **Commit working changes**: `git add -A && git commit`");
+  out3("2. **Save scratchpad**: save to `.haiku/intents/{intent-slug}/state/scratchpad.md`");
+  out3("3. **Write next prompt**: save to `.haiku/intents/{intent-slug}/state/next-prompt.md`");
+  out3("");
+  out3("The next-prompt.md should contain what to continue with in the next iteration.");
+  out3("Without this, progress may be lost if the session ends.");
+  out3("");
+  out3("### Never Stop Arbitrarily");
+  out3("");
+  out3("- You MUST NOT stop mid-bolt without saving state");
+  out3("- If you need user input, use `AskUserQuestion` tool");
+  out3("- If blocked, document in `.haiku/intents/{intent-slug}/state/blockers.md`");
+  out3("");
+  if (currentBranch && currentBranch !== "main" && currentBranch !== "master") {
+    if (!currentBranch.match(/^haiku\/[a-z0-9-]+\/(main|[0-9]+-[a-z0-9-]+)$/)) {
+      out3(`> **WARNING:** Current branch \`${currentBranch}\` doesn't follow H\xB7AI\xB7K\xB7U convention.`);
+      out3("> Expected: `haiku/{intent-slug}/main` or `haiku/{intent-slug}/{unit-number}-{unit-slug}`");
+      out3("> Create correct branch before proceeding.");
+      out3("");
+    }
+  } else {
+    out3(`> **WARNING:** You are on \`${currentBranch || "main"}\`. Create a unit branch before working.`);
+    out3("");
+  }
+  out3("---");
+  out3("");
+  out3("**Commands:** `/haiku:execute` (continue loop) | `/haiku:construct` (deprecated alias) | `/haiku:reset` (abandon task)");
+  out3("");
+  out3("> **No file changes?** If this hat's work is complete but no files were modified,");
+  out3("> save findings to scratchpad and read `plugin/skills/execute/subskills/advance/SKILL.md` then execute it to continue.");
+}
+var init_inject_context = __esm({
+  "src/hooks/inject-context.ts"() {
+    "use strict";
+    init_utils();
+  }
+});
+
 // src/hooks/index.ts
 var hooks_exports = {};
 __export(hooks_exports, {
   runHook: () => runHook
 });
-import { readFileSync as readFileSync3 } from "node:fs";
+import { readFileSync as readFileSync7 } from "node:fs";
 function readStdin() {
   try {
-    return readFileSync3(0, "utf8");
+    return readFileSync7(0, "utf8");
   } catch {
     return "";
   }
@@ -26686,6 +27936,27 @@ async function runHook(name, _args) {
     case "redirect-plan-mode":
       await redirectPlanMode(parsed, pluginRoot);
       break;
+    case "context-monitor":
+      await contextMonitor(parsed, pluginRoot);
+      break;
+    case "enforce-iteration":
+      await enforceIteration(parsed, pluginRoot);
+      break;
+    case "ensure-deps":
+      await ensureDeps(parsed, pluginRoot);
+      break;
+    case "quality-gate":
+      await qualityGate(parsed, pluginRoot);
+      break;
+    case "subagent-hook":
+      await subagentHook(parsed, pluginRoot);
+      break;
+    case "subagent-context":
+      await generateSubagentContext(parsed, pluginRoot);
+      break;
+    case "inject-context":
+      await injectContext(parsed, pluginRoot);
+      break;
     default:
       console.error(`haiku: hook '${name}' not implemented in binary \u2014 use shell fallback`);
       process.exit(2);
@@ -26697,6 +27968,13 @@ var init_hooks = __esm({
     init_prompt_guard();
     init_workflow_guard();
     init_redirect_plan_mode();
+    init_context_monitor();
+    init_enforce_iteration();
+    init_ensure_deps();
+    init_quality_gate();
+    init_subagent_hook();
+    init_subagent_context();
+    init_inject_context();
   }
 });
 

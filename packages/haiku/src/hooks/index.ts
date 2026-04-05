@@ -8,6 +8,13 @@ import { readFileSync } from "node:fs"
 import { promptGuard } from "./prompt-guard.js"
 import { workflowGuard } from "./workflow-guard.js"
 import { redirectPlanMode } from "./redirect-plan-mode.js"
+import { contextMonitor } from "./context-monitor.js"
+import { enforceIteration } from "./enforce-iteration.js"
+import { ensureDeps } from "./ensure-deps.js"
+import { qualityGate } from "./quality-gate.js"
+import { subagentHook } from "./subagent-hook.js"
+import { generateSubagentContext } from "./subagent-context.js"
+import { injectContext } from "./inject-context.js"
 
 // Read stdin synchronously (hooks are synchronous)
 function readStdin(): string {
@@ -36,6 +43,27 @@ export async function runHook(name: string, _args: string[]): Promise<void> {
 			break
 		case "redirect-plan-mode":
 			await redirectPlanMode(parsed, pluginRoot)
+			break
+		case "context-monitor":
+			await contextMonitor(parsed, pluginRoot)
+			break
+		case "enforce-iteration":
+			await enforceIteration(parsed, pluginRoot)
+			break
+		case "ensure-deps":
+			await ensureDeps(parsed, pluginRoot)
+			break
+		case "quality-gate":
+			await qualityGate(parsed, pluginRoot)
+			break
+		case "subagent-hook":
+			await subagentHook(parsed, pluginRoot)
+			break
+		case "subagent-context":
+			await generateSubagentContext(parsed, pluginRoot)
+			break
+		case "inject-context":
+			await injectContext(parsed, pluginRoot)
 			break
 		default:
 			// For hooks not yet ported to TypeScript, fall through
