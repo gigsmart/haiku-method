@@ -15,8 +15,6 @@ allowed-tools:
   - ToolSearch
 ---
 
-> **State Model Note:** This skill references `iteration.json` and shell-based state functions. These are deprecated. Use MCP tools instead: `haiku_intent_get/set`, `haiku_stage_get/set/start/complete`, `haiku_unit_get/set/start/complete/advance_hat/increment_bolt`. State lives in artifact frontmatter and `stages/{stage}/state.json`.
-
 # H·AI·K·U Migrate
 
 ## Name
@@ -85,7 +83,7 @@ This function:
    - Adds `studio: software`, `mode: continuous`, `migrated_from:`, `migration_date:`
    - Preserves all other fields and body verbatim
 3. Maps each `unit-*.md` to `stages/{inferred-stage}/units/` based on its `pass:` field
-4. Creates `state/iteration.json` with initial execution state
+4. Creates `stages/{stage}/state.json` with initial execution state
 5. Backs up old directory as `.ai-dlc/{slug}.pre-haiku-backup`
 6. Creates symlink `.ai-dlc/{slug}` → `.haiku/intents/{slug}`
 

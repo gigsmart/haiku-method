@@ -4,8 +4,6 @@ argument-hint: "[intent-slug]"
 disable-model-invocation: true
 ---
 
-> **State Model Note:** This skill references `iteration.json` and shell-based state functions. These are deprecated. Use MCP tools instead: `haiku_intent_get/set`, `haiku_stage_get/set/start/complete`, `haiku_unit_get/set/start/complete/advance_hat/increment_bolt`. State lives in artifact frontmatter and `stages/{stage}/state.json`.
-
 ## Name
 
 `haiku:reflect` - Reflection phase for analyzing outcomes and capturing learnings.
@@ -76,7 +74,7 @@ Collect data from state files and artifacts:
 ```bash
 # Load iteration state
 STATE=$(haiku_stage_get { intent, stage, field: "phase" } 2>/dev/null || echo "")
-OP_STATUS=$(hku_state_load "$INTENT_DIR" "operation-status.json" 2>/dev/null || echo "")
+OP_STATUS=$(cat "$INTENT_DIR/operation-status.json" 2>/dev/null || echo "")
 
 # Get DAG summary
 SUMMARY=$(get_dag_summary "$INTENT_DIR")
@@ -85,14 +83,14 @@ SUMMARY=$(get_dag_summary "$INTENT_DIR")
 for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   UNIT_NAME=$(basename "$unit_file" .md)
   UNIT_STATUS=$(parse_unit_status "$unit_file")
-  UNIT_SCRATCHPAD=$(hku_state_load "$INTENT_DIR" "scratchpad.md" 2>/dev/null || echo "")
+  UNIT_SCRATCHPAD=$(cat "$INTENT_DIR/scratchpad.md" 2>/dev/null || echo "")
 done
 ```
 
 Metrics to extract:
 - **Units completed** vs total
-- **Total iterations** (from iteration.json)
-- **Workflow used** (from iteration.json)
+- **Total bolts** (from unit frontmatter via `haiku_unit_get { field: "bolt" }`)
+- **Studio used** (from intent frontmatter via `haiku_intent_get { field: "studio" }`)
 - **Blockers encountered** (from unit scratchpads and state)
 - **Quality gate pass/fail history** (from state if recorded)
 - **Operational task status** (from operation-status.json)
@@ -333,13 +331,13 @@ Update `reflection.md` with any user corrections or additions.
 ```bash
 # Update reflection status in state
 REFLECTION_STATE='{"phase":"reflection","reflectionStatus":"awaiting-input","version":1,"previousVersions":[]}'
-hku_state_save "$INTENT_DIR" "reflection-status.json" "$REFLECTION_STATE"
+echo "$REFLECTION_STATE" > "$INTENT_DIR/reflection-status.json"
 ```
 
 After user validates:
 ```bash
 REFLECTION_STATE=$(echo "$REFLECTION_STATE" | jq '.reflectionStatus = "completed"')
-hku_state_save "$INTENT_DIR" "reflection-status.json" "$REFLECTION_STATE"
+echo "$REFLECTION_STATE" > "$INTENT_DIR/reflection-status.json"
 ```
 
 ### Step 7: Offer Next Steps

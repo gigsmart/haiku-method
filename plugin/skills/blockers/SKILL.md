@@ -8,8 +8,6 @@ allowed-tools:
   - Glob
 ---
 
-> **State Model Note:** This skill references `iteration.json` and shell-based state functions. These are deprecated. Use MCP tools instead: `haiku_intent_get/set`, `haiku_stage_get/set/start/complete`, `haiku_unit_get/set/start/complete/advance_hat/increment_bolt`. State lives in artifact frontmatter and `stages/{stage}/state.json`.
-
 # H·AI·K·U Blockers
 
 Blockers are obstacles that prevent progress on a task. In H·AI·K·U, properly documenting blockers is essential for productive iteration—it ensures the next session can address issues directly rather than rediscovering them.
@@ -204,7 +202,8 @@ Need user input on priorities.
 ### Saving Blockers
 
 ```bash
-hku_state_save "$INTENT_DIR" "blockers.md" "$BLOCKER_MARKDOWN"
+# Write blocker documentation to the intent directory (file-based, not MCP-managed)
+echo "$BLOCKER_MARKDOWN" > "$INTENT_DIR/blockers.md"
 ```
 
 ## Blocker Resolution
@@ -306,12 +305,12 @@ When a blocker is resolved:
 
 ```bash
 # Option 1: Clear the file
-hku_state_delete "$INTENT_DIR" "blockers.md"
+rm -f "$INTENT_DIR/blockers.md"
 
 # Option 2: Update with resolution
-hku_state_save "$INTENT_DIR" "blockers.md" "## Resolved
+echo "## Resolved
 
-OAuth issue fixed by disabling strict mode."
+OAuth issue fixed by disabling strict mode." > "$INTENT_DIR/blockers.md"
 ```
 
 ## Integration with H·AI·K·U Hats

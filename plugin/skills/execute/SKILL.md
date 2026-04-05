@@ -4,8 +4,6 @@ user-invocable: true
 argument-hint: "[intent-slug] [unit-name]"
 ---
 
-> **State Model Note:** This skill references `iteration.json` and shell-based state functions. These are deprecated. Use MCP tools instead: `haiku_intent_get/set`, `haiku_stage_get/set/start/complete`, `haiku_unit_get/set/start/complete/advance_hat/increment_bolt`. State lives in artifact frontmatter and `stages/{stage}/state.json`.
-
 ## Deprecation Notice
 
 > **This command is a backward-compatibility alias.** For stage-based intents, use `/haiku:run` instead. This command continues to work for legacy intents without studio/stage configuration.
@@ -16,7 +14,7 @@ argument-hint: "[intent-slug] [unit-name]"
 
 local intent_dir=$(hku_find_active_intent)
 if [ -n "$intent_dir" ]; then
-  local studio=$(hku_frontmatter_get "studio" "$intent_dir/intent.md")
+  local studio=$(haiku_intent_get { slug: "$INTENT_SLUG", field: "studio" })
   if [ -n "$studio" ]; then
     echo "This intent uses the stage-based workflow (studio: $studio)."
     echo "Delegating to /haiku:run for the build phase..."
@@ -88,7 +86,7 @@ If you encounter ambiguity:
 3. Let the reviewer hat catch issues on the next pass
 
 If truly blocked (cannot proceed without user input):
-1. Document the blocker clearly in `hku_state_save "$INTENT_DIR" "blockers.md"`
+1. Document the blocker clearly in `.haiku/intents/{slug}/blockers.md`
 2. Stop the loop naturally (don't read or execute the advance skill definition)
 3. The Stop hook will alert the user that human intervention is required
 
@@ -353,7 +351,9 @@ if [ -n "$TICKETING_TYPE" ]; then
   # Check ticket field in each unit file
   for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
     [ -f "$unit_file" ] || continue
-    TICKET=$(hku_frontmatter_get "ticket" "$unit_file" 2>/dev/null || echo "")
+    UNIT_NAME=$(basename "$unit_file" .md)
+    STAGE_NAME=$(basename "$(dirname "$(dirname "$unit_file")")")
+    TICKET=$(haiku_unit_get { intent: "$INTENT_SLUG", stage: "$STAGE_NAME", unit: "$UNIT_NAME", field: "ticket" } 2>/dev/null || echo "")
     if [ -z "$TICKET" ]; then
       MISSING="${MISSING}\n- $(basename "$unit_file"): ticket field is empty"
     fi
@@ -372,7 +372,7 @@ fi
 
 ### Step 1: Load State
 
-**State model:** State lives in artifact frontmatter and stage state.json — NOT in `iteration.json` (deprecated).
+**State model:** State lives in artifact frontmatter and `stages/{stage}/state.json`, accessed via MCP tools.
 
 Use MCP tools to load state:
 
@@ -403,15 +403,14 @@ Task already complete! Run /haiku:reset to start a new task.
 
 **Persist or clear targetUnit in state:**
 
-```bash
+```
 # If targeting: save to state
 if [ -n "$TARGET_UNIT" ]; then
-  STATE=$(echo "$STATE" | hku_json_set "targetUnit" "$TARGET_UNIT")
+  haiku_stage_set { intent: INTENT_SLUG, stage: ACTIVE_STAGE, field: "target_unit", value: "$TARGET_UNIT" }
 else
   # Clear any stale targetUnit from previous targeted run
-  STATE=$(echo "$STATE" | hku_json_set "targetUnit" "")
+  haiku_stage_set { intent: INTENT_SLUG, stage: ACTIVE_STAGE, field: "target_unit", value: "" }
 fi
-# State now lives in unit frontmatter and stage state.json — use MCP tools
 ```
 
 ### State Persistence
@@ -439,28 +438,25 @@ During execution, maintain a `STATE.md` file in the intent directory as a human-
 
 Update STATE.md at each hat transition and unit completion. This survives context resets and session boundaries better than ephemeral state.
 
-Use the file-based state helpers from `lib/state.sh`:
+Use MCP tools to read and update state:
 
-```bash
+```
+# Read current position
+haiku_unit_get { intent: INTENT_SLUG, stage: ACTIVE_STAGE, unit: CURRENT_UNIT, field: "hat" }
+haiku_unit_get { intent: INTENT_SLUG, stage: ACTIVE_STAGE, unit: CURRENT_UNIT, field: "bolt" }
 
+# Update hat
+haiku_unit_advance_hat { intent: INTENT_SLUG, stage: ACTIVE_STAGE, unit: CURRENT_UNIT, hat: "builder" }
 
-# Write the full STATE.md
-write_state_file "$INTENT_DIR" "STATE.md" "$state_content"
-
-# Read it back
-current_state=$(read_state_file "$INTENT_DIR" "STATE.md")
-
-# Update just one section (lockfile-protected)
-update_state_section "$INTENT_DIR" "Current Position" "- **Hat:** builder
-- **Unit:** unit-02-api
-- **Bolt:** 3"
+# Increment bolt
+haiku_unit_increment_bolt { intent: INTENT_SLUG, stage: ACTIVE_STAGE, unit: CURRENT_UNIT }
 ```
 
 ### Step 1b: Detect Agent Teams
 
 ```bash
 AGENT_TEAMS_ENABLED="${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}"
-CHANGE_STRATEGY=$(hku_frontmatter_get "git.change_strategy" "$INTENT_DIR/intent.md" 2>/dev/null || echo "unit")
+CHANGE_STRATEGY=$(haiku_intent_get { slug: "$INTENT_SLUG", field: "git.change_strategy" } 2>/dev/null || echo "unit")
 
 # Pure unit strategy always uses Sequential path (subagent delegation, no team orchestration).
 # Hybrid strategy (intent-level "intent" + some units overriding to "unit") keeps Teams enabled —
@@ -527,11 +523,10 @@ TeamCreate({
 })
 ```
 
-Save `teamName` to `iteration.json`:
+Save `teamName` to stage state:
 
-```bash
-STATE=$(echo "$STATE" | hku_json_set "teamName" "$TEAM_NAME")
-# State now lives in unit frontmatter and stage state.json — use MCP tools
+```
+haiku_stage_set { intent: INTENT_SLUG, stage: ACTIVE_STAGE, field: "team_name", value: "$TEAM_NAME" }
 ```
 
 ### Step 3 (Teams): Spawn ALL Ready Units in Parallel
@@ -625,7 +620,7 @@ git commit -m "status: mark $(basename "$UNIT_FILE" .md) as in_progress"
 
 ```bash
 # Determine stage from unit discipline
-UNIT_DISCIPLINE=$(hku_frontmatter_get "discipline" "$UNIT_FILE" 2>/dev/null || echo "")
+UNIT_DISCIPLINE=$(haiku_unit_get { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$UNIT_NAME", field: "discipline" } 2>/dev/null || echo "")
 UNIT_STAGE="$ACTIVE_STAGE"  # Default to intent-level stage
 case "$UNIT_DISCIPLINE" in
   design)          UNIT_STAGE="design" ;;
@@ -647,7 +642,7 @@ FIRST_HAT=$(echo "$UNIT_STAGE_HATS" | awk '{print $1}')
 # Per-unit hat tracking is derived from unit frontmatter status and the DAG.
 # The unit's current hat position is determined by its status field
 # and the stage's hat sequence (determined by discipline).
-hku_frontmatter_set "hat" "${FIRST_HAT}" "$INTENT_DIR/${UNIT_NAME}.md"
+haiku_unit_advance_hat { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$UNIT_NAME", hat: "${FIRST_HAT}" }
 git add "$INTENT_DIR/${UNIT_NAME}.md"
 git commit -m "status: set hat for ${UNIT_NAME}"
 ```
@@ -750,14 +745,14 @@ The lead processes auto-delivered teammate messages. Handle each event type:
 
 When a teammate reports successful completion:
 
-1. Read current hat for this unit from unit frontmatter (`hku_frontmatter_get "hat" "$UNIT_FILE"`)
+1. Read current hat for this unit from unit frontmatter (`haiku_unit_get { intent, stage, unit, field: "hat" }`)
 2. Read this unit's hat sequence from its stage (determined by discipline)
 3. Find current hat's index in the stage's hat sequence
 4. Determine next hat: `stageHats[currentIndex + 1]`
 
 **If next hat exists** (not at end of sequence):
 
-a. Update hat in unit frontmatter: `hku_frontmatter_set "hat" "$nextHat" "$UNIT_FILE"`
+a. Update hat in unit frontmatter: `haiku_unit_advance_hat { intent, stage, unit, hat: "$nextHat" }`
 b. Commit: `git add "$UNIT_FILE" && git commit -m "status: advance hat for $(basename "$UNIT_FILE" .md)"`
 c. Load hat instructions for nextHat from stage:
 
@@ -852,7 +847,7 @@ if [ "$EFFECTIVE_CS" = "unit" ]; then
   # Per-unit strategy: create PR to default branch (same as advance/SKILL.md unit path)
   git push -u origin "$UNIT_BRANCH" 2>/dev/null || true
 
-  UNIT_TICKET=$(hku_frontmatter_get "ticket" "$UNIT_FILE" 2>/dev/null || echo "")
+  UNIT_TICKET=$(haiku_unit_get { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$UNIT_NAME", field: "ticket" } 2>/dev/null || echo "")
   TICKET_LINE=""
   [ -n "$UNIT_TICKET" ] && TICKET_LINE="Closes ${UNIT_TICKET}"
 
@@ -923,9 +918,9 @@ When a teammate reports issues or rejects the work:
 
 1. Read current hat from unit frontmatter
 2. Determine previous hat: `workflow[currentIndex - 1]`
-3. Increment retry count in unit frontmatter (`hku_frontmatter_get "retries" "$UNIT_FILE"`)
-4. If `retries >= 3`: Mark unit as blocked, document in `hku_state_save "$INTENT_DIR" "blockers.md"`
-5. Otherwise: Update hat in unit frontmatter: `hku_frontmatter_set "hat" "$previousHat" "$UNIT_FILE"`
+3. Increment retry count in unit frontmatter (`haiku_unit_get { intent, stage, unit, field: "retries" }`)
+4. If `retries >= 3`: Mark unit as blocked, document in `.haiku/intents/{slug}/blockers.md`
+5. Otherwise: Update hat in unit frontmatter: `haiku_unit_advance_hat { intent, stage, unit, hat: "$previousHat" }`
 6. Load hat instructions for previousHat from stage (`hku_resolve_hat_instructions`)
 7. Spawn teammate at previous hat with the feedback/issues in the prompt
 
@@ -933,7 +928,7 @@ This means ANY hat can reject -- not just the reviewer. A red-team finding issue
 
 #### Blocked
 
-1. Document the blocker in `hku_state_save "$INTENT_DIR" "blockers.md"`
+1. Document the blocker in `.haiku/intents/{slug}/blockers.md`
 2. Check if ALL units are blocked
 3. Before declaring "all blocked," check if the active pass's units are all completed — if so, this is a pass completion, not a blocker. Route to pass transition (Step 5b) instead.
 4. If all blocked (and not a pass-complete scenario), alert user: "All units blocked. Human intervention required."
@@ -948,7 +943,7 @@ Before shutting down the team, read `plugin/skills/execute/subskills/integrate/S
 
 ```bash
 # Check if integration has already passed
-INTEGRATOR_COMPLETE=$(echo "$STATE" | hku_json_get "integratorComplete" "false")
+INTEGRATOR_COMPLETE=$(haiku_stage_get { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", field: "integrator_complete" } 2>/dev/null || echo "false")
 
 # Count total units
 UNIT_COUNT=$(ls -1 "$INTENT_DIR"/stages/*/units/unit-*.md 2>/dev/null | wc -l)
@@ -1088,12 +1083,10 @@ fi
 Mark intent complete:
 
 ```bash
-STATE=$(echo "$STATE" | hku_json_set "status" "completed")
-# State now lives in unit frontmatter and stage state.json — use MCP tools
+haiku_intent_set { slug: "$INTENT_SLUG", field: "status", value: "completed" }
 
 # Update intent.md frontmatter status so it persists in git
-
-hku_frontmatter_set "status" "completed" "$INTENT_DIR/intent.md"
+haiku_intent_set { slug: "$INTENT_SLUG", field: "status", value: "completed" }
 # Check off intent-level completion criteria checkboxes
 hku_check_intent_criteria "$INTENT_DIR"
 git add "$INTENT_DIR/intent.md"
@@ -1128,13 +1121,12 @@ if [ -n "$PASS_BACK_TARGET" ]; then
   fi
 
   # Update active_pass to the target pass
-  hku_frontmatter_set "active_pass" "$PASS_BACK_TARGET" "$INTENT_DIR/intent.md"
+  haiku_intent_set { slug: "$INTENT_SLUG", field: "active_pass", value: "$PASS_BACK_TARGET" }
   git add "$INTENT_DIR/intent.md"
   git commit -m "pass-back: revert active_pass to $PASS_BACK_TARGET"
 
   # Save state
-  STATE=$(echo "$STATE" | hku_json_set "status" "pass_back")
-  # State now lives in unit frontmatter and stage state.json — use MCP tools
+  haiku_intent_set { slug: "$INTENT_SLUG", field: "status", value: "pass_back" }
 
   echo ""
   echo "The current pass discovered issues requiring work in the **${PASS_BACK_TARGET}** pass."
@@ -1152,10 +1144,10 @@ The pass-back stops execution immediately. The user must re-elaborate for the ta
 ```bash
 
 INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
-INTENT_STATUS=$(haiku_intent_get { slug, field: "status" })
+INTENT_STATUS=$(haiku_intent_get { slug: "$INTENT_SLUG", field: "status" })
 if [ "$INTENT_STATUS" != "completed" ]; then
   echo "Fixing: intent status '$INTENT_STATUS' → 'completed'"
-  hku_frontmatter_set "status" "completed" "$INTENT_DIR/intent.md"
+  haiku_intent_set { slug: "$INTENT_SLUG", field: "status", value: "completed" }
   hku_check_intent_criteria "$INTENT_DIR"
   git add "$INTENT_DIR/intent.md"
   git add "$INTENT_DIR/completion-criteria.md" 2>/dev/null || true
@@ -1310,7 +1302,9 @@ DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
 TICKET_REFS=""
 for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
-  TICKET=$(hku_frontmatter_get "ticket" "$unit_file" 2>/dev/null || echo "")
+  UNIT_NAME=$(basename "$unit_file" .md)
+  STAGE_NAME=$(basename "$(dirname "$(dirname "$unit_file")")")
+  TICKET=$(haiku_unit_get { intent: "$INTENT_SLUG", stage: "$STAGE_NAME", unit: "$UNIT_NAME", field: "ticket" } 2>/dev/null || echo "")
   if [ -n "$TICKET" ]; then
     TICKET_REFS="${TICKET_REFS}\nCloses ${TICKET}"
   fi
@@ -1369,13 +1363,13 @@ To clean up:
 
 ### Per-Unit Hat Tracking
 
-Per-unit hat tracking is derived from unit-*.md frontmatter and the DAG, rather than stored in iteration.json. Each unit file tracks:
+Per-unit hat tracking is derived from unit-*.md frontmatter and the DAG. Each unit file tracks:
 
 - `hat`: Current hat for this specific unit (frontmatter field)
 - `retries`: Number of reviewer rejection cycles, max 3 before escalating to blocked (frontmatter field)
 - Stage: Determined by unit's discipline, which resolves the hat sequence from the corresponding STAGE.md
 
-This keeps `iteration.json` small and avoids duplicating state that already lives in the unit files.
+This avoids duplicating state and keeps all unit state in one place, accessible via MCP tools (`haiku_unit_get/set`).
 
 ### Parallel Commit Strategy
 
@@ -1413,7 +1407,7 @@ This prevents conflicts with the parent session and enables true isolation.
 
 ```bash
 # If targeting a specific unit, use it directly; otherwise find next ready unit
-TARGET_UNIT=$(echo "$STATE" | hku_json_get "targetUnit" "")
+TARGET_UNIT=$(haiku_stage_get { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", field: "target_unit" } 2>/dev/null || echo "")
 if [ -n "$TARGET_UNIT" ]; then
   UNIT_FILE="$INTENT_DIR/${TARGET_UNIT}.md"
 else
@@ -1468,8 +1462,7 @@ git commit -m "status: mark $(basename "$UNIT_FILE" .md) as in_progress"
 ```bash
 # Update currentUnit in state, e.g., "unit-01-core-backend"
 # Intent-level state saved to current branch (intent branch)
-STATE=$(echo "$STATE" | hku_json_set "currentUnit" "$UNIT_NAME")
-# State now lives in unit frontmatter and stage state.json — use MCP tools
+haiku_unit_start { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$UNIT_NAME", hat: "$FIRST_HAT" }
 ```
 
 #### Step 3: Spawn Subagent

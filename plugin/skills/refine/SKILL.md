@@ -3,8 +3,6 @@ description: Refine intent, unit, or upstream stage outputs mid-execution withou
 argument-hint: "[unit-slug | stage:<stage-name>]"
 ---
 
-> **State Model Note:** This skill references `iteration.json` and shell-based state functions. These are deprecated. Use MCP tools instead: `haiku_intent_get/set`, `haiku_stage_get/set/start/complete`, `haiku_unit_get/set/start/complete/advance_hat/increment_bolt`. State lives in artifact frontmatter and `stages/{stage}/state.json`.
-
 # H·AI·K·U Refine
 
 You are refining an H·AI·K·U artifact mid-execution. Your job is to amend specs without destroying in-flight progress. Supports three targets: intent-level specs, specific units, and **upstream stage outputs** (stage-scoped refinement).
@@ -80,7 +78,9 @@ If "Specific unit" is selected, list available units and ask which one:
 for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
   unit_name=$(basename "$unit_file" .md)
-  status=$(hku_frontmatter_get "status" "$unit_file" 2>/dev/null || echo "pending")
+  unit_name=$(basename "$unit_file" .md)
+  stage_name=$(basename "$(dirname "$(dirname "$unit_file")")")
+  status=$(haiku_unit_get { intent: "$INTENT_SLUG", stage: "$stage_name", unit: "$unit_name", field: "status" } 2>/dev/null || echo "pending")
   echo "- **${unit_name}** (${status})"
 done
 ```
@@ -116,7 +116,7 @@ When the target is an upstream stage, the goal is to add or update a **specific 
 1. **Load the target stage's definition:**
    ```bash
    source "$CLAUDE_PLUGIN_ROOT/lib/stage.sh"
-   local metadata=$(hku_load_stage_metadata "$TARGET_STAGE" "$STUDIO")
+   local metadata=$(haiku_stage_get { intent: "$INTENT_SLUG", stage: "$TARGET_STAGE", field: "metadata" })
    ```
 
 2. **Show existing stage outputs:**
@@ -135,7 +135,7 @@ When the target is an upstream stage, the goal is to add or update a **specific 
 
 5. **Persist the updated output:**
    ```bash
-   hku_persist_stage_outputs "$INTENT_DIR" "$TARGET_STAGE" "$STUDIO"
+   haiku_stage_set { intent: "$INTENT_SLUG", stage: "$TARGET_STAGE", field: "outputs_persisted", value: "true" }
    ```
 
 6. **Return to the current stage:**
@@ -230,7 +230,7 @@ For each affected unit:
 
 Update state:
 - For each affected unit, reset `hat` to the first hat in its stage (in unit frontmatter)
-- Clear `currentUnit` in iteration.json
+- The current unit tracking is managed by stage state via MCP tools
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
@@ -243,13 +243,10 @@ FIRST_HAT=$(hku_get_hat_sequence "$ACTIVE_STAGE" "$STUDIO" | awk '{print $1}')
 [ -z "$FIRST_HAT" ] && FIRST_HAT="planner"
 
 for unit_file in $AFFECTED_UNITS; do
+  UNIT_NAME=$(basename "$unit_file" .md)
   update_unit_status "$unit_file" "pending"
-  hku_frontmatter_set "hat" "${FIRST_HAT}" "$unit_file"
+  haiku_unit_advance_hat { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$UNIT_NAME", hat: "${FIRST_HAT}" }
 done
-
-# Clear currentUnit in iteration.json
-STATE=$(echo "$STATE" | hku_json_set "currentUnit" "")
-# State now lives in unit frontmatter and stage state.json — use MCP tools
 
 git add "$INTENT_DIR/"
 git commit -m "refine: re-queue affected units for ${INTENT_SLUG}"
@@ -271,14 +268,7 @@ ACTIVE_STAGE=$(haiku_intent_get { slug, field: "active_stage" } 2>/dev/null || e
 STUDIO=$(haiku_intent_get { slug, field: "studio" } 2>/dev/null || echo "software")
 FIRST_HAT=$(hku_get_hat_sequence "$ACTIVE_STAGE" "$STUDIO" | awk '{print $1}')
 [ -z "$FIRST_HAT" ] && FIRST_HAT="planner"
-hku_frontmatter_set "hat" "${FIRST_HAT}" "$INTENT_DIR/${UNIT_NAME}.md"
-
-# Clear currentUnit if it matches
-CURRENT_UNIT=$(echo "$STATE" | hku_json_get "currentUnit" "")
-if [ "$CURRENT_UNIT" = "$UNIT_NAME" ]; then
-  STATE=$(echo "$STATE" | hku_json_set "currentUnit" "")
-fi
-# State now lives in unit frontmatter and stage state.json — use MCP tools
+haiku_unit_advance_hat { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$UNIT_NAME", hat: "${FIRST_HAT}" }
 
 git add "$INTENT_DIR/"
 git commit -m "refine: re-queue ${UNIT_NAME} for ${INTENT_SLUG}"
@@ -286,11 +276,10 @@ git commit -m "refine: re-queue ${UNIT_NAME} for ${INTENT_SLUG}"
 
 **Note:** Units that are already completed and unaffected by the change stay completed. Only re-queue units that are directly impacted.
 
-If `integratorComplete` was set to `true` in `iteration.json`, reset it to `false` since the spec has changed:
+If the integrator had completed, reset it since the spec has changed:
 
-```bash
-STATE=$(echo "$STATE" | hku_json_set "integratorComplete" "false")
-# State now lives in unit frontmatter and stage state.json — use MCP tools
+```
+haiku_stage_set { intent: INTENT_SLUG, stage: ACTIVE_STAGE, field: "integrator_complete", value: "false" }
 ```
 
 ---

@@ -94,11 +94,12 @@ H·AI·K·U stores state in files:
 - `discovery.md` - Domain discovery findings from elaboration
 - `scratchpad.md` - Learnings and notes
 - `blockers.md` - What's blocking progress
-- `iteration.json` - Current hat, iteration count, status
+- `stages/{stage}/state.json` - Stage status, phase, gate outcome
+- Unit frontmatter - Current hat, bolt count, status per unit
 
 These files are:
 - Injected at session start (via hooks)
-- Updated during work (via `hku_state_save`/`hku_state_load`)
+- Updated during work (via MCP tools: `haiku_intent_get/set`, `haiku_stage_get/set`, `haiku_unit_get/set`)
 - Preserved across `/clear` commands
 
 ## The Iteration Loop
@@ -245,7 +246,9 @@ H·AI·K·U uses file-based state persistence in `.haiku/intents/{slug}/state/`:
 
 | Key | Purpose | Written By |
 |-----|---------|------------|
-| `iteration.json` | Hat, iteration count, status | Commands |
+| `stages/{stage}/state.json` | Stage status, phase, gate outcome | MCP tools |
+| `intent.md` frontmatter | Status, studio, active_stage, mode | MCP tools |
+| Unit frontmatter | Hat, bolt, status, depends_on | MCP tools |
 | `intent.md` | What we're building | /haiku:elaborate |
 | `completion-criteria.md` | How we know it's done | /haiku:elaborate |
 | `discovery.md` | Domain discovery findings | /haiku:elaborate |
@@ -273,14 +276,15 @@ H·AI·K·U provides slash commands:
 - `/haiku:resume` - Resume lost intent
 - `/haiku:reset` - Clear state
 
-### CLI Commands
+### MCP State Tools
 
-State is managed via foundation library functions:
+State is managed via MCP tools:
 
-- `hku_state_save "$INTENT_DIR" "<key>" "<content>"` - Persist state
-- `hku_state_load "$INTENT_DIR" "<key>"` - Retrieve state
-- `hku_state_list "$INTENT_DIR"` - List keys
-- `hku_state_delete "$INTENT_DIR" "<key>"` - Remove key
+- `haiku_intent_get/set` - Read/write intent frontmatter fields
+- `haiku_stage_get/set/start/complete` - Read/write stage state
+- `haiku_unit_get/set/start/complete/advance_hat/increment_bolt` - Read/write unit frontmatter
+- `haiku_unit_list` - List units in a stage
+- `haiku_knowledge_list/read` - Read knowledge artifacts
 
 ## Best Practices
 

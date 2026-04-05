@@ -4,8 +4,6 @@ user-invocable: true
 argument-hint: "[stage-name] <task description>"
 ---
 
-> **State Model Note:** This skill references `iteration.json` and shell-based state functions. These are deprecated. Use MCP tools instead: `haiku_intent_get/set`, `haiku_stage_get/set/start/complete`, `haiku_unit_get/set/start/complete/advance_hat/increment_bolt`. State lives in artifact frontmatter and `stages/{stage}/state.json`.
-
 # Quick Mode
 
 You are running **Quick Mode** — a streamlined path for trivial tasks that skips full elaboration and unit decomposition. The user has described a small task inline and you will execute it through a stage-based hat sequence using subagents, producing disciplined work without the overhead of full `/haiku:elaborate`.
@@ -132,19 +130,20 @@ quality_gates: []
 Quick mode task. Temporary artifact — will be removed after completion.
 ```
 
-### 3c: Iteration State
+### 3c: Stage State
 
-Create `.haiku/quick/state/iteration.json`:
+Create `.haiku/quick/stages/{STAGE_NAME}/state.json`:
 
 ```json
 {
-  "hat": "{first hat in stage}",
-  "iteration": 1,
-  "status": "active"
+  "stage": "{STAGE_NAME}",
+  "status": "active",
+  "phase": "execute",
+  "started_at": "{ISO date}"
 }
 ```
 
-The `hat` field is set to the first hat in the resolved stage's hat sequence.
+The stage state is initialized for hook integration.
 
 ---
 
@@ -163,14 +162,10 @@ Execute each hat in order by spawning a subagent.
 
 #### A. Update iteration state
 
-Write the current hat to `.haiku/quick/state/iteration.json` so hooks pick it up:
+Update the current hat via MCP tools so hooks pick it up:
 
-```json
-{
-  "hat": "{current-hat}",
-  "iteration": 1,
-  "status": "active"
-}
+```
+haiku_unit_advance_hat { intent: "quick", stage: STAGE_NAME, unit: "quick-task", hat: "{current-hat}" }
 ```
 
 #### B. Display hat transition

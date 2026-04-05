@@ -3,8 +3,6 @@ description: Clear all H·AI·K·U state and start fresh
 disable-model-invocation: true
 ---
 
-> **State Model Note:** This skill references `iteration.json` and shell-based state functions. These are deprecated. Use MCP tools instead: `haiku_intent_get/set`, `haiku_stage_get/set/start/complete`, `haiku_unit_get/set/start/complete/advance_hat/increment_bolt`. State lives in artifact frontmatter and `stages/{stage}/state.json`.
-
 ## Name
 
 `haiku:reset` - Clear H·AI·K·U state and start fresh.
@@ -60,10 +58,10 @@ STATE=$(haiku_stage_get { intent, stage, field: "phase" } 2>/dev/null || echo "{
 
 ### Step 1b: Cleanup Team (Agent Teams)
 
-If `teamName` exists in `iteration.json` and `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is set:
+If a team is active and `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is set:
 
 ```bash
-TEAM_NAME=$(echo "$STATE" | hku_json_get "teamName" "")
+TEAM_NAME=$(haiku_stage_get { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", field: "team_name" } 2>/dev/null || echo "")
 AGENT_TEAMS_ENABLED="${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}"
 ```
 
@@ -139,11 +137,10 @@ To start a new task, run `/haiku:elaborate`.
 
 | Key | Purpose |
 |-----|---------|
-| `iteration.json` | Hat, iteration count, workflow, status |
-| `intent.md` | What we're building |
+| `stages/{stage}/state.json` | Stage status, phase, gate outcome |
+| `intent.md` | What we're building (frontmatter has status, studio, active_stage) |
 | `completion-criteria.md` | How we know it's done |
 | `current-plan.md` | Plan for current iteration |
-| `intent-slug` | Slug identifier |
 
 ### Unit-Level State (from current branch)
 

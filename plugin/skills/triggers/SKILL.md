@@ -26,8 +26,6 @@ allowed-tools:
   - "mcp__*__memory"
 ---
 
-> **State Model Note:** This skill references `iteration.json` and shell-based state functions. These are deprecated. Use MCP tools instead: `haiku_intent_get/set`, `haiku_stage_get/set/start/complete`, `haiku_unit_get/set/start/complete/advance_hat/increment_bolt`. State lives in artifact frontmatter and `stages/{stage}/state.json`.
-
 # H·AI·K·U Triggers
 
 ## Name
@@ -62,7 +60,7 @@ source "$CLAUDE_PLUGIN_ROOT/lib/config.sh"
 
 
 PROVIDERS=$(load_providers)
-LAST_POLL=$(hku_state_load ".haiku" "trigger-poll.json" 2>/dev/null || echo '{"last_poll":"1970-01-01T00:00:00Z"}')
+LAST_POLL=$(cat ".haiku/trigger-poll.json" 2>/dev/null || echo '{"last_poll":"1970-01-01T00:00:00Z"}')
 LAST_POLL_TIME=$(echo "$LAST_POLL" | jq -r '.last_poll')
 ```
 
@@ -136,14 +134,14 @@ for intent_dir in .haiku/intents/*/; do
   STUDIO=$(haiku_intent_get { slug, field: "studio" })
 
   # Load stage review type
-  STAGE_METADATA=$(hku_load_stage_metadata "$ACTIVE_STAGE" "$STUDIO")
+  STAGE_METADATA=$(haiku_stage_get { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", field: "metadata" })
   REVIEW=$(echo "$STAGE_METADATA" | jq -r '.review // "auto"')
 
   # Check if this is an await gate
   if [ "$REVIEW" = "await" ] || echo "$STAGE_METADATA" | jq -e '.review | type == "array" and (. | map(select(. == "await")) | length > 0)' >/dev/null 2>&1; then
     # Check if the await condition is satisfied by any polled event
     # The await condition is stored in intent state
-    AWAIT_STATE=$(hku_state_load "$intent_dir" "await.json" 2>/dev/null || echo "")
+    AWAIT_STATE=$(cat "$intent_dir/await.json" 2>/dev/null || echo "")
     if [ -n "$AWAIT_STATE" ]; then
       AWAIT_EVENT=$(echo "$AWAIT_STATE" | jq -r '.event // ""')
       AWAIT_PROVIDER=$(echo "$AWAIT_STATE" | jq -r '.provider // ""')
@@ -169,7 +167,7 @@ For each active intent with a ticketing/CRM provider:
 
 ```bash
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-hku_state_save ".haiku" "trigger-poll.json" "{\"last_poll\":\"$TIMESTAMP\"}"
+echo "{\"last_poll\":\"$TIMESTAMP\"}" > ".haiku/trigger-poll.json"
 ```
 
 ### Step 7: Report
