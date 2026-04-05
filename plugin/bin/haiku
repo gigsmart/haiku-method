@@ -25278,6 +25278,69 @@ var init_design_direction = __esm({
   }
 });
 
+// src/telemetry.ts
+function parseHeaders(raw) {
+  const h = {};
+  for (const pair of raw.split(",").filter(Boolean)) {
+    const [k2, v2] = pair.split("=", 2);
+    if (k2 && v2) h[k2] = v2;
+  }
+  return h;
+}
+function parseResourceAttrs(raw) {
+  const attrs = [
+    { key: "service.name", value: { stringValue: "haiku" } }
+  ];
+  for (const pair of raw.split(",").filter(Boolean)) {
+    const [k2, v2] = pair.split("=", 2);
+    if (k2 && v2) attrs.push({ key: k2, value: { stringValue: v2 } });
+  }
+  return attrs;
+}
+function emitTelemetry(eventName, attributes = {}) {
+  if (!ENABLED) return;
+  const timeNanos = `${Date.now()}000000`;
+  const logAttrs = [
+    { key: "event.name", value: { stringValue: eventName } },
+    ...Object.entries(attributes).map(([k2, v2]) => ({
+      key: k2,
+      value: { stringValue: v2 }
+    }))
+  ];
+  const payload = JSON.stringify({
+    resourceLogs: [{
+      resource: { attributes: RESOURCE_ATTRS },
+      scopeLogs: [{
+        scope: { name: "haiku" },
+        logRecords: [{
+          timeUnixNano: timeNanos,
+          severityNumber: 9,
+          severityText: "INFO",
+          body: { stringValue: eventName },
+          attributes: logAttrs
+        }]
+      }]
+    }]
+  });
+  fetch(`${ENDPOINT}/v1/logs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...HEADERS },
+    body: payload,
+    signal: AbortSignal.timeout(5e3)
+  }).catch(() => {
+  });
+}
+var ENABLED, ENDPOINT, HEADERS, RESOURCE_ATTRS;
+var init_telemetry = __esm({
+  "src/telemetry.ts"() {
+    "use strict";
+    ENABLED = process.env.CLAUDE_CODE_ENABLE_TELEMETRY === "1";
+    ENDPOINT = (process.env.OTEL_EXPORTER_OTLP_ENDPOINT || "http://localhost:4317").replace(/\/$/, "");
+    HEADERS = parseHeaders(process.env.OTEL_EXPORTER_OTLP_HEADERS || "");
+    RESOURCE_ATTRS = parseResourceAttrs(process.env.OTEL_RESOURCE_ATTRIBUTES || "");
+  }
+});
+
 // src/state-tools.ts
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join as join3 } from "node:path";
@@ -25390,6 +25453,11 @@ function handleStateTool(name, args2) {
       const data = readJson(path);
       data[args2.field] = args2.value;
       writeJson(path, data);
+      if (args2.field === "phase") {
+        emitTelemetry("haiku.stage.phase", { intent: args2.intent, stage: args2.stage, phase: args2.value });
+      } else if (args2.field === "gate_entered_at") {
+        emitTelemetry("haiku.gate.entered", { intent: args2.intent, stage: args2.stage });
+      }
       return text("ok");
     }
     case "haiku_stage_start": {
@@ -25403,6 +25471,7 @@ function handleStateTool(name, args2) {
       data.gate_entered_at = null;
       data.gate_outcome = null;
       writeJson(path, data);
+      emitTelemetry("haiku.stage.started", { intent: args2.intent, stage: args2.stage });
       return text("ok");
     }
     case "haiku_stage_complete": {
@@ -25412,6 +25481,7 @@ function handleStateTool(name, args2) {
       data.completed_at = timestamp();
       data.gate_outcome = args2.gate_outcome || "advanced";
       writeJson(path, data);
+      emitTelemetry("haiku.stage.completed", { intent: args2.intent, stage: args2.stage, gate_outcome: data.gate_outcome });
       return text("ok");
     }
     // ── Unit ──
@@ -25443,17 +25513,20 @@ function handleStateTool(name, args2) {
       setFrontmatterField(path, "bolt", 1);
       setFrontmatterField(path, "hat", args2.hat);
       setFrontmatterField(path, "started_at", timestamp());
+      emitTelemetry("haiku.unit.started", { intent: args2.intent, stage: args2.stage, unit: args2.unit, hat: args2.hat });
       return text("ok");
     }
     case "haiku_unit_complete": {
       const path = unitPath(args2.intent, args2.stage, args2.unit);
       setFrontmatterField(path, "status", "completed");
       setFrontmatterField(path, "completed_at", timestamp());
+      emitTelemetry("haiku.unit.completed", { intent: args2.intent, stage: args2.stage, unit: args2.unit });
       return text("ok");
     }
     case "haiku_unit_advance_hat": {
       const path = unitPath(args2.intent, args2.stage, args2.unit);
       setFrontmatterField(path, "hat", args2.hat);
+      emitTelemetry("haiku.hat.transition", { intent: args2.intent, stage: args2.stage, unit: args2.unit, hat: args2.hat });
       return text("ok");
     }
     case "haiku_unit_increment_bolt": {
@@ -25461,6 +25534,7 @@ function handleStateTool(name, args2) {
       const { data } = parseFrontmatter(readFileSync(path, "utf8"));
       const current = data.bolt || 0;
       setFrontmatterField(path, "bolt", current + 1);
+      emitTelemetry("haiku.bolt.iteration", { intent: args2.intent, stage: args2.stage, unit: args2.unit, bolt: String(current + 1) });
       return text(String(current + 1));
     }
     // ── Knowledge ──
@@ -25483,6 +25557,7 @@ var stateToolDefs;
 var init_state_tools = __esm({
   "src/state-tools.ts"() {
     "use strict";
+    init_telemetry();
     stateToolDefs = [
       // Intent tools
       {
@@ -25572,11 +25647,376 @@ var init_state_tools = __esm({
   }
 });
 
+// src/orchestrator.ts
+import { existsSync as existsSync2, readFileSync as readFileSync2, readdirSync as readdirSync2 } from "node:fs";
+import { join as join4 } from "node:path";
+function findHaikuRoot2() {
+  let dir = process.cwd();
+  for (let i = 0; i < 20; i++) {
+    if (existsSync2(join4(dir, ".haiku"))) return join4(dir, ".haiku");
+    const parent = join4(dir, "..");
+    if (parent === dir) break;
+    dir = parent;
+  }
+  throw new Error("No .haiku/ directory found");
+}
+function readFrontmatter(filePath) {
+  if (!existsSync2(filePath)) return {};
+  const raw = readFileSync2(filePath, "utf8");
+  const match = raw.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) return {};
+  const data = {};
+  for (const line of match[1].split("\n")) {
+    const kv = line.match(/^([\w][\w-]*):\s*(.*)$/);
+    if (kv) {
+      const [, k2, v2] = kv;
+      if (v2 === "null") data[k2] = null;
+      else if (v2 === "true") data[k2] = true;
+      else if (v2 === "false") data[k2] = false;
+      else if (/^-?\d+$/.test(v2)) data[k2] = parseInt(v2, 10);
+      else if (v2.startsWith("[") && v2.endsWith("]")) {
+        data[k2] = v2.slice(1, -1).split(",").map((s) => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+      } else data[k2] = v2.replace(/^["']|["']$/g, "");
+    }
+  }
+  return data;
+}
+function readJson2(path) {
+  if (!existsSync2(path)) return {};
+  return JSON.parse(readFileSync2(path, "utf8"));
+}
+function resolveStudioStages(studio) {
+  const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || "";
+  for (const base of [join4(process.cwd(), ".haiku", "studios"), join4(pluginRoot, "studios")]) {
+    const studioFile = join4(base, studio, "STUDIO.md");
+    if (existsSync2(studioFile)) {
+      const fm = readFrontmatter(studioFile);
+      return fm.stages || [];
+    }
+  }
+  return [];
+}
+function resolveStageHats(studio, stage) {
+  const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || "";
+  for (const base of [join4(process.cwd(), ".haiku", "studios"), join4(pluginRoot, "studios")]) {
+    const stageFile = join4(base, studio, "stages", stage, "STAGE.md");
+    if (existsSync2(stageFile)) {
+      const fm = readFrontmatter(stageFile);
+      return fm.hats || [];
+    }
+  }
+  return [];
+}
+function resolveStageReview(studio, stage) {
+  const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || "";
+  for (const base of [join4(process.cwd(), ".haiku", "studios"), join4(pluginRoot, "studios")]) {
+    const stageFile = join4(base, studio, "stages", stage, "STAGE.md");
+    if (existsSync2(stageFile)) {
+      const fm = readFrontmatter(stageFile);
+      const review = fm.review;
+      if (Array.isArray(review)) return review[0];
+      return review || "auto";
+    }
+  }
+  return "auto";
+}
+function runNext(slug) {
+  const root = findHaikuRoot2();
+  const intentDir2 = join4(root, "intents", slug);
+  const intentFile = join4(intentDir2, "intent.md");
+  if (!existsSync2(intentFile)) {
+    return { action: "error", message: `Intent '${slug}' not found` };
+  }
+  const intent = readFrontmatter(intentFile);
+  const studio = intent.studio || "ideation";
+  const mode = intent.mode || "continuous";
+  const status = intent.status || "active";
+  const activeStage = intent.active_stage || "";
+  if (status === "completed") {
+    return { action: "complete", message: `Intent '${slug}' is already completed` };
+  }
+  if (status === "archived") {
+    return { action: "error", message: `Intent '${slug}' is archived` };
+  }
+  if (intent.composite) {
+    return runNextComposite(slug, intent, intentDir2);
+  }
+  const studioStages = resolveStudioStages(studio);
+  if (studioStages.length === 0) {
+    return { action: "error", message: `Studio '${studio}' has no stages` };
+  }
+  let currentStage = activeStage;
+  if (!currentStage) {
+    currentStage = studioStages[0];
+  }
+  const stageState = readJson2(join4(intentDir2, "stages", currentStage, "state.json"));
+  const phase = stageState.phase || "";
+  const stageStatus = stageState.status || "pending";
+  if (!phase || stageStatus === "pending") {
+    const hats = resolveStageHats(studio, currentStage);
+    return {
+      action: "start_stage",
+      intent: slug,
+      studio,
+      stage: currentStage,
+      hats,
+      phase: "decompose",
+      message: `Start stage '${currentStage}' \u2014 decompose the work into units`
+    };
+  }
+  if (phase === "decompose") {
+    const unitsDir = join4(intentDir2, "stages", currentStage, "units");
+    const hasUnits = existsSync2(unitsDir) && readdirSync2(unitsDir).filter((f) => f.endsWith(".md")).length > 0;
+    if (!hasUnits) {
+      return {
+        action: "decompose",
+        intent: slug,
+        studio,
+        stage: currentStage,
+        message: `Decompose stage '${currentStage}' into units with completion criteria`
+      };
+    }
+    return {
+      action: "advance_phase",
+      intent: slug,
+      stage: currentStage,
+      from_phase: "decompose",
+      to_phase: "execute",
+      message: `Units ready \u2014 begin execution of stage '${currentStage}'`
+    };
+  }
+  if (phase === "execute") {
+    const units = listUnits(intentDir2, currentStage);
+    const readyUnits = units.filter((u3) => u3.status === "pending" && u3.depsComplete);
+    const activeUnits = units.filter((u3) => u3.status === "active");
+    const allComplete = units.every((u3) => u3.status === "completed");
+    if (allComplete) {
+      return {
+        action: "advance_phase",
+        intent: slug,
+        stage: currentStage,
+        from_phase: "execute",
+        to_phase: "review",
+        message: `All units complete \u2014 begin adversarial review of stage '${currentStage}'`
+      };
+    }
+    if (activeUnits.length > 0) {
+      const unit = activeUnits[0];
+      const hats = resolveStageHats(studio, currentStage);
+      return {
+        action: "continue_unit",
+        intent: slug,
+        stage: currentStage,
+        unit: unit.name,
+        hat: unit.hat,
+        bolt: unit.bolt,
+        hats,
+        message: `Continue unit '${unit.name}' \u2014 hat: ${unit.hat}, bolt: ${unit.bolt}`
+      };
+    }
+    if (readyUnits.length > 0) {
+      const unit = readyUnits[0];
+      const hats = resolveStageHats(studio, currentStage);
+      return {
+        action: "start_unit",
+        intent: slug,
+        studio,
+        stage: currentStage,
+        unit: unit.name,
+        first_hat: hats[0] || "",
+        hats,
+        message: `Start unit '${unit.name}' with hat '${hats[0] || ""}' in stage '${currentStage}'`
+      };
+    }
+    const blockedUnits = units.filter((u3) => u3.status !== "completed");
+    return {
+      action: "blocked",
+      intent: slug,
+      stage: currentStage,
+      blocked_units: blockedUnits.map((u3) => u3.name),
+      message: `${blockedUnits.length} unit(s) blocked \u2014 dependencies not met or manual intervention needed`
+    };
+  }
+  if (phase === "review") {
+    return {
+      action: "review",
+      intent: slug,
+      studio,
+      stage: currentStage,
+      message: `Run adversarial review agents for stage '${currentStage}'`
+    };
+  }
+  if (phase === "persist") {
+    return {
+      action: "persist",
+      intent: slug,
+      stage: currentStage,
+      message: `Persist stage outputs for '${currentStage}'`
+    };
+  }
+  if (phase === "gate") {
+    const reviewType = resolveStageReview(studio, currentStage);
+    const stageIdx = studioStages.indexOf(currentStage);
+    const nextStage = stageIdx < studioStages.length - 1 ? studioStages[stageIdx + 1] : null;
+    const isLastStage = !nextStage;
+    if (reviewType === "auto") {
+      if (isLastStage) {
+        return { action: "intent_complete", intent: slug, studio, message: `All stages complete for intent '${slug}'` };
+      }
+      if (mode === "continuous") {
+        return { action: "advance_stage", intent: slug, stage: currentStage, next_stage: nextStage, gate_outcome: "advanced", message: `Gate auto-passed \u2014 advancing to '${nextStage}'` };
+      }
+      return { action: "stage_complete_discrete", intent: slug, stage: currentStage, next_stage: nextStage, message: `Stage '${currentStage}' complete. Run /haiku:run to start '${nextStage}'.` };
+    }
+    if (reviewType === "ask") {
+      return { action: "gate_ask", intent: slug, stage: currentStage, next_stage: nextStage, message: `Stage '${currentStage}' complete \u2014 awaiting your approval to advance` };
+    }
+    if (reviewType === "external") {
+      return { action: "gate_external", intent: slug, stage: currentStage, next_stage: nextStage, message: `Stage '${currentStage}' complete \u2014 push for external review` };
+    }
+    if (reviewType === "await") {
+      return { action: "gate_await", intent: slug, stage: currentStage, next_stage: nextStage, message: `Stage '${currentStage}' complete \u2014 awaiting external event before advancing` };
+    }
+    return { action: "advance_stage", intent: slug, stage: currentStage, next_stage: nextStage, gate_outcome: "advanced", message: `Advancing to '${nextStage}'` };
+  }
+  if (stageStatus === "completed") {
+    const stageIdx = studioStages.indexOf(currentStage);
+    const nextStage = stageIdx < studioStages.length - 1 ? studioStages[stageIdx + 1] : null;
+    if (!nextStage) {
+      return { action: "intent_complete", intent: slug, studio, message: `All stages complete for intent '${slug}'` };
+    }
+    const hats = resolveStageHats(studio, nextStage);
+    return { action: "start_stage", intent: slug, studio, stage: nextStage, hats, phase: "decompose", message: `Start stage '${nextStage}'` };
+  }
+  return { action: "error", message: `Unknown state for stage '${currentStage}' \u2014 phase: ${phase}, status: ${stageStatus}` };
+}
+function runNextComposite(slug, intent, intentDir2) {
+  const composite = intent.composite;
+  const compositeState = intent.composite_state || {};
+  const syncRules = intent.sync || [];
+  for (const entry of composite) {
+    const current = compositeState[entry.studio] || entry.stages[0];
+    if (current === "complete") continue;
+    if (!entry.stages.includes(current)) continue;
+    let blocked = false;
+    for (const rule of syncRules) {
+      for (const thenStage of rule.then) {
+        if (thenStage === `${entry.studio}:${current}`) {
+          for (const waitStage of rule.wait) {
+            const [ws, wst] = waitStage.split(":");
+            const wsState = compositeState[ws] || "";
+            const wsStages = composite.find((c) => c.studio === ws)?.stages || [];
+            const wsIdx = wsStages.indexOf(wst);
+            const currentIdx = wsStages.indexOf(wsState);
+            if (currentIdx <= wsIdx) {
+              blocked = true;
+              break;
+            }
+          }
+          if (blocked) break;
+        }
+      }
+      if (blocked) break;
+    }
+    if (!blocked) {
+      return {
+        action: "composite_run_stage",
+        intent: slug,
+        studio: entry.studio,
+        stage: current,
+        hats: resolveStageHats(entry.studio, current),
+        message: `Composite: run '${entry.studio}:${current}'`
+      };
+    }
+  }
+  const allComplete = composite.every((e) => compositeState[e.studio] === "complete");
+  if (allComplete) {
+    return { action: "intent_complete", intent: slug, message: `All composite studios complete for '${slug}'` };
+  }
+  return { action: "blocked", intent: slug, message: "All runnable stages are sync-blocked \u2014 waiting for dependencies" };
+}
+function listUnits(intentDir2, stage) {
+  const unitsDir = join4(intentDir2, "stages", stage, "units");
+  if (!existsSync2(unitsDir)) return [];
+  const files = readdirSync2(unitsDir).filter((f) => f.endsWith(".md"));
+  const units = files.map((f) => {
+    const fm = readFrontmatter(join4(unitsDir, f));
+    return {
+      name: f.replace(".md", ""),
+      status: fm.status || "pending",
+      hat: fm.hat || "",
+      bolt: fm.bolt || 0,
+      dependsOn: fm.depends_on || [],
+      depsComplete: false
+    };
+  });
+  const statusMap = new Map(units.map((u3) => [u3.name, u3.status]));
+  for (const unit of units) {
+    unit.depsComplete = unit.dependsOn.every((dep) => statusMap.get(dep) === "completed");
+  }
+  return units;
+}
+function handleOrchestratorTool(name, args2) {
+  const text = (s) => ({ content: [{ type: "text", text: s }] });
+  if (name === "haiku_run_next") {
+    const result = runNext(args2.intent);
+    emitTelemetry("haiku.orchestrator.action", { intent: args2.intent, action: result.action });
+    return text(JSON.stringify(result, null, 2));
+  }
+  if (name === "haiku_gate_approve") {
+    const root = findHaikuRoot2();
+    const intentDir2 = join4(root, "intents", args2.intent);
+    const intentFm = readFrontmatter(join4(intentDir2, "intent.md"));
+    const studio = intentFm.studio || "ideation";
+    const stages = resolveStudioStages(studio);
+    const currentIdx = stages.indexOf(args2.stage);
+    const nextStage = currentIdx < stages.length - 1 ? stages[currentIdx + 1] : null;
+    emitTelemetry("haiku.gate.resolved", { intent: args2.intent, stage: args2.stage, gate_type: "ask", outcome: "advanced" });
+    if (nextStage) {
+      return text(JSON.stringify({ action: "advance_stage", intent: args2.intent, stage: args2.stage, next_stage: nextStage, gate_outcome: "advanced" }));
+    }
+    return text(JSON.stringify({ action: "intent_complete", intent: args2.intent }));
+  }
+  return text(`Unknown orchestrator tool: ${name}`);
+}
+var orchestratorToolDefs;
+var init_orchestrator = __esm({
+  "src/orchestrator.ts"() {
+    "use strict";
+    init_telemetry();
+    orchestratorToolDefs = [
+      {
+        name: "haiku_run_next",
+        description: "Get the next action for an intent. Returns what the agent should do next: start a stage, decompose, execute a unit, review, advance, or report completion. The orchestrator handles all state logic \u2014 the agent just follows the returned action.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            intent: { type: "string", description: "Intent slug" }
+          },
+          required: ["intent"]
+        }
+      },
+      {
+        name: "haiku_gate_approve",
+        description: "Approve an 'ask' gate, advancing the intent to the next stage",
+        inputSchema: {
+          type: "object",
+          properties: {
+            intent: { type: "string" },
+            stage: { type: "string" }
+          },
+          required: ["intent", "stage"]
+        }
+      }
+    ];
+  }
+});
+
 // src/server.ts
 var server_exports = {};
 import { spawn } from "node:child_process";
 import { readdir as readdir2 } from "node:fs/promises";
-import { dirname, join as join4, resolve as resolve2 } from "node:path";
+import { dirname, join as join5, resolve as resolve2 } from "node:path";
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
@@ -25597,6 +26037,7 @@ var init_server3 = __esm({
     init_question_form();
     init_design_direction();
     init_state_tools();
+    init_orchestrator();
     OpenReviewInput = external_exports.object({
       intent_dir: external_exports.string().describe("Path to the intent directory (e.g., .haiku/intents/my-intent)"),
       review_type: external_exports.enum(["intent", "unit"]).describe("Type of review: intent-level or unit-level"),
@@ -25662,6 +26103,8 @@ var init_server3 = __esm({
     setMcpServer(server);
     server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: [
+        // Orchestration tools
+        ...orchestratorToolDefs,
         // State management tools
         ...stateToolDefs,
         {
@@ -25833,6 +26276,9 @@ var init_server3 = __esm({
     }));
     server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args2 } = request.params;
+      if (name === "haiku_run_next" || name === "haiku_gate_approve") {
+        return handleOrchestratorTool(name, args2 ?? {});
+      }
       if (name.startsWith("haiku_")) {
         return handleStateTool(name, args2 ?? {});
       }
@@ -25882,7 +26328,7 @@ var init_server3 = __esm({
         const MOCKUP_ALL_EXTS = [...MOCKUP_IMAGE_EXTS, ...MOCKUP_HTML_EXTS];
         const intentMockups = [];
         try {
-          const mockupsDir = join4(intentDir2, "mockups");
+          const mockupsDir = join5(intentDir2, "mockups");
           const entries = await readdir2(mockupsDir);
           for (const entry of entries.sort()) {
             const ext = entry.substring(entry.lastIndexOf(".")).toLowerCase();
@@ -25910,7 +26356,7 @@ var init_server3 = __esm({
         for (const unit of units) {
           if (!unitMockups.has(unit.slug)) {
             try {
-              const mockupsDir = join4(intentDir2, "mockups");
+              const mockupsDir = join5(intentDir2, "mockups");
               const entries = await readdir2(mockupsDir);
               const matches = entries.filter((f) => {
                 const name2 = f.substring(0, f.lastIndexOf("."));
@@ -26162,15 +26608,15 @@ var init_prompt_guard = __esm({
 });
 
 // src/hooks/workflow-guard.ts
-import { existsSync as existsSync2, readdirSync as readdirSync2 } from "node:fs";
-import { join as join5 } from "node:path";
+import { existsSync as existsSync3, readdirSync as readdirSync3 } from "node:fs";
+import { join as join6 } from "node:path";
 function findActiveIntent() {
-  const intentsDir = join5(process.cwd(), ".haiku", "intents");
-  if (!existsSync2(intentsDir)) return null;
-  const dirs = readdirSync2(intentsDir).filter(
-    (d) => existsSync2(join5(intentsDir, d, "intent.md"))
+  const intentsDir = join6(process.cwd(), ".haiku", "intents");
+  if (!existsSync3(intentsDir)) return null;
+  const dirs = readdirSync3(intentsDir).filter(
+    (d) => existsSync3(join6(intentsDir, d, "intent.md"))
   );
-  return dirs.length === 1 ? join5(intentsDir, dirs[0]) : null;
+  return dirs.length === 1 ? join6(intentsDir, dirs[0]) : null;
 }
 async function workflowGuard(input, _pluginRoot) {
   const toolName = input.tool_name;
@@ -26214,10 +26660,10 @@ var hooks_exports = {};
 __export(hooks_exports, {
   runHook: () => runHook
 });
-import { readFileSync as readFileSync2 } from "node:fs";
+import { readFileSync as readFileSync3 } from "node:fs";
 function readStdin() {
   try {
-    return readFileSync2(0, "utf8");
+    return readFileSync3(0, "utf8");
   } catch {
     return "";
   }

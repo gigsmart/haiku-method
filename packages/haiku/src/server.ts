@@ -126,6 +126,7 @@ const server = new Server(
 )
 
 import { stateToolDefs, handleStateTool } from "./state-tools.js"
+import { orchestratorToolDefs, handleOrchestratorTool } from "./orchestrator.js"
 
 // Inject MCP server into HTTP module for channel notifications
 setMcpServer(server)
@@ -133,6 +134,8 @@ setMcpServer(server)
 // List tools
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
 	tools: [
+		// Orchestration tools
+		...orchestratorToolDefs,
 		// State management tools
 		...stateToolDefs,
 		{
@@ -317,6 +320,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 // Call tools
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	const { name, arguments: args } = request.params
+
+	// Orchestration tools
+	if (name === "haiku_run_next" || name === "haiku_gate_approve") {
+		return handleOrchestratorTool(name, (args ?? {}) as Record<string, unknown>)
+	}
 
 	// State management tools
 	if (name.startsWith("haiku_")) {
