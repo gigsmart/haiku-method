@@ -626,16 +626,16 @@ Event detected → gate advances on next session or poll</code></pre>
 <p>With the foundation complete, these gaps emerge when running H·AI·K·U across departments at scale.</p>
 
 <div class="arch" style="margin-top:1.5rem">
-  <div class="layer layer-partial">
-    <div class="layer-label">Scale Layer (Wave 2 — 5/7 resolved, 2 proposed)</div>
+  <div class="layer layer-done">
+    <div class="layer-label">Scale Layer (Wave 2 — All Resolved)</div>
     <div class="layer-grid">
       <div class="block block-done"><strong>Conflict Awareness</strong><span>Git handles conflicts; decomposition checks active branches</span></div>
       <div class="block block-done"><strong>Knowledge Decay</strong><span>Freshness metadata on outputs, code-drift check at decomposition</span></div>
       <div class="block block-done"><strong>Composite Intents</strong><span>Multi-studio parallel stages with sync points</span></div>
       <div class="block block-done"><strong>Post-Delivery Monitoring</strong><span>Already covered by /operate — studio operations templates</span></div>
-      <div class="block block-gap"><strong>Capacity Model</strong><span>Historical throughput from local intent artifacts</span></div>
+      <div class="block block-done"><strong>Capacity Model</strong><span>/haiku:capacity — reads timestamps from frontmatter</span></div>
       <div class="block block-done"><strong>Access Control</strong><span>Handled by providers — git, ticketing, CRM enforce their own ACLs</span></div>
-      <div class="block block-gap"><strong>Studio Versioning</strong><span>Pin, lock, upgrade — studios are the product</span></div>
+      <div class="block block-done"><strong>Studio Versioning</strong><span>Redundant — plugin version tracks all studios together</span></div>
     </div>
   </div>
 </div>
@@ -751,35 +751,7 @@ Sales Studio (from 12 completed intents):
 <p>Not H·AI·K·U's concern. Providers enforce their own access control — git repos have permissions, ticketing has team visibility, CRM has deal ownership. <code>/browse</code> inherits git provider ACLs via OAuth. No additional layer needed.</p>
 
 <h2>Wave 2 Gap 7: Studio Versioning</h2>
-<p>Studios are the product. Versioning them is versioning the methodology itself. This is bigger than migration — users need to pin, lock, and deliberately upgrade.</p>
-
-<div class="gap-card" style="margin-top:1rem; border-color:var(--accent)">
-  <h3><span class="tag tag-done">Proposed</span> Studio Versions as First-Class Concept</h3>
-  <p>Studios declare a <code>version:</code> with a changelog. Intents pin to the version they were created with. Users choose when to upgrade.</p>
-  <pre style="margin-top:0.75rem; padding:1rem; background:var(--accent-bg); border-radius:0.5rem; font-size:0.8rem; overflow-x:auto; color:var(--accent)"><code># STUDIO.md
----
-name: software
-version: 2
-changelog:
-  - version: 2
-    changes: "Added review-agents to all stages, added await gate to product"
-  - version: 1
-    changes: "Initial 6-stage lifecycle"
----
-
-# intent.md — pinned to version at creation time
----
-studio: software
-studio_version: 1
----</code></pre>
-  <p style="margin-top:0.75rem"><strong>Behaviors:</strong></p>
-  <ul style="margin-top:0.5rem">
-    <li><strong>Pin:</strong> Intent runs with the studio version it was created with, even if the studio has been updated. No surprises mid-intent.</li>
-    <li><strong>Lock:</strong> Project-level setting to lock all new intents to a specific studio version: <code>studio_version: 1</code> in settings.yml.</li>
-    <li><strong>Upgrade:</strong> <code>/haiku:run</code> detects version mismatch and offers upgrade. Shows changelog. User decides. Upgrade applies new stages, hats, review agents to the active intent.</li>
-    <li><strong>Browse:</strong> The <code>/browse</code> UI shows which studio version each intent uses. Version mismatches are visible at a glance.</li>
-    <li><strong>Marketplace:</strong> When studios are distributed via the plugin marketplace, versions determine compatibility. A studio upgrade is a plugin update.</li>
-  </ul>
+<p>Redundant. Studios ship as part of the plugin, which is already versioned (<code>plugin.json</code>, auto-bumped by CI). You can't pin studio A to v1 while studio B runs v2 — they're all in the same plugin release. Intent records the plugin version it was created with (<code>plugin_version</code> in frontmatter) for reference, but there's no separate studio version to manage.</p>
 </div>
 
 <h2 style="margin-top:3rem">Summary</h2>
@@ -807,9 +779,9 @@ studio_version: 1
       <li><strong style="text-decoration:line-through; opacity:0.5">Post-delivery monitoring</strong> <span style="color:var(--success)">— already covered by /operate + studio operations</span></li>
       <li><strong style="text-decoration:line-through; opacity:0.5">Studio composition</strong> <span style="color:var(--success)">— implemented: composite intents with sync points</span></li>
       <li><strong style="text-decoration:line-through; opacity:0.5">Knowledge decay</strong> <span style="color:var(--success)">— done: freshness metadata + code-drift at decomposition</span></li>
-      <li><strong>Capacity model</strong> — historical throughput from OTEL data</li>
-      <li><strong style="text-decoration:line-through; opacity:0.5">Browse access control</strong> <span style="color:var(--success)">— providers handle ACLs; /browse inherits via OAuth</span></li>
-      <li><strong>Studio versioning</strong> — schema version + migration on version mismatch</li>
+      <li><strong style="text-decoration:line-through; opacity:0.5">Capacity model</strong> <span style="color:var(--success)">— /haiku:capacity from frontmatter timestamps</span></li>
+      <li><strong style="text-decoration:line-through; opacity:0.5">Browse access control</strong> <span style="color:var(--success)">— providers handle ACLs</span></li>
+      <li><strong style="text-decoration:line-through; opacity:0.5">Studio versioning</strong> <span style="color:var(--success)">— redundant with plugin versioning</span></li>
     </ul>
   </div>
 </div>
