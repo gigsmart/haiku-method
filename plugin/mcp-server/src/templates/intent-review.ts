@@ -76,7 +76,7 @@ export function renderIntentReview(
       return `<tr class="border-b border-gray-100 dark:border-gray-800">
         <td class="py-3 pr-3 font-mono text-sm text-gray-500 dark:text-gray-400">${u.number.toString().padStart(2, "0")}</td>
         <td class="py-3 pr-3 font-medium">${escapeHtml(u.title)}</td>
-        <td class="py-3 pr-3 text-sm">${escapeHtml(u.frontmatter.discipline)}</td>
+        <td class="py-3 pr-3 text-sm">${escapeHtml(u.frontmatter.discipline ?? u.frontmatter.type ?? "")}</td>
         <td class="py-3 pr-3">${renderBadge("Status", u.frontmatter.status)}</td>
         <td class="py-3 text-sm text-gray-500 dark:text-gray-400">${escapeHtml(deps)}</td>
       </tr>
@@ -136,9 +136,9 @@ export function renderIntentReview(
   }
 
   // Tab 4: Technical Details
-  const gitConfig = intent.frontmatter.git;
-  const workflow = intent.frontmatter.workflow;
-  const announcements = intent.frontmatter.announcements;
+  const gitConfig = intent.frontmatter.git ?? { change_strategy: "", auto_merge: false, auto_squash: false };
+  const workflow = intent.frontmatter.workflow ?? "";
+  const announcements = intent.frontmatter.announcements ?? [];
   const contextSection = findSection("Context");
 
   const technicalContent = `

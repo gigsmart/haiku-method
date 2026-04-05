@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import{createRequire}from'module';const require=createRequire(import.meta.url);
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -10290,7 +10291,7 @@ var require_dist = __commonJS({
 // src/server.ts
 import { spawn } from "node:child_process";
 import { readdir as readdir2 } from "node:fs/promises";
-import { dirname, join as join3, resolve as resolve2 } from "node:path";
+import { dirname, join as join4, resolve as resolve2 } from "node:path";
 
 // ../../node_modules/.bun/marked@15.0.12/node_modules/marked/lib/marked.esm.js
 function _getDefaults() {
@@ -12529,16 +12530,16 @@ function extractTitle(body) {
 function stripTitle(body) {
   return body.replace(/^# .+\n?/, "").trim();
 }
-async function parseIntent(intentDir) {
+async function parseIntent(intentDir2) {
   try {
-    const filePath = join(intentDir, "intent.md");
+    const filePath = join(intentDir2, "intent.md");
     const raw = await readFile(filePath, "utf-8");
     const { data, content } = (0, import_gray_matter.default)(raw);
     const frontmatter = normalizeFrontmatter(data);
     const title = extractTitle(content);
     const bodyWithoutTitle = stripTitle(content);
     const sections = extractSections(bodyWithoutTitle);
-    const slug = basename(intentDir);
+    const slug = basename(intentDir2);
     return {
       slug,
       frontmatter,
@@ -12547,7 +12548,7 @@ async function parseIntent(intentDir) {
       rawContent: raw
     };
   } catch (err) {
-    const filePath = join(intentDir, "intent.md");
+    const filePath = join(intentDir2, "intent.md");
     if (err.code !== "ENOENT") {
       console.warn(`[haiku/shared] Failed to parse ${filePath}:`, err);
     }
@@ -12580,13 +12581,13 @@ async function parseUnit(filePath) {
     return null;
   }
 }
-async function parseAllUnits(intentDir) {
+async function parseAllUnits(intentDir2) {
   try {
-    const entries = await readdir(intentDir);
+    const entries = await readdir(intentDir2);
     const unitFiles = entries.filter((f) => /^unit-\d+.*\.md$/.test(f)).sort();
     const units = [];
     for (const file of unitFiles) {
-      const parsed = await parseUnit(join(intentDir, file));
+      const parsed = await parseUnit(join(intentDir2, file));
       if (parsed) {
         units.push(parsed);
       }
@@ -24736,7 +24737,7 @@ function renderIntentReview(intent, units, criteria, sessionId, mermaid, intentM
     return `<tr class="border-b border-gray-100 dark:border-gray-800">
         <td class="py-3 pr-3 font-mono text-sm text-gray-500 dark:text-gray-400">${u.number.toString().padStart(2, "0")}</td>
         <td class="py-3 pr-3 font-medium">${escapeHtml(u.title)}</td>
-        <td class="py-3 pr-3 text-sm">${escapeHtml(u.frontmatter.discipline)}</td>
+        <td class="py-3 pr-3 text-sm">${escapeHtml(u.frontmatter.discipline ?? u.frontmatter.type ?? "")}</td>
         <td class="py-3 pr-3">${renderBadge("Status", u.frontmatter.status)}</td>
         <td class="py-3 text-sm text-gray-500 dark:text-gray-400">${escapeHtml(deps)}</td>
       </tr>
@@ -24788,9 +24789,9 @@ function renderIntentReview(intent, units, criteria, sessionId, mermaid, intentM
       <p class="text-gray-500 dark:text-gray-400 italic">No domain model defined.</p>
     `);
   }
-  const gitConfig = intent.frontmatter.git;
-  const workflow = intent.frontmatter.workflow;
-  const announcements = intent.frontmatter.announcements;
+  const gitConfig = intent.frontmatter.git ?? { change_strategy: "", auto_merge: false, auto_squash: false };
+  const workflow = intent.frontmatter.workflow ?? "";
+  const announcements = intent.frontmatter.announcements ?? [];
   const contextSection = findSection("Context");
   const technicalContent = `
     ${contextSection ? card(`
@@ -25356,6 +25357,294 @@ function renderDesignDirectionPage(data) {
   return renderLayout(title, body + clientScript, JSON.stringify(clientData));
 }
 
+// src/state-tools.ts
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { join as join3 } from "node:path";
+function findHaikuRoot() {
+  let dir = process.cwd();
+  for (let i = 0; i < 20; i++) {
+    if (existsSync(join3(dir, ".haiku"))) return join3(dir, ".haiku");
+    const parent = join3(dir, "..");
+    if (parent === dir) break;
+    dir = parent;
+  }
+  throw new Error("No .haiku/ directory found");
+}
+function intentDir(slug) {
+  return join3(findHaikuRoot(), "intents", slug);
+}
+function stageDir(slug, stage) {
+  return join3(intentDir(slug), "stages", stage);
+}
+function unitPath(slug, stage, unit) {
+  const name = unit.endsWith(".md") ? unit : `${unit}.md`;
+  return join3(stageDir(slug, stage), "units", name);
+}
+function stageStatePath(slug, stage) {
+  return join3(stageDir(slug, stage), "state.json");
+}
+function parseFrontmatter(raw) {
+  const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  if (!match) return { data: {}, body: raw };
+  const data = {};
+  for (const line of match[1].split("\n")) {
+    const kv = line.match(/^([\w][\w-]*):\s*(.*)$/);
+    if (kv) {
+      const [, k, v] = kv;
+      if (v === "null") data[k] = null;
+      else if (v === "true") data[k] = true;
+      else if (v === "false") data[k] = false;
+      else if (/^-?\d+$/.test(v)) data[k] = parseInt(v, 10);
+      else if (v.startsWith("[") && v.endsWith("]")) {
+        data[k] = v.slice(1, -1).split(",").map((s) => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+      } else {
+        data[k] = v.replace(/^["']|["']$/g, "");
+      }
+    }
+  }
+  return { data, body: match[2].trim() };
+}
+function setFrontmatterField(filePath, field, value) {
+  const raw = readFileSync(filePath, "utf8");
+  const { data, body } = parseFrontmatter(raw);
+  data[field] = value;
+  const lines = Object.entries(data).map(([k, v]) => {
+    if (v === null) return `${k}: null`;
+    if (Array.isArray(v)) return `${k}: [${v.join(", ")}]`;
+    return `${k}: ${v}`;
+  });
+  writeFileSync(filePath, `---
+${lines.join("\n")}
+---
+${body ? `
+${body}` : ""}`);
+}
+function readJson(path) {
+  if (!existsSync(path)) return {};
+  return JSON.parse(readFileSync(path, "utf8"));
+}
+function writeJson(path, data) {
+  mkdirSync(join3(path, ".."), { recursive: true });
+  writeFileSync(path, JSON.stringify(data, null, 2) + "\n");
+}
+function timestamp() {
+  return (/* @__PURE__ */ new Date()).toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+var stateToolDefs = [
+  // Intent tools
+  {
+    name: "haiku_intent_get",
+    description: "Read a field from an intent's frontmatter",
+    inputSchema: { type: "object", properties: { slug: { type: "string" }, field: { type: "string" } }, required: ["slug", "field"] }
+  },
+  {
+    name: "haiku_intent_set",
+    description: "Set a field in an intent's frontmatter",
+    inputSchema: { type: "object", properties: { slug: { type: "string" }, field: { type: "string" }, value: { type: "string" } }, required: ["slug", "field", "value"] }
+  },
+  {
+    name: "haiku_intent_list",
+    description: "List all intents in the workspace",
+    inputSchema: { type: "object", properties: {} }
+  },
+  // Stage tools
+  {
+    name: "haiku_stage_get",
+    description: "Read a field from a stage's state",
+    inputSchema: { type: "object", properties: { intent: { type: "string" }, stage: { type: "string" }, field: { type: "string" } }, required: ["intent", "stage", "field"] }
+  },
+  {
+    name: "haiku_stage_set",
+    description: "Set a field in a stage's state",
+    inputSchema: { type: "object", properties: { intent: { type: "string" }, stage: { type: "string" }, field: { type: "string" }, value: { type: "string" } }, required: ["intent", "stage", "field", "value"] }
+  },
+  {
+    name: "haiku_stage_start",
+    description: "Mark a stage as started (sets status, phase, timestamp)",
+    inputSchema: { type: "object", properties: { intent: { type: "string" }, stage: { type: "string" } }, required: ["intent", "stage"] }
+  },
+  {
+    name: "haiku_stage_complete",
+    description: "Mark a stage as completed (sets status, timestamp, gate outcome)",
+    inputSchema: { type: "object", properties: { intent: { type: "string" }, stage: { type: "string" }, gate_outcome: { type: "string", enum: ["advanced", "paused", "blocked", "awaiting"] } }, required: ["intent", "stage"] }
+  },
+  // Unit tools
+  {
+    name: "haiku_unit_get",
+    description: "Read a field from a unit's frontmatter",
+    inputSchema: { type: "object", properties: { intent: { type: "string" }, stage: { type: "string" }, unit: { type: "string" }, field: { type: "string" } }, required: ["intent", "stage", "unit", "field"] }
+  },
+  {
+    name: "haiku_unit_set",
+    description: "Set a field in a unit's frontmatter",
+    inputSchema: { type: "object", properties: { intent: { type: "string" }, stage: { type: "string" }, unit: { type: "string" }, field: { type: "string" }, value: { type: "string" } }, required: ["intent", "stage", "unit", "field", "value"] }
+  },
+  {
+    name: "haiku_unit_list",
+    description: "List all units in a stage with their status",
+    inputSchema: { type: "object", properties: { intent: { type: "string" }, stage: { type: "string" } }, required: ["intent", "stage"] }
+  },
+  {
+    name: "haiku_unit_start",
+    description: "Mark a unit as started (sets status, bolt, hat, timestamp)",
+    inputSchema: { type: "object", properties: { intent: { type: "string" }, stage: { type: "string" }, unit: { type: "string" }, hat: { type: "string" } }, required: ["intent", "stage", "unit", "hat"] }
+  },
+  {
+    name: "haiku_unit_complete",
+    description: "Mark a unit as completed (sets status, timestamp)",
+    inputSchema: { type: "object", properties: { intent: { type: "string" }, stage: { type: "string" }, unit: { type: "string" } }, required: ["intent", "stage", "unit"] }
+  },
+  {
+    name: "haiku_unit_advance_hat",
+    description: "Advance a unit to the next hat in the sequence",
+    inputSchema: { type: "object", properties: { intent: { type: "string" }, stage: { type: "string" }, unit: { type: "string" }, hat: { type: "string" } }, required: ["intent", "stage", "unit", "hat"] }
+  },
+  {
+    name: "haiku_unit_increment_bolt",
+    description: "Increment a unit's bolt counter (new iteration cycle)",
+    inputSchema: { type: "object", properties: { intent: { type: "string" }, stage: { type: "string" }, unit: { type: "string" } }, required: ["intent", "stage", "unit"] }
+  },
+  // Knowledge tools
+  {
+    name: "haiku_knowledge_list",
+    description: "List knowledge artifacts for an intent",
+    inputSchema: { type: "object", properties: { intent: { type: "string" } }, required: ["intent"] }
+  },
+  {
+    name: "haiku_knowledge_read",
+    description: "Read a knowledge artifact",
+    inputSchema: { type: "object", properties: { intent: { type: "string" }, name: { type: "string" } }, required: ["intent", "name"] }
+  }
+];
+function handleStateTool(name, args) {
+  const text = (s) => ({ content: [{ type: "text", text: s }] });
+  switch (name) {
+    // ── Intent ──
+    case "haiku_intent_get": {
+      const file = join3(intentDir(args.slug), "intent.md");
+      if (!existsSync(file)) return text("");
+      const { data } = parseFrontmatter(readFileSync(file, "utf8"));
+      const val = data[args.field];
+      return text(val == null ? "" : typeof val === "object" ? JSON.stringify(val) : String(val));
+    }
+    case "haiku_intent_set": {
+      const file = join3(intentDir(args.slug), "intent.md");
+      setFrontmatterField(file, args.field, args.value);
+      return text("ok");
+    }
+    case "haiku_intent_list": {
+      const root = findHaikuRoot();
+      const intentsDir = join3(root, "intents");
+      if (!existsSync(intentsDir)) return text("[]");
+      const slugs = readdirSync(intentsDir).filter((d) => existsSync(join3(intentsDir, d, "intent.md")));
+      const intents = slugs.map((slug) => {
+        const { data } = parseFrontmatter(readFileSync(join3(intentsDir, slug, "intent.md"), "utf8"));
+        return { slug, studio: data.studio, status: data.status, active_stage: data.active_stage };
+      });
+      return text(JSON.stringify(intents, null, 2));
+    }
+    // ── Stage ──
+    case "haiku_stage_get": {
+      const path = stageStatePath(args.intent, args.stage);
+      const data = readJson(path);
+      const val = data[args.field];
+      return text(val == null ? "" : String(val));
+    }
+    case "haiku_stage_set": {
+      const path = stageStatePath(args.intent, args.stage);
+      const data = readJson(path);
+      data[args.field] = args.value;
+      writeJson(path, data);
+      return text("ok");
+    }
+    case "haiku_stage_start": {
+      const path = stageStatePath(args.intent, args.stage);
+      const data = readJson(path);
+      data.stage = args.stage;
+      data.status = "active";
+      data.phase = "decompose";
+      data.started_at = timestamp();
+      data.completed_at = null;
+      data.gate_entered_at = null;
+      data.gate_outcome = null;
+      writeJson(path, data);
+      return text("ok");
+    }
+    case "haiku_stage_complete": {
+      const path = stageStatePath(args.intent, args.stage);
+      const data = readJson(path);
+      data.status = "completed";
+      data.completed_at = timestamp();
+      data.gate_outcome = args.gate_outcome || "advanced";
+      writeJson(path, data);
+      return text("ok");
+    }
+    // ── Unit ──
+    case "haiku_unit_get": {
+      const path = unitPath(args.intent, args.stage, args.unit);
+      if (!existsSync(path)) return text("");
+      const { data } = parseFrontmatter(readFileSync(path, "utf8"));
+      const val = data[args.field];
+      return text(val == null ? "" : typeof val === "object" ? JSON.stringify(val) : String(val));
+    }
+    case "haiku_unit_set": {
+      const path = unitPath(args.intent, args.stage, args.unit);
+      setFrontmatterField(path, args.field, args.value);
+      return text("ok");
+    }
+    case "haiku_unit_list": {
+      const dir = join3(stageDir(args.intent, args.stage), "units");
+      if (!existsSync(dir)) return text("[]");
+      const files = readdirSync(dir).filter((f) => f.endsWith(".md"));
+      const units = files.map((f) => {
+        const { data } = parseFrontmatter(readFileSync(join3(dir, f), "utf8"));
+        return { name: f.replace(".md", ""), status: data.status, bolt: data.bolt, hat: data.hat };
+      });
+      return text(JSON.stringify(units, null, 2));
+    }
+    case "haiku_unit_start": {
+      const path = unitPath(args.intent, args.stage, args.unit);
+      setFrontmatterField(path, "status", "active");
+      setFrontmatterField(path, "bolt", 1);
+      setFrontmatterField(path, "hat", args.hat);
+      setFrontmatterField(path, "started_at", timestamp());
+      return text("ok");
+    }
+    case "haiku_unit_complete": {
+      const path = unitPath(args.intent, args.stage, args.unit);
+      setFrontmatterField(path, "status", "completed");
+      setFrontmatterField(path, "completed_at", timestamp());
+      return text("ok");
+    }
+    case "haiku_unit_advance_hat": {
+      const path = unitPath(args.intent, args.stage, args.unit);
+      setFrontmatterField(path, "hat", args.hat);
+      return text("ok");
+    }
+    case "haiku_unit_increment_bolt": {
+      const path = unitPath(args.intent, args.stage, args.unit);
+      const { data } = parseFrontmatter(readFileSync(path, "utf8"));
+      const current = data.bolt || 0;
+      setFrontmatterField(path, "bolt", current + 1);
+      return text(String(current + 1));
+    }
+    // ── Knowledge ──
+    case "haiku_knowledge_list": {
+      const dir = join3(intentDir(args.intent), "knowledge");
+      if (!existsSync(dir)) return text("[]");
+      const files = readdirSync(dir).filter((f) => f.endsWith(".md"));
+      return text(JSON.stringify(files));
+    }
+    case "haiku_knowledge_read": {
+      const path = join3(intentDir(args.intent), "knowledge", args.name);
+      if (!existsSync(path)) return text("");
+      return text(readFileSync(path, "utf8"));
+    }
+    default:
+      return text(`Unknown tool: ${name}`);
+  }
+}
+
 // src/server.ts
 var OpenReviewInput = external_exports.object({
   intent_dir: external_exports.string().describe("Path to the intent directory (e.g., .haiku/intents/my-intent)"),
@@ -25422,6 +25711,8 @@ var server = new Server(
 setMcpServer(server);
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
+    // State management tools
+    ...stateToolDefs,
     {
       name: "open_review",
       description: "Open a visual review page in the browser for an H\xB7AI\xB7K\xB7U intent or unit. Parses intent/unit data and serves an interactive HTML review page.",
@@ -25591,11 +25882,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 }));
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
+  if (name.startsWith("haiku_")) {
+    return handleStateTool(name, args ?? {});
+  }
   if (name === "open_review") {
     const input = OpenReviewInput.parse(args);
     const allowedBase = resolve2(process.cwd(), ".haiku");
-    const intentDir = resolve2(process.cwd(), input.intent_dir);
-    if (!intentDir.startsWith(`${allowedBase}/`) && intentDir !== allowedBase) {
+    const intentDir2 = resolve2(process.cwd(), input.intent_dir);
+    if (!intentDir2.startsWith(`${allowedBase}/`) && intentDir2 !== allowedBase) {
       return {
         content: [
           {
@@ -25606,19 +25900,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         isError: true
       };
     }
-    const intent = await parseIntent(intentDir);
+    const intent = await parseIntent(intentDir2);
     if (!intent) {
       return {
         content: [
           {
             type: "text",
-            text: `Error: Could not parse intent at ${intentDir}`
+            text: `Error: Could not parse intent at ${intentDir2}`
           }
         ],
         isError: true
       };
     }
-    const units = await parseAllUnits(intentDir);
+    const units = await parseAllUnits(intentDir2);
     const dag = buildDAG(units);
     const mermaid = toMermaidDefinition(dag, units);
     const criteriaSection = intent.sections.find(
@@ -25626,7 +25920,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     );
     const criteria = criteriaSection ? parseCriteria(criteriaSection.content) : [];
     const session = createSession({
-      intent_dir: intentDir,
+      intent_dir: intentDir2,
       intent_slug: intent.slug,
       review_type: input.review_type,
       target: input.target ?? "",
@@ -25637,7 +25931,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const MOCKUP_ALL_EXTS = [...MOCKUP_IMAGE_EXTS, ...MOCKUP_HTML_EXTS];
     const intentMockups = [];
     try {
-      const mockupsDir = join3(intentDir, "mockups");
+      const mockupsDir = join4(intentDir2, "mockups");
       const entries = await readdir2(mockupsDir);
       for (const entry of entries.sort()) {
         const ext = entry.substring(entry.lastIndexOf(".")).toLowerCase();
@@ -25665,7 +25959,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     for (const unit of units) {
       if (!unitMockups.has(unit.slug)) {
         try {
-          const mockupsDir = join3(intentDir, "mockups");
+          const mockupsDir = join4(intentDir2, "mockups");
           const entries = await readdir2(mockupsDir);
           const matches = entries.filter((f) => {
             const name2 = f.substring(0, f.lastIndexOf("."));
@@ -25854,7 +26148,7 @@ Images: ${imagePaths.length}` : ""}`
     const directionUrl = `http://127.0.0.1:${port}/direction/${session.session_id}`;
     try {
       const cmd = process.platform === "darwin" ? ["open", directionUrl] : ["xdg-open", directionUrl];
-      Bun.spawn(cmd, { stdio: ["ignore", "ignore", "ignore"] });
+      spawn(cmd[0], cmd.slice(1), { stdio: ["ignore", "ignore", "ignore"] });
     } catch (err) {
       console.error("Failed to open browser:", err);
     }

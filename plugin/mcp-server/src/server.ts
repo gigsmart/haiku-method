@@ -656,7 +656,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 				process.platform === "darwin"
 					? ["open", directionUrl]
 					: ["xdg-open", directionUrl]
-			Bun.spawn(cmd, { stdio: ["ignore", "ignore", "ignore"] })
+			spawn(cmd[0], cmd.slice(1), { stdio: ["ignore", "ignore", "ignore"] })
 		} catch (err) {
 			console.error("Failed to open browser:", err)
 		}
