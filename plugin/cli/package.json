@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@haiku/shared": "workspace:*"
+    "@haiku/shared": "file:../../packages/haiku"
   },
   "devDependencies": {
     "@types/bun": "^1.2.0",
