@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type { BrowseProvider, HaikuIntent, HaikuIntentDetail } from "@/lib/browse/types"
 import { formatDate, formatDuration } from "@/lib/browse/types"
 import { IntentDetailView } from "./IntentDetailView"
@@ -19,6 +19,26 @@ function titleCase(s: string): string {
 		.join(" ")
 }
 
+function parseHash(): Record<string, string> {
+	if (typeof window === "undefined") return {}
+	const hash = window.location.hash.replace(/^#/, "")
+	if (!hash) return {}
+	const params: Record<string, string> = {}
+	for (const part of hash.split("&")) {
+		const [key, ...rest] = part.split("=")
+		if (key) params[decodeURIComponent(key)] = decodeURIComponent(rest.join("=") || "")
+	}
+	return params
+}
+
+function setHash(params: Record<string, string>) {
+	const parts = Object.entries(params)
+		.filter(([, v]) => v)
+		.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+	const hash = parts.length > 0 ? `#${parts.join("&")}` : " "
+	window.history.replaceState(null, "", hash.trim() || window.location.pathname + window.location.search)
+}
+
 const statusColors: Record<string, string> = {
 	active: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
 	completed: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
@@ -32,15 +52,39 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 	const [loading, setLoading] = useState(true)
 	const [loadingDetail, setLoadingDetail] = useState(false)
 	const [viewMode, setViewMode] = useState<"list" | "board">("list")
+	const initialHashHandled = useRef(false)
 
+	// Read initial hash state once intents are loaded
 	useEffect(() => {
 		async function load() {
 			const list = await provider.listIntents()
 			setIntents(list)
 			setLoading(false)
+
+			// Restore state from hash after intents load
+			if (!initialHashHandled.current) {
+				initialHashHandled.current = true
+				const params = parseHash()
+				if (params.view === "board" || params.view === "list") {
+					setViewMode(params.view)
+				}
+				if (params.intent) {
+					setLoadingDetail(true)
+					const detail = await provider.getIntent(params.intent)
+					setSelectedIntent(detail)
+					setLoadingDetail(false)
+				}
+			}
 		}
 		load()
 	}, [provider])
+
+	// Sync view mode to hash (only when no intent is selected)
+	useEffect(() => {
+		if (!selectedIntent && !loading) {
+			setHash({ view: viewMode !== "list" ? viewMode : "" })
+		}
+	}, [viewMode, selectedIntent, loading])
 
 	const handleSelectIntent = useCallback(
 		async (slug: string) => {
@@ -48,16 +92,22 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 			const detail = await provider.getIntent(slug)
 			setSelectedIntent(detail)
 			setLoadingDetail(false)
+			setHash({ intent: slug })
 		},
 		[provider],
 	)
+
+	const handleBackFromIntent = useCallback(() => {
+		setSelectedIntent(null)
+		setHash({ view: viewMode !== "list" ? viewMode : "" })
+	}, [viewMode])
 
 	if (selectedIntent) {
 		return (
 			<IntentDetailView
 				intent={selectedIntent}
 				provider={provider}
-				onBack={() => setSelectedIntent(null)}
+				onBack={handleBackFromIntent}
 			/>
 		)
 	}

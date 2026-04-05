@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import type { BrowseProvider, HaikuIntentDetail, HaikuStageState, HaikuUnit } from "@/lib/browse/types"
 import { formatDate, formatDuration } from "@/lib/browse/types"
 import { UnitDetailView } from "./UnitDetailView"
@@ -11,6 +13,26 @@ function titleCase(s: string): string {
 		.split("-")
 		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
 		.join(" ")
+}
+
+function parseHash(): Record<string, string> {
+	if (typeof window === "undefined") return {}
+	const hash = window.location.hash.replace(/^#/, "")
+	if (!hash) return {}
+	const params: Record<string, string> = {}
+	for (const part of hash.split("&")) {
+		const [key, ...rest] = part.split("=")
+		if (key) params[decodeURIComponent(key)] = decodeURIComponent(rest.join("=") || "")
+	}
+	return params
+}
+
+function setHash(params: Record<string, string>) {
+	const parts = Object.entries(params)
+		.filter(([, v]) => v)
+		.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+	const hash = parts.length > 0 ? `#${parts.join("&")}` : " "
+	window.history.replaceState(null, "", hash.trim() || window.location.pathname + window.location.search)
 }
 
 const stageStatusColors: Record<string, { bg: string; dot: string }> = {
@@ -35,8 +57,37 @@ interface Props {
 export function IntentDetailView({ intent, provider, onBack }: Props) {
 	const [selectedUnit, setSelectedUnit] = useState<{ unit: HaikuUnit; stage: string } | null>(null)
 	const [expandedStage, setExpandedStage] = useState<string | null>(intent.activeStage || null)
-
 	const [viewMode, setViewMode] = useState<"pipeline" | "board">("pipeline")
+
+	// Restore state from hash on mount
+	useEffect(() => {
+		const params = parseHash()
+		if (params.view === "board") setViewMode("board")
+		if (params.unit && params.stage) {
+			const stageState = intent.stages.find(s => s.name === params.stage)
+			const unit = stageState?.units.find(u => u.name === params.unit)
+			if (unit) setSelectedUnit({ unit, stage: params.stage })
+		}
+	}, [intent])
+
+	const updateHash = (overrides: Record<string, string>) => {
+		setHash({ intent: intent.slug, ...overrides })
+	}
+
+	const handleSelectUnit = (unit: HaikuUnit, stage: string) => {
+		setSelectedUnit({ unit, stage })
+		updateHash({ unit: unit.name, stage })
+	}
+
+	const handleBackFromUnit = () => {
+		setSelectedUnit(null)
+		updateHash({ view: viewMode !== "pipeline" ? viewMode : "" })
+	}
+
+	const handleViewModeChange = (mode: "pipeline" | "board") => {
+		setViewMode(mode)
+		updateHash({ view: mode !== "pipeline" ? mode : "" })
+	}
 
 	if (selectedUnit) {
 		return (
@@ -45,7 +96,7 @@ export function IntentDetailView({ intent, provider, onBack }: Props) {
 				stageName={selectedUnit.stage}
 				intentSlug={intent.slug}
 				provider={provider}
-				onBack={() => setSelectedUnit(null)}
+				onBack={handleBackFromUnit}
 			/>
 		)
 	}
@@ -87,13 +138,13 @@ export function IntentDetailView({ intent, provider, onBack }: Props) {
 			{/* View toggle */}
 			<div className="mb-4 flex gap-1 rounded-lg border border-stone-200 p-1 dark:border-stone-700 w-fit">
 				<button
-					onClick={() => setViewMode("pipeline")}
+					onClick={() => handleViewModeChange("pipeline")}
 					className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${viewMode === "pipeline" ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900" : "text-stone-500 hover:text-stone-700"}`}
 				>
 					Pipeline
 				</button>
 				<button
-					onClick={() => setViewMode("board")}
+					onClick={() => handleViewModeChange("board")}
 					className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${viewMode === "board" ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900" : "text-stone-500 hover:text-stone-700"}`}
 				>
 					Board
@@ -106,7 +157,7 @@ export function IntentDetailView({ intent, provider, onBack }: Props) {
 						intent={intent}
 						onSelectUnit={(u) => {
 							const unit = intent.stages.find(s => s.name === u.stage)?.units.find(un => un.name === u.name)
-							if (unit) setSelectedUnit({ unit, stage: u.stage })
+							if (unit) handleSelectUnit(unit, u.stage)
 						}}
 					/>
 				</section>
@@ -154,7 +205,7 @@ export function IntentDetailView({ intent, provider, onBack }: Props) {
 				<section className="mb-8">
 					<StageDetail
 						stage={intent.stages.find((s) => s.name === expandedStage)!}
-						onSelectUnit={(unit) => setSelectedUnit({ unit, stage: expandedStage })}
+						onSelectUnit={(unit) => handleSelectUnit(unit, expandedStage)}
 					/>
 				</section>
 			)}
@@ -166,8 +217,8 @@ export function IntentDetailView({ intent, provider, onBack }: Props) {
 						Intent Description
 					</h2>
 					<div className="rounded-xl border border-stone-200 p-6 dark:border-stone-700">
-						<div className="prose prose-sm prose-stone dark:prose-invert max-w-none whitespace-pre-wrap">
-							{intent.content}
+						<div className="prose prose-sm prose-stone dark:prose-invert max-w-none">
+							<ReactMarkdown remarkPlugins={[remarkGfm]}>{intent.content}</ReactMarkdown>
 						</div>
 					</div>
 				</section>
