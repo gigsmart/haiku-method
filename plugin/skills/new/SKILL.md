@@ -34,6 +34,7 @@ allowed-tools:
 ```
 /haiku:new [description]
 /haiku:new --template <template-name> [--param key=value ...]
+/haiku:new --composite
 ```
 
 ## Description
@@ -57,6 +58,39 @@ When `--template` is provided, the intent is seeded from a studio template file:
 ```
 
 This creates a sales intent pre-filled with units for Acme Corp, with criteria like "Acme Corp business model and pain points documented."
+
+### Composite Mode
+
+When `--composite` is provided, the intent combines stages from multiple studios that run in parallel with sync points.
+
+1. **Ask which studios to combine:** Present available studios and let the user select 2+.
+2. **Ask which stages from each:** For each studio, show its stages and let the user select which ones to include.
+3. **Define sync points:** Ask "Which stages must complete before others can start?" Build the `sync:` rules.
+4. **Write the intent** with `composite:` and `sync:` in frontmatter, plus `composite_state:` tracking per-studio active stages.
+
+**Example:**
+```
+/haiku:new --composite
+→ "Which studios?" → [software, marketing]
+→ "Software stages?" → [inception, design, development]
+→ "Marketing stages?" → [research, strategy, content, launch]
+→ "Sync points?" → "marketing:launch waits for software:development and marketing:content"
+```
+
+Creates an intent like:
+```yaml
+composite:
+  - studio: software
+    stages: [inception, design, development]
+  - studio: marketing
+    stages: [research, strategy, content, launch]
+sync:
+  - wait: [software:development, marketing:content]
+    then: [marketing:launch]
+composite_state:
+  software: inception
+  marketing: research
+```
 
 **Relationship to other commands:**
 - `/haiku:new` creates the intent and workspace

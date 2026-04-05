@@ -631,8 +631,8 @@ Event detected → gate advances on next session or poll</code></pre>
     <div class="layer-grid">
       <div class="block block-done"><strong>Conflict Awareness</strong><span>Git handles conflicts; decomposition checks active branches</span></div>
       <div class="block block-gap"><strong>Knowledge Decay</strong><span>Expiry and freshness tracking for artifacts</span></div>
-      <div class="block block-gap"><strong>Studio Composition</strong><span>Interleaved stages from multiple studios</span></div>
-      <div class="block block-gap"><strong>Post-Delivery Monitoring</strong><span>Automated success measurement after merge</span></div>
+      <div class="block block-done"><strong>Composite Intents</strong><span>Multi-studio parallel stages with sync points</span></div>
+      <div class="block block-done"><strong>Post-Delivery Monitoring</strong><span>Already covered by /operate — studio operations templates</span></div>
       <div class="block block-gap"><strong>Capacity Model</strong><span>Historical throughput informing feasibility</span></div>
       <div class="block block-gap"><strong>Browse Access Control</strong><span>Intent-level visibility and sensitive data masking</span></div>
       <div class="block block-gap"><strong>Studio Versioning</strong><span>Migration path when studio definitions evolve</span></div>
@@ -716,26 +716,11 @@ sync:
 </div>
 
 <h2>Wave 2 Gap 4: Post-Delivery Monitoring</h2>
-<p>An intent delivers a PR, it merges, and... silence. Did it actually work? Did metrics improve? Did it cause regressions?</p>
+<p>Already covered by <code>/haiku:operate</code>. Each studio defines operation templates (health-check, monitoring, etc.) that run after delivery. The operations stage in the software studio includes health checks, dependency audits, and backup verification — all studio-prescribed.</p>
 
 <div class="gap-card" style="margin-top:1rem; border-color:var(--accent)">
-  <h3><span class="tag tag-done">Proposed</span> Delivery Watchdog via Operations</h3>
-  <p>The operations stage already produces monitoring artifacts. Extend the intent lifecycle with a <strong>watchdog period</strong> after delivery — a lightweight monitoring phase that checks success criteria in production.</p>
-  <pre style="margin-top:0.75rem; padding:1rem; background:var(--accent-bg); border-radius:0.5rem; font-size:0.8rem; overflow-x:auto; color:var(--accent)"><code># intent.md
----
-watchdog:
-  duration: 7d
-  success_criteria:
-    - "error rate for /api/auth/* < 0.1%"
-    - "p95 latency < 200ms"
-  failure_action: create-incident  # create an incident-response intent
----
-
-# After PR merges, /haiku:triggers monitors:
-# 1. Polls monitoring provider for watchdog criteria
-# 2. If criteria met for full duration → intent status: verified
-# 3. If criteria violated → creates incident-response intent automatically
-# 4. Reflection captures production outcome data</code></pre>
+  <h3><span class="tag tag-done">Resolved</span> Studio Operations = Post-Delivery Monitoring</h3>
+  <p>Not a separate mechanism. The <code>/haiku:operate</code> skill reads operation templates from <code>studios/{studio}/operations/</code> and instantiates them for each intent. The software studio already ships with <code>health-check.md</code>, <code>dependency-audit.md</code>, <code>backup-verification.md</code>, and <code>secret-rotation.md</code>.</p>
 </div>
 
 <h2>Wave 2 Gap 5: Capacity Model</h2>
@@ -835,9 +820,9 @@ studio_version: 1        # version when intent was created
     <h3 style="color:var(--warn)">Wave 2: Proposed</h3>
     <ul style="margin-top:0.5rem">
       <li><strong style="text-decoration:line-through; opacity:0.5">Conflict detection</strong> <span style="color:var(--success)">— git handles it; decomposition checks active branches</span></li>
-      <li><strong>Knowledge decay</strong> — freshness windows + code-drift detection</li>
-      <li><strong>Studio composition</strong> — composite intents with sync points</li>
-      <li><strong>Post-delivery monitoring</strong> — watchdog period with auto-incident</li>
+      <li><strong style="text-decoration:line-through; opacity:0.5">Post-delivery monitoring</strong> <span style="color:var(--success)">— already covered by /operate + studio operations</span></li>
+      <li><strong style="text-decoration:line-through; opacity:0.5">Studio composition</strong> <span style="color:var(--success)">— implemented: composite intents with sync points</span></li>
+      <li><strong>Knowledge decay</strong> — freshness metadata + code-drift check at decomposition</li>
       <li><strong>Capacity model</strong> — historical throughput from OTEL data</li>
       <li><strong>Browse access control</strong> — intent visibility + sensitive field masking</li>
       <li><strong>Studio versioning</strong> — schema version + migration on version mismatch</li>

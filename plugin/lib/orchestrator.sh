@@ -383,6 +383,163 @@ hku_resolve_review_gate() {
   esac
 }
 
+# ============================================================================
+# Composite Intent Orchestration
+# ============================================================================
+
+# Check if an intent is composite
+# Usage: hku_is_composite <intent_dir>
+# Returns: 0 if composite, 1 if not
+hku_is_composite() {
+  local intent_file="${1}/intent.md"
+  local composite
+  composite=$(hku_frontmatter_get "composite" "$intent_file" 2>/dev/null || echo "")
+  [ -n "$composite" ] && [ "$composite" != "null" ]
+}
+
+# Get the next runnable stage for a composite intent
+# Usage: hku_composite_next_stage <intent_dir>
+# Returns: "studio:stage" or "" if all complete or all blocked
+hku_composite_next_stage() {
+  local intent_dir="$1"
+  local intent_file="${intent_dir}/intent.md"
+
+  # Read composite config and state
+  local composite_json
+  composite_json=$(yq --front-matter=extract -o json '.' "$intent_file" 2>/dev/null || echo "{}")
+
+  local composite_state
+  composite_state=$(echo "$composite_json" | jq -c '.composite_state // {}')
+
+  # For each studio in the composite, check if its current stage is runnable
+  echo "$composite_json" | jq -c '.composite[]' 2>/dev/null | while IFS= read -r entry; do
+    local studio stage_list current_stage
+    studio=$(echo "$entry" | jq -r '.studio')
+    stage_list=$(echo "$entry" | jq -r '.stages[]')
+    current_stage=$(echo "$composite_state" | jq -r ".\"$studio\" // empty")
+
+    # If no current stage, use the first stage
+    if [ -z "$current_stage" ]; then
+      current_stage=$(echo "$entry" | jq -r '.stages[0]')
+    fi
+
+    # Check if this studio is complete (current stage not in its list)
+    local in_list=false
+    for s in $stage_list; do
+      if [ "$s" = "$current_stage" ]; then
+        in_list=true
+        break
+      fi
+    done
+    [ "$in_list" = "false" ] && continue
+
+    # Check sync points — is this stage blocked?
+    local blocked=false
+    echo "$composite_json" | jq -c '.sync[]?' 2>/dev/null | while IFS= read -r sync_rule; do
+      local then_stages
+      then_stages=$(echo "$sync_rule" | jq -r '.then[]')
+      for ts in $then_stages; do
+        if [ "$ts" = "${studio}:${current_stage}" ]; then
+          # This stage has a sync dependency — check if all wait stages are done
+          local wait_stages
+          wait_stages=$(echo "$sync_rule" | jq -r '.wait[]')
+          for ws in $wait_stages; do
+            local ws_studio="${ws%%:*}"
+            local ws_stage="${ws##*:}"
+            local ws_current
+            ws_current=$(echo "$composite_state" | jq -r ".\"$ws_studio\" // empty")
+
+            # Check if ws_studio has advanced past ws_stage
+            local ws_stages ws_stage_idx ws_current_idx
+            ws_stages=$(echo "$composite_json" | jq -r ".composite[] | select(.studio == \"$ws_studio\") | .stages[]")
+            ws_stage_idx=0; ws_current_idx=0; local idx=0
+            for s in $ws_stages; do
+              [ "$s" = "$ws_stage" ] && ws_stage_idx=$idx
+              [ "$s" = "$ws_current" ] && ws_current_idx=$idx
+              idx=$((idx + 1))
+            done
+
+            if [ "$ws_current_idx" -le "$ws_stage_idx" ]; then
+              blocked=true
+              break 2
+            fi
+          done
+        fi
+      done
+    done
+
+    if [ "$blocked" = "false" ]; then
+      echo "${studio}:${current_stage}"
+      return 0
+    fi
+  done
+
+  echo ""
+}
+
+# Advance a composite intent's studio to its next stage
+# Usage: hku_composite_advance <intent_dir> <studio_name>
+hku_composite_advance() {
+  local intent_dir="$1"
+  local studio_name="$2"
+  local intent_file="${intent_dir}/intent.md"
+
+  local composite_json
+  composite_json=$(yq --front-matter=extract -o json '.' "$intent_file" 2>/dev/null || echo "{}")
+
+  # Get the studio's stage list
+  local stages current_stage
+  stages=$(echo "$composite_json" | jq -r ".composite[] | select(.studio == \"$studio_name\") | .stages[]")
+  current_stage=$(echo "$composite_json" | jq -r ".composite_state.\"$studio_name\" // empty")
+
+  # Find the next stage
+  local found=false next_stage=""
+  for s in $stages; do
+    if [ "$found" = "true" ]; then
+      next_stage="$s"
+      break
+    fi
+    if [ "$s" = "$current_stage" ]; then
+      found=true
+    fi
+  done
+
+  # Update composite_state
+  if [ -n "$next_stage" ]; then
+    hku_frontmatter_set "composite_state.${studio_name}" "$next_stage" "$intent_file"
+  else
+    # Studio complete — set to a sentinel value
+    hku_frontmatter_set "composite_state.${studio_name}" "complete" "$intent_file"
+  fi
+
+  echo "$next_stage"
+}
+
+# Check if all studios in a composite intent are complete
+# Usage: hku_composite_all_complete <intent_dir>
+# Returns: 0 if all complete, 1 if not
+hku_composite_all_complete() {
+  local intent_dir="$1"
+  local intent_file="${intent_dir}/intent.md"
+
+  local composite_json
+  composite_json=$(yq --front-matter=extract -o json '.' "$intent_file" 2>/dev/null || echo "{}")
+
+  echo "$composite_json" | jq -c '.composite[]' 2>/dev/null | while IFS= read -r entry; do
+    local studio
+    studio=$(echo "$entry" | jq -r '.studio')
+    local state
+    state=$(echo "$composite_json" | jq -r ".composite_state.\"$studio\" // empty")
+    if [ "$state" != "complete" ]; then
+      return 1
+    fi
+  done
+}
+
+# ============================================================================
+# Single-Studio Stage Navigation
+# ============================================================================
+
 # Get the next incomplete stage for an intent
 # Usage: hku_next_stage <intent_dir>
 # Returns: next stage name, or "" if all complete

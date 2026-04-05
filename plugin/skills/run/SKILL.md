@@ -89,13 +89,85 @@ Read the intent file and extract frontmatter: `studio`, `stages`, `active_stage`
 
 ### Step 2: Determine Stage
 
-Read `active_stage:` from intent frontmatter. If empty or missing, default to the studio's first stage.
+**Check for composite intent:** If the intent frontmatter has a `composite:` field, this is a composite intent with multiple studios running in parallel. Go to **Step 2c**.
 
 **If stage argument given:** Validate it's in the studio's stage list, use that stage.
 
-**Otherwise:** Use `active_stage` from frontmatter. If the current stage is already complete, advance to the next stage via `hku_next_stage`.
+**Otherwise:** Read `active_stage:` from intent frontmatter. If empty or missing, default to the studio's first stage. If the current stage is already complete, advance to the next stage via `hku_next_stage`.
 
 Both continuous and discrete modes run the **same stage loop** (Step 4). The difference is what happens at the review gate (Step 6).
+
+### Step 2c: Composite Intent Orchestration
+
+A composite intent runs stages from multiple studios in parallel with sync points:
+
+```yaml
+# intent.md
+composite:
+  - studio: software
+    stages: [inception, design, development]
+  - studio: marketing
+    stages: [research, strategy, content, launch]
+sync:
+  - wait: [software:development, marketing:content]
+    then: [marketing:launch]
+```
+
+**Execution model:**
+
+1. **Track per-studio active stages** — each studio in the composite has its own `active_stage`. Stored in intent frontmatter as:
+   ```yaml
+   composite_state:
+     software: design      # currently at design stage
+     marketing: strategy   # currently at strategy stage
+   ```
+
+2. **Find runnable stages** — for each studio, check if its current stage is ready to run:
+   - Stage has no sync dependency → runnable
+   - Stage has sync dependency → check if all `wait` stages are complete
+
+3. **Run the first runnable stage** — load stage definition from the appropriate studio, run the standard stage loop (Step 4). The stage's hats, review agents, inputs, and outputs all come from its studio definition.
+
+4. **On stage completion** — advance that studio's `active_stage`. Then check if any sync-blocked stages are now unblocked.
+
+5. **Sync point check:**
+   ```bash
+   # For each sync rule:
+   for sync_rule in $(echo "$intent_data" | jq -c '.sync[]'); do
+     wait_stages=$(echo "$sync_rule" | jq -r '.wait[]')
+     all_complete=true
+     for ws in $wait_stages; do
+       studio="${ws%%:*}"
+       stage="${ws##*:}"
+       state=$(echo "$intent_data" | jq -r ".composite_state.\"$studio\"")
+       # Check if this studio has advanced past this stage
+       # (its active_stage index is beyond this stage's index)
+       if ! stage_is_complete "$studio" "$stage" "$state"; then
+         all_complete=false
+         break
+       fi
+     done
+     if [ "$all_complete" = "true" ]; then
+       # The 'then' stages are now unblocked
+       echo "Sync point cleared: $(echo "$sync_rule" | jq -r '.then[]') now runnable"
+     fi
+   done
+   ```
+
+6. **Intent complete** when all studios have completed all their stages.
+
+**Example flow for a product launch:**
+```
+Parallel track 1: software:inception → software:design → software:development
+Parallel track 2: marketing:research → marketing:strategy → marketing:content
+                                                              ↓
+                                              SYNC: wait for software:development
+                                              AND marketing:content
+                                                              ↓
+                                              marketing:launch (runs after both complete)
+```
+
+After Step 2c determines the stage and studio to run, execution continues with Step 3 (Load Stage Definition) as normal. The stage loop is identical — only the orchestration of *which* stage to run next is different.
 
 ### Step 3: Load Stage Definition
 
