@@ -724,28 +724,7 @@ sync:
 </div>
 
 <h2>Wave 2 Gap 5: Capacity Model</h2>
-<p>OTEL is write-only from our side. Capacity analysis reads from local intent artifacts — iteration.json, unit status, stage completion timestamps. All data is already persisted in <code>.haiku/</code>.</p>
-
-<div class="gap-card" style="margin-top:1rem; border-color:var(--accent)">
-  <h3><span class="tag tag-done">Proposed</span> Historical Throughput from Local Artifacts</h3>
-  <p>A <code>/haiku:capacity</code> skill scans completed intents in <code>.haiku/intents/</code> and computes historical patterns from the artifacts themselves.</p>
-  <pre style="margin-top:0.75rem; padding:1rem; background:var(--accent-bg); border-radius:0.5rem; font-size:0.8rem; overflow-x:auto; color:var(--accent)"><code># /haiku:capacity — reads local .haiku/ artifacts, no OTEL query
-→ Scans .haiku/intents/*/state/iteration.json for bolt counts
-→ Reads git log for stage completion timestamps
-→ Parses unit frontmatter for status transitions
-
-Software Studio (from 8 completed intents):
-  inception: typically 1 session
-  development: typically 3-5 sessions, highest bolt counts
-  Active: 4 intents (1 development, 2 inception, 1 security)
-
-Sales Studio (from 12 completed intents):
-  research→qualification: fast, usually same session
-  proposal→negotiation: longest stage (await gates)
-  Active: 6 intents (3 proposal-await, 2 negotiation, 1 close)
-
-# Historical data from artifacts. Not estimates. Not OTEL queries.</code></pre>
-</div>
+<p>Implemented. <code>/haiku:capacity</code> reads timestamps from committed frontmatter — intent, stage, and unit artifacts all have <code>started_at</code> and <code>completed_at</code>. No OTEL query needed (write-only endpoint). No <code>iteration.json</code> (deprecated). Git log provides session count estimates.</p>
 
 <h2>Wave 2 Gap 6: Access Control</h2>
 <p>Not H·AI·K·U's concern. Providers enforce their own access control — git repos have permissions, ticketing has team visibility, CRM has deal ownership. <code>/browse</code> inherits git provider ACLs via OAuth. No additional layer needed.</p>
