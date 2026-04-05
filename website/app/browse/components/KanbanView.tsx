@@ -53,8 +53,26 @@ export function PortfolioKanban({ provider, intents, onSelectIntent }: KanbanPro
 		return <div className="py-12 text-center text-stone-500">Loading board...</div>
 	}
 
+	// Collect all known stages from intent details (preserves studio stage order)
+	const allStagesOrdered: string[] = []
+	const seenStages = new Set<string>()
+	for (const detail of intentDetails.values()) {
+		for (const stage of detail.stages) {
+			if (!seenStages.has(stage.name)) {
+				seenStages.add(stage.name)
+				allStagesOrdered.push(stage.name)
+			}
+		}
+	}
+
 	// Group intents by their active stage
 	const stageGroups = new Map<string, HaikuIntent[]>()
+
+	// Initialize all columns: Backlog, all known stages, Completed
+	stageGroups.set("Backlog", [])
+	for (const stage of allStagesOrdered) {
+		stageGroups.set(stage, [])
+	}
 	stageGroups.set("Completed", [])
 
 	for (const intent of intents) {
@@ -67,9 +85,8 @@ export function PortfolioKanban({ provider, intents, onSelectIntent }: KanbanPro
 		}
 	}
 
-	// Order: active stages first, then completed
-	const orderedKeys = [...stageGroups.keys()].filter(k => k !== "Completed")
-	orderedKeys.push("Completed")
+	// Order: Backlog, stages in pipeline order, then Completed
+	const orderedKeys = ["Backlog", ...allStagesOrdered, "Completed"]
 
 	return (
 		<div className="overflow-x-auto pb-4">
