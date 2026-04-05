@@ -32,7 +32,11 @@ export class GitHubProvider implements BrowseProvider {
 		if (!res.ok) return null
 		const json = await res.json()
 		if (json.encoding === "base64" && json.content) {
-			return atob(json.content.replace(/\n/g, ""))
+			// Decode base64 → Uint8Array → UTF-8 string (atob mangles multi-byte chars)
+			const binary = atob(json.content.replace(/\n/g, ""))
+			const bytes = new Uint8Array(binary.length)
+			for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+			return new TextDecoder().decode(bytes)
 		}
 		return null
 	}
