@@ -2,7 +2,9 @@
 
 import { useState } from "react"
 import type { BrowseProvider, HaikuIntentDetail, HaikuStageState, HaikuUnit } from "@/lib/browse/types"
+import { formatDate, formatDuration } from "@/lib/browse/types"
 import { UnitDetailView } from "./UnitDetailView"
+import { IntentKanban } from "./KanbanView"
 
 function titleCase(s: string): string {
 	return s
@@ -33,6 +35,8 @@ interface Props {
 export function IntentDetailView({ intent, provider, onBack }: Props) {
 	const [selectedUnit, setSelectedUnit] = useState<{ unit: HaikuUnit; stage: string } | null>(null)
 	const [expandedStage, setExpandedStage] = useState<string | null>(intent.activeStage || null)
+
+	const [viewMode, setViewMode] = useState<"pipeline" | "board">("pipeline")
 
 	if (selectedUnit) {
 		return (
@@ -80,6 +84,34 @@ export function IntentDetailView({ intent, provider, onBack }: Props) {
 				</div>
 			</header>
 
+			{/* View toggle */}
+			<div className="mb-4 flex gap-1 rounded-lg border border-stone-200 p-1 dark:border-stone-700 w-fit">
+				<button
+					onClick={() => setViewMode("pipeline")}
+					className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${viewMode === "pipeline" ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900" : "text-stone-500 hover:text-stone-700"}`}
+				>
+					Pipeline
+				</button>
+				<button
+					onClick={() => setViewMode("board")}
+					className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${viewMode === "board" ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900" : "text-stone-500 hover:text-stone-700"}`}
+				>
+					Board
+				</button>
+			</div>
+
+			{viewMode === "board" ? (
+				<section className="mb-8">
+					<IntentKanban
+						intent={intent}
+						onSelectUnit={(u) => {
+							const unit = intent.stages.find(s => s.name === u.stage)?.units.find(un => un.name === u.name)
+							if (unit) setSelectedUnit({ unit, stage: u.stage })
+						}}
+					/>
+				</section>
+			) : (
+			<>
 			{/* Stage Pipeline */}
 			<section className="mb-8">
 				<h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-stone-400">
@@ -139,6 +171,9 @@ export function IntentDetailView({ intent, provider, onBack }: Props) {
 						</div>
 					</div>
 				</section>
+			)}
+
+			</>
 			)}
 
 			{/* Knowledge Artifacts */}

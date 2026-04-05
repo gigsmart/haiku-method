@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import type { BrowseProvider, HaikuIntent, HaikuIntentDetail } from "@/lib/browse/types"
 import { formatDate, formatDuration } from "@/lib/browse/types"
 import { IntentDetailView } from "./IntentDetailView"
+import { PortfolioKanban } from "./KanbanView"
 
 interface Props {
 	provider: BrowseProvider
@@ -30,6 +31,7 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 	const [selectedIntent, setSelectedIntent] = useState<HaikuIntentDetail | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [loadingDetail, setLoadingDetail] = useState(false)
+	const [viewMode, setViewMode] = useState<"list" | "board">("list")
 
 	useEffect(() => {
 		async function load() {
@@ -88,6 +90,24 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 				</div>
 			</div>
 
+			{/* View toggle */}
+			{!loading && intents.length > 0 && (
+				<div className="mb-4 flex gap-1 rounded-lg border border-stone-200 p-1 dark:border-stone-700 w-fit">
+					<button
+						onClick={() => setViewMode("list")}
+						className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${viewMode === "list" ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900" : "text-stone-500 hover:text-stone-700"}`}
+					>
+						List
+					</button>
+					<button
+						onClick={() => setViewMode("board")}
+						className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${viewMode === "board" ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900" : "text-stone-500 hover:text-stone-700"}`}
+					>
+						Board
+					</button>
+				</div>
+			)}
+
 			{loading ? (
 				<div className="py-20 text-center text-stone-500">Loading intents...</div>
 			) : intents.length === 0 ? (
@@ -97,6 +117,12 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 						This workspace has no <code>.haiku/intents/</code> directory, or it's empty.
 					</p>
 				</div>
+			) : viewMode === "board" ? (
+				<PortfolioKanban
+					provider={provider}
+					intents={intents}
+					onSelectIntent={handleSelectIntent}
+				/>
 			) : (
 				<div className="space-y-3">
 					{intents.map((intent) => (
