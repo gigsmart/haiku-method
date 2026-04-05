@@ -34,7 +34,7 @@ Advances to the next hat in the stage's hat sequence. For example, in the develo
 # Intent-level state is stored in .haiku/intents/{slug}/state/
 INTENT_DIR=$(find .haiku -maxdepth 2 -name "intent.md" -exec dirname {} \; | head -1)
 INTENT_SLUG=$(basename "$INTENT_DIR")
-STATE=$(hku_state_load "$INTENT_DIR" "iteration.json")
+STATE=$(haiku_stage_get { intent, stage, field: "phase" })
 ```
 
 ### Step 2: Verify Hard Gate and Determine Next Hat (or Handle Completion)
@@ -48,12 +48,12 @@ Before advancing, check the hard gate for the current transition:
 
 ```bash
 # Hard gate verification — block advancement if gate conditions are not met
-CURRENT_HAT=$(echo "$STATE" | hku_json_get "hat")
+CURRENT_HAT=$(haiku_unit_get { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$CURRENT_UNIT", field: "hat" })
 
 case "$CURRENT_HAT" in
   planner)
     # PLAN_APPROVED gate: plan must exist and cover all criteria
-    PLAN=$(hku_state_load "$INTENT_DIR" "current-plan.md" 2>/dev/null || echo "")
+    PLAN=$(cat "$INTENT_DIR/current-plan.md" 2>/dev/null || echo "")
     if [ -z "$PLAN" ]; then
       echo "## HARD GATE: PLAN_APPROVED"
       echo ""
@@ -69,7 +69,7 @@ case "$CURRENT_HAT" in
     #
     # Visual gate check is still handled here because it prepares
     # comparison context for the reviewer (not a pass/fail gate at this point).
-    CURRENT_UNIT=$(echo "$STATE" | hku_json_get "currentUnit" "")
+    CURRENT_UNIT=$(haiku_stage_get { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", field: "current_unit" } 2>/dev/null || echo "")
     UNIT_FILE="$INTENT_DIR/${CURRENT_UNIT}.md"
     if [ -n "$CURRENT_UNIT" ] && [ -f "$UNIT_FILE" ]; then
       PLUGIN_DIR="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$(readlink -f "$0")")")}"
@@ -102,9 +102,9 @@ case "$CURRENT_HAT" in
     # CRITERIA_MET gate: each criterion must have PASS with evidence
     # This is verified by the reviewer hat itself — if the reviewer calls /haiku:advance,
     # it means criteria were evaluated. The structured completion marker is checked here.
-    REVIEW_RESULT=$(hku_state_load "$INTENT_DIR" "review-result.json" 2>/dev/null || echo "")
+    REVIEW_RESULT=$(cat "$INTENT_DIR/review-result.json" 2>/dev/null || echo "")
     if [ -n "$REVIEW_RESULT" ]; then
-      ALL_PASS=$(echo "$REVIEW_RESULT" | hku_json_get "allPass" "false" 2>/dev/null || echo "false")
+      ALL_PASS=$(echo "$REVIEW_RESULT" | jq -r '.allPass // "false"' 2>/dev/null || echo "false")
       if [ "$ALL_PASS" != "true" ]; then
         echo "## HARD GATE: CRITERIA_MET"
         echo ""
@@ -147,7 +147,7 @@ source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
 # INTENT_DIR and INTENT_SLUG already set in Step 1
 
 # Mark current unit as completed
-CURRENT_UNIT=$(echo "$ITERATION_JSON" | hku_json_get "currentUnit" "")
+CURRENT_UNIT=$(haiku_stage_get { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", field: "current_unit" } 2>/dev/null || echo "")
 if [ -n "$CURRENT_UNIT" ] && [ -f "$INTENT_DIR/${CURRENT_UNIT}.md" ]; then
   update_unit_status "$INTENT_DIR/${CURRENT_UNIT}.md" "completed"
   # Check off completion criteria checkboxes in the unit file
@@ -163,11 +163,10 @@ fi
 When `targetUnit` is set in state and matches the just-completed unit, handle early exit:
 
 ```bash
-TARGET_UNIT=$(echo "$STATE" | hku_json_get "targetUnit" "")
+TARGET_UNIT=$(haiku_stage_get { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", field: "target_unit" } 2>/dev/null || echo "")
 if [ -n "$TARGET_UNIT" ] && [ "$TARGET_UNIT" = "$CURRENT_UNIT" ]; then
   # Clear targetUnit from state
-  STATE=$(echo "$STATE" | hku_json_set "targetUnit" "")
-  hku_state_save "$INTENT_DIR" "iteration.json" "$STATE"
+  haiku_stage_set { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", field: "target_unit", value: "" }
 ```
 
 Clean up the targeted unit's team agents before exiting (if Agent Teams are enabled):
@@ -226,7 +225,7 @@ source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
 
 if [ "$CHANGE_STRATEGY" = "unit" ]; then
   # Unit strategy: open a PR for the unit branch directly to the default branch
-  UNIT_TICKET=$(hku_frontmatter_get "ticket" "$INTENT_DIR/${CURRENT_UNIT}.md" 2>/dev/null || echo "")
+  UNIT_TICKET=$(haiku_unit_get { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$CURRENT_UNIT", field: "ticket" } 2>/dev/null || echo "")
   TICKET_LINE=""
   if [ -n "$UNIT_TICKET" ]; then
     TICKET_LINE="Closes ${UNIT_TICKET}"
@@ -340,12 +339,11 @@ SKIP_INTEGRATOR=false
   }
   // Integration passed or skipped - Mark intent as done
   state.status = "completed";
-  // hku_state_save "$INTENT_DIR" "iteration.json" '<updated JSON>'
 ```
 
 ```bash
 # Update intent.md frontmatter status so it persists in git
-hku_frontmatter_set "status" "completed" "$INTENT_DIR/intent.md"
+haiku_intent_set { slug: "$INTENT_SLUG", field: "status", value: "completed" }
 # Check off intent-level completion criteria checkboxes
 hku_check_intent_criteria "$INTENT_DIR"
 source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
@@ -370,7 +368,6 @@ if (READY_COUNT > 0) {
   // MORE UNITS READY - Loop back to builder
   state.hat = unitHats[2] || "builder";  // Reset to builder (index 2 in default stage)
   state.currentUnit = null;  // Will be set by /haiku:execute when it picks next unit
-  // hku_state_save "$INTENT_DIR" "iteration.json" '<updated JSON>'
   return `Unit completed. ${READY_COUNT} more unit(s) ready. Continuing execution...`;
 }
 
@@ -393,7 +390,7 @@ AGENT_TEAMS_ENABLED="${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}"
 
 If `AGENT_TEAMS_ENABLED` is set and `READY_COUNT > 0` after completing a unit:
 
-1. Read `teamName` from `iteration.json`
+1. Read `teamName` from stage state (`haiku_stage_get { intent, stage, field: "team_name" }`)
 2. Read `intentTitle` from the `title` field in `intent.md` frontmatter
 3. Recreate the team (it was deleted in Step 2d-1 cleanup):
 
@@ -424,8 +421,7 @@ When `ALL_COMPLETE` is true and `state.integratorComplete` is not true, run inte
 1. Set state to indicate integration is running:
 
 ```bash
-STATE=$(echo "$STATE" | hku_json_set "hat" "integrator")
-hku_state_save "$INTENT_DIR" "iteration.json" "$STATE"
+haiku_stage_set { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", field: "phase", value: "integration" }
 ```
 
 2. Spawn the integrate skill as a subagent on the **intent worktree** (not a unit worktree):
@@ -462,11 +458,11 @@ Task({
 
 **If ACCEPT:**
 ```bash
-STATE=$(echo "$STATE" | hku_json_set "integratorComplete" "true" | hku_json_set "status" "completed")
-hku_state_save "$INTENT_DIR" "iteration.json" "$STATE"
+haiku_stage_set { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", field: "integrator_complete", value: "true" }
+haiku_intent_set { slug: "$INTENT_SLUG", field: "status", value: "completed" }
 
 # Update intent.md frontmatter status so it persists in git
-hku_frontmatter_set "status" "completed" "$INTENT_DIR/intent.md"
+haiku_intent_set { slug: "$INTENT_SLUG", field: "status", value: "completed" }
 # Check off intent-level completion criteria checkboxes
 hku_check_intent_criteria "$INTENT_DIR"
 source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
@@ -497,7 +493,7 @@ for UNIT_FILE in $REJECTED_UNITS; do
   update_unit_status "$UNIT_FILE" "pending"
 
   # Reset hat to first hat of this unit's stage (determined by discipline)
-  UNIT_DISCIPLINE=$(hku_frontmatter_get "discipline" "$UNIT_FILE" 2>/dev/null || echo "")
+  UNIT_DISCIPLINE=$(haiku_unit_get { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$(basename "$UNIT_FILE" .md)", field: "discipline" } 2>/dev/null || echo "")
   UNIT_STAGE="$ACTIVE_STAGE"
   case "$UNIT_DISCIPLINE" in
     design) UNIT_STAGE="design" ;;
@@ -505,15 +501,14 @@ for UNIT_FILE in $REJECTED_UNITS; do
   esac
   FIRST_HAT=$(hku_get_hat_sequence "$UNIT_STAGE" "$STUDIO" | awk '{print $1}')
   [ -z "$FIRST_HAT" ] && FIRST_HAT="planner"
-  hku_frontmatter_set "hat" "${FIRST_HAT}" "$UNIT_FILE"
-  hku_frontmatter_set "retries" "0" "$UNIT_FILE"
+  haiku_unit_advance_hat { intent: "$INTENT_SLUG", stage: "$UNIT_STAGE", unit: "$(basename "$UNIT_FILE" .md)", hat: "${FIRST_HAT}" }
+  haiku_unit_set { intent: "$INTENT_SLUG", stage: "$UNIT_STAGE", unit: "$(basename "$UNIT_FILE" .md)", field: "retries", value: "0" }
 done
 
 # Reset integration state
 GLOBAL_FIRST_HAT=$(hku_get_hat_sequence "$ACTIVE_STAGE" "$STUDIO" | awk '{print $1}')
 [ -z "$GLOBAL_FIRST_HAT" ] && GLOBAL_FIRST_HAT="planner"
-STATE=$(echo "$STATE" | hku_json_set "hat" "${GLOBAL_FIRST_HAT}" | hku_json_set "integratorComplete" "false")
-hku_state_save "$INTENT_DIR" "iteration.json" "$STATE"
+haiku_stage_set { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", field: "integrator_complete", value: "false" }
 
 # Output: "Integration rejected. Re-queued units: {list}. Run /haiku:execute to continue."
 ```
@@ -524,7 +519,7 @@ The re-queued units will be picked up on the next `/haiku:execute` cycle through
 
 ```bash
 # Increment iteration counter
-ITERATION=$(echo "$STATE" | hku_json_get "iteration" "1")
+ITERATION=$(haiku_unit_get { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$CURRENT_UNIT", field: "bolt" } 2>/dev/null || echo "1")
 ITERATION=$((ITERATION + 1))
 
 # Safety cap: prevent infinite loops
@@ -536,15 +531,14 @@ if [ "$ITERATION" -ge "$MAX_ITERATIONS" ]; then
   echo "This likely indicates poorly specified criteria or a systematic issue."
   echo ""
   echo "**Action required:** Review the intent and unit specs, then run \`/haiku:execute\` to resume."
-  STATE=$(echo "$STATE" | hku_json_set "status" "blocked" | hku_json_set "iteration" "$ITERATION")
-  hku_state_save "$INTENT_DIR" "iteration.json" "$STATE"
+  haiku_intent_set { slug: "$INTENT_SLUG", field: "status", value: "blocked" }
+  haiku_unit_increment_bolt { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$CURRENT_UNIT" }
   exit 0
 fi
 
-# Update hat and signal SessionStart to increment iteration
-# Intent-level state saved to current branch (intent branch)
-# state.hat = nextHat, state.iteration = ITERATION
-hku_state_save "$INTENT_DIR" "iteration.json" '<updated JSON with hat and iteration>'
+# Update hat and increment bolt
+haiku_unit_advance_hat { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$CURRENT_UNIT", hat: "$NEXT_HAT" }
+haiku_unit_increment_bolt { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$CURRENT_UNIT" }
 
 source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
 haiku_telemetry_init
@@ -600,7 +594,7 @@ Create PR: gh pr create --base ${DEFAULT_BRANCH} --head haiku/{intent-slug}/main
 If the intent has configured `announcements` in its frontmatter, generate each format:
 
 ```bash
-ANNOUNCEMENTS=$(hku_frontmatter_get "announcements" "$INTENT_DIR/intent.md" 2>/dev/null || echo "[]")
+ANNOUNCEMENTS=$(haiku_intent_get { slug, field: "announcements" } 2>/dev/null || echo "[]")
 ```
 
 For each configured format, generate the announcement artifact in `.haiku/intents/{intent-slug}/`:
@@ -628,7 +622,7 @@ Before delivery, verify all statuses are correct. This guard catches cases where
 ```bash
 # PRE-DELIVERY VALIDATION: Ensure all statuses are correctly set before delivery
 source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
-source "${CLAUDE_PLUGIN_ROOT}/lib/parse.sh"
+
 
 # Verify all units are marked completed
 for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
@@ -643,10 +637,10 @@ for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
 done
 
 # Verify intent is marked completed
-INTENT_STATUS=$(hku_frontmatter_get "status" "$INTENT_DIR/intent.md")
+INTENT_STATUS=$(haiku_intent_get { slug, field: "status" })
 if [ "$INTENT_STATUS" != "completed" ]; then
   echo "Fixing: intent status '$INTENT_STATUS' → 'completed'"
-  hku_frontmatter_set "status" "completed" "$INTENT_DIR/intent.md"
+  haiku_intent_set { slug: "$INTENT_SLUG", field: "status", value: "completed" }
   git add "$INTENT_DIR/intent.md"
 fi
 
@@ -860,7 +854,9 @@ DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
 TICKET_REFS=""
 for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
-  TICKET=$(hku_frontmatter_get "ticket" "$unit_file" 2>/dev/null || echo "")
+  UNIT_NAME=$(basename "$unit_file" .md)
+  STAGE_NAME=$(basename "$(dirname "$(dirname "$unit_file")")")
+  TICKET=$(haiku_unit_get { intent: "$INTENT_SLUG", stage: "$STAGE_NAME", unit: "$UNIT_NAME", field: "ticket" } 2>/dev/null || echo "")
   if [ -n "$TICKET" ]; then
     TICKET_REFS="${TICKET_REFS}\nCloses ${TICKET}"
   fi

@@ -19,8 +19,7 @@ _HKU_DESIGN_BLUEPRINT_SOURCED=1
 BLUEPRINT_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 # shellcheck source=deps.sh
 source "$BLUEPRINT_SCRIPT_DIR/deps.sh"
-# shellcheck source=parse.sh
-source "$BLUEPRINT_SCRIPT_DIR/parse.sh"
+HAIKU_PARSE="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/..}/bin/haiku-parse.mjs"
 
 # Validate jq dependency (required for archetype JSON processing)
 hku_require_jq || return 1

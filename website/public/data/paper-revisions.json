@@ -305,12 +305,12 @@
     "revisions": [
       {
         "version": "2",
-        "date": "2026-04-03",
-        "commitHash": "df05e94",
-        "fullCommitHash": "df05e9463c1fae88f20e555cbc93779875b96018",
-        "commitMessage": "feat: per-stage review agents, fix continuous mode, one PR per intent",
+        "date": "2026-04-04",
+        "commitHash": "c1a3a57",
+        "fullCommitHash": "c1a3a57e6d1ff2c5399f80d38cf0d38193091ced",
+        "commitMessage": "fix: align paper, website, and skills — 5 findings from cross-source review",
         "stats": {
-          "linesAdded": 204,
+          "linesAdded": 207,
           "linesRemoved": 998
         },
         "sectionChanges": [
@@ -564,7 +564,7 @@
             "section": "Configuration",
             "originalSection": "Configuration",
             "isNew": true,
-            "linesAdded": 5,
+            "linesAdded": 11,
             "linesRemoved": 0
           },
           {
@@ -1532,7 +1532,7 @@
       "Enforcement Through Hooks",
       "Configuration",
       "9. Beyond Software",
-      "Two Studios in Practice",
+      "Twelve Studios in Practice",
       "What Changes Across Domains",
       "What Stays the Same",
       "Creating a Custom Studio",

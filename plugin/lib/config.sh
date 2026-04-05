@@ -14,8 +14,7 @@
 # Source foundation libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 source "$SCRIPT_DIR/deps.sh"
-source "$SCRIPT_DIR/parse.sh"
-source "$SCRIPT_DIR/state.sh"
+HAIKU_PARSE="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/..}/bin/haiku-parse.mjs"
 source "$SCRIPT_DIR/migrate.sh"
 
 # Guard: ensure dependencies are available (config.sh relies on jq and yq)
@@ -140,7 +139,7 @@ load_repo_settings() {
   fi
 
   # Parse YAML to JSON
-  hku_yaml_to_json < "$settings_file"
+  "" dump < "$settings_file"
 }
 
 # Load intent overrides from intent.md frontmatter

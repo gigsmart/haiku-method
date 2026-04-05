@@ -128,13 +128,13 @@ load_pass_metadata() {
   }
 
   local name description available_stages default_stage
-  name=$(hku_frontmatter_get "name" "$def_file")
-  description=$(hku_frontmatter_get "description" "$def_file")
+  name=$("$HAIKU_PARSE" get "$def_file" "name")
+  description=$("$HAIKU_PARSE" get "$def_file" "description")
   # Support both new (available_stages) and legacy (available_workflows) field names
-  available_stages=$(hku_frontmatter_get "available_stages" "$def_file")
-  [ -z "$available_stages" ] && available_stages=$(hku_frontmatter_get "available_workflows" "$def_file")
-  default_stage=$(hku_frontmatter_get "default_stage" "$def_file")
-  [ -z "$default_stage" ] && default_stage=$(hku_frontmatter_get "default_workflow" "$def_file")
+  available_stages=$("$HAIKU_PARSE" get "$def_file" "available_stages")
+  [ -z "$available_stages" ] && available_stages=$("$HAIKU_PARSE" get "$def_file" "available_workflows")
+  default_stage=$("$HAIKU_PARSE" get "$def_file" "default_stage")
+  [ -z "$default_stage" ] && default_stage=$("$HAIKU_PARSE" get "$def_file" "default_workflow")
 
   # Convert YAML array to JSON array: [development, design] -> ["development","design"]
   local json_stages
@@ -209,8 +209,8 @@ constrain_stage() {
 
   # Extract available_stages (or legacy available_workflows) array from frontmatter
   local available_raw
-  available_raw=$(hku_frontmatter_get "available_stages" "$def_file")
-  [ -z "$available_raw" ] && available_raw=$(hku_frontmatter_get "available_workflows" "$def_file")
+  available_raw=$("$HAIKU_PARSE" get "$def_file" "available_stages")
+  [ -z "$available_raw" ] && available_raw=$("$HAIKU_PARSE" get "$def_file" "available_workflows")
 
   # Check if requested stage is in the available list
   local available_clean
@@ -230,8 +230,8 @@ constrain_stage() {
 
   # Not in available list — return default
   local default_stage
-  default_stage=$(hku_frontmatter_get "default_stage" "$def_file")
-  [ -z "$default_stage" ] && default_stage=$(hku_frontmatter_get "default_workflow" "$def_file")
+  default_stage=$("$HAIKU_PARSE" get "$def_file" "default_stage")
+  [ -z "$default_stage" ] && default_stage=$("$HAIKU_PARSE" get "$def_file" "default_workflow")
   echo "$default_stage"
   return 0
 }

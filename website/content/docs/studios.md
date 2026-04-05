@@ -70,6 +70,18 @@ Regulatory compliance lifecycle for audits, certifications (SOC2, HIPAA, GDPR, I
 | **Persistence** | git |
 | **Delivery** | Pull request |
 
+#### Security Assessment
+
+Structured offensive security lifecycle for penetration testing, vulnerability analysis, and security audits.
+
+| Property | Value |
+|----------|-------|
+| **Stages** | reconnaissance, enumeration, exploitation, post-exploitation, reporting |
+| **Persistence** | git |
+| **Delivery** | Pull request |
+
+The security-assessment studio is distinct from the software studio's security stage. The software studio's security stage is a defensive review phase within a development lifecycle. The security-assessment studio is a standalone offensive security lifecycle — its stages move from reconnaissance (mapping the attack surface) through exploitation (validating vulnerabilities) to reporting (structured findings with severity ratings and remediation guidance).
+
 ### Go-to-Market
 
 #### Sales

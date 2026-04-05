@@ -33,8 +33,7 @@ DETECT_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck source=deps.sh
 source "$DETECT_SCRIPT_DIR/deps.sh"
-# shellcheck source=parse.sh
-source "$DETECT_SCRIPT_DIR/parse.sh"
+HAIKU_PARSE="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/..}/bin/haiku-parse.mjs"
 
 # UI file extensions that trigger the visual gate
 readonly _VISUAL_GATE_UI_EXTENSIONS="tsx jsx vue svelte html css scss"
@@ -55,7 +54,7 @@ _check_discipline() {
   local unit_file="$1"
 
   local discipline
-  discipline=$(hku_frontmatter_get "discipline" "$unit_file")
+  discipline=$("$HAIKU_PARSE" get "$unit_file" "discipline")
 
   case "$discipline" in
     frontend|design) return 0 ;;
@@ -69,7 +68,7 @@ _check_design_ref() {
   local unit_file="$1"
 
   local design_ref
-  design_ref=$(hku_frontmatter_get "design_ref" "$unit_file")
+  design_ref=$("$HAIKU_PARSE" get "$unit_file" "design_ref")
 
   [ -n "$design_ref" ] && return 0
   return 1
@@ -81,7 +80,7 @@ _check_wireframe() {
   local unit_file="$1"
 
   local wireframe
-  wireframe=$(hku_frontmatter_get "wireframe" "$unit_file")
+  wireframe=$("$HAIKU_PARSE" get "$unit_file" "wireframe")
 
   [ -n "$wireframe" ] && return 0
   return 1

@@ -21,8 +21,7 @@ _HKU_KNOWLEDGE_SOURCED=1
 
 # Source parse library (which sources deps.sh)
 _HKU_KNOWLEDGE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-# shellcheck source=parse.sh
-source "$_HKU_KNOWLEDGE_SCRIPT_DIR/parse.sh"
+HAIKU_PARSE="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/..}/bin/haiku-parse.mjs"
 
 # Valid artifact types
 _HKU_KNOWLEDGE_TYPES="design architecture product conventions domain"

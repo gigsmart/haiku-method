@@ -154,8 +154,8 @@ load_hat_metadata() {
       local project_file="${repo_root}/.haiku/hats/${hat_name}.md"
       if [[ -f "$project_file" ]]; then
         local name_fm desc_fm
-        name_fm=$(hku_frontmatter_get "name" "$project_file" 2>/dev/null)
-        desc_fm=$(hku_frontmatter_get "description" "$project_file" 2>/dev/null)
+        name_fm=$("$HAIKU_PARSE" get "$project_file" "name" 2>/dev/null)
+        desc_fm=$("$HAIKU_PARSE" get "$project_file" "description" 2>/dev/null)
         [[ -n "$name_fm" ]] && hat_name="$name_fm"
         [[ -n "$desc_fm" ]] && description="$desc_fm"
       fi

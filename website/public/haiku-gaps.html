@@ -277,30 +277,30 @@
   </div>
 
   <!-- Orchestration Layer -->
-  <div class="layer layer-partial">
-    <div class="layer-label">Orchestration Layer (Partially Addressed)</div>
+  <div class="layer layer-done">
+    <div class="layer-label">Orchestration Layer (Done)</div>
     <div class="layer-grid">
       <div class="block block-done"><strong>Cross-Studio Data</strong><span>Via knowledge + spec providers</span></div>
       <div class="block block-done"><strong>Event Polling</strong><span>Scheduled tasks poll CRM/ticketing/comms</span></div>
-      <div class="block block-partial"><strong>Cross-Intent Triggers</strong><span>Provider events surface suggestions; templates needed for automation</span></div>
-      <div class="block block-gap"><strong>Intent Templates</strong><span>Parameterized playbooks for repeatable processes</span></div>
+      <div class="block block-done"><strong>Cross-Intent Triggers</strong><span>Provider events + templates for automation</span></div>
+      <div class="block block-done"><strong>Intent Templates</strong><span>10 parameterized playbooks across 7 studios</span></div>
     </div>
   </div>
 
   <!-- People Layer -->
-  <div class="layer layer-partial">
-    <div class="layer-label">People Layer (Partially Addressed)</div>
+  <div class="layer layer-done">
+    <div class="layer-label">People Layer (Done)</div>
     <div class="layer-grid">
       <div class="block block-done"><strong>Ownership via Ticketing</strong><span>Ticket assignees = stage owners</span></div>
       <div class="block block-done"><strong>Approval via Provider</strong><span>Ticketing workflow engines handle chains</span></div>
       <div class="block block-done"><strong>Handoff via Knowledge</strong><span>Cross-studio context pushed to knowledge provider</span></div>
-      <div class="block block-gap"><strong>Gate Protocol Schema</strong><span>Multi-level approval, timeout, escalation in STAGE.md</span></div>
+      <div class="block block-done"><strong>Gate Protocol Schema</strong><span>Timeout, escalation, conditions in STAGE.md</span></div>
     </div>
   </div>
 
   <!-- Visibility Layer -->
-  <div class="layer layer-partial">
-    <div class="layer-label">Visibility Layer (Partially Addressed)</div>
+  <div class="layer layer-done">
+    <div class="layer-label">Visibility Layer (Done)</div>
     <div class="layer-grid">
       <div class="block block-done"><strong>Portfolio via Ticketing</strong><span>Intent epics + unit tickets = the dashboard</span></div>
       <div class="block block-done"><strong>Metrics via Provider</strong><span>CRM pipeline reports, ticketing velocity</span></div>
@@ -414,7 +414,7 @@ triggers:
 </div>
 
 <div class="gap-card" style="margin-top:1.5rem; border-color:var(--accent)">
-  <h3><span class="tag tag-done">Proposed Fix</span> Studio Templates Directory</h3>
+  <h3><span class="tag tag-done">Implemented</span> Studio Templates Directory</h3>
   <p>Add <code>templates/</code> to the studio directory. Each template is a pre-filled intent with parameterized fields.</p>
   <pre style="margin-top:0.75rem; padding:1rem; background:var(--accent-bg); border-radius:0.5rem; font-size:0.8rem; overflow-x:auto; color:var(--accent)"><code># customer-success/templates/new-customer-onboarding.md
 ---
@@ -610,17 +610,164 @@ Event detected → gate advances on next session or poll</code></pre>
     </ul>
   </div>
   <div>
-    <h3 style="color:var(--warn)">Remaining Gaps</h3>
+    <h3 style="color:var(--success)">Previously Closed</h3>
     <ul style="margin-top:0.5rem">
-      <li><strong>Intent templates</strong> — parameterized playbooks for repeatable processes</li>
-      <li><strong>Gate protocol schema</strong> — timeout, escalation, conditional approval in STAGE.md</li>
+      <li><strong>Gate protocol</strong> — timeout, escalation, conditions in STAGE.md</li>
+      <li><strong>OTEL telemetry</strong> — 11 new event types for full lifecycle visibility</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- WAVE 2: MULTI-COMPANY MATURITY -->
+<!-- ============================================================ -->
+
+<h2 style="margin-top:4rem">Wave 2: Multi-Company Maturity</h2>
+<p>With the foundation complete, these gaps emerge when running H·AI·K·U across departments at scale.</p>
+
+<div class="arch" style="margin-top:1.5rem">
+  <div class="layer layer-done">
+    <div class="layer-label">Scale Layer (Wave 2 — All Resolved)</div>
+    <div class="layer-grid">
+      <div class="block block-done"><strong>Conflict Awareness</strong><span>Git handles conflicts; decomposition checks active branches</span></div>
+      <div class="block block-done"><strong>Knowledge Decay</strong><span>Freshness metadata on outputs, code-drift check at decomposition</span></div>
+      <div class="block block-done"><strong>Composite Intents</strong><span>Multi-studio parallel stages with sync points</span></div>
+      <div class="block block-done"><strong>Post-Delivery Monitoring</strong><span>Already covered by /operate — studio operations templates</span></div>
+      <div class="block block-done"><strong>Capacity Model</strong><span>/haiku:capacity — reads timestamps from frontmatter</span></div>
+      <div class="block block-done"><strong>Access Control</strong><span>Handled by providers — git, ticketing, CRM enforce their own ACLs</span></div>
+      <div class="block block-done"><strong>Studio Versioning</strong><span>Redundant — plugin version tracks all studios together</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Gap details with solutions -->
+
+<h2>Wave 2 Gap 1: Conflict Awareness</h2>
+<p>This is primarily a software concern. Git already handles merge conflicts at PR time. The improvement is earlier awareness — during decomposition, not at merge.</p>
+
+<div class="gap-card" style="margin-top:1rem; border-color:var(--accent)">
+  <h3><span class="tag tag-done">Resolved</span> Decomposition-Time Branch Check</h3>
+  <p>During decomposition (step 4.1), the software studio's inception stage checks for other active <code>haiku/*</code> branches and their recent file changes. If overlap is detected, it surfaces a note — not a blocker. Git handles the actual conflicts.</p>
+  <pre style="margin-top:0.75rem; padding:1rem; background:var(--accent-bg); border-radius:0.5rem; font-size:0.8rem; overflow-x:auto; color:var(--accent)"><code># During decomposition, a quick check:
+git branch -r --list 'origin/haiku/*' | while read branch; do
+  git diff --name-only main...$branch
+done
+# → "Note: haiku/auth-refactor also modifies src/auth/ — be aware"
+
+# Not a blocker. Not a trigger. Just awareness during planning.</code></pre>
+  <p style="font-size:0.85rem; margin-top:0.5rem">No footprint schema, no polling infrastructure, no cross-repo scanning. Git is already the conflict resolution tool. This just moves awareness earlier.</p>
+</div>
+
+<h2>Wave 2 Gap 2: Knowledge Decay</h2>
+<p>Knowledge artifacts become stale as the product evolves. Detection belongs at the point of use — during decomposition, when a stage loads its inputs — not on a polling schedule.</p>
+
+<div class="gap-card" style="margin-top:1rem; border-color:var(--accent)">
+  <h3><span class="tag tag-done">Implemented</span> Decay Metadata on Stage Outputs</h3>
+  <p>Stage outputs declare freshness and code dependencies in their frontmatter. When a downstream stage loads the input during decomposition, Claude checks the metadata and surfaces staleness.</p>
+  <pre style="margin-top:0.75rem; padding:1rem; background:var(--accent-bg); border-radius:0.5rem; font-size:0.8rem; overflow-x:auto; color:var(--accent)"><code># Stage output metadata (written during output persistence, step 4.4)
+---
+name: behavioral-spec
+stage: product
+created: 2026-03-15
+freshness: 90d              # advisory: consider stale after 90 days
+last_validated: 2026-03-15
+depends_on_code:             # files this artifact describes
+  - src/api/routes/*.ts
+  - src/services/auth.ts
+---
+
+# Decay check (during decomposition, step 4.1 — when loading inputs):
+# Claude reads the input artifact, checks the metadata:
+1. freshness: created + 90d < now? → "This spec is 120 days old"
+2. code drift: git log --since={last_validated} -- {depends_on_code}
+   → "47 commits to the described files since this spec was written"
+3. Claude decides: surface as a note, trigger stage-scoped refinement,
+   or proceed if the changes are irrelevant to this stage's work</code></pre>
+  <p style="font-size:0.85rem; margin-top:0.5rem">No trigger, no polling. The check happens naturally when the artifact is consumed. Code-drift is more meaningful than time — a spec describing unchanged code is still fresh regardless of age.</p>
+</div>
+
+<h2>Wave 2 Gap 3: Studio Composition</h2>
+<p>A product launch needs marketing AND software stages running in parallel with sync points. A compliance remediation might require both software development AND documentation. Today, these are separate intents with manual coordination.</p>
+
+<div class="gap-card" style="margin-top:1rem; border-color:var(--accent)">
+  <h3><span class="tag tag-done">Implemented</span> Composite Intents</h3>
+  <p>An intent can declare multiple studios with sync points. Each studio's stages run independently, but specified stages must sync before either can advance.</p>
+  <pre style="margin-top:0.75rem; padding:1rem; background:var(--accent-bg); border-radius:0.5rem; font-size:0.8rem; overflow-x:auto; color:var(--accent)"><code># intent.md for a product launch
+---
+title: Launch Feature X
+composite:
+  - studio: software
+    stages: [inception, design, development]
+  - studio: marketing
+    stages: [research, strategy, content, launch]
+sync:
+  - wait: [software:development, marketing:content]
+    then: [marketing:launch]
+    reason: "Can't launch marketing until the feature is built"
+---
+
+# Execution:
+# software:inception and marketing:research run in parallel
+# software:design and marketing:strategy run in parallel
+# software:development and marketing:content run in parallel
+# marketing:launch WAITS for both software:development + marketing:content
+# → sync point enforced by the orchestrator</code></pre>
+  <p style="font-size:0.85rem; margin-top:0.5rem">Composite intents are coordinated locally. Each studio's stages run their own decompose→execute→review→persist→gate cycle. Sync points are just <code>await</code> gates that check the other studio's stage completion status.</p>
+</div>
+
+<h2>Wave 2 Gap 4: Post-Delivery Monitoring</h2>
+<p>Already covered by <code>/haiku:operate</code>. Each studio defines operation templates (health-check, monitoring, etc.) that run after delivery. The operations stage in the software studio includes health checks, dependency audits, and backup verification — all studio-prescribed.</p>
+
+<div class="gap-card" style="margin-top:1rem; border-color:var(--accent)">
+  <h3><span class="tag tag-done">Resolved</span> Studio Operations = Post-Delivery Monitoring</h3>
+  <p>Not a separate mechanism. The <code>/haiku:operate</code> skill reads operation templates from <code>studios/{studio}/operations/</code> and instantiates them for each intent. The software studio already ships with <code>health-check.md</code>, <code>dependency-audit.md</code>, <code>backup-verification.md</code>, and <code>secret-rotation.md</code>.</p>
+</div>
+
+<h2>Wave 2 Gap 5: Capacity Model</h2>
+<p>Implemented. <code>/haiku:capacity</code> reads timestamps from committed frontmatter — intent, stage, and unit artifacts all have <code>started_at</code> and <code>completed_at</code>. No OTEL query needed (write-only endpoint). No <code>iteration.json</code> (deprecated). Git log provides session count estimates.</p>
+
+<h2>Wave 2 Gap 6: Access Control</h2>
+<p>Not H·AI·K·U's concern. Providers enforce their own access control — git repos have permissions, ticketing has team visibility, CRM has deal ownership. <code>/browse</code> inherits git provider ACLs via OAuth. No additional layer needed.</p>
+
+<h2>Wave 2 Gap 7: Studio Versioning</h2>
+<p>Redundant. Studios ship as part of the plugin, which is already versioned (<code>plugin.json</code>, auto-bumped by CI). You can't pin studio A to v1 while studio B runs v2 — they're all in the same plugin release. Intent records the plugin version it was created with (<code>plugin_version</code> in frontmatter) for reference, but there's no separate studio version to manage.</p>
+</div>
+
+<h2 style="margin-top:3rem">Summary</h2>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; margin-top:1rem">
+  <div>
+    <h3 style="color:var(--success)">Wave 1: Complete</h3>
+    <ul style="margin-top:0.5rem">
+      <li>12 studios, 60 stages, 120+ hats, 72 review agents</li>
+      <li>4 gate types + gate protocol (timeout/escalation)</li>
+      <li>38 operations, 26 reflections, 10 intent templates</li>
+      <li>6 bidirectional providers with semantic translation</li>
+      <li>/browse SPA with OAuth (GitHub + GitLab)</li>
+      <li>/haiku:triggers for scheduled provider polling</li>
+      <li>OTEL telemetry for full lifecycle visibility</li>
+      <li>GCP Cloud Function auth proxy (Terraform-managed)</li>
+      <li>Stage-scoped refinement for upstream gaps</li>
+      <li>Continuous + discrete execution modes</li>
+    </ul>
+  </div>
+  <div>
+    <h3 style="color:var(--success)">Wave 2: All Resolved</h3>
+    <ul style="margin-top:0.5rem">
+      <li><strong style="text-decoration:line-through; opacity:0.5">Conflict detection</strong> <span style="color:var(--success)">— git handles it; decomposition checks active branches</span></li>
+      <li><strong style="text-decoration:line-through; opacity:0.5">Post-delivery monitoring</strong> <span style="color:var(--success)">— already covered by /operate + studio operations</span></li>
+      <li><strong style="text-decoration:line-through; opacity:0.5">Studio composition</strong> <span style="color:var(--success)">— implemented: composite intents with sync points</span></li>
+      <li><strong style="text-decoration:line-through; opacity:0.5">Knowledge decay</strong> <span style="color:var(--success)">— done: freshness metadata + code-drift at decomposition</span></li>
+      <li><strong style="text-decoration:line-through; opacity:0.5">Capacity model</strong> <span style="color:var(--success)">— /haiku:capacity from frontmatter timestamps</span></li>
+      <li><strong style="text-decoration:line-through; opacity:0.5">Browse access control</strong> <span style="color:var(--success)">— providers handle ACLs</span></li>
+      <li><strong style="text-decoration:line-through; opacity:0.5">Studio versioning</strong> <span style="color:var(--success)">— redundant with plugin versioning</span></li>
     </ul>
   </div>
 </div>
 
 <p style="margin-top:2rem; text-align:center; font-size:0.9rem; color:var(--accent); font-weight:600">
-  H·AI·K·U is a Claude tool, not a platform. Providers are the infrastructure.<br/>
-  Claude is the universal adapter — it reads any provider's data model and produces H·AI·K·U artifacts, and vice versa.
+  Wave 1 makes H·AI·K·U work across companies. Wave 2 makes it work at scale.<br/>
+  H·AI·K·U is a Claude tool, not a platform. Providers are the infrastructure. Claude is the universal adapter.
 </p>
 
 </body>

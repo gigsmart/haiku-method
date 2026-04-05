@@ -103,19 +103,11 @@ The four-phase lifecycle is universal, but *how* each phase manifests depends on
 
 ### Built-in Studios
 
-H·AI·K·U ships with two studios that cover broad categories of work:
+H·AI·K·U ships with twelve studios organized into three categories — engineering, go-to-market, and general purpose — covering work from software development through sales cycles to content creation.
 
-**Ideation** is the default studio — a general-purpose lifecycle for creative, analytical, or exploratory work.
+#### Engineering Studios
 
-| Property | Value |
-|---|---|
-| Stages | research → create → review → deliver |
-| Persistence | filesystem (local snapshots) |
-| Delivery | local |
-
-The ideation studio suits work that follows a gather-create-review-deliver pattern: content creation, research projects, documentation, analysis, or any initiative that does not require version-controlled collaboration infrastructure.
-
-**Software** is a full software development lifecycle from problem understanding through security review.
+**Software** is the default for code-producing work — a full development lifecycle from problem understanding through security review.
 
 | Property | Value |
 |---|---|
@@ -123,7 +115,99 @@ The ideation studio suits work that follows a gather-create-review-deliver patte
 | Persistence | git (branches, worktrees) |
 | Delivery | pull request |
 
-The software studio's six stages span the complete arc from understanding the problem (inception) through ensuring it is secure in production (security). Each stage defines its own behavioral roles — inception uses an architect and decomposer; development uses a planner, builder, and reviewer; security uses a threat modeler, red team, blue team, and security reviewer.
+**Data Pipeline** covers ETL pipelines, data warehouses, and analytics workflows.
+
+| Property | Value |
+|---|---|
+| Stages | discovery → extraction → transformation → validation → deployment |
+| Persistence | git |
+| Delivery | pull request |
+
+**Migration** handles system and data migrations — platform transitions, version upgrades, and data moves.
+
+| Property | Value |
+|---|---|
+| Stages | assessment → mapping → migrate → validation → cutover |
+| Persistence | git |
+| Delivery | pull request |
+
+**Incident Response** is optimized for fast response with structured follow-through.
+
+| Property | Value |
+|---|---|
+| Stages | triage → investigate → mitigate → resolve → postmortem |
+| Persistence | git |
+| Delivery | pull request |
+
+**Compliance** covers regulatory audits, certifications (SOC2, HIPAA, GDPR, ISO 27001), and policy management.
+
+| Property | Value |
+|---|---|
+| Stages | scope → assess → remediate → document → certify |
+| Persistence | git |
+| Delivery | pull request |
+
+**Security Assessment** provides a structured offensive security lifecycle for penetration testing and vulnerability analysis.
+
+| Property | Value |
+|---|---|
+| Stages | reconnaissance → enumeration → exploitation → post-exploitation → reporting |
+| Persistence | git |
+| Delivery | pull request |
+
+#### Go-to-Market Studios
+
+**Sales** manages deals from prospect research through close and handoff.
+
+| Property | Value |
+|---|---|
+| Stages | research → qualification → proposal → negotiation → close |
+| Persistence | filesystem |
+| Delivery | local |
+
+**Marketing** covers campaign and content marketing from audience research through launch and measurement.
+
+| Property | Value |
+|---|---|
+| Stages | research → strategy → content → launch → measure |
+| Persistence | filesystem |
+| Delivery | local |
+
+**Customer Success** manages the customer lifecycle from onboarding through renewal.
+
+| Property | Value |
+|---|---|
+| Stages | onboarding → adoption → health-check → expansion → renewal |
+| Persistence | filesystem |
+| Delivery | local |
+
+**Product Strategy** defines what to build and why — from discovery through stakeholder alignment.
+
+| Property | Value |
+|---|---|
+| Stages | discovery → user-research → prioritization → roadmap → stakeholder-review |
+| Persistence | filesystem |
+| Delivery | local |
+
+#### General Purpose Studios
+
+**Ideation** is the default for creative, analytical, or exploratory work that does not fit a specialized domain.
+
+| Property | Value |
+|---|---|
+| Stages | research → create → review → deliver |
+| Persistence | filesystem (local snapshots) |
+| Delivery | local |
+
+**Documentation** covers technical documentation — API docs, guides, runbooks, and knowledge bases.
+
+| Property | Value |
+|---|---|
+| Stages | audit → outline → draft → review → publish |
+| Persistence | git |
+| Delivery | pull request |
+
+Each studio defines its own behavioral roles. The software studio's inception stage uses an architect and decomposer; its development stage uses a planner, builder, and reviewer; its security stage uses a threat modeler, red team, blue team, and security reviewer. The sales studio's qualification stage uses a research analyst and qualification specialist. Despite these differences, all twelve studios run on the same orchestration machinery.
 
 ### Custom Studios
 
@@ -145,7 +229,7 @@ A stage declares five things:
 
 2. **Review agents** — specialized adversarial agents that run during the stage's review phase. Each review agent is defined as a file within the stage's `review-agents/` directory, with a mandate and checklist scoped to the stage's domain. A development stage might define correctness, security, performance, architecture, and test-quality agents. A compliance stage might define thoroughness and accuracy agents. Stages can also *include* review agents from other stages via `review-agents-include`, enabling cross-stage verification — for example, the development stage can include the design stage's consistency and accessibility agents to verify that the implementation respects the design intent.
 
-3. **Review gate** — the checkpoint that must be satisfied before advancing. Four gate types exist: *auto* (the framework advances when quality gates pass), *ask* (the framework pauses for human approval), *external* (the framework blocks until an external review — such as a pull request approval — resolves), and *await* (the framework blocks until an external event occurs — such as a customer response, a CI pipeline result, or a stakeholder decision — that is outside the agent's control). Gates may vary by operating context: a stage can require external review under normal operation while allowing human-approval-only during autonomous runs.
+3. **Review gate** — the checkpoint that must be satisfied before advancing. Four gate types exist: *auto* (the framework advances when quality gates pass), *ask* (the framework pauses for human approval), *external* (the framework blocks until an external review — such as a pull request approval — resolves), and *await* (the framework blocks until an external event occurs — such as a customer response, a CI pipeline result, or a stakeholder decision — that is outside the agent's control). Gates may vary by operating context: a stage can require external review under normal operation while allowing human-approval-only during autonomous runs. Gates can also declare a *gate protocol* with timeout duration, timeout action (escalate, auto-advance, or block), and pre-conditions that must be true before the gate can pass.
 
 4. **Inputs** — explicit dependencies on outputs from earlier stages. A development stage, for instance, declares that it requires the discovery document from inception, the design brief from design, and the behavioral spec from product. This creates a verifiable pipeline: each stage's preconditions are guaranteed by the stages that preceded it.
 
@@ -155,7 +239,7 @@ A stage declares five things:
 
 Each stage executes through a fixed five-step loop:
 
-1. **Decompose** — Resolve inputs from prior stages. If the stage has no units yet, decompose the work into discrete units with completion criteria and a dependency graph. If upstream outputs are found to be insufficient, the agent surfaces the gap to the human — stage-backs are always human-initiated.
+1. **Decompose** — Resolve inputs from prior stages, checking freshness metadata for staleness. If the stage has no units yet, decompose the work into discrete units with completion criteria and a dependency graph. If an upstream output has a small gap (e.g., a missing screen in a design brief), the agent can run a *stage-scoped refinement* — a targeted side-trip that adds a single unit to the upstream stage, executes it through that stage's hats, and persists the updated output, all without resetting the current stage's progress. Full stage-backs (resetting `active_stage` to a prior stage) are always human-initiated.
 2. **Execute** — For each unit in dependency order, run the bolt loop: cycle through the hat sequence. Each hat runs in isolation, produces output for the next hat, and quality gates verify the result.
 3. **Adversarial review** — Spawn the stage's review agents in parallel. Each agent evaluates the stage's work against its specific mandate (correctness, security, accessibility, etc.). Agents from other stages included via `review-agents-include` run alongside the stage's own agents. High-severity findings trigger targeted fixes before the stage can proceed.
 4. **Persist** — Save stage outputs to their declared scope.
@@ -327,15 +411,17 @@ Configuration follows a three-level precedence: intent-level overrides take prio
 
 H·AI·K·U's universal core — the four-phase lifecycle, the stage loop, hat-based role separation, and quality enforcement — is domain-agnostic. Studios map this core to specific domains.
 
-### Two Studios in Practice
+### Twelve Studios in Practice
 
-The plugin ships with two studios that demonstrate the framework's range.
+The plugin ships with twelve studios across three categories that demonstrate the framework's range.
 
-The **software studio** defines six stages: inception → design → product → development → operations → security. It uses git persistence with pull-request delivery. Its hats include architects, decomposers, designers, builders, reviewers, and security auditors. Quality gates run test suites, linters, type checkers, and build commands.
+The **engineering studios** (software, data-pipeline, migration, incident-response, compliance, security-assessment) use git persistence with pull-request delivery. Their stages span domain-specific concerns — the software studio moves from inception through security; the incident-response studio moves from triage through postmortem; the security-assessment studio moves from reconnaissance through reporting. Quality gates run test suites, linters, type checkers, and build commands where applicable.
 
-The **ideation studio** defines four stages: research → create → review → deliver. It uses filesystem persistence with local delivery. Its hats include researchers, analysts, creators, editors, critics, fact-checkers, and publishers. The adversarial review phase (critics and fact-checkers) provides quality enforcement where machine-verifiable gates are not applicable.
+The **go-to-market studios** (sales, marketing, customer-success, product-strategy) use filesystem persistence with local delivery. Their stages reflect business workflows — the sales studio moves from research through close; the customer-success studio moves from onboarding through renewal. Quality enforcement relies on adversarial review rather than machine-verifiable gates.
 
-Both studios run on the same orchestration machinery. The same stage loop function drives inception in the software studio and research in the ideation studio. The same gate resolution function handles both domains. The same context injection hook loads context for any studio's hats.
+The **general-purpose studios** (ideation, documentation) serve creative, analytical, and documentation work. The ideation studio uses filesystem persistence; the documentation studio uses git persistence with pull-request delivery.
+
+All twelve studios run on the same orchestration machinery. The same stage loop function drives inception in the software studio, triage in the incident-response studio, and research in the ideation studio. The same gate resolution function handles every domain. The same context injection hook loads context for any studio's hats.
 
 ### What Changes Across Domains
 
@@ -377,7 +463,7 @@ The universal layer provides: a four-phase lifecycle that maps to any initiative
 
 The domain-specific layer provides: studios that define stage sequences appropriate to the domain; hats that carry behavioral instructions tuned to specific roles; quality gates that run domain-appropriate verification; and output definitions that scope deliverables correctly.
 
-The plugin implementation demonstrates that this separation works in practice. The same orchestration machinery drives a six-stage software development lifecycle with git persistence and pull-request delivery, and a four-stage ideation lifecycle with filesystem persistence and local delivery. Adding a new domain requires defining stages and hats, not modifying orchestration code.
+The plugin implementation demonstrates that this separation works in practice. The same orchestration machinery drives twelve studios — from a six-stage software development lifecycle with git persistence and pull-request delivery, to a five-stage sales cycle with filesystem persistence, to a five-stage security assessment with git-backed reporting. Adding a new domain requires defining stages and hats, not modifying orchestration code.
 
 The framework is intentionally extensible through studios rather than through core modifications. The orchestration layer is stable; the studio layer is where domain expertise accumulates.
 

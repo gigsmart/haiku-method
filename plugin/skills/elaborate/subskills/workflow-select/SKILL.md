@@ -21,15 +21,15 @@ Composable sub-skill for discovering available hats, presenting workflow options
 
 ## Step 1: Discover Available Hats
 
-Use `hku_frontmatter_get` to read all available hat definitions dynamically:
+Read all available hat definitions dynamically by parsing YAML frontmatter from hat files:
 
 ```bash
 # List all hats from plugin directory
 for hat_file in "${CLAUDE_PLUGIN_ROOT}/hats/"*.md; do
   [ -f "$hat_file" ] || continue
   slug=$(basename "$hat_file" .md)
-  name=$(hku_frontmatter_get "name" "$hat_file" 2>/dev/null)
-  desc=$(hku_frontmatter_get "description" "$hat_file" 2>/dev/null)
+  name=$(sed -n '/^---$/,/^---$/{ /^name:/s/^name: *//p }' "$hat_file" 2>/dev/null)
+  desc=$(sed -n '/^---$/,/^---$/{ /^description:/s/^description: *//p }' "$hat_file" 2>/dev/null)
   echo "- **${name:-$slug}** (\`$slug\`): $desc"
 done
 
@@ -37,8 +37,8 @@ done
 for hat_file in .haiku/hats/*.md; do
   [ -f "$hat_file" ] || continue
   slug=$(basename "$hat_file" .md)
-  name=$(hku_frontmatter_get "name" "$hat_file" 2>/dev/null)
-  desc=$(hku_frontmatter_get "description" "$hat_file" 2>/dev/null)
+  name=$(sed -n '/^---$/,/^---$/{ /^name:/s/^name: *//p }' "$hat_file" 2>/dev/null)
+  desc=$(sed -n '/^---$/,/^---$/{ /^description:/s/^description: *//p }' "$hat_file" 2>/dev/null)
   echo "- **${name:-$slug}** (\`$slug\`): $desc [project override]"
 done
 ```

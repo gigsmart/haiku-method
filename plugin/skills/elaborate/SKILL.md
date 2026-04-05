@@ -1,5 +1,5 @@
 ---
-description: Start H·AI·K·U mob elaboration to collaboratively define intent, success criteria, and decompose into units. Prefer `/haiku:new` + `/haiku:run` for stage-based workflows.
+description: "Deprecated: use /haiku:new + /haiku:run instead. Legacy elaboration for non-studio intents."
 allowed-tools:
   - Read
   - Write
@@ -46,11 +46,11 @@ allowed-tools:
 **Stage-based intent detection:** Before running legacy elaboration, check if the active intent has a `studio:` field in its frontmatter:
 
 ```bash
-source "$CLAUDE_PLUGIN_ROOT/lib/state.sh"
+
 source "$CLAUDE_PLUGIN_ROOT/lib/orchestrator.sh"
 local intent_dir=$(hku_find_active_intent)
 if [ -n "$intent_dir" ]; then
-  local studio=$(hku_frontmatter_get "studio" "$intent_dir/intent.md")
+  local studio=$(haiku_intent_get { slug: "$(basename "$intent_dir")", field: "studio" })
   if [ -n "$studio" ]; then
     # Stage-based intent — delegate to /haiku:run plan phase
     echo "This intent uses the stage-based workflow (studio: $studio)."
@@ -303,7 +303,7 @@ INTENT_SLUG="{slug}"
 
 # Check if intent.md exists and has iterates_on
 if [ -f ".haiku/intents/${INTENT_SLUG}/intent.md" ]; then
-  ITERATES_ON=$(hku_frontmatter_get "iterates_on" ".haiku/intents/${INTENT_SLUG}/intent.md" 2>/dev/null || echo "")
+  ITERATES_ON=$(haiku_intent_get { slug: "$INTENT_SLUG", field: "iterates_on" } 2>/dev/null || echo "")
 fi
 ```
 
@@ -369,7 +369,7 @@ This intent iterates on **{previous title}** (`{previous-slug}`).
 **Store this context** — it will be referenced in Phase 2, Phase 2.5, and Phase 5. Save to state:
 
 ```bash
-hku_state_save "$INTENT_DIR" "previous-intent-context" "{JSON summary of previous intent}"
+echo "{JSON summary of previous intent}" > "$INTENT_DIR/previous-intent-context.json"
 ```
 
 **When `iterates_on` is set, the following phases are modified:**
@@ -708,13 +708,13 @@ include its full content here. Load the list of artifacts via
 `hku_knowledge_list` and read each one via `hku_knowledge_read "$type"`.
 
 **Filter out scaffold artifacts:** Before including an artifact, check its
-frontmatter confidence level via `hku_frontmatter_get "confidence"`. Skip
+frontmatter confidence level. Skip
 any artifact with `confidence: low` — these are greenfield scaffolds with
 no real content. Also skip artifacts whose body sections contain only
 placeholder text like `(none yet)`.
 
 ```bash
-CONFIDENCE=$(hku_frontmatter_get "confidence" ".haiku/knowledge/${artifact_type}.md" 2>/dev/null || echo "")
+CONFIDENCE=$(sed -n '/^---$/,/^---$/{ /^confidence:/s/^confidence: *//p }' ".haiku/knowledge/${artifact_type}.md" 2>/dev/null || echo "")
 if [ "$CONFIDENCE" = "low" ]; then
   continue  # Skip low-confidence scaffolds in discovery brief
 fi
@@ -932,7 +932,7 @@ hku_generate_design_blueprint "${INTENT_SLUG}" "${SELECTED_ARCHETYPE}" "${SELECT
 source "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh"
 
 # Read blueprint details
-ARCHETYPE_NAME=$(hku_frontmatter_get "archetype_name" ".haiku/intents/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || hku_frontmatter_get "archetype" ".haiku/intents/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || echo "unknown")
+ARCHETYPE_NAME=$(sed -n '/^---$/,/^---$/{ /^archetype_name:/s/^archetype_name: *//p }' ".haiku/intents/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || sed -n '/^---$/,/^---$/{ /^archetype:/s/^archetype: *//p }' ".haiku/intents/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || echo "unknown")
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # Extract the body (everything after frontmatter) from the blueprint
@@ -1225,7 +1225,7 @@ Clicking an intent navigates to the Intent Detail view which shows:
 Data sources:
 - Intent metadata: Read `.haiku/intents/{slug}/intent.md` frontmatter via filesystem API
 - Unit metadata: Read `.haiku/intents/{slug}/stages/*/units/unit-*.md` frontmatter
-- Live state: Query `hku_state_load "$INTENT_DIR" "iteration.json"` for current hat and phase
+- Live state: Query `haiku_stage_get { intent, stage, field: "phase" }` for current hat and phase
 
 This unit does NOT handle: hat visualization (unit-03), live monitoring (unit-04),
 or timeline replay (unit-05). It only renders the structural hierarchy.
@@ -2129,7 +2129,7 @@ Use `AskUserQuestion`:
 
 The intent slug is derived from the `.haiku/intents/{intent-slug}/` directory path — no separate state save is needed.
 
-**Note:** Do NOT save `iteration.json` here. Execution state (hat, iteration count, workflow, status) is initialized by `/haiku:execute` when the build loop starts. Elaboration only writes the spec artifacts.
+**Note:** Do NOT initialize execution state here. Stage state (`stages/{stage}/state.json`) and unit state (unit frontmatter) are initialized by `/haiku:execute` when the build loop starts. Elaboration only writes the spec artifacts.
 
 ### 5. Commit any remaining artifacts on intent branch:
 

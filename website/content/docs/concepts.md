@@ -80,11 +80,7 @@ Studios are selected during `/haiku:new` and their stages run automatically via 
 
 #### Stage Constraints
 
-<<<<<<< HEAD
 Each stage restricts which hats are available during its execution. Hats are defined as files in `stages/{stage}/hats/{hat}.md`, ensuring the right discipline is applied at the right time.
-=======
-Each stage restricts which hats are available during its execution. Hats are defined as separate files at `stages/{stage}/hats/{hat}.md`, ensuring the right discipline is applied at the right time.
->>>>>>> 88bf3585c47301617dc53f3f900fe85e8303f2f3
 
 | Stage | Available Hats | Focus |
 |-------|---------------|-------|
@@ -357,6 +353,34 @@ Human reviews output
 - **OHOTL**: GPS drives while you watch, you can redirect anytime
 - **AHOTL**: You set destination, define acceptable routes, check when you arrive
 
+## Execution Modes: Continuous vs Discrete
+
+When creating an intent with `/haiku:new`, you select an execution mode that controls how stages advance.
+
+### Continuous Mode
+
+Continuous mode runs each stage in sequence, advancing automatically when review gates allow. When a gate passes (`auto`), the framework moves to the next stage without human intervention. When a gate requires approval (`ask`), external review (`external`), or an external event (`await`), the framework pauses at that gate, then continues through remaining stages once resolved.
+
+This is the default. It suits initiatives where the human trusts the review gates to enforce quality at each stage boundary.
+
+### Discrete Mode
+
+Discrete mode runs the same stage loop but always stops after each stage completes, regardless of the review gate setting. The human explicitly advances through stages by invoking `/haiku:run` again.
+
+This suits larger initiatives, cross-team work, and situations where each stage needs explicit human review before the next begins — for example, when a product stage's outputs must be approved by a different stakeholder than the development stage's outputs.
+
+### How They Differ
+
+Both modes execute the same five-step stage loop (decompose, execute, adversarial review, persist, gate). The difference is post-gate behavior:
+
+| Aspect | Continuous | Discrete |
+|--------|-----------|----------|
+| **After `auto` gate passes** | Advance to next stage | Stop; wait for `/haiku:run` |
+| **After `ask` gate** | Pause for approval, then advance | Pause for approval, then stop |
+| **After `external` gate** | Block until resolved, then advance | Block until resolved, then stop |
+| **After `await` gate** | Block until event, then advance | Block until event, then stop |
+| **Best for** | Trusted pipelines, small intents | Large intents, multi-stakeholder review |
+
 ## Bolts
 
 A **Bolt** is a single iteration cycle - one focused work session bounded by context resets (`/clear`).
@@ -384,24 +408,46 @@ A Bolt naturally ends when:
 
 ## State Management
 
-H·AI·K·U uses a two-tier state model:
+H·AI·K·U tracks state at three levels — intent, stage, and unit — using frontmatter fields and JSON state files. MCP tools (`haiku_intent_*`, `haiku_stage_*`, `haiku_unit_*`) are the primary interface for reading and writing state.
 
-### Committed Artifacts (`.haiku/`)
+### Intent State
 
-Persisted across sessions, branches, and team members:
+Stored as frontmatter fields in `intent.md`:
+
+| Field | Purpose |
+|------|---------|
+| `started_at` | When the intent began |
+| `completed_at` | When the intent finished |
+| `status` | Current intent status (active, completed, blocked) |
+
+### Stage State
+
+Stored in `stages/{stage}/state.json` within the intent directory:
+
+| Field | Purpose |
+|------|---------|
+| `phase` | Current phase within the stage (decompose, execute, review, persist, gate) |
+| `started_at` | When the stage began |
+| `completed_at` | When the stage finished |
+| `gate_entered_at` | When the review gate was reached |
+| `gate_outcome` | Result of gate evaluation (passed, waiting, blocked) |
+
+### Unit State
+
+Stored as frontmatter fields in `unit-*.md`:
+
+| Field | Purpose |
+|------|---------|
+| `bolt` | Current bolt (iteration) number |
+| `hat` | Current hat within the bolt's hat sequence |
+| `status` | Unit status (pending, active, completed, blocked) |
+| `started_at` | When the unit began |
+| `completed_at` | When the unit finished |
+
+### Supporting Files
 
 | File | Purpose |
 |------|---------|
-| `intent.md` | What we're building, overall criteria |
-| `unit-*.md` | Individual units with their criteria |
-
-### Ephemeral State (`.haiku/{slug}/state/`)
-
-Session-scoped, cleared on `/haiku:reset`:
-
-| File | Purpose |
-|------|---------|
-| `iteration.json` | Current hat, iteration count, status |
 | `scratchpad.md` | Learnings and progress notes |
 | `blockers.md` | Documented blockers |
 
@@ -409,8 +455,8 @@ Session-scoped, cleared on `/haiku:reset`:
 
 If you `/clear` without the stop hook:
 
-1. Committed artifacts (`.haiku/`) are safe
-2. Ephemeral state persists in `.haiku/{slug}/state/` files
+1. Committed artifacts (`.haiku/`) are safe — intent, stage, and unit state are persisted to disk
+2. MCP tools reconstruct full execution context on session start
 3. Run `/haiku:run` to continue
 
 ## Iteration Through Stages
@@ -453,9 +499,47 @@ Design references use provider-specific URI schemes (e.g., `figma://file-key#nod
 
 See the [Design Providers Guide](/docs/guide-design-providers/) for setup instructions, capability details, and configuration for each provider.
 
+## Intent Templates
+
+Studios ship with parameterized intent templates in `studios/{name}/templates/`. Templates provide pre-filled units with `{{ parameter }}` substitution, so common patterns can be instantiated without manual elaboration.
+
+Use `/haiku:new --template <name> --param key=value` to create an intent from a template. For example:
+
+```
+/haiku:new --template new-feature --param feature_name="User Profiles" --param api_prefix="/api/v2"
+```
+
+Ten templates ship across seven studios:
+
+| Template | Studio | Purpose |
+|----------|--------|---------|
+| `new-feature` | software | Standard feature with inception through security |
+| `bugfix` | software | Bug investigation and fix with regression tests |
+| `refactor` | software | Code restructuring with safety checks |
+| `new-prospect` | sales | New prospect research and qualification |
+| `new-customer-onboarding` | customer-success | Customer onboarding workflow |
+| `quarterly-evidence-collection` | compliance | Periodic compliance evidence gathering |
+| `production-incident` | incident-response | Incident response from triage to postmortem |
+| `product-launch` | marketing | Product launch campaign from research to measurement |
+| `api-documentation` | documentation | API documentation from audit to publish |
+
+Templates define units with completion criteria, dependencies, and stage assignments. Parameters are substituted at instantiation time, producing a fully elaborated intent ready for `/haiku:run`.
+
 ## Operations Phase
 
 After construction and integration complete, many features require ongoing maintenance — scheduled jobs, reactive responses to production events, or periodic human reviews. The operations phase provides a structured way to define and manage these tasks using `/haiku:operate`. Operations are defined as spec files alongside the code and tracked through the same state system as the rest of H·AI·K·U.
+
+### Studio Operation Templates
+
+Studios prescribe operation templates in `studios/{name}/operations/`. When you run `/haiku:operate`, it reads the current studio's templates to offer domain-appropriate operations. For example, the software studio provides deployment, monitoring, and rollback operations; the incident-response studio provides communication and escalation operations.
+
+Thirty-eight operation templates ship across twelve studios. Teams can add project-specific operations in `.haiku/studios/{name}/operations/` using the same override mechanism as stages and hats.
+
+### Studio Reflection Dimensions
+
+Studios prescribe reflection dimensions in `studios/{name}/reflections/`. When you run `/haiku:reflect`, it reads the current studio's dimensions to structure the post-mortem analysis along axes relevant to the domain. The software studio reflects on code quality, test coverage, and architecture decisions; the sales studio reflects on deal velocity, objection handling, and pipeline accuracy.
+
+Twenty-six reflection dimensions ship across twelve studios. Custom dimensions follow the same project-level override pattern.
 
 See the [Operations Guide](/docs/operations-guide/) for a full walkthrough.
 

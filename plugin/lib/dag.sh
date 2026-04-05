@@ -13,8 +13,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 # shellcheck source=config.sh
 source "$SCRIPT_DIR/config.sh"
-# shellcheck source=state.sh
-source "$SCRIPT_DIR/state.sh"
+HAIKU_PARSE="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/..}/bin/haiku-parse.mjs"
 
 # Fast YAML extraction for simple scalar values (avoids subprocess)
 # Delegates to _state_yaml_get_simple from state.sh
@@ -473,10 +472,10 @@ update_unit_status() {
   old_status=$(parse_unit_status "$unit_file")
 
   # Update status in frontmatter
-  hku_frontmatter_set "status" "$new_status" "$unit_file"
+  "$HAIKU_PARSE" set "$unit_file" "status" "$new_status"
 
   # Update last_updated timestamp
-  hku_frontmatter_set "last_updated" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$unit_file"
+  "$HAIKU_PARSE" set "$unit_file" "last_updated" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
   # Emit telemetry for unit status change (non-blocking)
   if [ -z "${_HAIKU_TELEMETRY_INIT:-}" ]; then

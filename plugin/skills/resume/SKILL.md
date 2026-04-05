@@ -16,12 +16,12 @@ disable-model-invocation: true
 
 ## Description
 
-**User-facing command** - Resume work on an intent when ephemeral state (iteration.json) is lost but `.haiku/` artifacts exist.
+**User-facing command** - Resume work on an intent when session context is lost but `.haiku/` artifacts exist.
 
 This happens when:
 - Session context was cleared unexpectedly
 - Starting fresh session after previous work
-- Branch state lost but artifacts preserved
+- Artifacts preserved in `.haiku/` directory
 
 **User Flow:**
 ```
@@ -57,7 +57,7 @@ for intent_file in .haiku/intents/*/intent.md; do
   [ -f "$intent_file" ] || continue
   dir=$(dirname "$intent_file")
   slug=$(basename "$dir")
-  status=$(hku_frontmatter_get "status" "$intent_file" 2>/dev/null || echo "active")
+  status=$(haiku_intent_get { slug, field: "status" } 2>/dev/null || echo "active")
   [ "$status" = "active" ] && echo "$slug"
 done
 ```
@@ -89,11 +89,11 @@ Read from `.haiku/intents/{slug}/intent.md`:
 
 ```bash
 intentFile=".haiku/intents/${slug}/intent.md"
-studio=$(hku_frontmatter_get "studio" "$intentFile")
+studio=$(haiku_intent_get { slug: "$slug", field: "studio" } 2>/dev/null || echo "software")
 [ -z "$studio" ] && studio="software"
-active_stage=$(hku_frontmatter_get "active_stage" "$intentFile")
+active_stage=$(haiku_intent_get { slug: "$slug", field: "active_stage" } 2>/dev/null || echo "development")
 [ -z "$active_stage" ] && active_stage="development"
-title=$(hku_frontmatter_get "title" "$intentFile")
+title=$(haiku_intent_get { slug: "$slug", field: "title" } 2>/dev/null || echo "$slug")
 [ -z "$title" ] && title="$slug"
 ```
 
@@ -144,11 +144,12 @@ cd "$INTENT_WORKTREE"
 
 Save to file-based state (intent-level state goes to the intent directory):
 
-```bash
+```
 # Intent slug is directory-based: .haiku/intents/{slug}/ — no separate save needed
+# State lives in intent.md frontmatter and stages/{stage}/state.json — accessed via MCP tools
 
-# Save iteration state to intent directory
-hku_state_save "$INTENT_DIR" "iteration.json" "{\"iteration\":1,\"hat\":\"$STARTING_HAT\",\"status\":\"active\"}"
+# Start the stage if not already active
+haiku_stage_start { intent: "$slug", stage: "$active_stage" }
 ```
 
 ### Step 5b: Restore Team (Agent Teams)
@@ -165,11 +166,11 @@ If `AGENT_TEAMS_ENABLED` is set:
 
 1. **Team exists** (`TEAM_CONFIG` found):
    - Read config to discover active teammates
-   - Save `teamName` to `iteration.json`
+   - Save `teamName` to stage state: `haiku_stage_set { intent, stage, field: "team_name", value: "$TEAM_NAME" }`
    - Note: Active teammates may need to be re-spawned if they were shut down
 
 2. **Team does not exist**:
-   - Save `teamName` to `iteration.json` (for `/haiku:execute` to create it)
+   - Save `teamName` to stage state (for `/haiku:execute` to create it)
    - Note in output: "Team will be created when `/haiku:execute` runs"
 
 **Without Agent Teams:** Skip this step. No team management needed.

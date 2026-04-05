@@ -219,7 +219,7 @@ hku_list_stages_with_status() {
   studio=$(hku_get_active_studio "$intent_file")
 
   local active_stage
-  active_stage=$(hku_frontmatter_get "active_stage" "$intent_file" 2>/dev/null)
+  active_stage=$("$HAIKU_PARSE" get "$intent_file" "active_stage" 2>/dev/null)
 
   if [[ -z "$active_stage" ]]; then
     # No active_stage set — first stage is active, rest are pending

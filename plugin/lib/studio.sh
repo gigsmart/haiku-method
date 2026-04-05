@@ -68,8 +68,8 @@ hku_load_studio_metadata() {
   }
 
   local sname sdescription stages persistence
-  sname=$(hku_frontmatter_get "name" "$studio_file")
-  sdescription=$(hku_frontmatter_get "description" "$studio_file")
+  sname=$("$HAIKU_PARSE" get "$studio_file" "name")
+  sdescription=$("$HAIKU_PARSE" get "$studio_file" "description")
   stages=$(yq --front-matter=extract -o json '.stages' "$studio_file" 2>/dev/null || echo "[]")
   persistence=$(yq --front-matter=extract -o json '.persistence' "$studio_file" 2>/dev/null || echo "null")
 
@@ -144,7 +144,7 @@ hku_get_active_studio() {
   # 1. Intent frontmatter
   if [[ -n "$intent_file" && -f "$intent_file" ]]; then
     local studio
-    studio=$(hku_frontmatter_get "studio" "$intent_file")
+    studio=$("$HAIKU_PARSE" get "$intent_file" "studio")
     if [[ -n "$studio" ]]; then
       echo "$studio"
       return 0

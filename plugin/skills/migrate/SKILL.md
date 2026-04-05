@@ -83,7 +83,7 @@ This function:
    - Adds `studio: software`, `mode: continuous`, `migrated_from:`, `migration_date:`
    - Preserves all other fields and body verbatim
 3. Maps each `unit-*.md` to `stages/{inferred-stage}/units/` based on its `pass:` field
-4. Creates `state/iteration.json` with initial execution state
+4. Creates `stages/{stage}/state.json` with initial execution state
 5. Backs up old directory as `.ai-dlc/{slug}.pre-haiku-backup`
 6. Creates symlink `.ai-dlc/{slug}` → `.haiku/intents/{slug}`
 

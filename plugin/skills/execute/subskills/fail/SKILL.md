@@ -28,8 +28,10 @@ If already at the first hat (planner by default), this command is blocked.
 ### Step 1: Load Current State
 
 ```bash
-# Intent-level state is stored on current branch (intent branch)
-STATE=$(hku_state_load "$INTENT_DIR" "iteration.json")
+# Discover active intent and stage
+INTENT_SLUG=$(basename "$(find .haiku -maxdepth 2 -name 'intent.md' -exec dirname {} \; | head -1)")
+ACTIVE_STAGE=$(haiku_intent_get { slug: INTENT_SLUG, field: "active_stage" })
+PHASE=$(haiku_stage_get { intent: INTENT_SLUG, stage: ACTIVE_STAGE, field: "phase" })
 ```
 
 ### Step 2: Determine Previous Hat
@@ -57,7 +59,8 @@ Before updating state, save the reason for failing:
 ```bash
 # Append to blockers (unit-level state - saved to current branch)
 REASON="Reviewer found issues: [describe issues]"
-hku_state_save "$INTENT_DIR" "blockers.md" "$REASON"
+# Append reason to blockers file (file-based, not MCP-managed)
+echo "$REASON" >> "$INTENT_DIR/blockers.md"
 ```
 
 ### Step 3a: Commit Blocker Documentation
@@ -73,11 +76,9 @@ fi
 
 ### Step 4: Update State
 
-```bash
+```
 # Update hat to previous hat
-# Intent-level state saved to current branch (intent branch)
-# state.hat = prevHat
-hku_state_save "$INTENT_DIR" "iteration.json" '<updated JSON with hat set to previous>'
+haiku_unit_advance_hat { intent: INTENT_SLUG, stage: ACTIVE_STAGE, unit: CURRENT_UNIT, hat: PREVIOUS_HAT }
 ```
 
 ```bash
@@ -97,11 +98,11 @@ AGENT_TEAMS_ENABLED="${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}"
 
 If `AGENT_TEAMS_ENABLED` is set:
 
-1. Read retry count from unit frontmatter (`hku_frontmatter_get "retries" "$UNIT_FILE"`)
+1. Read retry count from unit frontmatter (`haiku_unit_get { intent, stage, unit, field: "retries" }`)
 2. Increment retries in unit frontmatter
 3. Check retry limit:
    - If `retries >= 3`: Mark unit as blocked, save blocker documentation
-   - If `retries < 3`: Update hat in unit frontmatter: `hku_frontmatter_set "hat" "builder" "$UNIT_FILE"`
+   - If `retries < 3`: Update hat in unit frontmatter: `haiku_unit_advance_hat { intent, stage, unit, hat: "builder" }`
 4. Spawn new builder teammate with reviewer feedback:
 
 ```javascript

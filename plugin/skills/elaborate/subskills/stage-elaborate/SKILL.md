@@ -34,17 +34,17 @@ Read the active stage's definition file to determine elaboration parameters:
 source "${CLAUDE_PLUGIN_ROOT}/lib/stage.sh"
 STAGE_DEF_FILE=$(resolve_stage_definition "$ACTIVE_STAGE")
 
-# Read stage metadata
-STAGE_NAME=$(hku_frontmatter_get "name" "$STAGE_DEF_FILE")
-STAGE_DESCRIPTION=$(hku_frontmatter_get "description" "$STAGE_DEF_FILE")
-STAGE_AVAILABLE_WORKFLOWS=$(hku_frontmatter_get "available_workflows" "$STAGE_DEF_FILE")
-STAGE_DEFAULT_WORKFLOW=$(hku_frontmatter_get "default_workflow" "$STAGE_DEF_FILE")
+# Read stage metadata (from stage definition file frontmatter)
+STAGE_NAME=$(sed -n '/^---$/,/^---$/{ /^name:/s/^name: *//p }' "$STAGE_DEF_FILE")
+STAGE_DESCRIPTION=$(sed -n '/^---$/,/^---$/{ /^description:/s/^description: *//p }' "$STAGE_DEF_FILE")
+STAGE_AVAILABLE_WORKFLOWS=$(sed -n '/^---$/,/^---$/{ /^available_workflows:/s/^available_workflows: *//p }' "$STAGE_DEF_FILE")
+STAGE_DEFAULT_WORKFLOW=$(sed -n '/^---$/,/^---$/{ /^default_workflow:/s/^default_workflow: *//p }' "$STAGE_DEF_FILE")
 
 # Elaboration hints (optional — empty means "no constraint")
-STAGE_SKIP=$(hku_frontmatter_get "skip" "$STAGE_DEF_FILE" 2>/dev/null || echo "")
-STAGE_ADD=$(hku_frontmatter_get "add" "$STAGE_DEF_FILE" 2>/dev/null || echo "")
-STAGE_CRITERIA_FOCUS=$(hku_frontmatter_get "criteria_focus" "$STAGE_DEF_FILE" 2>/dev/null || echo "")
-STAGE_UNIT_TYPES=$(hku_frontmatter_get "unit_types" "$STAGE_DEF_FILE" 2>/dev/null || echo "")
+STAGE_SKIP=$(sed -n '/^---$/,/^---$/{ /^skip:/s/^skip: *//p }' "$STAGE_DEF_FILE" 2>/dev/null || echo "")
+STAGE_ADD=$(sed -n '/^---$/,/^---$/{ /^add:/s/^add: *//p }' "$STAGE_DEF_FILE" 2>/dev/null || echo "")
+STAGE_CRITERIA_FOCUS=$(sed -n '/^---$/,/^---$/{ /^criteria_focus:/s/^criteria_focus: *//p }' "$STAGE_DEF_FILE" 2>/dev/null || echo "")
+STAGE_UNIT_TYPES=$(sed -n '/^---$/,/^---$/{ /^unit_types:/s/^unit_types: *//p }' "$STAGE_DEF_FILE" 2>/dev/null || echo "")
 ```
 
 **Present stage context to the user:**

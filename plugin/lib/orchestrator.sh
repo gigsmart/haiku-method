@@ -17,10 +17,7 @@ _HKU_ORCHESTRATOR_SOURCED=1
 ORCHESTRATOR_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 # shellcheck source=deps.sh
 source "$ORCHESTRATOR_SCRIPT_DIR/deps.sh"
-# shellcheck source=parse.sh
-source "$ORCHESTRATOR_SCRIPT_DIR/parse.sh"
-# shellcheck source=state.sh
-source "$ORCHESTRATOR_SCRIPT_DIR/state.sh"
+HAIKU_PARSE="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/..}/bin/haiku-parse.mjs"
 # shellcheck source=studio.sh
 source "$ORCHESTRATOR_SCRIPT_DIR/studio.sh"
 # shellcheck source=stage.sh
@@ -228,9 +225,104 @@ hku_persist_stage_outputs() {
   return 0
 }
 
+# Resolve the gate protocol (timeout, escalation) for a stage
+# Usage: hku_get_gate_protocol <stage_name> <studio_name>
+# Returns: JSON gate-protocol object or "{}" if none defined
+hku_get_gate_protocol() {
+  local stage_name="$1"
+  local studio_name="$2"
+
+  local metadata
+  metadata=$(hku_load_stage_metadata "$stage_name" "$studio_name")
+  echo "$metadata" | jq -c '.["gate-protocol"] // {}'
+}
+
+# Record when a gate was entered (for timeout tracking)
+# Usage: hku_record_gate_entered <intent_dir> <stage_name>
+hku_record_gate_entered() {
+  local intent_dir="$1"
+  local stage_name="$2"
+  local timestamp
+  timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+  local gate_state
+  gate_state=$(hku_state_load "$intent_dir" "gate-state.json" 2>/dev/null || echo '{}')
+  gate_state=$(echo "$gate_state" | jq \
+    --arg stage "$stage_name" \
+    --arg time "$timestamp" \
+    '.[$stage] = {"entered": $time, "resolved": null}')
+  hku_state_save "$intent_dir" "gate-state.json" "$gate_state"
+}
+
+# Check if a gate has timed out
+# Usage: hku_check_gate_timeout <intent_dir> <stage_name> <studio_name>
+# Returns: "ok" | "timed_out"
+# Side effect: if timed out, emits telemetry and returns the timeout-action
+hku_check_gate_timeout() {
+  local intent_dir="$1"
+  local stage_name="$2"
+  local studio_name="$3"
+
+  local protocol
+  protocol=$(hku_get_gate_protocol "$stage_name" "$studio_name")
+
+  local timeout
+  timeout=$(echo "$protocol" | jq -r '.timeout // empty')
+
+  # No timeout configured
+  if [ -z "$timeout" ]; then
+    echo "ok"
+    return 0
+  fi
+
+  # Parse timeout duration to seconds
+  local timeout_seconds=0
+  case "$timeout" in
+    *h) timeout_seconds=$(( ${timeout%h} * 3600 )) ;;
+    *d) timeout_seconds=$(( ${timeout%d} * 86400 )) ;;
+    *m) timeout_seconds=$(( ${timeout%m} * 60 )) ;;
+    *)  timeout_seconds="$timeout" ;;
+  esac
+
+  # Check when the gate was entered
+  local gate_state
+  gate_state=$(hku_state_load "$intent_dir" "gate-state.json" 2>/dev/null || echo '{}')
+  local entered
+  entered=$(echo "$gate_state" | jq -r ".[\"$stage_name\"].entered // empty")
+
+  if [ -z "$entered" ]; then
+    echo "ok"
+    return 0
+  fi
+
+  # Compare timestamps
+  local now_epoch entered_epoch elapsed
+  now_epoch=$(date -u +%s)
+  entered_epoch=$(date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$entered" +%s 2>/dev/null || date -u -d "$entered" +%s 2>/dev/null || echo 0)
+  elapsed=$(( now_epoch - entered_epoch ))
+
+  if [ "$elapsed" -gt "$timeout_seconds" ]; then
+    local action
+    action=$(echo "$protocol" | jq -r '.["timeout-action"] // "block"')
+
+    # Emit telemetry
+    source "${ORCHESTRATOR_SCRIPT_DIR}/telemetry.sh" 2>/dev/null || true
+    if type haiku_record_gate_timeout >/dev/null 2>&1; then
+      local slug
+      slug=$(basename "$intent_dir")
+      haiku_record_gate_timeout "$slug" "$stage_name" "$action"
+    fi
+
+    echo "$action"
+    return 0
+  fi
+
+  echo "ok"
+}
+
 # Resolve the effective review gate mode
 # Usage: hku_resolve_review_gate <intent_dir> <stage_name> <studio_name> [autopilot]
-# Returns: 0 = advance (auto), 1 = pause (ask), 2 = block (external)
+# Returns: 0 = advance (auto), 1 = pause (ask), 2 = block (external), 3 = await
 hku_resolve_review_gate() {
   local intent_dir="$1"
   local stage_name="$2"
@@ -288,6 +380,163 @@ hku_resolve_review_gate() {
   esac
 }
 
+# ============================================================================
+# Composite Intent Orchestration
+# ============================================================================
+
+# Check if an intent is composite
+# Usage: hku_is_composite <intent_dir>
+# Returns: 0 if composite, 1 if not
+hku_is_composite() {
+  local intent_file="${1}/intent.md"
+  local composite
+  composite=$("$HAIKU_PARSE" get "$intent_file" "composite")
+  [ -n "$composite" ] && [ "$composite" != "null" ]
+}
+
+# Get the next runnable stage for a composite intent
+# Usage: hku_composite_next_stage <intent_dir>
+# Returns: "studio:stage" or "" if all complete or all blocked
+hku_composite_next_stage() {
+  local intent_dir="$1"
+  local intent_file="${intent_dir}/intent.md"
+
+  # Read composite config and state
+  local composite_json
+  composite_json=$(yq --front-matter=extract -o json '.' "$intent_file" 2>/dev/null || echo "{}")
+
+  local composite_state
+  composite_state=$(echo "$composite_json" | jq -c '.composite_state // {}')
+
+  # For each studio in the composite, check if its current stage is runnable
+  echo "$composite_json" | jq -c '.composite[]' 2>/dev/null | while IFS= read -r entry; do
+    local studio stage_list current_stage
+    studio=$(echo "$entry" | jq -r '.studio')
+    stage_list=$(echo "$entry" | jq -r '.stages[]')
+    current_stage=$(echo "$composite_state" | jq -r ".\"$studio\" // empty")
+
+    # If no current stage, use the first stage
+    if [ -z "$current_stage" ]; then
+      current_stage=$(echo "$entry" | jq -r '.stages[0]')
+    fi
+
+    # Check if this studio is complete (current stage not in its list)
+    local in_list=false
+    for s in $stage_list; do
+      if [ "$s" = "$current_stage" ]; then
+        in_list=true
+        break
+      fi
+    done
+    [ "$in_list" = "false" ] && continue
+
+    # Check sync points — is this stage blocked?
+    local blocked=false
+    echo "$composite_json" | jq -c '.sync[]?' 2>/dev/null | while IFS= read -r sync_rule; do
+      local then_stages
+      then_stages=$(echo "$sync_rule" | jq -r '.then[]')
+      for ts in $then_stages; do
+        if [ "$ts" = "${studio}:${current_stage}" ]; then
+          # This stage has a sync dependency — check if all wait stages are done
+          local wait_stages
+          wait_stages=$(echo "$sync_rule" | jq -r '.wait[]')
+          for ws in $wait_stages; do
+            local ws_studio="${ws%%:*}"
+            local ws_stage="${ws##*:}"
+            local ws_current
+            ws_current=$(echo "$composite_state" | jq -r ".\"$ws_studio\" // empty")
+
+            # Check if ws_studio has advanced past ws_stage
+            local ws_stages ws_stage_idx ws_current_idx
+            ws_stages=$(echo "$composite_json" | jq -r ".composite[] | select(.studio == \"$ws_studio\") | .stages[]")
+            ws_stage_idx=0; ws_current_idx=0; local idx=0
+            for s in $ws_stages; do
+              [ "$s" = "$ws_stage" ] && ws_stage_idx=$idx
+              [ "$s" = "$ws_current" ] && ws_current_idx=$idx
+              idx=$((idx + 1))
+            done
+
+            if [ "$ws_current_idx" -le "$ws_stage_idx" ]; then
+              blocked=true
+              break 2
+            fi
+          done
+        fi
+      done
+    done
+
+    if [ "$blocked" = "false" ]; then
+      echo "${studio}:${current_stage}"
+      return 0
+    fi
+  done
+
+  echo ""
+}
+
+# Advance a composite intent's studio to its next stage
+# Usage: hku_composite_advance <intent_dir> <studio_name>
+hku_composite_advance() {
+  local intent_dir="$1"
+  local studio_name="$2"
+  local intent_file="${intent_dir}/intent.md"
+
+  local composite_json
+  composite_json=$(yq --front-matter=extract -o json '.' "$intent_file" 2>/dev/null || echo "{}")
+
+  # Get the studio's stage list
+  local stages current_stage
+  stages=$(echo "$composite_json" | jq -r ".composite[] | select(.studio == \"$studio_name\") | .stages[]")
+  current_stage=$(echo "$composite_json" | jq -r ".composite_state.\"$studio_name\" // empty")
+
+  # Find the next stage
+  local found=false next_stage=""
+  for s in $stages; do
+    if [ "$found" = "true" ]; then
+      next_stage="$s"
+      break
+    fi
+    if [ "$s" = "$current_stage" ]; then
+      found=true
+    fi
+  done
+
+  # Update composite_state
+  if [ -n "$next_stage" ]; then
+    "$HAIKU_PARSE" set "$intent_file" "composite_state.${studio_name}" "$next_stage"
+  else
+    # Studio complete — set to a sentinel value
+    "$HAIKU_PARSE" set "$intent_file" "composite_state.${studio_name}" "complete"
+  fi
+
+  echo "$next_stage"
+}
+
+# Check if all studios in a composite intent are complete
+# Usage: hku_composite_all_complete <intent_dir>
+# Returns: 0 if all complete, 1 if not
+hku_composite_all_complete() {
+  local intent_dir="$1"
+  local intent_file="${intent_dir}/intent.md"
+
+  local composite_json
+  composite_json=$(yq --front-matter=extract -o json '.' "$intent_file" 2>/dev/null || echo "{}")
+
+  echo "$composite_json" | jq -c '.composite[]' 2>/dev/null | while IFS= read -r entry; do
+    local studio
+    studio=$(echo "$entry" | jq -r '.studio')
+    local state
+    state=$(echo "$composite_json" | jq -r ".composite_state.\"$studio\" // empty")
+    if [ "$state" != "complete" ]; then
+      return 1
+    fi
+  done
+}
+
+# ============================================================================
+# Single-Studio Stage Navigation
+# ============================================================================
+
 # Get the next incomplete stage for an intent
 # Usage: hku_next_stage <intent_dir>
 # Returns: next stage name, or "" if all complete
@@ -299,7 +548,7 @@ hku_next_stage() {
   studio=$(hku_get_active_studio "$intent_file")
 
   local active_stage
-  active_stage=$(hku_frontmatter_get "active_stage" "$intent_file")
+  active_stage=$("$HAIKU_PARSE" get "$intent_file" "active_stage")
 
   if [ -z "$active_stage" ]; then
     # No active stage — return first stage
@@ -349,7 +598,7 @@ hku_advance_stage() {
   next=$(hku_next_stage "$intent_dir")
 
   if [ -n "$next" ]; then
-    hku_frontmatter_set "active_stage" "$next" "$intent_file"
+    "$HAIKU_PARSE" set "$intent_file" "active_stage" "$next"
   fi
 
   echo "$next"

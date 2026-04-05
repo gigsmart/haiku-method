@@ -27,8 +27,7 @@ RESOLVE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck source=deps.sh
 source "$RESOLVE_SCRIPT_DIR/deps.sh"
-# shellcheck source=parse.sh
-source "$RESOLVE_SCRIPT_DIR/parse.sh"
+HAIKU_PARSE="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/..}/bin/haiku-parse.mjs"
 # shellcheck source=config.sh
 source "$RESOLVE_SCRIPT_DIR/config.sh"
 
@@ -240,7 +239,7 @@ _resolve_design_ref_field() {
   local repo_root="$2"
 
   local design_ref
-  design_ref=$(hku_frontmatter_get "design_ref" "$unit_file")
+  design_ref=$("$HAIKU_PARSE" get "$unit_file" "design_ref")
 
   [ -z "$design_ref" ] && return 1
 
@@ -322,7 +321,7 @@ _resolve_iteration_screenshots() {
   local repo_root="$3"
 
   local iterates_on
-  iterates_on=$(hku_frontmatter_get "iterates_on" "$intent_file")
+  iterates_on=$("$HAIKU_PARSE" get "$intent_file" "iterates_on")
 
   [ -z "$iterates_on" ] && return 1
 
@@ -422,7 +421,7 @@ _resolve_wireframe() {
   local repo_root="$2"
 
   local wireframe
-  wireframe=$(hku_frontmatter_get "wireframe" "$unit_file")
+  wireframe=$("$HAIKU_PARSE" get "$unit_file" "wireframe")
 
   [ -z "$wireframe" ] && return 1
 

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/redirect-plan-mode.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook redirect-plan-mode",
             "timeout": 5
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/subagent-hook.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook subagent-hook",
             "timeout": 30
           }
         ]
@@ -26,12 +26,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/prompt-guard.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook prompt-guard",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/workflow-guard.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook workflow-guard",
             "timeout": 5
           }
         ]
@@ -43,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/context-monitor.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook context-monitor",
             "timeout": 5
           }
         ]
@@ -54,12 +54,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/ensure-deps.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook ensure-deps",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/inject-context.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook inject-context",
             "async": true
           }
         ]
@@ -70,12 +70,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/quality-gate.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook quality-gate",
             "timeout": 120
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/enforce-iteration.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook enforce-iteration",
             "async": true
           }
         ]
@@ -86,12 +86,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/quality-gate.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook quality-gate",
             "timeout": 120
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/enforce-iteration.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook enforce-iteration",
             "async": true
           }
         ]

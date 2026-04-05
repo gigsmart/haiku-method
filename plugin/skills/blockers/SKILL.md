@@ -202,7 +202,8 @@ Need user input on priorities.
 ### Saving Blockers
 
 ```bash
-hku_state_save "$INTENT_DIR" "blockers.md" "$BLOCKER_MARKDOWN"
+# Write blocker documentation to the intent directory (file-based, not MCP-managed)
+echo "$BLOCKER_MARKDOWN" > "$INTENT_DIR/blockers.md"
 ```
 
 ## Blocker Resolution
@@ -304,12 +305,12 @@ When a blocker is resolved:
 
 ```bash
 # Option 1: Clear the file
-hku_state_delete "$INTENT_DIR" "blockers.md"
+rm -f "$INTENT_DIR/blockers.md"
 
 # Option 2: Update with resolution
-hku_state_save "$INTENT_DIR" "blockers.md" "## Resolved
+echo "## Resolved
 
-OAuth issue fixed by disabling strict mode."
+OAuth issue fixed by disabling strict mode." > "$INTENT_DIR/blockers.md"
 ```
 
 ## Integration with H·AI·K·U Hats

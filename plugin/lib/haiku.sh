@@ -13,8 +13,7 @@
 
 # Source state.sh for _state_yaml_get_simple (used via _yaml_get_simple alias below)
 HAIKU_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=state.sh
-source "$HAIKU_SCRIPT_DIR/state.sh"
+HAIKU_PARSE="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/..}/bin/haiku-parse.mjs"
 
 # Alias matching dag.sh convention (avoid pulling in full dag.sh + config.sh)
 if ! type _yaml_get_simple &>/dev/null; then

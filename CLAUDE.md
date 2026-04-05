@@ -38,6 +38,7 @@ When modifying any component, check if other components need corresponding updat
 - Plugin review agents: `plugin/studios/*/stages/*/review-agents/*.md`
 - Plugin operations: `plugin/studios/*/operations/*.md`
 - Plugin reflections: `plugin/studios/*/reflections/*.md`
+- Plugin intent templates: `plugin/studios/*/templates/*.md`
 - Plugin hooks: `plugin/hooks/*.sh` + `plugin/.claude-plugin/hooks.json`
 - Plugin libraries: `plugin/lib/*.sh`
 - Plugin orchestration: `plugin/lib/orchestrator.sh`, `plugin/lib/stage.sh`, `plugin/lib/studio.sh`

@@ -35,8 +35,7 @@ PERSISTENCE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 source "$PERSISTENCE_SCRIPT_DIR/config.sh"
 # shellcheck source=studio.sh
 source "$PERSISTENCE_SCRIPT_DIR/studio.sh"
-# shellcheck source=parse.sh
-source "$PERSISTENCE_SCRIPT_DIR/parse.sh"
+HAIKU_PARSE="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/..}/bin/haiku-parse.mjs"
 
 # Track which adapter is currently loaded to avoid re-sourcing
 _HKU_ADAPTER_SOURCED=""

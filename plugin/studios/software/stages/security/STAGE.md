@@ -20,6 +20,12 @@ review-agents-include:
     agents: [security, architecture]
   - stage: operations
     agents: [reliability]
+gate-protocol:
+  timeout: 72h
+  timeout-action: escalate
+  escalation: comms
+  conditions:
+    - "no HIGH findings from review agents"
 ---
 
 # Security

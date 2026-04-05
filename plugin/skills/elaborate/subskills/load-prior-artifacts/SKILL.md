@@ -50,7 +50,7 @@ INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
 
 for unit_file in ${INTENT_DIR}/unit-*.md; do
   [ -f "$unit_file" ] || continue
-  UNIT_STAGE=$(hku_frontmatter_get "stage" "$unit_file" 2>/dev/null || echo "")
+  UNIT_STAGE=$(sed -n '/^---$/,/^---$/{ /^stage:/s/^stage: *//p }' "$unit_file" 2>/dev/null || echo "")
   
   for prior_stage in $PRIOR_STAGES; do
     if [ "$UNIT_STAGE" = "$prior_stage" ]; then

@@ -26,8 +26,7 @@ VISUAL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck source=deps.sh
 source "$VISUAL_SCRIPT_DIR/deps.sh"
-# shellcheck source=parse.sh
-source "$VISUAL_SCRIPT_DIR/parse.sh"
+HAIKU_PARSE="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/..}/bin/haiku-parse.mjs"
 # shellcheck source=detect-visual-gate.sh
 source "$VISUAL_SCRIPT_DIR/detect-visual-gate.sh"
 # shellcheck source=resolve-design-ref.sh

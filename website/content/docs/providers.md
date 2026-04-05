@@ -16,10 +16,18 @@ Providers connect H·AI·K·U to external systems your team already uses — tic
 | **spec** | Pull requirements and acceptance criteria | Notion, Confluence, Google Docs |
 | **design** | Reference designs and component specs | Canva, OpenPencil, Pencil, Penpot, Excalidraw, Figma |
 | **comms** | Post status updates and notifications | Slack, Teams, Discord |
+| **CRM** | Sync deal/account data with intent lifecycle | Salesforce, HubSpot |
+| **knowledge** | Cross-studio context sharing via wiki/doc platforms | Notion, Confluence, Google Docs |
 | **VCS hosting** | Auto-detected from git remote | GitHub, GitLab, Bitbucket |
 | **CI/CD** | Auto-detected from repo config files | GitHub Actions, GitLab CI, Jenkins, CircleCI |
 
 VCS hosting and CI/CD are detected automatically — you don't need to configure them.
+
+### Bidirectional Translation
+
+Providers are bidirectional translation layers, not simple API connectors. Each provider has inbound instructions (how to read external data and distill it into H·AI·K·U artifacts), outbound instructions (how to translate H·AI·K·U state into the provider's format), and sync behavior (how to discover events and maintain consistency). The translation is mediated by the AI agent using semantic understanding rather than rigid schema mapping -- a CRM deal record does not contain H·AI·K·U frontmatter, but the agent reads the CRM's native fields and produces H·AI·K·U artifacts. This is what makes providers work across domains where the external tool's data model bears no resemblance to H·AI·K·U's internal representation.
+
+Providers also serve as the coordination layer for cross-studio work. Because H·AI·K·U is a local CLI tool, it cannot maintain always-on triggers or shared state. The provider is the durable layer: a CRM deal closing is visible to any session that polls the CRM via `/haiku:triggers`. A knowledge article written by the sales studio is readable by the customer success studio via the knowledge provider. Cross-studio data flows through providers, not through shared filesystems.
 
 ## Configuration
 
@@ -146,6 +154,8 @@ Providers work through MCP (Model Context Protocol) tool servers. For each provi
 | Penpot | `mcp__*penpot*` |
 | Excalidraw | `mcp__*excalidraw*` or `mcp__*Excalidraw*` |
 | Slack | `mcp__*slack*` |
+| Salesforce | `mcp__*salesforce*` |
+| HubSpot | `mcp__*hubspot*` |
 
 ## Next Steps
 

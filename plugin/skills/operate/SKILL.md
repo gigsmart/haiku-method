@@ -57,7 +57,7 @@ Markdown body: description, runbook, or checklist (for human-owned operations).
 
 ## Status Persistence
 
-Operation status is stored at `.haiku/intents/{intent}/state/operation-status.json` via `hku_state_save`:
+Operation status is stored at `.haiku/intents/{intent}/state/operation-status.json`:
 
 ```json
 {
@@ -156,8 +156,8 @@ For each intent directory found:
 
 1. Check if `.haiku/intents/{intent}/operations/` directory exists
 2. If it exists, read all `.md` files from it
-3. Parse each operation's frontmatter using `hku_frontmatter_get`
-4. Load status from `operation-status.json` via `hku_state_load`
+3. Parse each operation's frontmatter (YAML between `---` delimiters)
+4. Load status from `state/operation-status.json`
 
 Display the grouped table:
 
@@ -220,14 +220,14 @@ LEGACY_FILE="$INTENT_DIR/operations.md"
 4. Read all `.md` files in `$OPS_DIR`
 5. Parse frontmatter for each:
    ```bash
-   NAME=$(hku_frontmatter_get "name" "$op_file")
-   TYPE=$(hku_frontmatter_get "type" "$op_file")
-   OWNER=$(hku_frontmatter_get "owner" "$op_file")
-   SCHEDULE=$(hku_frontmatter_get "schedule" "$op_file")
-   TRIGGER=$(hku_frontmatter_get "trigger" "$op_file")
-   FREQUENCY=$(hku_frontmatter_get "frequency" "$op_file")
+   NAME=$(sed -n '/^---$/,/^---$/{ /^name:/s/^name: *//p }' "$op_file")
+   TYPE=$(sed -n '/^---$/,/^---$/{ /^type:/s/^type: *//p }' "$op_file")
+   OWNER=$(sed -n '/^---$/,/^---$/{ /^owner:/s/^owner: *//p }' "$op_file")
+   SCHEDULE=$(sed -n '/^---$/,/^---$/{ /^schedule:/s/^schedule: *//p }' "$op_file")
+   TRIGGER=$(sed -n '/^---$/,/^---$/{ /^trigger:/s/^trigger: *//p }' "$op_file")
+   FREQUENCY=$(sed -n '/^---$/,/^---$/{ /^frequency:/s/^frequency: *//p }' "$op_file")
    ```
-6. Load `operation-status.json` via `hku_state_load "$INTENT_DIR" "operation-status.json"`
+6. Load `state/operation-status.json`
 7. For each operation, extract `last_run` and `status` from the JSON
 
 Display the full status table:
@@ -260,7 +260,7 @@ When invoked as `/haiku:operate {intent} {operation}`:
 
 3. Read the owner:
    ```bash
-   OWNER=$(hku_frontmatter_get "owner" "$OP_FILE")
+   OWNER=$(sed -n '/^---$/,/^---$/{ /^owner:/s/^owner: *//p }' "$OP_FILE")
    ```
 
 4. Route:
@@ -273,7 +273,7 @@ For `owner: agent` operations:
 
 1. **Determine the runtime:**
    ```bash
-   RUNTIME=$(hku_frontmatter_get "runtime" "$OP_FILE")
+   RUNTIME=$(sed -n '/^---$/,/^---$/{ /^runtime:/s/^runtime: *//p }' "$OP_FILE")
    if [ -z "$RUNTIME" ]; then
      RUNTIME=$(get_operations_runtime)
    fi
@@ -319,7 +319,7 @@ For `owner: agent` operations:
    else                               OP_STATUS="failed"
    fi
 
-   STATUS_JSON=$(hku_state_load "$INTENT_DIR" "operation-status.json" 2>/dev/null || echo '{"operations":{}}')
+   STATUS_JSON=$(cat "$INTENT_DIR/state/operation-status.json" 2>/dev/null || echo '{"operations":{}}')
    UPDATED=$(echo "$STATUS_JSON" | jq \
      --arg name "$OPERATION_NAME" \
      --arg time "$TIMESTAMP" \
@@ -333,7 +333,7 @@ For `owner: agent` operations:
        "last_exit_code": $exit,
        "last_output": ($output | .[0:2000])
      }) | .operations[$name].deployed //= false | .operations[$name].deploy_target //= null')
-   hku_state_save "$INTENT_DIR" "operation-status.json" "$UPDATED"
+   echo "$UPDATED" > "$INTENT_DIR/state/operation-status.json"
    ```
 
 5. **Commit if files changed:**
@@ -367,9 +367,9 @@ For `owner: human` operations:
 1. **Read the operation spec** and extract the markdown body (everything below the frontmatter):
    ```bash
    BODY=$(sed '1,/^---$/d; 1,/^---$/d' "$OP_FILE")
-   SCHEDULE=$(hku_frontmatter_get "schedule" "$OP_FILE")
-   FREQUENCY=$(hku_frontmatter_get "frequency" "$OP_FILE")
-   TYPE=$(hku_frontmatter_get "type" "$OP_FILE")
+   SCHEDULE=$(sed -n '/^---$/,/^---$/{ /^schedule:/s/^schedule: *//p }' "$OP_FILE")
+   FREQUENCY=$(sed -n '/^---$/,/^---$/{ /^frequency:/s/^frequency: *//p }' "$OP_FILE")
+   TYPE=$(sed -n '/^---$/,/^---$/{ /^type:/s/^type: *//p }' "$OP_FILE")
    ```
 
 2. **Display the checklist and schedule:**
@@ -392,12 +392,12 @@ For `owner: human` operations:
 3. **Track presentation** in status:
    ```bash
    TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-   STATUS_JSON=$(hku_state_load "$INTENT_DIR" "operation-status.json" 2>/dev/null || echo '{"operations":{}}')
+   STATUS_JSON=$(cat "$INTENT_DIR/state/operation-status.json" 2>/dev/null || echo '{"operations":{}}')
    UPDATED=$(echo "$STATUS_JSON" | jq \
      --arg name "$OPERATION_NAME" \
      --arg time "$TIMESTAMP" \
      '.operations[$name] = ((.operations[$name] // {}) | .last_presented = $time | .status = (.status // "pending"))')
-   hku_state_save "$INTENT_DIR" "operation-status.json" "$UPDATED"
+   echo "$UPDATED" > "$INTENT_DIR/state/operation-status.json"
    ```
 
 **Done.** Stop here for human operation mode. Do NOT mark as completed.
@@ -426,7 +426,7 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
 
    First, parse the operation's type from its frontmatter:
    ```bash
-   TYPE=$(hku_frontmatter_get "type" "$op_file")
+   TYPE=$(sed -n '/^---$/,/^---$/{ /^type:/s/^type: *//p }' "$op_file")
    ```
 
    If `$DEPLOY_TARGET` was explicitly provided (e.g., `/haiku:operate myapp --deploy github-actions`), use that for all operations. Otherwise derive from stack config using the `has_stack_provider` helper:
@@ -578,12 +578,12 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
 5. **Update status** for each deployed operation (using the loop iteration variable `$OP_NAME`, not the ad-hoc `$OPERATION_NAME`):
    ```bash
    OP_NAME=$(basename "$op_file" .md)
-   STATUS_JSON=$(hku_state_load "$INTENT_DIR" "operation-status.json" 2>/dev/null || echo '{"operations":{}}')
+   STATUS_JSON=$(cat "$INTENT_DIR/state/operation-status.json" 2>/dev/null || echo '{"operations":{}}')
    UPDATED=$(echo "$STATUS_JSON" | jq \
      --arg name "$OP_NAME" \
      --arg target "$TARGET" \
      '.operations[$name] = ((.operations[$name] // {}) + {"deployed": true, "deploy_target": $target})')
-   hku_state_save "$INTENT_DIR" "operation-status.json" "$UPDATED"
+   echo "$UPDATED" > "$INTENT_DIR/state/operation-status.json"
    ```
 
 6. **Report results:**
@@ -606,7 +606,7 @@ When invoked as `/haiku:operate {intent} --status`:
 
 1. **Load status data:**
    ```bash
-   STATUS_JSON=$(hku_state_load "$INTENT_DIR" "operation-status.json" 2>/dev/null || echo '{"operations":{}}')
+   STATUS_JSON=$(cat "$INTENT_DIR/state/operation-status.json" 2>/dev/null || echo '{"operations":{}}')
    ```
 
 2. **Load operation specs** from `.haiku/intents/{intent}/operations/*.md` to get schedule info
@@ -743,7 +743,7 @@ When invoked as `/haiku:operate {intent} --teardown`:
 
 2. **Load status** to find all deployed operations:
    ```bash
-   STATUS_JSON=$(hku_state_load "$INTENT_DIR" "operation-status.json" 2>/dev/null || echo '{"operations":{}}')
+   STATUS_JSON=$(cat "$INTENT_DIR/state/operation-status.json" 2>/dev/null || echo '{"operations":{}}')
    DEPLOYED_OPS=$(echo "$STATUS_JSON" | jq -r '.operations | to_entries[] | select(.value.deployed == true) | .key')
    ```
 
@@ -786,7 +786,7 @@ When invoked as `/haiku:operate {intent} --teardown`:
         .operations[$name].deployed = false |
         .operations[$name].deploy_target = null')
    done
-   hku_state_save "$INTENT_DIR" "operation-status.json" "$STATUS_JSON"
+   echo "$STATUS_JSON" > "$INTENT_DIR/state/operation-status.json"
    ```
 
 6. **Report:**
@@ -819,8 +819,8 @@ If `.haiku/intents/{intent}/operations.md` exists but `.haiku/intents/{intent}/o
    - Sections: Recurring Tasks, Reactive Tasks, Manual Tasks
 
    ```bash
-   LEGACY_STATUS=$(hku_frontmatter_get "status" "$LEGACY_FILE")
-   LEGACY_CREATED=$(hku_frontmatter_get "created" "$LEGACY_FILE")
+   LEGACY_STATUS=$(sed -n '/^---$/,/^---$/{ /^status:/s/^status: *//p }' "$LEGACY_FILE")
+   LEGACY_CREATED=$(sed -n '/^---$/,/^---$/{ /^created:/s/^created: *//p }' "$LEGACY_FILE")
    ```
 
 3. **Display the legacy operational overview:**
@@ -843,6 +843,6 @@ If `.haiku/intents/{intent}/operations.md` exists but `.haiku/intents/{intent}/o
 
 4. **Agent and human task handling** works the same as before — parse tasks from the markdown sections, execute agent commands, display human checklists.
 
-5. **Status tracking** still uses `operation-status.json` via `hku_state_save`/`hku_state_load`, same schema as the new format.
+5. **Status tracking** still uses `state/operation-status.json` (direct file read/write), same schema as the new format.
 
 **Done.** Stop here for legacy mode.

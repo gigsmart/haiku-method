@@ -33,11 +33,30 @@ allowed-tools:
 
 ```
 /haiku:new [description]
+/haiku:new --template <template-name> [--param key=value ...]
 ```
 
 ## Description
 
 **User-facing command** - Creates a new intent with studio detection, mode selection, and workspace initialization. This replaces the "gather intent" portion of the old elaborate flow.
+
+### Template Mode
+
+When `--template` is provided, the intent is seeded from a studio template file:
+
+1. **Resolve the template**: Look in `plugin/studios/{studio}/templates/{name}.md` and `.haiku/studios/{studio}/templates/{name}.md` (project override takes precedence).
+2. **Parse parameters**: Extract `parameters:` from template frontmatter. Match `--param key=value` arguments against required parameters. If required parameters are missing, ask the user via `AskUserQuestion`.
+3. **Apply parameter substitution**: Replace `{{ param }}` placeholders in unit criteria and content.
+4. **Create units**: Write pre-filled unit files from the template's `units:` section to the appropriate stage directories.
+5. **Apply stage override**: If the template specifies `stages-override:`, only those stages are active (others skipped).
+6. **Skip decomposition**: Since units are pre-defined, the first `/haiku:run` skips the decompose step and goes straight to execution.
+
+**Example:**
+```
+/haiku:new --template new-prospect --param company="Acme Corp" --param source=referral
+```
+
+This creates a sales intent pre-filled with units for Acme Corp, with criteria like "Acme Corp business model and pain points documented."
 
 **Relationship to other commands:**
 - `/haiku:new` creates the intent and workspace

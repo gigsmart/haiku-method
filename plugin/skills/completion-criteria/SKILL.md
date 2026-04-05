@@ -152,7 +152,8 @@ User: "Add Google OAuth to the app"
 ### Step 5: Save
 
 ```bash
-hku_state_save "$INTENT_DIR" "completion-criteria.md" "$CRITERIA_MARKDOWN"
+# Write criteria to the intent directory (file-based artifact)
+echo "$CRITERIA_MARKDOWN" > "$INTENT_DIR/completion-criteria.md"
 ```
 
 ## Criteria Categories

@@ -75,8 +75,8 @@ for intent_file in .haiku/intents/*/intent.md; do
   [ -f "$intent_file" ] || continue
   dir=$(dirname "$intent_file")
   slug=$(basename "$dir")
-  status=$(hku_frontmatter_get "status" "$intent_file" 2>/dev/null || echo "active")
-  title=$(hku_frontmatter_get "title" "$intent_file" 2>/dev/null || echo "$slug")
+  status=$(haiku_intent_get { slug, field: "status" } 2>/dev/null || echo "active")
+  title=$(haiku_intent_get { slug, field: "title" } 2>/dev/null || echo "$slug")
   echo "$slug|$status|$title"
 done
 ```

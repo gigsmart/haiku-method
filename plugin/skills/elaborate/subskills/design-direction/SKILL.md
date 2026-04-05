@@ -109,7 +109,7 @@ Seed the design knowledge artifact from the blueprint:
 source "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh"
 
 # Read blueprint details
-ARCHETYPE_NAME=$(hku_frontmatter_get "archetype_name" ".haiku/intents/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || hku_frontmatter_get "archetype" ".haiku/intents/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || echo "unknown")
+ARCHETYPE_NAME=$(sed -n '/^---$/,/^---$/{ /^archetype_name:/s/^archetype_name: *//p }' ".haiku/intents/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || sed -n '/^---$/,/^---$/{ /^archetype:/s/^archetype: *//p }' ".haiku/intents/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || echo "unknown")
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # Extract the body (everything after frontmatter) from the blueprint

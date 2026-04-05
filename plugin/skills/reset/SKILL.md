@@ -49,7 +49,7 @@ If the task is not complete, warn:
 
 ```bash
 # Intent-level state is on current branch (intent branch)
-STATE=$(hku_state_load "$INTENT_DIR" "iteration.json" 2>/dev/null || echo "{}")
+STATE=$(haiku_stage_get { intent, stage, field: "phase" } 2>/dev/null || echo "{}")
 
 # If status is not "completed", warn the user
 # "Warning: Task is not complete. Current hat: $HAT"
@@ -58,10 +58,10 @@ STATE=$(hku_state_load "$INTENT_DIR" "iteration.json" 2>/dev/null || echo "{}")
 
 ### Step 1b: Cleanup Team (Agent Teams)
 
-If `teamName` exists in `iteration.json` and `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is set:
+If a team is active and `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is set:
 
 ```bash
-TEAM_NAME=$(echo "$STATE" | hku_json_get "teamName" "")
+TEAM_NAME=$(haiku_stage_get { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", field: "team_name" } 2>/dev/null || echo "")
 AGENT_TEAMS_ENABLED="${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}"
 ```
 
@@ -137,11 +137,10 @@ To start a new task, run `/haiku:elaborate`.
 
 | Key | Purpose |
 |-----|---------|
-| `iteration.json` | Hat, iteration count, workflow, status |
-| `intent.md` | What we're building |
+| `stages/{stage}/state.json` | Stage status, phase, gate outcome |
+| `intent.md` | What we're building (frontmatter has status, studio, active_stage) |
 | `completion-criteria.md` | How we know it's done |
 | `current-plan.md` | Plan for current iteration |
-| `intent-slug` | Slug identifier |
 
 ### Unit-Level State (from current branch)
 

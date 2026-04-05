@@ -10,7 +10,7 @@ A **stage** is a phase of work within a studio's lifecycle. Each stage defines i
 
 When `/haiku:run` executes an intent, it progresses through stages in the order defined by the studio. Each stage runs a five-step cycle:
 
-1. **Decompose** — Break the stage's work into units with completion criteria and a dependency DAG
+1. **Decompose** — Break the stage's work into units with completion criteria and a dependency DAG. Check input freshness; if an upstream output has a gap, run a stage-scoped refinement (targeted side-trip to the upstream stage)
 2. **Execute** — For each unit, run the bolt loop through the stage's hat sequence
 3. **Adversarial review** — Spawn the stage's review agents (plus any included from other stages) to verify the work
 4. **Persist** — Save stage outputs to their scoped locations
@@ -47,10 +47,11 @@ review-agents-include:
 | `name` | string | Stage identifier |
 | `description` | string | What this stage accomplishes |
 | `hats` | list | Ordered sequence of hats (roles) for this stage |
-| `review` | enum | Review mode: `auto`, `ask`, or `external` |
+| `review` | enum | Review mode: `auto`, `ask`, `external`, or `await` |
 | `unit_types` | list | Which unit types this stage processes |
 | `inputs` | list | Artifacts required from prior stages |
 | `review-agents-include` | list | Review agents from other stages to include during adversarial review |
+| `gate-protocol` | object | Timeout, escalation, and conditions for the review gate (optional) |
 
 ### Review Modes
 
@@ -64,6 +65,41 @@ review-agents-include:
 A stage can specify multiple review modes as a list (e.g., `[external, ask]`), meaning it uses external review first, with ask as fallback.
 
 The `await` gate is distinct from `external` — `external` pushes work for review by another person; `await` blocks because the ball is in someone else's court entirely (a customer needs to respond, a third-party approval needs to come through, a pipeline needs to finish).
+
+### Gate Protocol
+
+Stages can define a `gate-protocol:` to control timeout and escalation behavior:
+
+```yaml
+gate-protocol:
+  timeout: 48h              # duration before timeout action triggers
+  timeout-action: escalate  # escalate | auto-advance | block
+  escalation: comms         # provider category to notify on timeout
+  conditions:               # pre-conditions to pass the gate
+    - "no HIGH findings from review agents"
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `timeout` | duration | Time before timeout fires (`48h`, `7d`, `30m`) |
+| `timeout-action` | enum | `escalate` (notify), `auto-advance` (skip), `block` (keep waiting) |
+| `escalation` | string | Provider category to notify on timeout |
+| `conditions` | list | Pre-conditions that must be true before the gate can pass |
+
+The `/haiku:triggers` skill checks gate timeouts during each poll cycle.
+
+### Stage-Scoped Refinement
+
+During decomposition, if the agent discovers an upstream stage's output has a small gap (e.g., a missing screen in a design brief), it can run a **stage-scoped refinement** — a targeted side-trip to the upstream stage:
+
+1. Create a single unit in the upstream stage for the missing output
+2. Run that unit through the upstream stage's hat sequence
+3. Persist the updated output
+4. Return to the current stage with the gap filled
+
+This does NOT reset the current stage's progress. It's a scoped side-trip, not a full stage-back. The agent can invoke this autonomously for small gaps. Full stage-backs (resetting `active_stage` to a prior stage) are always human-initiated.
+
+Use `/haiku:refine stage:{upstream-stage}` to trigger this explicitly.
 
 ## Hats Within Stages
 

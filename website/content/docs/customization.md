@@ -4,7 +4,7 @@ description: Tailor studios, stages, hats, and providers to your team's workflow
 order: 35
 ---
 
-H·AI·K·U ships with built-in studios (software, ideation) that work out of the box. When your workflow doesn't fit these defaults, you can customize at every level — studios, stages, hats, and providers — without forking the plugin.
+H·AI·K·U ships with 12 built-in studios that work out of the box. When your workflow doesn't fit these defaults, you can customize at every level — studios, stages, hats, and providers — without forking the plugin.
 
 All customizations live under `.haiku/` in your project and take precedence over built-in defaults.
 
@@ -83,7 +83,8 @@ inputs:
 | `name` | string | yes | Stage identifier (matches directory name) |
 | `description` | string | yes | What this stage accomplishes |
 | `hats` | list | yes | Ordered hat sequence — agents execute in this order |
-| `review` | enum | yes | `auto`, `ask`, `external`, or `[external, ask]` |
+| `review` | enum | yes | `auto`, `ask`, `external`, `await`, or `[external, ask]` |
+| `gate-protocol` | object | no | Timeout duration, timeout action (`escalate`, `auto-advance`, `block`), and pre-conditions |
 | `unit_types` | list | no | Constrains which unit types this stage processes |
 | `inputs` | list | no | Artifacts required from prior stages |
 
@@ -92,6 +93,7 @@ inputs:
 - **`auto`** — Advance without human review if completion criteria pass
 - **`ask`** — Pause for human approval before advancing
 - **`external`** — Block until external review (e.g., PR approval)
+- **`await`** — Block until an external event occurs (e.g., customer response, CI result, stakeholder decision)
 - **`[external, ask]`** — Try external first, fall back to ask
 
 ## Creating a Custom Hat

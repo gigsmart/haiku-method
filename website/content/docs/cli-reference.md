@@ -18,6 +18,8 @@ Create a new intent with studio and stage configuration.
 - Creates `.haiku/intents/{slug}/` workspace with intent and unit files
 - Sets up git branch `haiku/{slug}` (software studio)
 
+**Arguments:** `--template <name> [--param key=value]` — optional. Instantiate from a studio intent template with parameter substitution.
+
 ### `/haiku:run`
 
 Run the stage pipeline for the current intent. Progresses through each stage in order, transitioning through the hats defined in each stage's `STAGE.md`.
@@ -52,7 +54,7 @@ Quick mode for small tasks — skip full pipeline. Streamlined workflow for fixe
 
 Refine intent or unit specs mid-execution without losing progress. Displays current artifact, collaborates on changes, preserves frontmatter, and re-queues affected units.
 
-**Arguments:** `[unit-slug]` — optional, to refine a specific unit.
+**Arguments:** `[unit-slug]` — optional, to refine a specific unit. `stage:{upstream-stage}` — optional, to refine an upstream stage's output without a full stage-back.
 
 ### `/haiku:followup`
 
@@ -131,6 +133,24 @@ Manage quality gates and gate enforcement. Define, list, and enforce quality gat
 Evaluation-Driven Development for hat definitions. Applies RED-GREEN-REFACTOR cycle to test hat instructions under 7 pressure types (time, sunk cost, authority, economic, exhaustion, social, pragmatic).
 
 **Arguments:** `[hat-name]`
+
+## Cross-Studio & Analysis
+
+### `/haiku:composite`
+
+Create a multi-studio intent with sync points. Coordinates work across studios — for example, a product launch that spans the software studio (build the feature), the marketing studio (launch campaign), and the documentation studio (API docs).
+
+### `/haiku:triggers`
+
+Poll providers for events that unblock `await` gates or trigger new work.
+
+**Arguments:** `[--poll <category>]` — poll a specific provider category. `[--check-gates]` — check all awaiting gates for resolution. `[--dry-run]` — report what would change without acting.
+
+### `/haiku:capacity`
+
+Historical throughput analysis from local artifacts. Analyzes completed intents, units, and bolts to surface velocity trends, bottleneck stages, and cycle-time distributions.
+
+**Arguments:** `[studio-name]` — optional, to scope analysis to a specific studio.
 
 ## Operations & Backlog
 
