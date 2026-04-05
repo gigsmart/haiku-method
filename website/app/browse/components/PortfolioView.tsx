@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import type { BrowseProvider, HaikuIntent, HaikuIntentDetail } from "@/lib/browse/types"
+import { formatDate, formatDuration } from "@/lib/browse/types"
 import { IntentDetailView } from "./IntentDetailView"
 
 interface Props {
@@ -127,6 +128,16 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 										<span>
 											Mode: <strong className="text-stone-700 dark:text-stone-300">{intent.mode}</strong>
 										</span>
+										{intent.startedAt && (
+											<span>
+												{formatDate(intent.startedAt)}{intent.completedAt ? ` — ${formatDate(intent.completedAt)}` : ""}
+											</span>
+										)}
+										{intent.startedAt && (
+											<span className="font-mono text-xs">
+												{intent.completedAt ? formatDuration(intent.startedAt, intent.completedAt) : `${formatDuration(intent.startedAt, null)} elapsed`}
+											</span>
+										)}
 									</div>
 								</div>
 								{intent.stagesTotal > 0 && (

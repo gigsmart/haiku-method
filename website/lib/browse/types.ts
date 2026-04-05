@@ -9,6 +9,8 @@ export interface HaikuIntent {
 	stagesComplete: number
 	stagesTotal: number
 	status: string
+	startedAt: string | null
+	completedAt: string | null
 	raw: Record<string, unknown>
 }
 
@@ -18,6 +20,10 @@ export interface HaikuUnit {
 	type: string
 	status: string
 	dependsOn: string[]
+	bolt: number
+	hat: string
+	startedAt: string | null
+	completedAt: string | null
 	criteria: Array<{ text: string; checked: boolean }>
 	content: string
 	raw: Record<string, unknown>
@@ -26,6 +32,10 @@ export interface HaikuUnit {
 export interface HaikuStageState {
 	name: string
 	status: "pending" | "active" | "complete"
+	phase: string
+	startedAt: string | null
+	completedAt: string | null
+	gateOutcome: string | null
 	units: HaikuUnit[]
 }
 
@@ -56,7 +66,6 @@ export function parseFrontmatter(raw: string): { data: Record<string, unknown>; 
 	const content = match[2].trim()
 	const data: Record<string, unknown> = {}
 
-	// Simple YAML parser for frontmatter (handles flat keys, arrays, and simple nested objects)
 	let currentKey = ""
 	for (const line of yamlBlock.split("\n")) {
 		const kvMatch = line.match(/^(\w[\w-]*):\s*(.*)$/)
@@ -75,6 +84,8 @@ export function parseFrontmatter(raw: string): { data: Record<string, unknown>; 
 				data[currentKey] = true
 			} else if (val === "false") {
 				data[currentKey] = false
+			} else if (val === "null") {
+				data[currentKey] = null
 			} else if (/^\d+$/.test(val)) {
 				data[currentKey] = parseInt(val, 10)
 			} else {
@@ -104,4 +115,23 @@ export function parseCriteria(content: string): Array<{ text: string; checked: b
 		}
 	}
 	return criteria
+}
+
+export function formatDuration(startedAt: string | null, completedAt: string | null): string {
+	if (!startedAt) return ""
+	const start = new Date(startedAt).getTime()
+	const end = completedAt ? new Date(completedAt).getTime() : Date.now()
+	const diffMs = end - start
+	const days = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+	const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+	if (days > 0) return `${days}d ${hours}h`
+	if (hours > 0) return `${hours}h`
+	const mins = Math.floor(diffMs / (1000 * 60))
+	return `${mins}m`
+}
+
+export function formatDate(iso: string | null): string {
+	if (!iso) return ""
+	const d = new Date(iso)
+	return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
 }

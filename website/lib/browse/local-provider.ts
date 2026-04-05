@@ -92,6 +92,8 @@ export class LocalProvider implements BrowseProvider {
 				studio,
 				activeStage: (data.active_stage as string) || "",
 				mode: (data.mode as string) || "continuous",
+				startedAt: (data.started_at as string) || null,
+				completedAt: (data.completed_at as string) || null,
 				stagesComplete: stages.length > 0 ? stages.indexOf(data.active_stage as string) : 0,
 				stagesTotal: stages.length,
 				status: (data.status as string) || "active",
@@ -130,17 +132,37 @@ export class LocalProvider implements BrowseProvider {
 					type: (unitData.type as string) || "",
 					status: (unitData.status as string) || "pending",
 					dependsOn: (unitData.depends_on as string[]) || [],
+					bolt: (unitData.bolt as number) || 0,
+					hat: (unitData.hat as string) || "",
+					startedAt: (unitData.started_at as string) || null,
+					completedAt: (unitData.completed_at as string) || null,
 					criteria: parseCriteria(unitContent),
 					content: unitContent,
 					raw: unitData,
 				})
 			}
 
+			// Read stage state.json
+			const stateRaw = await this.readFile(`.haiku/intents/${slug}/stages/${stageName}/state.json`)
+			let stagePhase = ""
+			let stageStartedAt: string | null = null
+			let stageCompletedAt: string | null = null
+			let gateOutcome: string | null = null
+			if (stateRaw) {
+				try {
+					const stateData = JSON.parse(stateRaw)
+					stagePhase = stateData.phase || ""
+					stageStartedAt = stateData.started_at || null
+					stageCompletedAt = stateData.completed_at || null
+					gateOutcome = stateData.gate_outcome || null
+				} catch { /* ignore */ }
+			}
+
 			let status: "pending" | "active" | "complete" = "pending"
 			if (stageName === activeStage) status = "active"
 			else if (stageNames.indexOf(stageName) < stageNames.indexOf(activeStage)) status = "complete"
 
-			stages.push({ name: stageName, status, units })
+			stages.push({ name: stageName, status, phase: stagePhase, startedAt: stageStartedAt, completedAt: stageCompletedAt, gateOutcome, units })
 		}
 
 		// Load knowledge files
@@ -152,6 +174,8 @@ export class LocalProvider implements BrowseProvider {
 			studio,
 			activeStage,
 			mode: (data.mode as string) || "continuous",
+			startedAt: (data.started_at as string) || null,
+			completedAt: (data.completed_at as string) || null,
 			stagesComplete: stageNames.indexOf(activeStage),
 			stagesTotal: stageNames.length,
 			status: (data.status as string) || "active",

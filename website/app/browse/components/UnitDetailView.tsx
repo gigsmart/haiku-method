@@ -1,6 +1,7 @@
 "use client"
 
 import type { BrowseProvider, HaikuUnit } from "@/lib/browse/types"
+import { formatDate, formatDuration } from "@/lib/browse/types"
 
 function titleCase(s: string): string {
 	return s
@@ -49,7 +50,7 @@ export function UnitDetailView({ unit, stageName, onBack }: Props) {
 			</header>
 
 			{/* Quick Stats */}
-			<div className="mb-8 grid grid-cols-3 gap-4">
+			<div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
 				<div className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
 					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">Criteria</div>
 					<div className="mt-1 text-2xl font-bold">
@@ -66,15 +67,26 @@ export function UnitDetailView({ unit, stageName, onBack }: Props) {
 					)}
 				</div>
 				<div className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
-					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">Dependencies</div>
-					<div className="mt-1 text-lg font-semibold">
-						{unit.dependsOn.length > 0 ? unit.dependsOn.length : "None"}
-					</div>
+					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">Bolt</div>
+					<div className="mt-1 text-2xl font-bold">{unit.bolt || 0}</div>
+				</div>
+				<div className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
+					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">Hat</div>
+					<div className="mt-1 text-lg font-semibold">{unit.hat ? titleCase(unit.hat) : "—"}</div>
 				</div>
 				<div className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
 					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">Status</div>
 					<div className="mt-1 text-lg font-semibold">{titleCase(unit.status)}</div>
 				</div>
+				{unit.startedAt && (
+					<div className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
+						<div className="text-xs font-medium uppercase tracking-wider text-stone-400">
+							{unit.completedAt ? "Duration" : "Elapsed"}
+						</div>
+						<div className="mt-1 text-lg font-semibold">{formatDuration(unit.startedAt, unit.completedAt)}</div>
+						<div className="mt-0.5 text-xs text-stone-400">{formatDate(unit.startedAt)}{unit.completedAt ? ` — ${formatDate(unit.completedAt)}` : ""}</div>
+					</div>
+				)}
 			</div>
 
 			{/* Completion Criteria */}
