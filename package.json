@@ -1,7 +1,7 @@
 {
-  "name": "ai-dlc",
+  "name": "haiku-method",
   "private": true,
-  "workspaces": ["website", "plugin/shared", "plugin/mcp-server", "plugin/cli"],
+  "workspaces": ["website", "packages/haiku"],
   "scripts": {
     "build": "bun run --filter '*' build",
     "dev": "bun run --cwd website dev",
