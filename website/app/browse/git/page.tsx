@@ -18,6 +18,7 @@ function GitBrowseInner() {
 
 	const [provider, setProvider] = useState<BrowseProvider | null>(null)
 	const [needsAuth, setNeedsAuth] = useState(false)
+	const [authReason, setAuthReason] = useState<string>("auth_required")
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 	const [tokenInput, setTokenInput] = useState("")
@@ -58,9 +59,12 @@ function GitBrowseInner() {
 				prov = new GitLabProvider(host, repoPath, branch, storedToken)
 			}
 
-			const accessible = await prov.isAccessible()
-			if (!accessible) {
+			const status = isGitHub
+				? await (prov as GitHubProvider).getAccessStatus()
+				: { ok: await (prov as GitLabProvider).isAccessible(), reason: "auth_required" as const }
+			if (!status.ok) {
 				if (storedToken) clearToken(host)
+				setAuthReason(status.reason)
 				setNeedsAuth(true)
 				setLoading(false)
 				return
@@ -131,9 +135,15 @@ function GitBrowseInner() {
 					<span className="text-stone-900 dark:text-white">{host}</span>
 				</nav>
 
-				<h1 className="mb-2 text-2xl font-bold">Authentication Required</h1>
+				<h1 className="mb-2 text-2xl font-bold">
+					{authReason === "rate_limited" ? "Rate Limited" : "Authentication Required"}
+				</h1>
 				<p className="mb-6 text-stone-600 dark:text-stone-400">
-					This repository is private. Sign in with {isGitHub ? "GitHub" : host} to continue.
+					{authReason === "rate_limited"
+						? "GitHub's unauthenticated API limit (60 requests/hour) has been reached. Sign in to get 5,000 requests/hour."
+						: authReason === "not_found"
+						? "Repository not found. It may be private — sign in to access it."
+						: `Sign in with ${isGitHub ? "GitHub" : host} to browse this repository.`}
 				</p>
 
 				{/* OAuth — primary auth method */}

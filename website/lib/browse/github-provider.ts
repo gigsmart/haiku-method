@@ -174,10 +174,19 @@ export class GitHubProvider implements BrowseProvider {
 		}
 	}
 
-	/** Check if the repo is accessible (returns false if 401/403) */
+	/** Check if the repo is accessible. Returns status for error differentiation. */
 	async isAccessible(): Promise<boolean> {
 		const res = await this.api("")
 		return res.ok
+	}
+
+	/** Get detailed access status for error messaging */
+	async getAccessStatus(): Promise<{ ok: boolean; reason: "accessible" | "rate_limited" | "not_found" | "auth_required" }> {
+		const res = await this.api("")
+		if (res.ok) return { ok: true, reason: "accessible" }
+		if (res.status === 403) return { ok: false, reason: "rate_limited" }
+		if (res.status === 404) return { ok: false, reason: "not_found" }
+		return { ok: false, reason: "auth_required" }
 	}
 
 	/** Get the OAuth URL for GitHub */
