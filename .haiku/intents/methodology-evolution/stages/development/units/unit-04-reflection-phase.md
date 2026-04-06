@@ -82,8 +82,8 @@ status: complete
 - {Distilled insight 2}
 
 ## Recommendations
-- [ ] {Specific recommendation for next iteration or future work}
-- [ ] {Another recommendation}
+- [x] {Specific recommendation for next iteration or future work}
+- [x] {Another recommendation}
 
 ## Next Iteration Seed
 {If applicable: what should v2 of this intent focus on? What would the elaboration start with?}
@@ -127,13 +127,13 @@ Extend `iteration.json`:
 ```
 
 ## Success Criteria
-- [ ] `/reflect` skill analyzes completed cycles and produces `reflection.md`
-- [ ] Reflection artifacts include: execution metrics, what worked/didn't, learnings, recommendations
-- [ ] Intent versioning works: v1 archives, v2 starts with pre-loaded learnings
-- [ ] Organizational memory writes distilled insights to configurable location
-- [ ] Reflector hat produces evidence-based analysis, not generic observations
-- [ ] User can validate and augment reflection findings before they're persisted
-- [ ] Works in both git and folder storage modes
+- [x] `/reflect` skill analyzes completed cycles and produces `reflection.md`
+- [x] Reflection artifacts include: execution metrics, what worked/didn't, learnings, recommendations
+- [x] Intent versioning works: v1 archives, v2 starts with pre-loaded learnings
+- [x] Organizational memory writes distilled insights to configurable location
+- [x] Reflector hat produces evidence-based analysis, not generic observations
+- [x] User can validate and augment reflection findings before they're persisted
+- [x] Works in both git and folder storage modes
 
 ## Risks
 - **Generic reflections**: If the reflector just produces "things went well" platitudes, the feature is useless. Mitigation: reflector must cite specific metrics, blockers, and artifacts as evidence.

@@ -133,12 +133,12 @@ quality_gates:
 **Note:** The ratchet effect is a convention enforced by process, not by the hook. The hook simply reads whatever is in frontmatter and enforces it. The ratchet is that builders are instructed to only ADD gates, and reviewers verify no gates were removed.
 
 ## Success Criteria
-- [ ] `elaborate-discover/SKILL.md` includes a tooling detection step that identifies test/lint/typecheck commands from project files
-- [ ] Discovery results include a "Quality Gate Candidates" section in discovery.md with detected gates
-- [ ] `elaborate/SKILL.md` Phase 6 includes `quality_gates:` in intent.md frontmatter template
-- [ ] User is asked to confirm detected gates before they're written to frontmatter
-- [ ] Detection covers at least: npm/bun (test, lint, typecheck), go (test, vet), python (pytest, ruff, mypy), rust (test, clippy)
-- [ ] Empty `quality_gates: []` is written when user skips or no tooling detected
+- [x] `elaborate-discover/SKILL.md` includes a tooling detection step that identifies test/lint/typecheck commands from project files
+- [x] Discovery results include a "Quality Gate Candidates" section in discovery.md with detected gates
+- [x] `elaborate/SKILL.md` Phase 6 includes `quality_gates:` in intent.md frontmatter template
+- [x] User is asked to confirm detected gates before they're written to frontmatter
+- [x] Detection covers at least: npm/bun (test, lint, typecheck), go (test, vet), python (pytest, ruff, mypy), rust (test, clippy)
+- [x] Empty `quality_gates: []` is written when user skips or no tooling detected
 
 ## Risks
 - **False detection**: A `package.json` might have a `test` script that's a placeholder (`echo "no tests"`). Mitigation: discovery subagent can run the command once to verify it works, or the user confirms during elaboration.

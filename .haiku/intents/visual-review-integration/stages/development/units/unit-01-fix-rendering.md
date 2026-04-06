@@ -121,14 +121,14 @@ try {
 
 ## Success Criteria
 
-- [ ] `renderMarkdownBlock()` calls `markdownToHtml()` server-side and injects HTML directly (no `data-markdown` attribute)
-- [ ] marked.js CDN script removed from `layout.ts`
-- [ ] Problem, Solution, Technical Spec, Domain Model sections render with headings, lists, code blocks, tables, bold/italic
-- [ ] Static dashboard CLI templates also render markdown server-side
-- [ ] Wireframes resolve by mockups/ directory filename convention when `wireframe:` frontmatter is empty
-- [ ] Image files (.png, .jpg, .svg) in mockups/ directory are served and displayed
-- [ ] Existing `open_review` tool continues to work unchanged after fixes
-- [ ] Review page loads in under 500ms on localhost
+- [x] `renderMarkdownBlock()` calls `markdownToHtml()` server-side and injects HTML directly (no `data-markdown` attribute)
+- [x] marked.js CDN script removed from `layout.ts`
+- [x] Problem, Solution, Technical Spec, Domain Model sections render with headings, lists, code blocks, tables, bold/italic
+- [x] Static dashboard CLI templates also render markdown server-side
+- [x] Wireframes resolve by mockups/ directory filename convention when `wireframe:` frontmatter is empty
+- [x] Image files (.png, .jpg, .svg) in mockups/ directory are served and displayed
+- [x] Existing `open_review` tool continues to work unchanged after fixes
+- [x] Review page loads in under 500ms on localhost
 
 ## Risks
 

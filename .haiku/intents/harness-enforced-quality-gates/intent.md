@@ -1,11 +1,12 @@
 ---
 title: "Harness-Enforced Quality Gates"
 studio: software
+stages: [inception, design, product, development, operations, security]
 mode: continuous
 active_stage: development
 status: completed
-started_at: 2026-03-29T00:00:00Z
-completed_at: 2026-03-29T23:59:59Z
+started_at: 2026-03-29T21:33:07Z
+completed_at: 2026-04-01T13:21:44Z
 ---
 
 

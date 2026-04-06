@@ -1,11 +1,12 @@
 ---
 title: "Intent: Remove Han Keep Dependency & Improve Intent State Management"
 studio: software
+stages: [inception, design, product, development, operations, security]
 mode: continuous
 active_stage: development
 status: completed
-started_at: 2026-03-14T00:00:00Z
-completed_at: 2026-03-14T23:59:59Z
+started_at: 2026-03-14T18:25:47Z
+completed_at: 2026-03-27T23:54:07Z
 ---
 
 

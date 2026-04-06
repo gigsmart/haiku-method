@@ -252,21 +252,21 @@ design_blueprint_path: {path to design-blueprint.md or empty}
 ```
 
 ## Success Criteria
-- [ ] Phase 2.75 is inserted between Phase 2.5 and Phase 3 in the elaborate skill
-- [ ] Knowledge synthesis triggers automatically on first elaboration when no knowledge artifacts exist
-- [ ] Design direction picker activates for greenfield projects without existing design knowledge
-- [ ] Design direction picker is skipped for brownfield/established projects
-- [ ] MCP visual picker is used when available, terminal fallback when not
-- [ ] Selected direction produces both `design-blueprint.md` and seeds `knowledge/design.md`
-- [ ] Discovery brief includes existing knowledge artifacts for enriched exploration
-- [ ] Wireframe brief includes `design_blueprint_path` field
-- [ ] Wireframe skill reads blueprint and produces styled wireframes with archetype CSS tokens
-- [ ] Styled wireframes use the blueprint's fonts, colors, spacing, and border-radius instead of gray defaults
-- [ ] Styled wireframes still look low-fidelity (no photos/brand assets) but carry the archetype's spatial personality
-- [ ] When no blueprint exists, wireframes produce standard gray-box output (backwards compatible)
-- [ ] Domain and product knowledge are loaded and available for Phase 3+ context
-- [ ] Autonomous mode auto-selects Editorial archetype with defaults (configurable via settings)
-- [ ] When design_blueprint_path is set in the wireframe brief frontmatter, the wireframe skill reads and applies it; when empty or missing, gray-box behavior is preserved (end-to-end integration test)
+- [x] Phase 2.75 is inserted between Phase 2.5 and Phase 3 in the elaborate skill
+- [x] Knowledge synthesis triggers automatically on first elaboration when no knowledge artifacts exist
+- [x] Design direction picker activates for greenfield projects without existing design knowledge
+- [x] Design direction picker is skipped for brownfield/established projects
+- [x] MCP visual picker is used when available, terminal fallback when not
+- [x] Selected direction produces both `design-blueprint.md` and seeds `knowledge/design.md`
+- [x] Discovery brief includes existing knowledge artifacts for enriched exploration
+- [x] Wireframe brief includes `design_blueprint_path` field
+- [x] Wireframe skill reads blueprint and produces styled wireframes with archetype CSS tokens
+- [x] Styled wireframes use the blueprint's fonts, colors, spacing, and border-radius instead of gray defaults
+- [x] Styled wireframes still look low-fidelity (no photos/brand assets) but carry the archetype's spatial personality
+- [x] When no blueprint exists, wireframes produce standard gray-box output (backwards compatible)
+- [x] Domain and product knowledge are loaded and available for Phase 3+ context
+- [x] Autonomous mode auto-selects Editorial archetype with defaults (configurable via settings)
+- [x] When design_blueprint_path is set in the wireframe brief frontmatter, the wireframe skill reads and applies it; when empty or missing, gray-box behavior is preserved (end-to-end integration test)
 
 ## Risks
 - **Phase ordering complexity**: Inserting Phase 2.75 into an already complex elaboration flow could create subtle ordering issues. Mitigation: The phase has clear entry/exit conditions and only runs when both gates (greenfield AND no existing knowledge) are met.

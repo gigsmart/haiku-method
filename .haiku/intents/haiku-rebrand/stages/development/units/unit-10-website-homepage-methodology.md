@@ -164,18 +164,18 @@ Adapt this content for web presentation — shorter paragraphs, visual hierarchy
 
 ## Success Criteria
 
-- [ ] Homepage communicates H·AI·K·U as a universal lifecycle framework (not dev-only)
-- [ ] Homepage has lifecycle visualization, domain profiles, and key principles
-- [ ] Methodology page explains the 4-phase lifecycle for a business audience
-- [ ] Phase pages exist for research, create, review, and deliver with multi-domain examples
-- [ ] Studios page shows domain profiles with their stage sequences
-- [ ] Design language is minimal, teal-accented, and Japanese-inspired (from haiku-method)
-- [ ] Site is responsive (mobile, tablet, desktop)
-- [ ] Dark/light mode supported
-- [ ] Existing blog, docs, paper, and feed content preserved
-- [ ] Content sourced from haiku-method paper (not invented from scratch)
-- [ ] Site builds successfully with `bun run build` (static export)
-- [ ] No developer jargon on the homepage or methodology pages
+- [x] Homepage communicates H·AI·K·U as a universal lifecycle framework (not dev-only)
+- [x] Homepage has lifecycle visualization, domain profiles, and key principles
+- [x] Methodology page explains the 4-phase lifecycle for a business audience
+- [x] Phase pages exist for research, create, review, and deliver with multi-domain examples
+- [x] Studios page shows domain profiles with their stage sequences
+- [x] Design language is minimal, teal-accented, and Japanese-inspired (from haiku-method)
+- [x] Site is responsive (mobile, tablet, desktop)
+- [x] Dark/light mode supported
+- [x] Existing blog, docs, paper, and feed content preserved
+- [x] Content sourced from haiku-method paper (not invented from scratch)
+- [x] Site builds successfully with `bun run build` (static export)
+- [x] No developer jargon on the homepage or methodology pages
 
 ## Risks
 

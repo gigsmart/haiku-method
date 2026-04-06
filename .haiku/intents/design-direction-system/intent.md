@@ -1,11 +1,12 @@
 ---
 title: "Design Direction System & Project Knowledge Layer"
 studio: software
+stages: [inception, design, product, development, operations, security]
 mode: continuous
 active_stage: development
 status: completed
-started_at: 2026-03-31T22:03:00ZT00:00:00Z
-completed_at: 2026-03-31T22:03:00ZT23:59:59Z
+started_at: 2026-03-31T22:08:00Z
+completed_at: 2026-04-01T13:21:44Z
 ---
 
 

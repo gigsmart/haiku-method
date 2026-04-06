@@ -185,16 +185,16 @@ Port the construct skill with:
 - During execution, produce `operations.md` alongside deliverables (guidance for the Operation phase)
 
 ## Success Criteria
-- [ ] H•AI•K•U core plugin installs and runs in Claude Code
-- [ ] `detect_storage_mode()` correctly identifies git vs folder environments
-- [ ] Folder mode: all state persists in `.haiku/` directories with no git commands
-- [ ] Git mode: works identically to current AI-DLC patterns (worktrees, branches, han keep)
-- [ ] Quality gates are read from `.haiku/settings.yml`, not hardcoded
-- [ ] `/elaborate` skill works in both git and folder modes
-- [ ] `/execute` skill runs the autonomous loop with configurable gates
-- [ ] DAG resolution works from filesystem alone
-- [ ] Hats are domain-agnostic (executor, not builder)
-- [ ] All 3 default workflows defined and functional
+- [x] H•AI•K•U core plugin installs and runs in Claude Code
+- [x] `detect_storage_mode()` correctly identifies git vs folder environments
+- [x] Folder mode: all state persists in `.haiku/` directories with no git commands
+- [x] Git mode: works identically to current AI-DLC patterns (worktrees, branches, han keep)
+- [x] Quality gates are read from `.haiku/settings.yml`, not hardcoded
+- [x] `/elaborate` skill works in both git and folder modes
+- [x] `/execute` skill runs the autonomous loop with configurable gates
+- [x] DAG resolution works from filesystem alone
+- [x] Hats are domain-agnostic (executor, not builder)
+- [x] All 3 default workflows defined and functional
 
 ## Risks
 - **Storage abstraction complexity**: Two storage modes means double the testing surface. Mitigation: unified API with clear mode-specific implementations behind it.

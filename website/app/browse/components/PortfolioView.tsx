@@ -31,12 +31,19 @@ function parseHash(): Record<string, string> {
 	return params
 }
 
-function setHash(params: Record<string, string>) {
+function buildHashString(params: Record<string, string>): string {
 	const parts = Object.entries(params)
 		.filter(([, v]) => v)
 		.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-	const hash = parts.length > 0 ? `#${parts.join("&")}` : " "
-	window.history.replaceState(null, "", hash.trim() || window.location.pathname + window.location.search)
+	return parts.length > 0 ? `#${parts.join("&")}` : window.location.pathname + window.location.search
+}
+
+function setHash(params: Record<string, string>) {
+	window.history.replaceState(null, "", buildHashString(params))
+}
+
+function pushHash(params: Record<string, string>) {
+	window.history.pushState(null, "", buildHashString(params))
 }
 
 const statusColors: Record<string, string> = {
@@ -79,6 +86,22 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 		load()
 	}, [provider])
 
+	// Listen for browser back/forward
+	useEffect(() => {
+		const onPopState = () => {
+			const params = parseHash()
+			if (params.intent) {
+				// Re-load intent
+				provider.getIntent(params.intent).then(detail => setSelectedIntent(detail))
+			} else {
+				setSelectedIntent(null)
+			}
+			if (params.view === "board" || params.view === "list") setViewMode(params.view)
+		}
+		window.addEventListener("popstate", onPopState)
+		return () => window.removeEventListener("popstate", onPopState)
+	}, [provider])
+
 	// Sync view mode to hash (only when no intent is selected)
 	useEffect(() => {
 		if (!selectedIntent && !loading) {
@@ -92,15 +115,15 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 			const detail = await provider.getIntent(slug)
 			setSelectedIntent(detail)
 			setLoadingDetail(false)
-			setHash({ intent: slug })
+			pushHash({ intent: slug })
 		},
 		[provider],
 	)
 
 	const handleBackFromIntent = useCallback(() => {
 		setSelectedIntent(null)
-		setHash({ view: viewMode !== "list" ? viewMode : "" })
-	}, [viewMode])
+		window.history.back()
+	}, [])
 
 	if (selectedIntent) {
 		return (
@@ -175,7 +198,17 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 				/>
 			) : (
 				<div className="space-y-3">
-					{intents.map((intent) => (
+					{[...intents].sort((a, b) => {
+						// Active first, then completed, then archived
+						const statusOrder: Record<string, number> = { active: 0, blocked: 1, completed: 2, archived: 3 }
+						const sa = statusOrder[a.status] ?? 1
+						const sb = statusOrder[b.status] ?? 1
+						if (sa !== sb) return sa - sb
+						// Within same status, sort by start date descending (newest first)
+						const da = a.startedAt ? new Date(a.startedAt).getTime() : 0
+						const db = b.startedAt ? new Date(b.startedAt).getTime() : 0
+						return db - da
+					}).map((intent) => (
 						<button
 							key={intent.slug}
 							onClick={() => handleSelectIntent(intent.slug)}

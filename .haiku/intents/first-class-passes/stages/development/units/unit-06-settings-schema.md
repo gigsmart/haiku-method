@@ -82,11 +82,11 @@ Check `plugin/shared/src/types.ts` — the `passes?: string[]` and `active_pass?
 
 ## Success Criteria
 
-- [ ] `settings.schema.json` `default_passes.items` has no `enum` constraint — accepts any string
-- [ ] Schema description documents built-in passes and how to create custom ones
-- [ ] Setup skill presents available passes dynamically (built-in + project-defined)
-- [ ] Fundamentals skill documents pass customization, augmentation, and single-pass default
-- [ ] TypeScript types do not hardcode pass name validation
+- [x] `settings.schema.json` `default_passes.items` has no `enum` constraint — accepts any string
+- [x] Schema description documents built-in passes and how to create custom ones
+- [x] Setup skill presents available passes dynamically (built-in + project-defined)
+- [x] Fundamentals skill documents pass customization, augmentation, and single-pass default
+- [x] TypeScript types do not hardcode pass name validation
 
 ## Risks
 

@@ -217,17 +217,17 @@ Updated terminology table:
 
 ## Success Criteria
 
-- [ ] Getting started tutorial works end-to-end (install -> first intent -> delivery)
-- [ ] CLI reference covers all `/haiku:*` commands with examples
-- [ ] Studios guide explains built-in studios and custom studio creation
-- [ ] Stages guide includes STAGE.md schema reference and custom stage example
-- [ ] Persistence guide covers git adapter, filesystem adapter, and custom adapter creation
-- [ ] Migration guide provides step-by-step AI-DLC -> H·AI·K·U migration
-- [ ] Concepts page updated with new terminology table
-- [ ] All existing docs updated to reference H·AI·K·U instead of AI-DLC
-- [ ] No remaining "AI-DLC" references in any docs page (except migration guide historical context)
-- [ ] All docs build successfully in the static site
-- [ ] Code examples in docs use H·AI·K·U commands and paths
+- [x] Getting started tutorial works end-to-end (install -> first intent -> delivery)
+- [x] CLI reference covers all `/haiku:*` commands with examples
+- [x] Studios guide explains built-in studios and custom studio creation
+- [x] Stages guide includes STAGE.md schema reference and custom stage example
+- [x] Persistence guide covers git adapter, filesystem adapter, and custom adapter creation
+- [x] Migration guide provides step-by-step AI-DLC -> H·AI·K·U migration
+- [x] Concepts page updated with new terminology table
+- [x] All existing docs updated to reference H·AI·K·U instead of AI-DLC
+- [x] No remaining "AI-DLC" references in any docs page (except migration guide historical context)
+- [x] All docs build successfully in the static site
+- [x] Code examples in docs use H·AI·K·U commands and paths
 
 ## Risks
 

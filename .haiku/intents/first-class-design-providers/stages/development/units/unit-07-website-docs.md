@@ -104,13 +104,13 @@ Document each capability (read_design, write_design, export_png, generate_wirefr
 - Include "Troubleshooting" tips for common setup issues (MCP not connecting, CLI not found, etc.)
 
 ## Success Criteria
-- [ ] New `guide-design-providers.md` page covers all 6 providers with setup instructions
-- [ ] Provider comparison table accurately reflects capabilities
-- [ ] Configuration examples match the JSON schemas from unit-06
-- [ ] Capability reference documents which providers support which operations
-- [ ] Existing docs (concepts.md, guide-designer.md, guide-tech-lead.md, workflows.md) updated with provider references
-- [ ] All code examples are valid and match actual implementation
-- [ ] Documentation follows existing site conventions (frontmatter, heading structure, linking)
+- [x] New `guide-design-providers.md` page covers all 6 providers with setup instructions
+- [x] Provider comparison table accurately reflects capabilities
+- [x] Configuration examples match the JSON schemas from unit-06
+- [x] Capability reference documents which providers support which operations
+- [x] Existing docs (concepts.md, guide-designer.md, guide-tech-lead.md, workflows.md) updated with provider references
+- [x] All code examples are valid and match actual implementation
+- [x] Documentation follows existing site conventions (frontmatter, heading structure, linking)
 
 ## Risks
 - **Documentation drift**: Docs could become stale if provider capabilities change. Mitigation: reference schemas as source of truth; include "last updated" frontmatter.

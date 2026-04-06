@@ -27,12 +27,19 @@ function parseHash(): Record<string, string> {
 	return params
 }
 
-function setHash(params: Record<string, string>) {
+function buildHashString(params: Record<string, string>): string {
 	const parts = Object.entries(params)
 		.filter(([, v]) => v)
 		.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-	const hash = parts.length > 0 ? `#${parts.join("&")}` : " "
-	window.history.replaceState(null, "", hash.trim() || window.location.pathname + window.location.search)
+	return parts.length > 0 ? `#${parts.join("&")}` : window.location.pathname + window.location.search
+}
+
+function setHash(params: Record<string, string>) {
+	window.history.replaceState(null, "", buildHashString(params))
+}
+
+function pushHash(params: Record<string, string>) {
+	window.history.pushState(null, "", buildHashString(params))
 }
 
 const stageStatusColors: Record<string, { bg: string; dot: string }> = {
@@ -76,12 +83,12 @@ export function IntentDetailView({ intent, provider, onBack }: Props) {
 
 	const handleSelectUnit = (unit: HaikuUnit, stage: string) => {
 		setSelectedUnit({ unit, stage })
-		updateHash({ unit: unit.name, stage })
+		pushHash({ intent: intent.slug, unit: unit.name, stage })
 	}
 
 	const handleBackFromUnit = () => {
 		setSelectedUnit(null)
-		updateHash({ view: viewMode !== "pipeline" ? viewMode : "" })
+		window.history.back()
 	}
 
 	const handleViewModeChange = (mode: "pipeline" | "board") => {

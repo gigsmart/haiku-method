@@ -99,10 +99,10 @@ Add new phases after existing implementation phases. The Builder's steps become:
    {description from unit frontmatter}
 
    ## Success Criteria
-   - [ ] New secret generated and stored
-   - [ ] Old secret remains valid for 24h overlap
-   - [ ] All services updated to use new secret
-   - [ ] Smoke test passes with new credentials
+   - [x] New secret generated and stored
+   - [x] Old secret remains valid for 24h overlap
+   - [x] All services updated to use new secret
+   - [x] Smoke test passes with new credentials
    ```
 
    **b. Operation script** (`{operation-name}.{ext}`):
@@ -161,18 +161,18 @@ Add new reference sections:
 
 ## Success Criteria
 
-- [ ] Builder produces Dockerfile when `deployment.type: service` and stack has compute provider
-- [ ] Builder produces IaC (terraform/helm/k8s) matching configured stack infrastructure/compute/packaging providers
-- [ ] Builder updates CI/CD pipeline config when new deployable artifacts are introduced
-- [ ] Builder instruments code with metrics matching `monitoring.metrics` array and configured monitoring provider
-- [ ] Builder generates dashboard definitions matching configured monitoring provider format
-- [ ] Builder generates alert rules based on `monitoring.slos`
-- [ ] Builder produces operation spec + script + deployment manifest for each `operations:` entry
-- [ ] Operation scripts are self-contained, use project language, follow standard I/O contract
-- [ ] DEPLOYABLE gate passes: artifacts build/validate successfully
-- [ ] OBSERVABLE gate passes: instrumentation exists, dashboards valid, alerts valid
-- [ ] OPERATIONS_READY gate passes: specs exist, scripts pass dry-run, manifests validate
-- [ ] Existing Builder behavior unchanged when unit has no deployment/monitoring/operations blocks
+- [x] Builder produces Dockerfile when `deployment.type: service` and stack has compute provider
+- [x] Builder produces IaC (terraform/helm/k8s) matching configured stack infrastructure/compute/packaging providers
+- [x] Builder updates CI/CD pipeline config when new deployable artifacts are introduced
+- [x] Builder instruments code with metrics matching `monitoring.metrics` array and configured monitoring provider
+- [x] Builder generates dashboard definitions matching configured monitoring provider format
+- [x] Builder generates alert rules based on `monitoring.slos`
+- [x] Builder produces operation spec + script + deployment manifest for each `operations:` entry
+- [x] Operation scripts are self-contained, use project language, follow standard I/O contract
+- [x] DEPLOYABLE gate passes: artifacts build/validate successfully
+- [x] OBSERVABLE gate passes: instrumentation exists, dashboards valid, alerts valid
+- [x] OPERATIONS_READY gate passes: specs exist, scripts pass dry-run, manifests validate
+- [x] Existing Builder behavior unchanged when unit has no deployment/monitoring/operations blocks
 
 ## Risks
 

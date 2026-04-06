@@ -158,16 +158,16 @@ source "${PLUGIN_ROOT}/lib/state.sh"
 Use existing `dlc_check_deps`, `dlc_find_active_intent`, `dlc_state_load`, `dlc_json_get`, `dlc_frontmatter_get` functions. No new library code needed.
 
 ## Success Criteria
-- [ ] `plugin/hooks/quality-gate.sh` exists and is executable
-- [ ] Hook reads `quality_gates:` from both intent.md and current unit frontmatter
-- [ ] Intent and unit gates merge additively (both lists run)
-- [ ] Each gate command is executed with a timeout
-- [ ] Failed gates produce `{"decision": "block"}` JSON with gate name, command, exit code, and output
-- [ ] Passing gates (or no gates) allow stop (exit 0, no JSON)
-- [ ] Hook only enforces for building hats: builder, implementer, refactorer
-- [ ] Hook respects `stop_hook_active` — allows stop on second attempt
-- [ ] Hook exits silently (exit 0) when no active intent, no iteration state, or non-building hat
-- [ ] Registered in `hooks/hooks.json` for both Stop and SubagentStop (NOT async)
+- [x] `plugin/hooks/quality-gate.sh` exists and is executable
+- [x] Hook reads `quality_gates:` from both intent.md and current unit frontmatter
+- [x] Intent and unit gates merge additively (both lists run)
+- [x] Each gate command is executed with a timeout
+- [x] Failed gates produce `{"decision": "block"}` JSON with gate name, command, exit code, and output
+- [x] Passing gates (or no gates) allow stop (exit 0, no JSON)
+- [x] Hook only enforces for building hats: builder, implementer, refactorer
+- [x] Hook respects `stop_hook_active` — allows stop on second attempt
+- [x] Hook exits silently (exit 0) when no active intent, no iteration state, or non-building hat
+- [x] Registered in `hooks/hooks.json` for both Stop and SubagentStop (NOT async)
 
 ## Risks
 - **Frontmatter parsing fragility**: YAML list extraction from markdown frontmatter can break on edge cases. Mitigation: use existing `dlc_frontmatter_get` + `yq` pipeline, test with empty/missing/malformed fields.

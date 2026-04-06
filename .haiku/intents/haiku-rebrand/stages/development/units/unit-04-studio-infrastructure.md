@@ -284,20 +284,20 @@ This allows projects to add stages to a built-in studio or override individual s
 
 ## Success Criteria
 
-- [ ] `plugin/lib/studio.sh` exists with all 6 functions implemented
-- [ ] `hku_resolve_studio` correctly resolves project-level overrides before built-in
-- [ ] `hku_load_studio_metadata` parses STUDIO.md frontmatter correctly
-- [ ] `hku_validate_studio` checks that all referenced stages have STAGE.md files
-- [ ] `hku_get_active_studio` falls through: intent -> settings -> default
-- [ ] `hku_list_available_studios` returns both built-in and project-level studios
-- [ ] `plugin/lib/stage.sh` resolves stages relative to studios
-- [ ] `hku_resolve_stage_outputs_dir` resolves the `outputs/` directory for a stage
-- [ ] `hku_load_stage_outputs` reads frontmatter from all output docs in `outputs/`
-- [ ] `hku_resolve_stage_inputs` maps input names to prior stage output locations
-- [ ] Studio directories created: `plugin/studios/ideation/`, `plugin/studios/software/`
-- [ ] STUDIO.md files created for ideation and software studios (frontmatter + body)
-- [ ] Settings schema includes `studio` field with default `"ideation"`
-- [ ] Stage STAGE.md stub files and `outputs/` directories exist (detailed content in unit-05)
+- [x] `plugin/lib/studio.sh` exists with all 6 functions implemented
+- [x] `hku_resolve_studio` correctly resolves project-level overrides before built-in
+- [x] `hku_load_studio_metadata` parses STUDIO.md frontmatter correctly
+- [x] `hku_validate_studio` checks that all referenced stages have STAGE.md files
+- [x] `hku_get_active_studio` falls through: intent -> settings -> default
+- [x] `hku_list_available_studios` returns both built-in and project-level studios
+- [x] `plugin/lib/stage.sh` resolves stages relative to studios
+- [x] `hku_resolve_stage_outputs_dir` resolves the `outputs/` directory for a stage
+- [x] `hku_load_stage_outputs` reads frontmatter from all output docs in `outputs/`
+- [x] `hku_resolve_stage_inputs` maps input names to prior stage output locations
+- [x] Studio directories created: `plugin/studios/ideation/`, `plugin/studios/software/`
+- [x] STUDIO.md files created for ideation and software studios (frontmatter + body)
+- [x] Settings schema includes `studio` field with default `"ideation"`
+- [x] Stage STAGE.md stub files and `outputs/` directories exist (detailed content in unit-05)
 
 ## Risks
 

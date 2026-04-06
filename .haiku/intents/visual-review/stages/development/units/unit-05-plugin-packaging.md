@@ -139,12 +139,12 @@ Add usage documentation to the plugin:
 
 ## Success Criteria
 
-- [ ] `.mcp.json` entry correctly references the MCP server entry point
-- [ ] Claude Code discovers and spawns the `ai-dlc-review` MCP server on session start
-- [ ] `/dashboard` skill generates the static site when invoked
-- [ ] Workspace dependencies resolve correctly (`bun install` from root)
-- [ ] Review channel works with `--dangerously-load-development-channels server:ai-dlc-review`
-- [ ] Documentation covers installation, channel setup, and dashboard generation
+- [x] `.mcp.json` entry correctly references the MCP server entry point
+- [x] Claude Code discovers and spawns the `ai-dlc-review` MCP server on session start
+- [x] `/dashboard` skill generates the static site when invoked
+- [x] Workspace dependencies resolve correctly (`bun install` from root)
+- [x] Review channel works with `--dangerously-load-development-channels server:ai-dlc-review`
+- [x] Documentation covers installation, channel setup, and dashboard generation
 
 ## Risks
 

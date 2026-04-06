@@ -214,25 +214,25 @@ grep -r 'available_workflows' plugin/ --include='*.md'                 # 0 resul
 
 ## Success Criteria
 
-- [ ] `plugin/hats/` directory deleted (all `.md` files removed)
-- [ ] `plugin/workflows.yml` deleted
+- [x] `plugin/hats/` directory deleted (all `.md` files removed)
+- [x] `plugin/workflows.yml` deleted
 <<<<<<< HEAD
-- [ ] `inject-context.sh` reads hat instructions from active stage's `hats/` directory
-- [ ] `subagent-context.sh` reads hat instructions from active stage's `hats/` directory
-- [ ] Hat files are read directly from `stages/{stage}/hats/{hat}.md`
-- [ ] `hku_get_hat_sequence` function exists and reads from STAGE.md frontmatter
+- [x] `inject-context.sh` reads hat instructions from active stage's `hats/` directory
+- [x] `subagent-context.sh` reads hat instructions from active stage's `hats/` directory
+- [x] Hat files are read directly from `stages/{stage}/hats/{hat}.md`
+- [x] `hku_get_hat_sequence` function exists and reads from STAGE.md frontmatter
 =======
-- [ ] `inject-context.sh` calls `hku_resolve_hat_instructions` to inject hat context
-- [ ] `subagent-context.sh` calls `hku_resolve_hat_instructions` to inject hat context
-- [ ] `hku_resolve_hat_instructions` reads from `{stage_dir}/hats/{hat_name}.md`
-- [ ] `hku_get_hat_sequence` exists and reads `hats:` from STAGE.md frontmatter
+- [x] `inject-context.sh` calls `hku_resolve_hat_instructions` to inject hat context
+- [x] `subagent-context.sh` calls `hku_resolve_hat_instructions` to inject hat context
+- [x] `hku_resolve_hat_instructions` reads from `{stage_dir}/hats/{hat_name}.md`
+- [x] `hku_get_hat_sequence` exists and reads `hats:` from STAGE.md frontmatter
 >>>>>>> 88bf3585c47301617dc53f3f900fe85e8303f2f3
-- [ ] No remaining references to `plugin/hats/` in any hook or skill file
-- [ ] No remaining references to `plugin/workflows.yml` in any file
-- [ ] Workflow selection sub-skill removed or deprecated
-- [ ] Hat transitions in execute/advance skills use stage hat sequence
-- [ ] Backward compat: `.haiku/hats/` project-level hat files checked as augmentation
-- [ ] `hku_resolve_hat_instructions` falls back to ideation studio `research` stage when no active stage is configured (legacy projects without `.haiku/settings.yml` always have hat context)
+- [x] No remaining references to `plugin/hats/` in any hook or skill file
+- [x] No remaining references to `plugin/workflows.yml` in any file
+- [x] Workflow selection sub-skill removed or deprecated
+- [x] Hat transitions in execute/advance skills use stage hat sequence
+- [x] Backward compat: `.haiku/hats/` project-level hat files checked as augmentation
+- [x] `hku_resolve_hat_instructions` falls back to ideation studio `research` stage when no active stage is configured (legacy projects without `.haiku/settings.yml` always have hat context)
 
 ## Risks
 

@@ -223,19 +223,19 @@ The fallback uses default parameter values for the chosen archetype (no slider t
 **Note:** The terminal fallback itself is implemented in unit-05 (elaboration integration), not in this unit. This unit only provides the MCP tool. This spec documents the fallback design so unit-05 has a clear contract.
 
 ## Success Criteria
-- [ ] `pick_design_direction` tool is registered in the MCP server with proper input validation
-- [ ] `DesignDirectionSession` type exists in sessions.ts with create/update/get functions
-- [ ] GET `/direction/:sessionId` serves the picker HTML
-- [ ] POST `/direction/:sessionId/select` stores the selection and sends channel notification
-- [ ] `get_review_status` returns selection data for design_direction sessions
-- [ ] Picker template renders archetype cards with preview HTML in a selectable gallery
-- [ ] Picker template renders parameter sliders with labels, descriptions, and value display
-- [ ] Selecting an archetype updates slider defaults
-- [ ] Submit button POSTs archetype + parameters and shows confirmation
-- [ ] Keyboard navigation works: arrow keys between archetype cards, Tab to sliders
-- [ ] ARIA attributes are correct: radiogroup, radio, aria-checked, labels on sliders
-- [ ] Dark mode toggle works correctly with the picker UI
-- [ ] All existing MCP server tests continue to pass
+- [x] `pick_design_direction` tool is registered in the MCP server with proper input validation
+- [x] `DesignDirectionSession` type exists in sessions.ts with create/update/get functions
+- [x] GET `/direction/:sessionId` serves the picker HTML
+- [x] POST `/direction/:sessionId/select` stores the selection and sends channel notification
+- [x] `get_review_status` returns selection data for design_direction sessions
+- [x] Picker template renders archetype cards with preview HTML in a selectable gallery
+- [x] Picker template renders parameter sliders with labels, descriptions, and value display
+- [x] Selecting an archetype updates slider defaults
+- [x] Submit button POSTs archetype + parameters and shows confirmation
+- [x] Keyboard navigation works: arrow keys between archetype cards, Tab to sliders
+- [x] ARIA attributes are correct: radiogroup, radio, aria-checked, labels on sliders
+- [x] Dark mode toggle works correctly with the picker UI
+- [x] All existing MCP server tests continue to pass
 
 ## Risks
 - **Preview HTML injection**: The `preview_html` field is rendered inside the picker page — malicious content could break layout or execute scripts. Mitigation: Render previews in sandboxed `<iframe srcdoc="...">` elements with `sandbox` attribute (no scripts, no same-origin).

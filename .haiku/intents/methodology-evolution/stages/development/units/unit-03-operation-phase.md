@@ -70,9 +70,9 @@ status: active
     - Document decisions and action items
 
 ## Completion Criteria
-- [ ] All recurring tasks running on schedule
-- [ ] Reactive triggers configured and tested
-- [ ] Manual task owners notified of responsibilities
+- [x] All recurring tasks running on schedule
+- [x] Reactive triggers configured and tested
+- [x] Manual task owners notified of responsibilities
 ```
 
 ### /operate Skill
@@ -113,13 +113,13 @@ Extend `iteration.json` with operation tracking:
 The executor hat (during Execution) is instructed to produce `operations.md` as part of its deliverables. This is a prompt-level instruction in the executor hat definition, not a code-level enforcement — the executor naturally produces the operational plan alongside the work output.
 
 ## Success Criteria
-- [ ] `/operate` skill exists and reads operational plans
-- [ ] `operations.md` format supports recurring, reactive, and manual task types
-- [ ] Operator hat validates operational readiness
-- [ ] Agent-owned tasks can be executed via the `/operate` skill
-- [ ] Human-owned tasks display guidance and checklists
-- [ ] Operation status tracked in intent state
-- [ ] Works in both git and folder storage modes
+- [x] `/operate` skill exists and reads operational plans
+- [x] `operations.md` format supports recurring, reactive, and manual task types
+- [x] Operator hat validates operational readiness
+- [x] Agent-owned tasks can be executed via the `/operate` skill
+- [x] Human-owned tasks display guidance and checklists
+- [x] Operation status tracked in intent state
+- [x] Works in both git and folder storage modes
 
 ## Risks
 - **Scope creep into automation**: Operation could become a full automation platform. Mitigation: keep it focused on plan execution and status tracking, not scheduling infrastructure.

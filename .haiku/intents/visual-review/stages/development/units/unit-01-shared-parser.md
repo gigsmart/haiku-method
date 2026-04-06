@@ -162,15 +162,15 @@ Consumed by the MCP server and CLI via relative imports (monorepo workspace) or 
 
 ## Success Criteria
 
-- [ ] `parseIntent()` correctly extracts all frontmatter fields from real intent.md files in the repo
-- [ ] `parseUnit()` correctly extracts all frontmatter fields including optional ones (wireframe, design_ref, deployment, monitoring, operations)
-- [ ] `parseAllUnits()` returns units sorted by number (01, 02, 03...)
-- [ ] `extractSections()` correctly splits markdown body into named sections (Problem, Solution, Domain Model, etc.)
-- [ ] `parseCriteria()` correctly identifies checked (`[x]`) and unchecked (`[ ]`) criteria items
-- [ ] `buildDAG()` produces correct adjacency list from unit depends_on fields
-- [ ] `toMermaidDefinition()` generates valid Mermaid graph TD syntax with status-based CSS classes
-- [ ] `listIntents()` discovers all intent directories, excluding `worktrees/` and `settings.yml`
-- [ ] All functions handle missing or malformed files gracefully (return null or empty, no throws)
+- [x] `parseIntent()` correctly extracts all frontmatter fields from real intent.md files in the repo
+- [x] `parseUnit()` correctly extracts all frontmatter fields including optional ones (wireframe, design_ref, deployment, monitoring, operations)
+- [x] `parseAllUnits()` returns units sorted by number (01, 02, 03...)
+- [x] `extractSections()` correctly splits markdown body into named sections (Problem, Solution, Domain Model, etc.)
+- [x] `parseCriteria()` correctly identifies checked (`[x]`) and unchecked (`[ ]`) criteria items
+- [x] `buildDAG()` produces correct adjacency list from unit depends_on fields
+- [x] `toMermaidDefinition()` generates valid Mermaid graph TD syntax with status-based CSS classes
+- [x] `listIntents()` discovers all intent directories, excluding `worktrees/` and `settings.yml`
+- [x] All functions handle missing or malformed files gracefully (return null or empty, no throws)
 
 ## Risks
 

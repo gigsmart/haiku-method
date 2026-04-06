@@ -188,15 +188,15 @@ You MUST treat visual fidelity failures as implementation guidance:
 ```
 
 ## Success Criteria
-- [ ] `detect-visual-gate.sh` correctly identifies units that produce user-visible output using the defined heuristic
-- [ ] Vision comparison prompt template exists with fidelity-aware instructions for high, medium, and low references
-- [ ] `run-visual-comparison.sh` orchestrates end-to-end: gate detection → reference resolution → capture → vision comparison → report
-- [ ] Comparison report written with YAML frontmatter (verdict, fidelity, counts) and categorized findings
-- [ ] Reviewer hat documentation updated with Visual Fidelity delegation agent entry and activation criteria
-- [ ] `REVIEW COMPLETE` structured marker includes Visual Fidelity line
-- [ ] Visual failures result in `Decision: REQUEST CHANGES` with visual feedback — never silently skipped
-- [ ] Builder documentation updated with guidance for handling visual fidelity feedback
-- [ ] Infrastructure failures (capture failure, dev server down) also result in review failure, not silent skip
+- [x] `detect-visual-gate.sh` correctly identifies units that produce user-visible output using the defined heuristic
+- [x] Vision comparison prompt template exists with fidelity-aware instructions for high, medium, and low references
+- [x] `run-visual-comparison.sh` orchestrates end-to-end: gate detection → reference resolution → capture → vision comparison → report
+- [x] Comparison report written with YAML frontmatter (verdict, fidelity, counts) and categorized findings
+- [x] Reviewer hat documentation updated with Visual Fidelity delegation agent entry and activation criteria
+- [x] `REVIEW COMPLETE` structured marker includes Visual Fidelity line
+- [x] Visual failures result in `Decision: REQUEST CHANGES` with visual feedback — never silently skipped
+- [x] Builder documentation updated with guidance for handling visual fidelity feedback
+- [x] Infrastructure failures (capture failure, dev server down) also result in review failure, not silent skip
 
 ## Risks
 - **Vision model subjectivity**: AI vision analysis is inherently subjective — may flag acceptable differences or miss real issues. Mitigation: the fidelity level adjusts tolerance, and the comparison prompt is carefully structured. Low-severity findings don't block.

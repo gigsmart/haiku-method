@@ -101,12 +101,12 @@ This is an uncommon path — the primary mechanism is forward progression. Pass-
 
 ## Success Criteria
 
-- [ ] Execute Step 3 uses `find_ready_units_for_pass` when `active_pass` is set
-- [ ] Execute Step 3 uses `find_ready_units` when `active_pass` is empty (backward compatible)
-- [ ] Workflow constraints applied when spawning teammates — unavailable workflows fall back to pass's `default_workflow`
-- [ ] Pass transition at Step 5c works with custom pass names (not just design/product/dev)
-- [ ] Pass transition notification includes the next pass's description from its definition
-- [ ] Pass-back mechanism: execute can set `active_pass` backward and stop for re-elaboration
+- [x] Execute Step 3 uses `find_ready_units_for_pass` when `active_pass` is set
+- [x] Execute Step 3 uses `find_ready_units` when `active_pass` is empty (backward compatible)
+- [x] Workflow constraints applied when spawning teammates — unavailable workflows fall back to pass's `default_workflow`
+- [x] Pass transition at Step 5c works with custom pass names (not just design/product/dev)
+- [x] Pass transition notification includes the next pass's description from its definition
+- [x] Pass-back mechanism: execute can set `active_pass` backward and stop for re-elaboration
 
 ## Risks
 

@@ -175,15 +175,15 @@ No new workflow definitions needed — the existing `default` workflow handles t
 
 ## Success Criteria
 
-- [ ] Phase 2 asks deployment and monitoring questions when appropriate (skips for libraries/docs/design)
-- [ ] Discovery subagent explores deployment architecture, monitoring setup, CI/CD pipeline, operational procedures
-- [ ] Phase 5 auto-creates infrastructure unit when intent introduces new deployable services
-- [ ] Phase 5 auto-creates observability unit when intent requires new monitoring
-- [ ] Phase 5 folds ops concerns into feature units for small intents (1-2 units)
-- [ ] Unit frontmatter supports `deployment:`, `monitoring:`, `operations:` blocks
-- [ ] Phase 4 enforces criteria categories by discipline (Functional required for all, Deployable/Observable/Operable per mapping)
-- [ ] Auto-routing works for infrastructure and observability disciplines
-- [ ] Existing elaboration flow is unchanged for intents without deployment surface
+- [x] Phase 2 asks deployment and monitoring questions when appropriate (skips for libraries/docs/design)
+- [x] Discovery subagent explores deployment architecture, monitoring setup, CI/CD pipeline, operational procedures
+- [x] Phase 5 auto-creates infrastructure unit when intent introduces new deployable services
+- [x] Phase 5 auto-creates observability unit when intent requires new monitoring
+- [x] Phase 5 folds ops concerns into feature units for small intents (1-2 units)
+- [x] Unit frontmatter supports `deployment:`, `monitoring:`, `operations:` blocks
+- [x] Phase 4 enforces criteria categories by discipline (Functional required for all, Deployable/Observable/Operable per mapping)
+- [x] Auto-routing works for infrastructure and observability disciplines
+- [x] Existing elaboration flow is unchanged for intents without deployment surface
 
 ## Risks
 

@@ -256,21 +256,21 @@ These can be added by dropping an adapter file in `plugin/lib/adapters/` and ref
 
 ## Success Criteria
 
-- [ ] `plugin/lib/persistence.sh` exists with all 5 interface functions
-- [ ] `_persistence_dispatch` correctly resolves adapter from active studio
-- [ ] `plugin/lib/adapters/git.sh` exists and wraps all existing git operations
-- [ ] `plugin/lib/adapters/filesystem.sh` exists as a working fallback adapter
-- [ ] Git adapter's `create_workspace` creates branches and worktrees correctly
-- [ ] Git adapter's `save` does `git add + commit`
-- [ ] Git adapter's `create_review` creates PRs via `gh`
-- [ ] Git adapter's `deliver` merges or marks PRs ready
-- [ ] Git adapter's `cleanup` removes branches and worktrees
-- [ ] Filesystem adapter creates versioned snapshots on `save`
-- [ ] Studio STUDIO.md `persistence:` field is read correctly
-- [ ] Software studio uses git adapter by default
-- [ ] Ideation studio uses filesystem adapter by default
-- [ ] No direct git calls remain in the orchestrator (all through persistence interface)
-- [ ] Existing git-based workflow is functionally identical after the abstraction
+- [x] `plugin/lib/persistence.sh` exists with all 5 interface functions
+- [x] `_persistence_dispatch` correctly resolves adapter from active studio
+- [x] `plugin/lib/adapters/git.sh` exists and wraps all existing git operations
+- [x] `plugin/lib/adapters/filesystem.sh` exists as a working fallback adapter
+- [x] Git adapter's `create_workspace` creates branches and worktrees correctly
+- [x] Git adapter's `save` does `git add + commit`
+- [x] Git adapter's `create_review` creates PRs via `gh`
+- [x] Git adapter's `deliver` merges or marks PRs ready
+- [x] Git adapter's `cleanup` removes branches and worktrees
+- [x] Filesystem adapter creates versioned snapshots on `save`
+- [x] Studio STUDIO.md `persistence:` field is read correctly
+- [x] Software studio uses git adapter by default
+- [x] Ideation studio uses filesystem adapter by default
+- [x] No direct git calls remain in the orchestrator (all through persistence interface)
+- [x] Existing git-based workflow is functionally identical after the abstraction
 
 ## Risks
 

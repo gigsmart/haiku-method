@@ -232,13 +232,13 @@ default_type: auto
 ```
 
 ## Success Criteria
-- [ ] 5 new JSON schema files created (canva, openpencil, pencil, penpot, excalidraw) following the existing figma.schema.json pattern
-- [ ] Each schema defines provider-specific config properties with descriptions and defaults
-- [ ] design.md includes provider-specific instruction sections for all 6 providers
-- [ ] Provider instructions cover: design creation, editing, token access, export, and design_ref storage
-- [ ] Schemas validate correctly — each provider's config properties are accepted by the schema
-- [ ] The existing figma.schema.json is unchanged (backward compatible)
-- [ ] design.md frontmatter documents all supported types
+- [x] 5 new JSON schema files created (canva, openpencil, pencil, penpot, excalidraw) following the existing figma.schema.json pattern
+- [x] Each schema defines provider-specific config properties with descriptions and defaults
+- [x] design.md includes provider-specific instruction sections for all 6 providers
+- [x] Provider instructions cover: design creation, editing, token access, export, and design_ref storage
+- [x] Schemas validate correctly — each provider's config properties are accepted by the schema
+- [x] The existing figma.schema.json is unchanged (backward compatible)
+- [x] design.md frontmatter documents all supported types
 
 ## Risks
 - **Schema accuracy**: Provider config properties may not match actual tool configuration needs (e.g., OpenPencil may need additional config fields not yet known). Mitigation: keep schemas minimal with `additionalProperties: false` that can be relaxed later; start with well-documented fields only.

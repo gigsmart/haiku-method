@@ -73,13 +73,13 @@ Each phase page:
 - "Build your own profile" guide
 
 ## Success Criteria
-- [ ] Website deployed at haikumethod.ai
-- [ ] Homepage clearly communicates H•AI•K•U's purpose and 4-phase lifecycle
-- [ ] All 4 phase pages exist with domain-agnostic content
-- [ ] Profile model explained with AI-DLC and SWARM examples
-- [ ] Getting started guide enables incremental adoption
-- [ ] Paper accessible on the website
-- [ ] Site uses static export (no server required)
+- [x] Website deployed at haikumethod.ai
+- [x] Homepage clearly communicates H•AI•K•U's purpose and 4-phase lifecycle
+- [x] All 4 phase pages exist with domain-agnostic content
+- [x] Profile model explained with AI-DLC and SWARM examples
+- [x] Getting started guide enables incremental adoption
+- [x] Paper accessible on the website
+- [x] Site uses static export (no server required)
 
 ## Risks
 - **Design overhead**: A new website needs design work. Mitigation: start with minimal design, leverage existing AI-DLC website patterns.

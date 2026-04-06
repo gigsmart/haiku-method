@@ -212,15 +212,15 @@ Then proceed to Phase 8 (Handoff).
 - **Brief content**: Include FULL intent.md, ALL unit-*.md files, and FULL discovery.md. The subagent needs complete context to do meaningful adversarial analysis.
 
 ## Success Criteria
-- [ ] Phase 7.5 section exists in `plugin/skills/elaborate/SKILL.md` between Phase 7 and Phase 8
-- [ ] Phase follows the delegated phase pattern: gather context → write brief → commit → invoke subagent → read results → handle findings → commit
-- [ ] Brief includes full content of intent.md, all unit-*.md files, and discovery.md
-- [ ] Orchestrator auto-applies high-confidence fixes (add_dependency, mechanical spec_edit, add_criterion) without user interaction
-- [ ] Orchestrator presents medium/low-confidence findings to user via AskUserQuestion with apply/skip options
-- [ ] `remove_unit` and `manual` fix types are never auto-applied regardless of confidence
-- [ ] All auto-applied fixes are committed with a descriptive commit message listing which findings were applied
-- [ ] Phase 7.5 never hard-blocks elaboration — user can always skip findings and proceed to Phase 8
-- [ ] Error handling: if subagent fails (status: error), report error and proceed to Phase 8
+- [x] Phase 7.5 section exists in `plugin/skills/elaborate/SKILL.md` between Phase 7 and Phase 8
+- [x] Phase follows the delegated phase pattern: gather context → write brief → commit → invoke subagent → read results → handle findings → commit
+- [x] Brief includes full content of intent.md, all unit-*.md files, and discovery.md
+- [x] Orchestrator auto-applies high-confidence fixes (add_dependency, mechanical spec_edit, add_criterion) without user interaction
+- [x] Orchestrator presents medium/low-confidence findings to user via AskUserQuestion with apply/skip options
+- [x] `remove_unit` and `manual` fix types are never auto-applied regardless of confidence
+- [x] All auto-applied fixes are committed with a descriptive commit message listing which findings were applied
+- [x] Phase 7.5 never hard-blocks elaboration — user can always skip findings and proceed to Phase 8
+- [x] Error handling: if subagent fails (status: error), report error and proceed to Phase 8
 
 ## Risks
 - **Elaborate SKILL.md is already ~2000 lines**: Impact: adding Phase 7.5 makes it larger. Mitigation: the phase follows the established delegated pattern (brief-invoke-read), so most logic lives in the subagent skill (unit-01), not inline. The orchestration section should be ~150-200 lines.

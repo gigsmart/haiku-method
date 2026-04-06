@@ -88,14 +88,14 @@ In `plugin/skills/backpressure/SKILL.md`, update to explain the relationship bet
 Quality gates are a subset of backpressure that has been promoted to hard enforcement. Other backpressure (e.g., custom project checks that don't need to block) remains advisory.
 
 ## Success Criteria
-- [ ] Builder hat references frontmatter-defined gates instead of hardcoded commands
-- [ ] Builder hat explains harness enforcement (agent blocked from stopping if gates fail)
-- [ ] Builder hat anti-rationalization table updated for harness enforcement
-- [ ] Reviewer hat no longer manually checks test/lint/type (harness handles it)
-- [ ] Reviewer hat includes ratchet review (verify no gates removed)
-- [ ] Advance skill TESTS_PASS hardcoded gate removed or replaced with harness reference
-- [ ] Advance skill PLAN_APPROVED and CRITERIA_MET gates preserved
-- [ ] Backpressure skill updated to explain quality gates vs. soft backpressure
+- [x] Builder hat references frontmatter-defined gates instead of hardcoded commands
+- [x] Builder hat explains harness enforcement (agent blocked from stopping if gates fail)
+- [x] Builder hat anti-rationalization table updated for harness enforcement
+- [x] Reviewer hat no longer manually checks test/lint/type (harness handles it)
+- [x] Reviewer hat includes ratchet review (verify no gates removed)
+- [x] Advance skill TESTS_PASS hardcoded gate removed or replaced with harness reference
+- [x] Advance skill PLAN_APPROVED and CRITERIA_MET gates preserved
+- [x] Backpressure skill updated to explain quality gates vs. soft backpressure
 
 ## Risks
 - **Builders relying on old patterns**: Existing muscle memory of "run tests before /advance" might conflict with new "harness blocks you automatically". Mitigation: clear hat instructions explaining the change.

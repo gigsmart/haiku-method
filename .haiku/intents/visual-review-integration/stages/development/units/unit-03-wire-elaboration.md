@@ -163,14 +163,14 @@ When the channel event arrives with `response_type: "question_answers"` in meta:
 
 ## Success Criteria
 
-- [ ] Domain Model validation (Phase 2.5) uses `ask_user_visual_question` when available, with domain model as context
-- [ ] Spec Alignment Gate (Phase 5.75) uses `ask_user_visual_question` when available, with elaboration summary as context
-- [ ] Per-unit review (Phase 6 Step D) uses `ask_user_visual_question` when available, with full unit spec as context
-- [ ] Wireframe review (Phase 6.25 Step 6) uses `ask_user_visual_question` when available, with wireframe references
-- [ ] All 4 review boundaries gracefully fall back to `AskUserQuestion` when the MCP tool is not available
-- [ ] Channel event responses are correctly parsed (JSON content, selected options, free-text notes)
-- [ ] The remaining ~13 `AskUserQuestion` calls in elaborate/SKILL.md are NOT modified
-- [ ] Skill instructions are clear enough that the agent correctly chooses between visual and terminal
+- [x] Domain Model validation (Phase 2.5) uses `ask_user_visual_question` when available, with domain model as context
+- [x] Spec Alignment Gate (Phase 5.75) uses `ask_user_visual_question` when available, with elaboration summary as context
+- [x] Per-unit review (Phase 6 Step D) uses `ask_user_visual_question` when available, with full unit spec as context
+- [x] Wireframe review (Phase 6.25 Step 6) uses `ask_user_visual_question` when available, with wireframe references
+- [x] All 4 review boundaries gracefully fall back to `AskUserQuestion` when the MCP tool is not available
+- [x] Channel event responses are correctly parsed (JSON content, selected options, free-text notes)
+- [x] The remaining ~13 `AskUserQuestion` calls in elaborate/SKILL.md are NOT modified
+- [x] Skill instructions are clear enough that the agent correctly chooses between visual and terminal
 
 ## Risks
 

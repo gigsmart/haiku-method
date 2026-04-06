@@ -75,14 +75,14 @@ The builder should evaluate both options and recommend the best approach based o
 - These are opt-in — existing workflows don't require them
 
 ## Success Criteria
-- [ ] AI-DLC plugin references or extends H•AI•K•U for software development
-- [ ] `/construct` works as deprecated alias for `/execute`
-- [ ] All existing AI-DLC tests pass unchanged
-- [ ] Existing intents with old state format load correctly (migration)
-- [ ] Software-specific quality gates (tests/lint/types) are configured in settings, not hardcoded
-- [ ] Operation phase available for AI-DLC intents (opt-in)
-- [ ] Reflection phase available for AI-DLC intents (opt-in)
-- [ ] No breakage for users who don't update their workflows
+- [x] AI-DLC plugin references or extends H•AI•K•U for software development
+- [x] `/construct` works as deprecated alias for `/execute`
+- [x] All existing AI-DLC tests pass unchanged
+- [x] Existing intents with old state format load correctly (migration)
+- [x] Software-specific quality gates (tests/lint/types) are configured in settings, not hardcoded
+- [x] Operation phase available for AI-DLC intents (opt-in)
+- [x] Reflection phase available for AI-DLC intents (opt-in)
+- [x] No breakage for users who don't update their workflows
 
 ## Risks
 - **Breakage of existing workflows**: Any change to state format, skill names, or hook behavior could break in-progress intents. Mitigation: thorough backward compat testing, migration logic for state format, deprecated aliases for renamed commands.

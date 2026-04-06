@@ -112,12 +112,12 @@ active_pass: "design"
 
 ## Success Criteria
 
-- [ ] Phase 5.95 presents configured passes as a suggestion with AskUserQuestion (not silently applied)
-- [ ] User can accept defaults, override with different passes, or choose single-pass
-- [ ] Custom pass names are validated against `validate_pass_exists` — invalid names produce a warning
-- [ ] Pass descriptions and available workflows are displayed when passes are configured
-- [ ] Units created during elaboration have `pass:` set to the active pass value
-- [ ] Single-pass intents (empty or 1-entry default_passes) skip Phase 5.95 entirely (backward compatible)
+- [x] Phase 5.95 presents configured passes as a suggestion with AskUserQuestion (not silently applied)
+- [x] User can accept defaults, override with different passes, or choose single-pass
+- [x] Custom pass names are validated against `validate_pass_exists` — invalid names produce a warning
+- [x] Pass descriptions and available workflows are displayed when passes are configured
+- [x] Units created during elaboration have `pass:` set to the active pass value
+- [x] Single-pass intents (empty or 1-entry default_passes) skip Phase 5.95 entirely (backward compatible)
 
 ## Risks
 

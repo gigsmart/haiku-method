@@ -212,16 +212,16 @@ git commit -m "knowledge: synthesize project knowledge artifacts"
 ```
 
 ## Success Criteria
-- [ ] `plugin/skills/elaborate/subskills/knowledge-synthesize/SKILL.md` exists with fork-context skill definition
-- [ ] Design synthesis correctly detects CSS/Tailwind tokens, component libraries, and layout patterns from established codebases
-- [ ] Architecture synthesis correctly identifies tech stack, module boundaries, and infrastructure from project config files
-- [ ] Product synthesis extracts project description and infers product purpose from README and app structure
-- [ ] Conventions synthesis detects linter configs, testing patterns, and PR process from tooling configuration
-- [ ] Domain synthesis extracts entity models, glossary terms, and business rules from code and schemas
-- [ ] Greenfield projects get scaffold artifacts with empty sections and appropriate notes
-- [ ] Brownfield projects get populated artifacts with confidence scores reflecting extraction quality
-- [ ] Results brief reports which artifacts were created, skipped, and their confidence levels
-- [ ] All written artifacts conform to the knowledge artifact schema from unit-01
+- [x] `plugin/skills/elaborate/subskills/knowledge-synthesize/SKILL.md` exists with fork-context skill definition
+- [x] Design synthesis correctly detects CSS/Tailwind tokens, component libraries, and layout patterns from established codebases
+- [x] Architecture synthesis correctly identifies tech stack, module boundaries, and infrastructure from project config files
+- [x] Product synthesis extracts project description and infers product purpose from README and app structure
+- [x] Conventions synthesis detects linter configs, testing patterns, and PR process from tooling configuration
+- [x] Domain synthesis extracts entity models, glossary terms, and business rules from code and schemas
+- [x] Greenfield projects get scaffold artifacts with empty sections and appropriate notes
+- [x] Brownfield projects get populated artifacts with confidence scores reflecting extraction quality
+- [x] Results brief reports which artifacts were created, skipped, and their confidence levels
+- [x] All written artifacts conform to the knowledge artifact schema from unit-01
 
 ## Risks
 - **Shallow extraction**: Automated scanning may miss nuanced conventions that are only visible in code review culture, not config files. Mitigation: Set `confidence: medium` or `confidence: low` for inferred patterns and note uncertainty explicitly in the artifact.

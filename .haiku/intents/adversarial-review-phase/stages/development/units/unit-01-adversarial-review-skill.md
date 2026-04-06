@@ -108,13 +108,13 @@ allowed-tools:
    - **Low**: Subjective — alternative approaches, nice-to-have criteria, stylistic boundary preferences
 
 ## Success Criteria
-- [ ] Skill file exists at `plugin/skills/elaborate/subskills/adversarial-review/SKILL.md` with correct frontmatter (`context: fork`, `agent: general-purpose`, `user-invocable: false`)
-- [ ] Allowed tools are Read, Write, Glob, Grep, Bash only (no AskUserQuestion, no web tools, no MCP)
-- [ ] Skill defines all 7 analysis passes (contradiction, hidden-complexity, assumption, dependency, scope, completeness, boundary)
-- [ ] Skill defines the structured finding format with all required fields (id, category, confidence, severity, affected_units, title, description, evidence, suggested_fix, fix_type, fix_target)
-- [ ] Skill includes anti-rationalization rules preventing premature "all clear" conclusions
-- [ ] Skill writes results to `.ai-dlc/{slug}/.briefs/elaborate-adversarial-review-results.md` with YAML frontmatter (status, findings_count, auto_fixable_count)
-- [ ] Confidence assignment rules are documented (high=deterministic, medium=context-dependent, low=subjective)
+- [x] Skill file exists at `plugin/skills/elaborate/subskills/adversarial-review/SKILL.md` with correct frontmatter (`context: fork`, `agent: general-purpose`, `user-invocable: false`)
+- [x] Allowed tools are Read, Write, Glob, Grep, Bash only (no AskUserQuestion, no web tools, no MCP)
+- [x] Skill defines all 7 analysis passes (contradiction, hidden-complexity, assumption, dependency, scope, completeness, boundary)
+- [x] Skill defines the structured finding format with all required fields (id, category, confidence, severity, affected_units, title, description, evidence, suggested_fix, fix_type, fix_target)
+- [x] Skill includes anti-rationalization rules preventing premature "all clear" conclusions
+- [x] Skill writes results to `.ai-dlc/{slug}/.briefs/elaborate-adversarial-review-results.md` with YAML frontmatter (status, findings_count, auto_fixable_count)
+- [x] Confidence assignment rules are documented (high=deterministic, medium=context-dependent, low=subjective)
 
 ## Risks
 - **Subagent produces low-quality findings**: Impact: noise in the review process, user loses trust. Mitigation: anti-rationalization rules + clear confidence definitions prevent both false "all clear" and false alarm flooding.

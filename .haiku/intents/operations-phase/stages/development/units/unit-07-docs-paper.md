@@ -93,14 +93,14 @@ Scan all docs for references to the current workflow that imply it ends at integ
 
 ## Success Criteria
 
-- [ ] Paper Operations section (lines 1116-1167) updated with implementation details
-- [ ] Paper workflow diagram includes operations step
-- [ ] Paper example scenario includes operations phase
-- [ ] Operations guide page exists with full walkthrough
-- [ ] Stack config reference page exists with examples for simple/medium/complex stacks
-- [ ] Operation file schema reference exists with format docs and examples
-- [ ] Existing docs updated to reference operations where relevant
-- [ ] No doc references imply the workflow ends at integration/PR without mentioning operations
+- [x] Paper Operations section (lines 1116-1167) updated with implementation details
+- [x] Paper workflow diagram includes operations step
+- [x] Paper example scenario includes operations phase
+- [x] Operations guide page exists with full walkthrough
+- [x] Stack config reference page exists with examples for simple/medium/complex stacks
+- [x] Operation file schema reference exists with format docs and examples
+- [x] Existing docs updated to reference operations where relevant
+- [x] No doc references imply the workflow ends at integration/PR without mentioning operations
 
 ## Risks
 

@@ -228,17 +228,17 @@ The receiving agent (Claude Code) parses `content` as JSON to get the structured
 
 ## Success Criteria
 
-- [ ] `ask_user_visual_question` tool appears in the MCP tool list alongside `open_review` and `get_review_status`
-- [ ] Tool accepts questions array with options, multiSelect, and header fields
-- [ ] Tool accepts optional context markdown
-- [ ] HTML question page renders with radio buttons for single-select and checkboxes for multi-select
-- [ ] "Other" option with textarea is always available for each question
-- [ ] Submitting answers POSTs to `/question/:sessionId/answer` and pushes channel event
-- [ ] Channel event content contains serialized QuestionAnswer array
-- [ ] Channel event meta includes `response_type: "question_answers"` discriminator
-- [ ] Question page is keyboard-navigable with proper ARIA labels and fieldsets
-- [ ] Question page loads in under 500ms on localhost
-- [ ] Existing `open_review` and `get_review_status` tools continue to work unchanged
+- [x] `ask_user_visual_question` tool appears in the MCP tool list alongside `open_review` and `get_review_status`
+- [x] Tool accepts questions array with options, multiSelect, and header fields
+- [x] Tool accepts optional context markdown
+- [x] HTML question page renders with radio buttons for single-select and checkboxes for multi-select
+- [x] "Other" option with textarea is always available for each question
+- [x] Submitting answers POSTs to `/question/:sessionId/answer` and pushes channel event
+- [x] Channel event content contains serialized QuestionAnswer array
+- [x] Channel event meta includes `response_type: "question_answers"` discriminator
+- [x] Question page is keyboard-navigable with proper ARIA labels and fieldsets
+- [x] Question page loads in under 500ms on localhost
+- [x] Existing `open_review` and `get_review_status` tools continue to work unchanged
 
 ## Risks
 

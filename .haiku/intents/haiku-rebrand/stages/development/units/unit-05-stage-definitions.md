@@ -399,20 +399,20 @@ This replaces the old `plugin/hats/*.md` files -- all hat instructions live as f
 
 ## Success Criteria
 
-- [ ] All 4 ideation studio stage files exist with complete frontmatter and body
-- [ ] All 6 software studio stage files exist with complete frontmatter and body
-- [ ] Every stage has `hats`, `review`, `unit_types`, and `inputs` in frontmatter
-- [ ] Every stage has an `outputs/` directory with at least one output doc
-- [ ] Every output doc has `name`, `location`, `scope`, `format`, `required` in frontmatter
-- [ ] Every stage body has sections for each hat defined in frontmatter
-- [ ] Every stage body has `## Criteria Guidance` and `## Completion Signal` sections
-- [ ] Input/output chains are consistent: every `inputs` entry's `output` name appears as an output `name` in the referenced `stage`'s `outputs/` directory
-- [ ] All `inputs` entries use qualified references (`stage` + `output` pairs), not bare slugs
-- [ ] Hat section `### Reads` subsections reference the unit's `## References` pattern, not the stage input set directly
-- [ ] Software stage review modes match spec: inception=auto, design=ask, product=[external,ask], development=ask, operations=auto, security=[external,ask]
-- [ ] Ideation stage review modes match spec: research=auto, create=ask, review=ask, deliver=auto
-- [ ] Hat sections provide actionable guidance (not just labels)
-- [ ] Criteria guidance sections include good/bad examples
+- [x] All 4 ideation studio stage files exist with complete frontmatter and body
+- [x] All 6 software studio stage files exist with complete frontmatter and body
+- [x] Every stage has `hats`, `review`, `unit_types`, and `inputs` in frontmatter
+- [x] Every stage has an `outputs/` directory with at least one output doc
+- [x] Every output doc has `name`, `location`, `scope`, `format`, `required` in frontmatter
+- [x] Every stage body has sections for each hat defined in frontmatter
+- [x] Every stage body has `## Criteria Guidance` and `## Completion Signal` sections
+- [x] Input/output chains are consistent: every `inputs` entry's `output` name appears as an output `name` in the referenced `stage`'s `outputs/` directory
+- [x] All `inputs` entries use qualified references (`stage` + `output` pairs), not bare slugs
+- [x] Hat section `### Reads` subsections reference the unit's `## References` pattern, not the stage input set directly
+- [x] Software stage review modes match spec: inception=auto, design=ask, product=[external,ask], development=ask, operations=auto, security=[external,ask]
+- [x] Ideation stage review modes match spec: research=auto, create=ask, review=ask, deliver=auto
+- [x] Hat sections provide actionable guidance (not just labels)
+- [x] Criteria guidance sections include good/bad examples
 
 ## Risks
 

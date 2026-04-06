@@ -133,14 +133,14 @@ Provider-native design files should be stored in `.ai-dlc/{intent}/designs/` (no
 Cloud-only providers (Canva, Figma) don't produce local files — only the URI reference in unit frontmatter.
 
 ## Success Criteria
-- [ ] Designer hat checks for available design providers before starting work
-- [ ] When a provider is available, the hat creates designs using provider MCP tools or CLI
-- [ ] Provider-native design artifacts are saved to `.ai-dlc/{intent}/designs/`
-- [ ] PNG exports are saved to mockups/ for visual review
-- [ ] Unit frontmatter `design_ref` is updated to point to provider-native artifact
-- [ ] Design tokens from the provider are used when the `design_tokens` capability is available
-- [ ] When no provider is available, existing behavior (text specs + HTML wireframes) works unchanged
-- [ ] Context injection includes provider capabilities and MCP hints
+- [x] Designer hat checks for available design providers before starting work
+- [x] When a provider is available, the hat creates designs using provider MCP tools or CLI
+- [x] Provider-native design artifacts are saved to `.ai-dlc/{intent}/designs/`
+- [x] PNG exports are saved to mockups/ for visual review
+- [x] Unit frontmatter `design_ref` is updated to point to provider-native artifact
+- [x] Design tokens from the provider are used when the `design_tokens` capability is available
+- [x] When no provider is available, existing behavior (text specs + HTML wireframes) works unchanged
+- [x] Context injection includes provider capabilities and MCP hints
 
 ## Risks
 - **Context window pressure**: Per-provider instruction blocks add tokens to the hat context. Mitigation: only inject instructions for the active provider, not all providers.

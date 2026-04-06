@@ -96,15 +96,15 @@ The resolution function should output a JSON object (consistent with existing be
 The `needs_agent_export` flag tells the calling context whether the PNG is ready or requires an additional agent step to produce.
 
 ## Success Criteria
-- [ ] Provider URIs (canva://, figma://, openpencil://, pencil://, penpot://, excalidraw://) no longer return "not yet supported" error
-- [ ] Native file formats (.op, .pen, .excalidraw) are recognized and resolved to PNG when CLI tools are available
-- [ ] When CLI tools are unavailable, instruction files are generated for agent-based export
-- [ ] Fallback behavior gracefully skips unresolvable references without failing the build
-- [ ] Resolution output includes provider type, fidelity level, and export instruction path
-- [ ] Existing file-based resolution (png, jpg, html, webp, directory) continues to work unchanged
-- [ ] The three-level priority hierarchy (design_ref > previous iteration > wireframe) is preserved
-- [ ] Instruction file format is explicitly specified (YAML frontmatter with tool name, parameters, expected output path, timeout) and documented for consuming agents
-- [ ] Exported PNG cache uses URI-derived hash naming (SHA-256 truncated to 8 hex chars) and invalidates on new bolt iteration
+- [x] Provider URIs (canva://, figma://, openpencil://, pencil://, penpot://, excalidraw://) no longer return "not yet supported" error
+- [x] Native file formats (.op, .pen, .excalidraw) are recognized and resolved to PNG when CLI tools are available
+- [x] When CLI tools are unavailable, instruction files are generated for agent-based export
+- [x] Fallback behavior gracefully skips unresolvable references without failing the build
+- [x] Resolution output includes provider type, fidelity level, and export instruction path
+- [x] Existing file-based resolution (png, jpg, html, webp, directory) continues to work unchanged
+- [x] The three-level priority hierarchy (design_ref > previous iteration > wireframe) is preserved
+- [x] Instruction file format is explicitly specified (YAML frontmatter with tool name, parameters, expected output path, timeout) and documented for consuming agents
+- [x] Exported PNG cache uses URI-derived hash naming (SHA-256 truncated to 8 hex chars) and invalidates on new bolt iteration
 
 ## Risks
 - **CLI tool availability**: Headless export via CLI requires tools installed on the user's system. Mitigation: instruction file fallback for agent-based export.

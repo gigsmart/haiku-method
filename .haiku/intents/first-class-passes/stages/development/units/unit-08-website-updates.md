@@ -65,13 +65,13 @@ Per the sync-check rule:
 
 ## Success Criteria
 
-- [ ] Website docs explain what passes are and when to use them
-- [ ] Built-in passes (design, product, dev) are described with their purposes
-- [ ] Single-pass default is clearly communicated — multipass is opt-in
-- [ ] Pass customization (augmentation, custom passes) is documented
-- [ ] Homepage mentions passes if it describes the methodology lifecycle
-- [ ] All website claims about passes match the paper and plugin implementation
-- [ ] Website builds successfully (`bun run build` in website directory)
+- [x] Website docs explain what passes are and when to use them
+- [x] Built-in passes (design, product, dev) are described with their purposes
+- [x] Single-pass default is clearly communicated — multipass is opt-in
+- [x] Pass customization (augmentation, custom passes) is documented
+- [x] Homepage mentions passes if it describes the methodology lifecycle
+- [x] All website claims about passes match the paper and plugin implementation
+- [x] Website builds successfully (`bun run build` in website directory)
 
 ## Risks
 

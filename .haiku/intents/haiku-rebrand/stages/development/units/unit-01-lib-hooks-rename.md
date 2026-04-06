@@ -188,15 +188,15 @@ grep -r '\.ai-dlc/' plugin/hooks/ --include='*.sh'    # 0 results
 
 ## Success Criteria
 
-- [ ] Zero `dlc_` function prefixes remain in `plugin/lib/*.sh` (grep returns 0)
-- [ ] Zero `_DLC_` guard variables remain in `plugin/lib/*.sh` (grep returns 0)
-- [ ] Zero `aidlc_` or `_AIDLC_` prefixes remain in `plugin/**/*.sh` (grep returns 0)
-- [ ] Zero `AI_DLC_` environment variables remain in `plugin/lib/config.sh` (grep returns 0)
-- [ ] Zero `ai_dlc.*` telemetry event names remain (grep returns 0)
-- [ ] Zero `.ai-dlc/` path references remain in `plugin/lib/*.sh` and `plugin/hooks/*.sh` (grep returns 0)
-- [ ] Zero `ai-dlc/` branch prefix references remain in hooks (grep returns 0)
-- [ ] All hook files source renamed library functions correctly
-- [ ] Plugin loads without `source` errors (functions resolve)
+- [x] Zero `dlc_` function prefixes remain in `plugin/lib/*.sh` (grep returns 0)
+- [x] Zero `_DLC_` guard variables remain in `plugin/lib/*.sh` (grep returns 0)
+- [x] Zero `aidlc_` or `_AIDLC_` prefixes remain in `plugin/**/*.sh` (grep returns 0)
+- [x] Zero `AI_DLC_` environment variables remain in `plugin/lib/config.sh` (grep returns 0)
+- [x] Zero `ai_dlc.*` telemetry event names remain (grep returns 0)
+- [x] Zero `.ai-dlc/` path references remain in `plugin/lib/*.sh` and `plugin/hooks/*.sh` (grep returns 0)
+- [x] Zero `ai-dlc/` branch prefix references remain in hooks (grep returns 0)
+- [x] All hook files source renamed library functions correctly
+- [x] Plugin loads without `source` errors (functions resolve)
 
 ## Risks
 

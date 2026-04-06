@@ -95,15 +95,15 @@ native_artifacts:
 ```
 
 ## Success Criteria
-- [ ] When a design provider with `generate_wireframe` capability is available, wireframes are generated using the provider's native tools
-- [ ] Provider-native artifacts (.op, .pen, Canva design IDs) are saved to designs/ directory
-- [ ] PNG exports of provider wireframes are saved alongside native artifacts
-- [ ] Unit frontmatter `design_ref` is set to the provider-native artifact path or URI
-- [ ] HTML wireframe is ALSO generated as supplementary output for universal viewing
-- [ ] When no provider is available, HTML wireframe generation works exactly as before (regression-free)
-- [ ] Provider generation failures fall through gracefully to HTML wireframe generation
-- [ ] Subagent verifies MCP tool availability via ToolSearch before attempting provider delegation
-- [ ] Results brief reports which provider was used
+- [x] When a design provider with `generate_wireframe` capability is available, wireframes are generated using the provider's native tools
+- [x] Provider-native artifacts (.op, .pen, Canva design IDs) are saved to designs/ directory
+- [x] PNG exports of provider wireframes are saved alongside native artifacts
+- [x] Unit frontmatter `design_ref` is set to the provider-native artifact path or URI
+- [x] HTML wireframe is ALSO generated as supplementary output for universal viewing
+- [x] When no provider is available, HTML wireframe generation works exactly as before (regression-free)
+- [x] Provider generation failures fall through gracefully to HTML wireframe generation
+- [x] Subagent verifies MCP tool availability via ToolSearch before attempting provider delegation
+- [x] Results brief reports which provider was used
 
 ## Risks
 - **Provider tool availability in subagent context**: The wireframes subagent may not have access to the same MCP tools as the parent agent. Mitigation: include MCP hint patterns in the brief so the subagent can verify tool availability before attempting provider generation.

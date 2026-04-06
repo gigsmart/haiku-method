@@ -177,18 +177,18 @@ Each generated HTML file must be fully self-contained:
 
 ## Success Criteria
 
-- [ ] CLI reads `.ai-dlc/` directory and discovers all intents
-- [ ] Generated index.html lists all intents with status badges, progress bars, and metadata
-- [ ] Generated intent detail pages render Problem, Solution, Success Criteria, DAG, and unit table
-- [ ] Generated unit detail pages render Description, Technical Spec, Criteria, Risks, and embedded wireframes
-- [ ] Mermaid DAG renders correctly in generated pages with status color-coding
-- [ ] Status filter (All/Active/Completed/Blocked) works on index page via JavaScript
-- [ ] All pages support dark mode with toggle and localStorage persistence
-- [ ] All pages are keyboard-navigable with proper ARIA attributes
-- [ ] Generated pages work with `file://` protocol (no server needed)
-- [ ] Mockup HTML files from `mockups/` directories are copied to output and linked correctly
-- [ ] Static site generates in under 5 seconds for a project with 20 intents
-- [ ] CLI accepts `--input`, `--output`, and `--title` flags
+- [x] CLI reads `.ai-dlc/` directory and discovers all intents
+- [x] Generated index.html lists all intents with status badges, progress bars, and metadata
+- [x] Generated intent detail pages render Problem, Solution, Success Criteria, DAG, and unit table
+- [x] Generated unit detail pages render Description, Technical Spec, Criteria, Risks, and embedded wireframes
+- [x] Mermaid DAG renders correctly in generated pages with status color-coding
+- [x] Status filter (All/Active/Completed/Blocked) works on index page via JavaScript
+- [x] All pages support dark mode with toggle and localStorage persistence
+- [x] All pages are keyboard-navigable with proper ARIA attributes
+- [x] Generated pages work with `file://` protocol (no server needed)
+- [x] Mockup HTML files from `mockups/` directories are copied to output and linked correctly
+- [x] Static site generates in under 5 seconds for a project with 20 intents
+- [x] CLI accepts `--input`, `--output`, and `--title` flags
 
 ## Risks
 

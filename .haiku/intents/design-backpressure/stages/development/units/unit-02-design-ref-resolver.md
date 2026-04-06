@@ -118,14 +118,14 @@ The resolver's output includes the `fidelity` level so downstream vision compari
 - **low** (wireframes): Expect structural/layout match only — colors, fonts, and styling will differ significantly (wireframes are gray/white)
 
 ## Success Criteria
-- [ ] `plugin/lib/resolve-design-ref.sh` resolves design references using the 3-level priority hierarchy
-- [ ] Unit frontmatter `design_ref:` field is supported and takes highest priority
-- [ ] Previous iteration screenshots are found via `iterates_on` with filesystem and git branch fallback
-- [ ] Wireframe HTML files are correctly identified as lowest-priority reference
-- [ ] Reference screenshots are generated using unit-01's capture infrastructure with `ref-` prefix
-- [ ] Resolver outputs JSON with type, fidelity, source path, and view list
-- [ ] Hard failure (non-zero exit) when no reference can be resolved for a UI-producing unit
-- [ ] Fidelity level is included in output for downstream tolerance adjustment
+- [x] `plugin/lib/resolve-design-ref.sh` resolves design references using the 3-level priority hierarchy
+- [x] Unit frontmatter `design_ref:` field is supported and takes highest priority
+- [x] Previous iteration screenshots are found via `iterates_on` with filesystem and git branch fallback
+- [x] Wireframe HTML files are correctly identified as lowest-priority reference
+- [x] Reference screenshots are generated using unit-01's capture infrastructure with `ref-` prefix
+- [x] Resolver outputs JSON with type, fidelity, source path, and view list
+- [x] Hard failure (non-zero exit) when no reference can be resolved for a UI-producing unit
+- [x] Fidelity level is included in output for downstream tolerance adjustment
 
 ## Risks
 - **View matching across iterations**: Previous intent may use different unit slugs or view names. Mitigation: match by view name similarity (fuzzy match), fall through to wireframe if no match found.

@@ -99,15 +99,15 @@ The existing Mermaid diagram (lines 379-415) showing the three-pass flow is stil
 
 ## Success Criteria
 
-- [ ] Paper pass frontmatter examples use flat array format matching implementation (`passes: [design, product, dev]`, `active_pass: "design"`)
-- [ ] "Iteration Through Passes" section describes pass definition files, instructions, and workflow constraints
-- [ ] Pass customization (augmentation pattern) is documented in the paper
-- [ ] Pass-backs are described with specific mechanics (active_pass set backward, re-elaborate, resume forward)
-- [ ] Pass artifact definition updated with definition file details and updated frontmatter example
-- [ ] Glossary entry updated to mention definition files and customization
-- [ ] Single-pass default is clearly stated as zero-overhead
-- [ ] Hat augmentation pattern (same as passes) is mentioned for consistency
-- [ ] Paper claims match the implementation in the plugin — no aspirational features presented as implemented
+- [x] Paper pass frontmatter examples use flat array format matching implementation (`passes: [design, product, dev]`, `active_pass: "design"`)
+- [x] "Iteration Through Passes" section describes pass definition files, instructions, and workflow constraints
+- [x] Pass customization (augmentation pattern) is documented in the paper
+- [x] Pass-backs are described with specific mechanics (active_pass set backward, re-elaborate, resume forward)
+- [x] Pass artifact definition updated with definition file details and updated frontmatter example
+- [x] Glossary entry updated to mention definition files and customization
+- [x] Single-pass default is clearly stated as zero-overhead
+- [x] Hat augmentation pattern (same as passes) is mentioned for consistency
+- [x] Paper claims match the implementation in the plugin — no aspirational features presented as implemented
 
 ## Risks
 

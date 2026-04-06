@@ -79,13 +79,13 @@ Update the ACCEPT/REJECT decision to include operational criteria:
 
 ## Success Criteria
 
-- [ ] Integration checks for port/resource conflicts across unit deployment artifacts
-- [ ] Integration validates consistent metric naming and no duplicate metrics
-- [ ] Integration verifies dashboard references resolve to actual metrics in merged codebase
-- [ ] Integration detects conflicting operation schedules/triggers
-- [ ] Integration runs full-stack dry-run when stack config has providers (terraform plan, helm template, etc.)
-- [ ] ACCEPT/REJECT decision accounts for deployment, monitoring, and operations validity
-- [ ] Existing integration behavior unchanged when no units have ops frontmatter
+- [x] Integration checks for port/resource conflicts across unit deployment artifacts
+- [x] Integration validates consistent metric naming and no duplicate metrics
+- [x] Integration verifies dashboard references resolve to actual metrics in merged codebase
+- [x] Integration detects conflicting operation schedules/triggers
+- [x] Integration runs full-stack dry-run when stack config has providers (terraform plan, helm template, etc.)
+- [x] ACCEPT/REJECT decision accounts for deployment, monitoring, and operations validity
+- [x] Existing integration behavior unchanged when no units have ops frontmatter
 
 ## Risks
 

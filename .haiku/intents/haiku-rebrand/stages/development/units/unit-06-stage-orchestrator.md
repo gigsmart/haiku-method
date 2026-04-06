@@ -236,25 +236,25 @@ hku_run_plan_phase() {
 
 ## Success Criteria
 
-- [ ] `/haiku:new` skill exists and creates intents with studio, stages, active_stage, and mode
-- [ ] `/haiku:new` correctly detects studio from settings and resolves stage list
-- [ ] `/haiku:run` skill exists and advances through stages
-- [ ] `/haiku:run` with explicit stage argument runs that specific stage
-- [ ] `/haiku:run` without stage argument auto-advances to next incomplete stage
-- [ ] `/haiku:autopilot` skill exists and correctly resolves review gates: bare `external` blocks, `ask` is overridden to `auto`, array gates (e.g. `[external, ask]`) select the most permissive non-`external` option and override it to `auto`
-- [ ] The stage loop correctly executes: plan -> build -> adversarial review -> output persistence -> gate
-- [ ] Plan phase resolves qualified inputs (stage + output pairs) from STAGE.md frontmatter
-- [ ] Plan phase loads all resolved input artifacts as context for decomposition
-- [ ] Plan phase populates each unit's `## References` section with the specific artifacts needed
-- [ ] Plan phase reuses existing elaborate sub-skills parameterized by stage and resolved inputs
-- [ ] Build phase reads each unit's `## References` (not the full stage input set) for builder context
-- [ ] Build phase reuses existing execute bolt loop with hats from STAGE.md
-- [ ] Output persistence writes each output to its scope-based location (project/intent/stage/repo)
-- [ ] Adversarial review verifies all required outputs are produced
-- [ ] Review gates behave correctly: auto advances, ask pauses, external creates review
-- [ ] State tracking correctly reports stage status
-- [ ] `/haiku:elaborate` and `/haiku:execute` work as backward-compat aliases
-- [ ] Intents without `studio:` field default to ideation studio
+- [x] `/haiku:new` skill exists and creates intents with studio, stages, active_stage, and mode
+- [x] `/haiku:new` correctly detects studio from settings and resolves stage list
+- [x] `/haiku:run` skill exists and advances through stages
+- [x] `/haiku:run` with explicit stage argument runs that specific stage
+- [x] `/haiku:run` without stage argument auto-advances to next incomplete stage
+- [x] `/haiku:autopilot` skill exists and correctly resolves review gates: bare `external` blocks, `ask` is overridden to `auto`, array gates (e.g. `[external, ask]`) select the most permissive non-`external` option and override it to `auto`
+- [x] The stage loop correctly executes: plan -> build -> adversarial review -> output persistence -> gate
+- [x] Plan phase resolves qualified inputs (stage + output pairs) from STAGE.md frontmatter
+- [x] Plan phase loads all resolved input artifacts as context for decomposition
+- [x] Plan phase populates each unit's `## References` section with the specific artifacts needed
+- [x] Plan phase reuses existing elaborate sub-skills parameterized by stage and resolved inputs
+- [x] Build phase reads each unit's `## References` (not the full stage input set) for builder context
+- [x] Build phase reuses existing execute bolt loop with hats from STAGE.md
+- [x] Output persistence writes each output to its scope-based location (project/intent/stage/repo)
+- [x] Adversarial review verifies all required outputs are produced
+- [x] Review gates behave correctly: auto advances, ask pauses, external creates review
+- [x] State tracking correctly reports stage status
+- [x] `/haiku:elaborate` and `/haiku:execute` work as backward-compat aliases
+- [x] Intents without `studio:` field default to ideation studio
 
 ## Risks
 

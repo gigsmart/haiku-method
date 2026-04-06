@@ -146,28 +146,28 @@ Rewrite for the new hierarchy:
 Before completing any work that modifies the plugin, paper, or website, verify cross-component consistency:
 
 ## After modifying plugin/studios/ or plugin/studios/*/stages/:
-- [ ] Is the studio/stage documented in the paper?
-- [ ] Does the website docs section reference it (if user-facing)?
-- [ ] Do the requires/produces chains form a valid pipeline?
+- [x] Is the studio/stage documented in the paper?
+- [x] Does the website docs section reference it (if user-facing)?
+- [x] Do the requires/produces chains form a valid pipeline?
 
 ## After modifying plugin/skills/:
-- [ ] Is the skill documented in the CLI reference?
-- [ ] Does the website docs section reference it (if user-facing)?
+- [x] Is the skill documented in the CLI reference?
+- [x] Does the website docs section reference it (if user-facing)?
 
 ## After modifying the paper:
-- [ ] Does the plugin implement what the paper describes?
-- [ ] If aspirational (not yet implemented), is it clearly marked as such?
+- [x] Does the plugin implement what the paper describes?
+- [x] If aspirational (not yet implemented), is it clearly marked as such?
 
 ## After modifying website/content/:
-- [ ] Are claims about the methodology accurate to the paper?
-- [ ] Are claims about the plugin accurate to the implementation?
+- [x] Are claims about the methodology accurate to the paper?
+- [x] Are claims about the plugin accurate to the implementation?
 
 ## After adding or renaming terminology:
-- [ ] Updated in paper
-- [ ] Updated in plugin fundamentals skill
-- [ ] Updated in all stage/skill files that reference it
-- [ ] Updated in website docs
-- [ ] Updated in CLAUDE.md terminology table
+- [x] Updated in paper
+- [x] Updated in plugin fundamentals skill
+- [x] Updated in all stage/skill files that reference it
+- [x] Updated in website docs
+- [x] Updated in CLAUDE.md terminology table
 
 ## Terminology reminders:
 - Studio = lifecycle template (software, ideation, etc.)
@@ -221,19 +221,19 @@ The haiku-method paper has broader conceptual material:
 
 ## Success Criteria
 
-- [ ] CLAUDE.md updated with H·AI·K·U terminology table (Studio -> Stage -> Unit -> Bolt)
-- [ ] CLAUDE.md updated with new concept-to-implementation mapping
-- [ ] CLAUDE.md updated with new key file locations (studios, stages, adapters, deploy)
-- [ ] CLAUDE.md sync discipline table includes studios, stages, and persistence adapters
-- [ ] `.claude/rules/sync-check.md` rewritten for studio/stage hierarchy
-- [ ] Haiku-method paper copied to `website/content/papers/haiku-method.md`
-- [ ] Haiku-method paper enriched with AI-DLC implementation specifics
-- [ ] AI-DLC paper archived or removed
-- [ ] No "AI-DLC" references remain in CLAUDE.md (except historical context)
-- [ ] No `.ai-dlc/` path references remain in CLAUDE.md
-- [ ] No `/ai-dlc:` command references remain in CLAUDE.md
-- [ ] Paper accurately describes the implemented system (studios, stages, persistence)
-- [ ] All cross-component references verified (paper matches plugin matches website)
+- [x] CLAUDE.md updated with H·AI·K·U terminology table (Studio -> Stage -> Unit -> Bolt)
+- [x] CLAUDE.md updated with new concept-to-implementation mapping
+- [x] CLAUDE.md updated with new key file locations (studios, stages, adapters, deploy)
+- [x] CLAUDE.md sync discipline table includes studios, stages, and persistence adapters
+- [x] `.claude/rules/sync-check.md` rewritten for studio/stage hierarchy
+- [x] Haiku-method paper copied to `website/content/papers/haiku-method.md`
+- [x] Haiku-method paper enriched with AI-DLC implementation specifics
+- [x] AI-DLC paper archived or removed
+- [x] No "AI-DLC" references remain in CLAUDE.md (except historical context)
+- [x] No `.ai-dlc/` path references remain in CLAUDE.md
+- [x] No `/ai-dlc:` command references remain in CLAUDE.md
+- [x] Paper accurately describes the implemented system (studios, stages, persistence)
+- [x] All cross-component references verified (paper matches plugin matches website)
 
 ## Risks
 

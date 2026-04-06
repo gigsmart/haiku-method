@@ -54,10 +54,10 @@ Create a reference file (`brand/naming.md` or similar) with:
 - Relationship to AI-DLC and SWARM
 
 ## Success Criteria
-- [ ] New H•AI•K•U repository exists with initial structure
-- [ ] HAIKU.md manifesto defines the framework, 4-phase lifecycle, profile model, and terminology
-- [ ] Naming constants document exists with brand identity
-- [ ] The relationship between H•AI•K•U, AI-DLC, and SWARM is clearly articulated
+- [x] New H•AI•K•U repository exists with initial structure
+- [x] HAIKU.md manifesto defines the framework, 4-phase lifecycle, profile model, and terminology
+- [x] Naming constants document exists with brand identity
+- [x] The relationship between H•AI•K•U, AI-DLC, and SWARM is clearly articulated
 
 ## Risks
 - **Name collision**: Other projects may use "H•AI•K•U" (Haiku OS exists). Mitigation: "H•AI•K•U Method" or "H•AI•K•U Framework" as the full name, "haikumethod.ai" as the domain.

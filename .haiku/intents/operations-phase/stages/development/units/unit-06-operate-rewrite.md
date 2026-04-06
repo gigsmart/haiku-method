@@ -144,16 +144,16 @@ The old single-file `operations.md` format is replaced by the per-file format. I
 
 ## Success Criteria
 
-- [ ] `/operate` lists all operations across all intents
-- [ ] `/operate {intent}` shows status table for all operations in an intent
-- [ ] `/operate {intent} {operation}` executes a specific agent-owned operation and reports results
-- [ ] `/operate {intent} {operation}` displays checklist for human-owned operations
-- [ ] `/operate {intent} --deploy` generates deployment manifests matching stack config
-- [ ] `/operate {intent} --deploy` supports: k8s-cronjob, k8s-deployment, github-actions, docker-compose, systemd
-- [ ] `/operate {intent} --status` shows last-run timestamps and health for all operations
-- [ ] `/operate {intent} --teardown` removes deployed operations without deleting specs/scripts
-- [ ] Operation status persisted in `operation-status.json`
-- [ ] Legacy `operations.md` format still works with deprecation warning
+- [x] `/operate` lists all operations across all intents
+- [x] `/operate {intent}` shows status table for all operations in an intent
+- [x] `/operate {intent} {operation}` executes a specific agent-owned operation and reports results
+- [x] `/operate {intent} {operation}` displays checklist for human-owned operations
+- [x] `/operate {intent} --deploy` generates deployment manifests matching stack config
+- [x] `/operate {intent} --deploy` supports: k8s-cronjob, k8s-deployment, github-actions, docker-compose, systemd
+- [x] `/operate {intent} --status` shows last-run timestamps and health for all operations
+- [x] `/operate {intent} --teardown` removes deployed operations without deleting specs/scripts
+- [x] Operation status persisted in `operation-status.json`
+- [x] Legacy `operations.md` format still works with deprecation warning
 
 ## Risks
 

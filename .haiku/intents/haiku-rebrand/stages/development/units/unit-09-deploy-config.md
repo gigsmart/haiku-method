@@ -160,18 +160,18 @@ variable "domain" {
 
 ## Success Criteria
 
-- [ ] `deploy/terraform/` directory exists with complete Terraform configuration
-- [ ] Railway web service configured for the website
-- [ ] GCP DNS zone and records configured for `haikumethod.ai`
-- [ ] `mcp.haikumethod.ai` subdomain configured
-- [ ] `.github/workflows/deploy-website.yml` exists and triggers on website changes
-- [ ] CI/CD deploys successfully on push to main
-- [ ] Website is accessible at `https://haikumethod.ai`
-- [ ] `www.haikumethod.ai` redirects to `haikumethod.ai`
-- [ ] Website `next.config.ts` updated for haikumethod.ai base URL
-- [ ] Feed URLs (RSS/Atom/JSON) work at the new domain
-- [ ] Terraform state is clean (no orphaned resources from haiku-method repo)
-- [ ] `.gitignore` excludes sensitive Terraform files
+- [x] `deploy/terraform/` directory exists with complete Terraform configuration
+- [x] Railway web service configured for the website
+- [x] GCP DNS zone and records configured for `haikumethod.ai`
+- [x] `mcp.haikumethod.ai` subdomain configured
+- [x] `.github/workflows/deploy-website.yml` exists and triggers on website changes
+- [x] CI/CD deploys successfully on push to main
+- [x] Website is accessible at `https://haikumethod.ai`
+- [x] `www.haikumethod.ai` redirects to `haikumethod.ai`
+- [x] Website `next.config.ts` updated for haikumethod.ai base URL
+- [x] Feed URLs (RSS/Atom/JSON) work at the new domain
+- [x] Terraform state is clean (no orphaned resources from haiku-method repo)
+- [x] `.gitignore` excludes sensitive Terraform files
 
 ## Risks
 

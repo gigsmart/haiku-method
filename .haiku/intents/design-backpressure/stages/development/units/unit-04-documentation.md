@@ -121,15 +121,15 @@ Add entry to `CHANGELOG.md` under the appropriate version section:
 ```
 
 ## Success Criteria
-- [ ] Backpressure skill docs list visual fidelity as the sixth type with description, AI adaptation patterns, and anti-patterns
-- [ ] Reviewer hat docs include Visual Fidelity delegation agent with activation criteria
-- [ ] Reviewer reference docs include anti-rationalization entries for visual fidelity
-- [ ] REVIEW COMPLETE marker template in reviewer docs includes `**Visual Fidelity:**` line
-- [ ] Builder hat docs include visual fidelity feedback handling in Step 3
-- [ ] Builder reference docs explain how to read comparison reports and compare screenshots
-- [ ] Elaboration skill docs include `design_ref:` and `views:` in unit frontmatter template
-- [ ] CHANGELOG.md updated with visual fidelity feature entries
-- [ ] All documentation changes are consistent with the actual implementation from units 01-03
+- [x] Backpressure skill docs list visual fidelity as the sixth type with description, AI adaptation patterns, and anti-patterns
+- [x] Reviewer hat docs include Visual Fidelity delegation agent with activation criteria
+- [x] Reviewer reference docs include anti-rationalization entries for visual fidelity
+- [x] REVIEW COMPLETE marker template in reviewer docs includes `**Visual Fidelity:**` line
+- [x] Builder hat docs include visual fidelity feedback handling in Step 3
+- [x] Builder reference docs explain how to read comparison reports and compare screenshots
+- [x] Elaboration skill docs include `design_ref:` and `views:` in unit frontmatter template
+- [x] CHANGELOG.md updated with visual fidelity feature entries
+- [x] All documentation changes are consistent with the actual implementation from units 01-03
 
 ## Risks
 - **Documentation drift**: Docs written based on spec may not match actual implementation if units 01-03 deviated. Mitigation: this unit depends on unit-03 being complete — read the actual implementation before writing docs.

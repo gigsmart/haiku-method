@@ -301,20 +301,20 @@ Resume with: `/haiku:run {slug}`
 
 ## Success Criteria
 
-- [ ] `plugin/lib/migrate.sh` contains `hku_migrate_legacy_intent`, `hku_migrate_intent_frontmatter`, `hku_infer_stage_from_unit`, and `hku_detect_legacy_intents` functions
-- [ ] `hku_migrate_legacy_intent` moves intent.md and all units to `.haiku/intents/{slug}/`
-- [ ] `hku_migrate_intent_frontmatter` maps `passes:` → removed, `active_pass:` → `active_stage:`, `workflow:` → removed, adds `studio: software`, `mode: continuous`, `migrated_from:`, `migration_date:`
-- [ ] `migration_date` in MIGRATION-PLAN.md frontmatter and in `hku_migrate_intent_frontmatter` output is set to the current date at migration runtime — NOT a hardcoded value
-- [ ] `hku_infer_stage_from_unit` maps `pass: dev` → `development`, `pass: design` → `design`, `pass: product` → `product`, unknown → `development`
-- [ ] Units are placed under `.haiku/intents/{slug}/stages/{stage}/units/` (not at the intent root)
-- [ ] `hku_detect_legacy_intents` detects active intents in `.ai-dlc/` and prints a notice (detection only — no auto-migration)
-- [ ] `/haiku:migrate` skill exists and runs the interactive migration flow
-- [ ] `/haiku:migrate` produces `MIGRATION-PLAN.md` in the intent's knowledge directory
-- [ ] `/haiku:migrate` identifies gap stages (inception, operations, security) and optionally runs their plan phase
-- [ ] Gap stage planning uses existing elaborate sub-skills parameterized by the migrated intent context
-- [ ] Gap stage planning generates units for review — build phase does NOT run automatically during migration
-- [ ] Backward-compat: old `.ai-dlc/{slug}/` path emits a clear migration notice rather than silently failing
-- [ ] A migrated intent that has not yet run gap-stage planning can still be resumed with `/haiku:run {slug}` from the last active stage
+- [x] `plugin/lib/migrate.sh` contains `hku_migrate_legacy_intent`, `hku_migrate_intent_frontmatter`, `hku_infer_stage_from_unit`, and `hku_detect_legacy_intents` functions
+- [x] `hku_migrate_legacy_intent` moves intent.md and all units to `.haiku/intents/{slug}/`
+- [x] `hku_migrate_intent_frontmatter` maps `passes:` → removed, `active_pass:` → `active_stage:`, `workflow:` → removed, adds `studio: software`, `mode: continuous`, `migrated_from:`, `migration_date:`
+- [x] `migration_date` in MIGRATION-PLAN.md frontmatter and in `hku_migrate_intent_frontmatter` output is set to the current date at migration runtime — NOT a hardcoded value
+- [x] `hku_infer_stage_from_unit` maps `pass: dev` → `development`, `pass: design` → `design`, `pass: product` → `product`, unknown → `development`
+- [x] Units are placed under `.haiku/intents/{slug}/stages/{stage}/units/` (not at the intent root)
+- [x] `hku_detect_legacy_intents` detects active intents in `.ai-dlc/` and prints a notice (detection only — no auto-migration)
+- [x] `/haiku:migrate` skill exists and runs the interactive migration flow
+- [x] `/haiku:migrate` produces `MIGRATION-PLAN.md` in the intent's knowledge directory
+- [x] `/haiku:migrate` identifies gap stages (inception, operations, security) and optionally runs their plan phase
+- [x] Gap stage planning uses existing elaborate sub-skills parameterized by the migrated intent context
+- [x] Gap stage planning generates units for review — build phase does NOT run automatically during migration
+- [x] Backward-compat: old `.ai-dlc/{slug}/` path emits a clear migration notice rather than silently failing
+- [x] A migrated intent that has not yet run gap-stage planning can still be resumed with `/haiku:run {slug}` from the last active stage
 
 ## Risks
 

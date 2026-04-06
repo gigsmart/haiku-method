@@ -90,7 +90,7 @@ export async function runMigrate(args: string[]): Promise<void> {
 
 			// Write intent.md
 			writeFileSync(join(destDir, "intent.md"),
-				`---\ntitle: "${title}"\nstudio: software\nmode: continuous\nactive_stage: development\nstatus: completed\nstarted_at: ${created}T00:00:00Z\ncompleted_at: ${created}T23:59:59Z\n---\n\n${intentBody}\n`)
+				`---\ntitle: "${title}"\nstudio: software\nstages: [inception, design, product, development, operations, security]\nmode: continuous\nactive_stage: development\nstatus: completed\nstarted_at: ${created}T00:00:00Z\ncompleted_at: ${created}T23:59:59Z\n---\n\n${intentBody}\n`)
 
 			// Write stage state
 			writeFileSync(join(destDir, "stages", "development", "state.json"),
@@ -113,7 +113,7 @@ export async function runMigrate(args: string[]): Promise<void> {
 		} else {
 			// Active/pending: migrate intent + knowledge, reset for fresh start
 			writeFileSync(join(destDir, "intent.md"),
-				`---\ntitle: "${title}"\nstudio: software\nmode: continuous\nactive_stage: ""\nstatus: active\nstarted_at: ${timestamp()}\ncompleted_at: null\n---\n\n${intentBody}\n`)
+				`---\ntitle: "${title}"\nstudio: software\nstages: [inception, design, product, development, operations, security]\nmode: continuous\nactive_stage: ""\nstatus: active\nstarted_at: ${timestamp()}\ncompleted_at: null\n---\n\n${intentBody}\n`)
 
 			console.log(`  MIGRATED: ${slug} (active — reset for fresh start, run /haiku:run)`)
 		}

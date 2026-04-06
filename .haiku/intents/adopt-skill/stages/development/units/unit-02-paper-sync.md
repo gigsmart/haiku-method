@@ -63,11 +63,11 @@ Add a section to the paper documenting the adoption pathway. The placement and s
 
 ## Success Criteria
 
-- [ ] The paper contains a section documenting the adoption pathway as a lifecycle entry point
-- [ ] The section accurately describes what /adopt does at a methodology level (not implementation detail)
-- [ ] The section explains the three entry points: /elaborate (new), /followup (iterate), /adopt (existing)
-- [ ] The paper's existing structure is preserved — the new content fits naturally within the document flow
-- [ ] No claims in the paper contradict the actual SKILL.md implementation (cross-reference unit-01 output)
+- [x] The paper contains a section documenting the adoption pathway as a lifecycle entry point
+- [x] The section accurately describes what /adopt does at a methodology level (not implementation detail)
+- [x] The section explains the three entry points: /elaborate (new), /followup (iterate), /adopt (existing)
+- [x] The paper's existing structure is preserved — the new content fits naturally within the document flow
+- [x] No claims in the paper contradict the actual SKILL.md implementation (cross-reference unit-01 output)
 
 ## Risks
 

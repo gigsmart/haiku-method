@@ -50,11 +50,11 @@ If the AI-DLC paper needs updating:
 - Or replace the AI-DLC paper with a redirect to H•AI•K•U + an AI-DLC-specific addendum
 
 ## Success Criteria
-- [ ] AI-DLC website references H•AI•K•U as the parent methodology
-- [ ] "Construction" -> "Execution" in all AI-DLC website content
-- [ ] Link to haikumethod.ai from AI-DLC website
-- [ ] Changelog entry covers all changes from this intent
-- [ ] Getting Started flow updated for H•AI•K•U context
+- [x] AI-DLC website references H•AI•K•U as the parent methodology
+- [x] "Construction" -> "Execution" in all AI-DLC website content
+- [x] Link to haikumethod.ai from AI-DLC website
+- [x] Changelog entry covers all changes from this intent
+- [x] Getting Started flow updated for H•AI•K•U context
 
 ## Risks
 - **Messaging confusion**: Users might be confused about the relationship between AI-DLC and H•AI•K•U. Mitigation: clear, simple messaging — "AI-DLC is H•AI•K•U for software development."

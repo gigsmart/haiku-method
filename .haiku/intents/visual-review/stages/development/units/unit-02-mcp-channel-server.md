@@ -175,16 +175,16 @@ Detect platform via `process.platform`.
 
 ## Success Criteria
 
-- [ ] Server creates successfully with `claude/channel` capability declaration
-- [ ] `open_review` tool accepts intent_dir, review_type, and target parameters
-- [ ] `open_review` parses intent/unit data using shared parser and generates an HTML page
-- [ ] `open_review` starts HTTP server (idempotent) and opens browser to review URL
-- [ ] HTTP server serves the review page at `GET /review/:sessionId`
-- [ ] `POST /review/:sessionId/decide` receives decision and pushes channel event to Claude Code
-- [ ] Channel event includes decision, review_type, target, and session_id in meta fields
-- [ ] Feedback text from the browser is included as the channel event content
-- [ ] Server handles multiple sequential review sessions (one at a time, not concurrent)
-- [ ] Server handles graceful shutdown when Claude Code terminates the subprocess
+- [x] Server creates successfully with `claude/channel` capability declaration
+- [x] `open_review` tool accepts intent_dir, review_type, and target parameters
+- [x] `open_review` parses intent/unit data using shared parser and generates an HTML page
+- [x] `open_review` starts HTTP server (idempotent) and opens browser to review URL
+- [x] HTTP server serves the review page at `GET /review/:sessionId`
+- [x] `POST /review/:sessionId/decide` receives decision and pushes channel event to Claude Code
+- [x] Channel event includes decision, review_type, target, and session_id in meta fields
+- [x] Feedback text from the browser is included as the channel event content
+- [x] Server handles multiple sequential review sessions (one at a time, not concurrent)
+- [x] Server handles graceful shutdown when Claude Code terminates the subprocess
 
 ## Risks
 

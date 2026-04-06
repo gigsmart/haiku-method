@@ -111,15 +111,15 @@ Create `get_provider_uri_scheme()` returning the URI prefix for a provider:
 | figma | `figma://` |
 
 ## Success Criteria
-- [ ] `designProviderEntry.type.enum` in settings.schema.json includes all 7 values (canva, openpencil, pencil, penpot, excalidraw, figma, auto)
-- [ ] `_provider_mcp_hint()` returns correct glob patterns for all 6 provider types
-- [ ] `detect_design_provider()` returns the first available provider when type is `auto`
-- [ ] `get_provider_capabilities()` returns correct capability JSON for all 6 provider types
-- [ ] `provider_has_capability()` returns true/false for valid capability checks
-- [ ] `get_provider_uri_scheme()` returns correct URI prefix for all 6 providers
-- [ ] Settings schema validates correctly with `ajv` or equivalent for all provider types
-- [ ] Existing `figma` provider configuration continues to work unchanged
-- [ ] `detect_design_provider()` returns providers in documented priority order (canva > figma > openpencil > pencil > penpot > excalidraw) when multiple are available simultaneously
+- [x] `designProviderEntry.type.enum` in settings.schema.json includes all 7 values (canva, openpencil, pencil, penpot, excalidraw, figma, auto)
+- [x] `_provider_mcp_hint()` returns correct glob patterns for all 6 provider types
+- [x] `detect_design_provider()` returns the first available provider when type is `auto`
+- [x] `get_provider_capabilities()` returns correct capability JSON for all 6 provider types
+- [x] `provider_has_capability()` returns true/false for valid capability checks
+- [x] `get_provider_uri_scheme()` returns correct URI prefix for all 6 providers
+- [x] Settings schema validates correctly with `ajv` or equivalent for all provider types
+- [x] Existing `figma` provider configuration continues to work unchanged
+- [x] `detect_design_provider()` returns providers in documented priority order (canva > figma > openpencil > pencil > penpot > excalidraw) when multiple are available simultaneously
 
 ## Risks
 - **MCP tool naming inconsistency**: Provider tools may use different naming conventions across Claude platform connectors vs local MCP servers. Mitigation: use broad glob patterns with `|` alternation.

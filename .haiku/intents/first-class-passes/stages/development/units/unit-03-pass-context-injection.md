@@ -100,14 +100,14 @@ This ensures single-pass intents have zero overhead from the pass system.
 
 ## Success Criteria
 
-- [ ] `inject-context.sh` extracts `active_pass` from intent frontmatter
-- [ ] `subagent-context.sh` extracts `active_pass` from intent frontmatter
-- [ ] When `active_pass` is set, pass instructions are injected into subagent context before hat instructions
-- [ ] Pass name is displayed in the status line alongside iteration/hat/workflow info
-- [ ] Workflow constraint is applied: units requesting unavailable workflows get the pass's default_workflow
-- [ ] Workflow constraint logs a note when it overrides the requested workflow
-- [ ] When `active_pass` is empty (single-pass), no pass context is injected and no workflows are constrained
-- [ ] Pass instructions include project augmentation when a project pass file exists (via unit-01's `load_pass_instructions`)
+- [x] `inject-context.sh` extracts `active_pass` from intent frontmatter
+- [x] `subagent-context.sh` extracts `active_pass` from intent frontmatter
+- [x] When `active_pass` is set, pass instructions are injected into subagent context before hat instructions
+- [x] Pass name is displayed in the status line alongside iteration/hat/workflow info
+- [x] Workflow constraint is applied: units requesting unavailable workflows get the pass's default_workflow
+- [x] Workflow constraint logs a note when it overrides the requested workflow
+- [x] When `active_pass` is empty (single-pass), no pass context is injected and no workflows are constrained
+- [x] Pass instructions include project augmentation when a project pass file exists (via unit-01's `load_pass_instructions`)
 
 ## Risks
 

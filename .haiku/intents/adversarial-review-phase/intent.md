@@ -1,11 +1,12 @@
 ---
 title: "Adversarial Spec Review Phase"
 studio: software
+stages: [inception, design, product, development, operations, security]
 mode: continuous
 active_stage: development
 status: completed
-started_at: 2026-03-30T00:00:00Z
-completed_at: 2026-03-30T23:59:59Z
+started_at: 2026-03-30T14:55:55Z
+completed_at: 2026-04-01T13:21:44Z
 ---
 
 

@@ -111,15 +111,15 @@ The capture utility supports reference screenshots (design intent images):
 - Reference screenshots use the same breakpoint naming convention for 1:1 comparison
 
 ## Success Criteria
-- [ ] Capture interface documented at `plugin/lib/capture-interface.md` with input/output contracts
-- [ ] `plugin/lib/capture-screenshots.sh` dispatcher routes to correct provider based on `--provider` flag
-- [ ] Playwright provider (`capture-playwright.sh`) captures screenshots at 3 breakpoints (375px, 768px, 1280px)
-- [ ] Playwright provider works with both URL mode (`--url`) and static HTML mode (`--static`)
-- [ ] Manual provider (`capture-manual.sh`) validates and copies pre-captured screenshots
-- [ ] All providers write `manifest.json` with consistent schema
-- [ ] Screenshots saved to correct directory structure with correct naming convention
-- [ ] All providers return non-zero exit code on capture failure
-- [ ] Wireframe HTML files from `.ai-dlc/{intent}/mockups/` can be captured as reference screenshots via Playwright provider
+- [x] Capture interface documented at `plugin/lib/capture-interface.md` with input/output contracts
+- [x] `plugin/lib/capture-screenshots.sh` dispatcher routes to correct provider based on `--provider` flag
+- [x] Playwright provider (`capture-playwright.sh`) captures screenshots at 3 breakpoints (375px, 768px, 1280px)
+- [x] Playwright provider works with both URL mode (`--url`) and static HTML mode (`--static`)
+- [x] Manual provider (`capture-manual.sh`) validates and copies pre-captured screenshots
+- [x] All providers write `manifest.json` with consistent schema
+- [x] Screenshots saved to correct directory structure with correct naming convention
+- [x] All providers return non-zero exit code on capture failure
+- [x] Wireframe HTML files from `.ai-dlc/{intent}/mockups/` can be captured as reference screenshots via Playwright provider
 
 ## Risks
 - **Playwright install size**: Chromium download is ~150MB. Mitigation: install Chromium only, not all browsers. Make installation opt-in per project.

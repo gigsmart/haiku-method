@@ -106,13 +106,13 @@ This mapping is used by elaboration to enforce the right criteria categories per
 
 ## Success Criteria
 
-- [ ] `stack:` key defined in settings schema with all 8 layers, each supporting array of provider entries
-- [ ] Schema validates: empty stack, single-provider stack, multi-provider stack (e.g., terraform + kubernetes)
-- [ ] New review agents (`deployment_safety`, `observability_completeness`, `infrastructure_correctness`) added to schema with defaults
-- [ ] New quality gates (`deploy_validate`, `container_build`, `manifest_validate`) added to schema
-- [ ] Config loading functions extended: `get_stack_layer()`, `has_stack_provider()`, `get_operations_runtime()` work correctly
-- [ ] Discipline-to-criteria-category mapping defined and accessible to elaboration
-- [ ] Existing settings files validate against updated schema without changes (backward compatible)
+- [x] `stack:` key defined in settings schema with all 8 layers, each supporting array of provider entries
+- [x] Schema validates: empty stack, single-provider stack, multi-provider stack (e.g., terraform + kubernetes)
+- [x] New review agents (`deployment_safety`, `observability_completeness`, `infrastructure_correctness`) added to schema with defaults
+- [x] New quality gates (`deploy_validate`, `container_build`, `manifest_validate`) added to schema
+- [x] Config loading functions extended: `get_stack_layer()`, `has_stack_provider()`, `get_operations_runtime()` work correctly
+- [x] Discipline-to-criteria-category mapping defined and accessible to elaboration
+- [x] Existing settings files validate against updated schema without changes (backward compatible)
 
 ## Risks
 

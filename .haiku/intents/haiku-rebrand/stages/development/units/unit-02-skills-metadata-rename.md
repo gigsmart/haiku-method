@@ -116,15 +116,15 @@ grep -r '\.ai-dlc/' plugin/skills/ --include='*.md'       # 0 results
 
 ## Success Criteria
 
-- [ ] Zero `/ai-dlc:` command references remain in any SKILL.md file
-- [ ] Zero `Skill("ai-dlc:*")` invocation strings remain
-- [ ] Zero `"ai-dlc"` references in plugin.json
-- [ ] plugin.json name is `"haiku"` and description references H·AI·K·U
-- [ ] All commit message prefix strings updated from `"ai-dlc: "` to `"haiku: "`
-- [ ] All `.ai-dlc/` path references in SKILL.md files updated to `.haiku/`
-- [ ] All "AI-DLC" user-facing text updated to "H·AI·K·U" in skills
-- [ ] Provider documentation files updated
-- [ ] hooks.json verified clean of ai-dlc references
+- [x] Zero `/ai-dlc:` command references remain in any SKILL.md file
+- [x] Zero `Skill("ai-dlc:*")` invocation strings remain
+- [x] Zero `"ai-dlc"` references in plugin.json
+- [x] plugin.json name is `"haiku"` and description references H·AI·K·U
+- [x] All commit message prefix strings updated from `"ai-dlc: "` to `"haiku: "`
+- [x] All `.ai-dlc/` path references in SKILL.md files updated to `.haiku/`
+- [x] All "AI-DLC" user-facing text updated to "H·AI·K·U" in skills
+- [x] Provider documentation files updated
+- [x] hooks.json verified clean of ai-dlc references
 
 ## Risks
 

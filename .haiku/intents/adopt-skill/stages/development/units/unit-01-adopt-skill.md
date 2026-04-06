@@ -141,16 +141,16 @@ The SKILL.md body must define these phases in detail:
 
 ## Success Criteria
 
-- [ ] `plugin/skills/adopt/SKILL.md` exists with valid frontmatter (description, user-invocable: true, argument-hint, allowed-tools)
-- [ ] The SKILL.md defines all 7 phases (pre-checks, feature description, exploration, propose intent/units, success criteria, operational plan, write artifacts, handoff)
-- [ ] Phase 2 specifies spawning Explore subagents for parallel codebase and git history analysis
-- [ ] Phase 3 includes user confirmation gate for proposed intent and unit breakdown
-- [ ] Phase 4 specifies analyzing test files and CI config to reconstruct success criteria with traceable evidence
-- [ ] Phase 5 specifies generating operation spec files with valid frontmatter matching operate/SKILL.md format
-- [ ] Phase 6 specifies writing all artifacts with `status: completed` on both intent and units
-- [ ] Phase 7 offers to run /operate, open PR, or show file paths
-- [ ] The skill references existing library functions (dlc_frontmatter_get/set, dlc_state_save, etc.) rather than reimplementing parsing
-- [ ] The SKILL.md follows the same structural conventions as existing skills (elaborate, followup, operate)
+- [x] `plugin/skills/adopt/SKILL.md` exists with valid frontmatter (description, user-invocable: true, argument-hint, allowed-tools)
+- [x] The SKILL.md defines all 7 phases (pre-checks, feature description, exploration, propose intent/units, success criteria, operational plan, write artifacts, handoff)
+- [x] Phase 2 specifies spawning Explore subagents for parallel codebase and git history analysis
+- [x] Phase 3 includes user confirmation gate for proposed intent and unit breakdown
+- [x] Phase 4 specifies analyzing test files and CI config to reconstruct success criteria with traceable evidence
+- [x] Phase 5 specifies generating operation spec files with valid frontmatter matching operate/SKILL.md format
+- [x] Phase 6 specifies writing all artifacts with `status: completed` on both intent and units
+- [x] Phase 7 offers to run /operate, open PR, or show file paths
+- [x] The skill references existing library functions (dlc_frontmatter_get/set, dlc_state_save, etc.) rather than reimplementing parsing
+- [x] The SKILL.md follows the same structural conventions as existing skills (elaborate, followup, operate)
 
 ## Risks
 

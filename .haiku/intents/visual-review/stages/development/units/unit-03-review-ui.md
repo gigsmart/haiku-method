@@ -168,18 +168,18 @@ Match the ai-dlc.dev website design language:
 
 ## Success Criteria
 
-- [ ] Intent review page renders all four tabs (Overview, Units & DAG, Domain Model, Technical Details)
-- [ ] Unit review page renders all four tabs (Spec, Wireframe, Criteria, Risks & Boundaries)
-- [ ] Mermaid.js DAG renders correctly with status-based color coding
-- [ ] Success criteria display as a visual checklist with checked/unchecked icons
-- [ ] Markdown content (Problem, Solution, Technical Spec) renders with proper formatting including code blocks, tables, and lists
-- [ ] Approve and Request Changes buttons POST to the correct endpoint
-- [ ] Request Changes requires feedback text before submitting
-- [ ] Dark mode toggle works with localStorage persistence and system preference detection
-- [ ] All tabs are keyboard-navigable with arrow keys and have proper ARIA attributes
-- [ ] Pages are responsive across desktop, tablet, and mobile breakpoints
-- [ ] Wireframe tab embeds the HTML wireframe via iframe when wireframe path exists
-- [ ] Page loads in under 500ms on localhost
+- [x] Intent review page renders all four tabs (Overview, Units & DAG, Domain Model, Technical Details)
+- [x] Unit review page renders all four tabs (Spec, Wireframe, Criteria, Risks & Boundaries)
+- [x] Mermaid.js DAG renders correctly with status-based color coding
+- [x] Success criteria display as a visual checklist with checked/unchecked icons
+- [x] Markdown content (Problem, Solution, Technical Spec) renders with proper formatting including code blocks, tables, and lists
+- [x] Approve and Request Changes buttons POST to the correct endpoint
+- [x] Request Changes requires feedback text before submitting
+- [x] Dark mode toggle works with localStorage persistence and system preference detection
+- [x] All tabs are keyboard-navigable with arrow keys and have proper ARIA attributes
+- [x] Pages are responsive across desktop, tablet, and mobile breakpoints
+- [x] Wireframe tab embeds the HTML wireframe via iframe when wireframe path exists
+- [x] Page loads in under 500ms on localhost
 
 ## Risks
 

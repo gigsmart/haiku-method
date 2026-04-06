@@ -166,17 +166,17 @@ Body structure varies by type (documented in the knowledge artifact templates be
 - The `dlc_knowledge_write` function validates frontmatter before writing
 
 ## Success Criteria
-- [ ] `plugin/lib/knowledge.sh` exists with all 8 functions implemented
-- [ ] `dlc_knowledge_dir()` creates `.ai-dlc/knowledge/` if missing and returns its path
-- [ ] `dlc_knowledge_exists()` correctly detects presence/absence of knowledge artifacts
-- [ ] `dlc_knowledge_read()` returns full artifact content including frontmatter
-- [ ] `dlc_knowledge_read_section()` extracts specific sections by heading
-- [ ] `dlc_knowledge_write()` validates artifact type and writes with proper frontmatter
-- [ ] `dlc_knowledge_update_section()` replaces or appends sections without corrupting other content
-- [ ] `dlc_knowledge_list()` returns only existing artifact types
-- [ ] `dlc_knowledge_load_for_hat()` returns correct artifacts for each hat type
-- [ ] Invalid artifact types are rejected with clear error messages
-- [ ] All functions follow existing `config.sh` conventions (error handling, return codes, output patterns)
+- [x] `plugin/lib/knowledge.sh` exists with all 8 functions implemented
+- [x] `dlc_knowledge_dir()` creates `.ai-dlc/knowledge/` if missing and returns its path
+- [x] `dlc_knowledge_exists()` correctly detects presence/absence of knowledge artifacts
+- [x] `dlc_knowledge_read()` returns full artifact content including frontmatter
+- [x] `dlc_knowledge_read_section()` extracts specific sections by heading
+- [x] `dlc_knowledge_write()` validates artifact type and writes with proper frontmatter
+- [x] `dlc_knowledge_update_section()` replaces or appends sections without corrupting other content
+- [x] `dlc_knowledge_list()` returns only existing artifact types
+- [x] `dlc_knowledge_load_for_hat()` returns correct artifacts for each hat type
+- [x] Invalid artifact types are rejected with clear error messages
+- [x] All functions follow existing `config.sh` conventions (error handling, return codes, output patterns)
 
 ## Risks
 - **Section parsing fragility**: `dlc_knowledge_read_section()` relies on markdown heading patterns — malformed headings could cause incorrect extraction. Mitigation: Use strict `## ` prefix matching with `awk`.

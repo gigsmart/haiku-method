@@ -141,15 +141,15 @@ When `false`, the agent doesn't run even if the unit has relevant frontmatter. T
 
 ## Success Criteria
 
-- [ ] Reviewer Stage 3 (Operational Readiness) runs when unit has ops frontmatter blocks
-- [ ] Deployment Safety agent verifies: artifact builds, no secrets, health check, graceful shutdown, resource limits, pipeline updated
-- [ ] Observability Completeness agent verifies: all metrics instrumented, dashboard references valid, alert rules reference correct metrics, SLOs achievable
-- [ ] Infrastructure Correctness agent verifies: IaC follows best practices, least privilege, idempotent, state backend configured
-- [ ] Chain-of-Verification extended: verification commands run for operational artifacts
-- [ ] Review agents score findings by confidence (High blocks, Medium warns, Low suggests)
-- [ ] Review agents respect settings.yml config (can be disabled per project)
-- [ ] Infrastructure/observability discipline units always get their corresponding review agent regardless of settings
-- [ ] Existing review behavior unchanged for units without ops frontmatter
+- [x] Reviewer Stage 3 (Operational Readiness) runs when unit has ops frontmatter blocks
+- [x] Deployment Safety agent verifies: artifact builds, no secrets, health check, graceful shutdown, resource limits, pipeline updated
+- [x] Observability Completeness agent verifies: all metrics instrumented, dashboard references valid, alert rules reference correct metrics, SLOs achievable
+- [x] Infrastructure Correctness agent verifies: IaC follows best practices, least privilege, idempotent, state backend configured
+- [x] Chain-of-Verification extended: verification commands run for operational artifacts
+- [x] Review agents score findings by confidence (High blocks, Medium warns, Low suggests)
+- [x] Review agents respect settings.yml config (can be disabled per project)
+- [x] Infrastructure/observability discipline units always get their corresponding review agent regardless of settings
+- [x] Existing review behavior unchanged for units without ops frontmatter
 
 ## Risks
 

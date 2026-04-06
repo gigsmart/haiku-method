@@ -112,16 +112,16 @@ grep -r '\.ai-dlc/' plugin/schemas/ --include='*.json'       # 0 results
 
 ## Success Criteria
 
-- [ ] settings.schema.json has no `ai-dlc` references; `$id` and descriptions use `haiku`
-- [ ] settings.schema.json includes `studio` field with default `"ideation"`
-- [ ] All provider schemas have `$id` and descriptions updated to `haiku` / "H·AI·K·U"
-- [ ] types.ts has no `AiDlc`, `AI_DLC`, `AIDLC`, or `Dlc` type names
-- [ ] types.ts string literals updated from `ai-dlc` to `haiku`
-- [ ] Settings migration function exists and handles `.ai-dlc/settings.yml` -> `.haiku/settings.yml`
-- [ ] Migration handles providers and knowledge directories
-- [ ] Migration runs automatically on first config load
-- [ ] Migration creates backward-compat symlinks
-- [ ] Schema validation passes for existing settings files after migration
+- [x] settings.schema.json has no `ai-dlc` references; `$id` and descriptions use `haiku`
+- [x] settings.schema.json includes `studio` field with default `"ideation"`
+- [x] All provider schemas have `$id` and descriptions updated to `haiku` / "H·AI·K·U"
+- [x] types.ts has no `AiDlc`, `AI_DLC`, `AIDLC`, or `Dlc` type names
+- [x] types.ts string literals updated from `ai-dlc` to `haiku`
+- [x] Settings migration function exists and handles `.ai-dlc/settings.yml` -> `.haiku/settings.yml`
+- [x] Migration handles providers and knowledge directories
+- [x] Migration runs automatically on first config load
+- [x] Migration creates backward-compat symlinks
+- [x] Schema validation passes for existing settings files after migration
 
 ## Risks
 

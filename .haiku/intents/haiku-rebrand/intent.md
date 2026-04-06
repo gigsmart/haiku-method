@@ -1,11 +1,12 @@
 ---
 title: "H·AI·K·U Rebrand — From AI-DLC to Domain-Agnostic Lifecycle Orchestrator"
 studio: software
+stages: [inception, design, product, development, operations, security]
 mode: continuous
 active_stage: development
 status: completed
-started_at: 2026-04-02T00:00:00Z
-completed_at: 2026-04-02T23:59:59Z
+started_at: 2026-04-03T10:48:35Z
+completed_at: 2026-04-05T10:25:11Z
 ---
 
 

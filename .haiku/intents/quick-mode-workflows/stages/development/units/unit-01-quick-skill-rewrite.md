@@ -26,19 +26,19 @@ backend - This unit will be executed by backend-focused agents.
 - **Quick Artifact**: Temporary `.ai-dlc/quick/` directory with minimal `intent.md` and `iteration.json` — enables hook context injection, cleaned up after completion
 
 ## Success Criteria
-- [ ] `/quick` accepts an optional workflow name as first argument and falls back to `default` when not specified
-- [ ] Quick mode reads `plugin/workflows.yml` and `.ai-dlc/workflows.yml` to resolve hat sequences
-- [ ] Quick mode creates a temporary `.ai-dlc/quick/` artifact (intent.md + iteration.json) for hook integration
-- [ ] The `.ai-dlc/quick/` directory is gitignored and cleaned up after completion
-- [ ] Each hat phase spawns a subagent that receives hat context via the existing hook system
-- [ ] Builder hats produce one commit per cycle; planner/reviewer hats produce no commits
-- [ ] Reviewer rejection loops back to builder with max 3 cycles before recommending `/elaborate`
-- [ ] Quick mode refuses to start if another active intent already exists; orphaned quick artifacts are detected and offered for cleanup
-- [ ] Hat context reaches subagents (verified via hook injection or fallback manual injection)
-- [ ] Cowork mode rejection still works
-- [ ] Scope validation still triggers during execution
-- [ ] Plugin auto-deploys via version bump on merge to main (existing CI — no changes needed)
-- [ ] Lint passes (`bun run lint`) after skill file changes
+- [x] `/quick` accepts an optional workflow name as first argument and falls back to `default` when not specified
+- [x] Quick mode reads `plugin/workflows.yml` and `.ai-dlc/workflows.yml` to resolve hat sequences
+- [x] Quick mode creates a temporary `.ai-dlc/quick/` artifact (intent.md + iteration.json) for hook integration
+- [x] The `.ai-dlc/quick/` directory is gitignored and cleaned up after completion
+- [x] Each hat phase spawns a subagent that receives hat context via the existing hook system
+- [x] Builder hats produce one commit per cycle; planner/reviewer hats produce no commits
+- [x] Reviewer rejection loops back to builder with max 3 cycles before recommending `/elaborate`
+- [x] Quick mode refuses to start if another active intent already exists; orphaned quick artifacts are detected and offered for cleanup
+- [x] Hat context reaches subagents (verified via hook injection or fallback manual injection)
+- [x] Cowork mode rejection still works
+- [x] Scope validation still triggers during execution
+- [x] Plugin auto-deploys via version bump on merge to main (existing CI — no changes needed)
+- [x] Lint passes (`bun run lint`) after skill file changes
 
 ## Notes
 - **Departure from discovery recommendation:** Discovery recommended "Option A: Inline Hat Loop" with inline behavioral guidelines in the skill. The final design chose the opposite: a temporary artifact enabling the existing hook system to load hat files at runtime. This was decided during elaboration because inline guidelines would drift from hat files over time. The hook-integration approach has zero drift risk since hat files are the single source of truth. Builders should follow this unit spec, not the discovery's architectural recommendation.

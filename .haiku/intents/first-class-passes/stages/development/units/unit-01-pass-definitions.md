@@ -66,14 +66,14 @@ This mirrors the provider loading three-tier merge pattern in `config.sh`.
 
 ## Success Criteria
 
-- [ ] `plugin/passes/design.md` exists with correct frontmatter and meaningful instructions
-- [ ] `plugin/passes/product.md` exists with correct frontmatter and meaningful instructions
-- [ ] `plugin/passes/dev.md` exists with correct frontmatter and meaningful instructions
-- [ ] `resolve_pass_definition` returns plugin path for built-in passes, project path for custom passes
-- [ ] `load_pass_instructions` returns plugin instructions with project augmentation appended when a project file with the same name exists
-- [ ] `load_pass_instructions` returns only project instructions for custom (non-built-in) passes
-- [ ] `constrain_workflow` returns the requested workflow when it's in `available_workflows`, otherwise returns `default_workflow`
-- [ ] `validate_pass_exists` returns 0 for built-in passes (design, product, dev) and any project-defined passes
+- [x] `plugin/passes/design.md` exists with correct frontmatter and meaningful instructions
+- [x] `plugin/passes/product.md` exists with correct frontmatter and meaningful instructions
+- [x] `plugin/passes/dev.md` exists with correct frontmatter and meaningful instructions
+- [x] `resolve_pass_definition` returns plugin path for built-in passes, project path for custom passes
+- [x] `load_pass_instructions` returns plugin instructions with project augmentation appended when a project file with the same name exists
+- [x] `load_pass_instructions` returns only project instructions for custom (non-built-in) passes
+- [x] `constrain_workflow` returns the requested workflow when it's in `available_workflows`, otherwise returns `default_workflow`
+- [x] `validate_pass_exists` returns 0 for built-in passes (design, product, dev) and any project-defined passes
 
 ## Risks
 

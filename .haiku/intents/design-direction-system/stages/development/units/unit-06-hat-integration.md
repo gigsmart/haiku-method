@@ -149,18 +149,18 @@ All hat updates should include awareness that knowledge artifacts may be stale:
 This is a note to add to each hat's knowledge loading section — not a separate mechanism.
 
 ## Success Criteria
-- [ ] Designer hat loads `knowledge/design.md` in Step 1 before surveying design resources
-- [ ] Designer hat constrains design alternatives to be consistent with established design direction when knowledge exists
-- [ ] Builder hat loads `architecture.md`, `conventions.md`, and `domain.md` before implementation
-- [ ] Builder hat follows documented conventions and architecture patterns
-- [ ] Builder hat respects confidence levels (high = authoritative, medium/low = guidance)
-- [ ] Planner hat loads `product.md`, `domain.md`, and `architecture.md` for planning context
-- [ ] Planner hat uses domain vocabulary in execution plans
-- [ ] Reviewer hat checks implementation against documented conventions and architecture
-- [ ] Reviewer hat treats knowledge compliance as review comments, not hard blockers
-- [ ] All hats handle missing knowledge gracefully (empty string = skip, not error)
-- [ ] Knowledge freshness awareness is documented in each hat
-- [ ] All existing hat behavior is preserved when no knowledge artifacts exist (backwards compatible)
+- [x] Designer hat loads `knowledge/design.md` in Step 1 before surveying design resources
+- [x] Designer hat constrains design alternatives to be consistent with established design direction when knowledge exists
+- [x] Builder hat loads `architecture.md`, `conventions.md`, and `domain.md` before implementation
+- [x] Builder hat follows documented conventions and architecture patterns
+- [x] Builder hat respects confidence levels (high = authoritative, medium/low = guidance)
+- [x] Planner hat loads `product.md`, `domain.md`, and `architecture.md` for planning context
+- [x] Planner hat uses domain vocabulary in execution plans
+- [x] Reviewer hat checks implementation against documented conventions and architecture
+- [x] Reviewer hat treats knowledge compliance as review comments, not hard blockers
+- [x] All hats handle missing knowledge gracefully (empty string = skip, not error)
+- [x] Knowledge freshness awareness is documented in each hat
+- [x] All existing hat behavior is preserved when no knowledge artifacts exist (backwards compatible)
 
 ## Risks
 - **Over-constraining agents**: If knowledge artifacts are too prescriptive, agents may produce rigid, unimaginative code that follows the letter but not the spirit. Mitigation: Frame knowledge as guidance with confidence levels, not immutable rules. Only the designer hat has hard constraints on visual fundamentals.

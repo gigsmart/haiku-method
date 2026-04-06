@@ -385,21 +385,21 @@ Body contains the full design direction document:
 After generating the design blueprint, call `dlc_knowledge_write("design", ...)` to seed `knowledge/design.md` with the blueprint's content (adapted to the knowledge schema format from unit-01). This is the bridge between per-intent blueprints and persistent project knowledge.
 
 ## Success Criteria
-- [ ] `plugin/mcp-server/src/archetypes.ts` exports 4 archetype definitions with all required fields
-- [ ] Each archetype has distinct CSS tokens that produce visually different results (not minor variations)
-- [ ] Each archetype has specific layout, typography, and component guidelines that a builder can follow
-- [ ] 4 parameter definitions with sensible ranges, steps, and descriptive labels
-- [ ] Each archetype defines its own default parameter values that make sense for its personality
-- [ ] Preview HTML snippets are self-contained and render a representative interface snippet for each archetype
-- [ ] Preview snippets are visually distinct from each other — a user can tell archetypes apart at a glance
-- [ ] Blueprint generation function applies parameter adjustments to CSS tokens correctly
-- [ ] Density parameter visibly affects spacing and font size in the generated blueprint
-- [ ] Shape language parameter visibly affects border-radius values
-- [ ] Color mood parameter shifts the color palette temperature
-- [ ] Generated `design-blueprint.md` has valid YAML frontmatter and complete markdown body
-- [ ] Knowledge seeding correctly populates `knowledge/design.md` from the blueprint
-- [ ] Generated CSS token values are syntactically valid CSS custom property values at all parameter extremes (0 and 100 for each parameter)
-- [ ] All existing tests pass
+- [x] `plugin/mcp-server/src/archetypes.ts` exports 4 archetype definitions with all required fields
+- [x] Each archetype has distinct CSS tokens that produce visually different results (not minor variations)
+- [x] Each archetype has specific layout, typography, and component guidelines that a builder can follow
+- [x] 4 parameter definitions with sensible ranges, steps, and descriptive labels
+- [x] Each archetype defines its own default parameter values that make sense for its personality
+- [x] Preview HTML snippets are self-contained and render a representative interface snippet for each archetype
+- [x] Preview snippets are visually distinct from each other — a user can tell archetypes apart at a glance
+- [x] Blueprint generation function applies parameter adjustments to CSS tokens correctly
+- [x] Density parameter visibly affects spacing and font size in the generated blueprint
+- [x] Shape language parameter visibly affects border-radius values
+- [x] Color mood parameter shifts the color palette temperature
+- [x] Generated `design-blueprint.md` has valid YAML frontmatter and complete markdown body
+- [x] Knowledge seeding correctly populates `knowledge/design.md` from the blueprint
+- [x] Generated CSS token values are syntactically valid CSS custom property values at all parameter extremes (0 and 100 for each parameter)
+- [x] All existing tests pass
 
 ## Risks
 - **Archetype convergence**: Despite different names, archetypes might produce insufficiently different results if CSS tokens are too similar. Mitigation: Review preview snippets side-by-side and ensure each archetype makes immediately different first impressions — different fonts, different spacing rhythms, different shape language.

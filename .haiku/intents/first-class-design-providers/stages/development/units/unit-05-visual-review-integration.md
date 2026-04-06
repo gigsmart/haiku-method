@@ -99,14 +99,14 @@ Add provider-awareness to the reviewer's visual fidelity gate:
 - When presenting findings via `ask_user_visual_question`, include the provider type in the context
 
 ## Success Criteria
-- [ ] Mode A (present-for-review) works: new designs from providers are exported to PNG and presented via `ask_user_visual_question`
-- [ ] Mode B (auto-compare) works: built output is compared against provider design references with threshold-based user prompting
-- [ ] Provider-native design files (.op, .pen, .excalidraw) increase the visual gate score
-- [ ] Comparison pipeline handles `needs_agent_export` flag from resolve-design-ref
-- [ ] Provider design refs default to `high` fidelity in comparison context
-- [ ] `ask_user_visual_question` presents comparison results with sufficient context for user decision
-- [ ] "Update design ref" response updates the unit's `design_ref` frontmatter
-- [ ] When no provider artifacts exist, the existing visual review pipeline works unchanged
+- [x] Mode A (present-for-review) works: new designs from providers are exported to PNG and presented via `ask_user_visual_question`
+- [x] Mode B (auto-compare) works: built output is compared against provider design references with threshold-based user prompting
+- [x] Provider-native design files (.op, .pen, .excalidraw) increase the visual gate score
+- [x] Comparison pipeline handles `needs_agent_export` flag from resolve-design-ref
+- [x] Provider design refs default to `high` fidelity in comparison context
+- [x] `ask_user_visual_question` presents comparison results with sufficient context for user decision
+- [x] "Update design ref" response updates the unit's `design_ref` frontmatter
+- [x] When no provider artifacts exist, the existing visual review pipeline works unchanged
 
 ## Risks
 - **PNG export quality**: Exported PNGs may not perfectly represent the provider-native design (color space differences, font rendering, resolution). Mitigation: use high DPI export settings; document known rendering differences per provider.

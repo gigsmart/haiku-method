@@ -92,13 +92,13 @@ The execute skill (`plugin/skills/execute/SKILL.md`) also resolves hats at lines
 
 ## Success Criteria
 
-- [ ] Plugin hat is always loaded when it exists — project hat with same name never replaces it
-- [ ] Project hat with same name as plugin hat: its body is appended under `## Project Augmentation` heading
-- [ ] Project hat with new name (no plugin match): loaded as standalone custom hat
-- [ ] When neither plugin nor project hat exists: existing "no instructions found" message is preserved
-- [ ] `inject-context.sh` uses augmentation pattern
-- [ ] `subagent-context.sh` uses augmentation pattern
-- [ ] `execute/SKILL.md` hat resolution references use augmentation pattern
+- [x] Plugin hat is always loaded when it exists — project hat with same name never replaces it
+- [x] Project hat with same name as plugin hat: its body is appended under `## Project Augmentation` heading
+- [x] Project hat with new name (no plugin match): loaded as standalone custom hat
+- [x] When neither plugin nor project hat exists: existing "no instructions found" message is preserved
+- [x] `inject-context.sh` uses augmentation pattern
+- [x] `subagent-context.sh` uses augmentation pattern
+- [x] `execute/SKILL.md` hat resolution references use augmentation pattern
 
 ## Risks
 

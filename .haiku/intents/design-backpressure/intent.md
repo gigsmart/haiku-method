@@ -1,11 +1,12 @@
 ---
 title: "Design as Backpressure"
 studio: software
+stages: [inception, design, product, development, operations, security]
 mode: continuous
 active_stage: development
 status: completed
-started_at: 2026-03-27T00:00:00Z
-completed_at: 2026-03-27T23:59:59Z
+started_at: 2026-03-27T23:04:37Z
+completed_at: 2026-04-01T13:21:44Z
 ---
 
 
