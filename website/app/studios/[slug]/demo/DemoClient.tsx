@@ -87,6 +87,8 @@ export function DemoClient({ config }: Props) {
     reset,
     setSpeed,
     setMobileTab,
+    stepForward,
+    stepBackward,
     totalSteps,
   } = useDemoEngine(config)
 
@@ -125,9 +127,17 @@ export function DemoClient({ config }: Props) {
         case "4":
           setSpeed(4)
           break
+        case "ArrowRight":
+          e.preventDefault()
+          stepForward()
+          break
+        case "ArrowLeft":
+          e.preventDefault()
+          stepBackward()
+          break
       }
     },
-    [togglePlayPause, reset, setSpeed],
+    [togglePlayPause, reset, setSpeed, stepForward, stepBackward],
   )
 
   useEffect(() => {
@@ -211,6 +221,24 @@ export function DemoClient({ config }: Props) {
             {state.playing ? "\u23F8 Pause" : "\u25B6 Play"}
           </button>
 
+          {/* Step backward/forward */}
+          <button
+            onClick={stepBackward}
+            title="Step Back"
+            disabled={state.stepIndex === 0}
+            className="cursor-pointer rounded-md border border-stone-700 bg-stone-900 px-2.5 py-1.5 font-sans text-[13px] text-stone-200 transition-all hover:border-teal-400 hover:text-teal-400 disabled:opacity-30 disabled:cursor-default max-[600px]:px-1.5 max-[600px]:py-1 max-[600px]:text-[11px]"
+          >
+            &#9664;
+          </button>
+          <button
+            onClick={stepForward}
+            title="Step Forward"
+            disabled={state.stepIndex >= totalSteps}
+            className="cursor-pointer rounded-md border border-stone-700 bg-stone-900 px-2.5 py-1.5 font-sans text-[13px] text-stone-200 transition-all hover:border-teal-400 hover:text-teal-400 disabled:opacity-30 disabled:cursor-default max-[600px]:px-1.5 max-[600px]:py-1 max-[600px]:text-[11px]"
+          >
+            &#9654;
+          </button>
+
           {/* Speed buttons */}
           <div className="flex gap-1 max-[900px]:hidden">
             {[1, 2, 4].map((s) => (
@@ -234,7 +262,7 @@ export function DemoClient({ config }: Props) {
             title="Restart (R)"
             className="cursor-pointer rounded-md border border-stone-700 bg-stone-900 px-3.5 py-1.5 font-sans text-[13px] text-stone-200 transition-all hover:border-teal-400 hover:text-teal-400 max-[600px]:px-2 max-[600px]:py-1 max-[600px]:text-[11px]"
           >
-            &#8634; Restart
+            &#8634;
           </button>
         </div>
       </div>
@@ -517,24 +545,7 @@ export function DemoClient({ config }: Props) {
       )}
 
       {/* Completion overlay */}
-      {isComplete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-950/85 transition-opacity duration-500">
-          <div className="rounded-2xl border border-teal-400 bg-stone-900 px-[60px] py-10 text-center shadow-[0_0_60px_rgba(45,212,191,0.15)] demo-animate-in max-[600px]:px-6 max-[600px]:py-[30px]">
-            <h2 className="mb-2 text-2xl font-bold text-teal-400 max-[600px]:text-xl">
-              Intent Complete
-            </h2>
-            <p className="mb-5 text-sm text-stone-400">
-              {config.completionText}
-            </p>
-            <button
-              onClick={reset}
-              className="cursor-pointer rounded-lg border-none bg-teal-400 px-7 py-2.5 font-sans text-sm font-semibold text-stone-950 hover:opacity-85"
-            >
-              Replay Demo
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Completion shows inline, not as overlay */}
 
       {/* Keyboard hint */}
       <div className="pointer-events-none fixed bottom-3 left-1/2 z-[5] -translate-x-1/2 font-mono text-[11px] text-stone-500 opacity-50 max-[900px]:hidden">
@@ -555,7 +566,11 @@ export function DemoClient({ config }: Props) {
         <kbd className="mx-0.5 inline-block rounded border border-stone-700 bg-stone-800 px-1.5 py-px text-[10px]">
           4
         </kbd>{" "}
-        speed
+        speed{" "}
+        <kbd className="mx-0.5 inline-block rounded border border-stone-700 bg-stone-800 px-1.5 py-px text-[10px]">
+          ← →
+        </kbd>{" "}
+        step
       </div>
     </div>
   )

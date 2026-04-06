@@ -283,6 +283,36 @@ export function useDemoEngine(config: DemoConfig) {
     [clearTimer, config.steps, runStep],
   )
 
+  const stepForward = useCallback(() => {
+    clearTimer()
+    setState((prev) => {
+      if (prev.stepIndex >= config.steps.length) return { ...prev, playing: false }
+      const step = config.steps[prev.stepIndex]
+      let next = prev
+      for (const action of step.actions) {
+        next = applyAction(action, next)
+      }
+      return { ...next, stepIndex: prev.stepIndex + 1, playing: false }
+    })
+  }, [clearTimer, config.steps, applyAction])
+
+  const stepBackward = useCallback(() => {
+    clearTimer()
+    setState((prev) => {
+      const targetIndex = Math.max(0, prev.stepIndex - 1)
+      // Replay all steps from 0 to targetIndex-1
+      let replayed = initialState()
+      replayed.playing = false
+      for (let i = 0; i < targetIndex; i++) {
+        const step = config.steps[i]
+        for (const action of step.actions) {
+          replayed = applyAction(action, replayed)
+        }
+      }
+      return { ...replayed, stepIndex: targetIndex, playing: false }
+    })
+  }, [clearTimer, config.steps, applyAction])
+
   const setMobileTab = useCallback((tab: "terminal" | "artifacts" | "board") => {
     setState((prev) => ({ ...prev, mobileTab: tab }))
   }, [])
@@ -310,6 +340,8 @@ export function useDemoEngine(config: DemoConfig) {
     setSpeed,
     setMobileTab,
     showCompletion,
+    stepForward,
+    stepBackward,
     totalSteps: config.steps.length,
     config,
   }
