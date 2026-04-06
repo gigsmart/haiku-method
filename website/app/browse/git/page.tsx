@@ -70,6 +70,14 @@ function GitBrowseInner() {
 				return
 			}
 
+			// If no token, prompt auth even for public repos (avoids rate limiting)
+			if (!storedToken && isOAuthAvailable(host)) {
+				setAuthReason("rate_limited")
+				setNeedsAuth(true)
+				setLoading(false)
+				return
+			}
+
 			setProvider(prov)
 			setLoading(false)
 		}
@@ -136,14 +144,12 @@ function GitBrowseInner() {
 				</nav>
 
 				<h1 className="mb-2 text-2xl font-bold">
-					{authReason === "rate_limited" ? "Rate Limited" : "Authentication Required"}
+					{authReason === "not_found" ? "Authentication Required" : "Sign In to Browse"}
 				</h1>
 				<p className="mb-6 text-stone-600 dark:text-stone-400">
-					{authReason === "rate_limited"
-						? "GitHub's unauthenticated API limit (60 requests/hour) has been reached. Sign in to get 5,000 requests/hour."
-						: authReason === "not_found"
+					{authReason === "not_found"
 						? "Repository not found. It may be private — sign in to access it."
-						: `Sign in with ${isGitHub ? "GitHub" : host} to browse this repository.`}
+						: `Sign in to browse H\u00b7AI\u00b7K\u00b7U intents in this repository. Authentication avoids GitHub\u2019s API rate limits.`}
 				</p>
 
 				{/* OAuth — primary auth method */}
