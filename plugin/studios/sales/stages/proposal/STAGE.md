@@ -6,7 +6,7 @@ review: [ask, await]
 unit_types: [proposal, demo, business-case]
 inputs:
   - stage: qualification
-    output: deal-brief
+    discovery: deal-brief
 gate-protocol:
   timeout: 7d
   timeout-action: escalate

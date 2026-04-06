@@ -6,13 +6,13 @@ review: auto
 unit_types: [ops, backend]
 inputs:
   - stage: inception
-    output: discovery
+    discovery: discovery
   - stage: product
-    output: behavioral-spec
+    discovery: behavioral-spec
   - stage: development
     output: code
   - stage: development
-    output: architecture
+    discovery: architecture
 review-agents-include:
   - stage: development
     agents: [security]

@@ -6,7 +6,7 @@ review: external
 unit_types: [postmortem, action-item]
 inputs:
   - stage: resolve
-    output: resolution-summary
+    discovery: resolution-summary
 ---
 
 # Postmortem

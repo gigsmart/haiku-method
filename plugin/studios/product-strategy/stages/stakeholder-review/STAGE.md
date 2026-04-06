@@ -6,7 +6,7 @@ review: external
 unit_types: [presentation, alignment]
 inputs:
   - stage: roadmap
-    output: roadmap-doc
+    discovery: roadmap-doc
 ---
 
 # Stakeholder Review

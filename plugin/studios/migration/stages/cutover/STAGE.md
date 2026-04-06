@@ -6,7 +6,7 @@ review: external
 unit_types: [cutover]
 inputs:
   - stage: validation
-    output: validation-report
+    discovery: validation-report
 review-agents-include:
   - stage: migrate
     agents: [data-integrity]

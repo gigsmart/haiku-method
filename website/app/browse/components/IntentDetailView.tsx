@@ -65,6 +65,59 @@ export function IntentDetailView({ intent, provider, onBack }: Props) {
 	const [selectedUnit, setSelectedUnit] = useState<{ unit: HaikuUnit; stage: string } | null>(null)
 	const [expandedStage, setExpandedStage] = useState<string | null>(intent.activeStage || null)
 	const [viewMode, setViewMode] = useState<"pipeline" | "board">("pipeline")
+	const [gateAction, setGateAction] = useState<"idle" | "approving" | "rejecting" | "success" | "error">("idle")
+
+	async function handleApproveStage(stageName: string) {
+		if (!provider.writeFile) return
+		setGateAction("approving")
+		try {
+			const statePath = `.haiku/intents/${intent.slug}/stages/${stageName}/state.json`
+			const currentState = await provider.readFile(statePath)
+			if (!currentState) { setGateAction("error"); return }
+			const state = JSON.parse(currentState)
+			state.gate_outcome = "advanced"
+			state.completed_at = new Date().toISOString().replace(/\.\d{3}Z$/, "Z")
+			state.status = "completed"
+			const success = await provider.writeFile(
+				statePath,
+				JSON.stringify(state, null, 2) + "\n",
+				`haiku: approve stage ${stageName} (external review)`
+			)
+			if (success) {
+				setGateAction("success")
+				setTimeout(() => window.location.reload(), 1500)
+			} else {
+				setGateAction("error")
+			}
+		} catch {
+			setGateAction("error")
+		}
+	}
+
+	async function handleRejectStage(stageName: string) {
+		if (!provider.writeFile) return
+		setGateAction("rejecting")
+		try {
+			const statePath = `.haiku/intents/${intent.slug}/stages/${stageName}/state.json`
+			const currentState = await provider.readFile(statePath)
+			if (!currentState) { setGateAction("error"); return }
+			const state = JSON.parse(currentState)
+			state.gate_outcome = "changes_requested"
+			const success = await provider.writeFile(
+				statePath,
+				JSON.stringify(state, null, 2) + "\n",
+				`haiku: request changes for stage ${stageName} (external review)`
+			)
+			if (success) {
+				setGateAction("success")
+				setTimeout(() => window.location.reload(), 1500)
+			} else {
+				setGateAction("error")
+			}
+		} catch {
+			setGateAction("error")
+		}
+	}
 
 	// Restore state from hash on mount
 	useEffect(() => {
@@ -208,14 +261,58 @@ export function IntentDetailView({ intent, provider, onBack }: Props) {
 			</section>
 
 			{/* Expanded Stage — Units */}
-			{expandedStage && (
-				<section className="mb-8">
-					<StageDetail
-						stage={intent.stages.find((s) => s.name === expandedStage)!}
-						onSelectUnit={(unit) => handleSelectUnit(unit, expandedStage)}
-					/>
-				</section>
-			)}
+			{expandedStage && (() => {
+				const expandedStageData = intent.stages.find((s) => s.name === expandedStage)!
+				return (
+					<section className="mb-8">
+						<StageDetail
+							stage={expandedStageData}
+							onSelectUnit={(unit) => handleSelectUnit(unit, expandedStage)}
+						/>
+						{expandedStageData.phase === "gate" && !expandedStageData.gateOutcome && provider.writeFile && (
+							<div className="mt-4 rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-800/50">
+								<h4 className="mb-3 text-sm font-semibold text-stone-700 dark:text-stone-300">
+									External Review Gate
+								</h4>
+								{gateAction === "success" ? (
+									<p className="text-sm text-green-600 dark:text-green-400">
+										Decision recorded. Refreshing...
+									</p>
+								) : gateAction === "error" ? (
+									<div>
+										<p className="mb-2 text-sm text-red-600 dark:text-red-400">
+											Failed to write gate decision. Ensure you have write access to this repository.
+										</p>
+										<button
+											onClick={() => setGateAction("idle")}
+											className="text-sm text-stone-500 underline hover:text-stone-700 dark:hover:text-stone-300"
+										>
+											Try again
+										</button>
+									</div>
+								) : (
+									<div className="flex gap-3">
+										<button
+											onClick={() => handleApproveStage(expandedStage)}
+											disabled={gateAction !== "idle"}
+											className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+										>
+											{gateAction === "approving" ? "Approving..." : "Approve Stage"}
+										</button>
+										<button
+											onClick={() => handleRejectStage(expandedStage)}
+											disabled={gateAction !== "idle"}
+											className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+										>
+											{gateAction === "rejecting" ? "Requesting..." : "Request Changes"}
+										</button>
+									</div>
+								)}
+							</div>
+						)}
+					</section>
+				)
+			})()}
 
 			{/* Intent Content */}
 			{intent.content && (

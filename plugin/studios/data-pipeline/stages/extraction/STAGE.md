@@ -6,7 +6,7 @@ review: ask
 unit_types: [extraction]
 inputs:
   - stage: discovery
-    output: source-catalog
+    discovery: source-catalog
 ---
 
 # Extraction

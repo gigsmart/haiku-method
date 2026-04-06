@@ -6,7 +6,7 @@ review: ask
 unit_types: [launch, distribution]
 inputs:
   - stage: content
-    output: assets
+    discovery: assets
 ---
 
 # Launch

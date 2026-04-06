@@ -552,22 +552,38 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 			}
 		}
 
+		// Build result with optional annotations
+		const reviewResult: Record<string, unknown> = {
+			session_id: session.session_id,
+			status: session.status,
+			decision: session.decision,
+			feedback: session.feedback,
+			review_type: session.review_type,
+			target: session.target,
+		}
+		if (session.annotations) {
+			// Include pins and comments directly, but only a truncated
+			// screenshot indicator to avoid bloating the text response.
+			// The full screenshot base64 is available via the session object.
+			const annot: Record<string, unknown> = {}
+			if (session.annotations.pins?.length) {
+				annot.pins = session.annotations.pins
+			}
+			if (session.annotations.comments?.length) {
+				annot.comments = session.annotations.comments
+			}
+			if (session.annotations.screenshot) {
+				annot.has_screenshot = true
+				annot.screenshot_length = session.annotations.screenshot.length
+			}
+			reviewResult.annotations = annot
+		}
+
 		return {
 			content: [
 				{
 					type: "text" as const,
-					text: JSON.stringify(
-						{
-							session_id: session.session_id,
-							status: session.status,
-							decision: session.decision,
-							feedback: session.feedback,
-							review_type: session.review_type,
-							target: session.target,
-						},
-						null,
-						2,
-					),
+					text: JSON.stringify(reviewResult, null, 2),
 				},
 			],
 		}

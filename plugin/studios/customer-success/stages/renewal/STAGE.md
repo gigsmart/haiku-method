@@ -6,7 +6,7 @@ review: [external, await]
 unit_types: [renewal, contract]
 inputs:
   - stage: expansion
-    output: opportunity-brief
+    discovery: opportunity-brief
 ---
 
 # Renewal

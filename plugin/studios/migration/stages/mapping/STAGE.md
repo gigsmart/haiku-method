@@ -6,7 +6,7 @@ review: ask
 unit_types: [mapping]
 inputs:
   - stage: assessment
-    output: migration-inventory
+    discovery: migration-inventory
 ---
 
 # Mapping

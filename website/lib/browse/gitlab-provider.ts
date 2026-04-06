@@ -25,9 +25,9 @@ export class GitLabProvider implements BrowseProvider {
 		return h
 	}
 
-	private async api(path: string): Promise<Response> {
+	private async api(path: string, init?: RequestInit): Promise<Response> {
 		const url = `https://${this.host}/api/v4/projects/${this.encodedProject}${path}`
-		return fetch(url, { headers: this.headers() })
+		return fetch(url, { ...init, headers: { ...this.headers(), ...init?.headers } })
 	}
 
 	async readFile(path: string): Promise<string | null> {
@@ -170,12 +170,55 @@ export class GitLabProvider implements BrowseProvider {
 		}
 	}
 
+	async writeFile(path: string, content: string, message: string): Promise<boolean> {
+		const encodedPath = encodeURIComponent(path)
+		const branch = this.branch || "main"
+
+		// Base64 encode content (handle Unicode correctly)
+		const encoded = btoa(
+			Array.from(new TextEncoder().encode(content))
+				.map((b) => String.fromCharCode(b))
+				.join("")
+		)
+
+		// Try update first (PUT), fall back to create (POST) if file doesn't exist
+		const res = await this.api(`/repository/files/${encodedPath}`, {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				branch,
+				commit_message: message,
+				encoding: "base64",
+				content: encoded,
+			}),
+		})
+
+		if (res.ok) return true
+
+		// If file doesn't exist yet, create it
+		if (res.status === 400 || res.status === 404) {
+			const createRes = await this.api(`/repository/files/${encodedPath}`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					branch,
+					commit_message: message,
+					encoding: "base64",
+					content: encoded,
+				}),
+			})
+			return createRes.ok
+		}
+
+		return false
+	}
+
 	async isAccessible(): Promise<boolean> {
 		const res = await this.api("")
 		return res.ok
 	}
 
 	static getOAuthUrl(host: string, clientId: string, redirectUri: string): string {
-		return `https://${host}/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=read_repository`
+		return `https://${host}/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=read_api`
 	}
 }

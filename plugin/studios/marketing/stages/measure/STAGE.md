@@ -6,7 +6,7 @@ review: auto
 unit_types: [analysis, report]
 inputs:
   - stage: launch
-    output: campaign-log
+    discovery: campaign-log
 ---
 
 # Measure

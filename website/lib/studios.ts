@@ -24,7 +24,7 @@ export interface StageDefinition {
 	hats: string[]
 	review: string
 	unitTypes: string[]
-	inputs: Array<{ stage: string; output: string }>
+	inputs: Array<{ stage: string; output: string; kind: "discovery" | "output" }>
 	reviewAgentsInclude: Array<{ stage: string; agents: string[] }>
 	content: string
 	hatDefinitions: HatDefinition[]
@@ -109,9 +109,10 @@ function parseStage(stageDir: string): StageDefinition | null {
 		hats: data.hats || [],
 		review: Array.isArray(data.review) ? data.review.join(", ") : data.review || "ask",
 		unitTypes: data.unit_types || [],
-		inputs: (data.inputs || []).map((i: { stage: string; output: string }) => ({
+		inputs: (data.inputs || []).map((i: { stage: string; output?: string; discovery?: string }) => ({
 			stage: i.stage,
-			output: i.output,
+			output: i.discovery || i.output || "",
+			kind: (i.discovery ? "discovery" : "output") as "discovery" | "output",
 		})),
 		reviewAgentsInclude: (data["review-agents-include"] || []).map(
 			(i: { stage: string; agents: string[] }) => ({

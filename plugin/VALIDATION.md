@@ -18,9 +18,9 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 ### Orchestration
 
 - [ ] `haiku_run_next` is the sole authority on what happens next — the agent follows its action, not prose instructions
-- [ ] The stage loop always follows the sequence: decompose → execute → review → persist → gate
+- [ ] The stage loop always follows the sequence: decompose → execute → review → gate (no separate persist step)
 - [ ] Continuous mode auto-advances through stages when gates pass; discrete mode always stops
-- [ ] Neither mode skips or collapses stages — every stage runs the full five-step loop
+- [ ] Neither mode skips or collapses stages — every stage runs the full four-step loop
 - [ ] An agent never autonomously resets `active_stage` to a prior stage (full stage-backs are human-initiated)
 - [ ] Stage-scoped refinements (upstream side-trips) do NOT reset current stage progress
 
@@ -284,7 +284,46 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 
 ---
 
-## Architecture Invariants
+## Scenario 15: Artifact Flow (Discovery + Output Chaining)
+
+**Trigger:** Agent completes a stage that has artifact definitions and advances to a downstream stage that declares those as inputs.
+
+### Artifact Definition Structure
+
+- [ ] Discovery artifacts are defined in `studios/{studio}/stages/{stage}/discovery/{ARTIFACT}.md` — knowledge produced during decompose
+- [ ] Output artifacts are defined in `studios/{studio}/stages/{stage}/outputs/{ARTIFACT}.md` — work products produced during execute
+- [ ] Each artifact definition has frontmatter with: `name`, `location`, `scope`, `format`, `required`
+- [ ] The `location:` field specifies where the artifact is written (e.g., `knowledge/DISCOVERY.md`, or project source tree)
+- [ ] Downstream stages declare `inputs:` in their STAGE.md frontmatter, referencing `stage:` and either `discovery:` or `output:` names
+
+### Software Studio Input/Output Chain
+
+- [ ] Inception produces discovery `discovery` → written to `.haiku/intents/{slug}/knowledge/DISCOVERY.md`
+- [ ] Design consumes inception/discovery (discovery); produces discovery `design-brief` (→ `stages/design/DESIGN-BRIEF.md`), discovery `design-tokens` (→ `knowledge/DESIGN-TOKENS.md`), and output `design-artifacts` (→ `stages/design/artifacts/` — hi-fi mockups stored inside the intent as part of the spec)
+- [ ] Product consumes inception/discovery, design/design-brief, design/design-tokens (all discovery); produces discovery `behavioral-spec` (→ `knowledge/BEHAVIORAL-SPEC.md`) and discovery `data-contracts` (→ `knowledge/DATA-CONTRACTS.md`)
+- [ ] Development consumes discovery artifacts from inception, design, product + output `design-artifacts` from design; produces output `code` (→ project source tree) and discovery `architecture` (→ `.haiku/knowledge/ARCHITECTURE.md`)
+- [ ] Operations consumes inception/discovery, product/behavioral-spec (discovery) + development/code (output), development/architecture (discovery)
+- [ ] Security consumes inception/discovery, product/behavioral-spec, product/data-contracts (discovery) + development/code (output), development/architecture (discovery)
+
+### Execution Flow
+
+- [ ] During decompose, the agent reads the stage's STAGE.md `inputs:` to discover required upstream artifacts
+- [ ] The agent reads each referenced artifact definition (from `discovery/` or `outputs/` in the upstream stage) to find the `location:` where the artifact lives
+- [ ] The agent loads the artifact from that location and uses it to inform decomposition
+- [ ] If an input artifact is missing or stale, the agent invokes `/haiku:refine stage:{upstream}` for a scoped side-trip
+- [ ] During execution, the agent writes output artifacts to the locations specified in the stage's output definitions
+- [ ] Artifact persistence promotes discovery/output files to their scoped knowledge directories (auto-commit on unit/stage complete)
+
+### Invariants
+
+- [ ] `produces:` is NOT a field in STAGE.md frontmatter — artifacts are file-based definitions in `stages/{stage}/discovery/` and `stages/{stage}/outputs/`
+- [ ] Input/output chains must form a valid DAG — no circular dependencies between stages
+- [ ] All `inputs:` references in STAGE.md must use `discovery:` or `output:` to reference artifacts in the corresponding directory of the upstream stage
+- [ ] The `location:` in artifact definitions determines where the artifact lives — not the agent's discretion
+
+---
+
+
 
 ### File Layout
 
@@ -301,6 +340,8 @@ plugin/
         STAGE.md               # hats, review, inputs, gate-protocol
         hats/{hat}.md           # behavioral role definitions
         review-agents/{agent}.md # adversarial review mandates
+        discovery/{artifact}.md # knowledge artifact definitions (research, specs, models)
+        outputs/{artifact}.md   # work product definitions (code, config, deliverables)
       operations/{op}.md        # post-delivery operation templates
       reflections/{dim}.md      # reflection analysis dimensions
       templates/{template}.md   # intent templates with parameters

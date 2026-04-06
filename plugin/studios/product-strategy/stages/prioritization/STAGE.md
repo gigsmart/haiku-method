@@ -6,7 +6,7 @@ review: ask
 unit_types: [scoring, trade-off-analysis]
 inputs:
   - stage: user-research
-    output: insights-report
+    discovery: insights-report
 ---
 
 # Prioritization

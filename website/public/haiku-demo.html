@@ -235,6 +235,78 @@
     50%{box-shadow:0 0 20px 4px rgba(45,212,191,.2)}
     100%{box-shadow:0 0 0 0 transparent}
   }
+
+  /* Visual review overlay */
+  .review-overlay{
+    position:fixed;inset:0;background:rgba(12,10,9,.92);
+    display:flex;align-items:center;justify-content:center;
+    z-index:90;opacity:0;pointer-events:none;transition:opacity .4s;
+  }
+  .review-overlay.visible{opacity:1;pointer-events:auto}
+  .review-card{
+    width:480px;max-width:90vw;background:var(--bg-panel);
+    border:1px solid var(--accent-dim);border-radius:16px;
+    box-shadow:0 0 60px rgba(45,212,191,.12);
+    animation:fadeSlideIn .4s ease;overflow:hidden;
+  }
+  .review-card-header{
+    padding:16px 24px;border-bottom:1px solid var(--border-dim);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .review-card-header h3{font-size:16px;font-weight:700;color:var(--accent)}
+  .review-card-header .review-tag{
+    font-size:11px;padding:3px 10px;border-radius:10px;
+    background:var(--accent-glow);color:var(--accent);border:1px solid var(--accent-dim);
+  }
+  .review-card-body{padding:20px 24px}
+  .review-card-body h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px}
+
+  /* Wireframe sketch */
+  .wireframe{
+    background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;
+    padding:20px;display:flex;flex-direction:column;align-items:center;gap:12px;
+    margin-bottom:16px;
+  }
+  .wire-box{
+    border:1px dashed var(--border);border-radius:6px;padding:8px 16px;
+    font-size:11px;font-family:var(--mono);color:var(--text-muted);text-align:center;
+    width:100%;max-width:220px;
+  }
+  .wire-box.logo{
+    border-style:solid;border-color:var(--accent-dim);color:var(--accent);
+    font-weight:600;font-size:13px;padding:14px;
+  }
+  .wire-box.btn{
+    background:rgba(45,212,191,.08);border-color:var(--accent-dim);color:var(--accent);
+  }
+  .wire-box.link{font-size:10px;border:none;color:var(--text-muted);text-decoration:underline}
+  .wire-row{display:flex;gap:8px;width:100%;max-width:220px}
+  .wire-row .wire-box{flex:1}
+
+  /* Criteria checklist */
+  .review-criteria{list-style:none;padding:0;margin:0 0 16px 0}
+  .review-criteria li{
+    font-size:12px;font-family:var(--mono);color:var(--text-dim);
+    padding:4px 0;display:flex;align-items:center;gap:8px;
+  }
+  .review-criteria li .check{
+    width:14px;height:14px;border:1px solid var(--border);border-radius:3px;
+    display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+    font-size:10px;color:var(--green);transition:all .3s;
+  }
+  .review-criteria li.checked .check{border-color:var(--green);background:rgba(34,197,94,.15)}
+
+  /* Review action buttons */
+  .review-actions{
+    display:flex;gap:12px;padding:16px 24px;border-top:1px solid var(--border-dim);
+  }
+  .review-btn{
+    flex:1;padding:10px;border:none;border-radius:8px;font-size:13px;
+    font-weight:600;font-family:var(--sans);cursor:default;transition:all .3s;
+  }
+  .review-btn.approve{background:var(--green);color:var(--bg)}
+  .review-btn.reject{background:var(--bg-panel-alt);color:var(--text-dim);border:1px solid var(--border)}
+  .review-btn.approve.highlight{box-shadow:0 0 16px rgba(34,197,94,.4);transform:scale(1.03)}
 </style>
 </head>
 <body>
@@ -278,6 +350,11 @@
   </div>
 </div>
 
+<!-- Visual review overlay -->
+<div class="review-overlay" id="review-overlay">
+  <div class="review-card" id="review-card"></div>
+</div>
+
 <!-- Completion overlay -->
 <div class="completion-overlay" id="completion-overlay">
   <div class="completion-card">
@@ -305,6 +382,8 @@ const playBtn    = document.getElementById("btn-play");
 const restartBtn = document.getElementById("btn-restart");
 const replayBtn  = document.getElementById("btn-replay");
 const overlay    = document.getElementById("completion-overlay");
+const reviewOverlay = document.getElementById("review-overlay");
+const reviewCard    = document.getElementById("review-card");
 const speedBtns  = document.querySelectorAll(".speed-btn");
 const stepCounterEl = document.getElementById("step-counter");
 const stageBadgeEl  = document.getElementById("stage-badge");
@@ -360,6 +439,68 @@ function removeFastForward(){
 
 function escHtml(s){
   return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// ── Visual review overlay ──
+function showDesignReview(stageName, intentTitle){
+  reviewCard.innerHTML =
+    '<div class="review-card-header">' +
+      '<h3>' + escHtml(stageName) + ' Review</h3>' +
+      '<span class="review-tag">ask gate</span>' +
+    '</div>' +
+    '<div class="review-card-body">' +
+      '<h4>' + escHtml(intentTitle) + '</h4>' +
+      '<div class="wireframe">' +
+        '<div class="wire-box logo">Logo</div>' +
+        '<div class="wire-box btn">Sign in with Google</div>' +
+        '<div class="wire-box btn">Sign in with GitHub</div>' +
+        '<div class="wire-box link">Forgot password?</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="review-actions">' +
+      '<button class="review-btn reject">Request Changes</button>' +
+      '<button class="review-btn approve" id="review-approve-btn">Approve Stage</button>' +
+    '</div>';
+  reviewOverlay.classList.add("visible");
+}
+
+function showCriteriaReview(stageName, intentTitle, criteria){
+  var items = criteria.map(function(c){
+    return '<li><span class="check"></span>' + escHtml(c) + '</li>';
+  }).join("");
+  reviewCard.innerHTML =
+    '<div class="review-card-header">' +
+      '<h3>' + escHtml(stageName) + ' Review</h3>' +
+      '<span class="review-tag">external gate</span>' +
+    '</div>' +
+    '<div class="review-card-body">' +
+      '<h4>' + escHtml(intentTitle) + '</h4>' +
+      '<ul class="review-criteria" id="review-criteria-list">' + items + '</ul>' +
+    '</div>' +
+    '<div class="review-actions">' +
+      '<button class="review-btn reject">Request Changes</button>' +
+      '<button class="review-btn approve" id="review-approve-btn">Approve Stage</button>' +
+    '</div>';
+  reviewOverlay.classList.add("visible");
+}
+
+function animateCheckmarks(){
+  var items = document.querySelectorAll("#review-criteria-list li");
+  items.forEach(function(li, i){
+    setTimeout(function(){
+      li.classList.add("checked");
+      li.querySelector(".check").textContent = "\u2713";
+    }, (i + 1) * 400);
+  });
+}
+
+function highlightApproveBtn(){
+  var btn = document.getElementById("review-approve-btn");
+  if(btn) btn.classList.add("highlight");
+}
+
+function hideReviewOverlay(){
+  reviewOverlay.classList.remove("visible");
 }
 
 // ── File tree ──
@@ -554,7 +695,7 @@ const steps = [
   { delay: 2000, actions: [function(){
     removeFastForward();
     addMsg("agent","agent","Provider setup complete. Abstraction layer supports Google and GitHub with a clean interface for adding Apple later.");
-    addFile(".haiku/intents/add-oauth-login/knowledge/provider-analysis.md");
+    addFile(".haiku/intents/add-oauth-login/knowledge/DISCOVERY.md");
     updateCard("inception","oauth-provider-setup","completed");
     updateCard("inception","callback-handler","in-progress");
   }]},
@@ -608,14 +749,16 @@ const steps = [
   { delay: 800, actions: [function(){ addTyping(); }]},
   { delay: 1200, actions: [function(){
     removeTyping();
-    addMsg("agent","agent","Opening visual review... (ask_user_visual_question)");
+    addMsg("agent","agent","Opening visual review...");
   }]},
   { delay: 500, actions: [function(){ addFastForward("45"); }]},
   { delay: 2000, actions: [function(){
     removeFastForward();
-    addMsg("agent","agent","Wireframe ready. Take a look.");
+    addMsg("agent","agent","Wireframe ready. Presenting for review.");
+    showDesignReview("Design", "add-oauth-login");
   }]},
-  { delay: 2200, actions: [function(){
+  { delay: 2500, actions: [function(){
+    hideReviewOverlay();
     addMsg("user","you","Add a 'forgot password' link below the form");
   }]},
   { delay: 800, actions: [function(){ addTyping(); }]},
@@ -629,27 +772,39 @@ const steps = [
   { delay: 1500, actions: [function(){
     removeFastForward();
     updateCard("design","oauth-flow","completed");
-    addFile(".haiku/intents/add-oauth-login/stages/design/outputs/design-brief.md");
-    addFile(".haiku/intents/add-oauth-login/stages/design/outputs/design-tokens.md");
-    addMsg("agent","agent","Design brief and tokens finalized. All breakpoints specified, interactive states defined, accessible color contrast verified.");
+    addFile(".haiku/intents/add-oauth-login/stages/design/DESIGN-BRIEF.md");
+    addFile(".haiku/intents/add-oauth-login/knowledge/DESIGN-TOKENS.md");
+    addFile(".haiku/intents/add-oauth-login/stages/design/artifacts/login-screen-desktop.png");
+    addFile(".haiku/intents/add-oauth-login/stages/design/artifacts/login-screen-mobile.png");
+    addFile(".haiku/intents/add-oauth-login/stages/design/artifacts/oauth-flow.png");
+    addMsg("agent","agent","Design brief and hi-fi mockups written to intent spec. Tokens extracted to knowledge. Desktop and mobile login screens plus OAuth flow diagram committed as design artifacts. All breakpoints, interactive states, accessible color contrast verified.");
   }]},
 
-  // === Step 8: Design gate - ask ===
+  // === Step 8: Design gate - ask (visual review) ===
   { delay: 1000, actions: [function(){
-    addMsg("system","system","Design stage complete. Review gate: ask. Awaiting your approval.");
+    addMsg("system","system","Design stage complete. Review gate: ask.");
+    addMsg("agent","agent","Opening visual review for stage approval...");
   }]},
-  { delay: 1800, actions: [function(){
-    addMsg("user","you","Approved. Looks good.");
+  { delay: 800, actions: [function(){
+    showDesignReview("Design", "add-oauth-login");
   }]},
-  { delay: 600, actions: [function(){
-    addMsg("agent","agent","Advancing to product stage.");
+  { delay: 2000, actions: [function(){
+    highlightApproveBtn();
+  }]},
+  { delay: 1200, actions: [function(){
+    hideReviewOverlay();
+    addMsg("agent","agent","Approved via visual review. Advancing to product stage.");
   }]},
 
   // === Step 9: Product stage (collaborative) ===
   { delay: 1000, actions: [function(){
     activateStage("product");
-    addMsg("agent","agent","Entering product stage. Hat: product-owner.\nDefining behavioral specifications...");
+    addMsg("agent","agent","Entering product stage. Hat: product-owner.\nLoading design stage outputs as inputs...");
     addFile(".haiku/intents/add-oauth-login/stages/product/state.json");
+  }]},
+  { delay: 800, actions: [function(){
+    addMsg("system","system","Resolved inputs \u2192 inception/discovery (knowledge/DISCOVERY.md), design/design-brief (stages/design/DESIGN-BRIEF.md), design/design-tokens (knowledge/DESIGN-TOKENS.md)");
+    addMsg("agent","agent","Design brief specifies full-page login with social buttons and forgot-password link. Tokens define spacing, colors, breakpoints.\nDecomposing product work from design artifacts...");
     addFile(".haiku/intents/add-oauth-login/stages/product/units/unit-01-auth-spec.md");
     addCard("product","auth-spec","in-progress");
   }]},
@@ -668,23 +823,43 @@ const steps = [
   { delay: 1200, actions: [function(){
     removeTyping();
     addMsg("agent","agent","Added: rate limit returns 429 with retry-after header.");
-    addFile(".haiku/intents/add-oauth-login/stages/product/outputs/behavioral-spec.md");
-    addFile(".haiku/intents/add-oauth-login/stages/product/outputs/data-contracts.md");
+    addFile(".haiku/intents/add-oauth-login/knowledge/BEHAVIORAL-SPEC.md");
+    addFile(".haiku/intents/add-oauth-login/knowledge/DATA-CONTRACTS.md");
     updateCard("product","auth-spec","completed");
   }]},
   { delay: 800, actions: [function(){
-    addMsg("system","system","Product stage complete. Review gate: external. Sent for external review.");
+    addMsg("system","system","Product stage complete. Review gate: external.");
+    addMsg("agent","agent","Sharing browse URL for external review...");
+  }]},
+  { delay: 1000, actions: [function(){
+    showCriteriaReview("Product", "add-oauth-login", [
+      "Valid code \u2192 token exchange \u2192 session created",
+      "Invalid code \u2192 400 error with message",
+      "Expired code \u2192 redirect to login",
+      "Rate limit at 100 req/min \u2192 429 + retry-after"
+    ]);
+  }]},
+  { delay: 800, actions: [function(){
+    animateCheckmarks();
+  }]},
+  { delay: 2200, actions: [function(){
+    highlightApproveBtn();
   }]},
   { delay: 1200, actions: [function(){
-    addMsg("system","system","External review approved.");
+    hideReviewOverlay();
+    addMsg("system","system","External review approved via browse page.");
     addMsg("agent","agent","Advancing to development stage.");
   }]},
 
   // === Step 10: Development stage (bolt loop, collaborative) ===
   { delay: 1000, actions: [function(){
     activateStage("development");
-    addMsg("agent","agent","Entering development stage. Hat: planner.\nPlanning implementation units...");
+    addMsg("agent","agent","Entering development stage. Hat: planner.\nLoading upstream stage outputs...");
     addFile(".haiku/intents/add-oauth-login/stages/development/state.json");
+  }]},
+  { delay: 800, actions: [function(){
+    addMsg("system","system","Resolved inputs \u2192 inception/discovery, design/design-brief, design/design-tokens, product/behavioral-spec, product/data-contracts");
+    addMsg("agent","agent","Design brief: full-page login with social buttons + forgot-password link. Tokens: spacing and color system. Product spec: OAuth callback flow with 429 rate limiting.\nDecomposing into implementation units...");
     addFile(".haiku/intents/add-oauth-login/stages/development/units/unit-01-oauth-provider.md");
     addFile(".haiku/intents/add-oauth-login/stages/development/units/unit-02-login-ui.md");
     addFile(".haiku/intents/add-oauth-login/stages/development/units/unit-03-session-mgmt.md");
@@ -743,8 +918,10 @@ const steps = [
   }]},
   { delay: 1000, actions: [function(){
     addMsg("agent","agent","Review agents passed: design consistency OK, accessibility OK.");
-    addFile(".haiku/intents/add-oauth-login/stages/development/outputs/code");
-    addFile(".haiku/intents/add-oauth-login/stages/development/outputs/architecture.md");
+    addFile("src/lib/oauth/provider.ts");
+    addFile("src/lib/oauth/callback.ts");
+    addFile("src/components/LoginPage.tsx");
+    addFile(".haiku/knowledge/ARCHITECTURE.md");
   }]},
   { delay: 800, actions: [function(){
     addMsg("system","system","Development stage complete. Review gate: ask. Awaiting your approval.");
@@ -773,7 +950,8 @@ const steps = [
     removeFastForward();
     addMsg("agent","agent","Hat: sre. Vault policies configured, health checks added for both provider endpoints, rollback plan documented with secret rotation procedure.");
     updateCard("operations","deploy-config","completed");
-    addFile(".haiku/intents/add-oauth-login/stages/operations/outputs/deploy-plan.md");
+    addFile("deploy/terraform/oauth.tf");
+    addFile(".haiku/knowledge/RUNBOOK.md");
   }]},
   { delay: 800, actions: [function(){
     addMsg("system","system","Operations complete. Review gate: auto. Advancing.");
@@ -807,17 +985,34 @@ const steps = [
     addMsg("agent","agent","Fixed. All token storage now uses httpOnly cookies. CSRF protection verified across both providers.");
     updateCard("security","threat-model","completed");
     updateCard("security","pen-test","completed");
-    addFile(".haiku/intents/add-oauth-login/stages/security/outputs/threat-model.md");
-    addFile(".haiku/intents/add-oauth-login/stages/security/outputs/security-report.md");
+    addFile(".haiku/knowledge/THREAT-MODEL.md");
+    addFile(".haiku/intents/add-oauth-login/knowledge/VULN-REPORT.md");
   }]},
   { delay: 1000, actions: [function(){
     addMsg("agent","agent","Hat: security-reviewer. Final review... All findings addressed. No critical or high-risk issues remain.");
   }]},
   { delay: 800, actions: [function(){
-    addMsg("system","system","Security stage complete. Review gate: external. Sent for external review.");
+    addMsg("system","system","Security stage complete. Review gate: external.");
+    addMsg("agent","agent","Sharing browse URL for external security review...");
+  }]},
+  { delay: 1000, actions: [function(){
+    showCriteriaReview("Security", "add-oauth-login", [
+      "STRIDE threat model complete",
+      "No critical/high-risk findings remain",
+      "Token storage uses httpOnly cookies only",
+      "CSRF protection verified both providers",
+      "GitHub PKCE gap documented as accepted risk"
+    ]);
+  }]},
+  { delay: 800, actions: [function(){
+    animateCheckmarks();
+  }]},
+  { delay: 2400, actions: [function(){
+    highlightApproveBtn();
   }]},
   { delay: 1200, actions: [function(){
-    addMsg("system","system","External security review approved.");
+    hideReviewOverlay();
+    addMsg("system","system","External security review approved via browse page.");
   }]},
 
   // === Step 13: Intent complete ===
@@ -880,6 +1075,7 @@ function reset(){
   treeEl.innerHTML = "";
   files = [];
   overlay.classList.remove("visible");
+  reviewOverlay.classList.remove("visible");
   stageBadgeEl.textContent = "ready";
   stageBadgeEl.classList.add("idle");
   stageBadgeEl.style.color = "";

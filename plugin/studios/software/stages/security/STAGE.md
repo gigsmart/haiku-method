@@ -6,15 +6,15 @@ review: [external, ask]
 unit_types: [security, backend]
 inputs:
   - stage: inception
-    output: discovery
+    discovery: discovery
   - stage: product
-    output: behavioral-spec
+    discovery: behavioral-spec
   - stage: product
-    output: data-contracts
+    discovery: data-contracts
   - stage: development
     output: code
   - stage: development
-    output: architecture
+    discovery: architecture
 review-agents-include:
   - stage: development
     agents: [security, architecture]

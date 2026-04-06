@@ -1,0 +1,26 @@
+---
+name: forecast
+description: Research market conditions and develop revenue projections
+hats: [analyst, forecaster]
+review: ask
+unit_types: [research, projection]
+inputs: []
+---
+
+# Forecast
+
+## Criteria Guidance
+
+Good criteria examples:
+- "Forecast model documents all assumptions with supporting data sources and confidence levels"
+- "Revenue projections cover at least 3 scenarios (base, optimistic, pessimistic) with distinct assumption sets"
+- "Market condition analysis references at least 5 data points from the last 90 days"
+
+Bad criteria examples:
+- "Forecast is done"
+- "Revenue looks reasonable"
+- "Market conditions are understood"
+
+## Completion Signal
+
+Forecast model exists with documented assumptions, multiple revenue scenarios, and market condition analysis. Each projection traces to underlying data. Forecaster has validated methodology and analyst has confirmed data sources are current and reliable.

@@ -6,9 +6,9 @@ review: auto
 unit_types: [delivery]
 inputs:
   - stage: draft
-    output: draft-documentation
+    discovery: draft-documentation
   - stage: review
-    output: review-report
+    discovery: review-report
 review-agents-include:
   - stage: draft
     agents: [accuracy]

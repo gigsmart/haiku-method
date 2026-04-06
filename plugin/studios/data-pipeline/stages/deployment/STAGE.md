@@ -6,7 +6,7 @@ review: external
 unit_types: [deployment]
 inputs:
   - stage: validation
-    output: validation-report
+    discovery: validation-report
 review-agents-include:
   - stage: transformation
     agents: [data-quality]

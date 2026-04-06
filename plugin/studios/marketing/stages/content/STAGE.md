@@ -6,7 +6,7 @@ review: ask
 unit_types: [copy, visual, landing-page, email]
 inputs:
   - stage: strategy
-    output: messaging-framework
+    discovery: messaging-framework
 ---
 
 # Content

@@ -6,7 +6,7 @@ review: ask
 unit_types: [transformation]
 inputs:
   - stage: extraction
-    output: staged-data
+    discovery: staged-data
 ---
 
 # Transformation

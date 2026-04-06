@@ -167,60 +167,97 @@ hku_run_adversarial_phase() {
   return 0
 }
 
-# Persist stage outputs to scope-based locations
+# Persist stage artifacts (discovery + outputs) to scope-based locations
 # Usage: hku_persist_stage_outputs <intent_dir> <stage_name> <studio_name>
 hku_persist_stage_outputs() {
   local intent_dir="$1"
   local stage_name="$2"
   local studio_name="$3"
 
-  local outputs
-  outputs=$(hku_load_stage_outputs "$stage_name" "$studio_name")
-
-  if [ "$outputs" = "[]" ] || [ -z "$outputs" ]; then
-    return 0
-  fi
-
   local repo_root
   repo_root=$(find_repo_root 2>/dev/null || echo "")
   local slug
   slug=$(basename "$intent_dir")
 
-  while IFS= read -r entry; do
-    local scope name src_file target_dir
-    scope=$(echo "$entry" | jq -r '.scope // "stage"')
-    name=$(echo "$entry" | jq -r '.name // .file')
+  local had_work=false
 
-    # Resolve the output file written by the build phase
-    src_file="${intent_dir}/stages/${stage_name}/outputs/${name}"
-    [ -f "$src_file" ] || continue
+  # Persist discovery artifacts
+  local discovery
+  discovery=$(hku_load_stage_discovery "$stage_name" "$studio_name")
+  if [ "$discovery" != "[]" ] && [ -n "$discovery" ]; then
+    while IFS= read -r entry; do
+      local scope name src_file target_dir
+      scope=$(echo "$entry" | jq -r '.scope // "intent"')
+      name=$(echo "$entry" | jq -r '.name // .file')
 
-    case "$scope" in
-      project)
-        target_dir="${repo_root}/.haiku/knowledge"
-        mkdir -p "$target_dir" 2>/dev/null
-        cp "$src_file" "${target_dir}/${name}" 2>/dev/null || true
-        ;;
-      intent)
-        target_dir="${intent_dir}/knowledge"
-        mkdir -p "$target_dir" 2>/dev/null
-        cp "$src_file" "${target_dir}/${name}" 2>/dev/null || true
-        ;;
-      stage)
-        # Stage-scoped outputs stay in place under stages/{stage}/outputs/
-        ;;
-      repo)
-        # Written directly to repo during build phase — no-op
-        ;;
-      *)
-        ;;
-    esac
-  done < <(echo "$outputs" | jq -c '.[]')
+      # Discovery artifacts written during decompose phase
+      src_file="${intent_dir}/stages/${stage_name}/discovery/${name}"
+      [ -f "$src_file" ] || continue
+      had_work=true
 
-  # Save via persistence layer
-  persistence_save "$slug" "haiku: persist stage outputs — ${stage_name}" \
-    "${intent_dir}/stages/${stage_name}/" \
-    "${intent_dir}/knowledge/" 2>/dev/null || true
+      case "$scope" in
+        project)
+          target_dir="${repo_root}/.haiku/knowledge"
+          mkdir -p "$target_dir" 2>/dev/null
+          cp "$src_file" "${target_dir}/${name}" 2>/dev/null || true
+          ;;
+        intent)
+          target_dir="${intent_dir}/knowledge"
+          mkdir -p "$target_dir" 2>/dev/null
+          cp "$src_file" "${target_dir}/${name}" 2>/dev/null || true
+          ;;
+        stage)
+          # Stage-scoped discovery stays in place under stages/{stage}/discovery/
+          ;;
+        *)
+          ;;
+      esac
+    done < <(echo "$discovery" | jq -c '.[]')
+  fi
+
+  # Persist output artifacts
+  local outputs
+  outputs=$(hku_load_stage_outputs "$stage_name" "$studio_name")
+  if [ "$outputs" != "[]" ] && [ -n "$outputs" ]; then
+    while IFS= read -r entry; do
+      local scope name src_file target_dir
+      scope=$(echo "$entry" | jq -r '.scope // "stage"')
+      name=$(echo "$entry" | jq -r '.name // .file')
+
+      # Output artifacts written during execute phase
+      src_file="${intent_dir}/stages/${stage_name}/outputs/${name}"
+      [ -f "$src_file" ] || continue
+      had_work=true
+
+      case "$scope" in
+        project)
+          target_dir="${repo_root}/.haiku/knowledge"
+          mkdir -p "$target_dir" 2>/dev/null
+          cp "$src_file" "${target_dir}/${name}" 2>/dev/null || true
+          ;;
+        intent)
+          target_dir="${intent_dir}/knowledge"
+          mkdir -p "$target_dir" 2>/dev/null
+          cp "$src_file" "${target_dir}/${name}" 2>/dev/null || true
+          ;;
+        stage)
+          # Stage-scoped outputs stay in place under stages/{stage}/outputs/
+          ;;
+        repo)
+          # Written directly to repo during build phase — no-op
+          ;;
+        *)
+          ;;
+      esac
+    done < <(echo "$outputs" | jq -c '.[]')
+  fi
+
+  if [ "$had_work" = "true" ]; then
+    # Save via persistence layer
+    persistence_save "$slug" "haiku: persist stage artifacts — ${stage_name}" \
+      "${intent_dir}/stages/${stage_name}/" \
+      "${intent_dir}/knowledge/" 2>/dev/null || true
+  fi
 
   return 0
 }

@@ -6,7 +6,7 @@ review: ask
 unit_types: [validation]
 inputs:
   - stage: transformation
-    output: modeled-data
+    discovery: modeled-data
 review-agents-include:
   - stage: extraction
     agents: [correctness]

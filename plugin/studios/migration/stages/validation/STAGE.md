@@ -6,7 +6,7 @@ review: ask
 unit_types: [validation]
 inputs:
   - stage: migrate
-    output: migration-artifacts
+    discovery: migration-artifacts
 review-agents-include:
   - stage: mapping
     agents: [accuracy]

@@ -6,7 +6,7 @@ review: ask
 unit_types: [service-enum, vuln-scan, attack-surface]
 inputs:
   - stage: reconnaissance
-    output: target-profile
+    discovery: target-profile
 ---
 
 # Enumeration

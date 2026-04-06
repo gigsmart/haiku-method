@@ -6,7 +6,7 @@ review: ask
 unit_types: [content]
 inputs:
   - stage: research
-    output: research-brief
+    discovery: research-brief
 ---
 
 # Create

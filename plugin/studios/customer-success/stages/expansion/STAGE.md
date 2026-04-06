@@ -6,7 +6,7 @@ review: [ask, await]
 unit_types: [expansion, upsell]
 inputs:
   - stage: health-check
-    output: health-report
+    discovery: health-report
 ---
 
 # Expansion

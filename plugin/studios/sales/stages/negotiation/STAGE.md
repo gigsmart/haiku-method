@@ -6,7 +6,7 @@ review: [ask, await]
 unit_types: [negotiation, contract]
 inputs:
   - stage: proposal
-    output: proposal-doc
+    discovery: proposal-doc
 ---
 
 # Negotiation

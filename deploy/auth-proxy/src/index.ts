@@ -7,10 +7,18 @@ import type { HttpFunction } from "@google-cloud/functions-framework"
 //   POST /github/token — exchange GitHub authorization code
 //   POST /gitlab/token — exchange GitLab authorization code
 
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "https://haikumethod.ai"
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN || "https://haikumethod.ai")
+	.split(",")
+	.map((o) => o.trim())
+	.filter(Boolean)
+
+function isOriginAllowed(origin: string): boolean {
+	if (ALLOWED_ORIGINS.includes("*")) return true
+	return ALLOWED_ORIGINS.includes(origin)
+}
 
 function corsHeaders(origin: string): Record<string, string> {
-	const allowed = origin === ALLOWED_ORIGIN || ALLOWED_ORIGIN === "*"
+	const allowed = isOriginAllowed(origin)
 	return {
 		"Access-Control-Allow-Origin": allowed ? origin : "",
 		"Access-Control-Allow-Methods": "POST, OPTIONS",

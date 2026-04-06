@@ -6,7 +6,7 @@ review: ask
 unit_types: [gap-analysis, risk-assessment]
 inputs:
   - stage: scope
-    output: control-mapping
+    discovery: control-mapping
 ---
 
 # Assess

@@ -21,9 +21,9 @@ export class GitHubProvider implements BrowseProvider {
 		return h
 	}
 
-	private async api(path: string): Promise<Response> {
+	private async api(path: string, init?: RequestInit): Promise<Response> {
 		const url = `https://api.github.com/repos/${this.owner}/${this.repo}${path}`
-		return fetch(url, { headers: this.headers() })
+		return fetch(url, { ...init, headers: { ...this.headers(), ...init?.headers } })
 	}
 
 	async readFile(path: string): Promise<string | null> {
@@ -172,6 +172,36 @@ export class GitHubProvider implements BrowseProvider {
 			reflection: await this.readFile(`.haiku/intents/${slug}/reflection.md`),
 			content,
 		}
+	}
+
+	async writeFile(path: string, content: string, message: string): Promise<boolean> {
+		// Get current file SHA (required for updates, absent for creates)
+		const ref = this.branch ? `?ref=${encodeURIComponent(this.branch)}` : ""
+		const getRes = await this.api(`/contents/${path}${ref}`)
+		let sha: string | undefined
+		if (getRes.ok) {
+			const currentFile = await getRes.json()
+			sha = currentFile?.sha
+		}
+
+		// Base64 encode content (handle Unicode correctly)
+		const encoded = btoa(
+			Array.from(new TextEncoder().encode(content))
+				.map((b) => String.fromCharCode(b))
+				.join("")
+		)
+
+		const res = await this.api(`/contents/${path}`, {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				message,
+				content: encoded,
+				...(sha ? { sha } : {}),
+				...(this.branch ? { branch: this.branch } : {}),
+			}),
+		})
+		return res.ok
 	}
 
 	/** Check if the repo is accessible. Returns status for error differentiation. */

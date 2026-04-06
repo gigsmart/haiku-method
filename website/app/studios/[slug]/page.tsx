@@ -67,7 +67,7 @@ export default async function StudioDetailPage({ params }: Props) {
 				<p className="text-lg text-stone-600 dark:text-stone-400">
 					{studio.description}
 				</p>
-				<div className="mt-4 flex gap-4 text-sm text-stone-500 dark:text-stone-400">
+				<div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-stone-500 dark:text-stone-400">
 					<span>
 						<strong className="text-stone-700 dark:text-stone-300">{studio.stages.length}</strong> stages
 					</span>
@@ -89,6 +89,20 @@ export default async function StudioDetailPage({ params }: Props) {
 					<span>
 						Delivery: <strong className="text-stone-700 dark:text-stone-300">{studio.persistence.delivery}</strong>
 					</span>
+				</div>
+				<div className="mt-6">
+					<a
+						href={slug === "software" ? "/haiku-demo.html" : `/haiku-demo-${slug}.html`}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600"
+					>
+						<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+						</svg>
+						Simulate a Session
+					</a>
 				</div>
 			</header>
 

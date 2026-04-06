@@ -1,3 +1,9 @@
+export interface ReviewAnnotations {
+  screenshot?: string;  // base64 PNG of annotated canvas
+  pins?: Array<{ x: number; y: number; text: string }>;
+  comments?: Array<{ selectedText: string; comment: string; paragraph: number }>;
+}
+
 export interface ReviewSession {
   session_type: "review";
   session_id: string;
@@ -8,6 +14,7 @@ export interface ReviewSession {
   status: "pending" | "approved" | "changes_requested";
   decision: string;
   feedback: string;
+  annotations?: ReviewAnnotations;
   html: string;
 }
 
@@ -150,7 +157,7 @@ export function getSession(sessionId: string): ReviewSession | QuestionSession |
 
 export function updateSession(
   sessionId: string,
-  updates: Partial<Pick<ReviewSession, "status" | "decision" | "feedback">>
+  updates: Partial<Pick<ReviewSession, "status" | "decision" | "feedback" | "annotations">>
 ): ReviewSession | undefined {
   const session = sessions.get(sessionId);
   if (!session || session.session_type !== "review") return undefined;

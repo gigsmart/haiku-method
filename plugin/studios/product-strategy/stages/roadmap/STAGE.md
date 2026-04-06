@@ -6,7 +6,7 @@ review: ask
 unit_types: [roadmap, milestone]
 inputs:
   - stage: prioritization
-    output: priority-matrix
+    discovery: priority-matrix
 ---
 
 # Roadmap
