@@ -8,6 +8,7 @@
 
 import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { join } from "node:path"
+import matter from "gray-matter"
 import { emitTelemetry } from "./telemetry.js"
 
 // ── Path helpers ───────────────────────────────────────────────────────────
@@ -26,23 +27,14 @@ function findHaikuRoot(): string {
 function readFrontmatter(filePath: string): Record<string, unknown> {
 	if (!existsSync(filePath)) return {}
 	const raw = readFileSync(filePath, "utf8")
-	const match = raw.match(/^---\n([\s\S]*?)\n---/)
-	if (!match) return {}
-	const data: Record<string, unknown> = {}
-	for (const line of match[1].split("\n")) {
-		const kv = line.match(/^([\w][\w-]*):\s*(.*)$/)
-		if (kv) {
-			const [, k, v] = kv
-			if (v === "null") data[k] = null
-			else if (v === "true") data[k] = true
-			else if (v === "false") data[k] = false
-			else if (/^-?\d+$/.test(v)) data[k] = parseInt(v, 10)
-			else if (v.startsWith("[") && v.endsWith("]")) {
-				data[k] = v.slice(1, -1).split(",").map(s => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean)
-			} else data[k] = v.replace(/^["']|["']$/g, "")
+	const { data } = matter(raw)
+	// Normalize Date objects to ISO date strings
+	for (const key in data) {
+		if (data[key] instanceof Date) {
+			data[key] = (data[key] as Date).toISOString().split("T")[0]
 		}
 	}
-	return data
+	return data as Record<string, unknown>
 }
 
 function readJson(path: string): Record<string, unknown> {
@@ -112,6 +104,7 @@ export function runNext(slug: string): OrchestratorAction {
 	const intent = readFrontmatter(intentFile)
 	const studio = (intent.studio as string) || "ideation"
 	const mode = (intent.mode as string) || "continuous"
+	const continuousFrom = (intent.continuous_from as string) || ""
 	const status = (intent.status as string) || "active"
 	const activeStage = (intent.active_stage as string) || ""
 
@@ -299,11 +292,21 @@ export function runNext(slug: string): OrchestratorAction {
 		const nextStage = stageIdx < studioStages.length - 1 ? studioStages[stageIdx + 1] : null
 		const isLastStage = !nextStage
 
+		// Resolve effective mode for the *next* stage transition.
+		// hybrid: discrete until continuous_from, then continuous from that stage onward.
+		// await/external gates always pause regardless of mode — they need external triggers.
+		let effectiveMode = mode
+		if (mode === "hybrid" && continuousFrom && nextStage) {
+			const thresholdIdx = studioStages.indexOf(continuousFrom)
+			const nextIdx = studioStages.indexOf(nextStage)
+			effectiveMode = nextIdx >= thresholdIdx ? "continuous" : "discrete"
+		}
+
 		if (reviewType === "auto") {
 			if (isLastStage) {
 				return { action: "intent_complete", intent: slug, studio, message: `All stages complete for intent '${slug}'` }
 			}
-			if (mode === "continuous") {
+			if (effectiveMode === "continuous") {
 				return { action: "advance_stage", intent: slug, stage: currentStage, next_stage: nextStage, gate_outcome: "advanced", message: `Gate auto-passed — advancing to '${nextStage}'` }
 			}
 			return { action: "stage_complete_discrete", intent: slug, stage: currentStage, next_stage: nextStage, message: `Stage '${currentStage}' complete. Run /haiku:run to start '${nextStage}'.` }

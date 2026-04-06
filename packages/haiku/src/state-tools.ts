@@ -7,6 +7,7 @@ import { execSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { z } from "zod"
+import matter from "gray-matter"
 import { emitTelemetry } from "./telemetry.js"
 
 // ── Path resolution ────────────────────────────────────────────────────────
@@ -42,38 +43,43 @@ function stageStatePath(slug: string, stage: string): string {
 
 // ── Frontmatter helpers ────────────────────────────────────────────────────
 
-function parseFrontmatter(raw: string): { data: Record<string, unknown>; body: string } {
-	const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
-	if (!match) return { data: {}, body: raw }
-	const data: Record<string, unknown> = {}
-	for (const line of match[1].split("\n")) {
-		const kv = line.match(/^([\w][\w-]*):\s*(.*)$/)
-		if (kv) {
-			const [, k, v] = kv
-			if (v === "null") data[k] = null
-			else if (v === "true") data[k] = true
-			else if (v === "false") data[k] = false
-			else if (/^-?\d+$/.test(v)) data[k] = parseInt(v, 10)
-			else if (v.startsWith("[") && v.endsWith("]")) {
-				data[k] = v.slice(1, -1).split(",").map(s => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean)
-			} else {
-				data[k] = v.replace(/^["']|["']$/g, "")
-			}
+function normalizeDates(data: Record<string, unknown>): Record<string, unknown> {
+	const result = { ...data }
+	for (const key in result) {
+		if (result[key] instanceof Date) {
+			result[key] = (result[key] as Date).toISOString().split("T")[0]
 		}
 	}
-	return { data, body: match[2].trim() }
+	return result
+}
+
+function parseFrontmatter(raw: string): { data: Record<string, unknown>; body: string } {
+	const { data, content } = matter(raw)
+	return { data: normalizeDates(data as Record<string, unknown>), body: content.trim() }
 }
 
 function setFrontmatterField(filePath: string, field: string, value: unknown): void {
 	const raw = readFileSync(filePath, "utf8")
-	const { data, body } = parseFrontmatter(raw)
-	data[field] = value
-	const lines = Object.entries(data).map(([k, v]) => {
-		if (v === null) return `${k}: null`
-		if (Array.isArray(v)) return `${k}: [${v.join(", ")}]`
-		return `${k}: ${v}`
-	})
-	writeFileSync(filePath, `---\n${lines.join("\n")}\n---\n${body ? `\n${body}` : ""}`)
+	const parsed = matter(raw)
+	parsed.data[field] = value
+	// gray-matter stringify: matter.stringify(content, data)
+	writeFileSync(filePath, matter.stringify(parsed.content, normalizeDates(parsed.data as Record<string, unknown>)))
+}
+
+function parseYaml(raw: string): Record<string, unknown> {
+	// Wrap raw YAML in frontmatter delimiters so gray-matter can parse it
+	const { data } = matter(`---\n${raw}\n---\n`)
+	return normalizeDates(data as Record<string, unknown>)
+}
+
+function getNestedField(obj: Record<string, unknown>, path: string): unknown {
+	const parts = path.split(".")
+	let current: unknown = obj
+	for (const part of parts) {
+		if (current == null || typeof current !== "object") return undefined
+		current = (current as Record<string, unknown>)[part]
+	}
+	return current
 }
 
 function readJson(path: string): Record<string, unknown> {
@@ -190,6 +196,28 @@ export const stateToolDefs = [
 		name: "haiku_knowledge_read",
 		description: "Read a knowledge artifact",
 		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, name: { type: "string" } }, required: ["intent", "name"] },
+	},
+	// Studio tools
+	{
+		name: "haiku_studio_list",
+		description: "List all available studios with their description, stages, and category. Project-level studios (.haiku/studios/) override built-in ones on name collision.",
+		inputSchema: { type: "object" as const, properties: {} },
+	},
+	{
+		name: "haiku_studio_get",
+		description: "Read a studio's STUDIO.md — returns frontmatter fields and body text. Resolves project-level override first, then built-in.",
+		inputSchema: { type: "object" as const, properties: { studio: { type: "string" } }, required: ["studio"] },
+	},
+	{
+		name: "haiku_studio_stage_get",
+		description: "Read a stage's STAGE.md from a studio — returns frontmatter fields (hats, review, requires, produces) and body text. Resolves project-level override first, then built-in.",
+		inputSchema: { type: "object" as const, properties: { studio: { type: "string" }, stage: { type: "string" } }, required: ["studio", "stage"] },
+	},
+	// Settings tools
+	{
+		name: "haiku_settings_get",
+		description: "Read a field from .haiku/settings.yml (e.g. studio, stack.compute, providers, workspace, default_announcements, review_agents, operations_runtime). Returns empty string if not set.",
+		inputSchema: { type: "object" as const, properties: { field: { type: "string", description: "Dot-separated path (e.g. 'studio', 'stack.compute', 'review_agents')" } }, required: ["field"] },
 	},
 ]
 
@@ -344,6 +372,78 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			const path = join(intentDir(args.intent as string), "knowledge", args.name as string)
 			if (!existsSync(path)) return text("")
 			return text(readFileSync(path, "utf8"))
+		}
+
+		// ── Studio ──
+		case "haiku_studio_list": {
+			const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+			const studios = new Map<string, Record<string, unknown>>()
+			// Built-in studios first
+			const builtinDir = join(pluginRoot, "studios")
+			if (existsSync(builtinDir)) {
+				for (const name of readdirSync(builtinDir)) {
+					const studioFile = join(builtinDir, name, "STUDIO.md")
+					if (existsSync(studioFile)) {
+						const { data, body } = parseFrontmatter(readFileSync(studioFile, "utf8"))
+						studios.set(name, { name, ...data, body: body.slice(0, 200) })
+					}
+				}
+			}
+			// Project-level overrides
+			try {
+				const projectDir = join(findHaikuRoot(), "studios")
+				if (existsSync(projectDir)) {
+					for (const name of readdirSync(projectDir)) {
+						const studioFile = join(projectDir, name, "STUDIO.md")
+						if (existsSync(studioFile)) {
+							const { data, body } = parseFrontmatter(readFileSync(studioFile, "utf8"))
+							studios.set(name, { name, ...data, body: body.slice(0, 200), source: "project" })
+						}
+					}
+				}
+			} catch { /* no .haiku dir */ }
+			return text(JSON.stringify([...studios.values()], null, 2))
+		}
+		case "haiku_studio_get": {
+			const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+			const studioName = args.studio as string
+			// Project override first
+			let studioFile = ""
+			try { studioFile = join(findHaikuRoot(), "studios", studioName, "STUDIO.md") } catch { /* */ }
+			if (!studioFile || !existsSync(studioFile)) {
+				studioFile = join(pluginRoot, "studios", studioName, "STUDIO.md")
+			}
+			if (!existsSync(studioFile)) return text("")
+			const raw = readFileSync(studioFile, "utf8")
+			const { data, body } = parseFrontmatter(raw)
+			return text(JSON.stringify({ ...data, body }, null, 2))
+		}
+		case "haiku_studio_stage_get": {
+			const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+			const stName = args.studio as string
+			const sgName = args.stage as string
+			let stageFile = ""
+			try { stageFile = join(findHaikuRoot(), "studios", stName, "stages", sgName, "STAGE.md") } catch { /* */ }
+			if (!stageFile || !existsSync(stageFile)) {
+				stageFile = join(pluginRoot, "studios", stName, "stages", sgName, "STAGE.md")
+			}
+			if (!existsSync(stageFile)) return text("")
+			const raw = readFileSync(stageFile, "utf8")
+			const { data, body } = parseFrontmatter(raw)
+			return text(JSON.stringify({ ...data, body }, null, 2))
+		}
+
+		// ── Settings ──
+		case "haiku_settings_get": {
+			const field = args.field as string
+			let settingsPath = ""
+			try { settingsPath = join(findHaikuRoot(), "settings.yml") } catch { /* */ }
+			if (!settingsPath || !existsSync(settingsPath)) return text("")
+			const raw = readFileSync(settingsPath, "utf8")
+			const settings = parseYaml(raw)
+			const val = getNestedField(settings, field)
+			if (val == null) return text("")
+			return text(typeof val === "object" ? JSON.stringify(val) : String(val))
 		}
 
 		default:

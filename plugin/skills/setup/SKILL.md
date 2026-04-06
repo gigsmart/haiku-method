@@ -457,8 +457,8 @@ done
 This returns studio names. For each, load its metadata by reading the STUDIO.md frontmatter:
 
 ```bash
-# Read studio metadata from STUDIO.md frontmatter
-yq --front-matter=extract -o json '.' "$CLAUDE_PLUGIN_ROOT/studios/<studio_name>/STUDIO.md" 2>/dev/null
+# Read studio metadata via MCP
+haiku_studio_get { studio: "<studio_name>" }
 ```
 
 Use `AskUserQuestion`:

@@ -103,29 +103,74 @@ Convert the intent description to a kebab-case slug:
 
 ### Step 3: Detect Studio
 
-Read `studio:` from `.haiku/settings.yml`:
+Studio is a **per-intent decision** — the agent recommends based on the nature of the work, not a static project default.
+
+#### 3a. Check for project-level override
+
+Check for a project-level studio constraint:
 ```bash
-# Read studio from settings via file read (no shell lib needed)
-local studio=$(yq -r '.studio // ""' .haiku/settings.yml 2>/dev/null)
+haiku_settings_get { field: "studio" }
 ```
 
-If not set, default to `ideation`.
+If set, verify it exists via `haiku_studio_get { studio: "<name>" }`. If valid, use it — the project has explicitly constrained studio selection. Skip to Step 4.
 
-Verify the studio exists by checking for `plugin/studios/{studio}/STUDIO.md` or `.haiku/studios/{studio}/STUDIO.md`. If neither exists, fall back to `ideation`.
+#### 3b. Recommend studio from intent
+
+If no project-level studio is set (or the field is empty):
+
+1. **Scan available studios:** Call `haiku_studio_list` to get all available studios with their name, description, stages, category, and body summary. This returns both built-in and project-level studios (project-level takes precedence on name collisions).
+
+2. **Match against intent description:** Compare the user's intent description against each studio's description, category, stage names, and body text. Consider:
+   - Does the intent's domain match the studio's category?
+   - Do the studio's stages represent a natural lifecycle for this work?
+   - Does the studio's description or body text address the kind of problem described?
+
+3. **Decision logic:**
+
+   **Clear signal (one studio is obviously right):** Select it and inform the user with a one-line rationale. Do not ask for confirmation — move on.
+   ```
+   Studio: migration (your intent is about remediating a system from a known-bad state to a known-good state)
+   ```
+
+   **Ambiguous (2-3 plausible fits):** Present the top candidates with a brief rationale for each. Ask the user to pick using `AskUserQuestion`.
+   ```
+   This intent could fit a few studios:
+
+   1. **migration** — assessment → mapping → migrate → validation → cutover
+      Fits because: you're taking a system from a known-bad state to a known-good state
+
+   2. **data-pipeline** — discovery → extraction → transformation → validation → deployment
+      Fits because: the core work is data quality remediation
+
+   Which studio fits best? (or describe what you're thinking and I'll adjust)
+   ```
+
+   **No clear fit:** Default to `ideation` and inform the user. Ideation is the general-purpose studio.
+
+#### 3c. Validate
+
+Verify the selected studio exists via `haiku_studio_get { studio: "<name>" }`. If it returns empty, fall back to `ideation` with a warning.
 
 ### Step 4: Ask Mode
 
 Ask the user to choose their execution mode using `AskUserQuestion`:
 
-**Continuous mode:** All stages are collapsed into a single flow. Functionally identical to the old elaborate-then-execute pattern. Best when you want to drive the process yourself and review at gates.
+**Continuous mode:** Agent drives through all stages. User reviews at gates.
 
-**Discrete mode:** Each stage runs independently. You invoke `/haiku:run` to advance through stages one at a time. Best for structured, phased work.
+**Discrete mode:** Each stage runs independently. User invokes `/haiku:run` to advance through stages one at a time.
+
+**Hybrid mode:** Discrete up to a named stage, then continuous from that stage onward. Best when early stages need human pacing (research, strategy) but later stages can be agent-driven (execution, validation).
 
 Options:
-1. **Continuous** - I'll drive, you review at gates
-2. **Discrete** - I'll invoke each stage separately
+1. **Continuous** — I'll drive, you review at gates
+2. **Discrete** — I'll invoke each stage separately
+3. **Hybrid** — Discrete until _____, then continuous
 
 Default: `continuous`
+
+**If hybrid is selected:** Present the studio's stage list and ask which stage marks the transition to continuous. Record this as `continuous_from` in the intent frontmatter. The stage named is the first stage that runs in continuous mode — all stages before it are discrete.
+
+**Note on await/external gates:** Gates with `review: await` or `review: external` always pause regardless of mode — they require an external trigger by definition. Hybrid mode only affects `review: auto` gate behavior.
 
 **When called from `/haiku:autopilot`:** Skip this question. Use `continuous` mode automatically (the autopilot skill passes the mode).
 
@@ -133,14 +178,13 @@ Default: `continuous`
 
 Load the stage list from the studio definition:
 ```bash
-# Read stages from the studio STUDIO.md frontmatter (no shell lib needed)
-# Read plugin/studios/{studio}/STUDIO.md and parse the stages: field from frontmatter
-local stages=$(yq --front-matter=extract -r '.stages[]' "$CLAUDE_PLUGIN_ROOT/studios/$studio/STUDIO.md" 2>/dev/null)
+haiku_studio_get { studio: "<selected_studio>" }
+# Parse the stages array from the returned JSON
 ```
 
-For continuous mode, `stages:` in frontmatter is set to `[]` and `active_stage:` to `""` (no stage tracking — the run command handles the collapse).
+For continuous mode, `stages:` in the intent frontmatter is set to `[]` and `active_stage:` to `""` (no stage tracking — the run command handles the collapse).
 
-For discrete mode, `stages:` lists all stages and `active_stage:` is set to the first stage.
+For discrete or hybrid mode, `stages:` lists all stages and `active_stage:` is set to the first stage.
 
 ### Step 6: Create Intent File
 
@@ -149,9 +193,10 @@ Write `.haiku/intents/{slug}/intent.md` with frontmatter:
 ```yaml
 ---
 studio: {studio_name}
-stages: [{stage_list}]       # [] for continuous
-active_stage: {first_stage}  # "" for continuous
-mode: {continuous|discrete}
+stages: [{stage_list}]              # [] for continuous
+active_stage: {first_stage}         # "" for continuous
+mode: {continuous|discrete|hybrid}
+continuous_from: {stage_name}       # only present for hybrid mode
 status: active
 created: {YYYY-MM-DD}
 ---
@@ -222,6 +267,7 @@ Run /haiku:run to start the first stage.
 When called from autopilot, the following adjustments apply:
 - Skip the mode question — use `continuous`
 - Skip confirmation prompts — proceed automatically
+- Studio recommendation still runs (Step 3b), but always auto-selects the best match — never ask in autopilot mode
 - The intent description is provided as the argument (required)
 - Do NOT invoke `/haiku:run` at the end — autopilot handles the transition
 

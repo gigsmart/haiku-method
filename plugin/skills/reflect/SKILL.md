@@ -341,7 +341,7 @@ echo "$REFLECTION_STATE" > "$INTENT_DIR/reflection-status.json"
 
 After user validates:
 ```bash
-REFLECTION_STATE=$(echo "$REFLECTION_STATE" | jq '.reflectionStatus = "completed"')
+REFLECTION_STATE — set reflectionStatus to "completed" in the JSON and write back
 echo "$REFLECTION_STATE" > "$INTENT_DIR/reflection-status.json"
 ```
 
@@ -446,8 +446,8 @@ git add .claude/memory/learnings.md && git commit -m "reflect(${INTENT_SLUG}): c
 3. **Sync to H·AI·K·U organizational memory** (if workspace configured):
 
 ```bash
-# Check if H·AI·K·U workspace is configured via settings
-HAIKU_WS=$(yq -r '.workspace // ""' .haiku/settings.yml 2>/dev/null || echo "")
+# Check if H·AI·K·U workspace is configured via MCP
+HAIKU_WS=$(haiku_settings_get { field: "workspace" } || echo "")
 
 if [ -n "$HAIKU_WS" ]; then
 

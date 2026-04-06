@@ -56,10 +56,10 @@ This skill polls configured providers for events since the last poll and surface
 ### Step 1: Load Configuration
 
 ```bash
-# Load providers from settings (no shell lib needed)
-PROVIDERS=$(yq -r '.providers // "{}"' .haiku/settings.yml 2>/dev/null || echo "{}")
-LAST_POLL=$(cat ".haiku/trigger-poll.json" 2>/dev/null || echo '{"last_poll":"1970-01-01T00:00:00Z"}')
-LAST_POLL_TIME=$(echo "$LAST_POLL" | jq -r '.last_poll')
+# Load providers from settings via MCP
+PROVIDERS=$(haiku_settings_get { field: "providers" } || echo "{}")
+LAST_POLL=$(Read ".haiku/trigger-poll.json" || echo '{"last_poll":"1970-01-01T00:00:00Z"}')
+LAST_POLL_TIME=$(parse last_poll from $LAST_POLL JSON)
 ```
 
 ### Step 2: Poll Providers for Events
@@ -110,8 +110,8 @@ Load trigger declarations from all studios:
 ```bash
 for studio_dir in "$CLAUDE_PLUGIN_ROOT/studios"/*/; do
   STUDIO_FILE="$studio_dir/STUDIO.md"
-  # Parse triggers: from frontmatter
-  TRIGGERS=$(yq --front-matter=extract -o json '.triggers' "$STUDIO_FILE" 2>/dev/null || echo "null")
+  # Parse triggers from studio frontmatter via MCP
+  TRIGGERS=$(haiku_studio_get { studio: "$(basename "$studio_dir")" } | parse triggers field)
   # Match against collected events
 done
 ```
@@ -133,16 +133,16 @@ for intent_dir in .haiku/intents/*/; do
 
   # Load stage review type
   STAGE_METADATA=$(haiku_stage_get { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", field: "metadata" })
-  REVIEW=$(echo "$STAGE_METADATA" | jq -r '.review // "auto"')
+  REVIEW=$(parse review field from $STAGE_METADATA)
 
   # Check if this is an await gate
-  if [ "$REVIEW" = "await" ] || echo "$STAGE_METADATA" | jq -e '.review | type == "array" and (. | map(select(. == "await")) | length > 0)' >/dev/null 2>&1; then
+  if REVIEW is "await" or REVIEW is an array containing "await"; then
     # Check if the await condition is satisfied by any polled event
     # The await condition is stored in intent state
-    AWAIT_STATE=$(cat "$intent_dir/await.json" 2>/dev/null || echo "")
+    AWAIT_STATE=$(Read "$intent_dir/await.json" || echo "")
     if [ -n "$AWAIT_STATE" ]; then
-      AWAIT_EVENT=$(echo "$AWAIT_STATE" | jq -r '.event // ""')
-      AWAIT_PROVIDER=$(echo "$AWAIT_STATE" | jq -r '.provider // ""')
+      AWAIT_EVENT=$(parse event field from $AWAIT_STATE)
+      AWAIT_PROVIDER=$(parse provider field from $AWAIT_STATE)
       # Match against polled events from that provider
     fi
   fi

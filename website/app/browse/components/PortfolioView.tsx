@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import type { BrowseProvider, HaikuIntent, HaikuIntentDetail } from "@/lib/browse/types"
 import { formatDate, formatDuration } from "@/lib/browse/types"
 import { buildBrowseUrl } from "@/lib/browse/url"
@@ -39,6 +41,7 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 	const [loadingMore, setLoadingMore] = useState(false)
 	const [loadingDetail, setLoadingDetail] = useState(false)
 	const [viewMode, setViewMode] = useState<"list" | "board">(location?.view === "board" ? "board" : "list")
+	const [knowledgeFiles, setKnowledgeFiles] = useState<string[]>([])
 	const initialNavHandled = useRef(false)
 
 	// Whether we have path-based navigation (remote browse) or local-only state
@@ -84,6 +87,15 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 			setLoading(false)
 		}
 		load()
+	}, [provider])
+
+	// Load portfolio-level knowledge files
+	useEffect(() => {
+		provider.listFiles(".haiku/knowledge").then((files) => {
+			setKnowledgeFiles(files.filter((f) => !f.startsWith(".")))
+		}).catch(() => {
+			// Directory may not exist — that's fine
+		})
 	}, [provider])
 
 	// Listen for browser back/forward (path-based navigation only)
@@ -194,6 +206,11 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 					</div>
 				</div>
 			</div>
+
+			{/* Portfolio Knowledge */}
+			{knowledgeFiles.length > 0 && (
+				<PortfolioKnowledge files={knowledgeFiles} provider={provider} />
+			)}
 
 			{/* View toggle */}
 			{!loading && intents.length > 0 && (
@@ -335,6 +352,76 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 							</div>
 							<div className="mt-3 h-1.5 w-full rounded-full bg-stone-100 dark:bg-stone-800" />
 						</div>
+					)}
+				</div>
+			)}
+		</div>
+	)
+}
+
+function PortfolioKnowledge({ files, provider }: { files: string[]; provider: BrowseProvider }) {
+	const [expanded, setExpanded] = useState(false)
+
+	return (
+		<section className="mb-6">
+			<button
+				onClick={() => setExpanded(!expanded)}
+				className="flex w-full items-center gap-2 rounded-lg border border-stone-200 px-4 py-3 text-left transition hover:border-teal-300 dark:border-stone-700 dark:hover:border-teal-700"
+			>
+				<svg className={`h-4 w-4 flex-shrink-0 text-stone-400 transition ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+				</svg>
+				<h2 className="text-sm font-semibold uppercase tracking-wider text-stone-400">
+					Knowledge
+				</h2>
+				<span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-500 dark:bg-stone-800 dark:text-stone-400">
+					{files.length} file{files.length !== 1 ? "s" : ""}
+				</span>
+			</button>
+			{expanded && (
+				<div className="mt-2 space-y-2">
+					{files.map((file) => (
+						<PortfolioKnowledgeFile key={file} file={file} provider={provider} />
+					))}
+				</div>
+			)}
+		</section>
+	)
+}
+
+function PortfolioKnowledgeFile({ file, provider }: { file: string; provider: BrowseProvider }) {
+	const [content, setContent] = useState<string | null>(null)
+	const [expanded, setExpanded] = useState(false)
+
+	const handleExpand = async () => {
+		if (content === null) {
+			const raw = await provider.readFile(`.haiku/knowledge/${file}`)
+			setContent(raw || "(empty)")
+		}
+		setExpanded(!expanded)
+	}
+
+	const isMarkdown = file.endsWith(".md")
+
+	return (
+		<div className="rounded-lg border border-stone-200 dark:border-stone-700">
+			<button
+				onClick={handleExpand}
+				className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-stone-50 dark:hover:bg-stone-800"
+			>
+				<span className="font-mono text-stone-600 dark:text-stone-400">{file}</span>
+				<svg className={`h-4 w-4 text-stone-400 transition ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+				</svg>
+			</button>
+			{expanded && content && (
+				<div className="border-t border-stone-100 px-4 py-4 dark:border-stone-800">
+					{isMarkdown ? (
+						<div className="prose prose-sm prose-stone dark:prose-invert max-w-none">
+							<ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+						</div>
+					) : (
+						<pre className="overflow-x-auto text-xs text-stone-600 dark:text-stone-400">{content}</pre>
 					)}
 				</div>
 			)}

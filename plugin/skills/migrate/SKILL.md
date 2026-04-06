@@ -177,5 +177,5 @@ Next: /haiku:run {slug}
 | Slug not found | "No legacy intent found at .ai-dlc/{slug}/" Error. |
 | Already migrated (symlink) | Skip with notice |
 | New dir already exists | Skip with notice (idempotent) |
-| yq not available | Error: "yq required for frontmatter migration" |
+| haiku binary not available | Error: "haiku binary required for frontmatter migration" |
 | No active intents | "No active legacy intents found." Exit. |

@@ -48,9 +48,8 @@ If skipped, proceed to Step 5 (Load Knowledge Context) — design knowledge alre
 In autonomous mode, skip the picker UI entirely. Auto-select **Editorial** with default parameters (the most conventional and broadly appropriate archetype). This default can be overridden via `default_archetype` in `.haiku/settings.yml`:
 
 ```bash
-# Config is now read via MCP tools or settings file directly
-DEFAULT_ARCHETYPE=$(# Read setting from .haiku/settings.yml directly
-yq -r "default_archetype" "editorial")
+# Read default archetype from settings via MCP
+DEFAULT_ARCHETYPE=$(haiku_settings_get { field: "default_archetype" } || echo "editorial")
 ```
 
 Generate the blueprint and seed knowledge using the selected archetype with its default parameters. Skip to Step 4.

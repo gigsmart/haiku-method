@@ -515,10 +515,10 @@ Using the deployment surface analysis from Subagent 5, identify operational conc
 ### Check for Operational Surface
 
 ```bash
-# Read stack layers from settings (no shell lib needed)
-STACK_COMPUTE=$(yq -r '.stack.compute // ""' .haiku/settings.yml 2>/dev/null || echo "")
-STACK_MONITORING=$(yq -r '.stack.monitoring // ""' .haiku/settings.yml 2>/dev/null || echo "")
-STACK_OPS=$(yq -r '.stack.operations // ""' .haiku/settings.yml 2>/dev/null || echo "")
+# Read stack layers from settings via MCP
+STACK_COMPUTE=$(haiku_settings_get { field: "stack.compute" } || echo "")
+STACK_MONITORING=$(haiku_settings_get { field: "stack.monitoring" } || echo "")
+STACK_OPS=$(haiku_settings_get { field: "stack.operations" } || echo "")
 ```
 
 If no operational surface is detected (no scheduled tasks, no monitoring, no deploy scripts, and all stack layers are empty), inform the user:
@@ -812,13 +812,14 @@ If operations were approved in Phase 5, write each spec to `$INTENT_DIR/operatio
 
 ```bash
 for op in "${OPERATIONS[@]}"; do
-  OP_NAME=$(echo "$op" | jq -r '.name')
-  OP_TYPE=$(echo "$op" | jq -r '.type')
-  OP_OWNER=$(echo "$op" | jq -r '.owner')
-  OP_RUNTIME=$(echo "$op" | jq -r '.runtime')
-  OP_SCHEDULE=$(echo "$op" | jq -r '.schedule')
-  OP_TRIGGER=$(echo "$op" | jq -r '.trigger')
-  OP_FREQUENCY=$(echo "$op" | jq -r '.frequency')
+  # Parse operation fields from the structured operation data
+  OP_NAME=$(parse name from $op)
+  OP_TYPE=$(parse type from $op)
+  OP_OWNER=$(parse owner from $op)
+  OP_RUNTIME=$(parse runtime from $op)
+  OP_SCHEDULE=$(parse schedule from $op)
+  OP_TRIGGER=$(parse trigger from $op)
+  OP_FREQUENCY=$(parse frequency from $op)
   OP_FILE="$INTENT_DIR/operations/${OP_NAME}.md"
 
   # Write the spec file with frontmatter and body

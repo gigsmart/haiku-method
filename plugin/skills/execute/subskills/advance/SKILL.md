@@ -103,7 +103,7 @@ case "$CURRENT_HAT" in
     # it means criteria were evaluated. The structured completion marker is checked here.
     REVIEW_RESULT=$(cat "$INTENT_DIR/review-result.json" 2>/dev/null || echo "")
     if [ -n "$REVIEW_RESULT" ]; then
-      ALL_PASS=$(echo "$REVIEW_RESULT" | jq -r '.allPass // "false"' 2>/dev/null || echo "false")
+      ALL_PASS=$(parse the allPass field from $REVIEW_RESULT JSON — use Read tool to read review-result.json and parse)
       if [ "$ALL_PASS" != "true" ]; then
         echo "## HARD GATE: CRITERIA_MET"
         echo ""
@@ -121,8 +121,8 @@ Then determine the next hat:
 ```javascript
 // Resolve hat sequence for this unit from its stage (determined by discipline)
 const currentUnit = state.currentUnit;
-// Get hat sequence from the unit's stage via # Read hat sequence from STAGE.md frontmatter: yq --front-matter=extract -r '.hats[]'
-# hku_get_hat_sequence
+// Get hat sequence from the unit's stage via haiku_studio_stage_get { studio, stage }
+// Parse the hats array from the returned JSON
 const unitHats = getHatSequenceForUnit(currentUnit) || ["planner", "builder", "reviewer"];
 const currentIndex = unitHats.indexOf(state.hat);
 const nextIndex = currentIndex + 1;
@@ -209,18 +209,17 @@ REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
 # Config is now read via MCP tools: haiku_intent_get, haiku_knowledge_read
 INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
 CONFIG=$(get_haiku_config "$INTENT_DIR")
-AUTO_MERGE=$(echo "$CONFIG" | jq -r '.auto_merge // "true"')
-AUTO_SQUASH=$(echo "$CONFIG" | jq -r '.auto_squash // "false"')
-DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
+AUTO_MERGE=$(haiku_settings_get { field: "auto_merge" } || echo "true")
+AUTO_SQUASH=$(haiku_settings_get { field: "auto_squash" } || echo "false")
+DEFAULT_BRANCH=$(haiku_settings_get { field: "default_branch" } || git symbolic-ref refs/remotes/origin/HEAD | sed 's@.*/@@')
 
 # Resolve effective change strategy: per-unit override takes priority over intent-level
 # DAG operations now use MCP tools: haiku_unit_list, haiku_unit_get, haiku_unit_set
 UNIT_CHANGE_STRATEGY=""
 if [ -n "$CURRENT_UNIT" ] && [ -f "$INTENT_DIR/${CURRENT_UNIT}.md" ]; then
-  UNIT_CHANGE_STRATEGY=$(# Read change_strategy from unit frontmatter via MCP or yq
-haiku_unit_get { intent, stage, unit, field: "change_strategy" } "$INTENT_DIR/${CURRENT_UNIT}.md")
+  UNIT_CHANGE_STRATEGY=$(haiku_unit_get { intent, stage, unit, field: "change_strategy" })
 fi
-CHANGE_STRATEGY="${UNIT_CHANGE_STRATEGY:-$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')}"
+CHANGE_STRATEGY="${UNIT_CHANGE_STRATEGY:-$(haiku_settings_get { field: "change_strategy" } || echo "unit")}"
 
 UNIT_SLUG="${CURRENT_UNIT#unit-}"
 UNIT_BRANCH="haiku/${INTENT_SLUG}/${UNIT_SLUG}"
@@ -334,9 +333,8 @@ if (ALL_COMPLETE) {
 ALL_UNIT_STRATEGY=true
 for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
-  UNIT_CS=$(# Read change_strategy from unit frontmatter via MCP or yq
-haiku_unit_get { intent, stage, unit, field: "change_strategy" } "$unit_file")
-  EFFECTIVE_CS="${UNIT_CS:-$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')}"
+  UNIT_CS=$(haiku_unit_get { intent, stage, unit, field: "change_strategy" })
+  EFFECTIVE_CS="${UNIT_CS:-$(haiku_settings_get { field: "change_strategy" } || echo "unit")}"
   [ "$EFFECTIVE_CS" != "unit" ] && { ALL_UNIT_STRATEGY=false; break; }
 done
 UNIT_COUNT=$(ls -1 "$INTENT_DIR"/stages/*/units/unit-*.md 2>/dev/null | wc -l)
@@ -518,16 +516,14 @@ haiku_unit_set "$UNIT_FILE" "pending"
     design) UNIT_STAGE="design" ;;
     infrastructure|observability) UNIT_STAGE="operations" ;;
   esac
-  FIRST_HAT=$(# Read hat sequence from STAGE.md frontmatter: yq --front-matter=extract -r '.hats[]'
-# hku_get_hat_sequence "$UNIT_STAGE" "$STUDIO" | awk '{print $1}')
+  FIRST_HAT=$(haiku_studio_stage_get { studio: "$STUDIO", stage: "$UNIT_STAGE" } | parse hats[0])
   [ -z "$FIRST_HAT" ] && FIRST_HAT="planner"
   haiku_unit_advance_hat { intent: "$INTENT_SLUG", stage: "$UNIT_STAGE", unit: "$(basename "$UNIT_FILE" .md)", hat: "${FIRST_HAT}" }
   haiku_unit_set { intent: "$INTENT_SLUG", stage: "$UNIT_STAGE", unit: "$(basename "$UNIT_FILE" .md)", field: "retries", value: "0" }
 done
 
 # Reset integration state
-GLOBAL_FIRST_HAT=$(# Read hat sequence from STAGE.md frontmatter: yq --front-matter=extract -r '.hats[]'
-# hku_get_hat_sequence "$ACTIVE_STAGE" "$STUDIO" | awk '{print $1}')
+GLOBAL_FIRST_HAT=$(haiku_studio_stage_get { studio: "$STUDIO", stage: "$ACTIVE_STAGE" } | parse hats[0])
 [ -z "$GLOBAL_FIRST_HAT" ] && GLOBAL_FIRST_HAT="planner"
 haiku_stage_set { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", field: "integrator_complete", value: "false" }
 
@@ -601,7 +597,7 @@ The intent branch is ready to merge:
 # Config is now read via MCP tools: haiku_intent_get, haiku_knowledge_read
 INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
 CONFIG=$(get_haiku_config "$INTENT_DIR")
-DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
+DEFAULT_BRANCH=$(haiku_settings_get { field: "default_branch" } || git symbolic-ref refs/remotes/origin/HEAD | sed 's@.*/@@')
 ```
 
 ```
@@ -764,13 +760,12 @@ The review is delegated to the `/haiku:review` skill, which runs specialized age
 # Config is now read via MCP tools: haiku_intent_get, haiku_knowledge_read
 # DAG operations now use MCP tools: haiku_unit_list, haiku_unit_get, haiku_unit_set
 CONFIG=$(get_haiku_config "$INTENT_DIR")
-CHANGE_STRATEGY=$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')
+CHANGE_STRATEGY=$(haiku_settings_get { field: "change_strategy" } || echo "unit")
 
 NEEDS_DELIVERY_REVIEW=false
 for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
-  UNIT_CS=$(# Read change_strategy from unit frontmatter via MCP or yq
-haiku_unit_get { intent, stage, unit, field: "change_strategy" } "$unit_file")
+  UNIT_CS=$(haiku_unit_get { intent, stage, unit, field: "change_strategy" })
   EFFECTIVE_CS="${UNIT_CS:-$CHANGE_STRATEGY}"
   [ "$EFFECTIVE_CS" != "unit" ] && { NEEDS_DELIVERY_REVIEW=true; break; }
 done
@@ -816,13 +811,12 @@ The review skill handles the full lifecycle:
 # Config is now read via MCP tools: haiku_intent_get, haiku_knowledge_read
 # DAG operations now use MCP tools: haiku_unit_list, haiku_unit_get, haiku_unit_set
 CONFIG=$(get_haiku_config "$INTENT_DIR")
-CHANGE_STRATEGY=$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')
+CHANGE_STRATEGY=$(haiku_settings_get { field: "change_strategy" } || echo "unit")
 
 ALL_UNIT_STRATEGY=true
 for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
-  UNIT_CS=$(# Read change_strategy from unit frontmatter via MCP or yq
-haiku_unit_get { intent, stage, unit, field: "change_strategy" } "$unit_file")
+  UNIT_CS=$(haiku_unit_get { intent, stage, unit, field: "change_strategy" })
   EFFECTIVE_CS="${UNIT_CS:-$CHANGE_STRATEGY}"
   [ "$EFFECTIVE_CS" != "unit" ] && { ALL_UNIT_STRATEGY=false; break; }
 done
@@ -879,7 +873,7 @@ git push -u origin "$INTENT_BRANCH" 2>/dev/null || true
 2. Collect ticket references from all units:
 
 ```bash
-DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
+DEFAULT_BRANCH=$(haiku_settings_get { field: "default_branch" } || git symbolic-ref refs/remotes/origin/HEAD | sed 's@.*/@@')
 
 TICKET_REFS=""
 for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do

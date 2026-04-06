@@ -67,19 +67,9 @@ If no argument provided, ask what the work is:
 List available studios and ask the user to select which ones this work spans:
 
 ```bash
-# List all available studios by reading STUDIO.md files directly
-for studio_dir in "$CLAUDE_PLUGIN_ROOT/studios"/*/; do
-  name=$(basename "$studio_dir")
-  desc=$(yq --front-matter=extract -r '.description // ""' "$studio_dir/STUDIO.md" 2>/dev/null)
-  echo "- **$name**: $desc"
-done
-# Also check project-defined studios
-for studio_dir in .haiku/studios/*/; do
-  [ -d "$studio_dir" ] || continue
-  name=$(basename "$studio_dir")
-  desc=$(yq --front-matter=extract -r '.description // ""' "$studio_dir/STUDIO.md" 2>/dev/null)
-  echo "- **$name**: $desc"
-done
+# List all available studios via MCP (includes both built-in and project-level)
+haiku_studio_list
+# Returns JSON array with name, description, stages, category for each studio
 ```
 
 Present as a multi-select `AskUserQuestion`. Require at least 2 selections.

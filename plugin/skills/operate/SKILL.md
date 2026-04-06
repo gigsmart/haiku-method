@@ -273,10 +273,10 @@ For `owner: agent` operations:
 
 1. **Determine the runtime:**
    ```bash
-   RUNTIME=$(sed -n '/^---$/,/^---$/{ /^runtime:/s/^runtime: *//p }' "$OP_FILE")
+   # Read runtime from op file frontmatter, fall back to settings
+   RUNTIME=$(Read "$OP_FILE" and parse runtime from frontmatter)
    if [ -z "$RUNTIME" ]; then
-     RUNTIME=$(# Read operations runtime from settings: yq -r '.operations_runtime // "shell"' .haiku/settings.yml
-yq -r '.operations_runtime // "shell"' .haiku/settings.yml 2>/dev/null || echo "shell")
+     RUNTIME=$(haiku_settings_get { field: "operations_runtime" } || echo "shell")
    fi
    ```
 
@@ -320,17 +320,9 @@ yq -r '.operations_runtime // "shell"' .haiku/settings.yml 2>/dev/null || echo "
    else                               OP_STATUS="failed"
    fi
 
-   STATUS_JSON=$(cat "$INTENT_DIR/state/operation-status.json" 2>/dev/null || echo '{"operations":{}}')
-   UPDATED=$(echo "$STATUS_JSON" | jq \
-     --arg name "$OPERATION_NAME" \
-     --arg time "$TIMESTAMP" \
-     --arg status "$OP_STATUS" \
-     --argjson exit "$EXIT_CODE" \
-     --arg output "$OUTPUT" \
-     '.operations[$name] = ((.operations[$name] // {}) + {
-       "last_run": $time,
-       "last_presented": null,
-       "status": $status,
+   STATUS_JSON=$(Read "$INTENT_DIR/state/operation-status.json" || echo '{"operations":{}}')
+   # Update the operation status in the JSON — set operations[$OPERATION_NAME] fields:
+   #   last_run: $TIMESTAMP, last_presented: null, status: $OP_STATUS,
        "last_exit_code": $exit,
        "last_output": ($output | .[0:2000])
      }) | .operations[$name].deployed //= false | .operations[$name].deploy_target //= null')
@@ -393,12 +385,9 @@ For `owner: human` operations:
 3. **Track presentation** in status:
    ```bash
    TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-   STATUS_JSON=$(cat "$INTENT_DIR/state/operation-status.json" 2>/dev/null || echo '{"operations":{}}')
-   UPDATED=$(echo "$STATUS_JSON" | jq \
-     --arg name "$OPERATION_NAME" \
-     --arg time "$TIMESTAMP" \
-     '.operations[$name] = ((.operations[$name] // {}) | .last_presented = $time | .status = (.status // "pending"))')
-   echo "$UPDATED" > "$INTENT_DIR/state/operation-status.json"
+   STATUS_JSON=$(Read "$INTENT_DIR/state/operation-status.json" || echo '{"operations":{}}')
+   # Update operations[$OPERATION_NAME].last_presented = $TIMESTAMP, ensure status defaults to "pending"
+   # Write updated JSON back to operation-status.json
    ```
 
 **Done.** Stop here for human operation mode. Do NOT mark as completed.
@@ -409,10 +398,10 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
 
 1. **Load stack configuration:**
    ```bash
-   # Read stack layers from settings (no shell lib needed)
-   COMPUTE_LAYER=$(yq -r '.stack.compute // ""' .haiku/settings.yml 2>/dev/null || echo "")
-   PIPELINE_LAYER=$(yq -r '.stack.pipeline // ""' .haiku/settings.yml 2>/dev/null || echo "")
-   OPS_LAYER=$(yq -r '.stack.operations // ""' .haiku/settings.yml 2>/dev/null || echo "")
+   # Read stack layers from settings via MCP
+   COMPUTE_LAYER=$(haiku_settings_get { field: "stack.compute" } || echo "")
+   PIPELINE_LAYER=$(haiku_settings_get { field: "stack.pipeline" } || echo "")
+   OPS_LAYER=$(haiku_settings_get { field: "stack.operations" } || echo "")
    ```
 
 2. **Read all agent-owned operations** from `.haiku/intents/{intent}/operations/`:
@@ -580,12 +569,9 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
 5. **Update status** for each deployed operation (using the loop iteration variable `$OP_NAME`, not the ad-hoc `$OPERATION_NAME`):
    ```bash
    OP_NAME=$(basename "$op_file" .md)
-   STATUS_JSON=$(cat "$INTENT_DIR/state/operation-status.json" 2>/dev/null || echo '{"operations":{}}')
-   UPDATED=$(echo "$STATUS_JSON" | jq \
-     --arg name "$OP_NAME" \
-     --arg target "$TARGET" \
-     '.operations[$name] = ((.operations[$name] // {}) + {"deployed": true, "deploy_target": $target})')
-   echo "$UPDATED" > "$INTENT_DIR/state/operation-status.json"
+   STATUS_JSON=$(Read "$INTENT_DIR/state/operation-status.json" || echo '{"operations":{}}')
+   # Update operations[$OP_NAME]: set deployed=true, deploy_target=$TARGET
+   # Write updated JSON back to operation-status.json
    ```
 
 6. **Report results:**
@@ -746,7 +732,7 @@ When invoked as `/haiku:operate {intent} --teardown`:
 2. **Load status** to find all deployed operations:
    ```bash
    STATUS_JSON=$(cat "$INTENT_DIR/state/operation-status.json" 2>/dev/null || echo '{"operations":{}}')
-   DEPLOYED_OPS=$(echo "$STATUS_JSON" | jq -r '.operations | to_entries[] | select(.value.deployed == true) | .key')
+   DEPLOYED_OPS=$(parse STATUS_JSON to find all operation keys where deployed == true)
    ```
 
 3. **For each deployed operation**, display removal instructions based on `deploy_target`:
@@ -782,11 +768,7 @@ When invoked as `/haiku:operate {intent} --teardown`:
 5. **Update status** to `torn-down` for each deployed operation:
    ```bash
    for OP_NAME in $DEPLOYED_OPS; do
-     STATUS_JSON=$(echo "$STATUS_JSON" | jq \
-       --arg name "$OP_NAME" \
-       '.operations[$name].status = "torn-down" |
-        .operations[$name].deployed = false |
-        .operations[$name].deploy_target = null')
+     # Update operations[$OP_NAME]: set status="torn-down", deployed=false, deploy_target=null
    done
    echo "$STATUS_JSON" > "$INTENT_DIR/state/operation-status.json"
    ```

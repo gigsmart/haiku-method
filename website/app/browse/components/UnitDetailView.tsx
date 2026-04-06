@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-import type { BrowseProvider, HaikuUnit } from "@/lib/browse/types"
+import type { BrowseProvider, HaikuAsset, HaikuUnit } from "@/lib/browse/types"
 import { formatDate, formatDuration } from "@/lib/browse/types"
 import { resolveLinks } from "@/lib/browse/resolve-links"
+import { AuthenticatedMedia } from "./AuthenticatedMedia"
 
 function titleCase(s: string): string {
 	return s
@@ -27,10 +28,12 @@ interface Props {
 	stageName: string
 	intentSlug: string
 	provider: BrowseProvider
+	assets?: HaikuAsset[]
+	host?: string
 	onBack: () => void
 }
 
-export function UnitDetailView({ unit, stageName, provider, onBack }: Props) {
+export function UnitDetailView({ unit, stageName, intentSlug, provider, assets = [], host, onBack }: Props) {
 	const checkedCount = unit.criteria.filter((c) => c.checked).length
 	const totalCriteria = unit.criteria.length
 	const progress = totalCriteria > 0 ? (checkedCount / totalCriteria) * 100 : 0
@@ -167,6 +170,17 @@ export function UnitDetailView({ unit, stageName, provider, onBack }: Props) {
 				</section>
 			)}
 
+			{/* Referenced Artifacts (from unit refs) */}
+			{unit.refs.length > 0 && (
+				<RefsSection
+					refs={unit.refs}
+					intentSlug={intentSlug}
+					provider={provider}
+					assets={assets}
+					host={host}
+				/>
+			)}
+
 			{/* Provider Links / References */}
 			{providerLinks.length > 0 && (
 				<section className="mb-8">
@@ -232,6 +246,147 @@ export function UnitDetailView({ unit, stageName, provider, onBack }: Props) {
 					</pre>
 				</details>
 			)}
+		</div>
+	)
+}
+
+const TEXT_EXTENSIONS = new Set(["md", "json", "yaml", "yml", "txt", "toml", "csv", "xml", "html"])
+
+function isTextFile(path: string): boolean {
+	const ext = path.split(".").pop()?.toLowerCase() || ""
+	return TEXT_EXTENSIONS.has(ext)
+}
+
+function RefsSection({ refs, intentSlug, provider, assets, host }: {
+	refs: string[]
+	intentSlug: string
+	provider: BrowseProvider
+	assets: HaikuAsset[]
+	host?: string
+}) {
+	// Build a lookup from relative path (relative to intent dir) to asset
+	const assetByRelPath = new Map<string, HaikuAsset>()
+	const intentPrefix = `.haiku/intents/${intentSlug}/`
+	for (const asset of assets) {
+		if (asset.path.startsWith(intentPrefix)) {
+			assetByRelPath.set(asset.path.slice(intentPrefix.length), asset)
+		}
+	}
+
+	return (
+		<section className="mb-8">
+			<h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-400">
+				Referenced Artifacts
+			</h2>
+			<div className="space-y-2">
+				{refs.map((ref) => {
+					const matchedAsset = assetByRelPath.get(ref)
+					if (matchedAsset && host) {
+						return (
+							<AssetRefItem key={ref} ref_={ref} asset={matchedAsset} host={host} />
+						)
+					}
+					if (isTextFile(ref)) {
+						return (
+							<TextRefItem key={ref} ref_={ref} intentSlug={intentSlug} provider={provider} />
+						)
+					}
+					return (
+						<GenericRefItem key={ref} ref_={ref} />
+					)
+				})}
+			</div>
+		</section>
+	)
+}
+
+function AssetRefItem({ ref_, asset, host }: { ref_: string; asset: HaikuAsset; host: string }) {
+	const fileName = ref_.split("/").pop() || ref_
+	const dirPath = ref_.includes("/") ? ref_.substring(0, ref_.lastIndexOf("/")) : ""
+
+	return (
+		<div className="flex items-center gap-3 rounded-lg border border-stone-200 p-3 dark:border-stone-700">
+			<div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded">
+				<AuthenticatedMedia
+					rawUrl={asset.rawUrl}
+					name={asset.name}
+					host={host}
+					className="rounded"
+				/>
+			</div>
+			<div className="min-w-0">
+				<p className="truncate text-sm font-medium text-stone-700 dark:text-stone-300">{fileName}</p>
+				{dirPath && (
+					<p className="truncate text-xs text-stone-400">{dirPath}</p>
+				)}
+			</div>
+		</div>
+	)
+}
+
+function TextRefItem({ ref_, intentSlug, provider }: { ref_: string; intentSlug: string; provider: BrowseProvider }) {
+	const [content, setContent] = useState<string | null>(null)
+	const [expanded, setExpanded] = useState(false)
+
+	const fileName = ref_.split("/").pop() || ref_
+	const dirPath = ref_.includes("/") ? ref_.substring(0, ref_.lastIndexOf("/")) : ""
+
+	const handleExpand = async () => {
+		if (content === null) {
+			const raw = await provider.readFile(`.haiku/intents/${intentSlug}/${ref_}`)
+			setContent(raw || "(empty)")
+		}
+		setExpanded(!expanded)
+	}
+
+	const isMarkdown = ref_.endsWith(".md")
+
+	return (
+		<div className="rounded-lg border border-stone-200 dark:border-stone-700">
+			<button
+				onClick={handleExpand}
+				className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-stone-50 dark:hover:bg-stone-800"
+			>
+				<div className="min-w-0">
+					<span className="font-mono text-stone-600 dark:text-stone-400">{fileName}</span>
+					{dirPath && (
+						<span className="ml-2 text-xs text-stone-400">{dirPath}</span>
+					)}
+				</div>
+				<svg className={`ml-2 h-4 w-4 flex-shrink-0 text-stone-400 transition ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+				</svg>
+			</button>
+			{expanded && content && (
+				<div className="border-t border-stone-100 px-4 py-4 dark:border-stone-800">
+					{isMarkdown ? (
+						<div className="prose prose-sm prose-stone dark:prose-invert max-w-none">
+							<ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+						</div>
+					) : (
+						<pre className="overflow-x-auto text-xs text-stone-600 dark:text-stone-400">{content}</pre>
+					)}
+				</div>
+			)}
+		</div>
+	)
+}
+
+function GenericRefItem({ ref_ }: { ref_: string }) {
+	const fileName = ref_.split("/").pop() || ref_
+	const dirPath = ref_.includes("/") ? ref_.substring(0, ref_.lastIndexOf("/")) : ""
+
+	return (
+		<div className="flex items-center gap-3 rounded-lg border border-stone-200 px-4 py-3 dark:border-stone-700">
+			<svg className="h-5 w-5 flex-shrink-0 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+				<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+			</svg>
+			<div className="min-w-0">
+				<p className="truncate text-sm font-mono text-stone-600 dark:text-stone-400">{fileName}</p>
+				{dirPath && (
+					<p className="truncate text-xs text-stone-400">{dirPath}</p>
+				)}
+			</div>
 		</div>
 	)
 }

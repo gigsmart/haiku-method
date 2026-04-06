@@ -185,8 +185,8 @@ HAT_FILE=".haiku/studios/software/stages/development/hats/builder.md"
 [ ! -f "$HAT_FILE" ] && HAT_FILE="$CLAUDE_PLUGIN_ROOT/studios/software/stages/development/hats/builder.md"
 instructions=$(cat "$HAT_FILE" 2>/dev/null || echo "")
 
-# Read hat sequence from STAGE.md frontmatter
-hat_sequence=$(yq --front-matter=extract -r '.hats | join(" ")' "$CLAUDE_PLUGIN_ROOT/studios/software/stages/development/STAGE.md" 2>/dev/null)
+# Read hat sequence from stage definition via MCP
+hat_sequence=$(haiku_studio_stage_get { studio: "software", stage: "development" } | parse hats and join with " ")
 # → "planner builder reviewer"
 ```
 

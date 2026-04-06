@@ -235,8 +235,8 @@ Update state:
 # Re-queue affected units and reset hat tracking via MCP tools
 ACTIVE_STAGE=$(haiku_intent_get { slug, field: "active_stage" } 2>/dev/null || echo "development")
 STUDIO=$(haiku_intent_get { slug, field: "studio" } 2>/dev/null || echo "software")
-# Read first hat from the stage's STAGE.md frontmatter hats: list
-FIRST_HAT=$(yq --front-matter=extract -r '.hats[0] // "planner"' "$CLAUDE_PLUGIN_ROOT/studios/$STUDIO/stages/$ACTIVE_STAGE/STAGE.md" 2>/dev/null || echo "planner")
+# Read first hat from the stage definition via MCP
+FIRST_HAT=$(haiku_studio_stage_get { studio: "$STUDIO", stage: "$ACTIVE_STAGE" } | parse hats[0] || echo "planner")
 
 for unit_file in $AFFECTED_UNITS; do
   UNIT_NAME=$(basename "$unit_file" .md)
@@ -259,8 +259,8 @@ haiku_unit_set { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$UNIT_NA
 # Reset hat tracking in unit frontmatter
 ACTIVE_STAGE=$(haiku_intent_get { slug, field: "active_stage" } 2>/dev/null || echo "development")
 STUDIO=$(haiku_intent_get { slug, field: "studio" } 2>/dev/null || echo "software")
-# Read first hat from the stage's STAGE.md frontmatter hats: list
-FIRST_HAT=$(yq --front-matter=extract -r '.hats[0] // "planner"' "$CLAUDE_PLUGIN_ROOT/studios/$STUDIO/stages/$ACTIVE_STAGE/STAGE.md" 2>/dev/null || echo "planner")
+# Read first hat from the stage definition via MCP
+FIRST_HAT=$(haiku_studio_stage_get { studio: "$STUDIO", stage: "$ACTIVE_STAGE" } | parse hats[0] || echo "planner")
 haiku_unit_advance_hat { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$UNIT_NAME", hat: "${FIRST_HAT}" }
 
 git add "$INTENT_DIR/"

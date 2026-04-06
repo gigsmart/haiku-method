@@ -186,10 +186,9 @@ Set inputs: `INTENT_SLUG`, `AUTONOMOUS_MODE`, `UNITS`.
 Read the default announcements from project settings — **do NOT ask the user**.
 
 ```bash
-# Config is now read via MCP tools or settings file directly
-# Read default announcements from settings (no shell lib needed)
-DEFAULT_ANNOUNCEMENTS=$(yq -r '.default_announcements // "null"' .haiku/settings.yml 2>/dev/null || echo "null")
-if [ -z "$DEFAULT_ANNOUNCEMENTS" ] || [ "$DEFAULT_ANNOUNCEMENTS" = "null" ]; then
+# Read default announcements from settings via MCP
+DEFAULT_ANNOUNCEMENTS=$(haiku_settings_get { field: "default_announcements" } || echo "")
+if [ -z "$DEFAULT_ANNOUNCEMENTS" ]; then
   DEFAULT_ANNOUNCEMENTS='["changelog"]'
 fi
 ```

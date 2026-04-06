@@ -189,7 +189,7 @@ If no hat name provided, list available hats from stages:
 for stage_file in "${CLAUDE_PLUGIN_ROOT}/studios/software/stages/"*/STAGE.md; do
   [ -f "$stage_file" ] || continue
   stage=$(basename "$(dirname "$stage_file")")
-  hats=$(yq --front-matter=extract -r '.hats | join(" ")' "$stage_file" 2>/dev/null)
+  hats=$(haiku_studio_stage_get { studio: "software", stage: "$stage" } | parse hats and join with " ")
   echo "$stage: $hats"
 done
 ```

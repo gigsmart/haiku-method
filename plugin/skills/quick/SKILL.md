@@ -151,8 +151,8 @@ The stage state is initialized for hook integration.
 Resolve the hat sequence from the stage definition. For `development`, this is `["planner", "builder", "reviewer"]`.
 
 ```bash
-# Read hat sequence from the stage's STAGE.md frontmatter (no shell lib needed)
-STAGE_HATS=$(yq --front-matter=extract -r '.hats[]' "$CLAUDE_PLUGIN_ROOT/studios/software/stages/$STAGE_NAME/STAGE.md" 2>/dev/null)
+# Read hat sequence from stage definition via MCP
+STAGE_HATS=$(haiku_studio_stage_get { studio: "software", stage: "$STAGE_NAME" } | parse hats array)
 ```
 
 Execute each hat in order by spawning a subagent.

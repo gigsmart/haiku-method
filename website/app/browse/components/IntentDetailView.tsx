@@ -188,6 +188,8 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 				stageName={selectedUnit.stage}
 				intentSlug={intent.slug}
 				provider={provider}
+				assets={intent.assets}
+				host={host || undefined}
 				onBack={handleBackFromUnit}
 			/>
 		)

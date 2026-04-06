@@ -368,9 +368,9 @@ When no studio is configured: `stage: ""`.
 ### Studio Resolution
 
 ```bash
-# Read stages from the studio STUDIO.md frontmatter (no shell lib needed)
-STUDIO=$(yq -r '.studio // ""' .haiku/settings.yml 2>/dev/null || echo "")
-STAGES=$(yq --front-matter=extract -r '.stages | join(",")' "$CLAUDE_PLUGIN_ROOT/studios/$STUDIO/STUDIO.md" 2>/dev/null || echo "")
+# Read studio and stages via MCP tools
+STUDIO=$(haiku_settings_get { field: "studio" } || echo "")
+STAGES=$(haiku_studio_get { studio: "$STUDIO" } | parse stages and join with ",")
 ```
 
 This reads `studio:` from settings.yml, then reads the `stages:` list from the STUDIO.md frontmatter. Returns `""` when no studio is configured.

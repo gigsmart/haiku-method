@@ -88,8 +88,8 @@ fi
 ### Load review agent config
 
 ```bash
-# Read review agent configuration from settings
-REVIEW_AGENTS=$(yq -r '.review_agents // "{}"' .haiku/settings.yml 2>/dev/null || echo "{}")
+# Read review agent configuration from settings via MCP
+REVIEW_AGENTS=$(haiku_settings_get { field: "review_agents" } || echo "{}")
 # Defaults: security=true, performance=true, architecture=true, correctness=true, test_quality=true
 # Optional: data_integrity, schema_drift, accessibility, api_contract, design_system
 ```
