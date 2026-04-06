@@ -1,6 +1,5 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
 import type { BrowseProvider, HaikuIntent, HaikuIntentDetail } from "@/lib/browse/types"
 import { formatDuration } from "@/lib/browse/types"
 
@@ -32,75 +31,33 @@ interface KanbanProps {
 // ── Portfolio Kanban: intents across stage columns ─────────────────────────
 
 export function PortfolioKanban({ provider, intents, onSelectIntent }: KanbanProps) {
-	// Collect all unique stages across all intents
-	const [intentDetails, setIntentDetails] = useState<Map<string, HaikuIntentDetail>>(new Map())
-	const [loading, setLoading] = useState(true)
-
-	useEffect(() => {
-		async function loadDetails() {
-			const details = new Map<string, HaikuIntentDetail>()
-			for (const intent of intents) {
-				const detail = await provider.getIntent(intent.slug)
-				if (detail) details.set(intent.slug, detail)
-			}
-			setIntentDetails(details)
-			setLoading(false)
-		}
-		loadDetails()
-	}, [provider, intents])
-
-	if (loading) {
-		return <div className="py-12 text-center text-stone-500">Loading board...</div>
-	}
-
-	// Collect all studio stages from intent frontmatter (preserves pipeline order)
+	// Build columns from lightweight intent data — no getIntent() calls needed
 	const allStagesOrdered: string[] = []
 	const seenStages = new Set<string>()
 
 	for (const intent of intents) {
-		// Use studioStages from frontmatter (the full stage list)
 		const stages = intent.studioStages.length > 0
 			? intent.studioStages
 			: intent.composite
 				? intent.composite.flatMap(c => c.stages.map(s => `${c.studio}:${s}`))
 				: []
-
-		// Fallback: use loaded intent detail stages
-		if (stages.length === 0) {
-			const detail = intentDetails.get(intent.slug)
-			if (detail) {
-				for (const s of detail.stages) {
-					if (!seenStages.has(s.name)) {
-						seenStages.add(s.name)
-						allStagesOrdered.push(s.name)
-					}
-				}
-			}
-		} else {
-			for (const s of stages) {
-				if (!seenStages.has(s)) {
-					seenStages.add(s)
-					allStagesOrdered.push(s)
-				}
+		for (const s of stages) {
+			if (!seenStages.has(s)) {
+				seenStages.add(s)
+				allStagesOrdered.push(s)
 			}
 		}
 	}
 
-	// Group intents by their active stage
 	const stageGroups = new Map<string, HaikuIntent[]>()
-
-	// Initialize all columns: Backlog, all studio stages, Completed
 	stageGroups.set("Backlog", [])
-	for (const stage of allStagesOrdered) {
-		stageGroups.set(stage, [])
-	}
+	for (const stage of allStagesOrdered) stageGroups.set(stage, [])
 	stageGroups.set("Completed", [])
 
 	for (const intent of intents) {
 		if (intent.status === "completed") {
 			stageGroups.get("Completed")!.push(intent)
 		} else if (intent.composite) {
-			// Composite: show in the first active studio:stage
 			const compositeState = (intent.raw.composite_state || {}) as Record<string, string>
 			for (const entry of intent.composite) {
 				const current = compositeState[entry.studio] || entry.stages[0]
@@ -118,7 +75,6 @@ export function PortfolioKanban({ provider, intents, onSelectIntent }: KanbanPro
 		}
 	}
 
-	// Order: Backlog, stages in pipeline order, then Completed
 	const orderedKeys = ["Backlog", ...allStagesOrdered, "Completed"]
 
 	return (
@@ -142,53 +98,41 @@ export function PortfolioKanban({ provider, intents, onSelectIntent }: KanbanPro
 								</div>
 							</div>
 							<div className="space-y-2 p-3" style={{ minHeight: "100px" }}>
-								{items.map((intent) => {
-									const detail = intentDetails.get(intent.slug)
-									const activeStageDetail = detail?.stages.find(s => s.name === intent.activeStage)
-									const totalUnits = detail?.stages.reduce((acc, s) => acc + s.units.length, 0) || 0
-									const completedUnits = detail?.stages.reduce((acc, s) => acc + s.units.filter(u => u.status === "completed").length, 0) || 0
-
-									return (
-										<button
-											key={intent.slug}
-											onClick={() => onSelectIntent?.(intent.slug)}
-											className={`w-full rounded-lg border p-3 text-left transition hover:shadow-sm ${statusColors[intent.status] || statusColors.pending}`}
-										>
-											<div className="text-sm font-semibold text-stone-900 dark:text-stone-100 line-clamp-2">
-												{intent.title}
-											</div>
-											<div className="mt-1 flex items-center gap-2 flex-wrap">
-												<span className="text-xs text-stone-500">{titleCase(intent.studio)}</span>
-												{intent.composite && (
-													<span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
-														composite
-													</span>
-												)}
-												{activeStageDetail?.phase && (
-													<span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${phaseColors[activeStageDetail.phase] || ""}`}>
-														{activeStageDetail.phase}
-													</span>
-												)}
-											</div>
-											{totalUnits > 0 && (
-												<div className="mt-2">
-													<div className="flex items-center justify-between text-xs text-stone-400">
-														<span>{completedUnits}/{totalUnits} units</span>
-														{intent.startedAt && (
-															<span>{formatDuration(intent.startedAt, intent.completedAt)}</span>
-														)}
-													</div>
-													<div className="mt-1 h-1 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700">
-														<div
-															className="h-full rounded-full bg-teal-500"
-															style={{ width: `${totalUnits > 0 ? (completedUnits / totalUnits) * 100 : 0}%` }}
-														/>
-													</div>
-												</div>
+								{items.map((intent) => (
+									<button
+										key={intent.slug}
+										onClick={() => onSelectIntent?.(intent.slug)}
+										className={`w-full rounded-lg border p-3 text-left transition hover:shadow-sm ${statusColors[intent.status] || statusColors.pending}`}
+									>
+										<div className="text-sm font-semibold text-stone-900 dark:text-stone-100 line-clamp-2">
+											{intent.title}
+										</div>
+										<div className="mt-1 flex items-center gap-2 flex-wrap">
+											<span className="text-xs text-stone-500">{titleCase(intent.studio)}</span>
+											{intent.composite && (
+												<span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+													composite
+												</span>
 											)}
-										</button>
-									)
-								})}
+										</div>
+										{intent.stagesTotal > 0 && (
+											<div className="mt-2">
+												<div className="flex items-center justify-between text-xs text-stone-400">
+													<span>{Math.max(0, intent.stagesComplete)}/{intent.stagesTotal} stages</span>
+													{intent.startedAt && (
+														<span>{formatDuration(intent.startedAt, intent.completedAt)}</span>
+													)}
+												</div>
+												<div className="mt-1 h-1 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700">
+													<div
+														className="h-full rounded-full bg-teal-500"
+														style={{ width: `${Math.max(0, (intent.stagesComplete / intent.stagesTotal) * 100)}%` }}
+													/>
+												</div>
+											</div>
+										)}
+									</button>
+								))}
 								{items.length === 0 && (
 									<div className="py-4 text-center text-xs text-stone-400">No intents</div>
 								)}
