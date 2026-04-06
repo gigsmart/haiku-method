@@ -112,15 +112,17 @@ Research the problem space, produce knowledge artifacts, then break the stage's 
 2. Read the stage's `discovery/` definitions (in the studio directory: `stages/{stage}/discovery/*.md`) to understand what knowledge artifacts this stage must produce
 3. Load resolved input artifacts from upstream stages — each discovery definition specifies a `location:` field indicating where the artifact lives (`.haiku/knowledge/` for project-wide, `.haiku/intents/{slug}/knowledge/` for intent-specific). Check freshness metadata — if inputs are stale or code has drifted, use `/haiku:refine stage:{upstream}` for a scoped side-trip
 4. **Research and write discovery artifacts** to their specified locations. These are knowledge artifacts — analysis, inventories, specs, threat models — that capture what you learned about the problem space. Write each artifact to the `location:` specified in its discovery definition
-5. Decompose the work into units with completion criteria and a dependency DAG
-6. For each unit, populate `refs:` in frontmatter — an array of paths to upstream artifacts relevant to that unit (design mockups, specs, discovery docs). Use paths relative to `.haiku/intents/{slug}/` (e.g., `stages/design/artifacts/login-screen-desktop.png`, `knowledge/BEHAVIORAL-SPEC.md`). These refs tell the execution agent exactly which artifacts inform this unit's work.
-7. Write unit files to `.haiku/intents/{slug}/stages/{stage}/units/`
-8. `haiku_stage_set { intent, stage, field: "phase", value: "execute" }`
-9. Call `haiku_run_next` again
+5. **For design stages: create visual wireframes during decompose.** The design stage's decompose phase produces the wireframes and mockups — NOT the execute phase. Use the designer hat's instructions to generate HTML wireframes or design provider files. Save to `stages/design/artifacts/`. Use `pick_design_direction` or `ask_user_visual_question` to get user feedback on wireframe options before finalizing. The execute phase only refines based on feedback.
+6. Decompose the work into units with completion criteria and a dependency DAG
+7. For each unit, populate `refs:` in frontmatter — an array of paths to upstream artifacts relevant to that unit (design mockups, specs, discovery docs). Use paths relative to `.haiku/intents/{slug}/` (e.g., `stages/design/artifacts/login-screen-desktop.html`, `knowledge/BEHAVIORAL-SPEC.md`). These refs tell the execution agent exactly which artifacts inform this unit's work.
+8. Write unit files to `.haiku/intents/{slug}/stages/{stage}/units/`
+9. `haiku_stage_set { intent, stage, field: "phase", value: "execute" }`
+10. Call `haiku_run_next` again
 
 **Discovery vs. Output artifacts:** Stages define two artifact directories:
 - `stages/{stage}/discovery/` — knowledge artifacts produced during decompose (research, analysis, specs)
 - `stages/{stage}/outputs/` — work products produced during execute (code, configs, deliverables)
+- **Design stage exception:** Visual artifacts (wireframes, mockups) are produced during decompose so the user can review them at the gate before execution begins
 
 #### `start_units` (parallel)
 
