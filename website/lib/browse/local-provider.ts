@@ -1,5 +1,5 @@
 import type { BrowseProvider, HaikuIntent, HaikuIntentDetail, HaikuStageState, HaikuUnit } from "./types"
-import { normalizeIntentStatus, parseCriteria, parseFrontmatter } from "./types"
+import { normalizeIntentStatus, parseCriteria, parseFrontmatter, parseUnit } from "./types"
 import { parseSettingsYaml } from "./resolve-links"
 
 // File System Access API types (not in all TS DOM libs)
@@ -139,22 +139,7 @@ export class LocalProvider implements BrowseProvider {
 				if (!unitFile.endsWith(".md")) continue
 				const unitRaw = await this.readFile(`.haiku/intents/${slug}/stages/${stageName}/units/${unitFile}`)
 				if (!unitRaw) continue
-				const { data: unitData, content: unitContent } = parseFrontmatter(unitRaw)
-				units.push({
-					name: unitFile.replace(".md", ""),
-					stage: stageName,
-					type: (unitData.type as string) || "",
-					status: (unitData.status as string) || "pending",
-					dependsOn: (unitData.depends_on as string[]) || [],
-					refs: (unitData.refs as string[]) || [],
-					bolt: (unitData.bolt as number) || 0,
-					hat: (unitData.hat as string) || "",
-					startedAt: (unitData.started_at as string) || null,
-					completedAt: (unitData.completed_at as string) || null,
-					criteria: parseCriteria(unitContent),
-					content: unitContent,
-					raw: unitData,
-				})
+				units.push(parseUnit(unitFile, stageName, unitRaw))
 			}
 
 			// Read stage state.json

@@ -120,6 +120,26 @@ export function parseFrontmatter(raw: string): { data: Record<string, unknown>; 
 	return { data, content }
 }
 
+/** Parse a unit's frontmatter + content into a HaikuUnit */
+export function parseUnit(unitFile: string, stageName: string, raw: string): HaikuUnit {
+	const { data, content } = parseFrontmatter(raw)
+	return {
+		name: unitFile.replace(".md", ""),
+		stage: stageName,
+		type: (data.type as string) || "",
+		status: (data.status as string) || "pending",
+		dependsOn: (data.depends_on as string[]) || [],
+		refs: (data.refs as string[]) || [],
+		bolt: (data.bolt as number) || 0,
+		hat: (data.hat as string) || "",
+		startedAt: (data.started_at as string) || null,
+		completedAt: (data.completed_at as string) || null,
+		criteria: parseCriteria(content),
+		content,
+		raw: data,
+	}
+}
+
 export function parseCriteria(content: string): Array<{ text: string; checked: boolean }> {
 	const criteria: Array<{ text: string; checked: boolean }> = []
 	for (const line of content.split("\n")) {
