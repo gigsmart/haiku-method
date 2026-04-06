@@ -7,6 +7,7 @@ import type { BrowseProvider, HaikuAsset, HaikuUnit } from "@/lib/browse/types"
 import { formatDate, formatDuration } from "@/lib/browse/types"
 import { resolveLinks } from "@/lib/browse/resolve-links"
 import { AuthenticatedMedia } from "./AuthenticatedMedia"
+import { AssetLightbox } from "./AssetLightbox"
 
 function titleCase(s: string): string {
 	return s
@@ -301,73 +302,133 @@ function RefsSection({ refs, intentSlug, provider, assets, host }: {
 }
 
 function AssetRefItem({ ref_, asset, host }: { ref_: string; asset: HaikuAsset; host: string }) {
+	const [showLightbox, setShowLightbox] = useState(false)
 	const fileName = ref_.split("/").pop() || ref_
 	const dirPath = ref_.includes("/") ? ref_.substring(0, ref_.lastIndexOf("/")) : ""
 
 	return (
-		<div className="flex items-center gap-3 rounded-lg border border-stone-200 p-3 dark:border-stone-700">
-			<div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded">
-				<AuthenticatedMedia
-					rawUrl={asset.rawUrl}
-					name={asset.name}
+		<>
+			<button
+				onClick={() => setShowLightbox(true)}
+				className="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-stone-200 p-3 text-left transition hover:border-teal-300 hover:shadow-sm dark:border-stone-700 dark:hover:border-teal-700"
+			>
+				<div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded bg-stone-100 dark:bg-stone-800">
+					<AuthenticatedMedia
+						rawUrl={asset.rawUrl}
+						name={asset.name}
+						host={host}
+						className="rounded"
+					/>
+				</div>
+				<div className="min-w-0">
+					<p className="truncate text-sm font-medium text-stone-700 dark:text-stone-300">{fileName}</p>
+					{dirPath && <p className="truncate text-xs text-stone-400">{dirPath}</p>}
+				</div>
+			</button>
+			{showLightbox && (
+				<AssetLightbox
+					asset={asset}
 					host={host}
-					className="rounded"
+					onClose={() => setShowLightbox(false)}
 				/>
-			</div>
-			<div className="min-w-0">
-				<p className="truncate text-sm font-medium text-stone-700 dark:text-stone-300">{fileName}</p>
-				{dirPath && (
-					<p className="truncate text-xs text-stone-400">{dirPath}</p>
-				)}
-			</div>
-		</div>
+			)}
+		</>
 	)
 }
 
 function TextRefItem({ ref_, intentSlug, provider }: { ref_: string; intentSlug: string; provider: BrowseProvider }) {
 	const [content, setContent] = useState<string | null>(null)
-	const [expanded, setExpanded] = useState(false)
+	const [showModal, setShowModal] = useState(false)
 
 	const fileName = ref_.split("/").pop() || ref_
 	const dirPath = ref_.includes("/") ? ref_.substring(0, ref_.lastIndexOf("/")) : ""
+	const isMarkdown = ref_.endsWith(".md")
 
-	const handleExpand = async () => {
+	const handleOpen = async () => {
 		if (content === null) {
 			const raw = await provider.readFile(`.haiku/intents/${intentSlug}/${ref_}`)
 			setContent(raw || "(empty)")
 		}
-		setExpanded(!expanded)
+		setShowModal(true)
 	}
 
-	const isMarkdown = ref_.endsWith(".md")
+	return (
+		<>
+			<button
+				onClick={handleOpen}
+				className="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-stone-200 p-3 text-left transition hover:border-teal-300 hover:shadow-sm dark:border-stone-700 dark:hover:border-teal-700"
+			>
+				<div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded bg-stone-100 text-2xl dark:bg-stone-800">
+					{isMarkdown ? "📄" : "📋"}
+				</div>
+				<div className="min-w-0">
+					<p className="truncate text-sm font-medium text-stone-700 dark:text-stone-300">{fileName}</p>
+					{dirPath && <p className="truncate text-xs text-stone-400">{dirPath}</p>}
+				</div>
+			</button>
+			{showModal && content && (
+				<DocModal
+					fileName={fileName}
+					filePath={ref_}
+					content={content}
+					isMarkdown={isMarkdown}
+					onClose={() => setShowModal(false)}
+				/>
+			)}
+		</>
+	)
+}
+
+function DocModal({ fileName, filePath, content, isMarkdown, onClose }: {
+	fileName: string; filePath: string; content: string; isMarkdown: boolean; onClose: () => void
+}) {
+	useEffect(() => {
+		const handleEsc = (e: KeyboardEvent) => { if (e.key === "Escape") onClose() }
+		document.addEventListener("keydown", handleEsc)
+		return () => document.removeEventListener("keydown", handleEsc)
+	}, [onClose])
+
+	// Strip frontmatter for display
+	let displayContent = content
+	let frontmatter = ""
+	if (isMarkdown && content.startsWith("---")) {
+		const endIdx = content.indexOf("---", 3)
+		if (endIdx !== -1) {
+			frontmatter = content.slice(3, endIdx).trim()
+			displayContent = content.slice(endIdx + 3).trim()
+		}
+	}
 
 	return (
-		<div className="rounded-lg border border-stone-200 dark:border-stone-700">
-			<button
-				onClick={handleExpand}
-				className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-stone-50 dark:hover:bg-stone-800"
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+			<div
+				className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-stone-200 bg-white shadow-2xl dark:border-stone-700 dark:bg-stone-900"
+				onClick={(e) => e.stopPropagation()}
 			>
-				<div className="min-w-0">
-					<span className="font-mono text-stone-600 dark:text-stone-400">{fileName}</span>
-					{dirPath && (
-						<span className="ml-2 text-xs text-stone-400">{dirPath}</span>
-					)}
+				<div className="flex items-center justify-between border-b border-stone-200 px-5 py-3 dark:border-stone-700">
+					<div>
+						<h3 className="font-mono text-sm font-semibold text-stone-900 dark:text-stone-100">{fileName}</h3>
+						<p className="font-mono text-xs text-stone-400">{filePath}</p>
+					</div>
+					<button onClick={onClose} className="rounded p-1 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200">
+						&#10005;
+					</button>
 				</div>
-				<svg className={`ml-2 h-4 w-4 flex-shrink-0 text-stone-400 transition ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-				</svg>
-			</button>
-			{expanded && content && (
-				<div className="border-t border-stone-100 px-4 py-4 dark:border-stone-800">
+				{frontmatter && (
+					<div className="border-b border-stone-100 bg-stone-50 px-5 py-2 dark:border-stone-800 dark:bg-stone-950/50">
+						<pre className="font-mono text-[11px] text-stone-500">{frontmatter}</pre>
+					</div>
+				)}
+				<div className="flex-1 overflow-y-auto px-5 py-4">
 					{isMarkdown ? (
 						<div className="prose prose-sm prose-stone dark:prose-invert max-w-none">
-							<ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+							<ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent}</ReactMarkdown>
 						</div>
 					) : (
 						<pre className="overflow-x-auto text-xs text-stone-600 dark:text-stone-400">{content}</pre>
 					)}
 				</div>
-			)}
+			</div>
 		</div>
 	)
 }
