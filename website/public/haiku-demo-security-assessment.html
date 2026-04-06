@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>H&#183;AI&#183;K&#183;U &mdash; Ideation Studio Demo</title>
+<title>H&#183;AI&#183;K&#183;U &mdash; Security Assessment Studio Demo</title>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   :root{
@@ -80,7 +80,6 @@
   @keyframes fadeSlideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
   @keyframes typingDot{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
   @keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
-  @keyframes highlightFade{0%{color:var(--accent);text-shadow:0 0 12px var(--accent-glow)}100%{color:var(--text-dim);text-shadow:none}}
   @media(max-width:900px){.main{flex-direction:column}.terminal-panel{flex:0 0 55%;border-right:none;border-bottom:1px solid var(--border-dim)}.right-panels{flex:1}.board-col{flex:0 0 110px}}
   @media(max-width:600px){.terminal-panel{flex:0 0 50%}.top-bar h1{font-size:13px}.controls button{padding:4px 10px;font-size:11px}}
   .completion-overlay{position:fixed;inset:0;background:rgba(12,10,9,.85);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .5s}
@@ -94,8 +93,6 @@
   .step-counter .current-stage{color:var(--accent);font-weight:600;margin-left:8px}
   .stage-badge{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:600;background:var(--accent-glow);color:var(--accent);border:1px solid var(--accent-dim);margin-left:auto;transition:all .3s}
   .stage-badge.idle{color:var(--text-muted);background:transparent;border-color:var(--border)}
-  .cursor{display:inline-block;width:7px;height:14px;background:var(--user);animation:cursorBlink .6s step-end infinite;vertical-align:text-bottom;margin-left:1px}
-  @keyframes cursorBlink{0%,100%{opacity:1}50%{opacity:0}}
   .kbd-hint{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-muted);font-family:var(--mono);opacity:.5;z-index:5;pointer-events:none}
   .kbd-hint kbd{display:inline-block;padding:1px 6px;border:1px solid var(--border);border-radius:3px;background:var(--bg-panel-alt);font-size:10px;margin:0 2px}
   .stage-flash{animation:stageFlash .6s ease}
@@ -122,7 +119,7 @@
 <body>
 <div class="app">
   <div class="top-bar">
-    <h1>H&#183;AI&#183;K&#183;U <span>Ideation Studio</span></h1>
+    <h1>H&#183;AI&#183;K&#183;U <span>Security Assessment Studio</span></h1>
     <div class="controls">
       <span class="step-counter" id="step-counter"></span>
       <button id="btn-play" class="active" title="Play / Pause (Space)">&#9654; Play</button>
@@ -139,7 +136,7 @@
     <div class="terminal-panel">
       <div class="terminal-header">
         <div class="dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
-        <span>claude &mdash; ~/projects</span>
+        <span>claude &mdash; ~/security</span>
         <span class="stage-badge idle" id="stage-badge">ready</span>
       </div>
       <div class="terminal-body" id="terminal"></div>
@@ -156,25 +153,21 @@
     </div>
   </div>
 </div>
-<div class="review-overlay" id="review-overlay">
-  <div class="review-card" id="review-card"></div>
-</div>
+<div class="review-overlay" id="review-overlay"><div class="review-card" id="review-card"></div></div>
 <div class="completion-overlay" id="completion-overlay">
   <div class="completion-card">
     <h2>Intent Complete</h2>
-    <p>All 4 stages passed. company-rebrand-strategy delivered.</p>
+    <p>All 5 stages passed. annual-pentest-web-app delivered.</p>
     <button id="btn-replay">Replay Demo</button>
   </div>
 </div>
-<div class="kbd-hint">
-  <kbd>Space</kbd> play/pause &nbsp; <kbd>R</kbd> restart &nbsp; <kbd>1</kbd><kbd>2</kbd><kbd>4</kbd> speed
-</div>
+<div class="kbd-hint"><kbd>Space</kbd> play/pause &nbsp; <kbd>R</kbd> restart &nbsp; <kbd>1</kbd><kbd>2</kbd><kbd>4</kbd> speed</div>
 <script>
 (function(){
 "use strict";
 const termEl=document.getElementById("terminal"),treeEl=document.getElementById("file-tree"),boardEl=document.getElementById("board"),progressEl=document.getElementById("progress-bar"),playBtn=document.getElementById("btn-play"),restartBtn=document.getElementById("btn-restart"),replayBtn=document.getElementById("btn-replay"),overlay=document.getElementById("completion-overlay"),reviewOverlay=document.getElementById("review-overlay"),reviewCard=document.getElementById("review-card"),speedBtns=document.querySelectorAll(".speed-btn"),stepCounterEl=document.getElementById("step-counter"),stageBadgeEl=document.getElementById("stage-badge");
 let playing=true,speed=1,stepIdx=0,timer=null,files=[],columns={},currentStage=null;
-const STAGES=["research","create","review","deliver"];
+const STAGES=["reconnaissance","enumeration","exploitation","post-exploitation","reporting"];
 
 function scrollTerminal(){termEl.scrollTop=termEl.scrollHeight}
 function escHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
@@ -183,20 +176,18 @@ function addTyping(){var d=document.createElement("div");d.className="msg msg-ag
 function removeTyping(){var e=document.getElementById("typing-msg");if(e)e.remove()}
 function addFastForward(s){var d=document.createElement("div");d.className="ff-indicator";d.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 19 22 12 13 5"/><polygon points="2 19 11 12 2 5"/></svg> Fast-forwarding '+s+'s of deep work...';d.id="ff-indicator";termEl.appendChild(d);scrollTerminal()}
 function removeFastForward(){var e=document.getElementById("ff-indicator");if(e)e.remove()}
-
-function showCriteriaReview(stageName,intentTitle,criteria){
+function showCriteriaReview(stageName,intentTitle,criteria,gateType){
+  var tag=gateType||"ask gate";
   var items=criteria.map(function(c){return'<li><span class="check"></span>'+escHtml(c)+'</li>'}).join("");
-  reviewCard.innerHTML='<div class="review-card-header"><h3>'+escHtml(stageName)+' Review</h3><span class="review-tag">ask gate</span></div><div class="review-card-body"><h4>'+escHtml(intentTitle)+'</h4><ul class="review-criteria" id="review-criteria-list">'+items+'</ul></div><div class="review-actions"><button class="review-btn reject">Request Changes</button><button class="review-btn approve" id="review-approve-btn">Approve Stage</button></div>';
+  reviewCard.innerHTML='<div class="review-card-header"><h3>'+escHtml(stageName)+' Review</h3><span class="review-tag">'+escHtml(tag)+'</span></div><div class="review-card-body"><h4>'+escHtml(intentTitle)+'</h4><ul class="review-criteria" id="review-criteria-list">'+items+'</ul></div><div class="review-actions"><button class="review-btn reject">Request Changes</button><button class="review-btn approve" id="review-approve-btn">Approve Stage</button></div>';
   reviewOverlay.classList.add("visible");
 }
 function animateCheckmarks(){var items=document.querySelectorAll("#review-criteria-list li");items.forEach(function(li,i){setTimeout(function(){li.classList.add("checked");li.querySelector(".check").textContent="\u2713"},(i+1)*400)})}
 function highlightApproveBtn(){var b=document.getElementById("review-approve-btn");if(b)b.classList.add("highlight")}
 function hideReviewOverlay(){reviewOverlay.classList.remove("visible")}
-
 function addFile(path){if(files.includes(path))return;files.push(path);renderTree();setTimeout(function(){var items=treeEl.querySelectorAll(".tree-item");items.forEach(function(it){it.classList.remove("highlight")});var last=treeEl.querySelector('[data-path="'+path+'"]');if(last)last.classList.add("highlight");setTimeout(function(){if(last)last.classList.remove("highlight")},2000)},50)}
 function renderTree(){var root={};files.forEach(function(p){var parts=p.split("/");var node=root;parts.forEach(function(seg,i){if(!node[seg])node[seg]=(i===parts.length-1)?null:{};if(node[seg]!==null)node=node[seg]})});treeEl.innerHTML="";renderNode(root,0,"")}
 function renderNode(node,depth,parentPath){var keys=Object.keys(node).sort(function(a,b){var aD=node[a]!==null,bD=node[b]!==null;if(aD&&!bD)return-1;if(!aD&&bD)return 1;return a.localeCompare(b)});keys.forEach(function(key){var fullPath=parentPath?parentPath+"/"+key:key;var isDir=node[key]!==null;var div=document.createElement("div");div.className="tree-item"+(isDir?" folder":"");div.setAttribute("data-path",fullPath);div.style.paddingLeft=(depth*16+4)+"px";div.innerHTML='<span class="icon">'+(isDir?"\uD83D\uDCC1":"\uD83D\uDCC4")+"</span>"+key;treeEl.appendChild(div);if(isDir)renderNode(node[key],depth+1,fullPath)})}
-
 function initBoard(){boardEl.innerHTML="";columns={};STAGES.forEach(function(stage){var col=document.createElement("div");col.className="board-col dimmed";col.innerHTML='<div class="col-header">'+stage+'</div><div class="col-cards"></div>';boardEl.appendChild(col);columns[stage]={el:col,cards:{}}})}
 function activateStage(stage){currentStage=stage;STAGES.forEach(function(s){var c=columns[s];c.el.classList.remove("active","stage-flash");if(STAGES.indexOf(s)<STAGES.indexOf(stage)){c.el.classList.remove("dimmed");c.el.classList.add("completed")}else if(s===stage){c.el.classList.remove("dimmed");c.el.classList.add("active");void c.el.offsetWidth;c.el.classList.add("stage-flash")}else{c.el.classList.add("dimmed")}});stageBadgeEl.textContent=stage;stageBadgeEl.classList.remove("idle")}
 function addCard(stage,name,status){var cardsEl=columns[stage].el.querySelector(".col-cards");var card=document.createElement("div");card.className="card"+(status?" "+status:"");card.textContent=name;cardsEl.appendChild(card);columns[stage].cards[name]=card}
@@ -206,52 +197,85 @@ function completeAllStages(){currentStage="complete";STAGES.forEach(function(s){
 const steps=[
   // === User invokes ===
   {delay:800,actions:[function(){addMsg("user","you","/haiku:new")}]},
-  {delay:1200,actions:[function(){addMsg("agent","agent","What do you want to accomplish?")}]},
-  {delay:1500,actions:[function(){addMsg("user","you","Design a company rebrand strategy")}]},
-  {delay:1200,actions:[function(){addMsg("agent","agent","Creating intent: company-rebrand-strategy...");addFile(".haiku/intents/company-rebrand-strategy/intent.md")}]},
-  {delay:800,actions:[function(){addMsg("system","system","Intent created. Studio: ideation. 4 stages: research \u2192 create \u2192 review \u2192 deliver")}]},
+  {delay:1200,actions:[function(){addTyping()}]},
+  {delay:1000,actions:[function(){removeTyping();addMsg("agent","agent","What do you want to accomplish?")}]},
+  {delay:1500,actions:[function(){addMsg("user","you","Annual penetration test for our web application")}]},
+  {delay:800,actions:[function(){addTyping()}]},
+  {delay:1200,actions:[function(){removeTyping();addMsg("agent","agent","Creating intent: annual-pentest-web-app...");addFile(".haiku/intents/annual-pentest-web-app/intent.md")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Intent created. Studio: security-assessment. 5 stages: reconnaissance \u2192 enumeration \u2192 exploitation \u2192 post-exploitation \u2192 reporting")}]},
 
-  // === RESEARCH stage ===
-  {delay:1000,actions:[function(){activateStage("research");addMsg("agent","agent","Entering research stage. Hat: researcher.\nWhat\u2019s driving the rebrand? Merger, repositioning, or something else?");addFile(".haiku/intents/company-rebrand-strategy/stages/research/state.json")}]},
-  {delay:2000,actions:[function(){addMsg("user","you","Repositioning. We\u2019re moving upmarket from SMB to enterprise. Current brand feels too playful.")}]},
-  {delay:1000,actions:[function(){addMsg("agent","agent","SMB-to-enterprise repositioning. Researching competitor strategies, enterprise buyer expectations, and similar transitions.");addFile(".haiku/intents/company-rebrand-strategy/stages/research/units/unit-01-competitor-analysis.md");addFile(".haiku/intents/company-rebrand-strategy/stages/research/units/unit-02-enterprise-brand-patterns.md");addCard("research","competitor-analysis","in-progress");addCard("research","enterprise-patterns","")}]},
-  {delay:500,actions:[function(){addFastForward("40")}]},
-  {delay:2000,actions:[function(){removeFastForward();addMsg("agent","agent","Hat: analyst. Found 5 competitors who made similar transitions. Key pattern: enterprise buyers want approachable expertise, not stuffy corporate. Three pillars: trust signals, visual maturity, tone shift.");updateCard("research","competitor-analysis","completed");updateCard("research","enterprise-patterns","completed");addFile(".haiku/intents/company-rebrand-strategy/knowledge/RESEARCH-BRIEF.md")}]},
-  {delay:800,actions:[function(){addMsg("system","system","Research complete. Review gate: auto. All criteria met \u2014 advancing.")}]},
-
-  // === CREATE stage ===
-  {delay:1000,actions:[function(){activateStage("create");addMsg("agent","agent","Entering create stage. Hat: creator.\nLoading research outputs...");addFile(".haiku/intents/company-rebrand-strategy/stages/create/state.json")}]},
-  {delay:800,actions:[function(){addMsg("system","system","Resolved inputs \u2192 research/research-brief (knowledge/RESEARCH-BRIEF.md)");addFile(".haiku/intents/company-rebrand-strategy/stages/create/units/unit-01-brand-positioning.md");addFile(".haiku/intents/company-rebrand-strategy/stages/create/units/unit-02-visual-direction.md");addFile(".haiku/intents/company-rebrand-strategy/stages/create/units/unit-03-messaging-framework.md");addCard("create","brand-positioning","in-progress");addCard("create","visual-direction","");addCard("create","messaging-framework","")}]},
+  // === RECONNAISSANCE ===
+  {delay:1000,actions:[function(){activateStage("reconnaissance");addMsg("agent","agent","Entering reconnaissance stage. Hat: osint-analyst.\nPassive and active information gathering about the target...");addFile(".haiku/intents/annual-pentest-web-app/stages/reconnaissance/state.json")}]},
+  {delay:1200,actions:[function(){addMsg("agent","agent","What\u2019s the target scope? Domain, IP ranges, any out-of-scope systems?")}]},
+  {delay:2000,actions:[function(){addMsg("user","you","Target: app.example.com and api.example.com. Out of scope: staging.example.com and any third-party services.")}]},
+  {delay:800,actions:[function(){addTyping()}]},
+  {delay:1000,actions:[function(){removeTyping();addMsg("agent","agent","Confirmed scope. Starting passive recon \u2014 DNS, WHOIS, certificate transparency logs, publicly indexed endpoints.");addFile(".haiku/intents/annual-pentest-web-app/stages/reconnaissance/units/unit-01-passive-recon.md");addFile(".haiku/intents/annual-pentest-web-app/stages/reconnaissance/units/unit-02-active-recon.md");addCard("reconnaissance","passive-recon","in-progress");addCard("reconnaissance","active-recon","")}]},
+  {delay:500,actions:[function(){addFastForward("45")}]},
+  {delay:2000,actions:[function(){removeFastForward();addMsg("agent","agent","Passive recon complete:\n  \u2022 6 subdomains discovered (2 in scope, 4 out of scope)\n  \u2022 Tech stack: React frontend, Node.js API, PostgreSQL, Redis\n  \u2022 CDN: Cloudflare (WAF detected)\n  \u2022 SSL: Let\u2019s Encrypt, auto-renewing, TLS 1.2+\n  \u2022 3 exposed endpoints found via certificate transparency");updateCard("reconnaissance","passive-recon","completed");updateCard("reconnaissance","active-recon","in-progress")}]},
   {delay:500,actions:[function(){addFastForward("35")}]},
-  {delay:1800,actions:[function(){removeFastForward();addMsg("agent","agent","Two positioning directions:\n  A) \"Trusted partner\" \u2014 reliability and depth\n  B) \"Smart ally\" \u2014 intelligence and approachability\nWhich resonates?")}]},
-  {delay:2000,actions:[function(){addMsg("user","you","B \u2014 smart ally. But add more credibility signals for enterprise trust.")}]},
-  {delay:1000,actions:[function(){addMsg("agent","agent","\"Smart ally with substance.\" Leading with expertise proof points while keeping conversational tone.");updateCard("create","brand-positioning","completed");updateCard("create","visual-direction","in-progress")}]},
-  {delay:500,actions:[function(){addFastForward("30")}]},
-  {delay:1500,actions:[function(){removeFastForward();addMsg("agent","agent","Visual: deeper tones with accent color, humanist typeface. Messaging: three tiers \u2014 executive (ROI), practitioner (capability), developer (technical depth).");updateCard("create","visual-direction","completed");updateCard("create","messaging-framework","completed");addFile(".haiku/intents/company-rebrand-strategy/knowledge/DRAFT-DELIVERABLE.md")}]},
-  {delay:1000,actions:[function(){addMsg("system","system","Create stage complete. Review gate: ask.");showCriteriaReview("Create","company-rebrand-strategy",["Brand positioning uses \"smart ally\" direction with credibility signals","Visual direction shifts palette to mature tones with warmth","Messaging framework covers executive, practitioner, and developer tiers"])}]},
-  {delay:800,actions:[function(){animateCheckmarks()}]},
-  {delay:1800,actions:[function(){highlightApproveBtn()}]},
-  {delay:1200,actions:[function(){hideReviewOverlay();addMsg("user","you","Approved. The messaging tiers are exactly right.")}]},
+  {delay:1500,actions:[function(){removeFastForward();addMsg("agent","agent","Hat: network-mapper. Active recon done. Port scan shows only 80/443 exposed. API has 47 endpoints from OpenAPI spec at /docs. One interesting finding: /admin endpoint returns 403 but confirms admin panel exists.");updateCard("reconnaissance","active-recon","completed");addFile(".haiku/intents/annual-pentest-web-app/knowledge/TARGET-PROFILE.md")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Reconnaissance complete. Review gate: auto. All criteria met \u2014 advancing.")}]},
 
-  // === REVIEW stage ===
-  {delay:1000,actions:[function(){activateStage("review");addMsg("agent","agent","Entering review stage. Hat: critic.\nAdversarial review of draft deliverable...");addFile(".haiku/intents/company-rebrand-strategy/stages/review/state.json")}]},
-  {delay:800,actions:[function(){addMsg("system","system","Resolved inputs \u2192 create/draft-deliverable (knowledge/DRAFT-DELIVERABLE.md)");addCard("review","strategic-review","in-progress");addCard("review","fact-check","")}]},
-  {delay:500,actions:[function(){addFastForward("35")}]},
-  {delay:1800,actions:[function(){removeFastForward();addMsg("agent","agent","Hat: fact-checker. Found 2 issues:\n  1. Major: Competitor case study cites pre-launch data only \u2014 no post-launch metrics\n  2. Minor: \"Best-in-class\" used twice \u2014 enterprise buyers find this generic\nVerdict: revise, then approve.");updateCard("review","strategic-review","completed");updateCard("review","fact-check","completed");addFile(".haiku/intents/company-rebrand-strategy/knowledge/REVIEW-REPORT.md")}]},
-  {delay:1000,actions:[function(){addMsg("system","system","Review stage complete. Review gate: ask.");showCriteriaReview("Review","company-rebrand-strategy",["Substantive issues identified with remediation suggestions","Factual claims verified against original sources","Each finding includes severity and actionable fix"])}]},
-  {delay:800,actions:[function(){animateCheckmarks()}]},
-  {delay:1800,actions:[function(){highlightApproveBtn()}]},
-  {delay:1200,actions:[function(){hideReviewOverlay();addMsg("user","you","Approved. Fair catches.")}]},
-
-  // === DELIVER stage ===
-  {delay:1000,actions:[function(){activateStage("deliver");addMsg("agent","agent","Entering deliver stage. Hat: publisher.\nLoading draft and review report...");addFile(".haiku/intents/company-rebrand-strategy/stages/deliver/state.json")}]},
-  {delay:800,actions:[function(){addMsg("system","system","Resolved inputs \u2192 create/draft-deliverable, review/review-report");addCard("deliver","finalize","in-progress")}]},
+  // === ENUMERATION ===
+  {delay:1000,actions:[function(){activateStage("enumeration");addMsg("agent","agent","Entering enumeration stage. Hat: enumerator.\nLoading target profile...");addFile(".haiku/intents/annual-pentest-web-app/stages/enumeration/state.json")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Resolved inputs \u2192 reconnaissance/target-profile (knowledge/TARGET-PROFILE.md)");addFile(".haiku/intents/annual-pentest-web-app/stages/enumeration/units/unit-01-service-enum.md");addFile(".haiku/intents/annual-pentest-web-app/stages/enumeration/units/unit-02-vuln-scan.md");addFile(".haiku/intents/annual-pentest-web-app/stages/enumeration/units/unit-03-attack-surface.md");addCard("enumeration","service-enum","in-progress");addCard("enumeration","vuln-scan","");addCard("enumeration","attack-surface","")}]},
+  {delay:500,actions:[function(){addFastForward("50")}]},
+  {delay:1800,actions:[function(){removeFastForward();addMsg("agent","agent","Service enumeration: Node.js 18.x, Express 4.18, React 18.2. Identified software versions for 94% of services. 3 outdated dependencies flagged.");updateCard("enumeration","service-enum","completed");updateCard("enumeration","vuln-scan","in-progress")}]},
+  {delay:500,actions:[function(){addFastForward("45")}]},
+  {delay:1800,actions:[function(){removeFastForward();addMsg("agent","agent","Hat: vulnerability-scanner. Vulnerability scan results:\n  \u2022 HIGH: Reflected XSS in search parameter (CVE-2024-XXXXX pattern)\n  \u2022 HIGH: JWT tokens don\u2019t expire \u2014 no exp claim\n  \u2022 MEDIUM: Rate limiting absent on /api/auth/login\n  \u2022 MEDIUM: CORS allows wildcard origin in one endpoint\n  \u2022 LOW: Server version header disclosed\n  \u2022 INFO: 3 outdated npm packages (no known exploits)");updateCard("enumeration","vuln-scan","completed");updateCard("enumeration","attack-surface","in-progress")}]},
   {delay:500,actions:[function(){addFastForward("25")}]},
-  {delay:1500,actions:[function(){removeFastForward();addMsg("agent","agent","All review findings addressed. Case study updated with post-launch metrics. Formatted for executive audience.");updateCard("deliver","finalize","completed");addFile(".haiku/intents/company-rebrand-strategy/knowledge/FINAL-DELIVERABLE.md")}]},
-  {delay:800,actions:[function(){addMsg("system","system","Deliver complete. Review gate: auto. All criteria met \u2014 advancing.")}]},
+  {delay:1200,actions:[function(){removeFastForward();addMsg("agent","agent","Attack surface mapped. Priority targets for exploitation: XSS vector, JWT implementation, and the /admin endpoint behind 403.");updateCard("enumeration","attack-surface","completed");addFile(".haiku/intents/annual-pentest-web-app/knowledge/VULNERABILITY-CATALOG.md")}]},
+  {delay:1000,actions:[function(){addMsg("system","system","Enumeration complete. Review gate: ask.");showCriteriaReview("Enumeration","annual-pentest-web-app",["Vulnerability catalog with CVE references and CVSS scores","Service versions identified for 90%+ of services","Attack surface categorized by risk level","False positives flagged, verified findings distinguished"])}]},
+  {delay:800,actions:[function(){animateCheckmarks()}]},
+  {delay:2000,actions:[function(){highlightApproveBtn()}]},
+  {delay:1200,actions:[function(){hideReviewOverlay();addMsg("user","you","Approved. The JWT issue is concerning \u2014 proceed with exploitation.")}]},
+
+  // === EXPLOITATION ===
+  {delay:1000,actions:[function(){activateStage("exploitation");addMsg("agent","agent","Entering exploitation stage. Hat: exploit-developer.\nLoading vulnerability catalog...\n\nNote: all exploitation will follow responsible disclosure. No data destruction, no service disruption, staying within authorized scope.");addFile(".haiku/intents/annual-pentest-web-app/stages/exploitation/state.json")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Resolved inputs \u2192 enumeration/vulnerability-catalog (knowledge/VULNERABILITY-CATALOG.md)");addFile(".haiku/intents/annual-pentest-web-app/stages/exploitation/units/unit-01-xss-exploit.md");addFile(".haiku/intents/annual-pentest-web-app/stages/exploitation/units/unit-02-jwt-exploit.md");addFile(".haiku/intents/annual-pentest-web-app/stages/exploitation/units/unit-03-auth-bypass.md");addCard("exploitation","xss-exploit","in-progress");addCard("exploitation","jwt-exploit","");addCard("exploitation","auth-bypass","")}]},
+  {delay:500,actions:[function(){addFastForward("40")}]},
+  {delay:1800,actions:[function(){removeFastForward();addMsg("agent","agent","Hat: attack-operator. XSS exploit confirmed. Payload: reflected XSS in the search parameter bypasses the Cloudflare WAF using a double-encoding technique. PoC demonstrates session cookie theft without triggering WAF rules.\n\nImpact: attacker can steal any user\u2019s session via crafted link.");updateCard("exploitation","xss-exploit","completed");updateCard("exploitation","jwt-exploit","in-progress")}]},
+  {delay:500,actions:[function(){addFastForward("35")}]},
+  {delay:1500,actions:[function(){removeFastForward();addMsg("agent","agent","JWT exploit confirmed. Tokens have no expiration claim and the signing key is a weak secret. Was able to forge a valid admin JWT by brute-forcing the HMAC secret (found: \"secret123\").\n\nImpact: permanent session hijacking + admin impersonation.");updateCard("exploitation","jwt-exploit","completed");updateCard("exploitation","auth-bypass","in-progress")}]},
+  {delay:800,actions:[function(){addMsg("agent","agent","The /admin endpoint \u2014 with the forged admin JWT, the 403 becomes a 200. Admin panel is fully accessible. Should I document the admin panel\u2019s capabilities as part of the access chain?")}]},
+  {delay:2200,actions:[function(){addMsg("user","you","Yes, document what\u2019s accessible but do NOT modify any data. Read-only assessment of the admin panel.")}]},
+  {delay:800,actions:[function(){addMsg("agent","agent","Understood. Read-only assessment only. Documenting accessible capabilities without making changes.")}]},
+  {delay:500,actions:[function(){addFastForward("20")}]},
+  {delay:1200,actions:[function(){removeFastForward();addMsg("agent","agent","Admin panel access confirmed via forged JWT. Capabilities accessible: user management, billing configuration, feature flags, database export. All documented, nothing modified.");updateCard("exploitation","auth-bypass","completed");addFile(".haiku/intents/annual-pentest-web-app/knowledge/ACCESS-LOG.md")}]},
+  {delay:1000,actions:[function(){addMsg("system","system","Exploitation complete. Review gate: ask.");showCriteriaReview("Exploitation","annual-pentest-web-app",["Each exploit logged with timestamp, technique, and outcome","PoC demonstrates impact without causing harm","Access chains documented end-to-end with reproduction steps","All activity stayed within authorized scope"])}]},
+  {delay:800,actions:[function(){animateCheckmarks()}]},
+  {delay:2000,actions:[function(){highlightApproveBtn()}]},
+  {delay:1200,actions:[function(){hideReviewOverlay();addMsg("user","you","Approved. The JWT finding is critical \u2014 we need to fix that immediately.")}]},
+
+  // === POST-EXPLOITATION ===
+  {delay:1000,actions:[function(){activateStage("post-exploitation");addMsg("agent","agent","Entering post-exploitation stage. Hat: post-exploit-analyst.\nLoading access log...");addFile(".haiku/intents/annual-pentest-web-app/stages/post-exploitation/state.json")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Resolved inputs \u2192 exploitation/access-log (knowledge/ACCESS-LOG.md)");addFile(".haiku/intents/annual-pentest-web-app/stages/post-exploitation/units/unit-01-impact-assessment.md");addFile(".haiku/intents/annual-pentest-web-app/stages/post-exploitation/units/unit-02-lateral-movement.md");addCard("post-exploitation","impact-assessment","in-progress");addCard("post-exploitation","lateral-movement","")}]},
+  {delay:500,actions:[function(){addFastForward("40")}]},
+  {delay:1800,actions:[function(){removeFastForward();addMsg("agent","agent","Hat: impact-assessor. Impact assessment:\n  \u2022 XSS chain: any user session can be stolen, including admin\n  \u2022 JWT chain: permanent admin access, full user data export capability\n  \u2022 Blast radius: all 12,000 user accounts, billing data, feature flags\n  \u2022 Data classification: PII (names, emails), financial (billing), operational (feature flags)");updateCard("post-exploitation","impact-assessment","completed");updateCard("post-exploitation","lateral-movement","in-progress")}]},
+  {delay:500,actions:[function(){addFastForward("30")}]},
+  {delay:1200,actions:[function(){removeFastForward();addMsg("agent","agent","Lateral movement analysis: from admin panel, the database export feature could theoretically dump the full PostgreSQL database. The Redis cache contains session tokens for all active users. No network segmentation between app tier and data tier.\n\nAll analysis is theoretical \u2014 no actual data exfiltration performed.");updateCard("post-exploitation","lateral-movement","completed");addFile(".haiku/intents/annual-pentest-web-app/knowledge/IMPACT-ASSESSMENT.md")}]},
+  {delay:1000,actions:[function(){addMsg("system","system","Post-exploitation complete. Review gate: ask.");showCriteriaReview("Post-Exploitation","annual-pentest-web-app",["Impact assessment documents max access level and blast radius","Lateral movement paths mapped with required credentials","Data exposure categorized by sensitivity","All post-exploitation stayed within scope, no exfiltration"])}]},
+  {delay:800,actions:[function(){animateCheckmarks()}]},
+  {delay:2000,actions:[function(){highlightApproveBtn()}]},
+  {delay:1200,actions:[function(){hideReviewOverlay();addMsg("user","you","Approved. Let\u2019s get this into the report.")}]},
+
+  // === REPORTING ===
+  {delay:1000,actions:[function(){activateStage("reporting");addMsg("agent","agent","Entering reporting stage. Hat: report-writer.\nLoading impact assessment...");addFile(".haiku/intents/annual-pentest-web-app/stages/reporting/state.json")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Resolved inputs \u2192 post-exploitation/impact-assessment (knowledge/IMPACT-ASSESSMENT.md)");addFile(".haiku/intents/annual-pentest-web-app/stages/reporting/units/unit-01-executive-summary.md");addFile(".haiku/intents/annual-pentest-web-app/stages/reporting/units/unit-02-technical-findings.md");addFile(".haiku/intents/annual-pentest-web-app/stages/reporting/units/unit-03-remediation-plan.md");addCard("reporting","executive-summary","in-progress");addCard("reporting","technical-findings","");addCard("reporting","remediation-plan","")}]},
+  {delay:500,actions:[function(){addFastForward("35")}]},
+  {delay:1500,actions:[function(){removeFastForward();addMsg("agent","agent","Executive summary drafted. Overall risk posture: HIGH. 2 critical findings, 2 medium, 1 low. Written in business terms for non-technical stakeholders.");updateCard("reporting","executive-summary","completed");updateCard("reporting","technical-findings","in-progress")}]},
+  {delay:500,actions:[function(){addFastForward("40")}]},
+  {delay:1500,actions:[function(){removeFastForward();addMsg("agent","agent","Hat: remediation-advisor. Technical findings documented with CVSS scores, reproduction steps, evidence screenshots, and specific remediation for each.");updateCard("reporting","technical-findings","completed");updateCard("reporting","remediation-plan","in-progress")}]},
+  {delay:500,actions:[function(){addFastForward("25")}]},
+  {delay:1200,actions:[function(){removeFastForward();addMsg("agent","agent","Remediation plan prioritized by risk reduction:\n  1. Immediate: Rotate JWT signing key, add expiration claims\n  2. Immediate: Fix XSS in search parameter with output encoding\n  3. Short-term: Add rate limiting on auth endpoints\n  4. Short-term: Fix CORS wildcard, add network segmentation\n  5. Maintenance: Update outdated npm packages, remove server header");updateCard("reporting","remediation-plan","completed");addFile(".haiku/intents/annual-pentest-web-app/knowledge/PENTEST-REPORT.md");addFile(".haiku/intents/annual-pentest-web-app/knowledge/EXECUTIVE-SUMMARY.md");addFile(".haiku/intents/annual-pentest-web-app/knowledge/REMEDIATION-PLAN.md")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Reporting complete. Review gate: external.");addMsg("agent","agent","Sharing browse URL for external stakeholder review...")}]},
+  {delay:1000,actions:[function(){showCriteriaReview("Reporting","annual-pentest-web-app",["Each finding has CVSS score, reproduction steps, and remediation","Executive summary communicates risk in business terms","Remediation plan prioritized by risk-reduction impact","Report reviewed for accuracy and appropriate classification"],"external gate")}]},
+  {delay:800,actions:[function(){animateCheckmarks()}]},
+  {delay:2400,actions:[function(){highlightApproveBtn()}]},
+  {delay:1200,actions:[function(){hideReviewOverlay();addMsg("system","system","External stakeholder review approved via browse page.")}]},
 
   // === Complete ===
-  {delay:1200,actions:[function(){completeAllStages();addMsg("agent","agent","All 4 stages complete for company-rebrand-strategy.\n\nDelivered:\n  \u2022 Research brief with competitor analysis and enterprise brand patterns\n  \u2022 Brand positioning: \"smart ally with substance\"\n  \u2022 Visual direction: mature palette, humanist typography\n  \u2022 Messaging framework: executive, practitioner, and developer tiers\n  \u2022 Adversarial review with 2 findings addressed\n  \u2022 Final deliverable formatted for executive audience\n\nIntent status: complete.")}]},
+  {delay:1200,actions:[function(){completeAllStages();addMsg("agent","agent","All 5 stages complete for annual-pentest-web-app.\n\nDelivered:\n  \u2022 Target profile with 6 subdomains and full tech stack fingerprinting\n  \u2022 Vulnerability catalog: 2 high, 2 medium, 1 low, 1 info\n  \u2022 3 successful exploit chains with PoC artifacts\n  \u2022 Impact assessment: 12K users, PII + financial data at risk\n  \u2022 Remediation plan with immediate and short-term priorities\n  \u2022 Executive summary and full technical report\n\nIntent status: complete.")}]},
   {delay:1500,actions:[function(){overlay.classList.add("visible")}]}
 ];
 
@@ -265,8 +289,7 @@ function reset(){pause();stepIdx=0;playing=true;currentStage=null;termEl.innerHT
 function updatePlayBtn(){playBtn.textContent=playing?"\u23F8 Pause":"\u25B6 Play";playBtn.classList.toggle("active",playing)}
 function setSpeed(s){speed=s;speedBtns.forEach(function(b){b.classList.toggle("active",parseFloat(b.dataset.speed)===s)});if(playing){pause();start()}}
 playBtn.addEventListener("click",function(){playing=!playing;updatePlayBtn();if(playing)start();else pause()});
-restartBtn.addEventListener("click",reset);
-replayBtn.addEventListener("click",reset);
+restartBtn.addEventListener("click",reset);replayBtn.addEventListener("click",reset);
 speedBtns.forEach(function(btn){btn.addEventListener("click",function(){setSpeed(parseFloat(btn.dataset.speed))})});
 document.addEventListener("keydown",function(e){if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;switch(e.key){case" ":e.preventDefault();playing=!playing;updatePlayBtn();if(playing)start();else pause();break;case"r":case"R":reset();break;case"1":setSpeed(1);break;case"2":setSpeed(2);break;case"4":setSpeed(4);break}});
 initBoard();updateProgress();updateStepCounter();start();
