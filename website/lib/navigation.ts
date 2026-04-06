@@ -56,6 +56,11 @@ export const primaryNavItems: NavItem[] = [
 		description: "Full methodology paper",
 	},
 	{
+		title: "Browse",
+		href: "/browse/",
+		description: "View H·AI·K·U portfolios",
+	},
+	{
 		title: "Blog",
 		href: "/blog/",
 		description: "Updates and insights",
