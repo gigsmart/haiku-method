@@ -115,10 +115,10 @@ export function PortfolioKanban({ provider, intents, onSelectIntent }: KanbanPro
 												</span>
 											)}
 										</div>
-										{intent.stagesTotal > 0 && (
+										{intent.stagesTotal > 0 && intent.stagesComplete > 0 && (
 											<div className="mt-2">
 												<div className="flex items-center justify-between text-xs text-stone-400">
-													<span>{Math.max(0, intent.stagesComplete)}/{intent.stagesTotal} stages</span>
+													<span>{intent.stagesComplete}/{intent.stagesTotal} stages</span>
 													{intent.startedAt && (
 														<span>{formatDuration(intent.startedAt, intent.completedAt)}</span>
 													)}
