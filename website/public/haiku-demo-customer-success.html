@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>H&#183;AI&#183;K&#183;U in Action &mdash; Customer Success Studio</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0c0a09;--bg-panel:#1c1917;--bg-panel-alt:#292524;
+    --text:#e7e5e4;--text-dim:#a8a29e;--text-muted:#78716c;
+    --accent:#2dd4bf;--accent-dim:#0d9488;--accent-glow:rgba(45,212,191,.15);
+    --user:#818cf8;--agent:#2dd4bf;--system:#fbbf24;
+    --green:#22c55e;--red:#ef4444;--orange:#f59e0b;
+    --border:#44403c;--border-dim:#292524;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:"Inter",ui-sans-serif,system-ui,sans-serif;
+  }
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden}
+  .app{display:flex;flex-direction:column;height:100vh}
+  .top-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border-dim);background:var(--bg);z-index:10;flex-shrink:0}
+  .top-bar h1{font-size:16px;font-weight:600;letter-spacing:.5px;color:var(--accent)}
+  .top-bar h1 span{color:var(--text-dim);font-weight:400}
+  .controls{display:flex;align-items:center;gap:12px}
+  .controls button{background:var(--bg-panel);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-family:var(--sans);transition:all .15s}
+  .controls button:hover{border-color:var(--accent);color:var(--accent)}
+  .controls button.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+  .speed-btns{display:flex;gap:4px}
+  .speed-btns button{padding:4px 10px;font-size:12px;border-radius:4px}
+  .progress-wrap{flex-shrink:0;height:3px;background:var(--bg-panel-alt);position:relative}
+  .progress-bar{height:100%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));width:0;transition:width .3s ease}
+  .main{display:flex;flex:1;overflow:hidden}
+  .terminal-panel{flex:0 0 60%;display:flex;flex-direction:column;border-right:1px solid var(--border-dim);background:var(--bg)}
+  .terminal-header{padding:10px 16px;font-size:12px;color:var(--text-muted);border-bottom:1px solid var(--border-dim);display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .terminal-header .dots{display:flex;gap:6px}
+  .terminal-header .dot{width:10px;height:10px;border-radius:50%}
+  .dot-r{background:#ef4444}.dot-y{background:#fbbf24}.dot-g{background:#22c55e}
+  .terminal-body{flex:1;overflow-y:auto;padding:16px 20px;font-family:var(--mono);font-size:13px;line-height:1.7;scroll-behavior:smooth}
+  .terminal-body::-webkit-scrollbar{width:6px}
+  .terminal-body::-webkit-scrollbar-track{background:transparent}
+  .terminal-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  .msg{margin-bottom:12px;animation:fadeSlideIn .3s ease}
+  .msg-user .msg-label{color:var(--user);font-weight:600}
+  .msg-agent .msg-label{color:var(--agent);font-weight:600}
+  .msg-system .msg-label{color:var(--system);font-weight:600}
+  .msg-label{font-size:11px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px}
+  .msg-text{color:var(--text);white-space:pre-wrap}
+  .msg-system .msg-text{color:var(--system);font-style:italic}
+  .typing-indicator{display:inline-flex;gap:4px;padding:4px 0}
+  .typing-indicator span{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:typingDot .8s infinite}
+  .typing-indicator span:nth-child(2){animation-delay:.15s}
+  .typing-indicator span:nth-child(3){animation-delay:.3s}
+  .ff-indicator{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg-panel-alt);border-radius:6px;color:var(--system);font-size:12px;margin:8px 0;animation:pulse 1.5s ease-in-out infinite}
+  .ff-indicator svg{width:14px;height:14px}
+  .right-panels{flex:0 0 40%;display:flex;flex-direction:column;overflow:hidden}
+  .artifact-panel{flex:1;border-bottom:1px solid var(--border-dim);display:flex;flex-direction:column;background:var(--bg-panel);overflow:hidden}
+  .panel-header{padding:10px 16px;font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border-dim);flex-shrink:0}
+  .file-tree{flex:1;overflow-y:auto;padding:12px 16px;font-family:var(--mono);font-size:12px;line-height:1.8}
+  .file-tree::-webkit-scrollbar{width:6px}
+  .file-tree::-webkit-scrollbar-track{background:transparent}
+  .file-tree::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  .tree-item{color:var(--text-dim);white-space:nowrap;animation:fadeSlideIn .3s ease}
+  .tree-item.highlight{color:var(--accent);text-shadow:0 0 8px var(--accent-glow)}
+  .tree-item.folder{color:var(--text-muted)}
+  .tree-item .icon{margin-right:6px;display:inline-block;width:16px;text-align:center}
+  .board-panel{flex:0 0 auto;min-height:200px;max-height:260px;display:flex;flex-direction:column;background:var(--bg-panel);overflow:hidden}
+  .board-scroll{flex:1;overflow-x:auto;overflow-y:hidden;padding:12px 16px;display:flex;gap:10px}
+  .board-scroll::-webkit-scrollbar{height:6px}
+  .board-scroll::-webkit-scrollbar-track{background:transparent}
+  .board-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  .board-col{flex:0 0 130px;display:flex;flex-direction:column;gap:6px;transition:opacity .3s}
+  .board-col.dimmed{opacity:.35}
+  .board-col.active .col-header{color:var(--accent);border-color:var(--accent)}
+  .board-col.completed .col-header{color:var(--green);border-color:var(--green)}
+  .col-header{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);padding-bottom:6px;border-bottom:2px solid var(--border);transition:all .3s}
+  .col-cards{display:flex;flex-direction:column;gap:4px;min-height:30px}
+  .card{padding:6px 8px;border-radius:4px;font-size:11px;font-family:var(--mono);background:var(--bg-panel-alt);border:1px solid var(--border);color:var(--text-dim);animation:fadeSlideIn .3s ease;transition:all .3s}
+  .card.in-progress{border-color:var(--accent);color:var(--accent);background:rgba(45,212,191,.08)}
+  .card.completed{border-color:var(--green);color:var(--green);background:rgba(34,197,94,.08)}
+  @keyframes fadeSlideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes typingDot{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+  @keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
+  @media(max-width:900px){.main{flex-direction:column}.terminal-panel{flex:0 0 55%;border-right:none;border-bottom:1px solid var(--border-dim)}.right-panels{flex:1}.board-col{flex:0 0 110px}}
+  @media(max-width:600px){.terminal-panel{flex:0 0 50%}.top-bar h1{font-size:13px}.controls button{padding:4px 10px;font-size:11px}}
+  .completion-overlay{position:fixed;inset:0;background:rgba(12,10,9,.85);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .5s}
+  .completion-overlay.visible{opacity:1;pointer-events:auto}
+  .completion-card{text-align:center;padding:40px 60px;background:var(--bg-panel);border:1px solid var(--accent);border-radius:16px;box-shadow:0 0 60px rgba(45,212,191,.15);animation:fadeSlideIn .5s ease}
+  .completion-card h2{color:var(--accent);font-size:24px;margin-bottom:8px}
+  .completion-card p{color:var(--text-dim);font-size:14px;margin-bottom:20px}
+  .completion-card button{background:var(--accent);color:var(--bg);border:none;padding:10px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+  .completion-card button:hover{opacity:.85}
+  .step-counter{font-size:12px;color:var(--text-muted);font-family:var(--mono);letter-spacing:.5px}
+  .step-counter .current-stage{color:var(--accent);font-weight:600;margin-left:8px}
+  .stage-badge{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:600;background:var(--accent-glow);color:var(--accent);border:1px solid var(--accent-dim);margin-left:auto;transition:all .3s}
+  .stage-badge.idle{color:var(--text-muted);background:transparent;border-color:var(--border)}
+  .kbd-hint{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-muted);font-family:var(--mono);opacity:.5;z-index:5;pointer-events:none}
+  .kbd-hint kbd{display:inline-block;padding:1px 6px;border:1px solid var(--border);border-radius:3px;background:var(--bg-panel-alt);font-size:10px;margin:0 2px}
+  .stage-flash{animation:stageFlash .6s ease}
+  @keyframes stageFlash{0%{box-shadow:0 0 0 0 rgba(45,212,191,.4)}50%{box-shadow:0 0 20px 4px rgba(45,212,191,.2)}100%{box-shadow:0 0 0 0 transparent}}
+  .review-overlay{position:fixed;inset:0;background:rgba(12,10,9,.92);display:flex;align-items:center;justify-content:center;z-index:90;opacity:0;pointer-events:none;transition:opacity .4s}
+  .review-overlay.visible{opacity:1;pointer-events:auto}
+  .review-card{width:480px;max-width:90vw;background:var(--bg-panel);border:1px solid var(--accent-dim);border-radius:16px;box-shadow:0 0 60px rgba(45,212,191,.12);animation:fadeSlideIn .4s ease;overflow:hidden}
+  .review-card-header{padding:16px 24px;border-bottom:1px solid var(--border-dim);display:flex;align-items:center;justify-content:space-between}
+  .review-card-header h3{font-size:16px;font-weight:700;color:var(--accent)}
+  .review-card-header .review-tag{font-size:11px;padding:3px 10px;border-radius:10px;background:var(--accent-glow);color:var(--accent);border:1px solid var(--accent-dim)}
+  .review-card-body{padding:20px 24px}
+  .review-card-body h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px}
+  .review-criteria{list-style:none;padding:0;margin:0 0 16px 0}
+  .review-criteria li{font-size:12px;font-family:var(--mono);color:var(--text-dim);padding:4px 0;display:flex;align-items:center;gap:8px}
+  .review-criteria li .check{width:14px;height:14px;border:1px solid var(--border);border-radius:3px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--green);transition:all .3s}
+  .review-criteria li.checked .check{border-color:var(--green);background:rgba(34,197,94,.15)}
+  .review-actions{display:flex;gap:12px;padding:16px 24px;border-top:1px solid var(--border-dim)}
+  .review-btn{flex:1;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:default;transition:all .3s}
+  .review-btn.approve{background:var(--green);color:var(--bg)}
+  .review-btn.reject{background:var(--bg-panel-alt);color:var(--text-dim);border:1px solid var(--border)}
+  .review-btn.approve.highlight{box-shadow:0 0 16px rgba(34,197,94,.4);transform:scale(1.03)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top-bar">
+    <h1>H&#183;AI&#183;K&#183;U <span>Customer Success Studio</span></h1>
+    <div class="controls">
+      <span class="step-counter" id="step-counter"></span>
+      <button id="btn-play" class="active">&#9654; Play</button>
+      <div class="speed-btns">
+        <button class="speed-btn active" data-speed="1">1x</button>
+        <button class="speed-btn" data-speed="2">2x</button>
+        <button class="speed-btn" data-speed="4">4x</button>
+      </div>
+      <button id="btn-restart">&#8634; Restart</button>
+    </div>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+  <div class="main">
+    <div class="terminal-panel">
+      <div class="terminal-header">
+        <div class="dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+        <span>claude &mdash; ~/cs-workspace</span>
+        <span class="stage-badge idle" id="stage-badge">ready</span>
+      </div>
+      <div class="terminal-body" id="terminal"></div>
+    </div>
+    <div class="right-panels">
+      <div class="artifact-panel">
+        <div class="panel-header">Artifacts</div>
+        <div class="file-tree" id="file-tree"></div>
+      </div>
+      <div class="board-panel">
+        <div class="panel-header">Lifecycle Board</div>
+        <div class="board-scroll" id="board"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="review-overlay" id="review-overlay"><div class="review-card" id="review-card"></div></div>
+<div class="completion-overlay" id="completion-overlay">
+  <div class="completion-card">
+    <h2>Intent Complete</h2>
+    <p>All 5 stages passed. onboard-techstartup-inc delivered.</p>
+    <button id="btn-replay">Replay Demo</button>
+  </div>
+</div>
+<div class="kbd-hint"><kbd>Space</kbd> play/pause &nbsp; <kbd>R</kbd> restart &nbsp; <kbd>1</kbd><kbd>2</kbd><kbd>4</kbd> speed</div>
+
+<script>
+(function(){
+"use strict";
+
+const termEl=document.getElementById("terminal"),treeEl=document.getElementById("file-tree"),boardEl=document.getElementById("board"),progressEl=document.getElementById("progress-bar"),playBtn=document.getElementById("btn-play"),restartBtn=document.getElementById("btn-restart"),replayBtn=document.getElementById("btn-replay"),overlay=document.getElementById("completion-overlay"),reviewOverlay=document.getElementById("review-overlay"),reviewCard=document.getElementById("review-card"),speedBtns=document.querySelectorAll(".speed-btn"),stepCounterEl=document.getElementById("step-counter"),stageBadgeEl=document.getElementById("stage-badge");
+
+let playing=true,speed=1,stepIdx=0,timer=null,files=[],columns={},currentStage=null;
+
+const STAGES=["onboarding","adoption","health-check","expansion","renewal"];
+const INTENT="onboard-techstartup-inc";
+const P=".haiku/intents/"+INTENT;
+
+function scrollTerminal(){termEl.scrollTop=termEl.scrollHeight}
+function escHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function addMsg(type,label,text){var d=document.createElement("div");d.className="msg msg-"+type;d.innerHTML='<div class="msg-label">'+label+'</div><div class="msg-text">'+escHtml(text)+'</div>';termEl.appendChild(d);scrollTerminal()}
+function addTyping(){var d=document.createElement("div");d.className="msg msg-agent";d.id="typing-msg";d.innerHTML='<div class="msg-label">agent</div><div class="typing-indicator"><span></span><span></span><span></span></div>';termEl.appendChild(d);scrollTerminal()}
+function removeTyping(){var e=document.getElementById("typing-msg");if(e)e.remove()}
+function addFastForward(s){var d=document.createElement("div");d.className="ff-indicator";d.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 19 22 12 13 5"/><polygon points="2 19 11 12 2 5"/></svg> Fast-forwarding '+s+'s of deep work...';d.id="ff-indicator";termEl.appendChild(d);scrollTerminal()}
+function removeFastForward(){var e=document.getElementById("ff-indicator");if(e)e.remove()}
+
+function showCriteriaReview(stageName,intentTitle,criteria,gateType){
+  var items=criteria.map(function(c){return'<li><span class="check"></span>'+escHtml(c)+'</li>'}).join("");
+  reviewCard.innerHTML='<div class="review-card-header"><h3>'+escHtml(stageName)+' Review</h3><span class="review-tag">'+escHtml(gateType||"ask gate")+'</span></div><div class="review-card-body"><h4>'+escHtml(intentTitle)+'</h4><ul class="review-criteria" id="review-criteria-list">'+items+'</ul></div><div class="review-actions"><button class="review-btn reject">Request Changes</button><button class="review-btn approve" id="review-approve-btn">Approve Stage</button></div>';
+  reviewOverlay.classList.add("visible");
+}
+function animateCheckmarks(){var items=document.querySelectorAll("#review-criteria-list li");items.forEach(function(li,i){setTimeout(function(){li.classList.add("checked");li.querySelector(".check").textContent="\u2713"},(i+1)*400)})}
+function highlightApproveBtn(){var b=document.getElementById("review-approve-btn");if(b)b.classList.add("highlight")}
+function hideReviewOverlay(){reviewOverlay.classList.remove("visible")}
+
+function addFile(path){if(files.includes(path))return;files.push(path);renderTree();setTimeout(function(){var items=treeEl.querySelectorAll(".tree-item");items.forEach(function(it){it.classList.remove("highlight")});var last=treeEl.querySelector('[data-path="'+path+'"]');if(last)last.classList.add("highlight");setTimeout(function(){if(last)last.classList.remove("highlight")},2000)},50)}
+function renderTree(){var root={};files.forEach(function(p){var parts=p.split("/");var node=root;parts.forEach(function(seg,i){if(!node[seg])node[seg]=(i===parts.length-1)?null:{};if(node[seg]!==null)node=node[seg]})});treeEl.innerHTML="";renderNode(root,0,"")}
+function renderNode(node,depth,parentPath){var keys=Object.keys(node).sort(function(a,b){var aDir=node[a]!==null,bDir=node[b]!==null;if(aDir&&!bDir)return-1;if(!aDir&&bDir)return 1;return a.localeCompare(b)});keys.forEach(function(key){var fullPath=parentPath?parentPath+"/"+key:key;var isDir=node[key]!==null;var div=document.createElement("div");div.className="tree-item"+(isDir?" folder":"");div.setAttribute("data-path",fullPath);div.style.paddingLeft=(depth*16+4)+"px";div.innerHTML='<span class="icon">'+(isDir?"\uD83D\uDCC1":"\uD83D\uDCC4")+"</span>"+key;treeEl.appendChild(div);if(isDir)renderNode(node[key],depth+1,fullPath)})}
+
+function initBoard(){boardEl.innerHTML="";columns={};STAGES.forEach(function(stage){var col=document.createElement("div");col.className="board-col dimmed";col.innerHTML='<div class="col-header">'+stage+'</div><div class="col-cards"></div>';boardEl.appendChild(col);columns[stage]={el:col,cards:{}}})}
+function activateStage(stage){currentStage=stage;STAGES.forEach(function(s){var c=columns[s];c.el.classList.remove("active","stage-flash");if(STAGES.indexOf(s)<STAGES.indexOf(stage)){c.el.classList.remove("dimmed");c.el.classList.add("completed")}else if(s===stage){c.el.classList.remove("dimmed");c.el.classList.add("active");void c.el.offsetWidth;c.el.classList.add("stage-flash")}else{c.el.classList.add("dimmed")}});stageBadgeEl.textContent=stage;stageBadgeEl.classList.remove("idle")}
+function addCard(stage,name,status){var cardsEl=columns[stage].el.querySelector(".col-cards");var card=document.createElement("div");card.className="card"+(status?" "+status:"");card.textContent=name;cardsEl.appendChild(card);columns[stage].cards[name]=card}
+function updateCard(stage,name,status){var card=columns[stage].cards[name];if(card)card.className="card "+status}
+function completeAllStages(){currentStage="complete";STAGES.forEach(function(s){var c=columns[s];c.el.classList.remove("dimmed","active");c.el.classList.add("completed");Object.keys(c.cards).forEach(function(n){c.cards[n].className="card completed"})});stageBadgeEl.textContent="complete";stageBadgeEl.style.color="var(--green)";stageBadgeEl.style.borderColor="var(--green)";stageBadgeEl.style.background="rgba(34,197,94,.1)"}
+
+var steps=[
+  // User invokes
+  {delay:800,actions:[function(){addMsg("user","you","/haiku:new")}]},
+  {delay:1000,actions:[function(){addTyping()}]},
+  {delay:800,actions:[function(){removeTyping();addMsg("agent","agent","What do you want to accomplish?")}]},
+  {delay:1500,actions:[function(){addMsg("user","you","Onboard TechStartup Inc to our platform. They just signed a $120K annual deal.")}]},
+
+  // Intent created
+  {delay:800,actions:[function(){addTyping()}]},
+  {delay:1000,actions:[function(){removeTyping();addMsg("agent","agent","Creating intent: onboard-techstartup-inc...");addFile(P+"/intent.md")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Intent created. Studio: customer-success. 5 stages: onboarding \u2192 adoption \u2192 health-check \u2192 expansion \u2192 renewal")}]},
+
+  // === ONBOARDING ===
+  {delay:1000,actions:[function(){activateStage("onboarding");addMsg("agent","agent","Entering onboarding stage. Hat: onboarding-lead.\nWhat do you know about TechStartup\u2019s team and their use case?");addFile(P+"/stages/onboarding/state.json")}]},
+  {delay:2000,actions:[function(){addMsg("user","you","50 employees, engineering-heavy. They want to use our API monitoring features. Main contact is Sarah Chen, VP of Engineering. They're migrating from a competitor tool.")}]},
+  {delay:800,actions:[function(){addTyping()}]},
+  {delay:1200,actions:[function(){removeTyping();addMsg("agent","agent","Competitor migration \u2014 we\u2019ll need to handle data import and make sure the transition is smooth. Decomposing onboarding work...")}]},
+  {delay:800,actions:[function(){addFile(P+"/stages/onboarding/units/unit-01-setup.md");addFile(P+"/stages/onboarding/units/unit-02-integration.md");addFile(P+"/stages/onboarding/units/unit-03-training.md");addCard("onboarding","setup","in-progress");addCard("onboarding","integration","");addCard("onboarding","training","")}]},
+  {delay:500,actions:[function(){addFastForward("30")}]},
+  {delay:1800,actions:[function(){removeFastForward();addMsg("agent","agent","Setup plan:\n  \u2022 Workspace provisioned with enterprise SSO (Okta)\n  \u2022 5 team seats activated: Sarah Chen + 4 engineering leads\n  \u2022 API keys generated for staging and production\n  \u2022 Data import from competitor: 6 months of monitoring history\n\nSuccess milestone: first live monitor created by end of week 1.");updateCard("onboarding","setup","completed");updateCard("onboarding","integration","in-progress")}]},
+  {delay:500,actions:[function(){addFastForward("25")}]},
+  {delay:1500,actions:[function(){removeFastForward();addMsg("agent","agent","Hat: technical-enabler. Integration guide created for TechStartup\u2019s stack:\n  \u2022 Node.js SDK configured for their Express API\n  \u2022 Kubernetes sidecar agent for their GKE cluster\n  \u2022 Slack webhook for alert routing to #eng-alerts\n  \u2022 Historical data import: 847 monitors migrated from competitor");updateCard("onboarding","integration","completed");updateCard("onboarding","training","in-progress")}]},
+  {delay:500,actions:[function(){addFastForward("20")}]},
+  {delay:1200,actions:[function(){removeFastForward();addMsg("agent","agent","Training materials personalized for 3 personas:\n  \u2022 Engineering leads: dashboard creation and alert configuration\n  \u2022 DevOps: SDK integration and Kubernetes agent management\n  \u2022 VP Engineering (Sarah): executive reporting and team oversight\n\nFirst success milestone achieved: 12 live monitors created within 3 days.");updateCard("onboarding","training","completed");addFile(P+"/knowledge/ONBOARDING-REPORT.md")}]},
+
+  // Onboarding gate - ask
+  {delay:800,actions:[function(){addMsg("system","system","Onboarding stage complete. Review gate: ask.")}]},
+  {delay:800,actions:[function(){showCriteriaReview("Onboarding",INTENT,["Workspace setup: SSO, seats, API keys","Integration: SDK, K8s agent, Slack webhook","847 monitors migrated from competitor","Training delivered to 3 personas","First success: 12 live monitors in 3 days"],"ask gate")}]},
+  {delay:800,actions:[function(){animateCheckmarks()}]},
+  {delay:2200,actions:[function(){highlightApproveBtn()}]},
+  {delay:1200,actions:[function(){hideReviewOverlay();addMsg("user","you","Great start. Move to adoption tracking.");addMsg("agent","agent","Advancing to adoption stage.")}]},
+
+  // === ADOPTION ===
+  {delay:1000,actions:[function(){activateStage("adoption");addMsg("agent","agent","Entering adoption stage. Hat: adoption-coach.\nLoading onboarding report...");addFile(P+"/stages/adoption/state.json")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Resolved inputs \u2192 onboarding/onboarding-report (knowledge/ONBOARDING-REPORT.md)");addMsg("agent","agent","Tracking adoption metrics and identifying underutilized features...")}]},
+  {delay:800,actions:[function(){addFile(P+"/stages/adoption/units/unit-01-usage-tracking.md");addFile(P+"/stages/adoption/units/unit-02-enablement.md");addCard("adoption","usage-tracking","in-progress");addCard("adoption","enablement","")}]},
+  {delay:500,actions:[function(){addFastForward("35")}]},
+  {delay:1800,actions:[function(){removeFastForward();addMsg("agent","agent","Hat: usage-analyst. Adoption metrics (30-day mark):\n  \u2022 DAU/MAU ratio: 0.68 (healthy)\n  \u2022 Monitors active: 47 (up from 12 at onboarding)\n  \u2022 Alert channels: 3 (Slack, PagerDuty, email)\n  \u2022 Features used: monitoring (high), alerting (high), dashboards (low), API testing (unused)\n\nDashboards and API testing are underutilized \u2014 big value opportunities.");updateCard("adoption","usage-tracking","completed");updateCard("adoption","enablement","in-progress")}]},
+  {delay:500,actions:[function(){addFastForward("20")}]},
+  {delay:1200,actions:[function(){removeFastForward();addMsg("agent","agent","Enablement plan created:\n  \u2022 Dashboard workshop for Sarah\u2019s team (maps dashboards to their weekly eng review)\n  \u2022 API testing walkthrough for DevOps lead (replaces their current Postman workflow)\n  \u2022 Custom metric builder tutorial (they have unique SLA requirements)\n\nAdoption target: 80% feature breadth within 60 days.");updateCard("adoption","enablement","completed");addFile(P+"/knowledge/USAGE-REPORT.md")}]},
+
+  // Adoption gate - auto
+  {delay:800,actions:[function(){addMsg("system","system","Adoption stage complete. Review gate: auto. All criteria met \u2014 advancing.");addMsg("agent","agent","Advancing to health-check stage.")}]},
+
+  // === HEALTH-CHECK ===
+  {delay:1000,actions:[function(){activateStage("health-check");addMsg("agent","agent","Entering health-check stage. Hat: health-monitor.\nLoading usage report...");addFile(P+"/stages/health-check/state.json")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Resolved inputs \u2192 adoption/usage-report (knowledge/USAGE-REPORT.md)");addMsg("agent","agent","Running comprehensive health assessment across 5 dimensions...")}]},
+  {delay:800,actions:[function(){addFile(P+"/stages/health-check/units/unit-01-health-scorecard.md");addFile(P+"/stages/health-check/units/unit-02-risk-assessment.md");addCard("health-check","health-scorecard","in-progress");addCard("health-check","risk-assessment","")}]},
+  {delay:500,actions:[function(){addFastForward("30")}]},
+  {delay:1800,actions:[function(){removeFastForward();addMsg("agent","agent","Health scorecard:\n  \u2022 Usage: 8/10 (strong daily engagement)\n  \u2022 Engagement: 7/10 (responding to alerts, creating monitors)\n  \u2022 Support sentiment: 9/10 (2 tickets, both resolved same day)\n  \u2022 Stakeholder access: 6/10 (only talking to Sarah, need exec sponsor)\n  \u2022 Contract alignment: 8/10 (using 75% of licensed capacity)\n\nOverall: 7.6/10 \u2014 Healthy, with one flag.");updateCard("health-check","health-scorecard","completed");updateCard("health-check","risk-assessment","in-progress")}]},
+  {delay:1200,actions:[function(){addMsg("agent","agent","Hat: risk-analyst. One risk flagged: single-threaded relationship through Sarah Chen. If she leaves or changes roles, we lose our champion. Should we proactively build a relationship with their CTO?")}]},
+  {delay:2200,actions:[function(){addMsg("user","you","Yes \u2014 get a meeting with the CTO. Position it as a quarterly business review. Sarah can make the intro.")}]},
+  {delay:800,actions:[function(){addMsg("agent","agent","Action item created: schedule QBR with CTO via Sarah\u2019s intro. Also adding their DevOps lead as a secondary contact for day-to-day interactions.");updateCard("health-check","risk-assessment","completed");addFile(P+"/knowledge/HEALTH-REPORT.md")}]},
+
+  // Health-check gate - ask
+  {delay:800,actions:[function(){addMsg("system","system","Health-check stage complete. Review gate: ask.")}]},
+  {delay:1500,actions:[function(){addMsg("user","you","Good catch on the single-thread risk. Approved.");addMsg("agent","agent","Advancing to expansion stage.")}]},
+
+  // === EXPANSION ===
+  {delay:1000,actions:[function(){activateStage("expansion");addMsg("agent","agent","Entering expansion stage. Hat: growth-strategist.\nLoading health report...");addFile(P+"/stages/expansion/state.json")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Resolved inputs \u2192 health-check/health-report (knowledge/HEALTH-REPORT.md)");addMsg("agent","agent","Identifying expansion opportunities based on usage patterns and customer value...")}]},
+  {delay:800,actions:[function(){addFile(P+"/stages/expansion/units/unit-01-opportunity-analysis.md");addFile(P+"/stages/expansion/units/unit-02-expansion-proposal.md");addCard("expansion","opportunity-analysis","in-progress");addCard("expansion","expansion-proposal","")}]},
+  {delay:500,actions:[function(){addFastForward("30")}]},
+  {delay:1800,actions:[function(){removeFastForward();addMsg("agent","agent","Hat: value-consultant. Two expansion opportunities identified:\n\n  1. [High] Additional seats: only 5 of 50 employees have access. Their QA team (8 people) is asking for monitoring access. Revenue impact: +$28K ARR.\n\n  2. [Medium] API testing add-on: they\u2019re currently using Postman separately. Our API testing integrates with their existing monitors. Revenue impact: +$15K ARR.\n\nTotal expansion potential: $43K ARR (36% uplift on $120K base).");updateCard("expansion","opportunity-analysis","completed");updateCard("expansion","expansion-proposal","in-progress")}]},
+  {delay:500,actions:[function(){addFastForward("25")}]},
+  {delay:1500,actions:[function(){removeFastForward();addMsg("agent","agent","Expansion proposals drafted:\n  \u2022 QA team seats: ROI justification tied to their bug escape rate (currently 12%, industry benchmark 5%)\n  \u2022 API testing: positioned as Postman replacement with monitoring integration\n\nBoth proposals grounded in their actual usage data and business outcomes.");updateCard("expansion","expansion-proposal","completed");addFile(P+"/knowledge/OPPORTUNITY-BRIEF.md")}]},
+
+  // Expansion gate - ask + await
+  {delay:800,actions:[function(){addMsg("system","system","Expansion stage complete. Review gate: ask + await.")}]},
+  {delay:800,actions:[function(){showCriteriaReview("Expansion",INTENT,["2 expansion opportunities with revenue impact","QA team seats: +$28K ARR justified by bug escape rate","API testing add-on: +$15K ARR replacing Postman","ROI grounded in actual usage data","Proposals ready for customer presentation"],"ask gate")}]},
+  {delay:800,actions:[function(){animateCheckmarks()}]},
+  {delay:2000,actions:[function(){highlightApproveBtn()}]},
+  {delay:1200,actions:[function(){hideReviewOverlay();addMsg("user","you","Approved. Send both proposals.")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Await gate: waiting for TechStartup Inc response on expansion proposals...")}]},
+  {delay:1500,actions:[function(){addMsg("system","system","Await resolved \u2014 TechStartup approved QA team seats (+$28K). API testing deferred to next quarter.")}]},
+  {delay:800,actions:[function(){addMsg("agent","agent","Partial win \u2014 $28K expansion closed. API testing is in pipeline for Q2. Advancing to renewal.")}]},
+
+  // === RENEWAL ===
+  {delay:1000,actions:[function(){activateStage("renewal");addMsg("agent","agent","Entering renewal stage. Hat: renewal-manager.\nLoading opportunity brief...");addFile(P+"/stages/renewal/state.json")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Resolved inputs \u2192 expansion/opportunity-brief (knowledge/OPPORTUNITY-BRIEF.md)");addMsg("agent","agent","Building renewal strategy with value realization summary...")}]},
+  {delay:800,actions:[function(){addFile(P+"/stages/renewal/units/unit-01-value-summary.md");addFile(P+"/stages/renewal/units/unit-02-renewal-proposal.md");addFile(P+"/stages/renewal/units/unit-03-ebr-deck.md");addCard("renewal","value-summary","in-progress");addCard("renewal","renewal-proposal","");addCard("renewal","ebr-deck","")}]},
+  {delay:500,actions:[function(){addFastForward("35")}]},
+  {delay:1800,actions:[function(){removeFastForward();addMsg("agent","agent","Value realization summary:\n  \u2022 Monitors: 12 at onboarding \u2192 63 active today\n  \u2022 MTTR reduction: 47 min \u2192 12 min (74% improvement)\n  \u2022 Incident detection: 89% of issues caught before customer reports\n  \u2022 Team adoption: 13 active users (up from 5)\n  \u2022 Competitor migration: complete, zero data loss\n\nQuantified ROI: $340K in prevented downtime costs vs. $148K contract value.");updateCard("renewal","value-summary","completed");updateCard("renewal","renewal-proposal","in-progress")}]},
+  {delay:500,actions:[function(){addFastForward("25")}]},
+  {delay:1500,actions:[function(){removeFastForward();addMsg("agent","agent","Hat: executive-sponsor. Renewal proposal:\n  \u2022 2-year renewal at $148K/year (includes QA team expansion)\n  \u2022 5% multi-year discount if they commit to 2 years\n  \u2022 API testing add-on included at 10% discount as early commitment incentive\n\nAnticipated objection: \u201Cwhy pay more when we\u2019re not using API testing yet?\u201D Counter: bundle discount saves them $8K vs. adding it later.");updateCard("renewal","renewal-proposal","completed");updateCard("renewal","ebr-deck","in-progress")}]},
+  {delay:500,actions:[function(){addFastForward("20")}]},
+  {delay:1200,actions:[function(){removeFastForward();addMsg("agent","agent","EBR deck tells the value story:\n  Slide 1: Where they started (competitor tool, manual monitoring)\n  Slide 2: What they achieved (74% MTTR reduction, $340K saved)\n  Slide 3: Where they can go (API testing, full-team adoption)\n  Slide 4: Renewal terms with bundle savings");updateCard("renewal","ebr-deck","completed");addFile(P+"/knowledge/RENEWAL-OUTCOME.md")}]},
+
+  // Renewal gate - external + await
+  {delay:800,actions:[function(){addMsg("system","system","Renewal stage complete. Review gate: external + await.")}]},
+  {delay:800,actions:[function(){showCriteriaReview("Renewal",INTENT,["Value summary with quantified ROI ($340K saved)","74% MTTR improvement documented with evidence","Renewal proposal with multi-year discount","Objection handling prepared for API testing bundle","EBR deck with clear value narrative"],"external gate")}]},
+  {delay:800,actions:[function(){animateCheckmarks()}]},
+  {delay:2400,actions:[function(){highlightApproveBtn()}]},
+  {delay:1200,actions:[function(){hideReviewOverlay();addMsg("system","system","External review approved. CTO signed 2-year renewal with API testing bundle.")}]},
+
+  // Complete
+  {delay:1200,actions:[function(){completeAllStages();addMsg("agent","agent","All 5 stages complete for onboard-techstartup-inc.\n\nDelivered:\n  \u2022 Onboarding: SSO setup, 847 monitors migrated, 3-persona training\n  \u2022 Adoption: 0.68 DAU/MAU, enablement plan for underutilized features\n  \u2022 Health-check: 7.6/10 score, single-thread risk mitigated with CTO QBR\n  \u2022 Expansion: QA team seats closed (+$28K), API testing in pipeline\n  \u2022 Renewal: 2-year deal signed at $163K/year with API testing bundle\n\nAccount growth: $120K \u2192 $163K ARR (36% expansion). Intent status: complete.")}]},
+  {delay:1500,actions:[function(){overlay.classList.add("visible")}]}
+];
+
+function getTotalSteps(){return steps.length}
+function updateProgress(){progressEl.style.width=Math.min(100,(stepIdx/getTotalSteps())*100)+"%"}
+function updateStepCounter(){var t=currentStage?'<span class="current-stage">'+currentStage+"</span>":"";stepCounterEl.innerHTML=stepIdx+"/"+getTotalSteps()+t}
+function runStep(){if(!playing||stepIdx>=steps.length)return;var s=steps[stepIdx];s.actions.forEach(function(fn){fn()});stepIdx++;updateProgress();updateStepCounter();if(stepIdx<steps.length){timer=setTimeout(runStep,steps[stepIdx].delay/speed)}else{updateProgress()}}
+function start(){if(stepIdx<steps.length){timer=setTimeout(runStep,steps[stepIdx].delay/speed)}}
+function pause(){clearTimeout(timer);timer=null}
+function reset(){pause();stepIdx=0;playing=true;currentStage=null;termEl.innerHTML="";treeEl.innerHTML="";files=[];overlay.classList.remove("visible");reviewOverlay.classList.remove("visible");stageBadgeEl.textContent="ready";stageBadgeEl.classList.add("idle");stageBadgeEl.style.color="";stageBadgeEl.style.borderColor="";stageBadgeEl.style.background="";initBoard();updateProgress();updateStepCounter();updatePlayBtn();start()}
+function updatePlayBtn(){playBtn.textContent=playing?"\u23F8 Pause":"\u25B6 Play";playBtn.classList.toggle("active",playing)}
+function setSpeed(s){speed=s;speedBtns.forEach(function(b){b.classList.toggle("active",parseFloat(b.dataset.speed)===s)});if(playing){pause();start()}}
+
+playBtn.addEventListener("click",function(){playing=!playing;updatePlayBtn();if(playing)start();else pause()});
+restartBtn.addEventListener("click",reset);
+replayBtn.addEventListener("click",reset);
+speedBtns.forEach(function(btn){btn.addEventListener("click",function(){setSpeed(parseFloat(btn.dataset.speed))})});
+document.addEventListener("keydown",function(e){if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;switch(e.key){case" ":e.preventDefault();playing=!playing;updatePlayBtn();if(playing)start();else pause();break;case"r":case"R":reset();break;case"1":setSpeed(1);break;case"2":setSpeed(2);break;case"4":setSpeed(4);break}});
+
+initBoard();updateProgress();updateStepCounter();start();
+})();
+</script>
+</body>
+</html>
