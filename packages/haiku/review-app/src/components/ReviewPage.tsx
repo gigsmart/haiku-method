@@ -560,21 +560,46 @@ function UnitsTable({ units, unitMockups }: { units: ParsedUnit[]; unitMockups: 
     return <p className="text-stone-500 dark:text-stone-400 italic">No units found.</p>;
   }
 
+  // Group by stage, preserving order
+  const stageOrder: string[] = [];
+  const byStage = new Map<string, ParsedUnit[]>();
+  for (const u of units) {
+    const stage = u.frontmatter.stage || "unknown";
+    if (!byStage.has(stage)) {
+      byStage.set(stage, []);
+      stageOrder.push(stage);
+    }
+    byStage.get(stage)!.push(u);
+  }
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left">
-        <thead>
-          <tr className="border-b-2 border-stone-200 dark:border-stone-700">
-            <th className="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">#</th>
-            <th className="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Name</th>
-            <th className="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Stage</th>
-            <th className="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Type</th>
-            <th className="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Status</th>
-            <th className="py-2 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Dependencies</th>
-          </tr>
-        </thead>
-        <tbody>
-          {units.map((u) => {
+    <div className="space-y-6">
+      {stageOrder.map((stage) => {
+        const stageUnits = byStage.get(stage) || [];
+        const completed = stageUnits.filter((u) => u.frontmatter.status === "completed").length;
+        return (
+          <div key={stage}>
+            <div className="flex items-center gap-3 mb-3">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                {stage.charAt(0).toUpperCase() + stage.slice(1)}
+              </h3>
+              <span className="text-xs text-stone-400 dark:text-stone-500">
+                {completed}/{stageUnits.length} complete
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b-2 border-stone-200 dark:border-stone-700">
+                    <th className="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">#</th>
+                    <th className="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Name</th>
+                    <th className="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Type</th>
+                    <th className="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Status</th>
+                    <th className="py-2 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Dependencies</th>
+                  </tr>
+                </thead>
+                <tbody>
+          {stageUnits.map((u) => {
             const deps = u.frontmatter.depends_on?.length ? u.frontmatter.depends_on.join(", ") : "\u2014";
             const isExpanded = expandedUnit === u.slug;
             // Build unit content from sections for inline commenting
@@ -636,8 +661,12 @@ function UnitsTable({ units, unitMockups }: { units: ParsedUnit[]; unitMockups: 
               </tr>
             );
           })}
-        </tbody>
-      </table>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
