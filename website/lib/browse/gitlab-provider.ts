@@ -100,7 +100,7 @@ export class GitLabProvider implements BrowseProvider {
 			project: {
 				repository: {
 					blobs: {
-						nodes: Array<{ path: string; rawBlob: string | null } | null> | null
+						nodes: Array<{ path: string; rawTextBlob: string | null } | null> | null
 					} | null
 				} | null
 			} | null
@@ -112,7 +112,7 @@ export class GitLabProvider implements BrowseProvider {
 		)
 		const nodes = data?.project?.repository?.blobs?.nodes
 		if (!nodes || nodes.length === 0) return null
-		return nodes[0]?.rawBlob ?? null
+		return nodes[0]?.rawTextBlob ?? null
 	}
 
 	async listFiles(dir: string): Promise<string[]> {
@@ -214,8 +214,8 @@ export class GitLabProvider implements BrowseProvider {
 				)
 				const blobs = blobsData?.project?.repository?.blobs?.nodes ?? []
 				for (const blob of blobs) {
-					if (blob?.rawBlob && blob.path) {
-						blobByPath.set(blob.path, blob.rawBlob)
+					if (blob?.rawTextBlob && blob.path) {
+						blobByPath.set(blob.path, blob.rawTextBlob)
 					}
 				}
 			} catch {
@@ -290,32 +290,15 @@ export class GitLabProvider implements BrowseProvider {
 		const allBlobs = treeData?.project?.repository?.tree?.blobs?.nodes ?? []
 		const allTrees = treeData?.project?.repository?.tree?.trees?.nodes ?? []
 
-		// Collect all file paths we need to read
-		const filePaths: string[] = []
-
-		// Always need intent.md
-		filePaths.push(`${basePath}/intent.md`)
-
-		// Add reflection.md
-		filePaths.push(`${basePath}/reflection.md`)
-
-		// Add text blob paths from the recursive tree (skip binary assets)
-		const textExtensions = [".md", ".json", ".yml", ".yaml", ".txt"]
-		for (const blob of allBlobs) {
-			if (blob?.path && !filePaths.includes(blob.path) && textExtensions.some(ext => blob.path.endsWith(ext))) {
-				filePaths.push(blob.path)
-			}
-		}
-
-		// Step 2: Batch-fetch file contents in chunks (GitLab 500s on large batches)
-		// Filter to only text files to avoid binary content issues
-		const textPaths = filePaths.filter(p =>
-			p.endsWith(".md") || p.endsWith(".json") || p.endsWith(".yml") || p.endsWith(".yaml") || p.endsWith(".txt")
-		)
+		// Collect all file paths from tree, then batch-fetch via rawTextBlob
+		// rawTextBlob returns null for binary files — safe to request everything
+		const filePaths = allBlobs
+			.filter((b): b is { name: string; path: string } => b?.path != null)
+			.map((b) => b.path)
 
 		const blobByPath = new Map<string, string>()
-		for (let i = 0; i < textPaths.length; i += CHUNK_SIZE) {
-			const chunk = textPaths.slice(i, i + CHUNK_SIZE)
+		for (let i = 0; i < filePaths.length; i += CHUNK_SIZE) {
+			const chunk = filePaths.slice(i, i + CHUNK_SIZE)
 			const blobsCacheKey = `gl:${this.host}:${this.projectPath}:intentBlobs:${slug}:${i}`
 			try {
 				const blobsData = await this.cachedQuery<operationsBatchBlobsQuery$data>(
@@ -323,10 +306,9 @@ export class GitLabProvider implements BrowseProvider {
 					{ fullPath: this.projectPath, paths: chunk, ref: this.ref },
 					blobsCacheKey,
 				)
-				const blobs = blobsData?.project?.repository?.blobs?.nodes ?? []
-				for (const blob of blobs) {
-					if (blob?.rawBlob != null && blob.path) {
-						blobByPath.set(blob.path, blob.rawBlob)
+				for (const blob of blobsData?.project?.repository?.blobs?.nodes ?? []) {
+					if (blob?.path && blob.rawTextBlob != null) {
+						blobByPath.set(blob.path, blob.rawTextBlob)
 					}
 				}
 			} catch {

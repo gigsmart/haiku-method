@@ -7,7 +7,7 @@
  * Key differences from GitHub:
  * - Uses project(fullPath:) instead of repository(owner:, name:)
  * - Tree traversal via repository.tree(path:, ref:, recursive:)
- * - File content via repository.blobs(paths:, ref:) -> nodes { rawBlob }
+ * - File content via repository.blobs(paths:, ref:) -> nodes { rawTextBlob }
  */
 import { graphql } from "relay-runtime"
 
@@ -46,7 +46,8 @@ export const GitLabBatchBlobsQuery = graphql`
           nodes {
             name
             path
-            rawBlob
+            rawTextBlob
+            rawPath
           }
         }
       }
@@ -63,7 +64,7 @@ export const GitLabIntentTreeQuery = graphql`
     project(fullPath: $fullPath) {
       repository {
         tree(path: $path, ref: $ref, recursive: true) {
-          blobs(first: 100) {
+          blobs(first: 500) {
             nodes {
               name
               path
@@ -92,7 +93,7 @@ export const GitLabReadFileQuery = graphql`
         blobs(paths: $paths, ref: $ref, first: 1) {
           nodes {
             path
-            rawBlob
+            rawTextBlob
           }
         }
       }

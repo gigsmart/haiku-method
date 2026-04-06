@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<762eea0d2207ef3b46387811b35dec2c>>
+ * @generated SignedSource<<7986b945cfcd3d219629745798f6b463>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -85,7 +85,7 @@ v3 = [
   {
     "kind": "Literal",
     "name": "first",
-    "value": 100
+    "value": 500
   }
 ],
 v4 = {
@@ -106,17 +106,24 @@ v6 = [
   (v4/*: any*/),
   (v5/*: any*/)
 ],
-v7 = {
+v7 = [
+  {
+    "kind": "Literal",
+    "name": "first",
+    "value": 100
+  }
+],
+v8 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "id",
   "storageKey": null
 },
-v8 = [
+v9 = [
   (v4/*: any*/),
   (v5/*: any*/),
-  (v7/*: any*/)
+  (v8/*: any*/)
 ];
 return {
   "fragment": {
@@ -168,11 +175,11 @@ return {
                         "storageKey": null
                       }
                     ],
-                    "storageKey": "blobs(first:100)"
+                    "storageKey": "blobs(first:500)"
                   },
                   {
                     "alias": null,
-                    "args": (v3/*: any*/),
+                    "args": (v7/*: any*/),
                     "concreteType": "TreeEntryConnection",
                     "kind": "LinkedField",
                     "name": "trees",
@@ -249,15 +256,15 @@ return {
                         "kind": "LinkedField",
                         "name": "nodes",
                         "plural": true,
-                        "selections": (v8/*: any*/),
+                        "selections": (v9/*: any*/),
                         "storageKey": null
                       }
                     ],
-                    "storageKey": "blobs(first:100)"
+                    "storageKey": "blobs(first:500)"
                   },
                   {
                     "alias": null,
-                    "args": (v3/*: any*/),
+                    "args": (v7/*: any*/),
                     "concreteType": "TreeEntryConnection",
                     "kind": "LinkedField",
                     "name": "trees",
@@ -270,7 +277,7 @@ return {
                         "kind": "LinkedField",
                         "name": "nodes",
                         "plural": true,
-                        "selections": (v8/*: any*/),
+                        "selections": (v9/*: any*/),
                         "storageKey": null
                       }
                     ],
@@ -282,23 +289,23 @@ return {
             ],
             "storageKey": null
           },
-          (v7/*: any*/)
+          (v8/*: any*/)
         ],
         "storageKey": null
       }
     ]
   },
   "params": {
-    "cacheID": "84ac35a89ea986736492cca9c5096766",
+    "cacheID": "62e0d429e4a565191ac3ee700253edc2",
     "id": null,
     "metadata": {},
     "name": "operationsIntentTreeQuery",
     "operationKind": "query",
-    "text": "query operationsIntentTreeQuery(\n  $fullPath: ID!\n  $path: String!\n  $ref: String\n) {\n  project(fullPath: $fullPath) {\n    repository {\n      tree(path: $path, ref: $ref, recursive: true) {\n        blobs(first: 100) {\n          nodes {\n            name\n            path\n            id\n          }\n        }\n        trees(first: 100) {\n          nodes {\n            name\n            path\n            id\n          }\n        }\n      }\n    }\n    id\n  }\n}\n"
+    "text": "query operationsIntentTreeQuery(\n  $fullPath: ID!\n  $path: String!\n  $ref: String\n) {\n  project(fullPath: $fullPath) {\n    repository {\n      tree(path: $path, ref: $ref, recursive: true) {\n        blobs(first: 500) {\n          nodes {\n            name\n            path\n            id\n          }\n        }\n        trees(first: 100) {\n          nodes {\n            name\n            path\n            id\n          }\n        }\n      }\n    }\n    id\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "eb5c7c2e55ca97b7fb1b43439357b474";
+(node as any).hash = "079d192142f866cc0b207dcebc578a36";
 
 export default node;

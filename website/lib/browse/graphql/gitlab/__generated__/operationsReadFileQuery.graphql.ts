@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c8b5ab1369bfd5e7fca4069dbd5c8952>>
+ * @generated SignedSource<<f008fdb822d4eaaa7bbe90fd44c14432>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -20,7 +20,7 @@ export type operationsReadFileQuery$data = {
       readonly blobs: {
         readonly nodes: ReadonlyArray<{
           readonly path: string;
-          readonly rawBlob: string | null | undefined;
+          readonly rawTextBlob: string | null | undefined;
         } | null | undefined> | null | undefined;
       } | null | undefined;
     } | null | undefined;
@@ -84,7 +84,7 @@ v4 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "rawBlob",
+  "name": "rawTextBlob",
   "storageKey": null
 },
 v5 = {
@@ -208,16 +208,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "ce803116cf6b854d109bec55d8b07154",
+    "cacheID": "cae1b7c112b9865336ada75b4ca6ba82",
     "id": null,
     "metadata": {},
     "name": "operationsReadFileQuery",
     "operationKind": "query",
-    "text": "query operationsReadFileQuery(\n  $fullPath: ID!\n  $paths: [String!]!\n  $ref: String\n) {\n  project(fullPath: $fullPath) {\n    repository {\n      blobs(paths: $paths, ref: $ref, first: 1) {\n        nodes {\n          path\n          rawBlob\n          id\n        }\n      }\n    }\n    id\n  }\n}\n"
+    "text": "query operationsReadFileQuery(\n  $fullPath: ID!\n  $paths: [String!]!\n  $ref: String\n) {\n  project(fullPath: $fullPath) {\n    repository {\n      blobs(paths: $paths, ref: $ref, first: 1) {\n        nodes {\n          path\n          rawTextBlob\n          id\n        }\n      }\n    }\n    id\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "0b42bab60c50bd0ac6188527e3349868";
+(node as any).hash = "6d8f9718bebbd468b5222ddc5ed2049b";
 
 export default node;

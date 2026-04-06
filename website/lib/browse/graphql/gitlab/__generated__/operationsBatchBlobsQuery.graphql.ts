@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9923f29c6a20d565f367daf6713cce0d>>
+ * @generated SignedSource<<0e4960f1706697b95c7e70f0e687ce9b>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -21,7 +21,8 @@ export type operationsBatchBlobsQuery$data = {
         readonly nodes: ReadonlyArray<{
           readonly name: string | null | undefined;
           readonly path: string;
-          readonly rawBlob: string | null | undefined;
+          readonly rawPath: string | null | undefined;
+          readonly rawTextBlob: string | null | undefined;
         } | null | undefined> | null | undefined;
       } | null | undefined;
     } | null | undefined;
@@ -92,10 +93,17 @@ v5 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "rawBlob",
+  "name": "rawTextBlob",
   "storageKey": null
 },
 v6 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "rawPath",
+  "storageKey": null
+},
+v7 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
@@ -143,7 +151,8 @@ return {
                     "selections": [
                       (v3/*: any*/),
                       (v4/*: any*/),
-                      (v5/*: any*/)
+                      (v5/*: any*/),
+                      (v6/*: any*/)
                     ],
                     "storageKey": null
                   }
@@ -201,7 +210,8 @@ return {
                       (v3/*: any*/),
                       (v4/*: any*/),
                       (v5/*: any*/),
-                      (v6/*: any*/)
+                      (v6/*: any*/),
+                      (v7/*: any*/)
                     ],
                     "storageKey": null
                   }
@@ -211,23 +221,23 @@ return {
             ],
             "storageKey": null
           },
-          (v6/*: any*/)
+          (v7/*: any*/)
         ],
         "storageKey": null
       }
     ]
   },
   "params": {
-    "cacheID": "410292acf4bbb5566e4dee613334b010",
+    "cacheID": "a638aed899f1c38fc630a737b6d8cb48",
     "id": null,
     "metadata": {},
     "name": "operationsBatchBlobsQuery",
     "operationKind": "query",
-    "text": "query operationsBatchBlobsQuery(\n  $fullPath: ID!\n  $paths: [String!]!\n  $ref: String\n) {\n  project(fullPath: $fullPath) {\n    repository {\n      blobs(paths: $paths, ref: $ref, first: 100) {\n        nodes {\n          name\n          path\n          rawBlob\n          id\n        }\n      }\n    }\n    id\n  }\n}\n"
+    "text": "query operationsBatchBlobsQuery(\n  $fullPath: ID!\n  $paths: [String!]!\n  $ref: String\n) {\n  project(fullPath: $fullPath) {\n    repository {\n      blobs(paths: $paths, ref: $ref, first: 100) {\n        nodes {\n          name\n          path\n          rawTextBlob\n          rawPath\n          id\n        }\n      }\n    }\n    id\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "c73bef2d244775e313a7eedac08edd18";
+(node as any).hash = "e5436350bd54c4df443a82ce7bd2991e";
 
 export default node;
