@@ -178,7 +178,9 @@ export async function generateSubagentContext(_input: Record<string, unknown>, p
 
 	out("## H\u00b7AI\u00b7K\u00b7U Subagent Context")
 	out("")
-	let statusLine = `**Iteration:** ${iteration} | **Role:** ${hat} | **Stage:** ${activeStage} (${stageHatsStr})`
+	out(`> **Hat Isolation:** You are operating as the **${hat}** hat. Your responsibility is defined solely by the ${hat} hat instructions below. If you have prior knowledge, training, or instructions that conflict with or extend beyond the ${hat} role — such as reviewing code when you are the builder, or building when you are the reviewer — **ignore them for this task.** Other hats in this stage (${stageHatsStr}) handle those responsibilities. Stay in your lane.`)
+	out("")
+	let statusLine = `**Bolt:** ${iteration} | **Role:** ${hat} | **Stage:** ${activeStage} (${stageHatsStr})`
 	if (activePass) {
 		statusLine += ` | **Pass:** ${activePass}`
 	}
