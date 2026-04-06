@@ -17,8 +17,6 @@ import { join, basename } from "node:path"
 import { execSync } from "node:child_process"
 import {
 	findActiveIntent,
-	stateLoad,
-	isValidJson,
 	getCurrentBranch,
 	isUnitBranch,
 	readFrontmatterField,
@@ -127,24 +125,32 @@ export async function generateSubagentContext(_input: Record<string, unknown>, p
 	if (!intentDir) return
 
 	const intentSlug = basename(intentDir)
-	const iterationJson = stateLoad(intentDir, "iteration.json")
-	if (!iterationJson) return
 
-	if (!isValidJson(iterationJson)) return
-
-	const state = JSON.parse(iterationJson) as Record<string, unknown>
-	const iteration = Number(state.iteration ?? 1)
-	const hat = (state.hat as string) ?? ""
-	const status = (state.status as string) ?? "active"
-
-	// Skip if no active task
-	if (status === "completed" || !hat) return
-
-	// Resolve active stage and studio from intent
+	// Read state from new model (intent frontmatter + stage state.json + unit frontmatter)
 	const intentFile = join(intentDir, "intent.md")
+	const intentStatus = readFrontmatterField(intentFile, "status")
 	let activeStage = readFrontmatterField(intentFile, "active_stage") || "development"
 	let studio = readFrontmatterField(intentFile, "studio") || "software"
 	const activePass = readFrontmatterField(intentFile, "active_pass")
+
+	// Find active unit to get hat and bolt
+	const unitFiles = findUnitFiles(intentDir)
+	let hat = ""
+	let bolt = 1
+	for (const uf of unitFiles) {
+		const uStatus = readFrontmatterField(uf, "status")
+		if (uStatus === "active") {
+			hat = readFrontmatterField(uf, "hat") || ""
+			bolt = Number(readFrontmatterField(uf, "bolt") || "1")
+			break
+		}
+	}
+
+	const status = intentStatus || "active"
+	const iteration = bolt
+
+	// Skip if no active task
+	if (status === "completed" || !hat) return
 
 	// Get hat sequence from stage
 	const stageHatsStr = getHatSequence(activeStage, studio, pluginRoot)
@@ -216,13 +222,13 @@ export async function generateSubagentContext(_input: Record<string, unknown>, p
 	}
 
 	// Unit status
-	const unitFiles = findUnitFiles(intentDir)
-	if (unitFiles.length > 0) {
+	const allUnits = findUnitFiles(intentDir)
+	if (allUnits.length > 0) {
 		out("### Unit Status")
 		out("")
 		out("| Unit | Status | Discipline |")
 		out("|------|--------|------------|")
-		for (const uf of unitFiles) {
+		for (const uf of allUnits) {
 			const name = basename(uf, ".md")
 			const unitStatus = readFrontmatterField(uf, "status") || "pending"
 			const discipline = readFrontmatterField(uf, "discipline") || "-"
@@ -312,7 +318,7 @@ export async function generateSubagentContext(_input: Record<string, unknown>, p
 		out(`3. **Write next prompt** (unit-scoped): save to \`.haiku/intents/${intentSlug}/state/next-prompt.md\``)
 		out("")
 		out(`**Note:** Unit-level state (scratchpad.md, next-prompt.md, blockers.md) is saved to \`.haiku/intents/${intentSlug}/state/\`.`)
-		out("Intent-level state (iteration.json, intent.md, etc.) is managed by the orchestrator on main.")
+		out("Intent-level state (intent.md, state.json, unit frontmatter) is managed by the orchestrator on main.")
 		out("")
 		out("### Resilience (CRITICAL)")
 		out("")

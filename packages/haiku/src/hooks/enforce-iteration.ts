@@ -8,17 +8,15 @@
 
 import {
 	findActiveIntent,
-	stateLoad,
-	stateSave,
 	isUnitBranch,
 	getCurrentBranch,
-	isValidJson,
 	readFrontmatterField,
 	setFrontmatterField,
+	readJson,
 	findUnitFiles,
 	checkIntentCriteria,
 } from "./utils.js"
-import { basename } from "node:path"
+import { basename, join } from "node:path"
 
 function out(s: string): void {
 	process.stdout.write(s + "\n")
@@ -28,12 +26,8 @@ export async function enforceIteration(_input: Record<string, unknown>, _pluginR
 	const currentBranch = getCurrentBranch()
 	const onUnitBranch = isUnitBranch(currentBranch)
 
-	// Load iteration state from filesystem
+	// Find active intent
 	const intentDir = findActiveIntent()
-	let iterationJson = ""
-	if (intentDir) {
-		iterationJson = stateLoad(intentDir, "iteration.json")
-	}
 
 	// Unit-branch sessions should NOT be told to /haiku:execute
 	if (onUnitBranch) {
@@ -43,57 +37,51 @@ export async function enforceIteration(_input: Record<string, unknown>, _pluginR
 		return
 	}
 
-	if (!iterationJson) {
+	if (!intentDir) {
 		// No H·AI·K·U state - not using the methodology, skip
 		return
 	}
 
-	if (!isValidJson(iterationJson)) {
-		return
-	}
+	// Read state from the new model: intent frontmatter + stage state.json + unit frontmatter
+	const intentFile = `${intentDir}/intent.md`
+	const intentStatus = readFrontmatterField(intentFile, "status")
+	const activeStage = readFrontmatterField(intentFile, "active_stage")
 
-	const state = JSON.parse(iterationJson) as Record<string, unknown>
-	const status = (state.status as string) ?? "active"
-	const currentIteration = Number(state.iteration ?? 1)
-	const hat = (state.hat as string) ?? "builder"
-	const maxIterations = Number(state.maxIterations ?? 0)
-	const targetUnit = (state.targetUnit as string) ?? ""
+	// If no active stage, no state to enforce
+	if (!activeStage) return
+
+	// Read stage state for phase info
+	const stageState = readJson(join(intentDir, "stages", activeStage, "state.json"))
+	const stageStatus = (stageState.status as string) ?? ""
+
+	// Find the active unit to get hat and bolt
+	const unitFiles = findUnitFiles(intentDir)
+	let hat = ""
+	let bolt = 1
+	let activeUnitName = ""
+	for (const uf of unitFiles) {
+		const uStatus = readFrontmatterField(uf, "status")
+		if (uStatus === "active") {
+			hat = readFrontmatterField(uf, "hat") || "builder"
+			bolt = Number(readFrontmatterField(uf, "bolt") || "1")
+			activeUnitName = basename(uf, ".md")
+			break
+		}
+	}
+	if (!hat) hat = "builder"
 
 	// If task is already complete, don't enforce iteration
-	if (status === "complete" || status === "completed") {
-		return
-	}
-
-	// Check if iteration limit exceeded
-	if (maxIterations > 0 && currentIteration >= maxIterations) {
-		out("")
-		out("---")
-		out("")
-		out("## H\u00b7AI\u00b7K\u00b7U: ITERATION LIMIT REACHED")
-		out("")
-		out(`**Iteration:** ${currentIteration} / ${maxIterations} (max)`)
-		out(`**Hat:** ${hat}`)
-		out("")
-		out("The maximum iteration limit has been reached. This is a safety mechanism")
-		out("to prevent infinite loops.")
-		out("")
-		out("**Options:**")
-		out("1. Review progress and decide if work is complete")
-		out("2. Increase limit: edit `.haiku/intents/{intent-slug}/state/iteration.json` and set maxIterations")
-		out("3. Reset iteration count: `/haiku:reset` and start fresh")
-		out("")
-		out("Progress preserved in `.haiku/intents/{intent-slug}/state/`.")
+	if (intentStatus === "completed" || stageStatus === "completed") {
 		return
 	}
 
 	// Get intent slug and check DAG status
-	const intentSlug = intentDir ? basename(intentDir) : ""
+	const intentSlug = basename(intentDir)
 	let readyCount = 0
 	let inProgressCount = 0
 	let allComplete = false
 
-	if (intentSlug && intentDir) {
-		const unitFiles = findUnitFiles(intentDir)
+	{
 		let pending = 0
 		let completed = 0
 		let blocked = 0
@@ -104,6 +92,7 @@ export async function enforceIteration(_input: Record<string, unknown>, _pluginR
 				case "completed":
 					completed++
 					break
+				case "active":
 				case "in_progress":
 					inProgressCount++
 					break
@@ -137,18 +126,9 @@ export async function enforceIteration(_input: Record<string, unknown>, _pluginR
 
 	if (allComplete) {
 		// Auto-reconcile: if all units complete but intent not marked completed
-		if (intentDir) {
-			const intentFile = `${intentDir}/intent.md`
-			const intentStatus = readFrontmatterField(intentFile, "status")
-			if (intentStatus === "active") {
-				setFrontmatterField(intentFile, "status", "completed")
-				checkIntentCriteria(intentDir)
-				// Update iteration.json status
-				if (iterationJson) {
-					const updatedState = { ...state, status: "completed" }
-					stateSave(intentDir, "iteration.json", JSON.stringify(updatedState))
-				}
-			}
+		if (intentStatus === "active") {
+			setFrontmatterField(intentFile, "status", "completed")
+			checkIntentCriteria(intentDir)
 		}
 		out("## H\u00b7AI\u00b7K\u00b7U: All Units Complete")
 		out("")
@@ -158,13 +138,13 @@ export async function enforceIteration(_input: Record<string, unknown>, _pluginR
 		// Work remains - instruct agent to continue
 		out("## H\u00b7AI\u00b7K\u00b7U: Session Exhausted - Continue Execution")
 		out("")
-		out(`**Iteration:** ${currentIteration} | **Hat:** ${hat}`)
+		out(`**Bolt:** ${bolt} | **Hat:** ${hat} | **Stage:** ${activeStage}`)
 		out(`**Ready units:** ${readyCount} | **In progress:** ${inProgressCount}`)
 		out("")
 		out("### ACTION REQUIRED")
 		out("")
-		if (targetUnit) {
-			out(`Call \`/haiku:execute ${intentSlug} ${targetUnit}\` to continue targeted execution.`)
+		if (activeUnitName) {
+			out(`Call \`/haiku:execute ${intentSlug} ${activeUnitName}\` to continue targeted execution.`)
 		} else {
 			out("Call `/haiku:execute` to continue the autonomous loop.")
 		}
@@ -175,7 +155,7 @@ export async function enforceIteration(_input: Record<string, unknown>, _pluginR
 		// Truly blocked - human must intervene
 		out("## H\u00b7AI\u00b7K\u00b7U: BLOCKED - Human Intervention Required")
 		out("")
-		out(`**Iteration:** ${currentIteration} | **Hat:** ${hat}`)
+		out(`**Bolt:** ${bolt} | **Hat:** ${hat} | **Stage:** ${activeStage}`)
 		out("")
 		out("No units are ready to work on. All remaining units are blocked.")
 		out("")
@@ -186,5 +166,5 @@ export async function enforceIteration(_input: Record<string, unknown>, _pluginR
 		out("")
 	}
 
-	out(`Progress preserved in \`.haiku/intents/${intentSlug}/state/\`.`)
+	out(`Progress preserved in \`.haiku/intents/${intentSlug}/\`.`)
 }

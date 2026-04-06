@@ -5,12 +5,13 @@
 // Gates are only enforced for building hats (builder, implementer, refactorer).
 
 import { execSync } from "node:child_process"
-import { existsSync } from "node:fs"
+import { existsSync, readdirSync } from "node:fs"
+import { join } from "node:path"
 import {
 	findActiveIntent,
-	stateLoad,
-	isValidJson,
+	readFrontmatterField,
 	readFrontmatterArray,
+	readJson,
 	getRepoRoot,
 } from "./utils.js"
 
@@ -21,13 +22,21 @@ interface GateResult {
 	output: string
 }
 
-function getJsonField(json: string, field: string): string {
-	try {
-		const obj = JSON.parse(json)
-		return String(obj[field] ?? "")
-	} catch {
-		return ""
+/**
+ * Find the first active unit file in a stage's units/ directory.
+ * Returns the full path to the unit file, or null if none found.
+ */
+function findActiveUnitInStage(intentDir: string, stage: string): string | null {
+	const unitsDir = join(intentDir, "stages", stage, "units")
+	if (!existsSync(unitsDir)) return null
+	for (const file of readdirSync(unitsDir)) {
+		if (file.startsWith("unit-") && file.endsWith(".md")) {
+			const filePath = join(unitsDir, file)
+			const status = readFrontmatterField(filePath, "status")
+			if (status === "active") return filePath
+		}
 	}
+	return null
 }
 
 export async function qualityGate(input: Record<string, unknown>, _pluginRoot: string): Promise<void> {
@@ -42,31 +51,34 @@ export async function qualityGate(input: Record<string, unknown>, _pluginRoot: s
 	const intentDir = findActiveIntent()
 	if (!intentDir) return
 
-	// Early exit: no iteration state
-	const iterationJson = stateLoad(intentDir, "iteration.json")
-	if (!iterationJson) return
+	// Read state from the new model: intent frontmatter + stage state.json + unit frontmatter
+	const intentFile = `${intentDir}/intent.md`
+	const intentStatus = readFrontmatterField(intentFile, "status")
+	const activeStage = readFrontmatterField(intentFile, "active_stage")
 
-	// Validate JSON
-	if (!isValidJson(iterationJson)) return
+	// Early exit: no active stage means no active work
+	if (!activeStage) return
 
-	// Extract iteration fields
-	const hat = getJsonField(iterationJson, "hat")
-	const status = getJsonField(iterationJson, "status")
-	const currentUnit = getJsonField(iterationJson, "currentUnit")
+	// Read stage state
+	const stageState = readJson(join(intentDir, "stages", activeStage, "state.json"))
+	const stageStatus = (stageState.status as string) ?? ""
+
+	// Early exit: completed or blocked intent/stage
+	if (intentStatus === "completed" || stageStatus === "completed" || stageStatus === "blocked") return
+
+	// Find the active unit and read its hat
+	const activeUnitFile = findActiveUnitInStage(intentDir, activeStage)
+	const hat = activeUnitFile ? readFrontmatterField(activeUnitFile, "hat") : ""
 
 	// Early exit: non-building hat
 	if (!["builder", "implementer", "refactorer"].includes(hat)) return
 
-	// Early exit: completed or blocked status
-	if (status === "completed" || status === "blocked") return
-
-	// Load quality gates from intent and unit
-	const intentGates = readFrontmatterArray(`${intentDir}/intent.md`, "quality_gates")
+	// Load quality gates from intent and active unit
+	const intentGates = readFrontmatterArray(intentFile, "quality_gates")
 
 	let unitGates: Array<Record<string, string>> = []
-	if (currentUnit) {
-		const unitFile = `${intentDir}/${currentUnit}.md`
-		unitGates = readFrontmatterArray(unitFile, "quality_gates")
+	if (activeUnitFile) {
+		unitGates = readFrontmatterArray(activeUnitFile, "quality_gates")
 	}
 
 	// Merge gates additively

@@ -55,11 +55,33 @@ export async function subagentHook(input: Record<string, unknown>, pluginRoot: s
 		updatedInput.mode = permissionMode
 	}
 
-	// Override Plan agent type to general-purpose
+	// Agent selection: match the best available agent to the work domain
+	// Hats define behavior (builder, reviewer); agents bring domain expertise (react-eng, go-eng)
+	// A specialized agent can wear any hat — it brings expertise to the role
 	if (isAgentTool) {
-		const subagentType = (updatedInput.subagent_type as string) ?? ""
-		if (subagentType === "Plan") {
+		const currentType = (updatedInput.subagent_type as string) ?? ""
+
+		// Override Plan to general-purpose
+		if (currentType === "Plan") {
 			updatedInput.subagent_type = "general-purpose"
+		}
+
+		// If no specific agent type set, try to match based on unit type or context
+		if (!currentType || currentType === "general-purpose") {
+			// Extract unit type from the injected context (if present)
+			const contextStr = (updatedInput[targetField] as string) ?? ""
+			const unitTypeMatch = contextStr.match(/type:\s*(frontend|backend|fullstack|design|research|security|ops|data)/i)
+			if (unitTypeMatch) {
+				const unitType = unitTypeMatch[1].toLowerCase()
+				// Check if the user has specialized agents available
+				// The agent description in the prompt will help Claude Code match the right one
+				// We add a hint for the agent selection system
+				if (!updatedInput.description) {
+					updatedInput.description = `H·AI·K·U ${unitType} work`
+				} else {
+					updatedInput.description = `H·AI·K·U ${unitType}: ${updatedInput.description}`
+				}
+			}
 		}
 	}
 

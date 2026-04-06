@@ -14,11 +14,10 @@ import { execSync } from "node:child_process"
 import {
 	findActiveIntent,
 	stateLoad,
-	stateSave,
-	isValidJson,
 	getCurrentBranch,
 	readFrontmatterField,
 	setFrontmatterField,
+	readJson,
 	findUnitFiles,
 	checkIntentCriteria,
 	getRepoRoot,
@@ -196,15 +195,11 @@ export async function injectContext(input: Record<string, unknown>, pluginRoot: 
 	// CHECK FOR H·AI·K·U STATE
 	// ========================================================================
 	const intentDir = findActiveIntent()
-	let iterationJson = ""
-	if (intentDir) {
-		iterationJson = stateLoad(intentDir, "iteration.json")
-	}
 
 	// ========================================================================
-	// NO ACTIVE ITERATION STATE — show available/resumable intents
+	// NO ACTIVE INTENT — show available/resumable intents
 	// ========================================================================
-	if (!iterationJson) {
+	if (!intentDir) {
 		// Discover resumable intents
 		const intentsDir = join(repoRoot, ".haiku", "intents")
 		const filesystemIntents: Array<{ slug: string; summary: string }> = []
@@ -257,73 +252,39 @@ export async function injectContext(input: Record<string, unknown>, pluginRoot: 
 	}
 
 	// ========================================================================
-	// VALIDATE ITERATION JSON
+	// READ STATE FROM NEW MODEL (intent frontmatter + stage state.json + unit frontmatter)
 	// ========================================================================
-	if (!isValidJson(iterationJson)) {
-		process.stderr.write("Warning: Invalid iteration.json format. Run /haiku:reset to clear state.\n")
-		return
-	}
-
-	let state = JSON.parse(iterationJson) as Record<string, unknown>
-
-	// Migration: strip deprecated unitStates field
-	if ("unitStates" in state) {
-		delete state.unitStates
-		if (intentDir) {
-			stateSave(intentDir, "iteration.json", JSON.stringify(state))
-		}
-	}
-
-	// Extract iteration state fields
-	let phase = (state.phase as string) ?? ""
-	const needsAdvance = state.needsAdvance === true
-	let iteration = Number(state.iteration ?? 1)
-	const hat = (state.hat as string) ?? "planner"
-	const status = (state.status as string) ?? "active"
-	const currentUnit = (state.currentUnit as string) ?? ""
-	const maxIterations = Number(state.maxIterations ?? 0)
-	const targetUnit = (state.targetUnit as string) ?? ""
-	const intentSlugState = (state.intentSlug as string) ?? ""
-
-	// State migration: add 'phase' field if missing
-	if (!phase) {
-		phase = hat === "planner" ? "elaboration" : "execution"
-		state.phase = phase
-		if (intentDir) {
-			stateSave(intentDir, "iteration.json", JSON.stringify(state))
-		}
-	}
-
-	// Check for needsAdvance flag
-	// Only advance on 'clear' or 'startup' sources — NOT on 'compact' events
-	if (needsAdvance && source !== "compact") {
-		const newIter = iteration + 1
-		state.iteration = newIter
-		state.needsAdvance = false
-		iteration = newIter
-		if (intentDir) {
-			stateSave(intentDir, "iteration.json", JSON.stringify(state))
-		}
-	}
-
-	// Resolve active stage and studio from intent
-	let activeStage = ""
-	let studio = ""
-	let activePass = ""
-
-	if (intentDir && existsSync(join(intentDir, "intent.md"))) {
-		activeStage = readFrontmatterField(join(intentDir, "intent.md"), "active_stage")
-		studio = readFrontmatterField(join(intentDir, "intent.md"), "studio")
-		activePass = readFrontmatterField(join(intentDir, "intent.md"), "active_pass")
-	}
+	const intentFile = join(intentDir, "intent.md")
+	const intentStatus = readFrontmatterField(intentFile, "status")
+	let activeStage = readFrontmatterField(intentFile, "active_stage")
+	const studio = readFrontmatterField(intentFile, "studio") || "ideation"
+	const activePass = readFrontmatterField(intentFile, "active_pass")
 	if (!activeStage) activeStage = "research"
-	if (!studio) studio = "ideation"
+
+	// Read stage state
+	const stageState = readJson(join(intentDir, "stages", activeStage, "state.json"))
+	const phase = (stageState.phase as string) ?? ""
+
+	// Find the active unit to get hat and bolt
+	const allUnitFiles = findUnitFiles(intentDir)
+	let hat = "planner"
+	let bolt = 1
+	let currentUnit = ""
+	for (const uf of allUnitFiles) {
+		const uStatus = readFrontmatterField(uf, "status")
+		if (uStatus === "active") {
+			hat = readFrontmatterField(uf, "hat") || "planner"
+			bolt = Number(readFrontmatterField(uf, "bolt") || "1")
+			currentUnit = basename(uf, ".md")
+			break
+		}
+	}
 
 	const stageHatsStr = getHatSequence(activeStage, studio, pluginRoot)
-	const intentSlug = intentDir ? basename(intentDir) : ""
+	const intentSlug = basename(intentDir)
 
 	// If task is complete, show completion message
-	if (status === "complete" || status === "completed") {
+	if (intentStatus === "completed") {
 		out("## H\u00b7AI\u00b7K\u00b7U: Task Complete")
 		out("")
 		out("Previous task was completed. Run `/haiku:reset` to start a new task.")
@@ -335,9 +296,12 @@ export async function injectContext(input: Record<string, unknown>, pluginRoot: 
 	// ========================================================================
 	out("## H\u00b7AI\u00b7K\u00b7U Context")
 	out("")
-	let statusLine = `**Iteration:** ${iteration} | **Hat:** ${hat} | **Stage:** ${activeStage} (${stageHatsStr})`
+	let statusLine = `**Bolt:** ${bolt} | **Hat:** ${hat} | **Stage:** ${activeStage} (${stageHatsStr})`
 	if (activePass) {
 		statusLine += ` | **Pass:** ${activePass}`
+	}
+	if (phase) {
+		statusLine += ` | **Phase:** ${phase}`
 	}
 	out(statusLine)
 	out("")

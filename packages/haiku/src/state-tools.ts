@@ -3,6 +3,7 @@
 // One tool per resource per operation. Under the hood: frontmatter + JSON files.
 // The caller doesn't need to know file paths — just resource identifiers.
 
+import { execSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { z } from "zod"
@@ -87,6 +88,20 @@ function writeJson(path: string, data: Record<string, unknown>): void {
 
 function timestamp(): string {
 	return new Date().toISOString().replace(/\.\d{3}Z$/, "Z")
+}
+
+/**
+ * Git add + commit for lifecycle state changes.
+ * Non-fatal: git failures are logged but never crash the MCP.
+ */
+function gitCommitState(message: string): void {
+	try {
+		const haikuRoot = findHaikuRoot()
+		execSync(`git add "${haikuRoot}"`, { encoding: "utf8", stdio: "pipe" })
+		execSync(`git commit -m "${message}" --allow-empty`, { encoding: "utf8", stdio: "pipe" })
+	} catch {
+		// Git failures are non-fatal — state was already written to disk
+	}
 }
 
 // ── Tool definitions ───────────────────────────────────────────────────────
@@ -241,6 +256,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			data.gate_outcome = null
 			writeJson(path, data)
 			emitTelemetry("haiku.stage.started", { intent: args.intent as string, stage: args.stage as string })
+			gitCommitState(`haiku: start stage ${args.stage as string}`)
 			return text("ok")
 		}
 		case "haiku_stage_complete": {
@@ -251,6 +267,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			data.gate_outcome = (args.gate_outcome as string) || "advanced"
 			writeJson(path, data)
 			emitTelemetry("haiku.stage.completed", { intent: args.intent as string, stage: args.stage as string, gate_outcome: data.gate_outcome as string })
+			gitCommitState(`haiku: complete stage ${args.stage as string}`)
 			return text("ok")
 		}
 
@@ -284,6 +301,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			setFrontmatterField(path, "hat", args.hat)
 			setFrontmatterField(path, "started_at", timestamp())
 			emitTelemetry("haiku.unit.started", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string, hat: args.hat as string })
+			gitCommitState(`haiku: start unit ${args.unit as string}`)
 			return text("ok")
 		}
 		case "haiku_unit_complete": {
@@ -291,6 +309,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			setFrontmatterField(path, "status", "completed")
 			setFrontmatterField(path, "completed_at", timestamp())
 			emitTelemetry("haiku.unit.completed", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string })
+			gitCommitState(`haiku: complete unit ${args.unit as string}`)
 			return text("ok")
 		}
 		case "haiku_unit_advance_hat": {

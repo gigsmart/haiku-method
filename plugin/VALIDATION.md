@@ -317,7 +317,7 @@ packages/
       hooks/                    # all 10 hooks in TypeScript
 ```
 
-### MCP Tools (16 + 2 orchestrator)
+### MCP Tools (16 state/knowledge + 2 orchestrator + 4 review/visual = 22 total)
 
 | Tool | Purpose |
 |------|---------|
@@ -327,6 +327,10 @@ packages/
 | `haiku_knowledge_list/read` | Read knowledge artifacts |
 | `haiku_run_next` | Get next orchestrator action |
 | `haiku_gate_approve` | Approve an ask gate |
+| `open_review` | Open visual review page in the browser for an intent or unit |
+| `get_review_status` | Check the status and decision of a review session |
+| `ask_user_visual_question` | Ask the user questions via a rich HTML page in the browser |
+| `pick_design_direction` | Open a browser-based visual picker for choosing a design direction |
 
 ### Automatic Telemetry
 
