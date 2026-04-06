@@ -499,7 +499,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 			}
 		}
 
-		// Generate HTML with session ID, mockups, and wireframes
+		// Store parsed data on the session for the SPA API endpoint
+		session.parsedIntent = intent
+		session.parsedUnits = units
+		session.parsedCriteria = criteria
+		session.parsedMermaid = mermaid
+		session.intentMockups = intentMockups
+		session.unitMockups = unitMockups
+
+		// Generate HTML with session ID, mockups, and wireframes (legacy fallback)
 		session.html = renderReviewPage({
 			intent,
 			units,

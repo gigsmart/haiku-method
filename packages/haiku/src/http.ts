@@ -5,6 +5,7 @@ import type { Server } from "@modelcontextprotocol/sdk/server/index.js"
 import { z } from "zod"
 import { getSession, updateDesignDirectionSession, updateQuestionSession, updateSession } from "./sessions.js"
 import type { QuestionAnswer, ReviewAnnotations } from "./sessions.js"
+import { REVIEW_APP_HTML } from "./review-app-html.js"
 
 let httpServer: HttpServer | null = null
 let actualPort: number | null = null
@@ -20,14 +21,85 @@ export function getActualPort(): number | null {
 	return actualPort
 }
 
+/** Serve the React SPA for any page route — the SPA reads the session ID from the URL */
+function serveSpa(): Response {
+	return new Response(REVIEW_APP_HTML, {
+		headers: { "Content-Type": "text/html; charset=utf-8" },
+	})
+}
+
+/** API endpoint: return session data as JSON for the SPA to render */
+function handleSessionApi(sessionId: string): Response {
+	const session = getSession(sessionId)
+	if (!session) {
+		return Response.json({ error: "Session not found" }, { status: 404 })
+	}
+
+	// Build a JSON-serializable response with all data the SPA needs
+	const data: Record<string, unknown> = {
+		session_id: session.session_id,
+		session_type: session.session_type,
+		status: session.status,
+	}
+
+	if (session.session_type === "review") {
+		data.intent_slug = session.intent_slug
+		data.review_type = session.review_type
+		data.target = session.target
+		data.decision = session.decision
+		data.feedback = session.feedback
+		if (session.annotations) data.annotations = session.annotations
+
+		// Include parsed intent/unit data if available
+		if (session.parsedIntent) data.intent = session.parsedIntent
+		if (session.parsedUnits) data.units = session.parsedUnits
+		if (session.parsedCriteria) data.criteria = session.parsedCriteria
+		if (session.parsedMermaid) data.mermaid = session.parsedMermaid
+		if (session.intentMockups) data.intent_mockups = session.intentMockups
+		if (session.unitMockups) {
+			// Convert Map to plain object for JSON serialization
+			const obj: Record<string, unknown> = {}
+			if (session.unitMockups instanceof Map) {
+				for (const [k, v] of session.unitMockups) {
+					obj[k] = v
+				}
+			} else {
+				Object.assign(obj, session.unitMockups)
+			}
+			data.unit_mockups = obj
+		}
+	}
+
+	if (session.session_type === "question") {
+		data.title = session.title
+		data.context = session.context
+		data.questions = session.questions
+		data.answers = session.answers
+		// Build image URLs
+		const imagePaths = session.imagePaths ?? []
+		data.image_urls = imagePaths.map(
+			(_: string, i: number) => `/question-image/${session.session_id}/${i}`,
+		)
+	}
+
+	if (session.session_type === "design_direction") {
+		data.title = "Design Direction"
+		data.intent_slug = session.intent_slug
+		data.archetypes = session.archetypes
+		data.parameters = session.parameters
+		data.selection = session.selection
+	}
+
+	return Response.json(data)
+}
+
 function handleReviewGet(sessionId: string): Response {
 	const session = getSession(sessionId)
 	if (!session || session.session_type !== "review") {
 		return new Response("Session not found", { status: 404 })
 	}
-	return new Response(session.html, {
-		headers: { "Content-Type": "text/html; charset=utf-8" },
-	})
+	// Serve the SPA — it will fetch session data via /api/session/:id
+	return serveSpa()
 }
 
 async function handleDecidePost(
@@ -283,9 +355,8 @@ function handleQuestionGet(sessionId: string): Response {
 	if (!session || session.session_type !== "question") {
 		return new Response("Session not found", { status: 404 })
 	}
-	return new Response(session.html, {
-		headers: { "Content-Type": "text/html; charset=utf-8" },
-	})
+	// Serve the SPA
+	return serveSpa()
 }
 
 async function handleQuestionAnswerPost(
@@ -347,9 +418,8 @@ function handleDirectionGet(sessionId: string): Response {
 	if (!session || session.session_type !== "design_direction") {
 		return new Response("Session not found", { status: 404 })
 	}
-	return new Response(session.html, {
-		headers: { "Content-Type": "text/html; charset=utf-8" },
-	})
+	// Serve the SPA
+	return serveSpa()
 }
 
 async function handleDirectionSelectPost(
@@ -418,6 +488,12 @@ async function handleDirectionSelectPost(
 function handleRequest(req: Request): Response | Promise<Response> {
 	const url = new URL(req.url)
 	const path = url.pathname
+
+	// GET /api/session/:sessionId — JSON API for the SPA
+	const apiSessionMatch = path.match(/^\/api\/session\/([^/]+)$/)
+	if (apiSessionMatch && req.method === "GET") {
+		return handleSessionApi(apiSessionMatch[1])
+	}
 
 	// GET /review/:sessionId
 	const reviewMatch = path.match(/^\/review\/([^/]+)$/)

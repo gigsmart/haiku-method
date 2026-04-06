@@ -16,6 +16,13 @@ export interface ReviewSession {
   feedback: string;
   annotations?: ReviewAnnotations;
   html: string;
+  /** Parsed data for the SPA — stored at session creation so /api/session can return it */
+  parsedIntent?: unknown;
+  parsedUnits?: unknown[];
+  parsedCriteria?: unknown[];
+  parsedMermaid?: string;
+  intentMockups?: unknown[];
+  unitMockups?: Map<string, unknown[]> | Record<string, unknown[]>;
 }
 
 export interface QuestionDef {
