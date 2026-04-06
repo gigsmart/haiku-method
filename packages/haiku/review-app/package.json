@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build"
   },
   "dependencies": {
+    "@haiku/shared": "file:../../shared",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",

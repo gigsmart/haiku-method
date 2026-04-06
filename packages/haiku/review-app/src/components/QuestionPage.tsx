@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import type { SessionData, QuestionAnswer } from "../types";
+import { MarkdownViewer } from "@haiku/shared";
 import { submitAnswers, tryCloseTab } from "../hooks/useSession";
 import { Card, SectionHeading } from "./Card";
-import { MarkdownViewer } from "./MarkdownViewer";
 import { SubmitSuccess } from "./SubmitSuccess";
 
 interface Props {

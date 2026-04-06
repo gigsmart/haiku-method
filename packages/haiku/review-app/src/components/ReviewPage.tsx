@@ -1,10 +1,8 @@
 import { useCallback, useRef, useState } from "react";
 import type { SessionData, ReviewAnnotations, ParsedUnit, MockupInfo, Section } from "../types";
+import { StatusBadge, MarkdownViewer, CriteriaChecklist } from "@haiku/shared";
 import { Tabs, type TabDef } from "./Tabs";
 import { Card, SectionHeading } from "./Card";
-import { StatusBadge } from "./StatusBadge";
-import { CriteriaChecklist } from "./CriteriaChecklist";
-import { MarkdownViewer } from "./MarkdownViewer";
 import { DecisionForm } from "./DecisionForm";
 import { AnnotationCanvas, type AnnotationPin } from "./AnnotationCanvas";
 import { InlineComments, type InlineComment } from "./InlineComments";

@@ -1,69 +1,23 @@
-// H·AI·K·U Browse — shared types for local and remote browsing
+// Re-export shared types from @haiku/shared
+export type {
+	HaikuIntent,
+	HaikuUnit,
+	HaikuStageState,
+	HaikuAsset,
+	HaikuIntentDetail,
+	CriterionItem,
+} from "@haiku/shared"
 
-export interface HaikuIntent {
-	slug: string
-	title: string
-	studio: string
-	studioStages: string[]
-	activeStage: string
-	mode: string
-	stagesComplete: number
-	stagesTotal: number
-	status: string
-	startedAt: string | null
-	completedAt: string | null
-	composite: Array<{ studio: string; stages: string[] }> | null
-	follows: string | null
-	content?: string
-	raw: Record<string, unknown>
-}
+// Re-export shared utilities from @haiku/shared
+export { formatDuration, formatDate, titleCase } from "@haiku/shared"
 
-export interface HaikuUnit {
-	name: string
-	stage: string
-	type: string
-	status: string
-	dependsOn: string[]
-	bolt: number
-	hat: string
-	startedAt: string | null
-	completedAt: string | null
-	refs: string[]
-	criteria: Array<{ text: string; checked: boolean }>
-	content: string
-	raw: Record<string, unknown>
-}
-
-export interface HaikuStageState {
-	name: string
-	status: "pending" | "active" | "complete"
-	phase: string
-	startedAt: string | null
-	completedAt: string | null
-	gateOutcome: string | null
-	units: HaikuUnit[]
-}
-
-export interface HaikuAsset {
-	path: string
-	name: string
-	rawUrl: string
-}
-
-export interface HaikuIntentDetail extends HaikuIntent {
-	stages: HaikuStageState[]
-	knowledge: string[]
-	operations: string[]
-	reflection: string | null
-	content: string
-	assets: HaikuAsset[]
-}
+// Website-specific types and utilities remain here
 
 export interface BrowseProvider {
 	/** List all intents in the workspace. If onProgress is provided, call it as each intent loads. */
-	listIntents(onProgress?: (intent: HaikuIntent) => void): Promise<HaikuIntent[]>
+	listIntents(onProgress?: (intent: import("@haiku/shared").HaikuIntent) => void): Promise<import("@haiku/shared").HaikuIntent[]>
 	/** Get full intent detail including stages, units, knowledge */
-	getIntent(slug: string): Promise<HaikuIntentDetail | null>
+	getIntent(slug: string): Promise<import("@haiku/shared").HaikuIntentDetail | null>
 	/** Read a raw file from the workspace */
 	readFile(path: string): Promise<string | null>
 	/** List files matching a pattern in a directory */
@@ -122,7 +76,7 @@ export function parseFrontmatter(raw: string): { data: Record<string, unknown>; 
 }
 
 /** Parse a unit's frontmatter + content into a HaikuUnit */
-export function parseUnit(unitFile: string, stageName: string, raw: string): HaikuUnit {
+export function parseUnit(unitFile: string, stageName: string, raw: string): import("@haiku/shared").HaikuUnit {
 	const { data, content } = parseFrontmatter(raw)
 	return {
 		name: unitFile.replace(".md", ""),
@@ -162,23 +116,4 @@ export function normalizeIntentStatus(status: string, completedAt: string | null
 		status: isComplete ? "completed" : status,
 		stagesComplete: isComplete ? stagesTotal : Math.max(0, stagesComplete),
 	}
-}
-
-export function formatDuration(startedAt: string | null, completedAt: string | null): string {
-	if (!startedAt) return ""
-	const start = new Date(startedAt).getTime()
-	const end = completedAt ? new Date(completedAt).getTime() : Date.now()
-	const diffMs = end - start
-	const days = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-	const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-	if (days > 0) return `${days}d ${hours}h`
-	if (hours > 0) return `${hours}h`
-	const mins = Math.floor(diffMs / (1000 * 60))
-	return `${mins}m`
-}
-
-export function formatDate(iso: string | null): string {
-	if (!iso) return ""
-	const d = new Date(iso)
-	return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
 }

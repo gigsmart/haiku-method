@@ -1,16 +1,17 @@
-import type { CriterionItem } from "@haiku/shared";
+import type { CriterionItem } from "../types";
 
 interface Props {
   criteria: CriterionItem[];
+  className?: string;
 }
 
-export function CriteriaChecklist({ criteria }: Props) {
+export function CriteriaChecklist({ criteria, className = "" }: Props) {
   if (criteria.length === 0) {
     return <p className="text-stone-500 dark:text-stone-400 italic">No criteria defined.</p>;
   }
 
   return (
-    <ol className="space-y-2">
+    <ol className={`space-y-2 ${className}`}>
       {criteria.map((c, i) => (
         <li
           key={i}

@@ -1,5 +1,9 @@
 /** Session types matching the server-side data model */
 
+// Import shared types from @haiku/shared and re-export them
+import type { CriterionItem, MockupInfo } from "@haiku/shared";
+export type { CriterionItem, MockupInfo };
+
 export interface ReviewAnnotations {
   screenshot?: string;
   pins?: Array<{ x: number; y: number; text: string }>;
@@ -35,16 +39,6 @@ export interface DesignParameterData {
   step: number;
   default: number;
   labels: { low: string; high: string };
-}
-
-export interface MockupInfo {
-  label: string;
-  url: string;
-}
-
-export interface CriterionItem {
-  checked: boolean;
-  text: string;
 }
 
 export interface Section {
