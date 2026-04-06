@@ -22,6 +22,7 @@ import ReadFileQuery from "./graphql/gitlab/__generated__/operationsReadFileQuer
 
 const glCache = new Map<string, { data: unknown; ts: number }>()
 const GL_CACHE_TTL = 5 * 60 * 1000
+const CHUNK_SIZE = 10
 
 export class GitLabProvider implements BrowseProvider {
 	readonly name = "GitLab"
@@ -200,7 +201,6 @@ export class GitLabProvider implements BrowseProvider {
 			.filter((n): n is { name: string; path: string } => n != null)
 			.map((n) => `${n.path}/intent.md`)
 
-		const CHUNK_SIZE = 10
 		const blobByPath = new Map<string, string>()
 
 		for (let i = 0; i < allPaths.length; i += CHUNK_SIZE) {
