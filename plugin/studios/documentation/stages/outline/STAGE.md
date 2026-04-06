@@ -6,7 +6,7 @@ review: ask
 unit_types: [outline]
 inputs:
   - stage: audit
-    output: audit-report
+    discovery: audit-report
 ---
 
 # Outline

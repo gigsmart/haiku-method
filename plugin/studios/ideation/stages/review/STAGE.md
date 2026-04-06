@@ -6,7 +6,7 @@ review: ask
 unit_types: [review]
 inputs:
   - stage: create
-    output: draft-deliverable
+    discovery: draft-deliverable
 ---
 
 # Review

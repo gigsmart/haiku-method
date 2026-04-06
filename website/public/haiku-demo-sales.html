@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>H&#183;AI&#183;K&#183;U in Action &mdash; Sales Studio</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0c0a09;--bg-panel:#1c1917;--bg-panel-alt:#292524;
+    --text:#e7e5e4;--text-dim:#a8a29e;--text-muted:#78716c;
+    --accent:#2dd4bf;--accent-dim:#0d9488;--accent-glow:rgba(45,212,191,.15);
+    --user:#818cf8;--agent:#2dd4bf;--system:#fbbf24;
+    --green:#22c55e;--red:#ef4444;--orange:#f59e0b;
+    --border:#44403c;--border-dim:#292524;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:"Inter",ui-sans-serif,system-ui,sans-serif;
+  }
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden}
+  .app{display:flex;flex-direction:column;height:100vh}
+  .top-bar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 20px;border-bottom:1px solid var(--border-dim);
+    background:var(--bg);z-index:10;flex-shrink:0;
+  }
+  .top-bar h1{font-size:16px;font-weight:600;letter-spacing:.5px;color:var(--accent)}
+  .top-bar h1 span{color:var(--text-dim);font-weight:400}
+  .controls{display:flex;align-items:center;gap:12px}
+  .controls button{
+    background:var(--bg-panel);border:1px solid var(--border);color:var(--text);
+    padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-family:var(--sans);
+    transition:all .15s;
+  }
+  .controls button:hover{border-color:var(--accent);color:var(--accent)}
+  .controls button.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+  .speed-btns{display:flex;gap:4px}
+  .speed-btns button{padding:4px 10px;font-size:12px;border-radius:4px}
+  .progress-wrap{flex-shrink:0;height:3px;background:var(--bg-panel-alt);position:relative}
+  .progress-bar{height:100%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));width:0;transition:width .3s ease}
+  .main{display:flex;flex:1;overflow:hidden}
+  .terminal-panel{flex:0 0 60%;display:flex;flex-direction:column;border-right:1px solid var(--border-dim);background:var(--bg)}
+  .terminal-header{
+    padding:10px 16px;font-size:12px;color:var(--text-muted);
+    border-bottom:1px solid var(--border-dim);display:flex;align-items:center;gap:8px;flex-shrink:0;
+  }
+  .terminal-header .dots{display:flex;gap:6px}
+  .terminal-header .dot{width:10px;height:10px;border-radius:50%}
+  .dot-r{background:#ef4444}.dot-y{background:#fbbf24}.dot-g{background:#22c55e}
+  .terminal-body{flex:1;overflow-y:auto;padding:16px 20px;font-family:var(--mono);font-size:13px;line-height:1.7;scroll-behavior:smooth}
+  .terminal-body::-webkit-scrollbar{width:6px}
+  .terminal-body::-webkit-scrollbar-track{background:transparent}
+  .terminal-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  .msg{margin-bottom:12px;animation:fadeSlideIn .3s ease}
+  .msg-user .msg-label{color:var(--user);font-weight:600}
+  .msg-agent .msg-label{color:var(--agent);font-weight:600}
+  .msg-system .msg-label{color:var(--system);font-weight:600}
+  .msg-label{font-size:11px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px}
+  .msg-text{color:var(--text);white-space:pre-wrap}
+  .msg-system .msg-text{color:var(--system);font-style:italic}
+  .typing-indicator{display:inline-flex;gap:4px;padding:4px 0}
+  .typing-indicator span{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:typingDot .8s infinite}
+  .typing-indicator span:nth-child(2){animation-delay:.15s}
+  .typing-indicator span:nth-child(3){animation-delay:.3s}
+  .ff-indicator{
+    display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg-panel-alt);
+    border-radius:6px;color:var(--system);font-size:12px;margin:8px 0;animation:pulse 1.5s ease-in-out infinite;
+  }
+  .ff-indicator svg{width:14px;height:14px}
+  .right-panels{flex:0 0 40%;display:flex;flex-direction:column;overflow:hidden}
+  .artifact-panel{flex:1;border-bottom:1px solid var(--border-dim);display:flex;flex-direction:column;background:var(--bg-panel);overflow:hidden}
+  .panel-header{
+    padding:10px 16px;font-size:12px;font-weight:600;color:var(--text-muted);
+    text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border-dim);flex-shrink:0;
+  }
+  .file-tree{flex:1;overflow-y:auto;padding:12px 16px;font-family:var(--mono);font-size:12px;line-height:1.8}
+  .file-tree::-webkit-scrollbar{width:6px}
+  .file-tree::-webkit-scrollbar-track{background:transparent}
+  .file-tree::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  .tree-item{color:var(--text-dim);white-space:nowrap;animation:fadeSlideIn .3s ease}
+  .tree-item.highlight{color:var(--accent);text-shadow:0 0 8px var(--accent-glow)}
+  .tree-item.folder{color:var(--text-muted)}
+  .tree-item .icon{margin-right:6px;display:inline-block;width:16px;text-align:center}
+  .board-panel{flex:0 0 auto;min-height:200px;max-height:260px;display:flex;flex-direction:column;background:var(--bg-panel);overflow:hidden}
+  .board-scroll{flex:1;overflow-x:auto;overflow-y:hidden;padding:12px 16px;display:flex;gap:10px}
+  .board-scroll::-webkit-scrollbar{height:6px}
+  .board-scroll::-webkit-scrollbar-track{background:transparent}
+  .board-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  .board-col{flex:0 0 130px;display:flex;flex-direction:column;gap:6px;transition:opacity .3s}
+  .board-col.dimmed{opacity:.35}
+  .board-col.active .col-header{color:var(--accent);border-color:var(--accent)}
+  .board-col.completed .col-header{color:var(--green);border-color:var(--green)}
+  .col-header{
+    font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+    color:var(--text-muted);padding-bottom:6px;border-bottom:2px solid var(--border);transition:all .3s;
+  }
+  .col-cards{display:flex;flex-direction:column;gap:4px;min-height:30px}
+  .card{
+    padding:6px 8px;border-radius:4px;font-size:11px;font-family:var(--mono);
+    background:var(--bg-panel-alt);border:1px solid var(--border);color:var(--text-dim);
+    animation:fadeSlideIn .3s ease;transition:all .3s;
+  }
+  .card.in-progress{border-color:var(--accent);color:var(--accent);background:rgba(45,212,191,.08)}
+  .card.completed{border-color:var(--green);color:var(--green);background:rgba(34,197,94,.08)}
+  @keyframes fadeSlideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes typingDot{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+  @keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
+  @keyframes highlightFade{0%{color:var(--accent);text-shadow:0 0 12px var(--accent-glow)}100%{color:var(--text-dim);text-shadow:none}}
+  @media(max-width:900px){
+    .main{flex-direction:column}
+    .terminal-panel{flex:0 0 55%;border-right:none;border-bottom:1px solid var(--border-dim)}
+    .right-panels{flex:1}.board-col{flex:0 0 110px}
+  }
+  @media(max-width:600px){.terminal-panel{flex:0 0 50%}.top-bar h1{font-size:13px}.controls button{padding:4px 10px;font-size:11px}}
+  .completion-overlay{
+    position:fixed;inset:0;background:rgba(12,10,9,.85);display:flex;align-items:center;justify-content:center;
+    z-index:100;opacity:0;pointer-events:none;transition:opacity .5s;
+  }
+  .completion-overlay.visible{opacity:1;pointer-events:auto}
+  .completion-card{
+    text-align:center;padding:40px 60px;background:var(--bg-panel);border:1px solid var(--accent);
+    border-radius:16px;box-shadow:0 0 60px rgba(45,212,191,.15);animation:fadeSlideIn .5s ease;
+  }
+  .completion-card h2{color:var(--accent);font-size:24px;margin-bottom:8px}
+  .completion-card p{color:var(--text-dim);font-size:14px;margin-bottom:20px}
+  .completion-card button{
+    background:var(--accent);color:var(--bg);border:none;padding:10px 28px;border-radius:8px;
+    font-size:14px;font-weight:600;cursor:pointer;font-family:var(--sans);
+  }
+  .completion-card button:hover{opacity:.85}
+  .step-counter{font-size:12px;color:var(--text-muted);font-family:var(--mono);letter-spacing:.5px}
+  .step-counter .current-stage{color:var(--accent);font-weight:600;margin-left:8px}
+  .stage-badge{
+    display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:10px;
+    font-size:11px;font-weight:600;background:var(--accent-glow);color:var(--accent);
+    border:1px solid var(--accent-dim);margin-left:auto;transition:all .3s;
+  }
+  .stage-badge.idle{color:var(--text-muted);background:transparent;border-color:var(--border)}
+  .cursor{display:inline-block;width:7px;height:14px;background:var(--user);animation:cursorBlink .6s step-end infinite;vertical-align:text-bottom;margin-left:1px}
+  @keyframes cursorBlink{0%,100%{opacity:1}50%{opacity:0}}
+  .kbd-hint{
+    position:fixed;bottom:12px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-muted);
+    font-family:var(--mono);opacity:.5;z-index:5;pointer-events:none;
+  }
+  .kbd-hint kbd{display:inline-block;padding:1px 6px;border:1px solid var(--border);border-radius:3px;background:var(--bg-panel-alt);font-size:10px;margin:0 2px}
+  .stage-flash{animation:stageFlash .6s ease}
+  @keyframes stageFlash{0%{box-shadow:0 0 0 0 rgba(45,212,191,.4)}50%{box-shadow:0 0 20px 4px rgba(45,212,191,.2)}100%{box-shadow:0 0 0 0 transparent}}
+  .review-overlay{
+    position:fixed;inset:0;background:rgba(12,10,9,.92);display:flex;align-items:center;justify-content:center;
+    z-index:90;opacity:0;pointer-events:none;transition:opacity .4s;
+  }
+  .review-overlay.visible{opacity:1;pointer-events:auto}
+  .review-card{
+    width:480px;max-width:90vw;background:var(--bg-panel);border:1px solid var(--accent-dim);
+    border-radius:16px;box-shadow:0 0 60px rgba(45,212,191,.12);animation:fadeSlideIn .4s ease;overflow:hidden;
+  }
+  .review-card-header{padding:16px 24px;border-bottom:1px solid var(--border-dim);display:flex;align-items:center;justify-content:space-between}
+  .review-card-header h3{font-size:16px;font-weight:700;color:var(--accent)}
+  .review-card-header .review-tag{font-size:11px;padding:3px 10px;border-radius:10px;background:var(--accent-glow);color:var(--accent);border:1px solid var(--accent-dim)}
+  .review-card-body{padding:20px 24px}
+  .review-card-body h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px}
+  .review-criteria{list-style:none;padding:0;margin:0 0 16px 0}
+  .review-criteria li{font-size:12px;font-family:var(--mono);color:var(--text-dim);padding:4px 0;display:flex;align-items:center;gap:8px}
+  .review-criteria li .check{
+    width:14px;height:14px;border:1px solid var(--border);border-radius:3px;
+    display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--green);transition:all .3s;
+  }
+  .review-criteria li.checked .check{border-color:var(--green);background:rgba(34,197,94,.15)}
+  .review-actions{display:flex;gap:12px;padding:16px 24px;border-top:1px solid var(--border-dim)}
+  .review-btn{
+    flex:1;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:600;
+    font-family:var(--sans);cursor:default;transition:all .3s;
+  }
+  .review-btn.approve{background:var(--green);color:var(--bg)}
+  .review-btn.reject{background:var(--bg-panel-alt);color:var(--text-dim);border:1px solid var(--border)}
+  .review-btn.approve.highlight{box-shadow:0 0 16px rgba(34,197,94,.4);transform:scale(1.03)}
+  .await-badge{
+    display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;
+    font-size:12px;font-family:var(--mono);color:var(--orange);
+    background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);margin:8px 0;
+    animation:pulse 2s ease-in-out infinite;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top-bar">
+    <h1>H&#183;AI&#183;K&#183;U <span>Sales Studio</span></h1>
+    <div class="controls">
+      <span class="step-counter" id="step-counter"></span>
+      <button id="btn-play" class="active" title="Play / Pause (Space)">&#9654; Play</button>
+      <div class="speed-btns">
+        <button class="speed-btn active" data-speed="1">1x</button>
+        <button class="speed-btn" data-speed="2">2x</button>
+        <button class="speed-btn" data-speed="4">4x</button>
+      </div>
+      <button id="btn-restart" title="Restart (R)">&#8634; Restart</button>
+    </div>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+  <div class="main">
+    <div class="terminal-panel">
+      <div class="terminal-header">
+        <div class="dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+        <span>claude &mdash; ~/sales-workspace</span>
+        <span class="stage-badge idle" id="stage-badge">ready</span>
+      </div>
+      <div class="terminal-body" id="terminal"></div>
+    </div>
+    <div class="right-panels">
+      <div class="artifact-panel">
+        <div class="panel-header">Artifacts</div>
+        <div class="file-tree" id="file-tree"></div>
+      </div>
+      <div class="board-panel">
+        <div class="panel-header">Lifecycle Board</div>
+        <div class="board-scroll" id="board"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="review-overlay" id="review-overlay">
+  <div class="review-card" id="review-card"></div>
+</div>
+<div class="completion-overlay" id="completion-overlay">
+  <div class="completion-card">
+    <h2>Intent Complete</h2>
+    <p>All 5 stages passed. close-acme-enterprise-deal delivered.</p>
+    <button id="btn-replay">Replay Demo</button>
+  </div>
+</div>
+<div class="kbd-hint">
+  <kbd>Space</kbd> play/pause &nbsp; <kbd>R</kbd> restart &nbsp; <kbd>1</kbd><kbd>2</kbd><kbd>4</kbd> speed
+</div>
+
+<script>
+(function(){
+"use strict";
+
+const termEl=document.getElementById("terminal"),treeEl=document.getElementById("file-tree"),boardEl=document.getElementById("board"),progressEl=document.getElementById("progress-bar"),playBtn=document.getElementById("btn-play"),restartBtn=document.getElementById("btn-restart"),replayBtn=document.getElementById("btn-replay"),overlay=document.getElementById("completion-overlay"),reviewOverlay=document.getElementById("review-overlay"),reviewCard=document.getElementById("review-card"),speedBtns=document.querySelectorAll(".speed-btn"),stepCounterEl=document.getElementById("step-counter"),stageBadgeEl=document.getElementById("stage-badge");
+
+let playing=true,speed=1,stepIdx=0,timer=null,files=[],columns={},currentStage=null;
+
+const STAGES=["research","qualification","proposal","negotiation","close"];
+const INTENT="close-acme-enterprise-deal";
+const P=".haiku/intents/"+INTENT;
+
+function scrollTerminal(){termEl.scrollTop=termEl.scrollHeight}
+function escHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function addMsg(type,label,text){var d=document.createElement("div");d.className="msg msg-"+type;d.innerHTML='<div class="msg-label">'+label+'</div><div class="msg-text">'+escHtml(text)+'</div>';termEl.appendChild(d);scrollTerminal()}
+function addTyping(){var d=document.createElement("div");d.className="msg msg-agent";d.id="typing-msg";d.innerHTML='<div class="msg-label">agent</div><div class="typing-indicator"><span></span><span></span><span></span></div>';termEl.appendChild(d);scrollTerminal()}
+function removeTyping(){var e=document.getElementById("typing-msg");if(e)e.remove()}
+function addFastForward(s){var d=document.createElement("div");d.className="ff-indicator";d.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 19 22 12 13 5"/><polygon points="2 19 11 12 2 5"/></svg> Fast-forwarding '+s+'s of deep work...';d.id="ff-indicator";termEl.appendChild(d);scrollTerminal()}
+function removeFastForward(){var e=document.getElementById("ff-indicator");if(e)e.remove()}
+
+function showCriteriaReview(stageName,intentTitle,criteria,gateType){
+  var items=criteria.map(function(c){return'<li><span class="check"></span>'+escHtml(c)+'</li>'}).join("");
+  reviewCard.innerHTML='<div class="review-card-header"><h3>'+escHtml(stageName)+' Review</h3><span class="review-tag">'+escHtml(gateType||"ask gate")+'</span></div><div class="review-card-body"><h4>'+escHtml(intentTitle)+'</h4><ul class="review-criteria" id="review-criteria-list">'+items+'</ul></div><div class="review-actions"><button class="review-btn reject">Request Changes</button><button class="review-btn approve" id="review-approve-btn">Approve Stage</button></div>';
+  reviewOverlay.classList.add("visible");
+}
+function animateCheckmarks(){var items=document.querySelectorAll("#review-criteria-list li");items.forEach(function(li,i){setTimeout(function(){li.classList.add("checked");li.querySelector(".check").textContent="\u2713"},(i+1)*400)})}
+function highlightApproveBtn(){var b=document.getElementById("review-approve-btn");if(b)b.classList.add("highlight")}
+function hideReviewOverlay(){reviewOverlay.classList.remove("visible")}
+
+function addFile(path){if(files.includes(path))return;files.push(path);renderTree();setTimeout(function(){var items=treeEl.querySelectorAll(".tree-item");items.forEach(function(it){it.classList.remove("highlight")});var last=treeEl.querySelector('[data-path="'+path+'"]');if(last)last.classList.add("highlight");setTimeout(function(){if(last)last.classList.remove("highlight")},2000)},50)}
+function renderTree(){var root={};files.forEach(function(p){var parts=p.split("/");var node=root;parts.forEach(function(seg,i){if(!node[seg])node[seg]=(i===parts.length-1)?null:{};if(node[seg]!==null)node=node[seg]})});treeEl.innerHTML="";renderNode(root,0,"")}
+function renderNode(node,depth,parentPath){var keys=Object.keys(node).sort(function(a,b){var aDir=node[a]!==null,bDir=node[b]!==null;if(aDir&&!bDir)return-1;if(!aDir&&bDir)return 1;return a.localeCompare(b)});keys.forEach(function(key){var fullPath=parentPath?parentPath+"/"+key:key;var isDir=node[key]!==null;var div=document.createElement("div");div.className="tree-item"+(isDir?" folder":"");div.setAttribute("data-path",fullPath);div.style.paddingLeft=(depth*16+4)+"px";div.innerHTML='<span class="icon">'+(isDir?"\uD83D\uDCC1":"\uD83D\uDCC4")+"</span>"+key;treeEl.appendChild(div);if(isDir)renderNode(node[key],depth+1,fullPath)})}
+
+function initBoard(){boardEl.innerHTML="";columns={};STAGES.forEach(function(stage){var col=document.createElement("div");col.className="board-col dimmed";col.innerHTML='<div class="col-header">'+stage+'</div><div class="col-cards"></div>';boardEl.appendChild(col);columns[stage]={el:col,cards:{}}})}
+function activateStage(stage){currentStage=stage;STAGES.forEach(function(s){var c=columns[s];c.el.classList.remove("active","stage-flash");if(STAGES.indexOf(s)<STAGES.indexOf(stage)){c.el.classList.remove("dimmed");c.el.classList.add("completed")}else if(s===stage){c.el.classList.remove("dimmed");c.el.classList.add("active");void c.el.offsetWidth;c.el.classList.add("stage-flash")}else{c.el.classList.add("dimmed")}});stageBadgeEl.textContent=stage;stageBadgeEl.classList.remove("idle")}
+function addCard(stage,name,status){var cardsEl=columns[stage].el.querySelector(".col-cards");var card=document.createElement("div");card.className="card"+(status?" "+status:"");card.textContent=name;cardsEl.appendChild(card);columns[stage].cards[name]=card}
+function updateCard(stage,name,status){var card=columns[stage].cards[name];if(card)card.className="card "+status}
+function completeAllStages(){currentStage="complete";STAGES.forEach(function(s){var c=columns[s];c.el.classList.remove("dimmed","active");c.el.classList.add("completed");Object.keys(c.cards).forEach(function(n){c.cards[n].className="card completed"})});stageBadgeEl.textContent="complete";stageBadgeEl.style.color="var(--green)";stageBadgeEl.style.borderColor="var(--green)";stageBadgeEl.style.background="rgba(34,197,94,.1)"}
+
+var steps=[
+  // User invokes
+  {delay:800,actions:[function(){addMsg("user","you","/haiku:new")}]},
+  {delay:1200,actions:[function(){addTyping()}]},
+  {delay:1000,actions:[function(){removeTyping();addMsg("agent","agent","What do you want to accomplish?")}]},
+  {delay:1500,actions:[function(){addMsg("user","you","Close the enterprise deal with Acme Corp")}]},
+
+  // Intent created
+  {delay:800,actions:[function(){addTyping()}]},
+  {delay:1200,actions:[function(){removeTyping();addMsg("agent","agent","Creating intent: close-acme-enterprise-deal...");addFile(P+"/intent.md")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Intent created. Studio: sales. 5 stages: research \u2192 qualification \u2192 proposal \u2192 negotiation \u2192 close")}]},
+
+  // === RESEARCH ===
+  {delay:1000,actions:[function(){activateStage("research");addMsg("agent","agent","Entering research stage. Hat: prospect-researcher.\nWhat do you know about Acme Corp so far?");addFile(P+"/stages/research/state.json")}]},
+  {delay:2000,actions:[function(){addMsg("user","you","They're a 2000-person manufacturing company. VP of Engineering reached out after seeing our booth at SaaStr. They're replacing a legacy ERP system.")}]},
+  {delay:800,actions:[function(){addTyping()}]},
+  {delay:1200,actions:[function(){removeTyping();addMsg("agent","agent","Great starting point. I\u2019ll build the full prospect brief. Decomposing research work...")}]},
+  {delay:800,actions:[function(){addMsg("agent","agent","3 units: company-profile, stakeholder-map, competitive-landscape");addFile(P+"/stages/research/units/unit-01-company-profile.md");addFile(P+"/stages/research/units/unit-02-stakeholder-map.md");addFile(P+"/stages/research/units/unit-03-competitive-landscape.md");addCard("research","company-profile","in-progress");addCard("research","stakeholder-map","");addCard("research","competitive-landscape","")}]},
+  {delay:500,actions:[function(){addFastForward("30")}]},
+  {delay:1800,actions:[function(){removeFastForward();addMsg("agent","agent","Company profile complete. Acme Corp: $450M revenue, 2000 employees, 12 manufacturing plants. Their legacy ERP is SAP R/3 \u2014 end of mainstream support. Key pain: manual inventory reconciliation costing them 40 hours/week per plant.");updateCard("research","company-profile","completed");updateCard("research","stakeholder-map","in-progress")}]},
+  {delay:500,actions:[function(){addFastForward("25")}]},
+  {delay:1500,actions:[function(){removeFastForward();addMsg("agent","agent","Hat: industry-analyst. Stakeholder map: VP Engineering (champion), CFO (economic buyer), IT Director (technical evaluator), Plant Managers (end users). CFO is the final sign-off.");updateCard("research","stakeholder-map","completed");updateCard("research","competitive-landscape","in-progress")}]},
+  {delay:500,actions:[function(){addFastForward("20")}]},
+  {delay:1500,actions:[function(){removeFastForward();addMsg("agent","agent","Competitive landscape mapped. Acme evaluated Oracle Cloud ERP and Infor CloudSuite. Oracle was too expensive, Infor lacked manufacturing-specific workflows. We have a clear gap to fill on shop-floor integration.");updateCard("research","competitive-landscape","completed");addFile(P+"/knowledge/PROSPECT-BRIEF.md")}]},
+
+  // Research gate - auto
+  {delay:1000,actions:[function(){addMsg("system","system","Research complete. Review gate: auto. All criteria met \u2014 advancing.");addMsg("agent","agent","Advancing to qualification stage.")}]},
+
+  // === QUALIFICATION ===
+  {delay:1000,actions:[function(){activateStage("qualification");addMsg("agent","agent","Entering qualification stage. Hat: qualifier.\nLoading research outputs...");addFile(P+"/stages/qualification/state.json")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Resolved inputs \u2192 research/prospect-brief (knowledge/PROSPECT-BRIEF.md)");addMsg("agent","agent","Prospect brief shows a strong fit. Let me run the BANT qualification...")}]},
+  {delay:800,actions:[function(){addFile(P+"/stages/qualification/units/unit-01-bant-scoring.md");addFile(P+"/stages/qualification/units/unit-02-icp-fit.md");addCard("qualification","bant-scoring","in-progress");addCard("qualification","icp-fit","");addMsg("agent","agent","2 units: bant-scoring and icp-fit.")}]},
+  {delay:500,actions:[function(){addFastForward("25")}]},
+  {delay:1500,actions:[function(){removeFastForward();addMsg("agent","agent","BANT scoring:\n  Budget: $2M allocated for ERP replacement (confirmed)\n  Authority: CFO final sign-off, VP Engineering is champion\n  Need: Legacy SAP R/3 end-of-life, 40hrs/week manual reconciliation\n  Timeline: Want to go live before Q4 plant shutdowns")}]},
+  {delay:1200,actions:[function(){addMsg("agent","agent","One concern \u2014 the IT Director may push for Oracle since they have existing Oracle DB licenses. How do you want to handle that?");updateCard("qualification","bant-scoring","completed");updateCard("qualification","icp-fit","in-progress")}]},
+  {delay:2200,actions:[function(){addMsg("user","you","Get ahead of it. Build a TCO comparison showing our integration costs are 60% lower than Oracle\u2019s. The IT Director cares about total cost, not just license fees.")}]},
+  {delay:800,actions:[function(){addTyping()}]},
+  {delay:1000,actions:[function(){removeTyping();addMsg("agent","agent","Smart. Hat: deal-strategist. I\u2019ll include the TCO comparison in the deal brief. ICP fit score: 87/100 \u2014 strong match on manufacturing vertical, company size, and tech stack.");updateCard("qualification","icp-fit","completed");addFile(P+"/knowledge/DEAL-BRIEF.md")}]},
+
+  // Qualification gate - ask
+  {delay:1000,actions:[function(){addMsg("system","system","Qualification complete. Review gate: ask.")}]},
+  {delay:800,actions:[function(){showCriteriaReview("Qualification",INTENT,["BANT criteria scored with evidence","ICP fit: 87/100 with justification","Buying committee mapped with roles","Win plan: champion VP Eng, blocker IT Dir addressed","TCO comparison prepared for Oracle objection"],"ask gate")}]},
+  {delay:800,actions:[function(){animateCheckmarks()}]},
+  {delay:2200,actions:[function(){highlightApproveBtn()}]},
+  {delay:1200,actions:[function(){hideReviewOverlay();addMsg("user","you","Approved. Move to proposal.");addMsg("agent","agent","Advancing to proposal stage.")}]},
+
+  // === PROPOSAL ===
+  {delay:1000,actions:[function(){activateStage("proposal");addMsg("agent","agent","Entering proposal stage. Hat: proposal-writer.\nLoading deal brief...");addFile(P+"/stages/proposal/state.json")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Resolved inputs \u2192 qualification/deal-brief (knowledge/DEAL-BRIEF.md)");addMsg("agent","agent","Deal brief loaded. Building proposal tailored to Acme\u2019s pain points...")}]},
+  {delay:800,actions:[function(){addFile(P+"/stages/proposal/units/unit-01-solution-proposal.md");addFile(P+"/stages/proposal/units/unit-02-business-case.md");addFile(P+"/stages/proposal/units/unit-03-demo-script.md");addCard("proposal","solution-proposal","in-progress");addCard("proposal","business-case","");addCard("proposal","demo-script","")}]},
+  {delay:500,actions:[function(){addFastForward("40")}]},
+  {delay:2000,actions:[function(){removeFastForward();addMsg("agent","agent","Solution proposal draft ready. Maps each Acme pain point to our capabilities:\n  \u2022 Manual reconciliation \u2192 automated inventory sync\n  \u2022 SAP end-of-life \u2192 modern cloud-native platform\n  \u2022 Multi-plant visibility \u2192 real-time dashboard\n\nWhat pricing tier should I use?");updateCard("proposal","solution-proposal","completed");updateCard("proposal","business-case","in-progress")}]},
+  {delay:2200,actions:[function(){addMsg("user","you","Enterprise tier. But offer a 15% multi-year discount if they commit to 3 years. The CFO loves long-term savings.")}]},
+  {delay:800,actions:[function(){addTyping()}]},
+  {delay:1200,actions:[function(){removeTyping();addMsg("agent","agent","Hat: solution-architect. Business case built with 3-year TCO showing 62% cost reduction vs Oracle, 280% ROI over contract term. The multi-year discount is positioned as \u201Cpartnership pricing.\u201D");updateCard("proposal","business-case","completed");updateCard("proposal","demo-script","in-progress")}]},
+  {delay:500,actions:[function(){addFastForward("30")}]},
+  {delay:1500,actions:[function(){removeFastForward();addMsg("agent","agent","Demo script targets the VP Engineering and Plant Managers. Focuses on shop-floor integration and real-time inventory \u2014 the exact workflows their legacy system can\u2019t handle.");updateCard("proposal","demo-script","completed");addFile(P+"/knowledge/PROPOSAL-DOC.md")}]},
+
+  // Proposal gate - ask + await
+  {delay:1000,actions:[function(){addMsg("system","system","Proposal stage complete. Review gate: ask + await.");addMsg("agent","agent","Proposal ready for your review, then we\u2019ll send to Acme.")}]},
+  {delay:800,actions:[function(){showCriteriaReview("Proposal",INTENT,["Pain points mapped to solution capabilities","Business case with 280% ROI and TCO comparison","Demo script tailored to VP Eng and Plant Managers","Multi-year discount positioned as partnership pricing"],"ask gate")}]},
+  {delay:800,actions:[function(){animateCheckmarks()}]},
+  {delay:2000,actions:[function(){highlightApproveBtn()}]},
+  {delay:1200,actions:[function(){hideReviewOverlay();addMsg("user","you","Approved. Send it.")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Await gate: waiting for Acme Corp response on proposal...")}]},
+  {delay:1500,actions:[function(){addMsg("system","system","Await resolved \u2014 Acme Corp responded. VP Engineering wants to proceed. CFO has questions on implementation timeline.")}]},
+  {delay:800,actions:[function(){addMsg("agent","agent","Great signal. Advancing to negotiation stage.")}]},
+
+  // === NEGOTIATION ===
+  {delay:1000,actions:[function(){activateStage("negotiation");addMsg("agent","agent","Entering negotiation stage. Hat: negotiator.\nLoading proposal details...");addFile(P+"/stages/negotiation/state.json")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Resolved inputs \u2192 proposal/proposal-doc (knowledge/PROPOSAL-DOC.md)");addMsg("agent","agent","CFO\u2019s implementation timeline concern is common. Preparing objection handling...")}]},
+  {delay:800,actions:[function(){addFile(P+"/stages/negotiation/units/unit-01-objection-handling.md");addFile(P+"/stages/negotiation/units/unit-02-contract-terms.md");addCard("negotiation","objection-handling","in-progress");addCard("negotiation","contract-terms","")}]},
+  {delay:500,actions:[function(){addFastForward("30")}]},
+  {delay:1500,actions:[function(){removeFastForward();addMsg("agent","agent","Objection brief ready:\n  \u2022 Implementation timeline \u2192 phased rollout: 2 pilot plants first, then remaining 10\n  \u2022 Data migration risk \u2192 parallel-run period with SAP for 30 days\n  \u2022 Training burden \u2192 on-site enablement team included in enterprise tier");updateCard("negotiation","objection-handling","completed");updateCard("negotiation","contract-terms","in-progress")}]},
+  {delay:1200,actions:[function(){addMsg("agent","agent","Hat: legal-reviewer. The Acme legal team sent back contract redlines. They want to cap liability at 1x annual contract value and add a 90-day termination clause. How do you want to handle these?")}]},
+  {delay:2200,actions:[function(){addMsg("user","you","Liability cap is fine \u2014 that\u2019s standard. Push back on the 90-day termination. Offer 180 days with a mutual clause instead.")}]},
+  {delay:800,actions:[function(){addTyping()}]},
+  {delay:1000,actions:[function(){removeTyping();addMsg("agent","agent","Counter-proposal sent. Liability cap accepted. Termination changed to 180-day mutual.");updateCard("negotiation","contract-terms","completed");addFile(P+"/knowledge/TERMS.md")}]},
+
+  // Negotiation gate - ask + await
+  {delay:800,actions:[function(){addMsg("system","system","Negotiation stage complete. Review gate: ask + await.")}]},
+  {delay:800,actions:[function(){showCriteriaReview("Negotiation",INTENT,["All objections addressed with evidence","Contract redlines categorized by risk","Liability cap: 1x ACV (accepted)","Termination: 180-day mutual (countered)","Stakeholder alignment confirmed"],"ask gate")}]},
+  {delay:800,actions:[function(){animateCheckmarks()}]},
+  {delay:2000,actions:[function(){highlightApproveBtn()}]},
+  {delay:1200,actions:[function(){hideReviewOverlay();addMsg("user","you","Approved.")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Await gate: waiting for Acme Corp legal response on counter-terms...")}]},
+  {delay:1500,actions:[function(){addMsg("system","system","Await resolved \u2014 Acme legal accepted 180-day mutual termination. Deal terms finalized.")}]},
+  {delay:800,actions:[function(){addMsg("agent","agent","All terms agreed. Advancing to close stage.")}]},
+
+  // === CLOSE ===
+  {delay:1000,actions:[function(){activateStage("close");addMsg("agent","agent","Entering close stage. Hat: closer.\nLoading negotiation terms...");addFile(P+"/stages/close/state.json")}]},
+  {delay:800,actions:[function(){addMsg("system","system","Resolved inputs \u2192 negotiation/terms (knowledge/TERMS.md)");addMsg("agent","agent","All terms are locked. Preparing close checklist and handoff package...")}]},
+  {delay:800,actions:[function(){addFile(P+"/stages/close/units/unit-01-close-checklist.md");addFile(P+"/stages/close/units/unit-02-handoff-package.md");addCard("close","close-checklist","in-progress");addCard("close","handoff-package","")}]},
+  {delay:500,actions:[function(){addFastForward("25")}]},
+  {delay:1500,actions:[function(){removeFastForward();addMsg("agent","agent","Close checklist:\n  \u2713 Contract signed by CFO\n  \u2713 PO issued: PO-2024-8847\n  \u2713 Payment terms: Net 30\n  \u2713 3-year enterprise tier confirmed\n  \u2713 15% partnership discount applied");updateCard("close","close-checklist","completed");updateCard("close","handoff-package","in-progress")}]},
+  {delay:500,actions:[function(){addFastForward("30")}]},
+  {delay:1500,actions:[function(){removeFastForward();addMsg("agent","agent","Hat: handoff-coordinator. Handoff package built for Customer Success:\n  \u2022 Full prospect history and relationship context\n  \u2022 Key contacts: VP Eng (champion), CFO (sponsor), IT Dir (technical)\n  \u2022 Agreed deliverables: phased rollout, pilot in 2 plants\n  \u2022 Implementation expectations and timeline commitments\n  \u2022 Win/loss analysis: won on TCO advantage and shop-floor integration");updateCard("close","handoff-package","completed");addFile(P+"/knowledge/HANDOFF-PACKAGE.md")}]},
+
+  // Close gate - external + await
+  {delay:1000,actions:[function(){addMsg("system","system","Close stage complete. Review gate: external + await.")}]},
+  {delay:800,actions:[function(){showCriteriaReview("Close",INTENT,["Contract signed with document references","PO and payment terms captured","Handoff package includes full prospect context","Win/loss analysis with 3 critical success factors","Customer Success team briefed"],"external gate")}]},
+  {delay:800,actions:[function(){animateCheckmarks()}]},
+  {delay:2400,actions:[function(){highlightApproveBtn()}]},
+  {delay:1200,actions:[function(){hideReviewOverlay();addMsg("system","system","External review approved. Deal closed.")}]},
+
+  // Complete
+  {delay:1200,actions:[function(){completeAllStages();addMsg("agent","agent","All 5 stages complete for close-acme-enterprise-deal.\n\nDelivered:\n  \u2022 Prospect brief with company profile, stakeholder map, and competitive landscape\n  \u2022 BANT qualification (87/100 ICP fit) with TCO comparison vs Oracle\n  \u2022 Enterprise proposal with 280% ROI business case and tailored demo\n  \u2022 Negotiation resolved: 1x ACV liability cap, 180-day mutual termination\n  \u2022 Handoff package ready for Customer Success team\n\nDeal value: $2M / 3 years. Intent status: complete.")}]},
+  {delay:1500,actions:[function(){overlay.classList.add("visible")}]}
+];
+
+function getTotalSteps(){return steps.length}
+function updateProgress(){progressEl.style.width=Math.min(100,(stepIdx/getTotalSteps())*100)+"%"}
+function updateStepCounter(){var t=currentStage?'<span class="current-stage">'+currentStage+"</span>":"";stepCounterEl.innerHTML=stepIdx+"/"+getTotalSteps()+t}
+function runStep(){if(!playing||stepIdx>=steps.length)return;var s=steps[stepIdx];s.actions.forEach(function(fn){fn()});stepIdx++;updateProgress();updateStepCounter();if(stepIdx<steps.length){timer=setTimeout(runStep,steps[stepIdx].delay/speed)}else{updateProgress()}}
+function start(){if(stepIdx<steps.length){timer=setTimeout(runStep,steps[stepIdx].delay/speed)}}
+function pause(){clearTimeout(timer);timer=null}
+function reset(){pause();stepIdx=0;playing=true;currentStage=null;termEl.innerHTML="";treeEl.innerHTML="";files=[];overlay.classList.remove("visible");reviewOverlay.classList.remove("visible");stageBadgeEl.textContent="ready";stageBadgeEl.classList.add("idle");stageBadgeEl.style.color="";stageBadgeEl.style.borderColor="";stageBadgeEl.style.background="";initBoard();updateProgress();updateStepCounter();updatePlayBtn();start()}
+function updatePlayBtn(){playBtn.textContent=playing?"\u23F8 Pause":"\u25B6 Play";playBtn.classList.toggle("active",playing)}
+function setSpeed(s){speed=s;speedBtns.forEach(function(b){b.classList.toggle("active",parseFloat(b.dataset.speed)===s)});if(playing){pause();start()}}
+
+playBtn.addEventListener("click",function(){playing=!playing;updatePlayBtn();if(playing)start();else pause()});
+restartBtn.addEventListener("click",reset);
+replayBtn.addEventListener("click",reset);
+speedBtns.forEach(function(btn){btn.addEventListener("click",function(){setSpeed(parseFloat(btn.dataset.speed))})});
+document.addEventListener("keydown",function(e){if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;switch(e.key){case" ":e.preventDefault();playing=!playing;updatePlayBtn();if(playing)start();else pause();break;case"r":case"R":reset();break;case"1":setSpeed(1);break;case"2":setSpeed(2);break;case"4":setSpeed(4);break}});
+
+initBoard();updateProgress();updateStepCounter();start();
+})();
+</script>
+</body>
+</html>

@@ -6,7 +6,7 @@ review: ask
 unit_types: [strategy, messaging]
 inputs:
   - stage: research
-    output: market-brief
+    discovery: market-brief
 ---
 
 # Strategy

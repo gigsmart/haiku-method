@@ -6,7 +6,7 @@ review: auto
 unit_types: [adoption, enablement]
 inputs:
   - stage: onboarding
-    output: onboarding-report
+    discovery: onboarding-report
 ---
 
 # Adoption

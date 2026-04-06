@@ -4,7 +4,7 @@ import { extname, join, resolve } from "node:path"
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js"
 import { z } from "zod"
 import { getSession, updateDesignDirectionSession, updateQuestionSession, updateSession } from "./sessions.js"
-import type { QuestionAnswer } from "./sessions.js"
+import type { QuestionAnswer, ReviewAnnotations } from "./sessions.js"
 
 let httpServer: HttpServer | null = null
 let actualPort: number | null = null
@@ -39,11 +39,34 @@ async function handleDecidePost(
 		return new Response("Session not found", { status: 404 })
 	}
 
-	let body: { decision: string; feedback?: string }
+	let body: { decision: string; feedback?: string; annotations?: ReviewAnnotations }
 	try {
 		const DecideSchema = z.object({
 			decision: z.string(),
 			feedback: z.string().optional(),
+			annotations: z
+				.object({
+					screenshot: z.string().optional(),
+					pins: z
+						.array(
+							z.object({
+								x: z.number(),
+								y: z.number(),
+								text: z.string(),
+							}),
+						)
+						.optional(),
+					comments: z
+						.array(
+							z.object({
+								selectedText: z.string(),
+								comment: z.string(),
+								paragraph: z.number(),
+							}),
+						)
+						.optional(),
+				})
+				.optional(),
 		})
 		body = DecideSchema.parse(await req.json())
 	} catch {
@@ -53,27 +76,66 @@ async function handleDecidePost(
 	const decision =
 		body.decision === "approved" ? "approved" : "changes_requested"
 	const feedback = body.feedback ?? ""
+	const annotations = body.annotations
 
 	updateSession(sessionId, {
 		status: decision,
 		decision,
 		feedback,
+		annotations,
 	})
 
 	// Push channel notification to Claude Code
 	if (mcpServer) {
 		try {
+			// Build notification content: feedback text + structured annotation summary
+			let notificationContent = feedback
+			if (annotations?.pins?.length) {
+				notificationContent +=
+					"\n\n--- Annotation Pins ---\n" +
+					annotations.pins
+						.map(
+							(p, i) =>
+								`[${i + 1}] (${p.x.toFixed(1)}%, ${p.y.toFixed(1)}%) ${p.text}`,
+						)
+						.join("\n")
+			}
+			if (annotations?.comments?.length) {
+				notificationContent +=
+					"\n\n--- Inline Comments ---\n" +
+					annotations.comments
+						.map(
+							(c, i) =>
+								`[${i + 1}] "${c.selectedText}" -> ${c.comment} (paragraph ${c.paragraph})`,
+						)
+						.join("\n")
+			}
+
+			const meta: Record<string, unknown> = {
+				decision,
+				review_type: session.review_type,
+				target: session.target || "",
+				session_id: sessionId,
+			}
+			if (annotations) {
+				meta.has_annotations = true
+				if (annotations.screenshot) {
+					meta.has_screenshot = true
+				}
+				if (annotations.pins?.length) {
+					meta.pin_count = annotations.pins.length
+				}
+				if (annotations.comments?.length) {
+					meta.comment_count = annotations.comments.length
+				}
+			}
+
 			await mcpServer.notification({
 				// biome-ignore lint/suspicious/noExplicitAny: Claude channel API not typed
 				method: "notifications/claude/channel" as any,
 				params: {
-					content: feedback,
-					meta: {
-						decision,
-						review_type: session.review_type,
-						target: session.target || "",
-						session_id: sessionId,
-					},
+					content: notificationContent,
+					meta,
 				},
 				// biome-ignore lint/suspicious/noExplicitAny: Claude channel API not typed
 			} as any)

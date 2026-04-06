@@ -58,6 +58,8 @@ export interface BrowseProvider {
 	readFile(path: string): Promise<string | null>
 	/** List files matching a pattern in a directory */
 	listFiles(dir: string): Promise<string[]>
+	/** Write a file to the workspace via commit (optional — not all providers support writes) */
+	writeFile?(path: string, content: string, message: string): Promise<boolean>
 	/** Provider display name */
 	readonly name: string
 }

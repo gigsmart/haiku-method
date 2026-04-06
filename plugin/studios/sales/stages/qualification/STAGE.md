@@ -6,7 +6,7 @@ review: ask
 unit_types: [qualification]
 inputs:
   - stage: research
-    output: prospect-brief
+    discovery: prospect-brief
 ---
 
 # Qualification

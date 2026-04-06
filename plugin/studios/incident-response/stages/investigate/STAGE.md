@@ -6,7 +6,7 @@ review: auto
 unit_types: [investigation, analysis]
 inputs:
   - stage: triage
-    output: incident-brief
+    discovery: incident-brief
 ---
 
 # Investigate

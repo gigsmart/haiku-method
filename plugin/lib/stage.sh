@@ -2,7 +2,8 @@
 # stage.sh — Stage resolution and metadata for H·AI·K·U
 #
 # Stages are lifecycle phases within a studio. Each stage has a
-# STAGE.md definition and an outputs/ directory with output docs.
+# STAGE.md definition, a discovery/ directory with knowledge artifact
+# definitions, and an optional outputs/ directory with work product docs.
 #
 # Usage:
 #   source stage.sh
@@ -85,20 +86,26 @@ hku_resolve_stage_outputs_dir() {
   echo "$(dirname "$stage_file")/outputs"
 }
 
-# Load output document definitions for a stage
-# Usage: hku_load_stage_outputs <stage_name> <studio_name>
-# Returns: JSON array of output definitions
-hku_load_stage_outputs() {
+# Resolve the discovery directory for a stage
+# Usage: hku_resolve_stage_discovery_dir <stage_name> <studio_name>
+# Returns: absolute path to discovery/ directory (may not exist)
+hku_resolve_stage_discovery_dir() {
   local stage="$1"
   local studio="$2"
 
-  local outputs_dir
-  outputs_dir=$(hku_resolve_stage_outputs_dir "$stage" "$studio") || {
-    echo "[]"
-    return 1
-  }
+  local stage_file
+  stage_file=$(hku_resolve_stage "$stage" "$studio") || return 1
 
-  if [[ ! -d "$outputs_dir" ]] || ! ls "$outputs_dir"/*.md >/dev/null 2>&1; then
+  echo "$(dirname "$stage_file")/discovery"
+}
+
+# Load artifact definitions from a directory (shared by outputs and discovery)
+# Usage: _hku_load_stage_artifacts_from_dir <dir_path>
+# Returns: JSON array of artifact definitions
+_hku_load_stage_artifacts_from_dir() {
+  local dir="$1"
+
+  if [[ ! -d "$dir" ]] || ! ls "$dir"/*.md >/dev/null 2>&1; then
     echo "[]"
     return 0
   fi
@@ -106,7 +113,7 @@ hku_load_stage_outputs() {
   local result="["
   local first=true
 
-  for f in "$outputs_dir"/*.md; do
+  for f in "$dir"/*.md; do
     [[ -f "$f" ]] || continue
     local meta
     meta=$(yq --front-matter=extract -o json '.' "$f" 2>/dev/null || echo "{}")
@@ -124,6 +131,53 @@ hku_load_stage_outputs() {
 
   result="${result}]"
   echo "$result"
+}
+
+# Load output document definitions for a stage
+# Usage: hku_load_stage_outputs <stage_name> <studio_name>
+# Returns: JSON array of output definitions
+hku_load_stage_outputs() {
+  local stage="$1"
+  local studio="$2"
+
+  local outputs_dir
+  outputs_dir=$(hku_resolve_stage_outputs_dir "$stage" "$studio") || {
+    echo "[]"
+    return 1
+  }
+
+  _hku_load_stage_artifacts_from_dir "$outputs_dir"
+}
+
+# Load discovery artifact definitions for a stage
+# Usage: hku_load_stage_discovery <stage_name> <studio_name>
+# Returns: JSON array of discovery definitions
+hku_load_stage_discovery() {
+  local stage="$1"
+  local studio="$2"
+
+  local discovery_dir
+  discovery_dir=$(hku_resolve_stage_discovery_dir "$stage" "$studio") || {
+    echo "[]"
+    return 1
+  }
+
+  _hku_load_stage_artifacts_from_dir "$discovery_dir"
+}
+
+# Load all artifact definitions for a stage (discovery + outputs combined)
+# Usage: hku_load_stage_artifacts <stage_name> <studio_name>
+# Returns: JSON array of all artifact definitions
+hku_load_stage_artifacts() {
+  local stage="$1"
+  local studio="$2"
+
+  local discovery outputs
+  discovery=$(hku_load_stage_discovery "$stage" "$studio")
+  outputs=$(hku_load_stage_outputs "$stage" "$studio")
+
+  # Merge the two arrays
+  echo "$discovery" "$outputs" | jq -s 'add'
 }
 
 # Resolve stage inputs to prior stage outputs
@@ -148,9 +202,22 @@ hku_resolve_stage_inputs() {
   local first=true
 
   while IFS= read -r entry; do
-    local src_stage src_output
+    local src_stage src_artifact artifact_type
     src_stage=$(echo "$entry" | jq -r '.stage')
-    src_output=$(echo "$entry" | jq -r '.output')
+
+    # Determine if this is a discovery or output reference
+    local discovery_ref output_ref
+    discovery_ref=$(echo "$entry" | jq -r '.discovery // empty')
+    output_ref=$(echo "$entry" | jq -r '.output // empty')
+
+    if [[ -n "$discovery_ref" ]]; then
+      src_artifact="$discovery_ref"
+      artifact_type="discovery"
+    else
+      src_artifact="$output_ref"
+      artifact_type="output"
+    fi
+
     local src_scope
     src_scope=$(echo "$entry" | jq -r '.scope // "intent"')
 
@@ -163,39 +230,47 @@ hku_resolve_stage_inputs() {
           # Project-scoped: look in .haiku/knowledge/
           local repo_root
           repo_root=$(find_repo_root 2>/dev/null || echo "")
-          if [[ -n "$repo_root" && -f "${repo_root}/.haiku/knowledge/${src_output}" ]]; then
-            resolved_path="${repo_root}/.haiku/knowledge/${src_output}"
+          if [[ -n "$repo_root" && -f "${repo_root}/.haiku/knowledge/${src_artifact}" ]]; then
+            resolved_path="${repo_root}/.haiku/knowledge/${src_artifact}"
           fi
           ;;
         stage)
           # Stage-scoped: look in intent's stages/{src_stage}/
-          if [[ -f "${intent_dir}/stages/${src_stage}/${src_output}" ]]; then
-            resolved_path="${intent_dir}/stages/${src_stage}/${src_output}"
+          if [[ -f "${intent_dir}/stages/${src_stage}/${src_artifact}" ]]; then
+            resolved_path="${intent_dir}/stages/${src_stage}/${src_artifact}"
           fi
           ;;
         *)
-          # Intent-scoped (default): look in intent knowledge/ and stages/{src_stage}/outputs/
-          if [[ -f "${intent_dir}/knowledge/${src_output}" ]]; then
-            resolved_path="${intent_dir}/knowledge/${src_output}"
-          elif [[ -f "${intent_dir}/stages/${src_stage}/outputs/${src_output}" ]]; then
-            resolved_path="${intent_dir}/stages/${src_stage}/outputs/${src_output}"
+          # Intent-scoped (default): look in intent knowledge/ and stage artifact dirs
+          if [[ -f "${intent_dir}/knowledge/${src_artifact}" ]]; then
+            resolved_path="${intent_dir}/knowledge/${src_artifact}"
+          elif [[ -f "${intent_dir}/stages/${src_stage}/outputs/${src_artifact}" ]]; then
+            resolved_path="${intent_dir}/stages/${src_stage}/outputs/${src_artifact}"
           fi
           ;;
       esac
     fi
 
-    # Fallback to built-in stage output definition
+    # Fallback to built-in stage artifact definition (discovery/ or outputs/)
     if [[ -z "$resolved_path" ]]; then
-      local src_outputs_dir
-      src_outputs_dir=$(hku_resolve_stage_outputs_dir "$src_stage" "$studio" 2>/dev/null || echo "")
-      if [[ -n "$src_outputs_dir" && -f "${src_outputs_dir}/${src_output}" ]]; then
-        resolved_path="${src_outputs_dir}/${src_output}"
+      if [[ "$artifact_type" = "discovery" ]]; then
+        local src_discovery_dir
+        src_discovery_dir=$(hku_resolve_stage_discovery_dir "$src_stage" "$studio" 2>/dev/null || echo "")
+        if [[ -n "$src_discovery_dir" && -f "${src_discovery_dir}/${src_artifact}" ]]; then
+          resolved_path="${src_discovery_dir}/${src_artifact}"
+        fi
+      else
+        local src_outputs_dir
+        src_outputs_dir=$(hku_resolve_stage_outputs_dir "$src_stage" "$studio" 2>/dev/null || echo "")
+        if [[ -n "$src_outputs_dir" && -f "${src_outputs_dir}/${src_artifact}" ]]; then
+          resolved_path="${src_outputs_dir}/${src_artifact}"
+        fi
       fi
     fi
 
     local obj
-    obj=$(jq -n --arg name "$src_output" --arg scope "$scope" --arg path "$resolved_path" \
-      '{name: $name, scope: $scope, resolved_path: $path}')
+    obj=$(jq -n --arg name "$src_artifact" --arg scope "$scope" --arg path "$resolved_path" --arg type "$artifact_type" \
+      '{name: $name, scope: $scope, type: $type, resolved_path: $path}')
 
     if [[ "$first" = "true" ]]; then
       first=false

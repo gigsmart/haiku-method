@@ -13,6 +13,9 @@ import {
   sectionHeading,
   type TabDef,
 } from "./components.js";
+import { renderAnnotationCanvas } from "./annotation-canvas.js";
+import { renderInlineComments } from "./inline-comments.js";
+import { markdownToHtml } from "../markdown.js";
 
 export function renderUnitReview(
   intent: ParsedIntent,
@@ -38,7 +41,13 @@ export function renderUnitReview(
   const techSpec = findSection("Technical Spec") || findSection("Technical Specification") || findSection("Implementation");
   const domainEntities = findSection("Domain Entities") || findSection("Entities");
 
-  // Tab 1: Spec
+  // Tab 1: Spec (with inline commenting on text content)
+  // Combine all spec content into a single commentable block for a unified inline comments experience
+  let combinedSpecMarkdown = "";
+  if (description) combinedSpecMarkdown += `## Description\n\n${description}\n\n`;
+  if (techSpec) combinedSpecMarkdown += `## Technical Spec\n\n${techSpec}\n\n`;
+  if (domainEntities) combinedSpecMarkdown += `## Domain Entities\n\n${domainEntities}\n\n`;
+
   const specContent = `
     ${renderBreadcrumb([
       { label: intent.title },
@@ -51,23 +60,16 @@ export function renderUnitReview(
       ${unit.frontmatter.discipline ? renderBadge("Discipline", unit.frontmatter.discipline) : ""}
     </div>
 
-    ${description ? card(`
-      ${sectionHeading("Description")}
-      ${renderMarkdownBlock("unit-description", description)}
-    `) : ""}
-
-    ${techSpec ? card(`
-      ${sectionHeading("Technical Spec")}
-      ${renderMarkdownBlock("unit-techspec", techSpec)}
-    `) : ""}
-
-    ${domainEntities ? card(`
-      ${sectionHeading("Domain Entities")}
-      ${renderMarkdownBlock("unit-entities", domainEntities)}
-    `) : ""}
+    ${combinedSpecMarkdown ? card(`
+      ${sectionHeading("Spec — Comment on text")}
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Select text to add inline comments.</p>
+      ${renderInlineComments(markdownToHtml(combinedSpecMarkdown))}
+    `) : card(`
+      <p class="text-gray-500 dark:text-gray-400 italic">No spec content available.</p>
+    `)}
   `;
 
-  // Tab 2: Wireframe
+  // Tab 2: Wireframe (with annotation canvas for images)
   const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"];
   function isImageUrl(url: string): boolean {
     const ext = url.substring(url.lastIndexOf(".")).toLowerCase();
@@ -75,10 +77,25 @@ export function renderUnitReview(
   }
 
   const hasWireframe = wireframeMockups.length > 0;
+  // Use the annotation canvas for the first image mockup so reviewers can pin and draw on it
+  const firstImageMockup = wireframeMockups.find((m) => isImageUrl(m.url));
+  const remainingMockups = wireframeMockups.filter((m) => m !== firstImageMockup);
+
   const wireframeContent = hasWireframe
-    ? card(`
-        ${sectionHeading("Wireframe")}
-        ${wireframeMockups.map((m) => `
+    ? `${firstImageMockup ? card(`
+        ${sectionHeading("Wireframe — Annotate")}
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400">${escapeHtml(firstImageMockup.label)}</h4>
+          <a href="${escapeAttr(firstImageMockup.url)}" target="_blank" rel="noopener noreferrer"
+             class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            Open in new tab &#8599;
+          </a>
+        </div>
+        ${renderAnnotationCanvas(firstImageMockup.url)}
+      `) : ""}
+      ${remainingMockups.length > 0 ? card(`
+        ${sectionHeading(firstImageMockup ? "Additional Wireframes" : "Wireframe")}
+        ${remainingMockups.map((m) => `
           <div class="mb-4">
             <div class="flex items-center justify-between mb-2">
               <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400">${escapeHtml(m.label)}</h4>
@@ -98,7 +115,7 @@ export function renderUnitReview(
             }
           </div>
         `).join("")}
-      `)
+      `) : ""}`
     : card(`
         ${sectionHeading("Wireframe")}
         <p class="text-gray-500 dark:text-gray-400 italic">No wireframe available for this unit.</p>
@@ -145,6 +162,6 @@ export function renderUnitReview(
 
   return `
     ${renderTabs("unit", tabs)}
-    ${renderDecisionForm(sessionId)}
+    ${renderDecisionForm(sessionId, true)}
   `;
 }

@@ -1,6 +1,6 @@
 import type { ParsedIntent, ParsedUnit, CriterionItem, Section } from "./index.js";
 import type { MockupInfo } from "./types.js";
-import { escapeHtml } from "./layout.js";
+import { escapeHtml, escapeAttr } from "./layout.js";
 import {
   renderTabs,
   renderBadge,
@@ -12,6 +12,9 @@ import {
   sectionHeading,
   type TabDef,
 } from "./components.js";
+import { renderAnnotationCanvas } from "./annotation-canvas.js";
+import { renderInlineComments } from "./inline-comments.js";
+import { markdownToHtml } from "../markdown.js";
 
 export function renderIntentReview(
   intent: ParsedIntent,
@@ -38,21 +41,32 @@ export function renderIntentReview(
   const problem = findSection("Problem");
   const solution = findSection("Solution");
 
-  // Tab 1: Overview
+  // Tab 1: Overview (with inline comments on text, annotation canvas on mockups)
+  const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"];
+  function isImageUrl(url: string): boolean {
+    const ext = url.substring(url.lastIndexOf(".")).toLowerCase();
+    return IMAGE_EXTS.includes(ext);
+  }
+
+  // Build inline-commentable text content from problem + solution
+  let overviewMarkdown = "";
+  if (problem) overviewMarkdown += `## Problem\n\n${problem}\n\n`;
+  if (solution) overviewMarkdown += `## Solution\n\n${solution}\n\n`;
+
+  // Find first image mockup for annotation canvas
+  const firstIntentImageMockup = intentMockups.find((m) => isImageUrl(m.url));
+  const remainingIntentMockups = intentMockups.filter((m) => m !== firstIntentImageMockup);
+
   const overviewContent = `
     <div class="flex flex-wrap items-center gap-2 mb-6">
       ${renderBadge("Review type", "intent")}
       ${renderBadge("Status", intent.frontmatter.status)}
     </div>
 
-    ${problem ? card(`
-      ${sectionHeading("Problem")}
-      ${renderMarkdownBlock("intent-problem", problem)}
-    `) : ""}
-
-    ${solution ? card(`
-      ${sectionHeading("Solution")}
-      ${renderMarkdownBlock("intent-solution", solution)}
+    ${overviewMarkdown ? card(`
+      ${sectionHeading("Overview — Comment on text")}
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Select text to add inline comments.</p>
+      ${renderInlineComments(markdownToHtml(overviewMarkdown))}
     `) : ""}
 
     ${criteria.length > 0 ? card(`
@@ -60,9 +74,21 @@ export function renderIntentReview(
       ${renderCriteriaChecklist(criteria)}
     `) : ""}
 
-    ${intentMockups.length > 0 ? card(`
-      ${sectionHeading("Mockups")}
-      ${renderMockupEmbeds(intentMockups)}
+    ${firstIntentImageMockup ? card(`
+      ${sectionHeading("Mockup — Annotate")}
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400">${escapeHtml(firstIntentImageMockup.label)}</h4>
+        <a href="${escapeAttr(firstIntentImageMockup.url)}" target="_blank" rel="noopener noreferrer"
+           class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+          Open in new tab &#8599;
+        </a>
+      </div>
+      ${renderAnnotationCanvas(firstIntentImageMockup.url)}
+    `) : ""}
+
+    ${remainingIntentMockups.length > 0 ? card(`
+      ${sectionHeading(firstIntentImageMockup ? "Additional Mockups" : "Mockups")}
+      ${renderMockupEmbeds(remainingIntentMockups)}
     `) : ""}
   `;
 
@@ -189,6 +215,6 @@ export function renderIntentReview(
 
   return `
     ${renderTabs("intent", tabs)}
-    ${renderDecisionForm(sessionId)}
+    ${renderDecisionForm(sessionId, true)}
   `;
 }

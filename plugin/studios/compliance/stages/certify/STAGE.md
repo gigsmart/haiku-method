@@ -6,7 +6,7 @@ review: [external, await]
 unit_types: [audit-prep, finding-resolution]
 inputs:
   - stage: document
-    output: evidence-package
+    discovery: evidence-package
 review-agents-include:
   - stage: assess
     agents: [thoroughness]

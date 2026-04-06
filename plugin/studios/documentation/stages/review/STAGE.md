@@ -6,7 +6,7 @@ review: ask
 unit_types: [review]
 inputs:
   - stage: draft
-    output: draft-documentation
+    discovery: draft-documentation
 ---
 
 # Review

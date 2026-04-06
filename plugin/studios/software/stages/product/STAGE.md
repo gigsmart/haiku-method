@@ -6,9 +6,11 @@ review: [external, ask]
 unit_types: [product, backend, frontend]
 inputs:
   - stage: inception
-    output: discovery
+    discovery: discovery
   - stage: design
-    output: design-tokens
+    discovery: design-brief
+  - stage: design
+    discovery: design-tokens
 ---
 
 # Product

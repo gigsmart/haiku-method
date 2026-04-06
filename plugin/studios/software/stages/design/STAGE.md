@@ -6,7 +6,7 @@ review: ask
 unit_types: [design, frontend]
 inputs:
   - stage: inception
-    output: discovery
+    discovery: discovery
 ---
 
 # Design

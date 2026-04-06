@@ -77,7 +77,7 @@ export function startOAuthFlow(config: AuthConfig, returnPath: string): void {
 			client_id: config.clientId,
 			redirect_uri: redirectUri,
 			response_type: "code",
-			scope: "read_repository read_api",
+			scope: "read_api",
 			state,
 		})
 		window.location.href = `https://${config.host}/oauth/authorize?${params}`
@@ -143,7 +143,11 @@ export async function handleOAuthCallback(provider: string): Promise<{
 
 		return { success: false, host, returnPath, error: data.error_description || "Unknown error" }
 	} catch (e) {
-		return { success: false, host, returnPath, error: `Token exchange failed: ${(e as Error).message}` }
+		const msg = (e as Error).message
+		const hint = msg === "Failed to fetch"
+			? `Token exchange failed: Could not reach the auth proxy at ${AUTH_PROXY_URL}. The service may not be deployed or CORS may be blocking the request.`
+			: `Token exchange failed: ${msg}`
+		return { success: false, host, returnPath, error: hint }
 	}
 }
 

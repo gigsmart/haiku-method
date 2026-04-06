@@ -6,7 +6,7 @@ review: ask
 unit_types: [content]
 inputs:
   - stage: outline
-    output: document-outline
+    discovery: document-outline
 ---
 
 # Draft

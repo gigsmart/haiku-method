@@ -6,7 +6,7 @@ review: ask
 unit_types: [control-implementation, policy, configuration]
 inputs:
   - stage: assess
-    output: gap-report
+    discovery: gap-report
 ---
 
 # Remediate

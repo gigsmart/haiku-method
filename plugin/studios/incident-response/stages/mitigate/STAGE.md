@@ -6,7 +6,7 @@ review: [ask, await]
 unit_types: [hotfix, rollback, workaround]
 inputs:
   - stage: investigate
-    output: root-cause
+    discovery: root-cause
 ---
 
 # Mitigate

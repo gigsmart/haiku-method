@@ -6,7 +6,7 @@ review: ask
 unit_types: [interviews, surveys, analysis]
 inputs:
   - stage: discovery
-    output: market-landscape
+    discovery: market-landscape
 ---
 
 # User Research

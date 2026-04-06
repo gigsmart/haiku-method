@@ -6,7 +6,7 @@ review: ask
 unit_types: [implementation]
 inputs:
   - stage: mapping
-    output: mapping-spec
+    discovery: mapping-spec
 ---
 
 # Migrate

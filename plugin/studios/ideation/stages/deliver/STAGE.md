@@ -6,9 +6,9 @@ review: auto
 unit_types: [delivery]
 inputs:
   - stage: create
-    output: draft-deliverable
+    discovery: draft-deliverable
   - stage: review
-    output: review-report
+    discovery: review-report
 ---
 
 # Deliver

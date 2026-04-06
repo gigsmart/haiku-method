@@ -140,11 +140,18 @@ export function renderCriteriaChecklist(criteria: CriterionItem[]): string {
   </ol>`;
 }
 
-/** Decision form: Approve (green) + Request Changes (amber). Request Changes reveals textarea. */
-export function renderDecisionForm(sessionId: string): string {
+/** Decision form: Approve (green) + Request Changes (amber). Request Changes reveals textarea.
+ *  When `collectAnnotations` is true, the form will also capture canvas annotations and
+ *  inline comments (if the corresponding globals are defined on window) and send them as
+ *  part of the POST body.
+ */
+export function renderDecisionForm(sessionId: string, collectAnnotations = false): string {
   return `<div class="mt-8 p-6 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm"
               id="decision-section">
     <h2 class="text-lg font-semibold mb-4">Review Decision</h2>
+    ${collectAnnotations ? `<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+      Annotations (pins, drawings, inline comments) will be included with your decision.
+    </p>` : ""}
 
     <div id="decision-buttons" class="flex flex-col sm:flex-row gap-3">
       <button onclick="handleApprove()"
@@ -187,6 +194,7 @@ export function renderDecisionForm(sessionId: string): string {
   <script>
     (function() {
       var sessionId = '${sessionId}';
+      var collectAnnotations = ${collectAnnotations ? "true" : "false"};
 
       window.showFeedbackForm = function() {
         document.getElementById('feedback-form').classList.remove('hidden');
@@ -215,14 +223,50 @@ export function renderDecisionForm(sessionId: string): string {
         submitDecision('changes_requested', text);
       };
 
+      function gatherAnnotations() {
+        if (!collectAnnotations) return undefined;
+        var annotations = {};
+        var hasAny = false;
+
+        // Canvas annotations (pins + screenshot)
+        if (typeof window.captureAnnotations === 'function' && typeof window.hasCanvasAnnotations === 'function' && window.hasCanvasAnnotations()) {
+          var canvasData = window.captureAnnotations();
+          if (canvasData.screenshot) {
+            annotations.screenshot = canvasData.screenshot;
+            hasAny = true;
+          }
+          if (canvasData.annotations && canvasData.annotations.length > 0) {
+            annotations.pins = canvasData.annotations;
+            hasAny = true;
+          }
+        }
+
+        // Inline text comments
+        if (typeof window.captureInlineComments === 'function' && typeof window.hasInlineComments === 'function' && window.hasInlineComments()) {
+          var inlineData = window.captureInlineComments();
+          if (inlineData && inlineData.length > 0) {
+            annotations.comments = inlineData;
+            hasAny = true;
+          }
+        }
+
+        return hasAny ? annotations : undefined;
+      }
+
       function submitDecision(decision, feedback) {
         var buttons = document.querySelectorAll('#decision-section button');
         buttons.forEach(function(b) { b.disabled = true; b.classList.add('opacity-50', 'cursor-not-allowed'); });
 
+        var payload = { decision: decision, feedback: feedback };
+        var annotations = gatherAnnotations();
+        if (annotations) {
+          payload.annotations = annotations;
+        }
+
         fetch('/review/' + sessionId + '/decide', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ decision: decision, feedback: feedback })
+          body: JSON.stringify(payload)
         })
         .then(function(res) {
           if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -232,7 +276,16 @@ export function renderDecisionForm(sessionId: string): string {
           var result = document.getElementById('decision-result');
           result.className = 'mt-4 p-4 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200';
           result.classList.remove('hidden');
-          result.innerHTML = '<p class="font-semibold">Decision submitted: ' + decision.replace(/_/g, ' ') + '</p><p class="text-sm mt-1">You can close this tab.</p>';
+          var msg = '<p class="font-semibold">Decision submitted: ' + decision.replace(/_/g, ' ') + '</p>';
+          if (annotations) {
+            var parts = [];
+            if (annotations.screenshot) parts.push('annotated screenshot');
+            if (annotations.pins && annotations.pins.length) parts.push(annotations.pins.length + ' pin(s)');
+            if (annotations.comments && annotations.comments.length) parts.push(annotations.comments.length + ' inline comment(s)');
+            if (parts.length > 0) msg += '<p class="text-sm mt-1">Included: ' + parts.join(', ') + '</p>';
+          }
+          msg += '<p class="text-sm mt-1">You can close this tab.</p>';
+          result.innerHTML = msg;
           document.getElementById('decision-buttons').classList.add('hidden');
           document.getElementById('feedback-form').classList.add('hidden');
         })

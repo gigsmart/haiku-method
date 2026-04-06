@@ -6,7 +6,7 @@ review: external
 unit_types: [finding, executive-summary, remediation-plan]
 inputs:
   - stage: post-exploitation
-    output: impact-assessment
+    discovery: impact-assessment
 ---
 
 # Reporting

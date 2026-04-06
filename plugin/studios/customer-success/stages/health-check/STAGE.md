@@ -6,7 +6,7 @@ review: ask
 unit_types: [health-assessment, risk-mitigation]
 inputs:
   - stage: adoption
-    output: usage-report
+    discovery: usage-report
 ---
 
 # Health Check

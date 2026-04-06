@@ -6,7 +6,7 @@ review: ask
 unit_types: [fix, test, deployment]
 inputs:
   - stage: mitigate
-    output: mitigation-log
+    discovery: mitigation-log
 ---
 
 # Resolve

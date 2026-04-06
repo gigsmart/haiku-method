@@ -6,7 +6,7 @@ review: ask
 unit_types: [evidence, documentation, audit-trail]
 inputs:
   - stage: remediate
-    output: remediation-log
+    discovery: remediation-log
 ---
 
 # Document

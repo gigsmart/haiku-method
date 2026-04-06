@@ -6,7 +6,7 @@ review: [external, await]
 unit_types: [close, handoff]
 inputs:
   - stage: negotiation
-    output: terms
+    discovery: terms
 ---
 
 # Close

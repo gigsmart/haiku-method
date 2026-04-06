@@ -6,15 +6,17 @@ review: ask
 unit_types: [backend, frontend, fullstack]
 inputs:
   - stage: inception
-    output: discovery
+    discovery: discovery
   - stage: design
-    output: design-brief
+    discovery: design-brief
   - stage: design
-    output: design-tokens
+    discovery: design-tokens
+  - stage: design
+    output: design-artifacts
   - stage: product
-    output: behavioral-spec
+    discovery: behavioral-spec
   - stage: product
-    output: data-contracts
+    discovery: data-contracts
 review-agents-include:
   - stage: design
     agents: [consistency, accessibility]
