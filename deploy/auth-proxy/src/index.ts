@@ -108,7 +108,8 @@ async function handleGitLab(
 	}
 
 	const gitlabHost = host || "gitlab.com"
-	const redirectUri = `${ALLOWED_ORIGIN}/auth/gitlab/callback/`
+	const origin = req.headers.origin || ALLOWED_ORIGINS[0]
+	const redirectUri = `${origin}/auth/gitlab/callback/`
 
 	try {
 		const tokenRes = await fetch(`https://${gitlabHost}/oauth/token`, {
