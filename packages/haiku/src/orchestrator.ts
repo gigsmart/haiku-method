@@ -128,15 +128,28 @@ export function runNext(slug: string): OrchestratorAction {
 		return runNextComposite(slug, intent, intentDir)
 	}
 
-	const studioStages = resolveStudioStages(studio)
-	if (studioStages.length === 0) {
+	const allStudioStages = resolveStudioStages(studio)
+	if (allStudioStages.length === 0) {
 		return { action: "error", message: `Studio '${studio}' has no stages` }
 	}
+
+	// Filter out skipped stages
+	const skipStages = (intent.skip_stages as string[]) || []
+	const studioStages = allStudioStages.filter(s => !skipStages.includes(s))
 
 	// Determine current stage
 	let currentStage = activeStage
 	if (!currentStage) {
 		currentStage = studioStages[0]
+	}
+	// If current stage was skipped, advance to next non-skipped stage
+	if (skipStages.includes(currentStage)) {
+		const idx = allStudioStages.indexOf(currentStage)
+		const next = allStudioStages.slice(idx + 1).find(s => !skipStages.includes(s))
+		if (!next) {
+			return { action: "intent_complete", intent: slug, studio, message: `All stages complete for intent '${slug}'` }
+		}
+		currentStage = next
 	}
 
 	// Load stage state
