@@ -43,11 +43,25 @@ export interface StudioDefinition {
 }
 
 // Categorize studios by domain
-function categorizeStudio(slug: string, persistence: { type: string }): string {
-	const engineering = ["software", "data-pipeline", "migration", "incident-response", "compliance", "security-assessment"]
-	const gtm = ["sales", "marketing", "customer-success", "product-strategy"]
+const categoryLabels: Record<string, string> = {
+	engineering: "Engineering",
+	"go-to-market": "Go-to-Market",
+	operations: "Operations",
+	"back-office": "Back Office",
+	product: "Product",
+	general: "General Purpose",
+}
+
+function categorizeStudio(slug: string, persistence: { type: string }, rawCategory?: string): string {
+	if (rawCategory && categoryLabels[rawCategory]) return categoryLabels[rawCategory]
+	if (rawCategory) return rawCategory.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
+	// Legacy fallback for studios without category field
+	const engineering = ["software", "data-pipeline", "security-assessment", "documentation"]
+	const gtm = ["sales", "marketing", "customer-success"]
+	const ops = ["incident-response", "migration", "project-management", "quality-assurance"]
 	if (engineering.includes(slug)) return "Engineering"
 	if (gtm.includes(slug)) return "Go-to-Market"
+	if (ops.includes(slug)) return "Operations"
 	return "General Purpose"
 }
 
@@ -152,7 +166,7 @@ function parseStudio(studioDir: string): StudioDefinition | null {
 		persistence,
 		content: content.trim(),
 		stageDefinitions,
-		category: categorizeStudio(slug, persistence),
+		category: categorizeStudio(slug, persistence, data.category as string | undefined),
 	}
 }
 
@@ -166,8 +180,7 @@ export function getAllStudios(): StudioDefinition[] {
 		.map((d) => parseStudio(path.join(pluginStudiosDir, d)))
 		.filter((s): s is StudioDefinition => s !== null)
 		.sort((a, b) => {
-			// Sort: Engineering first, then Go-to-Market, then General Purpose
-			const catOrder = ["Engineering", "Go-to-Market", "General Purpose"]
+			const catOrder = ["Engineering", "Product", "Go-to-Market", "Operations", "Back Office", "General Purpose"]
 			const catDiff = catOrder.indexOf(a.category) - catOrder.indexOf(b.category)
 			if (catDiff !== 0) return catDiff
 			return a.name.localeCompare(b.name)

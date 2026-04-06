@@ -14,10 +14,25 @@ const categoryColors: Record<string, { border: string; bg: string; text: string 
 		bg: "bg-indigo-50 dark:bg-indigo-950/30",
 		text: "text-indigo-600 dark:text-indigo-400",
 	},
+	Product: {
+		border: "border-violet-200 dark:border-violet-800",
+		bg: "bg-violet-50 dark:bg-violet-950/30",
+		text: "text-violet-600 dark:text-violet-400",
+	},
 	"Go-to-Market": {
 		border: "border-amber-200 dark:border-amber-800",
 		bg: "bg-amber-50 dark:bg-amber-950/30",
 		text: "text-amber-600 dark:text-amber-400",
+	},
+	Operations: {
+		border: "border-orange-200 dark:border-orange-800",
+		bg: "bg-orange-50 dark:bg-orange-950/30",
+		text: "text-orange-600 dark:text-orange-400",
+	},
+	"Back Office": {
+		border: "border-slate-200 dark:border-slate-700",
+		bg: "bg-slate-50 dark:bg-slate-950/30",
+		text: "text-slate-600 dark:text-slate-400",
 	},
 	"General Purpose": {
 		border: "border-teal-200 dark:border-teal-800",
