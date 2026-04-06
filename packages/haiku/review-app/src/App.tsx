@@ -102,6 +102,18 @@ function SessionLoader({ sessionId, pageType }: { sessionId: string; pageType: s
           <DesignPicker session={session} sessionId={sessionId} />
         )}
       </main>
+      <footer className="mt-12 pb-8 text-center text-xs text-stone-500 dark:text-stone-500">
+        Powered by{" "}
+        <a
+          href="https://haikumethod.ai"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-teal-600 dark:text-teal-400 hover:underline"
+        >
+          H·AI·K·U
+        </a>
+        {" "}— Human + AI Knowledge Unification
+      </footer>
     </>
   );
 }

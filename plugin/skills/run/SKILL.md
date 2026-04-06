@@ -230,10 +230,17 @@ The stage's review gate requires human approval.
 **The visual review opens automatically.** When `haiku_run_next` returns `gate_ask`, it auto-opens the review page in the browser (unless in autopilot mode). The response includes `review_url` and `review_session`.
 
 **Do:**
-1. Tell the user the review is open and wait for their response. The review page has approve/decline controls.
-2. Check the review status via `get_review_status { session_id }` — the user submits their decision through the browser.
-3. If approved: `haiku_gate_approve { intent, stage }` then call `haiku_run_next`
-4. If declined: stop and let the user decide what to change
+1. Tell the user the review is open and wait for their response. The review page has approve/decline controls. The MCP tool blocks until the user submits — no polling needed.
+2. If approved: `haiku_gate_approve { intent, stage }` then call `haiku_run_next`
+3. If `changes_requested`: analyze the annotations to determine which stage needs the fix:
+   - Read each annotation's `location` field (file path or section name)
+   - Comments on design artifacts (e.g., `stages/design/artifacts/...`, `DESIGN-BRIEF.md`) → `/haiku:refine stage:design`
+   - Comments on behavioral specs (`BEHAVIORAL-SPEC.md`, `DATA-CONTRACTS.md`) → `/haiku:refine stage:product`
+   - Comments on discovery/architecture docs → `/haiku:refine stage:inception`
+   - Comments on code or implementation → fix in the current stage (create a new unit or increment bolt)
+   - If multiple stages are implicated, start with the most upstream one
+   - If unclear, ask the user which stage to revisit
+   - After the refine side-trip completes, return to the current gate and call `haiku_run_next` again
 
 #### `gate_external`
 
