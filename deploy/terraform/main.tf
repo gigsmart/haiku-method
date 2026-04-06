@@ -18,8 +18,9 @@ module "dns" {
   mcp_verify_txt = var.mcp_domain_verify_txt
 
   # Auth proxy subdomain
-  enable_auth_proxy_dns = var.enable_auth_proxy
-  auth_proxy_dns_value  = var.enable_auth_proxy ? "${module.auth_proxy[0].function_url}." : ""
+  enable_auth_proxy_dns  = var.enable_auth_proxy
+  auth_proxy_subdomain   = var.auth_proxy_subdomain
+  auth_proxy_dns_value   = var.enable_auth_proxy ? "${module.auth_proxy[0].function_url}." : ""
 }
 
 # -----------------------------------------------------------------------------

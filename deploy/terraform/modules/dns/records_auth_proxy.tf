@@ -4,7 +4,7 @@
 
 resource "google_dns_record_set" "auth" {
   count        = var.enable_auth_proxy_dns ? 1 : 0
-  name         = "auth.${var.domain}."
+  name         = "${var.auth_proxy_subdomain}.${var.domain}."
   managed_zone = google_dns_managed_zone.main.name
   project      = var.project_id
   type         = "CNAME"

@@ -46,6 +46,12 @@ variable "enable_auth_proxy_dns" {
   default     = false
 }
 
+variable "auth_proxy_subdomain" {
+  description = "Subdomain prefix for auth proxy (e.g., 'auth' → auth.domain, 'haiku-auth' → haiku-auth.domain)"
+  type        = string
+  default     = "auth"
+}
+
 variable "auth_proxy_dns_value" {
   description = "DNS CNAME target for auth proxy subdomain (e.g., haiku-auth-proxy.your-account.workers.dev.)"
   type        = string
