@@ -9,6 +9,9 @@ import remarkGfm from "remark-gfm"
 interface Props {
 	config: DemoConfig
 	artifacts?: Record<string, string> | null
+	examples?: string[]
+	exampleConfigs?: Record<string, DemoConfig>
+	exampleArtifacts?: Record<string, Record<string, string> | null>
 }
 
 // ── File Tree Helpers ──
@@ -227,7 +230,11 @@ function ArtifactViewer({
 
 // ── Main Component ──
 
-export function DemoClient({ config, artifacts }: Props) {
+export function DemoClient({ config: initialConfig, artifacts: initialArtifacts, examples, exampleConfigs, exampleArtifacts }: Props) {
+	const [activeExample, setActiveExample] = useState<string | null>(examples?.[0] ?? null)
+	const config = activeExample && exampleConfigs?.[activeExample] ? exampleConfigs[activeExample] : initialConfig
+	const artifacts = activeExample && exampleArtifacts?.[activeExample] !== undefined ? exampleArtifacts![activeExample] : initialArtifacts
+
 	const {
 		state,
 		togglePlayPause,
@@ -438,6 +445,24 @@ export function DemoClient({ config, artifacts }: Props) {
 					>
 						&#8634;
 					</button>
+
+					{/* Example picker */}
+					{examples && examples.length > 1 && (
+						<select
+							value={activeExample || ""}
+							onChange={(e) => {
+								setActiveExample(e.target.value || null)
+								reset()
+							}}
+							className="cursor-pointer rounded-md border border-stone-700 bg-stone-900 px-2 py-1.5 font-sans text-[12px] text-stone-200 transition-all hover:border-teal-400 max-[600px]:hidden"
+						>
+							{examples.map((name) => (
+								<option key={name} value={name}>
+									{name.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
+								</option>
+							))}
+						</select>
+					)}
 				</div>
 			</div>
 

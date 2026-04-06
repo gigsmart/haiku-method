@@ -32,18 +32,19 @@ const stepModules: Record<string, () => Promise<{ config: DemoConfig }>> = {
  * Returns the example name or null if no examples exist.
  */
 function findExampleName(slug: string): string | null {
+	const examples = listExamples(slug)
+	return examples.length > 0 ? examples[0] : null
+}
+
+/** List all examples for a studio that have a sequence file */
+export function listExamples(slug: string): string[] {
 	const examplesDir = path.join(pluginStudiosDir, slug, "examples")
-	if (!fs.existsSync(examplesDir)) return null
-	const entries = fs.readdirSync(examplesDir).filter((d) => {
+	if (!fs.existsSync(examplesDir)) return []
+	return fs.readdirSync(examplesDir).filter((d) => {
 		const fullPath = path.join(examplesDir, d)
-		return fs.statSync(fullPath).isDirectory()
+		if (!fs.statSync(fullPath).isDirectory()) return false
+		return fs.existsSync(path.join(fullPath, "sequence.ts"))
 	})
-	// Return the first example that has a sequence file
-	for (const entry of entries) {
-		const seqPath = path.join(examplesDir, entry, "sequence.ts")
-		if (fs.existsSync(seqPath)) return entry
-	}
-	return null
 }
 
 /**
@@ -57,9 +58,9 @@ const exampleModules: Record<string, () => Promise<{ config: DemoConfig }>> = {
 		),
 }
 
-export async function getDemoConfig(slug: string): Promise<DemoConfig | null> {
+export async function getDemoConfig(slug: string, example?: string): Promise<DemoConfig | null> {
 	// Check for example-driven demo first
-	const exampleName = findExampleName(slug)
+	const exampleName = example || findExampleName(slug)
 	if (exampleName) {
 		const key = `${slug}/${exampleName}`
 		const loader = exampleModules[key]
@@ -82,8 +83,9 @@ export async function getDemoConfig(slug: string): Promise<DemoConfig | null> {
  */
 export function loadExampleArtifacts(
 	slug: string,
+	example?: string,
 ): Record<string, string> | null {
-	const exampleName = findExampleName(slug)
+	const exampleName = example || findExampleName(slug)
 	if (!exampleName) return null
 
 	const exampleDir = path.join(pluginStudiosDir, slug, "examples", exampleName)
