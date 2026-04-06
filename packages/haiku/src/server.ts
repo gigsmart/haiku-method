@@ -323,7 +323,48 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 	// Orchestration tools
 	if (name === "haiku_run_next" || name === "haiku_gate_approve") {
-		return handleOrchestratorTool(name, (args ?? {}) as Record<string, unknown>)
+		const result = handleOrchestratorTool(name, (args ?? {}) as Record<string, unknown>)
+
+		// Auto-open visual review on gate_ask (interactive mode only)
+		try {
+			const parsed = JSON.parse(typeof result.content === "string" ? result.content : (result.content as Array<{text?: string}>)?.[0]?.text || "{}")
+			if (parsed.action === "gate_ask" && parsed.intent) {
+				// Check mode — only open review in interactive/OHOTL, not autopilot
+				const { readFileSync, existsSync } = await import("node:fs")
+				const { join } = await import("node:path")
+				const root = process.cwd()
+				const intentFile = join(root, ".haiku", "intents", parsed.intent, "intent.md")
+				if (existsSync(intentFile)) {
+					const raw = readFileSync(intentFile, "utf8")
+					const modeMatch = raw.match(/^mode:\s*(.+)$/m)
+					const mode = modeMatch?.[1]?.trim() || "continuous"
+					if (mode !== "autopilot") {
+						// Trigger open_review as a side effect
+						const intentDir = join(root, ".haiku", "intents", parsed.intent)
+						const { startHttpServer } = await import("./http.js")
+						const { createReviewSession } = await import("./sessions.js")
+						const port = await startHttpServer()
+						const session = createReviewSession({
+							intent_slug: parsed.intent,
+							stage: parsed.stage,
+							review_type: "stage",
+							intent_dir: intentDir,
+						})
+						const url = `http://127.0.0.1:${port}/review/${session.id}`
+						// Open in browser
+						const { exec } = await import("node:child_process")
+						exec(`open "${url}"`)
+						// Add review URL to the response
+						parsed.review_url = url
+						parsed.review_session = session.id
+						parsed.message += ` Visual review opened at ${url}`
+						return { content: [{ type: "text" as const, text: JSON.stringify(parsed, null, 2) }] }
+					}
+				}
+			}
+		} catch { /* non-fatal — review is a convenience, not a requirement */ }
+
+		return result
 	}
 
 	// State management tools

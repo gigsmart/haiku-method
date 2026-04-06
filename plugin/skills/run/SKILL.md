@@ -227,9 +227,11 @@ The stage's review gate requires human approval.
 { "action": "gate_ask", "intent": "...", "stage": "...", "next_stage": "..." }
 ```
 
+**The visual review opens automatically.** When `haiku_run_next` returns `gate_ask`, it auto-opens the review page in the browser (unless in autopilot mode). The response includes `review_url` and `review_session`.
+
 **Do:**
-1. **Always try visual review first.** Call `open_review { intent, stage, review_type: "stage" }` to present a rich review page in the browser. This opens a visual review with all stage artifacts, wireframes, and unit summaries. Wait for the user's decision via `get_review_status`.
-2. If `open_review` fails (tool not available): present a conversational stage summary directly to the user. List the key outputs, units completed, and any review agent findings. Ask "Ready to advance to {next_stage}?" and wait for the user's text reply. Do NOT use `AskUserQuestion` with a select — this is a conversation, not a form.
+1. Tell the user the review is open and wait for their response. The review page has approve/decline controls.
+2. Check the review status via `get_review_status { session_id }` — the user submits their decision through the browser.
 3. If approved: `haiku_gate_approve { intent, stage }` then call `haiku_run_next`
 4. If declined: stop and let the user decide what to change
 
