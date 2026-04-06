@@ -41,6 +41,10 @@ jobs:
       - name: Build website
         run: bun run build
         working-directory: website
+        env:
+          NEXT_PUBLIC_HAIKU_GITHUB_OAUTH_CLIENT_ID: ${{ vars.NEXT_PUBLIC_HAIKU_GITHUB_OAUTH_CLIENT_ID }}
+          NEXT_PUBLIC_HAIKU_GITLAB_OAUTH_CLIENT_ID: ${{ vars.NEXT_PUBLIC_HAIKU_GITLAB_OAUTH_CLIENT_ID }}
+          NEXT_PUBLIC_HAIKU_AUTH_PROXY_URL: ${{ vars.NEXT_PUBLIC_HAIKU_AUTH_PROXY_URL }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
