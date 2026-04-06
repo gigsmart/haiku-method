@@ -115,7 +115,7 @@ export function IntentDetailView({ intent, provider, onBack }: Props) {
 	)
 
 	return (
-		<div className="mx-auto max-w-5xl px-4 py-8 lg:py-12">
+		<div className={`mx-auto px-4 py-8 lg:py-12 ${viewMode === "board" ? "max-w-full" : "max-w-5xl"}`}>
 			{/* Header */}
 			<button
 				onClick={onBack}

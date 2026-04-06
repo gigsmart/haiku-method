@@ -136,7 +136,7 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 	}
 
 	return (
-		<div className="mx-auto max-w-5xl px-4 py-8 lg:py-12">
+		<div className={`mx-auto px-4 py-8 lg:py-12 ${viewMode === "board" ? "max-w-full" : "max-w-5xl"}`}>
 			{/* Header */}
 			<div className="mb-8 flex items-center justify-between">
 				<div>
