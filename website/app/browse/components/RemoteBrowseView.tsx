@@ -87,7 +87,7 @@ export function RemoteBrowseView({ pathSegments, branch: branchParam }: Props) {
 			}
 
 			setProvider(prov)
-			addRecent(host, project)
+			addRecent(host, project, branch)
 			setLoading(false)
 		}
 

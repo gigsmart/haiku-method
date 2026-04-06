@@ -4,6 +4,7 @@ const MAX_RECENTS = 10
 export interface RecentRepo {
 	host: string
 	project: string
+	branch: string
 	label: string
 	lastVisited: number
 }
@@ -15,9 +16,16 @@ export function getRecents(): RecentRepo[] {
 	} catch { return [] }
 }
 
-export function addRecent(host: string, project: string) {
-	const recents = getRecents().filter(r => !(r.host === host && r.project === project))
-	recents.unshift({ host, project, label: `${host}/${project}`, lastVisited: Date.now() })
+export function addRecent(host: string, project: string, branch?: string) {
+	const b = branch || ""
+	const recents = getRecents().filter(r => !(r.host === host && r.project === project && r.branch === b))
+	recents.unshift({
+		host,
+		project,
+		branch: b,
+		label: `${host}/${project}${b ? ` (${b})` : ""}`,
+		lastVisited: Date.now(),
+	})
 	if (recents.length > MAX_RECENTS) recents.length = MAX_RECENTS
 	localStorage.setItem(RECENTS_KEY, JSON.stringify(recents))
 }

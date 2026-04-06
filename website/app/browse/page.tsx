@@ -287,14 +287,21 @@ function RecentsList() {
 				{recents.map((r) => (
 					<Link
 						key={r.label}
-						href={`/browse/${r.host}/${r.project}/`}
+						href={`/browse/${r.host}/${r.project}/${r.branch ? `?branch=${encodeURIComponent(r.branch)}` : ""}`}
 						className="flex items-center justify-between rounded-lg border border-stone-200 px-4 py-3 transition hover:border-teal-300 hover:shadow-sm dark:border-stone-700 dark:hover:border-teal-700"
 					>
 						<div>
 							<div className="font-mono text-sm font-medium text-stone-900 dark:text-stone-100">
 								{r.project}
 							</div>
-							<div className="text-xs text-stone-500">{r.host}</div>
+							<div className="flex items-center gap-2 text-xs text-stone-500">
+								<span>{r.host}</span>
+								{r.branch && (
+									<span className="rounded bg-stone-100 px-1.5 py-0.5 font-mono text-[10px] text-stone-600 dark:bg-stone-800 dark:text-stone-400">
+										{r.branch}
+									</span>
+								)}
+							</div>
 						</div>
 						<span className="text-xs text-stone-400">
 							{new Date(r.lastVisited).toLocaleDateString()}
