@@ -8,10 +8,10 @@ argument-hint: "[intent-slug]"
 
 > **This command is deprecated.** Use `/haiku:new` to create an intent, then `/haiku:run` to advance through stages.
 
-`/haiku:elaborate` was the legacy elaboration flow that decomposed intents into units. This functionality is now handled by `/haiku:run`, which manages the full stage lifecycle including planning/decomposition.
+`/haiku:elaborate` was the legacy elaboration flow that decomposed intents into units. This functionality is now handled by `/haiku:new` (intent creation) + `/haiku:run` (stage lifecycle).
 
-**Action:** Invoke `/haiku:run` via the Skill tool with any arguments the user provided. Do not run any legacy elaboration logic.
+**Action:** Invoke `/haiku:new` via the Skill tool with any arguments the user provided. Do not run any legacy elaboration logic.
 
 ```
-Skill { skill: "haiku:run", args: "{original arguments}" }
+Skill { skill: "haiku:new", args: "{original arguments}" }
 ```
