@@ -289,21 +289,20 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 										)}
 									</div>
 								</div>
-								{intent.stagesTotal > 0 && (
+								{intent.stagesTotal > 0 && intent.stagesComplete > 0 && (
 									<div className="text-right">
 										<div className="text-2xl font-bold text-teal-600 dark:text-teal-400">
-											{Math.max(0, intent.stagesComplete)}/{intent.stagesTotal}
+											{intent.stagesComplete}/{intent.stagesTotal}
 										</div>
 										<div className="text-xs text-stone-400">stages</div>
 									</div>
 								)}
 							</div>
-							{/* Progress bar */}
-							{intent.stagesTotal > 0 && (
+							{intent.stagesTotal > 0 && intent.stagesComplete > 0 && (
 								<div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-stone-100 dark:bg-stone-800">
 									<div
 										className="h-full rounded-full bg-teal-500 transition-all"
-										style={{ width: `${Math.max(0, (intent.stagesComplete / intent.stagesTotal) * 100)}%` }}
+										style={{ width: `${(intent.stagesComplete / intent.stagesTotal) * 100}%` }}
 									/>
 								</div>
 							)}
