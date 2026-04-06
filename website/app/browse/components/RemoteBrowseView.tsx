@@ -8,6 +8,7 @@ import type { BrowseProvider } from "@/lib/browse/types"
 import { getToken, clearToken, setToken, getAuthConfig, startOAuthFlow, isOAuthAvailable } from "@/lib/browse/auth"
 import { parseBrowsePath } from "@/lib/browse/url"
 import type { BrowseLocation } from "@/lib/browse/url"
+import { addRecent } from "@/lib/browse/recents"
 import { PortfolioView } from "./PortfolioView"
 
 function titleCase(s: string): string {
@@ -86,6 +87,7 @@ export function RemoteBrowseView({ pathSegments, branch: branchParam }: Props) {
 			}
 
 			setProvider(prov)
+			addRecent(host, project)
 			setLoading(false)
 		}
 
