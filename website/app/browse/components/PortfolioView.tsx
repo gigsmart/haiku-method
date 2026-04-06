@@ -1,20 +1,33 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
-import type { BrowseProvider, HaikuIntent, HaikuIntentDetail } from "@/lib/browse/types"
+import { createSearchIndex } from "@/lib/browse/search"
+import type { SearchDocument } from "@/lib/browse/search"
+import {
+	type CachedDocument,
+	cacheDocuments,
+	clearIntentCache,
+	getCachedDocuments,
+	isCacheFresh,
+	isDeepIndexComplete,
+	markCacheIndexed,
+} from "@/lib/browse/search-db"
+import type {
+	BrowseProvider,
+	HaikuIntent,
+	HaikuIntentDetail,
+} from "@/lib/browse/types"
 import { formatDate, formatDuration } from "@/lib/browse/types"
 import { buildBrowseUrl } from "@/lib/browse/url"
 import type { BrowseLocation } from "@/lib/browse/url"
-import { createSearchIndex } from "@/lib/browse/search"
-import type { SearchDocument } from "@/lib/browse/search"
-import { SearchBar } from "./SearchBar"
-import type { SearchSelection } from "./SearchBar"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { IntentDetailView } from "./IntentDetailView"
 import { PortfolioKanban } from "./KanbanView"
+import { SearchBar } from "./SearchBar"
+import type { SearchSelection } from "./SearchBar"
 
 interface Props {
 	provider: BrowseProvider
@@ -32,107 +45,165 @@ function titleCase(s: string): string {
 
 const statusColors: Record<string, string> = {
 	active: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
-	completed: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+	completed:
+		"bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
 	archived: "bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400",
 	blocked: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 }
 
-export function PortfolioView({ provider, location, onBack, repoLabel }: Props) {
+export function PortfolioView({
+	provider,
+	location,
+	onBack,
+	repoLabel,
+}: Props) {
 	const router = useRouter()
 	const [intents, setIntents] = useState<HaikuIntent[]>([])
-	const [selectedIntent, setSelectedIntent] = useState<HaikuIntentDetail | null>(null)
+	const [selectedIntent, setSelectedIntent] =
+		useState<HaikuIntentDetail | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [loadingMore, setLoadingMore] = useState(false)
 	const [loadingDetail, setLoadingDetail] = useState(false)
-	const [viewMode, setViewMode] = useState<"list" | "board">(location?.view === "board" ? "board" : "list")
+	const [viewMode, setViewMode] = useState<"list" | "board">(
+		location?.view === "board" ? "board" : "list",
+	)
 	const [knowledgeFiles, setKnowledgeFiles] = useState<string[]>([])
 	const initialNavHandled = useRef(false)
 	const [searchQuery, setSearchQuery] = useState("")
 	const [searchIndexVersion, setSearchIndexVersion] = useState(0)
 	const searchIndex = useMemo(() => createSearchIndex(), [])
 	const indexedIds = useRef(new Set<string>())
+	const [deepIndexProgress, setDeepIndexProgress] = useState<{
+		current: number
+		total: number
+	} | null>(null)
+	const deepIndexAbort = useRef<AbortController | null>(null)
+	const cacheWriteBuffer = useRef<CachedDocument[]>([])
+
+	// Repo key for IndexedDB scoping
+	const repoKey = useMemo(() => {
+		if (!location) return "local"
+		return `${location.host}/${location.project}/${location.branch || ""}`
+	}, [location])
 
 	// Whether we have path-based navigation (remote browse) or local-only state
 	const hasPathNav = !!location
 
 	// Build a URL helper that inherits host/project/branch from the current location
-	const browseUrl = useCallback((overrides: Partial<BrowseLocation> = {}) => {
-		if (!location) return "#"
-		return buildBrowseUrl({
-			host: location.host,
-			project: location.project,
-			branch: location.branch,
-			...overrides,
-		})
-	}, [location])
+	const browseUrl = useCallback(
+		(overrides: Partial<BrowseLocation> = {}) => {
+			if (!location) return "#"
+			return buildBrowseUrl({
+				host: location.host,
+				project: location.project,
+				branch: location.branch,
+				...overrides,
+			})
+		},
+		[location],
+	)
 
-	// Helper to add a document to the search index (deduped)
-	const addToIndex = useCallback((doc: SearchDocument) => {
-		if (indexedIds.current.has(doc.id)) return
-		indexedIds.current.add(doc.id)
-		searchIndex.add(doc)
-		setSearchIndexVersion((v) => v + 1)
-	}, [searchIndex])
+	// Helper to add a document to the search index (deduped) and buffer for cache
+	const addToIndex = useCallback(
+		(doc: SearchDocument) => {
+			if (indexedIds.current.has(doc.id)) return
+			indexedIds.current.add(doc.id)
+			searchIndex.add(doc)
+			// Buffer for IndexedDB persistence
+			cacheWriteBuffer.current.push({
+				...doc,
+				repoKey,
+				updatedAt: Date.now(),
+			})
+			setSearchIndexVersion((v) => v + 1)
+		},
+		[searchIndex, repoKey],
+	)
+
+	// Helper to remove a document from the search index
+	const removeFromIndex = useCallback(
+		(id: string) => {
+			if (!indexedIds.current.has(id)) return
+			indexedIds.current.delete(id)
+			try {
+				searchIndex.discard(id)
+			} catch {
+				/* already removed */
+			}
+		},
+		[searchIndex],
+	)
 
 	// Index all sub-items from an intent detail (units, knowledge, assets)
-	const indexIntentDetail = useCallback((detail: HaikuIntentDetail) => {
-		// Update the intent document with richer content
-		const intentId = `intent:${detail.slug}`
-		if (indexedIds.current.has(intentId)) {
-			try { searchIndex.discard(intentId) } catch { /* ignore */ }
-			indexedIds.current.delete(intentId)
-		}
-		addToIndex({
-			id: intentId,
-			type: "intent",
-			title: detail.title,
-			slug: detail.slug,
-			studio: detail.studio,
-			status: detail.status,
-			content: `${detail.title} ${detail.content || ""} ${detail.studio} ${detail.activeStage || ""} ${detail.mode}`,
-		})
+	const indexIntentDetail = useCallback(
+		(detail: HaikuIntentDetail) => {
+			// Update the intent document with richer content
+			const intentId = `intent:${detail.slug}`
+			removeFromIndex(intentId)
+			addToIndex({
+				id: intentId,
+				type: "intent",
+				title: detail.title,
+				slug: detail.slug,
+				studio: detail.studio,
+				status: detail.status,
+				content: `${detail.title} ${detail.content || ""} ${detail.studio} ${detail.activeStage || ""} ${detail.mode}`,
+			})
 
-		// Index units
-		for (const stage of detail.stages) {
-			for (const unit of stage.units) {
-				const criteriaText = unit.criteria.map((c) => c.text).join(" ")
+			// Remove stale units/knowledge/assets for this intent before re-indexing
+			const staleIds = Array.from(indexedIds.current).filter(
+				(id) =>
+					id.startsWith(`unit:${detail.slug}:`) ||
+					id.startsWith(`knowledge:${detail.slug}:`) ||
+					id.startsWith(`asset:${detail.slug}:`),
+			)
+			for (const id of staleIds) {
+				removeFromIndex(id)
+			}
+
+			// Index units
+			for (const stage of detail.stages) {
+				for (const unit of stage.units) {
+					const criteriaText = unit.criteria.map((c) => c.text).join(" ")
+					addToIndex({
+						id: `unit:${detail.slug}:${stage.name}:${unit.name}`,
+						type: "unit",
+						title: unit.name,
+						slug: detail.slug,
+						stage: stage.name,
+						studio: detail.studio,
+						status: unit.status,
+						content: `${unit.name} ${unit.content || ""} ${criteriaText} ${unit.type} ${unit.hat}`,
+					})
+				}
+			}
+
+			// Index knowledge files
+			for (const file of detail.knowledge) {
 				addToIndex({
-					id: `unit:${detail.slug}:${stage.name}:${unit.name}`,
-					type: "unit",
-					title: unit.name,
+					id: `knowledge:${detail.slug}:${file}`,
+					type: "knowledge",
+					title: file,
 					slug: detail.slug,
-					stage: stage.name,
-					studio: detail.studio,
-					status: unit.status,
-					content: `${unit.name} ${unit.content || ""} ${criteriaText} ${unit.type} ${unit.hat}`,
+					content: file,
+					path: `.haiku/intents/${detail.slug}/knowledge/${file}`,
 				})
 			}
-		}
 
-		// Index knowledge files
-		for (const file of detail.knowledge) {
-			addToIndex({
-				id: `knowledge:${detail.slug}:${file}`,
-				type: "knowledge",
-				title: file,
-				slug: detail.slug,
-				content: file,
-				path: `.haiku/intents/${detail.slug}/knowledge/${file}`,
-			})
-		}
-
-		// Index assets
-		for (const asset of detail.assets) {
-			addToIndex({
-				id: `asset:${detail.slug}:${asset.path}`,
-				type: "asset",
-				title: asset.name,
-				slug: detail.slug,
-				content: `${asset.name} ${asset.path}`,
-				path: asset.path,
-			})
-		}
-	}, [searchIndex, addToIndex])
+			// Index assets
+			for (const asset of detail.assets) {
+				addToIndex({
+					id: `asset:${detail.slug}:${asset.path}`,
+					type: "asset",
+					title: asset.name,
+					slug: detail.slug,
+					content: `${asset.name} ${asset.path}`,
+					path: asset.path,
+				})
+			}
+		},
+		[addToIndex, removeFromIndex],
+	)
 
 	// Restore deeplink state IMMEDIATELY before loading the full list
 	useEffect(() => {
@@ -141,13 +212,45 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 		if (location?.intent) {
 			// Load the deeplinked intent right away — don't wait for the full list
 			setLoadingDetail(true)
-			provider.getIntent(location.intent).then(detail => {
+			provider.getIntent(location.intent).then((detail) => {
 				setSelectedIntent(detail)
 				if (detail) indexIntentDetail(detail)
 				setLoadingDetail(false)
 			})
 		}
 	}, [provider, location?.intent, indexIntentDetail])
+
+	// Restore search index from IndexedDB cache on mount
+	useEffect(() => {
+		let cancelled = false
+		async function restoreCache() {
+			try {
+				const fresh = await isCacheFresh(repoKey)
+				if (!fresh) return
+				const cached = await getCachedDocuments(repoKey)
+				if (cancelled || cached.length === 0) return
+				for (const doc of cached) {
+					addToIndex({
+						id: doc.id,
+						type: doc.type,
+						title: doc.title,
+						slug: doc.slug,
+						stage: doc.stage,
+						studio: doc.studio,
+						status: doc.status,
+						content: doc.content,
+						path: doc.path,
+					})
+				}
+			} catch {
+				// IndexedDB may not be available (SSR, private browsing, etc.)
+			}
+		}
+		restoreCache()
+		return () => {
+			cancelled = true
+		}
+	}, [repoKey, addToIndex])
 
 	// Progressive loading — show each intent as it loads
 	useEffect(() => {
@@ -158,7 +261,7 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 			await provider.listIntents((intent) => {
 				setIntents((prev) => [...prev, intent])
 				setLoading(false)
-				// Index this intent for search
+				// Index this intent for search (now includes body content)
 				addToIndex({
 					id: `intent:${intent.slug}`,
 					type: "intent",
@@ -166,7 +269,7 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 					slug: intent.slug,
 					studio: intent.studio,
 					status: intent.status,
-					content: `${intent.title} ${intent.studio} ${intent.activeStage || ""} ${intent.mode}`,
+					content: `${intent.title} ${intent.content || ""} ${intent.studio} ${intent.activeStage || ""} ${intent.mode}`,
 				})
 			})
 
@@ -176,13 +279,113 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 		load()
 	}, [provider, addToIndex])
 
+	// Background deep indexing — fetch all intent details for unit search
+	useEffect(() => {
+		if (loadingMore || loading || intents.length === 0) return
+
+		// Abort any previous deep index run
+		deepIndexAbort.current?.abort()
+		const controller = new AbortController()
+		deepIndexAbort.current = controller
+
+		async function deepIndex() {
+			// Check if deep index is already cached and fresh
+			try {
+				const [fresh, deepDone] = await Promise.all([
+					isCacheFresh(repoKey),
+					isDeepIndexComplete(repoKey),
+				])
+				if (fresh && deepDone) return
+			} catch {
+				// IndexedDB unavailable — still do in-memory indexing
+			}
+
+			setDeepIndexProgress({ current: 0, total: intents.length })
+
+			for (let i = 0; i < intents.length; i++) {
+				if (controller.signal.aborted) return
+				const intent = intents[i]
+
+				// Skip if we already have unit-level data for this intent
+				const hasUnits = Array.from(indexedIds.current).some((id) =>
+					id.startsWith(`unit:${intent.slug}:`),
+				)
+				if (hasUnits) {
+					setDeepIndexProgress({ current: i + 1, total: intents.length })
+					continue
+				}
+
+				try {
+					// Yield to the main thread between fetches
+					await new Promise<void>((resolve) => {
+						if (typeof requestIdleCallback !== "undefined") {
+							requestIdleCallback(() => resolve())
+						} else {
+							setTimeout(resolve, 0)
+						}
+					})
+					if (controller.signal.aborted) return
+
+					const detail = await provider.getIntent(intent.slug)
+					if (controller.signal.aborted) return
+					if (!detail) continue
+
+					indexIntentDetail(detail)
+				} catch {
+					// Individual intent fetch failure — continue with others
+				}
+				setDeepIndexProgress({ current: i + 1, total: intents.length })
+			}
+
+			setDeepIndexProgress(null)
+
+			// Flush accumulated documents to IndexedDB
+			try {
+				const buffer = cacheWriteBuffer.current
+				cacheWriteBuffer.current = []
+				if (buffer.length > 0) {
+					await cacheDocuments(buffer)
+				}
+				await markCacheIndexed(repoKey, true)
+			} catch {
+				// IndexedDB write failure — non-critical
+			}
+		}
+
+		deepIndex()
+
+		return () => {
+			controller.abort()
+			setDeepIndexProgress(null)
+		}
+	}, [intents, loading, loadingMore, provider, repoKey, indexIntentDetail])
+
+	// Periodic flush of cache write buffer (for documents added outside deep index)
+	useEffect(() => {
+		const interval = setInterval(async () => {
+			const buffer = cacheWriteBuffer.current
+			if (buffer.length === 0) return
+			cacheWriteBuffer.current = []
+			try {
+				await cacheDocuments(buffer)
+				await markCacheIndexed(repoKey, false)
+			} catch {
+				// Non-critical
+			}
+		}, 5000)
+		return () => clearInterval(interval)
+	}, [repoKey])
+
 	// Load portfolio-level knowledge files
 	useEffect(() => {
-		provider.listFiles(".haiku/knowledge").then((files) => {
-			setKnowledgeFiles(files.filter((f) => !f.startsWith(".")))
-		}).catch(() => {
-			// Directory may not exist — that's fine
-		})
+		provider
+			.listFiles(".haiku/knowledge")
+			.then((files) => {
+				setKnowledgeFiles(files.filter((f) => !f.startsWith(".")))
+			})
+			.catch(() => {
+				// Directory may not exist — that's fine
+			})
 	}, [provider])
 
 	// Listen for browser back/forward (path-based navigation only)
@@ -190,7 +393,10 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 		if (!hasPathNav) return
 		const onPopState = () => {
 			// Re-parse the current URL to determine state
-			const segments = window.location.pathname.replace(/^\/browse\//, "").replace(/\/$/, "").split("/")
+			const segments = window.location.pathname
+				.replace(/^\/browse\//, "")
+				.replace(/\/$/, "")
+				.split("/")
 			const hasIntent = segments.includes("intent")
 			const hasBoard = segments.includes("board")
 
@@ -198,7 +404,7 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 				const intentIdx = segments.indexOf("intent")
 				const slug = segments[intentIdx + 1]
 				if (slug) {
-					provider.getIntent(slug).then(detail => setSelectedIntent(detail))
+					provider.getIntent(slug).then((detail) => setSelectedIntent(detail))
 				}
 			} else {
 				setSelectedIntent(null)
@@ -222,21 +428,30 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 			try {
 				const detail = await provider.getIntent(slug)
 				if (!detail) {
-					setIntentError(`Could not load intent "${slug}". It may have been deleted or the API returned an error.`)
+					setIntentError(
+						`Could not load intent "${slug}". It may have been deleted or the API returned an error.`,
+					)
 					setLoadingDetail(false)
 					return
 				}
 				setSelectedIntent(detail)
+				// Re-index the intent detail (surgical update — removes stale, adds fresh)
 				indexIntentDetail(detail)
+				// Also invalidate the IndexedDB cache for this intent so stale data doesn't persist
+				clearIntentCache(repoKey, slug).catch(() => {
+					/* non-critical */
+				})
 				if (hasPathNav) {
 					router.push(browseUrl({ intent: slug }))
 				}
 			} catch (e) {
-				setIntentError(`Error loading intent "${slug}": ${(e as Error).message}`)
+				setIntentError(
+					`Error loading intent "${slug}": ${(e as Error).message}`,
+				)
 			}
 			setLoadingDetail(false)
 		},
-		[provider, router, browseUrl, hasPathNav, indexIntentDetail],
+		[provider, router, browseUrl, hasPathNav, indexIntentDetail, repoKey],
 	)
 
 	const handleSearchSelect = useCallback(
@@ -263,15 +478,17 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 		}
 	}, [hasPathNav])
 
-	const handleViewModeChange = useCallback((mode: "list" | "board") => {
-		setViewMode(mode)
-		if (hasPathNav) {
-			const url = mode === "board"
-				? browseUrl({ view: "board" })
-				: browseUrl()
-			window.history.replaceState(null, "", url)
-		}
-	}, [browseUrl, hasPathNav])
+	const handleViewModeChange = useCallback(
+		(mode: "list" | "board") => {
+			setViewMode(mode)
+			if (hasPathNav) {
+				const url =
+					mode === "board" ? browseUrl({ view: "board" }) : browseUrl()
+				window.history.replaceState(null, "", url)
+			}
+		},
+		[browseUrl, hasPathNav],
+	)
 
 	if (selectedIntent) {
 		return (
@@ -285,7 +502,9 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 	}
 
 	return (
-		<div className={`mx-auto px-4 py-8 lg:py-12 ${viewMode === "board" ? "max-w-full" : "max-w-5xl"}`}>
+		<div
+			className={`mx-auto px-4 py-8 lg:py-12 ${viewMode === "board" ? "max-w-full" : "max-w-5xl"}`}
+		>
 			{/* Header */}
 			<div className="mb-8">
 				<div className="flex items-center justify-between">
@@ -305,10 +524,16 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 					</div>
 					<div className="text-right text-sm text-stone-500 dark:text-stone-400">
 						<div>
-							Source: <strong className="text-stone-700 dark:text-stone-300">{provider.name}</strong>
+							Source:{" "}
+							<strong className="text-stone-700 dark:text-stone-300">
+								{provider.name}
+							</strong>
 						</div>
 						<div>
-							<strong className="text-stone-700 dark:text-stone-300">{intents.length}</strong> intent{intents.length !== 1 ? "s" : ""}
+							<strong className="text-stone-700 dark:text-stone-300">
+								{intents.length}
+							</strong>{" "}
+							intent{intents.length !== 1 ? "s" : ""}
 						</div>
 					</div>
 				</div>
@@ -320,6 +545,11 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 							onSelect={handleSearchSelect}
 							query={searchQuery}
 							onQueryChange={setSearchQuery}
+							placeholder={
+								deepIndexProgress
+									? `Indexing... ${deepIndexProgress.current}/${deepIndexProgress.total}`
+									: undefined
+							}
 						/>
 					</div>
 				)}
@@ -357,7 +587,10 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 			{loading && intents.length === 0 ? (
 				<div className="space-y-3">
 					{[1, 2, 3, 4].map((i) => (
-						<div key={i} className="animate-pulse rounded-xl border border-stone-200 px-6 py-4 dark:border-stone-700">
+						<div
+							key={i}
+							className="animate-pulse rounded-xl border border-stone-200 px-6 py-4 dark:border-stone-700"
+						>
 							<div className="flex items-center justify-between">
 								<div>
 									<div className="h-5 w-48 rounded bg-stone-200 dark:bg-stone-700" />
@@ -375,9 +608,12 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 				</div>
 			) : !loading && intents.length === 0 ? (
 				<div className="rounded-xl border border-stone-200 px-8 py-16 text-center dark:border-stone-700">
-					<p className="text-lg font-medium text-stone-600 dark:text-stone-400">No intents found</p>
+					<p className="text-lg font-medium text-stone-600 dark:text-stone-400">
+						No intents found
+					</p>
 					<p className="mt-2 text-sm text-stone-500">
-						This workspace has no <code>.haiku/intents/</code> directory, or it's empty.
+						This workspace has no <code>.haiku/intents/</code> directory, or
+						it's empty.
 					</p>
 				</div>
 			) : viewMode === "board" ? (
@@ -388,79 +624,107 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 				/>
 			) : (
 				<div className="space-y-3">
-					{[...intents].sort((a, b) => {
-						// Active first, then completed, then archived
-						const statusOrder: Record<string, number> = { active: 0, blocked: 1, completed: 2, archived: 3 }
-						const sa = statusOrder[a.status] ?? 1
-						const sb = statusOrder[b.status] ?? 1
-						if (sa !== sb) return sa - sb
-						// Within same status, sort by start date descending (newest first)
-						const da = a.startedAt ? new Date(a.startedAt).getTime() : 0
-						const db = b.startedAt ? new Date(b.startedAt).getTime() : 0
-						return db - da
-					}).map((intent) => (
-						<Link
-							key={intent.slug}
-							href={browseUrl({ intent: intent.slug })}
-							onClick={(e) => {
-								e.preventDefault()
-								handleSelectIntent(intent.slug)
-							}}
-							className="block w-full rounded-xl border border-stone-200 px-6 py-4 text-left transition hover:border-teal-300 hover:shadow-sm dark:border-stone-700 dark:hover:border-teal-700"
-						>
-							<div className="flex items-center justify-between">
-								<div>
-									<div className="flex items-center gap-3">
-										<h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">
-											{intent.title}
-										</h2>
-										<span className={`rounded px-2 py-0.5 text-xs font-medium ${statusColors[intent.status] || statusColors.active}`}>
-											{intent.status}
-										</span>
-									</div>
-									<div className="mt-1 flex items-center gap-4 text-sm text-stone-500 dark:text-stone-400">
-										<span>
-											Studio: <strong className="text-stone-700 dark:text-stone-300">{titleCase(intent.studio)}</strong>
-										</span>
-										{intent.activeStage && (
+					{[...intents]
+						.sort((a, b) => {
+							// Active first, then completed, then archived
+							const statusOrder: Record<string, number> = {
+								active: 0,
+								blocked: 1,
+								completed: 2,
+								archived: 3,
+							}
+							const sa = statusOrder[a.status] ?? 1
+							const sb = statusOrder[b.status] ?? 1
+							if (sa !== sb) return sa - sb
+							// Within same status, sort by start date descending (newest first)
+							const da = a.startedAt ? new Date(a.startedAt).getTime() : 0
+							const db = b.startedAt ? new Date(b.startedAt).getTime() : 0
+							return db - da
+						})
+						.map((intent) => (
+							<Link
+								key={intent.slug}
+								href={browseUrl({ intent: intent.slug })}
+								onClick={(e) => {
+									e.preventDefault()
+									handleSelectIntent(intent.slug)
+								}}
+								className="block w-full rounded-xl border border-stone-200 px-6 py-4 text-left transition hover:border-teal-300 hover:shadow-sm dark:border-stone-700 dark:hover:border-teal-700"
+							>
+								<div className="flex items-center justify-between">
+									<div>
+										<div className="flex items-center gap-3">
+											<h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">
+												{intent.title}
+											</h2>
+											<span
+												className={`rounded px-2 py-0.5 text-xs font-medium ${statusColors[intent.status] || statusColors.active}`}
+											>
+												{intent.status}
+											</span>
+										</div>
+										<div className="mt-1 flex items-center gap-4 text-sm text-stone-500 dark:text-stone-400">
 											<span>
-												Stage: <strong className="text-stone-700 dark:text-stone-300">{titleCase(intent.activeStage)}</strong>
+												Studio:{" "}
+												<strong className="text-stone-700 dark:text-stone-300">
+													{titleCase(intent.studio)}
+												</strong>
 											</span>
-										)}
-										<span>
-											Mode: <strong className="text-stone-700 dark:text-stone-300">{intent.mode}</strong>
-										</span>
-										{intent.startedAt && (
+											{intent.activeStage && (
+												<span>
+													Stage:{" "}
+													<strong className="text-stone-700 dark:text-stone-300">
+														{titleCase(intent.activeStage)}
+													</strong>
+												</span>
+											)}
 											<span>
-												{formatDate(intent.startedAt)}{intent.completedAt ? ` — ${formatDate(intent.completedAt)}` : ""}
+												Mode:{" "}
+												<strong className="text-stone-700 dark:text-stone-300">
+													{intent.mode}
+												</strong>
 											</span>
-										)}
-										{intent.startedAt && (
-											<span className="font-mono text-xs">
-												{intent.completedAt ? formatDuration(intent.startedAt, intent.completedAt) : `${formatDuration(intent.startedAt, null)} elapsed`}
-											</span>
-										)}
+											{intent.startedAt && (
+												<span>
+													{formatDate(intent.startedAt)}
+													{intent.completedAt
+														? ` — ${formatDate(intent.completedAt)}`
+														: ""}
+												</span>
+											)}
+											{intent.startedAt && (
+												<span className="font-mono text-xs">
+													{intent.completedAt
+														? formatDuration(
+																intent.startedAt,
+																intent.completedAt,
+															)
+														: `${formatDuration(intent.startedAt, null)} elapsed`}
+												</span>
+											)}
+										</div>
 									</div>
+									{intent.stagesTotal > 0 && intent.stagesComplete > 0 && (
+										<div className="text-right">
+											<div className="text-2xl font-bold text-teal-600 dark:text-teal-400">
+												{intent.stagesComplete}/{intent.stagesTotal}
+											</div>
+											<div className="text-xs text-stone-400">stages</div>
+										</div>
+									)}
 								</div>
 								{intent.stagesTotal > 0 && intent.stagesComplete > 0 && (
-									<div className="text-right">
-										<div className="text-2xl font-bold text-teal-600 dark:text-teal-400">
-											{intent.stagesComplete}/{intent.stagesTotal}
-										</div>
-										<div className="text-xs text-stone-400">stages</div>
+									<div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-stone-100 dark:bg-stone-800">
+										<div
+											className="h-full rounded-full bg-teal-500 transition-all"
+											style={{
+												width: `${(intent.stagesComplete / intent.stagesTotal) * 100}%`,
+											}}
+										/>
 									</div>
 								)}
-							</div>
-							{intent.stagesTotal > 0 && intent.stagesComplete > 0 && (
-								<div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-stone-100 dark:bg-stone-800">
-									<div
-										className="h-full rounded-full bg-teal-500 transition-all"
-										style={{ width: `${(intent.stagesComplete / intent.stagesTotal) * 100}%` }}
-									/>
-								</div>
-							)}
-						</Link>
-					))}
+							</Link>
+						))}
 					{loadingMore && (
 						<div className="animate-pulse rounded-xl border border-stone-200 px-6 py-4 dark:border-stone-700">
 							<div className="h-5 w-36 rounded bg-stone-200 dark:bg-stone-700" />
@@ -477,7 +741,10 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 	)
 }
 
-function PortfolioKnowledge({ files, provider }: { files: string[]; provider: BrowseProvider }) {
+function PortfolioKnowledge({
+	files,
+	provider,
+}: { files: string[]; provider: BrowseProvider }) {
 	const [expanded, setExpanded] = useState(false)
 
 	return (
@@ -486,8 +753,18 @@ function PortfolioKnowledge({ files, provider }: { files: string[]; provider: Br
 				onClick={() => setExpanded(!expanded)}
 				className="flex w-full items-center gap-2 rounded-lg border border-stone-200 px-4 py-3 text-left transition hover:border-teal-300 dark:border-stone-700 dark:hover:border-teal-700"
 			>
-				<svg className={`h-4 w-4 flex-shrink-0 text-stone-400 transition ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+				<svg
+					className={`h-4 w-4 flex-shrink-0 text-stone-400 transition ${expanded ? "rotate-180" : ""}`}
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+				>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						strokeWidth={2}
+						d="M19 9l-7 7-7-7"
+					/>
 				</svg>
 				<h2 className="text-sm font-semibold uppercase tracking-wider text-stone-400">
 					Knowledge
@@ -499,7 +776,11 @@ function PortfolioKnowledge({ files, provider }: { files: string[]; provider: Br
 			{expanded && (
 				<div className="mt-2 space-y-2">
 					{files.map((file) => (
-						<PortfolioKnowledgeFile key={file} file={file} provider={provider} />
+						<PortfolioKnowledgeFile
+							key={file}
+							file={file}
+							provider={provider}
+						/>
 					))}
 				</div>
 			)}
@@ -507,7 +788,10 @@ function PortfolioKnowledge({ files, provider }: { files: string[]; provider: Br
 	)
 }
 
-function PortfolioKnowledgeFile({ file, provider }: { file: string; provider: BrowseProvider }) {
+function PortfolioKnowledgeFile({
+	file,
+	provider,
+}: { file: string; provider: BrowseProvider }) {
 	const [content, setContent] = useState<string | null>(null)
 	const [expanded, setExpanded] = useState(false)
 
@@ -527,19 +811,35 @@ function PortfolioKnowledgeFile({ file, provider }: { file: string; provider: Br
 				onClick={handleExpand}
 				className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-stone-50 dark:hover:bg-stone-800"
 			>
-				<span className="font-mono text-stone-600 dark:text-stone-400">{file}</span>
-				<svg className={`h-4 w-4 text-stone-400 transition ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+				<span className="font-mono text-stone-600 dark:text-stone-400">
+					{file}
+				</span>
+				<svg
+					className={`h-4 w-4 text-stone-400 transition ${expanded ? "rotate-180" : ""}`}
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+				>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						strokeWidth={2}
+						d="M19 9l-7 7-7-7"
+					/>
 				</svg>
 			</button>
 			{expanded && content && (
 				<div className="border-t border-stone-100 px-4 py-4 dark:border-stone-800">
 					{isMarkdown ? (
 						<div className="prose prose-sm prose-stone dark:prose-invert max-w-none">
-							<ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+							<ReactMarkdown remarkPlugins={[remarkGfm]}>
+								{content}
+							</ReactMarkdown>
 						</div>
 					) : (
-						<pre className="overflow-x-auto text-xs text-stone-600 dark:text-stone-400">{content}</pre>
+						<pre className="overflow-x-auto text-xs text-stone-600 dark:text-stone-400">
+							{content}
+						</pre>
 					)}
 				</div>
 			)}

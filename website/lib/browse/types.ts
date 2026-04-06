@@ -14,6 +14,7 @@ export interface HaikuIntent {
 	completedAt: string | null
 	composite: Array<{ studio: string; stages: string[] }> | null
 	follows: string | null
+	content?: string
 	raw: Record<string, unknown>
 }
 

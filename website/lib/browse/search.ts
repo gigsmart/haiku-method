@@ -26,7 +26,7 @@ export function createSearchIndex(): MiniSearch<SearchDocument> {
 			"content",
 		],
 		searchOptions: {
-			boost: { title: 3, slug: 2 },
+			boost: { title: 3, slug: 2, content: 0.5 },
 			fuzzy: 0.2,
 			prefix: true,
 		},

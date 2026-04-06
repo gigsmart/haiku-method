@@ -185,7 +185,7 @@ export class GitHubProvider implements BrowseProvider {
 			const rawText = intentEntry?.object?.text
 			if (!rawText) continue
 
-			const { data: frontmatter } = parseFrontmatter(rawText)
+			const { data: frontmatter, content } = parseFrontmatter(rawText)
 			const studio = (frontmatter.studio as string) || "ideation"
 			const stages = (frontmatter.stages as string[]) || []
 
@@ -211,6 +211,7 @@ export class GitHubProvider implements BrowseProvider {
 				),
 				stagesTotal: stages.length,
 				follows: (frontmatter.follows as string) || null,
+				content,
 				raw: frontmatter,
 			}
 			intents.push(intent)
