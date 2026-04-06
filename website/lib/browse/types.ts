@@ -27,6 +27,7 @@ export interface HaikuUnit {
 	hat: string
 	startedAt: string | null
 	completedAt: string | null
+	refs: string[]
 	criteria: Array<{ text: string; checked: boolean }>
 	content: string
 	raw: Record<string, unknown>

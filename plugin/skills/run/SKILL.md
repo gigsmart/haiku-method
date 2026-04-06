@@ -113,9 +113,10 @@ Research the problem space, produce knowledge artifacts, then break the stage's 
 3. Load resolved input artifacts from upstream stages — each discovery definition specifies a `location:` field indicating where the artifact lives (`.haiku/knowledge/` for project-wide, `.haiku/intents/{slug}/knowledge/` for intent-specific). Check freshness metadata — if inputs are stale or code has drifted, use `/haiku:refine stage:{upstream}` for a scoped side-trip
 4. **Research and write discovery artifacts** to their specified locations. These are knowledge artifacts — analysis, inventories, specs, threat models — that capture what you learned about the problem space. Write each artifact to the `location:` specified in its discovery definition
 5. Decompose the work into units with completion criteria and a dependency DAG
-6. Write unit files to `.haiku/intents/{slug}/stages/{stage}/units/`
-7. `haiku_stage_set { intent, stage, field: "phase", value: "execute" }`
-8. Call `haiku_run_next` again
+6. For each unit, populate `refs:` in frontmatter — an array of paths to upstream artifacts relevant to that unit (design mockups, specs, discovery docs). Use paths relative to `.haiku/intents/{slug}/` (e.g., `stages/design/artifacts/login-screen-desktop.png`, `knowledge/BEHAVIORAL-SPEC.md`). These refs tell the execution agent exactly which artifacts inform this unit's work.
+7. Write unit files to `.haiku/intents/{slug}/stages/{stage}/units/`
+8. `haiku_stage_set { intent, stage, field: "phase", value: "execute" }`
+9. Call `haiku_run_next` again
 
 **Discovery vs. Output artifacts:** Stages define two artifact directories:
 - `stages/{stage}/discovery/` — knowledge artifacts produced during decompose (research, analysis, specs)
@@ -132,9 +133,9 @@ A unit is ready to start. The orchestrator identifies which unit and the first h
 **Do:**
 1. `haiku_unit_start { intent, stage, unit, hat: first_hat }`
 2. Load the hat definition from `stages/{stage}/hats/{hat}.md`
-3. Load the stage's artifact definitions — `discovery/*.md` for knowledge artifacts and `outputs/*.md` for work products (in the studio directory: `stages/{stage}/`)
-4. Load the unit's `## References` section
-5. Execute the hat's work — produce work products as defined in the stage's artifact definitions
+3. Load the unit's `refs:` from frontmatter — read each referenced artifact. These are the upstream designs, specs, and knowledge docs that inform this unit's work. For image/binary refs, note their existence and what they represent (from the design brief). For text refs, read and use their content.
+4. Load the stage's artifact definitions — `discovery/*.md` and `outputs/*.md`
+5. Execute the hat's work using the referenced artifacts as source material. The implementation should match what the design mockups show, satisfy the behavioral specs, and follow the architectural patterns from discovery.
 6. Call `haiku_run_next` again
 
 #### `continue_unit`
@@ -147,7 +148,8 @@ An active unit — resume where you left off.
 
 **Do:**
 1. Load the current hat definition
-2. Continue the hat's work — write artifacts to the locations specified in the stage's artifact definitions (discovery/ and outputs/)
+2. Load the unit's `refs:` — the upstream artifacts that inform this unit (same as start_unit step 3)
+3. Continue the hat's work using the referenced artifacts — write outputs to the locations specified in the stage's artifact definitions
 3. When the hat's work is done, advance to the next hat:
    `haiku_unit_advance_hat { intent, stage, unit, hat: next_hat }`
 4. After all hats complete, check unit completion criteria

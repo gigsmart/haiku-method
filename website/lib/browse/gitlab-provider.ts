@@ -376,6 +376,7 @@ export class GitLabProvider implements BrowseProvider {
 					type: (unitData.type as string) || "",
 					status: (unitData.status as string) || "pending",
 					dependsOn: (unitData.depends_on as string[]) || [],
+					refs: (unitData.refs as string[]) || [],
 					bolt: (unitData.bolt as number) || 0,
 					hat: (unitData.hat as string) || "",
 					startedAt: (unitData.started_at as string) || null,
