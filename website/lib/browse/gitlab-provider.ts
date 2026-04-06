@@ -195,28 +195,39 @@ export class GitLabProvider implements BrowseProvider {
 		const intentDirs = treeData?.project?.repository?.tree?.trees?.nodes
 		if (!intentDirs || intentDirs.length === 0) return []
 
-		// Step 2: Batch-fetch all intent.md files
-		const paths = intentDirs
+		// Step 2: Batch-fetch intent.md files in chunks (GitLab 500s on large batches)
+		const allPaths = intentDirs
 			.filter((n): n is { name: string; path: string } => n != null)
 			.map((n) => `${n.path}/intent.md`)
 
-		const blobsCacheKey = `gl:${this.host}:${this.projectPath}:listIntentsBlobs`
-		const blobsData = await this.cachedQuery<operationsBatchBlobsQuery$data>(
-			BatchBlobsQuery,
-			{ fullPath: this.projectPath, paths, ref: this.ref },
-			blobsCacheKey,
-		)
-
-		const blobs = blobsData?.project?.repository?.blobs?.nodes ?? []
-		const intents: HaikuIntent[] = []
-
-		// Map blobs by path for O(1) lookup
+		const CHUNK_SIZE = 10
 		const blobByPath = new Map<string, string>()
-		for (const blob of blobs) {
-			if (blob?.rawBlob && blob.path) {
-				blobByPath.set(blob.path, blob.rawBlob)
+
+		for (let i = 0; i < allPaths.length; i += CHUNK_SIZE) {
+			const chunk = allPaths.slice(i, i + CHUNK_SIZE)
+			const blobsCacheKey = `gl:${this.host}:${this.projectPath}:listIntentsBlobs:${i}`
+			try {
+				const blobsData = await this.cachedQuery<operationsBatchBlobsQuery$data>(
+					BatchBlobsQuery,
+					{ fullPath: this.projectPath, paths: chunk, ref: this.ref },
+					blobsCacheKey,
+				)
+				const blobs = blobsData?.project?.repository?.blobs?.nodes ?? []
+				for (const blob of blobs) {
+					if (blob?.rawBlob && blob.path) {
+						blobByPath.set(blob.path, blob.rawBlob)
+					}
+				}
+			} catch {
+				// If batch fails, fall back to individual reads
+				for (const path of chunk) {
+					const raw = await this.readFile(path)
+					if (raw) blobByPath.set(path, raw)
+				}
 			}
 		}
+
+		const intents: HaikuIntent[] = []
 
 		for (const dir of intentDirs) {
 			if (!dir) continue
@@ -288,26 +299,41 @@ export class GitLabProvider implements BrowseProvider {
 		// Add reflection.md
 		filePaths.push(`${basePath}/reflection.md`)
 
-		// Add all blob paths from the recursive tree
+		// Add text blob paths from the recursive tree (skip binary assets)
+		const textExtensions = [".md", ".json", ".yml", ".yaml", ".txt"]
 		for (const blob of allBlobs) {
-			if (blob?.path && !filePaths.includes(blob.path)) {
+			if (blob?.path && !filePaths.includes(blob.path) && textExtensions.some(ext => blob.path.endsWith(ext))) {
 				filePaths.push(blob.path)
 			}
 		}
 
-		// Step 2: Batch-fetch all file contents
-		const blobsCacheKey = `gl:${this.host}:${this.projectPath}:intentBlobs:${slug}`
-		const blobsData = await this.cachedQuery<operationsBatchBlobsQuery$data>(
-			BatchBlobsQuery,
-			{ fullPath: this.projectPath, paths: filePaths, ref: this.ref },
-			blobsCacheKey,
+		// Step 2: Batch-fetch file contents in chunks (GitLab 500s on large batches)
+		// Filter to only text files to avoid binary content issues
+		const textPaths = filePaths.filter(p =>
+			p.endsWith(".md") || p.endsWith(".json") || p.endsWith(".yml") || p.endsWith(".yaml") || p.endsWith(".txt")
 		)
 
-		const blobs = blobsData?.project?.repository?.blobs?.nodes ?? []
 		const blobByPath = new Map<string, string>()
-		for (const blob of blobs) {
-			if (blob?.rawBlob != null && blob.path) {
-				blobByPath.set(blob.path, blob.rawBlob)
+		for (let i = 0; i < textPaths.length; i += CHUNK_SIZE) {
+			const chunk = textPaths.slice(i, i + CHUNK_SIZE)
+			const blobsCacheKey = `gl:${this.host}:${this.projectPath}:intentBlobs:${slug}:${i}`
+			try {
+				const blobsData = await this.cachedQuery<operationsBatchBlobsQuery$data>(
+					BatchBlobsQuery,
+					{ fullPath: this.projectPath, paths: chunk, ref: this.ref },
+					blobsCacheKey,
+				)
+				const blobs = blobsData?.project?.repository?.blobs?.nodes ?? []
+				for (const blob of blobs) {
+					if (blob?.rawBlob != null && blob.path) {
+						blobByPath.set(blob.path, blob.rawBlob)
+					}
+				}
+			} catch {
+				for (const path of chunk) {
+					const raw = await this.readFile(path)
+					if (raw) blobByPath.set(path, raw)
+				}
 			}
 		}
 

@@ -114,15 +114,27 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 		return () => window.removeEventListener("popstate", onPopState)
 	}, [provider, hasPathNav])
 
+	const [intentError, setIntentError] = useState<string | null>(null)
+
 	const handleSelectIntent = useCallback(
 		async (slug: string) => {
 			setLoadingDetail(true)
-			const detail = await provider.getIntent(slug)
-			setSelectedIntent(detail)
-			setLoadingDetail(false)
-			if (hasPathNav) {
-				router.push(browseUrl({ intent: slug }))
+			setIntentError(null)
+			try {
+				const detail = await provider.getIntent(slug)
+				if (!detail) {
+					setIntentError(`Could not load intent "${slug}". It may have been deleted or the API returned an error.`)
+					setLoadingDetail(false)
+					return
+				}
+				setSelectedIntent(detail)
+				if (hasPathNav) {
+					router.push(browseUrl({ intent: slug }))
+				}
+			} catch (e) {
+				setIntentError(`Error loading intent "${slug}": ${(e as Error).message}`)
 			}
+			setLoadingDetail(false)
 		},
 		[provider, router, browseUrl, hasPathNav],
 	)
@@ -198,6 +210,12 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 					>
 						Board
 					</button>
+				</div>
+			)}
+
+			{intentError && (
+				<div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400">
+					{intentError}
 				</div>
 			)}
 
