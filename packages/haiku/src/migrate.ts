@@ -33,6 +33,32 @@ function timestamp(): string {
 	return new Date().toISOString().replace(/\.\d{3}Z$/, "Z")
 }
 
+/** Get the first commit date for a file/directory from git history */
+function gitFirstCommitDate(path: string): string | null {
+	try {
+		const { execSync } = require("node:child_process")
+		const result = execSync(`git log --diff-filter=A --follow --format=%aI -- "${path}" | tail -1`, {
+			encoding: "utf8",
+			timeout: 5000,
+			cwd: process.cwd(),
+		}).trim()
+		return result || null
+	} catch { return null }
+}
+
+/** Get the last commit date for a file/directory from git history */
+function gitLastCommitDate(path: string): string | null {
+	try {
+		const { execSync } = require("node:child_process")
+		const result = execSync(`git log -1 --format=%aI -- "${path}"`, {
+			encoding: "utf8",
+			timeout: 5000,
+			cwd: process.cwd(),
+		}).trim()
+		return result || null
+	} catch { return null }
+}
+
 export async function runMigrate(args: string[]): Promise<void> {
 	const dryRun = args.includes("--dry-run")
 	const cwd = process.cwd()
@@ -135,9 +161,15 @@ export async function runMigrate(args: string[]): Promise<void> {
 
 		const { data: intentFm, body: intentBody } = readFrontmatter(join(srcDir, "intent.md"))
 		const status = (intentFm.status as string) || "active"
-		const created = (intentFm.created as string) || timestamp().split("T")[0]
 		const title = intentBody.match(/^# (.+)$/m)?.[1] || slug
 		const parentSlug = followsMap.get(slug) || ""
+
+		// Get real dates from git history
+		const gitCreated = gitFirstCommitDate(join(srcDir, "intent.md"))
+		const gitLastModified = gitLastCommitDate(srcDir)
+		const fmCreated = (intentFm.created as string) || ""
+		const startedAt = gitCreated || (fmCreated ? `${fmCreated}T00:00:00Z` : timestamp())
+		const completedAt = (status === "completed" || status === "complete") ? (gitLastModified || startedAt) : null
 
 		if (dryRun) {
 			console.log(`  DRY RUN: ${slug} (status: ${status})`)
@@ -219,12 +251,12 @@ export async function runMigrate(args: string[]): Promise<void> {
 		if (status === "completed" || status === "complete") {
 			// Completed: all stages marked complete, units in their respective stages
 			writeFileSync(join(destDir, "intent.md"),
-				`---\ntitle: "${title}"\nstudio: software\nstages: [inception, design, product, development, operations, security]\nmode: continuous\nactive_stage: security\nstatus: completed\nstarted_at: ${created}T00:00:00Z\ncompleted_at: ${created}T23:59:59Z${epic ? `\nepic: ${epic}` : ""}${parentSlug ? `\nfollows: ${parentSlug}` : ""}\n---\n\n${intentBody}\n`)
+				`---\ntitle: "${title}"\nstudio: software\nstages: [inception, design, product, development, operations, security]\nmode: continuous\nactive_stage: security\nstatus: completed\nstarted_at: ${startedAt}\ncompleted_at: ${completedAt}${epic ? `\nepic: ${epic}` : ""}${parentSlug ? `\nfollows: ${parentSlug}` : ""}\n---\n\n${intentBody}\n`)
 
 			for (const stage of allStages) {
 				mkdirSync(join(destDir, "stages", stage, "units"), { recursive: true })
 				writeFileSync(join(destDir, "stages", stage, "state.json"),
-					JSON.stringify({ stage, status: "completed", phase: "gate", started_at: `${created}T00:00:00Z`, completed_at: `${created}T23:59:59Z`, gate_entered_at: null, gate_outcome: "advanced" }, null, 2) + "\n")
+					JSON.stringify({ stage, status: "completed", phase: "gate", started_at: `${startedAt}`, completed_at: `${completedAt}`, gate_entered_at: null, gate_outcome: "advanced" }, null, 2) + "\n")
 			}
 
 			// Write units to their respective stages
@@ -234,7 +266,7 @@ export async function runMigrate(args: string[]): Promise<void> {
 					const uStatus = (fm.status as string) || "pending"
 					const uDeps = (fm.depends_on as string[]) || []
 					const uDiscipline = (fm.discipline as string) || "fullstack"
-					const uUpdated = (fm.last_updated as string) || null
+					const uUpdated = (fm.last_updated as string) || gitFirstCommitDate(join(sourceDir, file)) || null
 					const uTicket = (fm.ticket as string) || ""
 					const uBranch = (fm.branch as string) || ""
 
@@ -254,7 +286,7 @@ export async function runMigrate(args: string[]): Promise<void> {
 			})
 
 			writeFileSync(join(destDir, "intent.md"),
-				`---\ntitle: "${title}"\nstudio: software\nstages: [inception, design, product, development, operations, security]\nmode: continuous\nactive_stage: ${activeStage || '""'}\nstatus: active\nstarted_at: ${created}T00:00:00Z\ncompleted_at: null${epic ? `\nepic: ${epic}` : ""}${parentSlug ? `\nfollows: ${parentSlug}` : ""}\n---\n\n${intentBody}\n`)
+				`---\ntitle: "${title}"\nstudio: software\nstages: [inception, design, product, development, operations, security]\nmode: continuous\nactive_stage: ${activeStage || '""'}\nstatus: active\nstarted_at: ${startedAt}\ncompleted_at: null${epic ? `\nepic: ${epic}` : ""}${parentSlug ? `\nfollows: ${parentSlug}` : ""}\n---\n\n${intentBody}\n`)
 
 			// Write state for stages that have units or are before/at active stage
 			for (const stage of allStages) {
@@ -270,8 +302,8 @@ export async function runMigrate(args: string[]): Promise<void> {
 							stage,
 							status: isComplete ? "completed" : (isActive ? "active" : "pending"),
 							phase: isComplete ? "gate" : (isActive ? "execute" : ""),
-							started_at: `${created}T00:00:00Z`,
-							completed_at: isComplete ? `${created}T23:59:59Z` : null,
+							started_at: `${startedAt}`,
+							completed_at: isComplete ? `${completedAt}` : null,
 							gate_entered_at: null,
 							gate_outcome: isComplete ? "advanced" : null,
 						}, null, 2) + "\n")
@@ -284,7 +316,7 @@ export async function runMigrate(args: string[]): Promise<void> {
 					const uStatus = (fm.status as string) || "pending"
 					const uDeps = (fm.depends_on as string[]) || []
 					const uDiscipline = (fm.discipline as string) || "fullstack"
-					const uUpdated = (fm.last_updated as string) || null
+					const uUpdated = (fm.last_updated as string) || gitFirstCommitDate(join(sourceDir, file)) || null
 					const uTicket = (fm.ticket as string) || ""
 					const uBranch = (fm.branch as string) || ""
 
