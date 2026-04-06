@@ -112,12 +112,15 @@ Research the problem space, produce knowledge artifacts, then break the stage's 
 2. Read the stage's `discovery/` definitions (in the studio directory: `stages/{stage}/discovery/*.md`) to understand what knowledge artifacts this stage must produce
 3. Load resolved input artifacts from upstream stages — each discovery definition specifies a `location:` field indicating where the artifact lives (`.haiku/knowledge/` for project-wide, `.haiku/intents/{slug}/knowledge/` for intent-specific). Check freshness metadata — if inputs are stale or code has drifted, use `/haiku:refine stage:{upstream}` for a scoped side-trip
 4. **Research and write discovery artifacts** to their specified locations. These are knowledge artifacts — analysis, inventories, specs, threat models — that capture what you learned about the problem space. Write each artifact to the `location:` specified in its discovery definition
-5. **For design stages: create wireframes during decompose for alignment.** Generate low-fidelity wireframes (HTML or design provider) to establish layout, flow, and interaction patterns. Save to `stages/design/artifacts/`. Use `pick_design_direction` or `ask_user_visual_question` to get user feedback on wireframe options before moving to execute. The **execute phase** then produces **high-fidelity mockups** — polished, production-ready designs with real tokens, states, and responsive behavior. Wireframes are for direction; execution is for the real thing.
+5. **For design stages: create wireframes during decompose for alignment.** Generate low-fidelity wireframes (HTML or design provider) to establish layout, flow, and interaction patterns. Save to `stages/design/artifacts/`. Use `pick_design_direction` or `ask_user_visual_question` to get user feedback on wireframe options. The **execute phase** then produces **high-fidelity mockups** — polished, production-ready designs with real tokens, states, and responsive behavior.
 6. Decompose the work into units with completion criteria and a dependency DAG
-7. For each unit, populate `refs:` in frontmatter — an array of paths to upstream artifacts relevant to that unit (design mockups, specs, discovery docs). Use paths relative to `.haiku/intents/{slug}/` (e.g., `stages/design/artifacts/login-screen-desktop.html`, `knowledge/BEHAVIORAL-SPEC.md`). These refs tell the execution agent exactly which artifacts inform this unit's work.
+7. For each unit, populate `refs:` in frontmatter — an array of paths to upstream artifacts relevant to that unit.
 8. Write unit files to `.haiku/intents/{slug}/stages/{stage}/units/`
-9. `haiku_stage_set { intent, stage, field: "phase", value: "execute" }`
-10. Call `haiku_run_next` again
+9. **ENGAGE THE USER.** Present the decomposition plan: the units, their dependencies, the discovery artifacts you produced, and (for design) the wireframes. Ask the user to review and confirm before proceeding. This is a collaborative checkpoint — do NOT silently advance to execute. Wait for the user's explicit approval or feedback.
+10. After user approval: `haiku_stage_set { intent, stage, field: "phase", value: "execute" }`
+11. Call `haiku_run_next` again
+
+**CRITICAL: Decompose is collaborative.** Every stage's decompose phase must engage the user before advancing to execute. The only exception is if the intent is running in full autopilot mode. In interactive and one-human-on-the-loop modes, always present the plan and wait for confirmation.
 
 **Discovery vs. Output artifacts:** Stages define two artifact directories:
 - `stages/{stage}/discovery/` — knowledge artifacts produced during decompose (research, analysis, specs)
