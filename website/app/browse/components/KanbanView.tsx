@@ -153,58 +153,49 @@ interface IntentKanbanProps {
 }
 
 export function IntentKanban({ intent, onSelectUnit }: IntentKanbanProps) {
+	// Group units by status, not stage — units don't move between stages
+	const allUnits = intent.stages.flatMap(s => s.units.map(u => ({ ...u, stageName: s.name })))
+	const columns: Array<{ status: string; label: string; units: typeof allUnits }> = [
+		{ status: "pending", label: "Pending", units: allUnits.filter(u => u.status === "pending") },
+		{ status: "active", label: "Active", units: allUnits.filter(u => u.status === "active") },
+		{ status: "completed", label: "Completed", units: allUnits.filter(u => u.status === "completed") },
+	]
+
 	return (
 		<div className="overflow-x-auto pb-4">
-			<div className="flex gap-4" style={{ minWidth: `${intent.stages.length * 280}px` }}>
-				{intent.stages.map((stage) => (
+			<div className="flex gap-4" style={{ minWidth: "840px" }}>
+				{columns.map((col) => (
 					<div
-						key={stage.name}
+						key={col.status}
 						className="w-[270px] flex-shrink-0 rounded-xl border border-stone-200 bg-stone-50 dark:border-stone-700 dark:bg-stone-900/50"
 					>
 						<div className="border-b border-stone-200 px-4 py-3 dark:border-stone-700">
 							<div className="flex items-center justify-between">
 								<h3 className="text-sm font-bold text-stone-700 dark:text-stone-300">
-									{titleCase(stage.name)}
+									{col.label}
 								</h3>
-								<div className="flex items-center gap-2">
-									{stage.phase && (
-										<span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${phaseColors[stage.phase] || ""}`}>
-											{stage.phase}
-										</span>
-									)}
-									{stage.gateOutcome && (
-										<span className="rounded px-1.5 py-0.5 text-[10px] font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-											{stage.gateOutcome}
-										</span>
-									)}
-									<span className="rounded-full bg-stone-200 px-2 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-700 dark:text-stone-400">
-										{stage.units.filter(u => u.status === "completed").length}/{stage.units.length}
-									</span>
-								</div>
+								<span className="rounded-full bg-stone-200 px-2 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-700 dark:text-stone-400">
+									{col.units.length}
+								</span>
 							</div>
-							{stage.units.length > 0 && (
-								<div className="mt-2 h-1 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700">
-									<div
-										className={`h-full rounded-full ${stage.status === "complete" ? "bg-green-500" : "bg-teal-500"}`}
-										style={{ width: `${(stage.units.filter(u => u.status === "completed").length / stage.units.length) * 100}%` }}
-									/>
-								</div>
-							)}
 						</div>
 						<div className="space-y-2 p-3" style={{ minHeight: "80px" }}>
-							{stage.units.map((unit) => {
+							{col.units.map((unit) => {
 								const checked = unit.criteria.filter(c => c.checked).length
 								const total = unit.criteria.length
 								return (
 									<button
-										key={unit.name}
-										onClick={() => onSelectUnit?.({ name: unit.name, stage: stage.name })}
+										key={`${unit.stageName}-${unit.name}`}
+										onClick={() => onSelectUnit?.({ name: unit.name, stage: unit.stageName })}
 										className={`w-full rounded-lg border p-3 text-left transition hover:shadow-sm ${statusColors[unit.status] || statusColors.pending}`}
 									>
 										<div className="text-sm font-semibold text-stone-900 dark:text-stone-100 line-clamp-2">
 											{titleCase(unit.name)}
 										</div>
-										<div className="mt-1 flex items-center gap-2 text-xs text-stone-500">
+										<div className="mt-1 flex items-center gap-2 flex-wrap text-xs text-stone-500">
+											<span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] font-medium text-stone-600 dark:bg-stone-800 dark:text-stone-400">
+												{titleCase(unit.stageName)}
+											</span>
 											{unit.hat && <span>Hat: {titleCase(unit.hat)}</span>}
 											{unit.bolt > 0 && <span>Bolt {unit.bolt}</span>}
 											{unit.type && <span>{unit.type}</span>}
@@ -228,7 +219,7 @@ export function IntentKanban({ intent, onSelectUnit }: IntentKanbanProps) {
 									</button>
 								)
 							})}
-							{stage.units.length === 0 && (
+							{col.units.length === 0 && (
 								<div className="py-4 text-center text-xs text-stone-400">No units</div>
 							)}
 						</div>
