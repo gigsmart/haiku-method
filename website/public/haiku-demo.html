@@ -154,17 +154,47 @@
   @keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
   @keyframes highlightFade{0%{color:var(--accent);text-shadow:0 0 12px var(--accent-glow)}100%{color:var(--text-dim);text-shadow:none}}
 
+  /* Mobile tab bar */
+  .mobile-tabs{
+    display:none;flex-shrink:0;
+    border-bottom:1px solid var(--border-dim);background:var(--bg);
+  }
+  .mobile-tabs button{
+    flex:1;padding:8px 0;font-size:12px;font-weight:600;font-family:var(--sans);
+    background:none;border:none;border-bottom:2px solid transparent;
+    color:var(--text-muted);cursor:pointer;transition:all .15s;
+  }
+  .mobile-tabs button.active{color:var(--accent);border-bottom-color:var(--accent)}
+
   /* Responsive */
   @media(max-width:900px){
     .main{flex-direction:column}
-    .terminal-panel{flex:0 0 55%;border-right:none;border-bottom:1px solid var(--border-dim)}
+    .terminal-panel{flex:1;border-right:none;border-bottom:1px solid var(--border-dim)}
     .right-panels{flex:1}
     .board-col{flex:0 0 110px}
+    .top-bar{padding:10px 12px}
+    .speed-btns{display:none}
+    .kbd-hint{display:none}
   }
   @media(max-width:600px){
-    .terminal-panel{flex:0 0 50%}
+    .mobile-tabs{display:flex}
+    .main{flex-direction:column;overflow:hidden}
+    .terminal-panel{flex:1;border-right:none;border-bottom:none}
+    .terminal-body{-webkit-overflow-scrolling:touch;padding:12px 14px;font-size:12px;line-height:1.6}
+    .right-panels{flex:1}
+    .terminal-panel.mobile-hidden,.right-panels.mobile-hidden{display:none !important}
     .top-bar h1{font-size:13px}
-    .controls button{padding:4px 10px;font-size:11px}
+    .top-bar h1 span{display:none}
+    .controls button{padding:4px 8px;font-size:11px}
+    .controls{gap:6px}
+    .file-tree{font-size:11px;line-height:1.6;-webkit-overflow-scrolling:touch}
+    .board-col{flex:0 0 100px}
+    .board-scroll{-webkit-overflow-scrolling:touch}
+    .card{font-size:10px;padding:4px 6px}
+    .col-header{font-size:9px}
+    .panel-header{font-size:11px;padding:8px 12px}
+    .completion-card{padding:30px 24px}
+    .completion-card h2{font-size:20px}
   }
 
   /* Completed overlay */
@@ -327,9 +357,16 @@
   </div>
   <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
 
+  <!-- Mobile tab bar -->
+  <div class="mobile-tabs" id="mobile-tabs">
+    <button class="active" data-tab="terminal">Terminal</button>
+    <button data-tab="artifacts">Artifacts</button>
+    <button data-tab="board">Board</button>
+  </div>
+
   <!-- Main -->
   <div class="main">
-    <div class="terminal-panel">
+    <div class="terminal-panel" id="terminal-panel">
       <div class="terminal-header">
         <div class="dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
         <span>claude &mdash; ~/my-app</span>
@@ -337,12 +374,12 @@
       </div>
       <div class="terminal-body" id="terminal"></div>
     </div>
-    <div class="right-panels">
-      <div class="artifact-panel">
+    <div class="right-panels" id="right-panels">
+      <div class="artifact-panel" id="artifact-panel">
         <div class="panel-header">Artifacts</div>
         <div class="file-tree" id="file-tree"></div>
       </div>
-      <div class="board-panel">
+      <div class="board-panel" id="board-panel">
         <div class="panel-header">Lifecycle Board</div>
         <div class="board-scroll" id="board"></div>
       </div>
@@ -1142,6 +1179,39 @@ document.addEventListener("keydown", function(e){
       break;
   }
 });
+
+// ── Mobile tabs ──
+(function(){
+  var tabs = document.getElementById("mobile-tabs");
+  if (!tabs) return;
+  var termPanel = document.getElementById("terminal-panel");
+  var rightPanels = document.getElementById("right-panels");
+  var artifactPanel = document.getElementById("artifact-panel");
+  var boardPanel = document.getElementById("board-panel");
+  var btns = tabs.querySelectorAll("button");
+
+  function switchTab(tab) {
+    btns.forEach(function(b){ b.classList.toggle("active", b.dataset.tab === tab); });
+    if (tab === "terminal") {
+      termPanel.classList.remove("mobile-hidden");
+      rightPanels.classList.add("mobile-hidden");
+    } else if (tab === "artifacts") {
+      termPanel.classList.add("mobile-hidden");
+      rightPanels.classList.remove("mobile-hidden");
+      artifactPanel.style.display = "";
+      boardPanel.style.display = "none";
+    } else if (tab === "board") {
+      termPanel.classList.add("mobile-hidden");
+      rightPanels.classList.remove("mobile-hidden");
+      artifactPanel.style.display = "none";
+      boardPanel.style.display = "";
+    }
+  }
+
+  btns.forEach(function(btn){
+    btn.addEventListener("click", function(){ switchTab(btn.dataset.tab); });
+  });
+})();
 
 // ── Init ──
 initBoard();
