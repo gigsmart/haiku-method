@@ -9,14 +9,14 @@ export const metadata: Metadata = {
 
 const stageLoop = [
 	{
-		phase: "Plan",
+		phase: "Decompose",
 		color: "bg-pink-50 border-pink-200 dark:bg-pink-950/20 dark:border-pink-800",
 		textColor: "text-pink-600 dark:text-pink-400",
 		description: "The planner hat reads the stage definition (STAGE.md), prior stage artifacts, and global knowledge. It decomposes the stage's work into units with verifiable completion criteria.",
 		output: "Units with frontmatter: status, dependencies, criteria",
 	},
 	{
-		phase: "Build",
+		phase: "Execute",
 		color: "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800",
 		textColor: "text-green-600 dark:text-green-400",
 		description: "The builder hat picks the next ready unit from the DAG, executes a bolt (one cycle through the hat sequence), and produces artifacts. Multiple bolts may run per unit until criteria are met.",
@@ -30,10 +30,17 @@ const stageLoop = [
 		output: "Pass/fail verdict with specific issues if failed",
 	},
 	{
-		phase: "Review Gate",
+		phase: "Persist",
+		color: "bg-cyan-50 border-cyan-200 dark:bg-cyan-950/20 dark:border-cyan-800",
+		textColor: "text-cyan-600 dark:text-cyan-400",
+		description: "Stage artifacts are saved via the persistence adapter (git commit, filesystem write, etc.). State is checkpointed so progress survives session boundaries and context resets.",
+		output: "Committed artifacts, updated state.json, unit frontmatter timestamps",
+	},
+	{
+		phase: "Gate",
 		color: "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800",
 		textColor: "text-amber-600 dark:text-amber-400",
-		description: "The gate determines what happens next. Three modes: auto (advance immediately), ask (pause for user), external (block for team review). The studio's stage definition declares which mode.",
+		description: "The gate determines what happens next. Four modes: auto (advance immediately), ask (pause for user), await (wait for async signal), external (block for team review). The studio's stage definition declares which mode.",
 		output: "Advance to next stage, revise within stage, or go back",
 	},
 ]
@@ -185,7 +192,7 @@ export default function HowItWorksPage() {
 										<strong className="text-stone-900 dark:text-stone-100">Execution:</strong> AI drives autonomously through the stage pipeline. Each stage runs its own hat sequence (defined in STAGE.md), advancing to the next stage when the review gate passes. Gates set to <code className="text-green-600 dark:text-green-400">auto</code> advance immediately.
 									</p>
 									<p>
-										<strong className="text-stone-900 dark:text-stone-100">Human re-enters at:</strong> Review gates set to <code className="text-amber-600 dark:text-amber-400">ask</code> (user approves) or <code className="text-rose-600 dark:text-rose-400">external</code> (team reviews). Between gates, the AI runs unsupervised.
+										<strong className="text-stone-900 dark:text-stone-100">Human re-enters at:</strong> Review gates set to <code className="text-amber-600 dark:text-amber-400">ask</code> (user approves), <code className="text-cyan-600 dark:text-cyan-400">await</code> (waits for async signal), or <code className="text-rose-600 dark:text-rose-400">external</code> (team reviews). Between gates, the AI runs unsupervised.
 									</p>
 								</div>
 							</div>
@@ -219,7 +226,7 @@ export default function HowItWorksPage() {
 							The Stage Loop
 						</h2>
 						<p className="mx-auto max-w-2xl text-stone-600 dark:text-stone-400">
-							Every stage — regardless of domain — follows the same four-phase
+							Every stage — regardless of domain — follows the same five-phase
 							internal loop. This is the fundamental unit of work in H·AI·K·U.
 						</p>
 					</div>
@@ -468,7 +475,7 @@ export default function HowItWorksPage() {
 
 						<div className="mt-4 rounded-lg bg-stone-50 p-4 text-sm dark:bg-stone-900">
 							<p className="text-stone-600 dark:text-stone-400">
-								The DAG resolver (<code className="text-amber-600 dark:text-amber-400">dag.sh</code>) evaluates
+								The TypeScript orchestrator evaluates
 								unit frontmatter to determine execution order. Unit 03 (auth middleware) is
 								currently active because its sole dependency (unit 01) is complete.
 								Unit 04 is blocked — it needs both unit 02 and unit 03 to finish first.
@@ -832,7 +839,7 @@ Implement REST API endpoints for user authentication...
 										<span className="text-sm font-semibold text-stone-900 dark:text-stone-100">Gate Check</span>
 									</div>
 									<p className="text-xs text-stone-600 dark:text-stone-400">
-										All units done. Review gate fires: <span className="text-green-600">auto</span> advances, <span className="text-amber-600">ask</span> pauses for user, <span className="text-rose-600">external</span> blocks for team.
+										All units done. Review gate fires: <span className="text-green-600">auto</span> advances, <span className="text-amber-600">ask</span> pauses for user, <span className="text-cyan-600">await</span> waits for async signal, <span className="text-rose-600">external</span> blocks for team.
 									</p>
 								</div>
 							</div>
@@ -881,7 +888,7 @@ Implement REST API endpoints for user authentication...
 							<div className="ml-8">
 								<span className="text-stone-300 dark:text-stone-600">|-- </span>
 								<span className="text-amber-500">Review Gate</span>
-								<span className="text-stone-400"> — auto | ask | external</span>
+								<span className="text-stone-400"> — auto | ask | await | external</span>
 							</div>
 							<div className="ml-8">
 								<span className="text-stone-300 dark:text-stone-600">|-- </span>

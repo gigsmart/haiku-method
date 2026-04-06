@@ -607,15 +607,15 @@ export default function HomeContent({
 								<span className="text-gray-400">-- Plugin manifest</span>
 							</div>
 							<div className="pl-5">
-								<span className="font-semibold text-blue-500">hats/</span>{" "}
+								<span className="font-semibold text-blue-500">studios/</span>{" "}
 								<span className="text-gray-400">
-									-- 15 hat definition files (.md)
+									-- 120+ hat definitions in studios/*/stages/*/hats/
 								</span>
 							</div>
 							<div className="pl-5">
 								<span className="font-semibold text-blue-500">hooks/</span>{" "}
 								<span className="text-gray-400">
-									-- 9 lifecycle hooks (.sh)
+									-- 10 lifecycle hooks (compiled TypeScript)
 								</span>
 							</div>
 							<div className="pl-5">
@@ -638,12 +638,12 @@ export default function HomeContent({
 							</div>
 							<div className="pl-5">
 								<span className="font-semibold text-blue-500">skills/</span>{" "}
-								<span className="text-gray-400">-- 28 skill definitions</span>
+								<span className="text-gray-400">-- 34 skill definitions</span>
 							</div>
 							<div className="pl-5">
-								<span className="text-gray-500">workflows.yml</span>{" "}
+								<span className="font-semibold text-blue-500">bin/</span>{" "}
 								<span className="text-gray-400">
-									-- Named workflow sequences
+									-- Compiled haiku binary
 								</span>
 							</div>
 						</div>
@@ -1163,7 +1163,7 @@ export default function HomeContent({
 						className="mb-2 text-gray-500 dark:text-gray-400"
 					>
 						Now the AI works. You typed{" "}
-						<code className="text-amber-500">/haiku:execute</code>. Three loops
+						<code className="text-amber-500">/haiku:run</code>. Three loops
 						nest inside each other, from big to small.
 					</motion.p>
 
@@ -1312,10 +1312,10 @@ export default function HomeContent({
 					<FuelGauge />
 
 					<ChatBubble speaker="system">
-						<code className="text-amber-500">enforce-iteration.sh</code> fires
+						The <code className="text-amber-500">enforce-iteration</code> hook fires
 						when a session ends. It checks what work remains. If units are still
 						in progress, it tells the next session to call{" "}
-						<code className="text-amber-500">/haiku:execute</code> to continue.
+						<code className="text-amber-500">/haiku:run</code> to continue.
 						The AI never &ldquo;forgets&rdquo; mid-task.
 					</ChatBubble>
 
@@ -1357,10 +1357,10 @@ export default function HomeContent({
 									.haiku/&#123;intent-slug&#125;/state/
 								</code>
 								<ul className="mt-2 list-disc pl-4 text-xs text-gray-500">
-									<li>iteration.json</li>
+									<li>state.json (per stage)</li>
+									<li>Unit frontmatter (bolt, hat, status, timestamps)</li>
 									<li>scratchpad.md</li>
 									<li>blockers.md</li>
-									<li>current-plan.md</li>
 								</ul>
 							</div>
 						</div>
@@ -1483,56 +1483,62 @@ export default function HomeContent({
 						forceOpen={isRef}
 					>
 						<p className="mb-3">
-							Eight hooks (plus one support script) form the automated safety
-							system. Each fires at a specific point in the Claude
-							lifecycle.
+							10 lifecycle hooks &mdash; all compiled into a single{" "}
+							<code className="text-amber-500">bin/haiku</code> binary &mdash;
+							form the automated safety system. Each fires at a specific point
+							in the Claude lifecycle.
 						</p>
 						<div className="space-y-2">
 							{[
 								{
-									name: "inject-context.sh",
+									name: "inject-context",
 									trigger: "Session start",
 									desc: "Loads state from filesystem. Injects current hat instructions, intent description, completion criteria.",
 								},
 								{
-									name: "redirect-plan-mode.sh",
+									name: "redirect-plan-mode",
 									trigger: "Pre-tool-use",
 									desc: "Intercepts Claude's native plan mode and redirects to /haiku:elaborate.",
 								},
 								{
-									name: "subagent-hook.sh",
+									name: "subagent-hook",
 									trigger: "Pre-tool-use (Task)",
 									desc: "Injects H·AI·K·U context into sub-agents so child agents are aware of the current intent.",
 								},
 								{
-									name: "prompt-guard.sh",
+									name: "prompt-guard",
 									trigger: "Pre-tool-use",
 									desc: "Scans .haiku/ files for potential prompt injection patterns.",
 								},
 								{
-									name: "workflow-guard.sh",
+									name: "workflow-guard",
 									trigger: "Pre-tool-use",
 									desc: "Warns when the AI attempts file edits outside the scope of the current hat.",
 								},
 								{
-									name: "context-monitor.sh",
+									name: "context-monitor",
 									trigger: "Post-tool-use",
 									desc: "Monitors context window usage. Warns at 35% remaining.",
 								},
 								{
-									name: "quality-gate.sh",
+									name: "quality-gate",
 									trigger: "Session end (sync)",
 									desc: "Harness-enforced quality gates. Reads quality_gates: from intent and unit frontmatter, runs each gate command, and blocks the agent from stopping if any fail. Only enforced on building hats.",
 								},
 								{
-									name: "enforce-iteration.sh",
+									name: "enforce-iteration",
 									trigger: "Session end",
 									desc: 'Checks DAG status for remaining work. The "keep going" mechanism.',
 								},
 								{
-									name: "subagent-context.sh",
+									name: "subagent-context",
 									trigger: "Support script",
-									desc: "Provides the context payload that subagent-hook.sh injects.",
+									desc: "Provides the context payload that subagent-hook injects.",
+								},
+								{
+									name: "stage-transition",
+									trigger: "Stage boundary",
+									desc: "Validates stage completion and orchestrates transition to the next stage in the pipeline.",
 								},
 							].map((hook) => (
 								<div
@@ -1876,23 +1882,45 @@ export default function HomeContent({
 					{/* While You Build */}
 					<ToolkitGroup title="While You Build" color="amber">
 						<ToolkitCard
-							cmd="/haiku:elaborate"
-							tagline="Plan your work collaboratively"
+							cmd="/haiku:new"
+							tagline="Create an intent and start working"
 							color="amber"
 						>
 							<p>
-								The main entry point: define intent, explore domain, decompose
-								into units, set success criteria.
+								The main entry point: creates intent, enters the first stage
+								seamlessly. One command to go from idea to working.
+							</p>
+						</ToolkitCard>
+						<ToolkitCard
+							cmd="/haiku:run"
+							tagline="Continue, resume, or run the next stage"
+							color="amber"
+						>
+							<p>
+								Picks up where you left off, runs the next stage in the
+								pipeline, or resumes an interrupted session.
+							</p>
+						</ToolkitCard>
+						<ToolkitCard
+							cmd="/haiku:elaborate"
+							tagline="Plan your work collaboratively (deprecated)"
+							color="amber"
+						>
+							<p>
+								Legacy entry point. Use{" "}
+								<code className="text-amber-500">/haiku:new</code> instead,
+								which combines intent creation and elaboration.
 							</p>
 						</ToolkitCard>
 						<ToolkitCard
 							cmd="/haiku:execute"
-							tagline="Run the autonomous build loop"
+							tagline="Run the autonomous build loop (deprecated)"
 							color="amber"
 						>
 							<p>
-								Picks up units from the DAG, spawns hatted agents, iterates
-								until done.
+								Legacy command. Use{" "}
+								<code className="text-amber-500">/haiku:run</code> instead,
+								which handles all stage execution.
 							</p>
 						</ToolkitCard>
 						<ToolkitCard
@@ -1994,10 +2022,10 @@ export default function HomeContent({
 						className="mt-10 rounded-lg border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-900/50"
 					>
 						<h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-							Internal Skills (run automatically)
+							Internal Subskills (run automatically)
 						</h4>
 						<p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
-							These fire behind the scenes -- you never call them directly:
+							These are subskills under <code className="text-amber-500">execute/subskills/</code> -- they fire behind the scenes and are not user-invocable commands:
 						</p>
 						<div className="flex flex-wrap gap-1.5">
 							{[
