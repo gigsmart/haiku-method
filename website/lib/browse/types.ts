@@ -61,6 +61,8 @@ export interface BrowseProvider {
 	listFiles(dir: string): Promise<string[]>
 	/** Write a file to the workspace via commit (optional — not all providers support writes) */
 	writeFile?(path: string, content: string, message: string): Promise<boolean>
+	/** Read .haiku/settings.yml and return parsed settings, or null if not found */
+	getSettings(): Promise<Record<string, unknown> | null>
 	/** Provider display name */
 	readonly name: string
 }

@@ -16,6 +16,11 @@
 		"file_key": {
 			"type": "string",
 			"description": "Figma file key for the primary design file"
+		},
+		"url_template": {
+			"type": "string",
+			"description": "URL template for linking to Figma files. Variables: {key} (Figma file key)",
+			"default": "https://figma.com/file/{key}"
 		}
 	},
 	"additionalProperties": false

@@ -193,7 +193,62 @@ Use `AskUserQuestion`:
 - "Are these detected settings correct?"
 - Options: "Yes, looks good" / "Need to adjust"
 
-If **"Need to adjust"** → ask follow-up questions for each category they want to change. Use `AskUserQuestion` with the valid enum values from the settings schema for each provider type.
+If **"Need to adjust"** → ask follow-up questions for each category they want to change. Use `AskUserQuestion` with these options per category:
+
+**Ticketing:**
+```json
+{
+  "questions": [{
+    "question": "Which ticketing system does this project use?",
+    "header": "Ticketing Provider",
+    "options": [
+      {"label": "Jira", "description": "Atlassian Jira — requires project_key and cloud_id"},
+      {"label": "Linear", "description": "Linear — requires project_key and team_id"},
+      {"label": "GitHub Issues", "description": "GitHub Issues — zero config, uses the current repo"},
+      {"label": "GitLab Issues", "description": "GitLab Issues — requires project_id"},
+      {"label": "None", "description": "No external ticketing system"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+**Spec:**
+```json
+{
+  "questions": [{
+    "question": "Which spec/documentation tool does this project use?",
+    "header": "Spec Provider",
+    "options": [
+      {"label": "Notion", "description": "Notion — optional workspace_id"},
+      {"label": "Confluence", "description": "Atlassian Confluence — optional space_key and cloud_id"},
+      {"label": "Google Docs", "description": "Google Docs — optional folder_id"},
+      {"label": "None", "description": "No external spec tool"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+**Design:**
+```json
+{
+  "questions": [{
+    "question": "Which design tool does this project use?",
+    "header": "Design Provider",
+    "options": [
+      {"label": "Figma", "description": "Figma — optional team_id and file_key"},
+      {"label": "Canva", "description": "Canva — optional brand_kit_id"},
+      {"label": "Pencil", "description": "Pencil — local design tool with MCP integration"},
+      {"label": "Penpot", "description": "Penpot — open-source design platform"},
+      {"label": "None", "description": "No external design tool"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+Map user selections to provider types: "Jira" → `jira`, "Linear" → `linear`, "GitHub Issues" → `github-issues`, "GitLab Issues" → `gitlab-issues`, "Notion" → `notion`, "Confluence" → `confluence`, "Google Docs" → `google-docs`, "Figma" → `figma`, "Canva" → `canva`, "Pencil" → `pencil`, "Penpot" → `penpot`, "None" → omit from settings.
 
 ---
 

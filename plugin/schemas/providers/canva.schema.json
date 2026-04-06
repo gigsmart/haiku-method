@@ -18,6 +18,11 @@
 			"enum": ["png", "jpg", "pdf"],
 			"default": "png",
 			"description": "Default export format for design assets"
+		},
+		"url_template": {
+			"type": "string",
+			"description": "URL template for linking to Canva designs. Variables: {key} (Canva design ID)",
+			"default": "https://canva.com/design/{key}"
 		}
 	},
 	"additionalProperties": false

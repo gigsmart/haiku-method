@@ -46,6 +46,11 @@
 				"type": "string",
 				"enum": ["required", "optional", "none"]
 			}
+		},
+		"url_template": {
+			"type": "string",
+			"description": "URL template for linking to GitHub issues. Variables: {owner} (repo owner), {repo} (repo name), {number} (issue number)",
+			"default": "https://github.com/{owner}/{repo}/issues/{number}"
 		}
 	},
 	"additionalProperties": false

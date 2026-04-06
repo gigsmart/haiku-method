@@ -12,6 +12,11 @@
 		"template_doc_id": {
 			"type": "string",
 			"description": "Google Docs template document ID for new spec pages"
+		},
+		"url_template": {
+			"type": "string",
+			"description": "URL template for linking to Google Docs. Variables: {key} (Google Docs document ID)",
+			"default": "https://docs.google.com/document/d/{key}"
 		}
 	},
 	"additionalProperties": false

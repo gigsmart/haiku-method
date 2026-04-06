@@ -8,6 +8,7 @@ import type {
 	HaikuUnit,
 } from "./types"
 import { parseCriteria, parseFrontmatter } from "./types"
+import { parseSettingsYaml } from "./resolve-links"
 
 import type { operationsGetIntentQuery$data } from "./graphql/github/__generated__/operationsGetIntentQuery.graphql"
 import GetIntentQuery from "./graphql/github/__generated__/operationsGetIntentQuery.graphql"
@@ -382,6 +383,12 @@ export class GitHubProvider implements BrowseProvider {
 			reflection,
 			content,
 		}
+	}
+
+	async getSettings(): Promise<Record<string, unknown> | null> {
+		const raw = await this.readFile(".haiku/settings.yml")
+		if (!raw) return null
+		return parseSettingsYaml(raw)
 	}
 
 	/** Write a file via REST API (mutations stay REST — they're rare). */

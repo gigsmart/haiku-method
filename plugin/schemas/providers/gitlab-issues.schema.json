@@ -69,6 +69,11 @@
 				"type": "string",
 				"enum": ["required", "optional", "none"]
 			}
+		},
+		"url_template": {
+			"type": "string",
+			"description": "URL template for linking to GitLab issues. Variables: {host} (GitLab host), {project} (project path), {number} (issue number)",
+			"default": "https://{host}/{project}/-/issues/{number}"
 		}
 	},
 	"required": ["project_id"],

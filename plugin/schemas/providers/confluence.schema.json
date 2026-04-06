@@ -20,6 +20,11 @@
 		"template_id": {
 			"type": "string",
 			"description": "Confluence page template ID for new spec pages"
+		},
+		"url_template": {
+			"type": "string",
+			"description": "URL template for linking to Confluence pages. Variables: {cloud_id} (Atlassian site URL), {space_key} (Confluence space key), {key} (page ID)",
+			"default": "https://{cloud_id}/wiki/spaces/{space_key}/pages/{key}"
 		}
 	},
 	"additionalProperties": false

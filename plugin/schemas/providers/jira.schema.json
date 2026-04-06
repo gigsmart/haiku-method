@@ -78,6 +78,11 @@
 				"type": "string",
 				"enum": ["required", "optional", "none"]
 			}
+		},
+		"url_template": {
+			"type": "string",
+			"description": "URL template for linking to Jira issues. Variables: {cloud_id} (Atlassian site URL), {key} (issue key, e.g. PROJ-123)",
+			"default": "https://{cloud_id}/browse/{key}"
 		}
 	},
 	"required": ["project_key"],

@@ -18,6 +18,11 @@
 			"type": "integer",
 			"default": 4401,
 			"description": "Port number for the Penpot MCP server"
+		},
+		"url_template": {
+			"type": "string",
+			"description": "URL template for linking to Penpot designs. Variables: {key} (Penpot design ID or view token)",
+			"default": "https://design.penpot.app/#/view/{key}"
 		}
 	},
 	"additionalProperties": false

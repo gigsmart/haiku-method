@@ -8,6 +8,7 @@ import type {
 	HaikuUnit,
 } from "./types"
 import { parseCriteria, parseFrontmatter } from "./types"
+import { parseSettingsYaml } from "./resolve-links"
 
 import type { operationsBatchBlobsQuery$data } from "./graphql/gitlab/__generated__/operationsBatchBlobsQuery.graphql"
 import BatchBlobsQuery from "./graphql/gitlab/__generated__/operationsBatchBlobsQuery.graphql"
@@ -450,6 +451,12 @@ export class GitLabProvider implements BrowseProvider {
 			reflection,
 			content,
 		}
+	}
+
+	async getSettings(): Promise<Record<string, unknown> | null> {
+		const raw = await this.readFile(".haiku/settings.yml")
+		if (!raw) return null
+		return parseSettingsYaml(raw)
 	}
 
 	/** Write a file via REST API (mutations stay REST -- they're rare). */

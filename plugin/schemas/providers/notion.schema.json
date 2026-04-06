@@ -16,6 +16,11 @@
 		"parent_page_id": {
 			"type": "string",
 			"description": "Parent page ID under which spec pages are created (alternative to database_id)"
+		},
+		"url_template": {
+			"type": "string",
+			"description": "URL template for linking to Notion pages. Variables: {key} (Notion page ID or slug)",
+			"default": "https://notion.so/{key}"
 		}
 	},
 	"additionalProperties": false

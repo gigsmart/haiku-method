@@ -1,15 +1,25 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import type { BrowseProvider, HaikuUnit } from "@/lib/browse/types"
 import { formatDate, formatDuration } from "@/lib/browse/types"
+import { resolveLinks } from "@/lib/browse/resolve-links"
 
 function titleCase(s: string): string {
 	return s
 		.split("-")
 		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
 		.join(" ")
+}
+
+const FIELD_LABELS: Record<string, string> = {
+	ticket: "Ticket",
+	epic: "Epic",
+	design_ref: "Design",
+	spec_url: "Spec",
+	branch: "Branch",
 }
 
 interface Props {
@@ -20,12 +30,17 @@ interface Props {
 	onBack: () => void
 }
 
-export function UnitDetailView({ unit, stageName, onBack }: Props) {
+export function UnitDetailView({ unit, stageName, provider, onBack }: Props) {
 	const checkedCount = unit.criteria.filter((c) => c.checked).length
 	const totalCriteria = unit.criteria.length
 	const progress = totalCriteria > 0 ? (checkedCount / totalCriteria) * 100 : 0
-	const designRef = typeof unit.raw.design_ref === "string" ? unit.raw.design_ref : null
-	const wireframe = typeof unit.raw.wireframe === "string" ? unit.raw.wireframe : null
+	const [settings, setSettings] = useState<Record<string, unknown> | null>(null)
+
+	useEffect(() => {
+		provider.getSettings().then(setSettings)
+	}, [provider])
+
+	const providerLinks = resolveLinks(unit.raw, settings)
 
 	return (
 		<div className="mx-auto max-w-4xl px-4 py-8 lg:py-12">
@@ -152,39 +167,42 @@ export function UnitDetailView({ unit, stageName, onBack }: Props) {
 				</section>
 			)}
 
-			{/* Design Artifacts */}
-			{(designRef || wireframe) && (
+			{/* Provider Links / References */}
+			{providerLinks.length > 0 && (
 				<section className="mb-8">
 					<h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-400">
-						Design Artifacts
+						References
 					</h2>
 					<div className="flex flex-wrap gap-3">
-						{designRef && (
-							<a
-								href={designRef}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="inline-flex items-center gap-2 rounded-lg border border-stone-200 px-4 py-2 text-sm font-medium text-teal-600 transition hover:border-teal-300 hover:bg-teal-50 dark:border-stone-700 dark:text-teal-400 dark:hover:border-teal-700 dark:hover:bg-teal-950"
-							>
-								<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-								</svg>
-								Design Reference
-							</a>
-						)}
-						{wireframe && (
-							<a
-								href={wireframe}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="inline-flex items-center gap-2 rounded-lg border border-stone-200 px-4 py-2 text-sm font-medium text-teal-600 transition hover:border-teal-300 hover:bg-teal-50 dark:border-stone-700 dark:text-teal-400 dark:hover:border-teal-700 dark:hover:bg-teal-950"
-							>
-								<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-								</svg>
-								Wireframe
-							</a>
-						)}
+						{providerLinks.map((link) => {
+							const label = FIELD_LABELS[link.field] || titleCase(link.field)
+							if (link.url) {
+								return (
+									<a
+										key={link.field}
+										href={link.url}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="inline-flex items-center gap-2 rounded-lg border border-stone-200 px-4 py-2 text-sm font-medium text-teal-600 transition hover:border-teal-300 hover:bg-teal-50 dark:border-stone-700 dark:text-teal-400 dark:hover:border-teal-700 dark:hover:bg-teal-950"
+									>
+										<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+										</svg>
+										<span className="text-stone-500 dark:text-stone-400">{label}:</span>
+										{link.value}
+									</a>
+								)
+							}
+							return (
+								<span
+									key={link.field}
+									className="inline-flex items-center gap-2 rounded-lg border border-stone-200 px-4 py-2 text-sm text-stone-600 dark:border-stone-700 dark:text-stone-400"
+								>
+									<span className="font-medium text-stone-500 dark:text-stone-400">{label}:</span>
+									{link.value}
+								</span>
+							)
+						})}
 					</div>
 				</section>
 			)}

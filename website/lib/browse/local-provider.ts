@@ -1,5 +1,6 @@
 import type { BrowseProvider, HaikuIntent, HaikuIntentDetail, HaikuStageState, HaikuUnit } from "./types"
 import { parseCriteria, parseFrontmatter } from "./types"
+import { parseSettingsYaml } from "./resolve-links"
 
 // File System Access API types (not in all TS DOM libs)
 interface FSDirectoryHandle {
@@ -73,6 +74,12 @@ export class LocalProvider implements BrowseProvider {
 		} catch {
 			return []
 		}
+	}
+
+	async getSettings(): Promise<Record<string, unknown> | null> {
+		const raw = await this.readFile(".haiku/settings.yml")
+		if (!raw) return null
+		return parseSettingsYaml(raw)
 	}
 
 	async listIntents(): Promise<HaikuIntent[]> {

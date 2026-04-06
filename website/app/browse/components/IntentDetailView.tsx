@@ -8,6 +8,8 @@ import type { BrowseProvider, HaikuIntentDetail, HaikuStageState, HaikuUnit } fr
 import { formatDate, formatDuration } from "@/lib/browse/types"
 import { buildBrowseUrl } from "@/lib/browse/url"
 import type { BrowseLocation } from "@/lib/browse/url"
+import { resolveLinks } from "@/lib/browse/resolve-links"
+import type { ProviderLink } from "@/lib/browse/resolve-links"
 import { UnitDetailView } from "./UnitDetailView"
 import { IntentKanban } from "./KanbanView"
 
@@ -44,6 +46,12 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 	const [expandedStage, setExpandedStage] = useState<string | null>(intent.activeStage || null)
 	const [viewMode, setViewMode] = useState<"pipeline" | "board">("pipeline")
 	const [gateAction, setGateAction] = useState<"idle" | "approving" | "rejecting" | "success" | "error">("idle")
+	const [settings, setSettings] = useState<Record<string, unknown> | null>(null)
+
+	// Load settings once for provider link resolution
+	useEffect(() => {
+		provider.getSettings().then(setSettings)
+	}, [provider])
 
 	// Whether we have path-based navigation (remote browse) or local-only state
 	const hasPathNav = !!location
@@ -213,6 +221,9 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 					</span>
 				</div>
 			</header>
+
+			{/* Provider Links */}
+			<ProviderLinksSection frontmatter={intent.raw} settings={settings} />
 
 			{/* View toggle */}
 			<div className="mb-4 flex gap-1 rounded-lg border border-stone-200 p-1 dark:border-stone-700 w-fit">
@@ -392,6 +403,60 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 				</section>
 			)}
 		</div>
+	)
+}
+
+const FIELD_LABELS: Record<string, string> = {
+	ticket: "Ticket",
+	epic: "Epic",
+	design_ref: "Design",
+	spec_url: "Spec",
+	branch: "Branch",
+}
+
+function ProviderLinksSection({ frontmatter, settings }: { frontmatter: Record<string, unknown>; settings: Record<string, unknown> | null }) {
+	const links = resolveLinks(frontmatter, settings)
+	if (links.length === 0) return null
+
+	return (
+		<section className="mb-8">
+			<h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-400">
+				References
+			</h2>
+			<div className="flex flex-wrap gap-3">
+				{links.map((link) => (
+					<ProviderLinkBadge key={link.field} link={link} />
+				))}
+			</div>
+		</section>
+	)
+}
+
+function ProviderLinkBadge({ link }: { link: ProviderLink }) {
+	const label = FIELD_LABELS[link.field] || titleCase(link.field)
+
+	if (link.url) {
+		return (
+			<a
+				href={link.url}
+				target="_blank"
+				rel="noopener noreferrer"
+				className="inline-flex items-center gap-2 rounded-lg border border-stone-200 px-4 py-2 text-sm font-medium text-teal-600 transition hover:border-teal-300 hover:bg-teal-50 dark:border-stone-700 dark:text-teal-400 dark:hover:border-teal-700 dark:hover:bg-teal-950"
+			>
+				<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+				</svg>
+				<span className="text-stone-500 dark:text-stone-400">{label}:</span>
+				{link.value}
+			</a>
+		)
+	}
+
+	return (
+		<span className="inline-flex items-center gap-2 rounded-lg border border-stone-200 px-4 py-2 text-sm text-stone-600 dark:border-stone-700 dark:text-stone-400">
+			<span className="font-medium text-stone-500 dark:text-stone-400">{label}:</span>
+			{link.value}
+		</span>
 	)
 }
 
