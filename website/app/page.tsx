@@ -110,7 +110,7 @@ export default function Home() {
 					</p>
 					<div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
 						<Link
-							href="/methodology/"
+							href="/how-it-works/"
 							className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-6 py-3 font-medium text-white transition hover:bg-teal-700"
 						>
 							How it works

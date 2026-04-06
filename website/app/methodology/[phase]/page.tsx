@@ -3,6 +3,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { getMethodologyPhase, getAllMethodologyPhases } from "@/lib/methodology"
 import { remark } from "remark"
+import remarkGfm from "remark-gfm"
 import html from "remark-html"
 
 interface PhasePageProps {
@@ -65,7 +66,7 @@ export default async function PhasePage({ params }: PhasePageProps) {
 
 	const colors = phaseColors[phase.color] || phaseColors.teal
 
-	const processedContent = await remark().use(html).process(phase.content)
+	const processedContent = await remark().use(remarkGfm).use(html).process(phase.content)
 	const contentHtml = processedContent.toString()
 
 	return (
