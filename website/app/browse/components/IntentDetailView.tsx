@@ -13,6 +13,7 @@ import type { ProviderLink } from "@/lib/browse/resolve-links"
 import { UnitDetailView } from "./UnitDetailView"
 import { IntentKanban } from "./KanbanView"
 import { AuthenticatedMedia } from "./AuthenticatedMedia"
+import { BrowseMarkdown } from "./BrowseMarkdown"
 import { AssetLightbox } from "./AssetLightbox"
 
 function titleCase(s: string): string {
@@ -359,7 +360,7 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 					</h2>
 					<div className="rounded-xl border border-stone-200 p-6 dark:border-stone-700">
 						<div className="prose prose-sm prose-stone dark:prose-invert max-w-none">
-							<ReactMarkdown remarkPlugins={[remarkGfm]}>{intent.content}</ReactMarkdown>
+							<BrowseMarkdown assets={intent.assets} host={host || undefined} basePath={`.haiku/intents/${intent.slug}`}>{intent.content}</BrowseMarkdown>
 						</div>
 					</div>
 				</section>
@@ -376,7 +377,7 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 					</h2>
 					<div className="space-y-2">
 						{intent.knowledge.map((file) => (
-							<KnowledgeFile key={file} file={file} intentSlug={intent.slug} provider={provider} />
+							<KnowledgeFile key={file} file={file} intentSlug={intent.slug} provider={provider} assets={intent.assets} host={host || undefined} />
 						))}
 					</div>
 				</section>
@@ -390,7 +391,7 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 					</h2>
 					<div className="space-y-2">
 						{intent.operations.map((file) => (
-							<KnowledgeFile key={file} file={file} intentSlug={intent.slug} provider={provider} basePath="operations" />
+							<KnowledgeFile key={file} file={file} intentSlug={intent.slug} provider={provider} basePath="operations" assets={intent.assets} host={host || undefined} />
 						))}
 					</div>
 				</section>
@@ -404,7 +405,7 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 					</h2>
 					<div className="rounded-xl border border-stone-200 p-6 dark:border-stone-700">
 						<div className="prose prose-sm prose-stone dark:prose-invert max-w-none">
-							<ReactMarkdown remarkPlugins={[remarkGfm]}>{intent.reflection}</ReactMarkdown>
+							<BrowseMarkdown assets={intent.assets} host={host || undefined} basePath={`.haiku/intents/${intent.slug}`}>{intent.reflection}</BrowseMarkdown>
 						</div>
 					</div>
 				</section>
@@ -481,7 +482,7 @@ function ProviderLinkBadge({ link }: { link: ProviderLink }) {
 	)
 }
 
-function KnowledgeFile({ file, intentSlug, provider, basePath = "knowledge" }: { file: string; intentSlug: string; provider: BrowseProvider; basePath?: string }) {
+function KnowledgeFile({ file, intentSlug, provider, basePath = "knowledge", assets, host }: { file: string; intentSlug: string; provider: BrowseProvider; basePath?: string; assets?: HaikuAsset[]; host?: string }) {
 	const [content, setContent] = useState<string | null>(null)
 	const [expanded, setExpanded] = useState(false)
 
@@ -507,7 +508,7 @@ function KnowledgeFile({ file, intentSlug, provider, basePath = "knowledge" }: {
 			{expanded && content && (
 				<div className="border-t border-stone-100 px-4 py-4 dark:border-stone-800">
 					<div className="prose prose-sm prose-stone dark:prose-invert max-w-none">
-						<ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+						<BrowseMarkdown assets={assets} host={host} basePath={`.haiku/intents/${intentSlug}/${basePath}`}>{content}</BrowseMarkdown>
 					</div>
 				</div>
 			)}
