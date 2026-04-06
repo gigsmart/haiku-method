@@ -51,3 +51,4 @@ terraform.tfvars
 .ai-dlc/worktrees/
 .claude/worktrees
 .ai-dlc/quick/
+bun.lock

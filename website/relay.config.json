@@ -1,0 +1,37 @@
+{
+  "sources": {
+    "lib/browse/graphql/github": "github",
+    "lib/browse/graphql/gitlab": "gitlab"
+  },
+  "projects": {
+    "github": {
+      "language": "typescript",
+      "schema": "schema/github.graphql",
+      "output": "lib/browse/graphql/github/__generated__",
+      "eagerEsModules": true,
+      "requireCustomScalarTypes": false,
+      "customScalarTypes": {
+        "URI": "string",
+        "DateTime": "string",
+        "GitObjectID": "string",
+        "Base64String": "string",
+        "GitSSHRemote": "string",
+        "GitTimestamp": "string",
+        "HTML": "string",
+        "PreciseDateTime": "string",
+        "X509Certificate": "string",
+        "BigInt": "string",
+        "Date": "string",
+        "CustomPropertyValue": "string",
+        "GitRefname": "string"
+      }
+    },
+    "gitlab": {
+      "language": "typescript",
+      "schema": "schema/gitlab.graphql",
+      "output": "lib/browse/graphql/gitlab/__generated__",
+      "eagerEsModules": true,
+      "requireCustomScalarTypes": false
+    }
+  }
+}
