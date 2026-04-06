@@ -1,0 +1,9 @@
+{
+  "stage": "operations",
+  "status": "complete",
+  "current_unit": null,
+  "completed_units": [
+    "unit-01-deploy-config"
+  ],
+  "iteration": 0
+}

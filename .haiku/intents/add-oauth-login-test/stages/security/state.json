@@ -1,0 +1,10 @@
+{
+  "stage": "security",
+  "status": "complete",
+  "current_unit": null,
+  "completed_units": [
+    "unit-01-threat-model",
+    "unit-02-pen-test"
+  ],
+  "iteration": 0
+}

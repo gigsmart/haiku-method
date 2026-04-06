@@ -1,0 +1,11 @@
+{
+  "stage": "development",
+  "status": "complete",
+  "current_unit": null,
+  "completed_units": [
+    "unit-01-oauth-provider",
+    "unit-02-login-ui",
+    "unit-03-session-mgmt"
+  ],
+  "iteration": 0
+}

@@ -1,0 +1,12 @@
+{
+  "stage": "inception",
+  "status": "complete",
+  "current_unit": null,
+  "completed_units": [
+    "unit-01-oauth-provider-setup",
+    "unit-02-callback-handler",
+    "unit-03-session-management",
+    "unit-04-callback-error-handling"
+  ],
+  "iteration": 0
+}
