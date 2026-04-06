@@ -49,15 +49,3 @@ jobs:
           TF_VAR_gitlab_oauth_client_id: ${{ vars.NEXT_PUBLIC_HAIKU_GITLAB_OAUTH_CLIENT_ID }}
           TF_VAR_gitlab_oauth_client_secret: ${{ secrets.HAIKU_GITLAB_OAUTH_CLIENT_SECRET }}
           TF_VAR_enable_mcp_dns: "false"
-
-      - name: Sync auth proxy URL to repo variable
-        continue-on-error: true
-        working-directory: deploy/terraform
-        env:
-          GH_TOKEN: ${{ secrets.BUMP_TOKEN || secrets.GITHUB_TOKEN }}
-        run: |
-          AUTH_URL=$(terraform output -raw auth_proxy_url 2>/dev/null || echo "")
-          if [ -n "$AUTH_URL" ]; then
-            gh variable set NEXT_PUBLIC_HAIKU_AUTH_PROXY_URL --body "$AUTH_URL" -R "${{ github.repository }}" || echo "Warning: could not sync variable (needs admin token)"
-            echo "Set NEXT_PUBLIC_HAIKU_AUTH_PROXY_URL=$AUTH_URL"
-          fi
