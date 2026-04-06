@@ -4,8 +4,8 @@ description: Training program design and delivery lifecycle
 stages: [needs-analysis, design, develop, deliver, evaluate]
 category: people
 persistence:
-  type: git
-  delivery: pull-request
+  type: filesystem
+  delivery: local
 ---
 
 # Training Studio

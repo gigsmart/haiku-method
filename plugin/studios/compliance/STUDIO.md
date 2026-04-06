@@ -2,6 +2,7 @@
 name: compliance
 description: Regulatory compliance lifecycle for audits, certifications, and policy management
 stages: [scope, assess, remediate, document, certify]
+category: governance
 persistence:
   type: git
   delivery: pull-request

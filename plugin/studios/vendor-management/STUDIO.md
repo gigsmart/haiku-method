@@ -4,8 +4,8 @@ description: Vendor evaluation, procurement, and relationship management lifecyc
 stages: [requirements, evaluate, negotiate, onboard, monitor]
 category: business-ops
 persistence:
-  type: git
-  delivery: pull-request
+  type: filesystem
+  delivery: local
 ---
 
 # Vendor Management Studio

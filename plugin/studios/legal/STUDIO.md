@@ -4,8 +4,8 @@ description: Legal review and contract management lifecycle
 stages: [intake, research, draft, review, execute]
 category: business-ops
 persistence:
-  type: git
-  delivery: pull-request
+  type: filesystem
+  delivery: local
 ---
 
 # Legal Studio

@@ -2,6 +2,7 @@
 name: data-pipeline
 description: Data engineering lifecycle for ETL pipelines, data warehouses, and analytics workflows
 stages: [discovery, extraction, transformation, validation, deployment]
+category: engineering
 persistence:
   type: git
   delivery: pull-request

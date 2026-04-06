@@ -4,8 +4,8 @@ description: Human resources lifecycle for hiring, onboarding, and talent manage
 stages: [requisition, sourcing, screening, interview, offer]
 category: business-ops
 persistence:
-  type: git
-  delivery: pull-request
+  type: filesystem
+  delivery: local
 ---
 
 # HR Studio

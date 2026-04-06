@@ -4,8 +4,8 @@ description: Executive decision-making and strategic planning lifecycle
 stages: [landscape, options, evaluate, decide, communicate]
 category: leadership
 persistence:
-  type: git
-  delivery: pull-request
+  type: filesystem
+  delivery: local
 ---
 
 # Executive Strategy Studio
