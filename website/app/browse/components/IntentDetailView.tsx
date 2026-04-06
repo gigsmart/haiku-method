@@ -229,21 +229,78 @@ export function IntentDetailView({ intent, provider, onBack }: Props) {
 
 			{/* Knowledge Artifacts */}
 			{intent.knowledge.length > 0 && (
-				<section>
+				<section className="mb-8">
 					<h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-400">
 						Knowledge Artifacts
 					</h2>
-					<div className="grid gap-2 sm:grid-cols-2">
+					<div className="space-y-2">
 						{intent.knowledge.map((file) => (
-							<div
-								key={file}
-								className="rounded-lg border border-stone-200 px-4 py-3 text-sm dark:border-stone-700"
-							>
-								<span className="font-mono text-stone-600 dark:text-stone-400">{file}</span>
-							</div>
+							<KnowledgeFile key={file} file={file} intentSlug={intent.slug} provider={provider} />
 						))}
 					</div>
 				</section>
+			)}
+
+			{/* Operations */}
+			{intent.operations.length > 0 && (
+				<section className="mb-8">
+					<h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-400">
+						Operations
+					</h2>
+					<div className="space-y-2">
+						{intent.operations.map((file) => (
+							<KnowledgeFile key={file} file={file} intentSlug={intent.slug} provider={provider} basePath="operations" />
+						))}
+					</div>
+				</section>
+			)}
+
+			{/* Reflection */}
+			{intent.reflection && (
+				<section className="mb-8">
+					<h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-400">
+						Reflection
+					</h2>
+					<div className="rounded-xl border border-stone-200 p-6 dark:border-stone-700">
+						<div className="prose prose-sm prose-stone dark:prose-invert max-w-none">
+							<ReactMarkdown remarkPlugins={[remarkGfm]}>{intent.reflection}</ReactMarkdown>
+						</div>
+					</div>
+				</section>
+			)}
+		</div>
+	)
+}
+
+function KnowledgeFile({ file, intentSlug, provider, basePath = "knowledge" }: { file: string; intentSlug: string; provider: BrowseProvider; basePath?: string }) {
+	const [content, setContent] = useState<string | null>(null)
+	const [expanded, setExpanded] = useState(false)
+
+	const handleExpand = async () => {
+		if (content === null) {
+			const raw = await provider.readFile(`.haiku/intents/${intentSlug}/${basePath}/${file}`)
+			setContent(raw || "(empty)")
+		}
+		setExpanded(!expanded)
+	}
+
+	return (
+		<div className="rounded-lg border border-stone-200 dark:border-stone-700">
+			<button
+				onClick={handleExpand}
+				className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-stone-50 dark:hover:bg-stone-800"
+			>
+				<span className="font-mono text-stone-600 dark:text-stone-400">{file}</span>
+				<svg className={`h-4 w-4 text-stone-400 transition ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+				</svg>
+			</button>
+			{expanded && content && (
+				<div className="border-t border-stone-100 px-4 py-4 dark:border-stone-800">
+					<div className="prose prose-sm prose-stone dark:prose-invert max-w-none">
+						<ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+					</div>
+				</div>
 			)}
 		</div>
 	)

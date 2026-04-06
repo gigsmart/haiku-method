@@ -186,6 +186,8 @@ export class LocalProvider implements BrowseProvider {
 			raw: data,
 			stages,
 			knowledge: knowledgeFiles.filter((f) => f.endsWith(".md")),
+			operations: (await this.listFiles(`.haiku/intents/${slug}/operations`)).filter(f => f.endsWith(".md")),
+			reflection: await this.readFile(`.haiku/intents/${slug}/reflection.md`),
 			content,
 		}
 	}

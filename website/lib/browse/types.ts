@@ -44,6 +44,8 @@ export interface HaikuStageState {
 export interface HaikuIntentDetail extends HaikuIntent {
 	stages: HaikuStageState[]
 	knowledge: string[]
+	operations: string[]
+	reflection: string | null
 	content: string
 }
 
