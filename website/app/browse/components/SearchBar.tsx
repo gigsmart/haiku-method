@@ -1,9 +1,9 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import type MiniSearch from "minisearch"
 import type { SearchDocument } from "@/lib/browse/search"
 import { extractSnippet, highlightMatches } from "@/lib/browse/search"
+import type MiniSearch from "minisearch"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 interface SearchResult {
 	id: string
@@ -31,6 +31,7 @@ interface Props {
 	onSelect: (selection: SearchSelection) => void
 	query: string
 	onQueryChange: (query: string) => void
+	placeholder?: string
 }
 
 function titleCase(s: string): string {
@@ -43,11 +44,12 @@ function titleCase(s: string): string {
 const typeBadgeColors: Record<string, string> = {
 	intent: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
 	unit: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-	knowledge: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+	knowledge:
+		"bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
 	asset: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
 }
 
-export function SearchBar({ index, onSelect, query, onQueryChange }: Props) {
+export function SearchBar({ index, onSelect, query, onQueryChange, placeholder }: Props) {
 	const [results, setResults] = useState<SearchResult[]>([])
 	const [isOpen, setIsOpen] = useState(false)
 	const [activeIndex, setActiveIndex] = useState(-1)
@@ -140,7 +142,11 @@ export function SearchBar({ index, onSelect, query, onQueryChange }: Props) {
 				setActiveIndex((prev) => Math.max(prev - 1, -1))
 				return
 			}
-			if (e.key === "Enter" && activeIndex >= 0 && activeIndex < results.length) {
+			if (
+				e.key === "Enter" &&
+				activeIndex >= 0 &&
+				activeIndex < results.length
+			) {
 				e.preventDefault()
 				handleSelect(results[activeIndex])
 			}
@@ -179,20 +185,15 @@ export function SearchBar({ index, onSelect, query, onQueryChange }: Props) {
 		group.push(r)
 		grouped.set(r.type, group)
 	}
-	const typeOrder: SearchResult["type"][] = ["intent", "unit", "knowledge", "asset"]
+	const typeOrder: SearchResult["type"][] = [
+		"intent",
+		"unit",
+		"knowledge",
+		"asset",
+	]
 	const orderedGroups = typeOrder
 		.filter((t) => grouped.has(t))
-		.map((t) => ({ type: t, items: grouped.get(t)! }))
-
-	// Compute flat index for keyboard navigation
-	let flatIndex = 0
-	const flatMap = new Map<number, SearchResult>()
-	for (const group of orderedGroups) {
-		for (const item of group.items) {
-			flatMap.set(flatIndex, item)
-			flatIndex++
-		}
-	}
+		.map((t) => ({ type: t, items: grouped.get(t) || [] }))
 
 	const typeLabels: Record<string, string> = {
 		intent: "Intents",
@@ -228,16 +229,18 @@ export function SearchBar({ index, onSelect, query, onQueryChange }: Props) {
 					onFocus={() => {
 						if (query.trim() && results.length > 0) setIsOpen(true)
 					}}
-					placeholder="Search intents, units, knowledge..."
+					placeholder={placeholder || "Search intents, units, knowledge..."}
 					className="w-full rounded-lg border border-stone-200 bg-white py-1.5 pl-9 pr-3 text-sm placeholder:text-stone-400 focus:border-teal-500 focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:placeholder:text-stone-600"
 					aria-label="Search"
 					aria-expanded={isOpen && results.length > 0}
 					aria-haspopup="listbox"
+					aria-controls="search-results-listbox"
 					role="combobox"
 					aria-autocomplete="list"
 				/>
 				{query && (
 					<button
+						type="button"
 						onClick={() => {
 							onQueryChange("")
 							setResults([])
@@ -247,8 +250,19 @@ export function SearchBar({ index, onSelect, query, onQueryChange }: Props) {
 						className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
 						aria-label="Clear search"
 					>
-						<svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+						<svg
+							className="h-3.5 w-3.5"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							aria-hidden="true"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M6 18L18 6M6 6l12 12"
+							/>
 						</svg>
 					</button>
 				)}
@@ -258,8 +272,10 @@ export function SearchBar({ index, onSelect, query, onQueryChange }: Props) {
 			{isOpen && query.trim() && (
 				<div
 					ref={dropdownRef}
+					id="search-results-listbox"
 					className="absolute left-0 right-0 z-50 mt-1 max-h-80 overflow-y-auto rounded-lg border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-900"
 					role="listbox"
+					tabIndex={-1}
 				>
 					{results.length === 0 ? (
 						<div className="px-4 py-6 text-center text-sm text-stone-500">
@@ -277,6 +293,7 @@ export function SearchBar({ index, onSelect, query, onQueryChange }: Props) {
 										const idx = itemIdx++
 										return (
 											<button
+												type="button"
 												key={result.id}
 												data-search-item
 												onClick={() => handleSelect(result)}

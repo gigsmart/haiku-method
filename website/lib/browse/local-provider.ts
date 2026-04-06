@@ -89,7 +89,7 @@ export class LocalProvider implements BrowseProvider {
 		for (const slug of intentDirs) {
 			const raw = await this.readFile(`.haiku/intents/${slug}/intent.md`)
 			if (!raw) continue
-			const { data } = parseFrontmatter(raw)
+			const { data, content } = parseFrontmatter(raw)
 			const studio = (data.studio as string) || "ideation"
 			const stages = (data.stages as string[]) || []
 
@@ -111,6 +111,7 @@ export class LocalProvider implements BrowseProvider {
 				),
 				stagesTotal: stages.length,
 				follows: (data.follows as string) || null,
+				content,
 				raw: data,
 			})
 		}

@@ -235,7 +235,7 @@ export class GitLabProvider implements BrowseProvider {
 			const rawText = blobByPath.get(`${dir.path}/intent.md`)
 			if (!rawText) continue
 
-			const { data } = parseFrontmatter(rawText)
+			const { data, content } = parseFrontmatter(rawText)
 			const studio = (data.studio as string) || "ideation"
 			const stages = (data.stages as string[]) || []
 
@@ -259,6 +259,7 @@ export class GitLabProvider implements BrowseProvider {
 				),
 				stagesTotal: stages.length,
 				follows: (data.follows as string) || null,
+				content,
 				raw: data,
 			}
 			intents.push(intent)
