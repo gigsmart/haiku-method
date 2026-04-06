@@ -7,7 +7,7 @@ import type {
 	HaikuStageState,
 	HaikuUnit,
 } from "./types"
-import { parseCriteria, parseFrontmatter } from "./types"
+import { normalizeIntentStatus, parseCriteria, parseFrontmatter } from "./types"
 import { parseSettingsYaml } from "./resolve-links"
 
 import type { operationsGetIntentQuery$data } from "./graphql/github/__generated__/operationsGetIntentQuery.graphql"
@@ -203,12 +203,13 @@ export class GitHubProvider implements BrowseProvider {
 						studio: string
 						stages: string[]
 					}>) || null,
-				stagesComplete:
-					stages.length > 0
-						? stages.indexOf(frontmatter.active_stage as string)
-						: 0,
+				...normalizeIntentStatus(
+					(frontmatter.status as string) || "active",
+					(frontmatter.completed_at as string) || null,
+					stages.length > 0 ? stages.indexOf(frontmatter.active_stage as string) : 0,
+					stages.length,
+				),
 				stagesTotal: stages.length,
-				status: (frontmatter.status as string) || "active",
 				follows: (frontmatter.follows as string) || null,
 				raw: frontmatter,
 			}
@@ -372,9 +373,13 @@ export class GitHubProvider implements BrowseProvider {
 					studio: string
 					stages: string[]
 				}>) || null,
-			stagesComplete: stageNames.indexOf(activeStage),
+			...normalizeIntentStatus(
+				(frontmatter.status as string) || "active",
+				(frontmatter.completed_at as string) || null,
+				stageNames.indexOf(activeStage),
+				stageNames.length,
+			),
 			stagesTotal: stageNames.length,
-			status: (frontmatter.status as string) || "active",
 			follows: (frontmatter.follows as string) || null,
 			raw: frontmatter,
 			stages,

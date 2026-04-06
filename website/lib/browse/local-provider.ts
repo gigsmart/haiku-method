@@ -1,5 +1,5 @@
 import type { BrowseProvider, HaikuIntent, HaikuIntentDetail, HaikuStageState, HaikuUnit } from "./types"
-import { parseCriteria, parseFrontmatter } from "./types"
+import { normalizeIntentStatus, parseCriteria, parseFrontmatter } from "./types"
 import { parseSettingsYaml } from "./resolve-links"
 
 // File System Access API types (not in all TS DOM libs)
@@ -103,9 +103,13 @@ export class LocalProvider implements BrowseProvider {
 				completedAt: (data.completed_at as string) || null,
 				studioStages: (data.stages as string[]) || [],
 				composite: (data.composite as Array<{ studio: string; stages: string[] }>) || null,
-				stagesComplete: stages.length > 0 ? stages.indexOf(data.active_stage as string) : 0,
+				...normalizeIntentStatus(
+					(data.status as string) || "active",
+					(data.completed_at as string) || null,
+					stages.length > 0 ? stages.indexOf(data.active_stage as string) : 0,
+					stages.length,
+				),
 				stagesTotal: stages.length,
-				status: (data.status as string) || "active",
 				follows: (data.follows as string) || null,
 				raw: data,
 			})
@@ -188,9 +192,13 @@ export class LocalProvider implements BrowseProvider {
 			completedAt: (data.completed_at as string) || null,
 			studioStages: (data.stages as string[]) || [],
 			composite: (data.composite as Array<{ studio: string; stages: string[] }>) || null,
-			stagesComplete: stageNames.indexOf(activeStage),
+			...normalizeIntentStatus(
+				(data.status as string) || "active",
+				(data.completed_at as string) || null,
+				stageNames.indexOf(activeStage),
+				stageNames.length,
+			),
 			stagesTotal: stageNames.length,
-			status: (data.status as string) || "active",
 			follows: (data.follows as string) || null,
 			raw: data,
 			stages,

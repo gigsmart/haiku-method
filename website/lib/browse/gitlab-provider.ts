@@ -7,7 +7,7 @@ import type {
 	HaikuStageState,
 	HaikuUnit,
 } from "./types"
-import { parseCriteria, parseFrontmatter } from "./types"
+import { normalizeIntentStatus, parseCriteria, parseFrontmatter } from "./types"
 import { parseSettingsYaml } from "./resolve-links"
 
 import type { operationsBatchBlobsQuery$data } from "./graphql/gitlab/__generated__/operationsBatchBlobsQuery.graphql"
@@ -240,10 +240,13 @@ export class GitLabProvider implements BrowseProvider {
 				composite:
 					(data.composite as Array<{ studio: string; stages: string[] }>) ||
 					null,
-				stagesComplete:
+				...normalizeIntentStatus(
+					(data.status as string) || "active",
+					(data.completed_at as string) || null,
 					stages.length > 0 ? stages.indexOf(data.active_stage as string) : 0,
+					stages.length,
+				),
 				stagesTotal: stages.length,
-				status: (data.status as string) || "active",
 				follows: (data.follows as string) || null,
 				raw: data,
 			}
@@ -440,9 +443,13 @@ export class GitLabProvider implements BrowseProvider {
 					studio: string
 					stages: string[]
 				}>) || null,
-			stagesComplete: stageNames.indexOf(activeStage),
+			...normalizeIntentStatus(
+				(frontmatter.status as string) || "active",
+				(frontmatter.completed_at as string) || null,
+				stageNames.indexOf(activeStage),
+				stageNames.length,
+			),
 			stagesTotal: stageNames.length,
-			status: (frontmatter.status as string) || "active",
 			follows: (frontmatter.follows as string) || null,
 			raw: frontmatter,
 			stages,

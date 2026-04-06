@@ -126,6 +126,15 @@ export function parseCriteria(content: string): Array<{ text: string; checked: b
 	return criteria
 }
 
+/** Normalize status and compute stagesComplete. Handles "complete" vs "completed" and completedAt. */
+export function normalizeIntentStatus(status: string, completedAt: string | null, stagesComplete: number, stagesTotal: number): { status: string; stagesComplete: number } {
+	const isComplete = status === "completed" || status === "complete" || !!completedAt
+	return {
+		status: isComplete ? "completed" : status,
+		stagesComplete: isComplete ? stagesTotal : Math.max(0, stagesComplete),
+	}
+}
+
 export function formatDuration(startedAt: string | null, completedAt: string | null): string {
 	if (!startedAt) return ""
 	const start = new Date(startedAt).getTime()
