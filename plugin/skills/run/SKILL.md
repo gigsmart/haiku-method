@@ -228,10 +228,10 @@ The stage's review gate requires human approval.
 ```
 
 **Do:**
-1. If visual review is available: call `open_review { intent, stage, review_type: "stage" }` to present a rich review page in the browser. Wait for the user's decision via the MCP channel.
-2. If visual review is not available: present a stage summary via `AskUserQuestion`
+1. **Always try visual review first.** Call `open_review { intent, stage, review_type: "stage" }` to present a rich review page in the browser. This opens a visual review with all stage artifacts, wireframes, and unit summaries. Wait for the user's decision via `get_review_status`.
+2. If `open_review` fails (tool not available): present a conversational stage summary directly to the user. List the key outputs, units completed, and any review agent findings. Ask "Ready to advance to {next_stage}?" and wait for the user's text reply. Do NOT use `AskUserQuestion` with a select — this is a conversation, not a form.
 3. If approved: `haiku_gate_approve { intent, stage }` then call `haiku_run_next`
-4. If declined: stop and let the user decide
+4. If declined: stop and let the user decide what to change
 
 #### `gate_external`
 
