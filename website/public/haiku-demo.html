@@ -699,18 +699,21 @@ const steps = [
   { delay: 500, actions: [function(){ addFastForward("60"); }]},
   { delay: 2000, actions: [function(){
     removeFastForward();
-    addMsg("agent","agent","Bolt 1 complete. Hat: reviewer. Running code review...\n\nFound an issue: there\u2019s a race condition in the token refresh flow. If two requests hit the refresh endpoint simultaneously, both read the old refresh token, one succeeds and invalidates it, and the second fails. Need a mutex or token rotation strategy.");
+    addMsg("agent","agent","Bolt 1 complete. Hat: reviewer. Running code review...");
+  }]},
+  { delay: 1200, actions: [function(){
+    addMsg("agent","agent","Review found 1 issue: race condition in concurrent token exchanges");
   }]},
   { delay: 2200, actions: [function(){
-    addMsg("user","you","Good catch. Fix the race condition \u2014 use a mutex lock on the refresh operation with a short TTL so we don\u2019t deadlock if the process crashes.");
+    addMsg("user","you","Good catch. Use a mutex on the token store.");
   }]},
   { delay: 800, actions: [function(){
-    addMsg("agent","agent","On it. Bolt 2. Hat: builder. Adding a Redis-based distributed lock with a 5s TTL on token refresh...");
+    addMsg("agent","agent","Fixed \u2014 added lock on token write. Re-running review...");
   }]},
   { delay: 500, actions: [function(){ addFastForward("20"); }]},
   { delay: 1200, actions: [function(){
     removeFastForward();
-    addMsg("agent","agent","Fix applied \u2014 refresh is now atomic with a 5s TTL lock. Hat: reviewer. Re-reviewing... Approved. Race condition resolved.");
+    addMsg("agent","agent","Review passed. All criteria met.");
     updateCard("development","oauth-provider","completed");
     updateCard("development","login-ui","in-progress");
   }]},
