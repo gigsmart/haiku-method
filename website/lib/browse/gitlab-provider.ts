@@ -297,6 +297,8 @@ export class GitLabProvider implements BrowseProvider {
 			.map((b) => b.path)
 
 		const blobByPath = new Map<string, string>()
+		const assets: Array<{ path: string; name: string; rawUrl: string }> = []
+
 		for (let i = 0; i < filePaths.length; i += CHUNK_SIZE) {
 			const chunk = filePaths.slice(i, i + CHUNK_SIZE)
 			const blobsCacheKey = `gl:${this.host}:${this.projectPath}:intentBlobs:${slug}:${i}`
@@ -307,8 +309,13 @@ export class GitLabProvider implements BrowseProvider {
 					blobsCacheKey,
 				)
 				for (const blob of blobsData?.project?.repository?.blobs?.nodes ?? []) {
-					if (blob?.path && blob.rawTextBlob != null) {
+					if (!blob?.path) continue
+					if (blob.rawTextBlob != null) {
 						blobByPath.set(blob.path, blob.rawTextBlob)
+					} else if (blob.rawPath) {
+						// Binary file — store as asset with raw download URL
+						const rawUrl = blob.rawPath.startsWith("http") ? blob.rawPath : `https://${this.host}${blob.rawPath}`
+						assets.push({ path: blob.path, name: blob.name || blob.path.split("/").pop() || "", rawUrl })
 					}
 				}
 			} catch {
@@ -465,6 +472,7 @@ export class GitLabProvider implements BrowseProvider {
 			operations: operationsFiles,
 			reflection,
 			content,
+			assets,
 		}
 	}
 

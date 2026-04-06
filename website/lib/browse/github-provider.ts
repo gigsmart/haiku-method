@@ -387,6 +387,7 @@ export class GitHubProvider implements BrowseProvider {
 			operations: operationsFiles,
 			reflection,
 			content,
+			assets: [],
 		}
 	}
 

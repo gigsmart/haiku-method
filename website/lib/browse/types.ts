@@ -42,12 +42,19 @@ export interface HaikuStageState {
 	units: HaikuUnit[]
 }
 
+export interface HaikuAsset {
+	path: string
+	name: string
+	rawUrl: string
+}
+
 export interface HaikuIntentDetail extends HaikuIntent {
 	stages: HaikuStageState[]
 	knowledge: string[]
 	operations: string[]
 	reflection: string | null
 	content: string
+	assets: HaikuAsset[]
 }
 
 export interface BrowseProvider {
