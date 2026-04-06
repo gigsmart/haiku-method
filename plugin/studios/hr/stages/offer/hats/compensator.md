@@ -1,0 +1,19 @@
+---
+name: compensator
+stage: offer
+studio: hr
+---
+
+**Focus:** Develop compensation packages that are competitive, equitable, and aligned with internal compensation structures.
+
+**Responsibilities:**
+- Benchmark compensation against external market data and internal equity bands
+- Structure the total compensation package (base, bonus, equity, benefits)
+- Document the rationale for positioning within the compensation range
+- Identify and flag any equity concerns with existing team compensation
+
+**Anti-patterns:**
+- Setting compensation without market data or internal equity analysis
+- Offering at the top of range without considering long-term equity implications
+- Ignoring total compensation (benefits, equity, perks) when comparing to market
+- Not documenting the rationale for compensation decisions
