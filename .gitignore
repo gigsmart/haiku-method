@@ -40,6 +40,10 @@ coverage/
 # Generated plugin zip
 website/public/ai-dlc-plugin.zip
 
+# Tailwind build artifacts (packages/haiku)
+packages/haiku/src/templates/tailwind.css
+packages/haiku/src/templates/tailwind-generated.ts
+
 # Terraform
 .terraform/
 *.tfstate

@@ -486,16 +486,18 @@ export async function startHttpServer(): Promise<number> {
 		return actualPort
 	}
 
-	const basePort = Number.parseInt(process.env.AI_DLC_REVIEW_PORT ?? "8789", 10)
-	const maxAttempts = 10
+	// Use port 0 to let the OS pick a random available port
+	const requestedPort = process.env.AI_DLC_REVIEW_PORT ? Number.parseInt(process.env.AI_DLC_REVIEW_PORT, 10) : 0
+	const maxAttempts = requestedPort === 0 ? 1 : 10
 
 	for (let i = 0; i < maxAttempts; i++) {
-		const port = basePort + i
+		const port = requestedPort + i
 		try {
 			await listenOnPort(port)
-			actualPort = port
-			console.error(`Review HTTP server listening on http://127.0.0.1:${port}`)
-			return port
+			// For port 0, the OS assigns the actual port — read it from the server
+			actualPort = port === 0 ? (httpServer?.address() as { port: number })?.port ?? port : port
+			console.error(`Review HTTP server listening on http://127.0.0.1:${actualPort}`)
+			return actualPort
 		} catch (err: unknown) {
 			if (
 				err instanceof Error &&
@@ -509,7 +511,7 @@ export async function startHttpServer(): Promise<number> {
 	}
 
 	throw new Error(
-		`Could not find available port (tried ${basePort}-${basePort + maxAttempts - 1})`,
+		`Could not find available port (tried ${requestedPort}-${requestedPort + maxAttempts - 1})`,
 	)
 }
 

@@ -1,8 +1,8 @@
-import { tailwindConfig } from "./styles.js";
+import { inlineStyles } from "./styles.js";
 
 /**
  * Renders the full HTML document shell.
- * Includes Tailwind CDN, Mermaid ESM, marked.js, dark-mode logic, and skip-nav.
+ * Includes inline Tailwind CSS, Mermaid ESM, dark-mode logic, and skip-nav.
  */
 export function renderLayout(
   title: string,
@@ -15,10 +15,7 @@ export function renderLayout(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeAttr(title)}</title>
-  <script src="https://cdn.tailwindcss.com/3.4.17"
-          integrity="sha384-igm5BeiBt36UU4gqwWS7imYmelpTsZlQ45FZf+XBn9MuJbn4nQr7yx1yFydocC/K"
-          crossorigin="anonymous"></script>
-  ${tailwindConfig}
+  ${inlineStyles}
   <style>
     /* Hide tab panels that are not active */
     [role="tabpanel"][hidden] { display: none; }
