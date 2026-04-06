@@ -237,13 +237,14 @@ A stage declares five things:
 
 ### The Stage Loop
 
-Each stage executes through a fixed five-step loop:
+Each stage executes through a fixed four-step loop:
 
 1. **Decompose** — Resolve inputs from prior stages, checking freshness metadata for staleness. If the stage has no units yet, decompose the work into discrete units with completion criteria and a dependency graph. If an upstream output has a small gap (e.g., a missing screen in a design brief), the agent can run a *stage-scoped refinement* — a targeted side-trip that adds a single unit to the upstream stage, executes it through that stage's hats, and persists the updated output, all without resetting the current stage's progress. Full stage-backs (resetting `active_stage` to a prior stage) are always human-initiated.
 2. **Execute** — For each unit in dependency order, run the bolt loop: cycle through the hat sequence. Each hat runs in isolation, produces output for the next hat, and quality gates verify the result.
 3. **Adversarial review** — Spawn the stage's review agents in parallel. Each agent evaluates the stage's work against its specific mandate (correctness, security, accessibility, etc.). Agents from other stages included via `review-agents-include` run alongside the stage's own agents. High-severity findings trigger targeted fixes before the stage can proceed.
-4. **Persist** — Save stage outputs to their declared scope.
-5. **Gate** — Evaluate the review gate and either advance, pause for approval, block for external review, or await an external event.
+4. **Gate** — Evaluate the review gate and either advance, pause for approval, block for external review, or await an external event.
+
+Persistence is not a separate step — artifacts are committed to git automatically as they are produced during decomposition and execution. Each MCP state transition (stage start, unit completion, etc.) auto-commits to the persistence layer.
 
 This loop is enforced by the framework harness. Agents operate within it but cannot alter it. The human's control is expressed through review gates and mode selection, not through micro-management of the loop itself.
 
@@ -327,7 +328,7 @@ H·AI·K·U separates work progression from work storage. The stages, units, and
 
 The orchestration loop calls a uniform persistence interface: create a workspace, save work, request a review, deliver the result, clean up afterward. The implementation behind this interface varies by studio.
 
-This separation is deliberate. The same five-step stage loop that drives software development through git branches and pull requests also drives content creation through local filesystem snapshots. The orchestration code is identical; only the storage backend differs.
+This separation is deliberate. The same four-step stage loop that drives software development through git branches and pull requests also drives content creation through local filesystem snapshots. The orchestration code is identical; only the storage backend differs.
 
 ### Adapters
 
@@ -435,7 +436,7 @@ All twelve studios run on the same orchestration machinery. The same stage loop 
 ### What Stays the Same
 
 - The four-phase cycle (elaboration → execution → operation → reflection).
-- The stage loop (plan → build → adversarial → persist → gate).
+- The stage loop (decompose → execute → adversarial review → gate).
 - Hat-based role separation with fresh agent context per hat.
 - Completion criteria as the primary progress measure.
 - Input/output contracts between stages.

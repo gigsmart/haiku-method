@@ -252,13 +252,18 @@ export function runNext(slug: string): OrchestratorAction {
 		}
 	}
 
-	// Stage in persist phase
+	// Note: "persist" phase removed — artifacts are committed during execution
+	// via gitCommitState() in MCP state tools (stage_start/complete, unit_start/complete).
+	// If phase is "persist" (legacy), treat as gate-ready.
 	if (phase === "persist") {
+		// Auto-advance to gate
 		return {
-			action: "persist",
+			action: "advance_phase",
 			intent: slug,
 			stage: currentStage,
-			message: `Persist stage outputs for '${currentStage}'`,
+			from_phase: "persist",
+			to_phase: "gate",
+			message: `Artifacts already persisted — proceeding to gate`,
 		}
 	}
 

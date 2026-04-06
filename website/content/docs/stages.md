@@ -8,13 +8,12 @@ A **stage** is a phase of work within a studio's lifecycle. Each stage defines i
 
 ## How Stages Work
 
-When `/haiku:run` executes an intent, it progresses through stages in the order defined by the studio. Each stage runs a five-step cycle:
+When `/haiku:run` executes an intent, it progresses through stages in the order defined by the studio. Each stage runs a four-step cycle:
 
 1. **Decompose** — Break the stage's work into units with completion criteria and a dependency DAG. Check input freshness; if an upstream output has a gap, run a stage-scoped refinement (targeted side-trip to the upstream stage)
-2. **Execute** — For each unit, run the bolt loop through the stage's hat sequence
+2. **Execute** — For each unit, run the bolt loop through the stage's hat sequence. Artifacts are committed to git automatically as they are produced.
 3. **Adversarial review** — Spawn the stage's review agents (plus any included from other stages) to verify the work
-4. **Persist** — Save stage outputs to their scoped locations
-5. **Gate** — Evaluate the review mode and advance, pause for approval, block for external review, or await an external event
+4. **Gate** — Evaluate the review mode and advance, pause for approval, block for external review, or await an external event
 
 ## STAGE.md Schema
 

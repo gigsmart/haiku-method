@@ -52,7 +52,7 @@ const phases = [
 	{
 		name: "Execution",
 		description: "Do the work through structured workflows",
-		detail: "Decompose, execute, adversarial review, persist, and gate. Work that fails review does not advance.",
+		detail: "Decompose, execute, adversarial review, and gate. Artifacts persist automatically. Work that fails review does not advance.",
 		href: "/methodology/execution/",
 		color: "border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30",
 		textColor: "text-indigo-700 dark:text-indigo-300",
@@ -226,7 +226,7 @@ export default function MethodologyPage() {
 						<h2 className="mb-3 text-3xl font-bold">How Stages Work</h2>
 						<p className="mx-auto max-w-2xl text-stone-600 dark:text-stone-400">
 							Within each phase, work flows through stages. Each stage has a
-							specific structure: decompose, execute, review, persist, and gate.
+							specific structure: decompose, execute, review, and gate.
 						</p>
 					</div>
 
@@ -258,14 +258,7 @@ export default function MethodologyPage() {
 									</div>
 								</div>
 								<div className="flex items-start gap-3">
-									<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-xs font-bold text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300">4</span>
-									<div>
-										<div className="font-medium text-stone-900 dark:text-stone-100">Persist</div>
-										<p className="text-sm text-stone-600 dark:text-stone-400">Stage artifacts saved via persistence adapter. State checkpointed.</p>
-									</div>
-								</div>
-								<div className="flex items-start gap-3">
-									<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-100 text-xs font-bold text-rose-700 dark:bg-rose-900 dark:text-rose-300">5</span>
+									<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-100 text-xs font-bold text-rose-700 dark:bg-rose-900 dark:text-rose-300">4</span>
 									<div>
 										<div className="font-medium text-stone-900 dark:text-stone-100">Gate</div>
 										<p className="text-sm text-stone-600 dark:text-stone-400">Quality gate decides: advance to next stage, or iterate.</p>

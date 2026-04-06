@@ -174,23 +174,11 @@ Run adversarial review agents for the stage.
 2. Load included agents from `review-agents-include` in the stage's STAGE.md
 3. Spawn one subagent per review agent, in parallel — each gets the mandate, the diff, and the stage outputs
 4. Collect findings. If HIGH severity findings: fix them, then repeat review (up to 3 cycles)
-5. `haiku_stage_set { intent, stage, field: "phase", value: "persist" }`
-6. Call `haiku_run_next` again
+5. `haiku_stage_set { intent, stage, field: "phase", value: "gate" }`
+6. `haiku_stage_set { intent, stage, field: "gate_entered_at", value: NOW }`
+7. Call `haiku_run_next` again
 
-#### `persist`
-
-Save stage outputs to their scoped locations.
-
-```json
-{ "action": "persist", "intent": "...", "stage": "..." }
-```
-
-**Do:**
-1. Write stage outputs to scope-based locations (project, intent, stage, repo)
-2. Commit: `git add .haiku/intents/{slug}/stages/{stage}/ && git commit -m "haiku: persist stage outputs — {stage}"`
-3. `haiku_stage_set { intent, stage, field: "phase", value: "gate" }`
-4. `haiku_stage_set { intent, stage, field: "gate_entered_at", value: NOW }`
-5. Call `haiku_run_next` again
+Note: Artifacts are persisted (committed to git) automatically during execution — `haiku_unit_start`, `haiku_unit_complete`, `haiku_stage_start`, and `haiku_stage_complete` all auto-commit. There is no separate "persist" step.
 
 #### `gate_ask`
 

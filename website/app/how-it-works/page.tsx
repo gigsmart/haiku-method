@@ -30,13 +30,6 @@ const stageLoop = [
 		output: "Pass/fail verdict with specific issues if failed",
 	},
 	{
-		phase: "Persist",
-		color: "bg-cyan-50 border-cyan-200 dark:bg-cyan-950/20 dark:border-cyan-800",
-		textColor: "text-cyan-600 dark:text-cyan-400",
-		description: "Stage artifacts are saved via the persistence adapter (git commit, filesystem write, etc.). State is checkpointed so progress survives session boundaries and context resets.",
-		output: "Committed artifacts, updated state.json, unit frontmatter timestamps",
-	},
-	{
 		phase: "Gate",
 		color: "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800",
 		textColor: "text-amber-600 dark:text-amber-400",
@@ -226,7 +219,7 @@ export default function HowItWorksPage() {
 							The Stage Loop
 						</h2>
 						<p className="mx-auto max-w-2xl text-stone-600 dark:text-stone-400">
-							Every stage — regardless of domain — follows the same five-phase
+							Every stage — regardless of domain — follows the same four-phase
 							internal loop. This is the fundamental unit of work in H·AI·K·U.
 						</p>
 					</div>
@@ -565,7 +558,7 @@ Implement REST API endpoints for user authentication...
 					<div className="mt-6 rounded-xl border border-teal-200 bg-teal-50 p-5 dark:border-teal-800 dark:bg-teal-950/20">
 						<p className="text-sm text-teal-800 dark:text-teal-200">
 							<strong>This is what makes H·AI·K·U domain-agnostic.</strong> The core loop
-							(plan, build, review) is universal. The persistence layer is the only
+							(decompose, execute, review, gate) is universal. The persistence layer is the only
 							thing that changes between domains. Git is just one adapter.
 						</p>
 					</div>
