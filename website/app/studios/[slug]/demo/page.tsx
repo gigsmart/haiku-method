@@ -1,6 +1,7 @@
 import { getAllStudios, getStudioBySlug } from "@/lib/studios"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
+import { DemoClient } from "./DemoClient"
 
 interface Props {
 	params: Promise<{ slug: string }>
@@ -30,16 +31,11 @@ export default async function StudioDemoPage({ params }: Props) {
 	const studio = getStudioBySlug(slug)
 	if (!studio) notFound()
 
-	const demoUrl = slug === "software" ? "/haiku-demo.html" : `/haiku-demo.html?studio=${slug}`
-
 	return (
-		<div className="fixed inset-0 z-50 bg-[#0c0a09]">
-			<iframe
-				src={demoUrl}
-				title={`${studio.name} studio demo`}
-				className="h-full w-full border-0"
-				allow="fullscreen"
-			/>
-		</div>
+		<DemoClient
+			slug={slug}
+			studioName={studio.name}
+			stages={studio.stages}
+		/>
 	)
 }
