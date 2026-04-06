@@ -306,12 +306,12 @@
       {
         "version": "2",
         "date": "2026-04-04",
-        "commitHash": "c1a3a57",
-        "fullCommitHash": "c1a3a57e6d1ff2c5399f80d38cf0d38193091ced",
-        "commitMessage": "fix: align paper, website, and skills — 5 findings from cross-source review",
+        "commitHash": "6237a37",
+        "fullCommitHash": "6237a374e2973c4b5427292d9a6bd492cb8072ac",
+        "commitMessage": "feat: comprehensive docs update + binary rename to 'haiku'",
         "stats": {
-          "linesAdded": 207,
-          "linesRemoved": 998
+          "linesAdded": 264,
+          "linesRemoved": 992
         },
         "sectionChanges": [
           {
@@ -402,7 +402,7 @@
             "section": "Built-in Studios",
             "originalSection": "Built-in Studios",
             "isNew": true,
-            "linesAdded": 21,
+            "linesAdded": 105,
             "linesRemoved": 0
           },
           {
@@ -575,10 +575,10 @@
             "linesRemoved": 0
           },
           {
-            "section": "Two Studios in Practice",
-            "originalSection": "Two Studios in Practice",
+            "section": "Twelve Studios in Practice",
+            "originalSection": "Twelve Studios in Practice",
             "isNew": true,
-            "linesAdded": 7,
+            "linesAdded": 9,
             "linesRemoved": 0
           },
           {
