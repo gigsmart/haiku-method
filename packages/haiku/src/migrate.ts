@@ -63,11 +63,19 @@ export async function runMigrate(args: string[]): Promise<void> {
 		const srcDir = join(oldDir, slug)
 		const destDir = join(newDir, slug)
 
-		// Skip if already migrated
+		const force = args.includes("--force")
+
+		// Skip if already migrated — unless --force or missing stages
 		if (existsSync(destDir)) {
-			console.log(`  SKIP: ${slug} (already exists in .haiku/intents/)`)
-			skipped++
-			continue
+			const hasStages = existsSync(join(destDir, "stages"))
+			if (hasStages && !force) {
+				console.log(`  SKIP: ${slug} (already migrated with stages)`)
+				skipped++
+				continue
+			}
+			if (!hasStages) {
+				console.log(`  RE-MIGRATE: ${slug} (missing stages — upgrading)`)
+			}
 		}
 
 		const { data: intentFm, body: intentBody } = readFrontmatter(join(srcDir, "intent.md"))
@@ -86,50 +94,129 @@ export async function runMigrate(args: string[]): Promise<void> {
 
 		const allStages = ["inception", "design", "product", "development", "operations", "security"]
 
-		if (status === "completed") {
-			// Completed: migrate as historical record — all stages marked complete
-			mkdirSync(join(destDir, "stages", "development", "units"), { recursive: true })
+		// Map AI-DLC passes to H·AI·K·U stages
+		const passToStage: Record<string, string> = {
+			design: "design",
+			dev: "development",
+			product: "product",
+			ops: "operations",
+			security: "security",
+		}
 
-			// Write intent.md — active_stage is last stage so stagesComplete is correct
+		// Read all unit files and sort by pass
+		const unitFiles = readdirSync(srcDir).filter(f => f.startsWith("unit-") && f.endsWith(".md"))
+		const unitsByStage = new Map<string, Array<{ file: string; fm: Record<string, unknown>; body: string }>>()
+
+		for (const unitFile of unitFiles) {
+			const { data: unitFm, body: unitBody } = readFrontmatter(join(srcDir, unitFile))
+			const pass = (unitFm.pass as string) || "dev"
+			const stage = passToStage[pass] || "development"
+			if (!unitsByStage.has(stage)) unitsByStage.set(stage, [])
+			unitsByStage.get(stage)!.push({ file: unitFile, fm: unitFm, body: unitBody })
+		}
+
+		// Determine active stage from active_pass
+		const activePass = (intentFm.active_pass as string) || ""
+		const activeStage = activePass ? (passToStage[activePass] || "") : ""
+
+		// Preserve epic/ticket reference
+		const epic = (intentFm.epic as string) || ""
+
+		if (status === "completed" || status === "complete") {
+			// Completed: all stages marked complete, units in their respective stages
 			writeFileSync(join(destDir, "intent.md"),
-				`---\ntitle: "${title}"\nstudio: software\nstages: [inception, design, product, development, operations, security]\nmode: continuous\nactive_stage: security\nstatus: completed\nstarted_at: ${created}T00:00:00Z\ncompleted_at: ${created}T23:59:59Z\n---\n\n${intentBody}\n`)
+				`---\ntitle: "${title}"\nstudio: software\nstages: [inception, design, product, development, operations, security]\nmode: continuous\nactive_stage: security\nstatus: completed\nstarted_at: ${created}T00:00:00Z\ncompleted_at: ${created}T23:59:59Z${epic ? `\nepic: ${epic}` : ""}\n---\n\n${intentBody}\n`)
 
-			// Write state.json for ALL stages so browse shows them all as complete
 			for (const stage of allStages) {
-				mkdirSync(join(destDir, "stages", stage), { recursive: true })
+				mkdirSync(join(destDir, "stages", stage, "units"), { recursive: true })
 				writeFileSync(join(destDir, "stages", stage, "state.json"),
 					JSON.stringify({ stage, status: "completed", phase: "gate", started_at: `${created}T00:00:00Z`, completed_at: `${created}T23:59:59Z`, gate_entered_at: null, gate_outcome: "advanced" }, null, 2) + "\n")
 			}
 
-			// Migrate units into development stage
-			const unitFiles = readdirSync(srcDir).filter(f => f.startsWith("unit-") && f.endsWith(".md"))
-			for (const unitFile of unitFiles) {
-				const { data: unitFm, body: unitBody } = readFrontmatter(join(srcDir, unitFile))
-				const uStatus = (unitFm.status as string) || "pending"
-				const uDeps = (unitFm.depends_on as string[]) || []
-				const uDiscipline = (unitFm.discipline as string) || "fullstack"
-				const uUpdated = (unitFm.last_updated as string) || null
+			// Write units to their respective stages
+			for (const [stage, units] of unitsByStage) {
+				mkdirSync(join(destDir, "stages", stage, "units"), { recursive: true })
+				for (const { file, fm, body } of units) {
+					const uStatus = (fm.status as string) || "pending"
+					const uDeps = (fm.depends_on as string[]) || []
+					const uDiscipline = (fm.discipline as string) || "fullstack"
+					const uUpdated = (fm.last_updated as string) || null
+					const uTicket = (fm.ticket as string) || ""
+					const uBranch = (fm.branch as string) || ""
 
-				writeFileSync(join(destDir, "stages", "development", "units", unitFile),
-					`---\nname: ${basename(unitFile, ".md")}\ntype: ${uDiscipline}\nstatus: ${uStatus}\ndepends_on: [${uDeps.join(", ")}]\nbolt: 0\nhat: ""\nstarted_at: ${uUpdated || "null"}\ncompleted_at: ${uStatus === "completed" ? (uUpdated || "null") : "null"}\n---\n\n${unitBody}\n`)
+					writeFileSync(join(destDir, "stages", stage, "units", file),
+						`---\nname: ${basename(file, ".md")}\ntype: ${uDiscipline}\nstatus: ${uStatus}\ndepends_on: [${uDeps.join(", ")}]\nbolt: 0\nhat: ""${uTicket ? `\nticket: ${uTicket}` : ""}${uBranch ? `\nbranch: ${uBranch}` : ""}\nstarted_at: ${uUpdated || "null"}\ncompleted_at: ${uStatus === "completed" ? (uUpdated || "null") : "null"}\n---\n\n${body}\n`)
+				}
 			}
 
-			console.log(`  MIGRATED: ${slug} (completed, ${unitFiles.length} units)`)
+			console.log(`  MIGRATED: ${slug} (completed, ${unitFiles.length} units across ${unitsByStage.size} stage(s))`)
 		} else {
-			// Active/pending: migrate intent + knowledge, reset for fresh start
-			writeFileSync(join(destDir, "intent.md"),
-				`---\ntitle: "${title}"\nstudio: software\nstages: [inception, design, product, development, operations, security]\nmode: continuous\nactive_stage: ""\nstatus: active\nstarted_at: ${timestamp()}\ncompleted_at: null\n---\n\n${intentBody}\n`)
+			// Active: migrate intent + units in their stages, preserve active_stage
+			const skipStages = allStages.filter(s => {
+				// Skip stages that have no units and are past the active stage
+				if (!unitsByStage.has(s) && s !== activeStage) return false
+				return false // Don't skip — keep all stages for active intents
+			})
 
-			console.log(`  MIGRATED: ${slug} (active — reset for fresh start, run /haiku:run)`)
+			writeFileSync(join(destDir, "intent.md"),
+				`---\ntitle: "${title}"\nstudio: software\nstages: [inception, design, product, development, operations, security]\nmode: continuous\nactive_stage: ${activeStage || '""'}\nstatus: active\nstarted_at: ${created}T00:00:00Z\ncompleted_at: null${epic ? `\nepic: ${epic}` : ""}\n---\n\n${intentBody}\n`)
+
+			// Write state for stages that have units or are before/at active stage
+			for (const stage of allStages) {
+				mkdirSync(join(destDir, "stages", stage, "units"), { recursive: true })
+				const stageIdx = allStages.indexOf(stage)
+				const activeIdx = activeStage ? allStages.indexOf(activeStage) : -1
+				const isComplete = activeIdx >= 0 && stageIdx < activeIdx
+				const isActive = stage === activeStage
+
+				if (isComplete || isActive || unitsByStage.has(stage)) {
+					writeFileSync(join(destDir, "stages", stage, "state.json"),
+						JSON.stringify({
+							stage,
+							status: isComplete ? "completed" : (isActive ? "active" : "pending"),
+							phase: isComplete ? "gate" : (isActive ? "execute" : ""),
+							started_at: `${created}T00:00:00Z`,
+							completed_at: isComplete ? `${created}T23:59:59Z` : null,
+							gate_entered_at: null,
+							gate_outcome: isComplete ? "advanced" : null,
+						}, null, 2) + "\n")
+				}
+			}
+
+			// Write units to their respective stages
+			for (const [stage, units] of unitsByStage) {
+				for (const { file, fm, body } of units) {
+					const uStatus = (fm.status as string) || "pending"
+					const uDeps = (fm.depends_on as string[]) || []
+					const uDiscipline = (fm.discipline as string) || "fullstack"
+					const uUpdated = (fm.last_updated as string) || null
+					const uTicket = (fm.ticket as string) || ""
+					const uBranch = (fm.branch as string) || ""
+
+					writeFileSync(join(destDir, "stages", stage, "units", file),
+						`---\nname: ${basename(file, ".md")}\ntype: ${uDiscipline}\nstatus: ${uStatus}\ndepends_on: [${uDeps.join(", ")}]\nbolt: 0\nhat: ""${uTicket ? `\nticket: ${uTicket}` : ""}${uBranch ? `\nbranch: ${uBranch}` : ""}\nstarted_at: ${uUpdated || "null"}\ncompleted_at: ${uStatus === "completed" ? (uUpdated || "null") : "null"}\n---\n\n${body}\n`)
+				}
+			}
+
+			console.log(`  MIGRATED: ${slug} (active, stage: ${activeStage || "inception"}, ${unitFiles.length} units across ${unitsByStage.size} stage(s))`)
 		}
 
-		// Copy knowledge files
+		// Copy knowledge/discovery files
 		if (existsSync(join(srcDir, "discovery.md"))) {
-			cpSync(join(srcDir, "discovery.md"), join(destDir, "knowledge", "discovery.md"))
+			cpSync(join(srcDir, "discovery.md"), join(destDir, "knowledge", "DISCOVERY.md"))
 		}
 		if (existsSync(join(srcDir, "knowledge"))) {
 			try {
 				cpSync(join(srcDir, "knowledge"), join(destDir, "knowledge"), { recursive: true })
+			} catch { /* ignore if empty */ }
+		}
+
+		// Copy mockups to design stage artifacts
+		if (existsSync(join(srcDir, "mockups"))) {
+			const artifactsDir = join(destDir, "stages", "design", "artifacts")
+			mkdirSync(artifactsDir, { recursive: true })
+			try {
+				cpSync(join(srcDir, "mockups"), artifactsDir, { recursive: true })
 			} catch { /* ignore if empty */ }
 		}
 
