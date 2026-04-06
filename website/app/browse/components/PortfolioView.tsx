@@ -202,9 +202,23 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 			)}
 
 			{loading && intents.length === 0 ? (
-				<div className="py-20 text-center">
-					<div className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-stone-300 border-t-teal-500" />
-					<p className="text-stone-500">Loading intents...</p>
+				<div className="space-y-3">
+					{[1, 2, 3, 4].map((i) => (
+						<div key={i} className="animate-pulse rounded-xl border border-stone-200 px-6 py-4 dark:border-stone-700">
+							<div className="flex items-center justify-between">
+								<div>
+									<div className="h-5 w-48 rounded bg-stone-200 dark:bg-stone-700" />
+									<div className="mt-2 flex gap-4">
+										<div className="h-3 w-20 rounded bg-stone-100 dark:bg-stone-800" />
+										<div className="h-3 w-16 rounded bg-stone-100 dark:bg-stone-800" />
+										<div className="h-3 w-24 rounded bg-stone-100 dark:bg-stone-800" />
+									</div>
+								</div>
+								<div className="h-8 w-12 rounded bg-stone-100 dark:bg-stone-800" />
+							</div>
+							<div className="mt-3 h-1.5 w-full rounded-full bg-stone-100 dark:bg-stone-800" />
+						</div>
+					))}
 				</div>
 			) : !loading && intents.length === 0 ? (
 				<div className="rounded-xl border border-stone-200 px-8 py-16 text-center dark:border-stone-700">
@@ -296,9 +310,13 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 						</Link>
 					))}
 					{loadingMore && (
-						<div className="flex items-center justify-center gap-2 py-4 text-sm text-stone-400">
-							<div className="h-4 w-4 animate-spin rounded-full border-2 border-stone-300 border-t-teal-500" />
-							Loading more intents...
+						<div className="animate-pulse rounded-xl border border-stone-200 px-6 py-4 dark:border-stone-700">
+							<div className="h-5 w-36 rounded bg-stone-200 dark:bg-stone-700" />
+							<div className="mt-2 flex gap-4">
+								<div className="h-3 w-16 rounded bg-stone-100 dark:bg-stone-800" />
+								<div className="h-3 w-20 rounded bg-stone-100 dark:bg-stone-800" />
+							</div>
+							<div className="mt-3 h-1.5 w-full rounded-full bg-stone-100 dark:bg-stone-800" />
 						</div>
 					)}
 				</div>
