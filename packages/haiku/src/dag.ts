@@ -147,15 +147,33 @@ export function toMermaidDefinition(
 ): string {
 	const lines: string[] = ["graph TD"]
 
-	// Node definitions with labels
+	// Group units by stage
+	const stageOrder: string[] = []
+	const byStage = new Map<string, ParsedUnit[]>()
 	for (const unit of units) {
-		const rawLabel = unit.title || unit.slug
-		const label = escapeMermaidLabel(rawLabel)
-		const nodeId = sanitizeMermaidNodeId(unit.slug)
-		lines.push(`  ${nodeId}["${label}"]`)
+		const stage = unit.frontmatter.stage || "unknown"
+		if (!byStage.has(stage)) {
+			byStage.set(stage, [])
+			stageOrder.push(stage)
+		}
+		byStage.get(stage)!.push(unit)
 	}
 
-	// Edges
+	// Render subgraphs per stage
+	for (const stage of stageOrder) {
+		const stageUnits = byStage.get(stage) || []
+		const stageLabel = escapeMermaidLabel(stage.charAt(0).toUpperCase() + stage.slice(1))
+		lines.push(`  subgraph ${sanitizeMermaidNodeId(`stage_${stage}`)}["${stageLabel}"]`)
+		for (const unit of stageUnits) {
+			const rawLabel = unit.title || unit.slug
+			const label = escapeMermaidLabel(rawLabel)
+			const nodeId = sanitizeMermaidNodeId(unit.slug)
+			lines.push(`    ${nodeId}["${label}"]`)
+		}
+		lines.push("  end")
+	}
+
+	// Edges (cross-stage and intra-stage)
 	for (const edge of dag.edges) {
 		lines.push(
 			`  ${sanitizeMermaidNodeId(edge.from)} --> ${sanitizeMermaidNodeId(edge.to)}`,
