@@ -53,14 +53,35 @@ export function PortfolioKanban({ provider, intents, onSelectIntent }: KanbanPro
 		return <div className="py-12 text-center text-stone-500">Loading board...</div>
 	}
 
-	// Collect all known stages from intent details (preserves studio stage order)
+	// Collect all studio stages from intent frontmatter (preserves pipeline order)
 	const allStagesOrdered: string[] = []
 	const seenStages = new Set<string>()
-	for (const detail of intentDetails.values()) {
-		for (const stage of detail.stages) {
-			if (!seenStages.has(stage.name)) {
-				seenStages.add(stage.name)
-				allStagesOrdered.push(stage.name)
+
+	for (const intent of intents) {
+		// Use studioStages from frontmatter (the full stage list)
+		const stages = intent.studioStages.length > 0
+			? intent.studioStages
+			: intent.composite
+				? intent.composite.flatMap(c => c.stages.map(s => `${c.studio}:${s}`))
+				: []
+
+		// Fallback: use loaded intent detail stages
+		if (stages.length === 0) {
+			const detail = intentDetails.get(intent.slug)
+			if (detail) {
+				for (const s of detail.stages) {
+					if (!seenStages.has(s.name)) {
+						seenStages.add(s.name)
+						allStagesOrdered.push(s.name)
+					}
+				}
+			}
+		} else {
+			for (const s of stages) {
+				if (!seenStages.has(s)) {
+					seenStages.add(s)
+					allStagesOrdered.push(s)
+				}
 			}
 		}
 	}
@@ -68,7 +89,7 @@ export function PortfolioKanban({ provider, intents, onSelectIntent }: KanbanPro
 	// Group intents by their active stage
 	const stageGroups = new Map<string, HaikuIntent[]>()
 
-	// Initialize all columns: Backlog, all known stages, Completed
+	// Initialize all columns: Backlog, all studio stages, Completed
 	stageGroups.set("Backlog", [])
 	for (const stage of allStagesOrdered) {
 		stageGroups.set(stage, [])
@@ -78,6 +99,18 @@ export function PortfolioKanban({ provider, intents, onSelectIntent }: KanbanPro
 	for (const intent of intents) {
 		if (intent.status === "completed") {
 			stageGroups.get("Completed")!.push(intent)
+		} else if (intent.composite) {
+			// Composite: show in the first active studio:stage
+			const compositeState = (intent.raw.composite_state || {}) as Record<string, string>
+			for (const entry of intent.composite) {
+				const current = compositeState[entry.studio] || entry.stages[0]
+				if (current && current !== "complete") {
+					const key = `${entry.studio}:${current}`
+					if (!stageGroups.has(key)) stageGroups.set(key, [])
+					stageGroups.get(key)!.push(intent)
+					break
+				}
+			}
 		} else {
 			const stage = intent.activeStage || "Backlog"
 			if (!stageGroups.has(stage)) stageGroups.set(stage, [])
@@ -124,8 +157,13 @@ export function PortfolioKanban({ provider, intents, onSelectIntent }: KanbanPro
 											<div className="text-sm font-semibold text-stone-900 dark:text-stone-100 line-clamp-2">
 												{intent.title}
 											</div>
-											<div className="mt-1 flex items-center gap-2">
+											<div className="mt-1 flex items-center gap-2 flex-wrap">
 												<span className="text-xs text-stone-500">{titleCase(intent.studio)}</span>
+												{intent.composite && (
+													<span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+														composite
+													</span>
+												)}
 												{activeStageDetail?.phase && (
 													<span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${phaseColors[activeStageDetail.phase] || ""}`}>
 														{activeStageDetail.phase}
@@ -190,11 +228,24 @@ export function IntentKanban({ intent, onSelectUnit }: IntentKanbanProps) {
 											{stage.phase}
 										</span>
 									)}
+									{stage.gateOutcome && (
+										<span className="rounded px-1.5 py-0.5 text-[10px] font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+											{stage.gateOutcome}
+										</span>
+									)}
 									<span className="rounded-full bg-stone-200 px-2 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-700 dark:text-stone-400">
-										{stage.units.length}
+										{stage.units.filter(u => u.status === "completed").length}/{stage.units.length}
 									</span>
 								</div>
 							</div>
+							{stage.units.length > 0 && (
+								<div className="mt-2 h-1 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700">
+									<div
+										className={`h-full rounded-full ${stage.status === "complete" ? "bg-green-500" : "bg-teal-500"}`}
+										style={{ width: `${(stage.units.filter(u => u.status === "completed").length / stage.units.length) * 100}%` }}
+									/>
+								</div>
+							)}
 						</div>
 						<div className="space-y-2 p-3" style={{ minHeight: "80px" }}>
 							{stage.units.map((unit) => {

@@ -4,6 +4,7 @@ export interface HaikuIntent {
 	slug: string
 	title: string
 	studio: string
+	studioStages: string[]
 	activeStage: string
 	mode: string
 	stagesComplete: number
@@ -11,6 +12,7 @@ export interface HaikuIntent {
 	status: string
 	startedAt: string | null
 	completedAt: string | null
+	composite: Array<{ studio: string; stages: string[] }> | null
 	raw: Record<string, unknown>
 }
 
