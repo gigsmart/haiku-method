@@ -67,9 +67,15 @@ If no argument provided, ask what the work is:
 List available studios and ask the user to select which ones this work spans:
 
 ```bash
-source "$CLAUDE_PLUGIN_ROOT/lib/studio.sh"
-# List all available studios
+# List all available studios by reading STUDIO.md files directly
 for studio_dir in "$CLAUDE_PLUGIN_ROOT/studios"/*/; do
+  name=$(basename "$studio_dir")
+  desc=$(yq --front-matter=extract -r '.description // ""' "$studio_dir/STUDIO.md" 2>/dev/null)
+  echo "- **$name**: $desc"
+done
+# Also check project-defined studios
+for studio_dir in .haiku/studios/*/; do
+  [ -d "$studio_dir" ] || continue
   name=$(basename "$studio_dir")
   desc=$(yq --front-matter=extract -r '.description // ""' "$studio_dir/STUDIO.md" 2>/dev/null)
   echo "- **$name**: $desc"

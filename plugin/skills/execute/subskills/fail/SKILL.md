@@ -69,8 +69,9 @@ If any blocker documentation was written to the working tree (not state files), 
 
 ```bash
 if [ -n "$(git status --porcelain)" ]; then
-  source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
-  persistence_save "${INTENT_SLUG}" "haiku(${INTENT_SLUG}): document blocker"
+  # Persistence is automatic — git add + commit the blocker documentation
+  git add "$INTENT_DIR/blockers.md"
+  git commit -m "haiku(${INTENT_SLUG}): document blocker"
 fi
 ```
 
@@ -81,11 +82,10 @@ fi
 haiku_unit_advance_hat { intent: INTENT_SLUG, stage: ACTIVE_STAGE, unit: CURRENT_UNIT, hat: PREVIOUS_HAT }
 ```
 
-```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-haiku_telemetry_init
-haiku_record_hat_transition "${INTENT_SLUG}" "${CURRENT_HAT}" "${PREVIOUS_HAT}"
-haiku_record_hat_failure "${INTENT_SLUG}" "${UNIT_SLUG}" "${CURRENT_HAT}" "${PREVIOUS_HAT}" "${REASON}"
+```
+# Telemetry is no longer shell-based — hat transitions are tracked automatically
+# by the MCP server when haiku_unit_advance_hat is called
+haiku_unit_advance_hat { intent: INTENT_SLUG, stage: ACTIVE_STAGE, unit: CURRENT_UNIT, hat: PREVIOUS_HAT }
 ```
 
 ### Step 4b: Re-spawn Teammate (Agent Teams)

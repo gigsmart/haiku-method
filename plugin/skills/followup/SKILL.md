@@ -84,11 +84,10 @@ done
 **B: Check git branches as fallback (for cleaned-up intents):**
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
-branch_intents=$(discover_branch_intents true)
-echo "$branch_intents" | while IFS='|' read -r slug studio source branch; do
+# Discover intents from git branches directly (no shell lib needed)
+git branch -a | grep 'haiku/.*/main$' | sed 's|.*haiku/||;s|/main$||' | sort -u | while read -r slug; do
   [ -z "$slug" ] && continue
-  echo "$slug ($source: $branch)"
+  echo "$slug"
 done
 ```
 
@@ -261,9 +260,8 @@ This intent iterates on **{previous title}** (`{previous-slug}`).
 **Do NOT create units yet.** The elaboration phase handles unit decomposition.
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-haiku_telemetry_init
-haiku_record_followup_created "${INTENT_SLUG}" "${PREVIOUS_SLUG}"
+# Telemetry is tracked automatically by the MCP server
+# Follow-up creation is recorded when haiku_intent_set is called
 ```
 
 ### Step 5: Transition to Elaboration

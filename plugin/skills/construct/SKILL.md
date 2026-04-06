@@ -1,21 +1,17 @@
 ---
-description: (Deprecated) Alias for /haiku:execute. Use /haiku:execute instead.
-argument-hint: "[intent-slug] [unit-name]"
+description: "Deprecated: use /haiku:run instead"
 user-invocable: true
+argument-hint: "[intent-slug]"
 ---
 
 ## Deprecation Notice
 
-`/haiku:construct` is **deprecated**. Use `/haiku:execute` instead.
+> **This command is deprecated.** Use `/haiku:run` instead.
 
-The `/haiku:construct` command has been renamed to `/haiku:execute` to align with the H·AI·K·U methodology. All functionality is identical.
+`/haiku:construct` was an alias for `/haiku:execute`, which itself is now deprecated in favor of `/haiku:run`.
 
-## Behavior
-
-1. Display the following notice to the user:
+**Action:** Invoke `/haiku:run` via the Skill tool with any arguments the user provided. Do not run any legacy execution logic.
 
 ```
-DEPRECATION NOTICE: /haiku:construct is deprecated. Use /haiku:execute instead.
+Skill { skill: "haiku:run", args: "{original arguments}" }
 ```
-
-2. Invoke the `/haiku:execute` skill with the same arguments passed to `/haiku:construct`.

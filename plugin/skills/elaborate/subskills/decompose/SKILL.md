@@ -96,10 +96,11 @@ When the intent DOES have a deployment surface:
 ### Detect deployment surface
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-STACK_INFRA=$(get_stack_layer "infrastructure")
-STACK_MONITORING=$(get_stack_layer "monitoring")
-STACK_COMPUTE=$(get_stack_layer "compute")
+# Config is now read via MCP tools or settings file directly
+# Read stack layers from settings (no shell lib needed)
+STACK_INFRA=$(yq -r '.stack.infrastructure // ""' .haiku/settings.yml 2>/dev/null || echo "")
+STACK_MONITORING=$(yq -r '.stack.monitoring // ""' .haiku/settings.yml 2>/dev/null || echo "")
+STACK_COMPUTE=$(yq -r '.stack.compute // ""' .haiku/settings.yml 2>/dev/null || echo "")
 ```
 
 ### Apply auto-creation rules

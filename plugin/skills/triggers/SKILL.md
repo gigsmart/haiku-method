@@ -56,10 +56,8 @@ This skill polls configured providers for events since the last poll and surface
 ### Step 1: Load Configuration
 
 ```bash
-source "$CLAUDE_PLUGIN_ROOT/lib/config.sh"
-
-
-PROVIDERS=$(load_providers)
+# Load providers from settings (no shell lib needed)
+PROVIDERS=$(yq -r '.providers // "{}"' .haiku/settings.yml 2>/dev/null || echo "{}")
 LAST_POLL=$(cat ".haiku/trigger-poll.json" 2>/dev/null || echo '{"last_poll":"1970-01-01T00:00:00Z"}')
 LAST_POLL_TIME=$(echo "$LAST_POLL" | jq -r '.last_poll')
 ```

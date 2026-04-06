@@ -24,8 +24,9 @@ The calling mode sub-skill MUST set these variables before invoking this sub-ski
 ## Step 1: Check Design Knowledge
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh"
-HAS_DESIGN_KNOWLEDGE=$(hku_knowledge_exists "design" && echo "true" || echo "false")
+# Knowledge operations now use MCP tools: haiku_knowledge_list, haiku_knowledge_read
+HAS_DESIGN_KNOWLEDGE=$(# Check if knowledge artifact exists via MCP: haiku_knowledge_read { type: "design" }
+haiku_knowledge_read { type: "design" } 2>/dev/null "design" && echo "true" || echo "false")
 ```
 
 ---
@@ -47,8 +48,9 @@ If skipped, proceed to Step 5 (Load Knowledge Context) — design knowledge alre
 In autonomous mode, skip the picker UI entirely. Auto-select **Editorial** with default parameters (the most conventional and broadly appropriate archetype). This default can be overridden via `default_archetype` in `.haiku/settings.yml`:
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-DEFAULT_ARCHETYPE=$(get_setting_value "default_archetype" "editorial")
+# Config is now read via MCP tools or settings file directly
+DEFAULT_ARCHETYPE=$(# Read setting from .haiku/settings.yml directly
+yq -r "default_archetype" "editorial")
 ```
 
 Generate the blueprint and seed knowledge using the selected archetype with its default parameters. Skip to Step 4.
@@ -97,16 +99,18 @@ Use the default parameters for the chosen archetype (no slider tuning in termina
 Generate the design blueprint:
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/design-blueprint.sh"
+# Design blueprint operations now handled directly (no shell lib needed)
 SELECTED_ARCHETYPE="{archetype id from picker}"
 SELECTED_PARAMS='{JSON parameters from picker}'
-hku_generate_design_blueprint "${INTENT_SLUG}" "${SELECTED_ARCHETYPE}" "${SELECTED_PARAMS}"
+# Generate design blueprint by writing the file directly (no shell lib needed)
+# Write .haiku/intents/${INTENT_SLUG}/design-blueprint.md
+generate_design_blueprint "${INTENT_SLUG}" "${SELECTED_ARCHETYPE}" "${SELECTED_PARAMS}"
 ```
 
 Seed the design knowledge artifact from the blueprint:
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh"
+# Knowledge operations now use MCP tools: haiku_knowledge_list, haiku_knowledge_read
 
 # Read blueprint details
 ARCHETYPE_NAME=$(sed -n '/^---$/,/^---$/{ /^archetype_name:/s/^archetype_name: *//p }' ".haiku/intents/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || sed -n '/^---$/,/^---$/{ /^archetype:/s/^archetype: *//p }' ".haiku/intents/${INTENT_SLUG}/design-blueprint.md" 2>/dev/null || echo "unknown")
@@ -116,7 +120,9 @@ TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 BLUEPRINT_BODY=$(sed '1,/^---$/d' ".haiku/intents/${INTENT_SLUG}/design-blueprint.md" | sed '1,/^---$/d')
 
 # Write as properly-structured knowledge artifact
-hku_knowledge_write "design" "---
+# Write knowledge artifact by writing the file directly to .haiku/knowledge/
+# No shell lib needed — write to .haiku/knowledge/{type}.md
+cat > "design" "---
 type: design
 version: 1
 created: ${TIMESTAMP}
@@ -147,10 +153,13 @@ git commit -m "elaborate(${INTENT_SLUG}): set design direction — ${SELECTED_AR
 After design direction (or if skipped), load knowledge for remaining phases:
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh"
-DOMAIN_KNOWLEDGE=$(hku_knowledge_read "domain" 2>/dev/null || echo "")
-PRODUCT_KNOWLEDGE=$(hku_knowledge_read "product" 2>/dev/null || echo "")
-DESIGN_KNOWLEDGE=$(hku_knowledge_read "design" 2>/dev/null || echo "")
+# Knowledge operations now use MCP tools: haiku_knowledge_list, haiku_knowledge_read
+DOMAIN_KNOWLEDGE=$(# Read knowledge via MCP: haiku_knowledge_read { type }
+haiku_knowledge_read "domain" 2>/dev/null || echo "")
+PRODUCT_KNOWLEDGE=$(# Read knowledge via MCP: haiku_knowledge_read { type }
+haiku_knowledge_read "product" 2>/dev/null || echo "")
+DESIGN_KNOWLEDGE=$(# Read knowledge via MCP: haiku_knowledge_read { type }
+haiku_knowledge_read "design" 2>/dev/null || echo "")
 ```
 
 If domain or product knowledge exists, carry it forward as additional context for subsequent sub-skills (workflow selection, criteria, decomposition). This enriches unit specs with domain vocabulary and business rules already captured in knowledge artifacts.

@@ -88,8 +88,8 @@ fi
 ### Load review agent config
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-REVIEW_AGENTS=$(get_setting_value "review_agents")
+# Read review agent configuration from settings
+REVIEW_AGENTS=$(yq -r '.review_agents // "{}"' .haiku/settings.yml 2>/dev/null || echo "{}")
 # Defaults: security=true, performance=true, architecture=true, correctness=true, test_quality=true
 # Optional: data_integrity, schema_drift, accessibility, api_contract, design_system
 ```

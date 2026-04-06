@@ -178,19 +178,18 @@ Hat definition held under pressure. No changes needed.
 
 ```bash
 HAT_NAME="${1}"
-source "${CLAUDE_PLUGIN_ROOT}/lib/hat.sh"
-# Resolve hat instructions from the active stage
-HAT_INSTRUCTIONS=$(hku_resolve_hat_instructions "$HAT_NAME" "development" "software")
+# Read hat instructions from the hat file directly (no shell lib needed)
+HAT_FILE="$CLAUDE_PLUGIN_ROOT/studios/software/stages/development/hats/$HAT_NAME.md"
+HAT_INSTRUCTIONS=$(cat "$HAT_FILE" 2>/dev/null || echo "")
 ```
 
 If no hat name provided, list available hats from stages:
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/hat.sh"
-# List hats from all stages in the software studio
+# List hats from all stages in the software studio (no shell lib needed)
 for stage_file in "${CLAUDE_PLUGIN_ROOT}/studios/software/stages/"*/STAGE.md; do
   [ -f "$stage_file" ] || continue
   stage=$(basename "$(dirname "$stage_file")")
-  hats=$(hku_get_hat_sequence "$stage" "software")
+  hats=$(yq --front-matter=extract -r '.hats | join(" ")' "$stage_file" 2>/dev/null)
   echo "$stage: $hats"
 done
 ```

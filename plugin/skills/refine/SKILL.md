@@ -114,7 +114,7 @@ When the target is an upstream stage, the goal is to add or update a **specific 
 
 1. **Load the target stage's definition:**
    ```bash
-   source "$CLAUDE_PLUGIN_ROOT/lib/stage.sh"
+   # Read stage metadata via MCP tool
    local metadata=$(haiku_stage_get { intent: "$INTENT_SLUG", stage: "$TARGET_STAGE", field: "metadata" })
    ```
 
@@ -232,18 +232,15 @@ Update state:
 - The current unit tracking is managed by stage state via MCP tools
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
-source "${CLAUDE_PLUGIN_ROOT}/lib/hat.sh"
-
-# Re-queue affected units and reset hat tracking in frontmatter
+# Re-queue affected units and reset hat tracking via MCP tools
 ACTIVE_STAGE=$(haiku_intent_get { slug, field: "active_stage" } 2>/dev/null || echo "development")
 STUDIO=$(haiku_intent_get { slug, field: "studio" } 2>/dev/null || echo "software")
-FIRST_HAT=$(hku_get_hat_sequence "$ACTIVE_STAGE" "$STUDIO" | awk '{print $1}')
-[ -z "$FIRST_HAT" ] && FIRST_HAT="planner"
+# Read first hat from the stage's STAGE.md frontmatter hats: list
+FIRST_HAT=$(yq --front-matter=extract -r '.hats[0] // "planner"' "$CLAUDE_PLUGIN_ROOT/studios/$STUDIO/stages/$ACTIVE_STAGE/STAGE.md" 2>/dev/null || echo "planner")
 
 for unit_file in $AFFECTED_UNITS; do
   UNIT_NAME=$(basename "$unit_file" .md)
-  update_unit_status "$unit_file" "pending"
+  haiku_unit_set { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$UNIT_NAME", field: "status", value: "pending" }
   haiku_unit_advance_hat { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$UNIT_NAME", hat: "${FIRST_HAT}" }
 done
 
@@ -256,17 +253,14 @@ git commit -m "refine: re-queue affected units for ${INTENT_SLUG}"
 Re-queue only the target unit:
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
-source "${CLAUDE_PLUGIN_ROOT}/lib/hat.sh"
-
-# Re-queue the specific unit
-update_unit_status "$INTENT_DIR/${UNIT_NAME}.md" "pending"
+# Re-queue the specific unit via MCP tools
+haiku_unit_set { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$UNIT_NAME", field: "status", value: "pending" }
 
 # Reset hat tracking in unit frontmatter
 ACTIVE_STAGE=$(haiku_intent_get { slug, field: "active_stage" } 2>/dev/null || echo "development")
 STUDIO=$(haiku_intent_get { slug, field: "studio" } 2>/dev/null || echo "software")
-FIRST_HAT=$(hku_get_hat_sequence "$ACTIVE_STAGE" "$STUDIO" | awk '{print $1}')
-[ -z "$FIRST_HAT" ] && FIRST_HAT="planner"
+# Read first hat from the stage's STAGE.md frontmatter hats: list
+FIRST_HAT=$(yq --front-matter=extract -r '.hats[0] // "planner"' "$CLAUDE_PLUGIN_ROOT/studios/$STUDIO/stages/$ACTIVE_STAGE/STAGE.md" 2>/dev/null || echo "planner")
 haiku_unit_advance_hat { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$UNIT_NAME", hat: "${FIRST_HAT}" }
 
 git add "$INTENT_DIR/"

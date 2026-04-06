@@ -86,12 +86,29 @@ When reading configuration, always resolve in order: unit frontmatter → intent
 Run these detections via Bash by sourcing the config library:
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+# Auto-detect environment directly (no shell lib needed)
 
-VCS=$(detect_vcs)
-VCS_HOSTING=$(detect_vcs_hosting)
-CI_CD=$(detect_ci_cd)
-DEFAULT_BRANCH=$(resolve_default_branch "auto")
+# VCS detection
+if git rev-parse --git-dir &>/dev/null; then VCS="git"
+elif jj root &>/dev/null 2>&1; then VCS="jj"
+else VCS="unknown"; fi
+
+# Hosting detection
+REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
+if echo "$REMOTE_URL" | grep -qi github; then VCS_HOSTING="github"
+elif echo "$REMOTE_URL" | grep -qi gitlab; then VCS_HOSTING="gitlab"
+elif echo "$REMOTE_URL" | grep -qi bitbucket; then VCS_HOSTING="bitbucket"
+else VCS_HOSTING=""; fi
+
+# CI/CD detection
+if [ -d ".github/workflows" ]; then CI_CD="github-actions"
+elif [ -f ".gitlab-ci.yml" ]; then CI_CD="gitlab-ci"
+elif [ -f "Jenkinsfile" ]; then CI_CD="jenkins"
+elif [ -d ".circleci" ]; then CI_CD="circleci"
+else CI_CD=""; fi
+
+# Default branch
+DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo "main")
 
 echo "vcs=$VCS"
 echo "vcs_hosting=$VCS_HOSTING"
@@ -370,14 +387,23 @@ Ask the user which studio to use as the default for new intents.
 First, discover all available studios (built-in + project-defined) by running:
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/studio.sh"
-hku_list_studios
+# List all available studios by reading STUDIO.md files directly
+for studio_dir in "$CLAUDE_PLUGIN_ROOT/studios"/*/; do
+  [ -d "$studio_dir" ] || continue
+  echo "$(basename "$studio_dir")"
+done
+# Also check project-defined studios
+for studio_dir in .haiku/studios/*/; do
+  [ -d "$studio_dir" ] || continue
+  echo "$(basename "$studio_dir")"
+done
 ```
 
-This returns studio names. For each, load its metadata to show the stage pipeline:
+This returns studio names. For each, load its metadata by reading the STUDIO.md frontmatter:
 
 ```bash
-hku_load_studio_metadata "<studio_name>"
+# Read studio metadata from STUDIO.md frontmatter
+yq --front-matter=extract -o json '.' "$CLAUDE_PLUGIN_ROOT/studios/<studio_name>/STUDIO.md" 2>/dev/null
 ```
 
 Use `AskUserQuestion`:

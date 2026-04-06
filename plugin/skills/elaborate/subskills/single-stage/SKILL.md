@@ -51,8 +51,9 @@ if ! grep -q '\.haiku/worktrees/' "${REPO_ROOT}/.gitignore" 2>/dev/null; then
   exit 1
 fi
 
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-DEFAULT_BRANCH=$(resolve_default_branch "auto" "$REPO_ROOT")
+# Config is now read via MCP tools or settings file directly
+# Resolve default branch directly (no shell lib needed)
+DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo "main")
 git worktree add -B "$INTENT_BRANCH" "$INTENT_WORKTREE" "$DEFAULT_BRANCH"
 cd "$INTENT_WORKTREE"
 ```
@@ -93,11 +94,13 @@ git commit -m "elaborate(${INTENT_SLUG}): initialize discovery log"
 Check whether knowledge artifacts already exist. If this is the first elaboration in a project with code, synthesize knowledge from the existing codebase.
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-source "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh"
-PROJECT_MATURITY=$(detect_project_maturity)
-HAS_DESIGN_KNOWLEDGE=$(hku_knowledge_exists "design" && echo "true" || echo "false")
-KNOWLEDGE_COUNT=$(hku_knowledge_list | wc -l | tr -d ' ')
+# Config is now read via MCP tools or settings file directly
+# Knowledge operations now use MCP tools: haiku_knowledge_list, haiku_knowledge_read
+# Detect project maturity by checking for existing code (no shell lib needed)
+PROJECT_MATURITY=$([ -f "package.json" ] || [ -f "Cargo.toml" ] || [ -f "go.mod" ] && echo "established" || echo "greenfield")
+# Check design knowledge via MCP
+HAS_DESIGN_KNOWLEDGE=$(haiku_knowledge_read { type: "design" } 2>/dev/null && echo "true" || echo "false")
+KNOWLEDGE_COUNT=$(haiku_knowledge_list 2>/dev/null | wc -l | tr -d ' ')
 ```
 
 **If `PROJECT_MATURITY` is `greenfield` AND `KNOWLEDGE_COUNT` is 0:** Write scaffold knowledge artifacts inline (empty sections with `confidence: low`).
@@ -183,8 +186,9 @@ Set inputs: `INTENT_SLUG`, `AUTONOMOUS_MODE`, `UNITS`.
 Read the default announcements from project settings — **do NOT ask the user**.
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-DEFAULT_ANNOUNCEMENTS=$(get_setting_value "default_announcements")
+# Config is now read via MCP tools or settings file directly
+# Read default announcements from settings (no shell lib needed)
+DEFAULT_ANNOUNCEMENTS=$(yq -r '.default_announcements // "null"' .haiku/settings.yml 2>/dev/null || echo "null")
 if [ -z "$DEFAULT_ANNOUNCEMENTS" ] || [ "$DEFAULT_ANNOUNCEMENTS" = "null" ]; then
   DEFAULT_ANNOUNCEMENTS='["changelog"]'
 fi

@@ -118,7 +118,7 @@ This skill is invoked by `/haiku:advance` or `/haiku:execute` when all units are
 
 ## Step 9: Full-Stack Dry-Run
 
-**Condition**: Only run when the project has stack config with providers (check via `get_stack_layer` for non-empty layers). If no stack providers are configured, skip this step entirely. This step is best-effort — if tools are not available, skip with a warning rather than blocking.
+**Condition**: Only run when the project has stack config with providers (check `.haiku/settings.yml` for non-empty `stack.*` layers). If no stack providers are configured, skip this step entirely. This step is best-effort -- if tools are not available, skip with a warning rather than blocking.
 
 - If stack has `infrastructure` layer with `terraform`: run `terraform validate` (and `terraform plan` if state backend is accessible) on merged IaC directory
 - If stack has `packaging` layer with `helm`: run `helm template` on merged Helm charts to verify they render without errors
@@ -162,10 +162,9 @@ Operations validity: PASS (or SKIPPED — no operations blocks)
 Full-stack dry-run: PASS (or SKIPPED — no stack config)
 ```
 
-```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-haiku_telemetry_init
-haiku_record_integration_result "${INTENT_SLUG}" "true" "0"
+```
+# Integration result is tracked automatically by the MCP server
+# No manual telemetry call needed
 ```
 
 ### On REJECT
@@ -196,10 +195,9 @@ Dry-run failures:
 - {terraform plan failure, helm template error, etc.}
 ```
 
-```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-haiku_telemetry_init
-haiku_record_integration_result "${INTENT_SLUG}" "false" "${ISSUE_COUNT}"
+```
+# Integration result is tracked automatically by the MCP server
+# No manual telemetry call needed
 ```
 
 ---

@@ -31,8 +31,11 @@ The dispatcher (elaborate/SKILL.md) sets these before routing here:
 Read the active stage's definition file to determine elaboration parameters:
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/stage.sh"
-STAGE_DEF_FILE=$(resolve_stage_definition "$ACTIVE_STAGE")
+# Stage metadata is now read from STAGE.md frontmatter directly or via MCP tools
+# Resolve stage definition file directly (no shell lib needed)
+# Check project override first, then plugin built-in
+STAGE_DEF_FILE=".haiku/studios/$STUDIO/stages/$ACTIVE_STAGE/STAGE.md"
+[ ! -f "$STAGE_DEF_FILE" ] && STAGE_DEF_FILE="$CLAUDE_PLUGIN_ROOT/studios/$STUDIO/stages/$ACTIVE_STAGE/STAGE.md"
 
 # Read stage metadata (from stage definition file frontmatter)
 STAGE_NAME=$(sed -n '/^---$/,/^---$/{ /^name:/s/^name: *//p }' "$STAGE_DEF_FILE")

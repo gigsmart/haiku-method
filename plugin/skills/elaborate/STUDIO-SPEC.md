@@ -368,21 +368,20 @@ When no studio is configured: `stage: ""`.
 ### Studio Resolution
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/studio.sh"
-
-# Returns comma-separated stage names, or "" for single-stage
-STAGES=$(resolve_active_stages)
+# Read stages from the studio STUDIO.md frontmatter (no shell lib needed)
+STUDIO=$(yq -r '.studio // ""' .haiku/settings.yml 2>/dev/null || echo "")
+STAGES=$(yq --front-matter=extract -r '.stages | join(",")' "$CLAUDE_PLUGIN_ROOT/studios/$STUDIO/STUDIO.md" 2>/dev/null || echo "")
 ```
 
-`resolve_active_stages` reads `studio:` from settings.yml, validates the studio and all its stages exist, and returns the stage list. Returns `""` when no studio is configured.
+This reads `studio:` from settings.yml, then reads the `stages:` list from the STUDIO.md frontmatter. Returns `""` when no studio is configured.
 
 ### Stage Resolution (within a studio)
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/stage.sh"
-
-# Resolves relative to the active studio
-STAGE_FILE=$(resolve_stage_definition "design" "software")
+# Resolve stage definition file directly (no shell lib needed)
+# Check project override first, then plugin built-in
+STAGE_FILE=".haiku/studios/software/stages/design/STAGE.md"
+[ ! -f "$STAGE_FILE" ] && STAGE_FILE="$CLAUDE_PLUGIN_ROOT/studios/software/stages/design/STAGE.md"
 # → plugin/studios/software/stages/design/STAGE.md
 ```
 

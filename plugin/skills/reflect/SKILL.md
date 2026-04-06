@@ -32,12 +32,14 @@ The reflect skill:
 ### Step 0: Load State
 
 ```bash
-# Load H·AI·K·U state (file-based storage)
-source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-source "${CLAUDE_PLUGIN_ROOT}/lib/haiku.sh"
+# Load H·AI·K·U state via MCP tools
+# haiku_intent_list → discover intents
+# haiku_intent_get { slug, field } → read intent fields
+# haiku_unit_list { intent, stage } → list units
+# haiku_unit_get { intent, stage, unit, field } → read unit fields
+# haiku_stage_get { intent, stage, field } → read stage state
 
-# Intent slug is derived from .haiku directory structure
+# Intent slug is derived from .haiku directory structure or MCP tools
 INTENT_SLUG="${1:-$(basename "$(find .haiku -maxdepth 2 -name 'intent.md' -exec dirname {} \; | head -1)" 2>/dev/null || echo "")}"
 ```
 
@@ -77,12 +79,15 @@ STATE=$(haiku_stage_get { intent, stage, field: "phase" } 2>/dev/null || echo ""
 OP_STATUS=$(cat "$INTENT_DIR/operation-status.json" 2>/dev/null || echo "")
 
 # Get DAG summary
-SUMMARY=$(get_dag_summary "$INTENT_DIR")
+# Get DAG summary via MCP: haiku_unit_list { intent: INTENT_SLUG, stage: ACTIVE_STAGE }
+# Then compute summary from unit statuses
+SUMMARY=$(haiku_unit_list { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE" })
 
 # Parse per-unit data
 for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   UNIT_NAME=$(basename "$unit_file" .md)
-  UNIT_STATUS=$(parse_unit_status "$unit_file")
+  # Read unit status via MCP or from frontmatter
+UNIT_STATUS=$(haiku_unit_get { intent: "$INTENT_SLUG", stage: "$STAGE_NAME", unit: "$UNIT_NAME", field: "status" } 2>/dev/null || echo "pending")
   UNIT_SCRATCHPAD=$(cat "$INTENT_DIR/scratchpad.md" 2>/dev/null || echo "")
 done
 ```
@@ -441,19 +446,21 @@ git add .claude/memory/learnings.md && git commit -m "reflect(${INTENT_SLUG}): c
 3. **Sync to H·AI·K·U organizational memory** (if workspace configured):
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/haiku.sh"
+# Check if H·AI·K·U workspace is configured via settings
+HAIKU_WS=$(yq -r '.workspace // ""' .haiku/settings.yml 2>/dev/null || echo "")
 
-if haiku_is_configured; then
-  HAIKU_WS=$(haiku_resolve_workspace)
+if [ -n "$HAIKU_WS" ]; then
 
   # Write project-level learnings to org memory
   # Distill to org-applicable insights only (not project-specific details)
-  haiku_memory_write "learnings" "$ORG_LEARNINGS_CONTENT" "append"
+  # Write to workspace memory by appending to files directly
+# haiku_memory_write "learnings" "$ORG_LEARNINGS_CONTENT" "append"
 
   # Write domain-specific patterns if applicable
   # e.g., software development patterns go to memory/software/
   mkdir -p "$HAIKU_WS/memory/software"
-  haiku_memory_write "software/patterns" "$SOFTWARE_PATTERNS" "append"
+  # Write to workspace memory by appending to files directly
+# haiku_memory_write "software/patterns" "$SOFTWARE_PATTERNS" "append"
 
   echo "Organizational memory synced to H·AI·K·U workspace: $HAIKU_WS"
 fi

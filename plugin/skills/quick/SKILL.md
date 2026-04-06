@@ -44,8 +44,7 @@ The user invokes quick mode with an optional stage name and a task description:
 2. Read the first word of the argument string.
 3. Discover available stages — list stage directories from the software studio:
    ```bash
-   source "${CLAUDE_PLUGIN_ROOT}/lib/stage.sh"
-   # Built-in stages
+   # List built-in stages by reading the directory directly (no shell lib needed)
    for stage_dir in "${CLAUDE_PLUGIN_ROOT}/studios/software/stages/"*/; do
      [ -d "$stage_dir" ] || continue
      echo "$(basename "$stage_dir")"
@@ -152,8 +151,8 @@ The stage state is initialized for hook integration.
 Resolve the hat sequence from the stage definition. For `development`, this is `["planner", "builder", "reviewer"]`.
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/hat.sh"
-STAGE_HATS=$(hku_get_hat_sequence "$STAGE_NAME" "software")
+# Read hat sequence from the stage's STAGE.md frontmatter (no shell lib needed)
+STAGE_HATS=$(yq --front-matter=extract -r '.hats[]' "$CLAUDE_PLUGIN_ROOT/studios/software/stages/$STAGE_NAME/STAGE.md" 2>/dev/null)
 ```
 
 Execute each hat in order by spawning a subagent.
@@ -194,8 +193,11 @@ Do NOT read or execute the advance or fail skill definitions directly — just c
 **Hat context injection (always explicit):** Always inject hat context directly into the subagent prompt — do not rely on hooks firing for Agent-spawned subagents. Resolve hat instructions from the stage:
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/hat.sh"
-HAT_INSTRUCTIONS=$(hku_resolve_hat_instructions "{hat-name}" "$STAGE_NAME" "software")
+# Read hat instructions from the hat file directly (no shell lib needed)
+# Check project override first, then plugin built-in
+HAT_FILE=".haiku/studios/software/stages/$STAGE_NAME/hats/{hat-name}.md"
+[ ! -f "$HAT_FILE" ] && HAT_FILE="$CLAUDE_PLUGIN_ROOT/studios/software/stages/$STAGE_NAME/hats/{hat-name}.md"
+HAT_INSTRUCTIONS=$(cat "$HAT_FILE" 2>/dev/null || echo "")
 ```
 
 If hat instructions are found, append them to the subagent prompt as additional context under a `## Hat Instructions` heading. This makes hat injection deterministic regardless of whether `subagent-context.sh` fires.

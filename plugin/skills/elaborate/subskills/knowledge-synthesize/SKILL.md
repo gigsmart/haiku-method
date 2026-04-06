@@ -223,10 +223,11 @@ For each pass that produced findings, write the artifact using the knowledge.sh 
 ```bash
 # Determine plugin root
 CLAUDE_PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$(readlink -f "$0")")" && pwd)}"
-source "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh"
+# Knowledge operations now use MCP tools: haiku_knowledge_list, haiku_knowledge_read
 
 # Write an artifact (example for design)
-hku_knowledge_write "design" "$(cat <<'ARTIFACT_EOF'
+# Write knowledge artifact directly to .haiku/knowledge/{type}.md (no shell lib needed)
+cat > "design" "$(cat <<'ARTIFACT_EOF'
 ---
 type: design
 version: 1
@@ -254,20 +255,7 @@ ARTIFACT_EOF
 )"
 ```
 
-If `CLAUDE_PLUGIN_ROOT` is not set, locate knowledge.sh relative to the worktree's plugin directory:
-
-```bash
-# Try common locations in order
-for candidate in \
-  "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh" \
-  "$(git rev-parse --show-toplevel 2>/dev/null)/plugin/lib/knowledge.sh" \
-  ; do
-  if [ -f "$candidate" ]; then
-    source "$candidate"
-    break
-  fi
-done
-```
+Knowledge artifacts are now written directly to `.haiku/knowledge/{type}.md` files. No shell library is needed -- the MCP tools `haiku_knowledge_list` and `haiku_knowledge_read` handle reading, and writing is done via direct file operations.
 
 ### Artifact Templates
 
@@ -484,6 +472,7 @@ If a single pass fails but others succeed, continue with remaining passes and no
 
 ## Idempotency
 
-This skill is idempotent. Running it twice on the same codebase produces the same result. `hku_knowledge_write` overwrites existing artifacts atomically (write to temp, then mv).
+This skill is idempotent. Running it twice on the same codebase produces the same result. `# Write knowledge artifact directly to .haiku/knowledge/{type}.md (no shell lib needed)
+cat >` overwrites existing artifacts atomically (write to temp, then mv).
 
 Existing knowledge artifacts listed in `existing_knowledge` from the brief are overwritten with fresh synthesis results. The calling skill decides whether to invoke synthesis based on whether re-synthesis is needed.

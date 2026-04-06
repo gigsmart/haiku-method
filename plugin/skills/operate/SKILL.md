@@ -148,7 +148,7 @@ Usage: /haiku:operate {intent} --deploy [target]
 Scan all intents for operations and display a grouped table.
 
 ```bash
-REPO_ROOT="$(find_repo_root)"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 ALL_INTENTS=$(find "$REPO_ROOT/.haiku" -maxdepth 2 -name "intent.md" -exec dirname {} \; 2>/dev/null)
 ```
 
@@ -275,7 +275,8 @@ For `owner: agent` operations:
    ```bash
    RUNTIME=$(sed -n '/^---$/,/^---$/{ /^runtime:/s/^runtime: *//p }' "$OP_FILE")
    if [ -z "$RUNTIME" ]; then
-     RUNTIME=$(get_operations_runtime)
+     RUNTIME=$(# Read operations runtime from settings: yq -r '.operations_runtime // "shell"' .haiku/settings.yml
+yq -r '.operations_runtime // "shell"' .haiku/settings.yml 2>/dev/null || echo "shell")
    fi
    ```
 
@@ -408,9 +409,10 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
 
 1. **Load stack configuration:**
    ```bash
-   COMPUTE_LAYER=$(get_stack_layer "compute")
-   PIPELINE_LAYER=$(get_stack_layer "pipeline")
-   OPS_LAYER=$(get_stack_layer "operations")
+   # Read stack layers from settings (no shell lib needed)
+   COMPUTE_LAYER=$(yq -r '.stack.compute // ""' .haiku/settings.yml 2>/dev/null || echo "")
+   PIPELINE_LAYER=$(yq -r '.stack.pipeline // ""' .haiku/settings.yml 2>/dev/null || echo "")
+   OPS_LAYER=$(yq -r '.stack.operations // ""' .haiku/settings.yml 2>/dev/null || echo "")
    ```
 
 2. **Read all agent-owned operations** from `.haiku/intents/{intent}/operations/`:
@@ -429,19 +431,19 @@ When invoked as `/haiku:operate {intent} --deploy [target]`:
    TYPE=$(sed -n '/^---$/,/^---$/{ /^type:/s/^type: *//p }' "$op_file")
    ```
 
-   If `$DEPLOY_TARGET` was explicitly provided (e.g., `/haiku:operate myapp --deploy github-actions`), use that for all operations. Otherwise derive from stack config using the `has_stack_provider` helper:
+   If `$DEPLOY_TARGET` was explicitly provided (e.g., `/haiku:operate myapp --deploy github-actions`), use that for all operations. Otherwise derive from stack config by reading `.haiku/settings.yml`:
 
    ```bash
-   # Determine from stack config using has_stack_provider helper
-   if has_stack_provider "compute" "kubernetes"; then
+   # Determine from stack config by checking provider values
+   if echo "$COMPUTE_LAYER" | grep -qi "kubernetes"; then
      if [ "$TYPE" = "scheduled" ]; then
        TARGET="k8s-cronjob"
      else
        TARGET="k8s-deployment"
      fi
-   elif has_stack_provider "compute" "docker-compose"; then
+   elif echo "$COMPUTE_LAYER" | grep -qi "docker-compose"; then
      TARGET="docker-compose"
-   elif has_stack_provider "pipeline" "github-actions"; then
+   elif echo "$PIPELINE_LAYER" | grep -qi "github-actions"; then
      TARGET="github-actions"
    else
      TARGET="none"

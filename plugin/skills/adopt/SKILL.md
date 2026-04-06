@@ -98,12 +98,8 @@ fi
 ### Source Library Functions
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-
-
-source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
-
-REPO_ROOT=$(find_repo_root)
+# No shell libs needed — use git and MCP tools directly
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 ```
 
 ### Parse Arguments
@@ -519,10 +515,10 @@ Using the deployment surface analysis from Subagent 5, identify operational conc
 ### Check for Operational Surface
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-STACK_COMPUTE=$(get_stack_layer "compute")
-STACK_MONITORING=$(get_stack_layer "monitoring")
-STACK_OPS=$(get_stack_layer "operations")
+# Read stack layers from settings (no shell lib needed)
+STACK_COMPUTE=$(yq -r '.stack.compute // ""' .haiku/settings.yml 2>/dev/null || echo "")
+STACK_MONITORING=$(yq -r '.stack.monitoring // ""' .haiku/settings.yml 2>/dev/null || echo "")
+STACK_OPS=$(yq -r '.stack.operations // ""' .haiku/settings.yml 2>/dev/null || echo "")
 ```
 
 If no operational surface is detected (no scheduled tasks, no monitoring, no deploy scripts, and all stack layers are empty), inform the user:
@@ -642,9 +638,8 @@ OP_COUNT=0
 Before writing artifacts, create a dedicated branch so commits don't land on the user's current branch (which may be `main`):
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-CONFIG=$(get_haiku_config "" "$REPO_ROOT")
-DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
+# Read config from settings (no shell lib needed)
+DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo "main")
 
 ADOPT_BRANCH="haiku/${SLUG}/main"
 
@@ -886,10 +881,8 @@ After committing, derive counts from the approved artifacts and emit telemetry s
 # Count unit files written in this phase
 UNIT_COUNT=$(find "$INTENT_DIR" -maxdepth 1 -name "unit-*.md" | wc -l | tr -d ' ')
 
-source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-haiku_telemetry_init
-haiku_record_intent_created "${SLUG}" "adopt"
-haiku_record_intent_completed "${SLUG}" "${UNIT_COUNT}"
+# Telemetry is tracked automatically by the MCP server
+# Intent creation and completion events are recorded when haiku_intent_set is called
 ```
 
 ### Save State

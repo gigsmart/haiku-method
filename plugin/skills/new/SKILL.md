@@ -105,13 +105,13 @@ Convert the intent description to a kebab-case slug:
 
 Read `studio:` from `.haiku/settings.yml`:
 ```bash
-source "$CLAUDE_PLUGIN_ROOT/lib/config.sh"
-local studio=$(get_setting_value "studio")
+# Read studio from settings via file read (no shell lib needed)
+local studio=$(yq -r '.studio // ""' .haiku/settings.yml 2>/dev/null)
 ```
 
 If not set, default to `ideation`.
 
-Verify the studio exists via `hku_resolve_studio`. If it doesn't exist, fall back to `ideation`.
+Verify the studio exists by checking for `plugin/studios/{studio}/STUDIO.md` or `.haiku/studios/{studio}/STUDIO.md`. If neither exists, fall back to `ideation`.
 
 ### Step 4: Ask Mode
 
@@ -133,8 +133,9 @@ Default: `continuous`
 
 Load the stage list from the studio definition:
 ```bash
-source "$CLAUDE_PLUGIN_ROOT/lib/studio.sh"
-local stages=$(hku_load_studio_stages "$studio")
+# Read stages from the studio STUDIO.md frontmatter (no shell lib needed)
+# Read plugin/studios/{studio}/STUDIO.md and parse the stages: field from frontmatter
+local stages=$(yq --front-matter=extract -r '.stages[]' "$CLAUDE_PLUGIN_ROOT/studios/$studio/STUDIO.md" 2>/dev/null)
 ```
 
 For continuous mode, `stages:` in frontmatter is set to `[]` and `active_stage:` to `""` (no stage tracking — the run command handles the collapse).
@@ -188,9 +189,9 @@ Create the directory structure:
 ### Step 8: Persistence Setup
 
 ```bash
-source "$CLAUDE_PLUGIN_ROOT/lib/persistence.sh"
-persistence_create_workspace "{slug}" "{studio_name}"
-persistence_save "{slug}" "haiku: new intent — {slug}" ".haiku/intents/{slug}/"
+# Persistence is automatic — git add + commit the intent directory
+git add ".haiku/intents/{slug}/"
+git commit -m "haiku: new intent — {slug}"
 ```
 
 ### Step 9: Next Step

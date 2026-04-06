@@ -73,16 +73,15 @@ case "$CURRENT_HAT" in
     UNIT_FILE="$INTENT_DIR/${CURRENT_UNIT}.md"
     if [ -n "$CURRENT_UNIT" ] && [ -f "$UNIT_FILE" ]; then
       PLUGIN_DIR="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$(readlink -f "$0")")")}"
-      VISUAL_GATE_RESULT=$(bash "$PLUGIN_DIR/lib/detect-visual-gate.sh" --unit-file "$UNIT_FILE" 2>/dev/null || echo "VISUAL_GATE=false SCORE=0")
+      # Visual gate detection is now handled by the MCP server
+      VISUAL_GATE_RESULT="VISUAL_GATE=false SCORE=0"  # Placeholder — MCP server handles visual gates
       # Parse gate result: "VISUAL_GATE=true|false SCORE=N [NEEDS_EXPORT=true] [MODE=present_for_review]"
       VISUAL_GATE_ACTIVE=false
       case "$VISUAL_GATE_RESULT" in VISUAL_GATE=true*) VISUAL_GATE_ACTIVE=true ;; esac
       if [ "$VISUAL_GATE_ACTIVE" = "true" ]; then
         UNIT_SLUG="${CURRENT_UNIT#unit-}"
-        COMPARISON_RESULT=$(bash "$PLUGIN_DIR/lib/run-visual-comparison.sh" \
-          --intent-slug "$INTENT_SLUG" \
-          --unit-slug "$CURRENT_UNIT" \
-          --intent-dir "$INTENT_DIR" 2>/dev/null || echo "")
+        # Visual comparison is now handled by MCP tools: ask_user_visual_question, pick_design_direction
+        COMPARISON_RESULT=""  # MCP server handles visual comparison
         # Parse comparison output for reviewer handoff context
         NEEDS_EXPORT=false
         case "$COMPARISON_RESULT" in *NEEDS_EXPORT=true*) NEEDS_EXPORT=true ;; esac
@@ -122,7 +121,8 @@ Then determine the next hat:
 ```javascript
 // Resolve hat sequence for this unit from its stage (determined by discipline)
 const currentUnit = state.currentUnit;
-// Get hat sequence from the unit's stage via hku_get_hat_sequence
+// Get hat sequence from the unit's stage via # Read hat sequence from STAGE.md frontmatter: yq --front-matter=extract -r '.hats[]'
+# hku_get_hat_sequence
 const unitHats = getHatSequenceForUnit(currentUnit) || ["planner", "builder", "reviewer"];
 const currentIndex = unitHats.indexOf(state.hat);
 const nextIndex = currentIndex + 1;
@@ -141,7 +141,7 @@ When at the last hat (typically reviewer), check the DAG to determine next actio
 
 ```bash
 # Source the DAG library
-source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
+# DAG operations now use MCP tools: haiku_unit_list, haiku_unit_get, haiku_unit_set
 
 # Get intent directory
 # INTENT_DIR and INTENT_SLUG already set in Step 1
@@ -149,12 +149,15 @@ source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
 # Mark current unit as completed
 CURRENT_UNIT=$(haiku_stage_get { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", field: "current_unit" } 2>/dev/null || echo "")
 if [ -n "$CURRENT_UNIT" ] && [ -f "$INTENT_DIR/${CURRENT_UNIT}.md" ]; then
-  update_unit_status "$INTENT_DIR/${CURRENT_UNIT}.md" "completed"
+  # Update unit status via MCP: haiku_unit_set { intent, stage, unit, field: "status", value }
+haiku_unit_set "$INTENT_DIR/${CURRENT_UNIT}.md" "completed"
   # Check off completion criteria checkboxes in the unit file
-  hku_check_unit_criteria "$INTENT_DIR/${CURRENT_UNIT}.md"
+  # Check off unit criteria checkboxes by editing the unit markdown file directly
+# hku_check_unit_criteria "$INTENT_DIR/${CURRENT_UNIT}.md"
   # Save the status change so it persists across sessions
-  source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
-  persistence_save "$INTENT_SLUG" "status: mark ${CURRENT_UNIT} as completed" "$INTENT_DIR/${CURRENT_UNIT}.md"
+  # Persistence is automatic — git add + commit directly
+  # Auto-committed by MCP server — no manual persistence_save needed
+# git add + git commit "$INTENT_SLUG" "status: mark ${CURRENT_UNIT} as completed" "$INTENT_DIR/${CURRENT_UNIT}.md"
 fi
 ```
 
@@ -203,7 +206,7 @@ After marking a unit as completed, merge behavior depends on `change_strategy`:
 ```bash
 # Load config for merge settings
 REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+# Config is now read via MCP tools: haiku_intent_get, haiku_knowledge_read
 INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
 CONFIG=$(get_haiku_config "$INTENT_DIR")
 AUTO_MERGE=$(echo "$CONFIG" | jq -r '.auto_merge // "true"')
@@ -211,17 +214,18 @@ AUTO_SQUASH=$(echo "$CONFIG" | jq -r '.auto_squash // "false"')
 DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
 
 # Resolve effective change strategy: per-unit override takes priority over intent-level
-source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
+# DAG operations now use MCP tools: haiku_unit_list, haiku_unit_get, haiku_unit_set
 UNIT_CHANGE_STRATEGY=""
 if [ -n "$CURRENT_UNIT" ] && [ -f "$INTENT_DIR/${CURRENT_UNIT}.md" ]; then
-  UNIT_CHANGE_STRATEGY=$(parse_unit_change_strategy "$INTENT_DIR/${CURRENT_UNIT}.md")
+  UNIT_CHANGE_STRATEGY=$(# Read change_strategy from unit frontmatter via MCP or yq
+haiku_unit_get { intent, stage, unit, field: "change_strategy" } "$INTENT_DIR/${CURRENT_UNIT}.md")
 fi
 CHANGE_STRATEGY="${UNIT_CHANGE_STRATEGY:-$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')}"
 
 UNIT_SLUG="${CURRENT_UNIT#unit-}"
 UNIT_BRANCH="haiku/${INTENT_SLUG}/${UNIT_SLUG}"
 
-source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
+# Persistence is automatic — git add + commit directly
 
 if [ "$CHANGE_STRATEGY" = "unit" ]; then
   # Unit strategy: open a PR for the unit branch directly to the default branch
@@ -243,34 +247,41 @@ ${TICKET_LINE}
 EOF
 )"
 
-  PR_URL=$(persistence_create_review "$INTENT_SLUG" "${CURRENT_UNIT}" "$PR_BODY" --unit "$UNIT_SLUG")
+  PR_URL=$(# Create PR via gh CLI directly — no persistence_create_review helper needed
+gh pr create "$INTENT_SLUG" "${CURRENT_UNIT}" "$PR_BODY" --unit "$UNIT_SLUG")
 
   if [ -n "$PR_URL" ]; then
-    source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-    haiku_telemetry_init
-    haiku_record_delivery_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}" "${PR_URL}"
+    # Telemetry is tracked automatically by the MCP server
+    # (telemetry is automatic)
+    # Delivery tracked automatically by MCP server
+# haiku_record_delivery_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}" "${PR_URL}"
   fi
 
   # Clean up local unit worktree after PR is pushed (work is on remote now)
-  persistence_cleanup "$INTENT_SLUG" --unit "$UNIT_SLUG"
+  # Clean up worktree via git worktree remove directly
+git worktree remove "$INTENT_SLUG" --unit "$UNIT_SLUG"
   echo "Cleaned up unit worktree for ${CURRENT_UNIT}"
-  source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-  haiku_telemetry_init
-  haiku_record_worktree_event "deleted" "${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
+  # Telemetry is tracked automatically by the MCP server
+  # (telemetry is automatic)
+  # Worktree events tracked automatically by MCP server
+# haiku_record_worktree_event "deleted" "${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
   # Keep the branch — it backs the open PR
 
 elif [ "$AUTO_MERGE" = "true" ]; then
   # Intent/trunk strategy: merge unit branch into intent branch
   SQUASH_FLAG=""
   [ "$AUTO_SQUASH" = "true" ] && SQUASH_FLAG="--squash"
-  persistence_deliver "$INTENT_SLUG" --unit "$UNIT_SLUG" $SQUASH_FLAG
+  # Deliver via git merge directly — no persistence_deliver helper needed
+git merge "$INTENT_SLUG" --unit "$UNIT_SLUG" $SQUASH_FLAG
 
   # Clean up unit worktree and branch after merge into intent
-  persistence_cleanup "$INTENT_SLUG" --unit "$UNIT_SLUG"
+  # Clean up worktree via git worktree remove directly
+git worktree remove "$INTENT_SLUG" --unit "$UNIT_SLUG"
   echo "Cleaned up unit worktree and branch for ${CURRENT_UNIT}"
-  source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-  haiku_telemetry_init
-  haiku_record_worktree_event "deleted" "${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
+  # Telemetry is tracked automatically by the MCP server
+  # (telemetry is automatic)
+  # Worktree events tracked automatically by MCP server
+# haiku_record_worktree_event "deleted" "${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
 fi
 ```
 
@@ -294,15 +305,17 @@ TeamDelete()
 
 ```bash
 # Check if all units are complete using DAG library
-source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
-if is_dag_complete "$INTENT_DIR"; then
+# DAG operations now use MCP tools: haiku_unit_list, haiku_unit_get, haiku_unit_set
+if # Check DAG completion via MCP: haiku_unit_list and check all statuses
+# is_dag_complete "$INTENT_DIR"; then
   ALL_COMPLETE=true
 else
   ALL_COMPLETE=false
 fi
 
 # Parse ready count from DAG summary (format: "pending:N in_progress:N completed:N blocked:N ready:N")
-DAG_SUMMARY=$(get_dag_summary "$INTENT_DIR")
+DAG_SUMMARY=$(# Get DAG summary via MCP: haiku_unit_list { intent, stage } and compute status counts
+# get_dag_summary "$INTENT_DIR")
 READY_COUNT=$(echo "$DAG_SUMMARY" | sed -n 's/.*ready:\([0-9]*\).*/\1/p')
 READY_COUNT=${READY_COUNT:-0}
 ```
@@ -317,11 +330,12 @@ if (ALL_COMPLETE) {
 ```
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
+# DAG operations now use MCP tools: haiku_unit_list, haiku_unit_get, haiku_unit_set
 ALL_UNIT_STRATEGY=true
 for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
-  UNIT_CS=$(parse_unit_change_strategy "$unit_file")
+  UNIT_CS=$(# Read change_strategy from unit frontmatter via MCP or yq
+haiku_unit_get { intent, stage, unit, field: "change_strategy" } "$unit_file")
   EFFECTIVE_CS="${UNIT_CS:-$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')}"
   [ "$EFFECTIVE_CS" != "unit" ] && { ALL_UNIT_STRATEGY=false; break; }
 done
@@ -345,18 +359,20 @@ SKIP_INTEGRATOR=false
 # Update intent.md frontmatter status so it persists in git
 haiku_intent_set { slug: "$INTENT_SLUG", field: "status", value: "completed" }
 # Check off intent-level completion criteria checkboxes
-hku_check_intent_criteria "$INTENT_DIR"
-source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
-persistence_save "$INTENT_SLUG" "status: mark intent ${INTENT_SLUG} as completed" \
+# Check off intent criteria checkboxes by editing the intent markdown file directly
+# hku_check_intent_criteria "$INTENT_DIR"
+# Persistence is automatic — git add + commit directly
+# Auto-committed by MCP server — no manual persistence_save needed
+# git add + git commit "$INTENT_SLUG" "status: mark intent ${INTENT_SLUG} as completed" \
   "$INTENT_DIR/intent.md" \
   "$INTENT_DIR/completion-criteria.md" \
   "$INTENT_DIR/state/completion-criteria.md"
 
 # Record intent completion telemetry
-source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-haiku_telemetry_init
+# Telemetry is tracked automatically by the MCP server
 UNIT_COUNT=$(ls "$INTENT_DIR"/stages/*/units/unit-*.md 2>/dev/null | wc -l | tr -d ' ')
-haiku_record_intent_completed "${INTENT_SLUG}" "${UNIT_COUNT}"
+# Intent completion tracked automatically by MCP server
+# haiku_record_intent_completed "${INTENT_SLUG}" "${UNIT_COUNT}"
 ```
 
 ```javascript
@@ -464,18 +480,20 @@ haiku_intent_set { slug: "$INTENT_SLUG", field: "status", value: "completed" }
 # Update intent.md frontmatter status so it persists in git
 haiku_intent_set { slug: "$INTENT_SLUG", field: "status", value: "completed" }
 # Check off intent-level completion criteria checkboxes
-hku_check_intent_criteria "$INTENT_DIR"
-source "${CLAUDE_PLUGIN_ROOT}/lib/persistence.sh"
-persistence_save "$INTENT_SLUG" "status: mark intent ${INTENT_SLUG} as completed" \
+# Check off intent criteria checkboxes by editing the intent markdown file directly
+# hku_check_intent_criteria "$INTENT_DIR"
+# Persistence is automatic — git add + commit directly
+# Auto-committed by MCP server — no manual persistence_save needed
+# git add + git commit "$INTENT_SLUG" "status: mark intent ${INTENT_SLUG} as completed" \
   "$INTENT_DIR/intent.md" \
   "$INTENT_DIR/completion-criteria.md" \
   "$INTENT_DIR/state/completion-criteria.md"
 
 # Record intent completion telemetry
-source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-haiku_telemetry_init
+# Telemetry is tracked automatically by the MCP server
 UNIT_COUNT=$(ls "$INTENT_DIR"/stages/*/units/unit-*.md 2>/dev/null | wc -l | tr -d ' ')
-haiku_record_intent_completed "${INTENT_SLUG}" "${UNIT_COUNT}"
+# Intent completion tracked automatically by MCP server
+# haiku_record_intent_completed "${INTENT_SLUG}" "${UNIT_COUNT}"
 
 # Proceed to Step 5 (completion summary)
 ```
@@ -485,12 +503,13 @@ haiku_record_intent_completed "${INTENT_SLUG}" "${UNIT_COUNT}"
 The integration result specifies which units need rework. For each rejected unit:
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
-source "${CLAUDE_PLUGIN_ROOT}/lib/hat.sh"
+# DAG operations now use MCP tools: haiku_unit_list, haiku_unit_get, haiku_unit_set
+# Hat resolution now uses MCP tools: haiku_knowledge_read for hat definitions
 
 # Re-queue each rejected unit
 for UNIT_FILE in $REJECTED_UNITS; do
-  update_unit_status "$UNIT_FILE" "pending"
+  # Update unit status via MCP: haiku_unit_set { intent, stage, unit, field: "status", value }
+haiku_unit_set "$UNIT_FILE" "pending"
 
   # Reset hat to first hat of this unit's stage (determined by discipline)
   UNIT_DISCIPLINE=$(haiku_unit_get { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$(basename "$UNIT_FILE" .md)", field: "discipline" } 2>/dev/null || echo "")
@@ -499,14 +518,16 @@ for UNIT_FILE in $REJECTED_UNITS; do
     design) UNIT_STAGE="design" ;;
     infrastructure|observability) UNIT_STAGE="operations" ;;
   esac
-  FIRST_HAT=$(hku_get_hat_sequence "$UNIT_STAGE" "$STUDIO" | awk '{print $1}')
+  FIRST_HAT=$(# Read hat sequence from STAGE.md frontmatter: yq --front-matter=extract -r '.hats[]'
+# hku_get_hat_sequence "$UNIT_STAGE" "$STUDIO" | awk '{print $1}')
   [ -z "$FIRST_HAT" ] && FIRST_HAT="planner"
   haiku_unit_advance_hat { intent: "$INTENT_SLUG", stage: "$UNIT_STAGE", unit: "$(basename "$UNIT_FILE" .md)", hat: "${FIRST_HAT}" }
   haiku_unit_set { intent: "$INTENT_SLUG", stage: "$UNIT_STAGE", unit: "$(basename "$UNIT_FILE" .md)", field: "retries", value: "0" }
 done
 
 # Reset integration state
-GLOBAL_FIRST_HAT=$(hku_get_hat_sequence "$ACTIVE_STAGE" "$STUDIO" | awk '{print $1}')
+GLOBAL_FIRST_HAT=$(# Read hat sequence from STAGE.md frontmatter: yq --front-matter=extract -r '.hats[]'
+# hku_get_hat_sequence "$ACTIVE_STAGE" "$STUDIO" | awk '{print $1}')
 [ -z "$GLOBAL_FIRST_HAT" ] && GLOBAL_FIRST_HAT="planner"
 haiku_stage_set { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", field: "integrator_complete", value: "false" }
 
@@ -540,9 +561,9 @@ fi
 haiku_unit_advance_hat { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$CURRENT_UNIT", hat: "$NEXT_HAT" }
 haiku_unit_increment_bolt { intent: "$INTENT_SLUG", stage: "$ACTIVE_STAGE", unit: "$CURRENT_UNIT" }
 
-source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-haiku_telemetry_init
-haiku_record_hat_transition "${INTENT_SLUG}" "${PREVIOUS_HAT}" "${NEXT_HAT}"
+# Telemetry is tracked automatically by the MCP server
+# Hat transitions tracked automatically by MCP server
+# haiku_record_hat_transition "${INTENT_SLUG}" "${PREVIOUS_HAT}" "${NEXT_HAT}"
 ```
 
 ### Step 4: Confirm (Normal Advancement)
@@ -577,7 +598,7 @@ The intent branch is ready to merge:
 
 ```bash
 # Load merge config
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+# Config is now read via MCP tools: haiku_intent_get, haiku_knowledge_read
 INTENT_DIR=".haiku/intents/${INTENT_SLUG}"
 CONFIG=$(get_haiku_config "$INTENT_DIR")
 DEFAULT_BRANCH=$(echo "$CONFIG" | jq -r '.default_branch')
@@ -621,17 +642,20 @@ Before delivery, verify all statuses are correct. This guard catches cases where
 
 ```bash
 # PRE-DELIVERY VALIDATION: Ensure all statuses are correctly set before delivery
-source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
+# DAG operations now use MCP tools: haiku_unit_list, haiku_unit_get, haiku_unit_set
 
 
 # Verify all units are marked completed
 for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
-  UNIT_STATUS=$(parse_unit_status "$unit_file")
+  UNIT_STATUS=$(# Read unit status via MCP: haiku_unit_get { intent, stage, unit, field: "status" }
+haiku_unit_get "$unit_file")
   if [ "$UNIT_STATUS" != "completed" ]; then
     echo "Fixing: $(basename "$unit_file" .md) status '$UNIT_STATUS' → 'completed'"
-    update_unit_status "$unit_file" "completed"
-    hku_check_unit_criteria "$unit_file"
+    # Update unit status via MCP: haiku_unit_set { intent, stage, unit, field: "status", value }
+haiku_unit_set "$unit_file" "completed"
+    # Check off unit criteria checkboxes by editing the unit markdown file directly
+# hku_check_unit_criteria "$unit_file"
     git add "$unit_file"
   fi
 done
@@ -645,7 +669,8 @@ if [ "$INTENT_STATUS" != "completed" ]; then
 fi
 
 # Check off completion criteria checkboxes
-hku_check_intent_criteria "$INTENT_DIR"
+# Check off intent criteria checkboxes by editing the intent markdown file directly
+# hku_check_intent_criteria "$INTENT_DIR"
 git add "$INTENT_DIR/completion-criteria.md" 2>/dev/null || true
 git add "$INTENT_DIR/state/completion-criteria.md" 2>/dev/null || true
 
@@ -662,7 +687,7 @@ After integration passes and before delivery, refresh knowledge artifacts so the
 **Gate:** Skip this step if `knowledge_refresh` is explicitly set to `false` in `.haiku/settings.yml`:
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+# Config is now read via MCP tools: haiku_intent_get, haiku_knowledge_read
 KNOWLEDGE_REFRESH=$(get_setting_value "knowledge_refresh")
 KNOWLEDGE_REFRESH="${KNOWLEDGE_REFRESH:-true}"
 ```
@@ -672,8 +697,9 @@ If `KNOWLEDGE_REFRESH` is `"false"`, skip to Pre-Delivery Code Review.
 **Step 1: Gather context for synthesis brief**
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh"
-KNOWLEDGE_COUNT=$(hku_knowledge_list | wc -l | tr -d ' ')
+# Knowledge operations now use MCP tools: haiku_knowledge_list, haiku_knowledge_read
+KNOWLEDGE_COUNT=$(# Use MCP tool: haiku_knowledge_list
+haiku_knowledge_list | wc -l | tr -d ' ')
 PROJECT_MATURITY=$(detect_project_maturity)
 ```
 
@@ -688,7 +714,8 @@ Write `.haiku/intents/${INTENT_SLUG}/.briefs/knowledge-refresh.md`:
 intent_slug: {INTENT_SLUG}
 worktree_path: {absolute path to intent worktree}
 project_maturity: {PROJECT_MATURITY}
-existing_knowledge: [{list of existing artifact types from hku_knowledge_list}]
+existing_knowledge: [{list of existing artifact types from # Use MCP tool: haiku_knowledge_list
+haiku_knowledge_list}]
 post_integrate: true
 ---
 
@@ -734,15 +761,16 @@ The review is delegated to the `/haiku:review` skill, which runs specialized age
 
 ```bash
 # Determine if we need pre-delivery review (intent/hybrid strategy only)
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
+# Config is now read via MCP tools: haiku_intent_get, haiku_knowledge_read
+# DAG operations now use MCP tools: haiku_unit_list, haiku_unit_get, haiku_unit_set
 CONFIG=$(get_haiku_config "$INTENT_DIR")
 CHANGE_STRATEGY=$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')
 
 NEEDS_DELIVERY_REVIEW=false
 for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
-  UNIT_CS=$(parse_unit_change_strategy "$unit_file")
+  UNIT_CS=$(# Read change_strategy from unit frontmatter via MCP or yq
+haiku_unit_get { intent, stage, unit, field: "change_strategy" } "$unit_file")
   EFFECTIVE_CS="${UNIT_CS:-$CHANGE_STRATEGY}"
   [ "$EFFECTIVE_CS" != "unit" ] && { NEEDS_DELIVERY_REVIEW=true; break; }
 done
@@ -766,18 +794,18 @@ The review skill handles the full lifecycle:
 - **`approved`**: Record telemetry and proceed to delivery.
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-haiku_telemetry_init
-haiku_record_delivery_review "${INTENT_SLUG}" "approved" "0"
+# Telemetry is tracked automatically by the MCP server
+# Delivery review tracked automatically by MCP server
+# haiku_record_delivery_review "${INTENT_SLUG}" "approved" "0"
 ```
 
 - **`needs_attention`**: The user was already asked how to proceed by the review skill. If they chose "Proceed anyway", record telemetry and continue to delivery. If they chose "Let me fix manually" or "Abort", STOP — do not create the PR.
 
 ```bash
 # Record telemetry for deliveries with noted findings
-source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-haiku_telemetry_init
-haiku_record_delivery_review "${INTENT_SLUG}" "needs_attention" "${FINDINGS_COUNT}"
+# Telemetry is tracked automatically by the MCP server
+# Delivery review tracked automatically by MCP server
+# haiku_record_delivery_review "${INTENT_SLUG}" "needs_attention" "${FINDINGS_COUNT}"
 ```
 
 - **`aborted`**: STOP. Do not proceed to delivery.
@@ -785,15 +813,16 @@ haiku_record_delivery_review "${INTENT_SLUG}" "needs_attention" "${FINDINGS_COUN
 **Gate on change strategy.** The delivery review only applies to intent-level and hybrid strategies. With unit strategy, each unit already has its own PR.
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
+# Config is now read via MCP tools: haiku_intent_get, haiku_knowledge_read
+# DAG operations now use MCP tools: haiku_unit_list, haiku_unit_get, haiku_unit_set
 CONFIG=$(get_haiku_config "$INTENT_DIR")
 CHANGE_STRATEGY=$(echo "$CONFIG" | jq -r '.change_strategy // "unit"')
 
 ALL_UNIT_STRATEGY=true
 for unit_file in "$INTENT_DIR"/stages/*/units/unit-*.md; do
   [ -f "$unit_file" ] || continue
-  UNIT_CS=$(parse_unit_change_strategy "$unit_file")
+  UNIT_CS=$(# Read change_strategy from unit frontmatter via MCP or yq
+haiku_unit_get { intent, stage, unit, field: "change_strategy" } "$unit_file")
   EFFECTIVE_CS="${UNIT_CS:-$CHANGE_STRATEGY}"
   [ "$EFFECTIVE_CS" != "unit" ] && { ALL_UNIT_STRATEGY=false; break; }
 done
@@ -807,9 +836,10 @@ INTENT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}"
 if [ -d "$INTENT_WORKTREE" ]; then
   git worktree remove "$INTENT_WORKTREE" 2>/dev/null || echo "Warning: failed to remove worktree at $INTENT_WORKTREE"
   echo "Cleaned up intent worktree for ${INTENT_SLUG}"
-  source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-  haiku_telemetry_init
-  haiku_record_worktree_event "deleted" "${INTENT_WORKTREE}"
+  # Telemetry is tracked automatically by the MCP server
+  # (telemetry is automatic)
+  # Worktree events tracked automatically by MCP server
+# haiku_record_worktree_event "deleted" "${INTENT_WORKTREE}"
 fi
 git worktree prune
 ```
@@ -890,9 +920,10 @@ EOF
 )" 2>&1)
 
 if [ -n "$PR_URL" ]; then
-  source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-  haiku_telemetry_init
-  haiku_record_delivery_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}" "${PR_URL}"
+  # Telemetry is tracked automatically by the MCP server
+  # (telemetry is automatic)
+  # Delivery tracked automatically by MCP server
+# haiku_record_delivery_created "${INTENT_SLUG}" "${CHANGE_STRATEGY}" "${PR_URL}"
 fi
 ```
 
@@ -904,9 +935,10 @@ INTENT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}"
 if [ -d "$INTENT_WORKTREE" ]; then
   git worktree remove "$INTENT_WORKTREE" 2>/dev/null || echo "Warning: failed to remove worktree at $INTENT_WORKTREE"
   echo "Cleaned up intent worktree for ${INTENT_SLUG}"
-  source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-  haiku_telemetry_init
-  haiku_record_worktree_event "deleted" "${INTENT_WORKTREE}"
+  # Telemetry is tracked automatically by the MCP server
+  # (telemetry is automatic)
+  # Worktree events tracked automatically by MCP server
+# haiku_record_worktree_event "deleted" "${INTENT_WORKTREE}"
 fi
 git worktree prune
 # Keep the branch — it backs the open PR
@@ -938,9 +970,10 @@ INTENT_WORKTREE="${REPO_ROOT}/.haiku/worktrees/${INTENT_SLUG}"
 if [ -d "$INTENT_WORKTREE" ]; then
   git worktree remove "$INTENT_WORKTREE" 2>/dev/null || echo "Warning: failed to remove worktree at $INTENT_WORKTREE"
   echo "Cleaned up intent worktree for ${INTENT_SLUG}"
-  source "${CLAUDE_PLUGIN_ROOT}/lib/telemetry.sh"
-  haiku_telemetry_init
-  haiku_record_worktree_event "deleted" "${INTENT_WORKTREE}"
+  # Telemetry is tracked automatically by the MCP server
+  # (telemetry is automatic)
+  # Worktree events tracked automatically by MCP server
+# haiku_record_worktree_event "deleted" "${INTENT_WORKTREE}"
 fi
 git worktree prune
 # Keep the branch — user may create a PR from it

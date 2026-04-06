@@ -84,8 +84,9 @@ if [ -d ".haiku/intents/${INTENT_SLUG}/mockups" ]; then
 fi
 
 # Design knowledge
-source "${CLAUDE_PLUGIN_ROOT}/lib/knowledge.sh"
-DESIGN_K=$(hku_knowledge_read "design" 2>/dev/null || echo "")
+# Knowledge operations now use MCP tools: haiku_knowledge_list, haiku_knowledge_read
+DESIGN_K=$(# Read knowledge via MCP: haiku_knowledge_read { type: "design" }
+haiku_knowledge_read "design" 2>/dev/null || echo "")
 if [ -n "$DESIGN_K" ]; then
   echo "## Design Knowledge"
   echo "$DESIGN_K"

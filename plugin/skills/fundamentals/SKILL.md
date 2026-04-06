@@ -180,9 +180,14 @@ Project-level hat augmentations can still be placed in `.haiku/hats/{hat-name}.m
 
 ```bash
 # Example: resolve hat instructions for the builder hat in the development stage
-source "${CLAUDE_PLUGIN_ROOT}/lib/hat.sh"
-instructions=$(hku_resolve_hat_instructions "builder" "development" "software")
-hat_sequence=$(hku_get_hat_sequence "development" "software")  # "planner builder reviewer"
+# Read hat file directly — check project override first, then plugin built-in
+HAT_FILE=".haiku/studios/software/stages/development/hats/builder.md"
+[ ! -f "$HAT_FILE" ] && HAT_FILE="$CLAUDE_PLUGIN_ROOT/studios/software/stages/development/hats/builder.md"
+instructions=$(cat "$HAT_FILE" 2>/dev/null || echo "")
+
+# Read hat sequence from STAGE.md frontmatter
+hat_sequence=$(yq --front-matter=extract -r '.hats | join(" ")' "$CLAUDE_PLUGIN_ROOT/studios/software/stages/development/STAGE.md" 2>/dev/null)
+# → "planner builder reviewer"
 ```
 
 ## Iteration Passes

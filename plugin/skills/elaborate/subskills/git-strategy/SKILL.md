@@ -22,9 +22,10 @@ Composable sub-skill for selecting the delivery strategy, source branch, and mer
 ## Step 1: Resolve Default Branch
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+# Config is now read via MCP tools or settings file directly
 REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
-DEFAULT_BRANCH=$(resolve_default_branch "auto" "$REPO_ROOT")
+# Resolve default branch directly (no shell lib needed)
+DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo "main")
 ```
 
 Use the resolved branch name (e.g. `main`, `master`, `dev`) to replace `{DEFAULT_BRANCH}` in the questions below.

@@ -48,7 +48,7 @@ allowed-tools:
 Scan `.ai-dlc/` for directories containing `intent.md` with `status: active`:
 
 ```bash
-source "$CLAUDE_PLUGIN_ROOT/lib/config.sh"
+# No shell lib needed — git provides the project root
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
 ```
 
@@ -68,11 +68,12 @@ Present the list of detected intents to the user.
 
 ### Step 3: Physical Migration
 
-For each selected intent, source migrate.sh and call the migration function:
+For each selected intent, run the migration via the haiku binary:
 
 ```bash
-source "$CLAUDE_PLUGIN_ROOT/lib/migrate.sh"
-hku_migrate_legacy_intent "$PROJECT_ROOT" "$slug"
+# Migration is now handled by the haiku binary
+# Run: haiku migrate "$slug"
+haiku migrate "$slug"
 ```
 
 This function:
@@ -137,7 +138,7 @@ Ask the user whether to plan gap stages now using `AskUserQuestion`:
 
 If yes:
 - For each gap stage (inception, operations, security) in order:
-  - Source orchestrator.sh and call `hku_run_plan_phase` for the stage, parameterized by the migrated intent context
+  - Use `haiku_run_next` MCP tool to run the plan phase for the stage, parameterized by the migrated intent context
   - **Only the plan phase runs — build does NOT run during migration**
 
 If no, skip to summary.
