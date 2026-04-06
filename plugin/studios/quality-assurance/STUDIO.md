@@ -4,8 +4,8 @@ description: Quality assurance and testing lifecycle for products and processes
 stages: [plan, design-tests, execute-tests, analyze, certify]
 category: operations
 persistence:
-  type: git
-  delivery: pull-request
+  type: filesystem
+  delivery: local
 ---
 
 # Quality Assurance Studio

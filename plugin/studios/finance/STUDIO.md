@@ -4,8 +4,8 @@ description: Financial planning, budgeting, and analysis lifecycle
 stages: [forecast, budget, analysis, reporting, close]
 category: business-ops
 persistence:
-  type: git
-  delivery: pull-request
+  type: filesystem
+  delivery: local
 ---
 
 # Finance Studio

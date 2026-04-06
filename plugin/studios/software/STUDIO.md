@@ -2,6 +2,7 @@
 name: software
 description: Standard software development lifecycle
 stages: [inception, design, product, development, operations, security]
+category: engineering
 persistence:
   type: git
   delivery: pull-request
