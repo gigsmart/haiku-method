@@ -64,7 +64,7 @@ export class GitLabProvider implements BrowseProvider {
 		return json.filter((e) => e.type === "tree").map((e) => e.name).sort()
 	}
 
-	async listIntents(): Promise<HaikuIntent[]> {
+	async listIntents(onProgress?: (intent: HaikuIntent) => void): Promise<HaikuIntent[]> {
 		const intentDirs = await this.listDirs(".haiku/intents")
 		const intents: HaikuIntent[] = []
 
@@ -75,7 +75,7 @@ export class GitLabProvider implements BrowseProvider {
 			const studio = (data.studio as string) || "ideation"
 			const stages = (data.stages as string[]) || []
 
-			intents.push({
+			const intent: HaikuIntent = {
 				slug,
 				title: (data.title as string) || slug,
 				studio,
@@ -89,7 +89,9 @@ export class GitLabProvider implements BrowseProvider {
 				stagesTotal: stages.length,
 				status: (data.status as string) || "active",
 				raw: data,
-			})
+			}
+			intents.push(intent)
+			onProgress?.(intent)
 		}
 
 		return intents

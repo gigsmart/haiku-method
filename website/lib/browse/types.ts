@@ -50,8 +50,8 @@ export interface HaikuIntentDetail extends HaikuIntent {
 }
 
 export interface BrowseProvider {
-	/** List all intents in the workspace */
-	listIntents(): Promise<HaikuIntent[]>
+	/** List all intents in the workspace. If onProgress is provided, call it as each intent loads. */
+	listIntents(onProgress?: (intent: HaikuIntent) => void): Promise<HaikuIntent[]>
 	/** Get full intent detail including stages, units, knowledge */
 	getIntent(slug: string): Promise<HaikuIntentDetail | null>
 	/** Read a raw file from the workspace */

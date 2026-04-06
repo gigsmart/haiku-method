@@ -57,15 +57,24 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 	const [intents, setIntents] = useState<HaikuIntent[]>([])
 	const [selectedIntent, setSelectedIntent] = useState<HaikuIntentDetail | null>(null)
 	const [loading, setLoading] = useState(true)
+	const [loadingMore, setLoadingMore] = useState(false)
 	const [loadingDetail, setLoadingDetail] = useState(false)
 	const [viewMode, setViewMode] = useState<"list" | "board">("list")
 	const initialHashHandled = useRef(false)
 
-	// Read initial hash state once intents are loaded
+	// Progressive loading — show each intent as it loads
 	useEffect(() => {
 		async function load() {
-			const list = await provider.listIntents()
-			setIntents(list)
+			setIntents([])
+			setLoadingMore(true)
+
+			await provider.listIntents((intent) => {
+				setIntents((prev) => [...prev, intent])
+				// Stop showing initial spinner after first intent arrives
+				setLoading(false)
+			})
+
+			setLoadingMore(false)
 			setLoading(false)
 
 			// Restore state from hash after intents load
@@ -181,9 +190,12 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 				</div>
 			)}
 
-			{loading ? (
-				<div className="py-20 text-center text-stone-500">Loading intents...</div>
-			) : intents.length === 0 ? (
+			{loading && intents.length === 0 ? (
+				<div className="py-20 text-center">
+					<div className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-stone-300 border-t-teal-500" />
+					<p className="text-stone-500">Loading intents...</p>
+				</div>
+			) : !loading && intents.length === 0 ? (
 				<div className="rounded-xl border border-stone-200 px-8 py-16 text-center dark:border-stone-700">
 					<p className="text-lg font-medium text-stone-600 dark:text-stone-400">No intents found</p>
 					<p className="mt-2 text-sm text-stone-500">
@@ -269,6 +281,12 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 							)}
 						</button>
 					))}
+					{loadingMore && (
+						<div className="flex items-center justify-center gap-2 py-4 text-sm text-stone-400">
+							<div className="h-4 w-4 animate-spin rounded-full border-2 border-stone-300 border-t-teal-500" />
+							Loading more intents...
+						</div>
+					)}
 				</div>
 			)}
 		</div>
