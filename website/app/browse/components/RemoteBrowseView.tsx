@@ -1,21 +1,27 @@
 "use client"
 
-import { Suspense, useEffect, useMemo, useState } from "react"
-import { useSearchParams } from "next/navigation"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { GitHubProvider } from "@/lib/browse/github-provider"
 import { GitLabProvider } from "@/lib/browse/gitlab-provider"
 import type { BrowseProvider } from "@/lib/browse/types"
 import { getToken, clearToken, setToken, getAuthConfig, startOAuthFlow, isOAuthAvailable } from "@/lib/browse/auth"
-import { PortfolioView } from "../components/PortfolioView"
+import { parseBrowsePath } from "@/lib/browse/url"
+import type { BrowseLocation } from "@/lib/browse/url"
+import { PortfolioView } from "./PortfolioView"
 
 function titleCase(s: string): string {
 	return s.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
 }
 
-function GitBrowseInner() {
-	const searchParams = useSearchParams()
+interface Props {
+	/** Path segments after /browse/ — e.g. ["github.com", "org", "repo", "intent", "slug"] */
+	pathSegments: string[]
+	/** Optional branch from query params */
+	branch?: string
+}
 
+export function RemoteBrowseView({ pathSegments, branch: branchParam }: Props) {
 	const [provider, setProvider] = useState<BrowseProvider | null>(null)
 	const [needsAuth, setNeedsAuth] = useState(false)
 	const [authReason, setAuthReason] = useState<string>("auth_required")
@@ -23,21 +29,23 @@ function GitBrowseInner() {
 	const [error, setError] = useState<string | null>(null)
 	const [tokenInput, setTokenInput] = useState("")
 
-	// Parse repo from query: /browse/git?repo=github.com/org/repo&branch=main
-	const repoParam = searchParams.get("repo") || ""
-	const branch = searchParams.get("branch") || ""
+	const location = useMemo<BrowseLocation | null>(() => {
+		if (pathSegments.length < 3) return null
+		const loc = parseBrowsePath(pathSegments)
+		if (loc && branchParam) {
+			loc.branch = branchParam
+		}
+		return loc
+	}, [pathSegments, branchParam])
 
-	const { host, repoPath } = useMemo(() => {
-		const parts = repoParam.split("/").filter(Boolean)
-		if (parts.length < 3) return { host: "", repoPath: "" }
-		return { host: parts[0], repoPath: parts.slice(1).join("/") }
-	}, [repoParam])
-
+	const host = location?.host || ""
+	const project = location?.project || ""
+	const branch = location?.branch || ""
 	const isGitHub = host === "github.com"
 
 	useEffect(() => {
-		if (!host || !repoPath) {
-			setError(repoParam ? "Invalid repository path. Expected: github.com/org/repo" : null)
+		if (!host || !project) {
+			setError("Invalid repository path. Expected: /browse/github.com/org/repo/")
 			setLoading(false)
 			return
 		}
@@ -55,7 +63,7 @@ function GitBrowseInner() {
 			let prov: (GitHubProvider | GitLabProvider) & BrowseProvider
 
 			if (isGitHub) {
-				const parts = repoPath.split("/")
+				const parts = project.split("/")
 				if (parts.length < 2) {
 					setError("GitHub path must be owner/repo")
 					setLoading(false)
@@ -63,7 +71,7 @@ function GitBrowseInner() {
 				}
 				prov = new GitHubProvider(parts[0], parts[1], branch, storedToken)
 			} else {
-				prov = new GitLabProvider(host, repoPath, branch, storedToken)
+				prov = new GitLabProvider(host, project, branch, storedToken)
 			}
 
 			const status = isGitHub
@@ -82,7 +90,7 @@ function GitBrowseInner() {
 		}
 
 		init()
-	}, [host, repoPath, branch, isGitHub, repoParam])
+	}, [host, project, branch, isGitHub])
 
 	const handleOAuth = () => {
 		const config = getAuthConfig(host)
@@ -96,21 +104,6 @@ function GitBrowseInner() {
 		if (!tokenInput.trim()) return
 		setToken(host, tokenInput.trim())
 		window.location.reload()
-	}
-
-	// No repo param — show a "paste URL" prompt
-	if (!repoParam && !loading) {
-		return (
-			<div className="mx-auto max-w-xl px-4 py-16 text-center">
-				<h1 className="mb-4 text-2xl font-bold">Browse Remote Repository</h1>
-				<p className="mb-4 text-stone-600 dark:text-stone-400">
-					Use the repo parameter to specify which repository to browse.
-				</p>
-				<Link href="/browse/" className="text-teal-600 hover:text-teal-700">
-					&larr; Back to Browse
-				</Link>
-			</div>
-		)
 	}
 
 	if (loading) {
@@ -147,7 +140,7 @@ function GitBrowseInner() {
 				</h1>
 				<p className="mb-6 text-stone-600 dark:text-stone-400">
 					{authReason === "not_found"
-						? "Repository not found. It may be private — sign in to access it."
+						? "Repository not found. It may be private \u2014 sign in to access it."
 						: authReason === "auth_required"
 						? "Sign in to access this repository."
 						: `Sign in to browse H\u00b7AI\u00b7K\u00b7U intents in this repository.`}
@@ -218,23 +211,17 @@ function GitBrowseInner() {
 		)
 	}
 
-	if (provider) {
+	if (provider && location) {
+		const repoLabel = `${host}/${project}${branch ? ` (${branch})` : ""}`
 		return (
 			<PortfolioView
 				provider={provider}
+				location={location}
 				onBack={() => { window.location.href = "/browse/" }}
-				repoLabel={`${host}/${repoPath}${branch ? ` (${branch})` : ""}`}
+				repoLabel={repoLabel}
 			/>
 		)
 	}
 
 	return null
-}
-
-export default function GitBrowsePage() {
-	return (
-		<Suspense fallback={<div className="flex min-h-[50vh] items-center justify-center"><div className="text-stone-500">Loading...</div></div>}>
-			<GitBrowseInner />
-		</Suspense>
-	)
 }

@@ -1,16 +1,81 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { LocalProvider } from "@/lib/browse/local-provider"
 import type { BrowseProvider } from "@/lib/browse/types"
 import { PortfolioView } from "./components/PortfolioView"
+import { RemoteBrowseView } from "./components/RemoteBrowseView"
+
+/**
+ * Parse the current URL to detect if we're at a path-based browse URL.
+ *
+ * Path pattern: /browse/{host}/{...project}/[intent/{slug}/[{stage}/[{unit}/]]]
+ *
+ * Also handles GitHub Pages SPA fallback: if the 404.html redirected us here
+ * with the original path in sessionStorage, we restore it and push it into
+ * the browser history.
+ *
+ * Returns the path segments after /browse/ if there are enough to form a valid
+ * remote browse URL (at least host + 2 project segments), otherwise null.
+ */
+function getRemoteBrowseSegments(): { segments: string[]; branch?: string } | null {
+	if (typeof window === "undefined") return null
+
+	let fullPath = window.location.pathname
+	let search = window.location.search
+
+	// Check for GitHub Pages SPA redirect
+	const redirectPath = sessionStorage.getItem("browse-redirect-path")
+	if (redirectPath) {
+		sessionStorage.removeItem("browse-redirect-path")
+		const [pathPart, queryPart] = redirectPath.split("?")
+		fullPath = pathPart
+		search = queryPart ? `?${queryPart}` : ""
+		// Restore the original URL in the browser bar
+		window.history.replaceState(null, "", redirectPath)
+	}
+
+	const pathname = fullPath.replace(/\/+$/, "")
+	const prefix = "/browse"
+	if (!pathname.startsWith(prefix + "/") || pathname === prefix) return null
+
+	const rest = pathname.slice(prefix.length + 1)
+	const segments = rest.split("/").filter(Boolean)
+
+	// Need at minimum: host, org, repo (3 segments)
+	if (segments.length < 3) return null
+
+	// First segment should look like a hostname (contains a dot)
+	if (!segments[0].includes(".")) return null
+
+	const branch = new URLSearchParams(search).get("branch") || undefined
+	return { segments, branch }
+}
 
 export default function BrowsePage() {
 	const [provider, setProvider] = useState<BrowseProvider | null>(null)
 	const [error, setError] = useState<string | null>(null)
 	const [loading, setLoading] = useState(false)
 	const [dragging, setDragging] = useState(false)
+
+	// Detect path-based remote browse URL on initial render
+	const [remoteBrowse, setRemoteBrowse] = useState<{ segments: string[]; branch?: string } | null>(null)
+	const [mounted, setMounted] = useState(false)
+
+	useEffect(() => {
+		setRemoteBrowse(getRemoteBrowseSegments())
+		setMounted(true)
+	}, [])
+
+	// Listen for popstate to handle back navigation from remote browse to landing
+	useEffect(() => {
+		const onPopState = () => {
+			setRemoteBrowse(getRemoteBrowseSegments())
+		}
+		window.addEventListener("popstate", onPopState)
+		return () => window.removeEventListener("popstate", onPopState)
+	}, [])
 
 	const handleDirectoryPicker = useCallback(async () => {
 		try {
@@ -62,10 +127,26 @@ export default function BrowsePage() {
 		setError("Please drop a directory, not a file.")
 	}, [])
 
+	// Don't render anything until mounted (avoids hydration mismatch)
+	if (!mounted) {
+		return (
+			<div className="flex min-h-[50vh] items-center justify-center">
+				<div className="text-stone-500">Loading...</div>
+			</div>
+		)
+	}
+
+	// Remote browse mode — path contains host/project info
+	if (remoteBrowse) {
+		return <RemoteBrowseView pathSegments={remoteBrowse.segments} branch={remoteBrowse.branch} />
+	}
+
+	// Local directory browse mode
 	if (provider) {
 		return <PortfolioView provider={provider} onBack={() => setProvider(null)} />
 	}
 
+	// Landing page — choose browse mode
 	return (
 		<div className="mx-auto max-w-3xl px-4 py-16">
 			<nav className="mb-8 text-sm text-stone-500 dark:text-stone-400">
@@ -147,8 +228,9 @@ function RemoteUrlInput() {
 			}
 
 			const branch = parsed.searchParams.get("branch") || ""
-			const repo = `${host}/${pathParts.join("/")}`
-		const browsePath = `/browse/git/?repo=${encodeURIComponent(repo)}${branch ? `&branch=${encodeURIComponent(branch)}` : ""}`
+			const projectPath = pathParts.join("/")
+			let browsePath = `/browse/${host}/${projectPath}/`
+			if (branch) browsePath += `?branch=${encodeURIComponent(branch)}`
 			window.location.href = browsePath
 		} catch {
 			setError("Invalid URL. Try: github.com/org/repo or gitlab.com/group/project")

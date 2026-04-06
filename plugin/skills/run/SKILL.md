@@ -212,7 +212,7 @@ Push for external review.
 
 **Do:**
 1. Push the branch and commit stage artifacts
-2. Generate the browse URL: `https://{site}/browse/git/?repo={repo}#intent={slug}&stage={stage}`
+2. Generate the browse URL: `https://{site}/browse/{host}/{project}/intent/{slug}/{stage}/`
 3. Share the URL with the reviewer (via comms provider if configured, otherwise output to terminal)
 4. The reviewer opens the browse page, reviews the artifacts, and clicks "Approve Stage"
 5. The approval writes directly to the repo via git API

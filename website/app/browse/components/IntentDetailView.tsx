@@ -1,10 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import type { BrowseProvider, HaikuIntentDetail, HaikuStageState, HaikuUnit } from "@/lib/browse/types"
 import { formatDate, formatDuration } from "@/lib/browse/types"
+import { buildBrowseUrl } from "@/lib/browse/url"
+import type { BrowseLocation } from "@/lib/browse/url"
 import { UnitDetailView } from "./UnitDetailView"
 import { IntentKanban } from "./KanbanView"
 
@@ -13,33 +16,6 @@ function titleCase(s: string): string {
 		.split("-")
 		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
 		.join(" ")
-}
-
-function parseHash(): Record<string, string> {
-	if (typeof window === "undefined") return {}
-	const hash = window.location.hash.replace(/^#/, "")
-	if (!hash) return {}
-	const params: Record<string, string> = {}
-	for (const part of hash.split("&")) {
-		const [key, ...rest] = part.split("=")
-		if (key) params[decodeURIComponent(key)] = decodeURIComponent(rest.join("=") || "")
-	}
-	return params
-}
-
-function buildHashString(params: Record<string, string>): string {
-	const parts = Object.entries(params)
-		.filter(([, v]) => v)
-		.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-	return parts.length > 0 ? `#${parts.join("&")}` : window.location.pathname + window.location.search
-}
-
-function setHash(params: Record<string, string>) {
-	window.history.replaceState(null, "", buildHashString(params))
-}
-
-function pushHash(params: Record<string, string>) {
-	window.history.pushState(null, "", buildHashString(params))
 }
 
 const stageStatusColors: Record<string, { bg: string; dot: string }> = {
@@ -58,14 +34,31 @@ const unitStatusColors: Record<string, string> = {
 interface Props {
 	intent: HaikuIntentDetail
 	provider: BrowseProvider
+	location?: BrowseLocation
 	onBack: () => void
 }
 
-export function IntentDetailView({ intent, provider, onBack }: Props) {
+export function IntentDetailView({ intent, provider, location, onBack }: Props) {
+	const router = useRouter()
 	const [selectedUnit, setSelectedUnit] = useState<{ unit: HaikuUnit; stage: string } | null>(null)
 	const [expandedStage, setExpandedStage] = useState<string | null>(intent.activeStage || null)
 	const [viewMode, setViewMode] = useState<"pipeline" | "board">("pipeline")
 	const [gateAction, setGateAction] = useState<"idle" | "approving" | "rejecting" | "success" | "error">("idle")
+
+	// Whether we have path-based navigation (remote browse) or local-only state
+	const hasPathNav = !!location
+
+	// Build a URL helper that inherits host/project/branch from the current location
+	const browseUrl = useCallback((overrides: Partial<BrowseLocation> = {}) => {
+		if (!location) return "#"
+		return buildBrowseUrl({
+			host: location.host,
+			project: location.project,
+			branch: location.branch,
+			intent: intent.slug,
+			...overrides,
+		})
+	}, [location, intent.slug])
 
 	async function handleApproveStage(stageName: string) {
 		if (!provider.writeFile) return
@@ -119,34 +112,60 @@ export function IntentDetailView({ intent, provider, onBack }: Props) {
 		}
 	}
 
-	// Restore state from hash on mount
+	// Restore state from URL on mount
 	useEffect(() => {
-		const params = parseHash()
-		if (params.view === "board") setViewMode("board")
-		if (params.unit && params.stage) {
-			const stageState = intent.stages.find(s => s.name === params.stage)
-			const unit = stageState?.units.find(u => u.name === params.unit)
-			if (unit) setSelectedUnit({ unit, stage: params.stage })
+		if (location?.stage && location?.unit) {
+			const stageState = intent.stages.find(s => s.name === location.stage)
+			const unit = stageState?.units.find(u => u.name === location.unit)
+			if (unit) setSelectedUnit({ unit, stage: location.stage })
 		}
-	}, [intent])
+		if (location?.stage && !location?.unit) {
+			setExpandedStage(location.stage)
+		}
+	}, [intent, location?.stage, location?.unit])
 
-	const updateHash = (overrides: Record<string, string>) => {
-		setHash({ intent: intent.slug, ...overrides })
-	}
+	// Listen for browser back/forward (path-based navigation only)
+	useEffect(() => {
+		if (!hasPathNav) return
+		const onPopState = () => {
+			const segments = window.location.pathname.replace(/^\/browse\//, "").replace(/\/$/, "").split("/")
+			const intentIdx = segments.indexOf("intent")
+			if (intentIdx === -1) return
+
+			const remaining = segments.slice(intentIdx + 1)
+			// remaining: [slug] or [slug, stage] or [slug, stage, unit]
+			if (remaining.length >= 3) {
+				// Unit view
+				const stageState = intent.stages.find(s => s.name === remaining[1])
+				const unit = stageState?.units.find(u => u.name === remaining[2])
+				if (unit) {
+					setSelectedUnit({ unit, stage: remaining[1] })
+				}
+			} else {
+				// Intent view (no unit selected)
+				setSelectedUnit(null)
+			}
+		}
+		window.addEventListener("popstate", onPopState)
+		return () => window.removeEventListener("popstate", onPopState)
+	}, [intent, hasPathNav])
 
 	const handleSelectUnit = (unit: HaikuUnit, stage: string) => {
 		setSelectedUnit({ unit, stage })
-		pushHash({ intent: intent.slug, unit: unit.name, stage })
+		if (hasPathNav) {
+			router.push(browseUrl({ stage, unit: unit.name }))
+		}
 	}
 
 	const handleBackFromUnit = () => {
 		setSelectedUnit(null)
-		window.history.back()
+		if (hasPathNav) {
+			window.history.back()
+		}
 	}
 
 	const handleViewModeChange = (mode: "pipeline" | "board") => {
 		setViewMode(mode)
-		updateHash({ view: mode !== "pipeline" ? mode : "" })
 	}
 
 	if (selectedUnit) {

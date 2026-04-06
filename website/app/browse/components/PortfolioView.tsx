@@ -1,13 +1,18 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 import type { BrowseProvider, HaikuIntent, HaikuIntentDetail } from "@/lib/browse/types"
 import { formatDate, formatDuration } from "@/lib/browse/types"
+import { buildBrowseUrl } from "@/lib/browse/url"
+import type { BrowseLocation } from "@/lib/browse/url"
 import { IntentDetailView } from "./IntentDetailView"
 import { PortfolioKanban } from "./KanbanView"
 
 interface Props {
 	provider: BrowseProvider
+	location?: BrowseLocation
 	onBack: () => void
 	repoLabel?: string
 }
@@ -19,33 +24,6 @@ function titleCase(s: string): string {
 		.join(" ")
 }
 
-function parseHash(): Record<string, string> {
-	if (typeof window === "undefined") return {}
-	const hash = window.location.hash.replace(/^#/, "")
-	if (!hash) return {}
-	const params: Record<string, string> = {}
-	for (const part of hash.split("&")) {
-		const [key, ...rest] = part.split("=")
-		if (key) params[decodeURIComponent(key)] = decodeURIComponent(rest.join("=") || "")
-	}
-	return params
-}
-
-function buildHashString(params: Record<string, string>): string {
-	const parts = Object.entries(params)
-		.filter(([, v]) => v)
-		.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-	return parts.length > 0 ? `#${parts.join("&")}` : window.location.pathname + window.location.search
-}
-
-function setHash(params: Record<string, string>) {
-	window.history.replaceState(null, "", buildHashString(params))
-}
-
-function pushHash(params: Record<string, string>) {
-	window.history.pushState(null, "", buildHashString(params))
-}
-
 const statusColors: Record<string, string> = {
 	active: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
 	completed: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
@@ -53,32 +31,43 @@ const statusColors: Record<string, string> = {
 	blocked: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 }
 
-export function PortfolioView({ provider, onBack, repoLabel }: Props) {
+export function PortfolioView({ provider, location, onBack, repoLabel }: Props) {
+	const router = useRouter()
 	const [intents, setIntents] = useState<HaikuIntent[]>([])
 	const [selectedIntent, setSelectedIntent] = useState<HaikuIntentDetail | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [loadingMore, setLoadingMore] = useState(false)
 	const [loadingDetail, setLoadingDetail] = useState(false)
-	const [viewMode, setViewMode] = useState<"list" | "board">("list")
-	const initialHashHandled = useRef(false)
+	const [viewMode, setViewMode] = useState<"list" | "board">(location?.view === "board" ? "board" : "list")
+	const initialNavHandled = useRef(false)
+
+	// Whether we have path-based navigation (remote browse) or local-only state
+	const hasPathNav = !!location
+
+	// Build a URL helper that inherits host/project/branch from the current location
+	const browseUrl = useCallback((overrides: Partial<BrowseLocation> = {}) => {
+		if (!location) return "#"
+		return buildBrowseUrl({
+			host: location.host,
+			project: location.project,
+			branch: location.branch,
+			...overrides,
+		})
+	}, [location])
 
 	// Restore deeplink state IMMEDIATELY before loading the full list
 	useEffect(() => {
-		if (initialHashHandled.current) return
-		initialHashHandled.current = true
-		const params = parseHash()
-		if (params.view === "board" || params.view === "list") {
-			setViewMode(params.view)
-		}
-		if (params.intent) {
+		if (initialNavHandled.current) return
+		initialNavHandled.current = true
+		if (location?.intent) {
 			// Load the deeplinked intent right away — don't wait for the full list
 			setLoadingDetail(true)
-			provider.getIntent(params.intent).then(detail => {
+			provider.getIntent(location.intent).then(detail => {
 				setSelectedIntent(detail)
 				setLoadingDetail(false)
 			})
 		}
-	}, [provider])
+	}, [provider, location?.intent])
 
 	// Progressive loading — show each intent as it loads
 	useEffect(() => {
@@ -97,28 +86,33 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 		load()
 	}, [provider])
 
-	// Listen for browser back/forward
+	// Listen for browser back/forward (path-based navigation only)
 	useEffect(() => {
+		if (!hasPathNav) return
 		const onPopState = () => {
-			const params = parseHash()
-			if (params.intent) {
-				// Re-load intent
-				provider.getIntent(params.intent).then(detail => setSelectedIntent(detail))
+			// Re-parse the current URL to determine state
+			const segments = window.location.pathname.replace(/^\/browse\//, "").replace(/\/$/, "").split("/")
+			const hasIntent = segments.includes("intent")
+			const hasBoard = segments.includes("board")
+
+			if (hasIntent) {
+				const intentIdx = segments.indexOf("intent")
+				const slug = segments[intentIdx + 1]
+				if (slug) {
+					provider.getIntent(slug).then(detail => setSelectedIntent(detail))
+				}
 			} else {
 				setSelectedIntent(null)
 			}
-			if (params.view === "board" || params.view === "list") setViewMode(params.view)
+			if (hasBoard) {
+				setViewMode("board")
+			} else if (!hasIntent) {
+				setViewMode("list")
+			}
 		}
 		window.addEventListener("popstate", onPopState)
 		return () => window.removeEventListener("popstate", onPopState)
-	}, [provider])
-
-	// Sync view mode to hash (only when no intent is selected)
-	useEffect(() => {
-		if (!selectedIntent && !loading) {
-			setHash({ view: viewMode !== "list" ? viewMode : "" })
-		}
-	}, [viewMode, selectedIntent, loading])
+	}, [provider, hasPathNav])
 
 	const handleSelectIntent = useCallback(
 		async (slug: string) => {
@@ -126,21 +120,36 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 			const detail = await provider.getIntent(slug)
 			setSelectedIntent(detail)
 			setLoadingDetail(false)
-			pushHash({ intent: slug })
+			if (hasPathNav) {
+				router.push(browseUrl({ intent: slug }))
+			}
 		},
-		[provider],
+		[provider, router, browseUrl, hasPathNav],
 	)
 
 	const handleBackFromIntent = useCallback(() => {
 		setSelectedIntent(null)
-		window.history.back()
-	}, [])
+		if (hasPathNav) {
+			window.history.back()
+		}
+	}, [hasPathNav])
+
+	const handleViewModeChange = useCallback((mode: "list" | "board") => {
+		setViewMode(mode)
+		if (hasPathNav) {
+			const url = mode === "board"
+				? browseUrl({ view: "board" })
+				: browseUrl()
+			window.history.replaceState(null, "", url)
+		}
+	}, [browseUrl, hasPathNav])
 
 	if (selectedIntent) {
 		return (
 			<IntentDetailView
 				intent={selectedIntent}
 				provider={provider}
+				location={location}
 				onBack={handleBackFromIntent}
 			/>
 		)
@@ -178,13 +187,13 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 			{!loading && intents.length > 0 && (
 				<div className="mb-4 flex gap-1 rounded-lg border border-stone-200 p-1 dark:border-stone-700 w-fit">
 					<button
-						onClick={() => setViewMode("list")}
+						onClick={() => handleViewModeChange("list")}
 						className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${viewMode === "list" ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900" : "text-stone-500 hover:text-stone-700"}`}
 					>
 						List
 					</button>
 					<button
-						onClick={() => setViewMode("board")}
+						onClick={() => handleViewModeChange("board")}
 						className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${viewMode === "board" ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900" : "text-stone-500 hover:text-stone-700"}`}
 					>
 						Board
@@ -223,11 +232,14 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 						const db = b.startedAt ? new Date(b.startedAt).getTime() : 0
 						return db - da
 					}).map((intent) => (
-						<button
+						<Link
 							key={intent.slug}
-							onClick={() => handleSelectIntent(intent.slug)}
-							disabled={loadingDetail}
-							className="w-full rounded-xl border border-stone-200 px-6 py-4 text-left transition hover:border-teal-300 hover:shadow-sm dark:border-stone-700 dark:hover:border-teal-700"
+							href={browseUrl({ intent: intent.slug })}
+							onClick={(e) => {
+								e.preventDefault()
+								handleSelectIntent(intent.slug)
+							}}
+							className="block w-full rounded-xl border border-stone-200 px-6 py-4 text-left transition hover:border-teal-300 hover:shadow-sm dark:border-stone-700 dark:hover:border-teal-700"
 						>
 							<div className="flex items-center justify-between">
 								<div>
@@ -281,7 +293,7 @@ export function PortfolioView({ provider, onBack, repoLabel }: Props) {
 									/>
 								</div>
 							)}
-						</button>
+						</Link>
 					))}
 					{loadingMore && (
 						<div className="flex items-center justify-center gap-2 py-4 text-sm text-stone-400">

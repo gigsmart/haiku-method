@@ -225,7 +225,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 
 ## Scenario 12: Browse Renders Correctly
 
-**Trigger:** User opens `/browse/git?repo=github.com/org/repo`.
+**Trigger:** User opens `/browse/github.com/org/repo/`.
 
 - [ ] Portfolio shows all intents sorted by status then date
 - [ ] Each intent shows: title, studio, stage, status, dates, duration, progress

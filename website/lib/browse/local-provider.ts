@@ -99,6 +99,7 @@ export class LocalProvider implements BrowseProvider {
 				stagesComplete: stages.length > 0 ? stages.indexOf(data.active_stage as string) : 0,
 				stagesTotal: stages.length,
 				status: (data.status as string) || "active",
+				follows: (data.follows as string) || null,
 				raw: data,
 			})
 		}
@@ -179,10 +180,11 @@ export class LocalProvider implements BrowseProvider {
 			startedAt: (data.started_at as string) || null,
 			completedAt: (data.completed_at as string) || null,
 			studioStages: (data.stages as string[]) || [],
-				composite: (data.composite as Array<{ studio: string; stages: string[] }>) || null,
-				stagesComplete: stageNames.indexOf(activeStage),
+			composite: (data.composite as Array<{ studio: string; stages: string[] }>) || null,
+			stagesComplete: stageNames.indexOf(activeStage),
 			stagesTotal: stageNames.length,
 			status: (data.status as string) || "active",
+			follows: (data.follows as string) || null,
 			raw: data,
 			stages,
 			knowledge: knowledgeFiles.filter((f) => f.endsWith(".md")),
