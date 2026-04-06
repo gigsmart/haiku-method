@@ -60,6 +60,10 @@ export async function runMigrate(args: string[]): Promise<void> {
 	const mergeMap = new Map<string, string[]>() // base → [related slugs]
 	const mergedSlugs = new Set<string>()
 
+	// Detect follow-up intents: -followup, -v2, -phase2 → linked via follows: field
+	const followupSuffixes = ["-followup", "-v2", "-phase2"]
+	const followsMap = new Map<string, string>() // slug → parent slug
+
 	for (const slug of entries) {
 		for (const suffix of passSuffixes) {
 			if (slug.endsWith(suffix)) {
@@ -73,10 +77,31 @@ export async function runMigrate(args: string[]): Promise<void> {
 		}
 	}
 
+	// Detect follow-up relationships
+	for (const slug of entries) {
+		if (mergedSlugs.has(slug)) continue // already merged, not a followup
+		for (const suffix of followupSuffixes) {
+			if (slug.endsWith(suffix)) {
+				const parent = slug.slice(0, -suffix.length)
+				if (entries.includes(parent)) {
+					followsMap.set(slug, parent)
+				}
+			}
+		}
+	}
+
 	if (mergeMap.size > 0) {
 		console.log(`Detected ${mergeMap.size} multi-pass intent group(s):`)
 		for (const [base, related] of mergeMap) {
 			console.log(`  ${base} ← [${related.join(", ")}]`)
+		}
+		console.log()
+	}
+
+	if (followsMap.size > 0) {
+		console.log(`Detected ${followsMap.size} follow-up intent(s):`)
+		for (const [slug, parent] of followsMap) {
+			console.log(`  ${slug} follows ${parent}`)
 		}
 		console.log()
 	}
@@ -112,6 +137,7 @@ export async function runMigrate(args: string[]): Promise<void> {
 		const status = (intentFm.status as string) || "active"
 		const created = (intentFm.created as string) || timestamp().split("T")[0]
 		const title = intentBody.match(/^# (.+)$/m)?.[1] || slug
+		const parentSlug = followsMap.get(slug) || ""
 
 		if (dryRun) {
 			console.log(`  DRY RUN: ${slug} (status: ${status})`)
@@ -193,7 +219,7 @@ export async function runMigrate(args: string[]): Promise<void> {
 		if (status === "completed" || status === "complete") {
 			// Completed: all stages marked complete, units in their respective stages
 			writeFileSync(join(destDir, "intent.md"),
-				`---\ntitle: "${title}"\nstudio: software\nstages: [inception, design, product, development, operations, security]\nmode: continuous\nactive_stage: security\nstatus: completed\nstarted_at: ${created}T00:00:00Z\ncompleted_at: ${created}T23:59:59Z${epic ? `\nepic: ${epic}` : ""}\n---\n\n${intentBody}\n`)
+				`---\ntitle: "${title}"\nstudio: software\nstages: [inception, design, product, development, operations, security]\nmode: continuous\nactive_stage: security\nstatus: completed\nstarted_at: ${created}T00:00:00Z\ncompleted_at: ${created}T23:59:59Z${epic ? `\nepic: ${epic}` : ""}${parentSlug ? `\nfollows: ${parentSlug}` : ""}\n---\n\n${intentBody}\n`)
 
 			for (const stage of allStages) {
 				mkdirSync(join(destDir, "stages", stage, "units"), { recursive: true })
@@ -228,7 +254,7 @@ export async function runMigrate(args: string[]): Promise<void> {
 			})
 
 			writeFileSync(join(destDir, "intent.md"),
-				`---\ntitle: "${title}"\nstudio: software\nstages: [inception, design, product, development, operations, security]\nmode: continuous\nactive_stage: ${activeStage || '""'}\nstatus: active\nstarted_at: ${created}T00:00:00Z\ncompleted_at: null${epic ? `\nepic: ${epic}` : ""}\n---\n\n${intentBody}\n`)
+				`---\ntitle: "${title}"\nstudio: software\nstages: [inception, design, product, development, operations, security]\nmode: continuous\nactive_stage: ${activeStage || '""'}\nstatus: active\nstarted_at: ${created}T00:00:00Z\ncompleted_at: null${epic ? `\nepic: ${epic}` : ""}${parentSlug ? `\nfollows: ${parentSlug}` : ""}\n---\n\n${intentBody}\n`)
 
 			// Write state for stages that have units or are before/at active stage
 			for (const stage of allStages) {

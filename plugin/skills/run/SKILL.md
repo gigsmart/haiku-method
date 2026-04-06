@@ -91,12 +91,13 @@ The orchestrator returns one of these actions. Follow the instructions for each:
 A new stage is beginning. The orchestrator provides the stage name and hat list.
 
 ```json
-{ "action": "start_stage", "intent": "...", "studio": "...", "stage": "...", "hats": [...] }
+{ "action": "start_stage", "intent": "...", "studio": "...", "stage": "...", "hats": [...], "follows": "parent-slug", "parent_knowledge": ["DISCOVERY.md", ...] }
 ```
 
 **Do:**
 1. `haiku_stage_start { intent, stage }` — marks the stage as active
-2. Call `haiku_run_next` again — it will return `decompose`
+2. If `follows` is present (this intent iterates on a previous one), load the parent intent's knowledge artifacts via `haiku_knowledge_read { intent: follows, name: ... }` for each file in `parent_knowledge`. Copy relevant knowledge to this intent's knowledge directory as a starting point.
+3. Call `haiku_run_next` again — it will return `decompose`
 
 #### `decompose`
 

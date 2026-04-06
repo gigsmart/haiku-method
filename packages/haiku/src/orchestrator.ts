@@ -160,6 +160,15 @@ export function runNext(slug: string): OrchestratorAction {
 	// Stage not started yet
 	if (!phase || stageStatus === "pending") {
 		const hats = resolveStageHats(studio, currentStage)
+		const follows = (intent.follows as string) || ""
+		const parentKnowledge: string[] = []
+		if (follows && currentStage === studioStages[0]) {
+			// First stage of a follow-up intent — surface parent knowledge
+			const parentKnowledgeDir = join(root, "intents", follows, "knowledge")
+			if (existsSync(parentKnowledgeDir)) {
+				parentKnowledge.push(...readdirSync(parentKnowledgeDir).filter(f => f.endsWith(".md")))
+			}
+		}
 		return {
 			action: "start_stage",
 			intent: slug,
@@ -167,7 +176,10 @@ export function runNext(slug: string): OrchestratorAction {
 			stage: currentStage,
 			hats,
 			phase: "decompose",
-			message: `Start stage '${currentStage}' — decompose the work into units`,
+			...(follows ? { follows, parent_knowledge: parentKnowledge } : {}),
+			message: follows
+				? `Start stage '${currentStage}' — this intent follows '${follows}'. Load parent knowledge before decomposing.`
+				: `Start stage '${currentStage}' — decompose the work into units`,
 		}
 	}
 

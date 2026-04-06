@@ -243,6 +243,7 @@ export class GitLabProvider implements BrowseProvider {
 					stages.length > 0 ? stages.indexOf(data.active_stage as string) : 0,
 				stagesTotal: stages.length,
 				status: (data.status as string) || "active",
+				follows: (data.follows as string) || null,
 				raw: data,
 			}
 			intents.push(intent)
@@ -441,6 +442,7 @@ export class GitLabProvider implements BrowseProvider {
 			stagesComplete: stageNames.indexOf(activeStage),
 			stagesTotal: stageNames.length,
 			status: (frontmatter.status as string) || "active",
+			follows: (frontmatter.follows as string) || null,
 			raw: frontmatter,
 			stages,
 			knowledge: knowledgeFiles,

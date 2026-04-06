@@ -208,6 +208,7 @@ export class GitHubProvider implements BrowseProvider {
 						: 0,
 				stagesTotal: stages.length,
 				status: (frontmatter.status as string) || "active",
+				follows: (frontmatter.follows as string) || null,
 				raw: frontmatter,
 			}
 			intents.push(intent)
@@ -373,6 +374,7 @@ export class GitHubProvider implements BrowseProvider {
 			stagesComplete: stageNames.indexOf(activeStage),
 			stagesTotal: stageNames.length,
 			status: (frontmatter.status as string) || "active",
+			follows: (frontmatter.follows as string) || null,
 			raw: frontmatter,
 			stages,
 			knowledge: knowledgeFiles,

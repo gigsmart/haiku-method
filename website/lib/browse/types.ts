@@ -13,6 +13,7 @@ export interface HaikuIntent {
 	startedAt: string | null
 	completedAt: string | null
 	composite: Array<{ studio: string; stages: string[] }> | null
+	follows: string | null
 	raw: Record<string, unknown>
 }
 
