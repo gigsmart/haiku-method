@@ -110,14 +110,16 @@ jobs:
           echo "old_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: npm ci
 
       - name: Build MCP server bundle
-        run: bun run --cwd plugin/mcp-server build
+        run: npm run --prefix packages/haiku build
 
       - name: Commit version bump
         id: commit
@@ -130,7 +132,7 @@ jobs:
           fi
 
           # Add version files, changelog, and rebuilt MCP server bundle
-          git add plugin/.claude-plugin/plugin.json .claude-plugin/marketplace.json CHANGELOG.md plugin/mcp-server/dist/server.mjs
+          git add plugin/.claude-plugin/plugin.json .claude-plugin/marketplace.json CHANGELOG.md plugin/bin/haiku
 
           # Create commit message
           COMMIT_MSG="chore(plugin): bump version ${{ steps.bump-version.outputs.old_version }} -> ${{ steps.bump-version.outputs.new_version }} [skip ci]"

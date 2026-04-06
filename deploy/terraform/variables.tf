@@ -57,6 +57,12 @@ variable "gcp_region" {
   default     = "us-central1"
 }
 
+variable "auth_proxy_subdomain" {
+  description = "Subdomain prefix for auth proxy DNS (e.g., 'auth' or 'haiku-auth')"
+  type        = string
+  default     = "auth"
+}
+
 variable "auth_proxy_allowed_origin" {
   description = "CORS allowed origin for the auth proxy (e.g., https://haikumethod.ai)"
   type        = string
