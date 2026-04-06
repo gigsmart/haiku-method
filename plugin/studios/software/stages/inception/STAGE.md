@@ -2,7 +2,7 @@
 name: inception
 description: Understand the problem, define success, and decompose into units
 hats: [architect, decomposer]
-review: auto
+review: ask
 unit_types: [research, backend, frontend]
 inputs: []
 ---

@@ -233,6 +233,21 @@ export function runNext(slug: string): OrchestratorAction {
 			}
 		}
 
+		if (readyUnits.length > 1) {
+			// Multiple units ready — return all for parallel team execution
+			const hats = resolveStageHats(studio, currentStage)
+			return {
+				action: "start_units",
+				intent: slug,
+				studio,
+				stage: currentStage,
+				units: readyUnits.map(u => u.name),
+				first_hat: hats[0] || "",
+				hats,
+				message: `${readyUnits.length} units ready for parallel execution: ${readyUnits.map(u => u.name).join(", ")}`,
+			}
+		}
+
 		if (readyUnits.length > 0) {
 			const unit = readyUnits[0]
 			const hats = resolveStageHats(studio, currentStage)

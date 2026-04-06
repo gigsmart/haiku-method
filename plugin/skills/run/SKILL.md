@@ -122,9 +122,35 @@ Research the problem space, produce knowledge artifacts, then break the stage's 
 - `stages/{stage}/discovery/` — knowledge artifacts produced during decompose (research, analysis, specs)
 - `stages/{stage}/outputs/` — work products produced during execute (code, configs, deliverables)
 
+#### `start_units` (parallel)
+
+Multiple units are ready with no blocking dependencies. Execute them in parallel using agent teams.
+
+```json
+{ "action": "start_units", "intent": "...", "stage": "...", "units": ["unit-01", "unit-02", ...], "first_hat": "...", "hats": [...] }
+```
+
+**Do:**
+1. For each unit in `units`, spawn an Agent (subagent) using the Agent tool:
+   - Set `isolation: "worktree"` so each agent works on an isolated copy of the repo
+   - The prompt should include: intent slug, stage, unit name, hat, the unit's refs, and the stage's artifact definitions
+   - Each agent runs the full hat sequence for its unit autonomously (start → hats → complete)
+   - `haiku_unit_start { intent, stage, unit, hat: first_hat }` at the beginning
+   - `haiku_unit_complete { intent, stage, unit }` when criteria are met
+2. Launch all agents in a single message (parallel tool calls) — do NOT run them sequentially
+3. Wait for all agents to complete
+4. Call `haiku_run_next` again — it will return the next batch of ready units or advance the phase
+
+**Each agent's prompt should include:**
+- The hat definition from `stages/{stage}/hats/{hat}.md`
+- The unit's content and completion criteria
+- The unit's `refs:` artifacts
+- Instruction to work ONLY on this unit's scope — do not modify files outside the unit's responsibility
+- The H·AI·K·U MCP tools needed: `haiku_unit_start`, `haiku_unit_advance_hat`, `haiku_unit_complete`, `haiku_unit_increment_bolt`
+
 #### `start_unit`
 
-A unit is ready to start. The orchestrator identifies which unit and the first hat.
+A single unit is ready (no other units can run in parallel). Execute it directly.
 
 ```json
 { "action": "start_unit", "intent": "...", "stage": "...", "unit": "...", "first_hat": "...", "hats": [...] }
