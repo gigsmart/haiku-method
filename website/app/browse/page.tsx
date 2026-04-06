@@ -7,6 +7,8 @@ import type { BrowseProvider } from "@/lib/browse/types"
 import { PortfolioView } from "./components/PortfolioView"
 import { RemoteBrowseView } from "./components/RemoteBrowseView"
 
+import { getRecents } from "@/lib/browse/recents"
+
 /**
  * Parse the current URL to detect if we're at a path-based browse URL.
  *
@@ -212,6 +214,9 @@ export default function BrowsePage() {
 				</p>
 				<RemoteUrlInput />
 			</div>
+
+			{/* Recents */}
+			<RecentsList />
 		</div>
 	)
 }
@@ -261,5 +266,42 @@ function RemoteUrlInput() {
 			</button>
 			{error && <p className="mt-1 text-xs text-red-600">{error}</p>}
 		</form>
+	)
+}
+
+function RecentsList() {
+	const [recents, setRecents] = useState<ReturnType<typeof getRecents>>([])
+
+	useEffect(() => {
+		setRecents(getRecents())
+	}, [])
+
+	if (recents.length === 0) return null
+
+	return (
+		<div className="mt-8">
+			<h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-400">
+				Recent
+			</h2>
+			<div className="space-y-2">
+				{recents.map((r) => (
+					<Link
+						key={r.label}
+						href={`/browse/${r.host}/${r.project}/`}
+						className="flex items-center justify-between rounded-lg border border-stone-200 px-4 py-3 transition hover:border-teal-300 hover:shadow-sm dark:border-stone-700 dark:hover:border-teal-700"
+					>
+						<div>
+							<div className="font-mono text-sm font-medium text-stone-900 dark:text-stone-100">
+								{r.project}
+							</div>
+							<div className="text-xs text-stone-500">{r.host}</div>
+						</div>
+						<span className="text-xs text-stone-400">
+							{new Date(r.lastVisited).toLocaleDateString()}
+						</span>
+					</Link>
+				))}
+			</div>
+		</div>
 	)
 }
