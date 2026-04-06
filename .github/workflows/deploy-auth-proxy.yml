@@ -8,6 +8,9 @@ on:
       - "deploy/terraform/modules/auth-proxy/**"
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -39,9 +42,21 @@ jobs:
           TF_VAR_gcp_project_id: waldrip-net
           TF_VAR_domain: ${{ vars.HAIKU_DOMAIN || 'haikumethod.ai' }}
           TF_VAR_enable_auth_proxy: "true"
+          TF_VAR_auth_proxy_subdomain: ${{ vars.TF_VAR_auth_proxy_subdomain || 'auth' }}
           TF_VAR_auth_proxy_allowed_origin: ${{ vars.HAIKU_AUTH_ALLOWED_ORIGIN || 'https://haikumethod.ai' }}
           TF_VAR_github_oauth_client_id: ${{ vars.NEXT_PUBLIC_HAIKU_GITHUB_OAUTH_CLIENT_ID }}
           TF_VAR_github_oauth_client_secret: ${{ secrets.HAIKU_GITHUB_OAUTH_CLIENT_SECRET }}
           TF_VAR_gitlab_oauth_client_id: ${{ vars.NEXT_PUBLIC_HAIKU_GITLAB_OAUTH_CLIENT_ID }}
           TF_VAR_gitlab_oauth_client_secret: ${{ secrets.HAIKU_GITLAB_OAUTH_CLIENT_SECRET }}
           TF_VAR_enable_mcp_dns: "false"
+
+      - name: Sync auth proxy URL to repo variable
+        working-directory: deploy/terraform
+        env:
+          GH_TOKEN: ${{ secrets.BUMP_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          AUTH_URL=$(terraform output -raw auth_proxy_url 2>/dev/null || echo "")
+          if [ -n "$AUTH_URL" ]; then
+            gh variable set NEXT_PUBLIC_HAIKU_AUTH_PROXY_URL --body "$AUTH_URL" -R "${{ github.repository }}"
+            echo "Set NEXT_PUBLIC_HAIKU_AUTH_PROXY_URL=$AUTH_URL"
+          fi
