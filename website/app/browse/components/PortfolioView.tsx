@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import ReactMarkdown from "react-markdown"
@@ -9,6 +9,10 @@ import type { BrowseProvider, HaikuIntent, HaikuIntentDetail } from "@/lib/brows
 import { formatDate, formatDuration } from "@/lib/browse/types"
 import { buildBrowseUrl } from "@/lib/browse/url"
 import type { BrowseLocation } from "@/lib/browse/url"
+import { createSearchIndex } from "@/lib/browse/search"
+import type { SearchDocument } from "@/lib/browse/search"
+import { SearchBar } from "./SearchBar"
+import type { SearchSelection } from "./SearchBar"
 import { IntentDetailView } from "./IntentDetailView"
 import { PortfolioKanban } from "./KanbanView"
 
@@ -43,6 +47,10 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 	const [viewMode, setViewMode] = useState<"list" | "board">(location?.view === "board" ? "board" : "list")
 	const [knowledgeFiles, setKnowledgeFiles] = useState<string[]>([])
 	const initialNavHandled = useRef(false)
+	const [searchQuery, setSearchQuery] = useState("")
+	const [searchIndexVersion, setSearchIndexVersion] = useState(0)
+	const searchIndex = useMemo(() => createSearchIndex(), [])
+	const indexedIds = useRef(new Set<string>())
 
 	// Whether we have path-based navigation (remote browse) or local-only state
 	const hasPathNav = !!location
@@ -58,6 +66,74 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 		})
 	}, [location])
 
+	// Helper to add a document to the search index (deduped)
+	const addToIndex = useCallback((doc: SearchDocument) => {
+		if (indexedIds.current.has(doc.id)) return
+		indexedIds.current.add(doc.id)
+		searchIndex.add(doc)
+		setSearchIndexVersion((v) => v + 1)
+	}, [searchIndex])
+
+	// Index all sub-items from an intent detail (units, knowledge, assets)
+	const indexIntentDetail = useCallback((detail: HaikuIntentDetail) => {
+		// Update the intent document with richer content
+		const intentId = `intent:${detail.slug}`
+		if (indexedIds.current.has(intentId)) {
+			try { searchIndex.discard(intentId) } catch { /* ignore */ }
+			indexedIds.current.delete(intentId)
+		}
+		addToIndex({
+			id: intentId,
+			type: "intent",
+			title: detail.title,
+			slug: detail.slug,
+			studio: detail.studio,
+			status: detail.status,
+			content: `${detail.title} ${detail.content || ""} ${detail.studio} ${detail.activeStage || ""} ${detail.mode}`,
+		})
+
+		// Index units
+		for (const stage of detail.stages) {
+			for (const unit of stage.units) {
+				const criteriaText = unit.criteria.map((c) => c.text).join(" ")
+				addToIndex({
+					id: `unit:${detail.slug}:${stage.name}:${unit.name}`,
+					type: "unit",
+					title: unit.name,
+					slug: detail.slug,
+					stage: stage.name,
+					studio: detail.studio,
+					status: unit.status,
+					content: `${unit.name} ${unit.content || ""} ${criteriaText} ${unit.type} ${unit.hat}`,
+				})
+			}
+		}
+
+		// Index knowledge files
+		for (const file of detail.knowledge) {
+			addToIndex({
+				id: `knowledge:${detail.slug}:${file}`,
+				type: "knowledge",
+				title: file,
+				slug: detail.slug,
+				content: file,
+				path: `.haiku/intents/${detail.slug}/knowledge/${file}`,
+			})
+		}
+
+		// Index assets
+		for (const asset of detail.assets) {
+			addToIndex({
+				id: `asset:${detail.slug}:${asset.path}`,
+				type: "asset",
+				title: asset.name,
+				slug: detail.slug,
+				content: `${asset.name} ${asset.path}`,
+				path: asset.path,
+			})
+		}
+	}, [searchIndex, addToIndex])
+
 	// Restore deeplink state IMMEDIATELY before loading the full list
 	useEffect(() => {
 		if (initialNavHandled.current) return
@@ -67,10 +143,11 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 			setLoadingDetail(true)
 			provider.getIntent(location.intent).then(detail => {
 				setSelectedIntent(detail)
+				if (detail) indexIntentDetail(detail)
 				setLoadingDetail(false)
 			})
 		}
-	}, [provider, location?.intent])
+	}, [provider, location?.intent, indexIntentDetail])
 
 	// Progressive loading — show each intent as it loads
 	useEffect(() => {
@@ -81,13 +158,23 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 			await provider.listIntents((intent) => {
 				setIntents((prev) => [...prev, intent])
 				setLoading(false)
+				// Index this intent for search
+				addToIndex({
+					id: `intent:${intent.slug}`,
+					type: "intent",
+					title: intent.title,
+					slug: intent.slug,
+					studio: intent.studio,
+					status: intent.status,
+					content: `${intent.title} ${intent.studio} ${intent.activeStage || ""} ${intent.mode}`,
+				})
 			})
 
 			setLoadingMore(false)
 			setLoading(false)
 		}
 		load()
-	}, [provider])
+	}, [provider, addToIndex])
 
 	// Load portfolio-level knowledge files
 	useEffect(() => {
@@ -140,6 +227,7 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 					return
 				}
 				setSelectedIntent(detail)
+				indexIntentDetail(detail)
 				if (hasPathNav) {
 					router.push(browseUrl({ intent: slug }))
 				}
@@ -148,7 +236,24 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 			}
 			setLoadingDetail(false)
 		},
-		[provider, router, browseUrl, hasPathNav],
+		[provider, router, browseUrl, hasPathNav, indexIntentDetail],
+	)
+
+	const handleSearchSelect = useCallback(
+		(selection: SearchSelection) => {
+			setSearchQuery("")
+			if (selection.type === "intent") {
+				handleSelectIntent(selection.slug)
+			} else if (selection.type === "unit") {
+				// Navigate to intent, which will show the unit
+				handleSelectIntent(selection.slug)
+			} else if (selection.type === "knowledge") {
+				handleSelectIntent(selection.slug)
+			} else if (selection.type === "asset") {
+				handleSelectIntent(selection.slug)
+			}
+		},
+		[handleSelectIntent],
 	)
 
 	const handleBackFromIntent = useCallback(() => {
@@ -182,29 +287,42 @@ export function PortfolioView({ provider, location, onBack, repoLabel }: Props) 
 	return (
 		<div className={`mx-auto px-4 py-8 lg:py-12 ${viewMode === "board" ? "max-w-full" : "max-w-5xl"}`}>
 			{/* Header */}
-			<div className="mb-8 flex items-center justify-between">
-				<div>
-					<button
-						onClick={onBack}
-						className="mb-2 text-sm text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-white"
-					>
-						&larr; Back
-					</button>
-					<h1 className="text-3xl font-bold tracking-tight">Portfolio</h1>
-					{repoLabel && (
-						<p className="mt-1 font-mono text-sm text-stone-500 dark:text-stone-400">
-							{repoLabel}
-						</p>
-					)}
-				</div>
-				<div className="text-right text-sm text-stone-500 dark:text-stone-400">
+			<div className="mb-8">
+				<div className="flex items-center justify-between">
 					<div>
-						Source: <strong className="text-stone-700 dark:text-stone-300">{provider.name}</strong>
+						<button
+							onClick={onBack}
+							className="mb-2 text-sm text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-white"
+						>
+							&larr; Back
+						</button>
+						<h1 className="text-3xl font-bold tracking-tight">Portfolio</h1>
+						{repoLabel && (
+							<p className="mt-1 font-mono text-sm text-stone-500 dark:text-stone-400">
+								{repoLabel}
+							</p>
+						)}
 					</div>
-					<div>
-						<strong className="text-stone-700 dark:text-stone-300">{intents.length}</strong> intent{intents.length !== 1 ? "s" : ""}
+					<div className="text-right text-sm text-stone-500 dark:text-stone-400">
+						<div>
+							Source: <strong className="text-stone-700 dark:text-stone-300">{provider.name}</strong>
+						</div>
+						<div>
+							<strong className="text-stone-700 dark:text-stone-300">{intents.length}</strong> intent{intents.length !== 1 ? "s" : ""}
+						</div>
 					</div>
 				</div>
+				{/* Search bar */}
+				{!loading && intents.length > 0 && (
+					<div className="mt-4">
+						<SearchBar
+							index={searchIndexVersion >= 0 ? searchIndex : null}
+							onSelect={handleSearchSelect}
+							query={searchQuery}
+							onQueryChange={setSearchQuery}
+						/>
+					</div>
+				)}
 			</div>
 
 			{/* Portfolio Knowledge */}
