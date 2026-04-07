@@ -1,15 +1,16 @@
 ---
 name: unit-05-delete-skills
 type: backend
-status: pending
+status: active
 depends_on:
   - unit-02-core-prompts
   - unit-03-simple-prompts
   - unit-04-complex-prompts
-bolt: 0
-hat: ""
+bolt: 1
+hat: planner
 refs:
   - knowledge/DELETE-SKILLS-DISCOVERY.md
+started_at: '2026-04-07T04:16:25Z'
 ---
 
 # Delete Plugin Skills
