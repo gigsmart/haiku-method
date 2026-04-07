@@ -65,9 +65,11 @@ This creates a sales intent pre-filled with units for Acme Corp, with criteria l
 
 ---
 
-## Pre-checks
+## Pre-checks (RFC 2119)
 
-1. **Reject cowork mode:**
+The key words "MUST", "MUST NOT", "SHALL", "SHALL NOT", "REQUIRED" in this section are to be interpreted as described in RFC 2119.
+
+1. **Reject cowork mode:** The agent **MUST NOT** run this skill in cowork mode. If `CLAUDE_CODE_IS_COWORK=1`, the agent **MUST** stop immediately with the error below. The agent **SHALL NOT** proceed under any circumstances.
    ```bash
    if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
      echo "ERROR: /haiku:new cannot run in cowork mode."
@@ -76,9 +78,9 @@ This creates a sales intent pre-filled with units for Acme Corp, with criteria l
    fi
    ```
 
-2. **Verify git repo:** Must be in a git repository.
+2. **Verify git repo:** The agent **MUST** be in a git repository. Execution outside a git repo is **NOT** permitted.
 
-3. **Check for existing active intent:** If `.haiku/intents/*/intent.md` has an active intent, warn the user and confirm whether to create a new intent or resume the existing one.
+3. **Check for existing active intent:** If `.haiku/intents/*/intent.md` has an active intent, the agent **MUST** warn the user and confirm whether to create a new intent or resume the existing one.
 
 ---
 
@@ -103,7 +105,7 @@ Convert the intent description to a kebab-case slug:
 
 ### Step 3: Detect Studio
 
-Studio is a **per-intent decision** — the agent recommends based on the nature of the work, not a static project default.
+Studio is a **per-intent decision** — the agent **MUST** recommend based on the nature of the work, not a static project default.
 
 #### 3a. Check for project-level override
 
@@ -153,13 +155,13 @@ Verify the selected studio exists via `haiku_studio_get { studio: "<name>" }`. I
 
 ### Step 4: Set Mode
 
-Default to **continuous** mode. Do not ask the user — this is a per-intent decision the agent makes based on the work:
+The agent **MUST** default to **continuous** mode. The agent **MUST NOT** ask the user — this is a per-intent decision the agent makes based on the work:
 
 - **Continuous** (default): Agent drives through all stages. User reviews at gates. Best for most intents.
 - **Discrete**: Each stage runs independently. Use for exploratory work where the user wants to pause and think between stages.
 - **Hybrid**: Discrete for early stages (inception, design, product), continuous from a threshold stage onward. Set `continuous_from:` to the stage where continuous begins.
 
-Only use discrete/hybrid if the intent's nature clearly calls for it. Do not ask.
+The agent **SHALL** only use discrete/hybrid if the intent's nature clearly calls for it. The agent **MUST NOT** ask.
 
 **Hybrid mode:** Discrete up to a named stage, then continuous from that stage onward. Best when early stages need human pacing (research, strategy) but later stages can be agent-driven (execution, validation).
 
@@ -174,7 +176,7 @@ Default: `continuous`
 
 **Note on await/external gates:** Gates with `review: await` or `review: external` always pause regardless of mode — they require an external trigger by definition. Hybrid mode only affects `review: auto` gate behavior.
 
-**When called from `/haiku:autopilot`:** Skip this question. Use `continuous` mode automatically (the autopilot skill passes the mode).
+**When called from `/haiku:autopilot`:** The agent **MUST** skip this question. The agent **MUST** use `continuous` mode automatically (the autopilot skill passes the mode).
 
 ### Step 5: Resolve Stages
 
@@ -241,37 +243,34 @@ git add ".haiku/intents/{slug}/"
 git commit -m "haiku: new intent — {slug}"
 ```
 
-### Step 9: Next Step
+### Step 9: Present Intent for Review
 
-**Continuous mode:** Tell the user the intent is created and automatically transition to `/haiku:run`:
-```
-Intent created: {slug}
-Studio: {studio_name} | Mode: continuous
+Before starting execution, the agent **MUST** present the intent for high-level direction review using `ask_user_visual_question`. The context **MUST** include:
+- Intent title and description
+- Selected studio and its stage pipeline
+- Selected mode (continuous/discrete/hybrid)
+- Any skip_stages or follows relationships
 
-Starting first stage...
-```
-Then invoke `/haiku:run` via the `Skill` tool.
+The question **MUST** ask: "Does this direction look right? Ready to start?"
 
-**Discrete mode:** Tell the user what to do next:
-```
-Intent created: {slug}
-Studio: {studio_name} | Mode: discrete
-Stages: {stage_list}
-Active stage: {first_stage}
+The agent **MUST NOT** transition to `/haiku:run` without the user's explicit approval of the high-level direction.
 
-Run /haiku:run to start the first stage.
-```
+### Step 10: Start Execution
+
+**Continuous mode:** After user approval, invoke `/haiku:run` via the `Skill` tool.
+
+**Discrete mode:** After user approval, tell the user to run `/haiku:run` to start the first stage.
 
 ---
 
 ## Autonomous Mode (for /haiku:autopilot)
 
 When called from autopilot, the following adjustments apply:
-- Skip the mode question — use `continuous`
-- Skip confirmation prompts — proceed automatically
-- Studio recommendation still runs (Step 3b), but always auto-selects the best match — never ask in autopilot mode
-- The intent description is provided as the argument (required)
-- Do NOT invoke `/haiku:run` at the end — autopilot handles the transition
+- The agent **MUST** skip the mode question — use `continuous`
+- The agent **MUST** skip confirmation prompts — proceed automatically
+- Studio recommendation still runs (Step 3b), but the agent **MUST** auto-select the best match — the agent **MUST NOT** ask in autopilot mode
+- The intent description is provided as the argument (**REQUIRED**)
+- The agent **MUST NOT** invoke `/haiku:run` at the end — autopilot handles the transition
 
 ---
 
