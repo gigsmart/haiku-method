@@ -24,6 +24,16 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 - [ ] An agent never autonomously resets `active_stage` to a prior stage (full stage-backs are human-initiated)
 - [ ] Stage-scoped refinements (upstream side-trips) do NOT reset current stage progress
 
+### Visual Review Enforcement
+
+- [ ] Elaboration plan MUST be presented via `open_review` — never as plain conversation text
+- [ ] `open_review` MUST run in a background subagent (it blocks until user responds)
+- [ ] Gate ask MUST use `open_review` or verify the auto-opened review — never text-only approval
+- [ ] Rich content during elaboration (specs, wireframes, comparisons) MUST use `ask_user_visual_question`
+- [ ] Design direction choices MUST use `pick_design_direction`
+- [ ] Plain conversation text is only for simple clarification questions, not for presenting plans or reviews
+- [ ] The agent NEVER dumps unit lists, criteria tables, or stage summaries as conversation text when visual tools are available
+
 ### Quality Enforcement
 
 - [ ] Quality gates run on the Stop hook — the agent cannot bypass them

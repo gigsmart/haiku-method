@@ -126,11 +126,20 @@ Elaborate on the stage: research the problem space, produce knowledge artifacts,
    
    Continue until YOU are confident the plan is solid.
    
-10. **PRESENT THE FINAL PLAN for approval.** Once units are written, use `open_review` to present the complete plan visually for formal gate approval.
+10. **PRESENT THE FINAL PLAN for approval using a visual review tool.** Once units are written, you MUST call `open_review { intent_dir, review_type: "intent" }` in a **background subagent** to present the complete plan visually. The tool blocks until the user submits their decision. Run it in a subagent so the main conversation remains responsive:
+    ```
+    Agent { prompt: "Call open_review for intent ..., wait for decision, return result", run_in_background: true }
+    ```
+    Tell the user the review is open and wait for the subagent to return.
 11. After user approval: `haiku_stage_set { intent, stage, field: "phase", value: "execute" }`
 12. Call `haiku_run_next` again
 
-**CRITICAL: Elaboration is collaborative.** Every stage's elaboration phase is a multi-turn conversation — not a single question. Simple clarifications happen in the terminal. Rich content (specs, wireframes, comparisons) goes through the visual tool. The only exception is full autopilot mode.
+**MANDATORY: Visual tools for all user-facing content.** You MUST use visual MCP tools — never present plans, specs, wireframes, or reviews as plain conversation text. This is not optional:
+- Elaboration questions with rich content → `ask_user_visual_question`
+- Final elaboration plan → `open_review` (in a background subagent)
+- Gate review → `open_review` (auto-opened by orchestrator)
+- Design direction → `pick_design_direction`
+Failure to use these tools is a process violation.
 
 **Discovery vs. Output artifacts:** Stages define two artifact directories:
 - `stages/{stage}/discovery/` — knowledge artifacts produced during elaboration (research, analysis, specs)
@@ -238,10 +247,10 @@ The stage's review gate requires human approval.
 { "action": "gate_ask", "intent": "...", "stage": "...", "next_stage": "..." }
 ```
 
-**The visual review opens automatically.** When `haiku_run_next` returns `gate_ask`, it auto-opens the review page in the browser (unless in autopilot mode). The response includes `review_url` and `review_session`.
+**The visual review MUST open.** When `haiku_run_next` returns `gate_ask`, call `open_review` in a **background subagent** (the tool blocks until the user submits). If `haiku_run_next` auto-opened it (check for `review_url` in the response), the subagent should call `get_review_status` to wait for the decision instead.
 
 **Do:**
-1. Tell the user the review is open and wait for their response. The review page has approve/decline controls. The MCP tool blocks until the user submits — no polling needed.
+1. Spawn a background subagent that calls `open_review { intent_dir, review_type: "intent" }` and waits for the user's decision. Tell the user the review is open.
 2. If approved: `haiku_gate_approve { intent, stage }` then call `haiku_run_next`
 3. If `changes_requested`: analyze the annotations to determine which stage needs the fix:
    - Read each annotation's `location` field (file path or section name)
