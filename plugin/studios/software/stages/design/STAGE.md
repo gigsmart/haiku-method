@@ -11,13 +11,24 @@ inputs:
 
 # Design
 
-## Elaboration Phase
+## Phase Instructions (RFC 2119)
 
-During elaboration, create **low-fidelity wireframes** to establish layout, flow, and interaction patterns. Use HTML wireframes or a design provider MCP (Pencil, OpenPencil, Figma). NEVER produce ASCII art. Save wireframes to `stages/design/artifacts/`. Use `pick_design_direction` or `ask_user_visual_question` to present options and get user feedback before finalizing the elaboration.
+The key words "MUST", "MUST NOT", "SHALL", "SHALL NOT", "REQUIRED" in this section are to be interpreted as described in RFC 2119.
 
-## Execute Phase
+### Elaboration Phase
 
-During execute, the designer hat produces **high-fidelity mockups** from the approved wireframes. Apply real design tokens, specify all interactive states, define responsive behavior at each breakpoint. The output is production-ready design — polished, not sketched.
+During elaboration, the agent **MUST** create **multiple low-fidelity wireframe variants** and present them for the user to choose a direction:
+
+1. The agent **MUST** generate 2-3 distinct design approaches as HTML wireframe snippets (different layouts, interaction patterns, or visual hierarchies)
+2. The agent **MUST** call `pick_design_direction` with the variants as `archetypes` — each with a `name`, `description`, `preview_html` (the rendered wireframe), and `default_parameters` (tunable values like spacing, column count, etc.)
+3. The user selects their preferred direction and adjusts parameters
+4. The agent **MUST** use the selected direction to create the final wireframes saved to `stages/design/artifacts/`
+5. The agent **MUST NOT** produce ASCII art wireframes — all wireframes **MUST** be HTML or design provider files
+6. If a design provider MCP is available (Pencil, OpenPencil, Figma), the agent **SHOULD** use it instead of raw HTML
+
+### Execute Phase
+
+During execute, the designer hat **MUST** produce **high-fidelity mockups** from the approved wireframes. The agent **MUST** apply real design tokens, specify all interactive states, and define responsive behavior at each breakpoint. The output **MUST** be production-ready design — polished, not sketched.
 
 ## Criteria Guidance
 
@@ -34,4 +45,4 @@ Bad criteria examples:
 
 ## Completion Signal
 
-Design brief exists with screen layouts for all breakpoints. All interactive states are specified. Touch targets meet minimum size. Design tokens are defined (no raw hex values). Design reviewer has verified consistency, state coverage, and accessibility compliance.
+Design brief **MUST** exist with screen layouts for all breakpoints. All interactive states **MUST** be specified. Touch targets **MUST** meet minimum size. Design tokens are **REQUIRED** — the agent **MUST NOT** use raw hex values. Design reviewer **MUST** have verified consistency, state coverage, and accessibility compliance.
