@@ -28,19 +28,6 @@ import { type MockupInfo, renderReviewPage } from "./templates/index.js"
 import { renderQuestionPage } from "./templates/question-form.js"
 import { renderDesignDirectionPage } from "./templates/design-direction.js"
 
-const WEBSITE_URL = process.env.HAIKU_WEBSITE_URL ?? "https://haikumethod.ai"
-
-/** Encode port + session ID as URL-safe base64 for the hosted review page */
-function encodeReviewUrl(port: number, sessionId: string): string {
-	const payload = `${port}-${sessionId}`
-	return Buffer.from(payload).toString("base64url")
-}
-
-/** Build the full website review URL for any session type */
-function buildReviewUrl(port: number, sessionId: string): string {
-	return `${WEBSITE_URL}/review/${encodeReviewUrl(port, sessionId)}/`
-}
-
 const OpenReviewInput = z.object({
 	intent_dir: z
 		.string()
@@ -143,7 +130,7 @@ const server = new Server(
 )
 
 import { stateToolDefs, handleStateTool } from "./state-tools.js"
-import { orchestratorToolDefs, handleOrchestratorTool } from "./orchestrator.js"
+import { orchestratorToolDefs, handleOrchestratorTool, setOpenReviewHandler } from "./orchestrator.js"
 import { listPrompts, getPrompt, completeArgument } from "./prompts/index.js"
 // Side-effect imports: each file calls registerPrompt() at module load time. Add a new import here for each new prompt file.
 import "./prompts/core.js"
@@ -355,50 +342,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	const { name, arguments: args } = request.params
 
-	// Orchestration tools
+	// Orchestration tools (async — gate_ask blocks until user reviews)
 	if (name === "haiku_run_next" || name === "haiku_gate_approve" || name === "haiku_go_back") {
-		const result = handleOrchestratorTool(name, (args ?? {}) as Record<string, unknown>)
-
-		// Auto-open visual review on gate_ask (interactive mode only)
-		try {
-			const parsed = JSON.parse(typeof result.content === "string" ? result.content : (result.content as Array<{text?: string}>)?.[0]?.text || "{}")
-			if (parsed.action === "gate_ask" && parsed.intent) {
-				// Check mode — only open review in interactive/OHOTL, not autopilot
-				const { readFileSync, existsSync } = await import("node:fs")
-				const { join } = await import("node:path")
-				const root = process.cwd()
-				const intentFile = join(root, ".haiku", "intents", parsed.intent, "intent.md")
-				if (existsSync(intentFile)) {
-					const raw = readFileSync(intentFile, "utf8")
-					const modeMatch = raw.match(/^mode:\s*(.+)$/m)
-					const mode = modeMatch?.[1]?.trim() || "continuous"
-					if (mode !== "autopilot") {
-						// Trigger open_review as a side effect
-						const intentDir = join(root, ".haiku", "intents", parsed.intent)
-						const { startHttpServer } = await import("./http.js")
-						const { createReviewSession } = await import("./sessions.js")
-						const port = await startHttpServer()
-						const session = createReviewSession({
-							intent_slug: parsed.intent,
-							stage: parsed.stage,
-							review_type: "stage",
-							intent_dir: intentDir,
-						})
-						const url = buildReviewUrl(port, session.id)
-						// Open in browser
-						const { exec } = await import("node:child_process")
-						exec(`open "${url}"`)
-						// Add review URL to the response
-						parsed.review_url = url
-						parsed.review_session = session.id
-						parsed.message += ` Visual review opened at ${url}`
-						return { content: [{ type: "text" as const, text: JSON.stringify(parsed, null, 2) }] }
-					}
-				}
-			}
-		} catch { /* non-fatal — review is a convenience, not a requirement */ }
-
-		return result
+		return handleOrchestratorTool(name, (args ?? {}) as Record<string, unknown>)
 	}
 
 	// State management tools
@@ -564,7 +510,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 		// Start HTTP server (idempotent)
 		const port = await startHttpServer()
-		const reviewUrl = buildReviewUrl(port, session.session_id)
+		const reviewUrl = `http://127.0.0.1:${port}/review/${session.session_id}`
 
 		// Open browser
 		try {
@@ -764,7 +710,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 		// Start HTTP server (idempotent)
 		const port = await startHttpServer()
-		const questionUrl = buildReviewUrl(port, session.session_id)
+		const questionUrl = `http://127.0.0.1:${port}/question/${session.session_id}`
 
 		// Open browser
 		try {
@@ -860,7 +806,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 		// Start HTTP server (idempotent)
 		const port = await startHttpServer()
-		const directionUrl = buildReviewUrl(port, session.session_id)
+		const directionUrl = `http://127.0.0.1:${port}/direction/${session.session_id}`
 
 		// Open browser
 		try {
@@ -887,6 +833,62 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 		content: [{ type: "text" as const, text: `Unknown tool: ${name}` }],
 		isError: true,
 	}
+})
+
+// Wire up the review handler for the orchestrator's gate_ask flow.
+// This lets haiku_run_next open a review and block until the user decides,
+// without the agent needing to call open_review separately.
+setOpenReviewHandler(async (intentDirRel: string, reviewType: string) => {
+	const intentDirAbs = resolve(process.cwd(), intentDirRel)
+	const intent = await parseIntent(intentDirAbs)
+	if (!intent) throw new Error("Could not parse intent")
+
+	const units = await parseAllUnits(intentDirAbs)
+	const dag = buildDAG(units)
+	const mermaid = toMermaidDefinition(dag, units)
+	const criteriaSection = intent.sections.find(
+		(s) => s.heading.toLowerCase().includes("completion criteria") || s.heading.toLowerCase().includes("success criteria"),
+	)
+	const criteria = criteriaSection ? parseCriteria(criteriaSection.content) : []
+
+	const session = createSession({
+		intent_dir: intentDirAbs,
+		intent_slug: intent.slug,
+		review_type: reviewType as "intent" | "unit",
+		target: "",
+		html: "",
+	})
+
+	// Store parsed data on session for the SPA
+	Object.assign(session, { parsedIntent: intent, parsedUnits: units, parsedCriteria: criteria, parsedMermaid: mermaid })
+
+	// Parse stage states + knowledge
+	const stageStates = parseStageStates(intentDirAbs)
+	const knowledgeFiles = parseKnowledgeFiles(intentDirAbs)
+	const stageArtifacts = parseStageArtifacts(intentDirAbs)
+	Object.assign(session, { stageStates, knowledgeFiles, stageArtifacts })
+
+	session.html = renderReviewPage({ intent, units, criteria, reviewType: reviewType as "intent" | "unit", target: "", sessionId: session.session_id, mermaid, intentMockups: [], unitMockups: {} })
+
+	const port = await startHttpServer()
+	const reviewUrl = `http://127.0.0.1:${port}/review/${session.session_id}`
+
+	try {
+		const cmd = process.platform === "darwin" ? ["open", reviewUrl] : ["xdg-open", reviewUrl]
+		spawn(cmd[0], cmd.slice(1), { stdio: "ignore", detached: true }).unref()
+	} catch { /* */ }
+
+	await waitForSession(session.session_id, 30 * 60 * 1000)
+
+	const updated = getSession(session.session_id)
+	if (updated && updated.session_type === "review" && updated.status === "decided") {
+		return {
+			decision: updated.decision,
+			feedback: updated.feedback,
+			annotations: updated.annotations,
+		}
+	}
+	throw new Error("Review timeout")
 })
 
 // Start server

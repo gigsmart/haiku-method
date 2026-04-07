@@ -766,16 +766,73 @@ export const orchestratorToolDefs = [
 
 // ── Tool handlers ──────────────────────────────────────────────────────────
 
-export function handleOrchestratorTool(name: string, args: Record<string, unknown>): { content: Array<{ type: "text"; text: string }> } {
+/**
+ * Callback for opening a review and blocking until the user decides.
+ * Set by server.ts at startup to avoid circular imports.
+ */
+let _openReviewAndWait: ((intentDir: string, reviewType: string) => Promise<{ decision: string; feedback: string; annotations?: unknown }>) | null = null
+
+export function setOpenReviewHandler(handler: typeof _openReviewAndWait): void {
+	_openReviewAndWait = handler
+}
+
+export async function handleOrchestratorTool(name: string, args: Record<string, unknown>): Promise<{ content: Array<{ type: "text"; text: string }> }> {
 	const text = (s: string) => ({ content: [{ type: "text" as const, text: s }] })
 
 	if (name === "haiku_run_next") {
-		const result = runNext(args.intent as string)
-		emitTelemetry("haiku.orchestrator.action", { intent: args.intent as string, action: result.action })
+		const slug = args.intent as string
+		const result = runNext(slug)
+		emitTelemetry("haiku.orchestrator.action", { intent: slug, action: result.action })
 
-		// Sync session metadata after FSM mutations
-		syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
+		// Gate actions: open review internally, block until user decides, then advance
+		if (result.action === "gate_ask" && _openReviewAndWait) {
+			const intentDirPath = `.haiku/intents/${slug}`
+			try {
+				const reviewResult = await _openReviewAndWait(intentDirPath, "intent")
+				if (reviewResult.decision === "approved") {
+					// Advance the gate
+					const stage = result.stage as string
+					const nextStage = result.next_stage as string | null
+					if (nextStage) {
+						fsmAdvanceStage(slug, stage, nextStage)
+						syncSessionMetadata(slug, args.state_file as string | undefined)
+						return text(JSON.stringify({
+							action: "advance_stage",
+							intent: slug,
+							stage,
+							next_stage: nextStage,
+							gate_outcome: "advanced",
+							message: `Gate approved — advancing to '${nextStage}'`,
+						}, null, 2))
+					}
+					// Last stage
+					fsmCompleteStage(slug, stage, "advanced")
+					fsmIntentComplete(slug)
+					syncSessionMetadata(slug, args.state_file as string | undefined)
+					return text(JSON.stringify({
+						action: "intent_complete",
+						intent: slug,
+						message: `Gate approved — intent complete`,
+					}, null, 2))
+				}
+				// Changes requested
+				syncSessionMetadata(slug, args.state_file as string | undefined)
+				return text(JSON.stringify({
+					action: "changes_requested",
+					intent: slug,
+					stage: result.stage,
+					feedback: reviewResult.feedback,
+					annotations: reviewResult.annotations,
+					message: `Changes requested: ${reviewResult.feedback || "(see annotations)"}`,
+				}, null, 2))
+			} catch {
+				// Timeout or error — return the gate_ask so agent can handle
+				syncSessionMetadata(slug, args.state_file as string | undefined)
+				return text(JSON.stringify(result, null, 2))
+			}
+		}
 
+		syncSessionMetadata(slug, args.state_file as string | undefined)
 		return text(JSON.stringify(result, null, 2))
 	}
 
