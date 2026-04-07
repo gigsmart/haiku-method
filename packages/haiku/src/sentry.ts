@@ -4,7 +4,7 @@
 // which would significantly increase the compiled binary size.
 // All calls are fire-and-forget — errors in reporting are silently swallowed.
 
-const SENTRY_DSN = process.env.SENTRY_DSN_MCP || "https://a3d937ac7dc810e757ca21efb505ab86@o4510807013392384.ingest.us.sentry.io/4511180229509120"
+const SENTRY_DSN = "https://a3d937ac7dc810e757ca21efb505ab86@o4510807013392384.ingest.us.sentry.io/4511180229509120"
 
 /**
  * Report an error to Sentry via the HTTP store API.
