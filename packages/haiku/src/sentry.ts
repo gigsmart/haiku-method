@@ -6,6 +6,21 @@
 
 const SENTRY_DSN = "https://a3d937ac7dc810e757ca21efb505ab86@o4510807013392384.ingest.us.sentry.io/4511180229509120"
 
+// Read version for release tagging — tries plugin.json at CLAUDE_PLUGIN_ROOT
+function getRelease(): string {
+	try {
+		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+		if (pluginRoot) {
+			const { readFileSync } = require("node:fs")
+			const { join } = require("node:path")
+			const pkg = JSON.parse(readFileSync(join(pluginRoot, ".claude-plugin", "plugin.json"), "utf8"))
+			return `haiku-mcp@${pkg.version}`
+		}
+	} catch { /* */ }
+	return "haiku-mcp@dev"
+}
+const SENTRY_RELEASE = getRelease()
+
 /**
  * Report an error to Sentry via the HTTP store API.
  * Fire-and-forget — never blocks, never throws.
@@ -28,6 +43,7 @@ export function reportError(err: unknown, context?: Record<string, unknown>): vo
 			body: JSON.stringify({
 				event_id: crypto.randomUUID().replace(/-/g, ""),
 				timestamp: new Date().toISOString(),
+				release: SENTRY_RELEASE,
 				platform: "node",
 				level: "error",
 				logger: "haiku-mcp",
