@@ -1,7 +1,12 @@
 ---
-status: pending
+status: active
 type: backend
-depends_on: [unit-04-review-ui, unit-05-interactive-ui]
+depends_on:
+  - unit-04-review-ui
+  - unit-05-interactive-ui
+bolt: 1
+hat: architect
+started_at: '2026-04-07T14:39:46Z'
 ---
 
 # Cleanup and Binary Reduction
