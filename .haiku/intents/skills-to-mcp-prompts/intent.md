@@ -10,7 +10,7 @@ stages:
   - security
 mode: continuous
 active_stage: development
-status: active
+status: completed
 started_at: '2026-04-06'
 completed_at: null
 ---
