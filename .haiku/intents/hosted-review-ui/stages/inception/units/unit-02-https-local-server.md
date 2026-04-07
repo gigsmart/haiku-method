@@ -1,10 +1,8 @@
 ---
-title: HTTPS Local Server
+title: "HTTPS Local Server"
 type: backend
-depends_on:
-  - unit-01-dns-cert-infra
+depends_on: [unit-01-dns-cert-infra]
 status: pending
-hat: decomposer
 ---
 
 # HTTPS Local Server
@@ -40,8 +38,8 @@ Cert-fetching logic:
 
 ## Completion Criteria
 
-- [x] HTTPS server created with `node:https` `createServer()` using certs from cert-server — `http.ts` imports from `node:https`, passes `{cert, key}` to `createServer()`
-- [x] CORS headers on all responses allowing `https://haikumethod.ai` — `withCors()` wraps every response in `handleRequest()`
-- [x] SPA HTML-serving routes removed — `serveSpa()`, `handleReviewGet()`, `handleQuestionGet()`, `handleDirectionGet()` all deleted; no references to `REVIEW_APP_HTML`
-- [x] WebSocket upgrade handler preserved for `wss://` — upgrade event works identically on `https.createServer()`
-- [x] Cert caching in `~/.haiku/certs/` — `certs.ts` fetches from `/cert/latest`, caches cert/key/meta locally, returns cached if server unreachable
+- [ ] `curl -v https://local.haikumethod.ai:{port}/api/session/nonexistent 2>&1 | grep "SSL connection"` shows successful TLS handshake — verified by starting the MCP server and running the curl command
+- [ ] `curl -s -H "Origin: https://haikumethod.ai" https://local.haikumethod.ai:{port}/api/session/test | grep -i access-control` returns CORS headers — verified by inspecting response headers
+- [ ] `curl -s http://127.0.0.1:{port}/review/test` returns 404 (not SPA HTML) — verified by checking that HTML-serving routes are removed
+- [ ] WebSocket connection succeeds over `wss://` — verified by `websocat wss://local.haikumethod.ai:{port}/ws/session/test` (or equivalent WS test tool)
+- [ ] Cert cache file exists at `~/.haiku/certs/` after first startup — verified by `ls ~/.haiku/certs/`

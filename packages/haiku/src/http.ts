@@ -1,5 +1,4 @@
-import { type IncomingMessage } from "node:http"
-import { createServer, type Server as HttpsServer } from "node:https"
+import { createServer, type Server as HttpServer, type IncomingMessage } from "node:http"
 import { createHash } from "node:crypto"
 import { readFile, realpath } from "node:fs/promises"
 import { extname, join, resolve } from "node:path"
@@ -7,13 +6,20 @@ import type { Duplex } from "node:stream"
 import { z } from "zod"
 import { getSession, updateDesignDirectionSession, updateQuestionSession, updateSession } from "./sessions.js"
 import type { QuestionAnswer, QuestionAnnotations, ReviewAnnotations } from "./sessions.js"
-import { getCertificates } from "./certs.js"
+import { REVIEW_APP_HTML } from "./review-app-html.js"
 
-let httpServer: HttpsServer | null = null
+let httpServer: HttpServer | null = null
 let actualPort: number | null = null
 
 export function getActualPort(): number | null {
 	return actualPort
+}
+
+/** Serve the React SPA for any page route — the SPA reads the session ID from the URL */
+function serveSpa(): Response {
+	return new Response(REVIEW_APP_HTML, {
+		headers: { "Content-Type": "text/html; charset=utf-8" },
+	})
 }
 
 /** API endpoint: return session data as JSON for the SPA to render */
@@ -83,6 +89,15 @@ function handleSessionApi(sessionId: string): Response {
 	}
 
 	return Response.json(data)
+}
+
+function handleReviewGet(sessionId: string): Response {
+	const session = getSession(sessionId)
+	if (!session || session.session_type !== "review") {
+		return new Response("Session not found", { status: 404 })
+	}
+	// Serve the SPA — it will fetch session data via /api/session/:id
+	return serveSpa()
 }
 
 async function handleDecidePost(
@@ -275,6 +290,15 @@ async function handleQuestionImageGet(
 	}
 }
 
+function handleQuestionGet(sessionId: string): Response {
+	const session = getSession(sessionId)
+	if (!session || session.session_type !== "question") {
+		return new Response("Session not found", { status: 404 })
+	}
+	// Serve the SPA
+	return serveSpa()
+}
+
 async function handleQuestionAnswerPost(
 	sessionId: string,
 	req: Request,
@@ -323,6 +347,15 @@ async function handleQuestionAnswerPost(
 
 
 	return Response.json({ ok: true })
+}
+
+function handleDirectionGet(sessionId: string): Response {
+	const session = getSession(sessionId)
+	if (!session || session.session_type !== "design_direction") {
+		return new Response("Session not found", { status: 404 })
+	}
+	// Serve the SPA
+	return serveSpa()
 }
 
 async function handleDirectionSelectPost(
@@ -597,57 +630,50 @@ function handleUpgrade(req: IncomingMessage, socket: Duplex, _head: Buffer): voi
 	})
 }
 
-/** Add CORS headers to a Response */
-function withCors(response: Response): Response {
-	const headers = new Headers(response.headers)
-	headers.set("Access-Control-Allow-Origin", "https://haikumethod.ai")
-	headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-	headers.set("Access-Control-Allow-Headers", "Content-Type")
-	headers.set("Access-Control-Allow-Credentials", "true")
-	return new Response(response.body, {
-		status: response.status,
-		statusText: response.statusText,
-		headers,
-	})
-}
-
-async function handleRequest(req: Request): Promise<Response> {
-	// Handle CORS preflight
-	if (req.method === "OPTIONS") {
-		return withCors(new Response(null, { status: 204 }))
-	}
-
+function handleRequest(req: Request): Response | Promise<Response> {
 	const url = new URL(req.url)
 	const path = url.pathname
 
 	// GET /api/session/:sessionId — JSON API for the SPA
 	const apiSessionMatch = path.match(/^\/api\/session\/([^/]+)$/)
 	if (apiSessionMatch && req.method === "GET") {
-		return withCors(handleSessionApi(apiSessionMatch[1]))
+		return handleSessionApi(apiSessionMatch[1])
+	}
+
+	// GET /review/:sessionId
+	const reviewMatch = path.match(/^\/review\/([^/]+)$/)
+	if (reviewMatch && req.method === "GET") {
+		return handleReviewGet(reviewMatch[1])
 	}
 
 	// POST /review/:sessionId/decide
 	const decideMatch = path.match(/^\/review\/([^/]+)\/decide$/)
 	if (decideMatch && req.method === "POST") {
-		return withCors(await handleDecidePost(decideMatch[1], req))
+		return handleDecidePost(decideMatch[1], req)
 	}
 
 	// GET /mockups/:sessionId/:path — serve files from intent mockups/ dir
 	const mockupMatch = path.match(/^\/mockups\/([^/]+)\/(.+)$/)
 	if (mockupMatch && req.method === "GET") {
-		return withCors(await handleMockupGet(mockupMatch[1], mockupMatch[2]))
+		return handleMockupGet(mockupMatch[1], mockupMatch[2])
 	}
 
 	// GET /wireframe/:sessionId/:path — serve wireframe files from intent dir
 	const wireframeMatch = path.match(/^\/wireframe\/([^/]+)\/(.+)$/)
 	if (wireframeMatch && req.method === "GET") {
-		return withCors(await handleWireframeGet(wireframeMatch[1], wireframeMatch[2]))
+		return handleWireframeGet(wireframeMatch[1], wireframeMatch[2])
+	}
+
+	// GET /direction/:sessionId
+	const directionMatch = path.match(/^\/direction\/([^/]+)$/)
+	if (directionMatch && req.method === "GET") {
+		return handleDirectionGet(directionMatch[1])
 	}
 
 	// POST /direction/:sessionId/select
 	const directionSelectMatch = path.match(/^\/direction\/([^/]+)\/select$/)
 	if (directionSelectMatch && req.method === "POST") {
-		return withCors(await handleDirectionSelectPost(directionSelectMatch[1], req))
+		return handleDirectionSelectPost(directionSelectMatch[1], req)
 	}
 
 	// GET /question-image/:sessionId/:index — serve images for question sessions
@@ -655,32 +681,31 @@ async function handleRequest(req: Request): Promise<Response> {
 		/^\/question-image\/([^/]+)\/(\d+)$/,
 	)
 	if (questionImageMatch && req.method === "GET") {
-		return withCors(
-			await handleQuestionImageGet(
-				questionImageMatch[1],
-				Number.parseInt(questionImageMatch[2], 10),
-			),
+		return handleQuestionImageGet(
+			questionImageMatch[1],
+			Number.parseInt(questionImageMatch[2], 10),
 		)
+	}
+
+	// GET /question/:sessionId
+	const questionMatch = path.match(/^\/question\/([^/]+)$/)
+	if (questionMatch && req.method === "GET") {
+		return handleQuestionGet(questionMatch[1])
 	}
 
 	// POST /question/:sessionId/answer
 	const questionAnswerMatch = path.match(/^\/question\/([^/]+)\/answer$/)
 	if (questionAnswerMatch && req.method === "POST") {
-		return withCors(await handleQuestionAnswerPost(questionAnswerMatch[1], req))
+		return handleQuestionAnswerPost(questionAnswerMatch[1], req)
 	}
 
-	return withCors(new Response("Not Found", { status: 404 }))
+	return new Response("Not Found", { status: 404 })
 }
-
-const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000
 
 export async function startHttpServer(): Promise<number> {
 	if (httpServer && actualPort !== null) {
 		return actualPort
 	}
-
-	// Fetch TLS certificates before starting the server
-	const { cert, key } = await getCertificates()
 
 	// Use port 0 to let the OS pick a random available port
 	const requestedPort = process.env.AI_DLC_REVIEW_PORT ? Number.parseInt(process.env.AI_DLC_REVIEW_PORT, 10) : 0
@@ -689,21 +714,10 @@ export async function startHttpServer(): Promise<number> {
 	for (let i = 0; i < maxAttempts; i++) {
 		const port = requestedPort + i
 		try {
-			await listenOnPort(port, cert, key)
+			await listenOnPort(port)
 			// For port 0, the OS assigns the actual port — read it from the server
 			actualPort = port === 0 ? (httpServer?.address() as { port: number })?.port ?? port : port
-			console.error(`Review HTTPS server listening on https://local.haikumethod.ai:${actualPort}`)
-
-			// Periodically refresh certificates (every 12 hours)
-			setInterval(async () => {
-				try {
-					const fresh = await getCertificates()
-					httpServer?.setSecureContext({ cert: fresh.cert, key: fresh.key })
-				} catch (err) {
-					console.error("Failed to refresh TLS certificates:", err)
-				}
-			}, TWELVE_HOURS_MS)
-
+			console.error(`Review HTTP server listening on http://127.0.0.1:${actualPort}`)
 			return actualPort
 		} catch (err: unknown) {
 			if (
@@ -722,11 +736,11 @@ export async function startHttpServer(): Promise<number> {
 	)
 }
 
-function listenOnPort(port: number, cert: string, key: string): Promise<void> {
+function listenOnPort(port: number): Promise<void> {
 	return new Promise((resolve, reject) => {
-		const server = createServer({ cert, key }, async (req, res) => {
+		const server = createServer(async (req, res) => {
 			// Build a Web API Request from the incoming Node request
-			const url = `https://local.haikumethod.ai:${port}${req.url ?? "/"}`
+			const url = `http://127.0.0.1:${port}${req.url ?? "/"}`
 			const headers = new Headers()
 			for (const [key, value] of Object.entries(req.headers)) {
 				if (value) {
