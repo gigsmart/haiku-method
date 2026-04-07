@@ -236,7 +236,7 @@ function IntentReview({
   onInlineCommentsChange,
   onPinsChange,
 }: SubReviewProps) {
-  const intent = session.intent;
+  const intent = session.intent ?? ({ slug: "", title: "", frontmatter: {}, sections: [], rawContent: "" } as unknown as NonNullable<SessionData["intent"]>);
   const units = session.units ?? [];
   const criteria = session.criteria ?? [];
   const mermaid = session.mermaid ?? "";
@@ -465,7 +465,7 @@ function UnitReview({
   onInlineCommentsChange,
   onPinsChange,
 }: SubReviewProps) {
-  const intent = session.intent;
+  const intent = session.intent ?? ({ slug: "", title: "", frontmatter: {}, sections: [], rawContent: "" } as unknown as NonNullable<SessionData["intent"]>);
   const units = session.units ?? [];
   const criteria = session.criteria ?? [];
   const unitMockupsMap = session.unit_mockups ?? {};
