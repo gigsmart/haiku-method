@@ -138,21 +138,29 @@ export async function submitAnswers(
   sessionId: string,
   answers: QuestionAnswer[],
   wsRef?: React.RefObject<WebSocket | null>,
+  feedback?: string,
+  annotations?: { comments?: Array<{ selectedText: string; comment: string; paragraph: number }> },
 ): Promise<void> {
   // Try WebSocket first
   if (wsRef) {
     const sent = trySendViaWs(wsRef, {
       type: "answer",
       answers,
+      feedback,
+      annotations,
     });
     if (sent) return;
   }
 
   // Fall back to HTTP POST
+  const payload: Record<string, unknown> = { answers };
+  if (feedback) payload.feedback = feedback;
+  if (annotations) payload.annotations = annotations;
+
   const res = await fetch(`/question/${sessionId}/answer`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ answers }),
+    body: JSON.stringify(payload),
     keepalive: true,
   });
 

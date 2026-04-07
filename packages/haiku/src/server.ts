@@ -786,15 +786,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 		// Session was updated — read the latest state
 		const updatedQuestionSession = getSession(session.session_id)
 		if (updatedQuestionSession && updatedQuestionSession.session_type === "question" && updatedQuestionSession.status === "answered" && updatedQuestionSession.answers) {
+			const questionResult: Record<string, unknown> = {
+				status: "answered",
+				url: questionUrl,
+				answers: updatedQuestionSession.answers,
+			}
+			if (updatedQuestionSession.feedback) {
+				questionResult.feedback = updatedQuestionSession.feedback
+			}
+			if (updatedQuestionSession.annotations?.comments?.length) {
+				questionResult.annotations = updatedQuestionSession.annotations
+			}
 			return {
 				content: [
 					{
 						type: "text" as const,
-						text: JSON.stringify({
-							status: "answered",
-							url: questionUrl,
-							answers: updatedQuestionSession.answers,
-						}, null, 2),
+						text: JSON.stringify(questionResult, null, 2),
 					},
 				],
 			}

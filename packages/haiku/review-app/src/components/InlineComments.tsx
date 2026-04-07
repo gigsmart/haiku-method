@@ -12,9 +12,11 @@ interface Props {
   htmlContent: string;
   /** Location context passed to each comment (e.g., "knowledge/DISCOVERY.md" or "Unit 01: Login Screen") */
   location?: string;
+  /** Called whenever the comments list changes, so the parent can track them */
+  onCommentsChange?: (comments: InlineComment[]) => void;
 }
 
-export function InlineComments({ htmlContent, location }: Props) {
+export function InlineComments({ htmlContent, location, onCommentsChange }: Props) {
   const contentRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -109,16 +111,22 @@ export function InlineComments({ htmlContent, location }: Props) {
       highlightEl,
     };
 
-    setComments((prev) => [...prev, entry]);
+    setComments((prev) => {
+      const next = [...prev, entry];
+      onCommentsChange?.(next);
+      return next;
+    });
     setPopoverPos(null);
     pendingSelectionRef.current = null;
     // Don't clear selection — keep the text highlighted via the span
   }
 
   function updateCommentText(index: number, text: string) {
-    setComments((prev) =>
-      prev.map((c, i) => (i === index ? { ...c, comment: text } : c)),
-    );
+    setComments((prev) => {
+      const next = prev.map((c, i) => (i === index ? { ...c, comment: text } : c));
+      onCommentsChange?.(next);
+      return next;
+    });
   }
 
   function removeComment(index: number) {
@@ -132,7 +140,11 @@ export function InlineComments({ htmlContent, location }: Props) {
       parent.removeChild(comment.highlightEl);
       (parent as Element).normalize?.();
     }
-    setComments((prev) => prev.filter((_, i) => i !== index));
+    setComments((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      onCommentsChange?.(next);
+      return next;
+    });
     setActiveComment(null);
   }
 

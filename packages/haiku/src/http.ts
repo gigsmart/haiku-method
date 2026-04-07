@@ -5,7 +5,7 @@ import { extname, join, resolve } from "node:path"
 import type { Duplex } from "node:stream"
 import { z } from "zod"
 import { getSession, updateDesignDirectionSession, updateQuestionSession, updateSession } from "./sessions.js"
-import type { QuestionAnswer, ReviewAnnotations } from "./sessions.js"
+import type { QuestionAnswer, QuestionAnnotations, ReviewAnnotations } from "./sessions.js"
 import { REVIEW_APP_HTML } from "./review-app-html.js"
 
 let httpServer: HttpServer | null = null
@@ -308,7 +308,7 @@ async function handleQuestionAnswerPost(
 		return new Response("Session not found", { status: 404 })
 	}
 
-	let body: { answers: QuestionAnswer[] }
+	let body: { answers: QuestionAnswer[]; feedback?: string; annotations?: QuestionAnnotations }
 	try {
 		const QuestionAnswerSchema = z.object({
 			answers: z.array(
@@ -318,6 +318,20 @@ async function handleQuestionAnswerPost(
 					otherText: z.string().optional(),
 				}),
 			),
+			feedback: z.string().optional(),
+			annotations: z
+				.object({
+					comments: z
+						.array(
+							z.object({
+								selectedText: z.string(),
+								comment: z.string(),
+								paragraph: z.number(),
+							}),
+						)
+						.optional(),
+				})
+				.optional(),
 		})
 		body = QuestionAnswerSchema.parse(await req.json())
 	} catch {
@@ -327,6 +341,8 @@ async function handleQuestionAnswerPost(
 	updateQuestionSession(sessionId, {
 		status: "answered",
 		answers: body.answers,
+		feedback: body.feedback ?? "",
+		annotations: body.annotations,
 	})
 
 
@@ -509,7 +525,9 @@ function handleWebSocketMessage(sessionId: string, raw: string): void {
 	} else if (session.session_type === "question" && type === "answer") {
 		const answers = msg.answers as QuestionAnswer[] | undefined
 		if (answers) {
-			updateQuestionSession(sessionId, { status: "answered", answers })
+			const feedback = (msg.feedback as string) ?? ""
+			const annotations = msg.annotations as QuestionAnnotations | undefined
+			updateQuestionSession(sessionId, { status: "answered", answers, feedback, annotations })
 			sendToWebSocket(sessionId, { ok: true })
 		}
 	} else if (session.session_type === "design_direction" && type === "select") {

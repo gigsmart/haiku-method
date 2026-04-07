@@ -75,6 +75,10 @@ export interface QuestionAnswer {
   otherText?: string;
 }
 
+export interface QuestionAnnotations {
+  comments?: Array<{ selectedText: string; comment: string; paragraph: number }>;
+}
+
 export interface QuestionSession {
   session_type: "question";
   session_id: string;
@@ -85,6 +89,8 @@ export interface QuestionSession {
   imageBaseDirs?: string[];
   status: "pending" | "answered";
   answers: QuestionAnswer[];
+  feedback: string;
+  annotations?: QuestionAnnotations;
   html: string;
 }
 
@@ -161,7 +167,7 @@ export function createSession(
 }
 
 export function createQuestionSession(
-  params: Omit<QuestionSession, "session_type" | "session_id" | "status" | "answers"> & { imagePaths?: string[] }
+  params: Omit<QuestionSession, "session_type" | "session_id" | "status" | "answers" | "feedback"> & { imagePaths?: string[] }
 ): QuestionSession {
   evictSessions();
   const session_id = crypto.randomUUID();
@@ -172,6 +178,7 @@ export function createQuestionSession(
     imagePaths: params.imagePaths ?? [],
     status: "pending",
     answers: [],
+    feedback: "",
   };
   sessions.set(session_id, session);
   sessionCreatedAt.set(session_id, Date.now());
@@ -212,7 +219,7 @@ export function updateSession(
 
 export function updateQuestionSession(
   sessionId: string,
-  updates: Partial<Pick<QuestionSession, "status" | "answers">>
+  updates: Partial<Pick<QuestionSession, "status" | "answers" | "feedback" | "annotations">>
 ): QuestionSession | undefined {
   const session = sessions.get(sessionId);
   if (!session || session.session_type !== "question") return undefined;

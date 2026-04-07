@@ -4,6 +4,8 @@ import { MarkdownViewer } from "@haiku/shared";
 import { submitAnswers, tryCloseTab } from "../hooks/useSession";
 import { Card, SectionHeading } from "./Card";
 import { SubmitSuccess } from "./SubmitSuccess";
+import { InlineComments, type InlineComment } from "./InlineComments";
+import { marked } from "marked";
 
 interface Props {
   session: SessionData;
@@ -22,6 +24,8 @@ export function QuestionPage({ session, sessionId, wsRef }: Props) {
   const [otherTexts, setOtherTexts] = useState<Map<number, string>>(
     () => new Map(questions.map((_, i) => [i, ""])),
   );
+  const [feedback, setFeedback] = useState("");
+  const inlineCommentsRef = useRef<InlineComment[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
   const [showClose, setShowClose] = useState(false);
@@ -68,12 +72,20 @@ export function QuestionPage({ session, sessionId, wsRef }: Props) {
       };
     });
 
+    const annotations = inlineCommentsRef.current.length > 0
+      ? { comments: inlineCommentsRef.current.map(c => ({
+          selectedText: c.selectedText,
+          comment: c.comment,
+          paragraph: c.paragraph,
+        })) }
+      : undefined;
+
     try {
-      await submitAnswers(sessionId, answers, wsRef);
+      await submitAnswers(sessionId, answers, wsRef, feedback, annotations);
       setResult({ success: true, message: "Answers submitted successfully." });
       tryCloseTab(setShowClose, {
         url: `/question/${sessionId}/answer`,
-        body: { answers },
+        body: { answers, feedback, annotations },
       });
     } catch (err) {
       setResult({
@@ -93,8 +105,12 @@ export function QuestionPage({ session, sessionId, wsRef }: Props) {
       {/* Context block */}
       {context && (
         <Card>
-          <SectionHeading>Context</SectionHeading>
-          <MarkdownViewer id="question-context">{context}</MarkdownViewer>
+          <SectionHeading>Context -- Comment on text</SectionHeading>
+          <p className="text-xs text-stone-500 dark:text-stone-400 mb-3">Select text to add inline comments.</p>
+          <InlineComments
+            htmlContent={markdownToSimpleHtml(context)}
+            onCommentsChange={(comments) => { inlineCommentsRef.current = comments; }}
+          />
         </Card>
       )}
 
@@ -215,6 +231,18 @@ export function QuestionPage({ session, sessionId, wsRef }: Props) {
           );
         })}
 
+        <Card>
+          <SectionHeading>Additional Feedback</SectionHeading>
+          <textarea
+            className="w-full p-3 border border-stone-300 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-y text-sm"
+            rows={3}
+            placeholder="Any additional notes or feedback..."
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            disabled={submitting}
+          />
+        </Card>
+
         <button
           type="submit"
           disabled={submitting}
@@ -238,4 +266,10 @@ export function QuestionPage({ session, sessionId, wsRef }: Props) {
       </form>
     </>
   );
+}
+
+/** Simple client-side markdown to HTML using marked */
+function markdownToSimpleHtml(md: string): string {
+  const result = marked.parse(md, { async: false });
+  return typeof result === "string" ? result : String(result);
 }
