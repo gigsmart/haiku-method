@@ -554,7 +554,7 @@ function handleWebSocketMessage(sessionId: string, raw: string): void {
  * Handle HTTP upgrade requests for WebSocket connections.
  * Path: /ws/session/:sessionId
  */
-function handleUpgrade(req: IncomingMessage, socket: Duplex, _head: Buffer): void {
+function handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer): void {
 	const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "127.0.0.1"}`)
 	const match = url.pathname.match(/^\/ws\/session\/([^/]+)$/)
 
@@ -594,8 +594,12 @@ function handleUpgrade(req: IncomingMessage, socket: Duplex, _head: Buffer): voi
 	// Track this connection
 	trackWebSocket(sessionId, socket)
 
-	// Buffer for fragmented reads
-	let frameBuffer = Buffer.alloc(0)
+	// Buffer for fragmented reads — seed with leftover bytes from the HTTP
+	// parser (the `head` argument from the upgrade event). Without this,
+	// any data the client sends in the same TCP segment as the upgrade
+	// request is silently dropped, which can cause the first WS frame to
+	// be lost and the connection to appear broken.
+	let frameBuffer = head.length > 0 ? Buffer.from(head) : Buffer.alloc(0)
 
 	socket.on("data", (chunk: Buffer) => {
 		frameBuffer = Buffer.concat([frameBuffer, chunk])
@@ -605,7 +609,15 @@ function handleUpgrade(req: IncomingMessage, socket: Duplex, _head: Buffer): voi
 			const result = decodeWebSocketFrame(frameBuffer)
 			if (result === null) break // need more data
 			frameBuffer = frameBuffer.subarray(result.consumed)
-			if (result.opcode === 0x09) {
+			if (result.opcode === 0x08) {
+				// Close frame — send close back and tear down (RFC 6455 §5.5.1)
+				const closeFrame = Buffer.alloc(2)
+				closeFrame[0] = 0x88 // FIN + close opcode
+				closeFrame[1] = 0
+				socket.write(closeFrame)
+				socket.destroy()
+				break
+			} else if (result.opcode === 0x09) {
 				// Respond to ping with pong (RFC 6455 §5.5.3)
 				const pongHeader = Buffer.alloc(2)
 				pongHeader[0] = 0x8a // FIN + pong opcode
@@ -739,8 +751,11 @@ export async function startHttpServer(): Promise<number> {
 function listenOnPort(port: number): Promise<void> {
 	return new Promise((resolve, reject) => {
 		const server = createServer(async (req, res) => {
-			// Build a Web API Request from the incoming Node request
-			const url = `http://127.0.0.1:${port}${req.url ?? "/"}`
+			// Build a Web API Request from the incoming Node request.
+			// Use the Host header so the URL has the actual port even when
+			// the requested port was 0 (OS-assigned).
+			const host = req.headers.host ?? `127.0.0.1:${port}`
+			const url = `http://${host}${req.url ?? "/"}`
 			const headers = new Headers()
 			for (const [key, value] of Object.entries(req.headers)) {
 				if (value) {

@@ -8,7 +8,9 @@ import { AnnotationCanvas, type AnnotationPin } from "./AnnotationCanvas";
 import { InlineComments, type InlineComment, type InlineCommentEntry, scrollToInlineComment } from "./InlineComments";
 import { CommentTray, type TrayComment } from "./CommentTray";
 import { MermaidDiagram } from "./MermaidDiagram";
-import { marked } from "marked";
+import { remark } from "remark";
+import remarkGfm from "remark-gfm";
+import remarkHtml from "remark-html";
 
 interface Props {
   session: SessionData;
@@ -793,10 +795,9 @@ function MockupEmbeds({ mockups }: { mockups: MockupInfo[] }) {
   );
 }
 
-/** Simple client-side markdown to HTML using react-markdown isn't suitable here
- *  because InlineComments needs raw HTML. Use a minimal conversion. */
+/** Simple client-side markdown to HTML using remark.
+ *  InlineComments needs raw HTML, so we use remark instead of react-markdown. */
 function markdownToSimpleHtml(md: string): string {
-  const result = marked.parse(md, { async: false });
-  return typeof result === "string" ? result : String(result);
+  return remark().use(remarkGfm).use(remarkHtml).processSync(md).toString();
 }
 

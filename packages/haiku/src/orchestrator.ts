@@ -29,6 +29,8 @@ import {
 	syncSessionMetadata,
 } from "./state-tools.js"
 import { createIntentBranch, isOnIntentBranch, createUnitWorktree } from "./git-worktree.js"
+import { computeWaves } from "./dag.js"
+import type { DAGGraph } from "./types.js"
 
 // ── Path helpers ───────────────────────────────────────────────────────────
 
@@ -423,9 +425,19 @@ export function runNext(slug: string): OrchestratorAction {
 		if (execTypeViolation) return execTypeViolation
 
 		const units = listUnits(iDir, currentStage)
-		const readyUnits = units.filter(u => u.status === "pending" && u.depsComplete)
 		const activeUnits = units.filter(u => u.status === "active")
 		const allComplete = units.every(u => u.status === "completed")
+
+		// Compute waves from the DAG so we only release one wave at a time.
+		// A wave completes when all its units are completed; then the next
+		// wave's units become ready.
+		const { unitWave, totalWaves } = computeUnitWaves(units)
+		const wave = currentWaveNumber(units, unitWave, totalWaves)
+
+		// Filter ready units to only those in the current wave
+		const readyUnits = units.filter(u =>
+			u.status === "pending" && u.depsComplete && unitWave.get(u.name) === wave
+		)
 
 		if (allComplete) {
 			// FSM side effect: advance phase
@@ -451,9 +463,11 @@ export function runNext(slug: string): OrchestratorAction {
 				unit: unit.name,
 				hat: unit.hat,
 				bolt: unit.bolt,
+				wave: unitWave.get(unit.name) ?? wave,
+				total_waves: totalWaves,
 				hats,
 				stage_metadata: resolveStageMetadata(studio, currentStage),
-				message: `Continue unit '${unit.name}' — hat: ${unit.hat}, bolt: ${unit.bolt}`,
+				message: `Continue unit '${unit.name}' — hat: ${unit.hat}, bolt: ${unit.bolt}, wave: ${unitWave.get(unit.name) ?? wave}/${totalWaves}`,
 			}
 		}
 
@@ -469,12 +483,14 @@ export function runNext(slug: string): OrchestratorAction {
 				intent: slug,
 				studio,
 				stage: currentStage,
+				wave,
+				total_waves: totalWaves,
 				units: readyUnits.map(u => u.name),
 				first_hat: hats[0] || "",
 				hats,
 				worktrees: unitWorktrees,
 				stage_metadata: resolveStageMetadata(studio, currentStage),
-				message: `${readyUnits.length} units ready for parallel execution: ${readyUnits.map(u => u.name).join(", ")}`,
+				message: `Wave ${wave}/${totalWaves} — ${readyUnits.length} units ready for parallel execution: ${readyUnits.map(u => u.name).join(", ")}`,
 			}
 		}
 
@@ -488,12 +504,14 @@ export function runNext(slug: string): OrchestratorAction {
 				intent: slug,
 				studio,
 				stage: currentStage,
+				wave,
+				total_waves: totalWaves,
 				unit: unit.name,
 				first_hat: hats[0] || "",
 				hats,
 				worktree: worktreePath,
 				stage_metadata: resolveStageMetadata(studio, currentStage),
-				message: `Start unit '${unit.name}' with hat '${hats[0] || ""}' in stage '${currentStage}'`,
+				message: `Wave ${wave}/${totalWaves} — start unit '${unit.name}' with hat '${hats[0] || ""}' in stage '${currentStage}'`,
 			}
 		}
 
@@ -503,6 +521,8 @@ export function runNext(slug: string): OrchestratorAction {
 			action: "blocked",
 			intent: slug,
 			stage: currentStage,
+			wave,
+			total_waves: totalWaves,
 			blocked_units: blockedUnits.map(u => u.name),
 			message: `${blockedUnits.length} unit(s) blocked — dependencies not met or manual intervention needed`,
 		}
@@ -748,6 +768,59 @@ function listUnits(intentDirPath: string, stage: string): UnitInfo[] {
 	}
 
 	return units
+}
+
+/**
+ * Build a DAGGraph from UnitInfo[] and compute wave assignments.
+ * Returns { waves, unitWave, totalWaves } where:
+ *  - waves: Map<waveNumber, unitName[]>
+ *  - unitWave: Map<unitName, waveNumber>
+ *  - totalWaves: total number of waves
+ */
+function computeUnitWaves(units: UnitInfo[]): { waves: Map<number, string[]>; unitWave: Map<string, number>; totalWaves: number } {
+	// Build a DAGGraph from UnitInfo[]
+	const nodes = units.map(u => ({ id: u.name, status: u.status }))
+	const edges: Array<{ from: string; to: string }> = []
+	const adjacency = new Map<string, string[]>()
+
+	for (const u of units) {
+		adjacency.set(u.name, [])
+	}
+	for (const u of units) {
+		for (const dep of u.dependsOn) {
+			edges.push({ from: dep, to: u.name })
+			const existing = adjacency.get(dep)
+			if (existing) {
+				existing.push(u.name)
+			}
+		}
+	}
+
+	const dag: DAGGraph = { nodes, edges, adjacency }
+	const waves = computeWaves(dag)
+
+	// Build reverse map: unit name → wave number
+	const unitWave = new Map<string, number>()
+	let totalWaves = 0
+	for (const [wave, names] of waves) {
+		for (const name of names) {
+			unitWave.set(name, wave)
+		}
+		if (wave + 1 > totalWaves) totalWaves = wave + 1
+	}
+
+	return { waves, unitWave, totalWaves }
+}
+
+/**
+ * Find the current wave: the lowest wave number that still has pending units.
+ */
+function currentWaveNumber(units: UnitInfo[], unitWave: Map<string, number>, totalWaves: number): number {
+	for (let w = 0; w < totalWaves; w++) {
+		const hasIncomplete = units.some(u => unitWave.get(u.name) === w && u.status !== "completed")
+		if (hasIncomplete) return w
+	}
+	return 0
 }
 
 // ── Go back (stage/phase regression) ──────────────────────────────────────

@@ -35,5 +35,6 @@ export {
   buildDAG,
   topologicalSort,
   getReadyUnits,
+  computeWaves,
   toMermaidDefinition,
 } from "./dag.js";

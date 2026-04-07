@@ -5,7 +5,9 @@ import { submitAnswers, tryCloseTab } from "../hooks/useSession";
 import { Card, SectionHeading } from "./Card";
 import { SubmitSuccess } from "./SubmitSuccess";
 import { InlineComments, type InlineComment } from "./InlineComments";
-import { marked } from "marked";
+import { remark } from "remark";
+import remarkGfm from "remark-gfm";
+import remarkHtml from "remark-html";
 
 interface Props {
   session: SessionData;
@@ -268,8 +270,7 @@ export function QuestionPage({ session, sessionId, wsRef }: Props) {
   );
 }
 
-/** Simple client-side markdown to HTML using marked */
+/** Simple client-side markdown to HTML using remark */
 function markdownToSimpleHtml(md: string): string {
-  const result = marked.parse(md, { async: false });
-  return typeof result === "string" ? result : String(result);
+  return remark().use(remarkGfm).use(remarkHtml).processSync(md).toString();
 }

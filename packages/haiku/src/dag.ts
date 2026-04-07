@@ -90,6 +90,35 @@ export function topologicalSort(dag: DAGGraph): string[] {
 }
 
 /**
+ * Group units into dependency waves using topological ordering.
+ * Wave 0: units with no dependencies.
+ * Wave N: units whose dependencies are all in waves 0 through N-1.
+ */
+export function computeWaves(dag: DAGGraph): Map<number, string[]> {
+	const sorted = topologicalSort(dag)
+	const nodeWave = new Map<string, number>()
+
+	for (const nodeId of sorted) {
+		const deps = dag.edges.filter((e) => e.to === nodeId).map((e) => e.from)
+		if (deps.length === 0) {
+			nodeWave.set(nodeId, 0)
+		} else {
+			const maxDepWave = Math.max(...deps.map((d) => nodeWave.get(d) ?? 0))
+			nodeWave.set(nodeId, maxDepWave + 1)
+		}
+	}
+
+	const waves = new Map<number, string[]>()
+	for (const [nodeId, wave] of nodeWave) {
+		const group = waves.get(wave) ?? []
+		group.push(nodeId)
+		waves.set(wave, group)
+	}
+
+	return waves
+}
+
+/**
  * Get units that are ready to work on: all dependencies completed.
  */
 export function getReadyUnits(
@@ -165,23 +194,50 @@ export function toMermaidDefinition(
 		byStage.get(stage)!.push(unit)
 	}
 
-	// Only use subgraph if there are multiple stages
-	const useSubgraphs = stageOrder.length > 1
+	// When there are multiple stages, group by stage; otherwise group by wave
+	const useStageSubgraphs = stageOrder.length > 1
 
-	for (const stage of stageOrder) {
-		const stageUnits = byStage.get(stage) || []
-		if (useSubgraphs) {
+	if (useStageSubgraphs) {
+		for (const stage of stageOrder) {
+			const stageUnits = byStage.get(stage) || []
 			const stageLabel = escapeMermaidLabel(stage.charAt(0).toUpperCase() + stage.slice(1))
 			lines.push(`  subgraph ${sanitizeMermaidNodeId(`stage_${stage}`)}["${stageLabel}"]`)
-		}
-		for (const unit of stageUnits) {
-			const rawLabel = unit.title || unit.slug
-			const label = escapeMermaidLabel(rawLabel)
-			const nodeId = sanitizeMermaidNodeId(unit.slug)
-			lines.push(`    ${nodeId}["${label}"]`)
-		}
-		if (useSubgraphs) {
+			for (const unit of stageUnits) {
+				const rawLabel = unit.title || unit.slug
+				const label = escapeMermaidLabel(rawLabel)
+				const nodeId = sanitizeMermaidNodeId(unit.slug)
+				lines.push(`    ${nodeId}["${label}"]`)
+			}
 			lines.push("  end")
+		}
+	} else {
+		// Single stage (or no stage) — group by dependency wave
+		const waves = computeWaves(dag)
+		const unitMap = new Map(units.map(u => [u.slug, u]))
+		const waveNumbers = Array.from(waves.keys()).sort((a, b) => a - b)
+		const useWaveSubgraphs = waveNumbers.length > 1
+
+		for (const waveNum of waveNumbers) {
+			const waveNodeIds = waves.get(waveNum) ?? []
+			// Only include units that are in the provided units list
+			const waveUnits = waveNodeIds
+				.filter(id => unitMap.has(id))
+				.map(id => unitMap.get(id)!)
+
+			if (waveUnits.length === 0) continue
+
+			if (useWaveSubgraphs) {
+				lines.push(`  subgraph ${sanitizeMermaidNodeId(`wave_${waveNum}`)}["Wave ${waveNum}"]`)
+			}
+			for (const unit of waveUnits) {
+				const rawLabel = unit.title || unit.slug
+				const label = escapeMermaidLabel(rawLabel)
+				const nodeId = sanitizeMermaidNodeId(unit.slug)
+				lines.push(`    ${nodeId}["${label}"]`)
+			}
+			if (useWaveSubgraphs) {
+				lines.push("  end")
+			}
 		}
 	}
 

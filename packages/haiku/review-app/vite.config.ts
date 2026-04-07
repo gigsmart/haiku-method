@@ -19,6 +19,7 @@ export default defineConfig({
   },
   build: {
     // Inline everything into a single HTML file
+    minify: false,
     sourcemap: true,
     cssCodeSplit: false,
     assetsInlineLimit: Infinity,
