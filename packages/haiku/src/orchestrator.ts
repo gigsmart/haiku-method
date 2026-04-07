@@ -732,6 +732,10 @@ export function runNext(slug: string): OrchestratorAction {
 
 	// Stage in review phase
 	if (phase === "review") {
+		// Secondary output validation — hard check before adversarial review
+		const reviewOutputCheck = validateStageOutputs(slug, currentStage, studio)
+		if (reviewOutputCheck) return reviewOutputCheck
+
 		// FSM side effect: advance to gate phase so next haiku_run_next call
 		// proceeds to gate logic after the agent completes the review work.
 		fsmAdvancePhase(slug, currentStage, "gate")

@@ -259,7 +259,8 @@ export async function parseKnowledgeFiles(
     for (const entry of entries.sort()) {
       if (!entry.endsWith(".md")) continue;
       try {
-        const content = await readFile(join(knowledgeDir, entry), "utf-8");
+        const raw = await readFile(join(knowledgeDir, entry), "utf-8");
+        const { content } = matter(raw);
         files.push({
           name: entry.replace(/\.md$/, ""),
           content,
@@ -294,7 +295,8 @@ export async function parseStageArtifacts(
           // Capture markdown files that aren't state.json
           if (file.endsWith(".md")) {
             try {
-              const content = await readFile(join(stageDir, file), "utf-8");
+              const raw = await readFile(join(stageDir, file), "utf-8");
+              const { content } = matter(raw);
               artifacts.push({
                 stage: stageEntry.name,
                 name: file.replace(/\.md$/, ""),

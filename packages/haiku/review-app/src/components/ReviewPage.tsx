@@ -399,44 +399,49 @@ function IntentReview({
       disabled: knowledgeFiles.length === 0 && stageArtifacts.length === 0,
       content: (
         <>
-          {(knowledgeFiles.length > 0 || stageArtifacts.length > 0) && (
-            <Card>
-              <SectionHeading>Contents</SectionHeading>
-              <ul className="space-y-1 text-sm">
-                {knowledgeFiles.map((kf, i) => (
-                  <li key={`kf-${i}`}>
-                    <a href={`#knowledge-${i}`} className="text-teal-600 dark:text-teal-400 hover:underline">
+          <div className="flex gap-6">
+            {/* Sticky sidebar TOC */}
+            <div className="hidden lg:block w-56 flex-shrink-0">
+              <div className="sticky top-4">
+                <nav className="text-sm space-y-1">
+                  <h3 className="font-semibold text-stone-900 dark:text-stone-100 mb-2">Contents</h3>
+                  {knowledgeFiles.map((kf, i) => (
+                    <a key={`kf-${i}`} href={`#knowledge-${i}`}
+                       className="block py-1 px-2 rounded text-stone-600 dark:text-stone-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors truncate">
                       {kf.name}
                     </a>
-                  </li>
-                ))}
-                {stageArtifacts.map((sa, i) => (
-                  <li key={`sa-${i}`}>
-                    <a href={`#artifact-${i}`} className="text-teal-600 dark:text-teal-400 hover:underline">
+                  ))}
+                  {stageArtifacts.map((sa, i) => (
+                    <a key={`sa-${i}`} href={`#artifact-${i}`}
+                       className="block py-1 px-2 rounded text-stone-600 dark:text-stone-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors truncate">
                       {sa.stage}: {sa.name}
                     </a>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          )}
-          {knowledgeFiles.map((kf, i) => (
-            <Card key={`kf-${i}`} id={`knowledge-${i}`}>
-              <SectionHeading>{kf.name}</SectionHeading>
-              <InlineComments htmlContent={markdownToSimpleHtml(kf.content)} onCommentsChange={onInlineCommentsChange} />
-            </Card>
-          ))}
-          {stageArtifacts.map((sa, i) => (
-            <Card key={`sa-${i}`} id={`artifact-${i}`}>
-              <SectionHeading>{sa.stage}: {sa.name}</SectionHeading>
-              <InlineComments htmlContent={markdownToSimpleHtml(sa.content)} onCommentsChange={onInlineCommentsChange} />
-            </Card>
-          ))}
-          {knowledgeFiles.length === 0 && stageArtifacts.length === 0 && (
-            <Card>
-              <p className="text-stone-500 dark:text-stone-400 italic">No knowledge files or stage artifacts available.</p>
-            </Card>
-          )}
+                  ))}
+                </nav>
+              </div>
+            </div>
+
+            {/* Content area */}
+            <div className="flex-1 min-w-0">
+              {knowledgeFiles.map((kf, i) => (
+                <Card key={`kf-${i}`} id={`knowledge-${i}`}>
+                  <SectionHeading>{kf.name}</SectionHeading>
+                  <InlineComments htmlContent={markdownToSimpleHtml(kf.content)} onCommentsChange={onInlineCommentsChange} />
+                </Card>
+              ))}
+              {stageArtifacts.map((sa, i) => (
+                <Card key={`sa-${i}`} id={`artifact-${i}`}>
+                  <SectionHeading>{sa.stage}: {sa.name}</SectionHeading>
+                  <InlineComments htmlContent={markdownToSimpleHtml(sa.content)} onCommentsChange={onInlineCommentsChange} />
+                </Card>
+              ))}
+              {knowledgeFiles.length === 0 && stageArtifacts.length === 0 && (
+                <Card>
+                  <p className="text-stone-500 dark:text-stone-400 italic">No knowledge files or stage artifacts available.</p>
+                </Card>
+              )}
+            </div>
+          </div>
         </>
       ),
     },
