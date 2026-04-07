@@ -1,16 +1,17 @@
 ---
 name: unit-01-behavioral-spec
 type: product
-status: pending
+status: active
 depends_on: []
-bolt: 0
-hat: ""
+bolt: 1
+hat: product-owner
 refs:
   - knowledge/DISCOVERY.md
   - knowledge/PROMPTS-SERVER-DISCOVERY.md
   - knowledge/CORE-PROMPTS-DISCOVERY.md
   - knowledge/SUPPORTING-PROMPTS-DISCOVERY.md
   - stages/design/artifacts/PROMPT-CATALOG.md
+started_at: '2026-04-07T03:37:59Z'
 ---
 
 # Behavioral Spec
