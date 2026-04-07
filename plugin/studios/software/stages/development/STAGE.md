@@ -3,7 +3,7 @@ name: development
 description: Implement the specification through code
 hats: [planner, builder, reviewer]
 review: ask
-elaboration: autonomous
+elaboration: collaborative
 unit_types: [backend, frontend, fullstack]
 inputs:
   - stage: inception
