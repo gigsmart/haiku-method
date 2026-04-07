@@ -1,7 +1,11 @@
 ---
-status: pending
+status: active
 type: frontend
-depends_on: [unit-03-session-bridge]
+depends_on:
+  - unit-03-session-bridge
+bolt: 1
+hat: architect
+started_at: '2026-04-07T14:39:28Z'
 ---
 
 # Interactive UI (Question + Design Direction)
