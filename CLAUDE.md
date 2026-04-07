@@ -31,8 +31,7 @@ When modifying any component, check if other components need corresponding updat
 
 - Paper: `website/content/papers/haiku-method.md`
 - Plugin metadata: `plugin/.claude-plugin/plugin.json`
-- Plugin skills: `plugin/skills/*/SKILL.md` (thin stubs — naming/discovery layer)
-- Plugin prompts: `packages/haiku/src/prompts/*.ts` (MCP prompt handlers — behavior layer)
+- Plugin prompts: `packages/haiku/src/prompts/*.ts` (MCP prompt handlers — all behavior lives here)
 - Plugin studios: `plugin/studios/*/STUDIO.md`
 - Plugin stages: `plugin/studios/*/stages/*/STAGE.md`
 - Plugin hats: `plugin/studios/*/stages/*/hats/*.md`
