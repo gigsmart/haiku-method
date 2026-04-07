@@ -134,12 +134,17 @@ Elaborate on the stage: research the problem space, produce knowledge artifacts,
 11. After user approval: `haiku_stage_set { intent, stage, field: "phase", value: "execute" }`
 12. Call `haiku_run_next` again
 
-**MANDATORY: Visual tools for all user-facing content.** You MUST use visual MCP tools — never present plans, specs, wireframes, or reviews as plain conversation text. This is not optional:
-- Elaboration questions with rich content → `ask_user_visual_question`
-- Final elaboration plan → `open_review` (in a background subagent)
-- Gate review → `open_review` (auto-opened by orchestrator)
-- Design direction → `pick_design_direction`
-Failure to use these tools is a process violation.
+## Visual Review Requirements (RFC 2119)
+
+The key words "MUST", "MUST NOT", "SHALL", "SHALL NOT", "REQUIRED" in this section are to be interpreted as described in RFC 2119.
+
+1. The agent **MUST** use `open_review` to present elaboration plans. Presenting unit lists, criteria, or stage summaries as plain conversation text is a **violation**.
+2. The agent **MUST** run `open_review` in a **background subagent** (`run_in_background: true`). The tool blocks — running it in the foreground freezes the conversation.
+3. The agent **MUST** use `ask_user_visual_question` for any elaboration question involving rich content (specs, wireframes, multi-option comparisons, formatted tables). Simple yes/no clarifications MAY use the terminal.
+4. The agent **MUST** use `pick_design_direction` when presenting design alternatives.
+5. The agent **MUST NOT** present plans, reviews, specs, or structured data as plain conversation text when a visual MCP tool exists for that content type.
+6. The agent **SHALL** verify that the visual review tool was invoked before advancing the phase. If `open_review` was not called, the agent **MUST** call it before setting `phase: "execute"`.
+7. Gate reviews **MUST** use `open_review`. The orchestrator auto-opens it on `gate_ask`. If the response lacks `review_url`, the agent **MUST** call it explicitly in a background subagent.
 
 **Discovery vs. Output artifacts:** Stages define two artifact directories:
 - `stages/{stage}/discovery/` — knowledge artifacts produced during elaboration (research, analysis, specs)
