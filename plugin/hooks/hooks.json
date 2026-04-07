@@ -22,6 +22,16 @@
         ]
       },
       {
+        "matcher": "mcp__.*__haiku_",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook inject-state-file",
+            "timeout": 5
+          }
+        ]
+      },
+      {
         "matcher": "Write|Edit",
         "hooks": [
           {
