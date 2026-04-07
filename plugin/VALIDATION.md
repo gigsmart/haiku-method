@@ -461,6 +461,60 @@ Every MCP state transition emits its OTEL event — no manual calls needed:
 
 ---
 
+## Scenario 16: Validation Audit (2026-04-07)
+
+Systematic validation of every critical behavior. Status: PASS/FAIL/PARTIAL.
+
+### Intent Lifecycle
+
+- [ ] **One intent per session** — `haiku_intent_create` rejects if session has active intent (PARTIAL: only when state_file provided)
+- [ ] **Conversation context captured** — intent creation should summarize prior conversation into the intent (FAIL: only description arg, no context)
+- [ ] **Pre-start confirmation** — intent reviewed before first stage begins (FAIL: no gate between creation and first haiku_run_next)
+- [ ] **Stage skipping** — `skip_stages` in intent frontmatter allows skipping stages (PASS)
+
+### Elaboration Quality
+
+- [ ] **Collaborative engagement enforced** — multi-turn conversation for collaborative stages, not just instructed (PARTIAL: instructional only)
+- [ ] **Proper tools for questions** — `ask_user_visual_question` for rich content during elaboration (PASS: mentioned in prompts)
+- [ ] **Adversarial review of elaboration** — review agents check specs BEFORE pre-execution gate (FAIL: no automated review of elaboration output)
+- [ ] **Discovery artifact validation** — discovery artifacts validated at elaborate→execute transition (FAIL: only outputs validated, not discovery)
+
+### Gate Enforcement
+
+- [ ] **Pre-execution review gate** — FSM blocks elaborate→execute until user approves (PASS: gate_review enforced)
+- [ ] **Inter-stage gating by mode** — auto advances in continuous, pauses in discrete, ask/external open review (PASS)
+- [ ] **Changes routing** — changes_requested stays in current phase, loops back (PASS)
+- [ ] **External review tracking** — URL stored and checked on resume (PARTIAL: field exists but not populated by gate flow)
+- [ ] **Await gate specification** — user told WHERE to trigger the external event (FAIL: no mechanism to specify trigger location)
+
+### Execution Quality
+
+- [ ] **Wave-based parallel execution** — units grouped by dependency waves (PASS)
+- [ ] **One subagent per hat** — main orchestrates, subagents do hat work (PASS)
+- [ ] **Advance/fail flow** — subagent calls advance_hat or unit_fail (PASS)
+- [ ] **Bolt limits** — maximum retry count prevents infinite loops (FAIL: no max bolt enforced)
+- [ ] **Output validation** — required outputs verified before review phase (PASS)
+
+### Studio Completeness
+
+- [ ] **All studios have hats** — every stage has hat definitions (PASS)
+- [ ] **All studios have review agents** — every stage has review-agent definitions (PASS)
+- [ ] **All studios have discovery definitions** — (FAIL: 7/19 studios missing discovery in some stages)
+- [ ] **All studios have output definitions** — (FAIL: only software studio has outputs; 18/19 missing)
+
+### Known Gaps (Must Fix)
+
+1. Output definitions missing in 18/19 studios — only software is complete
+2. No bolt limit — units can retry infinitely
+3. No discovery artifact validation at phase transition
+4. No adversarial review of elaboration artifacts before execution gate
+5. Conversation context not captured in intent creation
+6. No pre-start confirmation gate after intent creation
+7. Collaborative elaboration is instructional only, not enforced
+8. External/await gates don't track or specify where reviews are posted
+
+---
+
 ## How to Validate
 
 An LLM validates this document by:
