@@ -843,7 +843,7 @@ setOpenReviewHandler(async (intentDirRel: string, reviewType: string) => {
 	const stageArtifacts = parseStageArtifacts(intentDirAbs)
 	Object.assign(session, { stageStates, knowledgeFiles, stageArtifacts })
 
-	session.html = renderReviewPage({ intent, units, criteria, reviewType: reviewType as "intent" | "unit", target: "", sessionId: session.session_id, mermaid, intentMockups: [], unitMockups: {} })
+	session.html = renderReviewPage({ intent, units, criteria, reviewType: reviewType as "intent" | "unit", target: "", sessionId: session.session_id, mermaid, intentMockups: [], unitMockups: new Map() })
 
 	const port = await startHttpServer()
 	const reviewUrl = `http://127.0.0.1:${port}/review/${session.session_id}`
