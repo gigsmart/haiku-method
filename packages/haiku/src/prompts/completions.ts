@@ -88,6 +88,7 @@ function resolveStudioFromContext(context?: Record<string, string>): string | nu
 	// If intent is in context, resolve its studio
 	if (context?.intent) {
 		try {
+			validateIdentifier(context.intent, "intent slug")
 			const dir = intentDir(context.intent)
 			const raw = readFileSync(join(dir, "intent.md"), "utf8")
 			const { data } = parseFrontmatter(raw)

@@ -819,7 +819,7 @@ registerPrompt({
 			`**Diff base:** ${diffBase}\n` +
 			`**Changed files:**\n\`\`\`\n${changedFiles}\n\`\`\`\n\n` +
 			`**Diff stats:**\n\`\`\`\n${diffStat}\n\`\`\`\n\n` +
-			(reviewGuidelines ? `### Review Guidelines (REVIEW.md)\n\n${reviewGuidelines}\n\n` : "") +
+			(reviewGuidelines ? `### Review Guidelines (REVIEW.md)\n\n${reviewGuidelines.slice(0, 5000)}${reviewGuidelines.length > 5000 ? "\n...(truncated)" : ""}\n\n` : "") +
 			(claudeMd ? `### Project Instructions (CLAUDE.md)\n\n${claudeMd.slice(0, 5000)}${claudeMd.length > 5000 ? "\n...(truncated)" : ""}\n\n` : "") +
 			`### Review Agents Config\n\n${reviewAgentsConfig}\n\n` +
 			`### Full Diff\n\n\`\`\`diff\n${diffContent}\n\`\`\`\n` +

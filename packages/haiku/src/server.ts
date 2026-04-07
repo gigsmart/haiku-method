@@ -132,6 +132,7 @@ const server = new Server(
 import { stateToolDefs, handleStateTool } from "./state-tools.js"
 import { orchestratorToolDefs, handleOrchestratorTool } from "./orchestrator.js"
 import { listPrompts, getPrompt, completeArgument } from "./prompts/index.js"
+// Side-effect imports: each file calls registerPrompt() at module load time. Add a new import here for each new prompt file.
 import "./prompts/core.js"
 import "./prompts/complex.js"
 import "./prompts/simple.js"

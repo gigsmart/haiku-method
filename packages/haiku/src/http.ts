@@ -403,7 +403,7 @@ async function handleDirectionSelectPost(
 // are routed to the same update functions as the HTTP POST endpoints.
 // This lets tool handlers use event-based waitForSession() instead of polling.
 
-const WS_MAGIC = "258EAFA5-E914-47DA-95CA-5AB5DC85B14"
+const WS_MAGIC = "258EAFA5-E914-47DA-95CA-C5AB5DC85B11"
 
 /** Active WebSocket connections keyed by session ID */
 const wsConnections = new Map<string, Duplex>()
@@ -454,10 +454,11 @@ function encodeWebSocketFrame(payload: Buffer): Buffer {
 
 /**
  * Decode a single WebSocket frame from a client (masked).
- * Returns the UTF-8 payload string, or null if the frame is a close/ping/pong
- * or cannot be decoded.
+ * Returns { payload, opcode, consumed } on success, or null if more data is needed.
+ * payload is null for non-text frames (close, ping, pong, binary).
+ * consumed is the number of bytes to advance the buffer regardless of frame type.
  */
-function decodeWebSocketFrame(buf: Buffer): string | null {
+function decodeWebSocketFrame(buf: Buffer): { payload: string | null; opcode: number; consumed: number } | null {
 	if (buf.length < 2) return null
 
 	const opcode = buf[0] & 0x0f
@@ -485,21 +486,23 @@ function decodeWebSocketFrame(buf: Buffer): string | null {
 
 	if (buf.length < offset + payloadLen) return null
 
-	const payload = buf.subarray(offset, offset + payloadLen)
+	const payloadBuf = buf.subarray(offset, offset + payloadLen)
 	if (mask) {
-		for (let i = 0; i < payload.length; i++) {
-			payload[i] ^= mask[i % 4]
+		for (let i = 0; i < payloadBuf.length; i++) {
+			payloadBuf[i] ^= mask[i % 4]
 		}
 	}
 
-	// Handle close frame
-	if (opcode === 0x08) return null
-	// Handle ping — respond with pong
-	if (opcode === 0x09) return null
-	// Only process text frames
-	if (opcode !== 0x01) return null
+	const consumed = offset + payloadLen
 
-	return payload.toString("utf8")
+	// Handle close and ping frames — return consumed so buffer advances
+	if (opcode === 0x08) return { payload: null, opcode, consumed }
+	// Ping — caller should send pong (RFC 6455 §5.5.3)
+	if (opcode === 0x09) return { payload: payloadBuf.toString("utf8"), opcode, consumed }
+	// Only process text frames
+	if (opcode !== 0x01) return { payload: null, opcode, consumed }
+
+	return { payload: payloadBuf.toString("utf8"), opcode, consumed }
 }
 
 /** Handle an incoming WebSocket message: parse and route to the appropriate update function */
@@ -597,14 +600,22 @@ function handleUpgrade(req: IncomingMessage, socket: Duplex, _head: Buffer): voi
 	socket.on("data", (chunk: Buffer) => {
 		frameBuffer = Buffer.concat([frameBuffer, chunk])
 
-		// Try to decode — may need more data
-		const payload = decodeWebSocketFrame(frameBuffer)
-		if (payload !== null) {
-			frameBuffer = Buffer.alloc(0)
-			handleWebSocketMessage(sessionId, payload)
+		// Consume all complete frames; return null means more data needed.
+		while (frameBuffer.length > 0) {
+			const result = decodeWebSocketFrame(frameBuffer)
+			if (result === null) break // need more data
+			frameBuffer = frameBuffer.subarray(result.consumed)
+			if (result.opcode === 0x09) {
+				// Respond to ping with pong (RFC 6455 §5.5.3)
+				const pongHeader = Buffer.alloc(2)
+				pongHeader[0] = 0x8a // FIN + pong opcode
+				pongHeader[1] = 0 // no payload
+				socket.write(pongHeader)
+			} else if (result.payload !== null) {
+				handleWebSocketMessage(sessionId, result.payload)
+			}
 		}
-		// If frame couldn't be decoded yet, wait for more data.
-		// Also reset buffer if it's grown too large (malformed client).
+		// Reset buffer if it's grown too large (malformed client)
 		if (frameBuffer.length > 1024 * 1024) {
 			frameBuffer = Buffer.alloc(0)
 		}
