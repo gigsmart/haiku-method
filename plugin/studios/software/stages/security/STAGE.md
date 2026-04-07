@@ -4,7 +4,7 @@ description: Threat modeling, security review, and vulnerability assessment
 hats: [threat-modeler, red-team, blue-team, security-reviewer]
 review: [external, ask]
 elaboration: autonomous
-unit_types: [security, backend]
+unit_types: [security]
 inputs:
   - stage: inception
     discovery: discovery

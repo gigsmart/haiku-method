@@ -4,7 +4,7 @@ description: Deployment, monitoring, and operational readiness
 hats: [ops-engineer, sre]
 review: auto
 elaboration: autonomous
-unit_types: [ops, backend]
+unit_types: [ops]
 inputs:
   - stage: inception
     discovery: discovery
