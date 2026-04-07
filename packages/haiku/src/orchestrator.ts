@@ -1056,12 +1056,11 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 				}
 
 				syncSessionMetadata(slug, args.state_file as string | undefined)
-				return text(JSON.stringify({
-					...result,
-					error: "review_ui_failed",
-					error_detail: errorMsg,
-					message: `Review UI failed: ${errorMsg}. Error logged to .haiku/logs/gate-review-error.log. The gate cannot be bypassed — call haiku_run_next again to retry.`,
-				}, null, 2))
+				// Return as an MCP error — isError: true prevents the agent from treating this as a valid response
+				return {
+					content: [{ type: "text" as const, text: `GATE BLOCKED: Review UI and elicitation both failed. Error: ${errorMsg}. Logged to .haiku/logs/gate-review-error.log. Call haiku_run_next to retry.` }],
+					isError: true,
+				}
 			}
 		}
 

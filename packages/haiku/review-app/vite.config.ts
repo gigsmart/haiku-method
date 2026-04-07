@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
     // Inline everything into a single HTML file
+    sourcemap: true,
     cssCodeSplit: false,
     assetsInlineLimit: Infinity,
     rollupOptions: {

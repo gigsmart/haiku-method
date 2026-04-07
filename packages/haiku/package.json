@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "prebuild": "node scripts/build-css.mjs && node scripts/build-review-app.mjs",
-    "build": "node scripts/build-css.mjs && node scripts/build-review-app.mjs && esbuild src/main.ts --bundle --platform=node --format=esm --minify --tree-shaking=true --drop:debugger --outfile=../../plugin/bin/haiku --banner:js='import{createRequire}from\"module\";const require=createRequire(import.meta.url);' && chmod +x ../../plugin/bin/haiku",
+    "build": "node scripts/build-css.mjs && node scripts/build-review-app.mjs && esbuild src/main.ts --bundle --platform=node --format=esm --minify --tree-shaking=true --drop:debugger --sourcemap=linked --outfile=../../plugin/bin/haiku --banner:js='import{createRequire}from\"module\";const require=createRequire(import.meta.url);' && chmod +x ../../plugin/bin/haiku",
     "typecheck": "tsc --noEmit",
     "test": "node test/state-tools.test.mjs"
   },
