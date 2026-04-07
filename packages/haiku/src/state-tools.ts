@@ -12,7 +12,7 @@ import { emitTelemetry } from "./telemetry.js"
 
 // ── Path resolution ────────────────────────────────────────────────────────
 
-function findHaikuRoot(): string {
+export function findHaikuRoot(): string {
 	// Walk up from cwd looking for .haiku/
 	let dir = process.cwd()
 	for (let i = 0; i < 20; i++) {
@@ -24,11 +24,11 @@ function findHaikuRoot(): string {
 	throw new Error("No .haiku/ directory found")
 }
 
-function intentDir(slug: string): string {
+export function intentDir(slug: string): string {
 	return join(findHaikuRoot(), "intents", slug)
 }
 
-function stageDir(slug: string, stage: string): string {
+export function stageDir(slug: string, stage: string): string {
 	return join(intentDir(slug), "stages", stage)
 }
 
@@ -53,7 +53,7 @@ function normalizeDates(data: Record<string, unknown>): Record<string, unknown> 
 	return result
 }
 
-function parseFrontmatter(raw: string): { data: Record<string, unknown>; body: string } {
+export function parseFrontmatter(raw: string): { data: Record<string, unknown>; body: string } {
 	const { data, content } = matter(raw)
 	return { data: normalizeDates(data as Record<string, unknown>), body: content.trim() }
 }

@@ -16,6 +16,9 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
 	CallToolRequestSchema,
 	ListToolsRequestSchema,
+	ListPromptsRequestSchema,
+	GetPromptRequestSchema,
+	CompleteRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
 import { z } from "zod"
 import { getActualPort, startHttpServer } from "./http.js"
@@ -120,12 +123,33 @@ const server = new Server(
 	{
 		capabilities: {
 			tools: {},
+			prompts: { listChanged: true },
+			completions: {},
 		},
 	},
 )
 
 import { stateToolDefs, handleStateTool } from "./state-tools.js"
 import { orchestratorToolDefs, handleOrchestratorTool } from "./orchestrator.js"
+import { listPrompts, getPrompt, completeArgument } from "./prompts/index.js"
+import "./prompts/core.js"
+import "./prompts/complex.js"
+import "./prompts/simple.js"
+
+// List prompts
+server.setRequestHandler(ListPromptsRequestSchema, async () => ({
+	prompts: listPrompts(),
+}))
+
+// Get prompt
+server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+	return getPrompt(request.params.name, request.params.arguments)
+})
+
+// Argument completion
+server.setRequestHandler(CompleteRequestSchema, async (request) => {
+	return completeArgument(request.params)
+})
 
 // List tools
 server.setRequestHandler(ListToolsRequestSchema, async () => ({

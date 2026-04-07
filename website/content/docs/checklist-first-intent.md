@@ -13,7 +13,7 @@ Complete these steps before beginning your first intent:
 ### Environment Setup
 - [ ] Claude Code or Cowork installed and working
 - [ ] H·AI·K·U plugin installed (`/plugin marketplace add thebushidocollective/ai-dlc` then `/plugin install haiku@thebushidocollective-ai-dlc --scope project`)
-- [ ] Verified plugin is active (commands like `/haiku:elaborate` are recognized)
+- [ ] Verified plugin is active (commands like `/haiku:new` are recognized)
 
 ### Project Selection
 - [ ] Chosen a real project (not a toy project)
@@ -30,10 +30,10 @@ Complete these steps before beginning your first intent:
 
 ## Phase 1: Elaboration
 
-Use `/haiku:elaborate` to define your intent collaboratively with Claude.
+Use `/haiku:new` to create your intent, then `/haiku:run` to elaborate it collaboratively with Claude.
 
 ### Start Elaboration
-- [ ] Run `/haiku:elaborate`
+- [ ] Run `/haiku:new` then `/haiku:run`
 - [ ] Describe what you want to build in 2-3 sentences
 
 ### Define the Intent
@@ -239,7 +239,7 @@ Based on this experience:
 ### Commands
 | Command | When to Use |
 |---------|-------------|
-| `/haiku:elaborate` | Start new intent |
+| `/haiku:new` | Start new intent |
 | `/haiku:run` | Continue/start unit work |
 | `/researcher` | Need more understanding |
 | `/planner` | Need to redesign approach |
