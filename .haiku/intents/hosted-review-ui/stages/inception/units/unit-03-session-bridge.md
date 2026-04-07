@@ -1,11 +1,12 @@
 ---
-status: active
+status: completed
 type: backend
 depends_on:
   - unit-02-https-upgrade
 bolt: 1
-hat: architect
+hat: decomposer
 started_at: '2026-04-07T14:39:12Z'
+completed_at: '2026-04-07T14:39:20Z'
 ---
 
 # Session Bridge
