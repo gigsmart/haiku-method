@@ -131,7 +131,6 @@ function IntentReview({
   const problem = findSection(intent.sections, "Problem");
   const solution = findSection(intent.sections, "Solution");
   const goals = findSection(intent.sections, "Goals", "Objectives");
-  const contextSection = findSection(intent.sections, "Context");
   const domainSection = findSectionWithSubs(intent.sections, "Domain Model");
 
   // Build overview markdown from whatever sections are available
@@ -151,9 +150,6 @@ function IntentReview({
   const firstImageMockup = intentMockups.find((m) => isImageUrl(m.url));
   const remainingMockups = intentMockups.filter((m) => m !== firstImageMockup);
 
-  const gitConfig = intent.frontmatter.git ?? { change_strategy: "", auto_merge: false, auto_squash: false };
-  const workflow = intent.frontmatter.workflow ?? "";
-  const announcements = intent.frontmatter.announcements ?? [];
 
   // Group units by stage for display
   const stageNames = Object.keys(stageStates);
@@ -317,54 +313,6 @@ function IntentReview({
           <SectionHeading>Domain Model</SectionHeading>
           <p className="text-stone-500 dark:text-stone-400 italic">No domain model defined.</p>
         </Card>
-      ),
-    },
-    {
-      id: "technical",
-      label: "Technical Details",
-      content: (
-        <>
-          {contextSection && (
-            <Card>
-              <SectionHeading>Context</SectionHeading>
-              <MarkdownViewer id="tech-context">{contextSection}</MarkdownViewer>
-            </Card>
-          )}
-          <Card>
-            <SectionHeading>Git Configuration</SectionHeading>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-              <div>
-                <dt className="text-stone-500 dark:text-stone-400">Change Strategy</dt>
-                <dd className="font-medium mt-0.5">{gitConfig.change_strategy}</dd>
-              </div>
-              <div>
-                <dt className="text-stone-500 dark:text-stone-400">Auto-merge</dt>
-                <dd className="font-medium mt-0.5">{gitConfig.auto_merge ? "Yes" : "No"}</dd>
-              </div>
-              <div>
-                <dt className="text-stone-500 dark:text-stone-400">Auto-squash</dt>
-                <dd className="font-medium mt-0.5">{gitConfig.auto_squash ? "Yes" : "No"}</dd>
-              </div>
-              <div>
-                <dt className="text-stone-500 dark:text-stone-400">Workflow</dt>
-                <dd className="font-medium mt-0.5">{workflow}</dd>
-              </div>
-            </dl>
-          </Card>
-          {announcements.length > 0 && (
-            <Card>
-              <SectionHeading>Announcements</SectionHeading>
-              <ul className="space-y-2">
-                {announcements.map((a, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-teal-500 mt-0.5" aria-hidden="true">&bull;</span>
-                    <span>{a}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          )}
-        </>
       ),
     },
   ].filter((tab) => {
