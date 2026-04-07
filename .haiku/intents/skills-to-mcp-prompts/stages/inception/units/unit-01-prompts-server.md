@@ -1,12 +1,13 @@
 ---
 name: unit-01-prompts-server
 type: backend
-status: pending
+status: active
 depends_on: []
-bolt: 0
-hat: ""
+bolt: 1
+hat: architect
 refs:
   - knowledge/DISCOVERY.md
+started_at: '2026-04-07T02:23:30Z'
 ---
 
 # MCP Prompts Server Infrastructure
