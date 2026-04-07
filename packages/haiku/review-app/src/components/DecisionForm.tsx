@@ -16,6 +16,7 @@ export function DecisionForm({ sessionId, collectAnnotations = false, getAnnotat
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
   const [feedbackError, setFeedbackError] = useState(false);
   const [showClose, setShowClose] = useState(false);
+  const [generalComments, setGeneralComments] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   if (showClose) {
@@ -67,18 +68,20 @@ export function DecisionForm({ sessionId, collectAnnotations = false, getAnnotat
         }
       }
     }
-    handleSubmit("approved", "");
+    handleSubmit("approved", generalComments.trim());
   }
 
   function handleRequestChanges() {
-    const text = textareaRef.current?.value.trim() || "";
-    if (!text) {
+    const changesText = textareaRef.current?.value.trim() || "";
+    if (!changesText) {
       setFeedbackError(true);
       textareaRef.current?.focus();
       return;
     }
     setFeedbackError(false);
-    handleSubmit("changes_requested", text);
+    // Combine general comments with changes feedback
+    const combined = [generalComments.trim(), changesText].filter(Boolean).join("\n\n---\n\n");
+    handleSubmit("changes_requested", combined);
   }
 
   return (
@@ -90,6 +93,20 @@ export function DecisionForm({ sessionId, collectAnnotations = false, getAnnotat
           Annotations (pins, drawings, inline comments) will be included with your decision.
         </p>
       )}
+
+      <div className="mb-4">
+        <label htmlFor="general-comments" className="block text-sm font-medium mb-2 text-stone-700 dark:text-stone-300">
+          Comments (optional)
+        </label>
+        <textarea
+          id="general-comments"
+          className="w-full min-h-[80px] p-3 border border-stone-300 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-y text-sm"
+          placeholder="General feedback, observations, or notes..."
+          value={generalComments}
+          onChange={(e) => setGeneralComments(e.target.value)}
+          disabled={submitting}
+        />
+      </div>
 
       {mode === "buttons" && (
         <div className="flex flex-col sm:flex-row gap-3">
