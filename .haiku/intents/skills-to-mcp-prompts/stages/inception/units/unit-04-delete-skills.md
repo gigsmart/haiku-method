@@ -1,13 +1,16 @@
 ---
 name: unit-04-delete-skills
 type: backend
-status: pending
-depends_on: [unit-02-core-prompts, unit-03-supporting-prompts]
-bolt: 0
-hat: ""
+status: active
+depends_on:
+  - unit-02-core-prompts
+  - unit-03-supporting-prompts
+bolt: 1
+hat: architect
 refs:
   - knowledge/DISCOVERY.md
   - knowledge/PROMPTS-SERVER-DISCOVERY.md
+started_at: '2026-04-07T02:50:41Z'
 ---
 
 # Delete Plugin Skills
