@@ -1,7 +1,7 @@
 ---
 status: pending
 type: frontend
-depends_on: [session-bridge]
+depends_on: [unit-03-session-bridge]
 ---
 
 # Interactive UI (Question + Design Direction)

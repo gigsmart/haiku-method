@@ -1,7 +1,7 @@
 ---
 status: pending
 type: backend
-depends_on: [https-upgrade]
+depends_on: [unit-02-https-upgrade]
 ---
 
 # Session Bridge

@@ -1,7 +1,7 @@
 ---
 status: pending
 type: backend
-depends_on: [review-ui, interactive-ui]
+depends_on: [unit-04-review-ui, unit-05-interactive-ui]
 ---
 
 # Cleanup and Binary Reduction
