@@ -9,6 +9,7 @@ import { join } from "node:path"
 import { z } from "zod"
 import matter from "gray-matter"
 import { emitTelemetry } from "./telemetry.js"
+import { writeHaikuMetadata, type HaikuSessionMetadata } from "./session-metadata.js"
 
 // ── Path resolution ────────────────────────────────────────────────────────
 
@@ -135,6 +136,69 @@ function resolveStageScope(intent: string, stage: string): string {
 		}
 	} catch { /* */ }
 	return ""
+}
+
+/**
+ * Collect current H·AI·K·U state and write to the caller-provided state file.
+ * The state_file path is injected by the pre_tool_use hook — the MCP server
+ * never resolves session IDs or config dirs. If no state_file, this is a no-op.
+ */
+function syncSessionMetadata(intent: string, stateFile: string | undefined): void {
+	if (!stateFile) return
+	try {
+		const root = findHaikuRoot()
+		const intentFile = join(root, "intents", intent, "intent.md")
+		if (!existsSync(intentFile)) return
+		const { data: intentData } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+		const studio = (intentData.studio as string) || ""
+		const activeStage = (intentData.active_stage as string) || ""
+
+		let phase = ""
+		if (activeStage) {
+			const sf = stageStatePath(intent, activeStage)
+			const stageState = readJson(sf)
+			phase = (stageState.phase as string) || ""
+		}
+
+		let activeUnit: string | null = null
+		let hat: string | null = null
+		let bolt: number | null = null
+		if (activeStage) {
+			const unitsDir = join(stageDir(intent, activeStage), "units")
+			if (existsSync(unitsDir)) {
+				for (const f of readdirSync(unitsDir).filter(f => f.endsWith(".md"))) {
+					const { data: unitData } = parseFrontmatter(readFileSync(join(unitsDir, f), "utf8"))
+					if (unitData.status === "active") {
+						activeUnit = f.replace(".md", "")
+						hat = (unitData.hat as string) || null
+						bolt = (unitData.bolt as number) || null
+						break
+					}
+				}
+			}
+		}
+
+		let stageDescription = activeStage
+		let stageUnitTypes: string[] = []
+		if (studio && activeStage) {
+			const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+			for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
+				const sf = join(base, studio, "stages", activeStage, "STAGE.md")
+				if (!existsSync(sf)) continue
+				const { data: stageFm } = parseFrontmatter(readFileSync(sf, "utf8"))
+				stageDescription = (stageFm.description as string) || activeStage
+				stageUnitTypes = (stageFm.unit_types as string[]) || []
+				break
+			}
+		}
+
+		writeHaikuMetadata(stateFile, {
+			intent, studio, active_stage: activeStage, phase,
+			active_unit: activeUnit, hat, bolt,
+			stage_description: stageDescription, stage_unit_types: stageUnitTypes,
+			updated_at: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
+		})
+	} catch { /* non-fatal */ }
 }
 
 // ── Tool definitions ───────────────────────────────────────────────────────
@@ -265,6 +329,9 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 		case "haiku_intent_set": {
 			const file = join(intentDir(args.slug as string), "intent.md")
 			setFrontmatterField(file, args.field as string, args.value)
+			if (args.field === "active_stage" || args.field === "status") {
+				syncSessionMetadata(args.slug as string, args.state_file as string | undefined)
+			}
 			return text("ok")
 		}
 		case "haiku_intent_list": {
@@ -294,6 +361,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			// Emit telemetry for phase transitions and gate events
 			if (args.field === "phase") {
 				emitTelemetry("haiku.stage.phase", { intent: args.intent as string, stage: args.stage as string, phase: args.value as string })
+				syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
 			} else if (args.field === "gate_entered_at") {
 				emitTelemetry("haiku.gate.entered", { intent: args.intent as string, stage: args.stage as string })
 			}
@@ -312,6 +380,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			writeJson(path, data)
 			emitTelemetry("haiku.stage.started", { intent: args.intent as string, stage: args.stage as string })
 			gitCommitState(`haiku: start stage ${args.stage as string}`)
+			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
 			return text("ok")
 		}
 		case "haiku_stage_complete": {
@@ -323,6 +392,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			writeJson(path, data)
 			emitTelemetry("haiku.stage.completed", { intent: args.intent as string, stage: args.stage as string, gate_outcome: data.gate_outcome as string })
 			gitCommitState(`haiku: complete stage ${args.stage as string}`)
+			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
 			return text("ok")
 		}
 
@@ -357,6 +427,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			setFrontmatterField(path, "started_at", timestamp())
 			emitTelemetry("haiku.unit.started", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string, hat: args.hat as string })
 			gitCommitState(`haiku: start unit ${args.unit as string}`)
+			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
 			const scope = resolveStageScope(args.intent as string, args.stage as string)
 			return text(scope ? `ok\n\n${scope}` : "ok")
 		}
@@ -372,12 +443,14 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			setFrontmatterField(path, "completed_at", timestamp())
 			emitTelemetry("haiku.unit.completed", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string })
 			gitCommitState(`haiku: complete unit ${args.unit as string}`)
+			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
 			return text("ok")
 		}
 		case "haiku_unit_advance_hat": {
 			const path = unitPath(args.intent as string, args.stage as string, args.unit as string)
 			setFrontmatterField(path, "hat", args.hat)
 			emitTelemetry("haiku.hat.transition", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string, hat: args.hat as string })
+			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
 			const hatScope = resolveStageScope(args.intent as string, args.stage as string)
 			return text(hatScope ? `ok\n\n${hatScope}` : "ok")
 		}

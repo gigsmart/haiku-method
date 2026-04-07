@@ -15,6 +15,7 @@ import { qualityGate } from "./quality-gate.js"
 import { subagentHook } from "./subagent-hook.js"
 import { generateSubagentContext } from "./subagent-context.js"
 import { injectContext } from "./inject-context.js"
+import { injectStateFile } from "./inject-state-file.js"
 
 // Read stdin synchronously (hooks are synchronous)
 function readStdin(): string {
@@ -64,6 +65,9 @@ export async function runHook(name: string, _args: string[]): Promise<void> {
 			break
 		case "inject-context":
 			await injectContext(parsed, pluginRoot)
+			break
+		case "inject-state-file":
+			await injectStateFile(parsed)
 			break
 		default:
 			// For hooks not yet ported to TypeScript, fall through
