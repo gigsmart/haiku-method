@@ -33,11 +33,14 @@ jobs:
 
       - name: Detect GCP project from service account key
         id: gcp
-        run: echo "project_id=$(echo '${{ secrets.GCP_SA_KEY }}' | jq -r .project_id)" >> $GITHUB_OUTPUT
+        run: |
+          PROJECT_ID=$(echo '${{ secrets.GCP_SA_KEY }}' | jq -r .project_id)
+          echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
+          echo "tf_state_bucket=${PROJECT_ID}-terraform-state" >> $GITHUB_OUTPUT
 
       - name: Terraform Init
         working-directory: deploy/terraform
-        run: terraform init
+        run: terraform init -backend-config="bucket=${{ steps.gcp.outputs.tf_state_bucket }}" -backend-config="prefix=haiku"
 
       - name: Terraform Apply
         working-directory: deploy/terraform

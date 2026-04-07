@@ -9,9 +9,8 @@ terraform {
   }
 
   backend "gcs" {
-    # Override via TF init: terraform init -backend-config="bucket=YOUR_BUCKET"
-    bucket = "haikumethod-ai-terraform-state"
-    prefix = "haiku"
+    # Bucket is injected at init time via -backend-config
+    # See deploy-auth-proxy.yml workflow
   }
 }
 
