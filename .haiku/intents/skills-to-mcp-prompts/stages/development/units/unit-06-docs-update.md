@@ -1,13 +1,14 @@
 ---
 name: unit-06-docs-update
 type: frontend
-status: pending
+status: active
 depends_on:
   - unit-05-delete-skills
-bolt: 0
-hat: ""
+bolt: 1
+hat: planner
 refs:
   - knowledge/DELETE-SKILLS-DISCOVERY.md
+started_at: '2026-04-07T04:18:33Z'
 ---
 
 # Website Documentation Update
