@@ -27563,7 +27563,7 @@ function checkExternalApproval(url) {
     return false;
   }
 }
-function validateStageOutputs(slug, stage, studio, intentDirPath) {
+function validateStageOutputs(slug, stage, studio) {
   const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || "";
   for (const base of [join7(process.cwd(), ".haiku", "studios"), join7(pluginRoot, "studios")]) {
     const outputsDir = join7(base, studio, "stages", stage, "outputs");
@@ -27606,7 +27606,7 @@ The execution phase must produce these artifacts. Go back and create them, then 
   }
   return null;
 }
-function validateDiscoveryArtifacts(slug, stage, studio, intentDirPath) {
+function validateDiscoveryArtifacts(slug, stage, studio) {
   const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || "";
   for (const base of [join7(process.cwd(), ".haiku", "studios"), join7(pluginRoot, "studios")]) {
     const discoveryDir = join7(base, studio, "stages", stage, "discovery");
@@ -27870,7 +27870,7 @@ function runNext(slug) {
     }
     const typeViolation = validateUnitTypes(iDir, currentStage, studio);
     if (typeViolation) return typeViolation;
-    const discoveryViolation = validateDiscoveryArtifacts(slug, currentStage, studio, iDir);
+    const discoveryViolation = validateDiscoveryArtifacts(slug, currentStage, studio);
     if (discoveryViolation) return discoveryViolation;
     const elaborationReviewed = stageState.elaboration_reviewed || false;
     if (!elaborationReviewed) {
@@ -27905,7 +27905,7 @@ function runNext(slug) {
       (u3) => u3.status === "pending" && u3.depsComplete && unitWave.get(u3.name) === wave
     );
     if (allComplete) {
-      const outputValidation = validateStageOutputs(slug, currentStage, studio, iDir);
+      const outputValidation = validateStageOutputs(slug, currentStage, studio);
       if (outputValidation) return outputValidation;
       fsmAdvancePhase(slug, currentStage, "review");
       return {
@@ -29375,6 +29375,56 @@ ${action.message}`);
     }
     case "spec_validation_failed": {
       sections.push(`## Spec Validation Failed
+
+${action.message}`);
+      break;
+    }
+    case "review_elaboration": {
+      const stage = action.stage;
+      const agents = readReviewAgentDefs(studio, stage);
+      sections.push(`## Review Elaboration Artifacts
+
+`);
+      sections.push(`Run adversarial review agents on the elaboration specs before the pre-execution gate opens.
+
+`);
+      if (Object.keys(agents).length > 0) {
+        sections.push(`### Review Agents
+`);
+        for (const [name, def] of Object.entries(agents)) {
+          sections.push(`#### ${name}
+
+${def.content}`);
+        }
+      }
+      sections.push(
+        `### Mechanics
+
+1. Spawn one subagent per review agent (in parallel)
+2. Each reviews the elaboration specs (units, discovery, knowledge)
+3. Fix any HIGH findings
+4. Call \`haiku_run_next { intent: "${slug}", elaboration_reviewed: true }\``
+      );
+      break;
+    }
+    case "awaiting_external_review": {
+      const externalUrl = action.external_review_url || "";
+      sections.push(
+        `## Awaiting External Review
+
+` + (externalUrl ? `The stage is awaiting external review at: ${externalUrl}
+
+` : `The stage is awaiting external review but no review URL has been recorded.
+
+`) + `Ask the user for the status of the external review. If approved, call \`haiku_run_next { intent: "${slug}" }\` \u2014 the FSM will detect the approval and advance.
+
+` + (externalUrl ? "" : `If the user provides a review URL, pass it: \`haiku_run_next { intent: "${slug}", external_review_url: "<url>" }\`
+`)
+      );
+      break;
+    }
+    case "discovery_missing": {
+      sections.push(`## Missing Discovery Artifacts
 
 ${action.message}`);
       break;

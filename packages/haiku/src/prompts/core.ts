@@ -513,6 +513,45 @@ function buildRunInstructions(
 			break
 		}
 
+		case "review_elaboration": {
+			const stage = action.stage as string
+			const agents = readReviewAgentDefs(studio, stage)
+			sections.push(`## Review Elaboration Artifacts\n\n`)
+			sections.push(`Run adversarial review agents on the elaboration specs before the pre-execution gate opens.\n\n`)
+			if (Object.keys(agents).length > 0) {
+				sections.push(`### Review Agents\n`)
+				for (const [name, def] of Object.entries(agents)) {
+					sections.push(`#### ${name}\n\n${def.content}`)
+				}
+			}
+			sections.push(
+				`### Mechanics\n\n` +
+				`1. Spawn one subagent per review agent (in parallel)\n` +
+				`2. Each reviews the elaboration specs (units, discovery, knowledge)\n` +
+				`3. Fix any HIGH findings\n` +
+				`4. Call \`haiku_run_next { intent: "${slug}", elaboration_reviewed: true }\``,
+			)
+			break
+		}
+
+		case "awaiting_external_review": {
+			const externalUrl = action.external_review_url as string || ""
+			sections.push(
+				`## Awaiting External Review\n\n` +
+				(externalUrl
+					? `The stage is awaiting external review at: ${externalUrl}\n\n`
+					: `The stage is awaiting external review but no review URL has been recorded.\n\n`) +
+				`Ask the user for the status of the external review. If approved, call \`haiku_run_next { intent: "${slug}" }\` — the FSM will detect the approval and advance.\n\n` +
+				(externalUrl ? "" : `If the user provides a review URL, pass it: \`haiku_run_next { intent: "${slug}", external_review_url: "<url>" }\`\n`),
+			)
+			break
+		}
+
+		case "discovery_missing": {
+			sections.push(`## Missing Discovery Artifacts\n\n${action.message}`)
+			break
+		}
+
 		case "error": {
 			sections.push(`## Error\n\n${action.message}`)
 			break

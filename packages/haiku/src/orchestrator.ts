@@ -134,7 +134,7 @@ function checkExternalApproval(url: string): boolean {
  * Validate that required stage outputs were created during execution.
  * Returns an error action if outputs are missing, null if all present.
  */
-function validateStageOutputs(slug: string, stage: string, studio: string, intentDirPath: string): OrchestratorAction | null {
+function validateStageOutputs(slug: string, stage: string, studio: string): OrchestratorAction | null {
 	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
 
 	// Read output definitions from the stage's outputs/ directory
@@ -199,7 +199,7 @@ function validateStageOutputs(slug: string, stage: string, studio: string, inten
  * that each required artifact exists at its specified location.
  * Returns an error action if artifacts are missing, null if all present.
  */
-function validateDiscoveryArtifacts(slug: string, stage: string, studio: string, intentDirPath: string): OrchestratorAction | null {
+function validateDiscoveryArtifacts(slug: string, stage: string, studio: string): OrchestratorAction | null {
 	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
 
 	// Read discovery definitions from the stage's discovery/ directory
@@ -553,7 +553,7 @@ export function runNext(slug: string): OrchestratorAction {
 		if (typeViolation) return typeViolation
 
 		// Validate discovery artifacts exist before advancing
-		const discoveryViolation = validateDiscoveryArtifacts(slug, currentStage, studio, iDir)
+		const discoveryViolation = validateDiscoveryArtifacts(slug, currentStage, studio)
 		if (discoveryViolation) return discoveryViolation
 
 		// Adversarial review of elaboration — run review agents on specs before gate
@@ -607,7 +607,7 @@ export function runNext(slug: string): OrchestratorAction {
 
 		if (allComplete) {
 			// Pre-gate check: validate required outputs were created
-			const outputValidation = validateStageOutputs(slug, currentStage, studio, iDir)
+			const outputValidation = validateStageOutputs(slug, currentStage, studio)
 			if (outputValidation) return outputValidation
 
 			// FSM side effect: advance phase
