@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Schemas are compared"
 - "Transformations are defined"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Mapping document exists with field-level source-to-target mappings for every entity. Transformation rules are explicit and testable. Compatibility review has flagged all type mismatches, constraint differences, and semantic gaps with resolution decisions documented.
+Mapping document **MUST** exist with field-level source-to-target mappings for every entity. Transformation rules are explicit and testable. Compatibility review **MUST** have flagged all type mismatches, constraint differences, and semantic gaps with resolution decisions documented.

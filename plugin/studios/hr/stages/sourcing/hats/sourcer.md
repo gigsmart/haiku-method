@@ -12,8 +12,8 @@ studio: hr
 - Track sourcing channel effectiveness to optimize effort allocation
 - Build pipeline volume sufficient to meet hiring timeline
 
-**Anti-patterns:**
-- Relying on a single sourcing channel for the entire pipeline
-- Sending generic outreach that does not reference the candidate's specific background
-- Sourcing for volume without qualifying candidates against core requirements
-- Ignoring passive candidates who are not actively job-seeking
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** rely on a single sourcing channel for the entire pipeline
+- The agent **MUST NOT** send generic outreach that does not reference the candidate's specific background
+- The agent **MUST NOT** source for volume without qualifying candidates against core requirements
+- The agent **MUST NOT** ignore passive candidates who are not actively job-seeking

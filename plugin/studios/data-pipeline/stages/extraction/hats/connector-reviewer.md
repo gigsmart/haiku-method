@@ -10,9 +10,9 @@ studio: data-pipeline
 
 **Reads:** Extractor's implementation, source catalog from discovery.
 
-**Anti-patterns:**
-- Approving extraction logic without verifying idempotency (re-run safety)
-- Not testing what happens when a source schema changes mid-extraction
-- Ignoring partial failure scenarios (e.g., network timeout after 80% of records)
-- Treating retry logic as optional for "reliable" sources
-- Not verifying that extraction metadata is sufficient for debugging production issues
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** approve extraction logic without verifying idempotency (re-run safety)
+- The agent **MUST** test what happens when a source schema changes mid-extraction
+- The agent **MUST NOT** ignore partial failure scenarios (e.g., network timeout after 80% of records)
+- The agent **MUST NOT** treat retry logic as optional for "reliable" sources
+- The agent **MUST** verify that extraction metadata is sufficient for debugging production issues

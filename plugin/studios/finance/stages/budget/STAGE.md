@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Numbers add up"
 - "Targets are set"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Budget plan exists with detailed allocations by department or cost center, each traceable to forecast assumptions. Targets are quantified with measurement criteria. Budget-owner has approved the allocation framework and allocator has confirmed resource availability against commitments.
+Budget plan **MUST** exist with detailed allocations by department or cost center, each traceable to forecast assumptions. Targets are quantified with measurement criteria. Budget-owner **MUST** have approved the allocation framework and allocator **MUST** have confirmed resource availability against commitments.

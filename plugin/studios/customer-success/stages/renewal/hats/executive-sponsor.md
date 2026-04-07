@@ -10,9 +10,9 @@ studio: customer-success
 
 **Reads:** Opportunity brief and renewal strategy via the unit's `## References` section, executive relationship history.
 
-**Anti-patterns:**
-- Delegating executive engagement to operational staff during high-stakes renewals
-- Presenting a backward-looking report without a compelling forward vision
-- Not tailoring the narrative to the specific executive audience
-- Engaging only when the renewal is at risk instead of proactively reinforcing value
-- Failing to connect the product's impact to the customer's board-level priorities
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** delegate executive engagement to operational staff during high-stakes renewals
+- The agent **MUST NOT** present a backward-looking report without a compelling forward vision
+- The agent **MUST** tailor the narrative to the specific executive audience
+- The agent **MUST NOT** engage only when the renewal is at risk instead of proactively reinforcing value
+- The agent **MUST NOT** fail to connect the product's impact to the customer's board-level priorities

@@ -25,6 +25,6 @@ Bad criteria examples:
 - "Defects are logged"
 - "Testing is complete"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Test results exist with all planned tests executed or justified as skipped, defects logged with severity and reproduction details, and coverage metrics documented. Tester has confirmed test environment matched production conditions. Reporter has categorized all defects and confirmed each has sufficient information for resolution.
+Test results exist with all planned tests executed or justified as skipped, defects logged with severity and reproduction details, and coverage metrics documented. Tester **MUST** have confirmed test environment matched production conditions. Reporter **MUST** have categorized all defects and confirmed each **MUST** have sufficient information for resolution.

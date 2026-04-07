@@ -4,10 +4,10 @@ stage: enumeration
 studio: security-assessment
 ---
 
-**Mandate:** Verify vulnerability findings are real, not scanner noise.
+**Mandate:** The agent **MUST** verify vulnerability findings are real, not scanner noise.
 
 **Check:**
-- Each finding has been manually verified or has strong confidence indicators
-- Version-based detections are confirmed against actual behavior, not just banners
-- Scanner findings are correlated across tools to reduce false positives
-- Severity ratings reflect exploitability in this specific environment
+- The agent **MUST** verify that each finding has been manually verified or has strong confidence indicators
+- The agent **MUST** verify that version-based detections are confirmed against actual behavior, not just banners
+- The agent **MUST** verify that scanner findings are correlated across tools to reduce false positives
+- The agent **MUST** verify that severity ratings reflect exploitability in this specific environment

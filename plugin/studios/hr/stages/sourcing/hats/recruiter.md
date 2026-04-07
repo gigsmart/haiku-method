@@ -12,8 +12,8 @@ studio: hr
 - Monitor pipeline health metrics (volume, quality, response rates)
 - Coordinate with the sourcer to adjust channel strategy based on results
 
-**Anti-patterns:**
-- Letting sourced candidates go uncontacted for extended periods
-- Not providing feedback to the sourcer on candidate quality from each channel
-- Treating sourcing as a one-time activity rather than an ongoing pipeline effort
-- Failing to track which channels produce the best conversion rates
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** let sourced candidates go uncontacted for extended periods
+- The agent **MUST** provide feedback to the sourcer on candidate quality from each channel
+- The agent **MUST NOT** treat sourcing as a one-time activity rather than an ongoing pipeline effort
+- The agent **MUST NOT** fail to track which channels produce the best conversion rates

@@ -10,9 +10,9 @@ studio: compliance
 
 **Reads:** Control mapping from scope stage via the unit's `## References` section.
 
-**Anti-patterns:**
-- Marking controls as met without reviewing actual evidence
-- Accepting verbal assurances without documentary proof
-- Conflating "process exists" with "process is effective"
-- Not documenting which specific evidence was reviewed for each determination
-- Applying inconsistent standards across similar controls
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** mark controls as met without reviewing actual evidence
+- The agent **MUST NOT** accept verbal assurances without documentary proof
+- The agent **MUST NOT** conflate "process exists" with "process is effective"
+- The agent **MUST** document which specific evidence was reviewed for each determination
+- The agent **MUST NOT** apply inconsistent standards across similar controls

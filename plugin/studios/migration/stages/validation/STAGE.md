@@ -26,6 +26,6 @@ Bad criteria examples:
 - "Validation is complete"
 - "Performance is acceptable"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Validation report exists with quantitative reconciliation results (row counts, checksum comparisons, sample diffs). Functional parity tests confirm that downstream consumers produce identical results against the migrated data. Performance benchmarks are within defined thresholds.
+Validation report **MUST** exist with quantitative reconciliation results (row counts, checksum comparisons, sample diffs). Functional parity tests confirm that downstream consumers produce identical results against the migrated data. Performance benchmarks are within defined thresholds.

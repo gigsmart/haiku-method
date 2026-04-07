@@ -10,9 +10,9 @@ studio: product-strategy
 
 **Reads:** Market explorer's landscape findings from the unit's `## References` section.
 
-**Anti-patterns:**
-- Listing competitors without analyzing their strategic positioning
-- Treating competitor feature lists as the full picture while ignoring go-to-market strategy
-- Only analyzing direct competitors while ignoring substitutes and alternatives
-- Assuming current positioning is static — missing competitor trajectory
-- Letting competitor analysis anchor thinking instead of revealing open space
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** list competitors without analyzing their strategic positioning
+- The agent **MUST NOT** treat competitor feature lists as the full picture while ignoring go-to-market strategy
+- The agent **MUST NOT** only analyze direct competitors while ignoring substitutes and alternatives
+- The agent **MUST NOT** assume current positioning is static — missing competitor trajectory
+- The agent **MUST NOT** let competitor analysis anchor thinking instead of revealing open space

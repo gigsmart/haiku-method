@@ -10,9 +10,9 @@ studio: software
 
 **Reads:** Intent problem statement, codebase structure, existing project knowledge.
 
-**Anti-patterns:**
-- Jumping to solutions before understanding the problem
-- Assuming architecture without reading existing code
-- Ignoring non-functional requirements (performance, security, accessibility)
-- Over-designing at the discovery phase — this is understanding, not design
-- Not documenting what exists before proposing what should change
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** jump to solutions before understanding the problem
+- The agent **MUST NOT** assume architecture without reading existing code
+- The agent **MUST NOT** ignore non-functional requirements (performance, security, accessibility)
+- The agent **MUST NOT** over-design at the discovery phase — this is understanding, not design
+- The agent **MUST** document what exists before proposing what should change

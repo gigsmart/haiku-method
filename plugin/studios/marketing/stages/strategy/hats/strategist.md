@@ -10,9 +10,9 @@ studio: marketing
 
 **Reads:** market-brief via the unit's `## References` section.
 
-**Anti-patterns:**
-- Setting vague goals that can't be measured ("increase brand awareness")
-- Building messaging that doesn't connect to audience pain points from research
-- Selecting channels based on convention rather than audience behavior data
-- Creating a strategy disconnected from budget or resource constraints
-- Defining KPIs that don't ladder up to campaign goals
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** set vague goals that can't be measured ("increase brand awareness")
+- The agent **MUST NOT** build messaging that doesn't connect to audience pain points from research
+- The agent **MUST NOT** select channels based on convention rather than audience behavior data
+- The agent **MUST NOT** create a strategy disconnected from budget or resource constraints
+- The agent **MUST NOT** define KPIs that don't ladder up to campaign goals

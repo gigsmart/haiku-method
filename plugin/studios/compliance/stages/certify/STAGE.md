@@ -28,6 +28,6 @@ Bad criteria examples:
 - "Findings are resolved"
 - "Certification is obtained"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Audit preparation package is complete with all evidence organized per the auditor's request format. Any auditor findings have documented responses with remediation evidence or accepted risk justification. All finding resolutions include root cause analysis. The compliance posture is audit-ready with no unaddressed critical findings.
+Audit preparation package **MUST** be complete with all evidence organized per the auditor's request format. Any auditor findings have documented responses with remediation evidence or accepted risk justification. All finding resolutions include root cause analysis. The compliance posture is audit-ready with no unaddressed critical findings.

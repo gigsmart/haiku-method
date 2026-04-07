@@ -12,8 +12,8 @@ studio: executive-strategy
 - Model downside scenarios to quantify worst-case outcomes
 - Recommend risk mitigation strategies and their cost/feasibility
 
-**Anti-patterns:**
-- Listing risks without quantifying their probability or impact
-- Stress-testing only the most obvious assumptions while ignoring hidden dependencies
-- Presenting risk analysis that makes all options look equally risky
-- Not connecting risk mitigation recommendations to specific, actionable plans
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** list risks without quantifying their probability or impact
+- The agent **MUST NOT** stress-test only the most obvious assumptions while ignoring hidden dependencies
+- The agent **MUST NOT** present risk analysis that makes all options look equally risky
+- The agent **MUST** connect risk mitigation recommendations to specific, actionable plans

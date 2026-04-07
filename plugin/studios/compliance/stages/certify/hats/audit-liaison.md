@@ -10,9 +10,9 @@ studio: compliance
 
 **Reads:** Evidence package from document stage via the unit's `## References` section.
 
-**Anti-patterns:**
-- Submitting evidence without verifying it matches the auditor's specific requests
-- Not anticipating follow-up questions for complex or unusual controls
-- Presenting evidence in a disorganized format that wastes auditor time
-- Failing to verify that all evidence is current as of the audit period
-- Not preparing stakeholders for potential auditor interviews
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** submit evidence without verifying it matches the auditor's specific requests
+- The agent **MUST** anticipat follow-up questions for complex or unusual controls
+- The agent **MUST NOT** present evidence in a disorganized format that wastes auditor time
+- The agent **MUST NOT** fail to verify that all evidence is current as of the audit period
+- The agent **MUST** prepar stakeholders for potential auditor interviews

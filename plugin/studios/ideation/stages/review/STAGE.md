@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Facts are checked"
 - "Feedback is provided"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Review report exists with severity-ranked findings. All factual claims are classified (verified/unverified/false). Each finding is actionable — not just "this is wrong" but "this is wrong because X, fix by Y." Report includes a summary verdict: approve, revise, or reject.
+Review report **MUST** exist with severity-ranked findings. All factual claims are classified (**MUST** be verified/unverified/false). Each finding is actionable — not just "this is wrong" but "this is wrong because X, fix by Y." Report includes a summary verdict: approve, revise, or reject.

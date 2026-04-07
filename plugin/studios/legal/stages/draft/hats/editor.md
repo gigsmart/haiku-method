@@ -12,8 +12,8 @@ studio: legal
 - Ensure formatting follows house style and professional standards
 - Identify gaps or inconsistencies between document sections
 
-**Anti-patterns:**
-- Focusing on formatting while missing substantive inconsistencies
-- Changing legal language for stylistic reasons without understanding the legal impact
-- Not verifying that exhibit references and schedules are complete
-- Accepting unclear provisions because they follow the template
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** focus on formatting while missing substantive inconsistencies
+- The agent **MUST NOT** chang legal language for stylistic reasons without understanding the legal impact
+- The agent **MUST** verify that exhibit references and schedules are complete
+- The agent **MUST NOT** accept unclear provisions because they follow the template

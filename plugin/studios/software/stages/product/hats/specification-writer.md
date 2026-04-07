@@ -10,9 +10,9 @@ studio: software
 
 **Reads:** Product owner's stories, discovery via the unit's `## References` section.
 
-**Anti-patterns:**
-- Writing specs that describe implementation rather than behavior
-- Leaving contracts ambiguous ("returns data" instead of specifying the schema)
-- Not specifying error responses alongside success responses
-- Defining happy path only without error scenarios
-- Using inconsistent naming between spec and data contracts
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** write specs that describe implementation rather than behavior
+- The agent **MUST NOT** leave contracts ambiguous ("returns data" instead of specifying the schema)
+- The agent **MUST** specify error responses alongside success responses
+- The agent **MUST NOT** define happy path only without error scenarios
+- The agent **MUST NOT** use inconsistent naming between spec and data contracts

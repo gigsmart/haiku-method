@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Sections are organized"
 - "Architecture is clear"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Document outline exists with a logical information architecture. Each section has a defined purpose and audience. The outline-reviewer has validated that the structure serves the reader's workflow — task-oriented navigation, progressive disclosure, and no orphaned sections.
+Document outline **MUST** exist with a logical information architecture. Each section **MUST** have a defined purpose and audience. The outline-reviewer **MUST** have validated that the structure serves the reader's workflow — task-oriented navigation, progressive disclosure, and no orphaned sections.

@@ -10,9 +10,9 @@ studio: customer-success
 
 **Reads:** Onboarding report via the unit's `## References` section, product usage data, benchmark data.
 
-**Anti-patterns:**
-- Reporting vanity metrics (page views, logins) without measuring value-driving actions
-- Analyzing usage in isolation without comparing against benchmarks or goals
-- Presenting data without interpreting what it means for the customer's success
-- Ignoring declining usage trends until they become critical
-- Not segmenting usage by team, role, or workflow to find specific adoption gaps
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** report vanity metrics (page views, logins) without measuring value-driving actions
+- The agent **MUST NOT** analyze usage in isolation without comparing against benchmarks or goals
+- The agent **MUST NOT** present data without interpreting what it means for the customer's success
+- The agent **MUST NOT** ignore declining usage trends until they become critical
+- The agent **MUST** segment usage by team, role, or workflow to find specific adoption gaps

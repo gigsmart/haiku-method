@@ -10,9 +10,9 @@ studio: compliance
 
 **Reads:** Auditor findings, evidence package, and remediation log via the unit's `## References` section.
 
-**Anti-patterns:**
-- Responding to findings without root cause analysis
-- Fixing the symptom without addressing why the gap existed
-- Accepting risk without documenting the business justification
-- Not providing evidence that the remediation actually resolves the finding
-- Treating findings as personal criticism rather than improvement opportunities
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** respond to findings without root cause analysis
+- The agent **MUST NOT** fix the symptom without addressing why the gap existed
+- The agent **MUST NOT** accept risk without documenting the business justification
+- The agent **MUST** provide evidence that the remediation actually resolves the finding
+- The agent **MUST NOT** treat findings as personal criticism rather than improvement opportunities

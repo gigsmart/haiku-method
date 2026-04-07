@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Assets are distributed"
 - "Schedule is set"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Launch plan is executed across all channels. Campaign log records actual publish timestamps, initial delivery confirmations, and any launch-day adjustments. Channel coordinator has verified all assets are live and tracking is active. Campaign is running and generating measurable activity.
+Launch plan is executed across all channels. Campaign log records actual publish timestamps, initial delivery confirmations, and any launch-day adjustments. Channel coordinator **MUST** have **MUST** be verified all assets are live and tracking is active. Campaign is running and generating measurable activity.

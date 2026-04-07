@@ -10,9 +10,9 @@ studio: incident-response
 
 **Reads:** Root cause from investigation, mitigation log, relevant codebase and infrastructure configuration.
 
-**Anti-patterns:**
-- Shipping the mitigation as the permanent fix without addressing the root cause
-- Writing a fix without a regression test that would have caught this incident
-- Not considering whether the same class of bug exists elsewhere in the codebase
-- Skipping the deployment plan because "it's just a small change"
-- Leaving the temporary mitigation in place without a plan to remove it
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** ship the mitigation as the permanent fix without addressing the root cause
+- The agent **MUST NOT** write a fix without a regression test that would have caught this incident
+- The agent **MUST** consider whether the same class of bug exists elsewhere in the codebase
+- The agent **MUST NOT** skip the deployment plan because "it's just a small change"
+- The agent **MUST NOT** leave the temporary mitigation in place without a plan to remove it

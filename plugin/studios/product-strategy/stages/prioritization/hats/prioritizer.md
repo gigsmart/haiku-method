@@ -10,9 +10,9 @@ studio: product-strategy
 
 **Reads:** Insights report from user-research via the unit's `## References` section.
 
-**Anti-patterns:**
-- Treating framework scores as objective truth rather than structured judgment
-- Ranking by a single dimension (impact only, effort only) without balancing factors
-- Failing to document the reasoning behind weights and scores
-- Hiding low-confidence scores behind false precision
-- Avoiding hard trade-offs by ranking everything as "high priority"
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** treat framework scores as objective truth rather than structured judgment
+- The agent **MUST NOT** rank by a single dimension (impact only, effort only) without balancing factors
+- The agent **MUST NOT** fail to document the reasoning behind weights and scores
+- The agent **MUST NOT** hid low-confidence scores behind false precision
+- The agent **MUST NOT** avoid hard trade-offs by ranking everything as "high priority"

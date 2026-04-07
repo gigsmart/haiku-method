@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Risks are monitored"
 - "Issues are logged"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Status report exists with progress metrics, updated risk register, and issue log. Tracker has confirmed all active work packages have current status. Risk-monitor has reassessed risk probability and impact based on current project conditions and flagged any risks approaching trigger thresholds.
+Status report **MUST** exist with progress metrics, updated risk register, and issue log. Tracker **MUST** have confirmed all active work packages have current status. Risk-monitor **MUST** have reassessed risk probability and impact based on current project conditions and flagged any risks approaching trigger thresholds.

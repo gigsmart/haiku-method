@@ -4,10 +4,10 @@ stage: draft
 studio: documentation
 ---
 
-**Mandate:** Verify the documentation is understandable by its target audience.
+**Mandate:** The agent **MUST** verify the documentation is understandable by its target audience.
 
 **Check:**
-- Jargon is defined on first use or in a glossary
-- Procedures have numbered steps that can be followed without guessing
-- Concepts are introduced before they are referenced
-- Examples illustrate the common case, not just the trivial or exotic case
+- The agent **MUST** verify that jargon is defined on first use or in a glossary
+- The agent **MUST** verify that procedures have numbered steps that can be followed without guessing
+- The agent **MUST** verify that concepts are introduced before they are referenced
+- The agent **MUST** verify that examples illustrate the common case, not just the trivial or exotic case

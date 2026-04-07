@@ -27,6 +27,6 @@ Bad criteria examples:
 - "Document is compliant"
 - "Issues are noted"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Review findings exist with all issues categorized by severity, compliance gaps identified with remediation recommendations, and residual risk opinion documented. Reviewer has confirmed the document achieves the stated legal objectives. Compliance-officer has verified regulatory alignment across all applicable jurisdictions.
+Review findings exist with all issues categorized by severity, compliance gaps identified with remediation recommendations, and residual risk opinion documented. Reviewer **MUST** have confirmed the document achieves the stated legal objectives. Compliance-officer **MUST** have **MUST** be verified regulatory alignment across all applicable jurisdictions.

@@ -45,7 +45,7 @@ if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
 fi
 ```
 
-If `CLAUDE_CODE_IS_COWORK=1`, stop immediately with the message above. Do NOT proceed.
+If `CLAUDE_CODE_IS_COWORK=1`, the agent **MUST** stop immediately with the message above. The agent **MUST NOT** proceed.
 
 ---
 
@@ -632,13 +632,16 @@ providers:
     type: slack
 ```
 
-Rules:
-- Only include `git:` or `jj:` — not both — based on `DETECTED_VCS`
-- Set `visual_review` to the value of `VISUAL_REVIEW_ENABLED` from Phase 3b
-- Only include provider sections for providers the user confirmed
-- Preserve any `instructions:` fields from existing settings
-- Preserve any fields not covered by this wizard (e.g., custom `config` keys)
-- Output must validate against `plugin/schemas/settings.schema.json`
+### Settings File Rules (RFC 2119)
+
+The key words "MUST", "MUST NOT", "SHALL", "SHALL NOT", "REQUIRED" in this section are to be interpreted as described in RFC 2119.
+
+- The agent **MUST** only include `git:` or `jj:` — not both — based on `DETECTED_VCS`
+- The agent **MUST** set `visual_review` to the value of `VISUAL_REVIEW_ENABLED` from Phase 3b
+- The agent **MUST** only include provider sections for providers the user confirmed
+- The agent **MUST** preserve any `instructions:` fields from existing settings
+- The agent **MUST** preserve any fields not covered by this wizard (e.g., custom `config` keys)
+- Output **MUST** validate against `plugin/schemas/settings.schema.json`
 
 3. Write the file using the `Write` tool to `.haiku/settings.yml`.
 

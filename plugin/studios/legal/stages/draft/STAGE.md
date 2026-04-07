@@ -25,6 +25,6 @@ Bad criteria examples:
 - "Contract looks good"
 - "Terms are included"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Draft document exists with all requirements addressed, terms defined consistently, and protective clauses mapped to identified risks. Drafter has confirmed compliance with applicable regulatory requirements. Editor has verified internal consistency, proper cross-references, and adherence to house style.
+Draft document **MUST** exist with all requirements addressed, terms defined consistently, and protective clauses mapped to identified risks. Drafter **MUST** have confirmed compliance with applicable regulatory requirements. Editor **MUST** have **MUST** be verified internal consistency, proper cross-references, and adherence to house style.

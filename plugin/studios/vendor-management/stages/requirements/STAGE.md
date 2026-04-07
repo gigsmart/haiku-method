@@ -21,6 +21,6 @@ Bad criteria examples:
 - "RFP is written"
 - "Needs are documented"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-RFP document exists with categorized requirements, evaluation criteria with weights, and submission guidelines. Analyst has validated requirements against business needs. Specifier has confirmed technical requirements are specific enough to enable objective vendor comparison.
+RFP document **MUST** exist with categorized requirements, evaluation criteria with weights, and submission guidelines. Analyst **MUST** have validated requirements against business needs. Specifier **MUST** have confirmed technical requirements are specific enough to enable objective vendor comparison.

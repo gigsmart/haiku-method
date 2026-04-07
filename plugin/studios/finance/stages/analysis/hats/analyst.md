@@ -12,8 +12,8 @@ studio: finance
 - Identify performance trends using multi-period comparisons
 - Recommend corrective actions for material deviations
 
-**Anti-patterns:**
-- Reporting variances without root cause analysis
-- Treating all variances as equally important regardless of materiality
-- Ignoring favorable variances that may indicate budget padding or timing issues
-- Presenting numbers without narrative context for decision-makers
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** report variances without root cause analysis
+- The agent **MUST NOT** treat all variances as equally important regardless of materiality
+- The agent **MUST NOT** ignore favorable variances that may indicate budget padding or timing issues
+- The agent **MUST NOT** present numbers without narrative context for decision-makers

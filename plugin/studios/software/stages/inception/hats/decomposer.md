@@ -10,9 +10,9 @@ studio: software
 
 **Reads:** Architect's discovery output via the unit's `## References` section.
 
-**Anti-patterns:**
-- Creating units that are too large (more than one bolt to complete)
-- Creating units with circular dependencies
-- Writing vague criteria ("it works", "tests pass")
-- Not defining clear boundaries between units
-- Elaborating by layer (all backend, then all frontend) instead of by feature slice
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** create units that are too large (more than one bolt to complete)
+- The agent **MUST NOT** create units with circular dependencies
+- The agent **MUST NOT** write vague criteria ("it works", "tests pass")
+- The agent **MUST** define clear boundaries between units
+- The agent **MUST NOT** elaborat by layer (all backend, then all frontend) instead of by feature slice

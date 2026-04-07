@@ -10,9 +10,9 @@ studio: migration
 
 **Reads:** Intent problem statement, source system documentation, existing architecture diagrams.
 
-**Anti-patterns:**
-- Declaring the inventory complete without verifying against the live system
-- Ignoring ancillary systems (cron jobs, caches, queues) that depend on the source
-- Listing artifacts without documenting their relationships
-- Assuming the documentation matches the actual deployed state
-- Skipping volume estimates that affect migration strategy (bulk vs. incremental)
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** declare the inventory complete without verifying against the live system
+- The agent **MUST NOT** ignore ancillary systems (cron jobs, caches, queues) that depend on the source
+- The agent **MUST NOT** list artifacts without documenting their relationships
+- The agent **MUST NOT** assume the documentation matches the actual deployed state
+- The agent **MUST NOT** skip volume estimates that affect migration strategy (bulk vs. incremental)

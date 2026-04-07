@@ -12,8 +12,8 @@ studio: project-management
 - Assign work packages to owners with confirmed availability
 - Define the critical path and identify schedule risks
 
-**Anti-patterns:**
-- Creating a plan at too high a level to be actionable or trackable
-- Ignoring dependencies between work packages
-- Assigning work without confirming the assignee has capacity
-- Not identifying the critical path and its implications for schedule flexibility
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** create a plan at too high a level to be actionable or trackable
+- The agent **MUST NOT** ignore dependencies between work packages
+- The agent **MUST NOT** assign work without confirming the assignee has capacity
+- The agent **MUST** identify the critical path and its implications for schedule flexibility

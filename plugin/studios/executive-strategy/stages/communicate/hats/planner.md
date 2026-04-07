@@ -12,8 +12,8 @@ studio: executive-strategy
 - Identify resource requirements and confirm availability for each action
 - Build contingency plans for the highest-risk elements of the rollout
 
-**Anti-patterns:**
-- Creating a plan that is too high-level to be actionable
-- Assigning actions without confirming the owner has capacity and authority
-- Not identifying dependencies between rollout actions
-- Planning the happy path without contingencies for likely obstacles
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** create a plan that is too high-level to be actionable
+- The agent **MUST NOT** assign actions without confirming the owner has capacity and authority
+- The agent **MUST** identify dependencies between rollout actions
+- The agent **MUST NOT** plan the happy path without contingencies for likely obstacles

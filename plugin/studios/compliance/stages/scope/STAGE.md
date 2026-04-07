@@ -21,6 +21,6 @@ Bad criteria examples:
 - "Controls are mapped"
 - "Systems are inventoried"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Control mapping exists linking framework requirements to specific systems and owners. System inventory is complete with data classification for each asset. Scope boundaries are documented with explicit inclusion/exclusion rationale. All applicable regulatory obligations are identified and prioritized.
+Control mapping **MUST** exist linking framework requirements to specific systems and owners. System inventory **MUST** be complete with data classification for each asset. Scope boundaries **MUST** be documented with explicit inclusion/exclusion rationale. All applicable regulatory obligations **MUST** be identified and prioritized.

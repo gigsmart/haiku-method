@@ -10,9 +10,9 @@ studio: sales
 
 **Reads:** Closer's execution docs and terms via the unit's `## References` section.
 
-**Anti-patterns:**
-- Handing off a name and contract without relationship context
-- Not documenting commitments or expectations set during the sales process
-- Omitting known risks, concerns, or sensitivities the prospect expressed
-- Treating handoff as an afterthought instead of a critical deliverable
-- Not capturing win/loss learnings while the deal context is still fresh
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** hand off a name and contract without relationship context
+- The agent **MUST** document commitments or expectations set during the sales process
+- The agent **MUST NOT** omit known risks, concerns, or sensitivities the prospect expressed
+- The agent **MUST NOT** treat handoff as an afterthought instead of a critical deliverable
+- The agent **MUST** captur win/loss learnings while the deal context is still fresh

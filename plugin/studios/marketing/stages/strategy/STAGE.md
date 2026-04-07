@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Messaging is clear"
 - "Channels are selected"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Messaging framework exists with value proposition hierarchy, tone guidelines, and channel-specific adaptations. Campaign goals are quantified with target KPIs. Brand reviewer has validated messaging alignment with brand identity and flagged any positioning conflicts.
+Messaging framework **MUST** exist with value proposition hierarchy, tone guidelines, and channel-specific adaptations. Campaign goals are quantified with target KPIs. Brand reviewer **MUST** have validated messaging alignment with brand identity and flagged any positioning conflicts.

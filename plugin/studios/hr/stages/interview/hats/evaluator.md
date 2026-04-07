@@ -12,8 +12,8 @@ studio: hr
 - Produce a comparative ranking with supporting behavioral evidence
 - Document hire/no-hire recommendations with clear rationale
 
-**Anti-patterns:**
-- Averaging scores without examining disagreements between interviewers
-- Letting a single strong opinion dominate the debrief without evidence review
-- Making recommendations based on likability rather than competency evidence
-- Not documenting the rationale clearly enough for future reference
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** averag scores without examining disagreements between interviewers
+- The agent **MUST NOT** let a single strong opinion dominate the debrief without evidence review
+- The agent **MUST NOT** make recommendations based on likability rather than competency evidence
+- The agent **MUST** document the rationale clearly enough for future reference

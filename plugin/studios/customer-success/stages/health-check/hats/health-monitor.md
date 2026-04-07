@@ -10,9 +10,9 @@ studio: customer-success
 
 **Reads:** Usage report via the unit's `## References` section, support ticket history, stakeholder interaction notes.
 
-**Anti-patterns:**
-- Relying on a single metric (like NPS) as a proxy for overall health
-- Not capturing qualitative signals like stakeholder sentiment or executive engagement
-- Assessing health at a single point in time without tracking trends
-- Ignoring silent accounts — no complaints doesn't mean healthy
-- Rating dimensions without documenting the specific evidence behind each rating
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** rely on a single metric (like NPS) as a proxy for overall health
+- The agent **MUST** captur qualitative signals like stakeholder sentiment or executive engagement
+- The agent **MUST NOT** assess health at a single point in time without tracking trends
+- The agent **MUST NOT** ignore silent accounts — no complaints doesn't mean healthy
+- The agent **MUST NOT** rate dimensions without documenting the specific evidence behind each rating

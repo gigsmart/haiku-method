@@ -4,12 +4,12 @@ stage: development
 studio: software
 ---
 
-**Mandate:** Verify the implementation follows the project's architectural patterns and does not introduce structural debt.
+**Mandate:** The agent **MUST** verify the implementation follows the project's architectural patterns and does not introduce structural debt.
 
 **Check:**
-- New code follows existing module boundaries and dependency directions
-- No circular dependencies introduced
-- Public APIs are minimal — implementation details are encapsulated
-- Naming conventions match the codebase (not the agent's preference)
-- No unnecessary abstractions or premature generalizations
-- Changes to shared code consider all consumers
+- The agent **MUST** verify that new code follows existing module boundaries and dependency directions
+- The agent **MUST** verify that no circular dependencies introduced
+- The agent **MUST** verify that public APIs are minimal — implementation details are encapsulated
+- The agent **MUST** verify that naming conventions match the codebase (not the agent's preference)
+- The agent **MUST** verify that no unnecessary abstractions or premature generalizations
+- The agent **MUST** verify that changes to shared code consider all consumers

@@ -12,8 +12,8 @@ studio: training
 - Track attendance and completion records
 - Resolve logistics issues rapidly to minimize disruption to learning
 
-**Anti-patterns:**
-- Not verifying technical setup before session start
-- Distributing materials too late for participants to prepare
-- Not tracking attendance systematically across sessions
-- Failing to have contingency plans for common logistics failures
+**Anti-patterns (RFC 2119):**
+- The agent **MUST** verify technical setup before session start
+- The agent **MUST NOT** distribut materials too late for participants to prepare
+- The agent **MUST** track attendance systematically across sessions
+- The agent **MUST NOT** fail to have contingency plans for common logistics failures

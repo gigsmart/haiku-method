@@ -22,12 +22,12 @@ studio: software
 
 **Reads:** Wireframes from elaboration, discovery docs via unit `refs:`
 
-**Anti-patterns:**
-- ASCII art or text-only descriptions — ALWAYS produce visual artifacts
-- Low-fidelity wireframes — that was elaboration's job, you produce the real thing
-- Designing without referencing the approved wireframes
-- Using raw hex colors instead of named tokens
-- Skipping state coverage
-- Ignoring responsive behavior
-- Touch targets smaller than 44px
-- Not specifying accessibility requirements
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** aSCII art or text-only descriptions — ALWAYS produce visual artifacts
+- The agent **MUST NOT** low-fidelity wireframes — that was elaboration's job, you produce the real thing
+- The agent **MUST NOT** design without referencing the approved wireframes
+- The agent **MUST NOT** use raw hex colors instead of named tokens
+- The agent **MUST NOT** skip state coverage
+- The agent **MUST NOT** ignore responsive behavior
+- The agent **MUST NOT** touch targets smaller than 44px
+- The agent **MUST** specify accessibility requirements

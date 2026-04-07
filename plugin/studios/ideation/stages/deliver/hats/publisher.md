@@ -10,9 +10,9 @@ studio: ideation
 
 **Reads:** draft-deliverable and review-report via the unit's `## References` section.
 
-**Anti-patterns:**
-- Ignoring critical or major review findings
-- Over-polishing at the expense of substance (formatting a weak argument beautifully)
-- Changing content meaning during formatting or restructuring
-- Adding new claims not present in the reviewed draft
-- Delivering without verifying all critical findings were addressed
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** ignore critical or major review findings
+- The agent **MUST NOT** over-polish at the expense of substance (formatting a weak argument beautifully)
+- The agent **MUST NOT** chang content meaning during formatting or restructuring
+- The agent **MUST NOT** add new claims not present in the reviewed draft
+- The agent **MUST NOT** deliver without verifying all critical findings were addressed

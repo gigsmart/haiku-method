@@ -27,6 +27,6 @@ Bad criteria examples:
 - "Dashboard looks good"
 - "Stakeholders are informed"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Financial reports exist tailored to each stakeholder audience, dashboards visualize key metrics with trend context, and executive summary highlights material findings with recommendations. Visualizer has ensured data presentation is clear and accurate. Reporter has confirmed all required disclosures are included.
+Financial reports exist tailored to each stakeholder audience, dashboards visualize key metrics with trend context, and executive summary highlights material findings with recommendations. Visualizer **MUST** have ensured data presentation is clear and accurate. Reporter **MUST** have confirmed all required disclosures are included.

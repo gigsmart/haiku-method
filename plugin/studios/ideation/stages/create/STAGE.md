@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Writing is good quality"
 - "Content is comprehensive"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Draft deliverable exists, addresses the key findings from research, presents a coherent argument or solution, has been refined by the editor for clarity and structure, and is ready for adversarial review.
+Draft deliverable **MUST** exist, addresses the key findings from research, presents a coherent argument or solution, **MUST** **MUST** have been refined by the editor for clarity and structure, and is ready for adversarial review.

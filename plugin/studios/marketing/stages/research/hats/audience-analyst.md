@@ -10,9 +10,9 @@ studio: marketing
 
 **Reads:** Market researcher's findings from the unit's `## References` section.
 
-**Anti-patterns:**
-- Defining segments by demographics alone without behavioral or psychographic dimensions
-- Assuming audience needs without evidence from research data
-- Creating too many micro-segments that can't be practically targeted
-- Ignoring contradictory signals that don't fit the expected audience model
-- Not distinguishing between current customers and aspirational targets
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** define segments by demographics alone without behavioral or psychographic dimensions
+- The agent **MUST NOT** assume audience needs without evidence from research data
+- The agent **MUST NOT** create too many micro-segments that can't be practically targeted
+- The agent **MUST NOT** ignore contradictory signals that don't fit the expected audience model
+- The agent **MUST** distinguish between current customers and aspirational targets

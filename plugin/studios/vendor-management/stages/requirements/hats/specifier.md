@@ -12,8 +12,8 @@ studio: vendor-management
 - Structure the RFP for clear, comparable vendor responses
 - Include SLA expectations, compliance requirements, and contractual constraints
 
-**Anti-patterns:**
-- Writing vague specifications that allow vendors to claim compliance without substance
-- Defining evaluation criteria after receiving vendor responses
-- Creating an RFP that is so complex it discourages qualified vendors from responding
-- Not including data handling, security, and compliance requirements
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** write vague specifications that allow vendors to claim compliance without substance
+- The agent **MUST NOT** define evaluation criteria after receiving vendor responses
+- The agent **MUST NOT** create an RFP that is so complex it discourages qualified vendors from responding
+- The agent **MUST** include data handling, security, and compliance requirements

@@ -9,7 +9,9 @@ You are refining an H·AI·K·U artifact mid-execution. Your job is to amend spe
 
 ---
 
-## Pre-check: Reject Cowork Mode
+## Pre-check: Reject Cowork Mode (RFC 2119)
+
+The key words "MUST", "MUST NOT", "SHALL", "SHALL NOT", "REQUIRED" in this section are to be interpreted as described in RFC 2119.
 
 ```bash
 if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
@@ -19,7 +21,7 @@ if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
 fi
 ```
 
-If `CLAUDE_CODE_IS_COWORK=1`, stop immediately with the message above. Do NOT proceed.
+If `CLAUDE_CODE_IS_COWORK=1`, the agent **MUST** stop immediately with the message above. The agent **MUST NOT** proceed.
 
 ---
 
@@ -130,7 +132,7 @@ When the target is an upstream stage, the goal is to add or update a **specific 
    - Load the target stage's hat sequence
    - Execute each hat for the new unit (bolt loop)
    - Run quality gates
-   - Do NOT re-run existing completed units in that stage
+   - The agent **MUST NOT** re-run existing completed units in that stage
 
 5. **Persist the updated output:**
    ```bash
@@ -139,7 +141,7 @@ When the target is an upstream stage, the goal is to add or update a **specific 
 
 6. **Return to the current stage:**
    - The current stage's elaboration or execution can now reference the new/updated upstream output
-   - Do NOT change `active_stage` — the upstream refinement is a scoped side-trip
+   - The agent **MUST NOT** change `active_stage` — the upstream refinement is a scoped side-trip
 
 7. **Commit:**
    ```bash
@@ -183,7 +185,7 @@ For each selected aspect:
 2. Ask the user what should change
 3. Confirm the updated content before writing
 
-**CRITICAL:** Preserve all frontmatter fields (status, depends_on, branch, discipline, ticket, etc.) when rewriting files. Only modify the content sections being refined.
+**CRITICAL:** The agent **MUST** preserve all frontmatter fields (status, depends_on, branch, discipline, ticket, etc.) when rewriting files. The agent **MUST** only modify the content sections being refined.
 
 ---
 
@@ -267,7 +269,7 @@ git add "$INTENT_DIR/"
 git commit -m "refine: re-queue ${UNIT_NAME} for ${INTENT_SLUG}"
 ```
 
-**Note:** Units that are already completed and unaffected by the change stay completed. Only re-queue units that are directly impacted.
+**Note:** Units that are already completed and unaffected by the change **MUST** stay completed. The agent **MUST** only re-queue units that are directly impacted.
 
 If the integrator had completed, reset it since the spec has changed:
 

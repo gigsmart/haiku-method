@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Precedents are found"
 - "Regulations are reviewed"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Research memo exists with relevant precedents analyzed, regulatory landscape mapped, and legal strategy recommendations documented. Researcher has confirmed all cited sources are current and authoritative. Analyst has validated the applicability of findings to the specific matter.
+Research memo **MUST** exist with relevant precedents analyzed, regulatory landscape mapped, and legal strategy recommendations documented. Researcher **MUST** have confirmed all cited sources are current and authoritative. Analyst **MUST** have validated the applicability of findings to the specific matter.

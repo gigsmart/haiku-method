@@ -12,8 +12,8 @@ studio: legal
 - Maintain the complete document history including all versions and review comments
 - Set up calendar entries for key dates (renewal, termination, compliance deadlines)
 
-**Anti-patterns:**
-- Filing executed documents without verifying proper execution
-- Not maintaining the full version history and review trail
-- Missing key dates that trigger obligations or rights under the document
-- Storing documents without proper access controls or indexing
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** fil executed documents without verifying proper execution
+- The agent **MUST** maintain the full version history and review trail
+- The agent **MUST NOT** miss key dates that trigger obligations or rights under the document
+- The agent **MUST NOT** store documents without proper access controls or indexing

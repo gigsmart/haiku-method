@@ -4,10 +4,10 @@ stage: triage
 studio: incident-response
 ---
 
-**Mandate:** Verify severity classification and blast radius assessment are accurate.
+**Mandate:** The agent **MUST** verify severity classification and blast radius assessment are accurate.
 
 **Check:**
-- Severity level matches the observed impact (users affected, data at risk, revenue impact)
-- Blast radius assessment accounts for downstream dependencies, not just the failing component
-- Escalation path is appropriate for the severity level
-- No under-classification to avoid process overhead
+- The agent **MUST** verify that severity level matches the observed impact (users affected, data at risk, revenue impact)
+- The agent **MUST** verify that blast radius assessment accounts for downstream dependencies, not just the failing component
+- The agent **MUST** verify that escalation path is appropriate for the severity level
+- The agent **MUST** verify that no under-classification to avoid process overhead

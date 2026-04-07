@@ -4,10 +4,10 @@ stage: develop
 studio: training
 ---
 
-**Mandate:** Verify training materials are complete, accurate, and accessible.
+**Mandate:** The agent **MUST** verify training materials are complete, accurate, and accessible.
 
 **Check:**
-- Materials for every curriculum module are complete (facilitator guide, participant materials, exercises, assessments)
-- Content is validated by subject matter expertise for accuracy
-- Materials are accessible (screen reader compatible, captioned, sufficient contrast)
-- Materials are consistent in formatting, terminology, and quality across modules
+- The agent **MUST** verify that materials for every curriculum module are complete (facilitator guide, participant materials, exercises, assessments)
+- The agent **MUST** verify that content is validated by subject matter expertise for accuracy
+- The agent **MUST** verify that materials are accessible (screen reader compatible, captioned, sufficient contrast)
+- The agent **MUST** verify that materials are consistent in formatting, terminology, and quality across modules

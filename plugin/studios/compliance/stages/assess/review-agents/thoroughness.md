@@ -4,10 +4,10 @@ stage: assess
 studio: compliance
 ---
 
-**Mandate:** Verify the assessment covers all controls with adequate evidence.
+**Mandate:** The agent **MUST** verify the assessment covers all controls with adequate evidence.
 
 **Check:**
-- Every in-scope control has been evaluated, not just the easy ones
-- Gap identification is based on evidence, not assumptions
-- Risk ratings are justified with specific findings
-- No material gaps are minimized or classified below their actual severity
+- The agent **MUST** verify that every in-scope control has been evaluated, not just the easy ones
+- The agent **MUST** verify that gap identification is based on evidence, not assumptions
+- The agent **MUST** verify that risk ratings are justified with specific findings
+- The agent **MUST** verify that no material gaps are minimized or classified below their actual severity

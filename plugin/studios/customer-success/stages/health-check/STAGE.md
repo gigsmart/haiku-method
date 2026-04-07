@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Risks are identified"
 - "Action plan exists"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Health report exists with a scored health assessment across multiple dimensions. Risk analyst has identified and severity-ranked all churn risks with specific leading indicators. Each risk has a concrete mitigation plan with success criteria. Escalation paths are documented for critical risks. Report provides a clear recommendation: healthy, at-risk, or critical.
+Health report **MUST** exist with a scored health assessment across multiple dimensions. Risk analyst **MUST** have identified and severity-ranked all churn risks with specific leading indicators. Each risk **MUST** have a concrete mitigation plan with success criteria. Escalation paths **MUST** be documented for critical risks. Report provides a clear recommendation: healthy, at-risk, or critical.

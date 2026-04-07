@@ -10,10 +10,10 @@ studio: security-assessment
 
 **Reads:** Intent scope definition, authorized IP ranges and domains, OSINT analyst's findings.
 
-**Anti-patterns:**
-- Scanning hosts or ranges outside the authorized scope
-- Using aggressive scan techniques that could cause denial of service
-- Failing to document scan parameters and timing for reproducibility
-- Skipping UDP services or non-standard port ranges without justification
-- Not correlating network findings with OSINT data
-- Running scans without confirming the rules of engagement permit active probing
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** scan hosts or ranges outside the authorized scope
+- The agent **MUST NOT** use aggressive scan techniques that could cause denial of service
+- The agent **MUST NOT** fail to document scan parameters and timing for reproducibility
+- The agent **MUST NOT** skip UDP services or non-standard port ranges without justification
+- The agent **MUST** correlat network findings with OSINT data
+- The agent **MUST NOT** run scans without confirming the rules of engagement permit active probing

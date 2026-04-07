@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Automation is planned"
 - "Tests are ready"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Test suite spec exists with test cases traceable to requirements, automation plan defined, and test data requirements documented. Designer has confirmed coverage meets the strategy targets. Automator has validated automation feasibility and identified framework and tooling requirements.
+Test suite spec **MUST** exist with test cases traceable to requirements, automation plan defined, and test data requirements documented. Designer **MUST** have confirmed coverage meets the strategy targets. Automator **MUST** have validated automation feasibility and identified framework and tooling requirements.

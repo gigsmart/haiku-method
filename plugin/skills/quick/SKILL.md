@@ -72,7 +72,7 @@ if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
 fi
 ```
 
-If `CLAUDE_CODE_IS_COWORK=1`, stop immediately. Do NOT proceed.
+If `CLAUDE_CODE_IS_COWORK=1`, the agent **MUST** stop immediately. The agent **MUST NOT** proceed.
 
 ### 2b: Active Intent Conflict
 
@@ -356,16 +356,18 @@ Output a brief summary:
 
 ---
 
-## Guardrails
+## Guardrails (RFC 2119)
 
-- **Temporary state only.** Quick mode creates `.haiku/quick/` artifacts purely for hook integration. They are always cleaned up — never committed, never persisted.
-- **No worktrees.** Work happens in the current working directory on the current branch. Quick mode does NOT create git worktrees.
-- **Subagent delegation.** Each hat phase is executed by a spawned subagent, not by the orchestrator directly. This keeps hat context clean and isolated.
-- **3-cycle limit.** If the reviewer rejects 3 times, quick mode stops and recommends `/haiku:elaborate`. Quick mode is not for tasks that need extensive iteration.
-- **Always delivers via PR.** Quick mode creates a feature branch (if on default branch) and opens a PR. All changes go through the merge process.
-- **Pre-delivery review is mandatory.** `/haiku:review` runs after the hat loop — the same multi-agent review that runs for full intents. Issues are fixed locally before the PR is created.
-- **Scope escape hatch.** If at any point during execution you realize the task is not trivial, stop and recommend `/haiku:elaborate`. Do not silently expand scope.
-- **Conflict guard.** Quick mode refuses to start if another active intent exists. Only one intent can be active at a time.
-- **Empty quality gates.** Quick artifacts use `quality_gates: []` — no harness-enforced gates. Verification is handled by the hat sequence itself.
-- **Single session.** Quick mode runs to completion in one session. There is no resume capability — if interrupted, clean up orphaned artifacts and start over.
-- **Cowork rejection.** Quick mode cannot run in cowork mode (`CLAUDE_CODE_IS_COWORK=1`).
+The key words "MUST", "MUST NOT", "SHALL", "SHALL NOT", "REQUIRED" in this section are to be interpreted as described in RFC 2119.
+
+- **Temporary state only.** Quick mode creates `.haiku/quick/` artifacts purely for hook integration. They **MUST** be cleaned up — the agent **MUST NOT** commit or persist them.
+- **No worktrees.** Work happens in the current working directory on the current branch. The agent **MUST NOT** create git worktrees in quick mode.
+- **Subagent delegation.** Each hat phase **MUST** be executed by a spawned subagent, not by the orchestrator directly. This keeps hat context clean and isolated.
+- **3-cycle limit.** If the reviewer rejects 3 times, the agent **MUST** stop and recommend `/haiku:elaborate`. Quick mode is not for tasks that need extensive iteration.
+- **Always delivers via PR.** Quick mode **MUST** create a feature branch (if on default branch) and open a PR. All changes **MUST** go through the merge process.
+- **Pre-delivery review is **REQUIRED**.** `/haiku:review` **MUST** run after the hat loop — the same multi-agent review that runs for full intents. Issues **MUST** be fixed locally before the PR is created.
+- **Scope escape hatch.** If at any point during execution the agent realizes the task is not trivial, the agent **MUST** stop and recommend `/haiku:elaborate`. The agent **MUST NOT** silently expand scope.
+- **Conflict guard.** Quick mode **MUST** refuse to start if another active intent exists. Only one intent can be active at a time.
+- **Empty quality gates.** Quick artifacts **MUST** use `quality_gates: []` — no harness-enforced gates. Verification is handled by the hat sequence itself.
+- **Single session.** Quick mode **MUST** run to completion in one session. There is no resume capability — if interrupted, clean up orphaned artifacts and start over.
+- **Cowork rejection.** Quick mode **MUST NOT** run in cowork mode (`CLAUDE_CODE_IS_COWORK=1`).

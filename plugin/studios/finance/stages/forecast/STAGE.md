@@ -21,6 +21,6 @@ Bad criteria examples:
 - "Revenue looks reasonable"
 - "Market conditions are understood"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Forecast model exists with documented assumptions, multiple revenue scenarios, and market condition analysis. Each projection traces to underlying data. Forecaster has validated methodology and analyst has confirmed data sources are current and reliable.
+Forecast model **MUST** exist with documented assumptions, multiple revenue scenarios, and market condition analysis. Each projection traces to underlying data. Forecaster **MUST** have validated methodology and analyst **MUST** have confirmed data sources are current and reliable.

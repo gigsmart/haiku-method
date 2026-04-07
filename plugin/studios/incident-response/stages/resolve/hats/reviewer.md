@@ -10,9 +10,9 @@ studio: incident-response
 
 **Reads:** Engineer's fix, root cause from investigation, mitigation log, regression tests.
 
-**Anti-patterns:**
-- Rubber-stamping because the incident is resolved and urgency has passed
-- Reviewing only the diff without understanding the root cause it's meant to fix
-- Not verifying the regression test actually fails without the fix applied
-- Ignoring deployment risk because the mitigation is already in place
-- Not checking whether the temporary mitigation cleanup is included or planned
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** rubber-stamp because the incident is resolved and urgency has passed
+- The agent **MUST NOT** review only the diff without understanding the root cause it's meant to fix
+- The agent **MUST** verify the regression test actually fails without the fix applied
+- The agent **MUST NOT** ignore deployment risk because the mitigation is already in place
+- The agent **MUST** check whether the temporary mitigation cleanup is included or planned

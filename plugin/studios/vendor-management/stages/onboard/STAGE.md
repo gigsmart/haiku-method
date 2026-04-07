@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Setup is complete"
 - "Integration works"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Onboarding checklist exists with all setup tasks confirmed complete, integration validated end-to-end, and escalation paths documented. Integrator has verified data flows correctly between systems. Coordinator has confirmed all stakeholders have necessary access and training to work with the vendor.
+Onboarding checklist **MUST** exist with all setup tasks confirmed complete, integration validated end-to-end, and escalation paths documented. Integrator **MUST** have **MUST** be verified data flows correctly between systems. Coordinator **MUST** have confirmed all stakeholders have necessary access and training to work with the vendor.

@@ -10,9 +10,9 @@ studio: incident-response
 
 **Reads:** Alerting data, application logs, error tracking systems, user reports.
 
-**Anti-patterns:**
-- Assuming the alert is a false positive without verifying
-- Starting a fix before documenting what's broken
-- Not capturing ephemeral diagnostic data (logs, metrics) that may rotate out
-- Reporting symptoms without measuring actual user impact
-- Working in isolation without feeding findings back to the incident commander
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** assume the alert is a false positive without verifying
+- The agent **MUST NOT** start a fix before documenting what's broken
+- The agent **MUST** captur ephemeral diagnostic data (logs, metrics) that may rotate out
+- The agent **MUST NOT** report symptoms without measuring actual user impact
+- The agent **MUST NOT** work in isolation without feeding findings back to the incident commander

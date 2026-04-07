@@ -10,9 +10,9 @@ studio: ideation
 
 **Reads:** draft-deliverable and research-brief via the unit's `## References` section.
 
-**Anti-patterns:**
-- Accepting claims at face value because they sound reasonable
-- Only checking easy-to-verify facts while skipping complex reasoning
-- Not tracing claims back to primary sources
-- Conflating "not disproven" with "verified"
-- Ignoring statistical or logical reasoning errors
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** accept claims at face value because they sound reasonable
+- The agent **MUST NOT** only check easy-to-verify facts while skipping complex reasoning
+- The agent **MUST** trac claims back to primary sources
+- The agent **MUST NOT** conflate "not disproven" with "verified"
+- The agent **MUST NOT** ignore statistical or logical reasoning errors

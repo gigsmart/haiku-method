@@ -12,8 +12,8 @@ studio: vendor-management
 - Recommend contract modifications to mitigate identified risks
 - Document risk acceptance for any terms that cannot be modified
 
-**Anti-patterns:**
-- Reviewing only the commercial terms while ignoring legal risk provisions
-- Flagging risks without providing specific contract language recommendations
-- Not checking for compliance with data protection and privacy regulations
-- Applying a generic review checklist without considering the specific vendor relationship
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** review only the commercial terms while ignoring legal risk provisions
+- The agent **MUST NOT** flag risks without providing specific contract language recommendations
+- The agent **MUST** check for compliance with data protection and privacy regulations
+- The agent **MUST NOT** apply a generic review checklist without considering the specific vendor relationship

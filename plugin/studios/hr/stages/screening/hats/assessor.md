@@ -12,8 +12,8 @@ studio: hr
 - Produce a ranked shortlist with supporting rationale for each candidate
 - Identify patterns in the candidate pool that may require sourcing adjustment
 
-**Anti-patterns:**
-- Overriding screener decisions without documented rationale
-- Ranking candidates without a transparent, repeatable methodology
-- Advancing too many or too few candidates for the interview stage
-- Ignoring candidate pool composition patterns that signal sourcing issues
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** override screener decisions without documented rationale
+- The agent **MUST NOT** rank candidates without a transparent, repeatable methodology
+- The agent **MUST NOT** advanc too many or too few candidates for the interview stage
+- The agent **MUST NOT** ignore candidate pool composition patterns that signal sourcing issues

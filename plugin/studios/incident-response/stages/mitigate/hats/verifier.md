@@ -10,9 +10,9 @@ studio: incident-response
 
 **Reads:** Mitigation log, monitoring dashboards, error tracking, the original alerting signals.
 
-**Anti-patterns:**
-- Declaring "fixed" based on a single data point or gut feeling
-- Using different metrics to verify than the ones that detected the problem
-- Not waiting long enough for metrics to stabilize before confirming
-- Ignoring partial mitigation — impact reduced but not eliminated
-- Not checking for side effects introduced by the mitigation itself
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** declare "fixed" based on a single data point or gut feeling
+- The agent **MUST NOT** use different metrics to verify than the ones that detected the problem
+- The agent **MUST** wait long enough for metrics to stabilize before confirming
+- The agent **MUST NOT** ignore partial mitigation — impact reduced but not eliminated
+- The agent **MUST** check for side effects introduced by the mitigation itself

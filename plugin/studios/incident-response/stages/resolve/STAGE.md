@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Tests pass"
 - "Deployed to production"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Permanent fix is implemented and addresses the root cause, not just the symptom. Regression tests exist that would catch this specific failure mode. Code review is complete. Deployment plan specifies rollout strategy and monitoring criteria. Resolution summary documents the fix, how it differs from the mitigation, and confirms the mitigation can be safely removed.
+Permanent fix is implemented and addresses the root cause, not just the symptom. Regression tests exist that would catch this specific failure mode. Code review **MUST** be complete. Deployment plan specifies rollout strategy and monitoring criteria. Resolution summary documents the fix, how it differs from the mitigation, and confirms the mitigation can be safely removed.

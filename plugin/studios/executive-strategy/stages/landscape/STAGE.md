@@ -21,6 +21,6 @@ Bad criteria examples:
 - "Competition is analyzed"
 - "Landscape is mapped"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Landscape analysis exists with market trends documented, competitive positions mapped, and organizational strengths and vulnerabilities assessed against the strategic question. Strategist has framed the decision context. Analyst has verified data sources and validated the analytical framework.
+Landscape analysis **MUST** exist with market trends documented, competitive positions mapped, and organizational strengths and vulnerabilities assessed against the strategic question. Strategist **MUST** have framed the decision context. Analyst **MUST** have **MUST** be verified data sources and validated the analytical framework.

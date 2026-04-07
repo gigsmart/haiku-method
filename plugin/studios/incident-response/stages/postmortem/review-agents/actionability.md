@@ -4,10 +4,10 @@ stage: postmortem
 studio: incident-response
 ---
 
-**Mandate:** Verify the postmortem produces actionable improvements, not just a narrative.
+**Mandate:** The agent **MUST** verify the postmortem produces actionable improvements, not just a narrative.
 
 **Check:**
-- Action items are specific, assigned, and have deadlines
-- Prevention measures address systemic causes, not just the specific incident
-- Detection improvements would catch this class of issue earlier
-- The timeline is accurate enough to be useful for future reference
+- The agent **MUST** verify that action items are specific, assigned, and have deadlines
+- The agent **MUST** verify that prevention measures address systemic causes, not just the specific incident
+- The agent **MUST** verify that detection improvements would catch this class of issue earlier
+- The agent **MUST** verify that the timeline is accurate enough to be useful for future reference

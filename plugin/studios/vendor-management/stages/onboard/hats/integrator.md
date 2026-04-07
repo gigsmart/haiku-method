@@ -12,8 +12,8 @@ studio: vendor-management
 - Test end-to-end data flows including error handling and edge cases
 - Document integration architecture and configuration for operational support
 
-**Anti-patterns:**
-- Deploying integration without end-to-end testing
-- Not testing error handling and failure scenarios
-- Configuring without documenting for the team that will maintain the integration
-- Ignoring performance under realistic data volumes
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** deploy integration without end-to-end testing
+- The agent **MUST** test error handling and failure scenarios
+- The agent **MUST NOT** configure without documenting for the team that will maintain the integration
+- The agent **MUST NOT** ignore performance under realistic data volumes

@@ -12,8 +12,8 @@ studio: project-management
 - Document assumptions that underpin the project scope
 - Map all stakeholders with their interests, influence, and engagement needs
 
-**Anti-patterns:**
-- Defining scope only by what is included without explicitly stating exclusions
-- Ignoring constraints that will surface during execution
-- Making assumptions without documenting them for later validation
-- Mapping stakeholders superficially without understanding their actual influence
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** define scope only by what is included without explicitly stating exclusions
+- The agent **MUST NOT** ignore constraints that will surface during execution
+- The agent **MUST NOT** make assumptions without documenting them for later validation
+- The agent **MUST NOT** map stakeholders superficially without understanding their actual influence

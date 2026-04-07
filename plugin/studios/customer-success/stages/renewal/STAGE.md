@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Contract terms discussed"
 - "Customer will renew"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Renewal strategy exists with a comprehensive value realization summary, competitive positioning, and recommended terms. Negotiation brief covers likely objections, concession boundaries, and walk-away criteria. Executive sponsor has prepared the executive business review narrative. Renewal outcome is documented: renewed (with terms), expanded, downsized, or churned — with lessons learned regardless of outcome.
+Renewal strategy **MUST** exist with a comprehensive value realization summary, competitive positioning, and recommended terms. Negotiation brief **MUST** cover likely objections, concession boundaries, and walk-away criteria. Executive sponsor **MUST** have prepared the executive business review narrative. Renewal outcome **MUST** be documented: renewed (with terms), expanded, downsized, or churned — with lessons learned regardless of outcome.

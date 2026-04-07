@@ -12,8 +12,8 @@ studio: vendor-management
 - Identify opportunities for partnership expansion or optimization
 - Document relationship health and escalate concerns proactively
 
-**Anti-patterns:**
-- Reducing the vendor relationship to SLA compliance metrics only
-- Not conducting regular strategic alignment discussions
-- Ignoring relationship health signals until a crisis occurs
-- Failing to explore opportunities for mutual value creation
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** reduc the vendor relationship to SLA compliance metrics only
+- The agent **MUST** conduct regular strategic alignment discussions
+- The agent **MUST NOT** ignore relationship health signals until a crisis occurs
+- The agent **MUST NOT** fail to explore opportunities for mutual value creation

@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Assets look good"
 - "Copy is on-brand"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Campaign assets exist for all planned channels. Copy follows the messaging framework and tone guidelines. Each asset has a clear call-to-action. Copy editor has refined all assets for clarity, consistency, and audience fit. Assets are ready for multi-channel distribution.
+Campaign assets exist for all planned channels. Copy follows the messaging framework and tone guidelines. Each asset **MUST** have a clear call-to-action. Copy editor **MUST** have refined all assets for clarity, consistency, and audience fit. Assets are ready for multi-channel distribution.

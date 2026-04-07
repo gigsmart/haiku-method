@@ -12,8 +12,8 @@ studio: vendor-management
 - Identify integration requirements with existing systems and processes
 - Benchmark requirements against market capabilities to ensure feasibility
 
-**Anti-patterns:**
-- Gathering requirements from a single stakeholder without cross-functional input
-- Listing features without connecting them to business needs
-- Setting requirements that no vendor in the market can reasonably meet
-- Not distinguishing between mandatory requirements and preferences
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** gather requirements from a single stakeholder without cross-functional input
+- The agent **MUST NOT** list features without connecting them to business needs
+- The agent **MUST NOT** set requirements that no vendor in the market can reasonably meet
+- The agent **MUST** distinguish between mandatory requirements and preferences

@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Data model looks good"
 - "Business logic is implemented"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Transformation layer converts staged raw data into the target schema. All business rules are implemented and centralized. Data model is documented with entity relationships, grain definitions, and SCD strategies. Transformations are idempotent and produce deterministic output. Data modeler has verified grain consistency and join correctness.
+Transformation layer converts staged raw data into the target schema. All business rules are implemented and centralized. Data model **MUST** be documented with entity relationships, grain definitions, and SCD strategies. Transformations are idempotent and produce deterministic output. Data modeler **MUST** have **MUST** be verified grain consistency and join correctness.

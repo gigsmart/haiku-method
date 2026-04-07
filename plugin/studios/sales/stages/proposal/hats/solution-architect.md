@@ -10,9 +10,9 @@ studio: sales
 
 **Reads:** Proposal writer's draft and deal-brief via the unit's `## References` section.
 
-**Anti-patterns:**
-- Approving technical claims in the proposal without validating feasibility
-- Designing an ideal-state solution that ignores the prospect's existing infrastructure
-- Over-engineering the solution beyond what the prospect needs or can absorb
-- Not flagging implementation risks or prerequisites that affect timeline
-- Treating every prospect environment as identical to the reference architecture
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** approve technical claims in the proposal without validating feasibility
+- The agent **MUST NOT** design an ideal-state solution that ignores the prospect's existing infrastructure
+- The agent **MUST NOT** over-engineer the solution beyond what the prospect needs or can absorb
+- The agent **MUST** flag implementation risks or prerequisites that affect timeline
+- The agent **MUST NOT** treat every prospect environment as identical to the reference architecture

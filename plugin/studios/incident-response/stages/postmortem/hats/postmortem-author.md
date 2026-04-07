@@ -10,9 +10,9 @@ studio: incident-response
 
 **Reads:** Incident brief, root cause analysis, mitigation log, resolution summary, and all communication artifacts from the incident.
 
-**Anti-patterns:**
-- Assigning blame to individuals instead of identifying systemic failures
-- Writing a timeline that skips the "boring" parts between detection and resolution
-- Proposing only tactical fixes ("add a check here") without addressing systemic gaps
-- Omitting the detection story — how the incident was found matters as much as what caused it
-- Writing for compliance rather than learning — a postmortem nobody reads prevents nothing
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** assign blame to individuals instead of identifying systemic failures
+- The agent **MUST NOT** write a timeline that skips the "boring" parts between detection and resolution
+- The agent **MUST NOT** propose only tactical fixes ("add a check here") without addressing systemic gaps
+- The agent **MUST NOT** omit the detection story — how the incident was found matters as much as what caused it
+- The agent **MUST NOT** write for compliance rather than learning — a postmortem nobody reads prevents nothing

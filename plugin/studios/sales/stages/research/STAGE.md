@@ -21,6 +21,6 @@ Bad criteria examples:
 - "Prospect is understood"
 - "Competitive analysis is done"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Prospect brief exists with company overview, key stakeholders mapped, pain points identified with evidence, and competitive landscape documented. Industry analyst has validated findings, identified market trends relevant to the prospect, and flagged risks or opportunities for the sales approach.
+Prospect brief **MUST** exist with company overview, key stakeholders mapped, pain points identified with evidence, and competitive landscape documented. Industry analyst **MUST** have validated findings, identified market trends relevant to the prospect, and flagged risks or opportunities for the sales approach.

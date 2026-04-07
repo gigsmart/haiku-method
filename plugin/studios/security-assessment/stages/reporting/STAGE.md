@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Findings are documented"
 - "Remediation is suggested"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Final report exists with executive summary, detailed technical findings, and remediation plan. Each finding has a severity rating, reproduction steps, evidence, and specific remediation guidance. Executive summary communicates risk posture in business terms. Remediation plan is prioritized by impact with clear ownership suggestions. Report has been reviewed for accuracy, completeness, and appropriate classification of sensitive details.
+Final report **MUST** exist with executive summary, detailed technical findings, and remediation plan. Each finding **MUST** have a severity rating, reproduction steps, evidence, and specific remediation guidance. Executive summary communicates risk posture in business terms. Remediation plan is prioritized by impact with clear ownership suggestions. Report **MUST** **MUST** have been reviewed for accuracy, completeness, and appropriate classification of sensitive details.

@@ -10,9 +10,9 @@ studio: data-pipeline
 
 **Reads:** Validator's test suite, transformation logic, data model documentation, SLA requirements from discovery.
 
-**Anti-patterns:**
-- Rubber-stamping a validation suite without tracing coverage back to requirements
-- Accepting row count checks as sufficient without uniqueness and referential integrity tests
-- Not verifying that validation failures produce enough context to diagnose the root cause
-- Ignoring SLA-related validations (freshness, completeness percentages)
-- Treating validation as a gate to pass rather than a safety net to maintain
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** rubber-stamp a validation suite without tracing coverage back to requirements
+- The agent **MUST NOT** accept row count checks as sufficient without uniqueness and referential integrity tests
+- The agent **MUST** verify that validation failures produce enough context to diagnose the root cause
+- The agent **MUST NOT** ignore SLA-related validations (freshness, completeness percentages)
+- The agent **MUST NOT** treat validation as a gate to pass rather than a safety net to maintain

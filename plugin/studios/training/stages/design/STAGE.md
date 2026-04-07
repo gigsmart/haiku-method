@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Learning paths are created"
 - "Modules are planned"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Curriculum plan exists with modules sequenced, learning outcomes mapped to gaps, and assessment strategy defined. Designer has confirmed the instructional approach is appropriate for the target audience. Subject-expert has validated content accuracy and completeness against the domain requirements.
+Curriculum plan **MUST** exist with modules sequenced, learning outcomes mapped to gaps, and assessment strategy defined. Designer **MUST** have confirmed the instructional approach is appropriate for the target audience. Subject-expert **MUST** have validated content accuracy and completeness against the domain requirements.

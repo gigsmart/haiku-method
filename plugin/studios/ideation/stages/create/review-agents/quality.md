@@ -4,10 +4,10 @@ stage: create
 studio: ideation
 ---
 
-**Mandate:** Verify the deliverable meets the standard defined in the intent and is grounded in the research.
+**Mandate:** The agent **MUST** verify the deliverable meets the standard defined in the intent and is grounded in the research.
 
 **Check:**
-- Claims and recommendations trace back to research findings
-- The deliverable addresses the stated problem, not a tangential one
-- Structure is clear and navigable — a reader can find what they need
-- No gaps where the research provided answers but the deliverable omits them
+- The agent **MUST** verify that claims and recommendations trace back to research findings
+- The agent **MUST** verify that the deliverable addresses the stated problem, not a tangential one
+- The agent **MUST** verify that structure is clear and navigable — a reader can find what they need
+- The agent **MUST** verify that no gaps where the research provided answers but the deliverable omits them

@@ -12,8 +12,8 @@ studio: executive-strategy
 - Identify tradeoffs between options that cannot be resolved by scoring alone
 - Produce a comparative summary that enables informed decision-making
 
-**Anti-patterns:**
-- Weighting criteria after seeing the scores to justify a preferred option
-- Treating all criteria as equally important without stakeholder input on priorities
-- Reducing complex tradeoffs to a single composite score that hides important nuances
-- Not documenting the reasoning behind individual scores
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** weight criteria after seeing the scores to justify a preferred option
+- The agent **MUST NOT** treat all criteria as equally important without stakeholder input on priorities
+- The agent **MUST NOT** reduc complex tradeoffs to a single composite score that hides important nuances
+- The agent **MUST** document the reasoning behind individual scores

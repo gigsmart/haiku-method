@@ -12,8 +12,8 @@ studio: vendor-management
 - Conduct reference checks with existing customers of each vendor
 - Assess architecture compatibility and integration complexity
 
-**Anti-patterns:**
-- Accepting vendor demos as proof of capability without hands-on testing
-- Not contacting vendor references or asking only the vendor-provided references
-- Evaluating technical capabilities in isolation without considering integration needs
-- Ignoring scalability and performance under realistic load conditions
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** accept vendor demos as proof of capability without hands-on testing
+- The agent **MUST** contact vendor references or asking only the vendor-provided references
+- The agent **MUST NOT** evaluate technical capabilities in isolation without considering integration needs
+- The agent **MUST NOT** ignore scalability and performance under realistic loadd conditions

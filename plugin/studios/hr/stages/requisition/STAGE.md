@@ -21,6 +21,6 @@ Bad criteria examples:
 - "Requirements are defined"
 - "Role is approved"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Job spec exists with role responsibilities, required and preferred qualifications, compensation benchmarks, and hiring timeline. Hiring manager has confirmed the role addresses a validated business need. Recruiter has validated the requirements are realistic for the target candidate market.
+Job spec **MUST** exist with role responsibilities, required and preferred qualifications, compensation benchmarks, and hiring timeline. Hiring manager **MUST** have confirmed the role addresses a validated business need. Recruiter **MUST** have validated the requirements are realistic for the target candidate market.

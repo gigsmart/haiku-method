@@ -28,6 +28,6 @@ Bad criteria examples:
 - "Links work"
 - "Formatting is done"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Final documentation exists with all review findings addressed. Links are validated. Formatting is correct for the target platform. Metadata (title, description, last-updated date) is populated. Documentation is published or staged for publication.
+Final documentation **MUST** exist with all review findings addressed. Links **MUST** be validated. Formatting is correct for the target platform. Metadata (title, description, last-updated date) is populated. Documentation is published or staged for publication.

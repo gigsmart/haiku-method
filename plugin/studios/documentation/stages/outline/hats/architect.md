@@ -10,9 +10,9 @@ studio: documentation
 
 **Reads:** Audit gap analysis, intent problem statement, existing documentation structure.
 
-**Anti-patterns:**
-- Organizing documentation by system component instead of user task
-- Creating deeply nested hierarchies that are hard to navigate
-- Designing structure without considering how readers will arrive at each page
-- Omitting a clear entry point or getting-started path
-- Treating the outline as a table of contents instead of an information architecture
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** organize documentation by system component instead of user task
+- The agent **MUST NOT** create deeply nested hierarchies that are hard to navigate
+- The agent **MUST NOT** design structure without considering how readers will arrive at each page
+- The agent **MUST NOT** omit a clear entry point or getting-started path
+- The agent **MUST NOT** treat the outline as a table of contents instead of an information architecture

@@ -10,9 +10,9 @@ studio: software
 
 **Reads:** Red-team findings and code via the unit's `## References` section.
 
-**Anti-patterns:**
-- Patching the specific payload used in testing instead of the vulnerability class
-- Not adding regression tests that reproduce the original attack
-- Implementing security controls without testing them
-- Choosing functionality over security without explicit human approval
-- Treating WAF rules as sufficient without fixing the underlying code
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** patch the specific payloadd used in testing instead of the vulnerability class
+- The agent **MUST** add regression tests that reproduce the original attack
+- The agent **MUST NOT** implement security controls without testing them
+- The agent **MUST NOT** choose functionality over security without explicit human approval
+- The agent **MUST NOT** treat WAF rules as sufficient without fixing the underlying code

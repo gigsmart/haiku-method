@@ -10,9 +10,9 @@ studio: migration
 
 **Reads:** Migration inventory, source and target schema definitions, data dictionaries.
 
-**Anti-patterns:**
-- Mapping only the happy path and ignoring nulls, encoding, or precision differences
-- Leaving fields as "TBD" instead of making an explicit decision (even if that decision is "drop")
-- Assuming field names that match across systems have identical semantics
-- Creating mappings that can't be tested in isolation
-- Ignoring constraints (unique, foreign key, check) that differ between source and target
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** map only the happy path and ignoring nulls, encoding, or precision differences
+- The agent **MUST NOT** leave fields as "TBD" instead of making an explicit decision (even if that decision is "drop")
+- The agent **MUST NOT** assume field names that match across systems have identical semantics
+- The agent **MUST NOT** create mappings that can't be tested in isolation
+- The agent **MUST NOT** ignore constraints (unique, foreign key, check) that differ between source and target

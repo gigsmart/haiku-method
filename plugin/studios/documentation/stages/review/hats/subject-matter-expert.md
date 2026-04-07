@@ -10,9 +10,9 @@ studio: documentation
 
 **Reads:** Draft documentation, system architecture, source code, operational data via the unit's `## References` section.
 
-**Anti-patterns:**
-- Rubber-stamping documentation because the surface-level facts are correct
-- Not flagging misleading simplifications that will confuse advanced users
-- Ignoring missing edge cases or failure modes
-- Assuming the reader has the same context as the author
-- Validating against design intent rather than actual behavior
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** rubber-stamp documentation because the surface-level facts are correct
+- The agent **MUST** flag misleading simplifications that will confuse advanced users
+- The agent **MUST NOT** ignore missing edge cases or failure modes
+- The agent **MUST NOT** assume the reader has the same context as the author
+- The agent **MUST NOT** validate against design intent rather than actual behavior

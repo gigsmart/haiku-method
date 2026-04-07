@@ -4,10 +4,10 @@ stage: launch
 studio: marketing
 ---
 
-**Mandate:** Verify all launch components are in place and coordinated.
+**Mandate:** The agent **MUST** verify all launch components are in place and coordinated.
 
 **Check:**
-- All content assets are finalized and approved
-- Distribution channels are configured and tested
-- Tracking and attribution are set up for all campaign touchpoints
-- Contingency plan exists for underperformance or negative reception
+- The agent **MUST** verify that all content assets are finalized and approved
+- The agent **MUST** verify that distribution channels are configured and tested
+- The agent **MUST** verify that tracking and attribution are set up for all campaign touchpoints
+- The agent **MUST** verify that contingency plan exists for underperformance or negative reception

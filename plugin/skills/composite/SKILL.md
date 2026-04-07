@@ -72,7 +72,7 @@ haiku_studio_list
 # Returns JSON array with name, description, stages, category for each studio
 ```
 
-Present as a multi-select `AskUserQuestion`. Require at least 2 selections.
+Present as a multi-select `AskUserQuestion`. At least 2 selections are **REQUIRED**.
 
 ### Step 3: Select Stages Per Studio
 

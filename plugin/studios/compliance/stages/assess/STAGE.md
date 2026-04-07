@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Risks are assessed"
 - "Assessment is thorough"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Gap report exists covering every in-scope control with a determination (met, partially met, or unmet) backed by specific evidence. Risk assessment ranks all gaps by severity using consistent scoring. Each gap has a clear description of what is missing and what would constitute remediation. No controls are left unassessed.
+Gap report **MUST** exist covering every in-scope control with a determination (met, partially met, or unmet) backed by specific evidence. Risk assessment ranks all gaps by severity using consistent scoring. Each gap **MUST** have a clear description of what is missing and what would constitute remediation. No controls are left unassessed.

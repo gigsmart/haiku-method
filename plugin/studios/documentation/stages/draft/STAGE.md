@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Content is complete"
 - "Examples are included"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Draft documentation exists with all sections populated. Code examples are accurate and runnable. The technical-reviewer has verified correctness of procedures, API signatures, and configuration values against the actual system. Draft is content-complete and ready for editorial review.
+Draft documentation **MUST** exist with all sections populated. Code examples are accurate and runnable. The technical-reviewer **MUST** have **MUST** be verified correctness of procedures, API signatures, and configuration values against the actual system. Draft is content-complete and ready for editorial review.

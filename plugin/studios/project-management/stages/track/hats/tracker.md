@@ -12,8 +12,8 @@ studio: project-management
 - Identify work packages that are off track and document the cause
 - Maintain a current view of overall project health
 
-**Anti-patterns:**
-- Accepting status reports at face value without verification
-- Tracking only percentage complete without evidence of actual progress
-- Waiting for status updates rather than proactively monitoring
-- Not escalating deviations until they become critical
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** accept status reports at face value without verification
+- The agent **MUST NOT** track only percentage complete without evidence of actual progress
+- The agent **MUST NOT** wait for status updates rather than proactively monitoring
+- The agent **MUST** escalate deviations until they become critical

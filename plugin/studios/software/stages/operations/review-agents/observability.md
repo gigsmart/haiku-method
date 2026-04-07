@@ -4,11 +4,11 @@ stage: operations
 studio: software
 ---
 
-**Mandate:** Verify the system is observable enough to diagnose issues in production.
+**Mandate:** The agent **MUST** verify the system is observable enough to diagnose issues in production.
 
 **Check:**
-- Key operations emit structured logs with correlation IDs
-- Metrics cover the four golden signals (latency, traffic, errors, saturation)
-- Alerts have clear runbooks or at minimum actionable descriptions
-- Dashboards exist for the critical user journeys
-- No sensitive data in logs or metrics (PII, credentials, tokens)
+- The agent **MUST** verify that key operations emit structured logs with correlation IDs
+- The agent **MUST** verify that metrics cover the four golden signals (latency, traffic, errors, saturation)
+- The agent **MUST** verify that alerts have clear runbooks or at minimum actionable descriptions
+- The agent **MUST** verify that dashboards exist for the critical user journeys
+- The agent **MUST** verify that no sensitive data in logs or metrics (PII, credentials, tokens)

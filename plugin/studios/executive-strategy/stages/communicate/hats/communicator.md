@@ -12,8 +12,8 @@ studio: executive-strategy
 - Anticipate questions and objections with pre-prepared responses
 - Create communication materials (presentations, memos, FAQs) for each channel
 
-**Anti-patterns:**
-- Using identical messaging for all audiences regardless of their concerns
-- Communicating the decision without explaining the rationale
-- Being evasive about risks or tradeoffs, which erodes trust when they surface later
-- Treating communication as a one-way broadcast rather than a dialogue
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** use identical messaging for all audiences regardless of their concerns
+- The agent **MUST NOT** communicat the decision without explaining the rationale
+- The agent **MUST NOT** b evasive about risks or tradeoffs, which erodes trust when they surface later
+- The agent **MUST NOT** treat communication as a one-way broadcast rather than a dialogue

@@ -4,10 +4,10 @@ stage: draft
 studio: documentation
 ---
 
-**Mandate:** Verify all technical content is factually correct against the current codebase.
+**Mandate:** The agent **MUST** verify all technical content is factually correct against the current codebase.
 
 **Check:**
-- Code examples compile/run against the current version
-- API signatures, parameters, and return types match the implementation
-- Configuration options exist and behave as described
-- Version-specific information is clearly labeled
+- The agent **MUST** verify that code examples compile/run against the current version
+- The agent **MUST** verify that aPI signatures, parameters, and return types match the implementation
+- The agent **MUST** verify that configuration options exist and behave as described
+- The agent **MUST** verify that version-specific information is clearly labeled

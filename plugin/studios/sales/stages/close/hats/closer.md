@@ -10,9 +10,9 @@ studio: sales
 
 **Reads:** terms via the unit's `## References` section.
 
-**Anti-patterns:**
-- Assuming verbal agreement means the deal is done
-- Not confirming procurement process steps and timeline with the prospect
-- Leaving follow-up items without assigned owners or deadlines
-- Failing to document the final agreed terms before requesting signature
-- Celebrating the close before the contract is fully executed and PO received
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** assume verbal agreement means the deal is done
+- The agent **MUST** confirm procurement process steps and timeline with the prospect
+- The agent **MUST NOT** leave follow-up items without assigned owners or deadlines
+- The agent **MUST NOT** fail to document the final agreed terms before requesting signature
+- The agent **MUST NOT** celebrat the close before the contract is fully executed and PO received

@@ -10,9 +10,9 @@ studio: marketing
 
 **Reads:** Analyst's performance analysis, campaign-log via the unit's `## References` section.
 
-**Anti-patterns:**
-- Burying key insights in dense data tables without narrative context
-- Writing recommendations that aren't grounded in the performance data
-- Presenting findings without clear "so what" implications for future campaigns
-- Omitting underperformance or framing all results as positive
-- Not distinguishing between quick wins and strategic shifts in recommendations
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** bury key insights in dense data tables without narrative context
+- The agent **MUST NOT** write recommendations that aren't grounded in the performance data
+- The agent **MUST NOT** present findings without clear "so what" implications for future campaigns
+- The agent **MUST NOT** omit underperformance or framing all results as positive
+- The agent **MUST** distinguish between quick wins and strategic shifts in recommendations

@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Pain points are documented"
 - "Research is thorough"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Insights report exists with user personas, jobs-to-be-done mapped to pain points, and synthesized themes. Each insight traces to specific user evidence. Insights synthesizer has identified cross-cutting patterns, ranked needs by severity and frequency, and flagged contradictions between user segments.
+Insights report **MUST** exist with user personas, jobs-to-be-done mapped to pain points, and synthesized themes. Each insight traces to specific user evidence. Insights synthesizer **MUST** have identified cross-cutting patterns, ranked needs by severity and frequency, and flagged contradictions between user segments.

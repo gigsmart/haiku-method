@@ -25,6 +25,6 @@ Bad criteria examples:
 - "Materials are ready"
 - "Training is developed"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Training materials exist for all curriculum modules, including facilitator guides, participant materials, exercises, and assessments. Developer has confirmed all content aligns with the curriculum plan. Editor has verified quality, consistency, and accessibility across all materials.
+Training materials exist for all curriculum modules, including facilitator guides, participant materials, exercises, and assessments. Developer **MUST** have confirmed all content aligns with the curriculum plan. Editor **MUST** have **MUST** be verified quality, consistency, and accessibility across all materials.

@@ -12,8 +12,8 @@ studio: executive-strategy
 - Include both conventional and unconventional options to expand the decision space
 - Articulate the value proposition and theory of change for each option
 
-**Anti-patterns:**
-- Generating only safe, incremental options without any bold alternatives
-- Creating options that are really just implementation variants of the same strategy
-- Anchoring on a preferred option and generating others as strawmen
-- Ignoring options that challenge current organizational assumptions
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** generate only safe, incremental options without any bold alternatives
+- The agent **MUST NOT** create options that are really just implementation variants of the same strategy
+- The agent **MUST NOT** anchor on a preferred option and generating others as strawmen
+- The agent **MUST NOT** ignore options that challenge current organizational assumptions

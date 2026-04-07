@@ -21,6 +21,6 @@ Bad criteria examples:
 - "Risk is assessed"
 - "Brief is written"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Legal brief exists with parties identified, jurisdictions mapped, governing law specified, and risk assessment complete. Paralegal has documented all relevant facts and precedent context. Risk-assessor has categorized risks with mitigation recommendations for downstream stages.
+Legal brief **MUST** exist with parties identified, jurisdictions mapped, governing law specified, and risk assessment complete. Paralegal **MUST** have documented all relevant facts and precedent context. Risk-assessor **MUST** have categorized risks with mitigation recommendations for downstream stages.

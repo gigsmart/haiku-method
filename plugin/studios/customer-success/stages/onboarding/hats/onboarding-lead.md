@@ -10,9 +10,9 @@ studio: customer-success
 
 **Reads:** Intent problem statement, customer contract details, any existing account context.
 
-**Anti-patterns:**
-- Treating onboarding as a checklist without tying steps to customer outcomes
-- Skipping stakeholder identification and relying on a single point of contact
-- Not defining what "initial value" looks like in measurable terms
-- Rushing through setup without confirming the customer understands why each step matters
-- Failing to document handoff context for the adoption stage
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** treat onboarding as a checklist without tying steps to customer outcomes
+- The agent **MUST NOT** skip stakeholder identification and relying on a single point of contact
+- The agent **MUST** define what "initial value" looks like in measurable terms
+- The agent **MUST NOT** rush through setup without confirming the customer understands why each step matters
+- The agent **MUST NOT** fail to document handoff context for the adoption stage

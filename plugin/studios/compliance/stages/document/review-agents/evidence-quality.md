@@ -4,10 +4,10 @@ stage: document
 studio: compliance
 ---
 
-**Mandate:** Verify evidence packages meet audit standards.
+**Mandate:** The agent **MUST** verify evidence packages meet audit standards.
 
 **Check:**
-- Each control has corresponding evidence (screenshots, logs, configs, policies)
-- Evidence is timestamped and traceable to specific systems
-- Audit trails are continuous with no unexplained gaps
-- Documentation format matches the framework's expected deliverables
+- The agent **MUST** verify that each control has corresponding evidence (screenshots, logs, configs, policies)
+- The agent **MUST** verify that evidence is timestamped and traceable to specific systems
+- The agent **MUST** verify that audit trails are continuous with no unexplained gaps
+- The agent **MUST** verify that documentation format matches the framework's expected deliverables

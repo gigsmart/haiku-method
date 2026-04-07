@@ -25,6 +25,6 @@ Bad criteria examples:
 - "Metrics are computed"
 - "Quality is assessed"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Quality report exists with metrics computed, defect patterns analyzed, and risk assessment complete. Analyst has identified systemic quality issues and their root causes. Statistician has validated metric calculations and confirmed trend analysis is statistically sound.
+Quality report **MUST** exist with metrics computed, defect patterns analyzed, and risk assessment complete. Analyst **MUST** have identified systemic quality issues and their root causes. Statistician **MUST** have validated metric calculations and confirmed trend analysis is statistically sound.

@@ -28,6 +28,6 @@ Bad criteria examples:
 - "Rollback is possible"
 - "Stakeholders are notified"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Cutover runbook exists with sequenced steps, owners, and checkpoints. Rollback procedure is tested and documented with point-of-no-return clearly marked. Communication plan covers all stakeholders. Post-cutover verification checklist confirms the target system is serving production traffic correctly.
+Cutover runbook **MUST** exist with sequenced steps, owners, and checkpoints. Rollback procedure is tested and documented with point-of-no-return clearly marked. Communication plan **MUST** cover all stakeholders. Post-cutover verification checklist confirms the target system is serving production traffic correctly.

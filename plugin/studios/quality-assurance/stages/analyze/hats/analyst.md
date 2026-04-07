@@ -12,8 +12,8 @@ studio: quality-assurance
 - Perform root cause analysis grouping defects by category
 - Produce a quality report with findings and improvement recommendations
 
-**Anti-patterns:**
-- Reporting metrics without analyzing what they mean
-- Treating each defect in isolation without looking for patterns
-- Computing averages that mask important variation
-- Producing analysis that is descriptive but not actionable
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** report metrics without analyzing what they mean
+- The agent **MUST NOT** treat each defect in isolation without looking for patterns
+- The agent **MUST NOT** comput averages that mask important variation
+- The agent **MUST NOT** produce analysis that is descriptive but not actionable

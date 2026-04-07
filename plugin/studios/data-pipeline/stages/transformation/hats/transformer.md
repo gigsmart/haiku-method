@@ -10,9 +10,9 @@ studio: data-pipeline
 
 **Reads:** Staged data from extraction, schema analysis and source catalog from discovery, target schema requirements from the intent.
 
-**Anti-patterns:**
-- Scattering business logic across multiple transformations instead of centralizing
-- Writing non-idempotent transformations that produce duplicates on re-run
-- Using opaque column aliases without documenting semantic meaning
-- Performing implicit type coercions without explicit CAST statements
-- Building deeply nested subqueries instead of named CTEs or intermediate models
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** scatter business logic across multiple transformations instead of centralizing
+- The agent **MUST NOT** write non-idempotent transformations that produce duplicates on re-run
+- The agent **MUST NOT** use opaque column aliases without documenting semantic meaning
+- The agent **MUST NOT** perform implicit type coercions without explicit CAST statements
+- The agent **MUST NOT** build deeply nested subqueries instead of named CTEs or intermediate models

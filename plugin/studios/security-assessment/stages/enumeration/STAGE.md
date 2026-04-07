@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Vulnerabilities are found"
 - "Attack surface is documented"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Vulnerability catalog exists with each finding linked to a specific service, version, and CVE where applicable. Services are enumerated with version detection and configuration details. Attack surface map categorizes all entry points by risk level. False positives are flagged and verified findings are distinguished from unverified. Priority targets for exploitation are identified with rationale.
+Vulnerability catalog **MUST** exist with each finding linked to a specific service, version, and CVE where applicable. Services are enumerated with version detection and configuration details. Attack surface map categorizes all entry points by risk level. False positives are flagged and **MUST** be verified findings are distinguished from unverified. Priority targets for exploitation **MUST** be identified with rationale.

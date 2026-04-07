@@ -21,6 +21,6 @@ Bad criteria examples:
 - "Target information gathered"
 - "Network has been mapped"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Target profile exists with synthesized findings from both passive and active reconnaissance. All discovered assets are cataloged with technology fingerprints, version information where available, and confidence ratings. Network topology is documented. OSINT findings are timestamped and sourced. The attack surface is mapped at a high level with areas of interest flagged for enumeration.
+Target profile **MUST** exist with synthesized findings from both passive and active reconnaissance. All discovered assets are cataloged with technology fingerprints, version information where available, and confidence ratings. Network topology **MUST** be documented. OSINT findings are timestamped and sourced. The attack surface is mapped at a high level with areas of interest flagged for enumeration.

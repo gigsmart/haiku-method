@@ -12,8 +12,8 @@ studio: legal
 - Verify jurisdiction-specific requirements are addressed
 - Assess the document against current regulatory enforcement trends
 
-**Anti-patterns:**
-- Checking compliance against a generic list without considering jurisdiction specifics
-- Approving compliance without documenting the mapping between requirements and provisions
-- Ignoring recent regulatory changes or enforcement actions
-- Treating compliance as a checkbox exercise rather than substantive analysis
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** check compliance against a generic list without considering jurisdiction specifics
+- The agent **MUST NOT** approve compliance without documenting the mapping between requirements and provisions
+- The agent **MUST NOT** ignore recent regulatory changes or enforcement actions
+- The agent **MUST NOT** treat compliance as a checkbox exercise rather than substantive analysis

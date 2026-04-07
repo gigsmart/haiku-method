@@ -4,10 +4,10 @@ stage: stakeholder-review
 studio: product-strategy
 ---
 
-**Mandate:** Verify the presentation is clear, complete, and anticipates stakeholder concerns.
+**Mandate:** The agent **MUST** verify the presentation is clear, complete, and anticipates stakeholder concerns.
 
 **Check:**
-- Key decisions and trade-offs are presented with context, not just conclusions
-- Data visualizations are accurate and not misleading
-- Risks and unknowns are surfaced proactively
-- Ask is specific: what decision, approval, or feedback is needed
+- The agent **MUST** verify that key decisions and trade-offs are presented with context, not just conclusions
+- The agent **MUST** verify that data visualizations are accurate and not misleading
+- The agent **MUST** verify that risks and unknowns are surfaced proactively
+- The agent **MUST** verify that ask is specific: what decision, approval, or feedback is needed

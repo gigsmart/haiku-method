@@ -12,8 +12,8 @@ studio: hr
 - Document the rationale for positioning within the compensation range
 - Identify and flag any equity concerns with existing team compensation
 
-**Anti-patterns:**
-- Setting compensation without market data or internal equity analysis
-- Offering at the top of range without considering long-term equity implications
-- Ignoring total compensation (benefits, equity, perks) when comparing to market
-- Not documenting the rationale for compensation decisions
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** set compensation without market data or internal equity analysis
+- The agent **MUST NOT** offer at the top of range without considering long-term equity implications
+- The agent **MUST NOT** ignore total compensation (benefits, equity, perks) when comparing to market
+- The agent **MUST** document the rationale for compensation decisions

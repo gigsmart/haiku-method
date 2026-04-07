@@ -12,8 +12,8 @@ studio: project-management
 - Establish governance structure including decision rights and escalation paths
 - Authorize resource commitment and project boundaries
 
-**Anti-patterns:**
-- Chartering a project without a clear business case
-- Defining success in terms that cannot be measured or verified
-- Not establishing decision rights, leading to unclear authority during execution
-- Approving scope without confirming resource availability
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** charter a project without a clear business case
+- The agent **MUST NOT** define success in terms that cannot be measured or verified
+- The agent **MUST** establish decision rights, leading to unclear authority during execution
+- The agent **MUST NOT** approve scope without confirming resource availability

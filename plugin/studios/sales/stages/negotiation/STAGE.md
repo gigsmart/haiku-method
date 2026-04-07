@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Terms are negotiated"
 - "Stakeholders are aligned"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Negotiation terms document exists with all objections addressed, contract terms agreed or escalated, and stakeholder positions documented. Legal reviewer has flagged risk items and confirmed acceptable terms. Both parties have a shared understanding of terms ready for final approval.
+Negotiation terms document **MUST** exist with all objections addressed, contract terms agreed or escalated, and stakeholder positions documented. Legal reviewer **MUST** have flagged risk items and confirmed acceptable terms. Both parties have a shared understanding of terms ready for final approval.

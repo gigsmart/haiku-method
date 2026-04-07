@@ -4,10 +4,10 @@ stage: deliver
 studio: ideation
 ---
 
-**Mandate:** Verify the final package is complete and ready for its audience.
+**Mandate:** The agent **MUST** verify the final package is complete and ready for its audience.
 
 **Check:**
-- All sections referenced in the table of contents exist
-- No placeholder text, TODO markers, or draft annotations remain
-- Formatting is consistent and publication-ready
-- All links, references, and citations resolve correctly
+- The agent **MUST** verify that all sections referenced in the table of contents exist
+- The agent **MUST** verify that no placeholder text, TODO markers, or draft annotations remain
+- The agent **MUST** verify that formatting is consistent and publication-ready
+- The agent **MUST** verify that all links, references, and citations resolve correctly

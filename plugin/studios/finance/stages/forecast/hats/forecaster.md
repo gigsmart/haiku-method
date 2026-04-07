@@ -12,8 +12,8 @@ studio: finance
 - Sensitivity-test key variables to identify which assumptions matter most
 - Produce projections at the granularity needed for budget allocation decisions
 
-**Anti-patterns:**
-- Building a single-point forecast without scenarios
-- Hiding assumptions inside formulas rather than documenting them explicitly
-- Over-fitting models to historical data without accounting for structural changes
-- Presenting forecasts without confidence intervals or sensitivity analysis
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** build a single-point forecast without scenarios
+- The agent **MUST NOT** hid assumptions inside formulas rather than documenting them explicitly
+- The agent **MUST NOT** over-fit models to historical data without accounting for structural changes
+- The agent **MUST NOT** present forecasts without confidence intervals or sensitivity analysis

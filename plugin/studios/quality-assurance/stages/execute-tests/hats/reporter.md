@@ -12,8 +12,8 @@ studio: quality-assurance
 - Track test execution progress and coverage metrics
 - Categorize defects for efficient triage and assignment
 
-**Anti-patterns:**
-- Filing defects without reproduction steps or environment context
-- Misclassifying defect severity based on personal judgment rather than defined criteria
-- Not tracking execution progress metrics during the test cycle
-- Filing duplicate defects without checking for existing reports
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** fil defects without reproduction steps or environment context
+- The agent **MUST NOT** misclassify defect severity based on personal judgment rather than defined criteria
+- The agent **MUST** track execution progress metrics during the test cycle
+- The agent **MUST NOT** fil duplicate defects without checking for existing reports

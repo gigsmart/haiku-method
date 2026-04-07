@@ -10,9 +10,9 @@ studio: incident-response
 
 **Reads:** Incident brief from triage, investigator's hypotheses, application logs, APM traces, infrastructure metrics.
 
-**Anti-patterns:**
-- Searching logs without a hypothesis to test — fishing expeditions waste time during incidents
-- Presenting raw log output without synthesis or interpretation
-- Ignoring logs from adjacent systems that may reveal upstream causes
-- Not correlating timestamps across different data sources
-- Treating absence of error logs as evidence of no problem
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** search logs without a hypothesis to test — fishing expeditions waste time during incidents
+- The agent **MUST NOT** present raw log output without synthesis or interpretation
+- The agent **MUST NOT** ignore logs from adjacent systems that may reveal upstream causes
+- The agent **MUST** correlat timestamps across different data sources
+- The agent **MUST NOT** treat absence of error logs as evidence of no problem

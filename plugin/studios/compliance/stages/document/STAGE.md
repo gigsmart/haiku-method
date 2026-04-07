@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Documentation is complete"
 - "Audit trail exists"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Evidence package exists with artifacts mapped to every in-scope control. Each piece of evidence has clear provenance (source, date, collector). Audit trail connects scope through assessment, remediation, and verification in a continuous chain. Documentation is organized for external auditor consumption with a clear index and cross-references.
+Evidence package **MUST** exist with artifacts mapped to every in-scope control. Each piece of evidence **MUST** have clear provenance (source, date, collector). Audit trail connects scope through assessment, remediation, and verification in a continuous chain. Documentation is organized for external auditor consumption with a clear index and cross-references.

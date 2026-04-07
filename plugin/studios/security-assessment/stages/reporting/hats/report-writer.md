@@ -10,10 +10,10 @@ studio: security-assessment
 
 **Reads:** Impact assessment, access log, vulnerability catalog, target profile, rules of engagement.
 
-**Anti-patterns:**
-- Including reproduction steps detailed enough for malicious use without proper classification
-- Omitting findings because they seem minor — all findings belong in the report
-- Writing technical jargon in the executive summary
-- Not including evidence artifacts (screenshots, logs, hashes) for each finding
-- Failing to document the methodology and tools used throughout the assessment
-- Reporting unverified scanner output as confirmed findings
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** include reproduction steps detailed enough for malicious use without proper classification
+- The agent **MUST NOT** omit findings because they seem minor — all findings belong in the report
+- The agent **MUST NOT** write technical jargon in the executive summary
+- The agent **MUST** include evidence artifacts (screenshots, logs, hashes) for each finding
+- The agent **MUST NOT** fail to document the methodology and tools used throughout the assessment
+- The agent **MUST NOT** report unverified scanner output as confirmed findings

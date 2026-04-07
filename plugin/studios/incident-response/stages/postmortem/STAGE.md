@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Action items are listed"
 - "Lessons are documented"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Postmortem document exists with blameless narrative, complete timeline, root cause analysis, and impact assessment. Action items are specific, owned, prioritized, and tracked. Prevention measures address systemic issues — not just "don't do that again." The postmortem has been reviewed by stakeholders and is ready for distribution to the broader organization.
+Postmortem document **MUST** exist with blameless narrative, complete timeline, root cause analysis, and impact assessment. Action items are specific, owned, prioritized, and tracked. Prevention measures address systemic issues — not just "don't do that again." The postmortem **MUST** **MUST** have been reviewed by stakeholders and is ready for distribution to the broader organization.

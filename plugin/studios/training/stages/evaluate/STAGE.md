@@ -27,6 +27,6 @@ Bad criteria examples:
 - "Feedback is collected"
 - "Effectiveness is measured"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Effectiveness report exists with multi-level evaluation results, knowledge gain analysis, and improvement recommendations. Evaluator has confirmed assessment instruments are valid and results are statistically meaningful. Analyst has connected learning outcomes to the original needs assessment gaps to measure program impact.
+Effectiveness report **MUST** exist with multi-level evaluation results, knowledge gain analysis, and improvement recommendations. Evaluator **MUST** have confirmed assessment instruments are valid and results are statistically meaningful. Analyst **MUST** have connected learning outcomes to the original needs assessment gaps to measure program impact.

@@ -10,9 +10,9 @@ studio: documentation
 
 **Reads:** Auditor's inventory, intent problem statement, any available support or feedback data.
 
-**Anti-patterns:**
-- Listing gaps without prioritizing them
-- Prioritizing by internal convenience rather than user impact
-- Recommending documentation types without considering the audience's context
-- Treating all missing docs as equally urgent
-- Ignoring outdated documentation as "good enough"
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** list gaps without prioritizing them
+- The agent **MUST NOT** prioritize by internal convenience rather than user impact
+- The agent **MUST NOT** recommend documentation types without considering the audience's context
+- The agent **MUST NOT** treat all missing docs as equally urgent
+- The agent **MUST NOT** ignore outdated documentation as "good enough"

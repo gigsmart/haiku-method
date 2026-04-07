@@ -10,9 +10,9 @@ studio: sales
 
 **Reads:** Qualifier's scorecard and prospect-brief via the unit's `## References` section.
 
-**Anti-patterns:**
-- Creating a strategy without identifying a specific internal champion
-- Ignoring organizational politics and treating the deal as purely rational
-- Planning only for the happy path without contingencies for objections or delays
-- Copying a generic playbook without adapting to this prospect's specific dynamics
-- Not identifying the biggest risk to the deal and how to mitigate it
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** create a strategy without identifying a specific internal champion
+- The agent **MUST NOT** ignore organizational politics and treating the deal as purely rational
+- The agent **MUST NOT** plan only for the happy path without contingencies for objections or delays
+- The agent **MUST NOT** copy a generic playbook without adapting to this prospect's specific dynamics
+- The agent **MUST** identify the biggest risk to the deal and how to mitigate it
