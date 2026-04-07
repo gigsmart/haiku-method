@@ -262,6 +262,11 @@ function buildRunInstructions(
 			const hats = (action.hats as string[]) || []
 			const bolt = (action.bolt as number) || 1
 
+			// Load stage definition for scope constraints
+			const stageDef = readStageDef(studio, stage)
+			const stageDesc = stageDef?.data?.description as string || stage
+			const stageOutputTypes = (stageDef?.data?.unit_types as string[]) || []
+
 			// Load unit content
 			const unitsDir = join(dir, "stages", stage, "units")
 			const unitFile = join(unitsDir, unit.endsWith(".md") ? unit : `${unit}.md`)
@@ -302,18 +307,31 @@ function buildRunInstructions(
 				}
 			}
 
+			// Stage scope constraint — prevents agents from doing work that belongs to downstream stages
+			const scopeConstraint =
+				`### Stage Scope: ${stage}\n\n` +
+				`**${stageDesc}**\n\n` +
+				`CRITICAL: You are in the **${stage}** stage. Your work MUST be limited to this stage's purpose.\n` +
+				`- Inception/design/product stages produce **knowledge artifacts only** (discovery docs, specs, unit files, design briefs) — do NOT write code, config, or implementation files.\n` +
+				`- Development stage produces **code and tests** — do NOT deploy or create infrastructure.\n` +
+				`- Operations stage produces **deployment and monitoring config** — do NOT modify application code.\n` +
+				`- Security stage produces **threat assessments and security tests** — do NOT refactor application code.\n\n` +
+				`If a unit's completion criteria require work outside this stage's scope, mark the criteria as validated (inception) or flag it for a downstream stage — do NOT implement it here.`
+
+			sections.push(scopeConstraint)
+
 			if (action.action === "start_unit") {
 				sections.push(
 					`### Instructions\n\n` +
 					`1. \`haiku_unit_start { intent: "${slug}", stage: "${stage}", unit: "${unit}", hat: "${hat}" }\`\n` +
-					`2. Execute the hat's work using the referenced artifacts\n` +
+					`2. Execute the hat's work — stay within the ${stage} stage's scope (see above)\n` +
 					`3. When done, advance to next hat or complete the unit\n` +
 					`4. Call \`haiku_run_next { intent: "${slug}" }\``,
 				)
 			} else {
 				sections.push(
 					`### Instructions\n\n` +
-					`1. Continue the "${hat}" hat's work\n` +
+					`1. Continue the "${hat}" hat's work — stay within the ${stage} stage's scope (see above)\n` +
 					`2. When hat work is done: \`haiku_unit_advance_hat { intent: "${slug}", stage: "${stage}", unit: "${unit}", hat: "<next_hat>" }\`\n` +
 					`3. After all hats, check completion criteria\n` +
 					`4. If met: \`haiku_unit_complete { intent: "${slug}", stage: "${stage}", unit: "${unit}" }\`\n` +
@@ -330,15 +348,24 @@ function buildRunInstructions(
 			const hats = (action.hats as string[]) || []
 			const firstHat = (action.first_hat as string) || hats[0] || ""
 
+			// Load stage definition for scope constraints
+			const parStageDef = readStageDef(studio, stage)
+			const parStageDesc = parStageDef?.data?.description as string || stage
+
 			sections.push(`## Parallel Execution: ${units.length} units`)
-			sections.push(`Stage: ${stage}`)
+			sections.push(`Stage: ${stage} — ${parStageDesc}`)
 			sections.push(`Hat sequence: ${hats.join(" -> ")}`)
 			sections.push(`Units: ${units.join(", ")}`)
 
 			sections.push(
+				`### Stage Scope\n\n` +
+				`CRITICAL: All agents are in the **${stage}** stage. They MUST stay within this stage's scope.\n` +
+				`Inception/design/product stages produce **knowledge artifacts only** — no code, config, or implementation.\n` +
+				`Development produces code. Operations produces infra. Security produces assessments.\n\n` +
 				`### Instructions\n\n` +
 				`Spawn an Agent per unit using the Agent tool with \`isolation: "worktree"\`.\n` +
-				`Each agent runs the full hat sequence for its unit autonomously.\n\n` +
+				`Each agent runs the full hat sequence for its unit autonomously.\n` +
+				`Include the stage scope constraint in each agent's prompt.\n\n` +
 				units.map(u =>
 					`- **${u}**: \`haiku_unit_start { intent: "${slug}", stage: "${stage}", unit: "${u}", hat: "${firstHat}" }\``,
 				).join("\n") +
