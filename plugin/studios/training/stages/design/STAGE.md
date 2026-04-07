@@ -3,6 +3,7 @@ name: design
 description: Design curriculum structure and learning paths
 hats: [designer, subject-expert]
 review: ask
+elaboration: collaborative
 unit_types: [curriculum, learning-path]
 inputs:
   - stage: needs-analysis

@@ -3,6 +3,7 @@ name: plan
 description: Create work breakdown, allocate resources, and define timeline
 hats: [planner, estimator]
 review: ask
+elaboration: collaborative
 unit_types: [work-breakdown, resource-plan]
 inputs:
   - stage: charter

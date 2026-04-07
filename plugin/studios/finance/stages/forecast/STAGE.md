@@ -3,6 +3,7 @@ name: forecast
 description: Research market conditions and develop revenue projections
 hats: [analyst, forecaster]
 review: ask
+elaboration: collaborative
 unit_types: [research, projection]
 inputs: []
 ---

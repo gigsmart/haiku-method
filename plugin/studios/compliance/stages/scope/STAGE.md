@@ -3,6 +3,7 @@ name: scope
 description: Define the compliance framework, identify applicable controls, and map to systems
 hats: [compliance-analyst, scope-definer]
 review: auto
+elaboration: collaborative
 unit_types: [framework-mapping, system-inventory]
 inputs: []
 ---

@@ -3,6 +3,7 @@ name: reporting
 description: Formal findings report with severity ratings, reproduction steps, remediation guidance, and executive summary
 hats: [report-writer, remediation-advisor]
 review: external
+elaboration: autonomous
 unit_types: [finding, executive-summary, remediation-plan]
 inputs:
   - stage: post-exploitation

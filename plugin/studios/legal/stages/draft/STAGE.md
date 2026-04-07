@@ -3,6 +3,7 @@ name: draft
 description: Create legal documents and contracts
 hats: [drafter, editor]
 review: ask
+elaboration: collaborative
 unit_types: [contract, agreement, policy]
 inputs:
   - stage: research

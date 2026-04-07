@@ -3,6 +3,7 @@ name: triage
 description: Assess severity, identify blast radius, and assign ownership
 hats: [incident-commander, first-responder]
 review: auto
+elaboration: collaborative
 unit_types: [triage, communication]
 inputs: []
 ---

@@ -3,6 +3,7 @@ name: evaluate
 description: Analyze tradeoffs and model scenarios for each option
 hats: [evaluator, risk-analyst]
 review: ask
+elaboration: collaborative
 unit_types: [tradeoff-analysis, scenario-modeling]
 inputs:
   - stage: options

@@ -3,6 +3,7 @@ name: user-research
 description: Understand user needs, pain points, and jobs-to-be-done
 hats: [user-researcher, insights-synthesizer]
 review: ask
+elaboration: collaborative
 unit_types: [interviews, surveys, analysis]
 inputs:
   - stage: discovery

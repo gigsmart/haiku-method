@@ -3,6 +3,7 @@ name: deliver
 description: Finalize and package the deliverable for its audience
 hats: [publisher]
 review: auto
+elaboration: autonomous
 unit_types: [delivery]
 inputs:
   - stage: create

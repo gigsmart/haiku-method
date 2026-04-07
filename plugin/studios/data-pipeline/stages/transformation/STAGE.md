@@ -3,6 +3,7 @@ name: transformation
 description: Transform and model data for the target schema
 hats: [transformer, data-modeler]
 review: ask
+elaboration: autonomous
 unit_types: [transformation]
 inputs:
   - stage: extraction

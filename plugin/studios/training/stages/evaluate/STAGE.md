@@ -3,6 +3,7 @@ name: evaluate
 description: Measure training effectiveness and analyze feedback
 hats: [evaluator, analyst]
 review: ask
+elaboration: autonomous
 unit_types: [effectiveness-measurement, feedback-analysis]
 inputs:
   - stage: deliver

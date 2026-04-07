@@ -3,6 +3,7 @@ name: launch
 description: Coordinate multi-channel launch, schedule distribution, and activate campaigns
 hats: [campaign-manager, channel-coordinator]
 review: ask
+elaboration: autonomous
 unit_types: [launch, distribution]
 inputs:
   - stage: content

@@ -3,6 +3,7 @@ name: extraction
 description: Design and implement data extraction from sources
 hats: [extractor, connector-reviewer]
 review: ask
+elaboration: autonomous
 unit_types: [extraction]
 inputs:
   - stage: discovery

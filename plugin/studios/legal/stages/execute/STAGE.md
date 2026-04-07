@@ -3,6 +3,7 @@ name: execute
 description: Finalize documents and coordinate signatures
 hats: [closer, administrator]
 review: await
+elaboration: autonomous
 unit_types: [execution, signature]
 inputs:
   - stage: review

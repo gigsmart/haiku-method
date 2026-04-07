@@ -3,6 +3,7 @@ name: create
 description: Generate the primary deliverable using research insights
 hats: [creator, editor]
 review: ask
+elaboration: collaborative
 unit_types: [content]
 inputs:
   - stage: research

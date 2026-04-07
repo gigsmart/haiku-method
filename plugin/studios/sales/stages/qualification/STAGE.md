@@ -3,6 +3,7 @@ name: qualification
 description: Qualify the opportunity against ICP, budget, authority, need, and timeline
 hats: [qualifier, deal-strategist]
 review: ask
+elaboration: collaborative
 unit_types: [qualification]
 inputs:
   - stage: research

@@ -3,6 +3,7 @@ name: negotiation
 description: Handle objections, negotiate terms, and align stakeholders
 hats: [negotiator, legal-reviewer]
 review: [ask, await]
+elaboration: collaborative
 unit_types: [negotiation, contract]
 inputs:
   - stage: proposal

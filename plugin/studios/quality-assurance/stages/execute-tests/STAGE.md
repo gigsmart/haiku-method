@@ -3,6 +3,7 @@ name: execute-tests
 description: Execute tests and log defects
 hats: [tester, reporter]
 review: auto
+elaboration: autonomous
 unit_types: [test-execution, defect-logging]
 inputs:
   - stage: design-tests

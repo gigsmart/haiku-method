@@ -3,6 +3,7 @@ name: develop
 description: Create training content and materials
 hats: [developer, editor]
 review: ask
+elaboration: autonomous
 unit_types: [content, materials]
 inputs:
   - stage: design

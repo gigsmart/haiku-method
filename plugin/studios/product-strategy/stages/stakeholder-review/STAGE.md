@@ -3,6 +3,7 @@ name: stakeholder-review
 description: Present to stakeholders, gather feedback, gain alignment
 hats: [presenter, feedback-synthesizer]
 review: external
+elaboration: collaborative
 unit_types: [presentation, alignment]
 inputs:
   - stage: roadmap

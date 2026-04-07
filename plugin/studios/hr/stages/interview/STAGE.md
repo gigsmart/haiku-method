@@ -3,6 +3,7 @@ name: interview
 description: Conduct structured interviews and evaluate candidates
 hats: [interviewer, evaluator]
 review: ask
+elaboration: collaborative
 unit_types: [interview, evaluation]
 inputs:
   - stage: screening

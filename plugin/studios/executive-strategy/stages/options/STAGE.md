@@ -3,6 +3,7 @@ name: options
 description: Generate and structure strategic options
 hats: [ideator, modeler]
 review: ask
+elaboration: collaborative
 unit_types: [option-generation, modeling]
 inputs:
   - stage: landscape

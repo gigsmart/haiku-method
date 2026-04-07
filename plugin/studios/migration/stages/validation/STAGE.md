@@ -3,6 +3,7 @@ name: validation
 description: Verify data integrity, functional parity, and performance
 hats: [validator, regression-tester]
 review: ask
+elaboration: autonomous
 unit_types: [validation]
 inputs:
   - stage: migrate

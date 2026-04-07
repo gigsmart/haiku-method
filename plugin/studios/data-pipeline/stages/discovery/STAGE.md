@@ -3,6 +3,7 @@ name: discovery
 description: Understand data sources, schemas, volumes, and SLAs
 hats: [data-architect, schema-analyst]
 review: auto
+elaboration: collaborative
 unit_types: [discovery]
 inputs: []
 ---

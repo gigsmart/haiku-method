@@ -3,6 +3,7 @@ name: adoption
 description: Drive product adoption, usage patterns, and feature discovery
 hats: [adoption-coach, usage-analyst]
 review: auto
+elaboration: autonomous
 unit_types: [adoption, enablement]
 inputs:
   - stage: onboarding

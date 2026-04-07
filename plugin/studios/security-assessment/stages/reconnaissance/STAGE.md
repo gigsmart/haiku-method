@@ -3,6 +3,7 @@ name: reconnaissance
 description: Passive and active information gathering about the target
 hats: [osint-analyst, network-mapper]
 review: auto
+elaboration: autonomous
 unit_types: [passive-recon, active-recon, osint]
 inputs: []
 ---

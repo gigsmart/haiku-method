@@ -3,6 +3,7 @@ name: roadmap
 description: Create the roadmap with sequencing, dependencies, and milestones
 hats: [roadmap-architect, capacity-planner]
 review: ask
+elaboration: collaborative
 unit_types: [roadmap, milestone]
 inputs:
   - stage: prioritization

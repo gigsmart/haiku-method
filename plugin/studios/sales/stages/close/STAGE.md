@@ -3,6 +3,7 @@ name: close
 description: Execute the deal, handoff to customer success, and document learnings
 hats: [closer, handoff-coordinator]
 review: [external, await]
+elaboration: collaborative
 unit_types: [close, handoff]
 inputs:
   - stage: negotiation

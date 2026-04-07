@@ -3,6 +3,7 @@ name: publish
 description: Format, validate links, and publish the documentation
 hats: [publisher]
 review: auto
+elaboration: autonomous
 unit_types: [delivery]
 inputs:
   - stage: draft

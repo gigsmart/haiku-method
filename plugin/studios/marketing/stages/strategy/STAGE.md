@@ -3,6 +3,7 @@ name: strategy
 description: Define campaign goals, messaging framework, and channel strategy
 hats: [strategist, brand-reviewer]
 review: ask
+elaboration: collaborative
 unit_types: [strategy, messaging]
 inputs:
   - stage: research

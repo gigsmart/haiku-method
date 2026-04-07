@@ -3,6 +3,7 @@ name: analysis
 description: Perform variance analysis and track financial performance
 hats: [analyst, auditor]
 review: auto
+elaboration: autonomous
 unit_types: [variance, performance-tracking]
 inputs:
   - stage: budget

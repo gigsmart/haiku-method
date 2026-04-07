@@ -3,6 +3,7 @@ name: certify
 description: Quality sign-off and release readiness assessment
 hats: [certifier, reviewer]
 review: external
+elaboration: autonomous
 unit_types: [certification, release-readiness]
 inputs:
   - stage: analyze

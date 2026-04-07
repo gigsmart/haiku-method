@@ -3,6 +3,7 @@ name: research
 description: Audience research, competitive analysis, and market positioning
 hats: [market-researcher, audience-analyst]
 review: auto
+elaboration: autonomous
 unit_types: [research, competitive-analysis]
 inputs: []
 ---

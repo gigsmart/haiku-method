@@ -3,6 +3,7 @@ name: research
 description: Gather context, explore prior art, and understand the problem space
 hats: [researcher, analyst]
 review: auto
+elaboration: collaborative
 unit_types: [research]
 inputs: []
 ---

@@ -3,6 +3,7 @@ name: certify
 description: Prepare for and support external audit, address findings
 hats: [audit-liaison, finding-resolver]
 review: [external, await]
+elaboration: autonomous
 unit_types: [audit-prep, finding-resolution]
 inputs:
   - stage: document

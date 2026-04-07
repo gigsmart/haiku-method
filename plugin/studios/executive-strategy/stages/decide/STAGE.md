@@ -3,6 +3,7 @@ name: decide
 description: Apply decision framework and produce recommendation
 hats: [advisor, facilitator]
 review: external
+elaboration: collaborative
 unit_types: [decision, recommendation]
 inputs:
   - stage: evaluate

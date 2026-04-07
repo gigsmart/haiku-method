@@ -3,6 +3,7 @@ name: negotiate
 description: Negotiate terms and review contract provisions
 hats: [negotiator, legal-reviewer]
 review: external
+elaboration: collaborative
 unit_types: [negotiation, contract-review]
 inputs:
   - stage: evaluate

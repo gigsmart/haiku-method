@@ -3,6 +3,7 @@ name: charter
 description: Define project scope, stakeholders, and success criteria
 hats: [sponsor, scoper]
 review: external
+elaboration: collaborative
 unit_types: [charter, scope-definition]
 inputs: []
 ---

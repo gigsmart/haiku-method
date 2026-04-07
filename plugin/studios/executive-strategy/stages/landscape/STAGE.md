@@ -3,6 +3,7 @@ name: landscape
 description: Analyze market conditions, competitive intelligence, and strategic context
 hats: [strategist, analyst]
 review: auto
+elaboration: autonomous
 unit_types: [market-analysis, competitive-intel]
 inputs: []
 ---
