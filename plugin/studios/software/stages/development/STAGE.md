@@ -3,6 +3,7 @@ name: development
 description: Implement the specification through code
 hats: [planner, builder, reviewer]
 review: ask
+elaboration: autonomous
 unit_types: [backend, frontend, fullstack]
 inputs:
   - stage: inception
@@ -38,6 +39,6 @@ Bad criteria examples:
 - "Tests are written"
 - "Types are correct"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-All completion criteria pass verification (tests, lint, typecheck). Code is committed to the branch. Reviewer has approved. All quality gates pass. No high-confidence blocking issues remain.
+All completion criteria **MUST** pass verification (tests, lint, typecheck). Code **MUST** be committed to the branch. Reviewer **MUST** have approved. All quality gates **MUST** pass. No high-confidence blocking issues **SHALL** remain.

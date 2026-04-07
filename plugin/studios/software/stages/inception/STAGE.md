@@ -3,6 +3,7 @@ name: inception
 description: Understand the problem, define success, and elaborate into units
 hats: [architect, decomposer]
 review: ask
+elaboration: collaborative
 unit_types: [research, backend, frontend]
 inputs: []
 ---
@@ -35,6 +36,6 @@ done
 
 If overlap is detected with files this intent plans to modify, note it in the discovery document. Not a blocker — just awareness for the architect hat to factor in.
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Discovery document exists with domain model and technical landscape. All units have specs with dependencies and verifiable completion criteria. Unit DAG is acyclic. Each unit is scoped to complete within a single bolt.
+Discovery document **MUST** exist with domain model and technical landscape. All units **MUST** have specs with dependencies and verifiable completion criteria. Unit DAG **MUST** be acyclic. Each unit **MUST** be scoped to complete within a single bolt.

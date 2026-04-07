@@ -3,6 +3,7 @@ name: security
 description: Threat modeling, security review, and vulnerability assessment
 hats: [threat-modeler, red-team, blue-team, security-reviewer]
 review: [external, ask]
+elaboration: autonomous
 unit_types: [security, backend]
 inputs:
   - stage: inception
@@ -43,6 +44,6 @@ Bad criteria examples:
 - "No SQL injection"
 - "Auth is secure"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-All identified threats have documented mitigations. Security tests cover the attack surface. No critical or high findings remain unaddressed. OWASP Top 10 coverage verified with evidence. Security reviewer has approved.
+All identified threats **MUST** have documented mitigations. Security tests **MUST** cover the attack surface. No critical or high findings **SHALL** remain unaddressed. OWASP Top 10 coverage **MUST** be verified with evidence. Security reviewer **MUST** have approved.

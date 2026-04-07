@@ -108,7 +108,9 @@ Elaborate on the stage: research the problem space, produce knowledge artifacts,
 ```
 
 **Do:**
-1. Read the stage's STAGE.md for inputs, unit types, and criteria guidance
+1. Read the stage's STAGE.md for inputs, unit types, criteria guidance, and **`elaboration:` mode** (`collaborative` or `autonomous`)
+   - `collaborative` — the agent **MUST** engage the user as a multi-turn conversation (steps 9-10 below are **REQUIRED**)
+   - `autonomous` — the agent **MAY** drive elaboration independently. The agent **SHOULD** still present the final plan via `open_review` but **MAY** skip iterative questions if the upstream specs are clear and complete
 2. Read the stage's `discovery/` definitions (in the studio directory: `stages/{stage}/discovery/*.md`) to understand what knowledge artifacts this stage must produce
 3. Load resolved input artifacts from upstream stages — each discovery definition specifies a `location:` field indicating where the artifact lives (`.haiku/knowledge/` for project-wide, `.haiku/intents/{slug}/knowledge/` for intent-specific). Check freshness metadata — if inputs are stale or code has drifted, use `/haiku:refine stage:{upstream}` for a scoped side-trip
 4. **Research and write discovery artifacts** to their specified locations. These are knowledge artifacts — analysis, inventories, specs, threat models — that capture what you learned about the problem space. Write each artifact to the `location:` specified in its discovery definition
