@@ -1,15 +1,16 @@
 ---
 name: unit-04-complex-prompts
 type: backend
-status: pending
+status: active
 depends_on:
   - unit-01-prompts-infrastructure
-bolt: 0
-hat: ""
+bolt: 1
+hat: planner
 refs:
   - knowledge/SUPPORTING-PROMPTS-DISCOVERY.md
   - knowledge/BEHAVIORAL-SPEC.md
   - stages/design/artifacts/PROMPT-CATALOG.md
+started_at: '2026-04-07T04:07:00Z'
 ---
 
 # Complex Prompts
