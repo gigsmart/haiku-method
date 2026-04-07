@@ -54,8 +54,8 @@ allowed-tools:
 
 ## Pre-checks
 
-1. **Reject cowork mode:** If `CLAUDE_CODE_IS_COWORK=1`, stop with an error.
-2. **Context window preflight:** Verify sufficient context for meaningful work.
+1. **Reject cowork mode:** The agent **MUST NOT** run this skill in cowork mode. If `CLAUDE_CODE_IS_COWORK=1`, the agent **MUST** stop with an error.
+2. **Context window preflight:** The agent **MUST** verify sufficient context for meaningful work.
 
 ## Implementation
 
@@ -70,7 +70,7 @@ The entire execution model is a loop:
 4. Repeat from step 1
 ```
 
-The orchestrator handles ALL state logic — which stage is active, which phase it's in, which unit is ready, whether the gate passed. You just follow the action.
+The orchestrator handles ALL state logic — which stage is active, which phase it's in, which unit is ready, whether the gate passed. The agent **MUST** follow the action returned by the orchestrator and **MUST NOT** attempt to manage state independently.
 
 ### Resolving the Intent
 
@@ -115,18 +115,20 @@ Elaborate on the stage: research the problem space, produce knowledge artifacts,
 5. Elaborate the work into units with completion criteria and a dependency DAG
 7. For each unit, populate `refs:` in frontmatter — an array of paths to upstream artifacts relevant to that unit.
 8. Write unit files to `.haiku/intents/{slug}/stages/{stage}/units/`
-9. **ELABORATE COLLABORATIVELY.** This is a multi-turn conversation. Ask as many questions as needed to build the best spec:
-   - Ask about architecture preferences, constraints, priorities, unknowns
-   - Probe for edge cases and non-obvious requirements
-   - Validate assumptions before writing them into units
-   - Present options and tradeoffs when decisions are needed
+9. **ELABORATE COLLABORATIVELY.** Elaboration is a **multi-turn conversation** between the agent and the user. The agent **MUST NOT** treat elaboration as a single pass where it researches, writes units, and presents a finished plan. Instead:
+
+   - The agent **MUST** engage the user iteratively — ask questions, get answers, refine, ask more questions
+   - The agent **MUST** ask about architecture preferences, constraints, priorities, unknowns
+   - The agent **MUST** probe for edge cases and non-obvious requirements
+   - The agent **MUST** validate assumptions with the user before writing them into units
+   - The agent **MUST** present options and tradeoffs when decisions are needed
+   - The agent **MUST NOT** silently make design decisions — if there's a choice, present it to the user
+   - The agent **SHALL** continue the conversation until both the agent and user are confident the plan is solid
    
-   **Simple questions** → ask in the terminal as natural conversation.
-   **Rich content** (wireframes, diagrams, multi-option comparisons, design directions, formatted specs) → ALWAYS use `ask_user_visual_question`. The visual tool renders markdown, supports images, and provides structured input. Any time you're presenting something the user needs to SEE to evaluate, use the visual tool.
+   **Simple questions** → the agent **MUST** ask in the terminal as natural conversation.
+   **Rich content** (wireframes, diagrams, multi-option comparisons, design directions, formatted specs) → the agent **MUST** use `ask_user_visual_question`. The visual tool renders markdown, supports images, and provides structured input. Any time the agent is presenting something the user needs to SEE to evaluate, the visual tool is **REQUIRED**.
    
-   Continue until YOU are confident the plan is solid.
-   
-10. **PRESENT THE FINAL PLAN for approval using a visual review tool.** Once units are written, you MUST call `open_review { intent_dir, review_type: "intent" }` in a **background subagent** to present the complete plan visually. The tool blocks until the user submits their decision. Run it in a subagent so the main conversation remains responsive:
+10. **PRESENT THE FINAL PLAN for approval using a visual review tool.** Once units are written, the agent **MUST** call `open_review { intent_dir, review_type: "intent" }` in a **background subagent** to present the complete plan visually. The tool blocks until the user submits their decision. The agent **MUST** run it in a subagent so the main conversation remains responsive:
     ```
     Agent { prompt: "Call open_review for intent ..., wait for decision, return result", run_in_background: true }
     ```
@@ -165,7 +167,7 @@ Multiple units are ready with no blocking dependencies. Execute them in parallel
    - Each agent runs the full hat sequence for its unit autonomously (start → hats → complete)
    - `haiku_unit_start { intent, stage, unit, hat: first_hat }` at the beginning
    - `haiku_unit_complete { intent, stage, unit }` when criteria are met
-2. Launch all agents in a single message (parallel tool calls) — do NOT run them sequentially
+2. The agent **MUST** launch all agents in a single message (parallel tool calls) — the agent **MUST NOT** run them sequentially
 3. Wait for all agents to complete
 4. Call `haiku_run_next` again — it will return the next batch of ready units or advance the phase
 
@@ -173,7 +175,7 @@ Multiple units are ready with no blocking dependencies. Execute them in parallel
 - The hat definition from `stages/{stage}/hats/{hat}.md`
 - The unit's content and completion criteria
 - The unit's `refs:` artifacts
-- Instruction to work ONLY on this unit's scope — do not modify files outside the unit's responsibility
+- Instruction to work ONLY on this unit's scope — the agent **MUST NOT** modify files outside the unit's responsibility
 - The H·AI·K·U MCP tools needed: `haiku_unit_start`, `haiku_unit_advance_hat`, `haiku_unit_complete`, `haiku_unit_increment_bolt`
 
 #### `start_unit`
@@ -211,7 +213,7 @@ An active unit — resume where you left off.
 6. If not met: `haiku_unit_increment_bolt { intent, stage, unit }` — starts a new bolt cycle
 7. Call `haiku_run_next` again
 
-**CRITICAL: No questions during execution.** The bolt loop is fully autonomous. If you encounter ambiguity, make a reasonable decision. Document assumptions in the unit's `## Notes` section.
+**CRITICAL: The agent **MUST NOT** ask questions during execution.** The bolt loop is fully autonomous. If the agent encounters ambiguity, the agent **MUST** make a reasonable decision. The agent **MUST** document assumptions in the unit's `## Notes` section.
 
 #### `advance_phase`
 
@@ -252,7 +254,7 @@ The stage's review gate requires human approval.
 { "action": "gate_ask", "intent": "...", "stage": "...", "next_stage": "..." }
 ```
 
-**The visual review MUST open.** When `haiku_run_next` returns `gate_ask`, call `open_review` in a **background subagent** (the tool blocks until the user submits). If `haiku_run_next` auto-opened it (check for `review_url` in the response), the subagent should call `get_review_status` to wait for the decision instead.
+**The visual review **MUST** open.** When `haiku_run_next` returns `gate_ask`, the agent **MUST** call `open_review` in a **background subagent** (the tool blocks until the user submits). If `haiku_run_next` auto-opened it (check for `review_url` in the response), the subagent **MUST** call `get_review_status` to wait for the decision instead.
 
 **Do:**
 1. Spawn a background subagent that calls `open_review { intent_dir, review_type: "intent" }` and waits for the user's decision. Tell the user the review is open.
