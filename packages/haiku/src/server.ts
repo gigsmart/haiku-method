@@ -891,8 +891,11 @@ process.on("SIGTERM", async () => {
 	process.exit(0)
 })
 
+import { reportError } from "./sentry.js"
+
 // MCP server entry point — invoked by: haiku mcp
 main().catch((err) => {
+	reportError(err, { context: "mcp-server-fatal" })
 	console.error("Fatal error:", err)
 	process.exit(1)
 })

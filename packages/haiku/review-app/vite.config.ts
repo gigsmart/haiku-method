@@ -4,6 +4,11 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  define: {
+    "import.meta.env.VITE_SENTRY_DSN": JSON.stringify(
+      process.env.SENTRY_DSN_REVIEW_SPA || "",
+    ),
+  },
   build: {
     // Inline everything into a single HTML file
     sourcemap: true,

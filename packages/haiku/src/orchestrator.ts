@@ -13,6 +13,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { join } from "node:path"
 import matter from "gray-matter"
 import { emitTelemetry } from "./telemetry.js"
+import { reportError } from "./sentry.js"
 import {
 	findHaikuRoot,
 	intentDir,
@@ -989,6 +990,7 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 				const errorMsg = err instanceof Error ? err.message : String(err)
 				const errorStack = err instanceof Error ? err.stack : ""
 				console.error(`[haiku] gate_review failed: ${errorMsg}`)
+				reportError(err, { intent: slug, stage })
 
 				// Log full error to .haiku/ for debugging
 				try {

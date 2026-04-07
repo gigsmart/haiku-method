@@ -12,6 +12,7 @@
 		"lint": "biome check ."
 	},
 	"dependencies": {
+		"@sentry/nextjs": "^10.47.0",
 		"diff": "^7.0.0",
 		"framer-motion": "^12.30.0",
 		"graphql": "^16.13.2",
