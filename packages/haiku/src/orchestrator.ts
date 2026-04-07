@@ -966,9 +966,17 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 				}
 				syncSessionMetadata(slug, args.state_file as string | undefined)
 				return text(JSON.stringify({ action: "changes_requested", intent: slug, stage, feedback: reviewResult.feedback, annotations: reviewResult.annotations, message: `Changes requested: ${reviewResult.feedback || "(see annotations)"}. Address the feedback, then call haiku_run_next { intent: "${slug}" } again.` }, null, 2))
-			} catch {
+			} catch (err) {
+				const errorMsg = err instanceof Error ? err.message : String(err)
+				console.error(`[haiku] gate_review failed: ${errorMsg}`)
 				syncSessionMetadata(slug, args.state_file as string | undefined)
-				return text(JSON.stringify(result, null, 2))
+				// Return the error to the agent — don't silently return the raw action
+				return text(JSON.stringify({
+					...result,
+					error: "review_ui_failed",
+					error_detail: errorMsg,
+					message: `Review UI failed to open: ${errorMsg}. The gate cannot be bypassed — fix the error and call haiku_run_next again.`,
+				}, null, 2))
 			}
 		}
 
