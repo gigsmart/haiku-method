@@ -1,11 +1,12 @@
 ---
-status: active
+status: completed
 type: frontend
 depends_on:
   - unit-03-session-bridge
 bolt: 1
 hat: decomposer
 started_at: '2026-04-07T14:39:28Z'
+completed_at: '2026-04-07T14:39:37Z'
 ---
 
 # Interactive UI (Question + Design Direction)
