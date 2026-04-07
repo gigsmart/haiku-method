@@ -1,9 +1,8 @@
 ---
-title: DNS and Cert-Server Infrastructure
+title: "DNS and Cert-Server Infrastructure"
 type: infra
 depends_on: []
 status: pending
-hat: decomposer
 ---
 
 # DNS and Cert-Server Infrastructure
@@ -32,8 +31,8 @@ Create a standalone microservice (modeled after Han's `han/cert-server/server.ts
 
 ## Completion Criteria
 
-- [x] `dig local.haikumethod.ai A` returns `127.0.0.1` — terraform record created in `deploy/terraform/modules/dns/records_local.tf`
-- [x] `dig local.haikumethod.ai AAAA` returns `::1` — terraform record created in `deploy/terraform/modules/dns/records_local.tf`
-- [x] Terraform plan shows only the new DNS records as additions — `records_local.tf` adds only `local_a` and `local_aaaa` resources
-- [x] Cert-server `GET /cert/latest` returns valid JSON with `cert`, `key`, `expires`, and `domain` fields — `services/cert-server/server.ts` implements endpoint
-- [x] Cert-server deployed and operational — Dockerfile, railway.toml, entrypoint.sh, renew-certs.sh created at `services/cert-server/`
+- [ ] `dig local.haikumethod.ai A` returns `127.0.0.1` — verified by running `dig +short local.haikumethod.ai A`
+- [ ] `dig local.haikumethod.ai AAAA` returns `::1` — verified by running `dig +short local.haikumethod.ai AAAA`
+- [ ] Terraform plan shows only the new DNS records as additions (no destructive changes) — verified by `cd deploy/terraform && terraform plan`
+- [ ] Cert-server `GET /cert/latest` returns valid JSON with `cert`, `key`, `expiry`, and `domain` fields — verified by `curl -s https://{cert-server-url}/cert/latest | jq 'keys'`
+- [ ] Returned certificate is valid for `local.haikumethod.ai` — verified by `echo | openssl s_client -connect local.haikumethod.ai:443 -servername local.haikumethod.ai 2>/dev/null | openssl x509 -noout -subject` (after unit-02 uses it)
