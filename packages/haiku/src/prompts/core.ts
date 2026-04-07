@@ -49,17 +49,31 @@ function readStageDef(studio: string, stage: string): { data: Record<string, unk
 }
 
 /** Read all hat definitions for a stage (project overrides plugin for same-named hats) */
-function readHatDefs(studio: string, stage: string): Record<string, string> {
+interface HatDef {
+	content: string          // full markdown body (without frontmatter)
+	agent_type?: string      // e.g., "general-purpose", "plan", custom
+	model?: string           // e.g., "opus", "sonnet", "haiku"
+	raw: string              // full file content
+}
+
+function readHatDefs(studio: string, stage: string): Record<string, HatDef> {
 	validateIdentifier(studio, "studio")
 	validateIdentifier(stage, "stage")
-	const hats: Record<string, string> = {}
+	const hats: Record<string, HatDef> = {}
 	const paths = studioSearchPaths()
 	// Reverse so plugin loads first, then project overwrites
 	for (const base of [...paths].reverse()) {
 		const hatsDir = join(base, studio, "stages", stage, "hats")
 		if (!existsSync(hatsDir)) continue
 		for (const f of readdirSync(hatsDir).filter(f => f.endsWith(".md"))) {
-			hats[f.replace(/\.md$/, "")] = readFileSync(join(hatsDir, f), "utf8")
+			const raw = readFileSync(join(hatsDir, f), "utf8")
+			const { data, body } = parseFrontmatter(raw)
+			hats[f.replace(/\.md$/, "")] = {
+				content: body,
+				agent_type: (data.agent_type as string) || undefined,
+				model: (data.model as string) || undefined,
+				raw,
+			}
 		}
 	}
 	return hats
@@ -253,9 +267,12 @@ function buildRunInstructions(
 				unitRefs = (data.refs as string[]) || []
 			}
 
-			// Hat definition
+			// Hat definition (structured — includes agent_type and model)
 			const hatDefs = readHatDefs(studio, stage)
-			const hatContent = hatDefs[hat] || `No hat definition found for "${hat}"`
+			const hatDef = hatDefs[hat]
+			const hatContent = hatDef?.content || `No hat definition found for "${hat}"`
+			const hatAgentType = hatDef?.agent_type || "general-purpose"
+			const hatModel = hatDef?.model
 
 			sections.push(`## ${unit} — hat: ${hat} (${hats.join(" → ")}) — bolt ${bolt}`)
 
@@ -285,7 +302,7 @@ function buildRunInstructions(
 				}
 			}
 
-			// Mechanics — one subagent per hat, main orchestrator manages the sequence
+			// Mechanics — one subagent per hat, subagent calls advance/fail tools
 			const worktreePath = action.worktree as string || ""
 			const hatIdx = hats.indexOf(hat)
 			const nextHat = hatIdx < hats.length - 1 ? hats[hatIdx + 1] : null
@@ -293,21 +310,21 @@ function buildRunInstructions(
 
 			sections.push(
 				`### Mechanics\n\n` +
-				`**You are the orchestrator.** Spawn a subagent for the "${hat}" hat only. Subagents cannot spawn subagents — control returns to you after each hat.\n` +
-				(worktreePath ? `Worktree: \`${worktreePath}\`\n\n` : "\n") +
-				`**Subagent does:**\n` +
+				`**You are the orchestrator.** Spawn a subagent for the "${hat}" hat.\n` +
+				`Agent type: \`${hatAgentType}\`${hatModel ? ` | Model: \`${hatModel}\`` : ""}\n` +
+				(worktreePath ? `Worktree: \`${worktreePath}\`\n` : "") +
+				`\n**Subagent prompt must include:**\n` +
+				`- The hat definition, unit spec, and refs above\n` +
+				`- The stage scope constraint\n` +
 				(action.action === "start_unit"
-					? `1. \`haiku_unit_start { intent: "${slug}", stage: "${stage}", unit: "${unit}", hat: "${hat}" }\`\n`
-					: `1. Continue the "${hat}" hat's work (unit already started)\n`) +
-				`2. Execute the hat definition above\n` +
-				`3. Return results to you\n\n` +
-				`**You do (after subagent returns):**\n` +
+					? `- Instruction to call \`haiku_unit_start { intent: "${slug}", stage: "${stage}", unit: "${unit}", hat: "${hat}" }\` first\n`
+					: "") +
+				`\n**Subagent calls one of these when done:**\n` +
 				(isLastHat
-					? `This is the last hat (${hats.join(" → ")}). Check completion criteria:\n` +
-					  `- Met: \`haiku_unit_complete { intent: "${slug}", stage: "${stage}", unit: "${unit}" }\`\n` +
-					  `- Not met: \`haiku_unit_increment_bolt { intent: "${slug}", stage: "${stage}", unit: "${unit}" }\`\n`
-					: `\`haiku_unit_advance_hat { intent: "${slug}", stage: "${stage}", unit: "${unit}", hat: "${nextHat}" }\`\n`) +
-				`Then \`haiku_run_next { intent: "${slug}" }\` — it will return the next hat, next unit, or next wave.`,
+					? `- **Success:** \`haiku_unit_complete { intent: "${slug}", stage: "${stage}", unit: "${unit}" }\`\n`
+					: `- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", stage: "${stage}", unit: "${unit}", hat: "${nextHat}" }\`\n`) +
+				`- **Failure:** \`haiku_unit_fail { intent: "${slug}", stage: "${stage}", unit: "${unit}" }\` — moves back one hat, increments bolt\n` +
+				`\n**After subagent returns:** call \`haiku_run_next { intent: "${slug}" }\``,
 			)
 			break
 		}

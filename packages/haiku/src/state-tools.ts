@@ -112,6 +112,27 @@ export function gitCommitState(message: string): void {
 	}
 }
 
+/** Resolve hat sequence for a stage — used by haiku_unit_fail */
+function resolveStageHats(intent: string, stage: string): string[] {
+	try {
+		const root = findHaikuRoot()
+		const intentFile = join(root, "intents", intent, "intent.md")
+		if (!existsSync(intentFile)) return []
+		const { data } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+		const studio = (data.studio as string) || ""
+		if (!studio) return []
+
+		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+		for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
+			const stageFile = join(base, studio, "stages", stage, "STAGE.md")
+			if (!existsSync(stageFile)) continue
+			const { data: stageFm } = parseFrontmatter(readFileSync(stageFile, "utf8"))
+			return (stageFm.hats as string[]) || []
+		}
+	} catch { /* */ }
+	return []
+}
+
 /** Resolve allowed unit types for a stage — used for enforcement */
 function resolveAllowedUnitTypes(intent: string, stage: string): string[] {
 	try {
@@ -275,6 +296,11 @@ export const stateToolDefs = [
 		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, stage: { type: "string" }, unit: { type: "string" }, hat: { type: "string" } }, required: ["intent", "stage", "unit", "hat"] },
 	},
 	{
+		name: "haiku_unit_fail",
+		description: "Hat failed — moves back one hat and increments bolt count. Called by the subagent when the hat's work doesn't meet expectations.",
+		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, stage: { type: "string" }, unit: { type: "string" } }, required: ["intent", "stage", "unit"] },
+	},
+	{
 		name: "haiku_unit_increment_bolt",
 		description: "Increment a unit's bolt counter (new iteration cycle)",
 		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, stage: { type: "string" }, unit: { type: "string" } }, required: ["intent", "stage", "unit"] },
@@ -424,12 +450,34 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			return text(mergeResult.message === "no worktree" ? "ok" : `ok (${mergeResult.message})`)
 		}
 		case "haiku_unit_advance_hat": {
-			const path = unitPath(args.intent as string, args.stage as string, args.unit as string)
-			setFrontmatterField(path, "hat", args.hat)
-			emitTelemetry("haiku.hat.transition", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string, hat: args.hat as string })
+			// Advance to the next hat. If this was the last hat, auto-complete the unit.
+			const advPath = unitPath(args.intent as string, args.stage as string, args.unit as string)
+			const nextHat = args.hat as string
+			setFrontmatterField(advPath, "hat", nextHat)
+			emitTelemetry("haiku.hat.transition", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string, hat: nextHat })
+			gitCommitState(`haiku: advance hat to ${nextHat} on ${args.unit as string}`)
 			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
 			const hatScope = resolveStageScope(args.intent as string, args.stage as string)
-			return text(hatScope ? `ok\n\n${hatScope}` : "ok")
+			return text(hatScope ? `advanced to ${nextHat}\n\n${hatScope}` : `advanced to ${nextHat}`)
+		}
+		case "haiku_unit_fail": {
+			// Hat failed — move back one hat, increment bolt count
+			const failPath = unitPath(args.intent as string, args.stage as string, args.unit as string)
+			const { data: failData } = parseFrontmatter(readFileSync(failPath, "utf8"))
+			const currentHat = (failData.hat as string) || ""
+			const currentBolt = (failData.bolt as number) || 1
+
+			// Resolve the hat sequence to find the previous hat
+			const stageHats = resolveStageHats(args.intent as string, args.stage as string)
+			const hatIdx = stageHats.indexOf(currentHat)
+			const prevHat = hatIdx > 0 ? stageHats[hatIdx - 1] : stageHats[0]
+
+			setFrontmatterField(failPath, "hat", prevHat)
+			setFrontmatterField(failPath, "bolt", currentBolt + 1)
+			emitTelemetry("haiku.unit.failed", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string, hat: currentHat, prev_hat: prevHat, bolt: String(currentBolt + 1) })
+			gitCommitState(`haiku: fail ${args.unit as string} — back to ${prevHat}, bolt ${currentBolt + 1}`)
+			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
+			return text(`failed — back to ${prevHat}, bolt ${currentBolt + 1}`)
 		}
 		case "haiku_unit_increment_bolt": {
 			const path = unitPath(args.intent as string, args.stage as string, args.unit as string)
