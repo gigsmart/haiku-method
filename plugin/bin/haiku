@@ -27868,6 +27868,35 @@ function runNext(slug) {
         message: `Collaborative elaboration requires engaging the user. ${updatedTurns} turn(s) so far \u2014 engage the user at least ${3 - updatedTurns} more time(s) before finalizing units.`
       };
     }
+    try {
+      const unitsDir2 = join7(iDir, "stages", currentStage, "units");
+      const unitFiles = readdirSync3(unitsDir2).filter((f) => f.endsWith(".md"));
+      const dagNodes = unitFiles.map((f) => {
+        const fm = readFrontmatter(join7(unitsDir2, f));
+        return { id: f.replace(".md", ""), status: fm.status || "pending" };
+      });
+      const dagEdges = [];
+      const dagAdj = /* @__PURE__ */ new Map();
+      for (const n of dagNodes) dagAdj.set(n.id, []);
+      for (const f of unitFiles) {
+        const fm = readFrontmatter(join7(unitsDir2, f));
+        const id = f.replace(".md", "");
+        for (const dep of fm.depends_on || []) {
+          dagEdges.push({ from: dep, to: id });
+          dagAdj.get(dep)?.push(id);
+        }
+      }
+      topologicalSort({ nodes: dagNodes, edges: dagEdges, adjacency: dagAdj });
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("Circular dependency")) {
+        return {
+          action: "dag_cycle_detected",
+          intent: slug,
+          stage: currentStage,
+          message: err.message + ". Fix the depends_on fields in the unit files to remove the cycle, then call haiku_run_next again."
+        };
+      }
+    }
     const typeViolation = validateUnitTypes(iDir, currentStage, studio);
     if (typeViolation) return typeViolation;
     const discoveryViolation = validateDiscoveryArtifacts(slug, currentStage, studio);
@@ -28175,7 +28204,12 @@ function computeUnitWaves(units) {
     }
   }
   const dag = { nodes, edges, adjacency };
-  const waves = computeWaves(dag);
+  let waves;
+  try {
+    waves = computeWaves(dag);
+  } catch {
+    waves = /* @__PURE__ */ new Map([[0, units.map((u3) => u3.name)]]);
+  }
   const unitWave = /* @__PURE__ */ new Map();
   let totalWaves = 0;
   for (const [wave, names] of waves) {
@@ -29425,6 +29459,12 @@ ${def.content}`);
     }
     case "discovery_missing": {
       sections.push(`## Missing Discovery Artifacts
+
+${action.message}`);
+      break;
+    }
+    case "dag_cycle_detected": {
+      sections.push(`## Circular Dependency Detected
 
 ${action.message}`);
       break;

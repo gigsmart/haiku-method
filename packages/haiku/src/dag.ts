@@ -95,7 +95,7 @@ export function topologicalSort(dag: DAGGraph): string[] {
  * Wave N: units whose dependencies are all in waves 0 through N-1.
  */
 export function computeWaves(dag: DAGGraph): Map<number, string[]> {
-	const sorted = topologicalSort(dag)
+	const sorted = topologicalSort(dag) // throws on cycles — caller should catch and report
 	const nodeWave = new Map<string, number>()
 
 	for (const nodeId of sorted) {

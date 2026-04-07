@@ -552,6 +552,11 @@ function buildRunInstructions(
 			break
 		}
 
+		case "dag_cycle_detected": {
+			sections.push(`## Circular Dependency Detected\n\n${action.message}`)
+			break
+		}
+
 		case "error": {
 			sections.push(`## Error\n\n${action.message}`)
 			break

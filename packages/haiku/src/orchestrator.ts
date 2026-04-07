@@ -30,7 +30,8 @@ import {
 } from "./state-tools.js"
 import { createIntentBranch, isOnIntentBranch, createUnitWorktree } from "./git-worktree.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
-import { computeWaves } from "./dag.js"
+import { computeWaves, buildDAG, topologicalSort } from "./dag.js"
+import { parseAllUnits } from "./index.js"
 import type { DAGGraph } from "./types.js"
 import { validateIdentifier } from "./prompts/helpers.js"
 
@@ -548,7 +549,38 @@ export function runNext(slug: string): OrchestratorAction {
 			}
 		}
 
-		// Units exist — validate types before allowing execution
+		// Units exist — validate DAG for cycles
+		try {
+			const unitsDir = join(iDir, "stages", currentStage, "units")
+			const unitFiles = readdirSync(unitsDir).filter(f => f.endsWith(".md"))
+			const dagNodes = unitFiles.map(f => {
+				const fm = readFrontmatter(join(unitsDir, f))
+				return { id: f.replace(".md", ""), status: (fm.status as string) || "pending" }
+			})
+			const dagEdges: Array<{ from: string; to: string }> = []
+			const dagAdj = new Map<string, string[]>()
+			for (const n of dagNodes) dagAdj.set(n.id, [])
+			for (const f of unitFiles) {
+				const fm = readFrontmatter(join(unitsDir, f))
+				const id = f.replace(".md", "")
+				for (const dep of (fm.depends_on as string[]) || []) {
+					dagEdges.push({ from: dep, to: id })
+					dagAdj.get(dep)?.push(id)
+				}
+			}
+			topologicalSort({ nodes: dagNodes, edges: dagEdges, adjacency: dagAdj })
+		} catch (err) {
+			if (err instanceof Error && err.message.includes("Circular dependency")) {
+				return {
+					action: "dag_cycle_detected",
+					intent: slug,
+					stage: currentStage,
+					message: err.message + ". Fix the depends_on fields in the unit files to remove the cycle, then call haiku_run_next again.",
+				}
+			}
+		}
+
+		// Validate unit types before allowing execution
 		const typeViolation = validateUnitTypes(iDir, currentStage, studio)
 		if (typeViolation) return typeViolation
 
@@ -967,7 +999,13 @@ function computeUnitWaves(units: UnitInfo[]): { waves: Map<number, string[]>; un
 	}
 
 	const dag: DAGGraph = { nodes, edges, adjacency }
-	const waves = computeWaves(dag)
+	let waves: Map<number, string[]>
+	try {
+		waves = computeWaves(dag)
+	} catch {
+		// Cycle — put all in wave 0 as fallback (cycle should be caught earlier at elaborate→execute)
+		waves = new Map([[0, units.map(u => u.name)]])
+	}
 
 	// Build reverse map: unit name → wave number
 	const unitWave = new Map<string, number>()
