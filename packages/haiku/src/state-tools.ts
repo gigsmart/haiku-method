@@ -356,9 +356,32 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 		case "haiku_stage_set": {
 			const path = stageStatePath(args.intent as string, args.stage as string)
 			const data = readJson(path)
+
+			// Guard: enforce valid phase transitions (decompose → execute → review → gate)
+			if (args.field === "phase") {
+				const validTransitions: Record<string, string[]> = {
+					"": ["decompose"],
+					"decompose": ["execute"],
+					"execute": ["review"],
+					"review": ["gate"],
+					"gate": [], // gate advances via haiku_gate_approve or haiku_stage_complete
+				}
+				const currentPhase = (data.phase as string) || ""
+				const nextPhase = args.value as string
+				const allowed = validTransitions[currentPhase] || []
+				if (!allowed.includes(nextPhase)) {
+					return text(JSON.stringify({
+						error: "invalid_phase_transition",
+						current_phase: currentPhase,
+						requested_phase: nextPhase,
+						allowed: allowed,
+						message: `Cannot transition from '${currentPhase}' to '${nextPhase}'. Valid next phases: ${allowed.join(", ") || "none (use haiku_run_next)"}. Use haiku_run_next to progress through phases.`,
+					}))
+				}
+			}
+
 			data[args.field as string] = args.value
 			writeJson(path, data)
-			// Emit telemetry for phase transitions and gate events
 			if (args.field === "phase") {
 				emitTelemetry("haiku.stage.phase", { intent: args.intent as string, stage: args.stage as string, phase: args.value as string })
 				syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
@@ -386,6 +409,17 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 		case "haiku_stage_complete": {
 			const path = stageStatePath(args.intent as string, args.stage as string)
 			const data = readJson(path)
+
+			// Guard: stage must have passed through gate phase before completion
+			const phase = (data.phase as string) || ""
+			if (phase !== "gate" && phase !== "review") {
+				return text(JSON.stringify({
+					error: "phase_not_ready",
+					current_phase: phase,
+					message: `Cannot complete stage: phase is '${phase}', must reach 'gate' first. Use haiku_run_next to progress through phases (decompose → execute → review → gate).`,
+				}))
+			}
+
 			data.status = "completed"
 			data.completed_at = timestamp()
 			data.gate_outcome = (args.gate_outcome as string) || "advanced"
