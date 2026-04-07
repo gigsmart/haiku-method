@@ -9,7 +9,8 @@ terraform {
   }
 
   backend "gcs" {
-    bucket = "waldrip-net-terraform-state"
+    # Override via TF init: terraform init -backend-config="bucket=YOUR_BUCKET"
+    bucket = "haikumethod-ai-terraform-state"
     prefix = "haiku"
   }
 }
