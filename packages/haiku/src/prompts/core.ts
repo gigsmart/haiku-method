@@ -503,6 +503,11 @@ function buildRunInstructions(
 			break
 		}
 
+		case "elaboration_insufficient": {
+			sections.push(`## Elaboration Insufficient\n\n${action.message}`)
+			break
+		}
+
 		case "spec_validation_failed": {
 			sections.push(`## Spec Validation Failed\n\n${action.message}`)
 			break
@@ -617,9 +622,9 @@ registerPrompt({
 			`2. Convert description to kebab-case slug (max 40 chars)\n` +
 			`3. ${projectStudio ? `Use studio "${projectStudio}"` : "Select studio per the logic above"}\n` +
 			`4. Default to **continuous** mode (do not ask the user)\n` +
-			`5. Write \`.haiku/intents/{slug}/intent.md\` with frontmatter (studio, mode, status: active, created date)\n` +
-			`6. Create directories: knowledge/, stages/, state/\n` +
-			`7. \`git add .haiku/intents/{slug}/\` && \`git commit -m "haiku: new intent -- {slug}"\`\n` +
+			`5. Summarize the conversation so far into a concise context block (key decisions, constraints, technical details discussed)\n` +
+			`6. Call \`haiku_intent_create\` with description, slug, and the \`context\` argument containing your conversation summary\n` +
+			`7. The tool creates directories, writes intent.md, writes CONVERSATION-CONTEXT.md to knowledge/, and opens a review for user confirmation\n` +
 			`8. Invoke /haiku:run — the orchestrator opens the review and advances automatically (continuous) or report ready (discrete)`,
 		)
 

@@ -479,6 +479,12 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			const currentHat = (failData.hat as string) || ""
 			const currentBolt = (failData.bolt as number) || 1
 
+			// Enforce max bolt limit
+			const MAX_BOLTS_FAIL = 5
+			if (currentBolt + 1 > MAX_BOLTS_FAIL) {
+				return text(JSON.stringify({ error: "max_bolts_exceeded", bolt: currentBolt, max: MAX_BOLTS_FAIL, message: `Unit has exceeded ${MAX_BOLTS_FAIL} bolt iterations. Escalate to the user — this unit may need to be redesigned or split.` }))
+			}
+
 			// Resolve the hat sequence to find the previous hat
 			const stageHats = resolveStageHats(args.intent as string, args.stage as string)
 			const hatIdx = stageHats.indexOf(currentHat)
@@ -499,6 +505,13 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			const path = unitPath(args.intent as string, args.stage as string, args.unit as string)
 			const { data } = parseFrontmatter(readFileSync(path, "utf8"))
 			const current = (data.bolt as number) || 0
+
+			// Enforce max bolt limit
+			const MAX_BOLTS_INC = 5
+			if (current + 1 > MAX_BOLTS_INC) {
+				return text(JSON.stringify({ error: "max_bolts_exceeded", bolt: current, max: MAX_BOLTS_INC, message: `Unit has exceeded ${MAX_BOLTS_INC} bolt iterations. Escalate to the user — this unit may need to be redesigned or split.` }))
+			}
+
 			setFrontmatterField(path, "bolt", current + 1)
 			emitTelemetry("haiku.bolt.iteration", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string, bolt: String(current + 1) })
 			return text(String(current + 1))

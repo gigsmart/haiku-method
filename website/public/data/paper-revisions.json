@@ -305,10 +305,10 @@
     "revisions": [
       {
         "version": "2",
-        "date": "2026-04-05",
-        "commitHash": "8144f59",
-        "fullCommitHash": "8144f590b4da9c80391d7a820c355cb9a8e34ff8",
-        "commitMessage": "refactor: 4-step stage loop — persist removed, artifacts auto-commit during execution",
+        "date": "2026-04-07",
+        "commitHash": "9c2f591",
+        "fullCommitHash": "9c2f59141748c5a710755043078d461688bb3135",
+        "commitMessage": "refactor: rename decompose phase to elaborate across entire project",
         "stats": {
           "linesAdded": 264,
           "linesRemoved": 992

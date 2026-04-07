@@ -191,6 +191,71 @@ function validateStageOutputs(slug: string, stage: string, studio: string, inten
 	return null
 }
 
+// ── Discovery artifact validation ────────────────────────────────────────
+
+/**
+ * Validate that required discovery artifacts exist before advancing from elaborate to execute.
+ * Reads discovery definitions from studios/{studio}/stages/{stage}/discovery/ and checks
+ * that each required artifact exists at its specified location.
+ * Returns an error action if artifacts are missing, null if all present.
+ */
+function validateDiscoveryArtifacts(slug: string, stage: string, studio: string, intentDirPath: string): OrchestratorAction | null {
+	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+
+	// Read discovery definitions from the stage's discovery/ directory
+	for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
+		const discoveryDir = join(base, studio, "stages", stage, "discovery")
+		if (!existsSync(discoveryDir)) continue
+
+		const discoveryDefs = readdirSync(discoveryDir).filter(f => f.endsWith(".md"))
+		const missing: Array<{ name: string; location: string }> = []
+
+		for (const f of discoveryDefs) {
+			const raw = readFileSync(join(discoveryDir, f), "utf8")
+			const { data } = matter(raw)
+			const required = data.required !== false // default true
+			if (!required) continue
+
+			const location = (data.location as string) || ""
+			if (!location) continue
+
+			// Skip project-tree locations (code, deployment configs) — can't validate a specific path
+			if (location.startsWith("(")) continue
+
+			// Resolve location with intent slug
+			const resolved = location.replace("{intent-slug}", slug)
+			const absPath = join(process.cwd(), resolved)
+
+			if (resolved.endsWith("/")) {
+				// Directory — check at least one file exists
+				if (!existsSync(absPath) || readdirSync(absPath).filter(e => e !== ".gitkeep").length === 0) {
+					missing.push({ name: (data.name as string) || f, location: resolved })
+				}
+			} else {
+				// Specific file
+				if (!existsSync(absPath)) {
+					missing.push({ name: (data.name as string) || f, location: resolved })
+				}
+			}
+		}
+
+		if (missing.length > 0) {
+			return {
+				action: "discovery_missing",
+				intent: slug,
+				stage,
+				missing,
+				message: `Cannot advance to execution: ${missing.length} required discovery artifact(s) not found.\n` +
+					missing.map(m => `- ${m.name}: expected at ${m.location}`).join("\n") +
+					`\n\nThe elaboration phase must produce these artifacts. Go back and create them, then call haiku_run_next again.`,
+			}
+		}
+		break // Project-level discovery dir takes precedence over plugin-level (first match wins)
+	}
+
+	return null
+}
+
 // ── Unit type validation ──────────────────────────────────────────────────
 
 /**
@@ -441,18 +506,25 @@ export function runNext(slug: string): OrchestratorAction {
 	if (phase === "elaborate" || phase === "decompose") {
 		const unitsDir = join(iDir, "stages", currentStage, "units")
 		const hasUnits = existsSync(unitsDir) && readdirSync(unitsDir).filter(f => f.endsWith(".md")).length > 0
-		if (!hasUnits) {
-			// Read elaboration mode from STAGE.md
-			const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
-			let elaborationMode = "collaborative"
-			for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
-				const stageFile = join(base, studio, "stages", currentStage, "STAGE.md")
-				if (existsSync(stageFile)) {
-					const fm = readFrontmatter(stageFile)
-					elaborationMode = (fm.elaboration as string) || "collaborative"
-					break
-				}
+
+		// Read elaboration mode from STAGE.md
+		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+		let elaborationMode = "collaborative"
+		for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
+			const stageFile = join(base, studio, "stages", currentStage, "STAGE.md")
+			if (existsSync(stageFile)) {
+				const fm = readFrontmatter(stageFile)
+				elaborationMode = (fm.elaboration as string) || "collaborative"
+				break
 			}
+		}
+
+		// Track elaboration turns for collaborative enforcement
+		const elaborationTurns = (stageState.elaboration_turns as number) || 0
+		const updatedTurns = elaborationTurns + 1
+		writeJson(join(iDir, "stages", currentStage, "state.json"), { ...stageState, elaboration_turns: updatedTurns })
+
+		if (!hasUnits) {
 			return {
 				action: "elaborate",
 				intent: slug,
@@ -463,9 +535,38 @@ export function runNext(slug: string): OrchestratorAction {
 				message: `Elaborate stage '${currentStage}' into units with completion criteria`,
 			}
 		}
+
+		// Enforce collaborative elaboration — minimum turn count
+		if (elaborationMode === "collaborative" && updatedTurns < 3) {
+			return {
+				action: "elaboration_insufficient",
+				intent: slug,
+				stage: currentStage,
+				turns: updatedTurns,
+				required: 3,
+				message: `Collaborative elaboration requires engaging the user. ${updatedTurns} turn(s) so far — engage the user at least ${3 - updatedTurns} more time(s) before finalizing units.`,
+			}
+		}
+
 		// Units exist — validate types before allowing execution
 		const typeViolation = validateUnitTypes(iDir, currentStage, studio)
 		if (typeViolation) return typeViolation
+
+		// Validate discovery artifacts exist before advancing
+		const discoveryViolation = validateDiscoveryArtifacts(slug, currentStage, studio, iDir)
+		if (discoveryViolation) return discoveryViolation
+
+		// Adversarial review of elaboration — run review agents on specs before gate
+		const elaborationReviewed = (stageState.elaboration_reviewed as boolean) || false
+		if (!elaborationReviewed) {
+			return {
+				action: "review_elaboration",
+				intent: slug,
+				studio,
+				stage: currentStage,
+				message: `Units and discovery artifacts validated. Run review agents on the elaboration specs before proceeding to the review gate. After review, call haiku_run_next { intent: "${slug}" } again.`,
+			}
+		}
 
 		// All units valid — open review gate before advancing to execute.
 		// The review UI blocks until the user approves the specs.
@@ -1028,6 +1129,8 @@ export const orchestratorToolDefs = [
 			type: "object" as const,
 			properties: {
 				intent: { type: "string", description: "Intent slug" },
+				elaboration_reviewed: { type: "boolean", description: "Set to true after review agents have reviewed the elaboration specs" },
+				external_review_url: { type: "string", description: "URL where stage was submitted for external review (PR, MR, etc.)" },
 			},
 			required: ["intent"],
 		},
@@ -1043,6 +1146,7 @@ export const orchestratorToolDefs = [
 			properties: {
 				description: { type: "string", description: "What the intent is about" },
 				slug: { type: "string", description: "URL-friendly slug for the intent (auto-generated from description if not provided)" },
+				context: { type: "string", description: "Conversation context summary — highlights from the conversation that led to this intent" },
 			},
 			required: ["description"],
 		},
@@ -1094,6 +1198,43 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 	if (name === "haiku_run_next") {
 		const slug = args.intent as string
 		const stFile = args.state_file as string | undefined
+
+		// Gap 4: If elaboration_reviewed flag is passed, persist it to stage state
+		if (args.elaboration_reviewed === true) {
+			try {
+				const root = findHaikuRoot()
+				const intentFile = join(root, "intents", slug, "intent.md")
+				if (existsSync(intentFile)) {
+					const intentFm = readFrontmatter(intentFile)
+					const activeStage = (intentFm.active_stage as string) || ""
+					if (activeStage) {
+						const ssPath = stageStatePath(slug, activeStage)
+						const ssData = readJson(ssPath)
+						ssData.elaboration_reviewed = true
+						writeJson(ssPath, ssData)
+					}
+				}
+			} catch { /* non-fatal */ }
+		}
+
+		// Gap 8: If external_review_url is passed and stage is blocked, store it
+		if (args.external_review_url) {
+			try {
+				const root = findHaikuRoot()
+				const intentFile = join(root, "intents", slug, "intent.md")
+				if (existsSync(intentFile)) {
+					const intentFm = readFrontmatter(intentFile)
+					const activeStage = (intentFm.active_stage as string) || ""
+					if (activeStage) {
+						const ssPath = stageStatePath(slug, activeStage)
+						const ssData = readJson(ssPath)
+						ssData.external_review_url = args.external_review_url as string
+						writeJson(ssPath, ssData)
+					}
+				}
+			} catch { /* non-fatal */ }
+		}
+
 		const result = runNext(slug)
 		emitTelemetry("haiku.orchestrator.action", { intent: slug, action: result.action })
 		if (stFile) logSessionEvent(stFile, { event: "run_next", intent: slug, action: result.action, stage: result.stage, unit: result.unit, hat: result.hat, wave: result.wave })
@@ -1104,6 +1245,19 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 		}
 		if (stFile && result.action === "outputs_missing") {
 			logSessionEvent(stFile, { event: "outputs_missing", intent: slug, stage: result.stage, missing: result.missing })
+		}
+		if (stFile && result.action === "discovery_missing") {
+			logSessionEvent(stFile, { event: "discovery_missing", intent: slug, stage: result.stage, missing: result.missing })
+		}
+		if (stFile && result.action === "review_elaboration") {
+			logSessionEvent(stFile, { event: "review_elaboration", intent: slug, stage: result.stage })
+		}
+
+		// External review: include instructions about recording the URL
+		if (result.action === "external_review_requested") {
+			result.message = (result.message as string || "") +
+				"\n\nIMPORTANT: Ask the user WHERE they submitted the work for review (PR URL, MR link, email, Slack channel, etc.). " +
+				"Record the URL by calling haiku_run_next { intent: \"" + slug + "\", external_review_url: \"<url>\" } so the FSM can track approval status."
 		}
 
 		// Gate review: open review UI, block until user decides, process decision
@@ -1403,11 +1557,101 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 
 		writeFileSync(join(iDir, "intent.md"), frontmatter)
 
+		// Gap 5: Write conversation context if provided
+		const context = args.context as string | undefined
+		if (context) {
+			const knowledgeDir = join(iDir, "knowledge")
+			mkdirSync(knowledgeDir, { recursive: true })
+			writeFileSync(join(knowledgeDir, "CONVERSATION-CONTEXT.md"), `# Conversation Context\n\n${context}\n`)
+		}
+
 		// Git commit
 		gitCommitState(`haiku: create intent ${slug}`)
 
 		emitTelemetry("haiku.intent.created", { intent: slug, studio: selectedStudio, mode: selectedMode })
 		if (stateFile) logSessionEvent(stateFile, { event: "intent_created", intent: slug, studio: selectedStudio, mode: selectedMode, stages: studioStages })
+
+		// Gap 6: Pre-start confirmation — open review UI to let user confirm intent before proceeding
+		if (_openReviewAndWait) {
+			try {
+				const intentDirPath = `.haiku/intents/${slug}`
+				const reviewResult = await _openReviewAndWait(intentDirPath, "intent", "ask")
+				if (stateFile) logSessionEvent(stateFile, { event: "intent_confirmation", intent: slug, decision: reviewResult.decision, feedback: reviewResult.feedback })
+				if (reviewResult.decision === "approved") {
+					return text(JSON.stringify({
+						action: "intent_created",
+						slug,
+						studio: selectedStudio,
+						mode: selectedMode,
+						stages: studioStages,
+						path: `.haiku/intents/${slug}`,
+						message: `Intent '${slug}' confirmed and created with studio '${selectedStudio}' (${selectedMode} mode). Run haiku_run_next { intent: "${slug}" } to begin.`,
+					}, null, 2))
+				}
+				// Changes requested — return feedback for the agent to adjust
+				return text(JSON.stringify({
+					action: "intent_changes_requested",
+					slug,
+					studio: selectedStudio,
+					mode: selectedMode,
+					stages: studioStages,
+					path: `.haiku/intents/${slug}`,
+					feedback: reviewResult.feedback,
+					message: `Intent '${slug}' created but user requested changes: ${reviewResult.feedback || "(see review)"}. Adjust the intent, then run haiku_run_next { intent: "${slug}" } to begin.`,
+				}, null, 2))
+			} catch {
+				// Review UI failed — fall back to elicitation
+				if (_elicitInput) {
+					try {
+						const elicitResult = await _elicitInput({
+							message: `Created intent '${slug}' with studio '${selectedStudio}'. Confirm to proceed?`,
+							requestedSchema: {
+								type: "object" as const,
+								properties: {
+									decision: {
+										type: "string",
+										title: "Decision",
+										description: "Approve intent or request changes",
+										enum: ["approve", "request_changes"],
+									},
+									feedback: {
+										type: "string",
+										title: "Feedback (optional)",
+										description: "Any changes to the intent",
+									},
+								},
+								required: ["decision"],
+							},
+						})
+						if (elicitResult.action === "accept" && elicitResult.content) {
+							const decision = (elicitResult.content as Record<string, string>).decision
+							const feedback = (elicitResult.content as Record<string, string>).feedback || ""
+							if (decision === "approve") {
+								return text(JSON.stringify({
+									action: "intent_created",
+									slug,
+									studio: selectedStudio,
+									mode: selectedMode,
+									stages: studioStages,
+									path: `.haiku/intents/${slug}`,
+									message: `Intent '${slug}' confirmed via elicitation and created with studio '${selectedStudio}' (${selectedMode} mode). Run haiku_run_next { intent: "${slug}" } to begin.`,
+								}, null, 2))
+							}
+							return text(JSON.stringify({
+								action: "intent_changes_requested",
+								slug,
+								studio: selectedStudio,
+								mode: selectedMode,
+								stages: studioStages,
+								path: `.haiku/intents/${slug}`,
+								feedback,
+								message: `Intent '${slug}' created but user requested changes: ${feedback}. Adjust the intent, then run haiku_run_next { intent: "${slug}" } to begin.`,
+							}, null, 2))
+						}
+					} catch { /* elicitation also failed — fall through to default return */ }
+				}
+			}
+		}
 
 		return text(JSON.stringify({
 			action: "intent_created",
