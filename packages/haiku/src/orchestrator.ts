@@ -26,7 +26,7 @@ import {
 	unitPath,
 	syncSessionMetadata,
 } from "./state-tools.js"
-import { createIntentBranch, isOnIntentBranch, createUnitWorktree, createIntentPR } from "./git-worktree.js"
+import { createIntentBranch, isOnIntentBranch, createUnitWorktree } from "./git-worktree.js"
 
 // ── Path helpers ───────────────────────────────────────────────────────────
 
@@ -821,14 +821,17 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 					syncSessionMetadata(slug, args.state_file as string | undefined)
 					return text(JSON.stringify({ action: "intent_complete", intent: slug, message: "Approved — intent complete" }, null, 2))
 				}
-				if (reviewResult.decision === "open_pr") {
-					// User chose external review — create PR from intent branch
-					const prTitle = `haiku: ${slug} — stage ${stage}`
-					const prBody = reviewResult.feedback || `Review stage '${stage}' for intent '${slug}'`
-					const prUrl = createIntentPR(slug, prTitle, prBody)
+				if (reviewResult.decision === "external_review") {
+					// User chose external review — stage blocks until external approval
 					fsmCompleteStage(slug, stage, "blocked")
 					syncSessionMetadata(slug, args.state_file as string | undefined)
-					return text(JSON.stringify({ action: "gate_external_pr", intent: slug, stage, pr_url: prUrl, message: prUrl ? `PR created: ${prUrl}` : "PR creation failed — push manually" }, null, 2))
+					return text(JSON.stringify({
+						action: "external_review_requested",
+						intent: slug,
+						stage,
+						feedback: reviewResult.feedback,
+						message: "External review requested. Submit the work for review through your project's review process (PR, MR, review board, etc.). Run /haiku:run again after approval.",
+					}, null, 2))
 				}
 				// changes_requested
 				syncSessionMetadata(slug, args.state_file as string | undefined)

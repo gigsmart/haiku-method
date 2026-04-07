@@ -127,19 +127,3 @@ export function cleanupIntentWorktrees(slug: string): void {
 	tryRun("git worktree prune")
 }
 
-/**
- * Create a PR from the intent branch.
- * Returns the PR URL or null if creation failed.
- */
-export function createIntentPR(slug: string, title: string, body: string): string | null {
-	try {
-		const branch = `haiku/${slug}/main`
-		// Push the branch
-		tryRun(`git push -u origin ${branch}`)
-		// Create PR
-		const url = run(`gh pr create --base main --head ${branch} --title "${title.replace(/"/g, '\\"')}" --body "${body.replace(/"/g, '\\"')}"`)
-		return url
-	} catch {
-		return null
-	}
-}
