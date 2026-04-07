@@ -3,11 +3,12 @@ import type { ReactNode } from "react";
 interface Props {
   children: ReactNode;
   className?: string;
+  id?: string;
 }
 
-export function Card({ children, className = "" }: Props) {
+export function Card({ children, className = "", id }: Props) {
   return (
-    <div className={`bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6 mb-6 ${className}`}>
+    <div id={id} className={`bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6 mb-6 ${className}`}>
       {children}
     </div>
   );

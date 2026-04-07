@@ -9,7 +9,7 @@
 // Returns an action object the agent follows.
 
 import { execFileSync } from "node:child_process"
-import { existsSync, readFileSync, readdirSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import matter from "gray-matter"
 import { emitTelemetry } from "./telemetry.js"
@@ -965,6 +965,20 @@ export const orchestratorToolDefs = [
 	},
 	// haiku_gate_approve removed — gates are handled by the FSM (review UI + elicitation fallback)
 	{
+		name: "haiku_intent_create",
+		description:
+			"Create a new H·AI·K·U intent. Uses elicitation to ask the user for studio selection and execution mode. " +
+			"If elicitation is unavailable, auto-detects the studio from the description and defaults to continuous mode.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				description: { type: "string", description: "What the intent is about" },
+				slug: { type: "string", description: "URL-friendly slug for the intent (auto-generated from description if not provided)" },
+			},
+			required: ["description"],
+		},
+	},
+	{
 		name: "haiku_go_back",
 		description:
 			"Go back to a previous stage or phase within the current stage. " +
@@ -1167,6 +1181,169 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 		fsmIntentComplete(args.intent as string)
 		syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
 		return text(JSON.stringify({ action: "intent_complete", intent: args.intent }))
+	}
+
+	if (name === "haiku_intent_create") {
+		const description = args.description as string
+		let slug = args.slug as string | undefined
+
+		// Generate slug from description if not provided
+		if (!slug) {
+			slug = description
+				.toLowerCase()
+				.replace(/[^a-z0-9\s-]/g, "")
+				.replace(/\s+/g, "-")
+				.replace(/-+/g, "-")
+				.replace(/^-|-$/g, "")
+				.slice(0, 50)
+				.replace(/-$/, "")
+		}
+
+		// Check if intent already exists
+		const root = findHaikuRoot()
+		const iDir = join(root, "intents", slug)
+		if (existsSync(join(iDir, "intent.md"))) {
+			return text(JSON.stringify({ error: "intent_exists", slug, message: `Intent '${slug}' already exists` }))
+		}
+
+		// List available studios
+		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+		const studioEntries: Array<{ name: string; description: string; stages: string[] }> = []
+		const builtinDir = join(pluginRoot, "studios")
+		if (existsSync(builtinDir)) {
+			for (const name of readdirSync(builtinDir)) {
+				const studioFile = join(builtinDir, name, "STUDIO.md")
+				if (existsSync(studioFile)) {
+					const fm = readFrontmatter(studioFile)
+					studioEntries.push({
+						name,
+						description: (fm.description as string) || name,
+						stages: (fm.stages as string[]) || [],
+					})
+				}
+			}
+		}
+		// Project-level overrides
+		try {
+			const projectDir = join(root, "studios")
+			if (existsSync(projectDir)) {
+				for (const name of readdirSync(projectDir)) {
+					const studioFile = join(projectDir, name, "STUDIO.md")
+					if (existsSync(studioFile)) {
+						const fm = readFrontmatter(studioFile)
+						const existing = studioEntries.findIndex(s => s.name === name)
+						const entry = {
+							name,
+							description: (fm.description as string) || name,
+							stages: (fm.stages as string[]) || [],
+						}
+						if (existing >= 0) studioEntries[existing] = entry
+						else studioEntries.push(entry)
+					}
+				}
+			}
+		} catch { /* no .haiku dir */ }
+
+		let selectedStudio = ""
+		let selectedMode = "continuous"
+		let studioStages: string[] = []
+
+		// Try elicitation first
+		if (_elicitInput) {
+			try {
+				const studioNames = studioEntries.map(s => s.name)
+				const studioDescriptions = studioEntries.map(s => `${s.name}: ${s.description}`).join("\n")
+
+				const elicitResult = await _elicitInput({
+					message: `Creating intent: "${description}"\n\nSelect a studio and execution mode.\n\nAvailable studios:\n${studioDescriptions}`,
+					requestedSchema: {
+						type: "object" as const,
+						properties: {
+							studio: {
+								type: "string",
+								title: "Studio",
+								description: "Which studio lifecycle to use",
+								enum: studioNames,
+							},
+							mode: {
+								type: "string",
+								title: "Execution Mode",
+								description: "continuous = stages auto-advance, discrete = pause between stages",
+								enum: ["continuous", "discrete"],
+							},
+						},
+						required: ["studio", "mode"],
+					},
+				})
+
+				if (elicitResult.action === "accept" && elicitResult.content) {
+					const content = elicitResult.content as Record<string, string>
+					selectedStudio = content.studio || ""
+					selectedMode = content.mode || "continuous"
+				} else {
+					// User cancelled
+					return text(JSON.stringify({ action: "cancelled", message: "Intent creation cancelled by user" }))
+				}
+			} catch {
+				// Elicitation failed — fall through to auto-detection
+			}
+		}
+
+		// Fallback: auto-detect studio from description
+		if (!selectedStudio) {
+			const desc = description.toLowerCase()
+			if (/\b(software|code|build|feature|implement|develop|api|app)\b/.test(desc)) {
+				selectedStudio = "software"
+			} else if (/\b(doc|write|content|documentation|article|guide)\b/.test(desc)) {
+				selectedStudio = "documentation"
+			} else {
+				selectedStudio = "ideation"
+			}
+			selectedMode = "continuous"
+		}
+
+		// Resolve stages for the selected studio
+		studioStages = resolveStudioStages(selectedStudio)
+		if (studioStages.length === 0) {
+			return text(JSON.stringify({ error: "no_stages", studio: selectedStudio, message: `Studio '${selectedStudio}' has no stages` }))
+		}
+
+		// Create directory structure
+		mkdirSync(join(iDir, "knowledge"), { recursive: true })
+		mkdirSync(join(iDir, "stages"), { recursive: true })
+
+		// Build intent.md frontmatter
+		const frontmatter = [
+			"---",
+			`title: "${description.replace(/"/g, '\\"')}"`,
+			`studio: ${selectedStudio}`,
+			`mode: ${selectedMode}`,
+			`status: active`,
+			`stages:`,
+			...studioStages.map(s => `  - ${s}`),
+			`created_at: ${timestamp()}`,
+			"---",
+			"",
+			`# ${description}`,
+			"",
+		].join("\n")
+
+		writeFileSync(join(iDir, "intent.md"), frontmatter)
+
+		// Git commit
+		gitCommitState(`haiku: create intent ${slug}`)
+
+		emitTelemetry("haiku.intent.created", { intent: slug, studio: selectedStudio, mode: selectedMode })
+
+		return text(JSON.stringify({
+			action: "intent_created",
+			slug,
+			studio: selectedStudio,
+			mode: selectedMode,
+			stages: studioStages,
+			path: `.haiku/intents/${slug}`,
+			message: `Intent '${slug}' created with studio '${selectedStudio}' (${selectedMode} mode). Run haiku_run_next { intent: "${slug}" } to begin.`,
+		}, null, 2))
 	}
 
 	if (name === "haiku_go_back") {

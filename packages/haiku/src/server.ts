@@ -318,7 +318,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	const { name, arguments: args } = request.params
 
 	// Orchestration tools (async — gate_ask blocks until user reviews)
-	if (name === "haiku_run_next" || name === "haiku_go_back") {
+	if (name === "haiku_run_next" || name === "haiku_go_back" || name === "haiku_intent_create") {
 		return handleOrchestratorTool(name, (args ?? {}) as Record<string, unknown>)
 	}
 

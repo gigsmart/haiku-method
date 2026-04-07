@@ -399,14 +399,35 @@ function IntentReview({
       disabled: knowledgeFiles.length === 0 && stageArtifacts.length === 0,
       content: (
         <>
+          {(knowledgeFiles.length > 0 || stageArtifacts.length > 0) && (
+            <Card>
+              <SectionHeading>Contents</SectionHeading>
+              <ul className="space-y-1 text-sm">
+                {knowledgeFiles.map((kf, i) => (
+                  <li key={`kf-${i}`}>
+                    <a href={`#knowledge-${i}`} className="text-teal-600 dark:text-teal-400 hover:underline">
+                      {kf.name}
+                    </a>
+                  </li>
+                ))}
+                {stageArtifacts.map((sa, i) => (
+                  <li key={`sa-${i}`}>
+                    <a href={`#artifact-${i}`} className="text-teal-600 dark:text-teal-400 hover:underline">
+                      {sa.stage}: {sa.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
           {knowledgeFiles.map((kf, i) => (
-            <Card key={`kf-${i}`}>
+            <Card key={`kf-${i}`} id={`knowledge-${i}`}>
               <SectionHeading>{kf.name}</SectionHeading>
               <InlineComments htmlContent={markdownToSimpleHtml(kf.content)} onCommentsChange={onInlineCommentsChange} />
             </Card>
           ))}
           {stageArtifacts.map((sa, i) => (
-            <Card key={`sa-${i}`}>
+            <Card key={`sa-${i}`} id={`artifact-${i}`}>
               <SectionHeading>{sa.stage}: {sa.name}</SectionHeading>
               <InlineComments htmlContent={markdownToSimpleHtml(sa.content)} onCommentsChange={onInlineCommentsChange} />
             </Card>
