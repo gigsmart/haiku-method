@@ -3,6 +3,7 @@ name: operations
 description: Deployment, monitoring, and operational readiness
 hats: [ops-engineer, sre]
 review: auto
+elaboration: autonomous
 unit_types: [ops, backend]
 inputs:
   - stage: inception
@@ -33,6 +34,6 @@ Bad criteria examples:
 - "Runbook exists"
 - "Monitoring is set up"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Deployment pipeline defined and validated (builds, plans, and applies successfully). Monitoring covers key metrics (latency, error rate, throughput). Runbook exists for common failure modes with step-by-step remediation commands. SLOs defined with alert thresholds and error budgets.
+Deployment pipeline **MUST** be defined and validated (builds, plans, and applies successfully). Monitoring **MUST** cover key metrics (latency, error rate, throughput). Runbook **MUST** exist for common failure modes with step-by-step remediation commands. SLOs **MUST** be defined with alert thresholds and error budgets.

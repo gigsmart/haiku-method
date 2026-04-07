@@ -3,6 +3,7 @@ name: product
 description: Define behavioral specifications and acceptance criteria
 hats: [product-owner, specification-writer]
 review: [external, ask]
+elaboration: collaborative
 unit_types: [product, backend, frontend]
 inputs:
   - stage: inception
@@ -27,6 +28,6 @@ Bad criteria examples:
 - "API is specified"
 - "Criteria are clear"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Behavioral spec exists with user flows and error scenarios. Data contracts define all API schemas with field types and validation rules. Every acceptance criterion has a testable given/when/then scenario. Product owner has approved scope.
+Behavioral spec **MUST** exist with user flows and error scenarios. Data contracts **MUST** define all API schemas with field types and validation rules. Every acceptance criterion **MUST** have a testable given/when/then scenario. Product owner **MUST** have approved scope.

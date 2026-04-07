@@ -181,11 +181,23 @@ export function runNext(slug: string): OrchestratorAction {
 		const unitsDir = join(intentDir, "stages", currentStage, "units")
 		const hasUnits = existsSync(unitsDir) && readdirSync(unitsDir).filter(f => f.endsWith(".md")).length > 0
 		if (!hasUnits) {
+			// Read elaboration mode from STAGE.md
+			const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+			let elaborationMode = "collaborative"
+			for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
+				const stageFile = join(base, studio, "stages", currentStage, "STAGE.md")
+				if (existsSync(stageFile)) {
+					const fm = readFrontmatter(stageFile)
+					elaborationMode = (fm.elaboration as string) || "collaborative"
+					break
+				}
+			}
 			return {
 				action: "decompose",
 				intent: slug,
 				studio,
 				stage: currentStage,
+				elaboration: elaborationMode,
 				message: `Elaborate stage '${currentStage}' into units with completion criteria`,
 			}
 		}
