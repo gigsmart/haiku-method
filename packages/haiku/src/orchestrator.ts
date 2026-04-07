@@ -161,7 +161,8 @@ function validateUnitTypes(intentDirPath: string, stage: string, studio: string)
 				`1. Extract useful insights into the stage's discovery knowledge (e.g., "we'll need X with these properties")\n` +
 				`2. Delete the violating unit file\n` +
 				`3. Create a new unit with the correct type for this stage's purpose\n\n` +
-				`Implementation details belong in knowledge documents for downstream stages, not in units here.`,
+				`Implementation details belong in knowledge documents for downstream stages, not in units here.\n\n` +
+				`After making changes, call \`haiku_run_next { intent: "${slug}" }\` again to re-validate.`,
 		}
 	}
 	return null
@@ -949,7 +950,7 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 				}
 				// changes_requested
 				syncSessionMetadata(slug, args.state_file as string | undefined)
-				return text(JSON.stringify({ action: "changes_requested", intent: slug, stage, feedback: reviewResult.feedback, annotations: reviewResult.annotations, message: `Changes requested: ${reviewResult.feedback || "(see annotations)"}` }, null, 2))
+				return text(JSON.stringify({ action: "changes_requested", intent: slug, stage, feedback: reviewResult.feedback, annotations: reviewResult.annotations, message: `Changes requested: ${reviewResult.feedback || "(see annotations)"}. Address the feedback, then call haiku_run_next { intent: "${slug}" } again.` }, null, 2))
 			} catch {
 				syncSessionMetadata(slug, args.state_file as string | undefined)
 				return text(JSON.stringify(result, null, 2))

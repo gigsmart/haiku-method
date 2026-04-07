@@ -385,7 +385,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 							error: "unit_type_not_allowed",
 							unit_type: unitType,
 							allowed_types: allowedTypes,
-							message: `Unit type '${unitType}' is not allowed in stage '${args.stage}'. Allowed types: ${allowedTypes.join(", ")}. This unit belongs in a different stage.`,
+							message: `Unit type '${unitType}' is not allowed in stage '${args.stage}'. Allowed types: ${allowedTypes.join(", ")}. Convert to knowledge for downstream stages, then call haiku_run_next again.`,
 						}))
 					}
 				}
@@ -407,7 +407,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			const unitRaw = readFileSync(path, "utf8")
 			const unchecked = (unitRaw.match(/- \[ \]/g) || []).length
 			if (unchecked > 0) {
-				return text(JSON.stringify({ error: "criteria_not_met", unchecked, message: `Cannot complete unit: ${unchecked} completion criteria still unchecked` }))
+				return text(JSON.stringify({ error: "criteria_not_met", unchecked, message: `Cannot complete unit: ${unchecked} completion criteria still unchecked. Address them, then call haiku_unit_complete again.` }))
 			}
 			setFrontmatterField(path, "status", "completed")
 			setFrontmatterField(path, "completed_at", timestamp())
