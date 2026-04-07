@@ -1,6 +1,8 @@
-import { createServer, type Server as HttpServer } from "node:http"
+import { createServer, type Server as HttpServer, type IncomingMessage } from "node:http"
+import { createHash } from "node:crypto"
 import { readFile, realpath } from "node:fs/promises"
 import { extname, join, resolve } from "node:path"
+import type { Duplex } from "node:stream"
 import { z } from "zod"
 import { getSession, updateDesignDirectionSession, updateQuestionSession, updateSession } from "./sessions.js"
 import type { QuestionAnswer, ReviewAnnotations } from "./sessions.js"
@@ -379,6 +381,226 @@ async function handleDirectionSelectPost(
 	return Response.json({ ok: true })
 }
 
+// ─── WebSocket support ───────────────────────────────────────────────
+// Minimal RFC 6455 implementation using Node built-ins (no dependencies).
+// The browser opens ws://…/ws/session/:id and can send JSON messages that
+// are routed to the same update functions as the HTTP POST endpoints.
+// This lets tool handlers use event-based waitForSession() instead of polling.
+
+const WS_MAGIC = "258EAFA5-E914-47DA-95CA-5AB5DC85B14"
+
+/** Active WebSocket connections keyed by session ID */
+const wsConnections = new Map<string, Duplex>()
+
+function trackWebSocket(sessionId: string, socket: Duplex): void {
+	wsConnections.set(sessionId, socket)
+}
+
+function untrackWebSocket(sessionId: string): void {
+	wsConnections.delete(sessionId)
+}
+
+/**
+ * Send a text frame to the WebSocket client for a given session (if connected).
+ * Used for server-initiated notifications (e.g. confirming receipt).
+ */
+export function sendToWebSocket(sessionId: string, data: unknown): void {
+	const socket = wsConnections.get(sessionId)
+	if (!socket || socket.destroyed) return
+	const payload = Buffer.from(JSON.stringify(data), "utf8")
+	const frame = encodeWebSocketFrame(payload)
+	socket.write(frame)
+}
+
+/** Encode a payload into an unmasked WebSocket text frame (server → client) */
+function encodeWebSocketFrame(payload: Buffer): Buffer {
+	const len = payload.length
+	let header: Buffer
+	if (len < 126) {
+		header = Buffer.alloc(2)
+		header[0] = 0x81 // FIN + text opcode
+		header[1] = len
+	} else if (len < 65536) {
+		header = Buffer.alloc(4)
+		header[0] = 0x81
+		header[1] = 126
+		header.writeUInt16BE(len, 2)
+	} else {
+		header = Buffer.alloc(10)
+		header[0] = 0x81
+		header[1] = 127
+		// Write as two 32-bit values since writeBigUInt64BE may not be available
+		header.writeUInt32BE(0, 2)
+		header.writeUInt32BE(len, 6)
+	}
+	return Buffer.concat([header, payload])
+}
+
+/**
+ * Decode a single WebSocket frame from a client (masked).
+ * Returns the UTF-8 payload string, or null if the frame is a close/ping/pong
+ * or cannot be decoded.
+ */
+function decodeWebSocketFrame(buf: Buffer): string | null {
+	if (buf.length < 2) return null
+
+	const opcode = buf[0] & 0x0f
+	const isMasked = (buf[1] & 0x80) !== 0
+	let payloadLen = buf[1] & 0x7f
+	let offset = 2
+
+	if (payloadLen === 126) {
+		if (buf.length < 4) return null
+		payloadLen = buf.readUInt16BE(2)
+		offset = 4
+	} else if (payloadLen === 127) {
+		if (buf.length < 10) return null
+		// Read lower 32 bits (messages > 4GB are not expected)
+		payloadLen = buf.readUInt32BE(6)
+		offset = 10
+	}
+
+	let mask: Buffer | null = null
+	if (isMasked) {
+		if (buf.length < offset + 4) return null
+		mask = buf.subarray(offset, offset + 4)
+		offset += 4
+	}
+
+	if (buf.length < offset + payloadLen) return null
+
+	const payload = buf.subarray(offset, offset + payloadLen)
+	if (mask) {
+		for (let i = 0; i < payload.length; i++) {
+			payload[i] ^= mask[i % 4]
+		}
+	}
+
+	// Handle close frame
+	if (opcode === 0x08) return null
+	// Handle ping — respond with pong
+	if (opcode === 0x09) return null
+	// Only process text frames
+	if (opcode !== 0x01) return null
+
+	return payload.toString("utf8")
+}
+
+/** Handle an incoming WebSocket message: parse and route to the appropriate update function */
+function handleWebSocketMessage(sessionId: string, raw: string): void {
+	let msg: Record<string, unknown>
+	try {
+		msg = JSON.parse(raw)
+	} catch {
+		return
+	}
+
+	const session = getSession(sessionId)
+	if (!session) return
+
+	const type = msg.type as string | undefined
+
+	if (session.session_type === "review" && type === "decide") {
+		const decision = msg.decision === "approved" ? "approved" : "changes_requested"
+		const feedback = (msg.feedback as string) ?? ""
+		const annotations = msg.annotations as ReviewAnnotations | undefined
+		updateSession(sessionId, { status: "decided" as never, decision, feedback, annotations })
+		sendToWebSocket(sessionId, { ok: true, decision, feedback })
+	} else if (session.session_type === "question" && type === "answer") {
+		const answers = msg.answers as QuestionAnswer[] | undefined
+		if (answers) {
+			updateQuestionSession(sessionId, { status: "answered", answers })
+			sendToWebSocket(sessionId, { ok: true })
+		}
+	} else if (session.session_type === "design_direction" && type === "select") {
+		if (session.status === "answered") {
+			sendToWebSocket(sessionId, { error: "Direction already selected" })
+			return
+		}
+		const archetype = msg.archetype as string
+		const parameters = msg.parameters as Record<string, number>
+		if (archetype && parameters) {
+			updateDesignDirectionSession(sessionId, {
+				status: "answered",
+				selection: { archetype, parameters },
+			})
+			sendToWebSocket(sessionId, { ok: true })
+		}
+	}
+}
+
+/**
+ * Handle HTTP upgrade requests for WebSocket connections.
+ * Path: /ws/session/:sessionId
+ */
+function handleUpgrade(req: IncomingMessage, socket: Duplex, _head: Buffer): void {
+	const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "127.0.0.1"}`)
+	const match = url.pathname.match(/^\/ws\/session\/([^/]+)$/)
+
+	if (!match) {
+		socket.write("HTTP/1.1 404 Not Found\r\n\r\n")
+		socket.destroy()
+		return
+	}
+
+	const sessionId = match[1]
+	const session = getSession(sessionId)
+	if (!session) {
+		socket.write("HTTP/1.1 404 Not Found\r\n\r\n")
+		socket.destroy()
+		return
+	}
+
+	const key = req.headers["sec-websocket-key"]
+	if (!key) {
+		socket.write("HTTP/1.1 400 Bad Request\r\n\r\n")
+		socket.destroy()
+		return
+	}
+
+	// Compute Sec-WebSocket-Accept per RFC 6455
+	const accept = createHash("sha1")
+		.update(key + WS_MAGIC)
+		.digest("base64")
+
+	socket.write(
+		"HTTP/1.1 101 Switching Protocols\r\n" +
+		"Upgrade: websocket\r\n" +
+		"Connection: Upgrade\r\n" +
+		`Sec-WebSocket-Accept: ${accept}\r\n\r\n`,
+	)
+
+	// Track this connection
+	trackWebSocket(sessionId, socket)
+
+	// Buffer for fragmented reads
+	let frameBuffer = Buffer.alloc(0)
+
+	socket.on("data", (chunk: Buffer) => {
+		frameBuffer = Buffer.concat([frameBuffer, chunk])
+
+		// Try to decode — may need more data
+		const payload = decodeWebSocketFrame(frameBuffer)
+		if (payload !== null) {
+			frameBuffer = Buffer.alloc(0)
+			handleWebSocketMessage(sessionId, payload)
+		}
+		// If frame couldn't be decoded yet, wait for more data.
+		// Also reset buffer if it's grown too large (malformed client).
+		if (frameBuffer.length > 1024 * 1024) {
+			frameBuffer = Buffer.alloc(0)
+		}
+	})
+
+	socket.on("close", () => {
+		untrackWebSocket(sessionId)
+	})
+
+	socket.on("error", () => {
+		untrackWebSocket(sessionId)
+	})
+}
+
 function handleRequest(req: Request): Response | Promise<Response> {
 	const url = new URL(req.url)
 	const path = url.pathname
@@ -530,6 +752,11 @@ function listenOnPort(port: number): Promise<void> {
 				res.writeHead(500)
 				res.end("Internal Server Error")
 			}
+		})
+
+		// Handle WebSocket upgrade requests
+		server.on("upgrade", (req, socket, head) => {
+			handleUpgrade(req, socket, head)
 		})
 
 		server.once("error", (err) => {

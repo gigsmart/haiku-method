@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { SessionData } from "./types";
-import { useSession } from "./hooks/useSession";
+import { useSession, useSessionWebSocket } from "./hooks/useSession";
 import { ReviewPage } from "./components/ReviewPage";
 import { QuestionPage } from "./components/QuestionPage";
 import { DesignPicker } from "./components/DesignPicker";
@@ -40,6 +40,7 @@ export function App() {
 
 function SessionLoader({ sessionId, pageType }: { sessionId: string; pageType: string }) {
   const { session, loading, error } = useSession(sessionId);
+  const wsRef = useSessionWebSocket(sessionId);
   const [title, setTitle] = useState("H\u00B7AI\u00B7K\u00B7U Review");
 
   useEffect(() => {
@@ -93,13 +94,13 @@ function SessionLoader({ sessionId, pageType }: { sessionId: string; pageType: s
       {/* Main content */}
       <main id="main-content" className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
         {session.session_type === "review" && (
-          <ReviewPage session={session} sessionId={sessionId} />
+          <ReviewPage session={session} sessionId={sessionId} wsRef={wsRef} />
         )}
         {session.session_type === "question" && (
-          <QuestionPage session={session} sessionId={sessionId} />
+          <QuestionPage session={session} sessionId={sessionId} wsRef={wsRef} />
         )}
         {session.session_type === "design_direction" && (
-          <DesignPicker session={session} sessionId={sessionId} />
+          <DesignPicker session={session} sessionId={sessionId} wsRef={wsRef} />
         )}
       </main>
       <footer className="mt-12 pb-8 text-center text-xs text-stone-500 dark:text-stone-500">

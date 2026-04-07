@@ -7,9 +7,10 @@ interface Props {
   sessionId: string;
   collectAnnotations?: boolean;
   getAnnotations?: () => ReviewAnnotations | undefined;
+  wsRef?: React.RefObject<WebSocket | null>;
 }
 
-export function DecisionForm({ sessionId, collectAnnotations = false, getAnnotations }: Props) {
+export function DecisionForm({ sessionId, collectAnnotations = false, getAnnotations, wsRef }: Props) {
   const [mode, setMode] = useState<"buttons" | "feedback">("buttons");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -25,7 +26,10 @@ export function DecisionForm({ sessionId, collectAnnotations = false, getAnnotat
     setSubmitting(true);
     try {
       const annotations = collectAnnotations && getAnnotations ? getAnnotations() : undefined;
-      await submitDecision(sessionId, decision, feedback, annotations);
+      const payload: Record<string, unknown> = { decision, feedback };
+      if (annotations) payload.annotations = annotations;
+
+      await submitDecision(sessionId, decision, feedback, annotations, wsRef);
 
       const parts: string[] = [];
       if (annotations?.screenshot) parts.push("annotated screenshot");
@@ -37,7 +41,10 @@ export function DecisionForm({ sessionId, collectAnnotations = false, getAnnotat
         message: `Decision submitted: ${decision.replace(/_/g, " ")}${parts.length > 0 ? `. Included: ${parts.join(", ")}` : ""}`,
       });
 
-      tryCloseTab(setShowClose);
+      tryCloseTab(setShowClose, {
+        url: `/review/${sessionId}/decide`,
+        body: payload,
+      });
     } catch (err) {
       setResult({
         success: false,

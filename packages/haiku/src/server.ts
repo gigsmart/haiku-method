@@ -22,7 +22,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js"
 import { z } from "zod"
 import { getActualPort, startHttpServer } from "./http.js"
-import { createDesignDirectionSession, createQuestionSession, createSession, getSession } from "./sessions.js"
+import { createDesignDirectionSession, createQuestionSession, createSession, getSession, waitForSession } from "./sessions.js"
 import type { DesignArchetypeData, DesignParameterData, QuestionDef } from "./sessions.js"
 import { type MockupInfo, renderReviewPage } from "./templates/index.js"
 import { renderQuestionPage } from "./templates/question-form.js"
@@ -563,33 +563,47 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 			console.error("Failed to open browser:", err)
 		}
 
-		// Block until the user submits their decision
-		const POLL_INTERVAL = 500
+		// Block until the user submits their decision (event-based, no polling)
 		const MAX_WAIT = 30 * 60 * 1000
-		const start = Date.now()
-
-		while (Date.now() - start < MAX_WAIT) {
-			if (session.status === "decided") {
-				const result: Record<string, unknown> = {
-					status: "decided",
-					url: reviewUrl,
-					decision: session.decision,
-					feedback: session.feedback,
-					review_type: session.review_type,
-					target: session.target,
-				}
-				if (session.annotations) {
-					const annot: Record<string, unknown> = {}
-					if (session.annotations.pins?.length) annot.pins = session.annotations.pins
-					if (session.annotations.comments?.length) annot.comments = session.annotations.comments
-					if (session.annotations.screenshot) annot.has_screenshot = true
-					result.annotations = annot
-				}
-				return {
-					content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
-				}
+		try {
+			await waitForSession(session.session_id, MAX_WAIT)
+		} catch {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: JSON.stringify({
+							status: "timeout",
+							url: reviewUrl,
+							session_id: session.session_id,
+							message: "User did not respond within 30 minutes",
+						}, null, 2),
+					},
+				],
 			}
-			await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL))
+		}
+
+		// Session was updated — read the latest state
+		const updatedReviewSession = getSession(session.session_id)
+		if (updatedReviewSession && updatedReviewSession.session_type === "review" && updatedReviewSession.status === "decided") {
+			const result: Record<string, unknown> = {
+				status: "decided",
+				url: reviewUrl,
+				decision: updatedReviewSession.decision,
+				feedback: updatedReviewSession.feedback,
+				review_type: updatedReviewSession.review_type,
+				target: updatedReviewSession.target,
+			}
+			if (updatedReviewSession.annotations) {
+				const annot: Record<string, unknown> = {}
+				if (updatedReviewSession.annotations.pins?.length) annot.pins = updatedReviewSession.annotations.pins
+				if (updatedReviewSession.annotations.comments?.length) annot.comments = updatedReviewSession.annotations.comments
+				if (updatedReviewSession.annotations.screenshot) annot.has_screenshot = true
+				result.annotations = annot
+			}
+			return {
+				content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
+			}
 		}
 
 		return {
@@ -749,30 +763,43 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 			console.error("Failed to open browser:", err)
 		}
 
-		// Block until the user submits their answers
-		const POLL_INTERVAL = 500 // ms
-		const MAX_WAIT = 30 * 60 * 1000 // 30 minutes
-		const start = Date.now()
-
-		while (Date.now() - start < MAX_WAIT) {
-			if (session.status === "answered" && session.answers) {
-				return {
-					content: [
-						{
-							type: "text" as const,
-							text: JSON.stringify({
-								status: "answered",
-								url: questionUrl,
-								answers: session.answers,
-							}, null, 2),
-						},
-					],
-				}
+		// Block until the user submits their answers (event-based, no polling)
+		const MAX_WAIT_Q = 30 * 60 * 1000 // 30 minutes
+		try {
+			await waitForSession(session.session_id, MAX_WAIT_Q)
+		} catch {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: JSON.stringify({
+							status: "timeout",
+							url: questionUrl,
+							session_id: session.session_id,
+							message: "User did not respond within 30 minutes",
+						}, null, 2),
+					},
+				],
 			}
-			await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL))
 		}
 
-		// Timed out
+		// Session was updated — read the latest state
+		const updatedQuestionSession = getSession(session.session_id)
+		if (updatedQuestionSession && updatedQuestionSession.session_type === "question" && updatedQuestionSession.status === "answered" && updatedQuestionSession.answers) {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: JSON.stringify({
+							status: "answered",
+							url: questionUrl,
+							answers: updatedQuestionSession.answers,
+						}, null, 2),
+					},
+				],
+			}
+		}
+
 		return {
 			content: [
 				{

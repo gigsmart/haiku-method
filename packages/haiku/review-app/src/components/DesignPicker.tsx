@@ -7,9 +7,10 @@ import { SubmitSuccess } from "./SubmitSuccess";
 interface Props {
   session: SessionData;
   sessionId: string;
+  wsRef?: React.RefObject<WebSocket | null>;
 }
 
-export function DesignPicker({ session, sessionId }: Props) {
+export function DesignPicker({ session, sessionId, wsRef }: Props) {
   const archetypes = session.archetypes ?? [];
   const parameters = session.parameters ?? [];
 
@@ -48,9 +49,12 @@ export function DesignPicker({ session, sessionId }: Props) {
     setSubmitting(true);
 
     try {
-      await submitDesignDirection(sessionId, selectedArchetype, paramValues);
+      await submitDesignDirection(sessionId, selectedArchetype, paramValues, wsRef);
       setResult({ success: true, message: `Direction selected: ${selectedArchetype}` });
-      tryCloseTab(setShowClose);
+      tryCloseTab(setShowClose, {
+        url: `/direction/${sessionId}/select`,
+        body: { archetype: selectedArchetype, parameters: paramValues },
+      });
     } catch (err) {
       setResult({
         success: false,

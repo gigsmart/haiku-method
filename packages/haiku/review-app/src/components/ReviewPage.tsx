@@ -12,6 +12,7 @@ import { marked } from "marked";
 interface Props {
   session: SessionData;
   sessionId: string;
+  wsRef?: React.RefObject<WebSocket | null>;
 }
 
 const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"];
@@ -46,7 +47,7 @@ function getPreamble(sections: Section[]): string {
   return preamble?.content ?? "";
 }
 
-export function ReviewPage({ session, sessionId }: Props) {
+export function ReviewPage({ session, sessionId, wsRef }: Props) {
   // State for collecting annotations across tabs
   const annotationPinsRef = useRef<AnnotationPin[]>([]);
   const inlineCommentsRef = useRef<InlineComment[]>([]);
@@ -84,6 +85,7 @@ export function ReviewPage({ session, sessionId }: Props) {
         session={session}
         sessionId={sessionId}
         getAnnotations={getAnnotations}
+        wsRef={wsRef}
       />
     );
   }
@@ -93,6 +95,7 @@ export function ReviewPage({ session, sessionId }: Props) {
       session={session}
       sessionId={sessionId}
       getAnnotations={getAnnotations}
+      wsRef={wsRef}
     />
   );
 }
@@ -103,10 +106,12 @@ function IntentReview({
   session,
   sessionId,
   getAnnotations,
+  wsRef,
 }: {
   session: SessionData;
   sessionId: string;
   getAnnotations: () => ReviewAnnotations | undefined;
+  wsRef?: React.RefObject<WebSocket | null>;
 }) {
   const intent = session.intent;
   const units = session.units ?? [];
@@ -372,7 +377,7 @@ function IntentReview({
   return (
     <>
       <Tabs groupId="intent" tabs={tabs} />
-      <DecisionForm sessionId={sessionId} collectAnnotations getAnnotations={getAnnotations} />
+      <DecisionForm sessionId={sessionId} collectAnnotations getAnnotations={getAnnotations} wsRef={wsRef} />
     </>
   );
 }
@@ -383,10 +388,12 @@ function UnitReview({
   session,
   sessionId,
   getAnnotations,
+  wsRef,
 }: {
   session: SessionData;
   sessionId: string;
   getAnnotations: () => ReviewAnnotations | undefined;
+  wsRef?: React.RefObject<WebSocket | null>;
 }) {
   const intent = session.intent;
   const units = session.units ?? [];
@@ -555,7 +562,7 @@ function UnitReview({
   return (
     <>
       <Tabs groupId="unit" tabs={tabs} />
-      <DecisionForm sessionId={sessionId} collectAnnotations getAnnotations={getAnnotations} />
+      <DecisionForm sessionId={sessionId} collectAnnotations getAnnotations={getAnnotations} wsRef={wsRef} />
     </>
   );
 }

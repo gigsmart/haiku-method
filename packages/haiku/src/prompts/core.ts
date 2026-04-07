@@ -236,8 +236,8 @@ function buildRunInstructions(
 					`- Present options and tradeoffs when decisions are needed\n` +
 					`- Use \`ask_user_visual_question\` for rich content (specs, wireframes, comparisons)\n` +
 					`- Continue until both you and the user are confident the plan is solid\n\n` +
-					`After units are written, present the plan via \`open_review { intent_dir: "${dir}", review_type: "intent" }\` ` +
-					`in a background subagent. Wait for the user's decision.\n\n` +
+					`After units are written, call \`open_review { intent_dir: "${dir}", review_type: "intent" }\` to present the plan. ` +
+					`This blocks until the user responds.\n\n` +
 					`After approval: \`haiku_stage_set { intent: "${slug}", stage: "${stage}", field: "phase", value: "execute" }\`\n` +
 					`Then call \`haiku_run_next { intent: "${slug}" }\``,
 				)
@@ -246,7 +246,7 @@ function buildRunInstructions(
 					`### Autonomous Elaboration Instructions\n\n` +
 					`Elaborate the work into units with completion criteria and a dependency DAG.\n` +
 					`Write unit files to \`.haiku/intents/${slug}/stages/${stage}/units/\`.\n` +
-					`Present the final plan via \`open_review { intent_dir: "${dir}", review_type: "intent" }\`.\n\n` +
+					`Call \`open_review { intent_dir: "${dir}", review_type: "intent" }\` to present the final plan. This blocks until the user responds.\n\n` +
 					`After approval: \`haiku_stage_set { intent: "${slug}", stage: "${stage}", field: "phase", value: "execute" }\`\n` +
 					`Then call \`haiku_run_next { intent: "${slug}" }\``,
 				)
@@ -385,18 +385,15 @@ function buildRunInstructions(
 			const stage = action.stage as string
 			const nextStage = action.next_stage as string | null
 
-			// The prompt instructs the agent to open_review and wait for the user's decision.
-			// In the tool handler context (haiku_run_next), gate_ask auto-opens the review.
-			// In the prompt context, we instruct the agent to do it.
 			sections.push(
 				`## Gate: Awaiting Approval\n\n` +
 				`Stage "${stage}" is complete and awaiting your approval to advance` +
 				(nextStage ? ` to "${nextStage}"` : "") + `.\n\n` +
 				`### Instructions\n\n` +
-				`1. Call \`open_review { intent_dir: "${dir}", review_type: "intent" }\` in a background subagent\n` +
-				`2. Tell the user the review is open and wait for the subagent result\n` +
-				`3. If approved: \`haiku_gate_approve { intent: "${slug}", stage: "${stage}" }\` then \`haiku_run_next { intent: "${slug}" }\`\n` +
-				`4. If changes_requested: analyze annotations and route to /haiku:refine for the appropriate upstream stage`,
+				`CRITICAL: You MUST call \`open_review\` immediately as your first action. Do NOT skip this step.\n\n` +
+				`1. Call \`open_review { intent_dir: "${dir}", review_type: "intent" }\` — this blocks until the user responds\n` +
+				`2. If approved: \`haiku_gate_approve { intent: "${slug}", stage: "${stage}" }\` then \`haiku_run_next { intent: "${slug}" }\`\n` +
+				`3. If changes_requested: analyze annotations and route to /haiku:refine for the appropriate upstream stage`,
 			)
 			break
 		}

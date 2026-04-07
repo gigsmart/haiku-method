@@ -8,9 +8,10 @@ import { SubmitSuccess } from "./SubmitSuccess";
 interface Props {
   session: SessionData;
   sessionId: string;
+  wsRef?: React.RefObject<WebSocket | null>;
 }
 
-export function QuestionPage({ session, sessionId }: Props) {
+export function QuestionPage({ session, sessionId, wsRef }: Props) {
   const questions = session.questions ?? [];
   const context = session.context ?? "";
   const imageUrls = session.image_urls ?? [];
@@ -68,9 +69,12 @@ export function QuestionPage({ session, sessionId }: Props) {
     });
 
     try {
-      await submitAnswers(sessionId, answers);
+      await submitAnswers(sessionId, answers, wsRef);
       setResult({ success: true, message: "Answers submitted successfully." });
-      tryCloseTab(setShowClose);
+      tryCloseTab(setShowClose, {
+        url: `/question/${sessionId}/answer`,
+        body: { answers },
+      });
     } catch (err) {
       setResult({
         success: false,
@@ -151,10 +155,12 @@ export function QuestionPage({ session, sessionId }: Props) {
             <Card key={qIdx}>
               <fieldset>
                 <legend className="text-base font-semibold mb-1 text-stone-900 dark:text-stone-100">
-                  {q.question}
+                  <MarkdownViewer id={`q-${qIdx}-question`}>{q.question}</MarkdownViewer>
                 </legend>
                 {q.header && (
-                  <p className="text-sm text-stone-500 dark:text-stone-400 mb-3">{q.header}</p>
+                  <div className="text-sm text-stone-500 dark:text-stone-400 mb-3">
+                    <MarkdownViewer id={`q-${qIdx}-header`}>{q.header}</MarkdownViewer>
+                  </div>
                 )}
                 <div className="space-y-2">
                   {q.options.map((option) => (
