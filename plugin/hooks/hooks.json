@@ -36,6 +36,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook guard-fsm-fields",
+            "timeout": 5
+          },
+          {
+            "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook prompt-guard",
             "timeout": 5
           },
