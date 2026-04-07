@@ -1,12 +1,13 @@
 ---
-status: active
+status: completed
 type: backend
 depends_on:
   - unit-04-review-ui
   - unit-05-interactive-ui
 bolt: 1
-hat: architect
+hat: decomposer
 started_at: '2026-04-07T14:39:46Z'
+completed_at: '2026-04-07T14:39:54Z'
 ---
 
 # Cleanup and Binary Reduction
