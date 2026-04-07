@@ -158,7 +158,11 @@ function validateUnitTypes(intentDirPath: string, stage: string, studio: string)
 			allowed_types: allowedTypes,
 			message: `${violations.length} unit(s) have types not allowed in stage '${stage}' (allowed: ${allowedTypes.join(", ")}). ` +
 				violations.map(v => `${v.unit} is '${v.type}'`).join(", ") +
-				`. Fix the unit types or move them to the appropriate stage.`,
+				`.\n\nDo NOT simply move these units to another stage. For each violation:\n` +
+				`1. Extract useful insights into the stage's discovery knowledge (e.g., "we'll need X with these properties")\n` +
+				`2. Delete the violating unit file\n` +
+				`3. Create a new unit with the correct type for this stage's purpose\n\n` +
+				`Implementation details belong in knowledge documents for downstream stages, not in units here.`,
 		}
 	}
 	return null
