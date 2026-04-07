@@ -34,6 +34,9 @@ export function InlineComments({ htmlContent, location, onCommentsChange }: Prop
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [comments, setComments] = useState<InlineCommentEntry[]>([]);
   const [popoverPos, setPopoverPos] = useState<{ x: number; y: number } | null>(null);
+  const [popoverMode, setPopoverMode] = useState<"button" | "editing">("button");
+  const [popoverText, setPopoverText] = useState("");
+  const popoverTextareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingSelectionRef = useRef<{
     text: string;
     range: Range;
@@ -93,20 +96,19 @@ export function InlineComments({ htmlContent, location, onCommentsChange }: Prop
     }, 10);
   }
 
-  function handleAddComment() {
+  function handleShowCommentInput() {
+    setPopoverMode("editing");
+    setPopoverText("");
+    // Focus textarea after render
+    setTimeout(() => popoverTextareaRef.current?.focus(), 0);
+  }
+
+  function handleSaveComment() {
     const selData = pendingSelectionRef.current;
     if (!selData) return;
 
     const id = nextCommentId();
-
-    // Show a prompt for the comment text
-    const commentText = window.prompt("Add your comment:");
-    if (commentText === null) {
-      // User cancelled
-      setPopoverPos(null);
-      pendingSelectionRef.current = null;
-      return;
-    }
+    const commentText = popoverText.trim();
 
     // Wrap selection in highlight span
     let highlightEl: HTMLElement | null = document.createElement("span");
@@ -142,6 +144,15 @@ export function InlineComments({ htmlContent, location, onCommentsChange }: Prop
       return next;
     });
     setPopoverPos(null);
+    setPopoverMode("button");
+    setPopoverText("");
+    pendingSelectionRef.current = null;
+  }
+
+  function handleCancelComment() {
+    setPopoverPos(null);
+    setPopoverMode("button");
+    setPopoverText("");
     pendingSelectionRef.current = null;
   }
 
@@ -155,6 +166,8 @@ export function InlineComments({ htmlContent, location, onCommentsChange }: Prop
         !contentRef.current.contains(e.target as Node)
       ) {
         setPopoverPos(null);
+        setPopoverMode("button");
+        setPopoverText("");
       }
     }
     document.addEventListener("mousedown", handleDown);
@@ -216,24 +229,66 @@ export function InlineComments({ htmlContent, location, onCommentsChange }: Prop
         dangerouslySetInnerHTML={{ __html: htmlContent }}
       />
 
-      {/* Floating "Add Comment" button on text selection */}
+      {/* Floating "Add Comment" popover on text selection */}
       {popoverPos && (
         <div
           ref={popoverRef}
-          className="absolute z-50 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-600 rounded-lg shadow-lg px-3 py-1.5 cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors"
+          className="absolute z-50 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-600 rounded-lg shadow-lg"
           style={{ left: popoverPos.x, top: popoverPos.y }}
-          role="button"
-          tabIndex={0}
-          aria-label="Add comment on selected text"
-          onClick={handleAddComment}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              handleAddComment();
-            }
-          }}
         >
-          <span className="text-sm font-medium text-teal-600 dark:text-teal-400">+ Comment</span>
+          {popoverMode === "button" ? (
+            <div
+              className="px-3 py-1.5 cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors rounded-lg"
+              role="button"
+              tabIndex={0}
+              aria-label="Add comment on selected text"
+              onClick={handleShowCommentInput}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleShowCommentInput();
+                }
+              }}
+            >
+              <span className="text-sm font-medium text-teal-600 dark:text-teal-400">+ Comment</span>
+            </div>
+          ) : (
+            <div className="p-3 w-64">
+              <textarea
+                ref={popoverTextareaRef}
+                className="w-full min-h-[60px] p-2 border border-stone-300 dark:border-stone-600 rounded-md bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-y"
+                placeholder="Add your comment..."
+                value={popoverText}
+                onChange={(e) => setPopoverText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    handleSaveComment();
+                  }
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    handleCancelComment();
+                  }
+                }}
+              />
+              <div className="flex justify-end gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={handleCancelComment}
+                  className="px-3 py-1 text-xs font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveComment}
+                  className="px-3 py-1 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-md transition-colors"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

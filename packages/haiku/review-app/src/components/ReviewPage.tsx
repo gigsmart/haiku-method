@@ -120,6 +120,28 @@ export function ReviewPage({ session, sessionId, wsRef }: Props) {
     setAllPins((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
+  const handleEditComment = useCallback((id: string, newComment: string) => {
+    // Try inline comments first
+    const inlineMatch = inlineCommentsRef.current.find((c) => c.id === id);
+    if (inlineMatch) {
+      setAllInlineComments((prev) =>
+        prev.map((c) => {
+          if (c.id !== id) return c;
+          // Update the highlight element's aria-label too
+          if (c.highlightEl) {
+            c.highlightEl.setAttribute("aria-label", `Commented text: ${newComment || "(no comment)"}`);
+          }
+          return { ...c, comment: newComment };
+        })
+      );
+      return;
+    }
+    // Try pins
+    setAllPins((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, text: newComment } : p))
+    );
+  }, []);
+
   const handleClearAll = useCallback(() => {
     // Unwrap all inline highlights
     for (const c of inlineCommentsRef.current) {
@@ -181,6 +203,7 @@ export function ReviewPage({ session, sessionId, wsRef }: Props) {
       <CommentTray
         comments={trayComments}
         onDelete={handleDeleteComment}
+        onEdit={handleEditComment}
         onClearAll={handleClearAll}
         onScrollTo={handleScrollTo}
       />

@@ -10,6 +10,7 @@ export interface TrayComment {
 interface Props {
   comments: TrayComment[];
   onDelete: (id: string) => void;
+  onEdit?: (id: string, newComment: string) => void;
   onClearAll: () => void;
   onScrollTo: (id: string) => void;
 }
@@ -19,8 +20,10 @@ function truncate(text: string, max: number): string {
   return text.substring(0, max) + "...";
 }
 
-export function CommentTray({ comments, onDelete, onClearAll, onScrollTo }: Props) {
+export function CommentTray({ comments, onDelete, onEdit, onClearAll, onScrollTo }: Props) {
   const [expanded, setExpanded] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
 
   if (comments.length === 0) return null;
 
@@ -35,7 +38,7 @@ export function CommentTray({ comments, onDelete, onClearAll, onScrollTo }: Prop
                 <div
                   key={c.id}
                   className="flex items-start gap-3 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-stone-800/50 cursor-pointer group transition-colors"
-                  onClick={() => onScrollTo(c.id)}
+                  onClick={() => { if (editingId !== c.id) onScrollTo(c.id); }}
                 >
                   <span
                     className={`flex-shrink-0 w-5 h-5 rounded-full text-[10px] font-bold inline-flex items-center justify-center mt-0.5 ${
@@ -51,24 +54,92 @@ export function CommentTray({ comments, onDelete, onClearAll, onScrollTo }: Prop
                     <p className="text-xs text-stone-500 dark:text-stone-400 italic truncate">
                       &ldquo;{truncate(c.text, 60)}&rdquo;
                     </p>
-                    {c.comment && (
-                      <p className="text-sm text-stone-700 dark:text-stone-300 mt-0.5 line-clamp-2">
-                        {c.comment}
-                      </p>
+                    {editingId === c.id ? (
+                      <div className="mt-1" onClick={(e) => e.stopPropagation()}>
+                        <textarea
+                          className="w-full min-h-[48px] p-2 border border-stone-300 dark:border-stone-600 rounded-md bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-y"
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                              e.preventDefault();
+                              onEdit?.(c.id, editText.trim());
+                              setEditingId(null);
+                              setEditText("");
+                            }
+                            if (e.key === "Escape") {
+                              e.preventDefault();
+                              setEditingId(null);
+                              setEditText("");
+                            }
+                          }}
+                        />
+                        <div className="flex justify-end gap-2 mt-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingId(null);
+                              setEditText("");
+                            }}
+                            className="px-2 py-0.5 text-xs font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700 rounded transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEdit?.(c.id, editText.trim());
+                              setEditingId(null);
+                              setEditText("");
+                            }}
+                            className="px-2 py-0.5 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 rounded transition-colors"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      c.comment && (
+                        <p className="text-sm text-stone-700 dark:text-stone-300 mt-0.5 line-clamp-2">
+                          {c.comment}
+                        </p>
+                      )
                     )}
                   </div>
-                  <button
-                    type="button"
-                    className="flex-shrink-0 text-stone-400 hover:text-red-500 text-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label="Delete comment"
-                    title="Delete"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(c.id);
-                    }}
-                  >
-                    &times;
-                  </button>
+                  {editingId !== c.id && (
+                    <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {onEdit && (
+                        <button
+                          type="button"
+                          className="text-stone-400 hover:text-teal-500 text-sm"
+                          aria-label="Edit comment"
+                          title="Edit"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingId(c.id);
+                            setEditText(c.comment);
+                          }}
+                        >
+                          &#9998;
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="text-stone-400 hover:text-red-500 text-sm"
+                        aria-label="Delete comment"
+                        title="Delete"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(c.id);
+                        }}
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
