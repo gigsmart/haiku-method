@@ -203,10 +203,19 @@ function buildRunInstructions(
 			sections.push(`Elaboration mode: **${elaboration}**`)
 
 			if (stageDef) {
+				const unitTypes = (stageDef.data.unit_types as string[]) || []
 				sections.push(`### Stage Definition\n\n${stageDef.body}`)
 				if (stageDef.data.inputs) {
 					sections.push(`### Inputs\n\n${JSON.stringify(stageDef.data.inputs)}`)
 				}
+				sections.push(
+					`### Stage Scope Constraint\n\n` +
+					`**${stageDef.data.description || stage}**\n` +
+					(unitTypes.length > 0 ? `Allowed unit types: ${unitTypes.join(", ")}\n\n` : "\n") +
+					`CRITICAL: Units created during this elaboration MUST be scoped to this stage's purpose as defined above. ` +
+					`Do NOT create units that belong to a different stage. Each unit's work and completion criteria must be achievable within this stage's domain. ` +
+					`If you identify work that belongs to a downstream stage, note it in the discovery document — do NOT create a unit for it here.`,
+				)
 			}
 
 			// Load discovery definitions
