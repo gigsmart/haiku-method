@@ -838,9 +838,9 @@ setOpenReviewHandler(async (intentDirRel: string, reviewType: string) => {
 	Object.assign(session, { parsedIntent: intent, parsedUnits: units, parsedCriteria: criteria, parsedMermaid: mermaid })
 
 	// Parse stage states + knowledge
-	const stageStates = parseStageStates(intentDirAbs)
-	const knowledgeFiles = parseKnowledgeFiles(intentDirAbs)
-	const stageArtifacts = parseStageArtifacts(intentDirAbs)
+	const stageStates = await parseStageStates(intentDirAbs)
+	const knowledgeFiles = await parseKnowledgeFiles(intentDirAbs)
+	const stageArtifacts = await parseStageArtifacts(intentDirAbs)
 	Object.assign(session, { stageStates, knowledgeFiles, stageArtifacts })
 
 	session.html = renderReviewPage({ intent, units, criteria, reviewType: reviewType as "intent" | "unit", target: "", sessionId: session.session_id, mermaid, intentMockups: [], unitMockups: new Map() })
