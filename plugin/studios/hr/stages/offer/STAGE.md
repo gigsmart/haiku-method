@@ -25,6 +25,6 @@ Bad criteria examples:
 - "Compensation is fair"
 - "Candidate accepted"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Offer package exists with compensation analysis, complete offer letter, and negotiation parameters. Compensator has validated internal equity and market competitiveness. Closer has confirmed all approval workflows are complete and the offer is ready for candidate presentation.
+Offer package **MUST** exist with compensation analysis, complete offer letter, and negotiation parameters. Compensator **MUST** have validated internal equity and market competitiveness. Closer **MUST** have confirmed all approval workflows **MUST** be complete and the offer is ready for candidate presentation.

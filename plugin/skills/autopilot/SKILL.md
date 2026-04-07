@@ -32,14 +32,16 @@ AI: Done! PR #42 created. [summary]
 
 ---
 
-## Guardrails
+## Guardrails (RFC 2119)
+
+The key words "MUST", "MUST NOT", "SHALL", "SHALL NOT", "REQUIRED" in this section are to be interpreted as described in RFC 2119.
 
 Autopilot is designed for straightforward features. It pauses and returns control to the user whenever risk is detected:
 
-1. **Pause on blockers or ambiguity** - Never guess. If elaboration or execution encounters something unclear, stop and ask.
-2. **Pause if elaboration generates more than 5 units** - Confirm scope with the user before proceeding to execution. More than 5 units suggests the feature may be too large or complex for autopilot.
-3. **Pause before creating PR** - Always confirm with the user before delivery. Show a summary of what was built across all units.
-4. **No silent failures** - If any phase fails, stop immediately and report what happened. Do not attempt to recover autonomously from phase-level failures.
+1. **Pause on blockers or ambiguity** - The agent **MUST NOT** guess. If elaboration or execution encounters something unclear, the agent **MUST** stop and ask.
+2. **Pause if elaboration generates more than 5 units** - The agent **MUST** confirm scope with the user before proceeding to execution. More than 5 units suggests the feature may be too large or complex for autopilot.
+3. **Pause before creating PR** - The agent **MUST** confirm with the user before delivery. The agent **MUST** show a summary of what was built across all units.
+4. **No silent failures** - If any phase fails, the agent **MUST** stop immediately and report what happened. The agent **MUST NOT** attempt to recover autonomously from phase-level failures.
 
 ---
 
@@ -47,7 +49,7 @@ Autopilot is designed for straightforward features. It pauses and returns contro
 
 ### Step 0: Validate Input
 
-A feature description is **required**. If no argument is provided:
+A feature description is **REQUIRED**. If no argument is provided:
 
 ```
 ERROR: /haiku:autopilot requires a feature description.
@@ -56,7 +58,7 @@ Usage: /haiku:autopilot <feature description>
 Example: /haiku:autopilot Add user avatar upload to the profile page
 ```
 
-Do NOT proceed without a description. This is not an interactive discovery tool — use `/haiku:elaborate` for that.
+The agent **MUST NOT** proceed without a description. This is not an interactive discovery tool — use `/haiku:elaborate` for that.
 
 ### Step 1: Pre-flight Checks
 
@@ -64,7 +66,7 @@ Before starting the lifecycle:
 
 1. **Verify environment** - Must be in a git repository with a clean working tree (or stashable changes).
 2. **Check for in-progress intents** - If `.haiku/` contains an active intent, warn the user and confirm whether to continue with a new intent or resume the existing one.
-3. **Detect cowork mode** - Autopilot requires full CLI capabilities. Reject if `CLAUDE_CODE_IS_COWORK=1`.
+3. **Detect cowork mode** - Autopilot requires full CLI capabilities. The agent **MUST** reject if `CLAUDE_CODE_IS_COWORK=1`.
 
 ```bash
 if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then

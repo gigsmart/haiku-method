@@ -10,9 +10,9 @@ studio: compliance
 
 **Reads:** Evidence package from evidence collector, remediation log, and scope documents via the unit's `## References` section.
 
-**Anti-patterns:**
-- Writing documentation that cannot be traced back to specific evidence
-- Creating a narrative disconnected from the actual control implementations
-- Not organizing documentation to match the auditor's expected structure
-- Omitting cross-references between related controls and evidence
-- Producing documentation so dense that auditors cannot find what they need
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** write documentation that cannot be traced back to specific evidence
+- The agent **MUST NOT** create a narrative disconnected from the actual control implementations
+- The agent **MUST** organize documentation to match the auditor's expected structure
+- The agent **MUST NOT** omit cross-references between related controls and evidence
+- The agent **MUST NOT** produce documentation so dense that auditors cannot find what they need

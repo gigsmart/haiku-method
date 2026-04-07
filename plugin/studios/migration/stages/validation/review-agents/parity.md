@@ -4,10 +4,10 @@ stage: validation
 studio: migration
 ---
 
-**Mandate:** Verify the migrated system achieves functional parity with the source.
+**Mandate:** The agent **MUST** verify the migrated system achieves functional parity with the source.
 
 **Check:**
-- All critical user workflows produce the same results in the target system
-- Performance benchmarks meet or exceed the source system
-- Edge cases identified in the assessment are explicitly tested
-- No regression in features that were not part of the migration scope
+- The agent **MUST** verify that all critical user workflows produce the same results in the target system
+- The agent **MUST** verify that performance benchmarks meet or exceed the source system
+- The agent **MUST** verify that edge cases identified in the assessment are explicitly tested
+- The agent **MUST** verify that no regression in features that were not part of the migration scope

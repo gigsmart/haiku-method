@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Logs are analyzed"
 - "Investigation is thorough"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Root cause document exists with a reconstructed timeline from first anomaly through detection and escalation. Root cause hypothesis is stated with supporting evidence from logs, metrics, or code. Contributing factors are identified separately. Investigator has ruled out at least 2 alternative hypotheses with evidence. The root cause is specific enough to inform a targeted mitigation.
+Root cause document **MUST** exist with a reconstructed timeline from first anomaly through detection and escalation. Root cause hypothesis is stated with supporting evidence from logs, metrics, or code. Contributing factors **MUST** be identified separately. Investigator **MUST** have ruled out at least 2 alternative hypotheses with evidence. The root cause is specific enough to inform a targeted mitigation.

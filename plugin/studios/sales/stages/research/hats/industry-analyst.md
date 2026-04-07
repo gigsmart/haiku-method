@@ -10,9 +10,9 @@ studio: sales
 
 **Reads:** Prospect researcher's findings from the unit's `## References` section.
 
-**Anti-patterns:**
-- Producing generic industry reports not tailored to this specific prospect
-- Ignoring the competitive landscape the prospect operates in
-- Missing regulatory or compliance pressures that drive purchasing decisions
-- Not connecting industry trends to concrete sales opportunities
-- Treating all competitors as equal threats without analyzing relative positioning
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** produce generic industry reports not tailored to this specific prospect
+- The agent **MUST NOT** ignore the competitive landscape the prospect operates in
+- The agent **MUST NOT** miss regulatory or compliance pressures that drive purchasing decisions
+- The agent **MUST** connect industry trends to concrete sales opportunities
+- The agent **MUST NOT** treat all competitors as equal threats without analyzing relative positioning

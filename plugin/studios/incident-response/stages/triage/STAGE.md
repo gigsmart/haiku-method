@@ -21,6 +21,6 @@ Bad criteria examples:
 - "People are notified"
 - "Incident is triaged"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Incident brief exists with severity classification, blast radius assessment, and ownership assignment. Affected systems and user impact are documented. Initial communication has been sent to stakeholders. First-responder has confirmed the incident is reproducible and captured initial diagnostic data.
+Incident brief **MUST** exist with severity classification, blast radius assessment, and ownership assignment. Affected systems and user impact **MUST** be documented. Initial communication **MUST** **MUST** have been sent to stakeholders. First-responder **MUST** have confirmed the incident is reproducible and captured initial diagnostic data.

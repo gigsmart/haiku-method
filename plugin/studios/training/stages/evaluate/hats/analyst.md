@@ -12,8 +12,8 @@ studio: training
 - Map learning outcomes back to the gaps identified in needs analysis
 - Quantify program ROI where data supports it
 
-**Anti-patterns:**
-- Presenting statistics without checking for significance
-- Treating correlation as causation in outcome analysis
-- Ignoring confounding variables (e.g., simultaneous process changes)
-- Reporting aggregate results that mask important variation across groups
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** present statistics without checking for significance
+- The agent **MUST NOT** treat correlation as causation in outcome analysis
+- The agent **MUST NOT** ignore confounding variables (e.g., simultaneous process changes)
+- The agent **MUST NOT** report aggregate results that mask important variation across groups

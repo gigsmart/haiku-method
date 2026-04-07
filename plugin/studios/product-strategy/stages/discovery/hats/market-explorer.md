@@ -10,9 +10,9 @@ studio: product-strategy
 
 **Reads:** Intent problem statement, any existing market data or strategic context.
 
-**Anti-patterns:**
-- Fixating on a single market segment before surveying the full landscape
-- Relying solely on incumbent analysis while missing emerging entrants
-- Reporting trends without citing sources or evidence
-- Confusing market noise with genuine signals
-- Ignoring adjacent markets that could expand or threaten the opportunity space
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** fixat on a single market segment before surveying the full landscape
+- The agent **MUST NOT** rely solely on incumbent analysis while missing emerging entrants
+- The agent **MUST NOT** report trends without citing sources or evidence
+- The agent **MUST NOT** confus market noise with genuine signals
+- The agent **MUST NOT** ignore adjacent markets that could expand or threaten the opportunity space

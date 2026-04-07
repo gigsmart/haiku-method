@@ -10,9 +10,9 @@ studio: data-pipeline
 
 **Reads:** Validation report, transformation code, extraction jobs, infrastructure requirements from the intent.
 
-**Anti-patterns:**
-- Deploying without configuring retries and timeout policies
-- Using hardcoded schedules without considering upstream dependency completion
-- Not setting resource limits (memory, CPU, parallelism) for pipeline stages
-- Deploying to production without a rollback plan for the first run
-- Skipping integration testing of the full DAG in a staging environment
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** deploy without configuring retries and timeout policies
+- The agent **MUST NOT** use hardcoded schedules without considering upstream dependency completion
+- The agent **MUST** set resource limits (memory, CPU, parallelism) for pipeline stages
+- The agent **MUST NOT** deploy to production without a rollback plan for the first run
+- The agent **MUST NOT** skip integration testing of the full DAG in a staging environment

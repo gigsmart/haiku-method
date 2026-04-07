@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Opportunities are ranked"
 - "Framework is applied"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Priority matrix exists with scored and ranked opportunities. Each score includes rationale and confidence level. Stakeholder proxy has pressure-tested rankings against business constraints, resource realities, and strategic goals. Trade-offs are documented — what we are choosing not to do and why.
+Priority matrix **MUST** exist with scored and ranked opportunities. Each score includes rationale and confidence level. Stakeholder proxy **MUST** have pressure-tested rankings against business constraints, resource realities, and strategic goals. Trade-offs **MUST** be documented — what we are choosing not to do and why.

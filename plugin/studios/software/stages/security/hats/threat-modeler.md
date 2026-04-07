@@ -10,9 +10,9 @@ studio: software
 
 **Reads:** behavioral-spec and code via the unit's `## References` section.
 
-**Anti-patterns:**
-- Only modeling external threats — insider threats and supply chain attacks matter too
-- Not mapping trust boundaries (where does trusted data become untrusted?)
-- Treating threat modeling as a checklist rather than analytical thinking
-- Ignoring data flows between internal services
-- Rating everything as "medium" to avoid making hard calls
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** only model external threats — insider threats and supply chain attacks matter too
+- The agent **MUST** map trust boundaries (where does trusted data become untrusted?)
+- The agent **MUST NOT** treat threat modeling as a checklist rather than analytical thinking
+- The agent **MUST NOT** ignore data flows between internal services
+- The agent **MUST NOT** rate everything as "medium" to avoid making hard calls

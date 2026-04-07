@@ -10,9 +10,9 @@ studio: documentation
 
 **Reads:** Draft documentation, project glossary or terminology reference via the unit's `## References` section.
 
-**Anti-patterns:**
-- Rewriting the author's voice instead of clarifying their intent
-- Prioritizing grammatical perfection over technical accuracy
-- Ignoring inconsistent terminology because each instance is individually clear
-- Making style changes that alter technical meaning
-- Not checking that headings, labels, and cross-references match
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** rewrite the author's voice instead of clarifying their intent
+- The agent **MUST NOT** prioritize grammatical perfection over technical accuracy
+- The agent **MUST NOT** ignore inconsistent terminology because each instance is individually clear
+- The agent **MUST NOT** make style changes that alter technical meaning
+- The agent **MUST** check that headings, labels, and cross-references match

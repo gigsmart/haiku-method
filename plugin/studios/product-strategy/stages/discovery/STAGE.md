@@ -21,6 +21,6 @@ Bad criteria examples:
 - "Competitors are listed"
 - "Opportunities are identified"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Market landscape document exists with segment analysis, competitive positioning map, and opportunity space assessment. All market claims cite sources with dates. Competitive analyst has identified positioning gaps and potential differentiation vectors. Opportunity space is mapped with evidence-backed sizing.
+Market landscape document **MUST** exist with segment analysis, competitive positioning map, and opportunity space assessment. All market claims cite sources with dates. Competitive analyst **MUST** have identified positioning gaps and potential differentiation vectors. Opportunity space is mapped with evidence-backed sizing.

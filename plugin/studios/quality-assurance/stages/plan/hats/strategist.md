@@ -12,8 +12,8 @@ studio: quality-assurance
 - Select test approaches and methodologies for each quality dimension
 - Define entry and exit criteria for each test phase
 
-**Anti-patterns:**
-- Creating a strategy that tries to test everything equally rather than prioritizing by risk
-- Defining strategy without consulting stakeholders on quality priorities
-- Selecting test approaches based on team familiarity rather than effectiveness
-- Not defining measurable exit criteria for each phase
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** create a strategy that tries to test everything equally rather than prioritizing by risk
+- The agent **MUST NOT** define strategy without consulting stakeholders on quality priorities
+- The agent **MUST NOT** select test approaches based on team familiarity rather than effectiveness
+- The agent **MUST** define measurable exit criteria for each phase

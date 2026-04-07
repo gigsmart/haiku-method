@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Handoff is done"
 - "Learnings are captured"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Deal execution is complete with signed agreements documented. Handoff package exists with full prospect context, relationship history, agreed terms, and implementation expectations for customer success. Win/loss analysis captures key learnings for future deals.
+Deal execution **MUST** be complete with signed agreements documented. Handoff package **MUST** exist with full prospect context, relationship history, agreed terms, and implementation expectations for customer success. Win/loss analysis captures key learnings for future deals.

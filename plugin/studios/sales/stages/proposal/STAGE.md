@@ -27,6 +27,6 @@ Bad criteria examples:
 - "Business case looks compelling"
 - "Demo is ready"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Proposal document exists with solution tailored to the prospect's specific pain points, business case with quantified ROI, and implementation approach. Solution architect has validated technical feasibility and mapped the solution to the prospect's environment. All deliverables are ready for prospect presentation.
+Proposal document **MUST** exist with solution tailored to the prospect's specific pain points, business case with quantified ROI, and implementation approach. Solution architect **MUST** have validated technical feasibility and mapped the solution to the prospect's environment. All deliverables are ready for prospect presentation.

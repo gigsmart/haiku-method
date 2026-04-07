@@ -12,8 +12,8 @@ studio: executive-strategy
 - Model resource requirements (capital, talent, time) for each option
 - Identify the key assumptions that most affect each option's viability
 
-**Anti-patterns:**
-- Building overly complex models that obscure key drivers
-- Presenting single-point projections without sensitivity ranges
-- Using inconsistent assumptions across options, making comparison unfair
-- Modeling only financial outcomes without considering operational feasibility
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** build overly complex models that obscure key drivers
+- The agent **MUST NOT** present single-point projections without sensitivity ranges
+- The agent **MUST NOT** use inconsistent assumptions across options, making comparison unfair
+- The agent **MUST NOT** model only financial outcomes without considering operational feasibility

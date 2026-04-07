@@ -4,10 +4,10 @@ stage: renewal
 studio: customer-success
 ---
 
-**Mandate:** Verify the renewal strategy accounts for all risk factors.
+**Mandate:** The agent **MUST** verify the renewal strategy accounts for all risk factors.
 
 **Check:**
-- Churn risk signals are identified and addressed in the renewal approach
-- Competitive threats are assessed with specific intelligence, not assumptions
-- Pricing strategy reflects the value delivered and market conditions
-- Executive sponsor engagement is confirmed, not assumed from past interactions
+- The agent **MUST** verify that churn risk signals are identified and addressed in the renewal approach
+- The agent **MUST** verify that competitive threats are assessed with specific intelligence, not assumptions
+- The agent **MUST** verify that pricing strategy reflects the value delivered and market conditions
+- The agent **MUST** verify that executive sponsor engagement is confirmed, not assumed from past interactions

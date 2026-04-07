@@ -10,9 +10,9 @@ studio: customer-success
 
 **Reads:** Health scorecard, usage report via the unit's `## References` section, historical churn patterns.
 
-**Anti-patterns:**
-- Only identifying risks after the customer has already escalated
-- Listing risks without severity ranking or mitigation plans
-- Treating all risks as equally urgent instead of triaging by impact and reversibility
-- Not distinguishing between leading indicators (predictive) and lagging indicators (already happened)
-- Creating mitigation plans without measurable success criteria or owners
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** only identify risks after the customer has already escalated
+- The agent **MUST NOT** list risks without severity ranking or mitigation plans
+- The agent **MUST NOT** treat all risks as equally urgent instead of triaging by impact and reversibility
+- The agent **MUST** distinguish between leading indicators (predictive) and lagging indicators (already happened)
+- The agent **MUST NOT** create mitigation plans without measurable success criteria or owners

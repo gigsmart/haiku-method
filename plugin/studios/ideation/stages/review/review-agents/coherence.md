@@ -4,10 +4,10 @@ stage: review
 studio: ideation
 ---
 
-**Mandate:** Verify the deliverable is internally consistent and presents a unified narrative.
+**Mandate:** The agent **MUST** verify the deliverable is internally consistent and presents a unified narrative.
 
 **Check:**
-- Terminology is used consistently throughout
-- Recommendations do not contradict each other
-- The executive summary accurately reflects the detailed content
-- Transitions between sections are logical
+- The agent **MUST** verify that terminology is used consistently throughout
+- The agent **MUST** verify that recommendations do not contradict each other
+- The agent **MUST** verify that the executive summary accurately reflects the detailed content
+- The agent **MUST** verify that transitions between sections are logical

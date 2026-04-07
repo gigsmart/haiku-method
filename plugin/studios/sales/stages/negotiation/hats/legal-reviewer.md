@@ -10,9 +10,9 @@ studio: sales
 
 **Reads:** Negotiator's terms and proposal-doc via the unit's `## References` section.
 
-**Anti-patterns:**
-- Treating all contract changes as equal risk without prioritizing
-- Rejecting standard prospect terms that pose no material risk
-- Not distinguishing between legal risk and commercial risk
-- Reviewing only the redlines without reading the full contract context
-- Escalating every issue instead of resolving routine items within authority
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** treat all contract changes as equal risk without prioritizing
+- The agent **MUST NOT** reject standard prospect terms that pose no material risk
+- The agent **MUST** distinguish between legal risk and commercial risk
+- The agent **MUST NOT** review only the redlines without reading the full contract context
+- The agent **MUST NOT** escalate every issue instead of resolving routine items within authority

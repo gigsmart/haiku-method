@@ -12,8 +12,8 @@ studio: training
 - Validate that the depth of coverage is appropriate for the target audience
 - Provide examples, case studies, or scenarios from real practice
 
-**Anti-patterns:**
-- Overloading the curriculum with expert-level detail inappropriate for the audience
-- Validating content accuracy without considering whether it serves the learning objectives
-- Providing theoretical accuracy without practical relevance
-- Not flagging content that is outdated or reflects superseded practices
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** overloadd the curriculum with expert-level detail inappropriate for the audience
+- The agent **MUST NOT** validate content accuracy without considering whether it serves the learning objectives
+- The agent **MUST NOT** provide theoretical accuracy without practical relevance
+- The agent **MUST** flag content that is outdated or reflects superseded practices

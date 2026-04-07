@@ -10,9 +10,9 @@ studio: data-pipeline
 
 **Reads:** Pipeline engineer's deployment, SLA requirements from discovery, validation report.
 
-**Anti-patterns:**
-- Approving deployment without verifying alert routing reaches the right on-call channel
-- Accepting monitoring that covers only success cases, not failure and degradation modes
-- Not verifying that runbooks are actionable by someone unfamiliar with the pipeline internals
-- Ignoring data freshness monitoring in favor of only pipeline execution monitoring
-- Treating operational readiness as a checkbox rather than a genuine safety review
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** approve deployment without verifying alert routing reaches the right on-call channel
+- The agent **MUST NOT** accept monitoring that covers only success cases, not failure and degradation modes
+- The agent **MUST** verify that runbooks are actionable by someone unfamiliar with the pipeline internals
+- The agent **MUST NOT** ignore data freshness monitoring in favor of only pipeline execution monitoring
+- The agent **MUST NOT** treat operational readiness as a checkbox rather than a genuine safety review

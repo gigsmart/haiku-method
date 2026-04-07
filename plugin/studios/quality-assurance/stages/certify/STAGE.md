@@ -27,6 +27,6 @@ Bad criteria examples:
 - "Release is ready"
 - "Sign-off is obtained"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Certification report exists with all exit criteria evaluated, known issues documented with risk acceptance, and release readiness assessment complete. Certifier has confirmed the product meets the quality bar defined in the test strategy. Reviewer has validated the certification evidence and approved or rejected release readiness.
+Certification report **MUST** exist with all exit criteria evaluated, known issues documented with risk acceptance, and release readiness assessment complete. Certifier **MUST** have confirmed the product meets the quality bar defined in the test strategy. Reviewer **MUST** have validated the certification evidence and approved or rejected release readiness.

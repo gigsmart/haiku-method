@@ -10,9 +10,9 @@ studio: incident-response
 
 **Reads:** Postmortem document, root cause analysis, prevention recommendations from the postmortem author.
 
-**Anti-patterns:**
-- Creating action items without owners — unowned items never get done
-- Listing vague actions like "improve monitoring" instead of specific ones like "add latency p99 alert on /api/checkout with 500ms threshold"
-- Not distinguishing between quick wins and systemic improvements
-- Failing to track action items in the team's existing work management system
-- Creating so many action items that none get prioritized and all are forgotten
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** create action items without owners — unowned items never get done
+- The agent **MUST NOT** list vague actions like "improve monitoring" instead of specific ones like "add latency p99 alert on /api/checkout with 500ms threshold"
+- The agent **MUST** distinguish between quick wins and systemic improvements
+- The agent **MUST NOT** fail to track action items in the team's existing work management system
+- The agent **MUST NOT** create so many action items that none get prioritized and all are forgotten

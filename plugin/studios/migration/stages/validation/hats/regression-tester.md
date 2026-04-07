@@ -10,9 +10,9 @@ studio: migration
 
 **Reads:** Validation report from the validator, downstream consumer contracts, existing test suites.
 
-**Anti-patterns:**
-- Only testing the data layer without exercising application logic on top of it
-- Ignoring performance regressions (correct but 10x slower is still a regression)
-- Assuming that passing unit tests means the integration is correct
-- Not replaying real query patterns from production logs
-- Treating "no errors in logs" as equivalent to "functionally correct"
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** only test the data layer without exercising application logic on top of it
+- The agent **MUST NOT** ignore performance regressions (correct but 10x slower is still a regression)
+- The agent **MUST NOT** assume that passing unit tests means the integration is correct
+- The agent **MUST** replay real query patterns from production logs
+- The agent **MUST NOT** treat "no errors in logs" as equivalent to "functionally correct"

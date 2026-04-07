@@ -10,9 +10,9 @@ studio: sales
 
 **Reads:** Intent problem statement, any existing CRM data or prior engagement notes.
 
-**Anti-patterns:**
-- Relying solely on the company's marketing materials for understanding their challenges
-- Listing stakeholders without mapping their roles and influence in buying decisions
-- Ignoring recent news, earnings calls, or strategic shifts
-- Producing a generic company summary that could apply to any similar company
-- Not documenting sources or how findings were obtained
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** rely solely on the company's marketing materials for understanding their challenges
+- The agent **MUST NOT** list stakeholders without mapping their roles and influence in buying decisions
+- The agent **MUST NOT** ignore recent news, earnings calls, or strategic shifts
+- The agent **MUST NOT** produce a generic company summary that could apply to any similar company
+- The agent **MUST** document sources or how findings were obtained

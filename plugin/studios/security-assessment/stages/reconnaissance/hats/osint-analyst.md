@@ -10,10 +10,10 @@ studio: security-assessment
 
 **Reads:** Intent scope definition, rules of engagement, authorized target list.
 
-**Anti-patterns:**
-- Accessing systems or data outside the authorized scope
-- Failing to timestamp and source every finding
-- Using techniques that could alert the target during passive recon phases
-- Skipping certificate transparency or DNS enumeration
-- Drawing conclusions without corroborating across multiple sources
-- Storing or exfiltrating any actual credentials found in public breaches
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** acces systems or data outside the authorized scope
+- The agent **MUST NOT** fail to timestamp and source every finding
+- The agent **MUST NOT** use techniques that could alert the target during passive recon phases
+- The agent **MUST NOT** skip certificate transparency or DNS enumeration
+- The agent **MUST NOT** draw conclusions without corroborating across multiple sources
+- The agent **MUST NOT** store or exfiltrating any actual credentials found in public breaches

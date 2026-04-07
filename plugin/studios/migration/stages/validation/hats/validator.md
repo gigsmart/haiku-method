@@ -10,9 +10,9 @@ studio: migration
 
 **Reads:** Migration artifacts, source data for comparison, mapping specification for expected transformations.
 
-**Anti-patterns:**
-- Declaring validation complete after checking only row counts
-- Sampling records non-randomly (e.g., only the first 100 rows)
-- Ignoring records that were intentionally dropped or transformed — they still need accounting
-- Treating zero errors as proof of correctness without verifying test coverage
-- Validating against the mapping spec but not against actual source data
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** declare validation complete after checking only row counts
+- The agent **MUST NOT** sampl records non-randomly (e.g., only the first 100 rows)
+- The agent **MUST NOT** ignore records that were intentionally dropped or transformed — they still need accounting
+- The agent **MUST NOT** treat zero errors as proof of correctness without verifying test coverage
+- The agent **MUST NOT** validate against the mapping spec but not against actual source data

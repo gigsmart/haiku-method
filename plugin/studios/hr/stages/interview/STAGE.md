@@ -25,6 +25,6 @@ Bad criteria examples:
 - "Candidates are evaluated"
 - "Scorecard is filled out"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Interview scorecards exist for all candidates with structured assessments across defined competency dimensions. Evaluator has synthesized interviewer feedback into a comparative ranking with hire recommendations. Each recommendation is supported by specific behavioral evidence from interviews.
+Interview scorecards exist for all candidates with structured assessments across defined competency dimensions. Evaluator **MUST** have synthesized interviewer feedback into a comparative ranking with hire recommendations. Each recommendation is supported by specific behavioral evidence from interviews.

@@ -12,8 +12,8 @@ studio: hr
 - Set compensation expectations aligned with budget and market data
 - Establish the hiring timeline and urgency level
 
-**Anti-patterns:**
-- Defining the role as a clone of the last person in the seat without reassessing needs
-- Listing requirements that are aspirational rather than actually needed for success
-- Setting compensation ranges without market benchmarking
-- Not involving the team in defining what the role actually needs
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** define the role as a clone of the last person in the seat without reassessing needs
+- The agent **MUST NOT** list requirements that are aspirational rather than actually needed for success
+- The agent **MUST NOT** set compensation ranges without market benchmarking
+- The agent **MUST** involv the team in defining what the role actually needs

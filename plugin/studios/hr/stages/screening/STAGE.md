@@ -25,6 +25,6 @@ Bad criteria examples:
 - "Top candidates are identified"
 - "Resumes are reviewed"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Screening report exists with each candidate scored against role requirements, ranked by fit, and annotated with strengths and concerns. Assessor has validated scoring consistency across candidates. Screener has confirmed all pipeline candidates were evaluated against the same criteria.
+Screening report **MUST** exist with each candidate scored against role requirements, ranked by fit, and annotated with strengths and concerns. Assessor **MUST** have validated scoring consistency across candidates. Screener **MUST** have confirmed all pipeline candidates were evaluated against the same criteria.

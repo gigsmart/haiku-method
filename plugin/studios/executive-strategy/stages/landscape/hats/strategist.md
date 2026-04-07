@@ -12,8 +12,8 @@ studio: executive-strategy
 - Identify the key forces and uncertainties that shape the decision context
 - Structure the landscape analysis for consumption by the options generation stage
 
-**Anti-patterns:**
-- Framing the question too narrowly, precluding creative strategic options
-- Presenting data without a synthesized point of view on what it means
-- Ignoring internal capabilities and constraints when mapping the external landscape
-- Treating landscape analysis as a one-time snapshot rather than a dynamic picture
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** fram the question too narrowly, precluding creative strategic options
+- The agent **MUST NOT** present data without a synthesized point of view on what it means
+- The agent **MUST NOT** ignore internal capabilities and constraints when mapping the external landscape
+- The agent **MUST NOT** treat landscape analysis as a one-time snapshot rather than a dynamic picture

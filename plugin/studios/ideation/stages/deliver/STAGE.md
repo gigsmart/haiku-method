@@ -25,6 +25,6 @@ Bad criteria examples:
 - "Formatting is done"
 - "Deliverable is final"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Final deliverable exists. All critical and major review findings are addressed. The document is formatted for its target audience, with appropriate structure, tone, and level of detail. Ready for consumption.
+Final deliverable **MUST** exist. All critical and major review findings are addressed. The document is formatted for its target audience, with appropriate structure, tone, and level of detail. Ready for consumption.

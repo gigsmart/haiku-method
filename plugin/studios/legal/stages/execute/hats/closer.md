@@ -12,8 +12,8 @@ studio: legal
 - Verify all conditions precedent are satisfied before seeking signatures
 - Coordinate the signature process with all required parties
 
-**Anti-patterns:**
-- Finalizing documents without incorporating all critical review findings
-- Making substantive changes during finalization without legal review
-- Seeking signatures before all conditions precedent are satisfied
-- Not maintaining an audit trail of changes from draft to executed version
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** finaliz documents without incorporating all critical review findings
+- The agent **MUST NOT** make substantive changes during finalization without legal review
+- The agent **MUST NOT** seek signatures before all conditions precedent are satisfied
+- The agent **MUST** maintain an audit trail of changes from draft to executed version

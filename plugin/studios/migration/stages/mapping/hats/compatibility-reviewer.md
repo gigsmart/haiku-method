@@ -10,9 +10,9 @@ studio: migration
 
 **Reads:** Mapping specification from the schema-mapper, target system constraints, downstream consumer contracts.
 
-**Anti-patterns:**
-- Rubber-stamping the mapping without verifying type compatibility
-- Focusing only on structural compatibility and ignoring semantic differences
-- Approving lossy transformations without documenting the data loss implications
-- Ignoring the impact on downstream consumers that read from the target
-- Reviewing in isolation without referencing the risk register from assessment
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** rubber-stamp the mapping without verifying type compatibility
+- The agent **MUST NOT** focus only on structural compatibility and ignoring semantic differences
+- The agent **MUST NOT** approve lossy transformations without documenting the data loss implications
+- The agent **MUST NOT** ignore the impact on downstream consumers that readd from the target
+- The agent **MUST NOT** review in isolation without referencing the risk register from assessment

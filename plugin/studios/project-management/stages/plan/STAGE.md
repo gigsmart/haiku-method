@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Resources are assigned"
 - "Timeline is set"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Project plan exists with work breakdown, resource allocations, dependency map, and critical path identified. Planner has confirmed all scope items from the charter are represented in the work breakdown. Estimator has validated effort estimates using historical data or expert judgment with documented assumptions.
+Project plan **MUST** exist with work breakdown, resource allocations, dependency map, and critical path identified. Planner **MUST** have confirmed all scope items from the charter are represented in the work breakdown. Estimator **MUST** have validated effort estimates using historical data or expert judgment with documented assumptions.

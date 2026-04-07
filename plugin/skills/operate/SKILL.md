@@ -390,7 +390,7 @@ For `owner: human` operations:
    # Write updated JSON back to operation-status.json
    ```
 
-**Done.** Stop here for human operation mode. Do NOT mark as completed.
+**Done.** Stop here for human operation mode. The agent **MUST NOT** mark as completed.
 
 ### Step 5: Deploy Mode
 
@@ -727,7 +727,7 @@ When invoked as `/haiku:operate {intent} --teardown`:
    Proceed with teardown? (yes/no)
    ```
 
-   **Wait for user confirmation.** If denied, stop.
+   **The agent **MUST** wait for user confirmation.** If denied, the agent **MUST** stop.
 
 2. **Load status** to find all deployed operations:
    ```bash

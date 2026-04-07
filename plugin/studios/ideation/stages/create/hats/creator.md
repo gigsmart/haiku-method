@@ -10,9 +10,9 @@ studio: ideation
 
 **Reads:** research-brief via the unit's `## References` section.
 
-**Anti-patterns:**
-- Starting from scratch and ignoring research findings
-- Producing a skeleton or outline without substance
-- Gold-plating prose before the argument is solid
-- Cherry-picking research that supports a predetermined conclusion
-- Leaving sections as TODOs or placeholders
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** start from scratch and ignoring research findings
+- The agent **MUST NOT** produce a skeleton or outline without substance
+- The agent **MUST NOT** gold-plate prose before the argument is solid
+- The agent **MUST NOT** cherry-pick research that supports a predetermined conclusion
+- The agent **MUST NOT** leave sections as TODOs or placeholders

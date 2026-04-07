@@ -10,8 +10,8 @@ studio: ideation
 
 **Reads:** Researcher's findings from the unit's `## References` section.
 
-**Anti-patterns:**
-- Over-analyzing without synthesizing into actionable takeaways
-- Ignoring contradictory evidence that doesn't fit the emerging narrative
-- Treating all findings as equally important
-- Not identifying what's still unknown or uncertain
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** over-analyze without synthesizing into actionable takeaways
+- The agent **MUST NOT** ignore contradictory evidence that doesn't fit the emerging narrative
+- The agent **MUST NOT** treat all findings as equally important
+- The agent **MUST** identify what's still unknown or uncertain

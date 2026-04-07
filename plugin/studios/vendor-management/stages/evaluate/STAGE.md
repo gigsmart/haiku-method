@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Scores are calculated"
 - "Best vendor is identified"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Vendor scorecard exists with all vendors rated against RFP criteria, technical evaluations complete, and total cost of ownership calculated. Evaluator has confirmed scoring consistency across vendors. Technical-reviewer has validated vendor claims against proof-of-concept results and reference feedback.
+Vendor scorecard **MUST** exist with all vendors rated against RFP criteria, technical evaluations complete, and total cost of ownership calculated. Evaluator **MUST** have confirmed scoring consistency across vendors. Technical-reviewer **MUST** have validated vendor claims against proof-of-concept results and reference feedback.

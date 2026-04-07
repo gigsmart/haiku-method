@@ -25,6 +25,6 @@ Bad criteria examples:
 - "Sessions are complete"
 - "Logistics are handled"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Delivery log exists with session records, attendance data, and facilitator observations. Facilitator has documented learner engagement patterns and content improvement recommendations. Coordinator has confirmed all sessions were delivered as planned with logistics issues resolved.
+Delivery log **MUST** exist with session records, attendance data, and facilitator observations. Facilitator **MUST** have documented learner engagement patterns and content improvement recommendations. Coordinator **MUST** have confirmed all sessions were delivered as planned with logistics issues resolved.

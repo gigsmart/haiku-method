@@ -10,9 +10,9 @@ studio: data-pipeline
 
 **Reads:** Modeled data from transformation, source catalog from discovery, business rules from the intent.
 
-**Anti-patterns:**
-- Writing only "happy path" tests without edge case coverage
-- Checking row counts without also checking for duplicates
-- Validating schema structure but not actual data values
-- Using overly loose thresholds that mask real quality issues
-- Not distinguishing between blocking failures and non-blocking warnings
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** write only "happy path" tests without edge case coverage
+- The agent **MUST NOT** check row counts without also checking for duplicates
+- The agent **MUST NOT** validate schema structure but not actual data values
+- The agent **MUST NOT** use overly loose thresholds that mask real quality issues
+- The agent **MUST** distinguish between blocking failures and non-blocking warnings

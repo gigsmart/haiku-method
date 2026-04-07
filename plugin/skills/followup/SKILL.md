@@ -43,10 +43,10 @@ AI: Created new intent fix-api-error-handling (iterates_on: my-feature).
     Transitioning to /haiku:elaborate...
 ```
 
-**What this does NOT do:**
-- Modify the previous intent or its units
-- Add units to completed intents
-- Re-elaborate the original intent
+**What this **MUST NOT** do:**
+- The agent **MUST NOT** modify the previous intent or its units
+- The agent **MUST NOT** add units to completed intents
+- The agent **MUST NOT** re-elaborate the original intent
 
 **Key behavior:** The new intent is fully independent — it has its own slug, its own units, its own worktree. The `iterates_on` field is a reference link that tells the elaboration phase to load prior context automatically.
 
@@ -62,7 +62,7 @@ if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
 fi
 ```
 
-If `CLAUDE_CODE_IS_COWORK=1`, stop immediately with the message above. Do NOT proceed.
+If `CLAUDE_CODE_IS_COWORK=1`, the agent **MUST** stop immediately with the message above. The agent **MUST NOT** proceed.
 
 ### Step 1: Find Previous Intent
 
@@ -257,7 +257,7 @@ This intent iterates on **{previous title}** (`{previous-slug}`).
 {Any additional context from the user's description or the review feedback}
 ```
 
-**Do NOT create units yet.** The elaboration phase handles unit elaboration.
+**The agent **MUST NOT** create units yet.** The elaboration phase handles unit elaboration.
 
 ```bash
 # Telemetry is tracked automatically by the MCP server

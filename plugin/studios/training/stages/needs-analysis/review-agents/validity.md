@@ -4,10 +4,10 @@ stage: needs-analysis
 studio: training
 ---
 
-**Mandate:** Verify needs assessment is data-driven and training is the appropriate intervention.
+**Mandate:** The agent **MUST** verify needs assessment is data-driven and training is the appropriate intervention.
 
 **Check:**
-- Skills gaps are quantified using data, not assumptions
-- Training is confirmed as the right intervention (vs process change, tooling, or hiring)
-- Learning objectives are specific, observable, and aligned to business goals
-- Target audience is accurately profiled with relevant demographics and constraints
+- The agent **MUST** verify that skills gaps are quantified using data, not assumptions
+- The agent **MUST** verify that training is confirmed as the right intervention (vs process change, tooling, or hiring)
+- The agent **MUST** verify that learning objectives are specific, observable, and aligned to business goals
+- The agent **MUST** verify that target audience is accurately profiled with relevant demographics and constraints

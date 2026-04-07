@@ -21,6 +21,6 @@ Bad criteria examples:
 - "Plan is ready"
 - "Coverage is planned"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Test strategy exists with scope defined, risk-based priorities established, and resource requirements documented. Strategist has confirmed the approach covers all critical quality dimensions. Planner has validated resource availability and sequencing is feasible within constraints.
+Test strategy **MUST** exist with scope defined, risk-based priorities established, and resource requirements documented. Strategist **MUST** have confirmed the approach **MUST** cover all critical quality dimensions. Planner **MUST** have validated resource availability and sequencing is feasible within constraints.

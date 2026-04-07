@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Performance is analyzed"
 - "Recommendations are provided"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Performance report exists with KPI actuals vs. targets, channel-level breakdown, and audience segment analysis. Analyst has identified what worked, what didn't, and why. Report writer has packaged findings into actionable recommendations with prioritization for future campaigns.
+Performance report **MUST** exist with KPI actuals vs. targets, channel-level breakdown, and audience segment analysis. Analyst **MUST** have identified what worked, what didn't, and why. Report writer **MUST** have packaged findings into actionable recommendations with prioritization for future campaigns.

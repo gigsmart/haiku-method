@@ -10,9 +10,9 @@ studio: marketing
 
 **Reads:** assets via the unit's `## References` section.
 
-**Anti-patterns:**
-- Launching assets without verifying tracking and attribution are active
-- Ignoring channel dependencies that create broken user journeys
-- Setting arbitrary launch dates without accounting for approval workflows
-- Not having a rollback plan for underperforming or problematic assets
-- Treating launch as a single event rather than a sequenced activation
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** launch assets without verifying tracking and attribution are active
+- The agent **MUST NOT** ignore channel dependencies that create broken user journeys
+- The agent **MUST NOT** set arbitrary launch dates without accounting for approval workflows
+- The agent **MUST** have a rollback plan for underperforming or problematic assets
+- The agent **MUST NOT** treat launch as a single event rather than a sequenced activation

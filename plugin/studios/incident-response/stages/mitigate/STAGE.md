@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Fix is applied"
 - "Things are back to normal"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Mitigation log documents exactly what was done — rollback version, feature flag toggled, scaling action, or hotfix applied — with timestamps. Verifier has confirmed the user-facing impact has stopped using the same signals that detected the incident. A rollback plan for the mitigation itself is documented. Any known side effects of the mitigation are called out.
+Mitigation log documents exactly what was done — rollback version, feature flag toggled, scaling action, or hotfix applied — with timestamps. Verifier **MUST** have confirmed the user-facing impact **MUST** have stopped using the same signals that detected the incident. A rollback plan for the mitigation itself **MUST** be documented. Any known side effects of the mitigation are called out.

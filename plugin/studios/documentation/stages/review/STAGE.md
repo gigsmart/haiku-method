@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Content is accurate"
 - "Feedback is given"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Review report exists with findings categorized by type (accuracy, clarity, completeness, consistency). Each finding includes severity, the specific problem, and a concrete fix. The subject-matter-expert has validated technical correctness. Report includes a verdict: approve, revise, or reject.
+Review report **MUST** exist with findings categorized by type (accuracy, clarity, completeness, consistency). Each finding includes severity, the specific problem, and a concrete fix. The subject-matter-expert **MUST** have validated technical correctness. Report includes a verdict: approve, revise, or reject.

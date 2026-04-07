@@ -10,9 +10,9 @@ studio: product-strategy
 
 **Reads:** User researcher's findings from the unit's `## References` section.
 
-**Anti-patterns:**
-- Averaging across segments instead of preserving meaningful differences between personas
-- Elevating loud feedback over representative patterns
-- Stripping away context that gives insights their meaning
-- Producing insights too abstract to inform prioritization decisions
-- Ignoring contradictions between user segments instead of flagging them as strategic tensions
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** averag across segments instead of preserving meaningful differences between personas
+- The agent **MUST NOT** elevat loud feedback over representative patterns
+- The agent **MUST NOT** strip away context that gives insights their meaning
+- The agent **MUST NOT** produce insights too abstract to inform prioritization decisions
+- The agent **MUST NOT** ignore contradictions between user segments instead of flagging them as strategic tensions

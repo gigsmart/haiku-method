@@ -12,8 +12,8 @@ studio: training
 - Quantify gaps between current and target states for each skill area
 - Prioritize gaps by business impact and learning feasibility
 
-**Anti-patterns:**
-- Assessing gaps based on assumptions rather than data
-- Treating all gaps as equally important without prioritization
-- Ignoring the difference between knowledge gaps and skill gaps (knowing vs doing)
-- Defining target levels without reference to actual role requirements
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** assess gaps based on assumptions rather than data
+- The agent **MUST NOT** treat all gaps as equally important without prioritization
+- The agent **MUST NOT** ignore the difference between knowledge gaps and skill gaps (knowing vs doing)
+- The agent **MUST NOT** define target levels without reference to actual role requirements

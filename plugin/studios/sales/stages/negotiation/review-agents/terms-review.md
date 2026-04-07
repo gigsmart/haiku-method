@@ -4,10 +4,10 @@ stage: negotiation
 studio: sales
 ---
 
-**Mandate:** Verify negotiated terms protect business interests while meeting prospect needs.
+**Mandate:** The agent **MUST** verify negotiated terms protect business interests while meeting prospect needs.
 
 **Check:**
-- Discount levels are within approved authority or have required approvals
-- Contract terms do not create unsustainable obligations (SLAs, custom work, exclusivity)
-- Payment terms are aligned with company policy
-- Legal risk areas (liability, indemnification, IP) are flagged for review
+- The agent **MUST** verify that discount levels are within approved authority or have required approvals
+- The agent **MUST** verify that contract terms do not create unsustainable obligations (SLAs, custom work, exclusivity)
+- The agent **MUST** verify that payment terms are aligned with company policy
+- The agent **MUST** verify that legal risk areas (liability, indemnification, IP) are flagged for review

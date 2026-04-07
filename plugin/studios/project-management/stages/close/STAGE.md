@@ -27,6 +27,6 @@ Bad criteria examples:
 - "Lessons are captured"
 - "Handoff is done"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Lessons learned document exists with categorized findings and actionable recommendations. Closer has confirmed all deliverables are accepted and open items are transferred with owners. Archivist has ensured project documentation is complete, organized, and accessible for future reference.
+Lessons learned document **MUST** exist with categorized findings and actionable recommendations. Closer **MUST** have confirmed all deliverables are accepted and open items are transferred with owners. Archivist **MUST** have ensured project documentation **MUST** be complete, organized, and accessible for future reference.

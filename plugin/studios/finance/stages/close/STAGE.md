@@ -25,6 +25,6 @@ Bad criteria examples:
 - "Reconciliation is done"
 - "Period is finalized"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Close report exists with all accounts reconciled, adjusting entries documented with justification, and trial balance balanced. Controller has verified compliance with accounting standards and approved the close. Reconciler has confirmed all sub-ledger postings are complete and intercompany transactions are eliminated.
+Close report **MUST** exist with all accounts reconciled, adjusting entries documented with justification, and trial balance balanced. Controller **MUST** have **MUST** be verified compliance with accounting standards and approved the close. Reconciler **MUST** have confirmed all sub-ledger postings **MUST** be complete and intercompany transactions are eliminated.

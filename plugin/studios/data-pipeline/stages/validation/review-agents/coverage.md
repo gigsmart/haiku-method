@@ -4,10 +4,10 @@ stage: validation
 studio: data-pipeline
 ---
 
-**Mandate:** Verify validation rules cover all data quality dimensions.
+**Mandate:** The agent **MUST** verify validation rules cover all data quality dimensions.
 
 **Check:**
-- Schema compliance checks cover all fields (type, format, range, nullability)
-- Business rule validations match the transformation specifications
-- Row count reconciliation between source and target is performed
-- Sample-based spot checks verify actual data values, not just structure
+- The agent **MUST** verify that schema compliance checks cover all fields (type, format, range, nullability)
+- The agent **MUST** verify that business rule validations match the transformation specifications
+- The agent **MUST** verify that row count reconciliation between source and target is performed
+- The agent **MUST** verify that sample-based spot checks verify actual data values, not just structure

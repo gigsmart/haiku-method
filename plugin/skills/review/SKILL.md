@@ -108,9 +108,13 @@ If the diff is empty, tell the user "No changes to review against `{DIFF_BASE}`"
 
 ## Step 1: Multi-Agent Review
 
-Spawn specialized review agents **in parallel** using the Agent tool. Each agent gets the full diff, the review guidelines (REVIEW.md + CLAUDE.md), and a focused mandate. Agents run in fresh contexts with no builder bias.
+## Multi-Agent Review Requirements (RFC 2119)
 
-**CRITICAL: Every agent MUST receive the REVIEW.md and CLAUDE.md content as part of its prompt.** These are the project's review rules — findings that violate REVIEW.md "Always check" items should be HIGH severity, and files matching REVIEW.md "Skip" patterns should be excluded.
+The key words "MUST", "MUST NOT", "SHALL", "SHALL NOT", "REQUIRED" in this section are to be interpreted as described in RFC 2119.
+
+The agent **MUST** spawn specialized review agents **in parallel** using the Agent tool. Each agent gets the full diff, the review guidelines (REVIEW.md + CLAUDE.md), and a focused mandate. Agents **MUST** run in fresh contexts with no builder bias.
+
+Every agent **MUST** receive the REVIEW.md and CLAUDE.md content as part of its prompt. These are the project's review rules — findings that violate REVIEW.md "Always check" items **MUST** be HIGH severity, and files matching REVIEW.md "Skip" patterns **MUST** be excluded.
 
 ### Core agents (always run)
 
@@ -181,7 +185,7 @@ For each optional agent enabled in `REVIEW_AGENTS`, spawn an additional agent:
 
 ### Spawn all agents in parallel
 
-Launch ALL applicable agents simultaneously — do not serialize them. Each agent is independent and reviews the same diff from its own perspective.
+The agent **MUST** launch ALL applicable agents simultaneously — the agent **MUST NOT** serialize them. Each agent is independent and reviews the same diff from its own perspective.
 
 ---
 
@@ -218,7 +222,7 @@ After all agents complete, collect their YAML findings and:
 
 After fixing all HIGH findings:
 
-Stage only the files that were modified during fixes (not `git add -A` which would sweep in unrelated changes):
+The agent **MUST** stage only the files that were modified during fixes (the agent **MUST NOT** use `git add -A` which would sweep in unrelated changes):
 
 ```bash
 # Stage only files touched by the fixes
@@ -241,7 +245,7 @@ FULL_DIFF=$(git diff "${DIFF_BASE}...HEAD" 2>/dev/null || git diff "${DIFF_BASE}
 DIFF_STAT=$(git diff --stat "${DIFF_BASE}...HEAD" 2>/dev/null || git diff --stat "${DIFF_BASE}..HEAD")
 ```
 
-Spawn only the agents that previously found HIGH issues. If they find new HIGH issues (introduced by the fix), fix those too. **Loop until no HIGH findings remain or 3 iterations have passed.**
+The agent **MUST** spawn only the agents that previously found HIGH issues. If they find new HIGH issues (introduced by the fix), the agent **MUST** fix those too. The agent **MUST** loop until no HIGH findings remain or 3 iterations have passed.
 
 ### Circuit breaker
 

@@ -12,8 +12,8 @@ studio: legal
 - Verify the document achieves the objectives stated in the legal brief
 - Categorize findings by severity (critical, important, advisory)
 
-**Anti-patterns:**
-- Performing only a surface review without analyzing legal implications
-- Identifying issues without providing specific remediation recommendations
-- Approving documents without verifying they address all identified risks
-- Focusing on minor style issues while missing substantive legal problems
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** perform only a surface review without analyzing legal implications
+- The agent **MUST NOT** identify issues without providing specific remediation recommendations
+- The agent **MUST NOT** approve documents without verifying they address all identified risks
+- The agent **MUST NOT** focus on minor style issues while missing substantive legal problems

@@ -23,6 +23,6 @@ Bad criteria examples:
 - "BANT is filled out"
 - "Deal looks good"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Deal brief exists with BANT qualification complete, ICP fit scored and justified, buying committee mapped with roles and influence levels, and deal strategy documented. Deal strategist has defined the win plan with identified champions, potential blockers, and recommended engagement approach.
+Deal brief **MUST** exist with BANT qualification complete, ICP fit scored and justified, buying committee mapped with roles and influence levels, and deal strategy documented. Deal strategist **MUST** have defined the win plan with identified champions, potential blockers, and recommended engagement approach.

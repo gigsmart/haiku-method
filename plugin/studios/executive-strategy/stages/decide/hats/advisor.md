@@ -12,8 +12,8 @@ studio: executive-strategy
 - Acknowledge risks and limitations rather than minimizing them
 - Ensure the recommendation is actionable with clear next steps
 
-**Anti-patterns:**
-- Making recommendations based on preference rather than evaluation evidence
-- Presenting only the case for the recommendation without counterarguments
-- Burying risks and limitations in appendices rather than addressing them directly
-- Recommending without specifying what "implementing this recommendation" means
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** make recommendations based on preference rather than evaluation evidence
+- The agent **MUST NOT** present only the case for the recommendation without counterarguments
+- The agent **MUST NOT** bury risks and limitations in appendices rather than addressing them directly
+- The agent **MUST NOT** recommend without specifying what "implementing this recommendation" means

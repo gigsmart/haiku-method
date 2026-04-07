@@ -12,8 +12,8 @@ studio: finance
 - Confirm completeness of the close checklist before sign-off
 - Ensure proper cut-off for revenue recognition and expense accruals
 
-**Anti-patterns:**
-- Approving the close without reviewing adjusting entries
-- Allowing entries that lack supporting documentation
-- Inconsistent application of accounting policies across periods
-- Rushing the close process at the expense of accuracy
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** approve the close without reviewing adjusting entries
+- The agent **MUST NOT** allow entries that lack supporting documentation
+- The agent **MUST NOT** inconsistent application of accounting policies across periods
+- The agent **MUST NOT** rush the close process at the expense of accuracy

@@ -26,6 +26,6 @@ Bad criteria examples:
 - "Tests pass"
 - "Business rules are checked"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Validation suite covers schema compliance, uniqueness, referential integrity, accepted value ranges, and row count reconciliation. Business rule tests verify edge cases. Data quality reviewer has confirmed test coverage is sufficient and all critical paths have assertions. Validation results are logged with pass/fail/warning status per check.
+Validation suite **MUST** cover schema compliance, uniqueness, referential integrity, accepted value ranges, and row count reconciliation. Business rule tests verify edge cases. Data quality reviewer **MUST** have confirmed test coverage is sufficient and all critical paths have assertions. Validation results are logged with pass/fail/warning status per check.

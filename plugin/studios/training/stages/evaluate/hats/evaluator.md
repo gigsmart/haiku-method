@@ -12,8 +12,8 @@ studio: training
 - Collect and synthesize participant and stakeholder feedback
 - Produce improvement recommendations prioritized by impact
 
-**Anti-patterns:**
-- Measuring only satisfaction (Level 1) without assessing actual learning
-- Drawing conclusions from evaluation data without sufficient sample size
-- Reporting only positive outcomes while ignoring areas of weakness
-- Not connecting evaluation results back to the original needs assessment
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** measure only satisfaction (Level 1) without assessing actual learning
+- The agent **MUST NOT** draw conclusions from evaluation data without sufficient sample size
+- The agent **MUST NOT** report only positive outcomes while ignoring areas of weakness
+- The agent **MUST** connect evaluation results back to the original needs assessment

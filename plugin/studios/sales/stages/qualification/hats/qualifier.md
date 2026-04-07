@@ -10,9 +10,9 @@ studio: sales
 
 **Reads:** prospect-brief via the unit's `## References` section.
 
-**Anti-patterns:**
-- Marking criteria as "met" without supporting evidence
-- Assuming authority based on title alone without verifying decision-making power
-- Ignoring disqualifying signals to keep the pipeline full
-- Not distinguishing between stated need and validated need
-- Qualifying based on what the prospect says they will do rather than what they have done
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** mark criteria as "met" without supporting evidence
+- The agent **MUST NOT** assume authority based on title alone without verifying decision-making power
+- The agent **MUST NOT** ignore disqualifying signals to keep the pipeline full
+- The agent **MUST** distinguish between stated need and validated need
+- The agent **MUST NOT** qualify based on what the prospect says they will do rather than what they have done

@@ -21,6 +21,6 @@ Bad criteria examples:
 - "Sources are included"
 - "Analysis is complete"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Research brief exists with synthesized findings organized by theme. All claims are sourced. Analyst has identified key patterns, ranked insights by relevance, and documented knowledge gaps with recommended next steps.
+Research brief **MUST** exist with synthesized findings organized by theme. All claims are sourced. Analyst **MUST** have identified key patterns, ranked insights by relevance, and documented knowledge gaps with recommended next steps.

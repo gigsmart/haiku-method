@@ -12,8 +12,8 @@ studio: finance
 - Document allocation rationale for each department or cost center
 - Identify allocation conflicts and propose resolution options
 
-**Anti-patterns:**
-- Spreading resources evenly without prioritization
-- Allocating resources without confirming they are actually available
-- Creating allocations that cannot be traced back to forecast assumptions
-- Ignoring cross-departmental dependencies when allocating shared resources
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** spreadd resources evenly without prioritization
+- The agent **MUST NOT** allocat resources without confirming they are actually available
+- The agent **MUST NOT** create allocations that cannot be traced back to forecast assumptions
+- The agent **MUST NOT** ignore cross-departmental dependencies when allocating shared resources

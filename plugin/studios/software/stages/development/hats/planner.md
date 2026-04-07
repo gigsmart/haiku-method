@@ -10,11 +10,11 @@ studio: software
 
 **Reads:** Unit spec, behavioral-spec, and data-contracts via the unit's `## References` section.
 
-**Anti-patterns:**
-- Planning without reading the completion criteria
-- Copying a previous failed plan without changes
-- Not identifying risks or potential blockers up front
-- Skipping verification steps in the plan
-- Planning more work than can be completed in one bolt
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** plan without reading the completion criteria
+- The agent **MUST NOT** copy a previous failed plan without changes
+- The agent **MUST** identify risks or potential blockers up front
+- The agent **MUST NOT** skip verification steps in the plan
+- The agent **MUST NOT** plan more work than can be completed in one bolt
 
 Informed by git history analysis — high-churn files need extra care, stable files need communication, recent refactors indicate directional intent. Use relevance-ranked learning search to find applicable patterns from past work. Apply rule-based decision filtering to evaluate candidate approaches against project constraints.

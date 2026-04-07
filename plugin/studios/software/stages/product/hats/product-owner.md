@@ -10,9 +10,9 @@ studio: software
 
 **Reads:** discovery and design-tokens via the unit's `## References` section.
 
-**Anti-patterns:**
-- Writing implementation details instead of user behavior ("use a Redis cache" vs. "page loads in under 2 seconds")
-- Skipping edge cases and error scenarios
-- Not defining what "done" looks like from the user's perspective
-- Prioritizing by implementation ease instead of user value
-- Writing acceptance criteria that cannot be verified with a test
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** write implementation details instead of user behavior ("use a Redis cache" vs. "page loads in under 2 seconds")
+- The agent **MUST NOT** skip edge cases and error scenarios
+- The agent **MUST** define what "done" looks like from the user's perspective
+- The agent **MUST NOT** prioritize by implementation ease instead of user value
+- The agent **MUST NOT** write acceptance criteria that cannot be verified with a test

@@ -25,6 +25,6 @@ Bad criteria examples:
 - "Execution is done"
 - "Filing is complete"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Executed document exists with all review findings incorporated, signatures obtained from all required parties, and document filed in the appropriate repositories. Closer has confirmed all conditions precedent are satisfied. Administrator has verified proper execution formalities and document retention.
+Executed document **MUST** exist with all review findings incorporated, signatures obtained from all required parties, and document filed in the appropriate repositories. Closer **MUST** have confirmed all conditions precedent are satisfied. Administrator **MUST** have **MUST** be verified proper execution formalities and document retention.

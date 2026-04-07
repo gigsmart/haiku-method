@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Pipeline is full"
 - "Outreach is done"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Candidate pipeline exists with qualified prospects from diverse sourcing channels, each with initial fit assessment against the job spec. Sourcer has documented channel effectiveness metrics. Recruiter has confirmed pipeline volume is sufficient to meet the hiring timeline.
+Candidate pipeline **MUST** exist with qualified prospects from diverse sourcing channels, each with initial fit assessment against the job spec. Sourcer **MUST** have documented channel effectiveness metrics. Recruiter **MUST** have confirmed pipeline volume is sufficient to meet the hiring timeline.

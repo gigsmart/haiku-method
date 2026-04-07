@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Data is pulled from sources"
 - "Connectors are configured"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Extraction jobs exist for all sources identified in discovery. Each job handles full and incremental loads, includes error handling and retry logic, respects source system rate limits, and lands raw data in the staging area with extraction metadata (timestamp, source, batch ID). Connector reviewer has verified idempotency and schema drift handling.
+Extraction jobs exist for all sources identified in discovery. Each job handles full and incremental loads, includes error handling and retry logic, respects source system rate limits, and lands raw data in the staging area with extraction metadata (timestamp, source, batch ID). Connector reviewer **MUST** have **MUST** be verified idempotency and schema drift handling.

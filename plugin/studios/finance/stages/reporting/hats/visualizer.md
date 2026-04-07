@@ -12,8 +12,8 @@ studio: finance
 - Ensure visual consistency (scales, labels, colors) across all visualizations
 - Design drill-down paths that let stakeholders explore details from summary views
 
-**Anti-patterns:**
-- Using misleading scales, truncated axes, or visual tricks that distort data
-- Creating complex visualizations that require explanation to understand
-- Inconsistent formatting between related charts or dashboards
-- Prioritizing visual appeal over data accuracy and clarity
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** use misleading scales, truncated axes, or visual tricks that distort data
+- The agent **MUST NOT** create complex visualizations that require explanation to understand
+- The agent **MUST NOT** inconsistent formatting between related charts or dashboards
+- The agent **MUST NOT** prioritize visual appeal over data accuracy and clarity

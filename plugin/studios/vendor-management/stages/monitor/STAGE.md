@@ -25,6 +25,6 @@ Bad criteria examples:
 - "SLAs are monitored"
 - "Relationship is managed"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Performance report exists with SLA compliance data, trend analysis, and relationship health assessment. Monitor has confirmed all contractual metrics are being measured accurately. Relationship-manager has documented vendor engagement quality and identified areas for partnership improvement.
+Performance report **MUST** exist with SLA compliance data, trend analysis, and relationship health assessment. Monitor **MUST** have confirmed all contractual metrics are being measured accurately. Relationship-manager **MUST** have documented vendor engagement quality and identified areas for partnership improvement.

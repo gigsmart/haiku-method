@@ -41,11 +41,11 @@ This addresses scenarios where:
 - A `discovery.md` with exploration findings about the codebase
 - Optional `operations/` directory with operation spec files for `/haiku:operate`
 
-**What this does NOT do:**
-- Modify any existing code
-- Create worktrees or branches for construction
-- Run tests or builds
-- Deploy anything
+**What this **MUST NOT** do:**
+- The agent **MUST NOT** modify any existing code
+- The agent **MUST NOT** create worktrees or branches for construction
+- The agent **MUST NOT** run tests or builds
+- The agent **MUST NOT** deploy anything
 
 **Key behavior:** All generated artifacts have `status: completed` since the feature already exists. The adopted intent is fully compatible with `/haiku:followup` (to iterate on it) and `/haiku:operate` (to manage its operations).
 
@@ -83,7 +83,7 @@ if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
 fi
 ```
 
-If `CLAUDE_CODE_IS_COWORK=1`, stop immediately. Do NOT proceed.
+If `CLAUDE_CODE_IS_COWORK=1`, the agent **MUST** stop immediately. The agent **MUST NOT** proceed.
 
 ### Verify Git Repository
 
@@ -433,7 +433,7 @@ Use `AskUserQuestion` for confirmation:
 }
 ```
 
-**Wait for user confirmation.** If they choose "Adjust units" or "Revise intent", engage in dialogue to make the requested changes and re-present. If "Start over", return to Phase 1. Only proceed to Phase 4 when the user approves.
+**The agent **MUST** wait for user confirmation.** If they choose "Adjust units" or "Revise intent", engage in dialogue to make the requested changes and re-present. If "Start over", return to Phase 1. The agent **MUST NOT** proceed to Phase 4 until the user approves.
 
 ---
 
@@ -497,7 +497,7 @@ Present all criteria to the user:
 }
 ```
 
-**Wait for user confirmation.** Iterate on feedback until approved. All criteria must reference traceable evidence (test files, CI checks, or code review notes).
+**The agent **MUST** wait for user confirmation.** Iterate on feedback until approved. All criteria **MUST** reference traceable evidence (test files, CI checks, or code review notes).
 
 ---
 
@@ -594,7 +594,7 @@ Present the proposed operations:
 }
 ```
 
-**Wait for user confirmation.** Iterate on feedback until approved.
+**The agent **MUST** wait for user confirmation.** Iterate on feedback until approved.
 
 ### Synthesize Approved Operations
 

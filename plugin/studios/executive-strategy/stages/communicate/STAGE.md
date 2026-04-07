@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Stakeholders are informed"
 - "Rollout is ready"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Communications package exists with stakeholder-specific messaging, rollout plan with sequenced actions and ownership, and FAQ for anticipated questions. Communicator has confirmed messaging is consistent across audiences and channels. Planner has validated the rollout sequence is feasible and dependencies are identified.
+Communications package **MUST** exist with stakeholder-specific messaging, rollout plan with sequenced actions and ownership, and FAQ for anticipated questions. Communicator **MUST** have confirmed messaging is consistent across audiences and channels. Planner **MUST** have validated the rollout sequence is feasible and dependencies **MUST** be identified.

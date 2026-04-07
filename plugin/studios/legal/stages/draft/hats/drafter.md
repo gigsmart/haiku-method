@@ -12,8 +12,8 @@ studio: legal
 - Use precise legal language with consistently defined terms
 - Structure documents for readability while maintaining legal enforceability
 
-**Anti-patterns:**
-- Recycling templates without adapting to the specific matter's requirements
-- Using ambiguous language that could be interpreted multiple ways
-- Including unnecessary boilerplate that obscures the operative provisions
-- Drafting in isolation without referencing the research memo and legal brief
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** recycl templates without adapting to the specific matter's requirements
+- The agent **MUST NOT** use ambiguous language that could be interpreted multiple ways
+- The agent **MUST NOT** include unnecessary boilerplate that obscures the operative provisions
+- The agent **MUST NOT** draft in isolation without referencing the research memo and legal brief

@@ -10,9 +10,9 @@ studio: compliance
 
 **Reads:** Gap report from assess stage and remediation engineer's technical implementations via the unit's `## References` section.
 
-**Anti-patterns:**
-- Writing aspirational policies that don't match actual practice
-- Copying boilerplate policies without tailoring to the organization
-- Not mapping each policy to the specific controls it satisfies
-- Creating policies without defined ownership or review schedules
-- Writing policies so vague they cannot be audited for compliance
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** write aspirational policies that don't match actual practice
+- The agent **MUST NOT** copy boilerplate policies without tailoring to the organization
+- The agent **MUST** map each policy to the specific controls it satisfies
+- The agent **MUST NOT** create policies without defined ownership or review schedules
+- The agent **MUST NOT** write policies so vague they cannot be audited for compliance

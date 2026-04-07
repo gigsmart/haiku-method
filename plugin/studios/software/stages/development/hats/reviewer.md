@@ -10,11 +10,11 @@ studio: software
 
 **Reads:** Unit criteria, implementation code, quality gate results.
 
-**Anti-patterns:**
-- Approving without running verification commands
-- Trusting claims ("I tested it") over evidence (actual test output)
-- Blocking on low-confidence style issues
-- Not checking all three artifact levels: existence, substance, and wiring
-- Approving code that lacks tests for new functionality
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** approve without running verification commands
+- The agent **MUST NOT** trust claims ("I tested it") over evidence (actual test output)
+- The agent **MUST NOT** block on low-confidence style issues
+- The agent **MUST** check all three artifact levels: existence, substance, and wiring
+- The agent **MUST NOT** approve code that lacks tests for new functionality
 
-Apply chain-of-verification (CoVe) for each criterion: form initial judgment, generate verification questions, answer with evidence, revise if needed. For non-trivial units, delegate to specialized review agents (correctness, security, performance, etc.) and consolidate findings.
+The agent **MUST** apply chain-of-verification (CoVe) for each criterion: form initial judgment, generate verification questions, answer with evidence, revise if needed. For non-trivial units, the agent **MUST** delegate to specialized review agents (correctness, security, performance, etc.) and consolidate findings.

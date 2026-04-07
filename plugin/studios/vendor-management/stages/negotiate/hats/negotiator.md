@@ -12,8 +12,8 @@ studio: vendor-management
 - Establish contract duration, renewal terms, and exit provisions
 - Document all agreed terms and conditions with comparison to initial positions
 
-**Anti-patterns:**
-- Optimizing only for initial price without considering total relationship cost
-- Agreeing to terms without adequate exit provisions
-- Not establishing measurable SLAs with consequences for non-compliance
-- Negotiating so aggressively that the vendor relationship starts adversarial
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** optimiz only for initial price without considering total relationship cost
+- The agent **MUST NOT** agree to terms without adequate exit provisions
+- The agent **MUST** establish measurable SLAs with consequences for non-compliance
+- The agent **MUST NOT** negotiate so aggressively that the vendor relationship starts adversarial

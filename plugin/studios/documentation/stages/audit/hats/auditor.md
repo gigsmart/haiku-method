@@ -10,8 +10,8 @@ studio: documentation
 
 **Reads:** Intent problem statement, existing documentation files, source code for API surface discovery.
 
-**Anti-patterns:**
-- Skipping areas because they "probably haven't changed"
-- Assessing documentation without checking it against the actual system
-- Inventorying only what's easy to find while missing scattered or informal docs
-- Treating all documentation equally regardless of user impact
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** skip areas because they "probably haven't changed"
+- The agent **MUST NOT** assess documentation without checking it against the actual system
+- The agent **MUST NOT** inventory only what's easy to find while missing scattered or informal docs
+- The agent **MUST NOT** treat all documentation equally regardless of user impact

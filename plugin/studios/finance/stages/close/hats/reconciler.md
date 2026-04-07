@@ -12,8 +12,8 @@ studio: finance
 - Eliminate intercompany transactions and confirm balances agree
 - Document and resolve reconciling items with explanations
 
-**Anti-patterns:**
-- Leaving reconciling items unexplained with "to be investigated later"
-- Reconciling at summary level without verifying detail
-- Carrying forward stale reconciling items from prior periods without resolution
-- Posting entries after the reconciliation is "complete" without re-reconciling
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** leave reconciling items unexplained with "to be investigated later"
+- The agent **MUST NOT** reconcil at summary level without verifying detail
+- The agent **MUST NOT** carry forward stale reconciling items from prior periods without resolution
+- The agent **MUST NOT** post entries after the reconciliation is "complete" without re-reconciling

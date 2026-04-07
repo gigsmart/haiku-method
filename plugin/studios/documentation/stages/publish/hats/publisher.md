@@ -10,9 +10,9 @@ studio: documentation
 
 **Reads:** Draft documentation and review report via the unit's `## References` section.
 
-**Anti-patterns:**
-- Ignoring critical or major review findings
-- Publishing without validating that links resolve correctly
-- Not testing rendering on the target platform (markdown quirks, broken tables, image paths)
-- Adding new content during the publish stage instead of sending it back for review
-- Skipping metadata (title, description, last-updated) that enables discoverability
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** ignore critical or major review findings
+- The agent **MUST NOT** publish without validating that links resolve correctly
+- The agent **MUST** test rendering on the target platform (markdown quirks, broken tables, image paths)
+- The agent **MUST NOT** add new content during the publish stage instead of sending it back for review
+- The agent **MUST NOT** skip metadata (title, description, last-updated) that enables discoverability

@@ -12,8 +12,8 @@ studio: project-management
 - Track mitigation action status and effectiveness
 - Identify new risks that emerge during execution
 
-**Anti-patterns:**
-- Treating the risk register as a static document rather than a living tool
-- Monitoring only previously identified risks while ignoring emerging ones
-- Not tracking whether mitigation actions are actually being executed
-- Waiting for risks to materialize rather than monitoring trigger conditions
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** treat the risk register as a static document rather than a living tool
+- The agent **MUST NOT** monitor only previously identified risks while ignoring emerging ones
+- The agent **MUST** track whether mitigation actions are actually being executed
+- The agent **MUST NOT** wait for risks to materialize rather than monitoring trigger conditions

@@ -12,8 +12,8 @@ studio: quality-assurance
 - Create the test execution schedule with dependencies
 - Confirm resource availability and environment readiness
 
-**Anti-patterns:**
-- Planning without confirming that test environments will be available
-- Not accounting for test data preparation and management effort
-- Scheduling test phases without considering development delivery dependencies
-- Underestimating the effort required for test setup and teardown
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** plan without confirming that test environments will be available
+- The agent **MUST** account for test data preparation and management effort
+- The agent **MUST NOT** schedul test phases without considering development delivery dependencies
+- The agent **MUST NOT** underestimat the effort required for test setup and teardown

@@ -25,6 +25,6 @@ Bad criteria examples:
 - "Contract is reviewed"
 - "Price is agreed"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Negotiation terms exist with agreed pricing, contract provisions reviewed, and SLA terms defined. Negotiator has confirmed terms meet budget and business requirements. Legal-reviewer has identified and addressed all material risk provisions with acceptable terms or documented risk acceptance.
+Negotiation terms exist with agreed pricing, contract provisions reviewed, and SLA terms defined. Negotiator **MUST** have confirmed terms meet budget and business requirements. Legal-reviewer **MUST** have identified and addressed all material risk provisions with acceptable terms or documented risk acceptance.

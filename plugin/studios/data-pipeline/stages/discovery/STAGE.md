@@ -21,6 +21,6 @@ Bad criteria examples:
 - "Schemas are understood"
 - "Requirements are gathered"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Source catalog exists with connection details, schema snapshots, volume estimates, and data freshness requirements for every source. Schema analysis identifies type conflicts, nullability patterns, and encoding issues. SLA targets are defined for latency, completeness, and error tolerance. Data lineage from source to intended target is mapped.
+Source catalog **MUST** exist with connection details, schema snapshots, volume estimates, and data freshness requirements for every source. Schema analysis identifies type conflicts, nullability patterns, and encoding issues. SLA targets **MUST** be defined for latency, completeness, and error tolerance. Data lineage from source to intended target is mapped.

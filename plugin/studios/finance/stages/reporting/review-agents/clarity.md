@@ -4,10 +4,10 @@ stage: reporting
 studio: finance
 ---
 
-**Mandate:** Verify financial reports are clear, accurate, and appropriate for their target audience.
+**Mandate:** The agent **MUST** verify financial reports are clear, accurate, and appropriate for their target audience.
 
 **Check:**
-- Visualizations use consistent scales and do not distort data
-- Report detail level is appropriate for each stakeholder audience
-- All metrics are sourced from verified analysis data
-- Executive summaries highlight the most material findings with actionable recommendations
+- The agent **MUST** verify that visualizations use consistent scales and do not distort data
+- The agent **MUST** verify that report detail level is appropriate for each stakeholder audience
+- The agent **MUST** verify that all metrics are sourced from verified analysis data
+- The agent **MUST** verify that executive summaries highlight the most material findings with actionable recommendations

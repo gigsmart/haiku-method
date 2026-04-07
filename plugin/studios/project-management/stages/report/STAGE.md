@@ -27,6 +27,6 @@ Bad criteria examples:
 - "Dashboard is updated"
 - "Stakeholders are informed"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Project dashboard exists with health indicators, progress visualization, and forecast. Reporter has confirmed all metrics are current and accurately represent project state. Communicator has tailored reports to each stakeholder audience and flagged items requiring stakeholder decisions or escalation.
+Project dashboard **MUST** exist with health indicators, progress visualization, and forecast. Reporter **MUST** have confirmed all metrics are current and accurately represent project state. Communicator **MUST** have tailored reports to each stakeholder audience and flagged items requiring stakeholder decisions or escalation.

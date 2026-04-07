@@ -25,6 +25,6 @@ Bad criteria examples:
 - "Recommendation is clear"
 - "Stakeholders agree"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Decision brief exists with recommended option, supporting rationale, risk acknowledgment, and dissenting perspectives documented. Advisor has confirmed the recommendation follows logically from the evaluation. Facilitator has ensured all stakeholder perspectives were considered and decision criteria are transparent.
+Decision brief **MUST** exist with recommended option, supporting rationale, risk acknowledgment, and dissenting perspectives documented. Advisor **MUST** have confirmed the recommendation follows logically from the evaluation. Facilitator **MUST** have ensured all stakeholder perspectives were considered and decision criteria are transparent.

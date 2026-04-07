@@ -12,8 +12,8 @@ studio: legal
 - Document the legal landscape including areas of settled and unsettled law
 - Identify recent developments or trends in relevant legal areas
 
-**Anti-patterns:**
-- Citing outdated or overturned precedents
-- Cherry-picking favorable precedents while ignoring unfavorable ones
-- Relying on secondary sources without verifying primary authority
-- Failing to check for recent legislative or regulatory changes
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** cit outdated or overturned precedents
+- The agent **MUST NOT** cherry-pick favorable precedents while ignoring unfavorable ones
+- The agent **MUST NOT** rely on secondary sources without verifying primary authority
+- The agent **MUST NOT** fail to check for recent legislative or regulatory changes

@@ -10,9 +10,9 @@ studio: software
 
 **Reads:** code and behavioral-spec via the unit's `## References` section.
 
-**Anti-patterns:**
-- Only testing happy paths with slightly malformed input
-- Not testing authentication and authorization boundaries
-- Executing destructive payloads in shared environments
-- Stopping after the first finding instead of completing the attack surface
-- Declaring code "secure" without executing actual attack payloads
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** only test happy paths with slightly malformed input
+- The agent **MUST** test authentication and authorization boundaries
+- The agent **MUST NOT** execute destructive payloads in shared environments
+- The agent **MUST NOT** stop after the first finding instead of completing the attack surface
+- The agent **MUST NOT** declare code "secure" without executing actual attack payloads

@@ -21,6 +21,6 @@ Bad criteria examples:
 - "Competitors are analyzed"
 - "Audience is understood"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Market brief exists with audience segments defined, competitor landscape mapped, and positioning opportunities identified. All claims reference specific data sources. Audience analyst has validated segment definitions and flagged gaps in market understanding with recommended next steps.
+Market brief **MUST** exist with audience segments defined, competitor landscape mapped, and positioning opportunities identified. All claims reference specific data sources. Audience analyst **MUST** have validated segment definitions and flagged gaps in market understanding with recommended next steps.

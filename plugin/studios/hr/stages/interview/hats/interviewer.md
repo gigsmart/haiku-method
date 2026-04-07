@@ -12,8 +12,8 @@ studio: hr
 - Document specific examples from candidate responses, not just impression ratings
 - Assess candidates against the rubric independently before debrief
 
-**Anti-patterns:**
-- Asking different questions to different candidates for the same role
-- Rating candidates on overall impression without documenting specific evidence
-- Allowing conversation to drift away from competency assessment
-- Sharing opinions with other interviewers before independent scoring
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** ask different questions to different candidates for the same role
+- The agent **MUST NOT** rate candidates on overall impression without documenting specific evidence
+- The agent **MUST NOT** allow conversation to drift away from competency assessment
+- The agent **MUST NOT** shar opinions with other interviewers before independent scoring

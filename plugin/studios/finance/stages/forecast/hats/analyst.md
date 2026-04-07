@@ -12,8 +12,8 @@ studio: finance
 - Document data sources with reliability assessments and refresh frequencies
 - Flag data gaps or quality issues that could undermine forecast accuracy
 
-**Anti-patterns:**
-- Using stale data without checking for updates
-- Relying on a single data source for critical assumptions
-- Presenting raw data without context or relevance assessment
-- Ignoring macroeconomic factors that affect the industry
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** use stale data without checking for updates
+- The agent **MUST NOT** rely on a single data source for critical assumptions
+- The agent **MUST NOT** present raw data without context or relevance assessment
+- The agent **MUST NOT** ignore macroeconomic factors that affect the industry

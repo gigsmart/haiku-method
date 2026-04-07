@@ -12,8 +12,8 @@ studio: quality-assurance
 - Design test data sets that cover boundary conditions and edge cases
 - Optimize test suite to minimize redundancy while maximizing coverage
 
-**Anti-patterns:**
-- Writing test cases without explicit expected results
-- Designing tests that only cover the happy path
-- Not maintaining traceability between tests and requirements
-- Creating unnecessarily verbose test cases that slow down execution
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** write test cases without explicit expected results
+- The agent **MUST NOT** design tests that only cover the happy path
+- The agent **MUST** maintain traceability between tests and requirements
+- The agent **MUST NOT** create unnecessarily verbose test cases that slow down execution

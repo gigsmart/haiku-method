@@ -21,6 +21,6 @@ Bad criteria examples:
 - "Gaps are identified"
 - "Documentation is reviewed"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Documentation inventory exists with coverage status for each area. Gap analysis identifies missing, outdated, and incomplete documentation with severity ratings. Priorities are ranked by user impact and effort, producing a clear backlog of documentation work.
+Documentation inventory **MUST** exist with coverage status for each area. Gap analysis identifies missing, outdated, and incomplete documentation with severity ratings. Priorities are ranked by user impact and effort, producing a clear backlog of documentation work.

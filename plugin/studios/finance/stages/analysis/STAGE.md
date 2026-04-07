@@ -25,6 +25,6 @@ Bad criteria examples:
 - "Performance is tracked"
 - "Analysis is complete"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Variance report exists with root cause analysis for all material deviations, performance trends documented, and corrective actions identified. Auditor has verified data accuracy and methodology consistency. Analyst has confirmed findings are actionable for the reporting stage.
+Variance report **MUST** exist with root cause analysis for all material deviations, performance trends documented, and corrective actions identified. Auditor **MUST** have **MUST** be verified data accuracy and methodology consistency. Analyst **MUST** have confirmed findings are actionable for the reporting stage.

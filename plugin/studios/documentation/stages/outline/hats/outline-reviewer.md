@@ -10,8 +10,8 @@ studio: documentation
 
 **Reads:** Architect's outline, audit gap analysis via the unit's `## References` section.
 
-**Anti-patterns:**
-- Approving an outline without mentally walking through user journeys
-- Focusing on section naming while ignoring structural problems
-- Not verifying that the outline addresses all prioritized gaps from the audit
-- Treating the outline as final without considering how it will evolve
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** approve an outline without mentally walking through user journeys
+- The agent **MUST NOT** focus on section naming while ignoring structural problems
+- The agent **MUST** verify that the outline addresses all prioritized gaps from the audit
+- The agent **MUST NOT** treat the outline as final without considering how it will evolve

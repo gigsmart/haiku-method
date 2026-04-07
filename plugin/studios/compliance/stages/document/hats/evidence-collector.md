@@ -10,9 +10,9 @@ studio: compliance
 
 **Reads:** Remediation log from remediate stage via the unit's `## References` section.
 
-**Anti-patterns:**
-- Collecting evidence without recording when and where it was obtained
-- Storing evidence without mapping it to specific controls
-- Accepting screenshots without timestamps or context
-- Not verifying that evidence is current and reflects the actual state
-- Leaving gaps in evidence coverage without documenting why
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** collect evidence without recording when and where it was obtained
+- The agent **MUST NOT** store evidence without mapping it to specific controls
+- The agent **MUST NOT** accept screenshots without timestamps or context
+- The agent **MUST** verify that evidence is current and reflects the actual state
+- The agent **MUST NOT** leave gaps in evidence coverage without documenting why

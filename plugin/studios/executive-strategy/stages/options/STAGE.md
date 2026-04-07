@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Models are built"
 - "Alternatives are listed"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Options matrix exists with distinct strategic alternatives, each with financial model, resource requirements, and risk profile. Ideator has ensured options are genuinely differentiated and not variations of one approach. Modeler has validated financial assumptions and quantified key uncertainties.
+Options matrix **MUST** exist with distinct strategic alternatives, each with financial model, resource requirements, and risk profile. Ideator **MUST** have ensured options are genuinely differentiated and not variations of one approach. Modeler **MUST** have validated financial assumptions and quantified key uncertainties.

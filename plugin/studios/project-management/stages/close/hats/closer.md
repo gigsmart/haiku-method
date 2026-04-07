@@ -12,8 +12,8 @@ studio: project-management
 - Transfer ongoing ownership with documented support contacts
 - Close out open items with owners and target dates or documented deferral
 
-**Anti-patterns:**
-- Declaring the project complete without formal deliverable acceptance
-- Leaving open items without assigned owners or resolution plans
-- Not transferring knowledge to the team that will own the deliverables going forward
-- Closing the project before all contractual or compliance obligations are fulfilled
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** declare the project complete without formal deliverable acceptance
+- The agent **MUST NOT** leave open items without assigned owners or resolution plans
+- The agent **MUST** transfer knowledge to the team that will own the deliverables going forward
+- The agent **MUST NOT** close the project before all contractual or compliance obligations are fulfilled

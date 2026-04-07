@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Milestones are defined"
 - "Dependencies are noted"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Roadmap document exists with sequenced initiatives, dependency graph, and milestone definitions. Each milestone has measurable success criteria. Capacity planner has validated feasibility against resource constraints and flagged bottlenecks. The roadmap tells a coherent narrative — why this sequence, why these milestones, what happens if assumptions change.
+Roadmap document **MUST** exist with sequenced initiatives, dependency graph, and milestone definitions. Each milestone **MUST** have measurable success criteria. Capacity planner **MUST** have validated feasibility against resource constraints and flagged bottlenecks. The roadmap tells a coherent narrative — why this sequence, why these milestones, what happens if assumptions change.

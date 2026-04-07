@@ -12,8 +12,8 @@ studio: hr
 - Define sourcing strategy based on role requirements and market conditions
 - Identify potential challenges in the hiring process early
 
-**Anti-patterns:**
-- Copying job descriptions from competitors without adapting to the actual role
-- Including requirements that systematically exclude qualified candidates
-- Writing descriptions that focus on what the company wants without articulating what it offers
-- Not challenging unrealistic requirements from the hiring manager
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** copy job descriptions from competitors without adapting to the actual role
+- The agent **MUST NOT** include requirements that systematically exclude qualified candidates
+- The agent **MUST NOT** write descriptions that focus on what the company wants without articulating what it offers
+- The agent **MUST** challeng unrealistic requirements from the hiring manager

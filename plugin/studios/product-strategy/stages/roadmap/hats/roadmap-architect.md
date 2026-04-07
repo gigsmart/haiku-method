@@ -10,9 +10,9 @@ studio: product-strategy
 
 **Reads:** Priority matrix from prioritization via the unit's `## References` section.
 
-**Anti-patterns:**
-- Treating the roadmap as a flat list of features with arbitrary dates
-- Ignoring dependencies between initiatives that constrain sequencing
-- Creating milestones without measurable success criteria
-- Overpacking phases without accounting for the unexpected
-- Building a roadmap that only works if every assumption holds — no flexibility for change
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** treat the roadmap as a flat list of features with arbitrary dates
+- The agent **MUST NOT** ignore dependencies between initiatives that constrain sequencing
+- The agent **MUST NOT** create milestones without measurable success criteria
+- The agent **MUST NOT** overpack phases without accounting for the unexpected
+- The agent **MUST NOT** build a roadmap that only works if every assumption holds — no flexibility for change

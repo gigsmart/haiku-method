@@ -4,12 +4,12 @@ stage: development
 studio: software
 ---
 
-**Mandate:** Verify tests actually validate behavior, not just exercise code paths.
+**Mandate:** The agent **MUST** verify tests actually validate behavior, not just exercise code paths.
 
 **Check:**
-- Tests assert on behavior and outcomes, not implementation details
-- Test names describe the scenario and expected result
-- Edge cases from the behavioral spec have corresponding tests
-- No tests that always pass (tautological assertions, mocked everything)
-- Integration tests cover system boundaries (API, database, external services)
-- Test data is realistic, not minimal placeholder values
+- The agent **MUST** verify that tests assert on behavior and outcomes, not implementation details
+- The agent **MUST** verify that test names describe the scenario and expected result
+- The agent **MUST** verify that edge cases from the behavioral spec have corresponding tests
+- The agent **MUST** verify that no tests that always pass (tautological assertions, mocked everything)
+- The agent **MUST** verify that integration tests cover system boundaries (API, database, external services)
+- The agent **MUST** verify that test data is realistic, not minimal placeholder values

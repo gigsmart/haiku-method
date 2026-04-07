@@ -21,6 +21,6 @@ Bad criteria examples:
 - "Gaps are identified"
 - "Objectives are defined"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Needs assessment exists with skills gaps quantified, learning objectives defined, and target audience profiled. Analyst has validated gap measurements against multiple data sources. Consultant has confirmed objectives align with business goals and are achievable within available constraints.
+Needs assessment **MUST** exist with skills gaps quantified, learning objectives defined, and target audience profiled. Analyst **MUST** have validated gap measurements against multiple data sources. Consultant **MUST** have confirmed objectives align with business goals and are achievable within available constraints.

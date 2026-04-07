@@ -10,9 +10,9 @@ studio: customer-success
 
 **Reads:** Health report via the unit's `## References` section, customer strategic initiatives, product roadmap.
 
-**Anti-patterns:**
-- Pushing products the customer doesn't need to hit quota
-- Identifying opportunities without grounding them in the customer's stated priorities
-- Ignoring account health signals — expanding an unhealthy account accelerates churn
-- Not sizing opportunities with defensible revenue estimates
-- Proposing expansion without a phased adoption plan
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** push products the customer doesn't need to hit quota
+- The agent **MUST NOT** identify opportunities without grounding them in the customer's stated priorities
+- The agent **MUST NOT** ignore account health signals — expanding an unhealthy account accelerates churn
+- The agent **MUST** siz opportunities with defensible revenue estimates
+- The agent **MUST NOT** propose expansion without a phased adoption plan

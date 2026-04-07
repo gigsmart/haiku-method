@@ -4,10 +4,10 @@ stage: outline
 studio: documentation
 ---
 
-**Mandate:** Verify the information architecture supports how users actually look for information.
+**Mandate:** The agent **MUST** verify the information architecture supports how users actually look for information.
 
 **Check:**
-- Organization follows user tasks, not internal code structure
-- Heading hierarchy is logical and consistent
-- No section is so large it should be split, or so small it should be merged
-- Cross-references between related topics are identified
+- The agent **MUST** verify that organization follows user tasks, not internal code structure
+- The agent **MUST** verify that heading hierarchy is logical and consistent
+- The agent **MUST** verify that no section is so large it should be split, or so small it should be merged
+- The agent **MUST** verify that cross-references between related topics are identified

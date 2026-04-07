@@ -10,9 +10,9 @@ studio: migration
 
 **Reads:** Cutover runbook from the cutover-coordinator, risk register, migration scripts.
 
-**Anti-patterns:**
-- Assuming rollback will work without testing it end-to-end
-- Not defining a clear point of no return
-- Writing rollback scripts that depend on state destroyed by the forward migration
-- Ignoring data written to the target after cutover that would be lost on rollback
-- Treating rollback as optional because "the migration will work"
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** assume rollback will work without testing it end-to-end
+- The agent **MUST** define a clear point of no return
+- The agent **MUST NOT** write rollback scripts that depend on state destroyed by the forward migration
+- The agent **MUST NOT** ignore data written to the target after cutover that would be lost on rollback
+- The agent **MUST NOT** treat rollback as optional because "the migration will work"

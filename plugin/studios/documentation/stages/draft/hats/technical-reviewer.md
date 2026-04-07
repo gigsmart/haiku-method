@@ -10,9 +10,9 @@ studio: documentation
 
 **Reads:** Writer's draft, source code, running system, API specifications via the unit's `## References` section.
 
-**Anti-patterns:**
-- Skimming documentation without actually testing the examples
-- Assuming API signatures are correct because they look plausible
-- Only checking happy-path procedures while ignoring error cases
-- Not flagging version-specific behavior that may break on upgrade
-- Approving documentation that describes intended behavior rather than actual behavior
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** skim documentation without actually testing the examples
+- The agent **MUST NOT** assume API signatures are correct because they look plausible
+- The agent **MUST NOT** only check happy-path procedures while ignoring error cases
+- The agent **MUST** flag version-specific behavior that may break on upgrade
+- The agent **MUST NOT** approve documentation that describes intended behavior rather than actual behavior

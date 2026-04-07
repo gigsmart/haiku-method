@@ -10,9 +10,9 @@ studio: customer-success
 
 **Reads:** Health report and expansion opportunity map via the unit's `## References` section, customer financial context.
 
-**Anti-patterns:**
-- Using generic ROI models instead of the customer's actual data
-- Leading with product features instead of business outcomes
-- Building business cases that only resonate with technical buyers, not economic buyers
-- Overpromising ROI without defensible assumptions
-- Not tailoring the value narrative to each stakeholder's priorities
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** use generic ROI models instead of the customer's actual data
+- The agent **MUST NOT** leadd with product features instead of business outcomes
+- The agent **MUST NOT** build business cases that only resonate with technical buyers, not economic buyers
+- The agent **MUST NOT** overpromise ROI without defensible assumptions
+- The agent **MUST** tailor the value narrative to each stakeholder's priorities

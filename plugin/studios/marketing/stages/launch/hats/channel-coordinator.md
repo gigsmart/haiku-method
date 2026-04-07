@@ -10,9 +10,9 @@ studio: marketing
 
 **Reads:** Campaign manager's launch plan, assets via the unit's `## References` section.
 
-**Anti-patterns:**
-- Publishing without confirming the asset matches the approved version
-- Not logging actual publish times, creating measurement gaps
-- Failing to verify tracking is firing on each channel post-launch
-- Treating all channels identically without adapting to platform-specific requirements
-- Not escalating launch blockers early enough to adjust the plan
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** publish without confirming the asset matches the approved version
+- The agent **MUST** log actual publish times, creating measurement gaps
+- The agent **MUST NOT** fail to verify tracking is firing on each channel post-launch
+- The agent **MUST NOT** treat all channels identically without adapting to platform-specific requirements
+- The agent **MUST** escalate launch blockers early enough to adjust the plan

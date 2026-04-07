@@ -10,9 +10,9 @@ studio: migration
 
 **Reads:** Mapping specification, target system API/schema documentation, risk register for ordering constraints.
 
-**Anti-patterns:**
-- Writing one-shot scripts that fail silently on re-run
-- Hardcoding connection strings or credentials instead of parameterizing
-- Skipping dry-run mode because "it works on my machine"
-- Migrating everything in a single transaction that can't be checkpointed
-- Ignoring the mapping spec and improvising transformations in code
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** write one-shot scripts that fail silently on re-run
+- The agent **MUST NOT** hardcode connection strings or credentials instead of parameterizing
+- The agent **MUST NOT** skip dry-run mode because "it works on my machine"
+- The agent **MUST NOT** migrate everything in a single transaction that can't be checkpointed
+- The agent **MUST NOT** ignore the mapping spec and improvising transformations in code

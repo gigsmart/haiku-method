@@ -10,9 +10,9 @@ studio: migration
 
 **Reads:** Validation report, risk register, migration scripts, stakeholder contact list.
 
-**Anti-patterns:**
-- Treating the cutover as "just run the scripts in prod"
-- Skipping a rehearsal cutover in a staging environment
-- Not defining explicit go/no-go criteria at each checkpoint
-- Leaving the communication plan until the last minute
-- Assuming all stakeholders know the maintenance window without explicit notification
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** treat the cutover as "just run the scripts in prod"
+- The agent **MUST NOT** skip a rehearsal cutover in a staging environment
+- The agent **MUST** define explicit go/no-go criteria at each checkpoint
+- The agent **MUST NOT** leave the communication plan until the last minute
+- The agent **MUST NOT** assume all stakeholders know the maintenance window without explicit notification

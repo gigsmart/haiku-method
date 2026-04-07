@@ -25,6 +25,6 @@ Bad criteria examples:
 - "Tradeoffs are analyzed"
 - "Risks are identified"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Evaluation report exists with multi-criteria scoring, scenario analysis results, and risk assessment for each option. Evaluator has confirmed the evaluation framework is consistent and comprehensive. Risk-analyst has validated probability estimates and stress-tested key assumptions.
+Evaluation report **MUST** exist with multi-criteria scoring, scenario analysis results, and risk assessment for each option. Evaluator **MUST** have confirmed the evaluation framework is consistent and comprehensive. Risk-analyst **MUST** have validated probability estimates and stress-tested key assumptions.

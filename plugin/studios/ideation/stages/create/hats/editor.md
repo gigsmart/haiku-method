@@ -10,9 +10,9 @@ studio: ideation
 
 **Reads:** Creator's draft, research-brief via the unit's `## References` section.
 
-**Anti-patterns:**
-- Rewriting the draft from scratch instead of editing
-- Prioritizing style over substance
-- Making changes that alter the creator's intended meaning
-- Introducing claims not supported by the research
-- Over-editing to the point of losing the original voice
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** rewrite the draft from scratch instead of editing
+- The agent **MUST NOT** prioritize style over substance
+- The agent **MUST NOT** make changes that alter the creator's intended meaning
+- The agent **MUST NOT** introduce claims not supported by the research
+- The agent **MUST NOT** over-edit to the point of losing the original voice

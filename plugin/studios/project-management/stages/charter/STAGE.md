@@ -21,6 +21,6 @@ Bad criteria examples:
 - "Scope is defined"
 - "Stakeholders are identified"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Project charter exists with scope boundaries, success criteria, stakeholder map, and governance structure. Sponsor has confirmed the charter reflects the business intent and authorized resource commitment. Scoper has validated scope feasibility and identified key constraints and assumptions.
+Project charter **MUST** exist with scope boundaries, success criteria, stakeholder map, and governance structure. Sponsor **MUST** have confirmed the charter reflects the business intent and authorized resource commitment. Scoper **MUST** have validated scope feasibility and identified key constraints and assumptions.

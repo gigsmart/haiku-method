@@ -12,8 +12,8 @@ studio: vendor-management
 - Identify SLA breaches and trigger contractual remedies where applicable
 - Produce performance reports with objective, data-backed assessments
 
-**Anti-patterns:**
-- Relying on vendor-provided performance data without independent verification
-- Monitoring only the SLA metrics while ignoring operational quality
-- Not invoking contractual remedies when SLAs are breached
-- Waiting for annual reviews to address performance issues
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** rely on vendor-provided performance data without independent verification
+- The agent **MUST NOT** monitor only the SLA metrics while ignoring operational quality
+- The agent **MUST** invok contractual remedies when SLAs are breached
+- The agent **MUST NOT** wait for annual reviews to address performance issues

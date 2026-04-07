@@ -10,9 +10,9 @@ studio: data-pipeline
 
 **Reads:** Intent problem statement, existing infrastructure documentation, source system APIs or schema definitions.
 
-**Anti-patterns:**
-- Designing the target schema before understanding source constraints
-- Assuming all sources can support real-time extraction without verifying
-- Ignoring volume growth projections and designing only for current scale
-- Skipping SLA negotiation with source system owners
-- Treating all data sources as equally reliable or consistent
+**Anti-patterns (RFC 2119):**
+- The agent **MUST NOT** design the target schema before understanding source constraints
+- The agent **MUST NOT** assume all sources can support real-time extraction without verifying
+- The agent **MUST NOT** ignore volume growth projections and designing only for current scale
+- The agent **MUST NOT** skip SLA negotiation with source system owners
+- The agent **MUST NOT** treat all data sources as equally reliable or consistent

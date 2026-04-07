@@ -28,6 +28,6 @@ Bad criteria examples:
 - "Monitoring is set up"
 - "Documentation exists"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Pipeline is deployed to the production orchestrator with correct scheduling, dependencies, and retry policies. Monitoring dashboards show pipeline health, data freshness, and row count trends. Alerting is configured for SLA breaches and pipeline failures. Runbook exists with recovery procedures for common failure scenarios. SRE has verified the deployment meets operational readiness criteria.
+Pipeline is deployed to the production orchestrator with correct scheduling, dependencies, and retry policies. Monitoring dashboards show pipeline health, data freshness, and row count trends. Alerting is configured for SLA breaches and pipeline failures. Runbook **MUST** exist with recovery procedures for common failure scenarios. SRE **MUST** have **MUST** be verified the deployment meets operational readiness criteria.

@@ -21,6 +21,6 @@ Bad criteria examples:
 - "Risks are documented"
 - "Systems are inventoried"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Migration inventory exists with a complete catalog of source artifacts (schemas, services, data stores, integrations). Risk register identifies each risk with severity, likelihood, and mitigation strategy. Dependency graph shows migration ordering constraints and parallel opportunities.
+Migration inventory **MUST** exist with a complete catalog of source artifacts (schemas, services, data stores, integrations). Risk register identifies each risk with severity, likelihood, and mitigation strategy. Dependency graph shows migration ordering constraints and parallel opportunities.

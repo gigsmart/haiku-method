@@ -23,6 +23,6 @@ Bad criteria examples:
 - "Customer is using the product"
 - "Features were explained"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Usage report exists with quantified adoption metrics across key features. Adoption coach has created a prioritized enablement plan targeting underutilized capabilities. Usage analyst has identified adoption patterns, bottlenecks, and at-risk workflows. Customer has progressed from initial setup usage to habitual product engagement.
+Usage report **MUST** exist with quantified adoption metrics across key features. Adoption coach **MUST** have created a prioritized enablement plan targeting underutilized capabilities. Usage analyst **MUST** have identified adoption patterns, bottlenecks, and at-risk workflows. Customer **MUST** have progressed from initial setup usage to habitual product engagement.

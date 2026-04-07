@@ -21,6 +21,6 @@ Bad criteria examples:
 - "Setup is done"
 - "Training was provided"
 
-## Completion Signal
+## Completion Signal (RFC 2119)
 
-Onboarding report exists with documented setup steps completed, training sessions delivered, and initial value metrics captured. Customer has achieved their first measurable success milestone. Technical integrations are verified working. Handoff to adoption includes account context, key stakeholders, and any open items.
+Onboarding report **MUST** exist with documented setup steps completed, training sessions delivered, and initial value metrics captured. Customer **MUST** have achieved their first measurable success milestone. Technical integrations are **MUST** be verified working. Handoff to adoption includes account context, key stakeholders, and any open items.
