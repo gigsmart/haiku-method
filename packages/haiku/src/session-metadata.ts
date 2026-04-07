@@ -7,8 +7,8 @@
 // The MCP never resolves session IDs or config dirs — that's the hook's job.
 // All operations are non-fatal.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
-import { dirname } from "node:path"
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { dirname, join } from "node:path"
 
 export interface HaikuSessionMetadata {
 	intent: string
@@ -38,4 +38,20 @@ export function readHaikuMetadata(stateFile: string): HaikuSessionMetadata | nul
 		return JSON.parse(readFileSync(stateFile, "utf8")) as HaikuSessionMetadata
 	} catch { /* non-fatal */ }
 	return null
+}
+
+/** Append an event to the session's haiku.jsonl log. Non-fatal. */
+export function logSessionEvent(stateFile: string, event: Record<string, unknown>): void {
+	try {
+		const jsonlPath = stateFile.replace(/\.json$/, ".jsonl")
+		mkdirSync(dirname(jsonlPath), { recursive: true })
+		const entry = { ...event, ts: new Date().toISOString() }
+		appendFileSync(jsonlPath, JSON.stringify(entry) + "\n")
+	} catch { /* non-fatal */ }
+}
+
+/** Check if this session already has an active intent. Returns the slug or null. */
+export function getSessionIntent(stateFile: string): string | null {
+	const metadata = readHaikuMetadata(stateFile)
+	return metadata?.intent || null
 }

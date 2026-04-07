@@ -29,6 +29,7 @@ import {
 	syncSessionMetadata,
 } from "./state-tools.js"
 import { createIntentBranch, isOnIntentBranch, createUnitWorktree } from "./git-worktree.js"
+import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
 import { computeWaves } from "./dag.js"
 import type { DAGGraph } from "./types.js"
 
@@ -1091,8 +1092,10 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 
 	if (name === "haiku_run_next") {
 		const slug = args.intent as string
+		const stFile = args.state_file as string | undefined
 		const result = runNext(slug)
 		emitTelemetry("haiku.orchestrator.action", { intent: slug, action: result.action })
+		if (stFile) logSessionEvent(stFile, { event: "run_next", intent: slug, action: result.action, stage: result.stage, unit: result.unit, hat: result.hat, wave: result.wave })
 
 		// Gate review: open review UI, block until user decides, process decision
 		if (result.action === "gate_review" && _openReviewAndWait) {
@@ -1264,6 +1267,18 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 				.replace(/^-|-$/g, "")
 				.slice(0, 50)
 				.replace(/-$/, "")
+		}
+
+		// One intent per session — reject if this session already has an active intent
+		const stateFile = args.state_file as string | undefined
+		if (stateFile) {
+			const existingIntent = getSessionIntent(stateFile)
+			if (existingIntent) {
+				return {
+					content: [{ type: "text" as const, text: `This session already has an active intent: '${existingIntent}'. Only one intent per session is allowed. Use /clear to start a new session, then create a new intent.` }],
+					isError: true,
+				}
+			}
 		}
 
 		// Check if intent already exists
