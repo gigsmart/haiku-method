@@ -112,6 +112,27 @@ export function gitCommitState(message: string): void {
 	}
 }
 
+/** Resolve allowed unit types for a stage — used for enforcement */
+function resolveAllowedUnitTypes(intent: string, stage: string): string[] {
+	try {
+		const root = findHaikuRoot()
+		const intentFile = join(root, "intents", intent, "intent.md")
+		if (!existsSync(intentFile)) return []
+		const { data } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+		const studio = (data.studio as string) || ""
+		if (!studio) return []
+
+		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+		for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
+			const stageFile = join(base, studio, "stages", stage, "STAGE.md")
+			if (!existsSync(stageFile)) continue
+			const { data: stageFm } = parseFrontmatter(readFileSync(stageFile, "utf8"))
+			return (stageFm.unit_types as string[]) || []
+		}
+	} catch { /* */ }
+	return []
+}
+
 /** Resolve stage metadata for scope context in tool responses */
 function resolveStageScope(intent: string, stage: string): string {
 	try {
@@ -351,11 +372,29 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			return text(JSON.stringify(units, null, 2))
 		}
 		case "haiku_unit_start": {
-			const path = unitPath(args.intent as string, args.stage as string, args.unit as string)
-			setFrontmatterField(path, "status", "active")
-			setFrontmatterField(path, "bolt", 1)
-			setFrontmatterField(path, "hat", args.hat)
-			setFrontmatterField(path, "started_at", timestamp())
+			const uPath = unitPath(args.intent as string, args.stage as string, args.unit as string)
+
+			// Enforce unit type matches stage's allowed unit_types
+			if (existsSync(uPath)) {
+				const { data: unitFm } = parseFrontmatter(readFileSync(uPath, "utf8"))
+				const unitType = (unitFm.type as string) || ""
+				if (unitType) {
+					const allowedTypes = resolveAllowedUnitTypes(args.intent as string, args.stage as string)
+					if (allowedTypes.length > 0 && !allowedTypes.includes(unitType)) {
+						return text(JSON.stringify({
+							error: "unit_type_not_allowed",
+							unit_type: unitType,
+							allowed_types: allowedTypes,
+							message: `Unit type '${unitType}' is not allowed in stage '${args.stage}'. Allowed types: ${allowedTypes.join(", ")}. This unit belongs in a different stage.`,
+						}))
+					}
+				}
+			}
+
+			setFrontmatterField(uPath, "status", "active")
+			setFrontmatterField(uPath, "bolt", 1)
+			setFrontmatterField(uPath, "hat", args.hat)
+			setFrontmatterField(uPath, "started_at", timestamp())
 			emitTelemetry("haiku.unit.started", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string, hat: args.hat as string })
 			gitCommitState(`haiku: start unit ${args.unit as string}`)
 			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)

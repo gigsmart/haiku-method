@@ -4,7 +4,7 @@ description: Understand the problem, define success, and elaborate into units
 hats: [architect, decomposer]
 review: ask
 elaboration: collaborative
-unit_types: [research, backend, frontend]
+unit_types: [research]
 inputs: []
 ---
 
