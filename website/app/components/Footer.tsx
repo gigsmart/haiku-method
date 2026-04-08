@@ -26,7 +26,7 @@ export function Footer() {
 						<div className="mt-4 flex gap-3">
 							{/* biome-ignore lint/a11y/useAnchorContent: aria-label provides accessible content */}
 							<a
-								href="https://github.com/TheBushidoCollective/haiku-method"
+								href="https://github.com/gigsmart/haiku-method"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="rounded-lg p-2 text-stone-500 transition hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-white"
@@ -97,7 +97,7 @@ export function Footer() {
 				{/* Bottom section */}
 				<div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-stone-200 pt-8 dark:border-stone-800 md:flex-row">
 					<p className="text-sm text-stone-500 dark:text-stone-400">
-						&copy; {new Date().getFullYear()} The Bushido Collective. Apache
+						&copy; {new Date().getFullYear()} GigSmart, Inc. Apache
 						2.0 License.
 					</p>
 					<div className="flex flex-wrap items-center gap-4 text-sm text-stone-500 dark:text-stone-400">

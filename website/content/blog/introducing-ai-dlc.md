@@ -2,7 +2,7 @@
 title: Introducing H·AI·K·U
 description: A methodology for iterative AI-driven development with hat-based workflows
 date: 2026-02-02
-author: The Bushido Collective
+author: GigSmart
 ---
 
 We're excited to introduce **H·AI·K·U** (formerly AI-DLC), a methodology for structured, iterative software development with AI assistants.
@@ -46,8 +46,8 @@ Units are focused pieces of work with clear success criteria. Breaking work into
 H·AI·K·U is distributed as a Claude plugin. Install it with:
 
 ```
-/plugin marketplace add thebushidocollective/ai-dlc
-/plugin install haiku@thebushidocollective-ai-dlc --scope project
+/plugin marketplace add gigsmart/ai-dlc
+/plugin install haiku@gigsmart-ai-dlc --scope project
 ```
 
 Then start using the hat commands to structure your workflow.
@@ -65,7 +65,7 @@ This is just the beginning. We're actively developing:
 - Team collaboration features
 - Metrics and analytics
 
-Follow our progress on [GitHub](https://github.com/thebushidocollective/ai-dlc) and join the conversation.
+Follow our progress on [GitHub](https://github.com/gigsmart/haiku-method) and join the conversation.
 
 ---
 

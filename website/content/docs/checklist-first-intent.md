@@ -12,7 +12,7 @@ Complete these steps before beginning your first intent:
 
 ### Environment Setup
 - [ ] Claude Code or Cowork installed and working
-- [ ] H·AI·K·U plugin installed (`/plugin marketplace add thebushidocollective/ai-dlc` then `/plugin install haiku@thebushidocollective-ai-dlc --scope project`)
+- [ ] H·AI·K·U plugin installed (`/plugin marketplace add gigsmart/ai-dlc` then `/plugin install haiku@gigsmart-ai-dlc --scope project`)
 - [ ] Verified plugin is active (commands like `/haiku:new` are recognized)
 
 ### Project Selection

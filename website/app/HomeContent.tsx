@@ -87,7 +87,7 @@ export default function HomeContent({
 				<div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_0%,rgba(59,130,246,0.08),transparent_60%)]" />
 				<div className="mx-auto max-w-4xl">
 					<div className="mb-6 inline-block rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5 text-xs font-semibold text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
-						By The Bushido Collective
+						By GigSmart
 					</div>
 					<h1 className="mb-4 bg-gradient-to-r from-blue-500 to-amber-400 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent sm:text-5xl lg:text-6xl">
 						H·AI·K·U: How It Works
@@ -2077,11 +2077,11 @@ export default function HomeContent({
 					<motion.div {...fadeIn} className="mt-10 text-center">
 						<div className="inline-block rounded-lg bg-gray-900 p-4 text-left font-mono text-sm text-white dark:bg-gray-800">
 							<div>
-								<code>/plugin marketplace add thebushidocollective/ai-dlc</code>
+								<code>/plugin marketplace add gigsmart/ai-dlc</code>
 							</div>
 							<div>
 								<code>
-									/plugin install haiku@thebushidocollective-ai-dlc --scope
+									/plugin install haiku@gigsmart-ai-dlc --scope
 									project
 								</code>
 							</div>
