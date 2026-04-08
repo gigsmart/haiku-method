@@ -5,7 +5,8 @@ import {
   renderTabs,
   renderBadge,
   renderCriteriaChecklist,
-  renderDecisionForm,
+  renderReviewSidebar,
+  renderReviewSidebarScript,
   renderBreadcrumb,
   renderMarkdownBlock,
   renderMockupEmbeds,
@@ -17,13 +18,15 @@ import { renderAnnotationCanvas } from "./annotation-canvas.js";
 import { renderInlineComments } from "./inline-comments.js";
 import { markdownToHtml } from "../markdown.js";
 
+import type { ReviewResult } from "./intent-review.js";
+
 export function renderUnitReview(
   intent: ParsedIntent,
   unit: ParsedUnit,
   criteria: CriterionItem[],
   sessionId: string,
   wireframeMockups: MockupInfo[],
-): string {
+): ReviewResult {
   const findSection = (name: string): string => {
     const section = unit.sections.find(
       (s: Section) => s.heading.toLowerCase() === name.toLowerCase(),
@@ -95,26 +98,7 @@ export function renderUnitReview(
       `) : ""}
       ${remainingMockups.length > 0 ? card(`
         ${sectionHeading(firstImageMockup ? "Additional Wireframes" : "Wireframe")}
-        ${remainingMockups.map((m) => `
-          <div class="mb-4">
-            <div class="flex items-center justify-between mb-2">
-              <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400">${escapeHtml(m.label)}</h4>
-              <a href="${escapeAttr(m.url)}" target="_blank" rel="noopener noreferrer"
-                 class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-                Open in new tab &#8599;
-              </a>
-            </div>
-            ${isImageUrl(m.url)
-              ? `<img src="${escapeAttr(m.url)}"
-                     alt="${escapeAttr(m.label)}"
-                     class="max-w-full h-auto border border-gray-200 dark:border-gray-700 rounded-lg" />`
-              : `<iframe src="${escapeAttr(m.url)}"
-                        sandbox="allow-scripts allow-same-origin"
-                        class="w-full h-[600px] border border-gray-200 dark:border-gray-700 rounded-lg bg-white"
-                        title="${escapeAttr(m.label)}"></iframe>`
-            }
-          </div>
-        `).join("")}
+        ${renderMockupEmbeds(remainingMockups)}
       `) : ""}`
     : card(`
         ${sectionHeading("Wireframe")}
@@ -160,8 +144,9 @@ export function renderUnitReview(
     { id: "risks", label: "Risks & Boundaries", content: risksContent },
   ];
 
-  return `
-    ${renderTabs("unit", tabs)}
-    ${renderDecisionForm(sessionId, true)}
-  `;
+  return {
+    body: renderTabs("unit", tabs),
+    sidebar: renderReviewSidebar(sessionId),
+    sidebarScript: renderReviewSidebarScript(sessionId),
+  };
 }

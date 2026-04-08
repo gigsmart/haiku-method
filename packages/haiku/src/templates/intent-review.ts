@@ -5,7 +5,8 @@ import {
   renderTabs,
   renderBadge,
   renderCriteriaChecklist,
-  renderDecisionForm,
+  renderReviewSidebar,
+  renderReviewSidebarScript,
   renderMarkdownBlock,
   renderMockupEmbeds,
   card,
@@ -16,6 +17,12 @@ import { renderAnnotationCanvas } from "./annotation-canvas.js";
 import { renderInlineComments } from "./inline-comments.js";
 import { markdownToHtml } from "../markdown.js";
 
+export interface ReviewResult {
+  body: string;
+  sidebar: string;
+  sidebarScript: string;
+}
+
 export function renderIntentReview(
   intent: ParsedIntent,
   units: ParsedUnit[],
@@ -24,7 +31,7 @@ export function renderIntentReview(
   mermaid: string,
   intentMockups: MockupInfo[],
   unitMockups: Map<string, MockupInfo[]>,
-): string {
+): ReviewResult {
   const findSection = (name: string): string => {
     const section = intent.sections.find(
       (s: Section) => s.heading.toLowerCase() === name.toLowerCase(),
@@ -213,8 +220,9 @@ export function renderIntentReview(
     { id: "technical", label: "Technical Details", content: technicalContent },
   ];
 
-  return `
-    ${renderTabs("intent", tabs)}
-    ${renderDecisionForm(sessionId, true)}
-  `;
+  return {
+    body: renderTabs("intent", tabs),
+    sidebar: renderReviewSidebar(sessionId),
+    sidebarScript: renderReviewSidebarScript(sessionId),
+  };
 }

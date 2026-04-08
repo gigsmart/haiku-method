@@ -1,7 +1,9 @@
 import type { ParsedIntent, ParsedUnit, CriterionItem } from "./index.js";
 import { renderLayout } from "./layout.js";
 import { renderIntentReview } from "./intent-review.js";
+import type { ReviewResult } from "./intent-review.js";
 import { renderUnitReview } from "./unit-review.js";
+import { renderMockupInteractionScript } from "./components.js";
 
 import type { MockupInfo } from "./types.js";
 export type { MockupInfo } from "./types.js";
@@ -21,6 +23,7 @@ export interface ReviewData {
 /**
  * Main entry point: renders a full review HTML page.
  * Routes to intent or unit review template based on reviewType.
+ * Uses two-column layout: main content + unified review sidebar.
  */
 export function renderReviewPage(data: ReviewData): string {
   // Prepare serialisable review data for client-side embedding
@@ -32,8 +35,10 @@ export function renderReviewPage(data: ReviewData): string {
     intentSlug: data.intent.slug,
   };
 
+  let result: ReviewResult | null = null;
   let bodyContent: string;
   let title: string;
+  let sidebarContent = "";
 
   if (data.reviewType === "unit" && data.target) {
     const targetUnit = data.units.find(
@@ -41,7 +46,7 @@ export function renderReviewPage(data: ReviewData): string {
     );
     if (targetUnit) {
       const wireframeMockups = data.unitMockups.get(targetUnit.slug) ?? [];
-      bodyContent = renderUnitReview(
+      result = renderUnitReview(
         data.intent,
         targetUnit,
         data.criteria,
@@ -56,7 +61,7 @@ export function renderReviewPage(data: ReviewData): string {
       title = `Review: ${data.intent.title}`;
     }
   } else {
-    bodyContent = renderIntentReview(
+    result = renderIntentReview(
       data.intent,
       data.units,
       data.criteria,
@@ -68,5 +73,14 @@ export function renderReviewPage(data: ReviewData): string {
     title = `Review: ${data.intent.title}`;
   }
 
-  return renderLayout(title, bodyContent, JSON.stringify(clientData));
+  if (result) {
+    // Sidebar script must come BEFORE the body content so window.addReviewComment
+    // is available when inline-comments and annotation-canvas scripts run.
+    bodyContent = result.sidebarScript + result.body + renderMockupInteractionScript();
+    sidebarContent = result.sidebar;
+  } else {
+    bodyContent = bodyContent! + renderMockupInteractionScript();
+  }
+
+  return renderLayout(title!, bodyContent, JSON.stringify(clientData), sidebarContent);
 }

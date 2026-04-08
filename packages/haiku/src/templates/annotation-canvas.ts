@@ -7,11 +7,11 @@ import { escapeAttr } from "./layout.js";
  * - Click to add numbered pin markers with text callouts
  * - Freehand pen drawing (toggle on/off)
  * - Toolbar: Pen tool, Pin tool, Clear, Undo
- * - Comments sidebar listing each annotation
+ * - Pins route to the unified review sidebar via window.addReviewComment()
  * - Capture: serialises to { screenshot: base64, annotations: [{x,y,text}] }
  *
  * @param imageContent - URL or base64 data URI of the image/wireframe to annotate
- * @returns HTML string with canvas overlay, pin system, and comments sidebar
+ * @returns HTML string with canvas overlay and pin system (no built-in sidebar)
  */
 export function renderAnnotationCanvas(imageContent: string): string {
   return `
@@ -52,37 +52,17 @@ export function renderAnnotationCanvas(imageContent: string): string {
     <span id="tool-status" class="text-xs text-gray-500 dark:text-gray-400">Pin mode</span>
   </div>
 
-  <div class="flex gap-4">
-    <!-- Canvas area -->
-    <div class="flex-1 min-w-0">
-      <div id="canvas-wrapper" class="relative inline-block border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-crosshair">
-        <img id="annotation-image"
-             src="${escapeAttr(imageContent)}"
-             alt="Content to annotate"
-             class="block max-w-full h-auto select-none"
-             draggable="false" />
-        <canvas id="draw-canvas"
-                class="absolute top-0 left-0 w-full h-full"
-                style="pointer-events: auto;"></canvas>
-        <div id="pins-layer" class="absolute top-0 left-0 w-full h-full" style="pointer-events: none;"></div>
-      </div>
-    </div>
-
-    <!-- Comments sidebar -->
-    <div id="comments-sidebar"
-         class="w-64 shrink-0 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col"
-         style="max-height: 600px;">
-      <div class="px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-          Annotations <span id="pin-count" class="text-gray-400 dark:text-gray-500">(0)</span>
-        </h3>
-      </div>
-      <div id="comments-list" class="flex-1 overflow-y-auto p-2 space-y-2">
-        <p id="no-annotations" class="text-xs text-gray-400 dark:text-gray-500 italic p-2">
-          Click on the image to add annotation pins.
-        </p>
-      </div>
-    </div>
+  <!-- Canvas area (full width — sidebar is external) -->
+  <div id="canvas-wrapper" class="relative inline-block border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-crosshair">
+    <img id="annotation-image"
+         src="${escapeAttr(imageContent)}"
+         alt="Content to annotate"
+         class="block max-w-full h-auto select-none"
+         draggable="false" />
+    <canvas id="draw-canvas"
+            class="absolute top-0 left-0 w-full h-full"
+            style="pointer-events: auto;"></canvas>
+    <div id="pins-layer" class="absolute top-0 left-0 w-full h-full" style="pointer-events: none;"></div>
   </div>
 </div>
 
@@ -114,29 +94,6 @@ export function renderAnnotationCanvas(imageContent: string): string {
     outline: 2px solid #3b82f6;
     outline-offset: 2px;
   }
-  .comment-entry {
-    padding: 6px 8px;
-    border-radius: 6px;
-    border: 1px solid transparent;
-    transition: border-color 0.15s;
-  }
-  .comment-entry:hover,
-  .comment-entry.active {
-    border-color: #3b82f6;
-  }
-  .comment-number {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #e11d48;
-    color: #fff;
-    font-size: 10px;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
 </style>
 
 <script>
@@ -145,14 +102,11 @@ export function renderAnnotationCanvas(imageContent: string): string {
   var canvas = document.getElementById('draw-canvas');
   var ctx = canvas.getContext('2d');
   var pinsLayer = document.getElementById('pins-layer');
-  var commentsList = document.getElementById('comments-list');
-  var noAnnotations = document.getElementById('no-annotations');
-  var pinCountEl = document.getElementById('pin-count');
   var toolStatus = document.getElementById('tool-status');
   var wrapper = document.getElementById('canvas-wrapper');
 
   var currentTool = 'pin'; // 'pin' or 'pen'
-  var pins = []; // { x, y, text, el, commentEl }
+  var pins = []; // { x, y, text, el, sidebarCommentId }
   var drawHistory = []; // array of ImageData snapshots
   var isDrawing = false;
 
@@ -162,7 +116,6 @@ export function renderAnnotationCanvas(imageContent: string): string {
     canvas.height = img.naturalHeight || img.offsetHeight;
     canvas.style.width = img.offsetWidth + 'px';
     canvas.style.height = img.offsetHeight + 'px';
-    // Restore drawing if we had any
     if (drawHistory.length > 0) {
       ctx.putImageData(drawHistory[drawHistory.length - 1], 0, 0);
     }
@@ -270,10 +223,12 @@ export function renderAnnotationCanvas(imageContent: string): string {
 
   function addPin(pctX, pctY) {
     var num = pins.length + 1;
+    var pinId = 'annotation-pin-' + num + '-' + Date.now();
 
     // Create pin element
     var pinEl = document.createElement('div');
     pinEl.className = 'annotation-pin';
+    pinEl.id = pinId;
     pinEl.textContent = num;
     pinEl.style.left = pctX + '%';
     pinEl.style.top = pctY + '%';
@@ -281,92 +236,60 @@ export function renderAnnotationCanvas(imageContent: string): string {
     pinEl.setAttribute('aria-label', 'Annotation ' + num);
     pinsLayer.appendChild(pinEl);
 
-    // Create comment entry
-    var commentEl = document.createElement('div');
-    commentEl.className = 'comment-entry bg-gray-50 dark:bg-gray-800/50';
-    commentEl.innerHTML =
-      '<div class="flex items-start gap-2">' +
-        '<span class="comment-number mt-0.5">' + num + '</span>' +
-        '<textarea class="flex-1 text-xs p-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" ' +
-          'rows="2" placeholder="Add comment..." ' +
-          'aria-label="Comment for annotation ' + num + '"></textarea>' +
-        '<button type="button" class="pin-delete text-gray-400 hover:text-red-500 text-xs mt-0.5" ' +
-          'aria-label="Delete annotation ' + num + '" title="Delete">&times;</button>' +
-      '</div>';
-    commentsList.appendChild(commentEl);
-
-    var pin = { x: pctX, y: pctY, text: '', el: pinEl, commentEl: commentEl };
+    var pin = { x: pctX, y: pctY, text: '', el: pinEl, sidebarCommentId: null };
     pins.push(pin);
 
-    // Focus the textarea
-    var textarea = commentEl.querySelector('textarea');
-    textarea.focus();
+    // Add to unified sidebar
+    if (typeof window.addReviewComment === 'function') {
+      var sidebarId = window.addReviewComment({
+        type: 'pin',
+        sourceId: pinId,
+        sourceLabel: 'Pin #' + num,
+        text: '',
+        scrollTargetId: pinId,
+        highlightEl: pinEl,
+        onDelete: function() {
+          removePin(pin, true);
+        },
+        onTextChange: function(val) {
+          pin.text = val;
+        }
+      });
+      pin.sidebarCommentId = sidebarId;
+    }
 
-    // Update text on input
-    textarea.addEventListener('input', function() {
-      pin.text = textarea.value;
-    });
-
-    // Highlight pin on hover
-    commentEl.addEventListener('mouseenter', function() {
-      pinEl.classList.add('selected');
-      commentEl.classList.add('active');
-    });
-    commentEl.addEventListener('mouseleave', function() {
-      pinEl.classList.remove('selected');
-      commentEl.classList.remove('active');
-    });
-    pinEl.addEventListener('mouseenter', function() {
-      pinEl.classList.add('selected');
-      commentEl.classList.add('active');
-    });
-    pinEl.addEventListener('mouseleave', function() {
-      pinEl.classList.remove('selected');
-      commentEl.classList.remove('active');
-    });
-
-    // Click pin to scroll comment into view
+    // Click pin to scroll sidebar comment into view
     pinEl.addEventListener('click', function(e) {
       e.stopPropagation();
-      commentEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      textarea.focus();
+      if (pin.sidebarCommentId) {
+        var card = document.querySelector('[data-comment-id="' + pin.sidebarCommentId + '"]');
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          var ta = card.querySelector('textarea');
+          if (ta) ta.focus();
+        }
+      }
     });
-
-    // Delete pin
-    commentEl.querySelector('.pin-delete').addEventListener('click', function() {
-      removePin(pin);
-    });
-
-    updatePinCount();
 
     // Save state for undo
     saveDrawState();
   }
 
-  function removePin(pin) {
+  function removePin(pin, fromSidebar) {
     var idx = pins.indexOf(pin);
     if (idx < 0) return;
     pins.splice(idx, 1);
     pin.el.remove();
-    pin.commentEl.remove();
+
+    // If not called from sidebar, remove from sidebar
+    if (!fromSidebar && pin.sidebarCommentId && typeof window.removeReviewComment === 'function') {
+      window.removeReviewComment(pin.sidebarCommentId);
+    }
+
     // Renumber remaining pins
     for (var i = 0; i < pins.length; i++) {
       pins[i].el.textContent = i + 1;
       pins[i].el.setAttribute('aria-label', 'Annotation ' + (i + 1));
-      var numEl = pins[i].commentEl.querySelector('.comment-number');
-      if (numEl) numEl.textContent = i + 1;
-      var ta = pins[i].commentEl.querySelector('textarea');
-      if (ta) ta.setAttribute('aria-label', 'Comment for annotation ' + (i + 1));
-    }
-    updatePinCount();
-  }
-
-  function updatePinCount() {
-    pinCountEl.textContent = '(' + pins.length + ')';
-    if (pins.length > 0) {
-      noAnnotations.style.display = 'none';
-    } else {
-      noAnnotations.style.display = '';
     }
   }
 
@@ -379,7 +302,7 @@ export function renderAnnotationCanvas(imageContent: string): string {
         ctx.putImageData(drawHistory[drawHistory.length - 1], 0, 0);
       }
     } else if (pins.length > 0) {
-      removePin(pins[pins.length - 1]);
+      removePin(pins[pins.length - 1], false);
     }
   });
 
@@ -390,30 +313,25 @@ export function renderAnnotationCanvas(imageContent: string): string {
     while (pins.length > 0) {
       var p = pins.pop();
       p.el.remove();
-      p.commentEl.remove();
+      if (p.sidebarCommentId && typeof window.removeReviewComment === 'function') {
+        window.removeReviewComment(p.sidebarCommentId);
+      }
     }
-    updatePinCount();
   });
 
   // --- Capture (called externally via window.captureAnnotations) ---
   window.captureAnnotations = function() {
-    // Composite: draw image + canvas drawing + pins onto a single capture canvas
     var captureCanvas = document.createElement('canvas');
     captureCanvas.width = canvas.width;
     captureCanvas.height = canvas.height;
     var captureCtx = captureCanvas.getContext('2d');
 
-    // Draw the original image
     captureCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-    // Draw the freehand annotations
     captureCtx.drawImage(canvas, 0, 0);
 
-    // Draw pin markers
     for (var i = 0; i < pins.length; i++) {
       var px = (pins[i].x / 100) * canvas.width;
       var py = (pins[i].y / 100) * canvas.height;
-      // Circle
       captureCtx.beginPath();
       captureCtx.arc(px, py, 14, 0, 2 * Math.PI);
       captureCtx.fillStyle = '#e11d48';
@@ -421,7 +339,6 @@ export function renderAnnotationCanvas(imageContent: string): string {
       captureCtx.strokeStyle = '#fff';
       captureCtx.lineWidth = 2;
       captureCtx.stroke();
-      // Number
       captureCtx.fillStyle = '#fff';
       captureCtx.font = 'bold 12px system-ui, sans-serif';
       captureCtx.textAlign = 'center';
