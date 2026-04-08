@@ -2077,11 +2077,11 @@ export default function HomeContent({
 					<motion.div {...fadeIn} className="mt-10 text-center">
 						<div className="inline-block rounded-lg bg-gray-900 p-4 text-left font-mono text-sm text-white dark:bg-gray-800">
 							<div>
-								<code>/plugin marketplace add gigsmart/ai-dlc</code>
+								<code>/plugin marketplace add gigsmart/haiku-method</code>
 							</div>
 							<div>
 								<code>
-									/plugin install haiku@gigsmart-ai-dlc --scope
+									/plugin install haiku@gigsmart-haiku-method --scope
 									project
 								</code>
 							</div>

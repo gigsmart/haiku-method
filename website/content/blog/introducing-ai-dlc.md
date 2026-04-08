@@ -46,8 +46,8 @@ Units are focused pieces of work with clear success criteria. Breaking work into
 H·AI·K·U is distributed as a Claude plugin. Install it with:
 
 ```
-/plugin marketplace add gigsmart/ai-dlc
-/plugin install haiku@gigsmart-ai-dlc --scope project
+/plugin marketplace add gigsmart/haiku-method
+/plugin install haiku@gigsmart-haiku-method --scope project
 ```
 
 Then start using the hat commands to structure your workflow.

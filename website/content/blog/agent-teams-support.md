@@ -131,8 +131,8 @@ Enable Agent Teams in your Claude Code settings:
 Install or update the H·AI·K·U plugin:
 
 ```
-/plugin marketplace add gigsmart/ai-dlc
-/plugin install haiku@gigsmart-ai-dlc --scope project
+/plugin marketplace add gigsmart/haiku-method
+/plugin install haiku@gigsmart-haiku-method --scope project
 ```
 
 Then run `/haiku:elaborate` to define an intent with a mode, and `/haiku:execute` to start the team.

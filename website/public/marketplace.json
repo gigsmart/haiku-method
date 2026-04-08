@@ -12,7 +12,7 @@
       "description": "H·AI·K·U methodology - universal lifecycle orchestration with hat-based workflows, completion criteria, and automatic context preservation",
       "source": {
         "source": "url",
-        "url": "https://github.com/gigsmart/ai-dlc.git"
+        "url": "https://github.com/gigsmart/haiku-method.git"
       },
       "category": "Pattern",
       "keywords": [

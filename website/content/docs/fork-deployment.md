@@ -11,7 +11,7 @@ This guide covers everything you need to get a full deployment running from a fo
 If you just want the plugin and don't care about hosting the website:
 
 1. Fork the repo
-2. That's it — the plugin works standalone via `/plugin install gigsmart/ai-dlc`
+2. That's it — the plugin works standalone via `/plugin install gigsmart/haiku-method`
 
 Everything below is only necessary if you want to host the website, run the auth proxy, or enable CI features like automated version bumping and PR reviews.
 

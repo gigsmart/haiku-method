@@ -22,7 +22,7 @@ Studio > Stage > Unit > Bolt
 ## Installation
 
 ```
-/install gigsmart/ai-dlc
+/install gigsmart/haiku-method
 ```
 
 No external dependencies. The plugin ships a single binary (`plugin/bin/haiku`) that handles MCP tools, hooks, and state management.

@@ -9,7 +9,7 @@ Get H·AI·K·U running in your project and deliver your first feature. H·AI·K
 ## Installation
 
 ```
-/plugin marketplace add gigsmart/ai-dlc
+/plugin marketplace add gigsmart/haiku-method
 /plugin install haiku --scope project
 ```
 
