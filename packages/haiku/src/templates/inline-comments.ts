@@ -231,11 +231,14 @@ export function renderInlineComments(markdownHtml: string): string {
       window.removeReviewComment(comment.sidebarCommentId);
     }
 
-    // Renumber remaining
+    // Renumber remaining and update sidebar labels
     for (var i = 0; i < comments.length; i++) {
       if (comments[i].highlightEl) {
         comments[i].highlightEl.setAttribute('data-comment-idx', i);
         comments[i].highlightEl.setAttribute('aria-label', 'Commented text, annotation ' + (i + 1));
+      }
+      if (comments[i].sidebarCommentId && typeof window.updateReviewCommentLabel === 'function') {
+        window.updateReviewCommentLabel(comments[i].sidebarCommentId, 'Selected text #' + (i + 1));
       }
     }
   }

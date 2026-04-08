@@ -870,7 +870,6 @@ export function renderReviewSidebarScript(sessionId: string): string {
         var parts = [];
         if (annotations.screenshot) parts.push('annotated screenshot');
         if (annotations.pins && annotations.pins.length) parts.push(annotations.pins.length + ' pin(s)');
-        if (annotations.comments && annotations.comments.length) parts.push(annotations.comments.length + ' inline comment(s)');
         if (annotations.reviewComments && annotations.reviewComments.length) parts.push(annotations.reviewComments.length + ' review comment(s)');
         if (parts.length > 0) msg += '<p class="text-xs mt-1">Included: ' + parts.join(', ') + '</p>';
       }
