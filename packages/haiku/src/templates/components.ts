@@ -460,13 +460,19 @@ export function renderMockupInteractionScript(): string {
       var preview = container.querySelector('.mockup-preview');
       if (!preview) return;
 
-      // Toggle: if canvas already open, close it
+      // Toggle: if canvas already open, hide it (don't destroy — preserves annotations)
       var existing = container.querySelector('.mockup-annotation-wrap');
       if (existing) {
-        existing.remove();
-        preview.style.display = '';
-        btn.classList.remove('bg-blue-100', 'text-blue-700', 'dark:bg-blue-900/40', 'dark:text-blue-300');
-        btn.classList.add('bg-gray-100', 'text-gray-600', 'dark:bg-gray-800', 'dark:text-gray-400');
+        var isHidden = existing.style.display === 'none';
+        existing.style.display = isHidden ? '' : 'none';
+        preview.style.display = isHidden ? 'none' : '';
+        if (isHidden) {
+          btn.classList.add('bg-blue-100', 'text-blue-700', 'dark:bg-blue-900/40', 'dark:text-blue-300');
+          btn.classList.remove('bg-gray-100', 'text-gray-600', 'dark:bg-gray-800', 'dark:text-gray-400');
+        } else {
+          btn.classList.remove('bg-blue-100', 'text-blue-700', 'dark:bg-blue-900/40', 'dark:text-blue-300');
+          btn.classList.add('bg-gray-100', 'text-gray-600', 'dark:bg-gray-800', 'dark:text-gray-400');
+        }
         return;
       }
 
