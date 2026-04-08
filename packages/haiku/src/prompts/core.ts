@@ -253,11 +253,12 @@ function buildRunInstructions(
 				`## Mechanics\n\n` +
 				(elaboration === "collaborative"
 					? `Mode: **collaborative** — you MUST engage the user iteratively before finalizing.\n\n` +
-					  `**CRITICAL: Use \`ask_user_visual_question\` for ALL structured questions.** ` +
-					  `When you have options for the user to choose between (A/B/C, scope decisions, ` +
-					  `approach tradeoffs, priorities), call \`ask_user_visual_question\` with the options ` +
-					  `as a question with selectable choices. Do NOT dump multiple-choice questions as ` +
-					  `conversation text. Plain text is ONLY for simple open-ended clarifications.\n\n`
+					  `**Use the right tool for the question type:**\n` +
+					  `- **Open-ended questions** ("tell me about...", clarifications) → conversation text\n` +
+					  `- **Multiple choice / A-B-C decisions** (scope, tradeoffs, priorities) → \`AskUserQuestion\` tool\n` +
+					  `- **Rich content with markdown** (specs, comparisons, detailed options) → \`ask_user_visual_question\` MCP tool\n` +
+					  `- **Design direction choices** (wireframe variants with previews) → \`pick_design_direction\` MCP tool\n\n` +
+					  `Do NOT present structured options as conversation text. Use the appropriate tool.\n\n`
 					: `Mode: **autonomous** — elaborate independently.\n\n`) +
 				`1. Research and write discovery artifacts\n` +
 				`2. Break work into units at \`.haiku/intents/${slug}/stages/${stage}/units/\`\n` +

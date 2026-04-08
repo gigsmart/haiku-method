@@ -29273,7 +29273,13 @@ All units MUST be within this stage's domain${unitTypes.length > 0 ? ` (${unitTy
 
 ` + (elaboration === "collaborative" ? `Mode: **collaborative** \u2014 you MUST engage the user iteratively before finalizing.
 
-**CRITICAL: Use \`ask_user_visual_question\` for ALL structured questions.** When you have options for the user to choose between (A/B/C, scope decisions, approach tradeoffs, priorities), call \`ask_user_visual_question\` with the options as a question with selectable choices. Do NOT dump multiple-choice questions as conversation text. Plain text is ONLY for simple open-ended clarifications.
+**Use the right tool for the question type:**
+- **Open-ended questions** ("tell me about...", clarifications) \u2192 conversation text
+- **Multiple choice / A-B-C decisions** (scope, tradeoffs, priorities) \u2192 \`AskUserQuestion\` tool
+- **Rich content with markdown** (specs, comparisons, detailed options) \u2192 \`ask_user_visual_question\` MCP tool
+- **Design direction choices** (wireframe variants with previews) \u2192 \`pick_design_direction\` MCP tool
+
+Do NOT present structured options as conversation text. Use the appropriate tool.
 
 ` : `Mode: **autonomous** \u2014 elaborate independently.
 
