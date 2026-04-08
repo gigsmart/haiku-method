@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 jobs:
   deploy:
@@ -31,15 +32,25 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
+      - name: Detect GCP project from service account key
+        id: gcp
+        run: |
+          PROJECT_ID=$(echo '${{ secrets.GCP_SA_KEY }}' | jq -r .project_id)
+          echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
+          echo "tf_state_bucket=${PROJECT_ID}-terraform-state" >> $GITHUB_OUTPUT
+
       - name: Terraform Init
         working-directory: deploy/terraform
-        run: terraform init
+        run: terraform init -backend-config="bucket=${{ steps.gcp.outputs.tf_state_bucket }}" -backend-config="prefix=haiku"
 
       - name: Terraform Apply
+        id: terraform
         working-directory: deploy/terraform
-        run: terraform apply -auto-approve
+        run: |
+          terraform apply -auto-approve
+          echo "auth_proxy_url=$(terraform output -raw auth_proxy_url)" >> $GITHUB_OUTPUT
         env:
-          TF_VAR_gcp_project_id: waldrip-net
+          TF_VAR_gcp_project_id: ${{ steps.gcp.outputs.project_id }}
           TF_VAR_domain: ${{ vars.HAIKU_DOMAIN || 'haikumethod.ai' }}
           TF_VAR_enable_auth_proxy: "true"
           TF_VAR_auth_proxy_subdomain: ${{ vars.TF_VAR_auth_proxy_subdomain || 'auth' }}
@@ -49,3 +60,8 @@ jobs:
           TF_VAR_gitlab_oauth_client_id: ${{ vars.NEXT_PUBLIC_HAIKU_GITLAB_OAUTH_CLIENT_ID }}
           TF_VAR_gitlab_oauth_client_secret: ${{ secrets.HAIKU_GITLAB_OAUTH_CLIENT_SECRET }}
           TF_VAR_enable_mcp_dns: "false"
+
+      - name: Update auth proxy URL variable
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh variable set NEXT_PUBLIC_HAIKU_AUTH_PROXY_URL --body "${{ steps.terraform.outputs.auth_proxy_url }}"
