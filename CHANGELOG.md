@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.87.0] - 2026-04-08
 
 ### Changed
-- Resume work on existing intents with `haiku:resume` (formerly `haiku:run`), and start new work with a simplified `haiku:new` command.
+- Resume work on existing intents with `haiku:resume` (formerly `haiku:run`), and start new work with a simplified `haiku:start` command.
 
 ## [1.86.11] - 2026-04-08
 

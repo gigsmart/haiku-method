@@ -76,7 +76,7 @@ A **Stage** is a typed phase within a studio's pipeline, each focused on a speci
 
 Stages are defined by the studio. The simplest studios (like the default software studio) use only the development stage. Multi-stage studios add design, product, or other discipline-specific stages when cross-functional iteration is needed.
 
-Studios are selected during `/haiku:new` and their stages run automatically via `/haiku:resume`.
+Studios are selected during `/haiku:start` and their stages run automatically via `/haiku:resume`.
 
 #### Stage Constraints
 
@@ -355,7 +355,7 @@ Human reviews output
 
 ## Execution Modes: Continuous vs Discrete
 
-When creating an intent with `/haiku:new`, you select an execution mode that controls how stages advance.
+When creating an intent with `/haiku:start`, you select an execution mode that controls how stages advance.
 
 ### Continuous Mode
 
@@ -503,10 +503,10 @@ See the [Design Providers Guide](/docs/guide-design-providers/) for setup instru
 
 Studios ship with parameterized intent templates in `studios/{name}/templates/`. Templates provide pre-filled units with `{{ parameter }}` substitution, so common patterns can be instantiated without manual elaboration.
 
-Use `/haiku:new --template <name> --param key=value` to create an intent from a template. For example:
+Use `/haiku:start --template <name> --param key=value` to create an intent from a template. For example:
 
 ```
-/haiku:new --template new-feature --param feature_name="User Profiles" --param api_prefix="/api/v2"
+/haiku:start --template new-feature --param feature_name="User Profiles" --param api_prefix="/api/v2"
 ```
 
 Ten templates ship across seven studios:

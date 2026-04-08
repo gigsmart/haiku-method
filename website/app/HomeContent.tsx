@@ -1882,7 +1882,7 @@ export default function HomeContent({
 					{/* While You Build */}
 					<ToolkitGroup title="While You Build" color="amber">
 						<ToolkitCard
-							cmd="/haiku:new"
+							cmd="/haiku:start"
 							tagline="Create an intent and start working"
 							color="amber"
 						>
@@ -1908,7 +1908,7 @@ export default function HomeContent({
 						>
 							<p>
 								Legacy entry point. Use{" "}
-								<code className="text-amber-500">/haiku:new</code> instead,
+								<code className="text-amber-500">/haiku:start</code> instead,
 								which combines intent creation and elaboration.
 							</p>
 						</ToolkitCard>

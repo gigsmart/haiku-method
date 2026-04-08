@@ -226,7 +226,7 @@ persistence:
 
 The orchestrator calls `persistence_*` functions instead of directly invoking git commands. This means:
 
-1. `/haiku:new` calls `persistence_create_workspace` instead of `git checkout -b`
+1. `/haiku:start` calls `persistence_create_workspace` instead of `git checkout -b`
 2. The build phase calls `persistence_save` instead of `git add && git commit`
 3. The review gate calls `persistence_create_review` instead of `gh pr create`
 4. Delivery calls `persistence_deliver` instead of `gh pr merge`

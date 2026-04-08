@@ -17,7 +17,7 @@ Get H·AI·K·U running in your project and deliver your first feature. H·AI·K
 
 | Command | What it does |
 |---------|--------------|
-| `/haiku:new` | Create an intent — define what you're building and select a studio |
+| `/haiku:start` | Create an intent — define what you're building and select a studio |
 | `/haiku:resume` | Run the stage pipeline — autonomous execution through each stage |
 
 ## Your First Feature
@@ -25,7 +25,7 @@ Get H·AI·K·U running in your project and deliver your first feature. H·AI·K
 ### Step 1: Create an Intent
 
 ```
-/haiku:new
+/haiku:start
 ```
 
 The AI guides you through:
@@ -39,7 +39,7 @@ The AI guides you through:
 Example session:
 
 ```
-User: /haiku:new
+User: /haiku:start
 AI: What do you want to build?
 User: Add user authentication with email/password
 AI: [Asks clarifying questions via interactive prompts]
@@ -80,7 +80,7 @@ Your progress is preserved — the AI picks up where it left off.
 
 | Command | Purpose |
 |---------|---------|
-| `/haiku:new` | Create a new intent |
+| `/haiku:start` | Create a new intent |
 | `/haiku:resume` | Run the stage pipeline |
 | `/haiku:review` | Pre-delivery code review — catches issues before external CI/bots |
 | `/haiku:resume [slug]` | Resume an existing intent after a break |
@@ -91,7 +91,7 @@ Your progress is preserved — the AI picks up where it left off.
 ## Example: Complete Workflow
 
 ```
-User: /haiku:new
+User: /haiku:start
 AI: What do you want to build?
 User: Add a dark mode toggle to the settings page
 AI: [Guides through requirements and criteria]

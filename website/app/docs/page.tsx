@@ -29,7 +29,7 @@ export default function DocsPage() {
 				<p>Then use the stage commands to structure your workflow:</p>
 				<ul>
 					<li>
-						<code>/haiku:new</code> - Create a new intent and select a studio
+						<code>/haiku:start</code> - Create a new intent and select a studio
 					</li>
 					<li>
 						<code>/haiku:resume</code> - Run the stage pipeline

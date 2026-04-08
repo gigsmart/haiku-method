@@ -6,7 +6,7 @@ export const config: DemoConfig = {
   stages: ["research", "create", "review", "deliver"],
   completionText: "All 4 stages passed. company-rebrand-strategy delivered.",
   steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:new"}] },
+    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
     { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
     { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Design a company rebrand strategy"}] },
     { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"Creating intent: company-rebrand-strategy..."}, {"type":"file","path":".haiku/intents/company-rebrand-strategy/intent.md"}] },

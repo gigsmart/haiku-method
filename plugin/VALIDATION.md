@@ -76,7 +76,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 
 ## Scenario 1: New Intent Through Full Lifecycle (Software Studio)
 
-**Trigger:** User runs `/haiku:new` with a description.
+**Trigger:** User runs `/haiku:start` with a description.
 
 ### Expected Flow
 
@@ -204,7 +204,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 
 ## Scenario 7: Template Instantiation
 
-**Trigger:** User runs `/haiku:new --template new-feature --param feature="OAuth login"`.
+**Trigger:** User runs `/haiku:start --template new-feature --param feature="OAuth login"`.
 
 - [ ] Template resolved from `studios/software/templates/new-feature.md`
 - [ ] Parameters substituted: `{{ feature }}` → "OAuth login" in all criteria
@@ -293,7 +293,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 - [ ] `ensure-deps`: no-op (Node is the only dependency)
 
 ### PreToolUse
-- [ ] `redirect-plan-mode`: blocks EnterPlanMode, suggests `/haiku:new`
+- [ ] `redirect-plan-mode`: blocks EnterPlanMode, suggests `/haiku:start`
 - [ ] `inject-state-file`: injects `state_file` arg into `haiku_` MCP tool calls
 - [ ] `guard-fsm-fields`: blocks direct edits to FSM-controlled fields in haiku state files
 - [ ] `prompt-guard`: warns on injection patterns in `.haiku/` file writes

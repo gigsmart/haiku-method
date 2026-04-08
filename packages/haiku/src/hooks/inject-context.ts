@@ -91,7 +91,7 @@ export async function injectContext(input: Record<string, unknown>, _pluginRoot:
 	if (!active) {
 		out("## H·AI·K·U")
 		out("")
-		out("No active intent. Use `/haiku:new` to create one.")
+		out("No active intent. Use `/haiku:start` to create one.")
 		return
 	}
 

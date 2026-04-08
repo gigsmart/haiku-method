@@ -42,7 +42,7 @@ allowed-tools:
 - Compliance remediation: software (fix the code) + compliance (document the fix)
 - Feature with docs: software (build) + documentation (write the docs)
 
-For single-studio work, use `/haiku:new` instead.
+For single-studio work, use `/haiku:start` instead.
 
 ## Implementation
 

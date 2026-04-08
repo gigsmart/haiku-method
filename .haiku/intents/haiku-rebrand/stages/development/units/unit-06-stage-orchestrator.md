@@ -14,7 +14,7 @@ completed_at: 2026-04-03T02:19:56Z
 
 ## Description
 
-Create the unified stage orchestrator that replaces the separate elaborate/execute command split. Three user-facing commands: `/haiku:new` (start intent), `/haiku:resume` (advance through stages), `/haiku:autopilot` (fully autonomous). Each stage internally runs: plan -> build -> adversarial review -> review gate.
+Create the unified stage orchestrator that replaces the separate elaborate/execute command split. Three user-facing commands: `/haiku:start` (start intent), `/haiku:resume` (advance through stages), `/haiku:autopilot` (fully autonomous). Each stage internally runs: plan -> build -> adversarial review -> review gate.
 
 ## Discipline
 
@@ -22,7 +22,7 @@ backend - Skill definition files, shell orchestration logic, and state managemen
 
 ## Domain Entities
 
-- `plugin/skills/new/SKILL.md` — `/haiku:new` skill definition
+- `plugin/skills/start/SKILL.md` — `/haiku:start` skill definition
 - `plugin/skills/run/SKILL.md` — `/haiku:resume` skill definition
 - `plugin/skills/autopilot/SKILL.md` — `/haiku:autopilot` skill definition (updated)
 - `plugin/lib/orchestrator.sh` — stage loop execution logic
@@ -31,9 +31,9 @@ backend - Skill definition files, shell orchestration logic, and state managemen
 
 ### Commands
 
-#### `/haiku:new` — Start a New Intent
+#### `/haiku:start` — Start a New Intent
 
-User says `/haiku:new`. The system:
+User says `/haiku:start`. The system:
 
 1. **Asks**: "What do you want to accomplish?" (no name needed upfront)
 2. **Extracts slug** from the user's answer (kebab-case, max 40 chars)
@@ -236,8 +236,8 @@ hku_run_plan_phase() {
 
 ## Success Criteria
 
-- [x] `/haiku:new` skill exists and creates intents with studio, stages, active_stage, and mode
-- [x] `/haiku:new` correctly detects studio from settings and resolves stage list
+- [x] `/haiku:start` skill exists and creates intents with studio, stages, active_stage, and mode
+- [x] `/haiku:start` correctly detects studio from settings and resolves stage list
 - [x] `/haiku:resume` skill exists and advances through stages
 - [x] `/haiku:resume` with explicit stage argument runs that specific stage
 - [x] `/haiku:resume` without stage argument auto-advances to next incomplete stage

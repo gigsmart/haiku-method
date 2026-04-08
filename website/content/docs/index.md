@@ -35,7 +35,7 @@ Because work is organized into units with clear criteria, progress is always mea
 ## Getting Started
 
 1. Install the H·AI·K·U plugin in your Claude environment
-2. Run `/haiku:new` to define your first intent with clear success criteria
+2. Run `/haiku:start` to define your first intent with clear success criteria
 3. Run `/haiku:resume` to move through the stage pipeline: planning, building, reviewing
 4. Complete the unit and move to the next
 5. After construction, manage ongoing operations with `/haiku:operate`

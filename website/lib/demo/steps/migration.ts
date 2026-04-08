@@ -6,7 +6,7 @@ export const config: DemoConfig = {
   stages: ["assessment", "mapping", "migrate", "validation", "cutover"],
   completionText: "All 5 stages passed. migrate-postgresql-12-to-16 delivered.",
   steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:new"}] },
+    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
     { delay: 1000, actions: [{"type":"typing"}] },
     { delay: 800, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
     { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Migrate our production PostgreSQL 12 cluster to PostgreSQL 16"}] },

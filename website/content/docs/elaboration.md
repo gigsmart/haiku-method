@@ -4,7 +4,7 @@ description: What to expect during H·AI·K·U inception — the collaborative p
 order: 3
 ---
 
-Inception is the first phase of any H·AI·K·U intent. It's where you and the AI collaboratively define *what* to build, *why* it matters, and *how you'll know it's done*. Run `/haiku:new` to start.
+Inception is the first phase of any H·AI·K·U intent. It's where you and the AI collaboratively define *what* to build, *why* it matters, and *how you'll know it's done*. Run `/haiku:start` to start.
 
 ## What Inception Produces
 
@@ -152,7 +152,7 @@ When invoked via `/haiku:autopilot`, inception runs with minimal interaction -- 
 - **Be specific upfront.** The more detail you give in Step 1, the fewer clarifying questions the AI needs to ask.
 - **Push back on criteria.** If a proposed criterion is vague ("code is clean") or out of scope, say so. Criteria drive everything downstream.
 - **Review domain models carefully.** A wrong domain model means wrong unit specs, which means building the wrong thing. This is the most important checkpoint.
-- **Use `/haiku:new {slug}`** to modify an existing intent that hasn't started execution yet.
+- **Use `/haiku:start {slug}`** to modify an existing intent that hasn't started execution yet.
 - **Use `/haiku:followup`** to create an iteration intent that builds on a completed one.
 
 ## What Happens After Inception

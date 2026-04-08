@@ -19,7 +19,7 @@ H·AI·K·U uses just two main commands:
 
 | Command | What it does |
 |---------|--------------|
-| `/haiku:new` | Define what you're building and how you'll know it's done |
+| `/haiku:start` | Define what you're building and how you'll know it's done |
 | `/haiku:resume` | Start the autonomous execution loop through the stage pipeline |
 
 ## Your First Feature
@@ -27,7 +27,7 @@ H·AI·K·U uses just two main commands:
 ### Step 1: Create an Intent
 
 ```
-/haiku:new
+/haiku:start
 ```
 
 The AI guides you through:
@@ -37,7 +37,7 @@ The AI guides you through:
 
 Example session:
 ```
-User: /haiku:new
+User: /haiku:start
 AI: What do you want to build?
 User: Add user authentication with email/password
 AI: [Asks clarifying questions via interactive prompts]
@@ -83,7 +83,7 @@ Your progress is preserved - the AI picks up where it left off.
 ## Example: Complete Workflow
 
 ```
-User: /haiku:new
+User: /haiku:start
 AI: What do you want to build?
 User: Add a dark mode toggle to the settings page
 AI: [Guides through requirements and criteria]
@@ -103,7 +103,7 @@ Once your intent is complete, manage ongoing operational tasks with `/haiku:oper
 
 ## Next Steps
 
-- [Inception & Planning](/docs/elaboration/) - What to expect during `/haiku:new`
+- [Inception & Planning](/docs/elaboration/) - What to expect during `/haiku:start`
 - [Core Concepts](/docs/concepts/) - Understand intents, units, and stages
 - [Studios & Stages](/docs/studios/) - Learn about studios and their stage pipelines
 - [Installation](/docs/installation/) - Detailed setup

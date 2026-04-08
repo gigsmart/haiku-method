@@ -6,7 +6,7 @@ export const config: DemoConfig = {
   stages: ["research", "qualification", "proposal", "negotiation", "close"],
   completionText: "All 5 stages passed. close-acme-enterprise-deal delivered.",
   steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:new"}] },
+    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
     { delay: 1200, actions: [{"type":"typing"}] },
     { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
     { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Close the enterprise deal with Acme Corp"}] },

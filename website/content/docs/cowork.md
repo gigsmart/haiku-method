@@ -8,7 +8,7 @@ Cowork mode lets you use H·AI·K·U when you're not inside a git repository —
 
 ## How It Works
 
-When you run `/haiku:new` outside of a git repo, H·AI·K·U detects this and enters cowork mode:
+When you run `/haiku:start` outside of a git repo, H·AI·K·U detects this and enters cowork mode:
 
 1. **Get the repo URL** — H·AI·K·U asks which repository the work targets. If VCS MCP tools (e.g., GitHub MCP) are available, it offers discovered repos as options.
 2. **Clone the repo** — The repository is cloned to a temporary workspace.

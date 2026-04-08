@@ -4,7 +4,7 @@ import Link from "next/link"
 export const metadata: Metadata = {
 	title: "How It Works",
 	description:
-		"Technical deep-dive into H·AI·K·U mechanics — stage loops, hat transitions, DAG-based unit management, persistence adapters, and what happens when you run /haiku:new.",
+		"Technical deep-dive into H·AI·K·U mechanics — stage loops, hat transitions, DAG-based unit management, persistence adapters, and what happens when you run /haiku:start.",
 }
 
 const stageLoop = [
@@ -640,10 +640,10 @@ Implement REST API endpoints for user authentication...
 					</div>
 
 					<div className="space-y-8">
-						{/* /haiku:new */}
+						{/* /haiku:start */}
 						<div className="rounded-xl border-2 border-teal-200 bg-teal-50/20 p-6 dark:border-teal-800 dark:bg-teal-950/10">
 							<div className="mb-5 flex items-center gap-3">
-								<code className="rounded-lg bg-teal-100 px-3 py-1.5 text-lg font-bold text-teal-700 dark:bg-teal-900 dark:text-teal-300">/haiku:new</code>
+								<code className="rounded-lg bg-teal-100 px-3 py-1.5 text-lg font-bold text-teal-700 dark:bg-teal-900 dark:text-teal-300">/haiku:start</code>
 								<span className="text-stone-500 dark:text-stone-400">Create an intent and start working</span>
 							</div>
 
@@ -754,7 +754,7 @@ Implement REST API endpoints for user authentication...
 							</div>
 
 							<div className="mt-5 rounded-lg bg-teal-100/50 p-3 text-xs text-teal-800 dark:bg-teal-900/20 dark:text-teal-200">
-								<strong>One seamless flow:</strong> The user never stops between creating the intent and starting work. <code>/haiku:new</code> creates the intent container and immediately enters the first stage &mdash; no separate command needed.
+								<strong>One seamless flow:</strong> The user never stops between creating the intent and starting work. <code>/haiku:start</code> creates the intent container and immediately enters the first stage &mdash; no separate command needed.
 							</div>
 						</div>
 

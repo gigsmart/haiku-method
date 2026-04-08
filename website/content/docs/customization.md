@@ -47,7 +47,7 @@ persistence:
 studio: data-pipeline
 ```
 
-Or specify it per-intent when running `/haiku:new`.
+Or specify it per-intent when running `/haiku:start`.
 
 ## Creating a Custom Stage
 

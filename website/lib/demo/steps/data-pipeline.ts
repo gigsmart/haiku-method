@@ -6,7 +6,7 @@ export const config: DemoConfig = {
   stages: ["discovery", "extraction", "transformation", "validation", "deployment"],
   completionText: "All 5 stages passed. customer-analytics-etl delivered.",
   steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:new"}] },
+    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
     { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
     { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Build a customer analytics ETL pipeline"}] },
     { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"Creating intent: customer-analytics-etl..."}, {"type":"file","path":".haiku/intents/customer-analytics-etl/intent.md"}] },

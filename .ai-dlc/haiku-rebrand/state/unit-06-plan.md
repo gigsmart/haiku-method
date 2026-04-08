@@ -2,7 +2,7 @@
 
 ## Overview
 
-Replace the separate elaborate/execute command split with a unified stage orchestrator. Three user-facing commands: `/haiku:new`, `/haiku:resume`, `/haiku:autopilot`. Each stage internally runs: plan → build → adversarial review → output persistence → review gate.
+Replace the separate elaborate/execute command split with a unified stage orchestrator. Three user-facing commands: `/haiku:start`, `/haiku:resume`, `/haiku:autopilot`. Each stage internally runs: plan → build → adversarial review → output persistence → review gate.
 
 ## Dependencies
 
@@ -16,7 +16,7 @@ The orchestrator sits between the user-facing commands and the existing sub-skil
 ```
 User commands          Orchestrator              Existing sub-skills
 ─────────────         ────────────              ──────────────────
-/haiku:new      →     Create intent             (setup, config)
+/haiku:start      →     Create intent             (setup, config)
 /haiku:resume      →     Stage loop:
                         Plan phase      →       gather, discover, decompose, criteria, dag
                         Build phase     →       execute bolt loop (planner/builder/reviewer hats)
@@ -156,9 +156,9 @@ hku_stage_units() {
 - The build phase reuses the existing execute bolt loop pattern from execute/SKILL.md
 - Gate resolution is deterministic and stateless
 
-### File 2: `plugin/skills/new/SKILL.md` (NEW)
+### File 2: `plugin/skills/start/SKILL.md` (NEW)
 
-The `/haiku:new` user-facing command.
+The `/haiku:start` user-facing command.
 
 **Structure:**
 
@@ -200,7 +200,7 @@ allowed-tools:
     - Continuous: automatically begin first stage's plan phase (transition to `/haiku:resume`)
     - Discrete: tell user to run `/haiku:resume {slug}` when ready
 
-**Relationship to elaborate:** `/haiku:new` replaces the "gather intent" portion of elaborate. It does NOT run decomposition — that happens in the plan phase of the first stage via `/haiku:resume`.
+**Relationship to elaborate:** `/haiku:start` replaces the "gather intent" portion of elaborate. It does NOT run decomposition — that happens in the plan phase of the first stage via `/haiku:resume`.
 
 ### File 3: `plugin/skills/run/SKILL.md` (NEW)
 
@@ -226,7 +226,7 @@ allowed-tools:
 2. **Resolve intent**:
    - If slug provided: find `.haiku/intents/{slug}/intent.md`
    - If no slug: find active intent via `hku_find_active_intent`
-   - If no active intent found: error, suggest `/haiku:new`
+   - If no active intent found: error, suggest `/haiku:start`
 3. **Determine stage**:
    - If stage argument given: validate it's in the studio's stage list, run that stage
    - If intent has `mode: continuous`: run all stages merged (collapse operation — behaves like old elaborate→execute)
@@ -286,7 +286,7 @@ Update the existing autopilot to use the stage pipeline.
 
 **Changes:**
 
-1. **Replace Phase 2 (Elaboration)**: Instead of invoking `/haiku:elaborate`, invoke `/haiku:new` (if no intent exists) then `/haiku:resume` with autopilot gate resolution
+1. **Replace Phase 2 (Elaboration)**: Instead of invoking `/haiku:elaborate`, invoke `/haiku:start` (if no intent exists) then `/haiku:resume` with autopilot gate resolution
 2. **Replace Phase 3 (Execution)**: Instead of invoking `/haiku:execute` per unit, the stage loop in `/haiku:resume` handles this
 3. **Gate resolution in autopilot mode**:
    - `auto` gates: advance immediately
@@ -297,7 +297,7 @@ Update the existing autopilot to use the stage pipeline.
 
 **The autopilot skill becomes a thin wrapper** that:
 1. Validates input (feature description required)
-2. Runs `/haiku:new` with the description (autonomous mode — no questions)
+2. Runs `/haiku:start` with the description (autonomous mode — no questions)
 3. Runs `/haiku:resume` with autopilot=true for each stage (or all at once in continuous mode)
 4. Handles delivery (PR creation with confirmation)
 
@@ -337,7 +337,7 @@ Convert to a backward-compatibility alias that runs the plan phase.
   - If yes: print deprecation notice, invoke `/haiku:resume {slug}` (plan phase only)  
   - If no (legacy): run existing elaborate logic unchanged
 - The bulk of the file remains unchanged for legacy support
-- Add a note in the description: "Prefer `/haiku:new` + `/haiku:resume` for stage-based workflows"
+- Add a note in the description: "Prefer `/haiku:start` + `/haiku:resume` for stage-based workflows"
 
 ### File 7: `plugin/skills/execute/SKILL.md` (UPDATE)
 
@@ -399,7 +399,7 @@ For `.haiku/{slug}/` (old directory structure):
 
 1. `plugin/lib/orchestrator.sh` — core functions, no existing file dependencies beyond stage.sh/studio.sh/state.sh
 2. `plugin/lib/state.sh` — add stage tracking functions (small additions)
-3. `plugin/skills/new/SKILL.md` — new skill, no conflicts
+3. `plugin/skills/start/SKILL.md` — new skill, no conflicts
 4. `plugin/skills/run/SKILL.md` — new skill, no conflicts
 5. `plugin/skills/autopilot/SKILL.md` — update existing (references new/run)
 6. `plugin/skills/elaborate/SKILL.md` — add alias/deprecation header

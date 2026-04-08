@@ -7,7 +7,7 @@ author: GigSmart
 
 H·AI·K·U had a greenfield problem. Every entry point assumed you were building something new.
 
-`/haiku:new` starts from a blank intent and walks you through specification, elaboration, and planning for work that does not exist yet. `/haiku:followup` iterates on a previous intent — but only one that was originally built through H·AI·K·U, with artifacts already on disk. If your team adopted H·AI·K·U after years of shipping software the traditional way, those existing features were invisible to the methodology. No intent files. No unit specs. No operational plans. No way to run `/haiku:operate auth-system` because the system had never heard of `auth-system`.
+`/haiku:start` starts from a blank intent and walks you through specification, elaboration, and planning for work that does not exist yet. `/haiku:followup` iterates on a previous intent — but only one that was originally built through H·AI·K·U, with artifacts already on disk. If your team adopted H·AI·K·U after years of shipping software the traditional way, those existing features were invisible to the methodology. No intent files. No unit specs. No operational plans. No way to run `/haiku:operate auth-system` because the system had never heard of `auth-system`.
 
 This is the brownfield gap. Most real teams are not starting from zero. They have authentication systems, billing pipelines, notification services — production features with real users, real tests, and real operational history. Telling those teams "H·AI·K·U works great, but only for the next thing you build" is not a serious answer.
 

@@ -6,7 +6,7 @@ export const config: DemoConfig = {
   stages: ["requirements", "evaluate", "negotiate", "onboard", "monitor"],
   completionText: "All 5 stages passed. select-cloud-infrastructure-vendor delivered.",
   steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:new"}] },
+    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
     { delay: 1200, actions: [{"type":"typing"}] },
     { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
     { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Select a new cloud infrastructure vendor for our platform"}] },

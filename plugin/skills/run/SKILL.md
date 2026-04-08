@@ -80,7 +80,7 @@ If a slug was provided as an argument, use it. Otherwise:
 haiku_intent_list → find the active intent
 ```
 
-If no active intent: error, suggest `/haiku:new`.
+If no active intent: error, suggest `/haiku:start`.
 
 ### Action Reference
 
@@ -152,7 +152,7 @@ The key words "MUST", "MUST NOT", "SHALL", "SHALL NOT", "REQUIRED" in this secti
 **2. `ask_user_visual_question` (rich HTML page in browser)**
 - **USE FOR:** Any content the user needs to SEE to evaluate — specs, wireframes, multi-option comparisons, formatted tables, design decisions, elaboration questions with context
 - The agent **MUST** use this for all rich content during elaboration
-- The agent **MUST** use this in `/haiku:new` Step 9 (intent direction review)
+- The agent **MUST** use this in `/haiku:start` Step 9 (intent direction review)
 - The tool opens a styled page in the browser with markdown rendering, images, radio/checkbox options
 - It blocks until the user submits — returns structured answers
 
@@ -399,7 +399,7 @@ Something is wrong.
 
 ## Relationship to Other Skills
 
-- **`/haiku:new`** — Creates the intent that `/haiku:resume` advances
+- **`/haiku:start`** — Creates the intent that `/haiku:resume` advances
 - **`/haiku:composite`** — Creates composite intents with sync points
 - **`/haiku:refine`** — Amend specs mid-execution or refine upstream stages
 - **`/haiku:review`** — Pre-delivery code review

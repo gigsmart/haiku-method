@@ -122,7 +122,7 @@ Given the server is running
 When  the client sends prompts/get { name: "haiku:resume", arguments: {} }
 Then  the handler returns a GetPromptResult (NOT McpError)
   And messages has 1 entry with role "user"
-  And the message text is "No active intent found. Create one with /haiku:new"
+  And the message text is "No active intent found. Create one with /haiku:start"
 ```
 
 Note: This is an application-level error (returned as a prompt message) because the
@@ -232,9 +232,9 @@ Then  the response contains completion.values = []
 ### 3.8 Argument Without Completer Returns Empty
 
 ```
-Given haiku:new has argument "description" with no completer (free text)
+Given haiku:start has argument "description" with no completer (free text)
 When  the client sends completion/complete {
-        ref: { type: "ref/prompt", name: "haiku:new" },
+        ref: { type: "ref/prompt", name: "haiku:start" },
         argument: { name: "description", value: "some text" }
       }
 Then  the response contains completion.values = []
@@ -407,13 +407,13 @@ Then  messages[2] includes a completion summary (studio, stages completed, total
   And messages[2] instructs: "Run /haiku:reflect or /haiku:review as next steps"
 ```
 
-### 4.12 `haiku:new` — Studio Detection and Elicitation
+### 4.12 `haiku:start` — Studio Detection and Elicitation
 
 ```
 Given no project-level studio override exists in .haiku/settings.yml
   And studios "software" and "content" are available
   And the user provides description "Build a REST API for user management"
-When  prompts/get is called for haiku:new with { description: "Build a REST API for user management" }
+When  prompts/get is called for haiku:start with { description: "Build a REST API for user management" }
 Then  the handler detects that "software" is the best-fit studio
   And the handler uses elicitation/create to ask the user to confirm the studio selection
       (form with studio candidates, descriptions, and a confirm/change option)
@@ -421,32 +421,32 @@ Then  the handler detects that "software" is the best-fit studio
   And messages[2] instructs the agent to write intent.md with frontmatter and create workspace dirs
 ```
 
-### 4.13 `haiku:new` — Project-Level Studio Override Skips Elicitation
+### 4.13 `haiku:start` — Project-Level Studio Override Skips Elicitation
 
 ```
 Given .haiku/settings.yml contains studio: "software"
-When  prompts/get is called for haiku:new with { description: "Add caching layer" }
+When  prompts/get is called for haiku:start with { description: "Add caching layer" }
 Then  the handler does NOT call elicitation for studio selection
   And messages[2] includes studio "software" and its stages directly
 ```
 
-### 4.14 `haiku:new` — Active Intent Conflict Elicitation
+### 4.14 `haiku:start` — Active Intent Conflict Elicitation
 
 ```
 Given an active intent "existing-feature" exists with status "in_progress"
-When  prompts/get is called for haiku:new with { description: "New feature" }
+When  prompts/get is called for haiku:start with { description: "New feature" }
 Then  the handler uses elicitation/create to ask:
       "An active intent 'existing-feature' exists. Create new or resume existing?"
   And if user selects "create new", the handler proceeds with new intent creation
   And if user selects "resume existing", the handler returns messages that redirect to haiku:resume
 ```
 
-### 4.15 `haiku:new` — Template Mode Pre-fills Units
+### 4.15 `haiku:start` — Template Mode Pre-fills Units
 
 ```
 Given studio "software" has template "api-endpoint" in templates/api-endpoint.md
   And the template has parameters: endpoint_name (required), auth_type (optional, default: "bearer")
-When  prompts/get is called for haiku:new with { description: "User API", template: "api-endpoint" }
+When  prompts/get is called for haiku:start with { description: "User API", template: "api-endpoint" }
 Then  the handler reads the template file and identifies required parameters
   And if endpoint_name is not in arguments, the handler uses elicitation to gather it
   And after parameter resolution, messages[2] includes pre-filled unit definitions
@@ -541,12 +541,12 @@ Then  open_review is NOT invoked
   And no HTTP session is created
 ```
 
-### 5.3 Elicitation Called for Studio Selection in `haiku:new`
+### 5.3 Elicitation Called for Studio Selection in `haiku:start`
 
 ```
 Given no project-level studio override
   And multiple studios are available
-When  the haiku:new prompt handler processes the request
+When  the haiku:start prompt handler processes the request
 Then  elicitation/create is called with a form containing:
       - field: "studio" (type: select, options: studio names with descriptions)
   And the handler blocks until elicitation resolves
@@ -557,7 +557,7 @@ Then  elicitation/create is called with a form containing:
 
 ```
 Given .haiku/settings.yml has studio: "software"
-When  the haiku:new prompt handler processes the request
+When  the haiku:start prompt handler processes the request
 Then  elicitation/create is NOT called
   And the handler uses "software" directly
 ```
@@ -566,7 +566,7 @@ Then  elicitation/create is NOT called
 
 ```
 Given the MCP client does not support elicitation
-When  the haiku:new prompt handler attempts elicitation for studio selection
+When  the haiku:start prompt handler attempts elicitation for studio selection
 Then  the handler catches the capability error
   And falls back to including the studio selection question in the prompt messages
   And messages[2] instructs the agent to ask the user which studio to use
@@ -583,14 +583,14 @@ Given the current working directory has no .haiku/ ancestor
 When  prompts/get is called for haiku:resume with any arguments
 Then  the handler returns a GetPromptResult (not an McpError)
   And messages contains 1 entry with role "user"
-  And the message text is "No H-AI-K-U workspace found. Run /haiku:new to create one."
+  And the message text is "No H-AI-K-U workspace found. Run /haiku:start to create one."
 ```
 
 ### 6.2 No Git Repository
 
 ```
 Given the current directory is not inside a git repository
-When  prompts/get is called for haiku:new
+When  prompts/get is called for haiku:start
 Then  the handler returns a GetPromptResult with 1 message
   And the message text is "Must be in a git repository."
 ```
@@ -631,7 +631,7 @@ These hold for ALL action prompts (not state-reading prompts).
 ### 7.1 Three-Message Pattern
 
 ```
-Given any action prompt (haiku:resume, haiku:new, haiku:refine, haiku:review, haiku:reflect)
+Given any action prompt (haiku:resume, haiku:start, haiku:refine, haiku:review, haiku:reflect)
 When  prompts/get returns successfully (no error boundary hit)
 Then  messages.length = 3
   And messages[0].role = "user"
@@ -691,12 +691,12 @@ No McpError is thrown.
 
 | Condition | Message Pattern | Scenario |
 |-----------|----------------|----------|
-| No .haiku/ workspace | `No H-AI-K-U workspace found. Run /haiku:new to create one.` | 6.1 |
+| No .haiku/ workspace | `No H-AI-K-U workspace found. Run /haiku:start to create one.` | 6.1 |
 | No git repository | `Must be in a git repository.` | 6.2 |
 | Cowork mode | `Cannot run in cowork mode.` | 6.3 |
 | Intent already completed | `Intent is already completed.` | 6.4 |
 | No changes to review | `No changes to review.` | 6.5 |
-| No active intent (auto-resolve failed) | `No active intent found. Create one with /haiku:new` | 2.7 |
+| No active intent (auto-resolve failed) | `No active intent found. Create one with /haiku:start` | 2.7 |
 
 The distinction: protocol errors mean "your request is malformed", application errors mean
 "your request is valid but the current state cannot satisfy it".

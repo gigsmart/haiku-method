@@ -29143,7 +29143,7 @@ function resolveIntent(args2) {
   }
   const active = findActiveIntents();
   if (active.length === 0) {
-    return { error: singleMessage("No active intent found. Create one with /haiku:new") };
+    return { error: singleMessage("No active intent found. Create one with /haiku:start") };
   }
   if (active.length > 1) {
     return { error: singleMessage(`Multiple active intents found: ${active.map((a) => a.slug).join(", ")}. Specify one with the intent argument.`) };
@@ -29754,7 +29754,7 @@ var init_core3 = __esm({
         if (!args2.intent) {
           const active = findActiveIntents();
           if (active.length === 0) {
-            return singleMessage("No active intents found. Create one with /haiku:new");
+            return singleMessage("No active intents found. Create one with /haiku:start");
           }
           if (active.length === 1) {
             args2.intent = active[0].slug;
@@ -29805,8 +29805,8 @@ Run \`/haiku:resume intent=<slug>\` to pick one.`
       }
     });
     registerPrompt({
-      name: "haiku:new",
-      title: "New Intent",
+      name: "haiku:start",
+      title: "Start Intent",
       description: "Start a new H\xB7AI\xB7K\xB7U intent with studio and stage configuration",
       arguments: [
         {
@@ -30310,7 +30310,7 @@ var init_complex = __esm({
             messages: [
               textMsg("user", "Run haiku:autopilot"),
               textMsg("assistant", "I need a feature description to start autopilot. No active intent found either. Please provide a description of what to build."),
-              textMsg("user", "Provide a feature description or use haiku:new first to create an intent.")
+              textMsg("user", "Provide a feature description or use haiku:start first to create an intent.")
             ]
           };
         }
@@ -30327,8 +30327,8 @@ ${active.body}` : `No active intent. Create one from description: "${desc}"`;
               intentCtx,
               "",
               "Autopilot mode will:",
-              "1. Ensure mode=autopilot is set on the intent (set during /haiku:new creation)",
-              "2. If no intent exists, run /haiku:new to create one from the description",
+              "1. Ensure mode=autopilot is set on the intent (set during /haiku:start creation)",
+              "2. If no intent exists, run /haiku:start to create one from the description",
               "3. Run /haiku:resume in a loop, advancing through all stages",
               "4. Override ask gates to auto (only external gates pause autopilot)",
               "5. Pause if elaboration generates >5 units (confirm scope with user)",
@@ -30591,7 +30591,7 @@ ${active.body}` : `No active intent. Create one from description: "${desc}"`;
               `Running quick mode for: "${desc}" using stage: **${stage}**`,
               "",
               "Quick mode is for trivial tasks (fix typos, rename variables, update configs, small refactors touching 1-2 files).",
-              "If the task is bigger than that, stop and recommend /haiku:new + /haiku:resume instead.",
+              "If the task is bigger than that, stop and recommend /haiku:start + /haiku:resume instead.",
               "",
               "Steps:",
               "1. Pre-checks: reject cowork mode, check for active intent conflicts, validate scope",
@@ -30607,7 +30607,7 @@ ${active.body}` : `No active intent. Create one from description: "${desc}"`;
               "Guardrails:",
               "- MUST NOT create worktrees -- work in current directory",
               "- MUST refuse if another active intent exists",
-              "- MUST stop and recommend /haiku:new if task is not trivial",
+              "- MUST stop and recommend /haiku:start if task is not trivial",
               "- 3-cycle review limit -- escalate if exceeded",
               "- Single session -- no resume capability"
             ].join("\n")),
@@ -30772,11 +30772,11 @@ var init_simple = __esm({
         }
         const intentsDir = join11(root, "intents");
         if (!existsSync9(intentsDir)) {
-          return singleMessage("No intents found. Use /haiku:new to create one.");
+          return singleMessage("No intents found. Use /haiku:start to create one.");
         }
         const slugs = readdirSync7(intentsDir, { withFileTypes: true }).filter((d) => d.isDirectory() && existsSync9(join11(intentsDir, d.name, "intent.md"))).map((d) => d.name);
         if (slugs.length === 0) {
-          return singleMessage("No intents found. Use /haiku:new to create one.");
+          return singleMessage("No intents found. Use /haiku:start to create one.");
         }
         const lines = ["# H-AI-K-U Dashboard\n"];
         for (const slug of slugs) {
@@ -30872,7 +30872,7 @@ Derive the slug from the description (lowercase, hyphens, max 50 chars).
             if (items.length === 0) {
               return singleMessage("Backlog is empty. Use /haiku:backlog add <idea> to add one.");
             }
-            const lines = ["## Backlog Review\n\nFor each item, present it and ask the user to:\n- **Keep** \u2014 leave as-is\n- **Reprioritize** \u2014 change priority\n- **Drop** \u2014 delete the item\n- **Promote** \u2014 promote to intent via /haiku:new\n- **Skip** \u2014 move to next\n\n### Items to review:\n"];
+            const lines = ["## Backlog Review\n\nFor each item, present it and ask the user to:\n- **Keep** \u2014 leave as-is\n- **Reprioritize** \u2014 change priority\n- **Drop** \u2014 delete the item\n- **Promote** \u2014 promote to intent via /haiku:start\n- **Skip** \u2014 move to next\n\n### Items to review:\n"];
             for (const file of items) {
               const raw = readFileSync8(join11(backlogDir, file), "utf8");
               const { data, body } = parseFrontmatter(raw);
@@ -30892,7 +30892,7 @@ Derive the slug from the description (lowercase, hyphens, max 50 chars).
 
 1. Read \`.haiku/backlog/${id}.md\`
 2. Confirm with user
-3. Run /haiku:new with the item's description
+3. Run /haiku:start with the item's description
 4. Delete the backlog file
 5. Confirm: "Promoted ${id} to intent."` : "Specify the item ID to promote. Use /haiku:backlog list to see available items.")
             );
@@ -31351,7 +31351,7 @@ Analyze the codebase and surface high-impact improvement ideas that survive adve
 
 ### Process
 
-1. **Scope:** ` + (area ? `Focus on \`${area}\`` : "Analyze full codebase (prioritize high-churn areas from recent commits)") + "\n2. **Identify** opportunities across: Performance, Security, Maintainability, Test Coverage, Developer Experience\n3. **Adversarial filter** each idea \u2014 argue against it on cost, prematurity, complexity, alternatives, risk\n4. **Classify** survivors by impact (High/Medium/Low) and effort (Low/Medium/High)\n5. **Present** with the strongest counter-argument for each idea\n\n### Output Format\n\nFor each surviving idea:\n- **{idea}** -- one-line description\n  - Impact: what specifically improves\n  - Effort: low/medium/high (never time estimates)\n  - Adversarial: strongest argument against\n  - Verdict: do it / park it\n\nAlso list discarded ideas with reasons.\n\n### Principles\n\n- Evidence over intuition -- point to specific code\n- Be ruthless -- discard more than you keep\n- Five strong ideas beat twenty weak ones\n- Zero ideas is valid if nothing survives\n\n### Next Steps\n\nAfter presenting, offer: Elaborate (run /haiku:new), Deep-dive (/haiku:ideate <sub-area>), or Discard"
+1. **Scope:** ` + (area ? `Focus on \`${area}\`` : "Analyze full codebase (prioritize high-churn areas from recent commits)") + "\n2. **Identify** opportunities across: Performance, Security, Maintainability, Test Coverage, Developer Experience\n3. **Adversarial filter** each idea \u2014 argue against it on cost, prematurity, complexity, alternatives, risk\n4. **Classify** survivors by impact (High/Medium/Low) and effort (Low/Medium/High)\n5. **Present** with the strongest counter-argument for each idea\n\n### Output Format\n\nFor each surviving idea:\n- **{idea}** -- one-line description\n  - Impact: what specifically improves\n  - Effort: low/medium/high (never time estimates)\n  - Adversarial: strongest argument against\n  - Verdict: do it / park it\n\nAlso list discarded ideas with reasons.\n\n### Principles\n\n- Evidence over intuition -- point to specific code\n- Be ruthless -- discard more than you keep\n- Five strong ideas beat twenty weak ones\n- Zero ideas is valid if nothing survives\n\n### Next Steps\n\nAfter presenting, offer: Elaborate (run /haiku:start), Deep-dive (/haiku:ideate <sub-area>), or Discard"
         );
       }
     });
@@ -31362,7 +31362,7 @@ Analyze the codebase and surface high-impact improvement ideas that survive adve
       arguments: [],
       handler: async () => {
         return singleMessage(
-          "## H-AI-K-U Setup\n\nConfigure this project's `.haiku/settings.yml` by auto-detecting the environment.\n\n### Phase 1: Auto-Detect Environment\n\nRun these detections:\n```bash\n# VCS\nif git rev-parse --git-dir &>/dev/null; then echo 'git'; elif jj root &>/dev/null; then echo 'jj'; fi\n# Hosting\ngit remote get-url origin 2>/dev/null\n# CI/CD\nls -d .github/workflows .gitlab-ci.yml Jenkinsfile .circleci 2>/dev/null\n# Default branch\ngit symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||'\n```\n\n### Phase 2: Probe MCP Tools for Providers\n\nUse ToolSearch to discover available MCP providers for ticketing, spec, design, and comms.\n\n### Phase 3: Confirm Settings\n\nPresent detected settings and ask for confirmation via `ask_user_visual_question`.\nAllow the user to adjust any category. Use elicitation (visual questions) for provider selection.\n\n### Phase 4: Provider Configuration\n\nFor each confirmed provider, collect required config (project keys, space IDs, etc.).\nRead schemas from `${CLAUDE_PLUGIN_ROOT}/schemas/providers/{type}.schema.json`.\n\n### Phase 5: Workflow Tuning\n\nAsk about:\n- Workflow mode (interactive vs autonomous)\n- Granularity (coarse/standard/fine)\n- Default studio\n- Announcement formats\n- Visual review (browser-based review UI)\n- Review agents (core + optional)\n\n### Phase 6: VCS Strategy\n\nAsk about change strategy (intent/unit/trunk) and source branch.\n\n### Phase 7: Write Settings\n\nWrite `.haiku/settings.yml` preserving any existing fields.\nCommit: `git add .haiku/settings.yml && git commit -m 'haiku: configure project settings'`\n\n### Phase 8: Confirmation\n\nDisplay summary table and suggest: `/haiku:new` to start first intent."
+          "## H-AI-K-U Setup\n\nConfigure this project's `.haiku/settings.yml` by auto-detecting the environment.\n\n### Phase 1: Auto-Detect Environment\n\nRun these detections:\n```bash\n# VCS\nif git rev-parse --git-dir &>/dev/null; then echo 'git'; elif jj root &>/dev/null; then echo 'jj'; fi\n# Hosting\ngit remote get-url origin 2>/dev/null\n# CI/CD\nls -d .github/workflows .gitlab-ci.yml Jenkinsfile .circleci 2>/dev/null\n# Default branch\ngit symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||'\n```\n\n### Phase 2: Probe MCP Tools for Providers\n\nUse ToolSearch to discover available MCP providers for ticketing, spec, design, and comms.\n\n### Phase 3: Confirm Settings\n\nPresent detected settings and ask for confirmation via `ask_user_visual_question`.\nAllow the user to adjust any category. Use elicitation (visual questions) for provider selection.\n\n### Phase 4: Provider Configuration\n\nFor each confirmed provider, collect required config (project keys, space IDs, etc.).\nRead schemas from `${CLAUDE_PLUGIN_ROOT}/schemas/providers/{type}.schema.json`.\n\n### Phase 5: Workflow Tuning\n\nAsk about:\n- Workflow mode (interactive vs autonomous)\n- Granularity (coarse/standard/fine)\n- Default studio\n- Announcement formats\n- Visual review (browser-based review UI)\n- Review agents (core + optional)\n\n### Phase 6: VCS Strategy\n\nAsk about change strategy (intent/unit/trunk) and source branch.\n\n### Phase 7: Write Settings\n\nWrite `.haiku/settings.yml` preserving any existing fields.\nCommit: `git add .haiku/settings.yml && git commit -m 'haiku: configure project settings'`\n\n### Phase 8: Confirmation\n\nDisplay summary table and suggest: `/haiku:start` to start first intent."
         );
       }
     });
@@ -32204,7 +32204,7 @@ async function redirectPlanMode(input, _pluginRoot) {
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
       permissionDecision: "deny",
-      permissionDecisionReason: "H\xB7AI\xB7K\xB7U: Use /haiku:new instead of plan mode.\n\nThe H\xB7AI\xB7K\xB7U plugin replaces Claude Code's built-in plan mode with a more comprehensive workflow:\n\n**`/haiku:new`** - Start a new intent that:\n- Defines intent and success criteria collaboratively\n- Decomposes work into independent units\n- Creates isolated worktrees for safe iteration\n- Sets up the execution loop with quality gates\n\n**To start:** Run `/haiku:new` with a description of what you want to build."
+      permissionDecisionReason: "H\xB7AI\xB7K\xB7U: Use /haiku:start instead of plan mode.\n\nThe H\xB7AI\xB7K\xB7U plugin replaces Claude Code's built-in plan mode with a more comprehensive workflow:\n\n**`/haiku:start`** - Start a new intent that:\n- Defines intent and success criteria collaboratively\n- Decomposes work into independent units\n- Creates isolated worktrees for safe iteration\n- Sets up the execution loop with quality gates\n\n**To start:** Run `/haiku:start` with a description of what you want to build."
     }
   };
   process.stdout.write(JSON.stringify(response));
@@ -33095,7 +33095,7 @@ async function injectContext(input, _pluginRoot) {
   if (!active) {
     out3("## H\xB7AI\xB7K\xB7U");
     out3("");
-    out3("No active intent. Use `/haiku:new` to create one.");
+    out3("No active intent. Use `/haiku:start` to create one.");
     return;
   }
   out3(`## H\xB7AI\xB7K\xB7U: ${active.slug}`);

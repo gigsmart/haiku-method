@@ -6,7 +6,7 @@ export const config: DemoConfig = {
   stages: ["triage", "investigate", "mitigate", "resolve", "postmortem"],
   completionText: "All 5 stages passed. api-latency-spike-p1 resolved.",
   steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:new"}] },
+    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
     { delay: 1000, actions: [{"type":"typing"}] },
     { delay: 800, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
     { delay: 1200, actions: [{"type":"msg","role":"user","label":"you","text":"API latency spike — P1 incident. /orders endpoint p99 jumped from 200ms to 12s five minutes ago."}] },

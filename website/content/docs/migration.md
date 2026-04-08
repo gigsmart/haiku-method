@@ -23,7 +23,7 @@ This guide covers migrating from AI-DLC to H·AI·K·U. Most migration is automa
 
 | Old Command | New Command |
 |-------------|-------------|
-| `/ai-dlc:elaborate` | `/haiku:new` + `/haiku:resume` |
+| `/ai-dlc:elaborate` | `/haiku:start` + `/haiku:resume` |
 | `/ai-dlc:execute` | `/haiku:resume` |
 | `/ai-dlc:review` | `/haiku:review` |
 | `/ai-dlc:autopilot` | `/haiku:autopilot` |
@@ -162,8 +162,8 @@ Intents that were in progress during the migration continue to work:
 ## Breaking Changes
 
 1. **Standalone hat files** — `plugin/hats/*.md` are no longer the primary hat definitions. Hats are now defined as files in `stages/{stage}/hats/`.
-2. **Workflow selection during elaboration** — Replaced by studio selection during `/haiku:new`.
-3. **`/ai-dlc:elaborate`** — Deprecated. Use `/haiku:new` to create intents, then `/haiku:resume` to execute stages.
+2. **Workflow selection during elaboration** — Replaced by studio selection during `/haiku:start`.
+3. **`/ai-dlc:elaborate`** — Deprecated. Use `/haiku:start` to create intents, then `/haiku:resume` to execute stages.
 4. **Pass-specific workflow constraints** — Replaced by stage-level hat definitions.
 5. **Custom workflow files** (`.ai-dlc/workflows.yml`) — Replaced by custom studio directories.
 

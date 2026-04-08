@@ -1368,7 +1368,7 @@ flowchart TB
     W8 -->|"Previous pass"| W2
     W8 -->|"Ready"| W9
     W9 --> W10
-    W10 -.->|"New Intent"| W1
+    W10 -.->|"Start Intent"| W1
 ```
 
 **Key principles of the workflow:**

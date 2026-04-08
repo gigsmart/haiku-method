@@ -8,8 +8,8 @@ export const config: DemoConfig = {
   stages: ["inception", "design", "product", "development", "operations", "security"],
   completionText: "All 6 stages passed. add-oauth-login delivered.",
   steps: [
-    // Step 1: User invokes /haiku:new
-    { delay: 800, actions: [{ type: "msg", role: "user", label: "you", text: "/haiku:new" }] },
+    // Step 1: User invokes /haiku:start
+    { delay: 800, actions: [{ type: "msg", role: "user", label: "you", text: "/haiku:start" }] },
     { delay: 1200, actions: [{ type: "typing" }] },
     { delay: 1000, actions: [{ type: "removeTyping" }, { type: "msg", role: "agent", label: "agent", text: "What do you want to accomplish?" }] },
     { delay: 1500, actions: [{ type: "msg", role: "user", label: "you", text: "Add OAuth login to the app" }] },

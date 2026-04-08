@@ -31,7 +31,7 @@ Remove all plugin skill files now that MCP prompts replace them. Delete deprecat
 - [x] Internal skill `completion-criteria` logic verified in orchestrator (no skill file dependency)
 - [x] Internal skill `backpressure` enforcement verified via hooks (no skill file dependency)
 - [x] Internal skill `blockers` handling verified in orchestrator (no skill file dependency)
-- [x] `followup` functionality verified as folded into `haiku:new` prompt
+- [x] `followup` functionality verified as folded into `haiku:start` prompt
 - [x] `reset` functionality available as MCP tool (not a prompt)
 - [x] CLAUDE.md Key File Locations updated: `plugin/skills/*/SKILL.md` references removed
 - [x] CLAUDE.md Concept-to-Implementation table updated: skill references → prompt module references

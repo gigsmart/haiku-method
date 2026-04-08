@@ -6,7 +6,7 @@ export const config: DemoConfig = {
   stages: ["discovery", "user-research", "prioritization", "roadmap", "stakeholder-review"],
   completionText: "All 5 stages passed. 2027-product-roadmap delivered.",
   steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:new"}] },
+    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
     { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
     { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Define the 2027 product roadmap"}] },
     { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"Creating intent: 2027-product-roadmap..."}, {"type":"file","path":".haiku/intents/2027-product-roadmap/intent.md"}] },

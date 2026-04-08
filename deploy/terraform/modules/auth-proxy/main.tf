@@ -1,6 +1,5 @@
 # Auth proxy — OAuth code→token exchange
 # Cloud Function v2 behind a regional HTTPS Load Balancer for public access
-# without requiring allUsers IAM binding (respects org domain restrictions)
 
 locals {
   function_name = "haiku-auth-proxy"

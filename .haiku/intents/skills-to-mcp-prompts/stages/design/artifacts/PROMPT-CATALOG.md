@@ -10,7 +10,7 @@ title: "MCP Prompt Catalog"
 
 | Name | Title | Description | Arguments |
 | --- | --- | --- | --- |
-| `haiku:new` | New Intent | Create a new H·AI·K·U intent with studio and stage configuration | `description?`: free text; `template?`: template name (completable) |
+| `haiku:start` | Start Intent | Create a new H·AI·K·U intent with studio and stage configuration | `description?`: free text; `template?`: template name (completable) |
 | `haiku:resume` | Run Intent | Advance an intent through its stages | `intent?`: slug (completable) |
 | `haiku:refine` | Refine | Amend specs mid-execution without losing progress | `stage?`: stage name (completable) |
 | `haiku:review` | Review | Pre-delivery code review with fix loop | `intent?`: slug (completable) |
@@ -111,7 +111,7 @@ MCP clients typically display prompts in the order returned by `prompts/list`. O
 | Unknown prompt name | -32602 (InvalidParams) | `Unknown prompt: {name}` |
 | Missing required argument | -32602 (InvalidParams) | `Missing required argument: {arg} for prompt {name}` |
 | Invalid argument value | -32602 (InvalidParams) | `Invalid value for {arg}: {value}. Expected: {expected}` |
-| No active intent (when required) | -32602 (InvalidParams) | `No active intent found. Create one with /haiku:new` |
+| No active intent (when required) | -32602 (InvalidParams) | `No active intent found. Create one with /haiku:start` |
 | Intent not found | -32602 (InvalidParams) | `Intent not found: {slug}` |
 
 All errors use MCP's `McpError` class with `ErrorCode.InvalidParams` (-32602) since prompt argument errors are parameter validation failures.

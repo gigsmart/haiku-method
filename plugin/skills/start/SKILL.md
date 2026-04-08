@@ -23,17 +23,17 @@ allowed-tools:
   - "mcp__*__memory"
 ---
 
-# H·AI·K·U New Intent
+# H·AI·K·U Start Intent
 
 ## Name
 
-`haiku:new` - Start a new H·AI·K·U intent with studio and stage configuration.
+`haiku:start` - Start a new H·AI·K·U intent with studio and stage configuration.
 
 ## Synopsis
 
 ```
-/haiku:new [description]
-/haiku:new --template <template-name> [--param key=value ...]
+/haiku:start [description]
+/haiku:start --template <template-name> [--param key=value ...]
 ```
 
 ## Description
@@ -53,13 +53,13 @@ When `--template` is provided, the intent is seeded from a studio template file:
 
 **Example:**
 ```
-/haiku:new --template new-prospect --param company="Acme Corp" --param source=referral
+/haiku:start --template new-prospect --param company="Acme Corp" --param source=referral
 ```
 
 This creates a sales intent pre-filled with units for Acme Corp, with criteria like "Acme Corp business model and pain points documented."
 
 **Relationship to other commands:**
-- `/haiku:new` creates the intent and workspace
+- `/haiku:start` creates the intent and workspace
 - `/haiku:resume` advances the intent through its stages (plan, build, review, gate)
 - `/haiku:elaborate` is now a backward-compatibility alias that delegates to this flow
 
@@ -72,7 +72,7 @@ The key words "MUST", "MUST NOT", "SHALL", "SHALL NOT", "REQUIRED" in this secti
 1. **Reject cowork mode:** The agent **MUST NOT** run this skill in cowork mode. If `CLAUDE_CODE_IS_COWORK=1`, the agent **MUST** stop immediately with the error below. The agent **SHALL NOT** proceed under any circumstances.
    ```bash
    if [ "${CLAUDE_CODE_IS_COWORK:-}" = "1" ]; then
-     echo "ERROR: /haiku:new cannot run in cowork mode."
+     echo "ERROR: /haiku:start cannot run in cowork mode."
      echo "Please run from a standard Claude Code CLI session."
      exit 1
    fi

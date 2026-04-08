@@ -24,7 +24,7 @@ registerPrompt({
 
 		const intentsDir = join(root, "intents")
 		if (!existsSync(intentsDir)) {
-			return singleMessage("No intents found. Use /haiku:new to create one.")
+			return singleMessage("No intents found. Use /haiku:start to create one.")
 		}
 
 		const slugs = readdirSync(intentsDir, { withFileTypes: true })
@@ -32,7 +32,7 @@ registerPrompt({
 			.map(d => d.name)
 
 		if (slugs.length === 0) {
-			return singleMessage("No intents found. Use /haiku:new to create one.")
+			return singleMessage("No intents found. Use /haiku:start to create one.")
 		}
 
 		const lines: string[] = ["# H-AI-K-U Dashboard\n"]
@@ -128,7 +128,7 @@ registerPrompt({
 					return singleMessage("Backlog is empty. Use /haiku:backlog add <idea> to add one.")
 				}
 
-				const lines: string[] = ["## Backlog Review\n\nFor each item, present it and ask the user to:\n- **Keep** — leave as-is\n- **Reprioritize** — change priority\n- **Drop** — delete the item\n- **Promote** — promote to intent via /haiku:new\n- **Skip** — move to next\n\n### Items to review:\n"]
+				const lines: string[] = ["## Backlog Review\n\nFor each item, present it and ask the user to:\n- **Keep** — leave as-is\n- **Reprioritize** — change priority\n- **Drop** — delete the item\n- **Promote** — promote to intent via /haiku:start\n- **Skip** — move to next\n\n### Items to review:\n"]
 				for (const file of items) {
 					const raw = readFileSync(join(backlogDir, file), "utf8")
 					const { data, body } = parseFrontmatter(raw)
@@ -144,7 +144,7 @@ registerPrompt({
 				return singleMessage(
 					`## Promote Backlog Item\n\n` +
 					(id
-						? `Promote backlog item \`${id}\` to a full intent:\n\n1. Read \`.haiku/backlog/${id}.md\`\n2. Confirm with user\n3. Run /haiku:new with the item's description\n4. Delete the backlog file\n5. Confirm: "Promoted ${id} to intent."`
+						? `Promote backlog item \`${id}\` to a full intent:\n\n1. Read \`.haiku/backlog/${id}.md\`\n2. Confirm with user\n3. Run /haiku:start with the item's description\n4. Delete the backlog file\n5. Confirm: "Promoted ${id} to intent."`
 						: "Specify the item ID to promote. Use /haiku:backlog list to see available items.")
 				)
 			}
@@ -675,7 +675,7 @@ registerPrompt({
 			"- Five strong ideas beat twenty weak ones\n" +
 			"- Zero ideas is valid if nothing survives\n\n" +
 			"### Next Steps\n\n" +
-			"After presenting, offer: Elaborate (run /haiku:new), Deep-dive (/haiku:ideate <sub-area>), or Discard"
+			"After presenting, offer: Elaborate (run /haiku:start), Deep-dive (/haiku:ideate <sub-area>), or Discard"
 		)
 	},
 })
@@ -721,7 +721,7 @@ registerPrompt({
 			"Write `.haiku/settings.yml` preserving any existing fields.\n" +
 			"Commit: `git add .haiku/settings.yml && git commit -m 'haiku: configure project settings'`\n\n" +
 			"### Phase 8: Confirmation\n\n" +
-			"Display summary table and suggest: `/haiku:new` to start first intent."
+			"Display summary table and suggest: `/haiku:start` to start first intent."
 		)
 	},
 })

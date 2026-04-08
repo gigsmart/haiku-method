@@ -6,7 +6,7 @@ export const config: DemoConfig = {
   stages: ["audit", "outline", "draft", "review", "publish"],
   completionText: "All 5 stages passed. rewrite-api-reference-docs delivered.",
   steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:new"}] },
+    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
     { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
     { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Rewrite the API reference docs"}] },
     { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"Creating intent: rewrite-api-reference-docs..."}, {"type":"file","path":".haiku/intents/rewrite-api-reference-docs/intent.md"}] },

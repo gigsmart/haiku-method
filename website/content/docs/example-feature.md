@@ -18,7 +18,7 @@ We're adding a **notification system** to a web application. Users should be abl
 ### Starting the Process
 
 ```
-User: /haiku:new
+User: /haiku:start
 
 I want to add a notification system to our app. Users should
 get notifications for important events and be able to manage them.

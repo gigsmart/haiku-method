@@ -6,7 +6,7 @@ export const config: DemoConfig = {
   stages: ["onboarding", "adoption", "health-check", "expansion", "renewal"],
   completionText: "All 5 stages passed. onboard-techstartup-inc delivered.",
   steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:new"}] },
+    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
     { delay: 1000, actions: [{"type":"typing"}] },
     { delay: 800, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
     { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Onboard TechStartup Inc to our platform. They just signed a $120K annual deal."}] },

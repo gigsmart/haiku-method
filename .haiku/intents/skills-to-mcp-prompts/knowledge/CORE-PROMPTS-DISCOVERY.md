@@ -6,9 +6,9 @@ stage: inception
 
 # Core Workflow Prompts — Discovery
 
-Analysis of the 5 core workflow prompts (`haiku:new`, `haiku:resume`, `haiku:refine`, `haiku:review`, `haiku:reflect`) and what each needs to become an MCP prompt handler.
+Analysis of the 5 core workflow prompts (`haiku:start`, `haiku:resume`, `haiku:refine`, `haiku:review`, `haiku:reflect`) and what each needs to become an MCP prompt handler.
 
-## 1. haiku:new
+## 1. haiku:start
 
 ### State Read
 
@@ -387,12 +387,12 @@ User: [Payload]
 All 5 prompts follow the same registration pattern from PROMPTS-SERVER-DISCOVERY.md:
 
 ```typescript
-// prompts/core/new.ts
+// prompts/core/start.ts
 import { registerPrompt } from "../index.js"
 
 registerPrompt({
-  name: "haiku:new",
-  title: "New Intent",
+  name: "haiku:start",
+  title: "Start Intent",
   description: "Start a new H-AI-K-U intent",
   arguments: [...],
   handler: async (args) => {
@@ -412,7 +412,7 @@ packages/haiku/src/prompts/
   types.ts           -- PromptDef (from unit-01)
   completions.ts     -- completion providers (from unit-01)
   core/
-    new.ts           -- haiku:new handler
+    new.ts           -- haiku:start handler
     run.ts           -- haiku:resume handler (largest file)
     refine.ts        -- haiku:refine handler
     review.ts        -- haiku:review handler
@@ -443,9 +443,9 @@ The prompts use two different user-interaction mechanisms:
 
 | Mechanism | Used By | Purpose |
 |-----------|---------|---------|
-| **Elicitation** (form mode) | `haiku:new` (studio picker, active intent conflict), `haiku:refine` (target picker) | Structured questions with known option sets. Server asks user directly via MCP client UI. Blocks until answer. |
+| **Elicitation** (form mode) | `haiku:start` (studio picker, active intent conflict), `haiku:refine` (target picker) | Structured questions with known option sets. Server asks user directly via MCP client UI. Blocks until answer. |
 | **open_review** (browser page) | `haiku:resume` (gate_ask, elaboration plan) | Rich content review with annotations, inline comments, design review. Uses HTTP server + templates. |
-| **ask_user_visual_question** (browser page) | `haiku:new` (direction review), `haiku:resume` (decompose -- rich questions) | Rich content questions with markdown rendering, images, structured input. Uses HTTP server + templates. |
+| **ask_user_visual_question** (browser page) | `haiku:start` (direction review), `haiku:resume` (decompose -- rich questions) | Rich content questions with markdown rendering, images, structured input. Uses HTTP server + templates. |
 
 The server handles elicitation directly (no agent involvement). Visual review and visual questions are side effects the server triggers, then the prompt instructs the agent to wait for the result.
 
@@ -455,7 +455,7 @@ All prompts need consistent error handling:
 
 | Scenario | Response |
 |----------|----------|
-| No `.haiku/` directory | Return error message in prompt: "No H-AI-K-U workspace found. Run /haiku:new to create one." |
+| No `.haiku/` directory | Return error message in prompt: "No H-AI-K-U workspace found. Run /haiku:start to create one." |
 | Intent not found | Return error: "Intent '{slug}' not found." |
 | Intent completed | Return error: "Intent is already completed." |
 | Cowork mode | Return error: "Cannot run in cowork mode." (for new, run, refine) |
@@ -485,5 +485,5 @@ Errors are returned as `GetPromptResult` with a single user message containing t
 1. **`haiku:resume`** -- Most complex by far. 12+ action types, each with different state reads, different message payloads, side effects (open_review for gate_ask), elaboration mode branching. Estimated ~400-600 lines.
 2. **`haiku:review`** -- Medium complexity. Needs git diff computation, review agent loading, multi-agent prompt construction. Estimated ~150-200 lines.
 3. **`haiku:reflect`** -- Medium complexity. Extensive state reading across all stages/units, metrics computation, session analysis instructions. Estimated ~150-200 lines.
-4. **`haiku:new`** -- Medium-low complexity. Studio resolution with elicitation fallback, template mode, workspace creation instructions. Estimated ~100-150 lines.
+4. **`haiku:start`** -- Medium-low complexity. Studio resolution with elicitation fallback, template mode, workspace creation instructions. Estimated ~100-150 lines.
 5. **`haiku:refine`** -- Lowest complexity. Target resolution with elicitation, load target artifact, construct refinement instructions. Estimated ~80-120 lines.

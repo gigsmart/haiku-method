@@ -6,7 +6,7 @@ export const config: DemoConfig = {
   stages: ["landscape", "options", "evaluate", "decide", "communicate"],
   completionText: "All 5 stages passed. apac-market-expansion delivered.",
   steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:new"}] },
+    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
     { delay: 1200, actions: [{"type":"typing"}] },
     { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
     { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Evaluate and plan market expansion into APAC"}] },

@@ -6,7 +6,7 @@ export const config: DemoConfig = {
   stages: ["requisition", "sourcing", "screening", "interview", "offer"],
   completionText: "All 5 stages passed. hire-senior-backend-engineer delivered.",
   steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:new"}] },
+    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
     { delay: 1200, actions: [{"type":"typing"}] },
     { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
     { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Hire a senior backend engineer for the platform team"}] },

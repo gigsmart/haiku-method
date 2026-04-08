@@ -76,7 +76,7 @@ registerPrompt({
 				messages: [
 					textMsg("user", "Run haiku:autopilot"),
 					textMsg("assistant", "I need a feature description to start autopilot. No active intent found either. Please provide a description of what to build."),
-					textMsg("user", "Provide a feature description or use haiku:new first to create an intent."),
+					textMsg("user", "Provide a feature description or use haiku:start first to create an intent."),
 				],
 			}
 		}
@@ -95,8 +95,8 @@ registerPrompt({
 					intentCtx,
 					"",
 					"Autopilot mode will:",
-					"1. Ensure mode=autopilot is set on the intent (set during /haiku:new creation)",
-					"2. If no intent exists, run /haiku:new to create one from the description",
+					"1. Ensure mode=autopilot is set on the intent (set during /haiku:start creation)",
+					"2. If no intent exists, run /haiku:start to create one from the description",
 					"3. Run /haiku:resume in a loop, advancing through all stages",
 					"4. Override ask gates to auto (only external gates pause autopilot)",
 					"5. Pause if elaboration generates >5 units (confirm scope with user)",
@@ -384,7 +384,7 @@ registerPrompt({
 					`Running quick mode for: "${desc}" using stage: **${stage}**`,
 					"",
 					"Quick mode is for trivial tasks (fix typos, rename variables, update configs, small refactors touching 1-2 files).",
-					"If the task is bigger than that, stop and recommend /haiku:new + /haiku:resume instead.",
+					"If the task is bigger than that, stop and recommend /haiku:start + /haiku:resume instead.",
 					"",
 					"Steps:",
 					"1. Pre-checks: reject cowork mode, check for active intent conflicts, validate scope",
@@ -400,7 +400,7 @@ registerPrompt({
 					"Guardrails:",
 					"- MUST NOT create worktrees -- work in current directory",
 					"- MUST refuse if another active intent exists",
-					"- MUST stop and recommend /haiku:new if task is not trivial",
+					"- MUST stop and recommend /haiku:start if task is not trivial",
 					"- 3-cycle review limit -- escalate if exceeded",
 					"- Single session -- no resume capability",
 				].join("\n")),

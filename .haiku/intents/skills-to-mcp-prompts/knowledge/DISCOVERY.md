@@ -40,7 +40,7 @@ Each prompt handler:
 ### Prompts to Implement (21)
 
 **Core workflow:**
-1. `haiku:new` — create intent (args: description, template, params)
+1. `haiku:start` — create intent (args: description, template, params)
 2. `haiku:resume` — advance stages (args: intent-slug)
 3. `haiku:refine` — upstream side-trip (args: stage)
 4. `haiku:review` — pre-delivery review (args: intent-slug)
@@ -90,7 +90,7 @@ Each prompt handler:
 
 | Capability | Purpose | Status |
 |-----------|---------|--------|
-| `prompts` | Slash commands — /haiku:new, /haiku:resume, etc. | Implement now |
+| `prompts` | Slash commands — /haiku:start, /haiku:resume, etc. | Implement now |
 | `completions` | Auto-complete for intent slugs, studios, stages | Implement now |
 | `elicitation.form` | Structured questions to user (studio picker, mode, gate approval) | Implement now |
 | `tools` | State management, orchestration, visual review | Already done |

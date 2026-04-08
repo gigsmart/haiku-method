@@ -13,7 +13,7 @@ Complete these steps before beginning your first intent:
 ### Environment Setup
 - [ ] Claude Code or Cowork installed and working
 - [ ] H·AI·K·U plugin installed (`/plugin marketplace add gigsmart/haiku-method` then `/plugin install haiku@gigsmart-haiku-method --scope project`)
-- [ ] Verified plugin is active (commands like `/haiku:new` are recognized)
+- [ ] Verified plugin is active (commands like `/haiku:start` are recognized)
 
 ### Project Selection
 - [ ] Chosen a real project (not a toy project)
@@ -30,10 +30,10 @@ Complete these steps before beginning your first intent:
 
 ## Phase 1: Elaboration
 
-Use `/haiku:new` to create your intent, then `/haiku:resume` to elaborate it collaboratively with Claude.
+Use `/haiku:start` to create your intent, then `/haiku:resume` to elaborate it collaboratively with Claude.
 
 ### Start Elaboration
-- [ ] Run `/haiku:new` then `/haiku:resume`
+- [ ] Run `/haiku:start` then `/haiku:resume`
 - [ ] Describe what you want to build in 2-3 sentences
 
 ### Define the Intent
@@ -239,7 +239,7 @@ Based on this experience:
 ### Commands
 | Command | When to Use |
 |---------|-------------|
-| `/haiku:new` | Start new intent |
+| `/haiku:start` | Start new intent |
 | `/haiku:resume` | Continue/start unit work |
 | `/researcher` | Need more understanding |
 | `/planner` | Need to redesign approach |

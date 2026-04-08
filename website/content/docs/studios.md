@@ -8,7 +8,7 @@ A **studio** is a named lifecycle template that defines which stages run and in 
 
 ## How Studios Work
 
-When you create an intent with `/haiku:new`, H·AI·K·U selects or prompts for a studio. The studio determines:
+When you create an intent with `/haiku:start`, H·AI·K·U selects or prompts for a studio. The studio determines:
 
 - **Which stages** the intent progresses through
 - **Persistence type** — how work is stored and delivered (git branches + PRs, or filesystem snapshots)
@@ -184,7 +184,7 @@ Project-level studios take precedence. This means you can override a built-in st
 
 ## Studio Selection During Intent Creation
 
-When you run `/haiku:new`:
+When you run `/haiku:start`:
 
 1. If `.haiku/settings.yml` has a `studio` field, that studio is used as the default
 2. If auto-detected (git repo → software, no git → ideation), that studio is suggested

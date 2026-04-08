@@ -15,7 +15,7 @@ The hat system prevents:
 - **Quality shortcuts**: Skipping review to "just ship it"
 - **Role confusion**: Trying to attack and defend code at the same time
 
-By explicitly switching hats, you maintain focus and ensure each phase gets proper attention. Domain research happens during inception (`/haiku:new`), before execution begins.
+By explicitly switching hats, you maintain focus and ensure each phase gets proper attention. Domain research happens during inception (`/haiku:start`), before execution begins.
 
 ## Software Studio Stages
 
@@ -23,7 +23,7 @@ The software studio organizes hats into discipline-specific stages. Each stage r
 
 ### Inception Stage
 
-Hats used during `/haiku:new` to define the intent and elaborate work.
+Hats used during `/haiku:start` to define the intent and elaborate work.
 
 #### Architect
 

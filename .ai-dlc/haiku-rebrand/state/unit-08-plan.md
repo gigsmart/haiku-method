@@ -178,7 +178,7 @@ This is the only orchestrator change — the orchestrator already delegates most
 
 These files are agent instructions (not executed shell). Update them to reference persistence functions instead of inline git commands. This is a find-and-replace effort in the bash code blocks within each SKILL.md.
 
-**`plugin/skills/new/SKILL.md` — Step 8 (Git Setup)**
+**`plugin/skills/start/SKILL.md` — Step 8 (Git Setup)**
 
 Replace:
 ```bash
@@ -270,7 +270,7 @@ Run through each criterion:
 | 3 | `plugin/lib/adapters/git.sh` | Step 1 (interface contract) |
 | 4 | `plugin/lib/adapters/filesystem.sh` | Step 1 (interface contract) |
 | 5 | `plugin/lib/orchestrator.sh` | Steps 1-4 |
-| 6a | `plugin/skills/new/SKILL.md` | Step 1 |
+| 6a | `plugin/skills/start/SKILL.md` | Step 1 |
 | 6b | `plugin/skills/run/SKILL.md` | Step 1 |
 | 6c | `plugin/skills/execute/SKILL.md` | Steps 1, 3 |
 | 6d | `plugin/skills/execute/subskills/advance/SKILL.md` | Steps 1, 3 |

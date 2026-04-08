@@ -9,7 +9,7 @@ H·AI·K·U = Human + AI Knowledge Unification. A lifecycle framework for struct
 
 ## How It Works
 
-All commands are MCP prompts on the `haiku` server. Invoke them as `/haiku:new`, `/haiku:resume`, etc. Do NOT use the Skill tool for haiku commands — they are MCP prompts, not skills.
+All commands are MCP prompts on the `haiku` server. Invoke them as `/haiku:start`, `/haiku:resume`, etc. Do NOT use the Skill tool for haiku commands — they are MCP prompts, not skills.
 
 The orchestrator tool `haiku_run_next { intent }` drives everything. It returns an action + `stage_metadata`. Follow the action, then call it again. Repeat.
 

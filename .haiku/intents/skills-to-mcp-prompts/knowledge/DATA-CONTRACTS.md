@@ -319,7 +319,7 @@ No `McpError` is thrown.
 
 | Error Condition | Returned By | Response Type | Message Format |
 |---|---|---|---|
-| No active intent (when required) | prompt handler | `GetPromptResult` (1 user message) | `No active intent found. Create one with /haiku:new` |
+| No active intent (when required) | prompt handler | `GetPromptResult` (1 user message) | `No active intent found. Create one with /haiku:start` |
 
 "No active intent" is a state resolution failure, not a parameter validation failure: the user
 did not provide an explicit slug, and the system cannot auto-resolve one. Contrast with "Intent
@@ -364,7 +364,7 @@ See BEHAVIORAL-SPEC.md scenario 2.7 for the authoritative behavior.
     "messages": [
       {
         "role": "user",
-        "content": { "type": "text", "text": "No active intent found. Create one with /haiku:new" }
+        "content": { "type": "text", "text": "No active intent found. Create one with /haiku:start" }
       }
     ]
   }
@@ -468,9 +468,9 @@ interface ElicitationResult {
 **Wire method:** `elicitation/create` (server-to-client request)
 
 **Used by:**
-- `haiku:new` — studio selection when no project-level override
-- `haiku:new` — active intent conflict resolution
-- `haiku:new` — template parameter gathering
+- `haiku:start` — studio selection when no project-level override
+- `haiku:start` — active intent conflict resolution
+- `haiku:start` — template parameter gathering
 - `haiku:refine` — target selection when no target argument provided
 - `haiku:composite` — multi-studio selection
 - `haiku:setup` — provider configuration

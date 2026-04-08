@@ -72,7 +72,7 @@ your-project/
 ## Quick Start
 
 ```bash
-# Use /haiku:new to create a new intent interactively — it sets up the correct
+# Use /haiku:start to create a new intent interactively — it sets up the correct
 # directory structure at .haiku/intents/{slug}/ automatically.
 
 # Or download templates manually:

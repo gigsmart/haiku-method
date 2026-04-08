@@ -8,7 +8,7 @@ Complete reference for all H·AI·K·U commands. Commands are MCP prompts invoke
 
 ## Core Commands
 
-### `/haiku:new`
+### `/haiku:start`
 
 Create a new intent with studio and stage configuration.
 

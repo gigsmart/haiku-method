@@ -6,7 +6,7 @@ export const config: DemoConfig = {
   stages: ["reconnaissance", "enumeration", "exploitation", "post-exploitation", "reporting"],
   completionText: "All 5 stages passed. annual-pentest-web-app delivered.",
   steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:new"}] },
+    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
     { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
     { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Annual penetration test for our web application"}] },
     { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"Creating intent: annual-pentest-web-app..."}, {"type":"file","path":".haiku/intents/annual-pentest-web-app/intent.md"}] },

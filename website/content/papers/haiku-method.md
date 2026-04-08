@@ -378,7 +378,7 @@ The concepts described above are implemented as a Claude Code plugin with two us
 
 ### Two Commands
 
-**`/haiku:new`** creates an intent — gathering a description, detecting the appropriate studio, selecting continuous or discrete mode, and setting up the workspace and persistence backend.
+**`/haiku:start`** creates an intent — gathering a description, detecting the appropriate studio, selecting continuous or discrete mode, and setting up the workspace and persistence backend.
 
 **`/haiku:resume`** advances the intent through its next stage — resolving the current state, loading the stage definition, and executing the five-phase stage loop.
 

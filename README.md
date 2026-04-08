@@ -30,7 +30,7 @@ No external dependencies. The plugin ships a single binary (`plugin/bin/haiku`) 
 ## Quick Start
 
 ```
-/haiku:new              # Create a new intent — describe what you want to do
+/haiku:start              # Create a new intent — describe what you want to do
 /haiku:resume              # The orchestrator tells you what to do next
 ```
 
@@ -76,7 +76,7 @@ Every stage runs the same five-step cycle:
 
 | Command | Purpose |
 |---------|---------|
-| `/haiku:new` | Create a new intent |
+| `/haiku:start` | Create a new intent |
 | `/haiku:resume` | Advance through stages (orchestrator-driven) |
 | `/haiku:composite` | Create multi-studio intent with sync points |
 | `/haiku:refine` | Amend specs mid-execution or refine upstream stages |
@@ -86,7 +86,7 @@ Every stage runs the same five-step cycle:
 | `/haiku:capacity` | Historical throughput analysis |
 | `/haiku:triggers` | Poll providers for events |
 | `/haiku:setup` | Configure providers and quality gates |
-| `/haiku:new --template <name>` | Create from a template (10 templates across 7 studios) |
+| `/haiku:start --template <name>` | Create from a template (10 templates across 7 studios) |
 
 ## Architecture
 

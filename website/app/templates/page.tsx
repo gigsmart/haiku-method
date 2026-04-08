@@ -141,7 +141,7 @@ curl -o .haiku/intents/my-feature/intent.md https://haikumethod.ai/templates/int
 curl -o .haiku/intents/my-feature/stages/dev/units/unit-01.md https://haikumethod.ai/templates/unit-template.md
 curl -o .haiku/settings.yml https://haikumethod.ai/templates/settings-template.yml
 
-# Or just use: /haiku:new`}</pre>
+# Or just use: /haiku:start`}</pre>
 				</div>
 			</section>
 

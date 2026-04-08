@@ -13,7 +13,7 @@ A studio is a named collection of stages, each with its own hat sequence. Each s
 - The order stages execute
 - Which hats operate within each stage
 
-Studios are selected during `/haiku:new` and can be customized per project.
+Studios are selected during `/haiku:start` and can be customized per project.
 
 > **Note on operating modes:** The HITL (Human-in-the-Loop) and OHOTL (Observed Human-on-the-Loop) modes listed below are recommendations for how you might interact with each stage. The plugin does not enforce a specific mode per stage -- you choose how much oversight to apply.
 
@@ -34,7 +34,7 @@ The default studio for most development work. In its simplest form, it uses only
 ### Flow
 
 ```
-/haiku:new
+/haiku:start
     ↓
 Define intent, criteria, units, and studio
     ↓
@@ -62,7 +62,7 @@ Next unit or intent complete
 **Intent:** Add user profile editing
 
 ```
-/haiku:new: "What do you want to build?"
+/haiku:start: "What do you want to build?"
 You: "Name, email, avatar image editing on the profile page"
 (Intent and units are now defined)
 
@@ -85,7 +85,7 @@ For cross-functional work, the software studio can include design and product st
 **Stages:** Design -> Product -> Development
 
 ```
-/haiku:new (select multi-stage software studio)
+/haiku:start (select multi-stage software studio)
     ↓
 /haiku:resume
     ↓

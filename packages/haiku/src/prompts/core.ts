@@ -1,6 +1,6 @@
 // prompts/core.ts — Core workflow prompt handlers
 //
-// Registers the 5 core prompts: haiku:new, haiku:resume, haiku:refine, haiku:review, haiku:reflect
+// Registers the 5 core prompts: haiku:start, haiku:resume, haiku:refine, haiku:review, haiku:reflect
 // Each handler reads state, optionally triggers side effects, and returns PromptMessage[].
 
 import { spawnSync } from "node:child_process"
@@ -27,7 +27,7 @@ function resolveIntent(args: Record<string, string>): { slug: string } | { error
 	// Auto-detect using shared helper
 	const active = findActiveIntents()
 	if (active.length === 0) {
-		return { error: singleMessage("No active intent found. Create one with /haiku:new") }
+		return { error: singleMessage("No active intent found. Create one with /haiku:start") }
 	}
 	if (active.length > 1) {
 		return { error: singleMessage(`Multiple active intents found: ${active.map(a => a.slug).join(", ")}. Specify one with the intent argument.`) }
@@ -133,7 +133,7 @@ registerPrompt({
 		if (!args.intent) {
 			const active = findActiveIntents()
 			if (active.length === 0) {
-				return singleMessage("No active intents found. Create one with /haiku:new")
+				return singleMessage("No active intents found. Create one with /haiku:start")
 			}
 			if (active.length === 1) {
 				args.intent = active[0].slug
@@ -678,11 +678,11 @@ function buildRunInstructions(
 	return sections.join("\n\n")
 }
 
-// ── haiku:new ───────────────────────────────────────────────────────────────
+// ── haiku:start ───────────────────────────────────────────────────────────────
 
 registerPrompt({
-	name: "haiku:new",
-	title: "New Intent",
+	name: "haiku:start",
+	title: "Start Intent",
 	description: "Start a new H·AI·K·U intent with studio and stage configuration",
 	arguments: [
 		{
