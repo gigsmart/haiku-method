@@ -1,18 +1,21 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 
 export default function NotFound() {
+	const [redirecting, setRedirecting] = useState(false)
+
 	useEffect(() => {
-		// SPA fallback: if the path starts with /browse/, redirect to /browse/ with the path saved
-		// so the browse page can restore the full path-based URL
 		const path = window.location.pathname
 		if (path.startsWith("/browse/") && path !== "/browse/") {
+			setRedirecting(true)
 			sessionStorage.setItem("browse-redirect-path", path + window.location.search)
 			window.location.replace("/browse/")
 		}
 	}, [])
+
+	if (redirecting) return null
 
 	return (
 		<div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
