@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 jobs:
   deploy:
@@ -43,8 +44,11 @@ jobs:
         run: terraform init -backend-config="bucket=${{ steps.gcp.outputs.tf_state_bucket }}" -backend-config="prefix=haiku"
 
       - name: Terraform Apply
+        id: terraform
         working-directory: deploy/terraform
-        run: terraform apply -auto-approve
+        run: |
+          terraform apply -auto-approve
+          echo "auth_proxy_url=$(terraform output -raw auth_proxy_url)" >> $GITHUB_OUTPUT
         env:
           TF_VAR_gcp_project_id: ${{ steps.gcp.outputs.project_id }}
           TF_VAR_domain: ${{ vars.HAIKU_DOMAIN || 'haikumethod.ai' }}
@@ -56,3 +60,8 @@ jobs:
           TF_VAR_gitlab_oauth_client_id: ${{ vars.NEXT_PUBLIC_HAIKU_GITLAB_OAUTH_CLIENT_ID }}
           TF_VAR_gitlab_oauth_client_secret: ${{ secrets.HAIKU_GITLAB_OAUTH_CLIENT_SECRET }}
           TF_VAR_enable_mcp_dns: "false"
+
+      - name: Update auth proxy URL variable
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh variable set NEXT_PUBLIC_HAIKU_AUTH_PROXY_URL --body "${{ steps.terraform.outputs.auth_proxy_url }}"
