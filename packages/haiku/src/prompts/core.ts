@@ -348,9 +348,12 @@ function buildRunInstructions(
 			const nextHat = hatIdx < hats.length - 1 ? hats[hatIdx + 1] : null
 			const isLastHat = !nextHat
 
+			const singleUseTeams = process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS === "true"
+
 			sections.push(
 				`### Mechanics\n\n` +
-				`**You are the orchestrator.** Spawn a subagent for the "${hat}" hat.\n` +
+				`**You are the orchestrator.** Spawn ${singleUseTeams ? "a teammate" : "a subagent"} for the "${hat}" hat.\n` +
+				(singleUseTeams ? `**Agent Teams enabled** — use team \`haiku-${slug}\`.\n` : "") +
 				`Agent type: \`${hatAgentType}\`${hatModel ? ` | Model: \`${hatModel}\`` : ""}\n` +
 				(worktreePath ? `Worktree: \`${worktreePath}\`\n` : "") +
 				`\n**Subagent prompt must include:**\n` +
@@ -410,8 +413,12 @@ function buildRunInstructions(
 				`### Mechanics\n\n` +
 				(wave !== undefined ? `**Wave ${wave}/${totalWaves ?? "?"}** — ` : "") +
 				`${units.length} units to run in parallel.\n` +
-				`**You are the orchestrator.** Spawn ${useTeams ? "an agent team" : "one subagent per unit"}. Do NOT do unit work yourself.\n` +
-				`Each subagent runs the FIRST hat ("${firstHat}") only. After all subagents complete, call \`haiku_run_next\` — the orchestrator will advance hats or start the next wave.\n\n` +
+				`**You are the orchestrator.** Do NOT do unit work yourself.\n\n` +
+				(useTeams
+					? `**Agent Teams enabled.** Use \`TeamCreate({ team_name: "haiku-${slug}", description: "H·AI·K·U: ${slug}" })\` if not already created. ` +
+					  `Then spawn teammates via the team for each unit. Each teammate runs the FIRST hat ("${firstHat}") only.\n\n`
+					: `Spawn one Agent subagent per unit. Each subagent runs the FIRST hat ("${firstHat}") only.\n\n`) +
+				`After all ${useTeams ? "teammates" : "subagents"} complete, call \`haiku_run_next\` — the orchestrator will advance hats or start the next wave.\n\n` +
 				`**Each subagent prompt must include:**\n` +
 				`- The hat definition for "${firstHat}"\n` +
 				`- The unit spec and refs\n` +

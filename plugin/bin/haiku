@@ -29367,11 +29367,13 @@ ${content.slice(0, 2e3)}${content.length > 2e3 ? "\n...(truncated)" : ""}`);
       const hatIdx = hats.indexOf(hat);
       const nextHat = hatIdx < hats.length - 1 ? hats[hatIdx + 1] : null;
       const isLastHat = !nextHat;
+      const singleUseTeams = process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS === "true";
       sections.push(
         `### Mechanics
 
-**You are the orchestrator.** Spawn a subagent for the "${hat}" hat.
-Agent type: \`${hatAgentType}\`${hatModel ? ` | Model: \`${hatModel}\`` : ""}
+**You are the orchestrator.** Spawn ${singleUseTeams ? "a teammate" : "a subagent"} for the "${hat}" hat.
+` + (singleUseTeams ? `**Agent Teams enabled** \u2014 use team \`haiku-${slug}\`.
+` : "") + `Agent type: \`${hatAgentType}\`${hatModel ? ` | Model: \`${hatModel}\`` : ""}
 ` + (worktreePath ? `Worktree: \`${worktreePath}\`
 ` : "") + `
 **Subagent prompt must include:**
@@ -29428,8 +29430,13 @@ Units: ${units.join(", ")}`);
         `### Mechanics
 
 ` + (wave !== void 0 ? `**Wave ${wave}/${totalWaves ?? "?"}** \u2014 ` : "") + `${units.length} units to run in parallel.
-**You are the orchestrator.** Spawn ${useTeams ? "an agent team" : "one subagent per unit"}. Do NOT do unit work yourself.
-Each subagent runs the FIRST hat ("${firstHat}") only. After all subagents complete, call \`haiku_run_next\` \u2014 the orchestrator will advance hats or start the next wave.
+**You are the orchestrator.** Do NOT do unit work yourself.
+
+` + (useTeams ? `**Agent Teams enabled.** Use \`TeamCreate({ team_name: "haiku-${slug}", description: "H\xB7AI\xB7K\xB7U: ${slug}" })\` if not already created. Then spawn teammates via the team for each unit. Each teammate runs the FIRST hat ("${firstHat}") only.
+
+` : `Spawn one Agent subagent per unit. Each subagent runs the FIRST hat ("${firstHat}") only.
+
+`) + `After all ${useTeams ? "teammates" : "subagents"} complete, call \`haiku_run_next\` \u2014 the orchestrator will advance hats or start the next wave.
 
 **Each subagent prompt must include:**
 - The hat definition for "${firstHat}"
