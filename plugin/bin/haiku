@@ -29271,8 +29271,12 @@ All units MUST be within this stage's domain${unitTypes.length > 0 ? ` (${unitTy
 
 ## Mechanics
 
-` + (elaboration === "collaborative" ? `Mode: **collaborative** \u2014 engage the user iteratively before finalizing.
+` + (elaboration === "collaborative" ? `Mode: **collaborative** \u2014 you MUST engage the user iteratively before finalizing.
+
+**CRITICAL: Use \`ask_user_visual_question\` for ALL structured questions.** When you have options for the user to choose between (A/B/C, scope decisions, approach tradeoffs, priorities), call \`ask_user_visual_question\` with the options as a question with selectable choices. Do NOT dump multiple-choice questions as conversation text. Plain text is ONLY for simple open-ended clarifications.
+
 ` : `Mode: **autonomous** \u2014 elaborate independently.
+
 `) + `1. Research and write discovery artifacts
 2. Break work into units at \`.haiku/intents/${slug}/stages/${stage}/units/\`
 3. Call \`haiku_run_next { intent: "${slug}" }\` \u2014 the orchestrator opens the review and advances the phase automatically`

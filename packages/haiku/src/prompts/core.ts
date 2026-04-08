@@ -252,8 +252,13 @@ function buildRunInstructions(
 				`Work belonging to other stages goes in the discovery document, not in units.\n\n` +
 				`## Mechanics\n\n` +
 				(elaboration === "collaborative"
-					? `Mode: **collaborative** — engage the user iteratively before finalizing.\n`
-					: `Mode: **autonomous** — elaborate independently.\n`) +
+					? `Mode: **collaborative** — you MUST engage the user iteratively before finalizing.\n\n` +
+					  `**CRITICAL: Use \`ask_user_visual_question\` for ALL structured questions.** ` +
+					  `When you have options for the user to choose between (A/B/C, scope decisions, ` +
+					  `approach tradeoffs, priorities), call \`ask_user_visual_question\` with the options ` +
+					  `as a question with selectable choices. Do NOT dump multiple-choice questions as ` +
+					  `conversation text. Plain text is ONLY for simple open-ended clarifications.\n\n`
+					: `Mode: **autonomous** — elaborate independently.\n\n`) +
 				`1. Research and write discovery artifacts\n` +
 				`2. Break work into units at \`.haiku/intents/${slug}/stages/${stage}/units/\`\n` +
 				`3. Call \`haiku_run_next { intent: "${slug}" }\` — the orchestrator opens the review and advances the phase automatically`,
