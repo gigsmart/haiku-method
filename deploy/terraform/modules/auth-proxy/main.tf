@@ -175,11 +175,12 @@ resource "google_compute_region_backend_service" "auth_proxy" {
   name                  = "haiku-auth-proxy-backend"
   project               = var.project_id
   region                = var.region
-  protocol              = "HTTPS"
+  protocol              = "HTTP"
   load_balancing_scheme = "EXTERNAL_MANAGED"
 
   backend {
     group           = google_compute_region_network_endpoint_group.auth_proxy.id
+    balancing_mode  = "UTILIZATION"
     capacity_scaler = 1.0
   }
 }
