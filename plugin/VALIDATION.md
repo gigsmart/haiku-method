@@ -1,6 +1,6 @@
 # H·AI·K·U Plugin Validation
 
-This document defines the expected behaviors, success criteria, and invariants that the H·AI·K·U plugin must satisfy. An LLM can validate against these scenarios by reading the skills, MCP tools, hooks, and studio definitions.
+This document defines the expected behaviors, success criteria, and invariants that the H·AI·K·U plugin must satisfy. An LLM can validate against these scenarios by reading the MCP prompts, MCP tools, hooks, and studio definitions.
 
 ## Core Invariants
 
@@ -31,7 +31,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 - [ ] Agent MUST validate assumptions with the user before writing them into units
 - [ ] Agent MUST present options and tradeoffs when decisions exist — MUST NOT silently choose
 - [ ] Elaboration continues until both agent and user are confident the plan is solid
-- [ ] All skills and stage definitions use RFC 2119 language (MUST, MUST NOT, SHALL, REQUIRED) for mandatory behavior
+- [ ] All MCP prompts and stage definitions use RFC 2119 language (MUST, MUST NOT, SHALL, REQUIRED) for mandatory behavior
 
 ### Visual Review Enforcement (RFC 2119)
 
@@ -378,7 +378,6 @@ plugin/
   bin/haiku                    # compiled binary (MCP + hooks + migrate)
   .mcp.json                    # points to bin/haiku mcp
   hooks/hooks.json             # points all hooks to bin/haiku hook <name>
-  skills/                      # prose instructions referencing MCP tools
   studios/                     # studio definitions (source of truth)
     {studio}/
       STUDIO.md                # stages, persistence, delivery
@@ -530,7 +529,7 @@ Systematic validation of every critical behavior. Status: PASS/FAIL/PARTIAL.
 
 An LLM validates this document by:
 
-1. **Reading the run skill** (`plugin/skills/run/SKILL.md`) and confirming the action reference matches the orchestrator's return types
+1. **Reading the MCP prompts** (`packages/haiku/src/prompts/`) and confirming they guide the agent correctly for each action
 2. **Reading the orchestrator** (`packages/haiku/src/orchestrator.ts`) and confirming it produces the documented actions
 3. **Reading the state tools** (`packages/haiku/src/state-tools.ts`) and confirming they write to the documented locations
 4. **Reading the hooks** (`packages/haiku/src/hooks/`) and confirming they match the hook scenarios

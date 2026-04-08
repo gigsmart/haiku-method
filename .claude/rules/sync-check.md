@@ -7,10 +7,6 @@ Before completing any work that modifies the plugin, paper, or website, verify c
 - [ ] Does the website docs section reference it (if user-facing)?
 - [ ] Do requires/produces chains form a valid pipeline?
 
-## After modifying plugin/skills/:
-- [ ] Is the CLI reference in the website docs up to date?
-- [ ] Does the skill align with the paper's methodology?
-
 ## After modifying the paper:
 - [ ] Does the plugin implement what the paper describes?
 - [ ] If aspirational (not yet implemented), is it clearly marked as such?
@@ -22,8 +18,7 @@ Before completing any work that modifies the plugin, paper, or website, verify c
 ## After adding or renaming terminology:
 - [ ] Updated in paper glossary
 - [ ] Updated in CLAUDE.md terminology table
-- [ ] Updated in plugin fundamentals skill
-- [ ] Updated in all stage/skill files that reference it
+- [ ] Updated in all stage files that reference it
 - [ ] Updated in website docs
 
 ## Terminology reminders:

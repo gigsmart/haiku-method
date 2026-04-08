@@ -120,7 +120,12 @@ export interface DesignDirectionSession {
   archetypes: DesignArchetypeData[];
   parameters: DesignParameterData[];
   status: "pending" | "answered";
-  selection: { archetype: string; parameters: Record<string, number> } | null;
+  selection: {
+    archetype: string;
+    parameters: Record<string, number>;
+    comments?: string;
+    annotations?: { screenshot?: string; pins?: Array<{ x: number; y: number; text: string }> };
+  } | null;
   html: string;
 }
 

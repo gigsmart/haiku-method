@@ -577,10 +577,12 @@ function handleWebSocketMessage(sessionId: string, raw: string): void {
 		}
 		const archetype = msg.archetype as string
 		const parameters = msg.parameters as Record<string, number>
+		const comments = (msg.comments as string | undefined) || undefined
+		const annotations = msg.annotations as { screenshot?: string; pins?: Array<{ x: number; y: number; text: string }> } | undefined
 		if (archetype && parameters) {
 			updateDesignDirectionSession(sessionId, {
 				status: "answered",
-				selection: { archetype, parameters },
+				selection: { archetype, parameters, comments, annotations },
 			})
 			sendToWebSocket(sessionId, { ok: true })
 		}

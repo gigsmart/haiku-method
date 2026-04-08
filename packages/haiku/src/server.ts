@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process"
-import { readdir } from "node:fs/promises"
+import { readFile, readdir } from "node:fs/promises"
 import { dirname, join, resolve } from "node:path"
 import {
 	buildDAG,
@@ -28,6 +28,7 @@ import type { DesignArchetypeData, DesignParameterData, QuestionDef } from "./se
 import { type MockupInfo, renderReviewPage } from "./templates/index.js"
 import { renderQuestionPage } from "./templates/question-form.js"
 import { renderDesignDirectionPage } from "./templates/design-direction.js"
+import { findHaikuRoot, stageStatePath, readJson, writeJson, parseFrontmatter } from "./state-tools.js"
 
 const OpenReviewInput = z.object({
 	intent_dir: z
@@ -80,39 +81,49 @@ const AskVisualQuestionInput = z.object({
 		),
 })
 
+const DesignArchetypeSchema = z.object({
+	name: z.string().describe("Archetype name"),
+	description: z.string().describe("Brief description of this archetype"),
+	preview_html: z
+		.string()
+		.describe("HTML snippet to render as a preview"),
+	default_parameters: z
+		.record(z.number())
+		.describe("Default parameter values for this archetype"),
+})
+
+const DesignParameterSchema = z.object({
+	name: z.string().describe("Parameter key name"),
+	label: z.string().describe("Human-readable label"),
+	description: z.string().describe("Description of what this parameter controls"),
+	min: z.number().describe("Minimum value"),
+	max: z.number().describe("Maximum value"),
+	step: z.number().describe("Step increment"),
+	default: z.number().describe("Default value"),
+	labels: z.object({
+		low: z.string().describe("Label for the low end"),
+		high: z.string().describe("Label for the high end"),
+	}),
+})
+
 const PickDesignDirectionInput = z.object({
 	intent_slug: z.string().describe("The intent slug this direction applies to"),
 	archetypes: z
-		.array(
-			z.object({
-				name: z.string().describe("Archetype name"),
-				description: z.string().describe("Brief description of this archetype"),
-				preview_html: z
-					.string()
-					.describe("HTML snippet to render as a preview"),
-				default_parameters: z
-					.record(z.number())
-					.describe("Default parameter values for this archetype"),
-			}),
-		)
-		.describe("Array of design archetypes to choose from"),
+		.array(DesignArchetypeSchema)
+		.optional()
+		.describe("Inline array of design archetypes to choose from"),
+	archetypes_file: z
+		.string()
+		.optional()
+		.describe("Path to a JSON file containing the archetypes array (alternative to inline archetypes)"),
 	parameters: z
-		.array(
-			z.object({
-				name: z.string().describe("Parameter key name"),
-				label: z.string().describe("Human-readable label"),
-				description: z.string().describe("Description of what this parameter controls"),
-				min: z.number().describe("Minimum value"),
-				max: z.number().describe("Maximum value"),
-				step: z.number().describe("Step increment"),
-				default: z.number().describe("Default value"),
-				labels: z.object({
-					low: z.string().describe("Label for the low end"),
-					high: z.string().describe("Label for the high end"),
-				}),
-			}),
-		)
-		.describe("Array of tunable parameters"),
+		.array(DesignParameterSchema)
+		.optional()
+		.describe("Inline array of tunable parameters"),
+	parameters_file: z
+		.string()
+		.optional()
+		.describe("Path to a JSON file containing the parameters array (alternative to inline parameters)"),
 	title: z
 		.string()
 		.optional()
@@ -229,7 +240,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 			description:
 				"Open a browser-based visual picker for choosing a design direction. " +
 				"Presents archetype cards with preview HTML and tunable parameter sliders. " +
-				"The user's selection is pushed back as a channel event.",
+				"The user's selection is pushed back as a channel event. " +
+				"Archetypes and parameters can be provided inline or as paths to JSON files on disk.",
 			inputSchema: {
 				type: "object" as const,
 				properties: {
@@ -264,7 +276,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 								"default_parameters",
 							],
 						},
-						description: "Design archetypes to choose from",
+						description: "Inline design archetypes to choose from",
+					},
+					archetypes_file: {
+						type: "string",
+						description: "Path to a JSON file containing the archetypes array (alternative to inline archetypes)",
 					},
 					parameters: {
 						type: "array",
@@ -301,14 +317,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 								"labels",
 							],
 						},
-						description: "Tunable parameters",
+						description: "Inline tunable parameters",
+					},
+					parameters_file: {
+						type: "string",
+						description: "Path to a JSON file containing the parameters array (alternative to inline parameters)",
 					},
 					title: {
 						type: "string",
 						description: "Optional page title",
 					},
 				},
-				required: ["intent_slug", "archetypes", "parameters"],
+				required: ["intent_slug"],
 			},
 		},
 	],
@@ -770,8 +790,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	if (name === "pick_design_direction") {
 		const input = PickDesignDirectionInput.parse(args)
 		const title = input.title ?? "Design Direction"
-		const archetypes: DesignArchetypeData[] = input.archetypes
-		const parameters: DesignParameterData[] = input.parameters
+
+		// Resolve archetypes: inline or from file
+		let archetypes: DesignArchetypeData[]
+		if (input.archetypes) {
+			archetypes = input.archetypes
+		} else if (input.archetypes_file) {
+			const raw = await readFile(resolve(input.archetypes_file), "utf-8")
+			archetypes = z.array(DesignArchetypeSchema).parse(JSON.parse(raw))
+		} else {
+			return { content: [{ type: "text" as const, text: "Error: provide either archetypes or archetypes_file" }] }
+		}
+
+		// Resolve parameters: inline or from file
+		let parameters: DesignParameterData[]
+		if (input.parameters) {
+			parameters = input.parameters
+		} else if (input.parameters_file) {
+			const raw = await readFile(resolve(input.parameters_file), "utf-8")
+			parameters = z.array(DesignParameterSchema).parse(JSON.parse(raw))
+		} else {
+			return { content: [{ type: "text" as const, text: "Error: provide either parameters or parameters_file" }] }
+		}
 
 		// Create design direction session
 		const session = createDesignDirectionSession({
@@ -827,17 +867,45 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 		// Session was updated — read the latest state
 		const updatedDirectionSession = getSession(session.session_id)
 		if (updatedDirectionSession && updatedDirectionSession.session_type === "design_direction" && updatedDirectionSession.status === "answered" && updatedDirectionSession.selection) {
+			// Persist design_direction_selected to stage state so the orchestrator
+			// knows to advance — the agent doesn't need to relay this flag.
+			try {
+				const root = findHaikuRoot()
+				const intentFile = join(root, "intents", input.intent_slug, "intent.md")
+				const intentRaw = await readFile(intentFile, "utf-8")
+				const intentFm = parseFrontmatter(intentRaw)
+				const activeStage = (intentFm.data.active_stage as string) || ""
+				if (activeStage) {
+					const ssPath = stageStatePath(input.intent_slug, activeStage)
+					const ssData = readJson(ssPath)
+					ssData.design_direction_selected = true
+					ssData.design_direction = {
+						archetype: updatedDirectionSession.selection.archetype,
+						parameters: updatedDirectionSession.selection.parameters,
+						...(updatedDirectionSession.selection.comments ? { comments: updatedDirectionSession.selection.comments } : {}),
+						...(updatedDirectionSession.selection.annotations ? { annotations: updatedDirectionSession.selection.annotations } : {}),
+					}
+					writeJson(ssPath, ssData)
+				}
+			} catch { /* non-fatal — orchestrator flag may need manual set */ }
+
+			// Return conversational context only — no action directives
+			const sel = updatedDirectionSession.selection
+			const parts: string[] = [
+				`The user selected the **${sel.archetype}** direction.`,
+			]
+			if (sel.comments) {
+				parts.push(`\nComments: ${sel.comments}`)
+			}
+			if (sel.annotations?.pins?.length) {
+				parts.push(`\nVisual annotations (${sel.annotations.pins.length} pins):`)
+				for (const pin of sel.annotations.pins) {
+					parts.push(`  - [${pin.x.toFixed(1)}%, ${pin.y.toFixed(1)}%]: ${pin.text || "(no text)"}`)
+				}
+			}
 			return {
 				content: [
-					{
-						type: "text" as const,
-						text: JSON.stringify({
-							status: "answered",
-							url: directionUrl,
-							archetype: updatedDirectionSession.selection.archetype,
-							parameters: updatedDirectionSession.selection.parameters,
-						}, null, 2),
-					},
+					{ type: "text" as const, text: parts.join("\n") },
 				],
 			}
 		}
@@ -846,12 +914,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 			content: [
 				{
 					type: "text" as const,
-					text: JSON.stringify({
-						status: "timeout",
-						url: directionUrl,
-						session_id: session.session_id,
-						message: "User did not respond within 30 minutes",
-					}, null, 2),
+					text: "The user did not select a design direction within the time limit. Ask them how they'd like to proceed.",
 				},
 			],
 		}

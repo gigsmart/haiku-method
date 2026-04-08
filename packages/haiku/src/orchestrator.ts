@@ -301,6 +301,67 @@ function validateUnitTypes(intentDirPath: string, stage: string, studio: string)
 	return null
 }
 
+/**
+ * Validate unit file naming convention in a stage.
+ * Files MUST match `unit-NN-slug.md` (e.g., unit-01-data-model.md).
+ * Returns violations or null if all pass.
+ */
+const UNIT_NAMING_PATTERN = /^unit-\d{2,}-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/
+function validateUnitNaming(intentDirPath: string, stage: string): OrchestratorAction | null {
+	const unitsDir = join(intentDirPath, "stages", stage, "units")
+	if (!existsSync(unitsDir)) return null
+
+	const allFiles = readdirSync(unitsDir).filter(f => f.endsWith(".md"))
+	if (allFiles.length === 0) return null
+
+	const violations: Array<{ file: string; issue: string }> = []
+	const seenNumbers = new Map<number, string>()
+
+	for (const f of allFiles) {
+		// Check basic pattern
+		if (!UNIT_NAMING_PATTERN.test(f)) {
+			// Give a specific hint about what's wrong
+			if (!f.startsWith("unit-")) {
+				violations.push({ file: f, issue: "must start with 'unit-'" })
+			} else if (!/^unit-\d+/.test(f)) {
+				violations.push({ file: f, issue: "must have a zero-padded number after 'unit-' (e.g., unit-01-...)" })
+			} else if (!/^unit-\d{2,}/.test(f)) {
+				violations.push({ file: f, issue: "number must be zero-padded to at least 2 digits (e.g., 01, 02)" })
+			} else {
+				violations.push({ file: f, issue: "slug must be kebab-case (lowercase letters, numbers, hyphens). Expected: unit-NN-slug.md" })
+			}
+			continue
+		}
+
+		// Check for duplicate numbers
+		const numMatch = f.match(/^unit-(\d+)/)
+		if (numMatch) {
+			const num = parseInt(numMatch[1], 10)
+			if (seenNumbers.has(num)) {
+				violations.push({ file: f, issue: `duplicate number ${numMatch[1]} (also used by ${seenNumbers.get(num)})` })
+			} else {
+				seenNumbers.set(num, f)
+			}
+		}
+	}
+
+	if (violations.length > 0) {
+		const slug = intentDirPath.split("/intents/")[1] || ""
+		return {
+			action: "unit_naming_invalid",
+			intent: slug,
+			stage,
+			violations,
+			message: `${violations.length} unit file(s) have invalid naming in stage '${stage}'. ` +
+				`Files MUST be named \`unit-NN-slug.md\` (e.g., \`unit-01-data-model.md\`):\n\n` +
+				violations.map(v => `- \`${v.file}\`: ${v.issue}`).join("\n") +
+				`\n\nRename the files to match the convention, then call \`haiku_run_next { intent: "${slug}" }\` again.`,
+		}
+	}
+
+	return null
+}
+
 // ── Action types ───────────────────────────────────────────────────────────
 
 export interface OrchestratorAction {
@@ -580,6 +641,10 @@ export function runNext(slug: string): OrchestratorAction {
 			}
 		}
 
+		// Validate unit file naming before allowing execution
+		const namingViolation = validateUnitNaming(iDir, currentStage)
+		if (namingViolation) return namingViolation
+
 		// Validate unit types before allowing execution
 		const typeViolation = validateUnitTypes(iDir, currentStage, studio)
 		if (typeViolation) return typeViolation
@@ -605,7 +670,7 @@ export function runNext(slug: string): OrchestratorAction {
 					intent: slug,
 					studio,
 					stage: currentStage,
-					message: `This stage requires a design direction selection before proceeding. Call pick_design_direction with wireframe variants, then call haiku_run_next { intent: "${slug}", design_direction_selected: true } after the user selects a direction.`,
+					message: `This stage requires a design direction selection before proceeding. Call pick_design_direction with wireframe variants — the state will be updated automatically when the user selects a direction.`,
 				}
 			}
 		}
@@ -628,7 +693,9 @@ export function runNext(slug: string): OrchestratorAction {
 
 	// Stage in execute phase
 	if (phase === "execute") {
-		// Validate unit types on every execute call — catch violations that snuck through
+		// Validate unit naming and types on every execute call — catch violations that snuck through
+		const execNamingViolation = validateUnitNaming(iDir, currentStage)
+		if (execNamingViolation) return execNamingViolation
 		const execTypeViolation = validateUnitTypes(iDir, currentStage, studio)
 		if (execTypeViolation) return execTypeViolation
 
@@ -1182,8 +1249,6 @@ export const orchestratorToolDefs = [
 			type: "object" as const,
 			properties: {
 				intent: { type: "string", description: "Intent slug" },
-				elaboration_reviewed: { type: "boolean", description: "Set to true after review agents have reviewed the elaboration specs" },
-				design_direction_selected: { type: "boolean", description: "Set to true after the user has selected a design direction via pick_design_direction" },
 				external_review_url: { type: "string", description: "URL where stage was submitted for external review (PR, MR, etc.)" },
 			},
 			required: ["intent"],
@@ -1252,42 +1317,6 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 	if (name === "haiku_run_next") {
 		const slug = args.intent as string
 		const stFile = args.state_file as string | undefined
-
-		// Gap 4: If elaboration_reviewed flag is passed, persist it to stage state
-		if (args.elaboration_reviewed === true) {
-			try {
-				const root = findHaikuRoot()
-				const intentFile = join(root, "intents", slug, "intent.md")
-				if (existsSync(intentFile)) {
-					const intentFm = readFrontmatter(intentFile)
-					const activeStage = (intentFm.active_stage as string) || ""
-					if (activeStage) {
-						const ssPath = stageStatePath(slug, activeStage)
-						const ssData = readJson(ssPath)
-						ssData.elaboration_reviewed = true
-						writeJson(ssPath, ssData)
-					}
-				}
-			} catch { /* non-fatal */ }
-		}
-
-		// If design_direction_selected flag is passed, persist it to stage state
-		if (args.design_direction_selected === true) {
-			try {
-				const root = findHaikuRoot()
-				const intentFile = join(root, "intents", slug, "intent.md")
-				if (existsSync(intentFile)) {
-					const intentFm = readFrontmatter(intentFile)
-					const activeStage = (intentFm.active_stage as string) || ""
-					if (activeStage) {
-						const ssPath = stageStatePath(slug, activeStage)
-						const ssData = readJson(ssPath)
-						ssData.design_direction_selected = true
-						writeJson(ssPath, ssData)
-					}
-				}
-			} catch { /* non-fatal */ }
-		}
 
 		// Gap 8: If external_review_url is passed and stage is blocked, store it
 		if (args.external_review_url) {

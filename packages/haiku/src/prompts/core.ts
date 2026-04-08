@@ -287,7 +287,13 @@ function buildRunInstructions(
 				`   - The execution phase produces the actual deliverables\n` +
 				`   - Do NOT write full specs, schemas, or implementations during elaboration\n` +
 				`3. Write unit files to \`.haiku/intents/${slug}/stages/${stage}/units/\`\n` +
-				`4. Call \`haiku_run_next { intent: "${slug}" }\` — the orchestrator validates and opens the review gate`,
+				`4. Call \`haiku_run_next { intent: "${slug}" }\` — the orchestrator validates and opens the review gate\n\n` +
+				`**Unit file naming convention (REQUIRED):**\n` +
+				`Files MUST be named \`unit-NN-slug.md\` where:\n` +
+				`- \`NN\` is a zero-padded sequence number (01, 02, 03...)\n` +
+				`- \`slug\` is a kebab-case descriptor (e.g., \`user-auth\`, \`data-model\`)\n` +
+				`- Example: \`unit-01-data-model.md\`, \`unit-02-api-endpoints.md\`\n\n` +
+				`Files that don't match this pattern will not appear in the review UI and will block advancement.`,
 			)
 
 			// Check for ticketing provider
@@ -619,7 +625,7 @@ function buildRunInstructions(
 				`1. Spawn one subagent per review agent (in parallel)\n` +
 				`2. Each reviews the elaboration specs (units, discovery, knowledge)\n` +
 				`3. Fix any HIGH findings\n` +
-				`4. Call \`haiku_run_next { intent: "${slug}", elaboration_reviewed: true }\``,
+				`4. Call \`haiku_run_next { intent: "${slug}" }\` to advance`,
 			)
 			break
 		}

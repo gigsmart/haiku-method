@@ -14,6 +14,8 @@ function out(s: string): void {
 	process.stdout.write(s + "\n")
 }
 
+const UNIT_NAMING_PATTERN = /^unit-\d{2,}-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/
+
 export async function validateUnitType(input: Record<string, unknown>, pluginRoot: string): Promise<void> {
 	// Check if the written/edited file is a unit file
 	const filePath = (input.file_path as string) || (input.path as string) || ""
@@ -26,6 +28,15 @@ export async function validateUnitType(input: Record<string, unknown>, pluginRoo
 	if (!haikuMatch) return
 
 	const [, intentSlug, stageName, unitFile] = haikuMatch
+
+	// Validate naming convention: unit-NN-slug.md
+	if (!UNIT_NAMING_PATTERN.test(unitFile)) {
+		out(`⚠️ UNIT NAMING VIOLATION: '${unitFile}' does not match the required pattern.`)
+		out(`Files MUST be named unit-NN-slug.md (e.g., unit-01-data-model.md):`)
+		out(`  - NN = zero-padded number (01, 02, 03...)`)
+		out(`  - slug = kebab-case descriptor (lowercase letters, numbers, hyphens)`)
+		out(`Rename this file now. Files that don't match this pattern will not appear in the review UI.`)
+	}
 
 	// Read the unit's frontmatter to get its type
 	if (!existsSync(absPath)) return

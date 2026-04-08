@@ -4,6 +4,7 @@ import type {
 } from "../sessions.js"
 import { escapeAttr, escapeHtml, renderLayout } from "./layout.js"
 import { card, sectionHeading } from "./components.js"
+import { renderAnnotationCanvas } from "./annotation-canvas.js"
 
 export interface DesignDirectionPageData {
 	title: string
@@ -90,7 +91,31 @@ export function renderDesignDirectionPage(
 		)
 	}
 
-	// -- Section C: Submit --
+	// -- Section C: Visual Annotations --
+	// Render a placeholder annotation canvas; JS swaps the image when an archetype is selected
+	body += card(
+		sectionHeading("Annotate Preview", 2) +
+			`<p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Optional — draw on or pin comments to the selected archetype preview.</p>
+    <div id="annotation-area" class="hidden">` +
+			renderAnnotationCanvas("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7") +
+			`</div>
+    <p id="annotation-placeholder" class="text-sm text-gray-400 dark:text-gray-500 italic">Select an archetype above to enable annotations.</p>`,
+	)
+
+	// -- Section D: Comments --
+	body += card(
+		sectionHeading("Comments", 2) +
+			`<p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Optional — note any tweaks or adjustments to the chosen direction.</p>
+    <textarea id="direction-comments"
+              placeholder="e.g. 'Use rounded corners instead of sharp edges', 'Make the header more compact'..."
+              rows="3"
+              class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800
+                     text-gray-900 dark:text-gray-100 px-3 py-2 text-sm
+                     focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400
+                     placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-y"></textarea>`,
+	)
+
+	// -- Section E: Submit --
 	body += `<button type="button" id="submit-direction"
     class="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg
            transition-colors focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
@@ -105,6 +130,10 @@ export function renderDesignDirectionPage(
     var sessionId = ${JSON.stringify(sessionId)};
     var cards = Array.from(document.querySelectorAll('.archetype-card'));
     var sliders = document.querySelectorAll('#parameter-tuners input[type="range"]');
+
+    var annotationArea = document.getElementById('annotation-area');
+    var annotationPlaceholder = document.getElementById('annotation-placeholder');
+    var annotationImage = document.getElementById('annotation-image');
 
     // --- Archetype selection ---
     function selectCard(card) {
@@ -138,11 +167,63 @@ export function renderDesignDirectionPage(
           if (output) { output.textContent = defaults[key]; }
         }
       } catch(e) { /* ignore parse errors */ }
+
+      // Load the archetype preview into the annotation canvas
+      loadPreviewIntoCanvas(card);
+    }
+
+    function loadPreviewIntoCanvas(card) {
+      var iframe = card.querySelector('iframe');
+      if (!iframe) return;
+      // Show the annotation area
+      annotationArea.classList.remove('hidden');
+      if (annotationPlaceholder) annotationPlaceholder.style.display = 'none';
+      // Use the iframe srcdoc as a rendered image via a blob URL
+      var srcdoc = iframe.getAttribute('srcdoc') || '';
+      var blob = new Blob([srcdoc], { type: 'text/html' });
+      var blobUrl = URL.createObjectURL(blob);
+      // Create a temporary iframe to render and screenshot
+      var tempIframe = document.createElement('iframe');
+      tempIframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:800px;height:600px;border:none;';
+      tempIframe.sandbox = 'allow-same-origin';
+      document.body.appendChild(tempIframe);
+      tempIframe.srcdoc = srcdoc;
+      tempIframe.onload = function() {
+        // Small delay to let rendering settle
+        setTimeout(function() {
+          try {
+            var doc = tempIframe.contentDocument;
+            var html2canvas = false; // We'll use a simpler approach: render the HTML as an SVG foreignObject
+            var svgData = '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600">' +
+              '<foreignObject width="100%" height="100%">' +
+              '<div xmlns="http://www.w3.org/1999/xhtml" style="width:800px;height:600px;overflow:hidden;">' +
+              srcdoc.replace(/&/g, '&amp;').replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, '') +
+              '</div></foreignObject></svg>';
+            var svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            var svgUrl = URL.createObjectURL(svgBlob);
+            if (annotationImage) {
+              annotationImage.src = svgUrl;
+            }
+          } catch(e) {
+            // If SVG rendering fails, use a placeholder with the archetype name
+            if (annotationImage) {
+              annotationImage.alt = 'Preview: ' + (card.getAttribute('data-archetype') || 'selected');
+            }
+          }
+          document.body.removeChild(tempIframe);
+          URL.revokeObjectURL(blobUrl);
+        }, 200);
+      };
     }
 
     cards.forEach(function(c) {
       c.addEventListener('click', function() { selectCard(c); });
     });
+
+    // Load annotation canvas for the initially-selected archetype
+    if (cards.length > 0) {
+      loadPreviewIntoCanvas(cards[0]);
+    }
 
     // Keyboard: arrow keys between cards
     document.getElementById('archetype-gallery').addEventListener('keydown', function(e) {
@@ -170,15 +251,24 @@ export function renderDesignDirectionPage(
       var archetype = selected.getAttribute('data-archetype');
       var params = {};
       sliders.forEach(function(s) { params[s.name] = parseFloat(s.value); });
+      var comments = (document.getElementById('direction-comments').value || '').trim();
 
       var btn = document.getElementById('submit-direction');
       btn.disabled = true;
       btn.classList.add('opacity-50', 'cursor-not-allowed');
 
+      var payload = { archetype: archetype, parameters: params };
+      if (comments) payload.comments = comments;
+
+      // Capture visual annotations if any
+      if (typeof window.captureAnnotations === 'function' && typeof window.hasCanvasAnnotations === 'function' && window.hasCanvasAnnotations()) {
+        payload.annotations = window.captureAnnotations();
+      }
+
       fetch('/direction/' + sessionId + '/select', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ archetype: archetype, parameters: params })
+        body: JSON.stringify(payload)
       })
       .then(function(res) {
         if (!res.ok) return res.json().then(function(b) { throw new Error(b.error || 'HTTP ' + res.status); });
