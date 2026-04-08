@@ -11,7 +11,6 @@ on:
 permissions:
   contents: read
   actions: write
-  variables: write
 
 jobs:
   deploy:
@@ -65,7 +64,5 @@ jobs:
           TF_VAR_gitlab_oauth_client_secret: ${{ secrets.HAIKU_GITLAB_OAUTH_CLIENT_SECRET }}
           TF_VAR_enable_mcp_dns: "false"
 
-      - name: Update auth proxy URL variable
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh variable set NEXT_PUBLIC_HAIKU_AUTH_PROXY_URL --body "${{ steps.terraform.outputs.auth_proxy_url }}"
+      - name: Print auth proxy URL
+        run: echo "Auth proxy deployed at ${{ steps.terraform.outputs.auth_proxy_url }}"
