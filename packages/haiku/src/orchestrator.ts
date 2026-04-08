@@ -1626,8 +1626,9 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 		mkdirSync(join(iDir, "knowledge"), { recursive: true })
 		mkdirSync(join(iDir, "stages"), { recursive: true })
 
-		// Build intent.md frontmatter
-		const frontmatter = [
+		// Build intent.md with frontmatter + body
+		const context = args.context as string | undefined
+		const intentContent = [
 			"---",
 			`title: "${description.replace(/"/g, '\\"')}"`,
 			`studio: ${selectedStudio}`,
@@ -1640,12 +1641,12 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 			"",
 			`# ${description}`,
 			"",
+			...(context ? [context, ""] : []),
 		].join("\n")
 
-		writeFileSync(join(iDir, "intent.md"), frontmatter)
+		writeFileSync(join(iDir, "intent.md"), intentContent)
 
-		// Gap 5: Write conversation context if provided
-		const context = args.context as string | undefined
+		// Also write conversation context to knowledge for discoverability
 		if (context) {
 			const knowledgeDir = join(iDir, "knowledge")
 			mkdirSync(knowledgeDir, { recursive: true })
