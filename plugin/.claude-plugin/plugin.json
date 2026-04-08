@@ -1,13 +1,13 @@
 {
   "name": "haiku",
-  "version": "1.85.5",
+  "version": "1.85.0",
   "description": "H·AI·K·U methodology — universal lifecycle orchestration with hat-based workflows, completion criteria, and automatic context preservation.",
   "author": {
     "name": "The Bushido Collective",
     "url": "https://thebushido.co"
   },
   "homepage": "https://haikumethod.ai",
-  "repository": "https://github.com/thebushidocollective/ai-dlc",
+  "repository": "https://github.com/TheBushidoCollective/haiku-method",
   "license": "Apache-2.0",
   "keywords": [
     "haiku",

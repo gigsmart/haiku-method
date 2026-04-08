@@ -371,7 +371,7 @@ This suits larger initiatives, cross-team work, and situations where each stage 
 
 ### How They Differ
 
-Both modes execute the same five-step stage loop (decompose, execute, adversarial review, persist, gate). The difference is post-gate behavior:
+Both modes execute the same four-step stage loop (elaborate, execute, adversarial review, gate). The difference is post-gate behavior:
 
 | Aspect | Continuous | Discrete |
 |--------|-----------|----------|
@@ -426,7 +426,7 @@ Stored in `stages/{stage}/state.json` within the intent directory:
 
 | Field | Purpose |
 |------|---------|
-| `phase` | Current phase within the stage (decompose, execute, review, persist, gate) |
+| `phase` | Current phase within the stage (elaborate, execute, review, gate) |
 | `started_at` | When the stage began |
 | `completed_at` | When the stage finished |
 | `gate_entered_at` | When the review gate was reached |

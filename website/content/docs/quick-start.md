@@ -9,7 +9,7 @@ Get H·AI·K·U running in your project and complete your first feature.
 ## Installation
 
 ```
-/plugin marketplace add TheBushidoCollective/haiku-method
+/plugin marketplace add thebushidocollective/ai-dlc
 /plugin install haiku --scope project
 ```
 

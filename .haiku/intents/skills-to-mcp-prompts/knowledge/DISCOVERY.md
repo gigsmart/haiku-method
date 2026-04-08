@@ -77,8 +77,21 @@ Each prompt handler:
 ## Key Decisions
 
 1. **Multi-message prompts** — server constructs full conversation context, not just instruction text
-2. **Side effects before return** — server calls open_review/ask_user_visual_question before returning the prompt, making enforcement programmatic
-3. **Hat definitions inlined** — server reads hat/stage files and includes them in the prompt, no file reading by the agent
-4. **Elaboration mode drives prompt** — collaborative stages get multi-turn conversation instructions, autonomous stages get concise directives
-5. **Big bang migration** — all skills converted at once, deprecated stubs deleted
-6. **Plugin skill files removed** — the MCP server IS the source of truth for prompt behavior
+2. **Side effects before return** — server calls open_review before returning the prompt for visual reviews
+3. **Elicitation for structured questions** — server uses `elicitation/create` (form mode) for non-visual structured questions (studio selection, mode choice, gate approvals, confirmations). This bypasses the agent entirely — the MCP server asks the user directly via the client's native UI
+4. **Visual review stays as open_review** — for rich content that needs annotation, inline comments, and design review. Uses the website-hosted review pages (local HTTPS server pattern)
+5. **Hat definitions inlined** — server reads hat/stage files and includes them in the prompt, no file reading by the agent
+6. **Elaboration mode drives prompt** — collaborative stages get multi-turn conversation instructions, autonomous stages get concise directives
+7. **Completions for argument auto-complete** — intent slugs, stage names, studio names, template names
+8. **Big bang migration** — all skills converted at once, deprecated stubs deleted
+9. **Plugin skill files removed** — the MCP server IS the source of truth for prompt behavior
+
+## MCP Capabilities Used
+
+| Capability | Purpose | Status |
+|-----------|---------|--------|
+| `prompts` | Slash commands — /haiku:new, /haiku:run, etc. | Implement now |
+| `completions` | Auto-complete for intent slugs, studios, stages | Implement now |
+| `elicitation.form` | Structured questions to user (studio picker, mode, gate approval) | Implement now |
+| `tools` | State management, orchestration, visual review | Already done |
+| `sampling` | Server-driven LLM calls for review agents, wireframe generation, auto-elaboration | **Future** — Claude Code doesn't support sampling yet. When it does, review agents and design generation can run server-side via sampling instead of agent-spawned subagents. |

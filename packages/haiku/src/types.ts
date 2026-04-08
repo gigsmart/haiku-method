@@ -55,7 +55,7 @@ export interface UnitFrontmatter {
 export interface StageState {
   stage: string;
   status: string;            // pending | active | completed
-  phase: string;             // decompose | execute | review | persist | gate
+  phase: string;             // elaborate | execute | review | gate
   started_at?: string;
   completed_at?: string | null;
   gate_entered_at?: string | null;

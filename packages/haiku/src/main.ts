@@ -7,6 +7,8 @@
 //
 // Built from packages/haiku/, compiled to plugin/bin/haiku
 
+import { reportError } from "./sentry.js"
+
 const [cmd, ...args] = process.argv.slice(2)
 
 if (cmd === "mcp") {

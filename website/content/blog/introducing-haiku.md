@@ -55,7 +55,7 @@ The plugin commands shifted from `/ai-dlc:*` to `/haiku:*`:
 - `/haiku:new` — create a new intent and select a studio
 - `/haiku:run` — run the stage pipeline (continuous mode)
 - `/haiku:execute` — drive unit implementations within a stage
-- `/haiku:elaborate` — collaborative planning and decomposition
+- `/haiku:elaborate` — collaborative planning and elaboration
 - `/haiku:review` — pre-delivery quality review
 
 The old commands still work as aliases during the transition period.

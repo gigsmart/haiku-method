@@ -629,8 +629,8 @@ Event detected → gate advances on next session or poll</code></pre>
   <div class="layer layer-done">
     <div class="layer-label">Scale Layer (Wave 2 — All Resolved)</div>
     <div class="layer-grid">
-      <div class="block block-done"><strong>Conflict Awareness</strong><span>Git handles conflicts; decomposition checks active branches</span></div>
-      <div class="block block-done"><strong>Knowledge Decay</strong><span>Freshness metadata on outputs, code-drift check at decomposition</span></div>
+      <div class="block block-done"><strong>Conflict Awareness</strong><span>Git handles conflicts; elaboration checks active branches</span></div>
+      <div class="block block-done"><strong>Knowledge Decay</strong><span>Freshness metadata on outputs, code-drift check at elaboration</span></div>
       <div class="block block-done"><strong>Composite Intents</strong><span>Multi-studio parallel stages with sync points</span></div>
       <div class="block block-done"><strong>Post-Delivery Monitoring</strong><span>Already covered by /operate — studio operations templates</span></div>
       <div class="block block-done"><strong>Capacity Model</strong><span>/haiku:capacity — reads timestamps from frontmatter</span></div>
@@ -643,12 +643,12 @@ Event detected → gate advances on next session or poll</code></pre>
 <!-- Gap details with solutions -->
 
 <h2>Wave 2 Gap 1: Conflict Awareness</h2>
-<p>This is primarily a software concern. Git already handles merge conflicts at PR time. The improvement is earlier awareness — during decomposition, not at merge.</p>
+<p>This is primarily a software concern. Git already handles merge conflicts at PR time. The improvement is earlier awareness — during elaboration, not at merge.</p>
 
 <div class="gap-card" style="margin-top:1rem; border-color:var(--accent)">
-  <h3><span class="tag tag-done">Resolved</span> Decomposition-Time Branch Check</h3>
-  <p>During decomposition (step 4.1), the software studio's inception stage checks for other active <code>haiku/*</code> branches and their recent file changes. If overlap is detected, it surfaces a note — not a blocker. Git handles the actual conflicts.</p>
-  <pre style="margin-top:0.75rem; padding:1rem; background:var(--accent-bg); border-radius:0.5rem; font-size:0.8rem; overflow-x:auto; color:var(--accent)"><code># During decomposition, a quick check:
+  <h3><span class="tag tag-done">Resolved</span> Elaboration-Time Branch Check</h3>
+  <p>During elaboration (step 4.1), the software studio's inception stage checks for other active <code>haiku/*</code> branches and their recent file changes. If overlap is detected, it surfaces a note — not a blocker. Git handles the actual conflicts.</p>
+  <pre style="margin-top:0.75rem; padding:1rem; background:var(--accent-bg); border-radius:0.5rem; font-size:0.8rem; overflow-x:auto; color:var(--accent)"><code># During elaboration, a quick check:
 git branch -r --list 'origin/haiku/*' | while read branch; do
   git diff --name-only main...$branch
 done
@@ -659,11 +659,11 @@ done
 </div>
 
 <h2>Wave 2 Gap 2: Knowledge Decay</h2>
-<p>Knowledge artifacts become stale as the product evolves. Detection belongs at the point of use — during decomposition, when a stage loads its inputs — not on a polling schedule.</p>
+<p>Knowledge artifacts become stale as the product evolves. Detection belongs at the point of use — during elaboration, when a stage loads its inputs — not on a polling schedule.</p>
 
 <div class="gap-card" style="margin-top:1rem; border-color:var(--accent)">
   <h3><span class="tag tag-done">Implemented</span> Decay Metadata on Stage Outputs</h3>
-  <p>Stage outputs declare freshness and code dependencies in their frontmatter. When a downstream stage loads the input during decomposition, Claude checks the metadata and surfaces staleness.</p>
+  <p>Stage outputs declare freshness and code dependencies in their frontmatter. When a downstream stage loads the input during elaboration, Claude checks the metadata and surfaces staleness.</p>
   <pre style="margin-top:0.75rem; padding:1rem; background:var(--accent-bg); border-radius:0.5rem; font-size:0.8rem; overflow-x:auto; color:var(--accent)"><code># Stage output metadata (written during output persistence, step 4.4)
 ---
 name: behavioral-spec
@@ -676,7 +676,7 @@ depends_on_code:             # files this artifact describes
   - src/services/auth.ts
 ---
 
-# Decay check (during decomposition, step 4.1 — when loading inputs):
+# Decay check (during elaboration, step 4.1 — when loading inputs):
 # Claude reads the input artifact, checks the metadata:
 1. freshness: created + 90d < now? → "This spec is 120 days old"
 2. code drift: git log --since={last_validated} -- {depends_on_code}
@@ -712,7 +712,7 @@ sync:
 # software:development and marketing:content run in parallel
 # marketing:launch WAITS for both software:development + marketing:content
 # → sync point enforced by the orchestrator</code></pre>
-  <p style="font-size:0.85rem; margin-top:0.5rem">Composite intents are coordinated locally. Each studio's stages run their own decompose→execute→review→persist→gate cycle. Sync points are just <code>await</code> gates that check the other studio's stage completion status.</p>
+  <p style="font-size:0.85rem; margin-top:0.5rem">Composite intents are coordinated locally. Each studio's stages run their own elaborate→execute→review→gate cycle. Sync points are just <code>await</code> gates that check the other studio's stage completion status.</p>
 </div>
 
 <h2>Wave 2 Gap 4: Post-Delivery Monitoring</h2>
@@ -754,10 +754,10 @@ sync:
   <div>
     <h3 style="color:var(--success)">Wave 2: All Resolved</h3>
     <ul style="margin-top:0.5rem">
-      <li><strong style="text-decoration:line-through; opacity:0.5">Conflict detection</strong> <span style="color:var(--success)">— git handles it; decomposition checks active branches</span></li>
+      <li><strong style="text-decoration:line-through; opacity:0.5">Conflict detection</strong> <span style="color:var(--success)">— git handles it; elaboration checks active branches</span></li>
       <li><strong style="text-decoration:line-through; opacity:0.5">Post-delivery monitoring</strong> <span style="color:var(--success)">— already covered by /operate + studio operations</span></li>
       <li><strong style="text-decoration:line-through; opacity:0.5">Studio composition</strong> <span style="color:var(--success)">— implemented: composite intents with sync points</span></li>
-      <li><strong style="text-decoration:line-through; opacity:0.5">Knowledge decay</strong> <span style="color:var(--success)">— done: freshness metadata + code-drift at decomposition</span></li>
+      <li><strong style="text-decoration:line-through; opacity:0.5">Knowledge decay</strong> <span style="color:var(--success)">— done: freshness metadata + code-drift at elaboration</span></li>
       <li><strong style="text-decoration:line-through; opacity:0.5">Capacity model</strong> <span style="color:var(--success)">— /haiku:capacity from frontmatter timestamps</span></li>
       <li><strong style="text-decoration:line-through; opacity:0.5">Browse access control</strong> <span style="color:var(--success)">— providers handle ACLs</span></li>
       <li><strong style="text-decoration:line-through; opacity:0.5">Studio versioning</strong> <span style="color:var(--success)">— redundant with plugin versioning</span></li>

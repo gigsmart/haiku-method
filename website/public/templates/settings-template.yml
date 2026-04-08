@@ -116,7 +116,7 @@ visual_review: false
 # Enable experimental features
 experimental:
   parallel_units: false     # Allow parallel unit execution (future)
-  auto_decompose: false     # Auto-suggest unit decomposition (future)
+  auto_elaborate: false     # Auto-suggest unit elaboration (future)
 
 # Debug mode (verbose logging)
 debug: false

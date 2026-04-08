@@ -49,7 +49,7 @@ export function Tabs({ groupId, tabs }: Props) {
       <div
         role="tablist"
         aria-label="Review sections"
-        className="flex overflow-x-auto border-b border-stone-200 dark:border-stone-700 -mx-1 mb-6"
+        className="flex overflow-x-auto border-b border-stone-200 dark:border-stone-700 -mx-1 mb-6 sticky top-[53px] z-30 bg-white dark:bg-stone-950 pb-0"
         onKeyDown={handleKeyDown}
       >
         {tabs.map((tab) => {

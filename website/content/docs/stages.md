@@ -10,7 +10,7 @@ A **stage** is a phase of work within a studio's lifecycle. Each stage defines i
 
 When `/haiku:run` executes an intent, it progresses through stages in the order defined by the studio. Each stage runs a four-step cycle:
 
-1. **Decompose** — Break the stage's work into units with completion criteria and a dependency DAG. Check input freshness; if an upstream output has a gap, run a stage-scoped refinement (targeted side-trip to the upstream stage)
+1. **Elaborate** — Break the stage's work into units with completion criteria and a dependency DAG. Check input freshness; if an upstream output has a gap, run a stage-scoped refinement (targeted side-trip to the upstream stage)
 2. **Execute** — For each unit, run the bolt loop through the stage's hat sequence. Artifacts are committed to git automatically as they are produced.
 3. **Adversarial review** — Spawn the stage's review agents (plus any included from other stages) to verify the work
 4. **Gate** — Evaluate the review mode and advance, pause for approval, block for external review, or await an external event
@@ -89,7 +89,7 @@ The `/haiku:triggers` skill checks gate timeouts during each poll cycle.
 
 ### Stage-Scoped Refinement
 
-During decomposition, if the agent discovers an upstream stage's output has a small gap (e.g., a missing screen in a design brief), it can run a **stage-scoped refinement** — a targeted side-trip to the upstream stage:
+During elaboration, if the agent discovers an upstream stage's output has a small gap (e.g., a missing screen in a design brief), it can run a **stage-scoped refinement** — a targeted side-trip to the upstream stage:
 
 1. Create a single unit in the upstream stage for the missing output
 2. Run that unit through the upstream stage's hat sequence
@@ -245,7 +245,7 @@ Each stage's inputs reference specific outputs from prior stages. If a required 
 
 | Stage | Hats | Review Agents | Review | Purpose |
 |-------|------|---------------|--------|---------|
-| **inception** | architect, decomposer | completeness, feasibility | auto | Problem understanding, unit decomposition |
+| **inception** | architect, elaborator | completeness, feasibility | auto | Problem understanding, unit elaboration |
 | **design** | designer, design-reviewer | consistency, accessibility | ask | Visual/interaction design |
 | **product** | product-owner, specification-writer | completeness, feasibility | external, ask | Behavioral specs, acceptance criteria |
 | **development** | planner, builder, reviewer | correctness, security, performance, architecture, test-quality + design:consistency, design:accessibility, product:completeness | ask | Implementation with quality gates |

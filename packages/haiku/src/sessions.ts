@@ -1,3 +1,37 @@
+import { EventEmitter } from "node:events"
+
+const sessionEvents = new EventEmitter()
+// Prevent warnings when many sessions are active concurrently
+sessionEvents.setMaxListeners(200)
+
+/**
+ * Notify that a session's status has been updated.
+ * Tool handlers awaiting waitForSession() will resolve.
+ */
+export function notifySessionUpdate(sessionId: string): void {
+  sessionEvents.emit(`session:${sessionId}`)
+}
+
+/**
+ * Await a session status change. Resolves when notifySessionUpdate is called
+ * for the given session, or rejects on timeout.
+ */
+export function waitForSession(sessionId: string, timeoutMs: number = 30 * 60 * 1000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      sessionEvents.removeListener(`session:${sessionId}`, handler)
+      reject(new Error("Session timeout"))
+    }, timeoutMs)
+
+    function handler() {
+      clearTimeout(timer)
+      resolve()
+    }
+
+    sessionEvents.once(`session:${sessionId}`, handler)
+  })
+}
+
 export interface ReviewAnnotations {
   screenshot?: string;  // base64 PNG of annotated canvas
   pins?: Array<{ x: number; y: number; text: string }>;
@@ -26,6 +60,7 @@ export interface ReviewSession {
   stageStates?: Record<string, unknown>;
   knowledgeFiles?: Array<{ name: string; content: string }>;
   stageArtifacts?: Array<{ stage: string; name: string; content: string }>;
+  outputArtifacts?: Array<{ stage: string; name: string; type: string; content?: string; relativePath?: string }>;
 }
 
 export interface QuestionDef {
@@ -41,6 +76,10 @@ export interface QuestionAnswer {
   otherText?: string;
 }
 
+export interface QuestionAnnotations {
+  comments?: Array<{ selectedText: string; comment: string; paragraph: number }>;
+}
+
 export interface QuestionSession {
   session_type: "question";
   session_id: string;
@@ -51,6 +90,8 @@ export interface QuestionSession {
   imageBaseDirs?: string[];
   status: "pending" | "answered";
   answers: QuestionAnswer[];
+  feedback: string;
+  annotations?: QuestionAnnotations;
   html: string;
 }
 
@@ -127,7 +168,7 @@ export function createSession(
 }
 
 export function createQuestionSession(
-  params: Omit<QuestionSession, "session_type" | "session_id" | "status" | "answers"> & { imagePaths?: string[] }
+  params: Omit<QuestionSession, "session_type" | "session_id" | "status" | "answers" | "feedback"> & { imagePaths?: string[] }
 ): QuestionSession {
   evictSessions();
   const session_id = crypto.randomUUID();
@@ -138,6 +179,7 @@ export function createQuestionSession(
     imagePaths: params.imagePaths ?? [],
     status: "pending",
     answers: [],
+    feedback: "",
   };
   sessions.set(session_id, session);
   sessionCreatedAt.set(session_id, Date.now());
@@ -172,16 +214,18 @@ export function updateSession(
   const session = sessions.get(sessionId);
   if (!session || session.session_type !== "review") return undefined;
   Object.assign(session, updates);
+  notifySessionUpdate(sessionId);
   return session;
 }
 
 export function updateQuestionSession(
   sessionId: string,
-  updates: Partial<Pick<QuestionSession, "status" | "answers">>
+  updates: Partial<Pick<QuestionSession, "status" | "answers" | "feedback" | "annotations">>
 ): QuestionSession | undefined {
   const session = sessions.get(sessionId);
   if (!session || session.session_type !== "question") return undefined;
   Object.assign(session, updates);
+  notifySessionUpdate(sessionId);
   return session;
 }
 
@@ -192,5 +236,6 @@ export function updateDesignDirectionSession(
   const session = sessions.get(sessionId);
   if (!session || session.session_type !== "design_direction") return undefined;
   Object.assign(session, updates);
+  notifySessionUpdate(sessionId);
   return session;
 }

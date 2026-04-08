@@ -1,28 +1,34 @@
 ---
 name: unit-03-supporting-prompts
 type: backend
-status: pending
-depends_on: [unit-01-prompts-server]
-bolt: 0
-hat: ""
+status: completed
+depends_on:
+  - unit-01-prompts-server
+bolt: 1
+hat: decomposer
 refs:
   - knowledge/DISCOVERY.md
+  - knowledge/PROMPTS-SERVER-DISCOVERY.md
+  - knowledge/SUPPORTING-PROMPTS-DISCOVERY.md
+started_at: '2026-04-07T02:33:48Z'
+completed_at: '2026-04-07T02:50:17Z'
 ---
 
-# Supporting + Reporting + Niche Prompts
+# Supporting Prompts — Simple + Medium
 
 ## Description
 
-Implement the remaining 16 prompts: composite, autopilot, setup, migrate, scaffold, operate, triggers, dashboard, backlog, capacity, release-notes, adopt, quick, seed, ideate, pressure-testing.
-
-These are simpler than the core prompts — most just read state and return instructions. Some (like dashboard, backlog) are read-only.
+Implement 9 simpler prompts that follow Pattern A (state read + instruction return) or Pattern E (subcommand dispatch): dashboard, backlog, capacity, release-notes, scaffold, migrate, seed, ideate, setup.
 
 ## Completion Criteria
 
-- [ ] All 16 supporting prompts implemented and registered
-- [ ] Each returns well-formed PromptMessage[] with context
-- [ ] `haiku:autopilot` sets mode=continuous and chains to run
-- [ ] `haiku:composite` validates 2+ studios selected
-- [ ] `haiku:dashboard` returns current intent status as formatted context
-- [ ] `haiku:migrate` runs the migration binary
-- [ ] All prompts surface as slash commands in Claude Code
+- [x] `haiku:dashboard` returns current intent status as formatted context (read-only)
+- [x] `haiku:backlog` dispatches add/list/review/promote subcommands
+- [x] `haiku:capacity` reads completed intents and returns bolt counts + stage durations
+- [x] `haiku:release-notes` reads CHANGELOG.md and returns formatted output
+- [x] `haiku:scaffold` accepts type + name, returns scaffold instructions for studios/stages/hats
+- [x] `haiku:migrate` returns instructions to run the migration binary
+- [x] `haiku:seed` dispatches plant/list/check subcommands
+- [x] `haiku:ideate` reads area context and returns brainstorming prompt
+- [x] `haiku:setup` uses elicitation for provider configuration
+- [x] All 9 prompts registered and surface as slash commands

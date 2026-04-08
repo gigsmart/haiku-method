@@ -19,7 +19,7 @@ H·AI·K·U requires [Claude Code](https://claude.ai/code) or [Claude Cowork](ht
 Install directly from within a Claude Code or Cowork session:
 
 ```
-/plugin marketplace add TheBushidoCollective/haiku-method
+/plugin marketplace add thebushidocollective/ai-dlc
 /plugin install haiku --scope project
 ```
 
@@ -32,7 +32,7 @@ Add the plugin to your Claude settings file manually.
 ```json
 {
   "plugins": [
-    "github:TheBushidoCollective/haiku-method"
+    "github:thebushidocollective/ai-dlc"
   ]
 }
 ```
@@ -42,7 +42,7 @@ Add the plugin to your Claude settings file manually.
 ```json
 {
   "plugins": [
-    "github:TheBushidoCollective/haiku-method"
+    "github:thebushidocollective/ai-dlc"
   ]
 }
 ```

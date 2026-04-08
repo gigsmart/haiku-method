@@ -38,7 +38,7 @@ const phases = [
 	{
 		name: "Elaboration",
 		description: "Define what will be done and why",
-		detail: "Collaborative planning that produces clear intent, decomposed work, and verifiable completion criteria.",
+		detail: "Collaborative planning that produces clear intent, elaborated work, and verifiable completion criteria.",
 		href: "/methodology/elaboration/",
 		color: "border-teal-200 bg-teal-50 dark:border-teal-800 dark:bg-teal-950/30",
 		textColor: "text-teal-700 dark:text-teal-300",
@@ -52,7 +52,7 @@ const phases = [
 	{
 		name: "Execution",
 		description: "Do the work through structured workflows",
-		detail: "Decompose, execute, adversarial review, and gate. Artifacts persist automatically. Work that fails review does not advance.",
+		detail: "Elaborate, execute, adversarial review, and gate. Artifacts persist automatically. Work that fails review does not advance.",
 		href: "/methodology/execution/",
 		color: "border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30",
 		textColor: "text-indigo-700 dark:text-indigo-300",
@@ -226,7 +226,7 @@ export default function MethodologyPage() {
 						<h2 className="mb-3 text-3xl font-bold">How Stages Work</h2>
 						<p className="mx-auto max-w-2xl text-stone-600 dark:text-stone-400">
 							Within each phase, work flows through stages. Each stage has a
-							specific structure: decompose, execute, review, and gate.
+							specific structure: elaborate, execute, review, and gate.
 						</p>
 					</div>
 
@@ -239,7 +239,7 @@ export default function MethodologyPage() {
 								<div className="flex items-start gap-3">
 									<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-100 text-xs font-bold text-teal-700 dark:bg-teal-900 dark:text-teal-300">1</span>
 									<div>
-										<div className="font-medium text-stone-900 dark:text-stone-100">Decompose</div>
+										<div className="font-medium text-stone-900 dark:text-stone-100">Elaborate</div>
 										<p className="text-sm text-stone-600 dark:text-stone-400">Agent breaks work into units with verifiable completion criteria.</p>
 									</div>
 								</div>

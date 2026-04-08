@@ -7,7 +7,7 @@ author: The Bushido Collective
 
 H·AI·K·U had a greenfield problem. Every entry point assumed you were building something new.
 
-`/haiku:elaborate` starts from a blank intent and walks you through specification, decomposition, and planning for work that does not exist yet. `/haiku:followup` iterates on a previous intent — but only one that was originally built through H·AI·K·U, with artifacts already on disk. If your team adopted H·AI·K·U after years of shipping software the traditional way, those existing features were invisible to the methodology. No intent files. No unit specs. No operational plans. No way to run `/haiku:operate auth-system` because the system had never heard of `auth-system`.
+`/haiku:new` starts from a blank intent and walks you through specification, elaboration, and planning for work that does not exist yet. `/haiku:followup` iterates on a previous intent — but only one that was originally built through H·AI·K·U, with artifacts already on disk. If your team adopted H·AI·K·U after years of shipping software the traditional way, those existing features were invisible to the methodology. No intent files. No unit specs. No operational plans. No way to run `/haiku:operate auth-system` because the system had never heard of `auth-system`.
 
 This is the brownfield gap. Most real teams are not starting from zero. They have authentication systems, billing pipelines, notification services — production features with real users, real tests, and real operational history. Telling those teams "H·AI·K·U works great, but only for the next thing you build" is not a serious answer.
 
@@ -37,7 +37,7 @@ Adopt runs through seven phases with interactive confirmation gates at each boun
 
 These run concurrently. The parallelism is not cosmetic — each explorer operates in its own context, focused on a single analytical lens, producing findings that the later phases synthesize. Running them sequentially would multiply wall-clock time for no benefit.
 
-**Phase 3: Propose.** The system synthesizes explorer findings into a proposed intent with decomposed units. The user reviews the proposed structure — are the unit boundaries sensible? Does the decomposition match how the team thinks about the feature? This is the first confirmation gate.
+**Phase 3: Propose.** The system synthesizes explorer findings into a proposed intent with elaborated units. The user reviews the proposed structure — are the unit boundaries sensible? Does the elaboration match how the team thinks about the feature? This is the first confirmation gate.
 
 **Phase 4: Criteria.** Success criteria are reverse-engineered from the test suite and CI configuration. Each criterion points to concrete evidence: "Authentication rejects expired tokens" references `test/auth/token_expiry_test.ts`. "Rate limiting enforces per-user quotas" references `test/middleware/rate_limit_test.ts` and the CI step that runs load tests. The criteria are not invented — they are extracted from what the codebase already proves about itself. The user reviews and approves.
 

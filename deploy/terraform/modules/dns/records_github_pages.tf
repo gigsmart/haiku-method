@@ -39,5 +39,5 @@ resource "google_dns_record_set" "www" {
   project      = var.project_id
   type         = "CNAME"
   ttl          = 300
-  rrdatas      = ["${var.github_pages_org}.github.io."]
+  rrdatas      = ["thebushidocollective.github.io."]
 }

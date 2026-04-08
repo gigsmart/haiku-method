@@ -23,7 +23,7 @@ The software studio organizes hats into discipline-specific stages. Each stage r
 
 ### Inception Stage
 
-Hats used during `/haiku:new` to define the intent and decompose work.
+Hats used during `/haiku:new` to define the intent and elaborate work.
 
 #### Architect
 
@@ -34,9 +34,9 @@ Explores the codebase and external systems to build a domain model and identify 
 - Identifies integration points and technical constraints
 - Proposes the system structure for the intent
 
-#### Decomposer
+#### Elaborator
 
-Breaks the intent into cohesive, independently deliverable units.
+Elaborates the intent into cohesive, independently deliverable units.
 
 - Creates units with clear boundaries and minimal coupling
 - Defines dependency edges between units (DAG)

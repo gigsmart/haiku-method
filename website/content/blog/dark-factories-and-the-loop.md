@@ -106,7 +106,7 @@ Here's what we see coming:
 
 **Teams of agents, not monolithic agents.** A single agent with a massive context window will always lose to a team of focused agents with clean contexts. H·AI·K·U's construction loop already breaks work into units with independent worktrees. With Agent Teams support, each unit becomes an independent session with its own context, coordinating through a shared task list. The architecture scales without architectural changes.
 
-**The methodology is the moat, not the tooling.** StrongDM's approach is locked to their custom infrastructure (Attractor, cxdb, Digital Twin Universe). H·AI·K·U is tool-agnostic markdown files. The methodology — hats, iterations, backpressure, completion criteria, DAG-based unit decomposition — transfers to any AI coding tool. When a better agent arrives, the methodology adapts. The tooling is replaceable. The discipline isn't.
+**The methodology is the moat, not the tooling.** StrongDM's approach is locked to their custom infrastructure (Attractor, cxdb, Digital Twin Universe). H·AI·K·U is tool-agnostic markdown files. The methodology — hats, iterations, backpressure, completion criteria, DAG-based unit elaboration — transfers to any AI coding tool. When a better agent arrives, the methodology adapts. The tooling is replaceable. The discipline isn't.
 
 ## The Knob, Not the Switch
 
@@ -114,7 +114,7 @@ Level 5 is real. Dark factories produce real software. StrongDM proved it.
 
 But the future isn't a binary choice between "human writes code" and "human disappears." It's a spectrum, and the best systems let you move along it freely.
 
-H·AI·K·U is that spectrum. Define your intent with rigor. Decompose it into units with clear criteria. Let the agents execute through structured workflows with automated quality gates. Watch closely, or don't. The system works either way.
+H·AI·K·U is that spectrum. Define your intent with rigor. Elaborate it into units with clear criteria. Let the agents execute through structured workflows with automated quality gates. Watch closely, or don't. The system works either way.
 
 The dark factory is a point-in-time decision, not an identity.
 

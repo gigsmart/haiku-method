@@ -207,7 +207,7 @@ H·AI·K·U ships with twelve studios organized into three categories — engine
 | Persistence | git |
 | Delivery | pull request |
 
-Each studio defines its own behavioral roles. The software studio's inception stage uses an architect and decomposer; its development stage uses a planner, builder, and reviewer; its security stage uses a threat modeler, red team, blue team, and security reviewer. The sales studio's qualification stage uses a research analyst and qualification specialist. Despite these differences, all twelve studios run on the same orchestration machinery.
+Each studio defines its own behavioral roles. The software studio's inception stage uses an architect and elaborator; its development stage uses a planner, builder, and reviewer; its security stage uses a threat modeler, red team, blue team, and security reviewer. The sales studio's qualification stage uses a research analyst and qualification specialist. Despite these differences, all twelve studios run on the same orchestration machinery.
 
 ### Custom Studios
 
@@ -239,12 +239,12 @@ A stage declares five things:
 
 Each stage executes through a fixed four-step loop:
 
-1. **Decompose** — Resolve inputs from prior stages, checking freshness metadata for staleness. If the stage has no units yet, decompose the work into discrete units with completion criteria and a dependency graph. If an upstream output has a small gap (e.g., a missing screen in a design brief), the agent can run a *stage-scoped refinement* — a targeted side-trip that adds a single unit to the upstream stage, executes it through that stage's hats, and persists the updated output, all without resetting the current stage's progress. Full stage-backs (resetting `active_stage` to a prior stage) are always human-initiated.
+1. **Elaborate** — Resolve inputs from prior stages, checking freshness metadata for staleness. If the stage has no units yet, decompose the work into discrete units with completion criteria and a dependency graph. If an upstream output has a small gap (e.g., a missing screen in a design brief), the agent can run a *stage-scoped refinement* — a targeted side-trip that adds a single unit to the upstream stage, executes it through that stage's hats, and persists the updated output, all without resetting the current stage's progress. Full stage-backs (resetting `active_stage` to a prior stage) are always human-initiated.
 2. **Execute** — For each unit in dependency order, run the bolt loop: cycle through the hat sequence. Each hat runs in isolation, produces output for the next hat, and quality gates verify the result.
 3. **Adversarial review** — Spawn the stage's review agents in parallel. Each agent evaluates the stage's work against its specific mandate (correctness, security, accessibility, etc.). Agents from other stages included via `review-agents-include` run alongside the stage's own agents. High-severity findings trigger targeted fixes before the stage can proceed.
 4. **Gate** — Evaluate the review gate and either advance, pause for approval, block for external review, or await an external event.
 
-Persistence is not a separate step — artifacts are committed to git automatically as they are produced during decomposition and execution. Each MCP state transition (stage start, unit completion, etc.) auto-commits to the persistence layer.
+Persistence is not a separate step — artifacts are committed to git automatically as they are produced during elaboration and execution. Each MCP state transition (stage start, unit completion, etc.) auto-commits to the persistence layer.
 
 This loop is enforced by the framework harness. Agents operate within it but cannot alter it. The human's control is expressed through review gates and mode selection, not through micro-management of the loop itself.
 
@@ -350,7 +350,7 @@ H·AI·K·U supports two execution modes, selected at intent creation.
 
 ### Continuous Mode
 
-Continuous mode runs each stage in sequence, advancing automatically when review gates allow. Every stage runs its own full cycle — decompose, execute, adversarial review, persist, gate — with its own hats, review agents, inputs, and outputs. When a review gate passes (`auto`), the framework advances to the next stage without human intervention. When a gate requires approval (`ask`) or external review (`external`), the framework pauses at that gate, then continues through remaining stages once resolved.
+Continuous mode runs each stage in sequence, advancing automatically when review gates allow. Every stage runs its own full cycle — elaborate, execute, adversarial review, gate — with its own hats, review agents, inputs, and outputs. When a review gate passes (`auto`), the framework advances to the next stage without human intervention. When a gate requires approval (`ask`) or external review (`external`), the framework pauses at that gate, then continues through remaining stages once resolved.
 
 This is the default. It suits initiatives where the human trusts the review gates to enforce quality at each stage boundary.
 
@@ -396,7 +396,7 @@ This principle — enforcement through hooks rather than instructions — applie
 
 ### Configuration
 
-Projects configure H·AI·K·U through a settings file that controls quality gate commands (test, lint, typecheck, build), provider integrations, unit decomposition granularity, and per-hat model selection. Review agents are defined per-stage within studio definitions, not as global configuration — each stage prescribes the adversarial perspectives relevant to its domain.
+Projects configure H·AI·K·U through a settings file that controls quality gate commands (test, lint, typecheck, build), provider integrations, unit elaboration granularity, and per-hat model selection. Review agents are defined per-stage within studio definitions, not as global configuration — each stage prescribes the adversarial perspectives relevant to its domain.
 
 Providers are bidirectional translation layers, not simple API connectors. Six provider categories exist: ticketing (Jira, Linear, GitHub Issues), spec (Notion, Confluence, Google Docs), design (Figma, Canva, Pencil), comms (Slack, Teams, Discord), CRM (Salesforce, HubSpot), and knowledge (wiki platforms for cross-studio context sharing). Each provider has inbound instructions (how to read provider data and distill it into H·AI·K·U artifacts), outbound instructions (how to translate H·AI·K·U state into the provider's format), and sync behavior (how to discover events and maintain consistency).
 
@@ -436,7 +436,7 @@ All twelve studios run on the same orchestration machinery. The same stage loop 
 ### What Stays the Same
 
 - The four-phase cycle (elaboration → execution → operation → reflection).
-- The stage loop (decompose → execute → adversarial review → gate).
+- The stage loop (elaborate → execute → adversarial review → gate).
 - Hat-based role separation with fresh agent context per hat.
 - Completion criteria as the primary progress measure.
 - Input/output contracts between stages.

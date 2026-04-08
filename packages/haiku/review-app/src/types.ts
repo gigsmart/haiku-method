@@ -108,6 +108,14 @@ export interface StageArtifact {
   content: string;
 }
 
+export interface OutputArtifact {
+  stage: string;
+  name: string;
+  type: "markdown" | "html" | "image";
+  content?: string;
+  relativePath?: string;
+}
+
 /** The API response from /api/session/:sessionId */
 export interface SessionData {
   session_id: string;
@@ -128,6 +136,7 @@ export interface SessionData {
   stage_states?: Record<string, StageStateInfo>;
   knowledge_files?: KnowledgeFile[];
   stage_artifacts?: StageArtifact[];
+  output_artifacts?: OutputArtifact[];
 
   // Question sessions
   title?: string;

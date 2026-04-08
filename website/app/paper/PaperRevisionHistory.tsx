@@ -1,6 +1,5 @@
 "use client"
 
-import { GITHUB_REPO } from "@/lib/constants"
 import { useEffect, useState } from "react"
 import { usePaperChanges } from "../components/PaperChangesContext"
 
@@ -317,7 +316,7 @@ export default function PaperRevisionHistory({
 							{/* Links */}
 							<div className="flex items-center gap-4 border-t border-stone-100 pt-2 text-xs text-stone-500 dark:border-stone-800 dark:text-stone-400">
 								<a
-									href={`https://github.com/${GITHUB_REPO}/commits/main/website/content/papers/${slug}.md`}
+									href={`https://github.com/TheBushidoCollective/haiku-method/commits/main/website/content/papers/${slug}.md`}
 									target="_blank"
 									rel="noopener noreferrer"
 									className="flex items-center gap-1 hover:text-stone-700 dark:hover:text-stone-300"

@@ -1,9 +1,11 @@
-import { createServer, type Server as HttpServer } from "node:http"
+import { createServer, type Server as HttpServer, type IncomingMessage } from "node:http"
+import { createHash } from "node:crypto"
 import { readFile, realpath } from "node:fs/promises"
 import { extname, join, resolve } from "node:path"
+import type { Duplex } from "node:stream"
 import { z } from "zod"
 import { getSession, updateDesignDirectionSession, updateQuestionSession, updateSession } from "./sessions.js"
-import type { QuestionAnswer, ReviewAnnotations } from "./sessions.js"
+import type { QuestionAnswer, QuestionAnnotations, ReviewAnnotations } from "./sessions.js"
 import { REVIEW_APP_HTML } from "./review-app-html.js"
 
 let httpServer: HttpServer | null = null
@@ -64,6 +66,7 @@ function handleSessionApi(sessionId: string): Response {
 		if (session.stageStates) data.stage_states = session.stageStates
 		if (session.knowledgeFiles) data.knowledge_files = session.knowledgeFiles
 		if (session.stageArtifacts) data.stage_artifacts = session.stageArtifacts
+		if (session.outputArtifacts) data.output_artifacts = session.outputArtifacts
 	}
 
 	if (session.session_type === "question") {
@@ -183,7 +186,7 @@ async function handleMockupGet(
 	const mockupsDir = join(session.intent_dir, "mockups")
 	const resolved = resolve(mockupsDir, filePath)
 	// Pre-check with resolve() before attempting realpath
-	if (!resolved.startsWith(resolve(mockupsDir))) {
+	if (!resolved.startsWith(resolve(mockupsDir) + "/")) {
 		return new Response("Forbidden", { status: 403 })
 	}
 
@@ -191,7 +194,7 @@ async function handleMockupGet(
 		// Symlink-safe check: ensure resolved real path stays within base dir
 		const realResolved = await realpath(resolved).catch(() => null)
 		const realBase = await realpath(mockupsDir).catch(() => resolve(mockupsDir))
-		if (!realResolved || !realResolved.startsWith(realBase)) {
+		if (!realResolved || !realResolved.startsWith(realBase + "/")) {
 			return new Response("Forbidden", { status: 403 })
 		}
 		const data = await readFile(resolved)
@@ -217,7 +220,7 @@ async function handleWireframeGet(
 	// Wireframe paths are relative to the intent dir
 	const resolved = resolve(session.intent_dir, filePath)
 	// Pre-check with resolve() before attempting realpath
-	if (!resolved.startsWith(resolve(session.intent_dir))) {
+	if (!resolved.startsWith(resolve(session.intent_dir) + "/")) {
 		return new Response("Forbidden", { status: 403 })
 	}
 
@@ -227,7 +230,43 @@ async function handleWireframeGet(
 		const realBase = await realpath(session.intent_dir).catch(() =>
 			resolve(session.intent_dir),
 		)
-		if (!realResolved || !realResolved.startsWith(realBase)) {
+		if (!realResolved || !realResolved.startsWith(realBase + "/")) {
+			return new Response("Forbidden", { status: 403 })
+		}
+		const data = await readFile(resolved)
+		const ext = extname(resolved).toLowerCase()
+		const contentType = MIME_TYPES[ext] ?? "application/octet-stream"
+		return new Response(data, {
+			headers: { "Content-Type": contentType },
+		})
+	} catch {
+		return new Response("Not found", { status: 404 })
+	}
+}
+
+async function handleStageArtifactGet(
+	sessionId: string,
+	filePath: string,
+): Promise<Response> {
+	const session = getSession(sessionId)
+	if (!session || session.session_type !== "review") {
+		return new Response("Session not found", { status: 404 })
+	}
+
+	// filePath is like "stages/{stage}/artifacts/{file}"
+	const resolved = resolve(session.intent_dir, filePath)
+	// Pre-check with resolve() before attempting realpath
+	if (!resolved.startsWith(resolve(session.intent_dir) + "/")) {
+		return new Response("Forbidden", { status: 403 })
+	}
+
+	try {
+		// Symlink-safe check: ensure resolved real path stays within base dir
+		const realResolved = await realpath(resolved).catch(() => null)
+		const realBase = await realpath(session.intent_dir).catch(() =>
+			resolve(session.intent_dir),
+		)
+		if (!realResolved || !realResolved.startsWith(realBase + "/")) {
 			return new Response("Forbidden", { status: 403 })
 		}
 		const data = await readFile(resolved)
@@ -306,7 +345,7 @@ async function handleQuestionAnswerPost(
 		return new Response("Session not found", { status: 404 })
 	}
 
-	let body: { answers: QuestionAnswer[] }
+	let body: { answers: QuestionAnswer[]; feedback?: string; annotations?: QuestionAnnotations }
 	try {
 		const QuestionAnswerSchema = z.object({
 			answers: z.array(
@@ -316,6 +355,20 @@ async function handleQuestionAnswerPost(
 					otherText: z.string().optional(),
 				}),
 			),
+			feedback: z.string().optional(),
+			annotations: z
+				.object({
+					comments: z
+						.array(
+							z.object({
+								selectedText: z.string(),
+								comment: z.string(),
+								paragraph: z.number(),
+							}),
+						)
+						.optional(),
+				})
+				.optional(),
 		})
 		body = QuestionAnswerSchema.parse(await req.json())
 	} catch {
@@ -325,6 +378,8 @@ async function handleQuestionAnswerPost(
 	updateQuestionSession(sessionId, {
 		status: "answered",
 		answers: body.answers,
+		feedback: body.feedback ?? "",
+		annotations: body.annotations,
 	})
 
 
@@ -379,6 +434,251 @@ async function handleDirectionSelectPost(
 	return Response.json({ ok: true })
 }
 
+// ─── WebSocket support ───────────────────────────────────────────────
+// Minimal RFC 6455 implementation using Node built-ins (no dependencies).
+// The browser opens ws://…/ws/session/:id and can send JSON messages that
+// are routed to the same update functions as the HTTP POST endpoints.
+// This lets tool handlers use event-based waitForSession() instead of polling.
+
+const WS_MAGIC = "258EAFA5-E914-47DA-95CA-C5AB5DC85B11"
+
+/** Active WebSocket connections keyed by session ID */
+const wsConnections = new Map<string, Duplex>()
+
+function trackWebSocket(sessionId: string, socket: Duplex): void {
+	wsConnections.set(sessionId, socket)
+}
+
+function untrackWebSocket(sessionId: string): void {
+	wsConnections.delete(sessionId)
+}
+
+/**
+ * Send a text frame to the WebSocket client for a given session (if connected).
+ * Used for server-initiated notifications (e.g. confirming receipt).
+ */
+export function sendToWebSocket(sessionId: string, data: unknown): void {
+	const socket = wsConnections.get(sessionId)
+	if (!socket || socket.destroyed) return
+	const payload = Buffer.from(JSON.stringify(data), "utf8")
+	const frame = encodeWebSocketFrame(payload)
+	socket.write(frame)
+}
+
+/** Encode a payload into an unmasked WebSocket text frame (server → client) */
+function encodeWebSocketFrame(payload: Buffer): Buffer {
+	const len = payload.length
+	let header: Buffer
+	if (len < 126) {
+		header = Buffer.alloc(2)
+		header[0] = 0x81 // FIN + text opcode
+		header[1] = len
+	} else if (len < 65536) {
+		header = Buffer.alloc(4)
+		header[0] = 0x81
+		header[1] = 126
+		header.writeUInt16BE(len, 2)
+	} else {
+		header = Buffer.alloc(10)
+		header[0] = 0x81
+		header[1] = 127
+		// Write as two 32-bit values since writeBigUInt64BE may not be available
+		header.writeUInt32BE(0, 2)
+		header.writeUInt32BE(len, 6)
+	}
+	return Buffer.concat([header, payload])
+}
+
+/**
+ * Decode a single WebSocket frame from a client (masked).
+ * Returns { payload, opcode, consumed } on success, or null if more data is needed.
+ * payload is null for non-text frames (close, ping, pong, binary).
+ * consumed is the number of bytes to advance the buffer regardless of frame type.
+ */
+function decodeWebSocketFrame(buf: Buffer): { payload: string | null; opcode: number; consumed: number } | null {
+	if (buf.length < 2) return null
+
+	const opcode = buf[0] & 0x0f
+	const isMasked = (buf[1] & 0x80) !== 0
+	let payloadLen = buf[1] & 0x7f
+	let offset = 2
+
+	if (payloadLen === 126) {
+		if (buf.length < 4) return null
+		payloadLen = buf.readUInt16BE(2)
+		offset = 4
+	} else if (payloadLen === 127) {
+		if (buf.length < 10) return null
+		// Read lower 32 bits (messages > 4GB are not expected)
+		payloadLen = buf.readUInt32BE(6)
+		offset = 10
+	}
+
+	let mask: Buffer | null = null
+	if (isMasked) {
+		if (buf.length < offset + 4) return null
+		mask = buf.subarray(offset, offset + 4)
+		offset += 4
+	}
+
+	if (buf.length < offset + payloadLen) return null
+
+	const payloadBuf = buf.subarray(offset, offset + payloadLen)
+	if (mask) {
+		for (let i = 0; i < payloadBuf.length; i++) {
+			payloadBuf[i] ^= mask[i % 4]
+		}
+	}
+
+	const consumed = offset + payloadLen
+
+	// Handle close and ping frames — return consumed so buffer advances
+	if (opcode === 0x08) return { payload: null, opcode, consumed }
+	// Ping — caller should send pong (RFC 6455 §5.5.3)
+	if (opcode === 0x09) return { payload: payloadBuf.toString("utf8"), opcode, consumed }
+	// Only process text frames
+	if (opcode !== 0x01) return { payload: null, opcode, consumed }
+
+	return { payload: payloadBuf.toString("utf8"), opcode, consumed }
+}
+
+/** Handle an incoming WebSocket message: parse and route to the appropriate update function */
+function handleWebSocketMessage(sessionId: string, raw: string): void {
+	let msg: Record<string, unknown>
+	try {
+		msg = JSON.parse(raw)
+	} catch {
+		return
+	}
+
+	const session = getSession(sessionId)
+	if (!session) return
+
+	const type = msg.type as string | undefined
+
+	if (session.session_type === "review" && type === "decide") {
+		const decision = msg.decision === "approved" ? "approved" : "changes_requested"
+		const feedback = (msg.feedback as string) ?? ""
+		const annotations = msg.annotations as ReviewAnnotations | undefined
+		updateSession(sessionId, { status: "decided" as never, decision, feedback, annotations })
+		sendToWebSocket(sessionId, { ok: true, decision, feedback })
+	} else if (session.session_type === "question" && type === "answer") {
+		const answers = msg.answers as QuestionAnswer[] | undefined
+		if (answers) {
+			const feedback = (msg.feedback as string) ?? ""
+			const annotations = msg.annotations as QuestionAnnotations | undefined
+			updateQuestionSession(sessionId, { status: "answered", answers, feedback, annotations })
+			sendToWebSocket(sessionId, { ok: true })
+		}
+	} else if (session.session_type === "design_direction" && type === "select") {
+		if (session.status === "answered") {
+			sendToWebSocket(sessionId, { error: "Direction already selected" })
+			return
+		}
+		const archetype = msg.archetype as string
+		const parameters = msg.parameters as Record<string, number>
+		if (archetype && parameters) {
+			updateDesignDirectionSession(sessionId, {
+				status: "answered",
+				selection: { archetype, parameters },
+			})
+			sendToWebSocket(sessionId, { ok: true })
+		}
+	}
+}
+
+/**
+ * Handle HTTP upgrade requests for WebSocket connections.
+ * Path: /ws/session/:sessionId
+ */
+function handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer): void {
+	const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "127.0.0.1"}`)
+	const match = url.pathname.match(/^\/ws\/session\/([^/]+)$/)
+
+	if (!match) {
+		socket.write("HTTP/1.1 404 Not Found\r\n\r\n")
+		socket.destroy()
+		return
+	}
+
+	const sessionId = match[1]
+	const session = getSession(sessionId)
+	if (!session) {
+		socket.write("HTTP/1.1 404 Not Found\r\n\r\n")
+		socket.destroy()
+		return
+	}
+
+	const key = req.headers["sec-websocket-key"]
+	if (!key) {
+		socket.write("HTTP/1.1 400 Bad Request\r\n\r\n")
+		socket.destroy()
+		return
+	}
+
+	// Compute Sec-WebSocket-Accept per RFC 6455
+	const accept = createHash("sha1")
+		.update(key + WS_MAGIC)
+		.digest("base64")
+
+	socket.write(
+		"HTTP/1.1 101 Switching Protocols\r\n" +
+		"Upgrade: websocket\r\n" +
+		"Connection: Upgrade\r\n" +
+		`Sec-WebSocket-Accept: ${accept}\r\n\r\n`,
+	)
+
+	// Track this connection
+	trackWebSocket(sessionId, socket)
+
+	// Buffer for fragmented reads — seed with leftover bytes from the HTTP
+	// parser (the `head` argument from the upgrade event). Without this,
+	// any data the client sends in the same TCP segment as the upgrade
+	// request is silently dropped, which can cause the first WS frame to
+	// be lost and the connection to appear broken.
+	let frameBuffer = head.length > 0 ? Buffer.from(head) : Buffer.alloc(0)
+
+	socket.on("data", (chunk: Buffer) => {
+		frameBuffer = Buffer.concat([frameBuffer, chunk])
+
+		// Consume all complete frames; return null means more data needed.
+		while (frameBuffer.length > 0) {
+			const result = decodeWebSocketFrame(frameBuffer)
+			if (result === null) break // need more data
+			frameBuffer = frameBuffer.subarray(result.consumed)
+			if (result.opcode === 0x08) {
+				// Close frame — send close back and tear down (RFC 6455 §5.5.1)
+				const closeFrame = Buffer.alloc(2)
+				closeFrame[0] = 0x88 // FIN + close opcode
+				closeFrame[1] = 0
+				socket.write(closeFrame)
+				socket.destroy()
+				break
+			} else if (result.opcode === 0x09) {
+				// Respond to ping with pong (RFC 6455 §5.5.3)
+				const pongHeader = Buffer.alloc(2)
+				pongHeader[0] = 0x8a // FIN + pong opcode
+				pongHeader[1] = 0 // no payload
+				socket.write(pongHeader)
+			} else if (result.payload !== null) {
+				handleWebSocketMessage(sessionId, result.payload)
+			}
+		}
+		// Reset buffer if it's grown too large (malformed client)
+		if (frameBuffer.length > 1024 * 1024) {
+			frameBuffer = Buffer.alloc(0)
+		}
+	})
+
+	socket.on("close", () => {
+		untrackWebSocket(sessionId)
+	})
+
+	socket.on("error", () => {
+		untrackWebSocket(sessionId)
+	})
+}
+
 function handleRequest(req: Request): Response | Promise<Response> {
 	const url = new URL(req.url)
 	const path = url.pathname
@@ -411,6 +711,12 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	const wireframeMatch = path.match(/^\/wireframe\/([^/]+)\/(.+)$/)
 	if (wireframeMatch && req.method === "GET") {
 		return handleWireframeGet(wireframeMatch[1], wireframeMatch[2])
+	}
+
+	// GET /stage-artifacts/:sessionId/:path — serve files from stages/*/artifacts/
+	const stageArtifactMatch = path.match(/^\/stage-artifacts\/([^/]+)\/(.+)$/)
+	if (stageArtifactMatch && req.method === "GET") {
+		return handleStageArtifactGet(stageArtifactMatch[1], stageArtifactMatch[2])
 	}
 
 	// GET /direction/:sessionId
@@ -488,8 +794,11 @@ export async function startHttpServer(): Promise<number> {
 function listenOnPort(port: number): Promise<void> {
 	return new Promise((resolve, reject) => {
 		const server = createServer(async (req, res) => {
-			// Build a Web API Request from the incoming Node request
-			const url = `http://127.0.0.1:${port}${req.url ?? "/"}`
+			// Build a Web API Request from the incoming Node request.
+			// Use the Host header so the URL has the actual port even when
+			// the requested port was 0 (OS-assigned).
+			const host = req.headers.host ?? `127.0.0.1:${port}`
+			const url = `http://${host}${req.url ?? "/"}`
 			const headers = new Headers()
 			for (const [key, value] of Object.entries(req.headers)) {
 				if (value) {
@@ -530,6 +839,11 @@ function listenOnPort(port: number): Promise<void> {
 				res.writeHead(500)
 				res.end("Internal Server Error")
 			}
+		})
+
+		// Handle WebSocket upgrade requests
+		server.on("upgrade", (req, socket, head) => {
+			handleUpgrade(req, socket, head)
 		})
 
 		server.once("error", (err) => {

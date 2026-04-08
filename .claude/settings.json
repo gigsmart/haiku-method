@@ -20,10 +20,10 @@
         "repo": "thebushidocollective/han"
       }
     },
-    "ai-dlc": {
+    "haiku": {
       "source": {
         "source": "directory",
-        "path": "${CLAUDE_PROJECT_DIR}"
+        "path": "."
       }
     }
   }

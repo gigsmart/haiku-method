@@ -4,13 +4,18 @@ import { MarkdownViewer } from "@haiku/shared";
 import { submitAnswers, tryCloseTab } from "../hooks/useSession";
 import { Card, SectionHeading } from "./Card";
 import { SubmitSuccess } from "./SubmitSuccess";
+import { InlineComments, type InlineComment } from "./InlineComments";
+import { remark } from "remark";
+import remarkGfm from "remark-gfm";
+import remarkHtml from "remark-html";
 
 interface Props {
   session: SessionData;
   sessionId: string;
+  wsRef?: React.RefObject<WebSocket | null>;
 }
 
-export function QuestionPage({ session, sessionId }: Props) {
+export function QuestionPage({ session, sessionId, wsRef }: Props) {
   const questions = session.questions ?? [];
   const context = session.context ?? "";
   const imageUrls = session.image_urls ?? [];
@@ -21,6 +26,8 @@ export function QuestionPage({ session, sessionId }: Props) {
   const [otherTexts, setOtherTexts] = useState<Map<number, string>>(
     () => new Map(questions.map((_, i) => [i, ""])),
   );
+  const [feedback, setFeedback] = useState("");
+  const inlineCommentsRef = useRef<InlineComment[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
   const [showClose, setShowClose] = useState(false);
@@ -67,10 +74,21 @@ export function QuestionPage({ session, sessionId }: Props) {
       };
     });
 
+    const annotations = inlineCommentsRef.current.length > 0
+      ? { comments: inlineCommentsRef.current.map(c => ({
+          selectedText: c.selectedText,
+          comment: c.comment,
+          paragraph: c.paragraph,
+        })) }
+      : undefined;
+
     try {
-      await submitAnswers(sessionId, answers);
+      await submitAnswers(sessionId, answers, wsRef, feedback, annotations);
       setResult({ success: true, message: "Answers submitted successfully." });
-      tryCloseTab(setShowClose);
+      tryCloseTab(setShowClose, {
+        url: `/question/${sessionId}/answer`,
+        body: { answers, feedback, annotations },
+      });
     } catch (err) {
       setResult({
         success: false,
@@ -89,8 +107,12 @@ export function QuestionPage({ session, sessionId }: Props) {
       {/* Context block */}
       {context && (
         <Card>
-          <SectionHeading>Context</SectionHeading>
-          <MarkdownViewer id="question-context">{context}</MarkdownViewer>
+          <SectionHeading>Context -- Comment on text</SectionHeading>
+          <p className="text-xs text-stone-500 dark:text-stone-400 mb-3">Select text to add inline comments.</p>
+          <InlineComments
+            htmlContent={markdownToSimpleHtml(context)}
+            onCommentsChange={(comments) => { inlineCommentsRef.current = comments; }}
+          />
         </Card>
       )}
 
@@ -151,10 +173,12 @@ export function QuestionPage({ session, sessionId }: Props) {
             <Card key={qIdx}>
               <fieldset>
                 <legend className="text-base font-semibold mb-1 text-stone-900 dark:text-stone-100">
-                  {q.question}
+                  <MarkdownViewer id={`q-${qIdx}-question`}>{q.question}</MarkdownViewer>
                 </legend>
                 {q.header && (
-                  <p className="text-sm text-stone-500 dark:text-stone-400 mb-3">{q.header}</p>
+                  <div className="text-sm text-stone-500 dark:text-stone-400 mb-3">
+                    <MarkdownViewer id={`q-${qIdx}-header`}>{q.header}</MarkdownViewer>
+                  </div>
                 )}
                 <div className="space-y-2">
                   {q.options.map((option) => (
@@ -209,6 +233,18 @@ export function QuestionPage({ session, sessionId }: Props) {
           );
         })}
 
+        <Card>
+          <SectionHeading>Additional Feedback</SectionHeading>
+          <textarea
+            className="w-full p-3 border border-stone-300 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-y text-sm"
+            rows={3}
+            placeholder="Any additional notes or feedback..."
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            disabled={submitting}
+          />
+        </Card>
+
         <button
           type="submit"
           disabled={submitting}
@@ -232,4 +268,9 @@ export function QuestionPage({ session, sessionId }: Props) {
       </form>
     </>
   );
+}
+
+/** Simple client-side markdown to HTML using remark */
+function markdownToSimpleHtml(md: string): string {
+  return remark().use(remarkGfm).use(remarkHtml).processSync(md).toString();
 }

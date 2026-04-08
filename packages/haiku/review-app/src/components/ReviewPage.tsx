@@ -1,17 +1,21 @@
 import { useCallback, useRef, useState } from "react";
-import type { SessionData, ReviewAnnotations, ParsedUnit, MockupInfo, Section, KnowledgeFile, StageArtifact, StageStateInfo } from "../types";
+import type { SessionData, ReviewAnnotations, ParsedUnit, MockupInfo, Section, KnowledgeFile, StageArtifact, StageStateInfo, OutputArtifact } from "../types";
 import { StatusBadge, MarkdownViewer, CriteriaChecklist } from "@haiku/shared";
 import { Tabs, type TabDef } from "./Tabs";
 import { Card, SectionHeading } from "./Card";
 import { DecisionForm } from "./DecisionForm";
 import { AnnotationCanvas, type AnnotationPin } from "./AnnotationCanvas";
-import { InlineComments, type InlineComment } from "./InlineComments";
+import { InlineComments, type InlineComment, type InlineCommentEntry, scrollToInlineComment } from "./InlineComments";
+import { CommentTray, type TrayComment } from "./CommentTray";
 import { MermaidDiagram } from "./MermaidDiagram";
-import { marked } from "marked";
+import { remark } from "remark";
+import remarkGfm from "remark-gfm";
+import remarkHtml from "remark-html";
 
 interface Props {
   session: SessionData;
   sessionId: string;
+  wsRef?: React.RefObject<WebSocket | null>;
 }
 
 const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"];
@@ -46,19 +50,23 @@ function getPreamble(sections: Section[]): string {
   return preamble?.content ?? "";
 }
 
-export function ReviewPage({ session, sessionId }: Props) {
-  // State for collecting annotations across tabs
-  const annotationPinsRef = useRef<AnnotationPin[]>([]);
-  const inlineCommentsRef = useRef<InlineComment[]>([]);
-  const imgRef = useRef<HTMLImageElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+export function ReviewPage({ session, sessionId, wsRef }: Props) {
+  // Lifted comment state: all inline comments and pins across tabs
+  const [allInlineComments, setAllInlineComments] = useState<InlineCommentEntry[]>([]);
+  const [allPins, setAllPins] = useState<AnnotationPin[]>([]);
+
+  // Refs for getAnnotations (keep in sync)
+  const inlineCommentsRef = useRef<InlineCommentEntry[]>([]);
+  inlineCommentsRef.current = allInlineComments;
+  const pinsRef = useRef<AnnotationPin[]>([]);
+  pinsRef.current = allPins;
 
   const getAnnotations = useCallback((): ReviewAnnotations | undefined => {
     const annotations: ReviewAnnotations = {};
     let hasAny = false;
 
-    if (annotationPinsRef.current.length > 0) {
-      annotations.pins = annotationPinsRef.current.map((p) => ({
+    if (pinsRef.current.length > 0) {
+      annotations.pins = pinsRef.current.map((p) => ({
         x: Math.round(p.x * 100) / 100,
         y: Math.round(p.y * 100) / 100,
         text: p.text,
@@ -78,37 +86,159 @@ export function ReviewPage({ session, sessionId }: Props) {
     return hasAny ? annotations : undefined;
   }, []);
 
-  if (session.review_type === "unit" && session.target) {
-    return (
-      <UnitReview
-        session={session}
-        sessionId={sessionId}
-        getAnnotations={getAnnotations}
-      />
+  // Build tray comments from both sources
+  const trayComments: TrayComment[] = [
+    ...allInlineComments.map((c) => ({
+      type: "inline" as const,
+      text: c.selectedText,
+      comment: c.comment,
+      id: c.id,
+    })),
+    ...allPins.map((p) => ({
+      type: "pin" as const,
+      text: `Pin at (${Math.round(p.x)}%, ${Math.round(p.y)}%)`,
+      comment: p.text,
+      id: p.id,
+    })),
+  ];
+
+  const handleDeleteComment = useCallback((id: string) => {
+    // Try inline comments first
+    const inlineMatch = inlineCommentsRef.current.find((c) => c.id === id);
+    if (inlineMatch) {
+      // Unwrap highlight
+      if (inlineMatch.highlightEl?.parentNode) {
+        const parent = inlineMatch.highlightEl.parentNode;
+        while (inlineMatch.highlightEl.firstChild) {
+          parent.insertBefore(inlineMatch.highlightEl.firstChild, inlineMatch.highlightEl);
+        }
+        parent.removeChild(inlineMatch.highlightEl);
+        (parent as Element).normalize?.();
+      }
+      setAllInlineComments((prev) => prev.filter((c) => c.id !== id));
+      return;
+    }
+    // Try pins
+    setAllPins((prev) => prev.filter((p) => p.id !== id));
+  }, []);
+
+  const handleEditComment = useCallback((id: string, newComment: string) => {
+    // Try inline comments first
+    const inlineMatch = inlineCommentsRef.current.find((c) => c.id === id);
+    if (inlineMatch) {
+      setAllInlineComments((prev) =>
+        prev.map((c) => {
+          if (c.id !== id) return c;
+          // Update the highlight element's aria-label too
+          if (c.highlightEl) {
+            c.highlightEl.setAttribute("aria-label", `Commented text: ${newComment || "(no comment)"}`);
+          }
+          return { ...c, comment: newComment };
+        })
+      );
+      return;
+    }
+    // Try pins
+    setAllPins((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, text: newComment } : p))
     );
-  }
+  }, []);
+
+  const handleClearAll = useCallback(() => {
+    // Unwrap all inline highlights
+    for (const c of inlineCommentsRef.current) {
+      if (c.highlightEl?.parentNode) {
+        const parent = c.highlightEl.parentNode;
+        while (c.highlightEl.firstChild) {
+          parent.insertBefore(c.highlightEl.firstChild, c.highlightEl);
+        }
+        parent.removeChild(c.highlightEl);
+        (parent as Element).normalize?.();
+      }
+    }
+    setAllInlineComments([]);
+    setAllPins([]);
+  }, []);
+
+  const handleScrollTo = useCallback((id: string) => {
+    // Inline comment: scroll to highlight
+    const inlineMatch = inlineCommentsRef.current.find((c) => c.id === id);
+    if (inlineMatch) {
+      scrollToInlineComment(id);
+      return;
+    }
+    // Pin: scroll to pin element
+    const pinEl = document.querySelector(`[data-pin-id="${id}"]`);
+    if (pinEl) {
+      pinEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, []);
+
+  const handleInlineCommentsChange = useCallback((comments: InlineCommentEntry[]) => {
+    setAllInlineComments(comments);
+  }, []);
+
+  const handlePinsChange = useCallback((pins: AnnotationPin[]) => {
+    setAllPins(pins);
+  }, []);
+
+  const commentCount = allInlineComments.length + allPins.length;
+
+  const commonProps = {
+    session,
+    sessionId,
+    getAnnotations,
+    wsRef,
+    commentCount,
+    onClearAllComments: handleClearAll,
+    onInlineCommentsChange: handleInlineCommentsChange,
+    onPinsChange: handlePinsChange,
+  };
 
   return (
-    <IntentReview
-      session={session}
-      sessionId={sessionId}
-      getAnnotations={getAnnotations}
-    />
+    <>
+      {session.review_type === "unit" && session.target ? (
+        <UnitReview {...commonProps} />
+      ) : (
+        <IntentReview {...commonProps} />
+      )}
+      <CommentTray
+        comments={trayComments}
+        onDelete={handleDeleteComment}
+        onEdit={handleEditComment}
+        onClearAll={handleClearAll}
+        onScrollTo={handleScrollTo}
+      />
+      {/* Bottom padding to prevent tray overlap */}
+      {trayComments.length > 0 && <div className="h-16" />}
+    </>
   );
 }
 
 // --- Intent Review ---
 
+interface SubReviewProps {
+  session: SessionData;
+  sessionId: string;
+  getAnnotations: () => ReviewAnnotations | undefined;
+  wsRef?: React.RefObject<WebSocket | null>;
+  commentCount: number;
+  onClearAllComments: () => void;
+  onInlineCommentsChange: (comments: InlineCommentEntry[]) => void;
+  onPinsChange: (pins: AnnotationPin[]) => void;
+}
+
 function IntentReview({
   session,
   sessionId,
   getAnnotations,
-}: {
-  session: SessionData;
-  sessionId: string;
-  getAnnotations: () => ReviewAnnotations | undefined;
-}) {
-  const intent = session.intent;
+  wsRef,
+  commentCount,
+  onClearAllComments,
+  onInlineCommentsChange,
+  onPinsChange,
+}: SubReviewProps) {
+  const intent = session.intent ?? ({ slug: "", title: "", frontmatter: {}, sections: [], rawContent: "" } as unknown as NonNullable<SessionData["intent"]>);
   const units = session.units ?? [];
   const criteria = session.criteria ?? [];
   const mermaid = session.mermaid ?? "";
@@ -117,6 +247,8 @@ function IntentReview({
   const stageStates = session.stage_states ?? {};
   const knowledgeFiles = session.knowledge_files ?? [];
   const stageArtifacts = session.stage_artifacts ?? [];
+  const outputArtifacts = session.output_artifacts ?? [];
+  const [dagMaximized, setDagMaximized] = useState(false);
 
   if (!intent) {
     return <p className="text-stone-500">No intent data available.</p>;
@@ -126,7 +258,6 @@ function IntentReview({
   const problem = findSection(intent.sections, "Problem");
   const solution = findSection(intent.sections, "Solution");
   const goals = findSection(intent.sections, "Goals", "Objectives");
-  const contextSection = findSection(intent.sections, "Context");
   const domainSection = findSectionWithSubs(intent.sections, "Domain Model");
 
   // Build overview markdown from whatever sections are available
@@ -146,9 +277,6 @@ function IntentReview({
   const firstImageMockup = intentMockups.find((m) => isImageUrl(m.url));
   const remainingMockups = intentMockups.filter((m) => m !== firstImageMockup);
 
-  const gitConfig = intent.frontmatter.git ?? { change_strategy: "", auto_merge: false, auto_squash: false };
-  const workflow = intent.frontmatter.workflow ?? "";
-  const announcements = intent.frontmatter.announcements ?? [];
 
   // Group units by stage for display
   const stageNames = Object.keys(stageStates);
@@ -162,6 +290,7 @@ function IntentReview({
 
   const hasUnits = units.length > 0;
   const hasKnowledge = knowledgeFiles.length > 0 || stageArtifacts.length > 0;
+  const hasOutputs = outputArtifacts.length > 0;
   const hasDomain = !!domainSection;
 
   const tabs: TabDef[] = [
@@ -179,7 +308,7 @@ function IntentReview({
             <Card>
               <SectionHeading>Overview -- Comment on text</SectionHeading>
               <p className="text-xs text-stone-500 dark:text-stone-400 mb-3">Select text to add inline comments.</p>
-              <InlineComments htmlContent={markdownToSimpleHtml(overviewMarkdown)} />
+              <InlineComments htmlContent={markdownToSimpleHtml(overviewMarkdown)} onCommentsChange={onInlineCommentsChange} />
             </Card>
           )}
 
@@ -204,7 +333,7 @@ function IntentReview({
                   Open in new tab &#8599;
                 </a>
               </div>
-              <AnnotationCanvas imageUrl={firstImageMockup.url} />
+              <AnnotationCanvas imageUrl={firstImageMockup.url} onPinsChange={onPinsChange} />
             </Card>
           )}
 
@@ -255,14 +384,51 @@ function IntentReview({
       content: (
         <>
           {mermaid && (
-            <Card>
-              <SectionHeading>Dependency Graph</SectionHeading>
-              <MermaidDiagram definition={mermaid} />
-            </Card>
+            <>
+              <Card>
+                <div className="flex items-center justify-between mb-3">
+                  <SectionHeading>Dependency Graph</SectionHeading>
+                  <button
+                    type="button"
+                    onClick={() => setDagMaximized(true)}
+                    className="text-xs px-2 py-1 rounded border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                  >
+                    View Full Size
+                  </button>
+                </div>
+                <MermaidDiagram definition={mermaid} />
+              </Card>
+              {dagMaximized && (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+                  onClick={() => setDagMaximized(false)}
+                >
+                  <div
+                    className="relative bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-xl overflow-auto"
+                    style={{ width: "90vw", height: "90vh" }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-white/90 dark:bg-stone-900/90 backdrop-blur border-b border-stone-200 dark:border-stone-700">
+                      <span className="font-semibold text-stone-900 dark:text-stone-100">Dependency Graph</span>
+                      <button
+                        type="button"
+                        onClick={() => setDagMaximized(false)}
+                        className="text-sm px-3 py-1 rounded border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                      >
+                        Close
+                      </button>
+                    </div>
+                    <div className="p-4">
+                      <MermaidDiagram definition={mermaid} />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
           <Card>
             <SectionHeading>Units</SectionHeading>
-            <UnitsTable units={units} unitMockups={unitMockupsMap} />
+            <UnitsTable units={units} unitMockups={unitMockupsMap} onInlineCommentsChange={onInlineCommentsChange} />
           </Card>
         </>
       ),
@@ -273,24 +439,58 @@ function IntentReview({
       disabled: knowledgeFiles.length === 0 && stageArtifacts.length === 0,
       content: (
         <>
-          {knowledgeFiles.map((kf, i) => (
-            <Card key={`kf-${i}`}>
-              <SectionHeading>{kf.name}</SectionHeading>
-              <InlineComments htmlContent={markdownToSimpleHtml(kf.content)} />
-            </Card>
-          ))}
-          {stageArtifacts.map((sa, i) => (
-            <Card key={`sa-${i}`}>
-              <SectionHeading>{sa.stage}: {sa.name}</SectionHeading>
-              <InlineComments htmlContent={markdownToSimpleHtml(sa.content)} />
-            </Card>
-          ))}
-          {knowledgeFiles.length === 0 && stageArtifacts.length === 0 && (
-            <Card>
-              <p className="text-stone-500 dark:text-stone-400 italic">No knowledge files or stage artifacts available.</p>
-            </Card>
-          )}
+          <div className="flex gap-6 items-start">
+            {/* Sticky sidebar TOC */}
+            <div className="hidden lg:block w-56 flex-shrink-0 self-start">
+              <div className="sticky top-20">
+                <nav className="text-sm space-y-1">
+                  <h3 className="font-semibold text-stone-900 dark:text-stone-100 mb-2">Contents</h3>
+                  {knowledgeFiles.map((kf, i) => (
+                    <a key={`kf-${i}`} href={`#knowledge-${i}`}
+                       className="block py-1 px-2 rounded text-stone-600 dark:text-stone-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors truncate">
+                      {kf.name}
+                    </a>
+                  ))}
+                  {stageArtifacts.map((sa, i) => (
+                    <a key={`sa-${i}`} href={`#artifact-${i}`}
+                       className="block py-1 px-2 rounded text-stone-600 dark:text-stone-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors truncate">
+                      {sa.stage}: {sa.name}
+                    </a>
+                  ))}
+                </nav>
+              </div>
+            </div>
+
+            {/* Content area */}
+            <div className="flex-1 min-w-0">
+              {knowledgeFiles.map((kf, i) => (
+                <Card key={`kf-${i}`} id={`knowledge-${i}`}>
+                  <SectionHeading>{kf.name}</SectionHeading>
+                  <InlineComments htmlContent={markdownToSimpleHtml(kf.content)} onCommentsChange={onInlineCommentsChange} />
+                </Card>
+              ))}
+              {stageArtifacts.map((sa, i) => (
+                <Card key={`sa-${i}`} id={`artifact-${i}`}>
+                  <SectionHeading>{sa.stage}: {sa.name}</SectionHeading>
+                  <InlineComments htmlContent={markdownToSimpleHtml(sa.content)} onCommentsChange={onInlineCommentsChange} />
+                </Card>
+              ))}
+              {knowledgeFiles.length === 0 && stageArtifacts.length === 0 && (
+                <Card>
+                  <p className="text-stone-500 dark:text-stone-400 italic">No knowledge files or stage artifacts available.</p>
+                </Card>
+              )}
+            </div>
+          </div>
         </>
+      ),
+    },
+    {
+      id: "outputs",
+      label: `Outputs (${outputArtifacts.length})`,
+      disabled: !hasOutputs,
+      content: (
+        <OutputArtifactsTab artifacts={outputArtifacts} onInlineCommentsChange={onInlineCommentsChange} />
       ),
     },
     {
@@ -314,57 +514,10 @@ function IntentReview({
         </Card>
       ),
     },
-    {
-      id: "technical",
-      label: "Technical Details",
-      content: (
-        <>
-          {contextSection && (
-            <Card>
-              <SectionHeading>Context</SectionHeading>
-              <MarkdownViewer id="tech-context">{contextSection}</MarkdownViewer>
-            </Card>
-          )}
-          <Card>
-            <SectionHeading>Git Configuration</SectionHeading>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-              <div>
-                <dt className="text-stone-500 dark:text-stone-400">Change Strategy</dt>
-                <dd className="font-medium mt-0.5">{gitConfig.change_strategy}</dd>
-              </div>
-              <div>
-                <dt className="text-stone-500 dark:text-stone-400">Auto-merge</dt>
-                <dd className="font-medium mt-0.5">{gitConfig.auto_merge ? "Yes" : "No"}</dd>
-              </div>
-              <div>
-                <dt className="text-stone-500 dark:text-stone-400">Auto-squash</dt>
-                <dd className="font-medium mt-0.5">{gitConfig.auto_squash ? "Yes" : "No"}</dd>
-              </div>
-              <div>
-                <dt className="text-stone-500 dark:text-stone-400">Workflow</dt>
-                <dd className="font-medium mt-0.5">{workflow}</dd>
-              </div>
-            </dl>
-          </Card>
-          {announcements.length > 0 && (
-            <Card>
-              <SectionHeading>Announcements</SectionHeading>
-              <ul className="space-y-2">
-                {announcements.map((a, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-teal-500 mt-0.5" aria-hidden="true">&bull;</span>
-                    <span>{a}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          )}
-        </>
-      ),
-    },
   ].filter((tab) => {
     if (tab.id === "units-dag" && !hasUnits) return false;
     if (tab.id === "knowledge" && !hasKnowledge) return false;
+    if (tab.id === "outputs" && !hasOutputs) return false;
     if (tab.id === "domain" && !hasDomain) return false;
     return true;
   });
@@ -372,7 +525,7 @@ function IntentReview({
   return (
     <>
       <Tabs groupId="intent" tabs={tabs} />
-      <DecisionForm sessionId={sessionId} collectAnnotations getAnnotations={getAnnotations} />
+      <DecisionForm sessionId={sessionId} collectAnnotations getAnnotations={getAnnotations} wsRef={wsRef} commentCount={commentCount} onClearAllComments={onClearAllComments} />
     </>
   );
 }
@@ -383,12 +536,13 @@ function UnitReview({
   session,
   sessionId,
   getAnnotations,
-}: {
-  session: SessionData;
-  sessionId: string;
-  getAnnotations: () => ReviewAnnotations | undefined;
-}) {
-  const intent = session.intent;
+  wsRef,
+  commentCount,
+  onClearAllComments,
+  onInlineCommentsChange,
+  onPinsChange,
+}: SubReviewProps) {
+  const intent = session.intent ?? ({ slug: "", title: "", frontmatter: {}, sections: [], rawContent: "" } as unknown as NonNullable<SessionData["intent"]>);
   const units = session.units ?? [];
   const criteria = session.criteria ?? [];
   const unitMockupsMap = session.unit_mockups ?? {};
@@ -462,7 +616,7 @@ function UnitReview({
             <Card>
               <SectionHeading>Spec -- Comment on text</SectionHeading>
               <p className="text-xs text-stone-500 dark:text-stone-400 mb-3">Select text to add inline comments.</p>
-              <InlineComments htmlContent={markdownToSimpleHtml(combinedSpec)} />
+              <InlineComments htmlContent={markdownToSimpleHtml(combinedSpec)} onCommentsChange={onInlineCommentsChange} />
             </Card>
           ) : (
             <Card>
@@ -492,7 +646,7 @@ function UnitReview({
                   Open in new tab &#8599;
                 </a>
               </div>
-              <AnnotationCanvas imageUrl={firstImageMockup.url} />
+              <AnnotationCanvas imageUrl={firstImageMockup.url} onPinsChange={onPinsChange} />
             </Card>
           )}
           {remainingMockups.length > 0 && (
@@ -555,14 +709,160 @@ function UnitReview({
   return (
     <>
       <Tabs groupId="unit" tabs={tabs} />
-      <DecisionForm sessionId={sessionId} collectAnnotations getAnnotations={getAnnotations} />
+      <DecisionForm sessionId={sessionId} collectAnnotations getAnnotations={getAnnotations} wsRef={wsRef} commentCount={commentCount} onClearAllComments={onClearAllComments} />
     </>
   );
 }
 
 // --- Helper components ---
 
-function UnitsTable({ units, unitMockups }: { units: ParsedUnit[]; unitMockups: Record<string, MockupInfo[]> }) {
+function OutputArtifactsTab({ artifacts, onInlineCommentsChange }: { artifacts: OutputArtifact[]; onInlineCommentsChange: (comments: InlineCommentEntry[]) => void }) {
+  const [expandedImage, setExpandedImage] = useState<string | null>(null);
+
+  if (artifacts.length === 0) {
+    return (
+      <Card>
+        <p className="text-stone-500 dark:text-stone-400 italic">No output artifacts available.</p>
+      </Card>
+    );
+  }
+
+  // Group by stage
+  const stageOrder: string[] = [];
+  const byStage = new Map<string, OutputArtifact[]>();
+  for (const a of artifacts) {
+    if (!byStage.has(a.stage)) {
+      byStage.set(a.stage, []);
+      stageOrder.push(a.stage);
+    }
+    byStage.get(a.stage)!.push(a);
+  }
+
+  return (
+    <>
+      <div className="flex gap-6 items-start">
+        {/* Sticky sidebar TOC */}
+        <div className="hidden lg:block w-56 flex-shrink-0 self-start">
+          <div className="sticky top-20">
+            <nav className="text-sm space-y-1">
+              <h3 className="font-semibold text-stone-900 dark:text-stone-100 mb-2">Contents</h3>
+              {artifacts.map((a, i) => (
+                <a key={`oa-${i}`} href={`#output-${i}`}
+                   className="block py-1 px-2 rounded text-stone-600 dark:text-stone-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors truncate">
+                  {a.stage}: {a.name}
+                </a>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {/* Content area */}
+        <div className="flex-1 min-w-0">
+          {stageOrder.map((stage) => {
+            const stageArtifacts = byStage.get(stage) || [];
+            return (
+              <div key={stage}>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-3 mt-6 first:mt-0">
+                  {stage.charAt(0).toUpperCase() + stage.slice(1)}
+                </h3>
+                {stageArtifacts.map((a, i) => {
+                  const globalIndex = artifacts.indexOf(a);
+                  if (a.type === "markdown" && a.content) {
+                    return (
+                      <Card key={`oa-${globalIndex}`} id={`output-${globalIndex}`}>
+                        <SectionHeading>{a.name}</SectionHeading>
+                        <InlineComments htmlContent={markdownToSimpleHtml(a.content)} onCommentsChange={onInlineCommentsChange} />
+                      </Card>
+                    );
+                  }
+                  if (a.type === "html" && a.content) {
+                    return (
+                      <Card key={`oa-${globalIndex}`} id={`output-${globalIndex}`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <SectionHeading>{a.name}</SectionHeading>
+                          {a.relativePath && (
+                            <a
+                              href={a.relativePath}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-teal-600 dark:text-teal-400 hover:underline"
+                            >
+                              View Full Size &#8599;
+                            </a>
+                          )}
+                        </div>
+                        <iframe
+                          srcDoc={a.content}
+                          sandbox="allow-scripts"
+                          className="w-full h-[600px] border border-stone-200 dark:border-stone-700 rounded-lg bg-white"
+                          title={a.name}
+                        />
+                      </Card>
+                    );
+                  }
+                  if (a.type === "image" && a.relativePath) {
+                    return (
+                      <Card key={`oa-${globalIndex}`} id={`output-${globalIndex}`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <SectionHeading>{a.name}</SectionHeading>
+                          <a
+                            href={a.relativePath}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-teal-600 dark:text-teal-400 hover:underline"
+                          >
+                            Open in new tab &#8599;
+                          </a>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedImage(expandedImage === a.relativePath ? null : a.relativePath!)}
+                          className="block cursor-pointer"
+                        >
+                          <img
+                            src={a.relativePath}
+                            alt={a.name}
+                            className={`border border-stone-200 dark:border-stone-700 rounded-lg transition-all ${
+                              expandedImage === a.relativePath ? "max-w-full" : "max-w-md"
+                            }`}
+                          />
+                        </button>
+                        {expandedImage !== a.relativePath && (
+                          <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">Click to expand</p>
+                        )}
+                      </Card>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Image lightbox overlay */}
+      {expandedImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-8 cursor-pointer"
+          onClick={() => setExpandedImage(null)}
+          onKeyDown={(e) => e.key === "Escape" && setExpandedImage(null)}
+          role="dialog"
+          aria-label="Expanded image"
+          tabIndex={0}
+        >
+          <img
+            src={expandedImage}
+            alt="Expanded artifact"
+            className="max-w-full max-h-full object-contain rounded-lg"
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
+function UnitsTable({ units, unitMockups, onInlineCommentsChange }: { units: ParsedUnit[]; unitMockups: Record<string, MockupInfo[]>; onInlineCommentsChange?: (comments: InlineCommentEntry[]) => void }) {
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
 
   if (units.length === 0) {
@@ -640,7 +940,7 @@ function UnitsTable({ units, unitMockups }: { units: ParsedUnit[]; unitMockups: 
                           {(u.frontmatter.discipline ?? u.frontmatter.type) && <StatusBadge label="Type" status={u.frontmatter.discipline ?? u.frontmatter.type ?? ""} />}
                         </div>
                         {unitContent.trim() && (
-                          <InlineComments htmlContent={markdownToSimpleHtml(unitContent)} />
+                          <InlineComments htmlContent={markdownToSimpleHtml(unitContent)} onCommentsChange={onInlineCommentsChange} />
                         )}
                       </div>
                     </div>
@@ -716,10 +1016,9 @@ function MockupEmbeds({ mockups }: { mockups: MockupInfo[] }) {
   );
 }
 
-/** Simple client-side markdown to HTML using react-markdown isn't suitable here
- *  because InlineComments needs raw HTML. Use a minimal conversion. */
+/** Simple client-side markdown to HTML using remark.
+ *  InlineComments needs raw HTML, so we use remark instead of react-markdown. */
 function markdownToSimpleHtml(md: string): string {
-  const result = marked.parse(md, { async: false });
-  return typeof result === "string" ? result : String(result);
+  return remark().use(remarkGfm).use(remarkHtml).processSync(md).toString();
 }
 

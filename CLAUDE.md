@@ -14,7 +14,7 @@ When modifying any component, check if other components need corresponding updat
 
 | Change Type | Paper | Plugin | Website |
 |---|---|---|---|
-| New skill | Mention in relevant section | Primary | Update docs if user-facing |
+| New prompt | Mention in relevant section | Add handler in `prompts/*.ts` | Update docs if user-facing |
 | New studio | Document in Profiles section | Primary | Update docs |
 | New stage | Document in relevant profile | Primary | Update docs |
 | New hat (in stage) | Document in relevant profile | Add `hats/{hat}.md` file in stage directory | Update docs if user-facing |
@@ -31,7 +31,7 @@ When modifying any component, check if other components need corresponding updat
 
 - Paper: `website/content/papers/haiku-method.md`
 - Plugin metadata: `plugin/.claude-plugin/plugin.json`
-- Plugin skills: `plugin/skills/*/SKILL.md`
+- Plugin prompts: `packages/haiku/src/prompts/*.ts` (MCP prompt handlers — all behavior lives here)
 - Plugin studios: `plugin/studios/*/STUDIO.md`
 - Plugin stages: `plugin/studios/*/stages/*/STAGE.md`
 - Plugin hats: `plugin/studios/*/stages/*/hats/*.md`
@@ -52,23 +52,23 @@ When modifying any component, check if other components need corresponding updat
 
 | Concept | Paper Section | Plugin Implementation | Key Files |
 |---|---|---|---|
-| Intent | Elaboration phase | `.haiku/intents/{slug}/intent.md` | elaborate/SKILL.md |
-| Unit | Elaboration phase | `.haiku/intents/{slug}/stages/{stage}/units/unit-NN-*.md` | elaborate/SKILL.md, dag.sh |
-| Bolt | Execution phase | `iteration` field in iteration.json | execute/SKILL.md, orchestrator.sh |
+| Intent | Elaboration phase | `.haiku/intents/{slug}/intent.md` | prompts/core.ts |
+| Unit | Elaboration phase | `.haiku/intents/{slug}/stages/{stage}/units/unit-NN-*.md` | prompts/core.ts |
+| Bolt | Execution phase | `iteration` field in iteration.json | orchestrator.ts |
 | Studio | Profiles section | `plugin/studios/{name}/STUDIO.md` | studio.sh |
-| Stage | Profiles section | `plugin/studios/{name}/stages/{stage}/STAGE.md` | stage.sh, orchestrator.sh |
-| Hat | Profiles section | `plugin/studios/{name}/stages/{stage}/hats/{hat}.md` | hat.sh, stage.sh |
-| Review Agent | Quality Enforcement | `plugin/studios/{name}/stages/{stage}/review-agents/{agent}.md` | orchestrator.sh, run/SKILL.md |
-| Review Gate | Quality Enforcement | `review:` field in STAGE.md (auto/ask/external/await/[external,ask]) | orchestrator.sh |
-| Operation Template | Operation phase | `plugin/studios/{name}/operations/{op}.md` | operate/SKILL.md |
-| Reflection Dimension | Reflection phase | `plugin/studios/{name}/reflections/{dim}.md` | reflect/SKILL.md |
-| Completion Criteria | Throughout | `quality_gates:` in unit/intent frontmatter, harness-enforced | elaborate, execute, advance, quality-gate.sh |
-| Backpressure | Principles section | Quality gates enforced by harness, not agent | quality-gate.sh, orchestrator.sh |
-| Operating Modes | Operating Modes section | interactive=HITL, /haiku:execute=OHOTL, /haiku:autopilot=AHOTL | execute, autopilot |
-| Hard Gates | Execution phase | exit code enforcement in quality-gate.sh | orchestrator.sh |
+| Stage | Profiles section | `plugin/studios/{name}/stages/{stage}/STAGE.md` | stage.sh, orchestrator.ts |
+| Hat | Profiles section | `plugin/studios/{name}/stages/{stage}/hats/{hat}.md` | prompts/core.ts |
+| Review Agent | Quality Enforcement | `plugin/studios/{name}/stages/{stage}/review-agents/{agent}.md` | orchestrator.ts, prompts/core.ts |
+| Review Gate | Quality Enforcement | `review:` field in STAGE.md (auto/ask/external/await/[external,ask]) | orchestrator.ts |
+| Operation Template | Operation phase | `plugin/studios/{name}/operations/{op}.md` | prompts/complex.ts |
+| Reflection Dimension | Reflection phase | `plugin/studios/{name}/reflections/{dim}.md` | prompts/core.ts |
+| Completion Criteria | Throughout | `quality_gates:` in unit/intent frontmatter, harness-enforced | orchestrator.ts, quality-gate.sh |
+| Backpressure | Principles section | Quality gates enforced by harness, not agent | quality-gate.sh, orchestrator.ts |
+| Operating Modes | Operating Modes section | interactive=HITL, /haiku:run=OHOTL, /haiku:autopilot=AHOTL | prompts/core.ts, prompts/complex.ts |
+| Hard Gates | Execution phase | exit code enforcement in quality-gate.sh | orchestrator.ts |
 | Persistence | Context Preservation | `plugin/lib/adapters/*.sh` (filesystem, git) | config.sh, adapters/ |
 | Providers | Memory Providers section | `plugin/schemas/providers/*.json`, `plugin/providers/*.md` | config.sh |
-| Operations | Operation phase | /haiku:operate skill | operate/SKILL.md |
+| Operations | Operation phase | /haiku:operate prompt | prompts/complex.ts |
 
 ## H·AI·K·U Terminology (CRITICAL)
 

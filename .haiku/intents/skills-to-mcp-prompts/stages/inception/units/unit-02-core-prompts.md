@@ -1,12 +1,16 @@
 ---
 name: unit-02-core-prompts
 type: backend
-status: pending
-depends_on: [unit-01-prompts-server]
-bolt: 0
-hat: ""
+status: completed
+depends_on:
+  - unit-01-prompts-server
+bolt: 1
+hat: decomposer
 refs:
   - knowledge/DISCOVERY.md
+  - knowledge/PROMPTS-SERVER-DISCOVERY.md
+started_at: '2026-04-07T02:33:40Z'
+completed_at: '2026-04-07T02:37:51Z'
 ---
 
 # Core Workflow Prompts
@@ -19,10 +23,10 @@ Implement the 5 core workflow prompts: `haiku:new`, `haiku:run`, `haiku:refine`,
 
 ## Completion Criteria
 
-- [ ] `haiku:new` prompt: gathers description, detects studio, sets mode, creates intent, presents direction for review via ask_user_visual_question
-- [ ] `haiku:run` prompt: calls orchestrator, reads action, constructs prompt with stage/hat/elaboration context inlined
-- [ ] `haiku:run` enforces visual review: calls open_review for gate_ask before returning prompt
-- [ ] `haiku:run` elaboration mode: collaborative prompts include multi-turn conversation instructions, autonomous prompts are concise
-- [ ] `haiku:refine` prompt: loads upstream stage context, constructs side-trip prompt
-- [ ] `haiku:review` prompt: loads diff + review agents, constructs review prompt
-- [ ] `haiku:reflect` prompt: loads completed intent, constructs analysis prompt
+- [x] `haiku:new` prompt: gathers description, detects studio, sets mode, creates intent, presents direction for review via ask_user_visual_question
+- [x] `haiku:run` prompt: calls orchestrator, reads action, constructs prompt with stage/hat/elaboration context inlined
+- [x] `haiku:run` enforces visual review: calls open_review for gate_ask before returning prompt
+- [x] `haiku:run` elaboration mode: collaborative prompts include multi-turn conversation instructions, autonomous prompts are concise
+- [x] `haiku:refine` prompt: loads upstream stage context, constructs side-trip prompt
+- [x] `haiku:review` prompt: loads diff + review agents, constructs review prompt
+- [x] `haiku:reflect` prompt: loads completed intent, constructs analysis prompt

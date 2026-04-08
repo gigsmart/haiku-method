@@ -22,8 +22,23 @@
         ]
       },
       {
+        "matcher": "mcp__.*__haiku_",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook inject-state-file",
+            "timeout": 5
+          }
+        ]
+      },
+      {
         "matcher": "Write|Edit",
         "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook guard-fsm-fields",
+            "timeout": 5
+          },
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook prompt-guard",
@@ -38,6 +53,16 @@
       }
     ],
     "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook validate-unit-type",
+            "timeout": 5
+          }
+        ]
+      },
       {
         "matcher": ".*",
         "hooks": [

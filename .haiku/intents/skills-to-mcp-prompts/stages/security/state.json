@@ -1,0 +1,9 @@
+{
+  "stage": "security",
+  "status": "completed",
+  "phase": "gate",
+  "started_at": "2026-04-07T06:24:42Z",
+  "completed_at": "2026-04-07T09:56:55Z",
+  "gate_entered_at": "2026-04-07T06:27:00Z",
+  "gate_outcome": "advanced"
+}

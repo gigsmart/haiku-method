@@ -9,6 +9,7 @@ import {
 	parseStageStates,
 	parseKnowledgeFiles,
 	parseStageArtifacts,
+	parseOutputArtifacts,
 	toMermaidDefinition,
 } from "./index.js"
 import { Server } from "@modelcontextprotocol/sdk/server/index.js"
@@ -16,10 +17,13 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
 	CallToolRequestSchema,
 	ListToolsRequestSchema,
+	ListPromptsRequestSchema,
+	GetPromptRequestSchema,
+	CompleteRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
 import { z } from "zod"
 import { getActualPort, startHttpServer } from "./http.js"
-import { createDesignDirectionSession, createQuestionSession, createSession, getSession } from "./sessions.js"
+import { createDesignDirectionSession, createQuestionSession, createSession, getSession, waitForSession } from "./sessions.js"
 import type { DesignArchetypeData, DesignParameterData, QuestionDef } from "./sessions.js"
 import { type MockupInfo, renderReviewPage } from "./templates/index.js"
 import { renderQuestionPage } from "./templates/question-form.js"
@@ -120,12 +124,34 @@ const server = new Server(
 	{
 		capabilities: {
 			tools: {},
+			prompts: { listChanged: true },
+			completions: {},
 		},
 	},
 )
 
 import { stateToolDefs, handleStateTool } from "./state-tools.js"
-import { orchestratorToolDefs, handleOrchestratorTool } from "./orchestrator.js"
+import { orchestratorToolDefs, handleOrchestratorTool, setOpenReviewHandler, setElicitInputHandler } from "./orchestrator.js"
+import { listPrompts, getPrompt, completeArgument } from "./prompts/index.js"
+// Side-effect imports: each file calls registerPrompt() at module load time. Add a new import here for each new prompt file.
+import "./prompts/core.js"
+import "./prompts/complex.js"
+import "./prompts/simple.js"
+
+// List prompts
+server.setRequestHandler(ListPromptsRequestSchema, async () => ({
+	prompts: listPrompts(),
+}))
+
+// Get prompt
+server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+	return getPrompt(request.params.name, request.params.arguments)
+})
+
+// Argument completion
+server.setRequestHandler(CompleteRequestSchema, async (request) => {
+	return completeArgument(request.params)
+})
 
 // List tools
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -134,32 +160,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 		...orchestratorToolDefs,
 		// State management tools
 		...stateToolDefs,
-		{
-			name: "open_review",
-			description:
-				"Open a visual review page in the browser for an H·AI·K·U intent or unit. " +
-				"Parses intent/unit data and serves an interactive HTML review page.",
-			inputSchema: {
-				type: "object" as const,
-				properties: {
-					intent_dir: {
-						type: "string",
-						description:
-							"Path to the intent directory (e.g., .haiku/intents/my-intent)",
-					},
-					review_type: {
-						type: "string",
-						enum: ["intent", "unit"],
-						description: "Type of review: intent-level or unit-level",
-					},
-					target: {
-						type: "string",
-						description: "Unit slug to review (required for unit reviews)",
-					},
-				},
-				required: ["intent_dir", "review_type"],
-			},
-		},
+		// open_review is internal — used by the FSM for gate_ask, not exposed to the agent
 		{
 			name: "get_review_status",
 			description:
@@ -317,50 +318,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	const { name, arguments: args } = request.params
 
-	// Orchestration tools
-	if (name === "haiku_run_next" || name === "haiku_gate_approve") {
-		const result = handleOrchestratorTool(name, (args ?? {}) as Record<string, unknown>)
-
-		// Auto-open visual review on gate_ask (interactive mode only)
-		try {
-			const parsed = JSON.parse(typeof result.content === "string" ? result.content : (result.content as Array<{text?: string}>)?.[0]?.text || "{}")
-			if (parsed.action === "gate_ask" && parsed.intent) {
-				// Check mode — only open review in interactive/OHOTL, not autopilot
-				const { readFileSync, existsSync } = await import("node:fs")
-				const { join } = await import("node:path")
-				const root = process.cwd()
-				const intentFile = join(root, ".haiku", "intents", parsed.intent, "intent.md")
-				if (existsSync(intentFile)) {
-					const raw = readFileSync(intentFile, "utf8")
-					const modeMatch = raw.match(/^mode:\s*(.+)$/m)
-					const mode = modeMatch?.[1]?.trim() || "continuous"
-					if (mode !== "autopilot") {
-						// Trigger open_review as a side effect
-						const intentDir = join(root, ".haiku", "intents", parsed.intent)
-						const { startHttpServer } = await import("./http.js")
-						const { createReviewSession } = await import("./sessions.js")
-						const port = await startHttpServer()
-						const session = createReviewSession({
-							intent_slug: parsed.intent,
-							stage: parsed.stage,
-							review_type: "stage",
-							intent_dir: intentDir,
-						})
-						const url = `http://127.0.0.1:${port}/review/${session.id}`
-						// Open in browser
-						const { exec } = await import("node:child_process")
-						exec(`open "${url}"`)
-						// Add review URL to the response
-						parsed.review_url = url
-						parsed.review_session = session.id
-						parsed.message += ` Visual review opened at ${url}`
-						return { content: [{ type: "text" as const, text: JSON.stringify(parsed, null, 2) }] }
-					}
-				}
-			}
-		} catch { /* non-fatal — review is a convenience, not a requirement */ }
-
-		return result
+	// Orchestration tools (async — gate_ask blocks until user reviews)
+	if (name === "haiku_run_next" || name === "haiku_go_back" || name === "haiku_intent_create") {
+		return handleOrchestratorTool(name, (args ?? {}) as Record<string, unknown>)
 	}
 
 	// State management tools
@@ -499,6 +459,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 		const stageStates = await parseStageStates(intentDir)
 		const knowledgeFiles = await parseKnowledgeFiles(intentDir)
 		const stageArtifacts = await parseStageArtifacts(intentDir)
+		const outputArtifacts = await parseOutputArtifacts(intentDir)
+
+		// Resolve image output artifact URLs now that we have a session ID
+		for (const oa of outputArtifacts) {
+			if (oa.type === "image" && oa.relativePath) {
+				oa.relativePath = `/stage-artifacts/${session.session_id}/stages/${oa.relativePath}`
+			}
+		}
 
 		// Store parsed data on the session for the SPA API endpoint
 		session.parsedIntent = intent
@@ -510,6 +478,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 		session.stageStates = stageStates
 		session.knowledgeFiles = knowledgeFiles
 		session.stageArtifacts = stageArtifacts
+		session.outputArtifacts = outputArtifacts
 
 		// Generate HTML with session ID, mockups, and wireframes (legacy fallback)
 		session.html = renderReviewPage({
@@ -539,33 +508,47 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 			console.error("Failed to open browser:", err)
 		}
 
-		// Block until the user submits their decision
-		const POLL_INTERVAL = 500
+		// Block until the user submits their decision (event-based, no polling)
 		const MAX_WAIT = 30 * 60 * 1000
-		const start = Date.now()
-
-		while (Date.now() - start < MAX_WAIT) {
-			if (session.status === "decided") {
-				const result: Record<string, unknown> = {
-					status: "decided",
-					url: reviewUrl,
-					decision: session.decision,
-					feedback: session.feedback,
-					review_type: session.review_type,
-					target: session.target,
-				}
-				if (session.annotations) {
-					const annot: Record<string, unknown> = {}
-					if (session.annotations.pins?.length) annot.pins = session.annotations.pins
-					if (session.annotations.comments?.length) annot.comments = session.annotations.comments
-					if (session.annotations.screenshot) annot.has_screenshot = true
-					result.annotations = annot
-				}
-				return {
-					content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
-				}
+		try {
+			await waitForSession(session.session_id, MAX_WAIT)
+		} catch {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: JSON.stringify({
+							status: "timeout",
+							url: reviewUrl,
+							session_id: session.session_id,
+							message: "User did not respond within 30 minutes",
+						}, null, 2),
+					},
+				],
 			}
-			await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL))
+		}
+
+		// Session was updated — read the latest state
+		const updatedReviewSession = getSession(session.session_id)
+		if (updatedReviewSession && updatedReviewSession.session_type === "review" && updatedReviewSession.status === "decided") {
+			const result: Record<string, unknown> = {
+				status: "decided",
+				url: reviewUrl,
+				decision: updatedReviewSession.decision,
+				feedback: updatedReviewSession.feedback,
+				review_type: updatedReviewSession.review_type,
+				target: updatedReviewSession.target,
+			}
+			if (updatedReviewSession.annotations) {
+				const annot: Record<string, unknown> = {}
+				if (updatedReviewSession.annotations.pins?.length) annot.pins = updatedReviewSession.annotations.pins
+				if (updatedReviewSession.annotations.comments?.length) annot.comments = updatedReviewSession.annotations.comments
+				if (updatedReviewSession.annotations.screenshot) annot.has_screenshot = true
+				result.annotations = annot
+			}
+			return {
+				content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
+			}
 		}
 
 		return {
@@ -725,30 +708,50 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 			console.error("Failed to open browser:", err)
 		}
 
-		// Block until the user submits their answers
-		const POLL_INTERVAL = 500 // ms
-		const MAX_WAIT = 30 * 60 * 1000 // 30 minutes
-		const start = Date.now()
-
-		while (Date.now() - start < MAX_WAIT) {
-			if (session.status === "answered" && session.answers) {
-				return {
-					content: [
-						{
-							type: "text" as const,
-							text: JSON.stringify({
-								status: "answered",
-								url: questionUrl,
-								answers: session.answers,
-							}, null, 2),
-						},
-					],
-				}
+		// Block until the user submits their answers (event-based, no polling)
+		const MAX_WAIT_Q = 30 * 60 * 1000 // 30 minutes
+		try {
+			await waitForSession(session.session_id, MAX_WAIT_Q)
+		} catch {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: JSON.stringify({
+							status: "timeout",
+							url: questionUrl,
+							session_id: session.session_id,
+							message: "User did not respond within 30 minutes",
+						}, null, 2),
+					},
+				],
 			}
-			await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL))
 		}
 
-		// Timed out
+		// Session was updated — read the latest state
+		const updatedQuestionSession = getSession(session.session_id)
+		if (updatedQuestionSession && updatedQuestionSession.session_type === "question" && updatedQuestionSession.status === "answered" && updatedQuestionSession.answers) {
+			const questionResult: Record<string, unknown> = {
+				status: "answered",
+				url: questionUrl,
+				answers: updatedQuestionSession.answers,
+			}
+			if (updatedQuestionSession.feedback) {
+				questionResult.feedback = updatedQuestionSession.feedback
+			}
+			if (updatedQuestionSession.annotations?.comments?.length) {
+				questionResult.annotations = updatedQuestionSession.annotations
+			}
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: JSON.stringify(questionResult, null, 2),
+					},
+				],
+			}
+		}
+
 		return {
 			content: [
 				{
@@ -796,16 +799,59 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 				process.platform === "darwin"
 					? ["open", directionUrl]
 					: ["xdg-open", directionUrl]
-			spawn(cmd[0], cmd.slice(1), { stdio: ["ignore", "ignore", "ignore"] })
+			spawn(cmd[0], cmd.slice(1), { stdio: "ignore", detached: true }).unref()
 		} catch (err) {
 			console.error("Failed to open browser:", err)
+		}
+
+		// Block until the user submits their selection (event-based, no polling)
+		const MAX_WAIT_DD = 30 * 60 * 1000 // 30 minutes
+		try {
+			await waitForSession(session.session_id, MAX_WAIT_DD)
+		} catch {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: JSON.stringify({
+							status: "timeout",
+							url: directionUrl,
+							session_id: session.session_id,
+							message: "User did not respond within 30 minutes",
+						}, null, 2),
+					},
+				],
+			}
+		}
+
+		// Session was updated — read the latest state
+		const updatedDirectionSession = getSession(session.session_id)
+		if (updatedDirectionSession && updatedDirectionSession.session_type === "design_direction" && updatedDirectionSession.status === "answered" && updatedDirectionSession.selection) {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: JSON.stringify({
+							status: "answered",
+							url: directionUrl,
+							archetype: updatedDirectionSession.selection.archetype,
+							parameters: updatedDirectionSession.selection.parameters,
+						}, null, 2),
+					},
+				],
+			}
 		}
 
 		return {
 			content: [
 				{
 					type: "text" as const,
-					text: `Design direction picker opened: ${directionUrl}\nSession ID: ${session.session_id}\nArchetypes: ${archetypes.length}\nParameters: ${parameters.length}`,
+					text: JSON.stringify({
+						status: "timeout",
+						url: directionUrl,
+						session_id: session.session_id,
+						message: "User did not respond within 30 minutes",
+					}, null, 2),
 				},
 			],
 		}
@@ -815,6 +861,95 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 		content: [{ type: "text" as const, text: `Unknown tool: ${name}` }],
 		isError: true,
 	}
+})
+
+// Wire up the review handler for the orchestrator's gate_ask flow.
+// This lets haiku_run_next open a review and block until the user decides,
+// without the agent needing to call open_review separately.
+setOpenReviewHandler(async (intentDirRel: string, reviewType: string) => {
+	const intentDirAbs = resolve(process.cwd(), intentDirRel)
+	const intent = await parseIntent(intentDirAbs)
+	if (!intent) throw new Error("Could not parse intent")
+
+	const units = await parseAllUnits(intentDirAbs)
+	const dag = buildDAG(units)
+	const mermaid = toMermaidDefinition(dag, units)
+	const criteriaSection = intent.sections.find(
+		(s) => s.heading.toLowerCase().includes("completion criteria") || s.heading.toLowerCase().includes("success criteria"),
+	)
+	const criteria = criteriaSection ? parseCriteria(criteriaSection.content) : []
+
+	const session = createSession({
+		intent_dir: intentDirAbs,
+		intent_slug: intent.slug,
+		review_type: reviewType as "intent" | "unit",
+		target: "",
+		html: "",
+	})
+
+	// Store parsed data on session for the SPA
+	Object.assign(session, { parsedIntent: intent, parsedUnits: units, parsedCriteria: criteria, parsedMermaid: mermaid })
+
+	// Parse stage states + knowledge
+	const stageStates = await parseStageStates(intentDirAbs)
+	const knowledgeFiles = await parseKnowledgeFiles(intentDirAbs)
+	const stageArtifacts = await parseStageArtifacts(intentDirAbs)
+	const outputArtifacts = await parseOutputArtifacts(intentDirAbs)
+
+	// Resolve image output artifact URLs now that we have a session ID
+	for (const oa of outputArtifacts) {
+		if (oa.type === "image" && oa.relativePath) {
+			oa.relativePath = `/stage-artifacts/${session.session_id}/stages/${oa.relativePath}`
+		}
+	}
+
+	Object.assign(session, { stageStates, knowledgeFiles, stageArtifacts, outputArtifacts })
+
+	session.html = renderReviewPage({ intent, units, criteria, reviewType: reviewType as "intent" | "unit", target: "", sessionId: session.session_id, mermaid, intentMockups: [], unitMockups: new Map() })
+
+	const port = await startHttpServer()
+	const reviewUrl = `http://127.0.0.1:${port}/review/${session.session_id}`
+
+	function openBrowser() {
+		try {
+			const cmd = process.platform === "darwin" ? ["open", reviewUrl] : ["xdg-open", reviewUrl]
+			spawn(cmd[0], cmd.slice(1), { stdio: "ignore", detached: true }).unref()
+		} catch { /* */ }
+	}
+
+	openBrowser()
+
+	// Retry loop: wait → check → reopen if needed → wait again
+	for (let attempt = 0; attempt < 3; attempt++) {
+		try {
+			await waitForSession(session.session_id, 10 * 60 * 1000) // 10 min per attempt
+		} catch {
+			// Timeout — check if session is still pending (user might still be looking)
+			const check = getSession(session.session_id)
+			if (check && check.session_type === "review" && check.status === "decided") {
+				// Decided while we were handling the timeout
+				return { decision: check.decision, feedback: check.feedback, annotations: check.annotations }
+			}
+			// Still pending — try reopening the browser
+			if (attempt < 2) {
+				console.error(`[haiku] Review session timeout (attempt ${attempt + 1}/3) — reopening browser`)
+				openBrowser()
+				continue
+			}
+		}
+
+		const updated = getSession(session.session_id)
+		if (updated && updated.session_type === "review" && updated.status === "decided") {
+			return { decision: updated.decision, feedback: updated.feedback, annotations: updated.annotations }
+		}
+	}
+
+	throw new Error("Review timeout after 3 attempts (30 min total)")
+})
+
+// Wire up elicitation fallback for when the review UI fails
+setElicitInputHandler(async (params) => {
+	return server.elicitInput(params as Parameters<typeof server.elicitInput>[0])
 })
 
 // Start server
@@ -837,8 +972,11 @@ process.on("SIGTERM", async () => {
 	process.exit(0)
 })
 
+import { reportError } from "./sentry.js"
+
 // MCP server entry point — invoked by: haiku mcp
 main().catch((err) => {
+	reportError(err, { context: "mcp-server-fatal" })
 	console.error("Fatal error:", err)
 	process.exit(1)
 })

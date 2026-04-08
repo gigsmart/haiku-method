@@ -24,7 +24,7 @@ A "shotgun debugging" approach (trying random fixes) would be inefficient and ri
 ## Phase 1: Elaboration
 
 ```
-User: /haiku:elaborate
+User: /haiku:new
 
 I want to fix intermittent 500 errors on checkout. About 2% of
 checkouts fail with database timeout errors. Been happening for

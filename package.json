@@ -1,6 +1,5 @@
 {
   "name": "haiku-method",
-  "version": "0.0.0",
   "private": true,
   "workspaces": ["website", "packages/haiku", "packages/shared"],
   "scripts": {

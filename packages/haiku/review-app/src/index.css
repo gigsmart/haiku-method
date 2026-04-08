@@ -8,6 +8,10 @@
 [role="tabpanel"][hidden] { display: none; }
 /* Smooth transitions for theme switch */
 html { transition: background-color 0.2s, color 0.2s; }
+/* Prevent table overflow — wrap in scrollable container */
+table { display: block; overflow-x: auto; max-width: 100%; }
+/* Prose code blocks should also scroll */
+pre { overflow-x: auto; }
 
 /* Annotation pin markers */
 .annotation-pin {

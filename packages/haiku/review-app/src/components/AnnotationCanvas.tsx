@@ -4,6 +4,8 @@ export interface AnnotationPin {
   x: number; // percentage
   y: number; // percentage
   text: string;
+  /** Unique identifier for this pin */
+  id: string;
 }
 
 export interface AnnotationCaptureData {
@@ -14,9 +16,16 @@ export interface AnnotationCaptureData {
 interface Props {
   imageUrl: string;
   onCapture?: (data: AnnotationCaptureData) => void;
+  /** Called whenever pins change so parent can track them */
+  onPinsChange?: (pins: AnnotationPin[]) => void;
 }
 
-export function AnnotationCanvas({ imageUrl }: Props) {
+let _pinIdCounter = 0;
+function nextPinId(): string {
+  return `pin-${++_pinIdCounter}-${Date.now()}`;
+}
+
+export function AnnotationCanvas({ imageUrl, onPinsChange }: Props) {
   const imgRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -24,6 +33,11 @@ export function AnnotationCanvas({ imageUrl }: Props) {
   const [tool, setTool] = useState<"pin" | "pen">("pin");
   const [pins, setPins] = useState<AnnotationPin[]>([]);
   const [activePin, setActivePin] = useState<number | null>(null);
+  const [tooltipState, setTooltipState] = useState<{ x: number; y: number; text: string } | null>(null);
+  const [pendingPin, setPendingPin] = useState<{ x: number; y: number; pctX: number; pctY: number } | null>(null);
+  const [pendingPinText, setPendingPinText] = useState("");
+  const pendingPinTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const pendingPinRef = useRef<HTMLDivElement>(null);
   const drawHistoryRef = useRef<ImageData[]>([]);
   const isDrawingRef = useRef(false);
 
@@ -129,16 +143,30 @@ export function AnnotationCanvas({ imageUrl }: Props) {
     if (tool !== "pin") return;
     e.preventDefault();
     const pct = getPctCoords(e);
-    setPins((prev) => [...prev, { x: pct.x, y: pct.y, text: "" }]);
+    const wrapperRect = wrapperRef.current?.getBoundingClientRect();
+    if (!wrapperRect) return;
+    const pixelX = e.clientX - wrapperRect.left;
+    const pixelY = e.clientY - wrapperRect.top;
+    setPendingPin({ x: pixelX, y: pixelY, pctX: pct.x, pctY: pct.y });
+    setPendingPinText("");
+    setTimeout(() => pendingPinTextareaRef.current?.focus(), 0);
   }
 
-  function updatePinText(index: number, text: string) {
-    setPins((prev) => prev.map((p, i) => (i === index ? { ...p, text } : p)));
+  function handleSavePin() {
+    if (!pendingPin) return;
+    const newPin: AnnotationPin = { x: pendingPin.pctX, y: pendingPin.pctY, text: pendingPinText.trim(), id: nextPinId() };
+    setPins((prev) => {
+      const next = [...prev, newPin];
+      onPinsChange?.(next);
+      return next;
+    });
+    setPendingPin(null);
+    setPendingPinText("");
   }
 
-  function removePin(index: number) {
-    setPins((prev) => prev.filter((_, i) => i !== index));
-    setActivePin(null);
+  function handleCancelPin() {
+    setPendingPin(null);
+    setPendingPinText("");
   }
 
   function handleUndo() {
@@ -165,8 +193,41 @@ export function AnnotationCanvas({ imageUrl }: Props) {
     }
     drawHistoryRef.current = [];
     setPins([]);
+    onPinsChange?.([]);
     setActivePin(null);
   }
+
+  // Compute tooltip position relative to wrapper when activePin changes
+  useEffect(() => {
+    if (activePin === null || !wrapperRef.current) {
+      setTooltipState(null);
+      return;
+    }
+    const pin = pins[activePin];
+    if (!pin || !pin.text) {
+      setTooltipState(null);
+      return;
+    }
+    const wrapperRect = wrapperRef.current.getBoundingClientRect();
+    setTooltipState({
+      x: (pin.x / 100) * wrapperRect.width,
+      y: (pin.y / 100) * wrapperRect.height - 20,
+      text: pin.text,
+    });
+  }, [activePin, pins]);
+
+  // Close pending pin popover on outside clicks
+  useEffect(() => {
+    if (!pendingPin) return;
+    function handleDown(e: MouseEvent) {
+      if (pendingPinRef.current && !pendingPinRef.current.contains(e.target as Node)) {
+        setPendingPin(null);
+        setPendingPinText("");
+      }
+    }
+    document.addEventListener("mousedown", handleDown);
+    return () => document.removeEventListener("mousedown", handleDown);
+  }, [pendingPin]);
 
   return (
     <div className="relative">
@@ -205,103 +266,115 @@ export function AnnotationCanvas({ imageUrl }: Props) {
         </button>
         <div className="flex-1" />
         <span className="text-xs text-stone-500 dark:text-stone-400">
-          {tool === "pin" ? "Pin mode" : "Pen mode"}
+          {tool === "pin" ? "Click to add pin" : "Draw to annotate"}
         </span>
       </div>
 
-      <div className="flex gap-4">
-        {/* Canvas area */}
-        <div className="flex-1 min-w-0">
-          <div
-            ref={wrapperRef}
-            className="relative inline-block border border-stone-200 dark:border-stone-700 rounded-lg overflow-hidden bg-stone-100 dark:bg-stone-800 cursor-crosshair"
-          >
-            <img
-              ref={imgRef}
-              src={imageUrl}
-              alt="Content to annotate"
-              className="block max-w-full h-auto select-none"
-              draggable={false}
-            />
-            <canvas
-              ref={canvasRef}
-              className="absolute top-0 left-0 w-full h-full"
-              style={{ pointerEvents: "auto" }}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              onClick={handleCanvasClick}
-            />
-            {/* Pin markers */}
-            <div className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: "none" }}>
-              {pins.map((pin, i) => (
-                <div
-                  key={i}
-                  className={`annotation-pin ${activePin === i ? "selected" : ""}`}
-                  style={{ left: `${pin.x}%`, top: `${pin.y}%`, pointerEvents: "auto" }}
-                  role="button"
-                  aria-label={`Annotation ${i + 1}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActivePin(i);
-                  }}
-                  onMouseEnter={() => setActivePin(i)}
-                  onMouseLeave={() => setActivePin(null)}
-                >
-                  {i + 1}
-                </div>
-              ))}
+      {/* Canvas area — full width, no sidebar */}
+      <div
+        ref={wrapperRef}
+        className="relative inline-block border border-stone-200 dark:border-stone-700 rounded-lg overflow-hidden bg-stone-100 dark:bg-stone-800 cursor-crosshair"
+      >
+        <img
+          ref={imgRef}
+          src={imageUrl}
+          alt="Content to annotate"
+          className="block max-w-full h-auto select-none"
+          draggable={false}
+        />
+        <canvas
+          ref={canvasRef}
+          className="absolute top-0 left-0 w-full h-full"
+          style={{ pointerEvents: "auto" }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onClick={handleCanvasClick}
+        />
+        {/* Pin markers with hover tooltip */}
+        <div className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: "none" }}>
+          {pins.map((pin, i) => (
+            <div
+              key={pin.id}
+              className={`annotation-pin ${activePin === i ? "selected" : ""}`}
+              data-pin-id={pin.id}
+              style={{ left: `${pin.x}%`, top: `${pin.y}%`, pointerEvents: "auto" }}
+              role="button"
+              aria-label={`Annotation ${i + 1}${pin.text ? `: ${pin.text}` : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActivePin(i);
+              }}
+              onMouseEnter={() => setActivePin(i)}
+              onMouseLeave={() => setActivePin(null)}
+            >
+              {i + 1}
             </div>
-          </div>
+          ))}
         </div>
 
-        {/* Comments sidebar */}
-        <div className="w-64 shrink-0 bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 shadow-sm overflow-hidden flex flex-col" style={{ maxHeight: 600 }}>
-          <div className="px-3 py-2 border-b border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800">
-            <h3 className="text-sm font-semibold text-stone-700 dark:text-stone-300">
-              Annotations <span className="text-stone-400 dark:text-stone-500">({pins.length})</span>
-            </h3>
+        {/* Tooltip on hover */}
+        {tooltipState && !pendingPin && (
+          <div
+            className="absolute z-50 max-w-xs px-3 py-2 bg-stone-800 dark:bg-stone-200 text-white dark:text-stone-900 text-xs rounded-lg shadow-lg pointer-events-none"
+            style={{
+              left: tooltipState.x,
+              top: tooltipState.y,
+              transform: "translate(-50%, -100%)",
+            }}
+          >
+            <p className="font-medium">{tooltipState.text}</p>
+            <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-stone-800 dark:border-t-stone-200" />
           </div>
-          <div className="flex-1 overflow-y-auto p-2 space-y-2">
-            {pins.length === 0 && (
-              <p className="text-xs text-stone-400 dark:text-stone-500 italic p-2">
-                Click on the image to add annotation pins.
-              </p>
-            )}
-            {pins.map((pin, i) => (
-              <div
-                key={i}
-                className={`comment-entry bg-stone-50 dark:bg-stone-800/50 ${activePin === i ? "active" : ""}`}
-                onMouseEnter={() => setActivePin(i)}
-                onMouseLeave={() => setActivePin(null)}
+        )}
+
+        {/* Inline pin comment input */}
+        {pendingPin && (
+          <div
+            ref={pendingPinRef}
+            className="absolute z-50 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-600 rounded-lg shadow-lg p-3 w-64"
+            style={{
+              left: pendingPin.x,
+              top: pendingPin.y + 10,
+            }}
+          >
+            <textarea
+              ref={pendingPinTextareaRef}
+              className="w-full min-h-[60px] p-2 border border-stone-300 dark:border-stone-600 rounded-md bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-y"
+              placeholder="Add a comment for this pin..."
+              value={pendingPinText}
+              onChange={(e) => setPendingPinText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  handleSavePin();
+                }
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  handleCancelPin();
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); handleCancelPin(); }}
+                className="px-3 py-1 text-xs font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-md transition-colors"
               >
-                <div className="flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-rose-600 text-white text-[10px] font-bold inline-flex items-center justify-center flex-shrink-0 mt-0.5">
-                    {i + 1}
-                  </span>
-                  <textarea
-                    className="flex-1 text-xs p-1.5 border border-stone-300 dark:border-stone-600 rounded bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 resize-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
-                    rows={2}
-                    placeholder="Add comment..."
-                    aria-label={`Comment for annotation ${i + 1}`}
-                    value={pin.text}
-                    onChange={(e) => updatePinText(i, e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="text-stone-400 hover:text-red-500 text-xs mt-0.5"
-                    aria-label={`Delete annotation ${i + 1}`}
-                    title="Delete"
-                    onClick={() => removePin(i)}
-                  >
-                    &times;
-                  </button>
-                </div>
-              </div>
-            ))}
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); handleSavePin(); }}
+                className="px-3 py-1 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-md transition-colors"
+              >
+                Save
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -380,6 +453,7 @@ export function captureAnnotations(
       x: Math.round(p.x * 100) / 100,
       y: Math.round(p.y * 100) / 100,
       text: p.text,
+      id: p.id,
     })),
   };
 }

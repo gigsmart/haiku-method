@@ -9,10 +9,10 @@ export const metadata: Metadata = {
 
 const stageLoop = [
 	{
-		phase: "Decompose",
+		phase: "Elaborate",
 		color: "bg-pink-50 border-pink-200 dark:bg-pink-950/20 dark:border-pink-800",
 		textColor: "text-pink-600 dark:text-pink-400",
-		description: "The planner hat reads the stage definition (STAGE.md), prior stage artifacts, and global knowledge. It decomposes the stage's work into units with verifiable completion criteria.",
+		description: "The planner hat reads the stage definition (STAGE.md), prior stage artifacts, and global knowledge. It elaborates the stage's work into units with verifiable completion criteria.",
 		output: "Units with frontmatter: status, dependencies, criteria",
 	},
 	{
@@ -135,7 +135,7 @@ export default function HowItWorksPage() {
 								<div className="rounded-lg bg-white/70 p-3 dark:bg-stone-950/40">
 									<div className="mb-1 text-sm font-semibold text-teal-700 dark:text-teal-300">Criteria validation</div>
 									<p className="text-xs text-stone-600 dark:text-stone-400">
-										Reviews the AI&apos;s proposed completion criteria and unit decomposition. Adjusts scope, adds constraints, removes unnecessary work.
+										Reviews the AI&apos;s proposed completion criteria and unit elaboration. Adjusts scope, adds constraints, removes unnecessary work.
 									</p>
 								</div>
 							</div>
@@ -154,7 +154,7 @@ export default function HowItWorksPage() {
 									</p>
 								</div>
 								<div className="rounded-lg bg-white/70 p-3 dark:bg-stone-950/40">
-									<div className="mb-1 text-sm font-semibold text-indigo-700 dark:text-indigo-300">Decomposition</div>
+									<div className="mb-1 text-sm font-semibold text-indigo-700 dark:text-indigo-300">Elaboration</div>
 									<p className="text-xs text-stone-600 dark:text-stone-400">
 										Breaks the intent into units with dependencies (a DAG). Each unit has specific, verifiable completion criteria — not vague descriptions, but checkboxes the reviewer can verify.
 									</p>
@@ -193,7 +193,7 @@ export default function HowItWorksPage() {
 								<h4 className="mb-2 text-sm font-bold text-purple-700 dark:text-purple-300">Discrete Mode</h4>
 								<div className="space-y-2 text-xs text-stone-600 dark:text-stone-400">
 									<p>
-										<strong className="text-stone-900 dark:text-stone-100">Elaboration:</strong> Same interactive process — AI proposes criteria and decomposition, human validates.
+										<strong className="text-stone-900 dark:text-stone-100">Elaboration:</strong> Same interactive process — AI proposes criteria and elaboration, human validates.
 									</p>
 									<p>
 										<strong className="text-stone-900 dark:text-stone-100">Execution:</strong> Human invokes each stage manually with <code className="text-purple-600 dark:text-purple-400">/haiku:run</code>. Within a stage, the AI runs autonomously through that stage&apos;s hat sequence (e.g., planner→builder→reviewer for development, or threat-modeler→red-team→blue-team→security-reviewer for security), but it stops after the stage completes.
@@ -558,7 +558,7 @@ Implement REST API endpoints for user authentication...
 					<div className="mt-6 rounded-xl border border-teal-200 bg-teal-50 p-5 dark:border-teal-800 dark:bg-teal-950/20">
 						<p className="text-sm text-teal-800 dark:text-teal-200">
 							<strong>This is what makes H·AI·K·U domain-agnostic.</strong> The core loop
-							(decompose, execute, review, gate) is universal. The persistence layer is the only
+							(elaborate, execute, review, gate) is universal. The persistence layer is the only
 							thing that changes between domains. Git is just one adapter.
 						</p>
 					</div>
@@ -715,7 +715,7 @@ Implement REST API endpoints for user authentication...
 										},
 										{
 											icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>,
-											label: "Decompose",
+											label: "Elaborate",
 											detail: "Break intent into units with criteria and dependencies",
 											who: "both",
 										},
@@ -749,7 +749,7 @@ Implement REST API endpoints for user authentication...
 									))}
 								</div>
 								<p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
-									The first stage varies by studio &mdash; inception for software, research for ideation &mdash; but it always does the deep elaboration work: discovery, decomposition, and criteria definition.
+									The first stage varies by studio &mdash; inception for software, research for ideation &mdash; but it always does the deep elaboration work: discovery, elaboration, and criteria definition.
 								</p>
 							</div>
 

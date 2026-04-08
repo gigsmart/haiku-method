@@ -22,8 +22,8 @@ export default function DocsPage() {
 				<h2>Getting Started</h2>
 				<p>Install the H·AI·K·U plugin in your Claude environment:</p>
 				<div className="not-prose my-4 rounded-lg bg-stone-100 p-4 font-mono text-sm dark:bg-stone-800">
-					<div><code>/plugin marketplace add TheBushidoCollective/haiku-method</code></div>
-					<div><code>/plugin install haiku@TheBushidoCollective-haiku-method --scope project</code></div>
+					<div><code>/plugin marketplace add thebushidocollective/ai-dlc</code></div>
+					<div><code>/plugin install haiku@thebushidocollective-ai-dlc --scope project</code></div>
 				</div>
 
 				<p>Then use the stage commands to structure your workflow:</p>

@@ -29,11 +29,15 @@ export {
   parseStageStates,
   parseKnowledgeFiles,
   parseStageArtifacts,
+  parseOutputArtifacts,
 } from "./parser.js";
+
+export type { OutputArtifact } from "./parser.js";
 
 export {
   buildDAG,
   topologicalSort,
   getReadyUnits,
+  computeWaves,
   toMermaidDefinition,
 } from "./dag.js";

@@ -57,3 +57,4 @@ terraform.tfvars
 .claude/worktrees
 .ai-dlc/quick/
 bun.lock
+plugin/bin/haiku.map

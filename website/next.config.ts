@@ -1,4 +1,5 @@
 import type { NextConfig } from "next"
+import { withSentryConfig } from "@sentry/nextjs"
 
 const isDev = process.env.NODE_ENV === "development"
 
@@ -10,4 +11,6 @@ const nextConfig: NextConfig = {
 	trailingSlash: true,
 }
 
-export default nextConfig
+export default withSentryConfig(nextConfig, {
+	silent: true,
+})

@@ -305,10 +305,10 @@
     "revisions": [
       {
         "version": "2",
-        "date": "2026-04-04",
-        "commitHash": "6237a37",
-        "fullCommitHash": "6237a374e2973c4b5427292d9a6bd492cb8072ac",
-        "commitMessage": "feat: comprehensive docs update + binary rename to 'haiku'",
+        "date": "2026-04-07",
+        "commitHash": "9c2f591",
+        "fullCommitHash": "9c2f59141748c5a710755043078d461688bb3135",
+        "commitMessage": "refactor: rename decompose phase to elaborate across entire project",
         "stats": {
           "linesAdded": 264,
           "linesRemoved": 992
@@ -430,7 +430,7 @@
             "section": "The Stage Loop",
             "originalSection": "The Stage Loop",
             "isNew": true,
-            "linesAdded": 9,
+            "linesAdded": 10,
             "linesRemoved": 0
           },
           {

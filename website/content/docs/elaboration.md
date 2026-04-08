@@ -83,7 +83,7 @@ The AI proposes **3-7 verifiable success criteria** based on the domain model an
 
 The AI also asks about non-functional requirements (performance targets, security needs, accessibility level) and adds those as criteria.
 
-### 7. Unit Decomposition
+### 7. Unit Elaboration
 
 For complex intents, the AI breaks the work into **units** -- independent pieces with clear boundaries. Each unit has:
 
@@ -94,7 +94,7 @@ For complex intents, the AI breaks the work into **units** -- independent pieces
 
 You review each unit individually and approve, request changes, or ask for a rethink.
 
-Simple intents (single concern, single area of code) get a single unit -- no decomposition needed.
+Simple intents (single concern, single area of code) get a single unit -- no elaboration needed.
 
 ### 8. Git Strategy
 
@@ -140,7 +140,7 @@ These project-level settings affect inception behavior:
 | `default_announcements` | What formats to generate on completion (changelog, release notes, etc.) |
 | `default_studio` | Which studio to use by default for new intents |
 | `visual_review` | Use browser-based review UI at inception gates |
-| `granularity` | How finely to decompose units (coarse / standard / fine) |
+| `granularity` | How finely to elaborate units (coarse / standard / fine) |
 | Providers | Ticketing, spec, design, and comms integrations |
 
 ### Autonomous Mode

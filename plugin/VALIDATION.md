@@ -12,7 +12,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 - [ ] Unit state lives in `unit-*.md` frontmatter (`bolt`, `hat`, `status`, `started_at`, `completed_at`)
 - [ ] Stage state lives in `stages/{stage}/state.json` (`phase`, `status`, `started_at`, `completed_at`, `gate_entered_at`, `gate_outcome`)
 - [ ] No lifecycle state is stored in `state/iteration.json` (deprecated)
-- [ ] Every state write goes through MCP tools (`haiku_intent_set`, `haiku_stage_set`, `haiku_unit_set`, etc.) — exception: hooks may write directly for auto-reconciliation (post-merge, auto-complete)
+- [ ] Stage/intent lifecycle transitions are performed by the `haiku_run_next` FSM driver — the agent never mutates stage or intent state directly. Intent creation goes through `haiku_intent_create`. Unit-level writes go through `haiku_unit_start`, `haiku_unit_advance_hat`, `haiku_unit_complete`, `haiku_unit_fail`, `haiku_unit_increment_bolt`, and `haiku_unit_set`. Exception: hooks may write directly for auto-reconciliation (post-merge, auto-complete)
 - [ ] Lifecycle transitions (stage start/complete, unit start/complete) are committed to git automatically. Incremental updates (hat advance, bolt increment, phase set) are committed by the agent as part of its workflow.
 
 ### Orchestration
@@ -35,9 +35,9 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 
 ### Visual Review Enforcement (RFC 2119)
 
-- [ ] Elaboration plan MUST be presented via `open_review` — never as plain conversation text
-- [ ] `open_review` MUST run in a background subagent (it blocks until user responds)
-- [ ] Gate ask MUST use `open_review` or verify the auto-opened review — never text-only approval
+- [ ] Elaboration plan MUST be presented via review UI — never as plain conversation text
+- [ ] FSM handles this internally via `haiku_run_next` (blocks until user responds)
+- [ ] Gates are handled by the FSM — `haiku_run_next` opens review UI, blocks, returns decision (`advance_stage` or `changes_requested`)
 - [ ] Rich content during elaboration (specs, wireframes, comparisons) MUST use `ask_user_visual_question`
 - [ ] Design direction choices MUST use `pick_design_direction`
 - [ ] Plain conversation text is ONLY for simple clarification questions — MUST NOT present plans or reviews as text
@@ -55,6 +55,23 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 - [ ] One PR per intent — units do not produce separate PRs
 - [ ] Intent branches follow: `haiku/{intent-slug}/main`
 
+### Session Integrity
+
+- [ ] One intent per session — `haiku_intent_create` rejects if the session already has an active intent
+- [ ] Session events are logged to `haiku.jsonl` for replay and demos
+- [ ] Conversation context captured in intent knowledge when provided
+
+### Worktree Isolation
+
+- [ ] Intent gets its own branch (`haiku/{intent-slug}/main`) on first stage start
+- [ ] Every unit gets its own worktree off the intent branch via `createUnitWorktree`
+- [ ] `haiku_unit_complete` merges unit worktree back to intent branch
+- [ ] Main agent stays on intent branch — only subagents work in unit worktrees
+- [ ] Worktree cleanup happens on unit completion (`mergeUnitWorktree`)
+- [ ] Intent branch is NOT merged to main automatically — user creates PR/MR
+- [ ] Multiple sessions cannot pollute each other's intent work (branch isolation)
+- [ ] If git is not available, worktree operations are non-fatal (graceful degradation)
+
 ---
 
 ## Scenario 1: New Intent Through Full Lifecycle (Software Studio)
@@ -63,29 +80,37 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 
 ### Expected Flow
 
-1. **Intent creation:**
+1. **Intent creation** (via `haiku_intent_create` with elicitation):
+   - [ ] `haiku_intent_create` uses MCP elicitation to gather title, studio, mode from the user
    - [ ] `intent.md` created with: title, studio: software, stages: [...], mode, status: active, started_at: now
    - [ ] `.haiku/intents/{slug}/` directory created with `knowledge/` subdirectory
-   - [ ] MCP tool `haiku_intent_set` used to set initial fields
+   - [ ] Intent fields set during creation (mode, studio, etc.)
+   - [ ] One intent per session — `haiku_intent_create` rejects if session already has an active intent
 
 2. **First `/haiku:run`:**
-   - [ ] `haiku_run_next` returns `start_stage` with stage: inception, hats: [architect, decomposer]
-   - [ ] Agent calls `haiku_stage_start { intent, stage: inception }`
-   - [ ] `state.json` created with phase: decompose
+   - [ ] `haiku_run_next` returns `start_stage` with stage: inception, hats: [architect, elaborator]
+   - [ ] Orchestrator performs FSM side effects: writes `state.json` (status: active, phase: elaborate), sets `active_stage`, creates intent branch
+   - [ ] Agent follows the returned action
 
 3. **Elaboration:**
-   - [ ] `haiku_run_next` returns `decompose`
+   - [ ] `haiku_run_next` returns `elaborate`
    - [ ] Agent reads STAGE.md for inception: inputs, unit_types, criteria guidance
    - [ ] Agent writes unit files to `stages/inception/units/`
-   - [ ] Agent calls `haiku_stage_set { phase: execute }`
+   - [ ] Agent calls `haiku_run_next` — orchestrator detects units exist, advances phase to execute
+   - [ ] Spec review gate opens between elaborate and execute (user must approve specs)
+   - [ ] Unit type validation blocks transition if units have wrong types for the stage
 
 4. **Execution:**
    - [ ] `haiku_run_next` returns `start_unit` with first ready unit and first hat
+   - [ ] Wave-based execution — units grouped by dependency depth, independent units run in parallel
+   - [ ] Agent spawns one subagent per hat — main agent orchestrates
    - [ ] Agent calls `haiku_unit_start { intent, stage, unit, hat }`
    - [ ] Agent loads hat definition from `stages/inception/hats/{hat}.md`
-   - [ ] Agent executes hat's work
-   - [ ] Agent calls `haiku_unit_advance_hat` for next hat, or `haiku_unit_complete` when done
+   - [ ] Subagent executes hat's work
+   - [ ] Subagent calls `haiku_unit_advance_hat` (success) or `haiku_unit_fail` (failure)
+   - [ ] Agent calls `haiku_unit_complete` when all hats pass
    - [ ] If criteria not met: `haiku_unit_increment_bolt` and retry
+   - [ ] Output validation blocks execute to review transition if required outputs missing
 
 5. **Adversarial review:**
    - [ ] `haiku_run_next` returns `review` when all units complete
@@ -94,11 +119,11 @@ These must ALWAYS be true regardless of studio, stage, or user action.
    - [ ] Agents run in parallel, findings collected
    - [ ] HIGH findings trigger fixes (up to 3 cycles)
 
-6. **Persist + Gate:**
-   - [ ] Stage outputs persisted to scoped locations
+6. **Gate:**
    - [ ] `haiku_run_next` returns appropriate gate action based on `review:` in STAGE.md
-   - [ ] Inception has `review: auto` → returns `advance_stage`
-   - [ ] Agent calls `haiku_stage_complete` + `haiku_intent_set { active_stage: design }`
+   - [ ] Inception has `review: auto` → orchestrator auto-advances (completes stage, sets active_stage)
+   - [ ] For `review: ask` gates, `haiku_run_next` opens review UI internally, blocks, returns `advance_stage` (approved) or `changes_requested` (denied)
+   - [ ] `haiku_run_next` returns `advance_stage` with mutations already applied
 
 7. **Continuous mode:**
    - [ ] After gate passes, `haiku_run_next` returns `start_stage` for design
@@ -107,14 +132,16 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 
 8. **Completion:**
    - [ ] After final stage gate passes, `haiku_run_next` returns `intent_complete`
-   - [ ] Agent calls `haiku_intent_set { status: completed, completed_at: now }`
+   - [ ] Orchestrator has already marked intent as completed (status: completed, completed_at: now)
 
 ### Telemetry Verification
 
+- [ ] `haiku.intent.created` emitted on intent creation
 - [ ] `haiku.stage.started` emitted for each stage
 - [ ] `haiku.stage.completed` emitted with gate_outcome
 - [ ] `haiku.unit.started` emitted with hat
 - [ ] `haiku.unit.completed` emitted
+- [ ] `haiku.unit.failed` emitted on hat failure
 - [ ] `haiku.hat.transition` emitted for each hat change
 - [ ] `haiku.bolt.iteration` emitted for each retry
 
@@ -134,11 +161,10 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 
 **Trigger:** Stage has `review: ask` (e.g., development stage).
 
-- [ ] `haiku_run_next` returns `gate_ask`
-- [ ] Agent presents stage summary via `AskUserQuestion`
-- [ ] On approval: agent calls `haiku_gate_approve { intent, stage }`
-- [ ] `haiku_run_next` then returns `advance_stage` (continuous) or `stage_complete_discrete` (discrete)
-- [ ] On denial: agent stops, no state change
+- [ ] `haiku_run_next` handles the gate internally — opens review UI, blocks until user responds
+- [ ] `haiku_run_next` returns `advance_stage` (approved, continuous) or `stage_complete_discrete` (approved, discrete)
+- [ ] `haiku_run_next` returns `changes_requested` (denied) — agent addresses feedback
+- [ ] If review UI fails, falls back to MCP elicitation
 
 ---
 
@@ -146,9 +172,8 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 
 **Trigger:** Stage has `review: await` (e.g., sales proposal).
 
-- [ ] `haiku_run_next` returns `gate_await`
+- [ ] `haiku_run_next` returns `gate_await` — orchestrator enters the gate (sets gate_entered_at)
 - [ ] Agent reports what is being awaited
-- [ ] Agent calls `haiku_stage_complete { gate_outcome: awaiting }`
 - [ ] Intent blocks until user runs `/haiku:run` again
 - [ ] On resume: agent confirms event occurred, then advances
 
@@ -158,9 +183,8 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 
 **Trigger:** Stage has `review: external` (e.g., product stage).
 
-- [ ] `haiku_run_next` returns `gate_external`
-- [ ] Agent pushes branch and creates PR/MR
-- [ ] Agent calls `haiku_stage_complete { gate_outcome: blocked }`
+- [ ] `haiku_run_next` returns `gate_external` — orchestrator enters the gate (sets gate_entered_at)
+- [ ] FSM returns `external_review_requested` — agent/user submits for review through their project's process
 - [ ] Intent blocks until external review resolves
 
 ---
@@ -186,7 +210,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 - [ ] Parameters substituted: `{{ feature }}` → "OAuth login" in all criteria
 - [ ] Pre-filled units created in appropriate stages
 - [ ] First `/haiku:run` skips elaboration (units already exist)
-- [ ] `haiku_run_next` returns `advance_phase` from decompose to execute
+- [ ] `haiku_run_next` returns `advance_phase` from elaborate to execute
 
 ---
 
@@ -269,12 +293,15 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 - [ ] `ensure-deps`: no-op (Node is the only dependency)
 
 ### PreToolUse
-- [ ] `redirect-plan-mode`: blocks EnterPlanMode, suggests `/haiku:elaborate`
+- [ ] `redirect-plan-mode`: blocks EnterPlanMode, suggests `/haiku:new`
+- [ ] `inject-state-file`: injects `state_file` arg into `haiku_` MCP tool calls
+- [ ] `guard-fsm-fields`: blocks direct edits to FSM-controlled fields in haiku state files
 - [ ] `prompt-guard`: warns on injection patterns in `.haiku/` file writes
 - [ ] `workflow-guard`: warns on edits outside active hat scope
 - [ ] `subagent-hook`: injects H·AI·K·U context into Agent/Task/Skill calls
 
 ### PostToolUse
+- [ ] `validate-unit-type`: warns on unit file writes with wrong types for the stage
 - [ ] `context-monitor`: warns at 35% and 25% context remaining
 
 ### Stop
@@ -297,7 +324,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 - [ ] `haiku hook <name>`: executes the named hook
 - [ ] `haiku migrate`: migrates `.ai-dlc/` to `.haiku/`
 - [ ] Unknown command: exits with error and usage message
-- [ ] Binary is a single file at `plugin/bin/haiku` (~500KB minified)
+- [ ] Binary is a single file at `plugin/bin/haiku` (~1.1MB minified, includes review SPA inlined)
 - [ ] Shebang (`#!/usr/bin/env node`) makes it directly executable
 - [ ] Zero external dependencies at runtime (no jq, yq, or npm install)
 
@@ -374,39 +401,128 @@ packages/
       state-tools.ts            # CRUD tools for intents, stages, units
       telemetry.ts              # automatic OTEL event emission
       migrate.ts                # .ai-dlc → .haiku migration
-      hooks/                    # all 10 hooks in TypeScript
+      hooks/                    # all hooks in TypeScript
 ```
 
-### MCP Tools (16 state/knowledge + 2 orchestrator + 4 review/visual = 22 total)
+### MCP Tools (23 total)
+
+**Orchestrator (3):**
 
 | Tool | Purpose |
 |------|---------|
-| `haiku_intent_get/set/list` | Read/write intent frontmatter |
-| `haiku_stage_get/set/start/complete` | Read/write stage state.json |
-| `haiku_unit_get/set/list/start/complete/advance_hat/increment_bolt` | Read/write unit frontmatter |
-| `haiku_knowledge_list/read` | Read knowledge artifacts |
-| `haiku_run_next` | Get next orchestrator action |
-| `haiku_gate_approve` | Approve an ask gate |
-| `open_review` | Open visual review page in the browser for an intent or unit |
-| `get_review_status` | Check the status and decision of a review session |
+| `haiku_run_next` | Get next orchestrator action (FSM driver) |
+| `haiku_go_back` | Navigate to a prior stage or phase |
+| `haiku_intent_create` | Create a new intent (with elicitation) |
+
+**Unit write (6):**
+
+| Tool | Purpose |
+|------|---------|
+| `haiku_unit_start` | Start a unit (set hat, status: active) |
+| `haiku_unit_advance_hat` | Advance to next hat (success) |
+| `haiku_unit_complete` | Mark unit complete |
+| `haiku_unit_fail` | Mark hat failure on a unit |
+| `haiku_unit_increment_bolt` | Increment bolt (retry cycle) |
+| `haiku_unit_set` | Write arbitrary unit frontmatter fields |
+
+**Read-only (11):**
+
+| Tool | Purpose |
+|------|---------|
+| `haiku_intent_get` | Read intent frontmatter |
+| `haiku_intent_list` | List all intents |
+| `haiku_stage_get` | Read stage state.json |
+| `haiku_unit_get` | Read unit frontmatter |
+| `haiku_unit_list` | List units in a stage |
+| `haiku_knowledge_list` | List knowledge artifacts |
+| `haiku_knowledge_read` | Read a knowledge artifact |
+| `haiku_studio_list` | List available studios |
+| `haiku_studio_get` | Read studio definition |
+| `haiku_studio_stage_get` | Read a stage definition within a studio |
+| `haiku_settings_get` | Read plugin settings |
+
+**Visual (3):**
+
+| Tool | Purpose |
+|------|---------|
 | `ask_user_visual_question` | Ask the user questions via a rich HTML page in the browser |
 | `pick_design_direction` | Open a browser-based visual picker for choosing a design direction |
+| `get_review_status` | Check the status and decision of a review session |
 
 ### Automatic Telemetry
 
 Every MCP state transition emits its OTEL event — no manual calls needed:
 
-| MCP Tool | Event |
-|----------|-------|
-| `haiku_stage_start` | `haiku.stage.started` |
-| `haiku_stage_complete` | `haiku.stage.completed` |
-| `haiku_stage_set(phase)` | `haiku.stage.phase` |
-| `haiku_stage_set(gate_entered_at)` | `haiku.gate.entered` |
+| Source | Event |
+|--------|-------|
+| `haiku_intent_create` | `haiku.intent.created` |
+| `haiku_run_next` (FSM: start_stage) | `haiku.stage.started` |
+| `haiku_run_next` (FSM: complete_stage) | `haiku.stage.completed` |
+| `haiku_run_next` (FSM: advance_phase) | `haiku.stage.phase` |
+| `haiku_run_next` (FSM: gate_ask/external/await) | `haiku.gate.entered` |
+| `haiku_run_next` (FSM: gate resolved) | `haiku.gate.resolved` |
+| `haiku_run_next` (FSM: intent_complete) | `haiku.intent.completed` |
+| `haiku_run_next` | `haiku.orchestrator.action` |
+| `haiku_go_back` | `haiku.go_back.stage` / `haiku.go_back.phase` |
 | `haiku_unit_start` | `haiku.unit.started` |
 | `haiku_unit_complete` | `haiku.unit.completed` |
+| `haiku_unit_fail` | `haiku.unit.failed` |
 | `haiku_unit_advance_hat` | `haiku.hat.transition` |
 | `haiku_unit_increment_bolt` | `haiku.bolt.iteration` |
-| `haiku_run_next` | `haiku.orchestrator.action` |
+
+---
+
+## Scenario 16: Validation Audit (2026-04-07)
+
+Systematic validation of every critical behavior. Status: PASS/FAIL/PARTIAL.
+
+### Intent Lifecycle
+
+- [ ] **One intent per session** — `haiku_intent_create` rejects if session has active intent (PARTIAL: only when state_file provided)
+- [ ] **Conversation context captured** — intent creation should summarize prior conversation into the intent (FAIL: only description arg, no context)
+- [ ] **Pre-start confirmation** — intent reviewed before first stage begins (FAIL: no gate between creation and first haiku_run_next)
+- [ ] **Stage skipping** — `skip_stages` in intent frontmatter allows skipping stages (PASS)
+
+### Elaboration Quality
+
+- [ ] **Collaborative engagement enforced** — multi-turn conversation for collaborative stages, not just instructed (PARTIAL: instructional only)
+- [ ] **Proper tools for questions** — `ask_user_visual_question` for rich content during elaboration (PASS: mentioned in prompts)
+- [ ] **Adversarial review of elaboration** — review agents check specs BEFORE pre-execution gate (FAIL: no automated review of elaboration output)
+- [ ] **Discovery artifact validation** — discovery artifacts validated at elaborate→execute transition (FAIL: only outputs validated, not discovery)
+
+### Gate Enforcement
+
+- [ ] **Pre-execution review gate** — FSM blocks elaborate→execute until user approves (PASS: gate_review enforced)
+- [ ] **Inter-stage gating by mode** — auto advances in continuous, pauses in discrete, ask/external open review (PASS)
+- [ ] **Changes routing** — changes_requested stays in current phase, loops back (PASS)
+- [ ] **External review tracking** — URL stored and checked on resume (PARTIAL: field exists but not populated by gate flow)
+- [ ] **Await gate specification** — user told WHERE to trigger the external event (FAIL: no mechanism to specify trigger location)
+
+### Execution Quality
+
+- [ ] **Wave-based parallel execution** — units grouped by dependency waves (PASS)
+- [ ] **One subagent per hat** — main orchestrates, subagents do hat work (PASS)
+- [ ] **Advance/fail flow** — subagent calls advance_hat or unit_fail (PASS)
+- [ ] **Bolt limits** — maximum retry count prevents infinite loops (FAIL: no max bolt enforced)
+- [ ] **Output validation** — required outputs verified before review phase (PASS)
+
+### Studio Completeness
+
+- [ ] **All studios have hats** — every stage has hat definitions (PASS)
+- [ ] **All studios have review agents** — every stage has review-agent definitions (PASS)
+- [ ] **All studios have discovery definitions** — (FAIL: 7/19 studios missing discovery in some stages)
+- [ ] **All studios have output definitions** — (FAIL: only software studio has outputs; 18/19 missing)
+
+### Known Gaps (Must Fix)
+
+1. Output definitions missing in 18/19 studios — only software is complete
+2. No bolt limit — units can retry infinitely
+3. No discovery artifact validation at phase transition
+4. No adversarial review of elaboration artifacts before execution gate
+5. Conversation context not captured in intent creation
+6. No pre-start confirmation gate after intent creation
+7. Collaborative elaboration is instructional only, not enforced
+8. External/await gates don't track or specify where reviews are posted
 
 ---
 

@@ -15,7 +15,8 @@ const statusColors: Record<string, string> = {
 }
 
 const phaseColors: Record<string, string> = {
-	decompose: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+	elaborate: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+	decompose: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400", // backward compat
 	execute: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
 	review: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
 	persist: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",

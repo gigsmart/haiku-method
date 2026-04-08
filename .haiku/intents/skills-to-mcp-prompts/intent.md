@@ -1,12 +1,18 @@
 ---
-title: "Migrate Skills to MCP Prompts"
+title: Migrate Skills to MCP Prompts
 studio: software
-stages: [inception, design, product, development, operations, security]
+stages:
+  - inception
+  - design
+  - product
+  - development
+  - operations
+  - security
 mode: continuous
-active_stage: ""
-status: active
-started_at: 2026-04-06T19:47:00Z
-completed_at: null
+active_stage: security
+status: completed
+started_at: '2026-04-06'
+completed_at: '2026-04-07T09:57:00Z'
 ---
 
 # Migrate Skills to MCP Prompts

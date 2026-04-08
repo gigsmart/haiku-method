@@ -3,16 +3,18 @@
 // One tool per resource per operation. Under the hood: frontmatter + JSON files.
 // The caller doesn't need to know file paths — just resource identifiers.
 
-import { execSync } from "node:child_process"
+import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
+import { join, resolve } from "node:path"
 import { z } from "zod"
 import matter from "gray-matter"
 import { emitTelemetry } from "./telemetry.js"
+import { writeHaikuMetadata, logSessionEvent, type HaikuSessionMetadata } from "./session-metadata.js"
+import { mergeUnitWorktree } from "./git-worktree.js"
 
 // ── Path resolution ────────────────────────────────────────────────────────
 
-function findHaikuRoot(): string {
+export function findHaikuRoot(): string {
 	// Walk up from cwd looking for .haiku/
 	let dir = process.cwd()
 	for (let i = 0; i < 20; i++) {
@@ -24,20 +26,20 @@ function findHaikuRoot(): string {
 	throw new Error("No .haiku/ directory found")
 }
 
-function intentDir(slug: string): string {
+export function intentDir(slug: string): string {
 	return join(findHaikuRoot(), "intents", slug)
 }
 
-function stageDir(slug: string, stage: string): string {
+export function stageDir(slug: string, stage: string): string {
 	return join(intentDir(slug), "stages", stage)
 }
 
-function unitPath(slug: string, stage: string, unit: string): string {
+export function unitPath(slug: string, stage: string, unit: string): string {
 	const name = unit.endsWith(".md") ? unit : `${unit}.md`
 	return join(stageDir(slug, stage), "units", name)
 }
 
-function stageStatePath(slug: string, stage: string): string {
+export function stageStatePath(slug: string, stage: string): string {
 	return join(stageDir(slug, stage), "state.json")
 }
 
@@ -53,12 +55,12 @@ function normalizeDates(data: Record<string, unknown>): Record<string, unknown> 
 	return result
 }
 
-function parseFrontmatter(raw: string): { data: Record<string, unknown>; body: string } {
+export function parseFrontmatter(raw: string): { data: Record<string, unknown>; body: string } {
 	const { data, content } = matter(raw)
 	return { data: normalizeDates(data as Record<string, unknown>), body: content.trim() }
 }
 
-function setFrontmatterField(filePath: string, field: string, value: unknown): void {
+export function setFrontmatterField(filePath: string, field: string, value: unknown): void {
 	const raw = readFileSync(filePath, "utf8")
 	const parsed = matter(raw)
 	parsed.data[field] = value
@@ -82,17 +84,17 @@ function getNestedField(obj: Record<string, unknown>, path: string): unknown {
 	return current
 }
 
-function readJson(path: string): Record<string, unknown> {
+export function readJson(path: string): Record<string, unknown> {
 	if (!existsSync(path)) return {}
 	return JSON.parse(readFileSync(path, "utf8"))
 }
 
-function writeJson(path: string, data: Record<string, unknown>): void {
+export function writeJson(path: string, data: Record<string, unknown>): void {
 	mkdirSync(join(path, ".."), { recursive: true })
 	writeFileSync(path, JSON.stringify(data, null, 2) + "\n")
 }
 
-function timestamp(): string {
+export function timestamp(): string {
 	return new Date().toISOString().replace(/\.\d{3}Z$/, "Z")
 }
 
@@ -100,14 +102,146 @@ function timestamp(): string {
  * Git add + commit for lifecycle state changes.
  * Non-fatal: git failures are logged but never crash the MCP.
  */
-function gitCommitState(message: string): void {
+export function gitCommitState(message: string): void {
 	try {
 		const haikuRoot = findHaikuRoot()
-		execSync(`git add "${haikuRoot}"`, { encoding: "utf8", stdio: "pipe" })
-		execSync(`git commit -m "${message}" --allow-empty`, { encoding: "utf8", stdio: "pipe" })
+		execFileSync("git", ["add", haikuRoot], { encoding: "utf8", stdio: "pipe" })
+		execFileSync("git", ["commit", "-m", message, "--allow-empty"], { encoding: "utf8", stdio: "pipe" })
 	} catch {
 		// Git failures are non-fatal — state was already written to disk
 	}
+}
+
+/** Resolve hat sequence for a stage — used by haiku_unit_fail */
+function resolveStageHats(intent: string, stage: string): string[] {
+	try {
+		const root = findHaikuRoot()
+		const intentFile = join(root, "intents", intent, "intent.md")
+		if (!existsSync(intentFile)) return []
+		const { data } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+		const studio = (data.studio as string) || ""
+		if (!studio) return []
+
+		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+		for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
+			const stageFile = join(base, studio, "stages", stage, "STAGE.md")
+			if (!existsSync(stageFile)) continue
+			const { data: stageFm } = parseFrontmatter(readFileSync(stageFile, "utf8"))
+			return (stageFm.hats as string[]) || []
+		}
+	} catch { /* */ }
+	return []
+}
+
+/** Resolve allowed unit types for a stage — used for enforcement */
+function resolveAllowedUnitTypes(intent: string, stage: string): string[] {
+	try {
+		const root = findHaikuRoot()
+		const intentFile = join(root, "intents", intent, "intent.md")
+		if (!existsSync(intentFile)) return []
+		const { data } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+		const studio = (data.studio as string) || ""
+		if (!studio) return []
+
+		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+		for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
+			const stageFile = join(base, studio, "stages", stage, "STAGE.md")
+			if (!existsSync(stageFile)) continue
+			const { data: stageFm } = parseFrontmatter(readFileSync(stageFile, "utf8"))
+			return (stageFm.unit_types as string[]) || []
+		}
+	} catch { /* */ }
+	return []
+}
+
+/** Resolve stage metadata for scope context in tool responses */
+function resolveStageScope(intent: string, stage: string): string {
+	try {
+		const root = findHaikuRoot()
+		const intentFile = join(root, "intents", intent, "intent.md")
+		if (!existsSync(intentFile)) return ""
+		const { data } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+		const studio = (data.studio as string) || ""
+		if (!studio) return ""
+
+		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+		for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
+			const stageFile = join(base, studio, "stages", stage, "STAGE.md")
+			if (!existsSync(stageFile)) continue
+			const raw = readFileSync(stageFile, "utf8")
+			const fm = parseFrontmatter(raw)
+			const { content } = matter(raw)
+			const desc = (fm.data.description as string) || stage
+			const unitTypes = (fm.data.unit_types as string[]) || []
+			return `[stage_scope] ${stage}: ${desc}` +
+				(unitTypes.length > 0 ? ` | unit_types: ${unitTypes.join(", ")}` : "") +
+				` | ${content.trim().slice(0, 500)}`
+		}
+	} catch { /* */ }
+	return ""
+}
+
+/**
+ * Collect current H·AI·K·U state and write to the caller-provided state file.
+ * The state_file path is injected by the pre_tool_use hook — the MCP server
+ * never resolves session IDs or config dirs. If no state_file, this is a no-op.
+ */
+export function syncSessionMetadata(intent: string, stateFile: string | undefined): void {
+	if (!stateFile) return
+	try {
+		const root = findHaikuRoot()
+		const intentFile = join(root, "intents", intent, "intent.md")
+		if (!existsSync(intentFile)) return
+		const { data: intentData } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+		const studio = (intentData.studio as string) || ""
+		const activeStage = (intentData.active_stage as string) || ""
+
+		let phase = ""
+		if (activeStage) {
+			const sf = stageStatePath(intent, activeStage)
+			const stageState = readJson(sf)
+			phase = (stageState.phase as string) || ""
+		}
+
+		let activeUnit: string | null = null
+		let hat: string | null = null
+		let bolt: number | null = null
+		if (activeStage) {
+			const unitsDir = join(stageDir(intent, activeStage), "units")
+			if (existsSync(unitsDir)) {
+				for (const f of readdirSync(unitsDir).filter(f => f.endsWith(".md"))) {
+					const { data: unitData } = parseFrontmatter(readFileSync(join(unitsDir, f), "utf8"))
+					if (unitData.status === "active") {
+						activeUnit = f.replace(".md", "")
+						hat = (unitData.hat as string) || null
+						bolt = (unitData.bolt as number) || null
+						break
+					}
+				}
+			}
+		}
+
+		let stageDescription = activeStage
+		let stageUnitTypes: string[] = []
+		if (studio && activeStage) {
+			const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+			for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
+				const sf = join(base, studio, "stages", activeStage, "STAGE.md")
+				if (!existsSync(sf)) continue
+				const { data: stageFm } = parseFrontmatter(readFileSync(sf, "utf8"))
+				stageDescription = (stageFm.description as string) || activeStage
+				stageUnitTypes = (stageFm.unit_types as string[]) || []
+				break
+			}
+		}
+
+		writeHaikuMetadata(stateFile, {
+			intent, studio, active_stage: activeStage, phase,
+			active_unit: activeUnit, hat, bolt,
+			stage_description: stageDescription, stage_unit_types: stageUnitTypes,
+			updated_at: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
+		})
+	} catch { /* non-fatal */ }
 }
 
 // ── Tool definitions ───────────────────────────────────────────────────────
@@ -120,11 +254,6 @@ export const stateToolDefs = [
 		inputSchema: { type: "object" as const, properties: { slug: { type: "string" }, field: { type: "string" } }, required: ["slug", "field"] },
 	},
 	{
-		name: "haiku_intent_set",
-		description: "Set a field in an intent's frontmatter",
-		inputSchema: { type: "object" as const, properties: { slug: { type: "string" }, field: { type: "string" }, value: { type: "string" } }, required: ["slug", "field", "value"] },
-	},
-	{
 		name: "haiku_intent_list",
 		description: "List all intents in the workspace",
 		inputSchema: { type: "object" as const, properties: {} },
@@ -134,21 +263,6 @@ export const stateToolDefs = [
 		name: "haiku_stage_get",
 		description: "Read a field from a stage's state",
 		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, stage: { type: "string" }, field: { type: "string" } }, required: ["intent", "stage", "field"] },
-	},
-	{
-		name: "haiku_stage_set",
-		description: "Set a field in a stage's state",
-		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, stage: { type: "string" }, field: { type: "string" }, value: { type: "string" } }, required: ["intent", "stage", "field", "value"] },
-	},
-	{
-		name: "haiku_stage_start",
-		description: "Mark a stage as started (sets status, phase, timestamp)",
-		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, stage: { type: "string" } }, required: ["intent", "stage"] },
-	},
-	{
-		name: "haiku_stage_complete",
-		description: "Mark a stage as completed (sets status, timestamp, gate outcome)",
-		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, stage: { type: "string" }, gate_outcome: { type: "string", enum: ["advanced", "paused", "blocked", "awaiting"] } }, required: ["intent", "stage"] },
 	},
 	// Unit tools
 	{
@@ -180,6 +294,11 @@ export const stateToolDefs = [
 		name: "haiku_unit_advance_hat",
 		description: "Advance a unit to the next hat in the sequence",
 		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, stage: { type: "string" }, unit: { type: "string" }, hat: { type: "string" } }, required: ["intent", "stage", "unit", "hat"] },
+	},
+	{
+		name: "haiku_unit_fail",
+		description: "Hat failed — moves back one hat and increments bolt count. Called by the subagent when the hat's work doesn't meet expectations.",
+		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, stage: { type: "string" }, unit: { type: "string" } }, required: ["intent", "stage", "unit"] },
 	},
 	{
 		name: "haiku_unit_increment_bolt",
@@ -235,11 +354,6 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			const val = data[args.field as string]
 			return text(val == null ? "" : typeof val === "object" ? JSON.stringify(val) : String(val))
 		}
-		case "haiku_intent_set": {
-			const file = join(intentDir(args.slug as string), "intent.md")
-			setFrontmatterField(file, args.field as string, args.value)
-			return text("ok")
-		}
 		case "haiku_intent_list": {
 			const root = findHaikuRoot()
 			const intentsDir = join(root, "intents")
@@ -258,45 +372,6 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			const data = readJson(path)
 			const val = data[args.field as string]
 			return text(val == null ? "" : String(val))
-		}
-		case "haiku_stage_set": {
-			const path = stageStatePath(args.intent as string, args.stage as string)
-			const data = readJson(path)
-			data[args.field as string] = args.value
-			writeJson(path, data)
-			// Emit telemetry for phase transitions and gate events
-			if (args.field === "phase") {
-				emitTelemetry("haiku.stage.phase", { intent: args.intent as string, stage: args.stage as string, phase: args.value as string })
-			} else if (args.field === "gate_entered_at") {
-				emitTelemetry("haiku.gate.entered", { intent: args.intent as string, stage: args.stage as string })
-			}
-			return text("ok")
-		}
-		case "haiku_stage_start": {
-			const path = stageStatePath(args.intent as string, args.stage as string)
-			const data = readJson(path)
-			data.stage = args.stage
-			data.status = "active"
-			data.phase = "decompose"
-			data.started_at = timestamp()
-			data.completed_at = null
-			data.gate_entered_at = null
-			data.gate_outcome = null
-			writeJson(path, data)
-			emitTelemetry("haiku.stage.started", { intent: args.intent as string, stage: args.stage as string })
-			gitCommitState(`haiku: start stage ${args.stage as string}`)
-			return text("ok")
-		}
-		case "haiku_stage_complete": {
-			const path = stageStatePath(args.intent as string, args.stage as string)
-			const data = readJson(path)
-			data.status = "completed"
-			data.completed_at = timestamp()
-			data.gate_outcome = (args.gate_outcome as string) || "advanced"
-			writeJson(path, data)
-			emitTelemetry("haiku.stage.completed", { intent: args.intent as string, stage: args.stage as string, gate_outcome: data.gate_outcome as string })
-			gitCommitState(`haiku: complete stage ${args.stage as string}`)
-			return text("ok")
 		}
 
 		// ── Unit ──
@@ -323,39 +398,162 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			return text(JSON.stringify(units, null, 2))
 		}
 		case "haiku_unit_start": {
-			const path = unitPath(args.intent as string, args.stage as string, args.unit as string)
-			setFrontmatterField(path, "status", "active")
-			setFrontmatterField(path, "bolt", 1)
-			setFrontmatterField(path, "hat", args.hat)
-			setFrontmatterField(path, "started_at", timestamp())
+			const uPath = unitPath(args.intent as string, args.stage as string, args.unit as string)
+
+			// Enforce unit type matches stage's allowed unit_types
+			if (existsSync(uPath)) {
+				const { data: unitFm } = parseFrontmatter(readFileSync(uPath, "utf8"))
+				const unitType = (unitFm.type as string) || ""
+				if (unitType) {
+					const allowedTypes = resolveAllowedUnitTypes(args.intent as string, args.stage as string)
+					if (allowedTypes.length > 0 && !allowedTypes.includes(unitType)) {
+						return text(JSON.stringify({
+							error: "unit_type_not_allowed",
+							unit_type: unitType,
+							allowed_types: allowedTypes,
+							message: `Unit type '${unitType}' is not allowed in stage '${args.stage}'. Allowed types: ${allowedTypes.join(", ")}. Convert to knowledge for downstream stages, then call haiku_run_next again.`,
+						}))
+					}
+				}
+			}
+
+			setFrontmatterField(uPath, "status", "active")
+			setFrontmatterField(uPath, "bolt", 1)
+			setFrontmatterField(uPath, "hat", args.hat)
+			setFrontmatterField(uPath, "started_at", timestamp())
 			emitTelemetry("haiku.unit.started", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string, hat: args.hat as string })
+			const sf = args.state_file as string | undefined
+			if (sf) logSessionEvent(sf, { event: "unit_started", intent: args.intent, stage: args.stage, unit: args.unit, hat: args.hat })
 			gitCommitState(`haiku: start unit ${args.unit as string}`)
-			return text("ok")
+			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
+			const scope = resolveStageScope(args.intent as string, args.stage as string)
+			return text(scope ? `ok\n\n${scope}` : "ok")
 		}
 		case "haiku_unit_complete": {
 			const path = unitPath(args.intent as string, args.stage as string, args.unit as string)
-			// Verify completion criteria are checked before allowing completion
 			const unitRaw = readFileSync(path, "utf8")
+			const { data: unitFm } = parseFrontmatter(unitRaw)
+
+			// Verify the unit went through all hats
+			const currentHat = (unitFm.hat as string) || ""
+			const stageHats = resolveStageHats(args.intent as string, args.stage as string)
+			if (stageHats.length > 0) {
+				if (!currentHat) {
+					return text(JSON.stringify({ error: "hat_sequence_incomplete", current_hat: "", remaining_hats: stageHats, message: `Cannot complete unit: hat sequence never started. Start with the first hat: "${stageHats[0]}".` }))
+				}
+				const hatIdx = stageHats.indexOf(currentHat)
+				const isLastHat = hatIdx === stageHats.length - 1
+				if (!isLastHat) {
+					const sf = args.state_file as string | undefined
+					if (sf) logSessionEvent(sf, { event: "hat_sequence_incomplete", intent: args.intent, stage: args.stage, unit: args.unit, current_hat: currentHat, expected_last: stageHats[stageHats.length - 1] })
+					return text(JSON.stringify({ error: "hat_sequence_incomplete", current_hat: currentHat, remaining_hats: stageHats.slice(hatIdx + 1), message: `Cannot complete unit: hat sequence not finished. Current hat: "${currentHat}", remaining: ${stageHats.slice(hatIdx + 1).join(" → ")}. Advance through all hats before completing.` }))
+				}
+			}
+
+			// Verify completion criteria are checked
 			const unchecked = (unitRaw.match(/- \[ \]/g) || []).length
 			if (unchecked > 0) {
-				return text(JSON.stringify({ error: "criteria_not_met", unchecked, message: `Cannot complete unit: ${unchecked} completion criteria still unchecked` }))
+				const sf = args.state_file as string | undefined
+				if (sf) logSessionEvent(sf, { event: "criteria_not_met", intent: args.intent, stage: args.stage, unit: args.unit, unchecked })
+				return text(JSON.stringify({ error: "criteria_not_met", unchecked, message: `Cannot complete unit: ${unchecked} completion criteria still unchecked. Address them, then call haiku_unit_complete again.` }))
 			}
+
+			// Verify declared outputs exist (paths relative to intent directory)
+			const unitOutputs = (unitFm.outputs as string[]) || []
+			if (unitOutputs.length > 0) {
+				const iDir = intentDir(args.intent as string)
+				const escaped = unitOutputs.filter(o => {
+					const resolved = resolve(iDir, o)
+					return !resolved.startsWith(resolve(iDir) + "/")
+				})
+				if (escaped.length > 0) {
+					return text(JSON.stringify({ error: "unit_outputs_escaped", escaped, message: `Cannot complete unit: ${escaped.length} output path(s) escape the intent directory: ${escaped.join(", ")}. Fix the outputs in the unit frontmatter.` }))
+				}
+				const missing = unitOutputs.filter(o => {
+					const resolved = resolve(iDir, o)
+					if (!resolved.startsWith(resolve(iDir) + "/")) return false // escaped — already caught above
+					return !existsSync(resolved)
+				})
+				if (missing.length > 0) {
+					const sf = args.state_file as string | undefined
+					if (sf) logSessionEvent(sf, { event: "outputs_missing", intent: args.intent, stage: args.stage, unit: args.unit, missing })
+					return text(JSON.stringify({ error: "unit_outputs_missing", missing, message: `Cannot complete unit: ${missing.length} declared output(s) not found: ${missing.join(", ")}. Create them, then call haiku_unit_complete again.` }))
+				}
+			}
+
 			setFrontmatterField(path, "status", "completed")
 			setFrontmatterField(path, "completed_at", timestamp())
 			emitTelemetry("haiku.unit.completed", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string })
+			{
+				const sf = args.state_file as string | undefined
+				if (sf) logSessionEvent(sf, { event: "unit_completed", intent: args.intent, stage: args.stage, unit: args.unit })
+			}
 			gitCommitState(`haiku: complete unit ${args.unit as string}`)
-			return text("ok")
+
+			// Merge unit worktree back to intent branch (if running in a worktree)
+			const mergeResult = mergeUnitWorktree(args.intent as string, args.unit as string)
+			if (!mergeResult.success) {
+				return text(JSON.stringify({ status: "completed_merge_failed", message: mergeResult.message }))
+			}
+
+			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
+			return text(mergeResult.message === "no worktree" ? "ok" : `ok (${mergeResult.message})`)
 		}
 		case "haiku_unit_advance_hat": {
-			const path = unitPath(args.intent as string, args.stage as string, args.unit as string)
-			setFrontmatterField(path, "hat", args.hat)
-			emitTelemetry("haiku.hat.transition", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string, hat: args.hat as string })
-			return text("ok")
+			// Advance to the next hat. If this was the last hat, auto-complete the unit.
+			const advPath = unitPath(args.intent as string, args.stage as string, args.unit as string)
+			const nextHat = args.hat as string
+			setFrontmatterField(advPath, "hat", nextHat)
+			{
+				const sf = args.state_file as string | undefined
+				if (sf) logSessionEvent(sf, { event: "hat_advanced", intent: args.intent, stage: args.stage, unit: args.unit, hat: nextHat })
+			}
+			emitTelemetry("haiku.hat.transition", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string, hat: nextHat })
+			gitCommitState(`haiku: advance hat to ${nextHat} on ${args.unit as string}`)
+			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
+			const hatScope = resolveStageScope(args.intent as string, args.stage as string)
+			return text(hatScope ? `advanced to ${nextHat}\n\n${hatScope}` : `advanced to ${nextHat}`)
+		}
+		case "haiku_unit_fail": {
+			// Hat failed — move back one hat, increment bolt count
+			const failPath = unitPath(args.intent as string, args.stage as string, args.unit as string)
+			const { data: failData } = parseFrontmatter(readFileSync(failPath, "utf8"))
+			const currentHat = (failData.hat as string) || ""
+			const currentBolt = (failData.bolt as number) || 1
+
+			// Enforce max bolt limit
+			const MAX_BOLTS_FAIL = 5
+			if (currentBolt + 1 > MAX_BOLTS_FAIL) {
+				return text(JSON.stringify({ error: "max_bolts_exceeded", bolt: currentBolt, max: MAX_BOLTS_FAIL, message: `Unit has exceeded ${MAX_BOLTS_FAIL} bolt iterations. Escalate to the user — this unit may need to be redesigned or split.` }))
+			}
+
+			// Resolve the hat sequence to find the previous hat
+			const stageHats = resolveStageHats(args.intent as string, args.stage as string)
+			const hatIdx = stageHats.indexOf(currentHat)
+			const prevHat = hatIdx > 0 ? stageHats[hatIdx - 1] : stageHats[0]
+
+			setFrontmatterField(failPath, "hat", prevHat)
+			setFrontmatterField(failPath, "bolt", currentBolt + 1)
+			{
+				const sf = args.state_file as string | undefined
+				if (sf) logSessionEvent(sf, { event: "unit_failed", intent: args.intent, stage: args.stage, unit: args.unit, from_hat: currentHat, to_hat: prevHat, bolt: currentBolt + 1 })
+			}
+			emitTelemetry("haiku.unit.failed", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string, hat: currentHat, prev_hat: prevHat, bolt: String(currentBolt + 1) })
+			gitCommitState(`haiku: fail ${args.unit as string} — back to ${prevHat}, bolt ${currentBolt + 1}`)
+			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
+			return text(`failed — back to ${prevHat}, bolt ${currentBolt + 1}`)
 		}
 		case "haiku_unit_increment_bolt": {
 			const path = unitPath(args.intent as string, args.stage as string, args.unit as string)
 			const { data } = parseFrontmatter(readFileSync(path, "utf8"))
 			const current = (data.bolt as number) || 0
+
+			// Enforce max bolt limit
+			const MAX_BOLTS_INC = 5
+			if (current + 1 > MAX_BOLTS_INC) {
+				return text(JSON.stringify({ error: "max_bolts_exceeded", bolt: current, max: MAX_BOLTS_INC, message: `Unit has exceeded ${MAX_BOLTS_INC} bolt iterations. Escalate to the user — this unit may need to be redesigned or split.` }))
+			}
+
 			setFrontmatterField(path, "bolt", current + 1)
 			emitTelemetry("haiku.bolt.iteration", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string, bolt: String(current + 1) })
 			return text(String(current + 1))

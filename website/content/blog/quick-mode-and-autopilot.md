@@ -39,11 +39,11 @@ The result: a task that used to bypass all quality infrastructure now runs throu
 
 At the other end of the spectrum, `/haiku:autopilot <description>` runs the entire H·AI·K·U lifecycle in a single command. Elaborate, plan, execute all units, deliver via PR.
 
-Autopilot operates in AHOTL mode — Autonomous, Human on the Loop. The agent elaborates requirements from the description and the codebase, decomposes into units, executes each unit through the full builder/reviewer cycle, and delivers the result. No clarification questions. No manual approvals per unit. Backpressure quality gates are the primary enforcement mechanism.
+Autopilot operates in AHOTL mode — Autonomous, Human on the Loop. The agent elaborates requirements from the description and the codebase, elaborates into units, executes each unit through the full builder/reviewer cycle, and delivers the result. No clarification questions. No manual approvals per unit. Backpressure quality gates are the primary enforcement mechanism.
 
 But autopilot is not unattended. It pauses at strategic boundaries:
 
-**Scope guardrail.** If elaboration produces more than five units, autopilot stops. It presents options: continue with the current decomposition, drop to manual execution, or re-elaborate with a narrower scope. Five units is the threshold where autonomous execution shifts from "efficient" to "risky" — the blast radius of a bad decomposition grows nonlinearly.
+**Scope guardrail.** If elaboration produces more than five units, autopilot stops. It presents options: continue with the current elaboration, drop to manual execution, or re-elaborate with a narrower scope. Five units is the threshold where autonomous execution shifts from "efficient" to "risky" — the blast radius of a bad elaboration grows nonlinearly.
 
 **Blocker escalation.** When a unit hits a blocker that requires human input — an ambiguous requirement, a missing dependency, a design decision the codebase does not answer — autopilot pauses and surfaces it rather than guessing.
 

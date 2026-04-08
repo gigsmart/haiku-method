@@ -7,7 +7,7 @@
 Read `plugin/VALIDATION.md` and verify the changed code against its criteria. Specifically:
 
 1. **State integrity** — state writes go through MCP tools, lifecycle transitions auto-commit to git
-2. **Orchestration** — `haiku_run_next` produces correct actions for the stage loop (decompose → execute → review → persist → gate)
+2. **Orchestration** — `haiku_run_next` produces correct actions for the stage loop (elaborate → execute → review → gate)
 3. **Quality enforcement** — `haiku_unit_complete` rejects if criteria checkboxes are unchecked
 4. **Hat isolation** — subagent context injects hat isolation directive; agents only receive their assigned hat's instructions
 5. **Mode handling** — continuous auto-advances on `auto` gates; discrete always stops
@@ -77,7 +77,7 @@ Flag any usage that confuses these distinct concepts:
 
 - No time estimates anywhere
 - 12 studios documented (engineering, go-to-market, general purpose)
-- 5-step stage loop: decompose, execute, adversarial review, persist, gate
+- 4-step stage loop: elaborate, execute, adversarial review, gate
 - 4 gate types: auto, ask, external, await
 - Providers are bidirectional translation layers (6 categories)
 

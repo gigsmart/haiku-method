@@ -13,14 +13,10 @@ const root = join(__dir, "..");
 const cssFile = join(root, "src/templates/tailwind.css");
 const tsFile = join(root, "src/templates/tailwind-generated.ts");
 
-// Run Tailwind CLI — resolve from hoisted node_modules (workspaces) or local
-import { createRequire } from "node:module";
-const require = createRequire(join(root, "package.json"));
-const tailwindBin = join(dirname(require.resolve("tailwindcss/package.json")), "lib/cli.js");
+// Run Tailwind CLI
 execFileSync(
-  process.execPath,
+  join(root, "node_modules/.bin/tailwindcss"),
   [
-    tailwindBin,
     "-c", join(root, "tailwind.config.cjs"),
     "-i", join(root, "src/templates/input.css"),
     "-o", cssFile,

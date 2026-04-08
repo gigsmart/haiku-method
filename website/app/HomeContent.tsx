@@ -1000,7 +1000,7 @@ export default function HomeContent({
 								down&rdquo;
 							</ExchangeLabel>
 							<ChatBubble speaker="ai">
-								I&rsquo;ve decomposed this into four units of work:
+								I&rsquo;ve elaborated this into four units of work:
 								<div className="mt-3 space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-950">
 									<DagUnit
 										id="Unit 1"
@@ -2077,11 +2077,11 @@ export default function HomeContent({
 					<motion.div {...fadeIn} className="mt-10 text-center">
 						<div className="inline-block rounded-lg bg-gray-900 p-4 text-left font-mono text-sm text-white dark:bg-gray-800">
 							<div>
-								<code>/plugin marketplace add TheBushidoCollective/haiku-method</code>
+								<code>/plugin marketplace add thebushidocollective/ai-dlc</code>
 							</div>
 							<div>
 								<code>
-									/plugin install haiku@TheBushidoCollective-haiku-method --scope
+									/plugin install haiku@thebushidocollective-ai-dlc --scope
 									project
 								</code>
 							</div>

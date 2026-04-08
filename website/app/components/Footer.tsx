@@ -1,4 +1,3 @@
-import { GITHUB_URL } from "@/lib/constants"
 import { footerNavigation } from "@/lib/navigation"
 import Link from "next/link"
 
@@ -27,7 +26,7 @@ export function Footer() {
 						<div className="mt-4 flex gap-3">
 							{/* biome-ignore lint/a11y/useAnchorContent: aria-label provides accessible content */}
 							<a
-								href={GITHUB_URL}
+								href="https://github.com/TheBushidoCollective/haiku-method"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="rounded-lg p-2 text-stone-500 transition hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-white"

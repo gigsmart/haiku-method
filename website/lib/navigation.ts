@@ -1,5 +1,3 @@
-import { GITHUB_URL } from "./constants"
-
 /**
  * Navigation data structure for H·AI·K·U website
  */
@@ -226,7 +224,7 @@ export const navigation: NavCategory[] = [
 					},
 					{
 						title: "GitHub",
-						href: GITHUB_URL,
+						href: "https://github.com/TheBushidoCollective/haiku-method",
 						description: "Source code and discussions",
 					},
 					{
@@ -283,9 +281,13 @@ export const footerNavigation = {
 			{ title: "Glossary", href: "/glossary/" },
 			{
 				title: "GitHub",
-				href: GITHUB_URL,
+				href: "https://github.com/TheBushidoCollective/haiku-method",
 			},
 			{ title: "H·AI·K·U Method", href: "https://haikumethod.ai" },
+			{
+				title: "Portfolio",
+				href: `/browse/github.com/${process.env.NEXT_PUBLIC_REPO_SLUG ?? "TheBushidoCollective/haiku-method"}/`,
+			},
 		],
 	},
 }

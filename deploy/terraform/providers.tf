@@ -9,8 +9,8 @@ terraform {
   }
 
   backend "gcs" {
-    # Bucket is injected at init time via -backend-config
-    # See deploy-auth-proxy.yml workflow
+    bucket = "waldrip-net-terraform-state"
+    prefix = "haiku"
   }
 }
 

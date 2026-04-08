@@ -45,7 +45,7 @@ This is a test intent.
 writeFileSync(join(haikuDir, "stages", "inception", "state.json"), JSON.stringify({
   stage: "inception",
   status: "active",
-  phase: "decompose",
+  phase: "elaborate",
   started_at: "2026-04-04T18:05:00Z",
   completed_at: null,
   gate_entered_at: null,
@@ -70,8 +70,8 @@ completed_at: null
 - [ ] Technical constraints identified
 `)
 
-writeFileSync(join(haikuDir, "stages", "inception", "units", "unit-02-decompose.md"), `---
-name: unit-02-decompose
+writeFileSync(join(haikuDir, "stages", "inception", "units", "unit-02-elaborate.md"), `---
+name: unit-02-elaborate
 type: research
 status: pending
 depends_on: [unit-01-discovery]
@@ -81,7 +81,7 @@ hat: ""
 
 ## Completion Criteria
 
-- [ ] Units decomposed with DAG
+- [ ] Units elaborated with DAG
 `)
 
 // Write knowledge
@@ -138,7 +138,7 @@ console.log("\n=== haiku-parse: Stage State ===")
 
 test("get stage phase from JSON", () => {
   const result = run(`get "${join(haikuDir, "stages/inception/state.json")}" phase`)
-  assert.strictEqual(result, "decompose")
+  assert.strictEqual(result, "elaborate")
 })
 
 test("set stage phase", () => {
@@ -170,10 +170,10 @@ test("get unit hat", () => {
   assert.strictEqual(result, "architect")
 })
 
-test("set unit hat to decomposer", () => {
-  run(`set "${join(haikuDir, "stages/inception/units/unit-01-discovery.md")}" hat decomposer`)
+test("set unit hat to elaborator", () => {
+  run(`set "${join(haikuDir, "stages/inception/units/unit-01-discovery.md")}" hat elaborator`)
   const result = run(`get "${join(haikuDir, "stages/inception/units/unit-01-discovery.md")}" hat`)
-  assert.strictEqual(result, "decomposer")
+  assert.strictEqual(result, "elaborator")
 })
 
 test("increment unit bolt", () => {
@@ -189,10 +189,10 @@ test("set unit status to completed", () => {
 })
 
 test("set preserves body content", () => {
-  run(`set "${join(haikuDir, "stages/inception/units/unit-02-decompose.md")}" status active`)
-  const raw = readFileSync(join(haikuDir, "stages/inception/units/unit-02-decompose.md"), "utf8")
+  run(`set "${join(haikuDir, "stages/inception/units/unit-02-elaborate.md")}" status active`)
+  const raw = readFileSync(join(haikuDir, "stages/inception/units/unit-02-elaborate.md"), "utf8")
   assert.ok(raw.includes("## Completion Criteria"), "Body content preserved")
-  assert.ok(raw.includes("Units decomposed with DAG"), "Criteria text preserved")
+  assert.ok(raw.includes("Units elaborated with DAG"), "Criteria text preserved")
 })
 
 console.log("\n=== haiku-parse: Stdin JSON ===")

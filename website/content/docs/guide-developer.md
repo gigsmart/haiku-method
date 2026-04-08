@@ -17,7 +17,7 @@ This guide covers the day-to-day workflow of using H·AI·K·U. It assumes you'v
 
 2. **Load context**
    - Run `/haiku:run` if continuing existing work
-   - Run `/haiku:elaborate` if starting new work
+   - Run `/haiku:new` if starting new work
 
 3. **Announce your hat**
    - Explicitly state which hat you're wearing
@@ -68,10 +68,10 @@ Then continue from where work stopped.
 You have a new task with no existing intent.
 
 ```
-/haiku:elaborate
+/haiku:new
 ```
 
-This enters Elaborator mode to define the intent collaboratively:
+This enters elaboration to define the intent collaboratively:
 
 1. Describe what you want to build
 2. Answer Claude's clarifying questions

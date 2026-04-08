@@ -7,14 +7,20 @@ interface Props {
   sessionId: string;
   collectAnnotations?: boolean;
   getAnnotations?: () => ReviewAnnotations | undefined;
+  wsRef?: React.RefObject<WebSocket | null>;
+  /** Number of pending comments (inline + pin) */
+  commentCount?: number;
+  /** Called when user clicks "Clear All Comments" from the decision form */
+  onClearAllComments?: () => void;
 }
 
-export function DecisionForm({ sessionId, collectAnnotations = false, getAnnotations }: Props) {
+export function DecisionForm({ sessionId, collectAnnotations = false, getAnnotations, wsRef, commentCount = 0, onClearAllComments }: Props) {
   const [mode, setMode] = useState<"buttons" | "feedback">("buttons");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
   const [feedbackError, setFeedbackError] = useState(false);
   const [showClose, setShowClose] = useState(false);
+  const [generalComments, setGeneralComments] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   if (showClose) {
@@ -25,7 +31,10 @@ export function DecisionForm({ sessionId, collectAnnotations = false, getAnnotat
     setSubmitting(true);
     try {
       const annotations = collectAnnotations && getAnnotations ? getAnnotations() : undefined;
-      await submitDecision(sessionId, decision, feedback, annotations);
+      const payload: Record<string, unknown> = { decision, feedback };
+      if (annotations) payload.annotations = annotations;
+
+      await submitDecision(sessionId, decision, feedback, annotations, wsRef);
 
       const parts: string[] = [];
       if (annotations?.screenshot) parts.push("annotated screenshot");
@@ -37,7 +46,10 @@ export function DecisionForm({ sessionId, collectAnnotations = false, getAnnotat
         message: `Decision submitted: ${decision.replace(/_/g, " ")}${parts.length > 0 ? `. Included: ${parts.join(", ")}` : ""}`,
       });
 
-      tryCloseTab(setShowClose);
+      tryCloseTab(setShowClose, {
+        url: `/review/${sessionId}/decide`,
+        body: payload,
+      });
     } catch (err) {
       setResult({
         success: false,
@@ -47,31 +59,23 @@ export function DecisionForm({ sessionId, collectAnnotations = false, getAnnotat
     }
   }
 
+  const hasComments = commentCount > 0;
+
   function handleApprove() {
-    // Warn if there are unsent annotations/comments
-    if (collectAnnotations && getAnnotations) {
-      const annotations = getAnnotations();
-      const hasComments = (annotations?.comments?.length ?? 0) > 0;
-      const hasPins = (annotations?.pins?.length ?? 0) > 0;
-      if (hasComments || hasPins) {
-        const count = (annotations?.comments?.length ?? 0) + (annotations?.pins?.length ?? 0);
-        if (!window.confirm(`You have ${count} annotation(s). Approving will include them as feedback. Continue?`)) {
-          return;
-        }
-      }
-    }
-    handleSubmit("approved", "");
+    handleSubmit("approved", generalComments.trim());
   }
 
   function handleRequestChanges() {
-    const text = textareaRef.current?.value.trim() || "";
-    if (!text) {
+    const changesText = textareaRef.current?.value.trim() || "";
+    if (!changesText) {
       setFeedbackError(true);
       textareaRef.current?.focus();
       return;
     }
     setFeedbackError(false);
-    handleSubmit("changes_requested", text);
+    // Combine general comments with changes feedback
+    const combined = [generalComments.trim(), changesText].filter(Boolean).join("\n\n---\n\n");
+    handleSubmit("changes_requested", combined);
   }
 
   return (
@@ -84,23 +88,67 @@ export function DecisionForm({ sessionId, collectAnnotations = false, getAnnotat
         </p>
       )}
 
+      <div className="mb-4">
+        <label htmlFor="general-comments" className="block text-sm font-medium mb-2 text-stone-700 dark:text-stone-300">
+          Comments (optional)
+        </label>
+        <textarea
+          id="general-comments"
+          className="w-full min-h-[80px] p-3 border border-stone-300 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-y text-sm"
+          placeholder="General feedback, observations, or notes..."
+          value={generalComments}
+          onChange={(e) => setGeneralComments(e.target.value)}
+          disabled={submitting}
+        />
+      </div>
+
       {mode === "buttons" && (
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={handleApprove}
-            disabled={submitting}
-            className="flex-1 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Approve
-          </button>
-          <button
-            onClick={() => setMode("feedback")}
-            disabled={submitting}
-            className="flex-1 px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Request Changes
-          </button>
-        </div>
+        <>
+          <div className="flex flex-col sm:flex-row gap-3">
+            {!hasComments ? (
+              <>
+                <button
+                  onClick={handleApprove}
+                  disabled={submitting}
+                  className="flex-1 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Approve
+                </button>
+                <button
+                  onClick={() => setMode("feedback")}
+                  disabled={submitting}
+                  className="flex-1 px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Request Changes
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => handleSubmit("changes_requested", generalComments.trim())}
+                  disabled={submitting}
+                  className="flex-1 px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? "Submitting..." : "Submit Changes"}
+                </button>
+                {onClearAllComments && (
+                  <button
+                    onClick={onClearAllComments}
+                    disabled={submitting}
+                    className="px-6 py-3 bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-700 dark:text-stone-200 font-medium rounded-lg transition-colors focus:ring-2 focus:ring-stone-400 focus:ring-offset-2 dark:focus:ring-offset-stone-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Clear Comments to Approve
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+          {hasComments && (
+            <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+              {commentCount} comment{commentCount !== 1 ? "s" : ""} pending -- submitting will request changes. Clear comments to approve instead.
+            </p>
+          )}
+        </>
       )}
 
       {mode === "feedback" && (

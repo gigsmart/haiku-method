@@ -19,12 +19,6 @@ variable "domain" {
   default     = "haikumethod.ai"
 }
 
-variable "github_pages_org" {
-  description = "GitHub org or username for Pages CNAME (e.g., thebushidocollective → thebushidocollective.github.io)"
-  type        = string
-  default     = "thebushidocollective"
-}
-
 # -----------------------------------------------------------------------------
 # MCP Subdomain (optional — disabled by default)
 # -----------------------------------------------------------------------------

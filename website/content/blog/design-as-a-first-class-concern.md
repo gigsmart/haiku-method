@@ -13,7 +13,7 @@ H·AI·K·U now does.
 
 ## Design Direction
 
-The design direction system activates during elaboration, not construction. This placement is the entire point. Design is forethought — it belongs in Phase 2.75, right after the intent is understood and before any unit decomposition happens. By the time the builder hat writes its first component, visual direction has already been decided and documented.
+The design direction system activates during elaboration, not construction. This placement is the entire point. Design is forethought — it belongs in Phase 2.75, right after the intent is understood and before any unit elaboration happens. By the time the builder hat writes its first component, visual direction has already been decided and documented.
 
 For greenfield projects or early-stage work without existing design knowledge, the system presents a visual picker: a browser-based MCP tool that renders four design archetypes as live preview HTML in sandboxed iframes. The archetypes — Brutalist, Editorial, Dense/Utilitarian, and Playful/Warm — are not themes or templates. They are starting positions in a design space, each with distinct opinions about density, typography, color mood, shape language, and layout structure.
 
@@ -55,7 +55,7 @@ The archetype system ensures that accumulated knowledge starts from a real desig
 
 The conventional AI workflow treats design as something you fix after the code exists. Generate the feature, look at it, adjust the CSS, iterate. Design is reactive — a correction applied to defaults the agent chose without guidance.
 
-H·AI·K·U inverts this. Design direction is established during elaboration, before any unit is decomposed, before any builder writes a line of code. The blueprint is an input to construction, not an output of it. By the time the agent generates a component, it already knows the density target, the shape language, the color mood, and the typography scale.
+H·AI·K·U inverts this. Design direction is established during elaboration, before any unit is elaborated, before any builder writes a line of code. The blueprint is an input to construction, not an output of it. By the time the agent generates a component, it already knows the density target, the shape language, the color mood, and the typography scale.
 
 This is the same principle that makes passes work: the right discipline at the right time produces better outcomes than applying all disciplines simultaneously. Design belongs in elaboration. Architecture belongs in elaboration. Domain understanding belongs in elaboration. These are the decisions that *shape* implementation. Making them explicit and early means the builder operates with constraints instead of defaults.
 

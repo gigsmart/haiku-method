@@ -11,7 +11,6 @@ module "dns" {
 
   # GitHub Pages for apex domain (static website)
   enable_github_pages_dns = true
-  github_pages_org        = var.github_pages_org
 
   # MCP subdomain (off by default — no service exists yet)
   enable_mcp_dns = var.enable_mcp_dns

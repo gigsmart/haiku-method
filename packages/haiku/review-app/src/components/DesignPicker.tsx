@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { SessionData, DesignArchetypeData, DesignParameterData } from "../types";
 import { submitDesignDirection, tryCloseTab } from "../hooks/useSession";
 import { Card, SectionHeading } from "./Card";
@@ -7,9 +7,10 @@ import { SubmitSuccess } from "./SubmitSuccess";
 interface Props {
   session: SessionData;
   sessionId: string;
+  wsRef?: React.RefObject<WebSocket | null>;
 }
 
-export function DesignPicker({ session, sessionId }: Props) {
+export function DesignPicker({ session, sessionId, wsRef }: Props) {
   const archetypes = session.archetypes ?? [];
   const parameters = session.parameters ?? [];
 
@@ -30,6 +31,15 @@ export function DesignPicker({ session, sessionId }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
   const [showClose, setShowClose] = useState(false);
+  const [previewModal, setPreviewModal] = useState<{ name: string; html: string } | null>(null);
+
+  const openPreviewModal = useCallback((name: string, html: string) => {
+    setPreviewModal({ name, html });
+  }, []);
+
+  const closePreviewModal = useCallback(() => {
+    setPreviewModal(null);
+  }, []);
 
   function selectArchetype(name: string) {
     setSelectedArchetype(name);
@@ -48,9 +58,12 @@ export function DesignPicker({ session, sessionId }: Props) {
     setSubmitting(true);
 
     try {
-      await submitDesignDirection(sessionId, selectedArchetype, paramValues);
+      await submitDesignDirection(sessionId, selectedArchetype, paramValues, wsRef);
       setResult({ success: true, message: `Direction selected: ${selectedArchetype}` });
-      tryCloseTab(setShowClose);
+      tryCloseTab(setShowClose, {
+        url: `/direction/${sessionId}/select`,
+        body: { archetype: selectedArchetype, parameters: paramValues },
+      });
     } catch (err) {
       setResult({
         success: false,
@@ -128,8 +141,18 @@ export function DesignPicker({ session, sessionId }: Props) {
                     srcDoc={arch.preview_html}
                     sandbox=""
                     title={`Preview: ${arch.name}`}
-                    className="w-full h-32 rounded-lg border border-stone-200 dark:border-stone-700 bg-white pointer-events-none"
+                    className="w-full h-48 rounded-lg border border-stone-200 dark:border-stone-700 bg-white pointer-events-none"
                   />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openPreviewModal(arch.name, arch.preview_html);
+                    }}
+                    className="mt-2 text-xs text-teal-600 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-200 underline underline-offset-2"
+                  >
+                    View Full Size
+                  </button>
                 </div>
               </div>
             );
@@ -205,6 +228,43 @@ export function DesignPicker({ session, sessionId }: Props) {
         >
           <p className="font-semibold">{result.message}</p>
           {result.success && <p className="text-sm mt-1">You can close this tab.</p>}
+        </div>
+      )}
+
+      {/* Preview Modal */}
+      {previewModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={closePreviewModal}
+          onKeyDown={(e) => { if (e.key === "Escape") closePreviewModal(); }}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Full size preview: ${previewModal.name}`}
+        >
+          <div
+            className="relative bg-white dark:bg-stone-900 rounded-xl shadow-2xl"
+            style={{ width: "90vw", height: "90vh" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200 dark:border-stone-700">
+              <h3 className="font-semibold text-stone-900 dark:text-stone-100">{previewModal.name}</h3>
+              <button
+                type="button"
+                onClick={closePreviewModal}
+                className="text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 text-xl leading-none px-2"
+                aria-label="Close preview"
+              >
+                &times;
+              </button>
+            </div>
+            <iframe
+              srcDoc={previewModal.html}
+              sandbox=""
+              title={`Full preview: ${previewModal.name}`}
+              className="w-full rounded-b-xl bg-white"
+              style={{ height: "calc(90vh - 3rem)" }}
+            />
+          </div>
         </div>
       )}
     </>

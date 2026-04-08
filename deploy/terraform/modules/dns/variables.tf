@@ -20,12 +20,6 @@ variable "enable_github_pages_dns" {
   default     = false
 }
 
-variable "github_pages_org" {
-  description = "GitHub org or username for Pages CNAME (e.g., thebushidocollective → thebushidocollective.github.io)"
-  type        = string
-  default     = "thebushidocollective"
-}
-
 # MCP subdomain
 variable "enable_mcp_dns" {
   description = "Whether to create MCP subdomain DNS records"
