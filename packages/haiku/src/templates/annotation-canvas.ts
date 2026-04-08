@@ -286,10 +286,13 @@ export function renderAnnotationCanvas(imageContent: string): string {
       window.removeReviewComment(pin.sidebarCommentId);
     }
 
-    // Renumber remaining pins
+    // Renumber remaining pins and update sidebar labels
     for (var i = 0; i < pins.length; i++) {
       pins[i].el.textContent = i + 1;
       pins[i].el.setAttribute('aria-label', 'Annotation ' + (i + 1));
+      if (pins[i].sidebarCommentId && typeof window.updateReviewCommentLabel === 'function') {
+        window.updateReviewCommentLabel(pins[i].sidebarCommentId, 'Pin #' + (i + 1));
+      }
     }
   }
 

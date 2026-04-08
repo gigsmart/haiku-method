@@ -140,176 +140,6 @@ export function renderCriteriaChecklist(criteria: CriterionItem[]): string {
   </ol>`;
 }
 
-/** Decision form: Approve (green) + Request Changes (amber). Request Changes reveals textarea.
- *  When `collectAnnotations` is true, the form will also capture canvas annotations and
- *  inline comments (if the corresponding globals are defined on window) and send them as
- *  part of the POST body.
- */
-export function renderDecisionForm(sessionId: string, collectAnnotations = false): string {
-  return `<div class="mt-8 p-6 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm"
-              id="decision-section">
-    <h2 class="text-lg font-semibold mb-4">Review Decision</h2>
-    ${collectAnnotations ? `<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-      Annotations (pins, drawings, inline comments) will be included with your decision.
-    </p>` : ""}
-
-    <div id="decision-buttons" class="flex flex-col sm:flex-row gap-3">
-      <button onclick="handleApprove()"
-              class="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
-        Approve
-      </button>
-      <button onclick="showFeedbackForm()"
-              class="flex-1 px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
-        Request Changes
-      </button>
-    </div>
-
-    <div id="feedback-form" class="hidden mt-4">
-      <label for="feedback-text" class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-        Describe the changes needed:
-      </label>
-      <textarea id="feedback-text"
-                class="w-full min-h-[120px] p-3 border border-gray-300 dark:border-gray-600 rounded-lg
-                       bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                       focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-y"
-                placeholder="What needs to change?"></textarea>
-      <p id="feedback-error" class="hidden mt-1 text-sm text-red-600 dark:text-red-400">
-        Please describe the changes needed before submitting.
-      </p>
-      <div class="flex gap-3 mt-3">
-        <button onclick="submitChangesRequested()"
-                class="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
-          Submit Feedback
-        </button>
-        <button onclick="hideFeedbackForm()"
-                class="px-6 py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium rounded-lg transition-colors">
-          Cancel
-        </button>
-      </div>
-    </div>
-
-    <div id="decision-result" class="hidden mt-4 p-4 rounded-lg"></div>
-  </div>
-
-  <script>
-    (function() {
-      var sessionId = '${sessionId}';
-      var collectAnnotations = ${collectAnnotations ? "true" : "false"};
-
-      window.showFeedbackForm = function() {
-        document.getElementById('feedback-form').classList.remove('hidden');
-        document.getElementById('decision-buttons').classList.add('hidden');
-        document.getElementById('feedback-text').focus();
-      };
-
-      window.hideFeedbackForm = function() {
-        document.getElementById('feedback-form').classList.add('hidden');
-        document.getElementById('decision-buttons').classList.remove('hidden');
-        document.getElementById('feedback-error').classList.add('hidden');
-      };
-
-      window.handleApprove = function() {
-        submitDecision('approved', '');
-      };
-
-      window.submitChangesRequested = function() {
-        var text = document.getElementById('feedback-text').value.trim();
-        if (!text) {
-          document.getElementById('feedback-error').classList.remove('hidden');
-          document.getElementById('feedback-text').focus();
-          return;
-        }
-        document.getElementById('feedback-error').classList.add('hidden');
-        submitDecision('changes_requested', text);
-      };
-
-      function gatherAnnotations() {
-        if (!collectAnnotations) return undefined;
-        var annotations = {};
-        var hasAny = false;
-
-        // Canvas annotations (pins + screenshot)
-        if (typeof window.captureAnnotations === 'function' && typeof window.hasCanvasAnnotations === 'function' && window.hasCanvasAnnotations()) {
-          var canvasData = window.captureAnnotations();
-          if (canvasData.screenshot) {
-            annotations.screenshot = canvasData.screenshot;
-            hasAny = true;
-          }
-          if (canvasData.annotations && canvasData.annotations.length > 0) {
-            annotations.pins = canvasData.annotations;
-            hasAny = true;
-          }
-        }
-
-        // Inline text comments
-        if (typeof window.captureInlineComments === 'function' && typeof window.hasInlineComments === 'function' && window.hasInlineComments()) {
-          var inlineData = window.captureInlineComments();
-          if (inlineData && inlineData.length > 0) {
-            annotations.comments = inlineData;
-            hasAny = true;
-          }
-        }
-
-        // Mockup annotations (expand/annotate on design assets)
-        if (typeof window.collectMockupAnnotations === 'function') {
-          var mockupData = window.collectMockupAnnotations();
-          if (mockupData) {
-            annotations.mockups = mockupData;
-            hasAny = true;
-          }
-        }
-
-        return hasAny ? annotations : undefined;
-      }
-
-      function submitDecision(decision, feedback) {
-        var buttons = document.querySelectorAll('#decision-section button');
-        buttons.forEach(function(b) { b.disabled = true; b.classList.add('opacity-50', 'cursor-not-allowed'); });
-
-        var payload = { decision: decision, feedback: feedback };
-        var annotations = gatherAnnotations();
-        if (annotations) {
-          payload.annotations = annotations;
-        }
-
-        fetch('/review/' + sessionId + '/decide', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        })
-        .then(function(res) {
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          return res.json();
-        })
-        .then(function() {
-          var result = document.getElementById('decision-result');
-          result.className = 'mt-4 p-4 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200';
-          result.classList.remove('hidden');
-          var msg = '<p class="font-semibold">Decision submitted: ' + decision.replace(/_/g, ' ') + '</p>';
-          if (annotations) {
-            var parts = [];
-            if (annotations.screenshot) parts.push('annotated screenshot');
-            if (annotations.pins && annotations.pins.length) parts.push(annotations.pins.length + ' pin(s)');
-            if (annotations.comments && annotations.comments.length) parts.push(annotations.comments.length + ' inline comment(s)');
-            if (parts.length > 0) msg += '<p class="text-sm mt-1">Included: ' + parts.join(', ') + '</p>';
-          }
-          msg += '<p class="text-sm mt-1">You can close this tab.</p>';
-          result.innerHTML = msg;
-          document.getElementById('decision-buttons').classList.add('hidden');
-          document.getElementById('feedback-form').classList.add('hidden');
-        })
-        .catch(function(err) {
-          var result = document.getElementById('decision-result');
-          result.className = 'mt-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200';
-          result.classList.remove('hidden');
-          result.textContent = 'Error: ' + err.message;
-          buttons.forEach(function(b) { b.disabled = false; b.classList.remove('opacity-50', 'cursor-not-allowed'); });
-        });
-      }
-    })();
-  </script>`;
-}
-
 /** Breadcrumb navigation. */
 export function renderBreadcrumb(items: { label: string; href?: string }[]): string {
   return `<nav aria-label="Breadcrumb" class="mb-4">
@@ -493,36 +323,24 @@ export function renderMockupInteractionScript(): string {
         container.appendChild(wrap);
         initAnnotationCanvas(wrap);
       } else if (iframe) {
-        // For iframes, capture as screenshot via SVG foreignObject
+        // Annotation is not supported for embedded iframes — show a notice
         preview.style.display = 'none';
         var wrap = document.createElement('div');
         wrap.className = 'mockup-annotation-wrap';
-
-        // Try to get srcdoc content for SVG rendering
-        var srcdoc = iframe.getAttribute('srcdoc') || '';
-        if (srcdoc) {
-          var svgData = '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600">' +
-            '<foreignObject width="100%" height="100%">' +
-            '<div xmlns="http://www.w3.org/1999/xhtml" style="width:800px;height:600px;overflow:hidden;">' +
-            srcdoc.replace(/<script[^>]*>[\\\\s\\\\S]*?<\\\\/script>/gi, '') +
-            '</div></foreignObject></svg>';
-          var svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-          var svgUrl = URL.createObjectURL(svgBlob);
-          wrap.innerHTML = buildAnnotationCanvasHTML(svgUrl);
-          container.appendChild(wrap);
-          initAnnotationCanvas(wrap);
-        } else {
-          // For src-based iframes, use a placeholder image
-          wrap.innerHTML = buildAnnotationCanvasHTML(iframe.src);
-          container.appendChild(wrap);
-          initAnnotationCanvas(wrap);
-        }
+        wrap.innerHTML = '<div class="p-6 text-center text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">' +
+          '<p class="text-sm font-medium mb-1">Annotation unavailable for embedded frames</p>' +
+          '<p class="text-xs">Use the Expand button to view full size.</p>' +
+        '</div>';
+        container.appendChild(wrap);
       }
     });
   });
 
   // Build annotation canvas HTML inline (mirrors annotation-canvas.ts structure)
   // No built-in sidebar — pins route to unified review sidebar.
+  function escImgSrc(s) {
+    return s.replace(/&/g, '&amp;').replace(/"/g, '%22').replace(/'/g, '%27').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
   function buildAnnotationCanvasHTML(imageSrc) {
     return '<div class="relative">' +
       '<div class="flex items-center gap-2 mb-3 p-2 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">' +
@@ -535,15 +353,17 @@ export function renderMockupInteractionScript(): string {
         '<span class="ac-status text-xs text-gray-500 dark:text-gray-400">Pin mode</span>' +
       '</div>' +
       '<div class="ac-canvas-wrapper relative inline-block border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-crosshair">' +
-        '<img class="ac-image block max-w-full h-auto select-none" src="' + imageSrc + '" alt="Content to annotate" draggable="false" />' +
+        '<img class="ac-image block max-w-full h-auto select-none" src="' + escImgSrc(imageSrc) + '" alt="Content to annotate" draggable="false" />' +
         '<canvas class="ac-draw absolute top-0 left-0 w-full h-full" style="pointer-events: auto;"></canvas>' +
         '<div class="ac-pins absolute top-0 left-0 w-full h-full" style="pointer-events: none;"></div>' +
       '</div>' +
     '</div>';
   }
 
-  // Initialize annotation canvas behavior on a container
+  // Initialize annotation canvas behavior on a container.
   // Pins route to the unified review sidebar via window.addReviewComment().
+  // TODO: Extract shared logic with annotation-canvas.ts into window._initAnnotationCanvas(wrap, opts)
+  // to eliminate ~200 lines of duplication. The two differ in DOM selection strategy and pin label format.
   function initAnnotationCanvas(wrap) {
     var img = wrap.querySelector('.ac-image');
     var canvas = wrap.querySelector('.ac-draw');
@@ -674,7 +494,12 @@ export function renderMockupInteractionScript(): string {
       if (!fromSidebar && pin.sidebarCommentId && typeof window.removeReviewComment === 'function') {
         window.removeReviewComment(pin.sidebarCommentId);
       }
-      for (var i = 0; i < pins.length; i++) { pins[i].el.textContent = i + 1; }
+      for (var i = 0; i < pins.length; i++) {
+        pins[i].el.textContent = i + 1;
+        if (pins[i].sidebarCommentId && typeof window.updateReviewCommentLabel === 'function') {
+          window.updateReviewCommentLabel(pins[i].sidebarCommentId, mockupLabel + ' pin #' + (i + 1));
+        }
+      }
     }
 
     wrap.querySelector('.ac-undo').addEventListener('click', function() {
@@ -925,6 +750,19 @@ export function renderReviewSidebarScript(sessionId: string): string {
   };
 
   /**
+   * Update a comment's sourceLabel by ID.
+   */
+  window.updateReviewCommentLabel = function(id, newLabel) {
+    var comment = comments.find(function(c) { return c.id === id; });
+    if (!comment) return;
+    comment.sourceLabel = newLabel;
+    if (comment.cardEl) {
+      var labelEl = comment.cardEl.querySelector('.text-xs.font-medium');
+      if (labelEl) labelEl.textContent = newLabel;
+    }
+  };
+
+  /**
    * Get all comments for submission.
    */
   window.getReviewComments = function() {
@@ -963,11 +801,8 @@ export function renderReviewSidebarScript(sessionId: string): string {
       if (canvasData.annotations && canvasData.annotations.length > 0) { annotations.pins = canvasData.annotations; hasAny = true; }
     }
 
-    // Inline text comments
-    if (typeof window.captureInlineComments === 'function' && typeof window.hasInlineComments === 'function' && window.hasInlineComments()) {
-      var inlineData = window.captureInlineComments();
-      if (inlineData && inlineData.length > 0) { annotations.comments = inlineData; hasAny = true; }
-    }
+    // Inline text comments are captured via the sidebar's reviewComments field
+    // (inline-comments.ts routes them to the sidebar via window.addReviewComment)
 
     // Mockup annotations
     if (typeof window.collectMockupAnnotations === 'function') {

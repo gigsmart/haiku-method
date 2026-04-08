@@ -36,7 +36,7 @@ export function renderReviewPage(data: ReviewData): string {
   };
 
   let result: ReviewResult | null = null;
-  let bodyContent: string;
+  let bodyContent = "";
   let title: string;
   let sidebarContent = "";
 
@@ -79,7 +79,7 @@ export function renderReviewPage(data: ReviewData): string {
     bodyContent = result.sidebarScript + result.body + renderMockupInteractionScript();
     sidebarContent = result.sidebar;
   } else {
-    bodyContent = bodyContent! + renderMockupInteractionScript();
+    bodyContent = (bodyContent ?? "") + renderMockupInteractionScript();
   }
 
   return renderLayout(title!, bodyContent, JSON.stringify(clientData), sidebarContent);
