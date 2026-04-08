@@ -134,7 +134,7 @@ Ask the user whether to plan gap stages now using `AskUserQuestion`:
 > **Gap stages detected:** {list}
 > Would you like to plan these stages now? This runs the plan phase only (no build).
 > 1. Yes - plan gap stages
-> 2. No - skip for now (you can run /haiku:run later)
+> 2. No - skip for now (you can run /haiku:resume later)
 
 If yes:
 - For each gap stage (inception, operations, security) in order:
@@ -164,7 +164,7 @@ Stages:
 Backup: .ai-dlc/{slug}.pre-haiku-backup
 Symlink: .ai-dlc/{slug} → .haiku/intents/{slug}
 
-Next: /haiku:run {slug}
+Next: /haiku:resume {slug}
 ```
 
 ---

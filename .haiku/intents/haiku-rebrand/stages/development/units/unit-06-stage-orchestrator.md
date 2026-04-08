@@ -14,7 +14,7 @@ completed_at: 2026-04-03T02:19:56Z
 
 ## Description
 
-Create the unified stage orchestrator that replaces the separate elaborate/execute command split. Three user-facing commands: `/haiku:new` (start intent), `/haiku:run` (advance through stages), `/haiku:autopilot` (fully autonomous). Each stage internally runs: plan -> build -> adversarial review -> review gate.
+Create the unified stage orchestrator that replaces the separate elaborate/execute command split. Three user-facing commands: `/haiku:new` (start intent), `/haiku:resume` (advance through stages), `/haiku:autopilot` (fully autonomous). Each stage internally runs: plan -> build -> adversarial review -> review gate.
 
 ## Discipline
 
@@ -23,7 +23,7 @@ backend - Skill definition files, shell orchestration logic, and state managemen
 ## Domain Entities
 
 - `plugin/skills/new/SKILL.md` — `/haiku:new` skill definition
-- `plugin/skills/run/SKILL.md` — `/haiku:run` skill definition
+- `plugin/skills/run/SKILL.md` — `/haiku:resume` skill definition
 - `plugin/skills/autopilot/SKILL.md` — `/haiku:autopilot` skill definition (updated)
 - `plugin/lib/orchestrator.sh` — stage loop execution logic
 - `plugin/lib/state.sh` — updated for stage tracking
@@ -54,11 +54,11 @@ User says `/haiku:new`. The system:
 6. **Creates workspace**: `.haiku/intents/{slug}/` directory structure
 7. **Begins first stage**: automatically transitions into the first stage's plan phase
 
-If mode is discrete, it stops after creating the intent and tells the user to run `/haiku:run {slug}` when ready.
+If mode is discrete, it stops after creating the intent and tells the user to run `/haiku:resume {slug}` when ready.
 
-#### `/haiku:run [name] [stage?]` — Run an Intent
+#### `/haiku:resume [name] [stage?]` — Run an Intent
 
-User says `/haiku:run my-feature` or `/haiku:run my-feature design`. The system:
+User says `/haiku:resume my-feature` or `/haiku:resume my-feature design`. The system:
 
 1. **Resolves intent**: finds `.haiku/intents/{name}/intent.md`
 2. **Determines stage**: if stage argument given, runs that stage. If not, reads `active_stage:` from intent frontmatter and advances to the next incomplete stage.
@@ -72,7 +72,7 @@ If all stages are complete, transitions to delivery.
 
 #### `/haiku:autopilot` — Fully Autonomous
 
-Same as `/haiku:run` but in continuous mode. Review gate resolution:
+Same as `/haiku:resume` but in continuous mode. Review gate resolution:
 - `auto` gates: advance immediately (unchanged)
 - `ask` gates: overridden to `auto`
 - `external` gates (single value only): **not bypassed** — autopilot blocks and surfaces to the user
@@ -238,9 +238,9 @@ hku_run_plan_phase() {
 
 - [x] `/haiku:new` skill exists and creates intents with studio, stages, active_stage, and mode
 - [x] `/haiku:new` correctly detects studio from settings and resolves stage list
-- [x] `/haiku:run` skill exists and advances through stages
-- [x] `/haiku:run` with explicit stage argument runs that specific stage
-- [x] `/haiku:run` without stage argument auto-advances to next incomplete stage
+- [x] `/haiku:resume` skill exists and advances through stages
+- [x] `/haiku:resume` with explicit stage argument runs that specific stage
+- [x] `/haiku:resume` without stage argument auto-advances to next incomplete stage
 - [x] `/haiku:autopilot` skill exists and correctly resolves review gates: bare `external` blocks, `ask` is overridden to `auto`, array gates (e.g. `[external, ask]`) select the most permissive non-`external` option and override it to `auto`
 - [x] The stage loop correctly executes: plan -> build -> adversarial review -> output persistence -> gate
 - [x] Plan phase resolves qualified inputs (stage + output pairs) from STAGE.md frontmatter
@@ -261,7 +261,7 @@ hku_run_plan_phase() {
 - **Orchestrator complexity**: The stage loop is the most complex new code. Mitigation: decompose into small functions (plan, build, review, gate) that compose.
 - **Sub-skill parameterization**: Existing sub-skills were written for a single monolithic elaboration. They need to accept stage context cleanly. Mitigation: pass stage metadata as environment/arguments, don't require sub-skill rewrites.
 - **State corruption**: Stage transitions update frontmatter. Concurrent runs could corrupt. Mitigation: lock intent file during stage transitions (existing state.sh pattern).
-- **Alias confusion**: Users familiar with elaborate/execute may be confused by the aliases. Mitigation: aliases print a deprecation notice pointing to `/haiku:run`.
+- **Alias confusion**: Users familiar with elaborate/execute may be confused by the aliases. Mitigation: aliases print a deprecation notice pointing to `/haiku:resume`.
 
 ## Boundaries
 

@@ -10,6 +10,7 @@ terraform {
       source  = "jianyuan/sentry"
       version = "~> 0.14"
     }
+
   }
 
   backend "gcs" {

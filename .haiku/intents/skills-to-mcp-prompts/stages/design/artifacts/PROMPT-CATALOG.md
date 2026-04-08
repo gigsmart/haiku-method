@@ -11,7 +11,7 @@ title: "MCP Prompt Catalog"
 | Name | Title | Description | Arguments |
 | --- | --- | --- | --- |
 | `haiku:new` | New Intent | Create a new H·AI·K·U intent with studio and stage configuration | `description?`: free text; `template?`: template name (completable) |
-| `haiku:run` | Run Intent | Advance an intent through its stages | `intent?`: slug (completable) |
+| `haiku:resume` | Run Intent | Advance an intent through its stages | `intent?`: slug (completable) |
 | `haiku:refine` | Refine | Amend specs mid-execution without losing progress | `stage?`: stage name (completable) |
 | `haiku:review` | Review | Pre-delivery code review with fix loop | `intent?`: slug (completable) |
 | `haiku:reflect` | Reflect | Post-completion analysis and learnings capture | `intent?`: slug (completable) |

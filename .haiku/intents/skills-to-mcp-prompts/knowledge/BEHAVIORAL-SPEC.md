@@ -52,9 +52,9 @@ Then  the response contains an empty prompts array: { prompts: [] }
 ### 2.1 Happy Path: Valid Name + Required Arguments
 
 ```
-Given the server is running with haiku:run registered
+Given the server is running with haiku:resume registered
   And an active intent "my-feature" exists in .haiku/intents/
-When  the client sends prompts/get { name: "haiku:run", arguments: { intent: "my-feature" } }
+When  the client sends prompts/get { name: "haiku:resume", arguments: { intent: "my-feature" } }
 Then  the response is a GetPromptResult with a messages array
   And messages has exactly 3 entries
   And messages[0] has role "user" with text content (state context)
@@ -66,9 +66,9 @@ Then  the response is a GetPromptResult with a messages array
 ### 2.2 Happy Path: Optional Arguments Omitted
 
 ```
-Given the server is running with haiku:run registered
+Given the server is running with haiku:resume registered
   And exactly one active intent exists in .haiku/intents/
-When  the client sends prompts/get { name: "haiku:run", arguments: {} }
+When  the client sends prompts/get { name: "haiku:resume", arguments: {} }
 Then  the handler resolves the single active intent automatically
   And returns a valid GetPromptResult with 3 messages
   And the messages reference the auto-resolved intent slug
@@ -119,7 +119,7 @@ Then  the server throws McpError with code -32602 (InvalidParams)
 Given the server is running
   And no intents exist in .haiku/intents/
   And no intent argument is provided
-When  the client sends prompts/get { name: "haiku:run", arguments: {} }
+When  the client sends prompts/get { name: "haiku:resume", arguments: {} }
 Then  the handler returns a GetPromptResult (NOT McpError)
   And messages has 1 entry with role "user"
   And the message text is "No active intent found. Create one with /haiku:new"
@@ -134,7 +134,7 @@ user did not provide an explicit slug -- the system cannot resolve one. Contrast
 ```
 Given the server is running
   And .haiku/intents/ exists but does not contain "nonexistent-slug"
-When  the client sends prompts/get { name: "haiku:run", arguments: { intent: "nonexistent-slug" } }
+When  the client sends prompts/get { name: "haiku:resume", arguments: { intent: "nonexistent-slug" } }
 Then  the server throws McpError with code -32602 (InvalidParams)
   And the error message is "Intent not found: nonexistent-slug"
 ```
@@ -148,7 +148,7 @@ Then  the server throws McpError with code -32602 (InvalidParams)
 ```
 Given .haiku/intents/ contains: "skills-to-mcp-prompts", "skip-ci-setup", "add-auth"
 When  the client sends completion/complete {
-        ref: { type: "ref/prompt", name: "haiku:run" },
+        ref: { type: "ref/prompt", name: "haiku:resume" },
         argument: { name: "intent", value: "ski" }
       }
 Then  the response contains completion.values = ["skills-to-mcp-prompts", "skip-ci-setup"]
@@ -176,7 +176,7 @@ Then  the response contains completion.values = ["inception", "design", "product
 ```
 Given .haiku/intents/ contains: "skills-to-mcp-prompts", "add-auth", "fix-bug"
 When  the client sends completion/complete {
-        ref: { type: "ref/prompt", name: "haiku:run" },
+        ref: { type: "ref/prompt", name: "haiku:resume" },
         argument: { name: "intent", value: "" }
       }
 Then  the response contains all 3 intent slugs in completion.values
@@ -188,7 +188,7 @@ Then  the response contains all 3 intent slugs in completion.values
 ```
 Given .haiku/intents/ contains: "skills-to-mcp-prompts", "add-auth"
 When  the client sends completion/complete {
-        ref: { type: "ref/prompt", name: "haiku:run" },
+        ref: { type: "ref/prompt", name: "haiku:resume" },
         argument: { name: "intent", value: "zzz" }
       }
 Then  the response contains completion.values = []
@@ -200,7 +200,7 @@ Then  the response contains completion.values = []
 ```
 Given .haiku/intents/ contains 150 intent directories
 When  the client sends completion/complete {
-        ref: { type: "ref/prompt", name: "haiku:run" },
+        ref: { type: "ref/prompt", name: "haiku:resume" },
         argument: { name: "intent", value: "" }
       }
 Then  completion.values has at most 100 entries
@@ -259,7 +259,7 @@ Then  the response contains all stages matching "d" across all studios
 ```
 Given .haiku/intents/ contains: "Add-Auth-Module"
 When  the client sends completion/complete {
-        ref: { type: "ref/prompt", name: "haiku:run" },
+        ref: { type: "ref/prompt", name: "haiku:resume" },
         argument: { name: "intent", value: "add" }
       }
 Then  completion.values includes "Add-Auth-Module"
@@ -270,7 +270,7 @@ Then  completion.values includes "Add-Auth-Module"
 ```
 Given .haiku/intents/ contains: "design-system", "redesign-tokens", "design-review"
 When  the client sends completion/complete {
-        ref: { type: "ref/prompt", name: "haiku:run" },
+        ref: { type: "ref/prompt", name: "haiku:resume" },
         argument: { name: "intent", value: "design" }
       }
 Then  completion.values starts with prefix matches: "design-system", "design-review"
@@ -282,23 +282,23 @@ Then  completion.values starts with prefix matches: "design-system", "design-rev
 
 ## 4. Core Prompt Behaviors
 
-### 4.1 `haiku:run` — Orchestrator Integration
+### 4.1 `haiku:resume` — Orchestrator Integration
 
 ```
 Given intent "my-feature" is active at stage "construction" with phase "execute"
-When  prompts/get is called for haiku:run with intent "my-feature"
+When  prompts/get is called for haiku:resume with intent "my-feature"
 Then  the handler calls the orchestrator's runNext() internally
   And the orchestrator returns an action (e.g., "start_unit", "continue_unit", "review", "gate_ask")
   And the handler constructs messages specific to that action type
   And messages[2] includes: hat definition content, unit completion criteria, available MCP tools
 ```
 
-### 4.2 `haiku:run` — `gate_ask` Opens Visual Review Before Returning
+### 4.2 `haiku:resume` — `gate_ask` Opens Visual Review Before Returning
 
 ```
 Given intent "my-feature" is at a stage gate with review type "ask"
   And the orchestrator returns action "gate_ask"
-When  prompts/get is called for haiku:run with intent "my-feature"
+When  prompts/get is called for haiku:resume with intent "my-feature"
 Then  the handler calls open_review (HTTP server) BEFORE constructing messages
   And open_review creates a session and returns a review URL
   And messages[2] instructs the agent: "A review is open at {url}. Wait for the user's decision."
@@ -306,23 +306,23 @@ Then  the handler calls open_review (HTTP server) BEFORE constructing messages
       if changes_requested analyze annotations and route to refine
 ```
 
-### 4.3 `haiku:run` — `gate_ask` Fallback When Visual Review Fails
+### 4.3 `haiku:resume` — `gate_ask` Fallback When Visual Review Fails
 
 ```
 Given the orchestrator returns action "gate_ask"
   And the HTTP server fails to start (port conflict, etc.)
-When  prompts/get is called for haiku:run
+When  prompts/get is called for haiku:resume
 Then  the handler falls back to a text-only gate prompt
   And messages[2] instructs the agent to present a stage summary in text
   And messages[2] instructs the agent to ask the user for approval via ask_user_visual_question
 ```
 
-### 4.4 `haiku:run` — `decompose` with Collaborative Elaboration Mode
+### 4.4 `haiku:resume` — `decompose` with Collaborative Elaboration Mode
 
 ```
 Given intent "my-feature" is at stage "design" with elaboration mode "collaborative"
   And the orchestrator returns action "decompose"
-When  prompts/get is called for haiku:run
+When  prompts/get is called for haiku:resume
 Then  messages[2] includes the STAGE.md content, discovery definitions, and upstream outputs
   And messages[2] includes multi-turn conversation rules:
       "MUST engage user iteratively", "MUST use ask_user_visual_question for rich content",
@@ -330,12 +330,12 @@ Then  messages[2] includes the STAGE.md content, discovery definitions, and upst
   And messages[2] includes interaction patterns and tool usage mandates
 ```
 
-### 4.5 `haiku:run` — `decompose` with Autonomous Elaboration Mode
+### 4.5 `haiku:resume` — `decompose` with Autonomous Elaboration Mode
 
 ```
 Given intent "my-feature" is at stage "construction" with elaboration mode "autonomous"
   And the orchestrator returns action "decompose"
-When  prompts/get is called for haiku:run
+When  prompts/get is called for haiku:resume
 Then  messages[2] includes the STAGE.md content, discovery definitions, and upstream outputs
   And messages[2] is concise (no multi-turn rules, no interaction patterns)
   And messages[2] states: "MAY drive elaboration independently",
@@ -343,12 +343,12 @@ Then  messages[2] includes the STAGE.md content, discovery definitions, and upst
       "MAY skip iterative questions if upstream specs are clear"
 ```
 
-### 4.6 `haiku:run` — `start_unit` / `continue_unit` Includes Hat Definition
+### 4.6 `haiku:resume` — `start_unit` / `continue_unit` Includes Hat Definition
 
 ```
 Given the orchestrator returns action "start_unit" for unit "unit-01-api" with hat "engineer"
   And stage "construction" has hat file stages/construction/hats/engineer.md
-When  prompts/get is called for haiku:run
+When  prompts/get is called for haiku:resume
 Then  messages[2] includes the full text content of hats/engineer.md
   And messages[2] includes the unit's description and completion criteria
   And messages[2] includes resolved ref content (each path in unit's refs array, read and inlined)
@@ -356,53 +356,53 @@ Then  messages[2] includes the full text content of hats/engineer.md
       haiku_unit_complete, haiku_unit_increment_bolt
 ```
 
-### 4.7 `haiku:run` — `review` Action Loads Review Agents
+### 4.7 `haiku:resume` — `review` Action Loads Review Agents
 
 ```
 Given the orchestrator returns action "review" for stage "construction"
   And stage "construction" has review-agents: correctness.md, security.md, performance.md
-When  prompts/get is called for haiku:run
+When  prompts/get is called for haiku:resume
 Then  messages[2] includes the full text of each review agent definition
   And messages[2] instructs: "Spawn one subagent per review agent"
   And messages[2] includes fix loop instructions: "Up to 3 cycles for HIGH findings"
   And messages[2] instructs: "After review, call haiku_stage_set phase=gate"
 ```
 
-### 4.8 `haiku:run` — `start_units` (Parallel Execution)
+### 4.8 `haiku:resume` — `start_units` (Parallel Execution)
 
 ```
 Given the orchestrator returns action "start_units" with units ["unit-01-api", "unit-02-ui", "unit-03-tests"]
   And each unit has hat "engineer" with refs and completion criteria
-When  prompts/get is called for haiku:run
+When  prompts/get is called for haiku:resume
 Then  messages[2] lists all 3 units with their individual criteria, refs, and hat definitions
   And messages[2] instructs: "Spawn one Agent per unit with worktree isolation"
   And messages[2] includes a per-unit prompt template with unit-specific content inlined
   And messages[2] instructs: "Wait for all agents to complete, then call haiku_run_next"
 ```
 
-### 4.9 `haiku:run` — `advance_stage` Transitions to Next Stage
+### 4.9 `haiku:resume` — `advance_stage` Transitions to Next Stage
 
 ```
 Given the orchestrator returns action "advance_stage" with next_stage "delivery"
-When  prompts/get is called for haiku:run
+When  prompts/get is called for haiku:resume
 Then  messages[2] is minimal: confirms stage transition from current to next
   And messages[2] instructs: "Call haiku_run_next to begin the next stage"
 ```
 
-### 4.10 `haiku:run` — `blocked` Action Reports Blocker
+### 4.10 `haiku:resume` — `blocked` Action Reports Blocker
 
 ```
 Given the orchestrator returns action "blocked" with unit "unit-02-ui" and reason "dependency failed"
-When  prompts/get is called for haiku:run
+When  prompts/get is called for haiku:resume
 Then  messages[2] includes the blocked unit name and the blocker reason
   And messages[2] instructs: "Resolve the blocker or use /haiku:refine to amend the unit"
 ```
 
-### 4.11 `haiku:run` — `intent_complete` Action
+### 4.11 `haiku:resume` — `intent_complete` Action
 
 ```
 Given the orchestrator returns action "intent_complete" for intent "my-feature"
-When  prompts/get is called for haiku:run
+When  prompts/get is called for haiku:resume
 Then  messages[2] includes a completion summary (studio, stages completed, total units, total bolts)
   And messages[2] instructs: "Run /haiku:reflect or /haiku:review as next steps"
 ```
@@ -438,7 +438,7 @@ When  prompts/get is called for haiku:new with { description: "New feature" }
 Then  the handler uses elicitation/create to ask:
       "An active intent 'existing-feature' exists. Create new or resume existing?"
   And if user selects "create new", the handler proceeds with new intent creation
-  And if user selects "resume existing", the handler returns messages that redirect to haiku:run
+  And if user selects "resume existing", the handler returns messages that redirect to haiku:resume
 ```
 
 ### 4.15 `haiku:new` — Template Mode Pre-fills Units
@@ -525,7 +525,7 @@ Then  the handler pre-computes execution metrics server-side:
 
 ```
 Given the orchestrator returns action "gate_ask" for intent "my-feature"
-When  the haiku:run prompt handler processes this action
+When  the haiku:resume prompt handler processes this action
 Then  open_review is invoked BEFORE the handler returns GetPromptResult
   And open_review receives: intent slug, stage name, summary content
   And open_review starts an HTTP session and returns a review URL
@@ -536,7 +536,7 @@ Then  open_review is invoked BEFORE the handler returns GetPromptResult
 
 ```
 Given the orchestrator returns action "start_unit" for intent "my-feature"
-When  the haiku:run prompt handler processes this action
+When  the haiku:resume prompt handler processes this action
 Then  open_review is NOT invoked
   And no HTTP session is created
 ```
@@ -580,7 +580,7 @@ Then  the handler catches the capability error
 
 ```
 Given the current working directory has no .haiku/ ancestor
-When  prompts/get is called for haiku:run with any arguments
+When  prompts/get is called for haiku:resume with any arguments
 Then  the handler returns a GetPromptResult (not an McpError)
   And messages contains 1 entry with role "user"
   And the message text is "No H-AI-K-U workspace found. Run /haiku:new to create one."
@@ -599,7 +599,7 @@ Then  the handler returns a GetPromptResult with 1 message
 
 ```
 Given the environment variable CLAUDE_CODE_IS_COWORK is set
-When  prompts/get is called for haiku:run
+When  prompts/get is called for haiku:resume
 Then  the handler returns a GetPromptResult with 1 message
   And the message text is "Cannot run in cowork mode."
 ```
@@ -608,7 +608,7 @@ Then  the handler returns a GetPromptResult with 1 message
 
 ```
 Given intent "old-feature" has status "completed"
-When  prompts/get is called for haiku:run with { intent: "old-feature" }
+When  prompts/get is called for haiku:resume with { intent: "old-feature" }
 Then  the handler returns a GetPromptResult with 1 message
   And the message text is "Intent is already completed."
 ```
@@ -631,7 +631,7 @@ These hold for ALL action prompts (not state-reading prompts).
 ### 7.1 Three-Message Pattern
 
 ```
-Given any action prompt (haiku:run, haiku:new, haiku:refine, haiku:review, haiku:reflect)
+Given any action prompt (haiku:resume, haiku:new, haiku:refine, haiku:review, haiku:reflect)
 When  prompts/get returns successfully (no error boundary hit)
 Then  messages.length = 3
   And messages[0].role = "user"
@@ -733,7 +733,7 @@ When  prompts/get is called for haiku:capacity with {}
 Then  the response is a GetPromptResult with 1 message
   And messages[0] has role "user"
   And the content states "No completed intents found. Complete an intent to see capacity metrics."
-  And the content suggests: "Run /haiku:run to advance an active intent"
+  And the content suggests: "Run /haiku:resume to advance an active intent"
 ```
 
 #### 9.3 Happy Path: Release Notes Reads Changelog
@@ -796,7 +796,7 @@ These prompts set a mode on the intent and then return prompt messages equivalen
 Given an active intent "my-feature" exists with status "in_progress"
 When  prompts/get is called for haiku:autopilot with { intent: "my-feature" }
 Then  the handler sets mode=autopilot on the intent's state
-  And the handler constructs messages equivalent to haiku:run
+  And the handler constructs messages equivalent to haiku:resume
   And messages[2] includes additional autopilot-specific instructions:
       "Proceed through all stages without pausing for user input at 'ask' gates"
 ```
@@ -880,7 +880,7 @@ Then  the response follows the 3-message pattern
 Given no intent is active, or the active intent has no in-progress unit
 When  prompts/get is called for haiku:pressure-testing with {}
 Then  the handler returns a GetPromptResult with 1 message
-  And messages[0] states "No active unit to pressure-test. Start a unit with /haiku:run first."
+  And messages[0] states "No active unit to pressure-test. Start a unit with /haiku:resume first."
 ```
 
 #### 9.15 Happy Path: Triggers Polls Providers

@@ -158,12 +158,12 @@ Studios:
 Sync points:
 - marketing:launch waits for software:development + marketing:content
 
-Run `/haiku:run` to start. Both studios' first stages will run in parallel.
+Run `/haiku:resume` to start. Both studios' first stages will run in parallel.
 ```
 
-## How /haiku:run Handles Composites
+## How /haiku:resume Handles Composites
 
-When `/haiku:run` encounters a composite intent (Step 2c in the run skill):
+When `/haiku:resume` encounters a composite intent (Step 2c in the run skill):
 
 1. Finds all runnable stages across all studios (respecting sync dependencies)
 2. Runs the first runnable stage through the standard stage loop

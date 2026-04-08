@@ -22,7 +22,7 @@ Implement 7 complex prompts that follow Pattern B (elicitation + side effect), P
 
 ## Completion Criteria
 
-- [x] `haiku:autopilot` sets mode=continuous, chains to haiku:run
+- [x] `haiku:autopilot` sets mode=continuous, chains to haiku:resume
 - [x] `haiku:composite` uses elicitation for multi-studio selection, validates 2+ studios
 - [x] `haiku:operate` dispatches operation templates from the studio's operations directory
 - [x] `haiku:triggers` polls configured providers, returns events as structured context

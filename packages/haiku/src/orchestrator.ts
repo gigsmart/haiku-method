@@ -807,7 +807,7 @@ export function runNext(slug: string): OrchestratorAction {
 			}
 			// FSM side effect: complete stage as discrete (paused)
 			fsmStageCompleteDiscrete(slug, currentStage)
-			return { action: "stage_complete_discrete", intent: slug, stage: currentStage, next_stage: nextStage, message: `Stage '${currentStage}' complete. Run /haiku:run to start '${nextStage}'.` }
+			return { action: "stage_complete_discrete", intent: slug, stage: currentStage, next_stage: nextStage, message: `Stage '${currentStage}' complete. Run /haiku:resume to start '${nextStage}'.` }
 		}
 
 		if (reviewType === "ask" || reviewType === "external" || reviewType.includes("ask") || reviewType.includes("external")) {
@@ -861,7 +861,7 @@ export function runNext(slug: string): OrchestratorAction {
 						intent: slug,
 						stage: currentStage,
 						external_review_url: externalUrl,
-						message: `Stage '${currentStage}' is awaiting external review at: ${externalUrl}. Run /haiku:run again after approval.`,
+						message: `Stage '${currentStage}' is awaiting external review at: ${externalUrl}. Run /haiku:resume again after approval.`,
 					}
 				}
 			} else {
@@ -1369,7 +1369,7 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 						intent: slug,
 						stage,
 						feedback: reviewResult.feedback,
-						message: "External review requested. Submit the work for review through your project's review process (PR, MR, review board, etc.). Include the H·AI·K·U browse link in the description so reviewers can see the intent, units, and knowledge artifacts. Record the review URL via haiku_run_next { intent, external_review_url }. Run /haiku:run again after approval.",
+						message: "External review requested. Submit the work for review through your project's review process (PR, MR, review board, etc.). Include the H·AI·K·U browse link in the description so reviewers can see the intent, units, and knowledge artifacts. Record the review URL via haiku_run_next { intent, external_review_url }. Run /haiku:resume again after approval.",
 					}, null, 2))
 				}
 				// changes_requested — go back to elaborate to fix specs
@@ -1626,8 +1626,9 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 		mkdirSync(join(iDir, "knowledge"), { recursive: true })
 		mkdirSync(join(iDir, "stages"), { recursive: true })
 
-		// Build intent.md frontmatter
-		const frontmatter = [
+		// Build intent.md with frontmatter + body
+		const context = args.context as string | undefined
+		const intentContent = [
 			"---",
 			`title: "${description.replace(/"/g, '\\"')}"`,
 			`studio: ${selectedStudio}`,
@@ -1640,12 +1641,12 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 			"",
 			`# ${description}`,
 			"",
+			...(context ? [context, ""] : []),
 		].join("\n")
 
-		writeFileSync(join(iDir, "intent.md"), frontmatter)
+		writeFileSync(join(iDir, "intent.md"), intentContent)
 
-		// Gap 5: Write conversation context if provided
-		const context = args.context as string | undefined
+		// Also write conversation context to knowledge for discoverability
 		if (context) {
 			const knowledgeDir = join(iDir, "knowledge")
 			mkdirSync(knowledgeDir, { recursive: true })

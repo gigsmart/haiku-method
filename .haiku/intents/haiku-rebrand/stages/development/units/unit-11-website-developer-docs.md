@@ -25,7 +25,7 @@ documentation - Technical writing for developer audience, structured as referenc
 ### Documentation Pages
 
 - `website/content/docs/getting-started.md` — installation and first intent
-- `website/content/docs/cli-reference.md` — `/haiku:new`, `/haiku:run`, `/haiku:autopilot` and all commands
+- `website/content/docs/cli-reference.md` — `/haiku:new`, `/haiku:resume`, `/haiku:autopilot` and all commands
 - `website/content/docs/studios.md` — studio configuration and customization guide
 - `website/content/docs/stages.md` — stage creation and STAGE.md schema reference
 - `website/content/docs/persistence.md` — persistence adapters guide
@@ -74,7 +74,7 @@ Complete reference for all `/haiku:*` commands:
 | Command | Description | Usage |
 |---------|-------------|-------|
 | `/haiku:new` | Start a new intent | `/haiku:new` (interactive) |
-| `/haiku:run [name] [stage?]` | Run/advance an intent | `/haiku:run dark-mode` or `/haiku:run dark-mode design` |
+| `/haiku:resume [name] [stage?]` | Run/advance an intent | `/haiku:resume dark-mode` or `/haiku:resume dark-mode design` |
 | `/haiku:autopilot` | Fully autonomous mode | `/haiku:autopilot` |
 | `/haiku:review` | Pre-delivery code review | `/haiku:review` |
 | `/haiku:followup` | Create follow-up intent | `/haiku:followup` |

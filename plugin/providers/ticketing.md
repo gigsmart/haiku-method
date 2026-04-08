@@ -72,7 +72,7 @@ The goal is a ticket that gives a person full context without needing to read `.
 
 ## Sync: Event Discovery
 
-On session start (or when `/haiku:run` is invoked), check the provider for relevant events:
+On session start (or when `/haiku:resume` is invoked), check the provider for relevant events:
 
 ```
 1. Load active intent's epic key from frontmatter

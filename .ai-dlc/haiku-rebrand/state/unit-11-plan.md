@@ -24,7 +24,7 @@ Create 7 new markdown files in `website/content/docs/`:
 
 **1a. `getting-started.md`** (replaces/subsumes `quick-start.md`)
 - Tutorial: install → first intent → run stages → deliver
-- Uses `/haiku:new` and `/haiku:run` commands
+- Uses `/haiku:new` and `/haiku:resume` commands
 - Shows software studio stage progression
 - References `.haiku/` paths throughout
 
@@ -83,7 +83,7 @@ Create 7 new markdown files in `website/content/docs/`:
 
 **2a. High-impact rewrites** (content structure changes, not just find/replace):
 - `index.md` — rewrite intro for H·AI·K·U, update core concepts (stages not hats), update getting started steps
-- `quick-start.md` — rewrite with `/haiku:new` + `/haiku:run` flow, update all commands/paths. May redirect to getting-started or keep as slimmer version.
+- `quick-start.md` — rewrite with `/haiku:new` + `/haiku:resume` flow, update all commands/paths. May redirect to getting-started or keep as slimmer version.
 - `installation.md` — update plugin name, commands, paths, verification steps
 - `elaboration.md` — rewrite for stage-based model (inception stage, not standalone "elaborate" phase)
 - `hats.md` — rewrite: hats now live as files in `stages/{stage}/hats/`, not standalone. Update to explain hats-within-stages model. Rename/redirect or keep as "understanding hats"

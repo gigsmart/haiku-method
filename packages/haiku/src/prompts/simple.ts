@@ -515,7 +515,7 @@ registerPrompt({
 			"### Prerequisites\n\n" +
 			"- `haiku` binary must be available on PATH\n" +
 			"- Legacy intents must exist in `.ai-dlc/`\n\n" +
-			"After migration, run `/haiku:run <slug>` to continue execution."
+			"After migration, run `/haiku:resume <slug>` to continue execution."
 		)
 	},
 })

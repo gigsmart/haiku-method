@@ -64,7 +64,7 @@ When modifying any component, check if other components need corresponding updat
 | Reflection Dimension | Reflection phase | `plugin/studios/{name}/reflections/{dim}.md` | prompts/core.ts |
 | Completion Criteria | Throughout | `quality_gates:` in unit/intent frontmatter, harness-enforced | orchestrator.ts, quality-gate.sh |
 | Backpressure | Principles section | Quality gates enforced by harness, not agent | quality-gate.sh, orchestrator.ts |
-| Operating Modes | Operating Modes section | interactive=HITL, /haiku:run=OHOTL, /haiku:autopilot=AHOTL | prompts/core.ts, prompts/complex.ts |
+| Operating Modes | Operating Modes section | interactive=HITL, /haiku:resume=OHOTL, /haiku:autopilot=AHOTL | prompts/core.ts, prompts/complex.ts |
 | Hard Gates | Execution phase | exit code enforcement in quality-gate.sh | orchestrator.ts |
 | Persistence | Context Preservation | `plugin/lib/adapters/*.sh` (filesystem, git) | config.sh, adapters/ |
 | Providers | Memory Providers section | `plugin/schemas/providers/*.json`, `plugin/providers/*.md` | config.sh |

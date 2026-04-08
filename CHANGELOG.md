@@ -5,6 +5,102 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.87.1] - 2026-04-08
+
+### Fixed
+- Auth proxy load balancer now uses Google-managed certificates for improved security and reliability.
+
+## [1.87.0] - 2026-04-08
+
+### Changed
+- Resume work on existing intents with `haiku:resume` (formerly `haiku:run`), and start new work with a simplified `haiku:new` command.
+
+## [1.86.11] - 2026-04-08
+
+### Fixed
+
+- Unit parsing now strictly enforces proper structure, removing incorrect fallback behavior that could mask malformed units.
+
+## [1.86.10] - 2026-04-08
+
+### Fixed
+- Fixed proxy-only subnet CIDR conflicts and added proper infrastructure deployment dependencies.
+
+## [1.86.7] - 2026-04-08
+
+### Fixed
+- Fixed infrastructure configuration to enable proper plugin deployment
+
+## [1.86.5] - 2026-04-08
+
+### Fixed
+- Terraform deployments can now recover from partial applies by importing orphaned GCP resources instead of failing.
+
+## [1.86.4] - 2026-04-08
+
+```markdown
+### Fixed
+- Improved authentication proxy load balancing for better reliability under load.
+```
+
+## [1.86.3] - 2026-04-08
+
+### Fixed
+- Authentication proxy deployments now correctly reference serverless Network Endpoint Groups by service name instead of full path, preventing configuration errors in serverless environments
+
+## [1.86.2] - 2026-04-08
+
+### Fixed
+- Backend service now properly scales capacity based on demand, improving reliability under load.
+
+## [1.86.0] - 2026-04-08
+
+### Added
+- Regional HTTPS load balancer support for auth proxy public access, improving global availability and performance.
+
+## [1.85.5] - 2026-04-08
+
+```markdown
+### Fixed
+
+- Auth proxy URL now updates automatically during deployments.
+```
+
+## [1.85.4] - 2026-04-08
+
+### Fixed
+
+- Deployments no longer fail when stale Terraform locks block the apply step.
+
+## [1.85.3] - 2026-04-08
+
+### Fixed
+- Fixed authentication proxy to use ingress settings for public access instead of IAM roles.
+
+## [1.85.2] - 2026-04-08
+
+Based on the commits provided, there are no user-facing changes in this release. The single commit (`fix: reapply auth proxy workflow changes`) is an infrastructure/CI fix that doesn't change what users can do with the plugin.
+
+If this patch release should include a changelog entry despite lacking user-facing changes, please clarify and I can reformat the workflow fix accordingly.
+
+## [1.85.1] - 2026-04-08
+
+I see that **version 1.85.1 already has a changelog entry** in the repo (dated 2026-04-07). The current released version is 1.85.5 (2026-04-08).
+
+Did you mean to:
+1. **Update the existing 1.85.1 entry** with more detail?
+2. **Create a new entry for 1.85.5** or another version?
+3. **Backfill an older version** that's missing from the changelog?
+
+The existing 1.85.1 entry is minimal:
+```markdown
+### Fixed
+- Tailwindcss binary is now resolved via module resolution instead of hardcoded paths, improving compatibility across different environments.
+- Workspace configuration updated to properly include packages/shared in monorepo builds.
+```
+
+Based on your commits, this could be expanded to mention the major feature (FSM orchestrator + review UI from PR #144) and infrastructure improvements. Let me know which version you'd like me to focus on, and I'll write a more comprehensive changelog entry.
+
 ## [1.85.5] - 2026-04-08
 
 ### Fixed

@@ -122,24 +122,7 @@ export async function parseAllUnits(
 ): Promise<ParsedUnit[]> {
   const units: ParsedUnit[] = [];
 
-  // 1. Look for unit files directly in the intent root
-  try {
-    const entries = await readdir(intentDir);
-    const unitFiles = entries
-      .filter((f) => /^unit-\d+.*\.md$/.test(f))
-      .sort();
-
-    for (const file of unitFiles) {
-      const parsed = await parseUnit(join(intentDir, file));
-      if (parsed) {
-        units.push(parsed);
-      }
-    }
-  } catch {
-    // Intent dir may not exist or have no direct unit files
-  }
-
-  // 2. Look for unit files in stages/{stage}/units/ subdirectories
+  // Look for unit files in stages/{stage}/units/ subdirectories
   try {
     const stagesDir = join(intentDir, "stages");
     const stageEntries = await readdir(stagesDir, { withFileTypes: true });

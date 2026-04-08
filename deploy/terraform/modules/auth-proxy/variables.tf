@@ -39,3 +39,8 @@ variable "gitlab_oauth_client_secret" {
   sensitive   = true
   default     = ""
 }
+
+variable "domain" {
+  description = "Base domain (e.g., haikumethod.ai) — used for SSL cert CN"
+  type        = string
+}

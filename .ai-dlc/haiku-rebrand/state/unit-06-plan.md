@@ -2,7 +2,7 @@
 
 ## Overview
 
-Replace the separate elaborate/execute command split with a unified stage orchestrator. Three user-facing commands: `/haiku:new`, `/haiku:run`, `/haiku:autopilot`. Each stage internally runs: plan → build → adversarial review → output persistence → review gate.
+Replace the separate elaborate/execute command split with a unified stage orchestrator. Three user-facing commands: `/haiku:new`, `/haiku:resume`, `/haiku:autopilot`. Each stage internally runs: plan → build → adversarial review → output persistence → review gate.
 
 ## Dependencies
 
@@ -17,7 +17,7 @@ The orchestrator sits between the user-facing commands and the existing sub-skil
 User commands          Orchestrator              Existing sub-skills
 ─────────────         ────────────              ──────────────────
 /haiku:new      →     Create intent             (setup, config)
-/haiku:run      →     Stage loop:
+/haiku:resume      →     Stage loop:
                         Plan phase      →       gather, discover, decompose, criteria, dag
                         Build phase     →       execute bolt loop (planner/builder/reviewer hats)
                         Adversarial     →       adversarial-review sub-skill
@@ -38,7 +38,7 @@ The core stage loop logic. Shell library sourced by the skill SKILL.md files.
 
 ```bash
 # Run the full stage loop for a single stage
-# Called by /haiku:run and /haiku:autopilot
+# Called by /haiku:resume and /haiku:autopilot
 hku_run_stage() {
   local intent_dir="$1"
   local stage_name="$2"
@@ -197,14 +197,14 @@ allowed-tools:
 8. **Create workspace**: `.haiku/intents/{slug}/` directory, `stages/`, `knowledge/`, `state/`
 9. **Git setup**: Create intent branch, initial commit
 10. **Mode-dependent next step**:
-    - Continuous: automatically begin first stage's plan phase (transition to `/haiku:run`)
-    - Discrete: tell user to run `/haiku:run {slug}` when ready
+    - Continuous: automatically begin first stage's plan phase (transition to `/haiku:resume`)
+    - Discrete: tell user to run `/haiku:resume {slug}` when ready
 
-**Relationship to elaborate:** `/haiku:new` replaces the "gather intent" portion of elaborate. It does NOT run decomposition — that happens in the plan phase of the first stage via `/haiku:run`.
+**Relationship to elaborate:** `/haiku:new` replaces the "gather intent" portion of elaborate. It does NOT run decomposition — that happens in the plan phase of the first stage via `/haiku:resume`.
 
 ### File 3: `plugin/skills/run/SKILL.md` (NEW)
 
-The `/haiku:run` user-facing command.
+The `/haiku:resume` user-facing command.
 
 **Structure:**
 
@@ -286,8 +286,8 @@ Update the existing autopilot to use the stage pipeline.
 
 **Changes:**
 
-1. **Replace Phase 2 (Elaboration)**: Instead of invoking `/haiku:elaborate`, invoke `/haiku:new` (if no intent exists) then `/haiku:run` with autopilot gate resolution
-2. **Replace Phase 3 (Execution)**: Instead of invoking `/haiku:execute` per unit, the stage loop in `/haiku:run` handles this
+1. **Replace Phase 2 (Elaboration)**: Instead of invoking `/haiku:elaborate`, invoke `/haiku:new` (if no intent exists) then `/haiku:resume` with autopilot gate resolution
+2. **Replace Phase 3 (Execution)**: Instead of invoking `/haiku:execute` per unit, the stage loop in `/haiku:resume` handles this
 3. **Gate resolution in autopilot mode**:
    - `auto` gates: advance immediately
    - `ask` gates: overridden to `auto`
@@ -298,7 +298,7 @@ Update the existing autopilot to use the stage pipeline.
 **The autopilot skill becomes a thin wrapper** that:
 1. Validates input (feature description required)
 2. Runs `/haiku:new` with the description (autonomous mode — no questions)
-3. Runs `/haiku:run` with autopilot=true for each stage (or all at once in continuous mode)
+3. Runs `/haiku:resume` with autopilot=true for each stage (or all at once in continuous mode)
 4. Handles delivery (PR creation with confirmation)
 
 ### File 5: `plugin/lib/state.sh` (UPDATE)
@@ -334,10 +334,10 @@ Convert to a backward-compatibility alias that runs the plan phase.
 
 - Add a deprecation notice at the top of the skill output
 - Detect if intent has studio/stages configured:
-  - If yes: print deprecation notice, invoke `/haiku:run {slug}` (plan phase only)  
+  - If yes: print deprecation notice, invoke `/haiku:resume {slug}` (plan phase only)  
   - If no (legacy): run existing elaborate logic unchanged
 - The bulk of the file remains unchanged for legacy support
-- Add a note in the description: "Prefer `/haiku:new` + `/haiku:run` for stage-based workflows"
+- Add a note in the description: "Prefer `/haiku:new` + `/haiku:resume` for stage-based workflows"
 
 ### File 7: `plugin/skills/execute/SKILL.md` (UPDATE)
 
@@ -347,10 +347,10 @@ Convert to a backward-compatibility alias that runs the build phase.
 
 - Add a deprecation notice at the top of the skill output
 - Detect if intent has studio/stages configured:
-  - If yes: print deprecation notice, invoke `/haiku:run {slug}` (build phase only)
+  - If yes: print deprecation notice, invoke `/haiku:resume {slug}` (build phase only)
   - If no (legacy): run existing execute logic unchanged
 - The bulk of the file remains unchanged for legacy support
-- Add a note in the description: "Prefer `/haiku:run` for stage-based workflows"
+- Add a note in the description: "Prefer `/haiku:resume` for stage-based workflows"
 
 ---
 
@@ -412,7 +412,7 @@ For `.haiku/{slug}/` (old directory structure):
 | Orchestrator complexity | Decomposed into small composable functions (plan, build, review, gate) |
 | Sub-skill parameterization | Stage metadata passed as environment/arguments, sub-skills don't need rewrites |
 | State corruption on concurrent runs | Lock intent file during stage transitions (existing state.sh atomic write pattern) |
-| Alias confusion | Aliases print deprecation notice pointing to `/haiku:run` |
+| Alias confusion | Aliases print deprecation notice pointing to `/haiku:resume` |
 | Continuous mode regression | Continuous mode collapse operation produces identical behavior to old flow |
 | New directory structure breaks hooks | `hku_find_active_intent` searches both old and new locations |
 

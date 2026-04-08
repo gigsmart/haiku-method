@@ -19,7 +19,7 @@ H·AI·K·U requires [Claude Code](https://claude.ai/code) or [Claude Cowork](ht
 Install directly from within a Claude Code or Cowork session:
 
 ```
-/plugin marketplace add gigsmart/ai-dlc
+/plugin marketplace add thebushidocollective/ai-dlc
 /plugin install haiku --scope project
 ```
 
@@ -32,7 +32,7 @@ Add the plugin to your Claude settings file manually.
 ```json
 {
   "plugins": [
-    "github:gigsmart/ai-dlc"
+    "github:thebushidocollective/ai-dlc"
   ]
 }
 ```
@@ -42,7 +42,7 @@ Add the plugin to your Claude settings file manually.
 ```json
 {
   "plugins": [
-    "github:gigsmart/ai-dlc"
+    "github:thebushidocollective/ai-dlc"
   ]
 }
 ```
@@ -117,7 +117,7 @@ However, committing is recommended - it provides:
 
 ### Commands Not Recognized
 
-**Symptom:** `/haiku:new` or `/haiku:run` don't activate
+**Symptom:** `/haiku:new` or `/haiku:resume` don't activate
 
 **Solutions:**
 1. Restart Claude session

@@ -49,7 +49,7 @@ When `--template` is provided, the intent is seeded from a studio template file:
 3. **Apply parameter substitution**: Replace `{{ param }}` placeholders in unit criteria and content.
 4. **Create units**: Write pre-filled unit files from the template's `units:` section to the appropriate stage directories.
 5. **Apply stage override**: If the template specifies `stages-override:`, only those stages are active (others skipped).
-6. **Skip elaboration**: Since units are pre-defined, the first `/haiku:run` skips the elaboration step and goes straight to execution.
+6. **Skip elaboration**: Since units are pre-defined, the first `/haiku:resume` skips the elaboration step and goes straight to execution.
 
 **Example:**
 ```
@@ -60,7 +60,7 @@ This creates a sales intent pre-filled with units for Acme Corp, with criteria l
 
 **Relationship to other commands:**
 - `/haiku:new` creates the intent and workspace
-- `/haiku:run` advances the intent through its stages (plan, build, review, gate)
+- `/haiku:resume` advances the intent through its stages (plan, build, review, gate)
 - `/haiku:elaborate` is now a backward-compatibility alias that delegates to this flow
 
 ---
@@ -253,13 +253,13 @@ Before starting execution, the agent **MUST** present the intent for high-level 
 
 The question **MUST** ask: "Does this direction look right? Ready to start?"
 
-The agent **MUST NOT** transition to `/haiku:run` without the user's explicit approval of the high-level direction.
+The agent **MUST NOT** transition to `/haiku:resume` without the user's explicit approval of the high-level direction.
 
 ### Step 10: Start Execution
 
-**Continuous mode:** After user approval, invoke `/haiku:run` via the `Skill` tool.
+**Continuous mode:** After user approval, invoke `/haiku:resume` via the `Skill` tool.
 
-**Discrete mode:** After user approval, tell the user to run `/haiku:run` to start the first stage.
+**Discrete mode:** After user approval, tell the user to run `/haiku:resume` to start the first stage.
 
 ---
 
@@ -270,7 +270,7 @@ When called from autopilot, the following adjustments apply:
 - The agent **MUST** skip confirmation prompts — proceed automatically
 - Studio recommendation still runs (Step 3b), but the agent **MUST** auto-select the best match — the agent **MUST NOT** ask in autopilot mode
 - The intent description is provided as the argument (**REQUIRED**)
-- The agent **MUST NOT** invoke `/haiku:run` at the end — autopilot handles the transition
+- The agent **MUST NOT** invoke `/haiku:resume` at the end — autopilot handles the transition
 
 ---
 

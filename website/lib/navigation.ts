@@ -223,6 +223,11 @@ export const navigation: NavCategory[] = [
 						description: "Join the H\u00b7AI\u00b7K\u00b7U community",
 					},
 					{
+						title: "Fork Deployment Guide",
+						href: "/docs/fork-deployment/",
+						description: "Deploy your own fork of H\u00b7AI\u00b7K\u00b7U",
+					},
+					{
 						title: "GitHub",
 						href: "https://github.com/gigsmart/haiku-method",
 						description: "Source code and discussions",

@@ -1,6 +1,6 @@
 // prompts/core.ts — Core workflow prompt handlers
 //
-// Registers the 5 core prompts: haiku:new, haiku:run, haiku:refine, haiku:review, haiku:reflect
+// Registers the 5 core prompts: haiku:new, haiku:resume, haiku:refine, haiku:review, haiku:reflect
 // Each handler reads state, optionally triggers side effects, and returns PromptMessage[].
 
 import { spawnSync } from "node:child_process"
@@ -114,21 +114,41 @@ function listStudios(): Array<{ name: string; data: Record<string, unknown>; bod
 	return Array.from(seen.values())
 }
 
-// ── haiku:run ───────────────────────────────────────────────────────────────
+// ── haiku:resume ────────────────────────────────────────────────────────────
 
 registerPrompt({
-	name: "haiku:run",
-	title: "Run Intent",
-	description: "Advance an H·AI·K·U intent through its next stage",
+	name: "haiku:resume",
+	title: "Resume Intent",
+	description: "Resume an H·AI·K·U intent — pick up where you left off",
 	arguments: [
 		{
 			name: "intent",
-			description: "Intent slug (auto-detected if omitted)",
+			description: "Intent slug (prompts for selection if omitted)",
 			required: false,
 			completer: completeIntentSlug,
 		},
 	],
 	handler: async (args) => {
+		// If no intent specified, find active intents and elicit selection
+		if (!args.intent) {
+			const active = findActiveIntents()
+			if (active.length === 0) {
+				return singleMessage("No active intents found. Create one with /haiku:new")
+			}
+			if (active.length === 1) {
+				args.intent = active[0].slug
+			} else {
+				const intentList = active.map(a => {
+					const { data } = parseFrontmatter(readFileSync(join(intentDir(a.slug), "intent.md"), "utf8"))
+					return `- **${a.slug}**: ${data.title || "(untitled)"} — stage: ${data.active_stage || "none"}, status: ${data.status}`
+				}).join("\n")
+				return singleMessage(
+					`Multiple active intents found. Which one do you want to resume?\n\n${intentList}\n\n` +
+					`Run \`/haiku:resume intent=<slug>\` to pick one.`,
+				)
+			}
+		}
+
 		const resolved = resolveIntent(args)
 		if ("error" in resolved) return resolved.error
 
@@ -266,7 +286,7 @@ function buildRunInstructions(
 				`   - A unit spec says WHAT will be produced and HOW to verify it\n` +
 				`   - The execution phase produces the actual deliverables\n` +
 				`   - Do NOT write full specs, schemas, or implementations during elaboration\n` +
-				`3. Write unit files to \`.haiku/intents/${slug}/stages/${stage}/units/unit-NN-slug.md\` (e.g. \`unit-01-auth-flow.md\`, \`unit-02-session-mgmt.md\`)\n` +
+				`3. Write unit files to \`.haiku/intents/${slug}/stages/${stage}/units/\`\n` +
 				`4. Call \`haiku_run_next { intent: "${slug}" }\` — the orchestrator validates and opens the review gate`,
 			)
 
@@ -494,7 +514,7 @@ function buildRunInstructions(
 				`### Instructions\n\n` +
 				`1. Push the branch and commit stage artifacts\n` +
 				`2. Share the review URL with the reviewer\n` +
-				`3. Report: "Awaiting external review. Run /haiku:run when review is complete."`,
+				`3. Report: "Awaiting external review. Run /haiku:resume when review is complete."`,
 			)
 			break
 		}
@@ -506,7 +526,7 @@ function buildRunInstructions(
 				`Stage "${stage}" is complete. The gate has been entered by the orchestrator.\n\n` +
 				`### Instructions\n\n` +
 				`1. Report what is being awaited\n` +
-				`2. Stop. Run /haiku:run when the event occurs.`,
+				`2. Stop. Run /haiku:resume when the event occurs.`,
 			)
 			break
 		}
@@ -529,7 +549,7 @@ function buildRunInstructions(
 				`## Stage Complete (Discrete Mode)\n\n` +
 				`Stage "${stage}" has been completed by the orchestrator.\n\n` +
 				`### Instructions\n\n` +
-				`Report: "Stage complete. Run /haiku:run to start '${nextStage}'."`,
+				`Report: "Stage complete. Run /haiku:resume to start '${nextStage}'."`,
 			)
 			break
 		}
@@ -686,24 +706,6 @@ registerPrompt({
 			// No .haiku dir yet -- that's fine for new intent
 		}
 
-		// Check for active intents
-		let activeIntents: string[] = []
-		try {
-			const root = findHaikuRoot()
-			const intentsDir = join(root, "intents")
-			if (existsSync(intentsDir)) {
-				activeIntents = readdirSync(intentsDir, { withFileTypes: true })
-					.filter(d => d.isDirectory() && existsSync(join(intentsDir, d.name, "intent.md")))
-					.filter(d => {
-						const { data } = parseFrontmatter(readFileSync(join(intentsDir, d.name, "intent.md"), "utf8"))
-						return data.status === "active"
-					})
-					.map(d => d.name)
-			}
-		} catch {
-			// No workspace yet
-		}
-
 		// List available studios for the agent to recommend from
 		const studios = listStudios()
 		const studioSummary = studios.map(s =>
@@ -715,14 +717,6 @@ registerPrompt({
 
 		if (args.description) {
 			contextParts.push(`## Intent Description\n\n${args.description}`)
-		}
-
-		if (activeIntents.length > 0) {
-			contextParts.push(
-				`## Warning: Active Intents\n\n` +
-				`The following intents are currently active: ${activeIntents.join(", ")}.\n` +
-				`Confirm with the user whether to create a new intent or resume an existing one.`,
-			)
 		}
 
 		if (projectStudio) {
@@ -751,7 +745,7 @@ registerPrompt({
 			`5. Summarize the conversation so far into a concise context block (key decisions, constraints, technical details discussed)\n` +
 			`6. Call \`haiku_intent_create\` with description, slug, and the \`context\` argument containing your conversation summary\n` +
 			`7. The tool creates directories, writes intent.md, writes CONVERSATION-CONTEXT.md to knowledge/, and opens a review for user confirmation\n` +
-			`8. Invoke /haiku:run — the orchestrator opens the review and advances automatically (continuous) or report ready (discrete)`,
+			`8. Invoke /haiku:resume — the orchestrator opens the review and advances automatically (continuous) or report ready (discrete)`,
 		)
 
 		const instructionText = contextParts.join("\n\n")

@@ -200,7 +200,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 					{/* GitHub link */}
 					<div className="mt-4">
 						<a
-							href="https://github.com/gigsmart/haiku-method"
+							href="https://github.com/TheBushidoCollective/haiku-method"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="flex items-center justify-center gap-2 rounded-lg border border-stone-200 px-4 py-3 font-medium transition hover:bg-stone-50 dark:border-stone-700 dark:hover:bg-stone-800"

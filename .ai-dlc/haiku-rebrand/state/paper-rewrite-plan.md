@@ -71,7 +71,7 @@ Source of truth: the plugin implementation on branch `ai-dlc/haiku-rebrand/main`
   - Bolt planning: AI-driven (planner hat)
 
 ### Section 8: The H·AI·K·U Plugin Implementation
-- Two commands: `/haiku:new` (create intent + start first stage) and `/haiku:run` (continue)
+- Two commands: `/haiku:new` (create intent + start first stage) and `/haiku:resume` (continue)
 - Plugin architecture: skills (SKILL.md), hooks (shell), libraries (shell)
 - Key libraries: orchestrator.sh, studio.sh, stage.sh, hat.sh, persistence.sh, state.sh
 - Hook system: context injection, quality gates, backpressure, iteration enforcement
@@ -97,7 +97,7 @@ Source of truth: the plugin implementation on branch `ai-dlc/haiku-rebrand/main`
 6. `plugin/lib/hat.sh` — hat resolution
 7. `plugin/lib/persistence.sh` + `plugin/lib/adapters/*.sh` — persistence
 8. `plugin/skills/new/SKILL.md` — /haiku:new
-9. `plugin/skills/run/SKILL.md` — /haiku:run
+9. `plugin/skills/run/SKILL.md` — /haiku:resume
 10. `plugin/hooks/quality-gate.sh` — quality enforcement
 11. `plugin/hooks/inject-context.sh` — context injection
 12. `CLAUDE.md` — current project config

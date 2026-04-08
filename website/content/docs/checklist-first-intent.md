@@ -12,7 +12,7 @@ Complete these steps before beginning your first intent:
 
 ### Environment Setup
 - [ ] Claude Code or Cowork installed and working
-- [ ] H·AI·K·U plugin installed (`/plugin marketplace add gigsmart/ai-dlc` then `/plugin install haiku --scope project`)
+- [ ] H·AI·K·U plugin installed (`/plugin marketplace add thebushidocollective/ai-dlc` then `/plugin install haiku@thebushidocollective-ai-dlc --scope project`)
 - [ ] Verified plugin is active (commands like `/haiku:new` are recognized)
 
 ### Project Selection
@@ -30,10 +30,10 @@ Complete these steps before beginning your first intent:
 
 ## Phase 1: Elaboration
 
-Use `/haiku:new` to create your intent, then `/haiku:run` to elaborate it collaboratively with Claude.
+Use `/haiku:new` to create your intent, then `/haiku:resume` to elaborate it collaboratively with Claude.
 
 ### Start Elaboration
-- [ ] Run `/haiku:new` then `/haiku:run`
+- [ ] Run `/haiku:new` then `/haiku:resume`
 - [ ] Describe what you want to build in 2-3 sentences
 
 ### Define the Intent
@@ -76,10 +76,10 @@ Use `/haiku:new` to create your intent, then `/haiku:run` to elaborate it collab
 
 ## Phase 2: First Unit
 
-Work through your first unit using `/haiku:run`.
+Work through your first unit using `/haiku:resume`.
 
 ### Start Execution
-- [ ] Run `/haiku:run`
+- [ ] Run `/haiku:resume`
 - [ ] Verify Claude loaded the correct unit
 
 ### Planner Hat
@@ -137,7 +137,7 @@ Continue with remaining units.
 
 ### For Each Remaining Unit
 
-- [ ] Run `/haiku:run` to load next unit
+- [ ] Run `/haiku:resume` to load next unit
 - [ ] Review any dependencies are satisfied
 - [ ] Complete Planner → Builder → Reviewer cycle
 - [ ] Commit with unit reference
@@ -146,7 +146,7 @@ Continue with remaining units.
 ### Between Units
 
 - [ ] Check if context is getting heavy
-- [ ] `/clear` if needed, then `/haiku:run` to continue
+- [ ] `/clear` if needed, then `/haiku:resume` to continue
 - [ ] Verify committed artifacts reflect current state
 
 ### Handling Blockers
@@ -214,7 +214,7 @@ Answer these questions honestly:
 
 **Tooling:**
 - [ ] Any friction with the commands?
-- [ ] Did `/clear` + `/haiku:run` work smoothly?
+- [ ] Did `/clear` + `/haiku:resume` work smoothly?
 - [ ] Were artifacts helpful?
 
 ### Metrics to Note
@@ -240,7 +240,7 @@ Based on this experience:
 | Command | When to Use |
 |---------|-------------|
 | `/haiku:new` | Start new intent |
-| `/haiku:run` | Continue/start unit work |
+| `/haiku:resume` | Continue/start unit work |
 | `/researcher` | Need more understanding |
 | `/planner` | Need to redesign approach |
 | `/builder` | Ready to implement |

@@ -108,7 +108,7 @@ interface GetPromptResult {
 **Request:**
 ```typescript
 {
-  ref: { type: "ref/prompt", name: "haiku:run" },
+  ref: { type: "ref/prompt", name: "haiku:resume" },
   argument: { name: "intent", value: "ski" },  // partial input
   context?: { arguments?: { studio: "software" } }  // previously resolved args
 }
@@ -180,7 +180,7 @@ Individual prompt handlers will be added in later units (unit-02+). This unit bu
 
 ```typescript
 interface PromptDef {
-  name: string                           // e.g. "haiku:run"
+  name: string                           // e.g. "haiku:resume"
   title: string                          // e.g. "Run Intent"
   description: string                    // One-line summary
   arguments: PromptArgDef[]              // Argument definitions

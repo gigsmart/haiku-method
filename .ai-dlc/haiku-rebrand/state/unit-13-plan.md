@@ -99,7 +99,7 @@ Structure following existing skill patterns (see `new/SKILL.md`, `run/SKILL.md` 
 
 5. **Optional gap-stage elaboration** — Ask user whether to plan gap stages now. If yes, call `hku_run_plan_phase` from orchestrator.sh for each gap stage (inception, operations, security) in order, parameterized by migrated intent context. Only plan phase — build does NOT run.
 
-6. **Summary** — Report: intent location, unit counts per stage, gap stages planned, next step (`/haiku:run {slug}`).
+6. **Summary** — Report: intent location, unit counts per stage, gap stages planned, next step (`/haiku:resume {slug}`).
 
 ### Step 3: Add Detection to `plugin/hooks/inject-context.sh`
 
@@ -150,7 +150,7 @@ Insert a call to `hku_detect_legacy_intents` **early in the hook** (after librar
 | Gap planning uses elaborate sub-skills | Step 2 (step 5) |
 | Build phase does NOT run during migration | Step 2 (explicit constraint) |
 | Backward compat: old path emits migration notice | Step 1d (symlink), Step 1e (detection) |
-| Migrated intent resumable with /haiku:run | Step 1c (state.json), Step 1b (active_stage) |
+| Migrated intent resumable with /haiku:resume | Step 1c (state.json), Step 1b (active_stage) |
 
 ## Risk Mitigations
 

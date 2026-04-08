@@ -1,13 +1,13 @@
 {
   "name": "haiku",
-  "version": "1.85.0",
+  "version": "1.87.1",
   "description": "H·AI·K·U methodology — universal lifecycle orchestration with hat-based workflows, completion criteria, and automatic context preservation.",
   "author": {
-    "name": "GigSmart",
-    "url": "https://gigsmart.com"
+    "name": "The Bushido Collective",
+    "url": "https://thebushido.co"
   },
   "homepage": "https://haikumethod.ai",
-  "repository": "https://github.com/gigsmart/haiku-method",
+  "repository": "https://github.com/TheBushidoCollective/haiku-method",
   "license": "Apache-2.0",
   "keywords": [
     "haiku",

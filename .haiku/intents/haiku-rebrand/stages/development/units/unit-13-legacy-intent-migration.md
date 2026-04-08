@@ -214,7 +214,7 @@ For each migrated intent:
 
 **Step 5: Optional gap-stage elaboration**
 
-If the user approves, run the plan phase for each gap stage in order. This uses the same elaborate sub-skills as `/haiku:run`'s plan phase, parameterized by:
+If the user approves, run the plan phase for each gap stage in order. This uses the same elaborate sub-skills as `/haiku:resume`'s plan phase, parameterized by:
 - The migrated intent's existing knowledge (unit descriptions provide context for inception)
 - The existing development units (operations planning uses these to understand the system)
 - The existing product units (security planning uses the behavioral spec)
@@ -227,7 +227,7 @@ Report the migration outcome:
 - Intent migrated to `.haiku/intents/{slug}/`
 - Units mapped: N units → design, M units → product, P units → development
 - Gap stages planned: inception (Q units), operations (R units), security (S units)
-- Next step: `/haiku:run {slug}` to continue from the current active stage
+- Next step: `/haiku:resume {slug}` to continue from the current active stage
 
 ### Auto-Detection Hook
 
@@ -296,7 +296,7 @@ migration_date: <current-date>    # set at migration runtime
 ## Active Stage
 
 The intent was in pass `dev` (now: `development` stage) at the time of migration.
-Resume with: `/haiku:run {slug}`
+Resume with: `/haiku:resume {slug}`
 ```
 
 ## Success Criteria
@@ -314,7 +314,7 @@ Resume with: `/haiku:run {slug}`
 - [x] Gap stage planning uses existing elaborate sub-skills parameterized by the migrated intent context
 - [x] Gap stage planning generates units for review — build phase does NOT run automatically during migration
 - [x] Backward-compat: old `.ai-dlc/{slug}/` path emits a clear migration notice rather than silently failing
-- [x] A migrated intent that has not yet run gap-stage planning can still be resumed with `/haiku:run {slug}` from the last active stage
+- [x] A migrated intent that has not yet run gap-stage planning can still be resumed with `/haiku:resume {slug}` from the last active stage
 
 ## Risks
 

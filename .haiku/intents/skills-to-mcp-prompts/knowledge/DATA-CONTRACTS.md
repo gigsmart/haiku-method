@@ -27,7 +27,7 @@ interface ListPromptsResult {
 }
 
 interface Prompt {
-  name: string                            // REQUIRED. Unique identifier, e.g. "haiku:run"
+  name: string                            // REQUIRED. Unique identifier, e.g. "haiku:resume"
   title?: string                          // Display name, e.g. "Run Intent"
   description?: string                    // One-line summary for client UI
   arguments?: PromptArgument[]            // Argument definitions; omit if prompt takes no args
@@ -194,7 +194,7 @@ The primary internal type representing a registered prompt.
 
 ```typescript
 interface PromptDef {
-  name: string                            // REQUIRED. Unique prompt name, e.g. "haiku:run"
+  name: string                            // REQUIRED. Unique prompt name, e.g. "haiku:resume"
                                           // Validation: non-empty, must start with "haiku:"
   title: string                           // REQUIRED. Human-readable display name
                                           // Validation: non-empty string
@@ -349,7 +349,7 @@ See BEHAVIORAL-SPEC.md scenario 2.7 for the authoritative behavior.
   "id": 1,
   "error": {
     "code": -32602,
-    "message": "Missing required argument: intent for prompt haiku:run"
+    "message": "Missing required argument: intent for prompt haiku:resume"
   }
 }
 ```
@@ -504,7 +504,7 @@ interface OpenReviewOutput {
 ```
 
 **Used by:**
-- `haiku:run` — when the orchestrator returns `gate_ask` action. The handler calls `open_review` before constructing the gate prompt messages. The returned `review_url` is embedded in the instruction message so the agent can direct the user to it.
+- `haiku:resume` — when the orchestrator returns `gate_ask` action. The handler calls `open_review` before constructing the gate prompt messages. The returned `review_url` is embedded in the instruction message so the agent can direct the user to it.
 
 **Error handling:**
 - If `open_review` fails (e.g., port conflict), the handler falls back to a text-only gate prompt. See BEHAVIORAL-SPEC.md scenario 4.3 for the authoritative fallback behavior.

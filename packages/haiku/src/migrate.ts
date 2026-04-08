@@ -356,6 +356,6 @@ export async function runMigrate(args: string[]): Promise<void> {
 	} else {
 		console.log("\nNext steps:")
 		console.log("  git add .haiku/intents/ && git commit -m 'haiku: migrate intents from .ai-dlc/'")
-		console.log("  For active intents: run /haiku:run to start from inception")
+		console.log("  For active intents: run /haiku:resume to start from inception")
 	}
 }

@@ -35,6 +35,9 @@ jobs:
         working-directory: deploy/terraform
         run: terraform init
 
+      - name: Clear stale Terraform lock
+        run: gcloud storage rm "gs://${{ steps.gcp.outputs.tf_state_bucket }}/haiku/default.tflock" 2>/dev/null || true
+
       - name: Terraform Apply
         working-directory: deploy/terraform
         run: terraform apply -auto-approve
@@ -52,3 +55,6 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           TF_VAR_sentry_base_url: ${{ vars.SENTRY_BASE_URL || 'https://sentry.io/api/' }}
           TF_VAR_sentry_organization: ${{ vars.SENTRY_ORGANIZATION || 'gigsmart' }}
+
+      - name: Print auth proxy URL
+        run: echo "Auth proxy deployed at ${{ steps.terraform.outputs.auth_proxy_url }}"

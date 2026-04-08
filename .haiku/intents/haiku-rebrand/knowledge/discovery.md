@@ -45,7 +45,7 @@ Git is the software studio's persistence adapter, not a system-level assumption.
 
 ### Architecture Decision: Product Review is `[external, ask]`
 
-The product stage's review gate is `review: [external, ask]` — the first element (`external`) is the default gate for normal `/haiku:run` runs, serving as the go/no-go decision boundary where the team decides whether to actually build the thing. The `ask` element gives autopilot a valid non-blocking path: `/haiku:autopilot` selects `ask` (the most permissive non-`external` option) and overrides it to `auto`, so autopilot can proceed without a hard external gate while the full external review option remains available for human-driven workflows. The same pattern applies to the security stage.
+The product stage's review gate is `review: [external, ask]` — the first element (`external`) is the default gate for normal `/haiku:resume` runs, serving as the go/no-go decision boundary where the team decides whether to actually build the thing. The `ask` element gives autopilot a valid non-blocking path: `/haiku:autopilot` selects `ask` (the most permissive non-`external` option) and overrides it to `auto`, so autopilot can proceed without a hard external gate while the full external review option remains available for human-driven workflows. The same pattern applies to the security stage.
 
 ## Codebase Context
 
@@ -240,10 +240,10 @@ When exploring the domain, document:
 ### Command renames
 | From | To |
 |------|-----|
-| `/ai-dlc:elaborate` | `/haiku:stage` (or `/haiku:run` for continuous) |
+| `/ai-dlc:elaborate` | `/haiku:stage` (or `/haiku:resume` for continuous) |
 | `/ai-dlc:execute` | (dissolved into stage loop) |
 | `/ai-dlc:setup` | `/haiku:setup` |
-| `/ai-dlc:autopilot` | `/haiku:run` (continuous mode) |
+| `/ai-dlc:autopilot` | `/haiku:resume` (continuous mode) |
 | `/ai-dlc:review` | `/haiku:review` |
 | `/ai-dlc:followup` | `/haiku:followup` |
 | `/ai-dlc:quick` | `/haiku:quick` |

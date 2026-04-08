@@ -20,7 +20,7 @@ Create a new intent with studio and stage configuration.
 
 **Arguments:** `description` (optional) — describe what you want to build. `template` (optional) — instantiate from a studio intent template.
 
-### `/haiku:run`
+### `/haiku:resume`
 
 Run the stage pipeline for the current intent. Progresses through each stage in order, transitioning through the hats defined in each stage's `STAGE.md`.
 
@@ -34,7 +34,7 @@ Pre-delivery code review using multi-agent specialized review. Spawns parallel a
 
 ### `/haiku:autopilot`
 
-Full autonomous workflow — create intent, run stages, review, and deliver in one command. Sets mode=autopilot and chains to /haiku:run.
+Full autonomous workflow — create intent, run stages, review, and deliver in one command. Sets mode=autopilot and chains to /haiku:resume.
 
 **Arguments:** `description` (optional) — feature description.
 

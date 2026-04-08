@@ -18,7 +18,7 @@ By the end of inception, you'll have a set of spec files in `.haiku/{intent-slug
 | `discovery.md` | Technical exploration findings -- API schemas, codebase patterns, data sources |
 | `mockups/` | Wireframes for frontend/design units (if applicable) |
 
-These files are the contract that the execution phase (`/haiku:run`) builds against.
+These files are the contract that the execution phase (`/haiku:resume`) builds against.
 
 ## The Flow
 
@@ -159,7 +159,7 @@ When invoked via `/haiku:autopilot`, inception runs with minimal interaction -- 
 
 After inception, the typical flow is:
 
-1. **Run** (`/haiku:run`) -- autonomous stage pipeline: stages execute their hat sequences per unit
+1. **Run** (`/haiku:resume`) -- autonomous stage pipeline: stages execute their hat sequences per unit
 2. **Integration** -- cross-unit validation after all units complete
 3. **Pre-delivery review** -- full-diff, multi-agent code review before PR creation
 4. **PR creation** -- push and open a pull request

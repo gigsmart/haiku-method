@@ -22,7 +22,7 @@ Implement 7 complex prompt handlers following Patterns B/C/D/F: autopilot, compo
 
 ## Completion Criteria
 
-- [x] `haiku:autopilot` sets mode=autopilot on intent, returns haiku:run-equivalent prompt
+- [x] `haiku:autopilot` sets mode=autopilot on intent, returns haiku:resume-equivalent prompt
 - [x] `haiku:composite` uses elicitation for multi-studio selection, validates 2+ studios
 - [x] `haiku:operate` dispatches operation templates from studio's operations directory
 - [x] `haiku:triggers` reads provider config and returns polling instructions

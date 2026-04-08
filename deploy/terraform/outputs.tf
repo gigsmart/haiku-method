@@ -8,6 +8,6 @@ output "dns_nameservers" {
 }
 
 output "auth_proxy_url" {
-  description = "URL of the auth proxy Cloud Function"
-  value       = var.enable_auth_proxy ? module.auth_proxy[0].function_url : null
+  description = "Public URL of the auth proxy (via load balancer)"
+  value       = var.enable_auth_proxy ? "https://${var.auth_proxy_subdomain}.${var.domain}" : null
 }

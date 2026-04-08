@@ -227,9 +227,9 @@ Fields:
 
 #### Review Gate Resolution
 
-When `review` is an array (e.g., `[external, ask]`), the first element is the **default** gate used during normal execution (`/haiku:run`). In autopilot mode, the orchestrator selects the most permissive non-`external` option from the array — `ask` → overridden to `auto`. If the array contains only `external`, autopilot blocks and surfaces the gate to the user rather than silently bypassing it.
+When `review` is an array (e.g., `[external, ask]`), the first element is the **default** gate used during normal execution (`/haiku:resume`). In autopilot mode, the orchestrator selects the most permissive non-`external` option from the array — `ask` → overridden to `auto`. If the array contains only `external`, autopilot blocks and surfaces the gate to the user rather than silently bypassing it.
 
-| `review` value | `/haiku:run` behavior | `/haiku:autopilot` behavior |
+| `review` value | `/haiku:resume` behavior | `/haiku:autopilot` behavior |
 |---|---|---|
 | `auto` | Advances automatically | Advances automatically |
 | `ask` | Pauses for user approval | Overridden to `auto` |

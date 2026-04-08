@@ -76,7 +76,7 @@ A **Stage** is a typed phase within a studio's pipeline, each focused on a speci
 
 Stages are defined by the studio. The simplest studios (like the default software studio) use only the development stage. Multi-stage studios add design, product, or other discipline-specific stages when cross-functional iteration is needed.
 
-Studios are selected during `/haiku:new` and their stages run automatically via `/haiku:run`.
+Studios are selected during `/haiku:new` and their stages run automatically via `/haiku:resume`.
 
 #### Stage Constraints
 
@@ -365,7 +365,7 @@ This is the default. It suits initiatives where the human trusts the review gate
 
 ### Discrete Mode
 
-Discrete mode runs the same stage loop but always stops after each stage completes, regardless of the review gate setting. The human explicitly advances through stages by invoking `/haiku:run` again.
+Discrete mode runs the same stage loop but always stops after each stage completes, regardless of the review gate setting. The human explicitly advances through stages by invoking `/haiku:resume` again.
 
 This suits larger initiatives, cross-team work, and situations where each stage needs explicit human review before the next begins — for example, when a product stage's outputs must be approved by a different stakeholder than the development stage's outputs.
 
@@ -375,7 +375,7 @@ Both modes execute the same four-step stage loop (elaborate, execute, adversaria
 
 | Aspect | Continuous | Discrete |
 |--------|-----------|----------|
-| **After `auto` gate passes** | Advance to next stage | Stop; wait for `/haiku:run` |
+| **After `auto` gate passes** | Advance to next stage | Stop; wait for `/haiku:resume` |
 | **After `ask` gate** | Pause for approval, then advance | Pause for approval, then stop |
 | **After `external` gate** | Block until resolved, then advance | Block until resolved, then stop |
 | **After `await` gate** | Block until event, then advance | Block until event, then stop |
@@ -457,7 +457,7 @@ If you `/clear` without the stop hook:
 
 1. Committed artifacts (`.haiku/`) are safe — intent, stage, and unit state are persisted to disk
 2. MCP tools reconstruct full execution context on session start
-3. Run `/haiku:run` to continue
+3. Run `/haiku:resume` to continue
 
 ## Iteration Through Stages
 
@@ -523,7 +523,7 @@ Ten templates ship across seven studios:
 | `product-launch` | marketing | Product launch campaign from research to measurement |
 | `api-documentation` | documentation | API documentation from audit to publish |
 
-Templates define units with completion criteria, dependencies, and stage assignments. Parameters are substituted at instantiation time, producing a fully elaborated intent ready for `/haiku:run`.
+Templates define units with completion criteria, dependencies, and stage assignments. Parameters are substituted at instantiation time, producing a fully elaborated intent ready for `/haiku:resume`.
 
 ## Operations Phase
 

@@ -9,7 +9,7 @@ Get H·AI·K·U running in your project and complete your first feature.
 ## Installation
 
 ```
-/plugin marketplace add gigsmart/ai-dlc
+/plugin marketplace add thebushidocollective/ai-dlc
 /plugin install haiku --scope project
 ```
 
@@ -20,7 +20,7 @@ H·AI·K·U uses just two main commands:
 | Command | What it does |
 |---------|--------------|
 | `/haiku:new` | Define what you're building and how you'll know it's done |
-| `/haiku:run` | Start the autonomous execution loop through the stage pipeline |
+| `/haiku:resume` | Start the autonomous execution loop through the stage pipeline |
 
 ## Your First Feature
 
@@ -42,13 +42,13 @@ AI: What do you want to build?
 User: Add user authentication with email/password
 AI: [Asks clarifying questions via interactive prompts]
 AI: Here are the success criteria I captured...
-AI: Intent created! Run /haiku:run to start.
+AI: Intent created! Run /haiku:resume to start.
 ```
 
 ### Step 2: Run
 
 ```
-/haiku:run
+/haiku:resume
 ```
 
 The AI now works autonomously through the stage pipeline:
@@ -66,7 +66,7 @@ If the session runs long, the AI will suggest clearing context:
 ```
 AI: "Context getting full. Run /clear to continue."
 User: /clear
-User: /haiku:run
+User: /haiku:resume
 ```
 
 Your progress is preserved - the AI picks up where it left off.
@@ -89,7 +89,7 @@ User: Add a dark mode toggle to the settings page
 AI: [Guides through requirements and criteria]
 AI: Intent created!
 
-User: /haiku:run
+User: /haiku:resume
 AI: [Works autonomously through planner → builder → reviewer]
 AI: Intent complete! All criteria satisfied.
 

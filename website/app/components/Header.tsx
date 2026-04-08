@@ -175,7 +175,7 @@ export function Header() {
 						<div className="ml-2 flex items-center gap-2 border-l border-stone-200 pl-4 dark:border-stone-700">
 							{/* biome-ignore lint/a11y/useAnchorContent: aria-label provides accessible content */}
 							<a
-								href="https://github.com/gigsmart/haiku-method"
+								href="https://github.com/TheBushidoCollective/haiku-method"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="rounded-lg p-2 text-stone-600 transition hover:bg-stone-100 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-white"

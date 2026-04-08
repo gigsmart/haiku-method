@@ -40,12 +40,12 @@ allowed-tools:
 
 ## Name
 
-`haiku:run` - Advance an H·AI·K·U intent through its stages.
+`haiku:resume` - Advance an H·AI·K·U intent through its stages.
 
 ## Synopsis
 
 ```
-/haiku:run [intent-slug]
+/haiku:resume [intent-slug]
 ```
 
 ## Description
@@ -323,7 +323,7 @@ Waiting for an external event.
 **Do:**
 1. Report what is being awaited
 2. `haiku_stage_complete { intent, stage, gate_outcome: "awaiting" }`
-3. Stop. The user runs `/haiku:run` when the event occurs.
+3. Stop. The user runs `/haiku:resume` when the event occurs.
 
 #### `advance_stage`
 
@@ -350,7 +350,7 @@ Stage done but discrete mode — stop and wait for user.
 **Do:**
 1. `haiku_stage_complete { intent, stage, gate_outcome: "advanced" }`
 2. `haiku_intent_set { slug, field: "active_stage", value: next_stage }`
-3. Report: "Stage complete. Run `/haiku:run` for the next stage."
+3. Report: "Stage complete. Run `/haiku:resume` for the next stage."
 
 #### `intent_complete`
 
@@ -399,7 +399,7 @@ Something is wrong.
 
 ## Relationship to Other Skills
 
-- **`/haiku:new`** — Creates the intent that `/haiku:run` advances
+- **`/haiku:new`** — Creates the intent that `/haiku:resume` advances
 - **`/haiku:composite`** — Creates composite intents with sync points
 - **`/haiku:refine`** — Amend specs mid-execution or refine upstream stages
 - **`/haiku:review`** — Pre-delivery code review

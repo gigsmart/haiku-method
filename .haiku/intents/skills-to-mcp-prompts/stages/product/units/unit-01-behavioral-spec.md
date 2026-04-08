@@ -29,7 +29,7 @@ Write Given/When/Then behavioral specifications for the MCP prompts system. Cove
 - [x] Context-aware completion: Given intent argument resolved, When completing stage argument, Then returns only stages from that intent's studio — Scenario 3.2
 - [x] Error: unknown prompt name returns -32602 with descriptive message — Scenario 2.4
 - [x] Error: missing required argument returns -32602 with argument name — Scenario 2.5
-- [x] haiku:run behavior: Given active intent, When invoked, Then calls orchestrator, constructs action-specific prompt with hat/stage context — Scenarios 4.1, 4.4-4.11
-- [x] haiku:run gate_ask: Given orchestrator returns gate_ask, When constructing prompt, Then open_review is called as side effect before returning — Scenarios 4.2, 4.3, 5.1, 5.2
+- [x] haiku:resume behavior: Given active intent, When invoked, Then calls orchestrator, constructs action-specific prompt with hat/stage context — Scenarios 4.1, 4.4-4.11
+- [x] haiku:resume gate_ask: Given orchestrator returns gate_ask, When constructing prompt, Then open_review is called as side effect before returning — Scenarios 4.2, 4.3, 5.1, 5.2
 - [x] haiku:new behavior: Given description argument, When invoked, Then detects studio, uses elicitation for confirmation, creates intent — Scenarios 4.12-4.15, 5.3-5.5
 - [x] Edge case: prompts/get with no arguments for a prompt that has optional args returns valid prompt with defaults — Scenario 2.2

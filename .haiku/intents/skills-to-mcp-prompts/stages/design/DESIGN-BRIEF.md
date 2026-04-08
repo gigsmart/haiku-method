@@ -21,7 +21,7 @@ All prompts use the `haiku:` namespace prefix. Names are lowercase, hyphen-separ
 | Prompt | Title | Description Pattern |
 | --- | --- | --- |
 | `haiku:new` | New Intent | Create a new H·AI·K·U intent |
-| `haiku:run` | Run Intent | Advance an intent through its stages |
+| `haiku:resume` | Run Intent | Advance an intent through its stages |
 | `haiku:refine` | Refine | Amend specs mid-execution |
 | `haiku:review` | Review | Pre-delivery code review |
 | `haiku:reflect` | Reflect | Post-completion analysis |

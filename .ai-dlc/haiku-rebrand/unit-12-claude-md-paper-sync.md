@@ -117,7 +117,7 @@ Studio -> Stage -> Unit -> Bolt
 | Knowledge Pool | Accumulated Context | `.haiku/knowledge/` | knowledge.sh |
 | Completion Criteria | Exit Conditions | criteria in unit frontmatter, hard-gated | parse.sh |
 | Backpressure | Quality Enforcement | Quality gates in stages | quality-gate.sh |
-| Operating Modes | HITL/OHOTL/AHOTL | continuous=HITL, /haiku:run=OHOTL, /haiku:autopilot=AHOTL | run, autopilot |
+| Operating Modes | HITL/OHOTL/AHOTL | continuous=HITL, /haiku:resume=OHOTL, /haiku:autopilot=AHOTL | run, autopilot |
 ```
 
 #### Sync Discipline Table

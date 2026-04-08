@@ -19,13 +19,13 @@ completed_at: '2026-04-07T04:15:42Z'
 
 ## Description
 
-Implement the 5 core prompt handlers: haiku:new, haiku:run, haiku:refine, haiku:review, haiku:reflect. Each reads state and returns PromptMessage[].
+Implement the 5 core prompt handlers: haiku:new, haiku:resume, haiku:refine, haiku:review, haiku:reflect. Each reads state and returns PromptMessage[].
 
 ## Completion Criteria
 
-- [x] `haiku:run` handler calls `runNext()`, constructs action-specific messages with hat/stage context inlined
-- [x] `haiku:run` calls `open_review` as side effect for `gate_ask` action before returning prompt
-- [x] `haiku:run` collaborative mode returns multi-turn instructions, autonomous mode returns concise directives
+- [x] `haiku:resume` handler calls `runNext()`, constructs action-specific messages with hat/stage context inlined
+- [x] `haiku:resume` calls `open_review` as side effect for `gate_ask` action before returning prompt
+- [x] `haiku:resume` collaborative mode returns multi-turn instructions, autonomous mode returns concise directives
 - [x] `haiku:new` handler uses elicitation for studio selection (with fallback to prompt-based question)
 - [x] `haiku:refine` handler loads upstream stage context and constructs side-trip prompt
 - [x] `haiku:review` handler computes git diff and loads review agent definitions

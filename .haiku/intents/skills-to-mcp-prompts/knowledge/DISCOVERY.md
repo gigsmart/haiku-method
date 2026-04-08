@@ -22,7 +22,7 @@ The MCP server adds `prompts/list` + `prompts/get` capabilities. Each skill beco
 - `prompts/list` returns available prompts with name, description, arguments
 - `prompts/get { name, arguments }` returns `{ messages: PromptMessage[] }`
 - Each `PromptMessage` has `role` (user/assistant) and `content` (text/image/resource)
-- Clients surface prompts as slash commands (e.g., `/haiku:run`)
+- Clients surface prompts as slash commands (e.g., `/haiku:resume`)
 - Arguments support auto-completion via the completion API
 
 ### Prompt Construction Strategy
@@ -41,7 +41,7 @@ Each prompt handler:
 
 **Core workflow:**
 1. `haiku:new` — create intent (args: description, template, params)
-2. `haiku:run` — advance stages (args: intent-slug)
+2. `haiku:resume` — advance stages (args: intent-slug)
 3. `haiku:refine` — upstream side-trip (args: stage)
 4. `haiku:review` — pre-delivery review (args: intent-slug)
 5. `haiku:reflect` — post-completion analysis (args: intent-slug)
@@ -90,7 +90,7 @@ Each prompt handler:
 
 | Capability | Purpose | Status |
 |-----------|---------|--------|
-| `prompts` | Slash commands — /haiku:new, /haiku:run, etc. | Implement now |
+| `prompts` | Slash commands — /haiku:new, /haiku:resume, etc. | Implement now |
 | `completions` | Auto-complete for intent slugs, studios, stages | Implement now |
 | `elicitation.form` | Structured questions to user (studio picker, mode, gate approval) | Implement now |
 | `tools` | State management, orchestration, visual review | Already done |
