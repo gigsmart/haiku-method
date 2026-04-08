@@ -29404,7 +29404,7 @@ After all subagents complete: \`haiku_run_next { intent: "${slug}" }\``
 
 Phase advanced to "${toPhase}" by the orchestrator.
 
-Call \`haiku_run_next { intent: "${slug}" }\` to continue.`
+**Call \`haiku_run_next { intent: "${slug}" }\` immediately.** Do NOT ask the user \u2014 the transition was already approved.`
       );
       break;
     }
@@ -29483,9 +29483,7 @@ Stage "${stage}" is complete. The gate has been entered by the orchestrator.
 
 Gate passed. The orchestrator has advanced from "${stage}" to "${nextStage}".
 
-### Instructions
-
-Call \`haiku_run_next { intent: "${slug}" }\` to continue.`
+**Call \`haiku_run_next { intent: "${slug}" }\` immediately.** Do NOT ask the user for confirmation \u2014 the gate was already approved. Do NOT present summaries or ask "want me to continue?" \u2014 just call the tool.`
       );
       break;
     }

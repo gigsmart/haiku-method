@@ -388,7 +388,7 @@ function buildRunInstructions(
 			sections.push(
 				`## Advance Phase\n\n` +
 				`Phase advanced to "${toPhase}" by the orchestrator.\n\n` +
-				`Call \`haiku_run_next { intent: "${slug}" }\` to continue.`,
+				`**Call \`haiku_run_next { intent: "${slug}" }\` immediately.** Do NOT ask the user — the transition was already approved.`,
 			)
 			break
 		}
@@ -461,8 +461,7 @@ function buildRunInstructions(
 			sections.push(
 				`## Advance Stage\n\n` +
 				`Gate passed. The orchestrator has advanced from "${stage}" to "${nextStage}".\n\n` +
-				`### Instructions\n\n` +
-				`Call \`haiku_run_next { intent: "${slug}" }\` to continue.`,
+				`**Call \`haiku_run_next { intent: "${slug}" }\` immediately.** Do NOT ask the user for confirmation — the gate was already approved. Do NOT present summaries or ask "want me to continue?" — just call the tool.`,
 			)
 			break
 		}
