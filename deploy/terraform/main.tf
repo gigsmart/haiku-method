@@ -12,11 +12,6 @@ module "dns" {
   # GitHub Pages for apex domain (static website)
   enable_github_pages_dns = true
 
-  # MCP subdomain (off by default — no service exists yet)
-  enable_mcp_dns = var.enable_mcp_dns
-  mcp_dns_value  = var.mcp_dns_value
-  mcp_verify_txt = var.mcp_domain_verify_txt
-
   # Auth proxy subdomain — points to LB IP as A record
   enable_auth_proxy_dns  = var.enable_auth_proxy
   auth_proxy_subdomain   = var.auth_proxy_subdomain

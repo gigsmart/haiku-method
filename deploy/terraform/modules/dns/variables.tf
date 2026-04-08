@@ -20,25 +20,6 @@ variable "enable_github_pages_dns" {
   default     = false
 }
 
-# MCP subdomain
-variable "enable_mcp_dns" {
-  description = "Whether to create MCP subdomain DNS records"
-  type        = bool
-  default     = false
-}
-
-variable "mcp_dns_value" {
-  description = "DNS value for MCP subdomain CNAME"
-  type        = string
-  default     = ""
-}
-
-variable "mcp_verify_txt" {
-  description = "Domain verification TXT value for MCP"
-  type        = string
-  default     = ""
-}
-
 # Auth proxy subdomain
 variable "enable_auth_proxy_dns" {
   description = "Whether to create auth proxy subdomain DNS records"
