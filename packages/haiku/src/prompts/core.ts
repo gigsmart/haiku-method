@@ -260,9 +260,14 @@ function buildRunInstructions(
 					  `- **Design direction choices** (wireframe variants with previews) → \`pick_design_direction\` MCP tool\n\n` +
 					  `Do NOT present structured options as conversation text. Use the appropriate tool.\n\n`
 					: `Mode: **autonomous** — elaborate independently.\n\n`) +
-				`1. Research and write discovery artifacts\n` +
-				`2. Break work into units at \`.haiku/intents/${slug}/stages/${stage}/units/\`\n` +
-				`3. Call \`haiku_run_next { intent: "${slug}" }\` — the orchestrator opens the review and advances the phase automatically`,
+				`**Elaboration produces the PLAN, not the deliverables:**\n` +
+				`1. Research the problem space and write discovery artifacts to \`knowledge/\`\n` +
+				`2. Define units with scope, completion criteria, and dependencies — NOT the actual work product\n` +
+				`   - A unit spec says WHAT will be produced and HOW to verify it\n` +
+				`   - The execution phase produces the actual deliverables\n` +
+				`   - Do NOT write full specs, schemas, or implementations during elaboration\n` +
+				`3. Write unit files to \`.haiku/intents/${slug}/stages/${stage}/units/\`\n` +
+				`4. Call \`haiku_run_next { intent: "${slug}" }\` — the orchestrator validates and opens the review gate`,
 			)
 
 			// Check for ticketing provider
@@ -348,7 +353,7 @@ function buildRunInstructions(
 			const nextHat = hatIdx < hats.length - 1 ? hats[hatIdx + 1] : null
 			const isLastHat = !nextHat
 
-			const singleUseTeams = process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS === "true"
+			const singleUseTeams = ["true", "1"].includes(process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS || "")
 
 			sections.push(
 				`### Mechanics\n\n` +
@@ -404,7 +409,7 @@ function buildRunInstructions(
 			sections.push(`Hats: ${hats.join(" → ")}\nUnits: ${units.join(", ")}`)
 
 			const worktrees = (action.worktrees as Record<string, string | null>) || {}
-			const useTeams = process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS === "true"
+			const useTeams = ["true", "1"].includes(process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS || "")
 
 			const wave = action.wave as number | undefined
 			const totalWaves = action.total_waves as number | undefined

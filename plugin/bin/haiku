@@ -29284,9 +29284,14 @@ Do NOT present structured options as conversation text. Use the appropriate tool
 
 ` : `Mode: **autonomous** \u2014 elaborate independently.
 
-`) + `1. Research and write discovery artifacts
-2. Break work into units at \`.haiku/intents/${slug}/stages/${stage}/units/\`
-3. Call \`haiku_run_next { intent: "${slug}" }\` \u2014 the orchestrator opens the review and advances the phase automatically`
+`) + `**Elaboration produces the PLAN, not the deliverables:**
+1. Research the problem space and write discovery artifacts to \`knowledge/\`
+2. Define units with scope, completion criteria, and dependencies \u2014 NOT the actual work product
+   - A unit spec says WHAT will be produced and HOW to verify it
+   - The execution phase produces the actual deliverables
+   - Do NOT write full specs, schemas, or implementations during elaboration
+3. Write unit files to \`.haiku/intents/${slug}/stages/${stage}/units/\`
+4. Call \`haiku_run_next { intent: "${slug}" }\` \u2014 the orchestrator validates and opens the review gate`
       );
       try {
         const settingsPath = join9(process.cwd(), ".haiku", "settings.yml");
@@ -29367,7 +29372,7 @@ ${content.slice(0, 2e3)}${content.length > 2e3 ? "\n...(truncated)" : ""}`);
       const hatIdx = hats.indexOf(hat);
       const nextHat = hatIdx < hats.length - 1 ? hats[hatIdx + 1] : null;
       const isLastHat = !nextHat;
-      const singleUseTeams = process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS === "true";
+      const singleUseTeams = ["true", "1"].includes(process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS || "");
       sections.push(
         `### Mechanics
 
@@ -29423,7 +29428,7 @@ Stay within this stage's scope \u2014 do not produce outputs belonging to other 
       sections.push(`Hats: ${hats.join(" \u2192 ")}
 Units: ${units.join(", ")}`);
       const worktrees = action.worktrees || {};
-      const useTeams = process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS === "true";
+      const useTeams = ["true", "1"].includes(process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS || "");
       const wave = action.wave;
       const totalWaves = action.total_waves;
       sections.push(
