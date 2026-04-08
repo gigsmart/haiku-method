@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.85.1] - 2026-04-08
+
+I see that **version 1.85.1 already has a changelog entry** in the repo (dated 2026-04-07). The current released version is 1.85.5 (2026-04-08).
+
+Did you mean to:
+1. **Update the existing 1.85.1 entry** with more detail?
+2. **Create a new entry for 1.85.5** or another version?
+3. **Backfill an older version** that's missing from the changelog?
+
+The existing 1.85.1 entry is minimal:
+```markdown
+### Fixed
+- Tailwindcss binary is now resolved via module resolution instead of hardcoded paths, improving compatibility across different environments.
+- Workspace configuration updated to properly include packages/shared in monorepo builds.
+```
+
+Based on your commits, this could be expanded to mention the major feature (FSM orchestrator + review UI from PR #144) and infrastructure improvements. Let me know which version you'd like me to focus on, and I'll write a more comprehensive changelog entry.
+
 ## [1.85.5] - 2026-04-08
 
 ### Fixed
