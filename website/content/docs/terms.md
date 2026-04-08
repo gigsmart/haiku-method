@@ -4,8 +4,6 @@ description: Terms for using H·AI·K·U and haikumethod.ai
 order: 99
 ---
 
-# Terms of Service
-
 **Effective date:** April 8, 2026
 
 These terms cover use of the H·AI·K·U plugin and the website at haikumethod.ai. Both are maintained by GigSmart, Inc.

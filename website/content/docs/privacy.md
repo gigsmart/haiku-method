@@ -4,8 +4,6 @@ description: How H·AI·K·U handles your data
 order: 98
 ---
 
-# Privacy Policy
-
 **Effective date:** April 8, 2026
 
 H·AI·K·U is an open-source project maintained by GigSmart, Inc. This policy explains what data the plugin and website touch, where it goes, and what we don't do.
