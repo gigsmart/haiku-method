@@ -49,3 +49,6 @@ jobs:
           TF_VAR_gitlab_oauth_client_id: ${{ vars.NEXT_PUBLIC_HAIKU_GITLAB_OAUTH_CLIENT_ID }}
           TF_VAR_gitlab_oauth_client_secret: ${{ secrets.HAIKU_GITLAB_OAUTH_CLIENT_SECRET }}
           TF_VAR_enable_mcp_dns: "false"
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          TF_VAR_sentry_base_url: ${{ vars.SENTRY_BASE_URL || 'https://sentry.io/api/' }}
+          TF_VAR_sentry_organization: ${{ vars.SENTRY_ORGANIZATION || 'gigsmart' }}

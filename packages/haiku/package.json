@@ -6,7 +6,7 @@
   "scripts": {
     "prebuild": "node scripts/build-css.mjs && node scripts/build-review-app.mjs",
     "build": "node scripts/build-css.mjs && node scripts/build-review-app.mjs && esbuild src/main.ts --bundle --platform=node --format=esm --tree-shaking=true --sourcemap=external --outfile=../../plugin/bin/haiku --banner:js='import{createRequire}from\"module\";const require=createRequire(import.meta.url);' && chmod +x ../../plugin/bin/haiku",
-    "postbuild": "if [ -n \"$SENTRY_AUTH_TOKEN\" ]; then sentry-cli sourcemaps upload --org the-bushido-collective --project haiku-mcp --release haiku-mcp@$(node -e \"process.stdout.write(require('../../plugin/.claude-plugin/plugin.json').version)\") ../../plugin/bin/haiku.map && sentry-cli sourcemaps upload --org the-bushido-collective --project haiku-spa --release haiku-spa@$(node -e \"process.stdout.write(require('../../plugin/.claude-plugin/plugin.json').version)\") review-app/dist/assets/; fi; rm -f ../../plugin/bin/haiku.map",
+    "postbuild": "if [ -n \"$SENTRY_AUTH_TOKEN\" ]; then sentry-cli sourcemaps upload --url ${SENTRY_URL:-https://sentry.io} --org ${SENTRY_ORG:-gigsmart} --project haiku-mcp --release haiku-mcp@$(node -e \"process.stdout.write(require('../../plugin/.claude-plugin/plugin.json').version)\") ../../plugin/bin/haiku.map && sentry-cli sourcemaps upload --url ${SENTRY_URL:-https://sentry.io} --org ${SENTRY_ORG:-gigsmart} --project haiku-spa --release haiku-spa@$(node -e \"process.stdout.write(require('../../plugin/.claude-plugin/plugin.json').version)\") review-app/dist/assets/; fi; rm -f ../../plugin/bin/haiku.map",
     "typecheck": "tsc --noEmit",
     "test": "node test/state-tools.test.mjs"
   },
