@@ -17,10 +17,10 @@ module "dns" {
   mcp_dns_value  = var.mcp_dns_value
   mcp_verify_txt = var.mcp_domain_verify_txt
 
-  # Auth proxy subdomain
+  # Auth proxy subdomain — points to LB IP as A record
   enable_auth_proxy_dns  = var.enable_auth_proxy
   auth_proxy_subdomain   = var.auth_proxy_subdomain
-  auth_proxy_dns_value   = var.enable_auth_proxy ? "${module.auth_proxy[0].function_url}." : ""
+  auth_proxy_dns_value   = var.enable_auth_proxy ? module.auth_proxy[0].lb_ip : ""
 }
 
 # -----------------------------------------------------------------------------
@@ -33,6 +33,7 @@ module "auth_proxy" {
 
   project_id     = var.gcp_project_id
   region         = var.gcp_region
+  domain         = var.domain
   allowed_origin = var.auth_proxy_allowed_origin
 
   github_oauth_client_id     = var.github_oauth_client_id

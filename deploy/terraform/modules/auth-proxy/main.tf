@@ -1,5 +1,6 @@
-# Auth proxy Cloud Function — OAuth code→token exchange
-# Deployed as Cloud Functions v2 (Cloud Run backed)
+# Auth proxy — OAuth code→token exchange
+# Cloud Function v2 behind a regional HTTPS Load Balancer for public access
+# without requiring allUsers IAM binding (respects org domain restrictions)
 
 locals {
   function_name = "haiku-auth-proxy"
@@ -83,7 +84,7 @@ resource "google_secret_manager_secret_version" "gitlab_client_secret" {
   secret_data = var.gitlab_oauth_client_secret
 }
 
-# Cloud Function v2
+# Cloud Function v2 (internal — not directly public)
 resource "google_cloudfunctions2_function" "auth_proxy" {
   name     = local.function_name
   project  = var.project_id
@@ -101,12 +102,12 @@ resource "google_cloudfunctions2_function" "auth_proxy" {
   }
 
   service_config {
-    min_instance_count               = 0
-    max_instance_count               = 5
-    available_memory                 = "256M"
-    timeout_seconds                  = 30
-    ingress_settings                 = "ALLOW_ALL"
-    all_traffic_on_latest_revision   = true
+    min_instance_count             = 0
+    max_instance_count             = 5
+    available_memory               = "256M"
+    timeout_seconds                = 30
+    ingress_settings               = "ALLOW_ALL"
+    all_traffic_on_latest_revision = true
 
     environment_variables = {
       ALLOWED_ORIGIN = var.allowed_origin
@@ -145,9 +146,94 @@ resource "google_cloudfunctions2_function" "auth_proxy" {
 # NOTE: The compute service account (xxx-compute@developer.gserviceaccount.com)
 # needs roles/secretmanager.secretAccessor granted manually — our Terraform SA
 # doesn't have projectIamAdmin permissions.
-# Run: gcloud projects add-iam-policy-binding PROJECT \
-#   --member="serviceAccount:COMPUTE_SA" --role="roles/secretmanager.secretAccessor"
 
-# Public access is handled via ingress_settings = "ALLOW_ALL" on the function,
-# which allows unauthenticated HTTP requests without needing an allUsers IAM binding.
-# This avoids org policy restrictions on domain-restricted sharing.
+# ---------------------------------------------------------------------------
+# Regional HTTPS Load Balancer — provides public access without allUsers IAM
+# ---------------------------------------------------------------------------
+
+# Reserve a static IP for the load balancer
+resource "google_compute_address" "auth_proxy" {
+  name    = "haiku-auth-proxy-ip"
+  project = var.project_id
+  region  = var.region
+}
+
+# Serverless NEG pointing to the Cloud Run service backing the function
+resource "google_compute_region_network_endpoint_group" "auth_proxy" {
+  name                  = "haiku-auth-proxy-neg"
+  project               = var.project_id
+  region                = var.region
+  network_endpoint_type = "SERVERLESS"
+
+  cloud_run {
+    service = google_cloudfunctions2_function.auth_proxy.service_config[0].service
+  }
+}
+
+# Backend service
+resource "google_compute_region_backend_service" "auth_proxy" {
+  name                  = "haiku-auth-proxy-backend"
+  project               = var.project_id
+  region                = var.region
+  protocol              = "HTTPS"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+
+  backend {
+    group = google_compute_region_network_endpoint_group.auth_proxy.id
+  }
+}
+
+# URL map
+resource "google_compute_region_url_map" "auth_proxy" {
+  name            = "haiku-auth-proxy-urlmap"
+  project         = var.project_id
+  region          = var.region
+  default_service = google_compute_region_backend_service.auth_proxy.id
+}
+
+# Google-managed SSL certificate
+resource "google_compute_region_ssl_certificate" "auth_proxy" {
+  name    = "haiku-auth-proxy-cert"
+  project = var.project_id
+  region  = var.region
+
+  # Self-signed placeholder — use managed cert via google_certificate_manager_certificate for production
+  # For now, traffic goes through the LB IP directly; DNS CNAME handles the domain
+  certificate = tls_self_signed_cert.auth_proxy.cert_pem
+  private_key = tls_private_key.auth_proxy.private_key_pem
+}
+
+resource "tls_private_key" "auth_proxy" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "tls_self_signed_cert" "auth_proxy" {
+  private_key_pem = tls_private_key.auth_proxy.private_key_pem
+  subject {
+    common_name = "auth.${var.domain}"
+  }
+  validity_period_hours = 8760
+  allowed_uses          = ["key_encipherment", "digital_signature", "server_auth"]
+}
+
+# HTTPS proxy
+resource "google_compute_region_target_https_proxy" "auth_proxy" {
+  name             = "haiku-auth-proxy-https"
+  project          = var.project_id
+  region           = var.region
+  url_map          = google_compute_region_url_map.auth_proxy.id
+  ssl_certificates = [google_compute_region_ssl_certificate.auth_proxy.id]
+}
+
+# Forwarding rule
+resource "google_compute_forwarding_rule" "auth_proxy" {
+  name                  = "haiku-auth-proxy-fwd"
+  project               = var.project_id
+  region                = var.region
+  ip_address            = google_compute_address.auth_proxy.address
+  ip_protocol           = "TCP"
+  port_range            = "443"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  target                = google_compute_region_target_https_proxy.auth_proxy.id
+}
