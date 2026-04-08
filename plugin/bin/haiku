@@ -28794,7 +28794,8 @@ ${studioDescriptions}`,
     }
     mkdirSync4(join7(iDir, "knowledge"), { recursive: true });
     mkdirSync4(join7(iDir, "stages"), { recursive: true });
-    const frontmatter = [
+    const context = args2.context;
+    const intentContent = [
       "---",
       `title: "${description.replace(/"/g, '\\"')}"`,
       `studio: ${selectedStudio}`,
@@ -28806,10 +28807,10 @@ ${studioDescriptions}`,
       "---",
       "",
       `# ${description}`,
-      ""
+      "",
+      ...context ? [context, ""] : []
     ].join("\n");
-    writeFileSync3(join7(iDir, "intent.md"), frontmatter);
-    const context = args2.context;
+    writeFileSync3(join7(iDir, "intent.md"), intentContent);
     if (context) {
       const knowledgeDir = join7(iDir, "knowledge");
       mkdirSync4(knowledgeDir, { recursive: true });
