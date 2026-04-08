@@ -437,7 +437,10 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			// Verify the unit went through all hats
 			const currentHat = (unitFm.hat as string) || ""
 			const stageHats = resolveStageHats(args.intent as string, args.stage as string)
-			if (stageHats.length > 0 && currentHat) {
+			if (stageHats.length > 0) {
+				if (!currentHat) {
+					return text(JSON.stringify({ error: "hat_sequence_incomplete", current_hat: "", remaining_hats: stageHats, message: `Cannot complete unit: hat sequence never started. Start with the first hat: "${stageHats[0]}".` }))
+				}
 				const hatIdx = stageHats.indexOf(currentHat)
 				const isLastHat = hatIdx === stageHats.length - 1
 				if (!isLastHat) {
