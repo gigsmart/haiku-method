@@ -316,3 +316,78 @@ export async function parseStageArtifacts(
   }
   return artifacts;
 }
+
+const OUTPUT_IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"];
+const OUTPUT_HTML_EXTS = [".html", ".htm"];
+
+export interface OutputArtifact {
+  stage: string;
+  name: string;
+  type: "markdown" | "html" | "image";
+  /** Markdown and HTML content is inlined; images use a URL */
+  content?: string;
+  /** Relative path within the stage artifacts dir (for serving via HTTP) */
+  relativePath?: string;
+}
+
+/**
+ * Scan stages/{stage}/artifacts/ directories for output artifacts.
+ * Returns markdown/html content inline and image file references for HTTP serving.
+ */
+export async function parseOutputArtifacts(
+  intentDir: string
+): Promise<OutputArtifact[]> {
+  const artifacts: OutputArtifact[] = [];
+  try {
+    const stagesDir = join(intentDir, "stages");
+    const stageEntries = await readdir(stagesDir, { withFileTypes: true });
+    for (const stageEntry of stageEntries) {
+      if (!stageEntry.isDirectory()) continue;
+      try {
+        const artifactsDir = join(stagesDir, stageEntry.name, "artifacts");
+        const files = await readdir(artifactsDir);
+        for (const file of files.sort()) {
+          const ext = file.substring(file.lastIndexOf(".")).toLowerCase();
+          if (file.endsWith(".md")) {
+            try {
+              const raw = await readFile(join(artifactsDir, file), "utf-8");
+              const { content } = matter(raw);
+              artifacts.push({
+                stage: stageEntry.name,
+                name: file.replace(/\.md$/, ""),
+                type: "markdown",
+                content,
+              });
+            } catch {
+              // Skip unreadable files
+            }
+          } else if (OUTPUT_HTML_EXTS.includes(ext)) {
+            try {
+              const content = await readFile(join(artifactsDir, file), "utf-8");
+              artifacts.push({
+                stage: stageEntry.name,
+                name: file.replace(/\.[^.]+$/, ""),
+                type: "html",
+                content,
+              });
+            } catch {
+              // Skip unreadable files
+            }
+          } else if (OUTPUT_IMAGE_EXTS.includes(ext)) {
+            artifacts.push({
+              stage: stageEntry.name,
+              name: file.replace(/\.[^.]+$/, ""),
+              type: "image",
+              relativePath: `${stageEntry.name}/artifacts/${file}`,
+            });
+          }
+        }
+      } catch {
+        // No artifacts/ directory for this stage
+      }
+    }
+  } catch {
+    // No stages/ directory
+  }
+  return artifacts;
+}

@@ -9,6 +9,7 @@ import {
 	parseStageStates,
 	parseKnowledgeFiles,
 	parseStageArtifacts,
+	parseOutputArtifacts,
 	toMermaidDefinition,
 } from "./index.js"
 import { Server } from "@modelcontextprotocol/sdk/server/index.js"
@@ -458,6 +459,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 		const stageStates = await parseStageStates(intentDir)
 		const knowledgeFiles = await parseKnowledgeFiles(intentDir)
 		const stageArtifacts = await parseStageArtifacts(intentDir)
+		const outputArtifacts = await parseOutputArtifacts(intentDir)
+
+		// Resolve image output artifact URLs now that we have a session ID
+		for (const oa of outputArtifacts) {
+			if (oa.type === "image" && oa.relativePath) {
+				oa.relativePath = `/stage-artifacts/${session.session_id}/stages/${oa.relativePath}`
+			}
+		}
 
 		// Store parsed data on the session for the SPA API endpoint
 		session.parsedIntent = intent
@@ -469,6 +478,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 		session.stageStates = stageStates
 		session.knowledgeFiles = knowledgeFiles
 		session.stageArtifacts = stageArtifacts
+		session.outputArtifacts = outputArtifacts
 
 		// Generate HTML with session ID, mockups, and wireframes (legacy fallback)
 		session.html = renderReviewPage({
@@ -884,7 +894,16 @@ setOpenReviewHandler(async (intentDirRel: string, reviewType: string) => {
 	const stageStates = await parseStageStates(intentDirAbs)
 	const knowledgeFiles = await parseKnowledgeFiles(intentDirAbs)
 	const stageArtifacts = await parseStageArtifacts(intentDirAbs)
-	Object.assign(session, { stageStates, knowledgeFiles, stageArtifacts })
+	const outputArtifacts = await parseOutputArtifacts(intentDirAbs)
+
+	// Resolve image output artifact URLs now that we have a session ID
+	for (const oa of outputArtifacts) {
+		if (oa.type === "image" && oa.relativePath) {
+			oa.relativePath = `/stage-artifacts/${session.session_id}/stages/${oa.relativePath}`
+		}
+	}
+
+	Object.assign(session, { stageStates, knowledgeFiles, stageArtifacts, outputArtifacts })
 
 	session.html = renderReviewPage({ intent, units, criteria, reviewType: reviewType as "intent" | "unit", target: "", sessionId: session.session_id, mermaid, intentMockups: [], unitMockups: new Map() })
 

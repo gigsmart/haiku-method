@@ -66,6 +66,7 @@ function handleSessionApi(sessionId: string): Response {
 		if (session.stageStates) data.stage_states = session.stageStates
 		if (session.knowledgeFiles) data.knowledge_files = session.knowledgeFiles
 		if (session.stageArtifacts) data.stage_artifacts = session.stageArtifacts
+		if (session.outputArtifacts) data.output_artifacts = session.outputArtifacts
 	}
 
 	if (session.session_type === "question") {
@@ -217,6 +218,42 @@ async function handleWireframeGet(
 	}
 
 	// Wireframe paths are relative to the intent dir
+	const resolved = resolve(session.intent_dir, filePath)
+	// Pre-check with resolve() before attempting realpath
+	if (!resolved.startsWith(resolve(session.intent_dir))) {
+		return new Response("Forbidden", { status: 403 })
+	}
+
+	try {
+		// Symlink-safe check: ensure resolved real path stays within base dir
+		const realResolved = await realpath(resolved).catch(() => null)
+		const realBase = await realpath(session.intent_dir).catch(() =>
+			resolve(session.intent_dir),
+		)
+		if (!realResolved || !realResolved.startsWith(realBase)) {
+			return new Response("Forbidden", { status: 403 })
+		}
+		const data = await readFile(resolved)
+		const ext = extname(resolved).toLowerCase()
+		const contentType = MIME_TYPES[ext] ?? "application/octet-stream"
+		return new Response(data, {
+			headers: { "Content-Type": contentType },
+		})
+	} catch {
+		return new Response("Not found", { status: 404 })
+	}
+}
+
+async function handleStageArtifactGet(
+	sessionId: string,
+	filePath: string,
+): Promise<Response> {
+	const session = getSession(sessionId)
+	if (!session || session.session_type !== "review") {
+		return new Response("Session not found", { status: 404 })
+	}
+
+	// filePath is like "stages/{stage}/artifacts/{file}"
 	const resolved = resolve(session.intent_dir, filePath)
 	// Pre-check with resolve() before attempting realpath
 	if (!resolved.startsWith(resolve(session.intent_dir))) {
@@ -674,6 +711,12 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	const wireframeMatch = path.match(/^\/wireframe\/([^/]+)\/(.+)$/)
 	if (wireframeMatch && req.method === "GET") {
 		return handleWireframeGet(wireframeMatch[1], wireframeMatch[2])
+	}
+
+	// GET /stage-artifacts/:sessionId/:path — serve files from stages/*/artifacts/
+	const stageArtifactMatch = path.match(/^\/stage-artifacts\/([^/]+)\/(.+)$/)
+	if (stageArtifactMatch && req.method === "GET") {
+		return handleStageArtifactGet(stageArtifactMatch[1], stageArtifactMatch[2])
 	}
 
 	// GET /direction/:sessionId

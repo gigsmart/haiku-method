@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import type { SessionData, ReviewAnnotations, ParsedUnit, MockupInfo, Section, KnowledgeFile, StageArtifact, StageStateInfo } from "../types";
+import type { SessionData, ReviewAnnotations, ParsedUnit, MockupInfo, Section, KnowledgeFile, StageArtifact, StageStateInfo, OutputArtifact } from "../types";
 import { StatusBadge, MarkdownViewer, CriteriaChecklist } from "@haiku/shared";
 import { Tabs, type TabDef } from "./Tabs";
 import { Card, SectionHeading } from "./Card";
@@ -247,6 +247,7 @@ function IntentReview({
   const stageStates = session.stage_states ?? {};
   const knowledgeFiles = session.knowledge_files ?? [];
   const stageArtifacts = session.stage_artifacts ?? [];
+  const outputArtifacts = session.output_artifacts ?? [];
 
   if (!intent) {
     return <p className="text-stone-500">No intent data available.</p>;
@@ -288,6 +289,7 @@ function IntentReview({
 
   const hasUnits = units.length > 0;
   const hasKnowledge = knowledgeFiles.length > 0 || stageArtifacts.length > 0;
+  const hasOutputs = outputArtifacts.length > 0;
   const hasDomain = !!domainSection;
 
   const tabs: TabDef[] = [
@@ -446,6 +448,14 @@ function IntentReview({
       ),
     },
     {
+      id: "outputs",
+      label: `Outputs (${outputArtifacts.length})`,
+      disabled: !hasOutputs,
+      content: (
+        <OutputArtifactsTab artifacts={outputArtifacts} onInlineCommentsChange={onInlineCommentsChange} />
+      ),
+    },
+    {
       id: "domain",
       label: "Domain Model",
       content: domainSection ? (
@@ -469,6 +479,7 @@ function IntentReview({
   ].filter((tab) => {
     if (tab.id === "units-dag" && !hasUnits) return false;
     if (tab.id === "knowledge" && !hasKnowledge) return false;
+    if (tab.id === "outputs" && !hasOutputs) return false;
     if (tab.id === "domain" && !hasDomain) return false;
     return true;
   });
@@ -666,6 +677,152 @@ function UnitReview({
 }
 
 // --- Helper components ---
+
+function OutputArtifactsTab({ artifacts, onInlineCommentsChange }: { artifacts: OutputArtifact[]; onInlineCommentsChange: (comments: InlineCommentEntry[]) => void }) {
+  const [expandedImage, setExpandedImage] = useState<string | null>(null);
+
+  if (artifacts.length === 0) {
+    return (
+      <Card>
+        <p className="text-stone-500 dark:text-stone-400 italic">No output artifacts available.</p>
+      </Card>
+    );
+  }
+
+  // Group by stage
+  const stageOrder: string[] = [];
+  const byStage = new Map<string, OutputArtifact[]>();
+  for (const a of artifacts) {
+    if (!byStage.has(a.stage)) {
+      byStage.set(a.stage, []);
+      stageOrder.push(a.stage);
+    }
+    byStage.get(a.stage)!.push(a);
+  }
+
+  return (
+    <>
+      <div className="flex gap-6 items-start">
+        {/* Sticky sidebar TOC */}
+        <div className="hidden lg:block w-56 flex-shrink-0 self-start">
+          <div className="sticky top-20">
+            <nav className="text-sm space-y-1">
+              <h3 className="font-semibold text-stone-900 dark:text-stone-100 mb-2">Contents</h3>
+              {artifacts.map((a, i) => (
+                <a key={`oa-${i}`} href={`#output-${i}`}
+                   className="block py-1 px-2 rounded text-stone-600 dark:text-stone-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors truncate">
+                  {a.stage}: {a.name}
+                </a>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {/* Content area */}
+        <div className="flex-1 min-w-0">
+          {stageOrder.map((stage) => {
+            const stageArtifacts = byStage.get(stage) || [];
+            return (
+              <div key={stage}>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-3 mt-6 first:mt-0">
+                  {stage.charAt(0).toUpperCase() + stage.slice(1)}
+                </h3>
+                {stageArtifacts.map((a, i) => {
+                  const globalIndex = artifacts.indexOf(a);
+                  if (a.type === "markdown" && a.content) {
+                    return (
+                      <Card key={`oa-${globalIndex}`} id={`output-${globalIndex}`}>
+                        <SectionHeading>{a.name}</SectionHeading>
+                        <InlineComments htmlContent={markdownToSimpleHtml(a.content)} onCommentsChange={onInlineCommentsChange} />
+                      </Card>
+                    );
+                  }
+                  if (a.type === "html" && a.content) {
+                    return (
+                      <Card key={`oa-${globalIndex}`} id={`output-${globalIndex}`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <SectionHeading>{a.name}</SectionHeading>
+                          {a.relativePath && (
+                            <a
+                              href={a.relativePath}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-teal-600 dark:text-teal-400 hover:underline"
+                            >
+                              View Full Size &#8599;
+                            </a>
+                          )}
+                        </div>
+                        <iframe
+                          srcDoc={a.content}
+                          sandbox="allow-scripts"
+                          className="w-full h-[600px] border border-stone-200 dark:border-stone-700 rounded-lg bg-white"
+                          title={a.name}
+                        />
+                      </Card>
+                    );
+                  }
+                  if (a.type === "image" && a.relativePath) {
+                    return (
+                      <Card key={`oa-${globalIndex}`} id={`output-${globalIndex}`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <SectionHeading>{a.name}</SectionHeading>
+                          <a
+                            href={a.relativePath}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-teal-600 dark:text-teal-400 hover:underline"
+                          >
+                            Open in new tab &#8599;
+                          </a>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedImage(expandedImage === a.relativePath ? null : a.relativePath!)}
+                          className="block cursor-pointer"
+                        >
+                          <img
+                            src={a.relativePath}
+                            alt={a.name}
+                            className={`border border-stone-200 dark:border-stone-700 rounded-lg transition-all ${
+                              expandedImage === a.relativePath ? "max-w-full" : "max-w-md"
+                            }`}
+                          />
+                        </button>
+                        {expandedImage !== a.relativePath && (
+                          <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">Click to expand</p>
+                        )}
+                      </Card>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Image lightbox overlay */}
+      {expandedImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-8 cursor-pointer"
+          onClick={() => setExpandedImage(null)}
+          onKeyDown={(e) => e.key === "Escape" && setExpandedImage(null)}
+          role="dialog"
+          aria-label="Expanded image"
+          tabIndex={0}
+        >
+          <img
+            src={expandedImage}
+            alt="Expanded artifact"
+            className="max-w-full max-h-full object-contain rounded-lg"
+          />
+        </div>
+      )}
+    </>
+  );
+}
 
 function UnitsTable({ units, unitMockups, onInlineCommentsChange }: { units: ParsedUnit[]; unitMockups: Record<string, MockupInfo[]>; onInlineCommentsChange?: (comments: InlineCommentEntry[]) => void }) {
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);

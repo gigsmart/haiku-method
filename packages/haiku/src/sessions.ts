@@ -60,6 +60,7 @@ export interface ReviewSession {
   stageStates?: Record<string, unknown>;
   knowledgeFiles?: Array<{ name: string; content: string }>;
   stageArtifacts?: Array<{ stage: string; name: string; content: string }>;
+  outputArtifacts?: Array<{ stage: string; name: string; type: string; content?: string; relativePath?: string }>;
 }
 
 export interface QuestionDef {
