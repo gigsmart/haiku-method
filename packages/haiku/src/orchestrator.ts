@@ -1375,7 +1375,7 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 						intent: slug,
 						stage,
 						feedback: reviewResult.feedback,
-						message: "External review requested. Submit the work for review through your project's review process (PR, MR, review board, etc.). Run /haiku:run again after approval.",
+						message: "External review requested. Submit the work for review through your project's review process (PR, MR, review board, etc.). Include the H·AI·K·U browse link in the description so reviewers can see the intent, units, and knowledge artifacts. Record the review URL via haiku_run_next { intent, external_review_url }. Run /haiku:run again after approval.",
 					}, null, 2))
 				}
 				// changes_requested — go back to elaborate to fix specs
