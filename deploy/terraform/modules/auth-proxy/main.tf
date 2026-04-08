@@ -151,6 +151,17 @@ resource "google_cloudfunctions2_function" "auth_proxy" {
 # Regional HTTPS Load Balancer — provides public access without allUsers IAM
 # ---------------------------------------------------------------------------
 
+# Proxy-only subnet required by regional EXTERNAL_MANAGED LBs
+resource "google_compute_subnetwork" "proxy_only" {
+  name          = "haiku-proxy-only-subnet"
+  project       = var.project_id
+  region        = var.region
+  network       = "default"
+  ip_cidr_range = "10.129.0.0/23"
+  purpose       = "REGIONAL_MANAGED_PROXY"
+  role          = "ACTIVE"
+}
+
 # Reserve a static IP for the load balancer
 resource "google_compute_address" "auth_proxy" {
   name    = "haiku-auth-proxy-ip"
