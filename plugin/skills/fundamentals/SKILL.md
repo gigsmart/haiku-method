@@ -27,6 +27,16 @@ The orchestrator tool `haiku_run_next { intent }` drives everything. It returns 
 
 Every `haiku_run_next` response includes `stage_metadata` — the stage's description, allowed unit_types, and STAGE.md body. ALL work MUST stay within the stage's scope. Do not produce outputs belonging to other stages.
 
+## Phase Distinction (Critical)
+
+**Elaborate** and **Execute** are fundamentally different:
+
+- **Elaborate** = broad research + unit definition. No hat rotation. Produce discovery artifacts (knowledge/) and unit specs (scope, criteria, dependencies). Do NOT produce the actual deliverables — units are instructions for focused work, not the work itself. One adversarial review before the human gate.
+
+- **Execute** = focused work through hats. Each unit runs through the stage's hat sequence (e.g., architect → builder → reviewer). Each hat is a separate subagent. Hats ensure completeness via different perspectives. This is where deliverables are produced and written to `stages/{stage}/artifacts/`.
+
+Elaboration produces the PLAN. Execution produces the WORK.
+
 ## Key MCP Tools
 
 | Tool | Purpose |
