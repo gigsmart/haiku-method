@@ -230,11 +230,11 @@ resource "google_certificate_manager_certificate_map_entry" "auth_proxy" {
 
 # HTTPS proxy
 resource "google_compute_region_target_https_proxy" "auth_proxy" {
-  name            = "haiku-auth-proxy-https"
-  project         = var.project_id
-  region          = var.region
-  url_map         = google_compute_region_url_map.auth_proxy.id
-  certificate_map = "//certificatemanager.googleapis.com/${google_certificate_manager_certificate_map.auth_proxy.id}"
+  name                             = "haiku-auth-proxy-https"
+  project                          = var.project_id
+  region                           = var.region
+  url_map                          = google_compute_region_url_map.auth_proxy.id
+  certificate_manager_certificates = ["//certificatemanager.googleapis.com/${google_certificate_manager_certificate.auth_proxy.id}"]
 }
 
 # Forwarding rule
