@@ -28010,16 +28010,6 @@ function runNext(slug) {
     if (typeViolation) return typeViolation;
     const discoveryViolation = validateDiscoveryArtifacts(slug, currentStage, studio);
     if (discoveryViolation) return discoveryViolation;
-    const elaborationReviewed = stageState.elaboration_reviewed || false;
-    if (!elaborationReviewed) {
-      return {
-        action: "review_elaboration",
-        intent: slug,
-        studio,
-        stage: currentStage,
-        message: `Units and discovery artifacts validated. Run review agents on the elaboration specs before proceeding to the review gate. After review, call haiku_run_next { intent: "${slug}" } again.`
-      };
-    }
     const designDirectionSelected = stageState.design_direction_selected || false;
     if (!designDirectionSelected) {
       const stageMetaForDesign = resolveStageMetadata(studio, currentStage);

@@ -588,17 +588,10 @@ export function runNext(slug: string): OrchestratorAction {
 		const discoveryViolation = validateDiscoveryArtifacts(slug, currentStage, studio)
 		if (discoveryViolation) return discoveryViolation
 
-		// Adversarial review of elaboration — run review agents on specs before gate
-		const elaborationReviewed = (stageState.elaboration_reviewed as boolean) || false
-		if (!elaborationReviewed) {
-			return {
-				action: "review_elaboration",
-				intent: slug,
-				studio,
-				stage: currentStage,
-				message: `Units and discovery artifacts validated. Run review agents on the elaboration specs before proceeding to the review gate. After review, call haiku_run_next { intent: "${slug}" } again.`,
-			}
-		}
+		// Note: adversarial review of elaboration specs is included in the gate_review
+		// instructions. The gate review handler opens the review UI which shows specs
+		// and lets the user approve or request changes. No separate review_elaboration
+		// step — it was causing a redundant haiku_run_next round-trip.
 
 		// Check if the stage requires a design direction selection before proceeding.
 		// Read the STAGE.md body — if it mentions pick_design_direction (RFC 2119 MUST),
