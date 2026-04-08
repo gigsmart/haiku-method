@@ -204,6 +204,14 @@ resource "google_compute_region_url_map" "auth_proxy" {
   default_service = google_compute_region_backend_service.auth_proxy.id
 }
 
+# DNS authorization for managed certificate
+resource "google_certificate_manager_dns_authorization" "auth_proxy" {
+  name     = "haiku-auth-proxy-dns-auth"
+  project  = var.project_id
+  location = var.region
+  domain   = "auth.${var.domain}"
+}
+
 # Google-managed SSL certificate via Certificate Manager
 resource "google_certificate_manager_certificate" "auth_proxy" {
   name     = "haiku-auth-proxy-cert"
@@ -211,7 +219,8 @@ resource "google_certificate_manager_certificate" "auth_proxy" {
   location = var.region
 
   managed {
-    domains = ["auth.${var.domain}"]
+    domains            = ["auth.${var.domain}"]
+    dns_authorizations = [google_certificate_manager_dns_authorization.auth_proxy.id]
   }
 }
 
