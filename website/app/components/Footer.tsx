@@ -15,7 +15,7 @@ export function Footer() {
 				{/* Main footer content */}
 				<div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
 					{/* Brand column */}
-					<div className="lg:col-span-2">
+					<div className="lg:col-span-1">
 						<Link href="/" className="text-xl font-bold tracking-tight">
 							H·AI·K·U
 						</Link>
