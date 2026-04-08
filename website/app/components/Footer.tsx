@@ -26,13 +26,12 @@ export function Footer() {
 						<div className="mt-5 space-y-3">
 							<div>
 								<span className="text-[10px] text-stone-400 dark:text-stone-500 lowercase">born at</span>
-								<a href="https://thebushido.co" target="_blank" rel="noopener noreferrer" className="mt-0.5 flex items-center gap-2 text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 transition-colors">
-									<span className="text-base" style={{ fontFamily: "'Noto Sans JP', 'Hiragino Sans', serif" }}>武士道</span>
-									<span className="text-xs font-medium">The Bushido Collective</span>
+								<a href="https://thebushido.co" target="_blank" rel="noopener noreferrer" className="mt-0.5 block">
+									<img src="/images/born-at.svg" alt="The Bushido Collective" className="h-[20px] brightness-0 opacity-40 dark:invert dark:opacity-50 hover:opacity-70 transition-opacity" />
 								</a>
 							</div>
 							<div>
-								<span className="text-[10px] text-stone-400 dark:text-stone-500 lowercase tracking-wide">now maintained by</span>
+								<span className="text-[10px] text-stone-400 dark:text-stone-500 lowercase tracking-wide">maintained by</span>
 								<a href="https://gigsmart.com" target="_blank" rel="noopener noreferrer" className="mt-0.5 block">
 									<img src="/images/battle-tested-at.svg" alt="GigSmart" className="h-[16px] brightness-0 opacity-40 dark:invert dark:opacity-50 hover:opacity-70 transition-opacity" />
 								</a>
