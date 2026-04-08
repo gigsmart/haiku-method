@@ -7,13 +7,14 @@ export function Footer() {
 		footerNavigation.developers,
 		footerNavigation.guides,
 		footerNavigation.resources,
+		footerNavigation.legal,
 	]
 
 	return (
 		<footer className="border-t border-stone-200 bg-stone-50 pb-20 dark:border-stone-800 dark:bg-stone-900 md:pb-0">
 			<div className="mx-auto max-w-6xl px-4 py-12">
 				{/* Main footer content */}
-				<div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
+				<div className="grid gap-8 md:grid-cols-2 lg:grid-cols-6">
 					{/* Brand column */}
 					<div className="lg:col-span-1">
 						<Link href="/" className="text-xl font-bold tracking-tight">
@@ -96,10 +97,14 @@ export function Footer() {
 
 				{/* Bottom section */}
 				<div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-stone-200 pt-8 dark:border-stone-800 md:flex-row">
-					<p className="text-sm text-stone-500 dark:text-stone-400">
-						&copy; {new Date().getFullYear()} GigSmart, Inc. Apache
-						2.0 License.
-					</p>
+					<div className="flex flex-wrap items-center gap-4 text-sm text-stone-500 dark:text-stone-400">
+						<p>
+							&copy; {new Date().getFullYear()} GigSmart, Inc. Apache
+							2.0 License.
+						</p>
+						<Link href="/docs/privacy/" className="underline hover:text-stone-900 dark:hover:text-white">Privacy</Link>
+						<Link href="/docs/terms/" className="underline hover:text-stone-900 dark:hover:text-white">Terms</Link>
+					</div>
 					<div className="flex flex-wrap items-center gap-4 text-sm text-stone-500 dark:text-stone-400">
 						<span>
 							Built with{" "}
