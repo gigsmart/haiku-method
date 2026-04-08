@@ -4902,17 +4902,6 @@ async function parseUnit(filePath) {
 async function parseAllUnits(intentDir3) {
   const units = [];
   try {
-    const entries = await readdir(intentDir3);
-    const unitFiles = entries.filter((f) => /^unit-\d+.*\.md$/.test(f)).sort();
-    for (const file of unitFiles) {
-      const parsed = await parseUnit(join(intentDir3, file));
-      if (parsed) {
-        units.push(parsed);
-      }
-    }
-  } catch {
-  }
-  try {
     const stagesDir = join(intentDir3, "stages");
     const stageEntries = await readdir(stagesDir, { withFileTypes: true });
     for (const stageEntry of stageEntries) {
