@@ -135,6 +135,7 @@ import { listPrompts, getPrompt, completeArgument } from "./prompts/index.js"
 import "./prompts/core.js"
 import "./prompts/complex.js"
 import "./prompts/simple.js"
+import "./prompts/repair.js"
 
 // List prompts
 server.setRequestHandler(ListPromptsRequestSchema, async () => ({
