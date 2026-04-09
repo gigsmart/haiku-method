@@ -171,7 +171,7 @@ jobs:
           VERSION="${{ steps.bump-version.outputs.new_version }}"
           # Include CHANGELOG.md in the plugin package so /haiku:release-notes works
           cp CHANGELOG.md plugin/CHANGELOG.md
-          zip -r "ai-dlc-plugin-${VERSION}.zip" plugin/ \
+          zip -r "haiku-plugin-${VERSION}.zip" plugin/ \
             -x "plugin/node_modules/*" \
             -x "plugin/*/node_modules/*" \
             -x "plugin/*/.tsbuildinfo"
@@ -204,4 +204,4 @@ jobs:
           gh release create "$TAG" \
             --title "$TAG" \
             --notes-file /tmp/release-notes.md \
-            "ai-dlc-plugin-${VERSION}.zip#AI-DLC Plugin (zip)"
+            "haiku-plugin-${VERSION}.zip#H·AI·K·U Plugin (zip)"
