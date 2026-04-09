@@ -117,4 +117,5 @@ export interface DAGGraph {
   nodes: DAGNode[];
   edges: DAGEdge[];
   adjacency: Map<string, string[]>;
+  unresolvedDeps?: Array<{ unit: string; dep: string }>;
 }
