@@ -1,7 +1,7 @@
 ---
 title: Website — Stepped review UI component migration
 type: frontend
-status: active
+status: completed
 depends_on:
   - unit-03-website-review-shell
 quality_gates:
@@ -26,6 +26,7 @@ bolt: 1
 hat: reviewer
 started_at: '2026-04-09T20:11:26Z'
 hat_started_at: '2026-04-09T20:19:27Z'
+completed_at: '2026-04-09T20:20:12Z'
 ---
 
 # Website — Review Content Views (Browse Reuse + Standalone Forms)
