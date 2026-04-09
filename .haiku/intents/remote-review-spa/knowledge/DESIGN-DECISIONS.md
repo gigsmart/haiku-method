@@ -1,16 +1,28 @@
 # Design Decisions
 
-## Layout: Split Panel with Collapsible Sidebar
-- Left sidebar: connection status (minimal once connected), stepped review navigation, comment textarea, action buttons
-- Right panel: read-only document content for the current step
-- Sidebar collapsible: user can toggle between expanded (step list + comments) and collapsed (progress dots)
+## Core Principle: Review = Browse + Review Layer
+
+The review experience reuses the website's existing browse components for content rendering. This gives us visual consistency for free and cuts the implementation scope significantly.
+
+- IntentReview uses browse's `IntentDetailView` (scoped to intent summary, not all units expanded)
+- UnitReview uses browse's `UnitDetailView` (scoped to the specific unit)
+- QuestionForm and DirectionPicker are standalone (no browse equivalent)
+
+## Layout: Browse Content + Review Sidebar
+
+- **Right panel**: Browse's existing content views (IntentDetailView or UnitDetailView)
+- **Left sidebar**: Review-specific overlay — stepped nav, comments, decision action
+- Sidebar collapsible: expanded (280px, step list + comments) ↔ collapsed (64px, progress dots)
+- User can toggle collapse at any viewport width
 - Auto-collapses on narrow viewports, collapses to top status bar on mobile
 
-## Review Flow: Stepped
-- Reviewer walks through each section sequentially (Problem → Solution → Units → Criteria → Decision)
-- Each step shows one section in the right panel
-- Comments are entered in the left sidebar for the current step
-- Final "Decision" step summarizes all comments and auto-suggests action:
+## Review Flow: Stepped with Free Navigation
+- Sections derived from the browse content (intent: Problem, Solution, Units, Criteria, etc.)
+- Free navigation — click any step, Back/Next for convenience
+- Steps marked as "seen" when visited
+- Comments entered per section in left sidebar, stored locally
+- Comments batched and sent with decision (not real-time per-step)
+- Final "Decision" step summarizes comments, auto-suggests action:
   - Has comments → suggests "Request Changes" (primary), "Approve Anyway" (secondary)
   - No comments → suggests "Approve" (primary), "Request Changes" (secondary)
 
@@ -18,34 +30,34 @@
 - Review: teal (#14b8a6)
 - Question: amber (#f59e0b)
 - Direction: indigo (#6366f1)
-- Accent applied to: session type label, step icons, progress dots, action buttons
+
+## Scoped Content (NOT content overload)
+- **Intent review**: shows intent-level content only — problem, solution, criteria, DAG overview. Units shown as a summary list, not expanded.
+- **Unit review**: shows that specific unit only — spec, criteria, wireframes, risks.
+- **Question**: dedicated question form, not a browse view
+- **Direction**: archetype thumbnails with radio + parameter sliders, not a browse view
 
 ## Direction Picker
 - Archetype cards with thumbnail HTML previews (rendered in iframes/containers)
 - Radio button selection (single choice)
 - Parameter sliders below the selected archetype
-- NOT just text cards — each archetype has a live preview thumbnail
 
 ## Annotation Canvas
-- Keeps current overlay behavior — appears as modal when clicking mockup images
-- Not integrated inline in the document flow
+- Overlay modal on mockup image click (same as current SPA)
+- Pin placement + freehand drawing
+- Not integrated inline — pops up over browse content
 
 ## Error States
 - Fill the right panel with centered error card
-- Left sidebar shows failed step with red dot
+- Left sidebar shows failed connection with red dot
 - States: expired token, tunnel unreachable, malformed token, session not found
 
 ## Reconnecting
-- Amber reconnecting banner at top
-- Left sidebar shows amber pulsing dot with "Reconnecting..."
-- Right panel content becomes read-only (dimmed)
+- Amber banner at top
+- Sidebar shows amber pulsing dot with "Reconnecting..."
+- Content becomes read-only (dimmed)
 
-## Design Tokens (from website)
-- Stone palette (neutral): 50-950
-- Teal: #14b8a6 (primary)
-- Background: #1c1917 (content), #0c0a09 (sidebar)
-- Borders: #292524 (subtle), #44403c (medium)
-- Text: #e7e5e4 (primary), #d6d3d1 (prose), #a8a29e (secondary), #78716c (muted)
-- Font: Inter, system-ui
-- Card radius: 12px
-- Sidebar width: 280px expanded, 64px collapsed
+## Design Tokens (inherited from website)
+- Stone palette, teal primary, Inter font
+- All tokens from the existing browse experience carry over automatically
+- No new tokens needed — review sidebar uses the same palette
