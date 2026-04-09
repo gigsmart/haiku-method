@@ -1,8 +1,8 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://haiku.dev/schemas/providers/github-vcs.schema.json",
-	"title": "GitHub VCS Provider Config",
-	"description": "Provider-specific configuration for GitHub VCS (version control)",
+	"$id": "https://haiku.dev/schemas/providers/github-git.schema.json",
+	"title": "GitHub Git Provider Config",
+	"description": "Provider-specific configuration for GitHub git storage",
 	"type": "object",
 	"properties": {
 		"auto_push": {
