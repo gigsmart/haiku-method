@@ -1,7 +1,7 @@
 ---
 title: Website — Review page shell with hash fragment routing
 type: frontend
-status: active
+status: completed
 depends_on: []
 quality_gates:
   - /app/review/page.tsx exists and builds successfully with next build
@@ -21,6 +21,7 @@ bolt: 1
 hat: reviewer
 started_at: '2026-04-09T19:57:40Z'
 hat_started_at: '2026-04-09T20:10:30Z'
+completed_at: '2026-04-09T20:11:14Z'
 ---
 
 # Website — Review Page Shell
