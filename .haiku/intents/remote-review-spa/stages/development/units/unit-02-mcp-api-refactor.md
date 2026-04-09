@@ -1,17 +1,25 @@
 ---
 title: MCP — CORS + consolidated file route
 type: backend
-status: pending
+status: active
 depends_on: []
 quality_gates:
-  - "CORS headers on all responses: Access-Control-Allow-Origin * when HAIKU_REMOTE_REVIEW=1"
+  - >-
+    CORS headers on all responses: Access-Control-Allow-Origin * when
+    HAIKU_REMOTE_REVIEW=1
   - OPTIONS preflight returns 204 with correct CORS headers
-  - "GET /files/:sessionId/*path serves files from intent dir and global knowledge"
+  - >-
+    GET /files/:sessionId/*path serves files from intent dir and global
+    knowledge
   - Path traversal guard via realpath — returns 403 on traversal attempt
   - Question image paths resolved to relative paths at session creation
   - Content-Type set from file extension
   - Old file routes still work when feature flag is off (backwards compat)
   - TypeScript compiles with no errors
+bolt: 1
+hat: planner
+started_at: '2026-04-09T19:57:38Z'
+hat_started_at: '2026-04-09T19:57:38Z'
 ---
 
 # MCP — CORS + Consolidated File Route
