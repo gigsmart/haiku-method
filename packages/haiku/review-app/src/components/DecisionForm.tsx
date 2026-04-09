@@ -59,7 +59,7 @@ export function DecisionForm({ sessionId, collectAnnotations = false, getAnnotat
     }
   }
 
-  const hasComments = commentCount > 0;
+  const hasComments = commentCount > 0 || generalComments.trim().length > 0;
 
   function handleApprove() {
     handleSubmit("approved", generalComments.trim());
@@ -137,7 +137,7 @@ export function DecisionForm({ sessionId, collectAnnotations = false, getAnnotat
                     disabled={submitting}
                     className="px-6 py-3 bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-700 dark:text-stone-200 font-medium rounded-lg transition-colors focus:ring-2 focus:ring-stone-400 focus:ring-offset-2 dark:focus:ring-offset-stone-900 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Clear Comments to Approve
+                    Clear All & Approve Instead
                   </button>
                 )}
               </>
@@ -145,7 +145,7 @@ export function DecisionForm({ sessionId, collectAnnotations = false, getAnnotat
           </div>
           {hasComments && (
             <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
-              {commentCount} comment{commentCount !== 1 ? "s" : ""} pending -- submitting will request changes. Clear comments to approve instead.
+              {commentCount > 0 ? `${commentCount} comment${commentCount !== 1 ? "s" : ""} pending` : "Feedback entered"} — submitting will request changes.
             </p>
           )}
         </>
