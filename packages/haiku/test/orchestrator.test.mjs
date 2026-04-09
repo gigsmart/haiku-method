@@ -135,8 +135,8 @@ ${(opts.criteria || ["- [ ] Default criteria"]).join("\n")}
 
 console.log("\n=== orchestratorToolDefs ===")
 
-test("has 3 orchestration tools", () => {
-  assert.strictEqual(orchestratorToolDefs.length, 3)
+test("has 5 orchestration tools", () => {
+  assert.strictEqual(orchestratorToolDefs.length, 5)
 })
 
 test("haiku_run_next tool defined with intent required", () => {
@@ -154,6 +154,18 @@ test("haiku_intent_create tool defined with description required", () => {
 test("haiku_go_back tool defined with intent required", () => {
   const tool = orchestratorToolDefs.find((t) => t.name === "haiku_go_back")
   assert.ok(tool)
+  assert.ok(tool.inputSchema.required.includes("intent"))
+})
+
+test("haiku_select_studio tool defined with intent required", () => {
+  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_select_studio")
+  assert.ok(tool, "haiku_select_studio tool should be defined")
+  assert.ok(tool.inputSchema.required.includes("intent"))
+})
+
+test("haiku_intent_reset tool defined with intent required", () => {
+  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_intent_reset")
+  assert.ok(tool, "haiku_intent_reset tool should be defined")
   assert.ok(tool.inputSchema.required.includes("intent"))
 })
 

@@ -130,23 +130,17 @@ const server = new Server(
 
 import { stateToolDefs, handleStateTool } from "./state-tools.js"
 import { orchestratorToolDefs, handleOrchestratorTool, setOpenReviewHandler, setElicitInputHandler } from "./orchestrator.js"
+// Prompts migrated to skills (plugin/skills/) — prompt handlers kept for protocol compatibility
 import { listPrompts, getPrompt, completeArgument } from "./prompts/index.js"
-// Side-effect imports: each file calls registerPrompt() at module load time. Add a new import here for each new prompt file.
-import "./prompts/core.js"
-import "./prompts/complex.js"
-import "./prompts/simple.js"
 
-// List prompts
 server.setRequestHandler(ListPromptsRequestSchema, async () => ({
 	prompts: listPrompts(),
 }))
 
-// Get prompt
 server.setRequestHandler(GetPromptRequestSchema, async (request) => {
 	return getPrompt(request.params.name, request.params.arguments)
 })
 
-// Argument completion
 server.setRequestHandler(CompleteRequestSchema, async (request) => {
 	return completeArgument(request.params)
 })
@@ -326,7 +320,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	const { name, arguments: args } = request.params
 
 	// Orchestration tools (async — gate_ask blocks until user reviews)
-	if (name === "haiku_run_next" || name === "haiku_go_back" || name === "haiku_intent_create") {
+	if (name === "haiku_run_next" || name === "haiku_go_back" || name === "haiku_intent_create" || name === "haiku_select_studio" || name === "haiku_intent_reset") {
 		return handleOrchestratorTool(name, (args ?? {}) as Record<string, unknown>)
 	}
 
