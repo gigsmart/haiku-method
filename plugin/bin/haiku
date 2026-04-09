@@ -29107,7 +29107,7 @@ ${errorStack}
           );
         } catch {
         }
-        const agentFixable = errorMsg.includes("Could not parse intent") || errorMsg.includes("No such file") || errorMsg.includes("ENOENT") || errorMsg.includes("frontmatter") || errorMsg.includes("invalid identifier") || errorMsg.includes("timeout") || errorMsg.includes("Timeout");
+        const agentFixable = errorMsg.includes("Could not parse intent") || errorMsg.includes("No such file") || errorMsg.includes("ENOENT") || errorMsg.includes("frontmatter") || errorMsg.includes("invalid identifier") || errorMsg.includes("Circular dependency") || errorMsg.includes("timeout") || errorMsg.includes("Timeout");
         if (agentFixable) {
           syncSessionMetadata(slug, args2.state_file);
           return {
