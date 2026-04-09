@@ -8,7 +8,7 @@
 // Primary tool: haiku_run_next { intent }
 // Returns an action object the agent follows.
 
-import { execFileSync } from "node:child_process"
+import { execFileSync, execSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import matter from "gray-matter"
@@ -361,6 +361,95 @@ function validateUnitNaming(intentDirPath: string, stage: string): OrchestratorA
 	}
 
 	return null
+}
+
+// ── Quality gate runner ───────────────────────────────────────────────────
+
+interface QualityGateResult {
+	name: string
+	command: string
+	dir: string
+	exit_code: number
+	output: string
+}
+
+/**
+ * Read quality_gates from intent.md and all unit files in a stage,
+ * execute each gate command, and return failures.
+ */
+function runQualityGates(slug: string, stage: string): QualityGateResult[] {
+	const root = findHaikuRoot()
+	const iDir = join(root, "intents", slug)
+	const intentFile = join(iDir, "intent.md")
+
+	// Determine repo root for default cwd
+	let repoRoot: string
+	try {
+		repoRoot = execSync("git rev-parse --show-toplevel", { encoding: "utf8" }).trim()
+	} catch {
+		repoRoot = process.cwd()
+	}
+
+	// Parse quality_gates from frontmatter using gray-matter (already imported)
+	function parseGates(filePath: string): Array<{ name: string; command: string; dir: string }> {
+		const data = readFrontmatter(filePath)
+		const raw = Array.isArray(data.quality_gates) ? data.quality_gates : []
+		return raw
+			.filter((g: Record<string, unknown>): g is Record<string, string> => !!g?.command)
+			.map((g: Record<string, string>) => ({ name: g.name ?? "", command: g.command, dir: g.dir ?? "" }))
+	}
+
+	// Collect gates from intent + all units in this stage
+	const allGates = parseGates(intentFile)
+	const unitsDir = join(iDir, "stages", stage, "units")
+	if (existsSync(unitsDir)) {
+		for (const f of readdirSync(unitsDir).filter(f => f.startsWith("unit-") && f.endsWith(".md"))) {
+			allGates.push(...parseGates(join(unitsDir, f)))
+		}
+	}
+
+	// Deduplicate by command+dir (same command in different dirs is legitimate in monorepos)
+	const seen = new Set<string>()
+	const uniqueGates = allGates.filter(g => {
+		const key = `${g.command}::${g.dir}`
+		if (seen.has(key)) return false
+		seen.add(key)
+		return true
+	})
+
+	// Execute each gate (matches hook: 30s timeout, 500-char output truncation)
+	const failures: QualityGateResult[] = []
+	for (let i = 0; i < uniqueGates.length; i++) {
+		const gate = uniqueGates[i]
+		const cwd = gate.dir ? resolve(repoRoot, gate.dir) : repoRoot
+		let output = ""
+		let exitCode = 0
+
+		try {
+			output = execSync(gate.command, {
+				cwd,
+				encoding: "utf8",
+				timeout: 30_000,
+				stdio: ["pipe", "pipe", "pipe"],
+			})
+		} catch (err: unknown) {
+			const execErr = err as { status?: number; stdout?: string; stderr?: string }
+			exitCode = execErr.status ?? 1
+			output = ((execErr.stdout ?? "") + (execErr.stderr ?? "")).slice(0, 500)
+		}
+
+		if (exitCode !== 0) {
+			failures.push({
+				name: gate.name || `gate-${i}`,
+				command: gate.command,
+				dir: gate.dir,
+				exit_code: exitCode,
+				output,
+			})
+		}
+	}
+
+	return failures
 }
 
 // ── Action types ───────────────────────────────────────────────────────────
@@ -863,6 +952,24 @@ export function runNext(slug: string): OrchestratorAction {
 		const reviewOutputCheck = validateStageOutputs(slug, currentStage, studio)
 		if (reviewOutputCheck) return reviewOutputCheck
 
+		// Run quality gates (tests, lint, typecheck) before subjective review agents.
+		// If any gate fails, send the agent back to fix them — don't waste review cycles
+		// on code that doesn't compile or pass tests.
+		const gateFailures = runQualityGates(slug, currentStage)
+		if (gateFailures.length > 0) {
+			// Stay in review phase — agent must fix and call haiku_run_next again
+			return {
+				action: "fix_quality_gates",
+				intent: slug,
+				stage: currentStage,
+				failures: gateFailures,
+				message: `Quality gate(s) failed — fix before adversarial review:\n\n` +
+					gateFailures.map(f =>
+						`- **${f.name}**: \`${f.command}\` (exit ${f.exit_code})${f.dir !== "" ? ` in ${f.dir}` : ""}\n  ${f.output.split("\n").slice(0, 5).join("\n  ")}`,
+					).join("\n\n"),
+			}
+		}
+
 		// FSM side effect: advance to gate phase so next haiku_run_next call
 		// proceeds to gate logic after the agent completes the review work.
 		fsmAdvancePhase(slug, currentStage, "gate")
@@ -872,7 +979,7 @@ export function runNext(slug: string): OrchestratorAction {
 			intent: slug,
 			studio,
 			stage: currentStage,
-			message: `Run adversarial review agents for stage '${currentStage}'`,
+			message: `Quality gates passed — run adversarial review agents for stage '${currentStage}'`,
 		}
 	}
 

@@ -15889,7 +15889,7 @@ var init_protocol = __esm({
               return;
             }
             const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-            await new Promise((resolve7) => setTimeout(resolve7, pollInterval));
+            await new Promise((resolve9) => setTimeout(resolve9, pollInterval));
             options2?.signal?.throwIfAborted();
           }
         } catch (error2) {
@@ -15906,7 +15906,7 @@ var init_protocol = __esm({
        */
       request(request, resultSchema, options2) {
         const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options2 ?? {};
-        return new Promise((resolve7, reject) => {
+        return new Promise((resolve9, reject) => {
           const earlyReject = (error2) => {
             reject(error2);
           };
@@ -15984,7 +15984,7 @@ var init_protocol = __esm({
               if (!parseResult.success) {
                 reject(parseResult.error);
               } else {
-                resolve7(parseResult.data);
+                resolve9(parseResult.data);
               }
             } catch (error2) {
               reject(error2);
@@ -16245,12 +16245,12 @@ var init_protocol = __esm({
           }
         } catch {
         }
-        return new Promise((resolve7, reject) => {
+        return new Promise((resolve9, reject) => {
           if (signal.aborted) {
             reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
             return;
           }
-          const timeoutId = setTimeout(resolve7, interval);
+          const timeoutId = setTimeout(resolve9, interval);
           signal.addEventListener("abort", () => {
             clearTimeout(timeoutId);
             reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -19277,7 +19277,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve7.call(this, root, ref);
+      let _sch = resolve9.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -19304,7 +19304,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve7(root, ref) {
+    function resolve9(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -19879,7 +19879,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve7(baseURI, relativeURI, options2) {
+    function resolve9(baseURI, relativeURI, options2) {
       const schemelessOptions = options2 ? Object.assign({ scheme: "null" }, options2) : { scheme: "null" };
       const resolved = resolveComponent(parse4(baseURI, schemelessOptions), parse4(relativeURI, schemelessOptions), schemelessOptions, true);
       schemelessOptions.skipEscape = true;
@@ -20106,7 +20106,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve7,
+      resolve: resolve9,
       resolveComponent,
       equal,
       serialize,
@@ -23906,12 +23906,12 @@ var init_stdio2 = __esm({
         this.onclose?.();
       }
       send(message) {
-        return new Promise((resolve7) => {
+        return new Promise((resolve9) => {
           const json = serializeMessage(message);
           if (this._stdout.write(json)) {
-            resolve7();
+            resolve9();
           } else {
-            this._stdout.once("drain", resolve7);
+            this._stdout.once("drain", resolve9);
           }
         });
       }
@@ -23933,14 +23933,14 @@ function notifySessionUpdate(sessionId) {
   sessionEvents.emit(`session:${sessionId}`);
 }
 function waitForSession(sessionId, timeoutMs = 30 * 60 * 1e3) {
-  return new Promise((resolve7, reject) => {
+  return new Promise((resolve9, reject) => {
     const timer = setTimeout(() => {
       sessionEvents.removeListener(`session:${sessionId}`, handler);
       reject(new Error("Session timeout"));
     }, timeoutMs);
     function handler() {
       clearTimeout(timer);
-      resolve7();
+      resolve9();
     }
     sessionEvents.once(`session:${sessionId}`, handler);
   });
@@ -24620,7 +24620,7 @@ async function startHttpServer() {
   );
 }
 function listenOnPort(port) {
-  return new Promise((resolve7, reject) => {
+  return new Promise((resolve9, reject) => {
     const server2 = createServer(async (req, res) => {
       const host = req.headers.host ?? `127.0.0.1:${port}`;
       const url = `http://${host}${req.url ?? "/"}`;
@@ -24670,7 +24670,7 @@ function listenOnPort(port) {
     });
     server2.listen(port, "127.0.0.1", () => {
       httpServer = server2;
-      resolve7();
+      resolve9();
     });
   });
 }
@@ -26422,13 +26422,13 @@ var init_inline_comments = __esm({
 function renderIntentReview(intent, units, criteria, sessionId, mermaid, intentMockups, unitMockups) {
   const findSection = (name) => {
     const section = intent.sections.find(
-      (s) => s.heading.toLowerCase() === name.toLowerCase()
+      (s) => s.heading?.toLowerCase() === name.toLowerCase()
     );
     return section?.content ?? "";
   };
   const findSectionWithSubs = (name) => {
     return intent.sections.find(
-      (s) => s.heading.toLowerCase() === name.toLowerCase()
+      (s) => s.heading?.toLowerCase() === name.toLowerCase()
     );
   };
   const problem = findSection("Problem");
@@ -26612,13 +26612,13 @@ var init_intent_review = __esm({
 function renderUnitReview(intent, unit, criteria, sessionId, wireframeMockups) {
   const findSection = (name) => {
     const section = unit.sections.find(
-      (s) => s.heading.toLowerCase() === name.toLowerCase()
+      (s) => s.heading?.toLowerCase() === name.toLowerCase()
     );
     return section?.content ?? "";
   };
   const findSectionWithSubs = (name) => {
     return unit.sections.find(
-      (s) => s.heading.toLowerCase() === name.toLowerCase()
+      (s) => s.heading?.toLowerCase() === name.toLowerCase()
     );
   };
   const description = findSection("Description") || findSection("Overview");
@@ -28264,9 +28264,9 @@ var init_helpers2 = __esm({
 });
 
 // src/orchestrator.ts
-import { execFileSync as execFileSync3 } from "node:child_process";
+import { execFileSync as execFileSync3, execSync } from "node:child_process";
 import { existsSync as existsSync5, mkdirSync as mkdirSync4, readFileSync as readFileSync4, readdirSync as readdirSync3, writeFileSync as writeFileSync3 } from "node:fs";
-import { join as join7 } from "node:path";
+import { join as join7, resolve as resolve3 } from "node:path";
 function readFrontmatter(filePath) {
   if (!existsSync5(filePath)) return {};
   const raw = readFileSync4(filePath, "utf8");
@@ -28508,6 +28508,65 @@ Rename the files to match the convention, then call \`haiku_run_next { intent: "
     };
   }
   return null;
+}
+function runQualityGates(slug, stage) {
+  const root = findHaikuRoot();
+  const iDir = join7(root, "intents", slug);
+  const intentFile = join7(iDir, "intent.md");
+  let repoRoot;
+  try {
+    repoRoot = execSync("git rev-parse --show-toplevel", { encoding: "utf8" }).trim();
+  } catch {
+    repoRoot = process.cwd();
+  }
+  function parseGates(filePath) {
+    const data = readFrontmatter(filePath);
+    const raw = Array.isArray(data.quality_gates) ? data.quality_gates : [];
+    return raw.filter((g2) => !!g2?.command).map((g2) => ({ name: g2.name ?? "", command: g2.command, dir: g2.dir ?? "" }));
+  }
+  const allGates = parseGates(intentFile);
+  const unitsDir = join7(iDir, "stages", stage, "units");
+  if (existsSync5(unitsDir)) {
+    for (const f of readdirSync3(unitsDir).filter((f2) => f2.startsWith("unit-") && f2.endsWith(".md"))) {
+      allGates.push(...parseGates(join7(unitsDir, f)));
+    }
+  }
+  const seen = /* @__PURE__ */ new Set();
+  const uniqueGates = allGates.filter((g2) => {
+    const key = `${g2.command}::${g2.dir}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  const failures = [];
+  for (let i = 0; i < uniqueGates.length; i++) {
+    const gate = uniqueGates[i];
+    const cwd = gate.dir ? resolve3(repoRoot, gate.dir) : repoRoot;
+    let output = "";
+    let exitCode = 0;
+    try {
+      output = execSync(gate.command, {
+        cwd,
+        encoding: "utf8",
+        timeout: 3e4,
+        stdio: ["pipe", "pipe", "pipe"]
+      });
+    } catch (err) {
+      const execErr = err;
+      exitCode = execErr.status ?? 1;
+      output = ((execErr.stdout ?? "") + (execErr.stderr ?? "")).slice(0, 500);
+    }
+    if (exitCode !== 0) {
+      failures.push({
+        name: gate.name || `gate-${i}`,
+        command: gate.command,
+        dir: gate.dir,
+        exit_code: exitCode,
+        output
+      });
+    }
+  }
+  return failures;
 }
 function fsmStartStage(slug, stage) {
   const path = stageStatePath(slug, stage);
@@ -28881,13 +28940,28 @@ Fix the depends_on fields, then call \`haiku_run_next { intent: "${slug}" }\` ag
   if (phase === "review") {
     const reviewOutputCheck = validateStageOutputs(slug, currentStage, studio);
     if (reviewOutputCheck) return reviewOutputCheck;
+    const gateFailures = runQualityGates(slug, currentStage);
+    if (gateFailures.length > 0) {
+      return {
+        action: "fix_quality_gates",
+        intent: slug,
+        stage: currentStage,
+        failures: gateFailures,
+        message: `Quality gate(s) failed \u2014 fix before adversarial review:
+
+` + gateFailures.map(
+          (f) => `- **${f.name}**: \`${f.command}\` (exit ${f.exit_code})${f.dir !== "" ? ` in ${f.dir}` : ""}
+  ${f.output.split("\n").slice(0, 5).join("\n  ")}`
+        ).join("\n\n")
+      };
+    }
     fsmAdvancePhase(slug, currentStage, "gate");
     return {
       action: "review",
       intent: slug,
       studio,
       stage: currentStage,
-      message: `Run adversarial review agents for stage '${currentStage}'`
+      message: `Quality gates passed \u2014 run adversarial review agents for stage '${currentStage}'`
     };
   }
   if (phase === "persist") {
@@ -29776,7 +29850,7 @@ var init_completions = __esm({
 // src/prompts/core.ts
 import { spawnSync } from "node:child_process";
 import { existsSync as existsSync7, readFileSync as readFileSync6, readdirSync as readdirSync5 } from "node:fs";
-import { join as join9, resolve as resolve3 } from "node:path";
+import { join as join9, resolve as resolve4 } from "node:path";
 function resolveIntent(args2) {
   if (args2.intent) {
     validateIdentifier(args2.intent, "intent slug");
@@ -29966,7 +30040,37 @@ Files MUST be named \`unit-NN-slug.md\` where:
 - \`slug\` is a kebab-case descriptor (e.g., \`user-auth\`, \`data-model\`)
 - Example: \`unit-01-data-model.md\`, \`unit-02-api-endpoints.md\`
 
-Files that don't match this pattern will not appear in the review UI and will block advancement.`
+Files that don't match this pattern will not appear in the review UI and will block advancement.
+
+## Quality Gates (REQUIRED for stages with executable outputs)
+
+During elaboration, detect project tooling and write \`quality_gates\` to **intent.md** frontmatter.
+These are shell commands that MUST pass before adversarial review agents run.
+
+**Format:**
+\`\`\`yaml
+quality_gates:
+  - name: typecheck
+    command: npm run typecheck
+    dir: packages/app
+  - name: lint
+    command: npm run lint
+  - name: test
+    command: npm test
+\`\`\`
+
+**Fields:**
+- \`name\`: Human label for the gate
+- \`command\`: Shell command that must exit 0 to pass
+- \`dir\` (optional): Directory to run in, relative to repo root. Omit to run from repo root.
+
+**Detection:** Scan the repo for tooling \u2014 \`package.json\` (npm/bun scripts), \`Makefile\`, \`pyproject.toml\`, \`Cargo.toml\`, \`go.mod\`, CI configs. Extract the standard check/test/lint commands.
+
+**Rules:**
+- Intent-level gates apply to ALL units (put shared checks like typecheck/lint here)
+- Unit-level gates are additive for unit-specific checks
+- Gates can only be added, never removed (ratchet rule)
+- If the project has a monorepo structure, use \`dir\` to scope commands to the right package`
       );
       try {
         const settingsPath = join9(process.cwd(), ".haiku", "settings.yml");
@@ -30031,9 +30135,9 @@ ${unitContent}`);
 ${hatContent}`);
       if (unitRefs.length > 0) {
         sections.push(`### Refs`);
-        const dirResolved = resolve3(dir);
+        const dirResolved = resolve4(dir);
         for (const ref of unitRefs) {
-          const refResolved = resolve3(dir, ref);
+          const refResolved = resolve4(dir, ref);
           if (!refResolved.startsWith(dirResolved)) continue;
           if (existsSync7(join9(dir, ref))) {
             const content = readFileSync6(join9(dir, ref), "utf8");
@@ -30150,6 +30254,32 @@ After all subagents return: check the last subagent's \`advance_hat\` result \u2
 Phase advanced to "${toPhase}" by the orchestrator.
 
 **Call \`haiku_run_next { intent: "${slug}" }\` immediately.** Do NOT ask the user \u2014 the transition was already approved.`
+      );
+      break;
+    }
+    case "fix_quality_gates": {
+      const failures = action.failures || [];
+      sections.push(
+        `## Quality Gates Failed
+
+The following quality gates must pass before adversarial review can begin:
+
+` + failures.map(
+          (f) => `### ${f.name}
+- **Command:** \`${f.command}\`
+` + (f.dir ? `- **Directory:** \`${f.dir}\`
+` : "") + `- **Exit code:** ${f.exit_code}
+- **Output:**
+\`\`\`
+${f.output}
+\`\`\``
+        ).join("\n\n") + `
+
+### Instructions
+
+1. Fix the failing gate(s) \u2014 read the output, diagnose, and fix
+2. Commit your fixes
+3. Call \`haiku_run_next { intent: "${slug}" }\` \u2014 the orchestrator re-runs gates automatically`
       );
       break;
     }
@@ -32115,7 +32245,7 @@ Analyze the codebase and surface high-impact improvement ideas that survive adve
 var server_exports = {};
 import { spawn } from "node:child_process";
 import { readFile as readFile3 } from "node:fs/promises";
-import { dirname as dirname2, join as join12, resolve as resolve4 } from "node:path";
+import { dirname as dirname2, join as join12, resolve as resolve5 } from "node:path";
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
@@ -32472,7 +32602,7 @@ var init_server3 = __esm({
         const context = input.context ?? "";
         const questions = input.questions;
         const imagePaths = input.image_paths ?? [];
-        const imageBaseDirs = imagePaths.map((p) => dirname2(resolve4(p)));
+        const imageBaseDirs = imagePaths.map((p) => dirname2(resolve5(p)));
         const session = createQuestionSession({
           title,
           questions,
@@ -32560,7 +32690,7 @@ var init_server3 = __esm({
         if (input.archetypes) {
           archetypes = input.archetypes;
         } else if (input.archetypes_file) {
-          const raw = await readFile3(resolve4(input.archetypes_file), "utf-8");
+          const raw = await readFile3(resolve5(input.archetypes_file), "utf-8");
           archetypes = external_exports.array(DesignArchetypeSchema).parse(JSON.parse(raw));
         } else {
           return { content: [{ type: "text", text: "Error: provide either archetypes or archetypes_file" }] };
@@ -32569,7 +32699,7 @@ var init_server3 = __esm({
         if (input.parameters) {
           parameters = input.parameters;
         } else if (input.parameters_file) {
-          const raw = await readFile3(resolve4(input.parameters_file), "utf-8");
+          const raw = await readFile3(resolve5(input.parameters_file), "utf-8");
           parameters = external_exports.array(DesignParameterSchema).parse(JSON.parse(raw));
         } else {
           return { content: [{ type: "text", text: "Error: provide either parameters or parameters_file" }] };
@@ -32670,14 +32800,14 @@ Visual annotations (${sel.annotations.pins.length} pins):`);
       };
     });
     setOpenReviewHandler(async (intentDirRel, reviewType) => {
-      const intentDirAbs = resolve4(process.cwd(), intentDirRel);
+      const intentDirAbs = resolve5(process.cwd(), intentDirRel);
       const intent = await parseIntent(intentDirAbs);
       if (!intent) throw new Error("Could not parse intent");
       const units = await parseAllUnits(intentDirAbs);
       const dag = buildDAG(units);
       const mermaid = toMermaidDefinition(dag, units);
       const criteriaSection = intent.sections.find(
-        (s) => s.heading.toLowerCase().includes("completion criteria") || s.heading.toLowerCase().includes("success criteria")
+        (s) => s.heading?.toLowerCase().includes("completion criteria") || s.heading?.toLowerCase().includes("success criteria")
       );
       const criteria = criteriaSection ? parseCriteria(criteriaSection.content) : [];
       const session = createSession({
@@ -32880,7 +33010,7 @@ var init_context_monitor = __esm({
 // src/hooks/utils.ts
 import { existsSync as existsSync12, readFileSync as readFileSync10, readdirSync as readdirSync9, statSync as statSync2, writeFileSync as writeFileSync5, mkdirSync as mkdirSync5 } from "node:fs";
 import { join as join15, dirname as dirname3 } from "node:path";
-import { execSync } from "node:child_process";
+import { execSync as execSync2 } from "node:child_process";
 function readFrontmatterField(filePath, field) {
   if (!existsSync12(filePath)) return "";
   const content = readFileSync10(filePath, "utf8");
@@ -32898,7 +33028,7 @@ function readJson3(filePath) {
 function findActiveIntent2() {
   let repoRoot;
   try {
-    repoRoot = execSync("git rev-parse --show-toplevel", { encoding: "utf8" }).trim();
+    repoRoot = execSync2("git rev-parse --show-toplevel", { encoding: "utf8" }).trim();
   } catch {
     repoRoot = process.cwd();
   }
@@ -32922,14 +33052,14 @@ function isUnitBranch(branch) {
 }
 function getCurrentBranch2() {
   try {
-    return execSync("git branch --show-current", { encoding: "utf8" }).trim();
+    return execSync2("git branch --show-current", { encoding: "utf8" }).trim();
   } catch {
     return "";
   }
 }
 function getRepoRoot() {
   try {
-    return execSync("git rev-parse --show-toplevel", { encoding: "utf8" }).trim();
+    return execSync2("git rev-parse --show-toplevel", { encoding: "utf8" }).trim();
   } catch {
     return process.cwd();
   }
@@ -33183,9 +33313,9 @@ var init_ensure_deps = __esm({
 });
 
 // src/hooks/quality-gate.ts
-import { execSync as execSync2 } from "node:child_process";
+import { execSync as execSync3 } from "node:child_process";
 import { existsSync as existsSync13, readdirSync as readdirSync10 } from "node:fs";
-import { join as join17 } from "node:path";
+import { join as join17, resolve as resolve6 } from "node:path";
 function findActiveUnitInStage(intentDir3, stage) {
   const unitsDir = join17(intentDir3, "stages", stage, "units");
   if (!existsSync13(unitsDir)) return null;
@@ -33229,11 +33359,12 @@ async function qualityGate(input, _pluginRoot) {
     const gateName = gate.name ?? `gate-${i}`;
     const gateCmd = gate.command ?? "";
     if (!gateCmd) continue;
+    const cwd = gate.dir ? resolve6(repoRoot, gate.dir) : repoRoot;
     let gateOutput = "";
     let gateExit = 0;
     try {
-      gateOutput = execSync2(gateCmd, {
-        cwd: repoRoot,
+      gateOutput = execSync3(gateCmd, {
+        cwd,
         encoding: "utf8",
         timeout: 3e4,
         stdio: ["pipe", "pipe", "pipe"]
@@ -33276,7 +33407,7 @@ var init_quality_gate = __esm({
 // src/hooks/subagent-context.ts
 import { existsSync as existsSync14, readFileSync as readFileSync11 } from "node:fs";
 import { join as join18, basename as basename4 } from "node:path";
-import { execSync as execSync3 } from "node:child_process";
+import { execSync as execSync4 } from "node:child_process";
 function out2(s) {
   process.stdout.write(s + "\n");
 }
@@ -33337,12 +33468,12 @@ function getHatSequence(stageName, studioName, pluginRoot) {
 }
 function getRepoRootFromWorktree() {
   try {
-    const output = execSync3("git worktree list --porcelain", { encoding: "utf8" });
+    const output = execSync4("git worktree list --porcelain", { encoding: "utf8" });
     const first = output.split("\n")[0];
     return first.replace(/^worktree /, "");
   } catch {
     try {
-      return execSync3("git rev-parse --show-toplevel", { encoding: "utf8" }).trim();
+      return execSync4("git rev-parse --show-toplevel", { encoding: "utf8" }).trim();
     } catch {
       return process.cwd();
     }
@@ -33732,14 +33863,14 @@ var init_inject_state_file = __esm({
 
 // src/hooks/validate-unit-type.ts
 import { existsSync as existsSync16, readFileSync as readFileSync13 } from "node:fs";
-import { join as join21, resolve as resolve5, basename as basename5 } from "node:path";
+import { join as join21, resolve as resolve7, basename as basename5 } from "node:path";
 function out4(s) {
   process.stdout.write(s + "\n");
 }
 async function validateUnitType(input, pluginRoot) {
   const filePath = input.file_path || input.path || "";
   if (!filePath) return;
-  const absPath = resolve5(process.cwd(), filePath);
+  const absPath = resolve7(process.cwd(), filePath);
   const haikuMatch = absPath.match(/\.haiku\/intents\/([^/]+)\/stages\/([^/]+)\/units\/([^/]+\.md)$/);
   if (!haikuMatch) return;
   const [, intentSlug, stageName, unitFile] = haikuMatch;
@@ -33787,7 +33918,7 @@ var init_validate_unit_type = __esm({
 });
 
 // src/hooks/guard-fsm-fields.ts
-import { resolve as resolve6 } from "node:path";
+import { resolve as resolve8 } from "node:path";
 function out5(s) {
   process.stdout.write(s);
 }
@@ -33797,7 +33928,7 @@ async function guardFsmFields(input) {
   const toolInput = input.tool_input || {};
   const filePath = toolInput.file_path || "";
   if (!filePath) return;
-  const absPath = resolve6(process.cwd(), filePath);
+  const absPath = resolve8(process.cwd(), filePath);
   const isIntentFile = absPath.match(/\.haiku\/intents\/[^/]+\/intent\.md$/);
   const isStageState = absPath.match(/\.haiku\/intents\/[^/]+\/stages\/[^/]+\/state\.json$/);
   const isUnitFile = absPath.match(/\.haiku\/intents\/[^/]+\/stages\/[^/]+\/units\/[^/]+\.md$/);
@@ -33956,8 +34087,8 @@ function timestamp2() {
 }
 function gitFirstCommitDate(path) {
   try {
-    const { execSync: execSync4 } = __require("node:child_process");
-    const result = execSync4(`git log --diff-filter=A --follow --format=%aI -- "${path}" | tail -1`, {
+    const { execSync: execSync5 } = __require("node:child_process");
+    const result = execSync5(`git log --diff-filter=A --follow --format=%aI -- "${path}" | tail -1`, {
       encoding: "utf8",
       timeout: 5e3,
       cwd: process.cwd()
@@ -33969,8 +34100,8 @@ function gitFirstCommitDate(path) {
 }
 function gitLastCommitDate(path) {
   try {
-    const { execSync: execSync4 } = __require("node:child_process");
-    const result = execSync4(`git log -1 --format=%aI -- "${path}"`, {
+    const { execSync: execSync5 } = __require("node:child_process");
+    const result = execSync5(`git log -1 --format=%aI -- "${path}"`, {
       encoding: "utf8",
       timeout: 5e3,
       cwd: process.cwd()

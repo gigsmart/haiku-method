@@ -694,7 +694,7 @@ setOpenReviewHandler(async (intentDirRel: string, reviewType: string) => {
 	const dag = buildDAG(units)
 	const mermaid = toMermaidDefinition(dag, units)
 	const criteriaSection = intent.sections.find(
-		(s) => s.heading.toLowerCase().includes("completion criteria") || s.heading.toLowerCase().includes("success criteria"),
+		(s) => s.heading?.toLowerCase().includes("completion criteria") || s.heading?.toLowerCase().includes("success criteria"),
 	)
 	const criteria = criteriaSection ? parseCriteria(criteriaSection.content) : []
 
