@@ -2,17 +2,11 @@
 // Test suite for H·AI·K·U prompt registry — registration, listing, getting, completions
 // Run: npx tsx test/prompts.test.mjs
 
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
-import { tmpdir } from "node:os"
 import assert from "node:assert"
 
 import { registerPrompt, listPrompts, getPrompt, completeArgument } from "../src/prompts/index.ts"
 
 // ── Setup ──────────────────────────────────────────────────────────────────
-
-const tmp = mkdtempSync(join(tmpdir(), "haiku-prompts-test-"))
-const origCwd = process.cwd()
 
 let passed = 0
 let failed = 0
@@ -106,6 +100,8 @@ registerPrompt({
 })
 
 // ── listPrompts ───────────────────────────────────────────────────────────
+
+try {
 
 console.log("\n=== listPrompts ===")
 
@@ -293,10 +289,11 @@ await testAsync("overwritten prompt uses new handler", async () => {
   assert.strictEqual(result.messages[0].content.text, "replaced")
 })
 
-// ── Cleanup ───────────────────────────────────────────────────────────────
+} finally {
 
-process.chdir(origCwd)
-rmSync(tmp, { recursive: true })
+// ── Cleanup ───────────────────────────────────────────────────────────────
 
 console.log(`\n${passed} passed, ${failed} failed\n`)
 process.exit(failed > 0 ? 1 : 0)
+
+}

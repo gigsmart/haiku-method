@@ -2,7 +2,7 @@
 // Test suite for H·AI·K·U state tool MCP handlers — handleStateTool for every tool
 // Run: npx tsx test/state-tools-handlers.test.mjs
 
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } from "node:fs"
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync, chmodSync } from "node:fs"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 import assert from "node:assert"
@@ -108,7 +108,6 @@ providers:
 process.env.PATH = join(tmp, "fake-bin") + ":" + process.env.PATH
 mkdirSync(join(tmp, "fake-bin"), { recursive: true })
 writeFileSync(join(tmp, "fake-bin", "git"), "#!/bin/sh\nexit 0\n")
-import { chmodSync } from "node:fs"
 chmodSync(join(tmp, "fake-bin", "git"), 0o755)
 
 process.chdir(projDir)
@@ -132,6 +131,8 @@ function getTextResult(result) {
 }
 
 // ── stateToolDefs ─────────────────────────────────────────────────────────
+
+try {
 
 console.log("\n=== stateToolDefs ===")
 
@@ -359,11 +360,12 @@ test("increments again correctly", () => {
 })
 
 test("enforces max bolt limit", () => {
-  // Bolt is now at 4, incrementing should go to 5 (limit)
+  // Bolt on unit-01 is now at 4 from prior increment tests (2 → 3 → 4).
+  // Incrementing from 4 should go to 5 (the limit).
   const result = handleStateTool("haiku_unit_increment_bolt", { intent: intentSlug, stage: "inception", unit: "unit-01-discovery" })
   assert.strictEqual(getTextResult(result), "5")
 
-  // Next increment should fail (exceeds 5)
+  // Next increment should fail (exceeds max of 5)
   const exceeded = handleStateTool("haiku_unit_increment_bolt", { intent: intentSlug, stage: "inception", unit: "unit-01-discovery" })
   const parsed = JSON.parse(getTextResult(exceeded))
   assert.strictEqual(parsed.error, "max_bolts_exceeded")
@@ -472,8 +474,10 @@ test("returns error for unknown tool name", () => {
 
 // ── Cleanup ───────────────────────────────────────────────────────────────
 
-process.chdir(origCwd)
-rmSync(tmp, { recursive: true })
-
 console.log(`\n${passed} passed, ${failed} failed\n`)
+
+} finally {
+  process.chdir(origCwd)
+  rmSync(tmp, { recursive: true })
+}
 process.exit(failed > 0 ? 1 : 0)

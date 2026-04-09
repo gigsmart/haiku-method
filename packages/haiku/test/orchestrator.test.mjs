@@ -390,18 +390,26 @@ test("skips completed units and starts next ready", () => {
   assert.strictEqual(result.unit, "unit-02-second")
 })
 
-test("blocks unit with incomplete dependency", () => {
+test("does not start unit with incomplete dependency", () => {
   const { projDir, slug, intentDirPath } = createProject("execute-blocked", {
     active_stage: "plan",
   })
   createStageState(intentDirPath, "plan", { phase: "execute" })
   createUnit(intentDirPath, "plan", "unit-01-first", { status: "active" })
   createUnit(intentDirPath, "plan", "unit-02-second", { status: "pending", depends_on: ["unit-01-first"] })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  // Should assign unit-01 (active) or wait for it — not unit-02
-  if (result.action === "assign_unit") {
-    assert.notStrictEqual(result.unit, "unit-02-second", "Should not assign blocked unit")
+  const prevCwd = process.cwd()
+  try {
+    process.chdir(projDir)
+    const result = runNext(slug)
+    // unit-02-second depends on unit-01-first which is active (not completed),
+    // so the orchestrator must never start unit-02-second
+    if (result.unit) {
+      assert.notStrictEqual(result.unit, "unit-02-second", "Should not start unit with incomplete dependency")
+    }
+    // The active unit (unit-01-first) should be the one acted on
+    assert.strictEqual(result.unit, "unit-01-first", "Should continue the active unit, not the blocked one")
+  } finally {
+    process.chdir(prevCwd)
   }
 })
 
@@ -469,8 +477,10 @@ stages: []
 
 // ── Cleanup ───────────────────────────────────────────────────────────────
 
-process.chdir(origCwd)
-rmSync(tmp, { recursive: true })
-
-console.log(`\n${passed} passed, ${failed} failed\n`)
+try {
+  console.log(`\n${passed} passed, ${failed} failed\n`)
+} finally {
+  process.chdir(origCwd)
+  rmSync(tmp, { recursive: true })
+}
 process.exit(failed > 0 ? 1 : 0)

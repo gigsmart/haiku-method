@@ -53,8 +53,10 @@ async function testAsync(name, fn) {
 
 // ── Create a minimal .haiku project for prompts that read state ───────────
 
+let projectCounter = 0
 function setupProject() {
-  const projDir = join(tmp, "project")
+  projectCounter++
+  const projDir = join(tmp, `project-${projectCounter}`)
   const haikuRoot = join(projDir, ".haiku")
   const intentSlug = "test-feature"
 
@@ -408,8 +410,10 @@ await testAsync("returns empty completions for unknown argument", async () => {
 
 // ── Cleanup ───────────────────────────────────────────────────────────────
 
-process.chdir(origCwd)
-rmSync(tmp, { recursive: true })
-
-console.log(`\n${passed} passed, ${failed} failed\n`)
+try {
+  console.log(`\n${passed} passed, ${failed} failed\n`)
+} finally {
+  process.chdir(origCwd)
+  rmSync(tmp, { recursive: true })
+}
 process.exit(failed > 0 ? 1 : 0)

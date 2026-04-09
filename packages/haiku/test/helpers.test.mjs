@@ -40,16 +40,7 @@ function test(name, fn) {
   }
 }
 
-async function testAsync(name, fn) {
-  try {
-    await fn()
-    passed++
-    console.log(`  ✓ ${name}`)
-  } catch (e) {
-    failed++
-    console.log(`  ✗ ${name}: ${e.message}`)
-  }
-}
+try {
 
 // ── parseFrontmatter ──────────────────────────────────────────────────────
 
@@ -438,10 +429,12 @@ test("includes project-local studios path first", () => {
   assert.ok(paths[0].includes(".haiku/studios"))
 })
 
-// ── Cleanup ───────────────────────────────────────────────────────────────
+} finally {
+  // ── Cleanup ───────────────────────────────────────────────────────────────
 
-process.chdir(origCwd)
-rmSync(tmp, { recursive: true })
+  process.chdir(origCwd)
+  rmSync(tmp, { recursive: true })
 
-console.log(`\n${passed} passed, ${failed} failed\n`)
-process.exit(failed > 0 ? 1 : 0)
+  console.log(`\n${passed} passed, ${failed} failed\n`)
+  process.exit(failed > 0 ? 1 : 0)
+}

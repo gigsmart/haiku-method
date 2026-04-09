@@ -49,8 +49,19 @@ for (const file of testFiles) {
     // Print stdout and stderr from the failing test
     if (e.stdout) process.stdout.write(e.stdout)
     if (e.stderr) process.stderr.write(e.stderr)
-    totalFailed++
-    results.push({ file, passed: 0, failed: 1, status: "CRASH" })
+
+    // Attempt to parse pass/fail counts from stdout even on non-zero exit
+    const crashMatch = e.stdout && e.stdout.match(/(\d+) passed, (\d+) failed/)
+    if (crashMatch) {
+      const p = parseInt(crashMatch[1], 10)
+      const f = parseInt(crashMatch[2], 10)
+      totalPassed += p
+      totalFailed += f
+      results.push({ file, passed: p, failed: f, status: f > 0 ? "FAIL" : "CRASH" })
+    } else {
+      totalFailed++
+      results.push({ file, passed: 0, failed: 1, status: "CRASH" })
+    }
   }
 }
 

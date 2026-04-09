@@ -234,7 +234,10 @@ test("haiku_settings_get requires field", () => {
 
 console.log("\n=== Zod Schema Validation ===")
 
-// Test the Zod schemas used for tool input validation in server.ts
+// NOTE: These schemas mirror the ones in server.ts. If the source schemas change,
+// update these to match. They cannot be imported directly because server.ts has
+// side effects (MCP server initialization, process signal handlers) that would
+// run on import.
 
 const GetReviewStatusInput = z.object({
   session_id: z.string(),
@@ -294,7 +297,7 @@ test("AskVisualQuestionInput accepts full input", () => {
   assert.strictEqual(result.image_paths.length, 1)
 })
 
-test("AskVisualQuestionInput rejects empty questions array", () => {
+test("AskVisualQuestionInput accepts empty questions array", () => {
   // z.array allows empty by default — this should parse
   const result = AskVisualQuestionInput.parse({ questions: [] })
   assert.strictEqual(result.questions.length, 0)
