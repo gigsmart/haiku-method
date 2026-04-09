@@ -98,7 +98,7 @@ export function useSession(sessionId: string) {
  *  Tries WebSocket first if a wsRef is provided, falls back to HTTP POST. */
 export async function submitDecision(
   sessionId: string,
-  decision: "approved" | "changes_requested",
+  decision: "approved" | "changes_requested" | "external_review",
   feedback: string,
   annotations?: ReviewAnnotations,
   wsRef?: React.RefObject<WebSocket | null>,

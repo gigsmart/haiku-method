@@ -267,7 +267,7 @@ export async function runMigrate(args: string[]): Promise<void> {
 					const uStatus = (fm.status as string) || "pending"
 					const uDeps = (fm.depends_on as string[]) || []
 					const uDiscipline = (fm.discipline as string) || "fullstack"
-					const uUpdated = (fm.last_updated as string) || gitFirstCommitDate(join(sourceDir, file)) || null
+					const uUpdated = (fm.last_updated as string) || gitFirstCommitDate(join(srcDir, file)) || null
 					const uTicket = (fm.ticket as string) || ""
 					const uBranch = (fm.branch as string) || ""
 
@@ -282,7 +282,7 @@ export async function runMigrate(args: string[]): Promise<void> {
 			// Active: migrate intent + units in their stages, preserve active_stage
 			const skipStages = allStages.filter(s => {
 				// Skip stages that have no units and are past the active stage
-				if (!unitsByStage.has(s) && s !== activeStage) return false
+				if (!unitsByStage.has(s) && s !== mappedStage) return false
 				return false // Don't skip — keep all stages for active intents
 			})
 
@@ -315,7 +315,7 @@ export async function runMigrate(args: string[]): Promise<void> {
 					const uStatus = (fm.status as string) || "pending"
 					const uDeps = (fm.depends_on as string[]) || []
 					const uDiscipline = (fm.discipline as string) || "fullstack"
-					const uUpdated = (fm.last_updated as string) || gitFirstCommitDate(join(sourceDir, file)) || null
+					const uUpdated = (fm.last_updated as string) || gitFirstCommitDate(join(srcDir, file)) || null
 					const uTicket = (fm.ticket as string) || ""
 					const uBranch = (fm.branch as string) || ""
 
@@ -325,7 +325,7 @@ export async function runMigrate(args: string[]): Promise<void> {
 			}
 
 			const mergeNoteActive = relatedSlugs.length > 0 ? ` [merged: ${relatedSlugs.join(", ")}]` : ""
-			console.log(`  MIGRATED: ${slug} (active, stage: ${activeStage || "inception"}, ${totalUnitCount} units across ${unitsByStage.size} stage(s))${mergeNoteActive}`)
+			console.log(`  MIGRATED: ${slug} (active, stage: ${mappedStage || "inception"}, ${totalUnitCount} units across ${unitsByStage.size} stage(s))${mergeNoteActive}`)
 		}
 
 		// Copy knowledge/discovery files

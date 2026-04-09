@@ -5217,29 +5217,47 @@ function toMermaidDefinition(dag, units) {
   }
   if (useStageSubgraphs && stageOrder.length > 1) {
     for (let i = 0; i < stageOrder.length - 1; i++) {
-      const currentStageUnits = byStage.get(stageOrder[i]) || [];
-      const nextStageUnits = byStage.get(stageOrder[i + 1]) || [];
-      if (currentStageUnits.length > 0 && nextStageUnits.length > 0) {
-        const lastUnit = currentStageUnits[currentStageUnits.length - 1];
-        const firstUnit = nextStageUnits[0];
-        lines.push(`  ${sanitizeMermaidNodeId(lastUnit.slug)} -.-> ${sanitizeMermaidNodeId(firstUnit.slug)}`);
-      }
+      const currentId = sanitizeMermaidNodeId(`stage_${stageOrder[i]}`);
+      const nextId = sanitizeMermaidNodeId(`stage_${stageOrder[i + 1]}`);
+      lines.push(`  ${currentId} --> ${nextId}`);
+    }
+  }
+  const unitStageMap = /* @__PURE__ */ new Map();
+  for (const unit of units) {
+    unitStageMap.set(unit.slug, unit.frontmatter.stage || "_root");
+  }
+  for (const edge of dag.edges) {
+    const fromStage = unitStageMap.get(edge.from);
+    const toStage = unitStageMap.get(edge.to);
+    if (fromStage && toStage && fromStage === toStage) {
+      lines.push(
+        `  ${sanitizeMermaidNodeId(edge.from)} --> ${sanitizeMermaidNodeId(edge.to)}`
+      );
     }
   }
   const externalNodes = /* @__PURE__ */ new Set();
   for (const edge of dag.edges) {
-    if (!unitSlugs.has(edge.from)) externalNodes.add(edge.from);
-    if (!unitSlugs.has(edge.to)) externalNodes.add(edge.to);
+    const fromStage = unitStageMap.get(edge.from);
+    const toStage = unitStageMap.get(edge.to);
+    const fromIsExternal = !unitSlugs.has(edge.from);
+    const toIsExternal = !unitSlugs.has(edge.to);
+    if (fromIsExternal && toStage) {
+      externalNodes.add(edge.from);
+      lines.push(
+        `  ${sanitizeMermaidNodeId(edge.from)} --> ${sanitizeMermaidNodeId(edge.to)}`
+      );
+    }
+    if (toIsExternal && fromStage) {
+      externalNodes.add(edge.to);
+      lines.push(
+        `  ${sanitizeMermaidNodeId(edge.from)} --> ${sanitizeMermaidNodeId(edge.to)}`
+      );
+    }
   }
   for (const ext of externalNodes) {
     const nodeId = sanitizeMermaidNodeId(ext);
     const label = escapeMermaidLabel(ext);
     lines.push(`  ${nodeId}["${label} (external)"]:::external`);
-  }
-  for (const edge of dag.edges) {
-    lines.push(
-      `  ${sanitizeMermaidNodeId(edge.from)} --> ${sanitizeMermaidNodeId(edge.to)}`
-    );
   }
   const statusGroups = /* @__PURE__ */ new Map();
   for (const node of dag.nodes) {
@@ -27485,12 +27503,40 @@ function writeJson(path, data) {
 function timestamp() {
   return (/* @__PURE__ */ new Date()).toISOString().replace(/\.\d{3}Z$/, "Z");
 }
-function gitCommitState(message) {
+function gitCommitState(message, push) {
   try {
     const haikuRoot = findHaikuRoot();
     execFileSync2("git", ["add", haikuRoot], { encoding: "utf8", stdio: "pipe" });
     execFileSync2("git", ["commit", "-m", message, "--allow-empty"], { encoding: "utf8", stdio: "pipe" });
+    if (push) {
+      try {
+        execFileSync2("git", ["push"], { encoding: "utf8", stdio: "pipe" });
+      } catch {
+      }
+    }
   } catch {
+  }
+}
+function shouldPushForIntent(intent) {
+  try {
+    const root = findHaikuRoot();
+    const intentFile = join5(root, "intents", intent, "intent.md");
+    if (!existsSync3(intentFile)) return false;
+    const { data } = parseFrontmatter(readFileSync2(intentFile, "utf8"));
+    const studio = data.studio || "";
+    if (!studio) return false;
+    const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || "";
+    for (const base of [join5(process.cwd(), ".haiku", "studios"), join5(pluginRoot, "studios")]) {
+      const studioFile = join5(base, studio, "STUDIO.md");
+      if (existsSync3(studioFile)) {
+        const { data: studioFm } = parseFrontmatter(readFileSync2(studioFile, "utf8"));
+        const persistence = studioFm.persistence;
+        return persistence?.type === "git";
+      }
+    }
+    return false;
+  } catch {
+    return false;
   }
 }
 function resolveStageHats(intent, stage) {
@@ -27562,18 +27608,18 @@ function syncSessionMetadata(intent, stateFile) {
     if (!existsSync3(intentFile)) return;
     const { data: intentData } = parseFrontmatter(readFileSync2(intentFile, "utf8"));
     const studio = intentData.studio || "";
-    const activeStage2 = intentData.active_stage || "";
+    const activeStage = intentData.active_stage || "";
     let phase = "";
-    if (activeStage2) {
-      const sf = stageStatePath(intent, activeStage2);
+    if (activeStage) {
+      const sf = stageStatePath(intent, activeStage);
       const stageState = readJson(sf);
       phase = stageState.phase || "";
     }
     let activeUnit = null;
     let hat = null;
     let bolt = null;
-    if (activeStage2) {
-      const unitsDir = join5(stageDir(intent, activeStage2), "units");
+    if (activeStage) {
+      const unitsDir = join5(stageDir(intent, activeStage), "units");
       if (existsSync3(unitsDir)) {
         for (const f of readdirSync(unitsDir).filter((f2) => f2.endsWith(".md"))) {
           const { data: unitData } = parseFrontmatter(readFileSync2(join5(unitsDir, f), "utf8"));
@@ -27586,15 +27632,15 @@ function syncSessionMetadata(intent, stateFile) {
         }
       }
     }
-    let stageDescription = activeStage2;
+    let stageDescription = activeStage;
     let stageUnitTypes = [];
-    if (studio && activeStage2) {
+    if (studio && activeStage) {
       const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || "";
       for (const base of [join5(process.cwd(), ".haiku", "studios"), join5(pluginRoot, "studios")]) {
-        const sf = join5(base, studio, "stages", activeStage2, "STAGE.md");
+        const sf = join5(base, studio, "stages", activeStage, "STAGE.md");
         if (!existsSync3(sf)) continue;
         const { data: stageFm } = parseFrontmatter(readFileSync2(sf, "utf8"));
-        stageDescription = stageFm.description || activeStage2;
+        stageDescription = stageFm.description || activeStage;
         stageUnitTypes = stageFm.unit_types || [];
         break;
       }
@@ -27602,7 +27648,7 @@ function syncSessionMetadata(intent, stateFile) {
     writeHaikuMetadata(stateFile, {
       intent,
       studio,
-      active_stage: activeStage2,
+      active_stage: activeStage,
       phase,
       active_unit: activeUnit,
       hat,
@@ -27690,7 +27736,7 @@ function handleStateTool(name, args2) {
       emitTelemetry("haiku.unit.started", { intent: args2.intent, stage: args2.stage, unit: args2.unit, hat: args2.hat });
       const sf = args2.state_file;
       if (sf) logSessionEvent(sf, { event: "unit_started", intent: args2.intent, stage: args2.stage, unit: args2.unit, hat: args2.hat });
-      gitCommitState(`haiku: start unit ${args2.unit}`);
+      gitCommitState(`haiku: start unit ${args2.unit}`, shouldPushForIntent(args2.intent));
       syncSessionMetadata(args2.intent, args2.state_file);
       const scope = resolveStageScope(args2.intent, args2.stage);
       return text(scope ? `ok
@@ -27749,7 +27795,7 @@ ${scope}` : "ok");
         const sf = args2.state_file;
         if (sf) logSessionEvent(sf, { event: "unit_completed", intent: args2.intent, stage: args2.stage, unit: args2.unit });
       }
-      gitCommitState(`haiku: complete unit ${args2.unit}`);
+      gitCommitState(`haiku: complete unit ${args2.unit}`, shouldPushForIntent(args2.intent));
       const mergeResult = mergeUnitWorktree(args2.intent, args2.unit);
       if (!mergeResult.success) {
         return text(JSON.stringify({ status: "completed_merge_failed", message: mergeResult.message }));
@@ -27766,7 +27812,7 @@ ${scope}` : "ok");
         if (sf) logSessionEvent(sf, { event: "hat_advanced", intent: args2.intent, stage: args2.stage, unit: args2.unit, hat: nextHat });
       }
       emitTelemetry("haiku.hat.transition", { intent: args2.intent, stage: args2.stage, unit: args2.unit, hat: nextHat });
-      gitCommitState(`haiku: advance hat to ${nextHat} on ${args2.unit}`);
+      gitCommitState(`haiku: advance hat to ${nextHat} on ${args2.unit}`, shouldPushForIntent(args2.intent));
       syncSessionMetadata(args2.intent, args2.state_file);
       const hatScope = resolveStageScope(args2.intent, args2.stage);
       return text(hatScope ? `advanced to ${nextHat}
@@ -27792,7 +27838,7 @@ ${hatScope}` : `advanced to ${nextHat}`);
         if (sf) logSessionEvent(sf, { event: "unit_failed", intent: args2.intent, stage: args2.stage, unit: args2.unit, from_hat: currentHat, to_hat: prevHat, bolt: currentBolt + 1 });
       }
       emitTelemetry("haiku.unit.failed", { intent: args2.intent, stage: args2.stage, unit: args2.unit, hat: currentHat, prev_hat: prevHat, bolt: String(currentBolt + 1) });
-      gitCommitState(`haiku: fail ${args2.unit} \u2014 back to ${prevHat}, bolt ${currentBolt + 1}`);
+      gitCommitState(`haiku: fail ${args2.unit} \u2014 back to ${prevHat}, bolt ${currentBolt + 1}`, shouldPushForIntent(args2.intent));
       syncSessionMetadata(args2.intent, args2.state_file);
       return text(`failed \u2014 back to ${prevHat}, bolt ${currentBolt + 1}`);
     }
@@ -28142,6 +28188,27 @@ function readFrontmatter(filePath) {
   const { data } = parseFrontmatter(raw);
   return data;
 }
+function shouldPush(slug) {
+  try {
+    const root = findHaikuRoot();
+    const intentFile = join7(root, "intents", slug, "intent.md");
+    const fm = readFrontmatter(intentFile);
+    const studioName = fm.studio;
+    if (!studioName) return false;
+    const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || "";
+    for (const base of [join7(process.cwd(), ".haiku", "studios"), join7(pluginRoot, "studios")]) {
+      const studioFile = join7(base, studioName, "STUDIO.md");
+      if (existsSync5(studioFile)) {
+        const studioFm = readFrontmatter(studioFile);
+        const persistence = studioFm.persistence;
+        return persistence?.type === "git";
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
 function resolveStudioStages(studio) {
   const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || "";
   for (const base of [join7(process.cwd(), ".haiku", "studios"), join7(pluginRoot, "studios")]) {
@@ -28397,7 +28464,7 @@ function fsmStartStage(slug, stage) {
     createIntentBranch(slug);
   }
   emitTelemetry("haiku.stage.started", { intent: slug, stage });
-  gitCommitState(`haiku: start stage ${stage}`);
+  gitCommitState(`haiku: start stage ${stage}`, shouldPush(slug));
 }
 function fsmAdvancePhase(slug, stage, toPhase) {
   const path = stageStatePath(slug, stage);
@@ -28414,7 +28481,7 @@ function fsmCompleteStage(slug, stage, gateOutcome) {
   data.gate_outcome = gateOutcome;
   writeJson(path, data);
   emitTelemetry("haiku.stage.completed", { intent: slug, stage, gate_outcome: gateOutcome });
-  gitCommitState(`haiku: complete stage ${stage}`);
+  gitCommitState(`haiku: complete stage ${stage}`, shouldPush(slug));
 }
 function fsmAdvanceStage(slug, currentStage, nextStage) {
   fsmCompleteStage(slug, currentStage, "advanced");
@@ -28438,7 +28505,7 @@ function fsmIntentComplete(slug) {
     setFrontmatterField(intentFile, "completed_at", timestamp());
   }
   emitTelemetry("haiku.intent.completed", { intent: slug });
-  gitCommitState(`haiku: complete intent ${slug}`);
+  gitCommitState(`haiku: complete intent ${slug}`, shouldPush(slug));
 }
 function fsmStageCompleteDiscrete(slug, stage) {
   fsmCompleteStage(slug, stage, "paused");
@@ -28455,7 +28522,7 @@ function runNext(slug) {
   const mode = intent.mode || "continuous";
   const continuousFrom = intent.continuous_from || "";
   const status = intent.status || "active";
-  const activeStage2 = intent.active_stage || "";
+  const activeStage = intent.active_stage || "";
   if (status === "completed") {
     return { action: "complete", message: `Intent '${slug}' is already completed` };
   }
@@ -28471,7 +28538,7 @@ function runNext(slug) {
   }
   const skipStages = intent.skip_stages || [];
   const studioStages = allStudioStages.filter((s) => !skipStages.includes(s));
-  let currentStage = activeStage2;
+  let currentStage = activeStage;
   if (!currentStage) {
     currentStage = studioStages[0];
   }
@@ -28483,7 +28550,7 @@ function runNext(slug) {
       if (prevStatus !== "completed") {
         currentStage = studioStages[i];
         setFrontmatterField(intentFile, "active_stage", currentStage);
-        emitTelemetry("haiku.fsm.consistency_fix", { intent: slug, stale_stage: activeStage2, corrected_stage: currentStage });
+        emitTelemetry("haiku.fsm.consistency_fix", { intent: slug, stale_stage: activeStage, corrected_stage: currentStage });
         break;
       }
     }
@@ -29003,7 +29070,7 @@ function goBack(slug, targetStage, targetPhase) {
     }
     setFrontmatterField(intentFile, "active_stage", targetStage);
     emitTelemetry("haiku.go_back.stage", { intent: slug, from_stage: currentActiveStage, to_stage: targetStage });
-    gitCommitState(`haiku: go back to stage ${targetStage}`);
+    gitCommitState(`haiku: go back to stage ${targetStage}`, shouldPush(slug));
     return {
       action: "went_back",
       intent: slug,
@@ -29047,7 +29114,7 @@ function goBack(slug, targetStage, targetPhase) {
       }
     }
     emitTelemetry("haiku.go_back.phase", { intent: slug, stage: currentActiveStage, from_phase: currentPhase, to_phase: targetPhase });
-    gitCommitState(`haiku: go back to phase ${targetPhase} in ${currentActiveStage}`);
+    gitCommitState(`haiku: go back to phase ${targetPhase} in ${currentActiveStage}`, shouldPush(slug));
     return {
       action: "went_back",
       intent: slug,
@@ -29075,9 +29142,9 @@ async function handleOrchestratorTool(name, args2) {
         const intentFile = join7(root, "intents", slug, "intent.md");
         if (existsSync5(intentFile)) {
           const intentFm = readFrontmatter(intentFile);
-          const activeStage2 = intentFm.active_stage || "";
-          if (activeStage2) {
-            const ssPath = stageStatePath(slug, activeStage2);
+          const activeStage = intentFm.active_stage || "";
+          if (activeStage) {
+            const ssPath = stageStatePath(slug, activeStage);
             const ssData = readJson(ssPath);
             ssData.external_review_url = args2.external_review_url;
             writeJson(ssPath, ssData);
@@ -29295,10 +29362,10 @@ ${errorStack}
       }
     } catch {
     }
-    let selectedStudio = "";
+    let selectedStudio = args2.studio || "";
     let selectedMode = "continuous";
     let studioStages = [];
-    if (_elicitInput) {
+    if (!selectedStudio && _elicitInput) {
       try {
         const studioNames = studioEntries.map((s) => s.name);
         const studioDescriptions = studioEntries.map((s) => `${s.name}: ${s.description}`).join("\n");
@@ -29380,88 +29447,9 @@ ${studioDescriptions}`,
 ${context}
 `);
     }
-    gitCommitState(`haiku: create intent ${slug}`);
+    gitCommitState(`haiku: create intent ${slug}`, shouldPush(slug));
     emitTelemetry("haiku.intent.created", { intent: slug, studio: selectedStudio, mode: selectedMode });
     if (stateFile) logSessionEvent(stateFile, { event: "intent_created", intent: slug, studio: selectedStudio, mode: selectedMode, stages: studioStages });
-    if (_openReviewAndWait) {
-      try {
-        const intentDirPath = `.haiku/intents/${slug}`;
-        const reviewResult = await _openReviewAndWait(intentDirPath, "intent", "ask");
-        if (stateFile) logSessionEvent(stateFile, { event: "intent_confirmation", intent: slug, decision: reviewResult.decision, feedback: reviewResult.feedback });
-        if (reviewResult.decision === "approved") {
-          return text(JSON.stringify({
-            action: "intent_created",
-            slug,
-            studio: selectedStudio,
-            mode: selectedMode,
-            stages: studioStages,
-            path: `.haiku/intents/${slug}`,
-            message: `Intent '${slug}' confirmed and created with studio '${selectedStudio}' (${selectedMode} mode). Run haiku_run_next { intent: "${slug}" } to begin.`
-          }, null, 2));
-        }
-        return text(JSON.stringify({
-          action: "intent_changes_requested",
-          slug,
-          studio: selectedStudio,
-          mode: selectedMode,
-          stages: studioStages,
-          path: `.haiku/intents/${slug}`,
-          feedback: reviewResult.feedback,
-          message: `Intent '${slug}' created but user requested changes: ${reviewResult.feedback || "(see review)"}. Adjust the intent, then run haiku_run_next { intent: "${slug}" } to begin.`
-        }, null, 2));
-      } catch {
-        if (_elicitInput) {
-          try {
-            const elicitResult = await _elicitInput({
-              message: `Created intent '${slug}' with studio '${selectedStudio}'. Confirm to proceed?`,
-              requestedSchema: {
-                type: "object",
-                properties: {
-                  decision: {
-                    type: "string",
-                    title: "Decision",
-                    description: "Approve intent or request changes",
-                    enum: ["approve", "request_changes"]
-                  },
-                  feedback: {
-                    type: "string",
-                    title: "Feedback (optional)",
-                    description: "Any changes to the intent"
-                  }
-                },
-                required: ["decision"]
-              }
-            });
-            if (elicitResult.action === "accept" && elicitResult.content) {
-              const decision = elicitResult.content.decision;
-              const feedback = elicitResult.content.feedback || "";
-              if (decision === "approve") {
-                return text(JSON.stringify({
-                  action: "intent_created",
-                  slug,
-                  studio: selectedStudio,
-                  mode: selectedMode,
-                  stages: studioStages,
-                  path: `.haiku/intents/${slug}`,
-                  message: `Intent '${slug}' confirmed via elicitation and created with studio '${selectedStudio}' (${selectedMode} mode). Run haiku_run_next { intent: "${slug}" } to begin.`
-                }, null, 2));
-              }
-              return text(JSON.stringify({
-                action: "intent_changes_requested",
-                slug,
-                studio: selectedStudio,
-                mode: selectedMode,
-                stages: studioStages,
-                path: `.haiku/intents/${slug}`,
-                feedback,
-                message: `Intent '${slug}' created but user requested changes: ${feedback}. Adjust the intent, then run haiku_run_next { intent: "${slug}" } to begin.`
-              }, null, 2));
-            }
-          } catch {
-          }
-        }
-      }
-    }
     return text(JSON.stringify({
       action: "intent_created",
       slug,
@@ -29519,7 +29507,8 @@ var init_orchestrator = __esm({
           properties: {
             description: { type: "string", description: "What the intent is about" },
             slug: { type: "string", description: "URL-friendly slug for the intent (auto-generated from description if not provided)" },
-            context: { type: "string", description: "Conversation context summary \u2014 highlights from the conversation that led to this intent" }
+            context: { type: "string", description: "Conversation context summary \u2014 highlights from the conversation that led to this intent" },
+            studio: { type: "string", description: "Studio to use (skip studio selection elicitation when provided)" }
           },
           required: ["description"]
         }
@@ -29973,13 +29962,11 @@ ${content.slice(0, 2e3)}${content.length > 2e3 ? "\n...(truncated)" : ""}`);
       const hatIdx = hats.indexOf(hat);
       const nextHat = hatIdx < hats.length - 1 ? hats[hatIdx + 1] : null;
       const isLastHat = !nextHat;
-      const singleUseTeams = ["true", "1"].includes(process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS || "");
       sections.push(
         `### Mechanics
 
-**You are the orchestrator.** Spawn ${singleUseTeams ? "a teammate" : "a subagent"} for the "${hat}" hat.
-` + (singleUseTeams ? `**Agent Teams enabled** \u2014 use team \`haiku-${slug}\`.
-` : "") + `Agent type: \`${hatAgentType}\`${hatModel ? ` | Model: \`${hatModel}\`` : ""}
+**You are the orchestrator.** Spawn a subagent for the "${hat}" hat.
+Agent type: \`${hatAgentType}\`${hatModel ? ` | Model: \`${hatModel}\`` : ""}
 ` + (worktreePath ? `Worktree: \`${worktreePath}\`
 ` : "") + `
 **Subagent prompt must include:**
@@ -30029,7 +30016,6 @@ Stay within this stage's scope \u2014 do not produce outputs belonging to other 
       sections.push(`Hats: ${hats.join(" \u2192 ")}
 Units: ${units.join(", ")}`);
       const worktrees = action.worktrees || {};
-      const useTeams = ["true", "1"].includes(process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS || "");
       const wave = action.wave;
       const totalWaves = action.total_waves;
       sections.push(
@@ -30038,11 +30024,9 @@ Units: ${units.join(", ")}`);
 ` + (wave !== void 0 ? `**Wave ${wave}/${totalWaves ?? "?"}** \u2014 ` : "") + `${units.length} units to run in parallel.
 **You are the orchestrator.** Do NOT do unit work yourself.
 
-` + (useTeams ? `**Agent Teams enabled.** Use \`TeamCreate({ team_name: "haiku-${slug}", description: "H\xB7AI\xB7K\xB7U: ${slug}" })\` if not already created. Then spawn teammates via the team for each unit. Each teammate runs the FIRST hat ("${firstHat}") only.
+Spawn one Agent subagent per unit **in a single message** (all Agent tool calls in one response). Each subagent runs the FIRST hat ("${firstHat}") only.
 
-` : `Spawn one Agent subagent per unit. Each subagent runs the FIRST hat ("${firstHat}") only.
-
-`) + `After all ${useTeams ? "teammates" : "subagents"} complete, call \`haiku_run_next\` \u2014 the orchestrator will advance hats or start the next wave.
+After all subagents complete, call \`haiku_run_next\` \u2014 the orchestrator will advance hats or start the next wave.
 
 **Each subagent prompt must include:**
 - The hat definition for "${firstHat}"
@@ -30448,6 +30432,17 @@ ${studioSummary}
           );
         }
         contextParts.push(
+          `## Quick Context Scan
+
+Before prelaboration, do a quick scan of the project to orient yourself (max 2-3 tool calls):
+- Check the project root structure (ls or glob for key files)
+- Read any project config or README that reveals the tech stack and project purpose
+- If the intent mentions specific areas, glance at relevant directories
+
+This gives you enough context to ask informed questions and recommend the right studio.
+Keep it brief \u2014 save deep exploration for the elaboration phase.`
+        );
+        contextParts.push(
           `## Prelaboration
 
 Before creating the intent, ensure the description is substantive enough to drive elaboration.
@@ -30466,14 +30461,15 @@ Do NOT create the intent until the description conveys enough scope that elabora
 
 ## Implementation Steps
 
-1. ${args2.description ? "Evaluate the provided description \u2014 if too brief, prelaborate with the user" : "Ask the user: 'What do you want to accomplish?' (free text, not a form)"}
-2. Convert the final description to kebab-case slug (max 40 chars)
-3. ${projectStudio ? `Use studio "${projectStudio}"` : "Select studio per the logic above"}
-4. Default to **continuous** mode (do not ask the user)
-5. Summarize the conversation so far into a concise context block (key decisions, constraints, technical details discussed)
-6. Call \`haiku_intent_create\` with the enriched description, slug, and the \`context\` argument containing your conversation summary
-7. The tool creates directories, writes intent.md, writes CONVERSATION-CONTEXT.md to knowledge/, and opens a review for user confirmation
-8. Invoke /haiku:resume \u2014 the orchestrator opens the review and advances automatically (continuous) or report ready (discrete)`
+1. Quick context scan \u2014 explore the project structure and key config (2-3 tool calls max)
+2. ${args2.description ? "Evaluate the provided description \u2014 if too brief, prelaborate with the user" : "Ask the user: 'What do you want to accomplish?' (free text, not a form)"}
+3. Convert the final description to kebab-case slug (max 40 chars)
+4. ${projectStudio ? `Use studio "${projectStudio}"` : "Select studio per the logic above"}
+5. Default to **continuous** mode (do not ask the user)
+6. Summarize the conversation so far into a concise context block (key decisions, constraints, technical details discussed)
+7. Call \`haiku_intent_create\` with the enriched description, slug, and the \`context\` argument containing your conversation summary
+8. The tool creates directories, writes intent.md, writes CONVERSATION-CONTEXT.md to knowledge/, and opens a review for user confirmation
+9. Invoke /haiku:resume \u2014 the orchestrator opens the review and advances automatically (continuous) or report ready (discrete)`
         );
         const instructionText = contextParts.join("\n\n");
         if (args2.description) {
@@ -30514,16 +30510,16 @@ Do NOT create the intent until the description conveys enough scope that elabora
         const intentRaw = readFileSync6(join9(dir, "intent.md"), "utf8");
         const { data: intentData, body: intentBody } = parseFrontmatter(intentRaw);
         const studio = intentData.studio || "ideation";
-        const activeStage2 = intentData.active_stage || "";
+        const activeStage = intentData.active_stage || "";
         let currentPhase = "";
-        if (activeStage2) {
-          const stateJson = readJson2(join9(dir, "stages", activeStage2, "state.json"));
+        if (activeStage) {
+          const stateJson = readJson2(join9(dir, "stages", activeStage, "state.json"));
           currentPhase = stateJson.phase || "";
         }
         const contextParts = [
           `Intent: ${slug}`,
           `Studio: ${studio}`,
-          `Active Stage: ${activeStage2}`,
+          `Active Stage: ${activeStage}`,
           `Phase: ${currentPhase}`
         ];
         if (args2.stage) {
@@ -30552,7 +30548,7 @@ ${existingUnits.length > 0 ? existingUnits.map((u3) => `- ${u3}`).join("\n") : "
 2. Create a new unit in \`.haiku/intents/${slug}/stages/${targetStage}/units/\` for the new/updated output
 3. Run the target stage's hat sequence for this unit only (do NOT re-run completed units)
 4. Persist the updated output
-5. Return to the current stage (${activeStage2}) -- this is a scoped side-trip
+5. Return to the current stage (${activeStage}) -- this is a scoped side-trip
 6. Commit: \`git add .haiku/intents/${slug}/stages/${targetStage}/ && git commit -m "refine: add output to ${targetStage} stage"\``;
           return {
             messages: [
@@ -31384,13 +31380,13 @@ var init_simple = __esm({
           const { data } = parseFrontmatter(raw);
           const status = data.status || "unknown";
           const studio = data.studio || "\u2014";
-          const activeStage2 = data.active_stage || "\u2014";
+          const activeStage = data.active_stage || "\u2014";
           const mode = data.mode || "continuous";
           const startedAt = data.started_at || "\u2014";
           lines.push(`## ${slug}`);
           lines.push(`- **Status:** ${status}`);
           lines.push(`- **Studio:** ${studio}`);
-          lines.push(`- **Active Stage:** ${activeStage2}`);
+          lines.push(`- **Active Stage:** ${activeStage}`);
           lines.push(`- **Mode:** ${mode}`);
           lines.push(`- **Started:** ${startedAt}`);
           const stagesDir = join11(intentsDir, slug, "stages");
@@ -32503,9 +32499,9 @@ var init_server3 = __esm({
             const intentFile = join12(root, "intents", input.intent_slug, "intent.md");
             const intentRaw = await readFile3(intentFile, "utf-8");
             const intentFm = parseFrontmatter(intentRaw);
-            const activeStage2 = intentFm.data.active_stage || "";
-            if (activeStage2) {
-              const ssPath = stageStatePath(input.intent_slug, activeStage2);
+            const activeStage = intentFm.data.active_stage || "";
+            if (activeStage) {
+              const ssPath = stageStatePath(input.intent_slug, activeStage);
               const ssData = readJson(ssPath);
               ssData.design_direction_selected = true;
               ssData.design_direction = {
@@ -32948,9 +32944,9 @@ async function enforceIteration(_input, _pluginRoot) {
   }
   const intentFile = `${intentDir3}/intent.md`;
   const intentStatus = readFrontmatterField(intentFile, "status");
-  const activeStage2 = readFrontmatterField(intentFile, "active_stage");
-  if (!activeStage2) return;
-  const stageState = readJson3(join16(intentDir3, "stages", activeStage2, "state.json"));
+  const activeStage = readFrontmatterField(intentFile, "active_stage");
+  if (!activeStage) return;
+  const stageState = readJson3(join16(intentDir3, "stages", activeStage, "state.json"));
   const stageStatus = stageState.status ?? "";
   const unitFiles = findUnitFiles(intentDir3);
   let hat = "";
@@ -33022,7 +33018,7 @@ async function enforceIteration(_input, _pluginRoot) {
   } else if (readyCount > 0 || inProgressCount > 0) {
     out("## H\xB7AI\xB7K\xB7U: Session Exhausted - Continue Execution");
     out("");
-    out(`**Bolt:** ${bolt} | **Hat:** ${hat} | **Stage:** ${activeStage2}`);
+    out(`**Bolt:** ${bolt} | **Hat:** ${hat} | **Stage:** ${activeStage}`);
     out(`**Ready units:** ${readyCount} | **In progress:** ${inProgressCount}`);
     out("");
     out("### ACTION REQUIRED");
@@ -33038,7 +33034,7 @@ async function enforceIteration(_input, _pluginRoot) {
   } else {
     out("## H\xB7AI\xB7K\xB7U: BLOCKED - Human Intervention Required");
     out("");
-    out(`**Bolt:** ${bolt} | **Hat:** ${hat} | **Stage:** ${activeStage2}`);
+    out(`**Bolt:** ${bolt} | **Hat:** ${hat} | **Stage:** ${activeStage}`);
     out("");
     out("No units are ready to work on. All remaining units are blocked.");
     out("");
@@ -33090,12 +33086,12 @@ async function qualityGate(input, _pluginRoot) {
   if (!intentDir3) return;
   const intentFile = `${intentDir3}/intent.md`;
   const intentStatus = readFrontmatterField(intentFile, "status");
-  const activeStage2 = readFrontmatterField(intentFile, "active_stage");
-  if (!activeStage2) return;
-  const stageState = readJson3(join17(intentDir3, "stages", activeStage2, "state.json"));
+  const activeStage = readFrontmatterField(intentFile, "active_stage");
+  if (!activeStage) return;
+  const stageState = readJson3(join17(intentDir3, "stages", activeStage, "state.json"));
   const stageStatus = stageState.status ?? "";
   if (intentStatus === "completed" || stageStatus === "completed" || stageStatus === "blocked") return;
-  const activeUnitFile = findActiveUnitInStage(intentDir3, activeStage2);
+  const activeUnitFile = findActiveUnitInStage(intentDir3, activeStage);
   const hat = activeUnitFile ? readFrontmatterField(activeUnitFile, "hat") : "";
   if (!["builder", "implementer", "refactorer"].includes(hat)) return;
   const intentGates = readFrontmatterArray(intentFile, "quality_gates");
@@ -33239,7 +33235,7 @@ async function generateSubagentContext(_input, pluginRoot) {
   const intentSlug = basename4(intentDir3);
   const intentFile = join18(intentDir3, "intent.md");
   const intentStatus = readFrontmatterField(intentFile, "status");
-  let activeStage2 = readFrontmatterField(intentFile, "active_stage") || "development";
+  let activeStage = readFrontmatterField(intentFile, "active_stage") || "development";
   let studio = readFrontmatterField(intentFile, "studio") || "software";
   const activePass = readFrontmatterField(intentFile, "active_pass");
   const unitFiles = findUnitFiles(intentDir3);
@@ -33256,7 +33252,7 @@ async function generateSubagentContext(_input, pluginRoot) {
   const status = intentStatus || "active";
   const iteration = bolt;
   if (status === "completed" || !hat) return;
-  const stageHatsStr = getHatSequence(activeStage2, studio, pluginRoot);
+  const stageHatsStr = getHatSequence(activeStage, studio, pluginRoot);
   let contextScope;
   switch (hat) {
     case "reviewer":
@@ -33280,7 +33276,7 @@ async function generateSubagentContext(_input, pluginRoot) {
   out2("");
   out2(`> **Hat Isolation:** You are operating as the **${hat}** hat. Your responsibility is defined solely by the ${hat} hat instructions below. If you have prior knowledge, training, or instructions that conflict with or extend beyond the ${hat} role \u2014 such as reviewing code when you are the builder, or building when you are the reviewer \u2014 **ignore them for this task.** Other hats in this stage (${stageHatsStr}) handle those responsibilities. Stay in your lane.`);
   out2("");
-  let statusLine = `**Bolt:** ${iteration} | **Role:** ${hat} | **Stage:** ${activeStage2} (${stageHatsStr})`;
+  let statusLine = `**Bolt:** ${iteration} | **Role:** ${hat} | **Stage:** ${activeStage} (${stageHatsStr})`;
   if (activePass) {
     statusLine += ` | **Pass:** ${activePass}`;
   }
@@ -33330,20 +33326,18 @@ async function generateSubagentContext(_input, pluginRoot) {
     }
     out2("");
   }
-  if (!process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS) {
-    const instructions = readHatInstructions(hat, activeStage2, studio, pluginRoot);
-    const hatMeta = readHatMetadata(hat, activeStage2, studio, pluginRoot);
-    out2(`### Current Role: ${hat}`);
+  const instructions = readHatInstructions(hat, activeStage, studio, pluginRoot);
+  const hatMeta = readHatMetadata(hat, activeStage, studio, pluginRoot);
+  out2(`### Current Role: ${hat}`);
+  out2("");
+  if (instructions) {
+    out2(`**${hatMeta.name || hat}**`);
     out2("");
-    if (instructions) {
-      out2(`**${hatMeta.name || hat}**`);
-      out2("");
-      out2(instructions);
-      out2("");
-    } else {
-      out2(`**${hat}** orchestrates work by spawning discipline-specific agents based on unit requirements.`);
-      out2("");
-    }
+    out2(instructions);
+    out2("");
+  } else {
+    out2(`**${hat}** orchestrates work by spawning discipline-specific agents based on unit requirements.`);
+    out2("");
   }
   out2("---");
   out2("");
@@ -33423,16 +33417,6 @@ async function generateSubagentContext(_input, pluginRoot) {
   out2("Output status messages directly - users see them in real-time.");
   out2(`Document blockers in \`.haiku/intents/${intentSlug}/state/blockers.md\` for persistence (unit-scoped).`);
   out2("");
-  if (process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS) {
-    out2("### Team Communication");
-    out2("");
-    out2("You are a **teammate** in an Agent Teams session.");
-    out2("- Report completion/issues to team lead via SendMessage");
-    out2("- Do NOT call /haiku:execute, or read/execute the advance or fail skill definitions directly \u2014 the lead handles orchestration");
-    out2("- Use TaskUpdate to mark shared tasks as completed when done");
-    out2("- Coordinate with other teammates through the team lead");
-    out2("");
-  }
 }
 var init_subagent_context = __esm({
   "src/hooks/subagent-context.ts"() {
@@ -33995,28 +33979,28 @@ async function runMigrate(args2) {
     }
     const unitsByStage = /* @__PURE__ */ new Map();
     let totalUnitCount = 0;
-    for (const { dir: sourceDir2, defaultStage } of sourceDirs) {
-      const unitFiles = readdirSync13(sourceDir2).filter((f) => f.startsWith("unit-") && f.endsWith(".md"));
+    for (const { dir: sourceDir, defaultStage } of sourceDirs) {
+      const unitFiles = readdirSync13(sourceDir).filter((f) => f.startsWith("unit-") && f.endsWith(".md"));
       for (const unitFile of unitFiles) {
-        const { data: unitFm, body: unitBody } = readFrontmatter2(join22(sourceDir2, unitFile));
+        const { data: unitFm, body: unitBody } = readFrontmatter2(join22(sourceDir, unitFile));
         const pass = unitFm.pass || "";
         const stage = pass ? passToStage[pass] || "development" : defaultStage || "development";
         if (!unitsByStage.has(stage)) unitsByStage.set(stage, []);
         unitsByStage.get(stage).push({ file: unitFile, fm: unitFm, body: unitBody });
         totalUnitCount++;
       }
-      if (sourceDir2 !== srcDir) {
-        if (existsSync17(join22(sourceDir2, "discovery.md"))) {
-          const relSlug = basename6(sourceDir2);
+      if (sourceDir !== srcDir) {
+        if (existsSync17(join22(sourceDir, "discovery.md"))) {
+          const relSlug = basename6(sourceDir);
           if (!dryRun) {
-            cpSync(join22(sourceDir2, "discovery.md"), join22(destDir, "knowledge", `${relSlug}-discovery.md`));
+            cpSync(join22(sourceDir, "discovery.md"), join22(destDir, "knowledge", `${relSlug}-discovery.md`));
           }
         }
-        if (existsSync17(join22(sourceDir2, "mockups")) && !dryRun) {
+        if (existsSync17(join22(sourceDir, "mockups")) && !dryRun) {
           const artifactsDir = join22(destDir, "stages", "design", "artifacts");
           mkdirSync6(artifactsDir, { recursive: true });
           try {
-            cpSync(join22(sourceDir2, "mockups"), artifactsDir, { recursive: true });
+            cpSync(join22(sourceDir, "mockups"), artifactsDir, { recursive: true });
           } catch {
           }
         }
@@ -34057,7 +34041,7 @@ ${intentBody}
           const uStatus = fm.status || "pending";
           const uDeps = fm.depends_on || [];
           const uDiscipline = fm.discipline || "fullstack";
-          const uUpdated = fm.last_updated || gitFirstCommitDate(join22(sourceDir, file)) || null;
+          const uUpdated = fm.last_updated || gitFirstCommitDate(join22(srcDir, file)) || null;
           const uTicket = fm.ticket || "";
           const uBranch = fm.branch || "";
           writeFileSync6(
@@ -34084,7 +34068,7 @@ ${body}
       console.log(`  MIGRATED: ${slug} (completed, ${totalUnitCount} units across ${unitsByStage.size} stage(s))${mergeNote}`);
     } else {
       const skipStages = allStages.filter((s) => {
-        if (!unitsByStage.has(s) && s !== activeStage) return false;
+        if (!unitsByStage.has(s) && s !== mappedStage) return false;
         return false;
       });
       const firstStageWithUnits = allStages.find((s) => unitsByStage.has(s)) || "";
@@ -34128,7 +34112,7 @@ ${intentBody}
           const uStatus = fm.status || "pending";
           const uDeps = fm.depends_on || [];
           const uDiscipline = fm.discipline || "fullstack";
-          const uUpdated = fm.last_updated || gitFirstCommitDate(join22(sourceDir, file)) || null;
+          const uUpdated = fm.last_updated || gitFirstCommitDate(join22(srcDir, file)) || null;
           const uTicket = fm.ticket || "";
           const uBranch = fm.branch || "";
           writeFileSync6(
@@ -34152,7 +34136,7 @@ ${body}
         }
       }
       const mergeNoteActive = relatedSlugs.length > 0 ? ` [merged: ${relatedSlugs.join(", ")}]` : "";
-      console.log(`  MIGRATED: ${slug} (active, stage: ${activeStage || "inception"}, ${totalUnitCount} units across ${unitsByStage.size} stage(s))${mergeNoteActive}`);
+      console.log(`  MIGRATED: ${slug} (active, stage: ${mappedStage || "inception"}, ${totalUnitCount} units across ${unitsByStage.size} stage(s))${mergeNoteActive}`);
     }
     if (existsSync17(join22(srcDir, "discovery.md"))) {
       cpSync(join22(srcDir, "discovery.md"), join22(destDir, "knowledge", "DISCOVERY.md"));
