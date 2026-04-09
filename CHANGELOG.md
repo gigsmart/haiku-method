@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.88.0] - 2026-04-09
+
+```markdown
+### Added
+- Git provider integration enables remote repository browsing and file operations from the plugin.
+
+### Changed
+- Orchestrator execution engine refactored for more reliable stage transitions and state management.
+- Review sidebar redesigned to improve navigation and context visibility during unit and gate reviews.
+
+### Fixed
+- Validation catches configuration errors more reliably, preventing invalid states from progressing through stages.
+```
+
 ## [1.87.6] - 2026-04-09
 
 ### Fixed
