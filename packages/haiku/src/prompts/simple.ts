@@ -316,22 +316,29 @@ registerPrompt({
 	handler: async (args) => {
 		const version = args.version || ""
 
-		// Walk up from cwd to find repo root (directory containing CHANGELOG.md)
-		let dir = process.cwd()
+		// Check the plugin's own CHANGELOG.md first, then walk up from cwd
+		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
 		let changelogPath = ""
-		for (let i = 0; i < 20; i++) {
-			const candidate = join(dir, "CHANGELOG.md")
-			if (existsSync(candidate)) {
-				changelogPath = candidate
-				break
+		if (pluginRoot) {
+			const pluginChangelog = join(pluginRoot, "CHANGELOG.md")
+			if (existsSync(pluginChangelog)) changelogPath = pluginChangelog
+		}
+		if (!changelogPath) {
+			let dir = process.cwd()
+			for (let i = 0; i < 20; i++) {
+				const candidate = join(dir, "CHANGELOG.md")
+				if (existsSync(candidate)) {
+					changelogPath = candidate
+					break
+				}
+				const parent = join(dir, "..")
+				if (parent === dir) break
+				dir = parent
 			}
-			const parent = join(dir, "..")
-			if (parent === dir) break
-			dir = parent
 		}
 
 		if (!changelogPath) {
-			return singleMessage("No CHANGELOG.md found in the repository root.")
+			return singleMessage("No CHANGELOG.md found.")
 		}
 
 		const content = readFileSync(changelogPath, "utf8")
@@ -377,6 +384,26 @@ registerPrompt({
 			`Full changelog: CHANGELOG.md\n` +
 			`RSS: https://haikumethod.ai/changelog/feed.xml`
 		)
+	},
+})
+
+// ── haiku:version ──────────────────────────────────────────────────────────
+
+registerPrompt({
+	name: "haiku:version",
+	title: "Version",
+	description: "Show the running H·AI·K·U plugin version",
+	arguments: [],
+	handler: async () => {
+		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+		let version = "unknown"
+		if (pluginRoot) {
+			try {
+				const pluginJson = JSON.parse(readFileSync(join(pluginRoot, ".claude-plugin", "plugin.json"), "utf8"))
+				version = pluginJson.version || "unknown"
+			} catch { /* ignore */ }
+		}
+		return singleMessage(`H·AI·K·U plugin version: **${version}**\nPlugin root: \`${pluginRoot || "(not set)"}\``)
 	},
 })
 
