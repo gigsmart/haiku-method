@@ -2,8 +2,10 @@ import { fetchQuery } from "relay-runtime"
 import { createRelayEnvironment } from "./graphql/environment"
 import type {
 	BrowseProvider,
+	HaikuArtifact,
 	HaikuIntent,
 	HaikuIntentDetail,
+	HaikuKnowledgeFile,
 	HaikuStageState,
 	HaikuUnit,
 } from "./types"
@@ -26,6 +28,14 @@ const glCache = new Map<string, { data: unknown; ts: number }>()
 const GL_CACHE_TTL = 5 * 60 * 1000
 const CHUNK_SIZE = 10
 
+function classifyArtifact(name: string): HaikuArtifact["type"] {
+	const lower = name.toLowerCase()
+	if (lower.endsWith(".md")) return "markdown"
+	if (lower.endsWith(".html") || lower.endsWith(".htm")) return "html"
+	if (/\.(png|jpe?g|gif|svg|webp|avif|bmp|ico)$/.test(lower)) return "image"
+	return "other"
+}
+
 export class GitLabProvider implements BrowseProvider {
 	readonly name = "GitLab"
 	private host: string
@@ -35,6 +45,7 @@ export class GitLabProvider implements BrowseProvider {
 	private env: ReturnType<typeof createRelayEnvironment>
 	/** Maps slug → branch for intents discovered via branch scanning */
 	private intentBranchMap = new Map<string, string>()
+	private intentMetaMap = new Map<string, { branch?: string; prUrl?: string | null; prStatus?: string | null; prNumber?: number | null }>()
 	/** ETag from the last branch-change poll */
 	private lastBranchesEtag: string | null = null
 
@@ -336,6 +347,7 @@ export class GitLabProvider implements BrowseProvider {
 			})
 			intentsBySlug.set(slug, intent)
 			this.intentBranchMap.set(slug, branchName)
+			this.intentMetaMap.set(slug, { branch: branchName, prUrl, prStatus, prNumber })
 			onProgress?.(intent)
 		})
 
@@ -433,7 +445,18 @@ export class GitLabProvider implements BrowseProvider {
 	 * In scan mode, uses the intentBranchMap to resolve which branch holds this intent.
 	 */
 	async getIntent(slug: string): Promise<HaikuIntentDetail | null> {
-		const intentBranch = this.intentBranchMap.get(slug)
+		let intentBranch = this.intentBranchMap.get(slug)
+
+		// If branch map isn't populated yet (deeplink before listIntents), try to resolve the branch
+		if (!intentBranch && !this.branch) {
+			const branchName = `haiku/${slug}/main`
+			const testRead = await this.readFileFromRef(branchName, `.haiku/intents/${slug}/intent.md`)
+			if (testRead) {
+				intentBranch = branchName
+				this.intentBranchMap.set(slug, branchName)
+			}
+		}
+
 		const effectiveRef = intentBranch || this.ref
 		const basePath = `.haiku/intents/${slug}`
 
@@ -529,6 +552,27 @@ export class GitLabProvider implements BrowseProvider {
 				units.push(parseUnit(fileName, stageName, unitRaw))
 			}
 
+			// Parse stage artifacts
+			const stageArtifacts: HaikuArtifact[] = []
+			const artifactsPrefix = `${stagePath}/artifacts/`
+			for (const blob of allBlobs) {
+				if (!blob?.path || !blob.path.startsWith(artifactsPrefix)) continue
+				const fileName = blob.path.slice(artifactsPrefix.length)
+				if (fileName.includes("/")) continue // direct children only
+
+				const artType = classifyArtifact(fileName)
+				const textContent = blobByPath.get(blob.path)
+				if (textContent != null) {
+					stageArtifacts.push({ name: fileName, content: textContent, type: artType })
+				} else {
+					// Binary — build rawUrl
+					const ref = intentBranch || this.branch || "HEAD"
+					const encodedFilePath = encodeURIComponent(blob.path)
+					const rawUrl = `https://${this.host}/api/v4/projects/${this.encodedProject}/repository/files/${encodedFilePath}/raw?ref=${encodeURIComponent(ref)}`
+					stageArtifacts.push({ name: fileName, rawUrl, type: artType })
+				}
+			}
+
 			// Parse state.json
 			const stateRaw = blobByPath.get(`${stagePath}/state.json`)
 			let stagePhase = ""
@@ -561,33 +605,43 @@ export class GitLabProvider implements BrowseProvider {
 				completedAt: stageCompletedAt,
 				gateOutcome,
 				units,
+				artifacts: stageArtifacts.length > 0 ? stageArtifacts : undefined,
 			})
 		}
 
-		// Knowledge files (from the tree listing)
+		// Knowledge files (from the tree listing — include content from blobByPath)
 		const knowledgePrefix = `${basePath}/knowledge/`
-		const knowledgeFiles = allBlobs
+		const knowledgeFiles: HaikuKnowledgeFile[] = allBlobs
 			.filter(
 				(b): b is { name: string; path: string } =>
 					!!b?.path.startsWith(knowledgePrefix) &&
 					!b.path.slice(knowledgePrefix.length).includes("/") &&
 					b.name.endsWith(".md"),
 			)
-			.map((b) => b.name)
+			.map((b) => ({
+				name: b.name,
+				content: blobByPath.get(b.path) || "",
+			}))
 
-		// Operations files
+		// Operations files (include content)
 		const operationsPrefix = `${basePath}/operations/`
-		const operationsFiles = allBlobs
+		const operationsFiles: HaikuKnowledgeFile[] = allBlobs
 			.filter(
 				(b): b is { name: string; path: string } =>
 					!!b?.path.startsWith(operationsPrefix) &&
 					!b.path.slice(operationsPrefix.length).includes("/") &&
 					b.name.endsWith(".md"),
 			)
-			.map((b) => b.name)
+			.map((b) => ({
+				name: b.name,
+				content: blobByPath.get(b.path) || "",
+			}))
 
 		// Reflection
 		const reflection = blobByPath.get(`${basePath}/reflection.md`) ?? null
+
+		// Carry forward branch/MR metadata from the listing scan
+		const meta = this.intentMetaMap.get(slug) || {}
 
 		return {
 			slug,
@@ -618,6 +672,7 @@ export class GitLabProvider implements BrowseProvider {
 			reflection,
 			content,
 			assets,
+			...meta,
 		}
 	}
 

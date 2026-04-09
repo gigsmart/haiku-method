@@ -196,14 +196,14 @@ export function PortfolioView({
 			}
 
 			// Index knowledge files
-			for (const file of detail.knowledge) {
+			for (const kf of detail.knowledge) {
 				addToIndex({
-					id: `knowledge:${detail.slug}:${file}`,
+					id: `knowledge:${detail.slug}:${kf.name}`,
 					type: "knowledge",
-					title: file,
+					title: kf.name,
 					slug: detail.slug,
-					content: file,
-					path: `.haiku/intents/${detail.slug}/knowledge/${file}`,
+					content: `${kf.name} ${kf.content || ""}`,
+					path: `.haiku/intents/${detail.slug}/knowledge/${kf.name}`,
 				})
 			}
 
@@ -232,6 +232,10 @@ export function PortfolioView({
 			provider.getIntent(location.intent).then((detail) => {
 				setSelectedIntent(detail)
 				if (detail) indexIntentDetail(detail)
+				setLoadingDetail(false)
+			}).catch((e) => {
+				console.error("[haiku-browse] Failed to load deeplinked intent:", e)
+				setIntentError(`Failed to load intent "${location.intent}": ${(e as Error).message}`)
 				setLoadingDetail(false)
 			})
 		}
@@ -270,31 +274,39 @@ export function PortfolioView({
 	}, [repoKey, addToIndex])
 
 	// Progressive loading — show each intent as it loads
+	// When deep-linked to a specific intent, defer list loading until user navigates back
+	const [listDeferred, setListDeferred] = useState(!!location?.intent)
+
 	useEffect(() => {
+		if (listDeferred) return // Skip list loading when deep-linked to a specific intent
 		async function load() {
 			setIntents([])
 			setLoadingMore(true)
 
-			await provider.listIntents((intent) => {
-				setIntents((prev) => [...prev, intent])
-				setLoading(false)
-				// Index this intent for search (now includes body content)
-				addToIndex({
-					id: `intent:${intent.slug}`,
-					type: "intent",
-					title: intent.title,
-					slug: intent.slug,
-					studio: intent.studio,
-					status: intent.status,
-					content: `${intent.title} ${intent.content || ""} ${intent.studio} ${intent.activeStage || ""} ${intent.mode}`,
+			try {
+				await provider.listIntents((intent) => {
+					setIntents((prev) => [...prev, intent])
+					setLoading(false)
+					addToIndex({
+						id: `intent:${intent.slug}`,
+						type: "intent",
+						title: intent.title,
+						slug: intent.slug,
+						studio: intent.studio,
+						status: intent.status,
+						content: `${intent.title} ${intent.content || ""} ${intent.studio} ${intent.activeStage || ""} ${intent.mode}`,
+					})
 				})
-			})
+			} catch (e) {
+				console.error("[haiku-browse] Failed to list intents:", e)
+				setIntentError(`Failed to load intents: ${(e as Error).message}`)
+			}
 
 			setLoadingMore(false)
 			setLoading(false)
 		}
 		load()
-	}, [provider, addToIndex])
+	}, [provider, addToIndex, listDeferred])
 
 	// Background deep indexing — fetch all intent details for unit search
 	useEffect(() => {
@@ -543,10 +555,11 @@ export function PortfolioView({
 
 	const handleBackFromIntent = useCallback(() => {
 		setSelectedIntent(null)
+		if (listDeferred) setListDeferred(false) // Trigger list loading on first back navigation
 		if (hasPathNav) {
 			window.history.back()
 		}
-	}, [hasPathNav])
+	}, [hasPathNav, listDeferred])
 
 	const handleViewModeChange = useCallback(
 		(mode: "list" | "board") => {
@@ -566,6 +579,7 @@ export function PortfolioView({
 				intent={selectedIntent}
 				provider={provider}
 				location={location}
+				initialStage={location?.stage}
 				onBack={handleBackFromIntent}
 			/>
 		)

@@ -4,6 +4,8 @@ export type {
 	HaikuUnit,
 	HaikuStageState,
 	HaikuAsset,
+	HaikuArtifact,
+	HaikuKnowledgeFile,
 	HaikuIntentDetail,
 	CriterionItem,
 } from "@haiku/shared"
@@ -89,6 +91,7 @@ export function parseUnit(unitFile: string, stageName: string, raw: string): imp
 		status: (data.status as string) || "pending",
 		dependsOn: (data.depends_on as string[]) || [],
 		refs: (data.refs as string[]) || [],
+		outputs: (data.outputs as string[]) || [],
 		bolt: (data.bolt as number) || 0,
 		hat: (data.hat as string) || "",
 		startedAt: (data.started_at as string) || null,

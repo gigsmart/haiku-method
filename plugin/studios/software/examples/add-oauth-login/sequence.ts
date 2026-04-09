@@ -31,7 +31,7 @@ export const config: DemoConfig = {
     { delay: 1000, actions: [{ type: "removeTyping" }, { type: "msg", role: "agent", label: "agent", text: "Good call. Updated to 4 units." }, { type: "file", path: `${P}/stages/inception/units/unit-04-callback-error-handling.md` }, { type: "card", stage: "inception", name: "callback-errors", status: "" }] },
 
     // Step 4: Inception - execute
-    { delay: 800, actions: [{ type: "msg", role: "agent", label: "agent", text: "Hat: architect. Starting OAuth provider setup \u2014 mapping provider abstraction layer..." }] },
+    { delay: 800, actions: [{ type: "msg", role: "agent", label: "agent", text: "Hat: researcher. Starting OAuth provider setup \u2014 mapping provider abstraction layer..." }] },
     { delay: 600, actions: [{ type: "fastForward", seconds: "30" }] },
     { delay: 2000, actions: [{ type: "removeFastForward" }, { type: "msg", role: "agent", label: "agent", text: "Provider setup complete. Abstraction layer supports Google and GitHub with a clean interface for adding Apple later." }, { type: "file", path: `${P}/knowledge/DISCOVERY.md` }, { type: "updateCard", stage: "inception", name: "oauth-provider-setup", status: "completed" }, { type: "updateCard", stage: "inception", name: "callback-handler", status: "in-progress" }] },
     { delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },

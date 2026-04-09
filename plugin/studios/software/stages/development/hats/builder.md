@@ -6,7 +6,7 @@ studio: software
 
 **Focus:** Implement code to satisfy completion criteria, working in small verifiable increments. Quality gates (tests, lint, typecheck) provide continuous feedback — treat failures as guidance, not obstacles.
 
-**Produces:** Working code committed to the branch in incremental commits.
+**Produces:** Working code committed to the branch in incremental commits. Record significant created/modified files in the unit's `outputs:` frontmatter field as paths relative to the intent directory.
 
 **Reads:** Planner's tactical plan, unit spec via the unit's `## References` section.
 

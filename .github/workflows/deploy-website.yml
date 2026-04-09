@@ -47,6 +47,8 @@ jobs:
           NEXT_PUBLIC_HAIKU_GITHUB_OAUTH_CLIENT_ID: ${{ vars.NEXT_PUBLIC_HAIKU_GITHUB_OAUTH_CLIENT_ID }}
           NEXT_PUBLIC_HAIKU_GITLAB_OAUTH_CLIENT_ID: ${{ vars.NEXT_PUBLIC_HAIKU_GITLAB_OAUTH_CLIENT_ID }}
           NEXT_PUBLIC_HAIKU_AUTH_PROXY_URL: ${{ vars.NEXT_PUBLIC_HAIKU_AUTH_PROXY_URL }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ vars.SENTRY_DSN_WEBSITE }}
+          SENTRY_DSN_REVIEW_SPA: ${{ vars.SENTRY_DSN_REVIEW_SPA }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

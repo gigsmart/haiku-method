@@ -2,8 +2,10 @@ import { fetchQuery } from "relay-runtime"
 import { createRelayEnvironment } from "./graphql/environment"
 import type {
 	BrowseProvider,
+	HaikuArtifact,
 	HaikuIntent,
 	HaikuIntentDetail,
+	HaikuKnowledgeFile,
 	HaikuStageState,
 	HaikuUnit,
 } from "./types"
@@ -23,6 +25,14 @@ import ReadFileQuery from "./graphql/github/__generated__/operationsReadFileQuer
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 const apiCache = new Map<string, { data: unknown; ts: number }>()
 
+function classifyArtifact(name: string): HaikuArtifact["type"] {
+	const lower = name.toLowerCase()
+	if (lower.endsWith(".md")) return "markdown"
+	if (lower.endsWith(".html") || lower.endsWith(".htm")) return "html"
+	if (/\.(png|jpe?g|gif|svg|webp|avif|bmp|ico)$/.test(lower)) return "image"
+	return "other"
+}
+
 export class GitHubProvider implements BrowseProvider {
 	readonly name = "GitHub"
 	private owner: string
@@ -32,6 +42,8 @@ export class GitHubProvider implements BrowseProvider {
 	private env: ReturnType<typeof createRelayEnvironment>
 	/** Maps slug → branch for intents discovered via branch scanning */
 	private intentBranchMap = new Map<string, string>()
+	/** Maps slug → branch/PR metadata for carrying into detail views */
+	private intentMetaMap = new Map<string, { branch?: string; prUrl?: string | null; prStatus?: string | null; prNumber?: number | null }>()
 	/** ETag from the last branch-change poll */
 	private lastRefsEtag: string | null = null
 
@@ -264,6 +276,7 @@ export class GitHubProvider implements BrowseProvider {
 			})
 			intentsBySlug.set(slug, intent)
 			this.intentBranchMap.set(slug, branchName)
+			this.intentMetaMap.set(slug, { branch: branchName, ...prMeta })
 			onProgress?.(intent)
 		})
 
@@ -369,7 +382,18 @@ export class GitHubProvider implements BrowseProvider {
 	 * In scan mode, uses the intentBranchMap to resolve which branch holds this intent.
 	 */
 	async getIntent(slug: string): Promise<HaikuIntentDetail | null> {
-		const intentBranch = this.intentBranchMap.get(slug)
+		let intentBranch = this.intentBranchMap.get(slug)
+
+		// If branch map isn't populated yet (deeplink before listIntents), try to resolve the branch
+		if (!intentBranch && !this.branch) {
+			const branchName = `haiku/${slug}/main`
+			const testRead = await this.readFileFromBranch(branchName, `.haiku/intents/${slug}/intent.md`)
+			if (testRead) {
+				intentBranch = branchName
+				this.intentBranchMap.set(slug, branchName)
+			}
+		}
+
 		const basePath = `.haiku/intents/${slug}`
 		const cacheKey = `gh:${this.owner}/${this.repo}:getIntent:${slug}:${intentBranch || this.branch || "HEAD"}`
 		const data = await this.cachedQuery<operationsGetIntentQuery$data>(
@@ -429,6 +453,28 @@ export class GitHubProvider implements BrowseProvider {
 				units.push(parseUnit(unitEntry.name, stageName, unitText))
 			}
 
+			// Parse artifacts from the "artifacts" subdirectory
+			const stageArtifacts: HaikuArtifact[] = []
+			const artifactsEntry = stageChildren.find(
+				(e) => e.name === "artifacts" && e.type === "tree",
+			)
+			const artifactEntries = artifactsEntry?.object?.entries ?? []
+
+			for (const artEntry of artifactEntries) {
+				if (artEntry.type !== "blob") continue
+				const artType = classifyArtifact(artEntry.name)
+				const textContent = artEntry.object?.text
+				if (textContent != null) {
+					stageArtifacts.push({ name: artEntry.name, content: textContent, type: artType })
+				} else {
+					// Binary file — build a raw URL via GitHub API
+					const ref = intentBranch || this.branch || "HEAD"
+					const filePath = `${basePath}/stages/${stageName}/artifacts/${artEntry.name}`
+					const rawUrl = `https://raw.githubusercontent.com/${this.owner}/${this.repo}/${encodeURIComponent(ref)}/${filePath}`
+					stageArtifacts.push({ name: artEntry.name, rawUrl, type: artType })
+				}
+			}
+
 			// Parse state.json
 			const stateEntry = stageChildren.find(
 				(e) => e.name === "state.json" && e.type === "blob",
@@ -463,20 +509,27 @@ export class GitHubProvider implements BrowseProvider {
 				completedAt: stageCompletedAt,
 				gateOutcome,
 				units,
+				artifacts: stageArtifacts.length > 0 ? stageArtifacts : undefined,
 			})
 		}
 
-		// Knowledge files
+		// Knowledge files (include content)
 		const knowledgeEntries = data.repository.knowledgeTree?.entries ?? []
-		const knowledgeFiles = knowledgeEntries
+		const knowledgeFiles: HaikuKnowledgeFile[] = knowledgeEntries
 			.filter((e) => e.type === "blob" && e.name.endsWith(".md"))
-			.map((e) => e.name)
+			.map((e) => ({
+				name: e.name,
+				content: e.object?.text || "",
+			}))
 
-		// Operations files
+		// Operations files (include content)
 		const operationsEntries = data.repository.operationsTree?.entries ?? []
-		const operationsFiles = operationsEntries
+		const operationsFiles: HaikuKnowledgeFile[] = operationsEntries
 			.filter((e) => e.type === "blob" && e.name.endsWith(".md"))
-			.map((e) => e.name)
+			.map((e) => ({
+				name: e.name,
+				content: e.object?.text || "",
+			}))
 
 		// Reflection
 		const reflection = data.repository.reflectionFile?.text ?? null
@@ -510,6 +563,7 @@ export class GitHubProvider implements BrowseProvider {
 			reflection,
 			content,
 			assets: [],
+			...(this.intentMetaMap.get(slug) || {}),
 		}
 	}
 

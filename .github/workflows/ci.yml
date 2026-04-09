@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  test:
+    name: MCP Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run MCP test suite
+        working-directory: packages/haiku
+        run: node test/run-all.mjs
+
+  review-gate:
+    name: Review Gate
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Check for unresolved review comments
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # Fetch all review threads via GraphQL and check for unresolved ones
+          UNRESOLVED=$(gh api graphql -f query='
+            query($owner: String!, $repo: String!, $pr: Int!) {
+              repository(owner: $owner, name: $repo) {
+                pullRequest(number: $pr) {
+                  reviewThreads(first: 100) {
+                    nodes {
+                      isResolved
+                      comments(first: 1) {
+                        nodes {
+                          author { login }
+                          body
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ' -f owner="${{ github.repository_owner }}" \
+            -f repo="$(echo '${{ github.repository }}' | cut -d/ -f2)" \
+            -F pr="${PR_NUMBER}" \
+            --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)')
+
+          if [ -z "$UNRESOLVED" ]; then
+            echo "No unresolved review threads."
+            exit 0
+          fi
+
+          COUNT=$(echo "$UNRESOLVED" | jq -s 'length')
+          echo ""
+          echo "::error::$COUNT unresolved review thread(s) found. Resolve all review comments before merging."
+          echo ""
+
+          # Print details of unresolved threads
+          echo "$UNRESOLVED" | jq -r '.comments.nodes[0] | "  - \(.author.login): \(.body | split("\n") | .[0])"'
+          echo ""
+          exit 1

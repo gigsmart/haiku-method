@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.93.1] - 2026-04-09
+
+### Changed
+- Added comprehensive test suite for MCP handlers, orchestration logic, and core utilities to ensure plugin reliability and maintainability.
+
+---
+
+**Note:** This patch version contains only internal test infrastructure improvements with no user-facing changes.
+
+## [1.93.0] - 2026-04-09
+
+### Added
+- Researcher hat for inception stage that aligns discovery and problem-solving with product expectations.
+
+### Removed
+- Architect and decomposer hats from inception stage.
+
+### Changed
+- Discovery phase in inception stage updated to incorporate researcher workflows.
+
+## [1.92.0] - 2026-04-09
+
+### Added
+- Trace artifact outputs back to their source units with automatic FSM validation, ensuring consistency across your project's generated work.
+
+## [1.91.0] - 2026-04-09
+
+### Added
+- Intent details now display full content including knowledge, artifacts, and designs.
+
+## [1.89.1] - 2026-04-09
+
+```markdown
+### Fixed
+
+- Parallel execution prompts now provide more forceful guidance, and inception stage maintains business-level focus throughout planning.
+```
+
 ## [1.89.0] - 2026-04-09
 
 ### Added

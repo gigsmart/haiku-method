@@ -395,6 +395,9 @@ function buildRunInstructions(
 				`- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\` — auto-advances to the next hat, or auto-completes if this was the last hat\n` +
 				`- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\` — moves back one hat, increments bolt\n` +
 				`\n**After subagent returns:** The \`advance_hat\` result contains the next FSM action — spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately — advance_hat handles FSM progression internally.\n` +
+				`\n**Output tracking:** When your hat produces artifacts (files, designs, specs, code), record them in the unit's frontmatter \`outputs:\` field as paths relative to the intent directory:\n` +
+				"```yaml\noutputs:\n  - stages/design/artifacts/landing-page.html\n  - stages/development/artifacts/api-schema.graphql\n```\n" +
+				`The FSM validates that declared outputs exist before allowing hat advancement.\n` +
 				`\n**If outputs from a previous stage are missing, incomplete, or incorrect:** call \`haiku_go_back { intent: "${slug}" }\` to return to the prior stage for corrections.\n` +
 				`\n**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` — do NOT open files in a browser and ask via text. The visual question tool provides a structured review experience.`,
 			)
@@ -441,14 +444,15 @@ function buildRunInstructions(
 				`### Mechanics\n\n` +
 				(wave !== undefined ? `**Wave ${wave}/${totalWaves ?? "?"}** — ` : "") +
 				`${units.length} units to run in parallel.\n` +
-				`**You are the orchestrator.** Do NOT do unit work yourself.\n\n` +
-				`Spawn one Agent subagent per unit **in a single message** (all Agent tool calls in one response). Each subagent runs the FIRST hat ("${firstHat}") only.\n\n` +
+				`**You are the orchestrator.** Do NOT do unit work yourself. Do NOT ask the user which unit to start — launch ALL of them NOW.\n\n` +
+				`**IMMEDIATELY** spawn one Agent subagent per unit **in a single message** (all Agent tool calls in one response). No questions, no confirmation, no menu. Each subagent runs the FIRST hat ("${firstHat}") only.\n\n` +
 				`Each subagent calls \`advance_hat\` when done — it internally progresses the FSM. The last subagent to finish the wave triggers the next action automatically.\n\n` +
 				`**Each subagent prompt must include:**\n` +
 				`- The hat definition for "${firstHat}"\n` +
 				`- The unit spec and refs\n` +
 				`- The stage scope constraint\n` +
 				`- Instruction to call \`haiku_unit_start\` first\n` +
+				`- Output tracking: record produced artifacts in the unit's \`outputs:\` frontmatter field (paths relative to intent dir)\n` +
 				`- If outputs from a previous stage are missing, incomplete, or incorrect: call \`haiku_go_back { intent: "${slug}" }\` to return to the prior stage for corrections\n\n` +
 				units.map(u => {
 					const wt = worktrees[u]

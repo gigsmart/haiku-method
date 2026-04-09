@@ -1,10 +1,8 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
-import type { BrowseProvider, HaikuAsset, HaikuIntent, HaikuIntentDetail, HaikuStageState, HaikuUnit } from "@/lib/browse/types"
+import type { BrowseProvider, HaikuArtifact, HaikuAsset, HaikuIntent, HaikuIntentDetail, HaikuKnowledgeFile, HaikuStageState, HaikuUnit } from "@/lib/browse/types"
 import { formatDate, formatDuration } from "@/lib/browse/types"
 import { buildBrowseUrl } from "@/lib/browse/url"
 import type { BrowseLocation } from "@/lib/browse/url"
@@ -40,13 +38,15 @@ interface Props {
 	intent: HaikuIntentDetail
 	provider: BrowseProvider
 	location?: BrowseLocation
+	initialStage?: string
 	onBack: () => void
 }
 
-export function IntentDetailView({ intent, provider, location, onBack }: Props) {
+export function IntentDetailView({ intent, provider, location, initialStage, onBack }: Props) {
 	const router = useRouter()
 	const [selectedUnit, setSelectedUnit] = useState<{ unit: HaikuUnit; stage: string } | null>(null)
-	const [expandedStage, setExpandedStage] = useState<string | null>(intent.activeStage || null)
+	const [expandedStage, setExpandedStage] = useState<string | null>(initialStage || intent.activeStage || null)
+	const stageRefs = useRef<Record<string, HTMLElement | null>>({})
 	const [viewMode, setViewMode] = useState<"pipeline" | "board">("pipeline")
 	const [gateAction, setGateAction] = useState<"idle" | "approving" | "rejecting" | "success" | "error">("idle")
 	const [settings, setSettings] = useState<Record<string, unknown> | null>(null)
@@ -138,6 +138,18 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 		}
 	}, [intent, location?.stage, location?.unit])
 
+	// Scroll to initially expanded stage on mount
+	useEffect(() => {
+		const target = initialStage || location?.stage
+		if (target && !location?.unit) {
+			// Small delay so DOM has rendered the expanded stage section
+			const timeout = setTimeout(() => {
+				stageRefs.current[target]?.scrollIntoView({ behavior: "smooth", block: "start" })
+			}, 150)
+			return () => clearTimeout(timeout)
+		}
+	}, [initialStage, location?.stage, location?.unit])
+
 	// Listen for browser back/forward (path-based navigation only)
 	useEffect(() => {
 		if (!hasPathNav) return
@@ -147,17 +159,29 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 			if (intentIdx === -1) return
 
 			const remaining = segments.slice(intentIdx + 1)
-			// remaining: [slug] or [slug, stage] or [slug, stage, unit]
-			if (remaining.length >= 3) {
-				// Unit view
-				const stageState = intent.stages.find(s => s.name === remaining[1])
-				const unit = stageState?.units.find(u => u.name === remaining[2])
+			// Parse stage and unit from remaining segments
+			// New format: [slug, "stage", stageName, unit?] or legacy [slug, stageName, unit?]
+			let parsedStage: string | undefined
+			let parsedUnit: string | undefined
+			if (remaining.length >= 3 && remaining[1] === "stage") {
+				parsedStage = remaining[2]
+				if (remaining.length >= 4) parsedUnit = remaining[3]
+			} else if (remaining.length >= 2 && remaining[1] !== "stage") {
+				parsedStage = remaining[1]
+				if (remaining.length >= 3) parsedUnit = remaining[2]
+			}
+
+			if (parsedUnit && parsedStage) {
+				const stageState = intent.stages.find(s => s.name === parsedStage)
+				const unit = stageState?.units.find(u => u.name === parsedUnit)
 				if (unit) {
-					setSelectedUnit({ unit, stage: remaining[1] })
+					setSelectedUnit({ unit, stage: parsedStage })
 				}
 			} else {
-				// Intent view (no unit selected)
 				setSelectedUnit(null)
+				if (parsedStage) {
+					setExpandedStage(parsedStage)
+				}
 			}
 		}
 		window.addEventListener("popstate", onPopState)
@@ -272,7 +296,16 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 						return (
 							<div key={stage.name} className="flex items-center">
 								<button
-									onClick={() => setExpandedStage(expandedStage === stage.name ? null : stage.name)}
+									onClick={() => {
+										const newStage = expandedStage === stage.name ? null : stage.name
+										setExpandedStage(newStage)
+										if (hasPathNav) {
+											const url = newStage
+												? browseUrl({ stage: newStage })
+												: browseUrl()
+											window.history.pushState({}, "", url)
+										}
+									}}
 									className={`rounded-lg border px-4 py-2 transition ${colors.bg} ${
 										expandedStage === stage.name ? "ring-2 ring-teal-400" : ""
 									}`}
@@ -302,10 +335,12 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 			{expandedStage && (() => {
 				const expandedStageData = intent.stages.find((s) => s.name === expandedStage)!
 				return (
-					<section className="mb-8">
+					<section className="mb-8" ref={(el) => { stageRefs.current[expandedStage] = el }}>
 						<StageDetail
 							stage={expandedStageData}
 							onSelectUnit={(unit) => handleSelectUnit(unit, expandedStage)}
+							assets={intent.assets}
+							host={host || undefined}
 						/>
 						{expandedStageData.phase === "gate" && !expandedStageData.gateOutcome && provider.writeFile && (
 							<div className="mt-4 rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-800/50">
@@ -376,8 +411,8 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 						Knowledge Artifacts
 					</h2>
 					<div className="space-y-2">
-						{intent.knowledge.map((file) => (
-							<KnowledgeFile key={file} file={file} intentSlug={intent.slug} provider={provider} assets={intent.assets} host={host || undefined} />
+						{intent.knowledge.map((kf) => (
+							<KnowledgeFileCard key={kf.name} file={kf} assets={intent.assets} host={host || undefined} basePath={`.haiku/intents/${intent.slug}/knowledge`} />
 						))}
 					</div>
 				</section>
@@ -390,8 +425,8 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 						Operations
 					</h2>
 					<div className="space-y-2">
-						{intent.operations.map((file) => (
-							<KnowledgeFile key={file} file={file} intentSlug={intent.slug} provider={provider} basePath="operations" assets={intent.assets} host={host || undefined} />
+						{intent.operations.map((kf) => (
+							<KnowledgeFileCard key={kf.name} file={kf} assets={intent.assets} host={host || undefined} basePath={`.haiku/intents/${intent.slug}/operations`} />
 						))}
 					</div>
 				</section>
@@ -529,33 +564,25 @@ function ProviderLinkBadge({ link }: { link: ProviderLink }) {
 	)
 }
 
-function KnowledgeFile({ file, intentSlug, provider, basePath = "knowledge", assets, host }: { file: string; intentSlug: string; provider: BrowseProvider; basePath?: string; assets?: HaikuAsset[]; host?: string }) {
-	const [content, setContent] = useState<string | null>(null)
+/** Renders a knowledge or operations file with content available inline (collapsible). */
+function KnowledgeFileCard({ file, assets, host, basePath }: { file: HaikuKnowledgeFile; assets?: HaikuAsset[]; host?: string; basePath?: string }) {
 	const [expanded, setExpanded] = useState(false)
-
-	const handleExpand = async () => {
-		if (content === null) {
-			const raw = await provider.readFile(`.haiku/intents/${intentSlug}/${basePath}/${file}`)
-			setContent(raw || "(empty)")
-		}
-		setExpanded(!expanded)
-	}
 
 	return (
 		<div className="rounded-lg border border-stone-200 dark:border-stone-700">
 			<button
-				onClick={handleExpand}
+				onClick={() => setExpanded(!expanded)}
 				className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-stone-50 dark:hover:bg-stone-800"
 			>
-				<span className="font-mono text-stone-600 dark:text-stone-400">{file}</span>
+				<span className="font-mono text-stone-600 dark:text-stone-400">{file.name}</span>
 				<svg className={`h-4 w-4 text-stone-400 transition ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
 					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
 				</svg>
 			</button>
-			{expanded && content && (
+			{expanded && (
 				<div className="border-t border-stone-100 px-4 py-4 dark:border-stone-800">
 					<div className="prose prose-sm prose-stone dark:prose-invert max-w-none">
-						<BrowseMarkdown assets={assets} host={host} basePath={`.haiku/intents/${intentSlug}/${basePath}`}>{content}</BrowseMarkdown>
+						<BrowseMarkdown assets={assets} host={host} basePath={basePath}>{file.content || "(empty)"}</BrowseMarkdown>
 					</div>
 				</div>
 			)}
@@ -563,8 +590,211 @@ function KnowledgeFile({ file, intentSlug, provider, basePath = "knowledge", ass
 	)
 }
 
-function StageDetail({ stage, onSelectUnit }: { stage: HaikuStageState; onSelectUnit: (u: HaikuUnit) => void }) {
-	if (stage.units.length === 0) {
+/** Fullscreen modal for artifacts — handles Escape key and prevents background scroll. */
+function ArtifactFullscreenModal({ artifact, assets, host, onClose }: { artifact: HaikuArtifact; assets?: HaikuAsset[]; host?: string; onClose: () => void }) {
+	const handleKeyDown = useCallback((e: KeyboardEvent) => {
+		if (e.key === "Escape") onClose()
+	}, [onClose])
+
+	useEffect(() => {
+		document.addEventListener("keydown", handleKeyDown)
+		document.body.style.overflow = "hidden"
+		return () => {
+			document.removeEventListener("keydown", handleKeyDown)
+			document.body.style.overflow = ""
+		}
+	}, [handleKeyDown])
+
+	if (artifact.type === "html" && artifact.content) {
+		return (
+			<div className="fixed inset-0 z-[100] flex flex-col bg-white dark:bg-stone-950">
+				<div className="flex items-center justify-between border-b border-stone-200 px-4 py-2 dark:border-stone-800">
+					<span className="font-mono text-sm text-stone-600 dark:text-stone-400">{artifact.name}</span>
+					<button onClick={onClose} className="rounded-lg px-3 py-1.5 text-sm font-medium text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800">
+						Close
+					</button>
+				</div>
+				<iframe
+					srcDoc={artifact.content}
+					title={artifact.name}
+					className="flex-1 border-0"
+					sandbox="allow-same-origin"
+				/>
+			</div>
+		)
+	}
+
+	if (artifact.type === "image") {
+		return (
+			<div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={onClose}>
+				<div className="relative flex max-h-[95vh] max-w-[95vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-stone-900" onClick={(e) => e.stopPropagation()}>
+					<div className="flex items-center justify-between border-b border-stone-200 px-4 py-3 dark:border-stone-700">
+						<span className="truncate font-mono text-sm text-stone-600 dark:text-stone-400">{artifact.name}</span>
+						<button onClick={onClose} className="ml-4 rounded-lg p-1.5 text-stone-400 transition hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300" aria-label="Close">
+							<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+							</svg>
+						</button>
+					</div>
+					<div className="flex-1 overflow-auto p-4">
+						{artifact.rawUrl && host ? (
+							<AuthenticatedMedia rawUrl={artifact.rawUrl} name={artifact.name} host={host} className="max-h-[85vh] rounded-lg" fullSize />
+						) : artifact.rawUrl ? (
+							<img src={artifact.rawUrl} alt={artifact.name} className="max-h-[85vh] rounded-lg" />
+						) : null}
+					</div>
+				</div>
+			</div>
+		)
+	}
+
+	if (artifact.type === "markdown" && artifact.content) {
+		return (
+			<div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={onClose}>
+				<div className="relative flex max-h-[95vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-stone-900" onClick={(e) => e.stopPropagation()}>
+					<div className="flex items-center justify-between border-b border-stone-200 px-4 py-3 dark:border-stone-700">
+						<span className="truncate font-mono text-sm text-stone-600 dark:text-stone-400">{artifact.name}</span>
+						<button onClick={onClose} className="ml-4 rounded-lg p-1.5 text-stone-400 transition hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300" aria-label="Close">
+							<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+							</svg>
+						</button>
+					</div>
+					<div className="flex-1 overflow-auto px-6 py-4">
+						<div className="prose prose-sm prose-stone dark:prose-invert max-w-none">
+							<BrowseMarkdown assets={assets} host={host}>{artifact.content}</BrowseMarkdown>
+						</div>
+					</div>
+				</div>
+			</div>
+		)
+	}
+
+	return null
+}
+
+/** Thumbnail card for an artifact in the grid. HTML/Image show a preview; Markdown shows an icon. */
+function ArtifactThumbnail({ artifact, host, onClick }: { artifact: HaikuArtifact; host?: string; onClick: () => void }) {
+	if (artifact.type === "html" && artifact.content) {
+		return (
+			<button
+				onClick={onClick}
+				className="group flex flex-col overflow-hidden rounded-lg border border-stone-200 text-left transition hover:border-teal-300 hover:shadow-sm dark:border-stone-700 dark:hover:border-teal-700"
+			>
+				<div className="relative aspect-[4/3] w-full overflow-hidden bg-white dark:bg-stone-900">
+					<iframe
+						srcDoc={artifact.content}
+						title={artifact.name}
+						className="absolute inset-0 h-[300%] w-[300%] origin-top-left border-0"
+						style={{ transform: "scale(0.3333)", pointerEvents: "none" }}
+						tabIndex={-1}
+						sandbox="allow-same-origin"
+					/>
+				</div>
+				<div className="border-t border-stone-100 px-3 py-2 dark:border-stone-800">
+					<p className="truncate text-xs font-medium text-stone-700 group-hover:text-teal-600 dark:text-stone-300 dark:group-hover:text-teal-400">
+						{artifact.name}
+					</p>
+				</div>
+			</button>
+		)
+	}
+
+	if (artifact.type === "image") {
+		return (
+			<button
+				onClick={onClick}
+				className="group flex flex-col overflow-hidden rounded-lg border border-stone-200 text-left transition hover:border-teal-300 hover:shadow-sm dark:border-stone-700 dark:hover:border-teal-700"
+			>
+				<div className="h-[150px] w-full overflow-hidden bg-stone-50 dark:bg-stone-800/50">
+					{artifact.rawUrl && host ? (
+						<AuthenticatedMedia rawUrl={artifact.rawUrl} name={artifact.name} host={host} className="h-full w-full object-cover" />
+					) : artifact.rawUrl ? (
+						<img src={artifact.rawUrl} alt={artifact.name} className="h-full w-full object-cover" />
+					) : (
+						<div className="flex h-full items-center justify-center text-stone-300 dark:text-stone-600">
+							<svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" /></svg>
+						</div>
+					)}
+				</div>
+				<div className="border-t border-stone-100 px-3 py-2 dark:border-stone-800">
+					<p className="truncate text-xs font-medium text-stone-700 group-hover:text-teal-600 dark:text-stone-300 dark:group-hover:text-teal-400">
+						{artifact.name}
+					</p>
+				</div>
+			</button>
+		)
+	}
+
+	// Markdown and other types — not thumbnailable, return null (handled separately)
+	return null
+}
+
+/** Renders a markdown artifact as collapsible with a fullscreen option. */
+function MarkdownArtifactCard({ artifact, assets, host }: { artifact: HaikuArtifact; assets?: HaikuAsset[]; host?: string }) {
+	const [expanded, setExpanded] = useState(false)
+	const [fullscreen, setFullscreen] = useState(false)
+
+	return (
+		<>
+			<div className="rounded-lg border border-stone-200 dark:border-stone-700">
+				<div className="flex w-full items-center justify-between px-4 py-3 text-left text-sm">
+					<button
+						onClick={() => setExpanded(!expanded)}
+						className="flex flex-1 items-center gap-2 hover:text-stone-900 dark:hover:text-stone-100"
+					>
+						<svg className={`h-4 w-4 text-stone-400 transition ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+						</svg>
+						<span className="font-mono text-stone-600 dark:text-stone-400">{artifact.name}</span>
+					</button>
+					<button
+						onClick={() => setFullscreen(true)}
+						className="ml-2 rounded px-2 py-1 text-xs text-stone-500 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-stone-800 dark:hover:text-stone-300"
+					>
+						Full Screen
+					</button>
+				</div>
+				{expanded && (
+					<div className="border-t border-stone-100 px-4 py-4 dark:border-stone-800">
+						<div className="prose prose-sm prose-stone dark:prose-invert max-w-none">
+							<BrowseMarkdown assets={assets} host={host}>{artifact.content || "(empty)"}</BrowseMarkdown>
+						</div>
+					</div>
+				)}
+			</div>
+			{fullscreen && (
+				<ArtifactFullscreenModal artifact={artifact} assets={assets} host={host} onClose={() => setFullscreen(false)} />
+			)}
+		</>
+	)
+}
+
+/** Renders an "other" artifact type as a simple row. */
+function OtherArtifactCard({ artifact }: { artifact: HaikuArtifact }) {
+	return (
+		<div className="rounded-lg border border-stone-200 px-4 py-3 dark:border-stone-700">
+			<span className="font-mono text-sm text-stone-600 dark:text-stone-400">{artifact.name}</span>
+			{artifact.rawUrl && (
+				<a href={artifact.rawUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-xs text-teal-600 hover:underline dark:text-teal-400">
+					Download
+				</a>
+			)}
+		</div>
+	)
+}
+
+function StageDetail({ stage, onSelectUnit, assets, host }: { stage: HaikuStageState; onSelectUnit: (u: HaikuUnit) => void; assets?: HaikuAsset[]; host?: string }) {
+	const hasUnits = stage.units.length > 0
+	const hasArtifacts = (stage.artifacts?.length ?? 0) > 0
+	const [fullscreenArtifact, setFullscreenArtifact] = useState<HaikuArtifact | null>(null)
+
+	// Split artifacts into thumbnailable (html/image) and non-thumbnailable (markdown/other)
+	const thumbnailArtifacts = stage.artifacts?.filter(a => a.type === "html" || a.type === "image") ?? []
+	const markdownArtifacts = stage.artifacts?.filter(a => a.type === "markdown") ?? []
+	const otherArtifacts = stage.artifacts?.filter(a => a.type !== "html" && a.type !== "image" && a.type !== "markdown") ?? []
+
+	if (!hasUnits && !hasArtifacts) {
 		return (
 			<div className="rounded-xl border border-stone-200 px-6 py-8 text-center dark:border-stone-700">
 				<p className="text-stone-500">No units in this stage yet.</p>
@@ -573,45 +803,76 @@ function StageDetail({ stage, onSelectUnit }: { stage: HaikuStageState; onSelect
 	}
 
 	return (
-		<div className="space-y-2">
-			<h3 className="text-sm font-semibold text-stone-600 dark:text-stone-300">
-				{titleCase(stage.name)} — {stage.units.length} unit{stage.units.length !== 1 ? "s" : ""}
-			</h3>
-			{stage.units.map((unit) => {
-				const checkedCount = unit.criteria.filter((c) => c.checked).length
-				const totalCriteria = unit.criteria.length
-				return (
-					<button
-						key={unit.name}
-						onClick={() => onSelectUnit(unit)}
-						className="w-full rounded-lg border border-stone-200 px-5 py-3 text-left transition hover:border-teal-300 dark:border-stone-700 dark:hover:border-teal-700"
-					>
-						<div className="flex items-center justify-between">
-							<div className="flex items-center gap-3">
-								<span className="text-sm font-semibold text-stone-900 dark:text-stone-100">
-									{titleCase(unit.name)}
-								</span>
-								<span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${unitStatusColors[unit.status] || unitStatusColors.pending}`}>
-									{unit.status}
-								</span>
-								{unit.type && (
-									<span className="text-xs text-stone-400">{unit.type}</span>
+		<div className="space-y-4">
+			{hasUnits && (
+				<div className="space-y-2">
+					<h3 className="text-sm font-semibold text-stone-600 dark:text-stone-300">
+						{titleCase(stage.name)} — {stage.units.length} unit{stage.units.length !== 1 ? "s" : ""}
+					</h3>
+					{stage.units.map((unit) => {
+						const checkedCount = unit.criteria.filter((c) => c.checked).length
+						const totalCriteria = unit.criteria.length
+						return (
+							<button
+								key={unit.name}
+								onClick={() => onSelectUnit(unit)}
+								className="w-full rounded-lg border border-stone-200 px-5 py-3 text-left transition hover:border-teal-300 dark:border-stone-700 dark:hover:border-teal-700"
+							>
+								<div className="flex items-center justify-between">
+									<div className="flex items-center gap-3">
+										<span className="text-sm font-semibold text-stone-900 dark:text-stone-100">
+											{titleCase(unit.name)}
+										</span>
+										<span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${unitStatusColors[unit.status] || unitStatusColors.pending}`}>
+											{unit.status}
+										</span>
+										{unit.type && (
+											<span className="text-xs text-stone-400">{unit.type}</span>
+										)}
+									</div>
+									{totalCriteria > 0 && (
+										<span className="text-xs text-stone-400">
+											{checkedCount}/{totalCriteria} criteria
+										</span>
+									)}
+								</div>
+								{unit.dependsOn.length > 0 && (
+									<div className="mt-1 text-xs text-stone-400">
+										Depends on: {unit.dependsOn.join(", ")}
+									</div>
 								)}
-							</div>
-							{totalCriteria > 0 && (
-								<span className="text-xs text-stone-400">
-									{checkedCount}/{totalCriteria} criteria
-								</span>
-							)}
+							</button>
+						)
+					})}
+				</div>
+			)}
+			{hasArtifacts && (
+				<div className="space-y-3">
+					<h4 className="text-xs font-semibold uppercase tracking-wider text-stone-400">
+						Stage Artifacts
+					</h4>
+					{/* Thumbnail grid for HTML and Image artifacts */}
+					{thumbnailArtifacts.length > 0 && (
+						<div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+							{thumbnailArtifacts.map((artifact) => (
+								<ArtifactThumbnail key={artifact.name} artifact={artifact} host={host} onClick={() => setFullscreenArtifact(artifact)} />
+							))}
 						</div>
-						{unit.dependsOn.length > 0 && (
-							<div className="mt-1 text-xs text-stone-400">
-								Depends on: {unit.dependsOn.join(", ")}
-							</div>
-						)}
-					</button>
-				)
-			})}
+					)}
+					{/* Collapsible markdown artifacts */}
+					{markdownArtifacts.map((artifact) => (
+						<MarkdownArtifactCard key={artifact.name} artifact={artifact} assets={assets} host={host} />
+					))}
+					{/* Other artifacts — simple row */}
+					{otherArtifacts.map((artifact) => (
+						<OtherArtifactCard key={artifact.name} artifact={artifact} />
+					))}
+				</div>
+			)}
+			{/* Fullscreen modal for thumbnail artifacts */}
+			{fullscreenArtifact && (
+				<ArtifactFullscreenModal artifact={fullscreenArtifact} assets={assets} host={host} onClose={() => setFullscreenArtifact(null)} />
+			)}
 		</div>
 	)
 }
