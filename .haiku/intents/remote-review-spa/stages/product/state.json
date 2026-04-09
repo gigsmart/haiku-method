@@ -1,0 +1,10 @@
+{
+  "stage": "product",
+  "status": "completed",
+  "phase": "gate",
+  "started_at": "2026-04-09T12:41:12Z",
+  "completed_at": "2026-04-09T12:54:27Z",
+  "gate_entered_at": "2026-04-09T12:54:16Z",
+  "gate_outcome": "advanced",
+  "elaboration_turns": 4
+}

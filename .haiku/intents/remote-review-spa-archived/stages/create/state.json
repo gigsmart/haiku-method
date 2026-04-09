@@ -1,0 +1,10 @@
+{
+  "stage": "create",
+  "status": "active",
+  "phase": "elaborate",
+  "started_at": "2026-04-09T04:20:47Z",
+  "completed_at": null,
+  "gate_entered_at": null,
+  "gate_outcome": null,
+  "elaboration_turns": 5
+}

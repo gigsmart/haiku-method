@@ -1,12 +1,13 @@
 import { createServer, type Server as HttpServer, type IncomingMessage } from "node:http"
 import { createHash } from "node:crypto"
 import { readFile, realpath } from "node:fs/promises"
-import { extname, join, resolve } from "node:path"
+import { dirname, extname, join, resolve } from "node:path"
 import type { Duplex } from "node:stream"
 import { z } from "zod"
 import { getSession, updateDesignDirectionSession, updateQuestionSession, updateSession } from "./sessions.js"
 import type { QuestionAnswer, QuestionAnnotations, ReviewAnnotations } from "./sessions.js"
 import { REVIEW_APP_HTML } from "./review-app-html.js"
+import { isRemoteReviewEnabled, e2eEncrypt, isE2EActive } from "./tunnel.js"
 
 let httpServer: HttpServer | null = null
 let actualPort: number | null = null
@@ -171,6 +172,100 @@ const MIME_TYPES: Record<string, string> = {
 	".jpeg": "image/jpeg",
 	".gif": "image/gif",
 	".webp": "image/webp",
+	".md": "text/markdown; charset=utf-8",
+	".txt": "text/plain; charset=utf-8",
+	".pdf": "application/pdf",
+}
+
+/** Add CORS headers when remote review is enabled */
+function withCors(response: Response): Response {
+	if (!isRemoteReviewEnabled()) return response
+	const headers = new Headers(response.headers)
+	headers.set("Access-Control-Allow-Origin", "*")
+	headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	headers.set("Access-Control-Allow-Headers", "Content-Type")
+	return new Response(response.body, {
+		status: response.status,
+		statusText: response.statusText,
+		headers,
+	})
+}
+
+/** Extract session ID from any request URL path */
+function extractSessionId(path: string): string | null {
+	const match = path.match(/\/(?:api\/session|review|question|direction|files|mockups|wireframe|stage-artifacts|question-image)\/([^/]+)/)
+	return match?.[1] ?? null
+}
+
+/**
+ * Wrap a response with E2E encryption if active for this session.
+ * Preserves the original Content-Type in X-Original-Content-Type header
+ * so the client knows how to handle the decrypted data.
+ */
+async function withE2E(response: Response, sessionId: string | null): Promise<Response> {
+	if (!sessionId || !isE2EActive(sessionId) || response.status >= 400) return response
+
+	const originalContentType = response.headers.get("Content-Type") ?? "application/octet-stream"
+	const body = await response.arrayBuffer()
+	const encrypted = e2eEncrypt(sessionId, Buffer.from(body))
+
+	if (!encrypted) return response
+
+	const headers = new Headers(response.headers)
+	headers.set("Content-Type", "application/octet-stream")
+	headers.set("X-Original-Content-Type", originalContentType)
+	headers.set("X-E2E-Encrypted", "1")
+
+	return new Response(encrypted, {
+		status: response.status,
+		statusText: response.statusText,
+		headers,
+	})
+}
+
+/** Consolidated file serving: GET /files/:sessionId/*path */
+async function handleFileGet(
+	sessionId: string,
+	filePath: string,
+): Promise<Response> {
+	const session = getSession(sessionId)
+	if (!session) {
+		return new Response("Session not found", { status: 404 })
+	}
+
+	const intentDir = session.session_type === "review" ? session.intent_dir : null
+	const haikuKnowledgeDir = intentDir ? resolve(dirname(dirname(intentDir)), "knowledge") : null
+	const allowedBases = [intentDir, haikuKnowledgeDir].filter((d): d is string => d !== null)
+
+	if (allowedBases.length === 0) {
+		return new Response("Not found", { status: 404 })
+	}
+
+	for (const baseDir of allowedBases) {
+		const resolved = resolve(baseDir, filePath)
+		const resolvedBase = resolve(baseDir)
+		if (!resolved.startsWith(resolvedBase + "/") && resolved !== resolvedBase) {
+			continue
+		}
+
+		try {
+			const realResolved = await realpath(resolved).catch(() => null)
+			const realBase = await realpath(baseDir).catch(() => resolvedBase)
+			if (!realResolved || (!realResolved.startsWith(realBase + "/") && realResolved !== realBase)) {
+				continue
+			}
+			const data = await readFile(realResolved)
+			const ext = extname(realResolved).toLowerCase()
+			const contentType = MIME_TYPES[ext] ?? "application/octet-stream"
+			return new Response(data, {
+				headers: { "Content-Type": contentType },
+			})
+		} catch {
+			continue
+		}
+	}
+
+	return new Response("Not found", { status: 404 })
 }
 
 async function handleMockupGet(
@@ -685,6 +780,17 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	const url = new URL(req.url)
 	const path = url.pathname
 
+	// CORS preflight (handled before E2E — preflight is plaintext)
+	if (req.method === "OPTIONS" && isRemoteReviewEnabled()) {
+		return withCors(new Response(null, { status: 204 }))
+	}
+
+	// GET /files/:sessionId/*path — consolidated file serving
+	const filesMatch = path.match(/^\/files\/([^/]+)\/(.+)$/)
+	if (filesMatch && req.method === "GET") {
+		return handleFileGet(filesMatch[1], filesMatch[2])
+	}
+
 	// GET /api/session/:sessionId — JSON API for the SPA
 	const apiSessionMatch = path.match(/^\/api\/session\/([^/]+)$/)
 	if (apiSessionMatch && req.method === "GET") {
@@ -703,19 +809,19 @@ function handleRequest(req: Request): Response | Promise<Response> {
 		return handleDecidePost(decideMatch[1], req)
 	}
 
-	// GET /mockups/:sessionId/:path — serve files from intent mockups/ dir
+	// GET /mockups/:sessionId/:path
 	const mockupMatch = path.match(/^\/mockups\/([^/]+)\/(.+)$/)
 	if (mockupMatch && req.method === "GET") {
 		return handleMockupGet(mockupMatch[1], mockupMatch[2])
 	}
 
-	// GET /wireframe/:sessionId/:path — serve wireframe files from intent dir
+	// GET /wireframe/:sessionId/:path
 	const wireframeMatch = path.match(/^\/wireframe\/([^/]+)\/(.+)$/)
 	if (wireframeMatch && req.method === "GET") {
 		return handleWireframeGet(wireframeMatch[1], wireframeMatch[2])
 	}
 
-	// GET /stage-artifacts/:sessionId/:path — serve files from stages/*/artifacts/
+	// GET /stage-artifacts/:sessionId/:path
 	const stageArtifactMatch = path.match(/^\/stage-artifacts\/([^/]+)\/(.+)$/)
 	if (stageArtifactMatch && req.method === "GET") {
 		return handleStageArtifactGet(stageArtifactMatch[1], stageArtifactMatch[2])
@@ -733,7 +839,7 @@ function handleRequest(req: Request): Response | Promise<Response> {
 		return handleDirectionSelectPost(directionSelectMatch[1], req)
 	}
 
-	// GET /question-image/:sessionId/:index — serve images for question sessions
+	// GET /question-image/:sessionId/:index
 	const questionImageMatch = path.match(
 		/^\/question-image\/([^/]+)\/(\d+)$/,
 	)
@@ -829,7 +935,10 @@ function listenOnPort(port: number): Promise<void> {
 			})
 
 			try {
-				const webResponse = await handleRequest(webRequest)
+				let webResponse = await handleRequest(webRequest)
+				// Network-layer: apply CORS + E2E encryption to all responses
+				const sessionId = extractSessionId(new URL(webRequest.url).pathname)
+				webResponse = await withE2E(withCors(webResponse), sessionId)
 				res.writeHead(
 					webResponse.status,
 					Object.fromEntries(webResponse.headers.entries()),

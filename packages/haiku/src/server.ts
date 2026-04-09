@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process"
 import { readFile, readdir } from "node:fs/promises"
 import { dirname, join, resolve } from "node:path"
+import { openTunnel, closeTunnel, buildReviewUrl, isRemoteReviewEnabled, clearE2EKey } from "./tunnel.js"
 import {
 	buildDAG,
 	parseAllUnits,
@@ -471,7 +472,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 		// Start HTTP server (idempotent)
 		const port = await startHttpServer()
-		const questionUrl = `http://127.0.0.1:${port}/question/${session.session_id}`
+		let questionUrl: string
+		if (isRemoteReviewEnabled()) {
+			const tunnelUrl = await openTunnel(port)
+			questionUrl = buildReviewUrl(session.session_id, tunnelUrl, "question")
+		} else {
+			questionUrl = `http://127.0.0.1:${port}/question/${session.session_id}`
+		}
 
 		// Open browser
 		try {
@@ -587,7 +594,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 		// Start HTTP server (idempotent)
 		const port = await startHttpServer()
-		const directionUrl = `http://127.0.0.1:${port}/direction/${session.session_id}`
+		let directionUrl: string
+		if (isRemoteReviewEnabled()) {
+			const tunnelUrl = await openTunnel(port)
+			directionUrl = buildReviewUrl(session.session_id, tunnelUrl, "direction")
+		} else {
+			directionUrl = `http://127.0.0.1:${port}/direction/${session.session_id}`
+		}
 
 		// Open browser
 		try {
@@ -727,11 +740,20 @@ setOpenReviewHandler(async (intentDirRel: string, reviewType: string) => {
 	session.html = renderReviewPage({ intent, units, criteria, reviewType: reviewType as "intent" | "unit", target: "", sessionId: session.session_id, mermaid, intentMockups: [], unitMockups: new Map() })
 
 	const port = await startHttpServer()
-	const reviewUrl = `http://127.0.0.1:${port}/review/${session.session_id}`
+	const useRemote = isRemoteReviewEnabled()
 
-	function openBrowser() {
+	let reviewUrl: string
+	if (useRemote) {
+		const tunnelUrl = await openTunnel(port)
+		reviewUrl = buildReviewUrl(session.session_id, tunnelUrl, reviewType)
+	} else {
+		reviewUrl = `http://127.0.0.1:${port}/review/${session.session_id}`
+	}
+
+	function openBrowser(url?: string) {
 		try {
-			const cmd = process.platform === "darwin" ? ["open", reviewUrl] : ["xdg-open", reviewUrl]
+			const target = url ?? reviewUrl
+			const cmd = process.platform === "darwin" ? ["open", target] : ["xdg-open", target]
 			spawn(cmd[0], cmd.slice(1), { stdio: "ignore", detached: true }).unref()
 		} catch { /* */ }
 	}
@@ -746,23 +768,31 @@ setOpenReviewHandler(async (intentDirRel: string, reviewType: string) => {
 			// Timeout — check if session is still pending (user might still be looking)
 			const check = getSession(session.session_id)
 			if (check && check.session_type === "review" && check.status === "decided") {
-				// Decided while we were handling the timeout
+				if (useRemote) { clearE2EKey(session.session_id); closeTunnel() }
 				return { decision: check.decision, feedback: check.feedback, annotations: check.annotations }
 			}
 			// Still pending — try reopening the browser
 			if (attempt < 2) {
 				console.error(`[haiku] Review session timeout (attempt ${attempt + 1}/3) — reopening browser`)
-				openBrowser()
+				if (useRemote) {
+					const tunnelUrl = await openTunnel(port)
+					const newUrl = buildReviewUrl(session.session_id, tunnelUrl, reviewType)
+					openBrowser(newUrl)
+				} else {
+					openBrowser()
+				}
 				continue
 			}
 		}
 
 		const updated = getSession(session.session_id)
 		if (updated && updated.session_type === "review" && updated.status === "decided") {
+			if (useRemote) { clearE2EKey(session.session_id); closeTunnel() }
 			return { decision: updated.decision, feedback: updated.feedback, annotations: updated.annotations }
 		}
 	}
 
+	if (useRemote) { clearE2EKey(session.session_id); closeTunnel() }
 	throw new Error("Review timeout after 3 attempts (30 min total)")
 })
 
