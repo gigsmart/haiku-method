@@ -560,46 +560,90 @@ function KnowledgeFileCard({ file, assets, host, basePath }: { file: HaikuKnowle
 /** Renders a single stage artifact based on its type. */
 function ArtifactCard({ artifact, assets, host }: { artifact: HaikuArtifact; assets?: HaikuAsset[]; host?: string }) {
 	const [expanded, setExpanded] = useState(false)
+	const [fullscreen, setFullscreen] = useState(false)
 
 	if (artifact.type === "image") {
 		return (
-			<div className="rounded-lg border border-stone-200 dark:border-stone-700 overflow-hidden">
-				<div className="px-4 py-2 text-xs font-mono text-stone-500 dark:text-stone-400 bg-stone-50 dark:bg-stone-800/50">
-					{artifact.name}
+			<>
+				<div className="rounded-lg border border-stone-200 dark:border-stone-700 overflow-hidden cursor-pointer" onClick={() => setFullscreen(true)}>
+					<div className="px-4 py-2 text-xs font-mono text-stone-500 dark:text-stone-400 bg-stone-50 dark:bg-stone-800/50 flex items-center justify-between">
+						{artifact.name}
+						<span className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-300">View Full Size</span>
+					</div>
+					{artifact.rawUrl && host ? (
+						<AuthenticatedMedia rawUrl={artifact.rawUrl} name={artifact.name} host={host} className="w-full" fullSize />
+					) : artifact.rawUrl ? (
+						<img src={artifact.rawUrl} alt={artifact.name} className="w-full" />
+					) : null}
 				</div>
-				{artifact.rawUrl && host ? (
-					<AuthenticatedMedia rawUrl={artifact.rawUrl} name={artifact.name} host={host} className="w-full" fullSize />
-				) : artifact.rawUrl ? (
-					<img src={artifact.rawUrl} alt={artifact.name} className="w-full" />
-				) : null}
-			</div>
+				{fullscreen && (
+					<div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setFullscreen(false)}>
+						<div className="relative max-h-[95vh] max-w-[95vw] overflow-auto" onClick={(e) => e.stopPropagation()}>
+							<button onClick={() => setFullscreen(false)} className="absolute right-3 top-3 z-10 rounded-full bg-black/60 p-2 text-white hover:bg-black/80">
+								<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+							</button>
+							{artifact.rawUrl && host ? (
+								<AuthenticatedMedia rawUrl={artifact.rawUrl} name={artifact.name} host={host} className="max-h-[95vh]" fullSize />
+							) : artifact.rawUrl ? (
+								<img src={artifact.rawUrl} alt={artifact.name} className="max-h-[95vh]" />
+							) : null}
+						</div>
+					</div>
+				)}
+			</>
 		)
 	}
 
 	if (artifact.type === "html" && artifact.content) {
 		return (
-			<div className="rounded-lg border border-stone-200 dark:border-stone-700">
-				<button
-					onClick={() => setExpanded(!expanded)}
-					className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-stone-50 dark:hover:bg-stone-800"
-				>
-					<span className="font-mono text-stone-600 dark:text-stone-400">{artifact.name}</span>
-					<svg className={`h-4 w-4 text-stone-400 transition ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-					</svg>
-				</button>
-				{expanded && (
-					<div className="border-t border-stone-100 dark:border-stone-800">
+			<>
+				<div className="rounded-lg border border-stone-200 dark:border-stone-700">
+					<div className="flex w-full items-center justify-between px-4 py-3 text-left text-sm">
+						<button
+							onClick={() => setExpanded(!expanded)}
+							className="flex flex-1 items-center gap-2 hover:text-stone-900 dark:hover:text-stone-100"
+						>
+							<svg className={`h-4 w-4 text-stone-400 transition ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+							</svg>
+							<span className="font-mono text-stone-600 dark:text-stone-400">{artifact.name}</span>
+						</button>
+						<button
+							onClick={() => setFullscreen(true)}
+							className="ml-2 rounded px-2 py-1 text-xs text-stone-500 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-stone-800 dark:hover:text-stone-300"
+						>
+							Full Screen
+						</button>
+					</div>
+					{expanded && (
+						<div className="border-t border-stone-100 dark:border-stone-800">
+							<iframe
+								srcDoc={artifact.content}
+								title={artifact.name}
+								className="w-full border-0"
+								style={{ minHeight: "400px" }}
+								sandbox="allow-same-origin"
+							/>
+						</div>
+					)}
+				</div>
+				{fullscreen && (
+					<div className="fixed inset-0 z-[100] flex flex-col bg-white dark:bg-stone-950">
+						<div className="flex items-center justify-between border-b border-stone-200 px-4 py-2 dark:border-stone-800">
+							<span className="font-mono text-sm text-stone-600 dark:text-stone-400">{artifact.name}</span>
+							<button onClick={() => setFullscreen(false)} className="rounded-lg px-3 py-1.5 text-sm font-medium text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800">
+								Close
+							</button>
+						</div>
 						<iframe
 							srcDoc={artifact.content}
 							title={artifact.name}
-							className="w-full border-0"
-							style={{ minHeight: "400px" }}
+							className="flex-1 border-0"
 							sandbox="allow-same-origin"
 						/>
 					</div>
 				)}
-			</div>
+			</>
 		)
 	}
 
