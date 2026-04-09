@@ -681,12 +681,12 @@ function ArtifactThumbnail({ artifact, host, onClick }: { artifact: HaikuArtifac
 				onClick={onClick}
 				className="group flex flex-col overflow-hidden rounded-lg border border-stone-200 text-left transition hover:border-teal-300 hover:shadow-sm dark:border-stone-700 dark:hover:border-teal-700"
 			>
-				<div className="relative h-[150px] w-full overflow-hidden bg-white dark:bg-stone-900">
+				<div className="relative aspect-[4/3] w-full overflow-hidden bg-white dark:bg-stone-900">
 					<iframe
 						srcDoc={artifact.content}
 						title={artifact.name}
-						className="h-[600px] w-[800px] origin-top-left border-0"
-						style={{ transform: "scale(0.25)", pointerEvents: "none" }}
+						className="absolute inset-0 h-[300%] w-[300%] origin-top-left border-0"
+						style={{ transform: "scale(0.3333)", pointerEvents: "none" }}
 						tabIndex={-1}
 						sandbox="allow-same-origin"
 					/>
