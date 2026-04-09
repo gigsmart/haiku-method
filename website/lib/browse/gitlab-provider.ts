@@ -265,14 +265,19 @@ export class GitLabProvider implements BrowseProvider {
 		const branchesCacheKey = `gl:${this.host}:${this.projectPath}:listHaikuBranches`
 		const branchesData = await this.cachedQuery<operationsListBranchNamesQuery$data>(
 			ListBranchNamesQuery,
-			{ fullPath: this.projectPath, searchPattern: "haiku/", offset: 0, limit: 100 },
+			{ fullPath: this.projectPath, searchPattern: "haiku", offset: 0, limit: 100 },
 			branchesCacheKey,
 		)
 
 		const branchNames = branchesData?.project?.repository?.branchNames ?? []
+		if (branchNames.length > 0) {
+			console.log(`[haiku-browse] Found ${branchNames.length} haiku branches:`, branchNames)
+		} else {
+			console.log(`[haiku-browse] No haiku branches found via branchNames query`)
+		}
 
 		// Filter to haiku/*/main branches and extract slugs
-		const mainBranches = branchNames.filter((name) => {
+		const mainBranches = branchNames.filter((name: string) => {
 			const parts = name.split("/")
 			return parts.length >= 2 && parts[parts.length - 1] === "main"
 		})
