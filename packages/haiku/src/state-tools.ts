@@ -9,7 +9,7 @@ import { join, resolve } from "node:path"
 import matter from "gray-matter"
 import { emitTelemetry } from "./telemetry.js"
 import { writeHaikuMetadata, logSessionEvent } from "./session-metadata.js"
-import { mergeUnitWorktree } from "./git-worktree.js"
+import { mergeUnitWorktree, getCurrentBranch } from "./git-worktree.js"
 
 // ── Environment detection ──────────────────────────────────────────────────
 
@@ -134,6 +134,31 @@ export function gitCommitState(message: string): { committed: boolean; pushed: b
 	} catch {
 		return { committed: false, pushed: false }
 	}
+}
+
+/**
+ * Validate the agent is on the correct git branch for the current operation.
+ * Returns an error message if on the wrong branch, empty string if OK.
+ */
+export function validateBranch(intent: string, expectedType: "intent" | "unit", unit?: string): string {
+	if (!isGitRepo()) return "" // No branch enforcement in filesystem mode
+	const current = getCurrentBranch()
+	if (!current) return ""
+
+	if (expectedType === "intent") {
+		const expected = `haiku/${intent}/main`
+		if (current !== expected) {
+			return `⚠️ WRONG BRANCH: Expected '${expected}' but on '${current}'. Run \`git checkout ${expected}\` to switch to the intent branch. Custom branch names break the H·AI·K·U lifecycle.`
+		}
+	} else if (expectedType === "unit" && unit) {
+		const expectedUnit = `haiku/${intent}/${unit}`
+		const expectedIntent = `haiku/${intent}/main`
+		// Unit work can happen on the unit branch (worktree) or intent branch (non-worktree mode)
+		if (current !== expectedUnit && current !== expectedIntent) {
+			return `⚠️ WRONG BRANCH: Expected '${expectedUnit}' or '${expectedIntent}' but on '${current}'. Ensure you're working in the correct worktree.`
+		}
+	}
+	return ""
 }
 
 /** Returns a warning string if git push failed, empty string otherwise. Agent sees this and can try to resolve. */

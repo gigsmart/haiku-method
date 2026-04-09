@@ -26,6 +26,7 @@ import {
 	parseFrontmatter,
 	syncSessionMetadata,
 	setRunNextHandler,
+	validateBranch,
 } from "./state-tools.js"
 import { createIntentBranch, isOnIntentBranch, createUnitWorktree } from "./git-worktree.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
@@ -1359,6 +1360,12 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 					}
 				}
 			} catch { /* non-fatal */ }
+		}
+
+		// Validate we're on the correct intent branch
+		const branchCheck = validateBranch(slug, "intent")
+		if (branchCheck) {
+			return { content: [{ type: "text" as const, text: branchCheck }], isError: true }
 		}
 
 		const result = runNext(slug)
