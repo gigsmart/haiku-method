@@ -1,7 +1,7 @@
 ---
 title: MCP — CORS + consolidated file route
 type: backend
-status: active
+status: completed
 depends_on: []
 quality_gates:
   - >-
@@ -20,6 +20,7 @@ bolt: 1
 hat: reviewer
 started_at: '2026-04-09T19:57:38Z'
 hat_started_at: '2026-04-09T20:01:12Z'
+completed_at: '2026-04-09T20:02:00Z'
 ---
 
 # MCP — CORS + Consolidated File Route
