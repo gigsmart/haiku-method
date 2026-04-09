@@ -34,14 +34,14 @@ export function renderIntentReview(
 ): ReviewResult {
   const findSection = (name: string): string => {
     const section = intent.sections.find(
-      (s: Section) => s.heading.toLowerCase() === name.toLowerCase(),
+      (s: Section) => s.heading?.toLowerCase() === name.toLowerCase(),
     );
     return section?.content ?? "";
   };
 
   const findSectionWithSubs = (name: string): Section | undefined => {
     return intent.sections.find(
-      (s: Section) => s.heading.toLowerCase() === name.toLowerCase(),
+      (s: Section) => s.heading?.toLowerCase() === name.toLowerCase(),
     );
   };
 

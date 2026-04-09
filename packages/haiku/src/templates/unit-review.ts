@@ -29,14 +29,14 @@ export function renderUnitReview(
 ): ReviewResult {
   const findSection = (name: string): string => {
     const section = unit.sections.find(
-      (s: Section) => s.heading.toLowerCase() === name.toLowerCase(),
+      (s: Section) => s.heading?.toLowerCase() === name.toLowerCase(),
     );
     return section?.content ?? "";
   };
 
   const findSectionWithSubs = (name: string): Section | undefined => {
     return unit.sections.find(
-      (s: Section) => s.heading.toLowerCase() === name.toLowerCase(),
+      (s: Section) => s.heading?.toLowerCase() === name.toLowerCase(),
     );
   };
 

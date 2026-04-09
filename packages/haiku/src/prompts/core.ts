@@ -297,7 +297,32 @@ function buildRunInstructions(
 				`- \`NN\` is a zero-padded sequence number (01, 02, 03...)\n` +
 				`- \`slug\` is a kebab-case descriptor (e.g., \`user-auth\`, \`data-model\`)\n` +
 				`- Example: \`unit-01-data-model.md\`, \`unit-02-api-endpoints.md\`\n\n` +
-				`Files that don't match this pattern will not appear in the review UI and will block advancement.`,
+				`Files that don't match this pattern will not appear in the review UI and will block advancement.\n\n` +
+				`## Quality Gates (REQUIRED for stages with executable outputs)\n\n` +
+				`During elaboration, detect project tooling and write \`quality_gates\` to **intent.md** frontmatter.\n` +
+				`These are shell commands that MUST pass before adversarial review agents run.\n\n` +
+				`**Format:**\n` +
+				`\`\`\`yaml\n` +
+				`quality_gates:\n` +
+				`  - name: typecheck\n` +
+				`    command: npm run typecheck\n` +
+				`    dir: packages/app\n` +
+				`  - name: lint\n` +
+				`    command: npm run lint\n` +
+				`  - name: test\n` +
+				`    command: npm test\n` +
+				`\`\`\`\n\n` +
+				`**Fields:**\n` +
+				`- \`name\`: Human label for the gate\n` +
+				`- \`command\`: Shell command that must exit 0 to pass\n` +
+				`- \`dir\` (optional): Directory to run in, relative to repo root. Omit to run from repo root.\n\n` +
+				`**Detection:** Scan the repo for tooling — \`package.json\` (npm/bun scripts), \`Makefile\`, \`pyproject.toml\`, ` +
+				`\`Cargo.toml\`, \`go.mod\`, CI configs. Extract the standard check/test/lint commands.\n\n` +
+				`**Rules:**\n` +
+				`- Intent-level gates apply to ALL units (put shared checks like typecheck/lint here)\n` +
+				`- Unit-level gates are additive for unit-specific checks\n` +
+				`- Gates can only be added, never removed (ratchet rule)\n` +
+				`- If the project has a monorepo structure, use \`dir\` to scope commands to the right package`,
 			)
 
 			// Check for ticketing provider
@@ -471,6 +496,26 @@ function buildRunInstructions(
 				`## Advance Phase\n\n` +
 				`Phase advanced to "${toPhase}" by the orchestrator.\n\n` +
 				`**Call \`haiku_run_next { intent: "${slug}" }\` immediately.** Do NOT ask the user — the transition was already approved.`,
+			)
+			break
+		}
+
+		case "fix_quality_gates": {
+			const failures = (action.failures as Array<{ name: string; command: string; dir: string; exit_code: number; output: string }>) || []
+			sections.push(
+				`## Quality Gates Failed\n\n` +
+				`The following quality gates must pass before adversarial review can begin:\n\n` +
+				failures.map(f =>
+					`### ${f.name}\n` +
+					`- **Command:** \`${f.command}\`\n` +
+					(f.dir ? `- **Directory:** \`${f.dir}\`\n` : "") +
+					`- **Exit code:** ${f.exit_code}\n` +
+					`- **Output:**\n\`\`\`\n${f.output}\n\`\`\``,
+				).join("\n\n") +
+				`\n\n### Instructions\n\n` +
+				`1. Fix the failing gate(s) — read the output, diagnose, and fix\n` +
+				`2. Commit your fixes\n` +
+				`3. Call \`haiku_run_next { intent: "${slug}" }\` — the orchestrator re-runs gates automatically`,
 			)
 			break
 		}

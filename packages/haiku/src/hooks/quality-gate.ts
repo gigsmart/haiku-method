@@ -6,7 +6,7 @@
 
 import { execSync } from "node:child_process"
 import { existsSync, readdirSync } from "node:fs"
-import { join } from "node:path"
+import { join, resolve } from "node:path"
 import {
 	findActiveIntent,
 	readFrontmatterField,
@@ -96,12 +96,15 @@ export async function qualityGate(input: Record<string, unknown>, _pluginRoot: s
 
 		if (!gateCmd) continue
 
+		// Resolve cwd: use gate.dir (relative to repo root) if specified, else repo root
+		const cwd = gate.dir ? resolve(repoRoot, gate.dir) : repoRoot
+
 		let gateOutput = ""
 		let gateExit = 0
 
 		try {
 			gateOutput = execSync(gateCmd, {
-				cwd: repoRoot,
+				cwd,
 				encoding: "utf8",
 				timeout: 30000,
 				stdio: ["pipe", "pipe", "pipe"],
