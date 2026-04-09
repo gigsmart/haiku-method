@@ -750,14 +750,14 @@ registerPrompt({
 			`## Prelaboration\n\n` +
 			`Before creating the intent, ensure the description is substantive enough to drive elaboration.\n\n` +
 			`**If the description is short (under ~2 sentences) or vague:**\n` +
-			`Ask 2-3 targeted questions via \`AskUserQuestion\` to flesh it out:\n` +
-			`- What's the core problem or goal?\n` +
-			`- Who are the users/stakeholders?\n` +
-			`- What are the key constraints or non-negotiables?\n` +
-			`- Any existing systems this integrates with?\n\n` +
+			`Ask 2-3 targeted questions via \`AskUserQuestion\` to understand scope.\n` +
+			`Tailor questions to the domain — what matters depends on the studio and the work:\n` +
+			`- What's the desired outcome?\n` +
+			`- Who benefits from this / who is the audience?\n` +
+			`- What constraints or boundaries should we respect?\n\n` +
 			`Fold the answers into a richer description (3-5 sentences) before proceeding.\n` +
-			`Do NOT create the intent until you have a description that would let someone ` +
-			`understand the scope without asking follow-up questions.\n\n` +
+			`Do NOT create the intent until the description conveys enough scope ` +
+			`that elaboration can proceed without ambiguity.\n\n` +
 			`**If the description is already detailed (multiple sentences, clear scope):** proceed directly.\n\n` +
 			`## Implementation Steps\n\n` +
 			`1. ${args.description ? "Evaluate the provided description — if too brief, prelaborate with the user" : "Ask the user: 'What do you want to accomplish?' (free text, not a form)"}\n` +
