@@ -59,5 +59,8 @@
 ### DAG
 Units 1, 2, 3 parallel → Unit 4 depends on Unit 3
 
+### Feature Flag
+Keep existing local SPA behind a feature flag during development. Remote review is opt-in until tested. Flag controls whether MCP opens localtunnel + website URL or falls back to local SPA. Full cutover (remove local SPA) happens after validation.
+
 ### Branch
 Feature branch: haiku/remote-review-spa/main → PR to main

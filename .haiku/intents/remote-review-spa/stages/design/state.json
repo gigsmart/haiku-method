@@ -1,9 +1,23 @@
 {
   "stage": "design",
-  "status": "active",
-  "phase": "elaborate",
+  "status": "completed",
+  "phase": "gate",
   "started_at": "2026-04-09T05:12:07Z",
-  "completed_at": null,
-  "gate_entered_at": null,
-  "gate_outcome": null
+  "completed_at": "2026-04-09T12:41:08Z",
+  "gate_entered_at": "2026-04-09T12:20:56Z",
+  "gate_outcome": "advanced",
+  "design_direction_selected": true,
+  "design_direction": {
+    "archetype": "Document View",
+    "parameters": {
+      "sidebar_width": 220,
+      "content_padding": 32,
+      "card_radius": 12,
+      "section_gap": 24,
+      "content_max_width": 720,
+      "prose_font_size": 15,
+      "heading_style": 1
+    }
+  },
+  "elaboration_turns": 4
 }
