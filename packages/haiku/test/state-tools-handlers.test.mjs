@@ -466,5 +466,5 @@ console.log(`\n${passed} passed, ${failed} failed\n`)
 } finally {
   process.chdir(origCwd)
   rmSync(tmp, { recursive: true })
+  process.exit(failed > 0 ? 1 : 0)
 }
-process.exit(failed > 0 ? 1 : 0)
