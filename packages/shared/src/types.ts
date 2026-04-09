@@ -16,6 +16,14 @@ export interface HaikuIntent {
   follows: string | null;
   content?: string;
   raw: Record<string, unknown>;
+  /** The git branch this intent lives on (populated when scanning haiku/* branches) */
+  branch?: string;
+  /** PR/MR URL if one exists for this intent's branch */
+  prUrl?: string | null;
+  /** PR/MR state: "open", "merged", "closed" */
+  prStatus?: string | null;
+  /** PR/MR number */
+  prNumber?: number | null;
 }
 
 export interface HaikuUnit {
@@ -29,9 +37,22 @@ export interface HaikuUnit {
   startedAt: string | null;
   completedAt: string | null;
   refs: string[];
+  outputs: string[];
   criteria: Array<{ text: string; checked: boolean }>;
   content: string;
   raw: Record<string, unknown>;
+}
+
+export interface HaikuArtifact {
+  name: string;
+  content?: string;
+  rawUrl?: string;
+  type: "markdown" | "html" | "image" | "other";
+}
+
+export interface HaikuKnowledgeFile {
+  name: string;
+  content: string;
 }
 
 export interface HaikuStageState {
@@ -42,6 +63,7 @@ export interface HaikuStageState {
   completedAt: string | null;
   gateOutcome: string | null;
   units: HaikuUnit[];
+  artifacts?: HaikuArtifact[];
 }
 
 export interface HaikuAsset {
@@ -52,8 +74,8 @@ export interface HaikuAsset {
 
 export interface HaikuIntentDetail extends HaikuIntent {
   stages: HaikuStageState[];
-  knowledge: string[];
-  operations: string[];
+  knowledge: HaikuKnowledgeFile[];
+  operations: HaikuKnowledgeFile[];
   reflection: string | null;
   content: string;
   assets: HaikuAsset[];

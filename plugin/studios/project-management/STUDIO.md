@@ -3,9 +3,6 @@ name: project-management
 description: Project planning, execution tracking, and delivery lifecycle
 stages: [charter, plan, track, report, close]
 category: operations
-persistence:
-  type: filesystem
-  delivery: local
 ---
 
 # Project Management Studio

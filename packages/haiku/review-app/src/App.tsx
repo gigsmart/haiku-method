@@ -91,8 +91,8 @@ function SessionLoader({ sessionId, pageType }: { sessionId: string; pageType: s
         </div>
       </header>
 
-      {/* Main content */}
-      <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Main content — review pages get full width for sidebar layout */}
+      <main id="main-content" className={session.session_type === "review" ? "px-4 sm:px-6 lg:px-8 py-6" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6"}>
         {session.session_type === "review" && (
           <ReviewPage session={session} sessionId={sessionId} wsRef={wsRef} />
         )}

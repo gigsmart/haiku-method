@@ -3,9 +3,6 @@ name: vendor-management
 description: Vendor evaluation, procurement, and relationship management lifecycle
 stages: [requirements, evaluate, negotiate, onboard, monitor]
 category: back-office
-persistence:
-  type: filesystem
-  delivery: local
 ---
 
 # Vendor Management Studio

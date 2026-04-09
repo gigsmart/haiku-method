@@ -4,6 +4,8 @@ export type {
 	HaikuUnit,
 	HaikuStageState,
 	HaikuAsset,
+	HaikuArtifact,
+	HaikuKnowledgeFile,
 	HaikuIntentDetail,
 	CriterionItem,
 } from "@haiku/shared"
@@ -28,6 +30,10 @@ export interface BrowseProvider {
 	getSettings(): Promise<Record<string, unknown> | null>
 	/** Provider display name */
 	readonly name: string
+	/** Check if branches have changed since last poll (ETag-based). Returns true if re-fetch needed. */
+	checkForBranchChanges?(): Promise<boolean>
+	/** Clear cached branch/intent data so the next fetch gets fresh results. */
+	clearBranchCache?(): void
 }
 
 export function parseFrontmatter(raw: string): { data: Record<string, unknown>; content: string } {
@@ -85,6 +91,7 @@ export function parseUnit(unitFile: string, stageName: string, raw: string): imp
 		status: (data.status as string) || "pending",
 		dependsOn: (data.depends_on as string[]) || [],
 		refs: (data.refs as string[]) || [],
+		outputs: (data.outputs as string[]) || [],
 		bolt: (data.bolt as number) || 0,
 		hat: (data.hat as string) || "",
 		startedAt: (data.started_at as string) || null,

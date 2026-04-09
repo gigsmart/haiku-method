@@ -127,3 +127,17 @@ export const GitLabListFilesQuery = graphql`
     }
   }
 `
+
+/**
+ * Lists branch names matching a search pattern.
+ * Used to discover haiku/* branches for the branch-scanning flow.
+ */
+export const GitLabListBranchNamesQuery = graphql`
+  query operationsListBranchNamesQuery($fullPath: ID!, $searchPattern: String!, $offset: Int!, $limit: Int!) {
+    project(fullPath: $fullPath) {
+      repository {
+        branchNames(searchPattern: $searchPattern, offset: $offset, limit: $limit)
+      }
+    }
+  }
+`

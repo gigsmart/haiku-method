@@ -353,7 +353,7 @@ Then  messages[2] includes the full text content of hats/engineer.md
   And messages[2] includes the unit's description and completion criteria
   And messages[2] includes resolved ref content (each path in unit's refs array, read and inlined)
   And messages[2] lists available MCP tools: haiku_unit_start, haiku_unit_advance_hat,
-      haiku_unit_complete, haiku_unit_increment_bolt
+      haiku_unit_reject_hat, haiku_unit_increment_bolt
 ```
 
 ### 4.7 `haiku:resume` — `review` Action Loads Review Agents

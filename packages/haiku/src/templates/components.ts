@@ -1,4 +1,4 @@
-import type { CriterionItem } from "../markdown.js";
+import type { CriterionItem } from "../types.js";
 import { markdownToHtml } from "../markdown.js";
 import { escapeHtml, escapeAttr } from "./layout.js";
 import { statusColors } from "./styles.js";
@@ -632,6 +632,26 @@ export function renderReviewSidebarScript(sessionId: string): string {
       mobileBadge.textContent = String(n);
       mobileBadge.classList.toggle('hidden', n === 0);
     }
+    updateDecisionButtons();
+  }
+
+  function updateDecisionButtons() {
+    var approveBtn = document.getElementById('sidebar-btn-approve');
+    var changesBtn = document.getElementById('sidebar-btn-request-changes');
+    if (!approveBtn || !changesBtn) return;
+    var hasComments = comments.length > 0;
+    var hasGeneralComment = (document.getElementById('sidebar-general-comment').value || '').trim().length > 0;
+    var hasFeedback = hasComments || hasGeneralComment;
+
+    if (hasFeedback) {
+      // Comments exist — "Request Changes" becomes primary, "Approve" is de-emphasized
+      approveBtn.className = 'flex-1 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900';
+      approveBtn.textContent = 'Approve Anyway';
+    } else {
+      // No feedback — restore normal button states
+      approveBtn.className = 'flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900';
+      approveBtn.textContent = 'Approve';
+    }
   }
 
   function escText(str) {
@@ -892,6 +912,9 @@ export function renderReviewSidebarScript(sessionId: string): string {
 
   document.getElementById('sidebar-btn-approve').addEventListener('click', function() { submitDecision('approved'); });
   document.getElementById('sidebar-btn-request-changes').addEventListener('click', function() { submitDecision('changes_requested'); });
+
+  // Update button states when general comment changes
+  document.getElementById('sidebar-general-comment').addEventListener('input', updateDecisionButtons);
 })();
 </script>`;
 }

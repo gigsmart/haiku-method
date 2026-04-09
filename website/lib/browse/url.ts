@@ -1,6 +1,6 @@
 // H·AI·K·U Browse — path-based URL builder and parser
 //
-// URL pattern: /browse/{host}/{...project}/[intent/{slug}/[{stage}/[{unit}/]]]
+// URL pattern: /browse/{host}/{...project}/[intent/{slug}/[stage/{stage}/[{unit}/]]]
 // Special views: /browse/{host}/{...project}/board/
 // Branch param: ?branch=feature
 
@@ -31,7 +31,7 @@ const RESERVED_KEYWORDS = new Set(["intent", "board"])
  *   → "/browse/github.com/org/repo/intent/add-login/"
  *
  *   buildBrowseUrl({ host: "github.com", project: "org/repo", intent: "add-login", stage: "dev", unit: "unit-01" })
- *   → "/browse/github.com/org/repo/intent/add-login/dev/unit-01/"
+ *   → "/browse/github.com/org/repo/intent/add-login/stage/dev/unit-01/"
  */
 export function buildBrowseUrl(loc: BrowseLocation): string {
   const base = `/browse/${loc.host}/${loc.project}`
@@ -40,9 +40,9 @@ export function buildBrowseUrl(loc: BrowseLocation): string {
   if (loc.intent) {
     path = `${base}/intent/${loc.intent}/`
     if (loc.stage) {
-      path = `${base}/intent/${loc.intent}/${loc.stage}/`
+      path = `${base}/intent/${loc.intent}/stage/${loc.stage}/`
       if (loc.unit) {
-        path = `${base}/intent/${loc.intent}/${loc.stage}/${loc.unit}/`
+        path = `${base}/intent/${loc.intent}/stage/${loc.stage}/${loc.unit}/`
       }
     }
   } else if (loc.view === "board") {
@@ -75,7 +75,7 @@ export function buildBrowseUrl(loc: BrowseLocation): string {
  *   ["github.com", "org", "repo", "intent", "add-login"]
  *   → { host: "github.com", project: "org/repo", intent: "add-login" }
  *
- *   ["github.com", "org", "repo", "intent", "add-login", "dev", "unit-01"]
+ *   ["github.com", "org", "repo", "intent", "add-login", "stage", "dev", "unit-01"]
  *   → { host: "github.com", project: "org/repo", intent: "add-login", stage: "dev", unit: "unit-01" }
  *
  *   ["gitlab.com", "org", "group", "subgroup", "project", "intent", "my-intent"]
@@ -120,8 +120,16 @@ export function parseBrowsePath(segments: string[]): BrowseLocation | null {
   if (keyword === "intent") {
     const remaining = segments.slice(keywordIndex + 1)
     if (remaining.length >= 1) loc.intent = remaining[0]
-    if (remaining.length >= 2) loc.stage = remaining[1]
-    if (remaining.length >= 3) loc.unit = remaining[2]
+    // Parse stage: either "stage/{name}" keyword format or legacy "{name}" positional format
+    if (remaining.length >= 3 && remaining[1] === "stage") {
+      // New format: intent/{slug}/stage/{stage}[/{unit}]
+      loc.stage = remaining[2]
+      if (remaining.length >= 4) loc.unit = remaining[3]
+    } else if (remaining.length >= 2 && remaining[1] !== "stage") {
+      // Legacy format: intent/{slug}/{stage}[/{unit}]
+      loc.stage = remaining[1]
+      if (remaining.length >= 3) loc.unit = remaining[2]
+    }
     return loc
   }
 

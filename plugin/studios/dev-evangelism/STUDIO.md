@@ -3,9 +3,6 @@ name: dev-evangelism
 description: Developer evangelism lifecycle — research, narrative, create, publish, measure
 stages: [research, narrative, create, publish, measure]
 category: content
-persistence:
-  type: filesystem
-  delivery: local
 ---
 
 # Developer Evangelism Studio

@@ -25,6 +25,8 @@ import {
 	timestamp,
 	parseFrontmatter,
 	syncSessionMetadata,
+	setRunNextHandler,
+	validateBranch,
 } from "./state-tools.js"
 import { createIntentBranch, isOnIntentBranch, createUnitWorktree } from "./git-worktree.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
@@ -696,6 +698,18 @@ export function runNext(slug: string): OrchestratorAction {
 			}
 		}
 
+		// Validate unit naming and types across ALL stages — catch legacy issues from before validation existed
+		const stagesDir = join(iDir, "stages")
+		if (existsSync(stagesDir)) {
+			for (const stageEntry of readdirSync(stagesDir, { withFileTypes: true }).filter(e => e.isDirectory()).sort((a, b) => a.name.localeCompare(b.name))) {
+				if (stageEntry.name === currentStage) continue // already validated above
+				const crossNaming = validateUnitNaming(iDir, stageEntry.name)
+				if (crossNaming) return crossNaming
+				const crossTypes = validateUnitTypes(iDir, stageEntry.name, studio)
+				if (crossTypes) return crossTypes
+			}
+		}
+
 		// All units valid — open review gate before advancing to execute.
 		// The review UI blocks until the user approves the specs.
 		// This is handled by the handleOrchestratorTool wrapper which
@@ -1136,7 +1150,7 @@ function currentWaveNumber(units: UnitInfo[], unitWave: Map<string, number>, tot
 
 // ── Go back (stage/phase regression) ──────────────────────────────────────
 
-function goBack(slug: string, targetStage?: string, targetPhase?: string): OrchestratorAction {
+function goBack(slug: string): OrchestratorAction {
 	const root = findHaikuRoot()
 	const iDir = join(root, "intents", slug)
 	const intentFile = join(iDir, "intent.md")
@@ -1149,28 +1163,24 @@ function goBack(slug: string, targetStage?: string, targetPhase?: string): Orche
 	const studio = (intent.studio as string) || "ideation"
 	const currentActiveStage = (intent.active_stage as string) || ""
 
-	if (targetStage) {
-		// Validate target stage exists in the studio
-		const allStages = resolveStudioStages(studio)
-		if (!allStages.includes(targetStage)) {
-			return { action: "error", message: `Stage '${targetStage}' not found in studio '${studio}'` }
-		}
+	if (!currentActiveStage) {
+		return { action: "error", message: `No active stage to go back from` }
+	}
 
-		// Reset the target stage's state
-		const path = stageStatePath(slug, targetStage)
-		const data: Record<string, unknown> = {
-			stage: targetStage,
-			status: "active",
-			phase: "elaborate",
-			started_at: timestamp(),
-			completed_at: null,
-			gate_entered_at: null,
-			gate_outcome: null,
-		}
-		writeJson(path, data)
+	// Read current phase
+	const path = stageStatePath(slug, currentActiveStage)
+	const stageState = readJson(path)
+	const currentPhase = (stageState.phase as string) || "elaborate"
 
-		// Re-queue all units in the target stage to pending
-		const unitsDir = join(iDir, "stages", targetStage, "units")
+	// If in execute/review/gate → go back to elaborate in current stage
+	if (currentPhase !== "elaborate") {
+		stageState.phase = "elaborate"
+		stageState.gate_entered_at = null
+		stageState.gate_outcome = null
+		writeJson(path, stageState)
+
+		// Re-queue all units to pending
+		const unitsDir = join(iDir, "stages", currentActiveStage, "units")
 		if (existsSync(unitsDir)) {
 			const files = readdirSync(unitsDir).filter(f => f.endsWith(".md"))
 			for (const f of files) {
@@ -1183,78 +1193,74 @@ function goBack(slug: string, targetStage?: string, targetPhase?: string): Orche
 			}
 		}
 
-		// Update intent's active_stage
-		setFrontmatterField(intentFile, "active_stage", targetStage)
-
-		emitTelemetry("haiku.go_back.stage", { intent: slug, from_stage: currentActiveStage, to_stage: targetStage })
-		gitCommitState(`haiku: go back to stage ${targetStage}`)
-
-		return {
-			action: "went_back",
-			intent: slug,
-			target_stage: targetStage,
-			reset_phase: "elaborate",
-			message: `Went back to stage '${targetStage}' — stage reset to elaborate, all units re-queued`,
-		}
-	}
-
-	if (targetPhase) {
-		if (!currentActiveStage) {
-			return { action: "error", message: `No active stage to go back within` }
-		}
-
-		// Valid phases in order
-		const phaseOrder = ["elaborate", "execute", "review", "gate"]
-		const targetIdx = phaseOrder.indexOf(targetPhase)
-		if (targetIdx < 0) {
-			return { action: "error", message: `Invalid phase '${targetPhase}'. Valid phases: ${phaseOrder.join(", ")}` }
-		}
-
-		const path = stageStatePath(slug, currentActiveStage)
-		const stageState = readJson(path)
-		const currentPhase = (stageState.phase as string) || ""
-		const currentIdx = phaseOrder.indexOf(currentPhase)
-
-		if (targetIdx >= currentIdx) {
-			return { action: "error", message: `Cannot go back: '${targetPhase}' is not before current phase '${currentPhase}'` }
-		}
-
-		// Set phase back
-		stageState.phase = targetPhase
-		stageState.gate_entered_at = null
-		stageState.gate_outcome = null
-		writeJson(path, stageState)
-
-		// If going back to elaborate or execute, re-queue affected units
-		if (targetPhase === "elaborate" || targetPhase === "execute") {
-			const unitsDir = join(iDir, "stages", currentActiveStage, "units")
-			if (existsSync(unitsDir)) {
-				const files = readdirSync(unitsDir).filter(f => f.endsWith(".md"))
-				for (const f of files) {
-					const unitFile = join(unitsDir, f)
-					setFrontmatterField(unitFile, "status", "pending")
-					setFrontmatterField(unitFile, "bolt", 0)
-					setFrontmatterField(unitFile, "hat", "")
-					setFrontmatterField(unitFile, "started_at", null)
-					setFrontmatterField(unitFile, "completed_at", null)
-				}
-			}
-		}
-
-		emitTelemetry("haiku.go_back.phase", { intent: slug, stage: currentActiveStage, from_phase: currentPhase, to_phase: targetPhase })
-		gitCommitState(`haiku: go back to phase ${targetPhase} in ${currentActiveStage}`)
+		emitTelemetry("haiku.go_back.phase", { intent: slug, stage: currentActiveStage, from_phase: currentPhase, to_phase: "elaborate" })
+		gitCommitState(`haiku: go back to elaborate in ${currentActiveStage}`)
 
 		return {
 			action: "went_back",
 			intent: slug,
 			stage: currentActiveStage,
-			target_phase: targetPhase,
-			message: `Went back to phase '${targetPhase}' in stage '${currentActiveStage}'`,
+			target_phase: "elaborate",
+			message: `Went back to elaborate phase in stage '${currentActiveStage}' — all units re-queued`,
 		}
 	}
 
-	return { action: "error", message: "Must specify either target_stage or target_phase" }
+	// Already in elaborate → go back to the previous stage
+	const allStages = resolveStudioStages(studio)
+	const skipStages = (intent.skip_stages as string[]) || []
+	const studioStages = allStages.filter(s => !skipStages.includes(s))
+	const currentIdx = studioStages.indexOf(currentActiveStage)
+
+	if (currentIdx <= 0) {
+		return { action: "error", message: `Already at the first stage ('${currentActiveStage}') — cannot go back further` }
+	}
+
+	const targetStage = studioStages[currentIdx - 1]
+
+	// Reset the target stage's state
+	const targetPath = stageStatePath(slug, targetStage)
+	const data: Record<string, unknown> = {
+		stage: targetStage,
+		status: "active",
+		phase: "elaborate",
+		started_at: timestamp(),
+		completed_at: null,
+		gate_entered_at: null,
+		gate_outcome: null,
+	}
+	writeJson(targetPath, data)
+
+	// Re-queue all units in the target stage to pending
+	const unitsDir = join(iDir, "stages", targetStage, "units")
+	if (existsSync(unitsDir)) {
+		const files = readdirSync(unitsDir).filter(f => f.endsWith(".md"))
+		for (const f of files) {
+			const unitFile = join(unitsDir, f)
+			setFrontmatterField(unitFile, "status", "pending")
+			setFrontmatterField(unitFile, "bolt", 0)
+			setFrontmatterField(unitFile, "hat", "")
+			setFrontmatterField(unitFile, "started_at", null)
+			setFrontmatterField(unitFile, "completed_at", null)
+		}
+	}
+
+	// Update intent's active_stage
+	setFrontmatterField(intentFile, "active_stage", targetStage)
+
+	emitTelemetry("haiku.go_back.stage", { intent: slug, from_stage: currentActiveStage, to_stage: targetStage })
+	gitCommitState(`haiku: go back to stage ${targetStage}`)
+
+	return {
+		action: "went_back",
+		intent: slug,
+		target_stage: targetStage,
+		reset_phase: "elaborate",
+		message: `Went back to stage '${targetStage}' — stage reset to elaborate, all units re-queued`,
+	}
 }
+
+// Register runNext callback so state-tools can call it without circular imports
+setRunNextHandler(runNext)
 
 // ── Tool definitions ───────────────────────────────────────────────────────
 
@@ -1287,6 +1293,7 @@ export const orchestratorToolDefs = [
 				description: { type: "string", description: "What the intent is about" },
 				slug: { type: "string", description: "URL-friendly slug for the intent (auto-generated from description if not provided)" },
 				context: { type: "string", description: "Conversation context summary — highlights from the conversation that led to this intent" },
+				studio: { type: "string", description: "Studio to use (skip studio selection elicitation when provided)" },
 			},
 			required: ["description"],
 		},
@@ -1294,16 +1301,14 @@ export const orchestratorToolDefs = [
 	{
 		name: "haiku_go_back",
 		description:
-			"Go back to a previous stage or phase within the current stage. " +
-			"If target_stage is provided: resets that stage (status: active, phase: elaborate), re-queues all its units. " +
-			"If target_phase is provided: sets phase back within the current active stage, re-queues affected units. " +
-			"This is a human-initiated action — the agent should only call this when explicitly requested.",
+			"Go back to the previous stage or phase. The FSM determines the target based on current position: " +
+			"if in execute/review/gate phase, goes back to elaborate in the current stage; " +
+			"if already in elaborate phase, goes back to the previous stage. " +
+			"Agents can call this when they detect missing information from a prior stage.",
 		inputSchema: {
 			type: "object" as const,
 			properties: {
 				intent: { type: "string", description: "Intent slug" },
-				target_stage: { type: "string", description: "Stage to go back to (resets the stage entirely)" },
-				target_phase: { type: "string", description: "Phase to go back to within the current active stage (elaborate, execute, review)" },
 			},
 			required: ["intent"],
 		},
@@ -1332,7 +1337,7 @@ export function setElicitInputHandler(handler: typeof _elicitInput): void {
 	_elicitInput = handler
 }
 
-export async function handleOrchestratorTool(name: string, args: Record<string, unknown>): Promise<{ content: Array<{ type: "text"; text: string }> }> {
+export async function handleOrchestratorTool(name: string, args: Record<string, unknown>): Promise<{ content: Array<{ type: "text"; text: string }>; isError?: boolean }> {
 	const text = (s: string) => ({ content: [{ type: "text" as const, text: s }] })
 
 	if (name === "haiku_run_next") {
@@ -1355,6 +1360,12 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 					}
 				}
 			} catch { /* non-fatal */ }
+		}
+
+		// Validate we're on the correct intent branch
+		const branchCheck = validateBranch(slug, "intent")
+		if (branchCheck) {
+			return { content: [{ type: "text" as const, text: branchCheck }], isError: true }
 		}
 
 		const result = runNext(slug)
@@ -1399,17 +1410,17 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 						// Phase advancement (specs approved → start execution)
 						fsmAdvancePhase(slug, stage, nextPhase)
 						syncSessionMetadata(slug, args.state_file as string | undefined)
-						return text(JSON.stringify({ action: "advance_phase", intent: slug, stage, from_phase: "elaborate", to_phase: nextPhase, message: `Specs approved — advancing to ${nextPhase}` }, null, 2))
+						return text(JSON.stringify({ action: "advance_phase", intent: slug, stage, from_phase: "elaborate", to_phase: nextPhase, message: `Specs approved — advancing to ${nextPhase}. IMPORTANT: Call haiku_run_next { intent: "${slug}" } immediately. Do NOT ask the user — the transition was already approved.` }, null, 2))
 					}
 					if (nextStage) {
 						fsmAdvanceStage(slug, stage, nextStage)
 						syncSessionMetadata(slug, args.state_file as string | undefined)
-						return text(JSON.stringify({ action: "advance_stage", intent: slug, stage, next_stage: nextStage, gate_outcome: "advanced", message: `Approved — advancing to '${nextStage}'` }, null, 2))
+						return text(JSON.stringify({ action: "advance_stage", intent: slug, stage, next_stage: nextStage, gate_outcome: "advanced", message: `Approved — advancing to '${nextStage}'. IMPORTANT: Call haiku_run_next { intent: "${slug}" } immediately. Do NOT ask the user, do NOT summarize, do NOT say "want me to continue?" — the gate was already approved. Just call the tool.` }, null, 2))
 					}
 					fsmCompleteStage(slug, stage, "advanced")
 					fsmIntentComplete(slug)
 					syncSessionMetadata(slug, args.state_file as string | undefined)
-					return text(JSON.stringify({ action: "intent_complete", intent: slug, message: "Approved — intent complete" }, null, 2))
+					return text(JSON.stringify({ action: "intent_complete", intent: slug, message: "Approved — intent complete. IMPORTANT: Report completion summary. Do NOT ask what to do next — the intent is done." }, null, 2))
 				}
 				if (reviewResult.decision === "external_review") {
 					fsmCompleteStage(slug, stage, "blocked")
@@ -1609,26 +1620,54 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 			}
 		} catch { /* no .haiku dir */ }
 
-		let selectedStudio = ""
+		let selectedStudio = (args.studio as string) || ""
 		let selectedMode = "continuous"
 		let studioStages: string[] = []
 
-		// Try elicitation first
-		if (_elicitInput) {
-			try {
-				const studioNames = studioEntries.map(s => s.name)
-				const studioDescriptions = studioEntries.map(s => `${s.name}: ${s.description}`).join("\n")
+		// Skip elicitation if studio was provided by the agent
+		if (!selectedStudio && _elicitInput) {
+			// Recommend studios based on description keywords
+			const desc = description.toLowerCase()
+			const recommendations: string[] = []
+			for (const s of studioEntries) {
+				const name = s.name.toLowerCase()
+				const sdesc = (s.description || "").toLowerCase()
+				// Check if description keywords match studio name, description, or category
+				if (desc.includes(name) || name.includes(desc.split(" ")[0])) {
+					recommendations.push(s.name)
+				} else if (/\b(software|code|build|feature|implement|develop|api|app)\b/.test(desc) && (name === "software" || sdesc.includes("software") || sdesc.includes("develop"))) {
+					recommendations.push(s.name)
+				} else if (/\b(doc|write|content|documentation|article|guide)\b/.test(desc) && (name === "documentation" || sdesc.includes("document") || sdesc.includes("content"))) {
+					recommendations.push(s.name)
+				} else if (/\b(security|audit|compliance|pen.?test|vuln)\b/.test(desc) && (name === "security" || name === "compliance" || sdesc.includes("security"))) {
+					recommendations.push(s.name)
+				} else if (/\b(ops|deploy|infra|terraform|ci.?cd|pipeline)\b/.test(desc) && (name === "operations" || sdesc.includes("ops") || sdesc.includes("infra"))) {
+					recommendations.push(s.name)
+				}
+			}
 
+			// Deduplicate and cap at 3
+			const uniqueRecs = [...new Set(recommendations)].slice(0, 3)
+
+			// Build elicitation choices: recommended + "Show all studios"
+			const elicitChoices = uniqueRecs.length > 0
+				? [...uniqueRecs, "Show all studios..."]
+				: studioEntries.map(s => s.name)
+			const elicitDescriptions = uniqueRecs.length > 0
+				? studioEntries.filter(s => uniqueRecs.includes(s.name)).map(s => `${s.name}: ${s.description}`).join("\n")
+				: studioEntries.map(s => `${s.name}: ${s.description}`).join("\n")
+
+			try {
 				const elicitResult = await _elicitInput({
-					message: `Creating intent: "${description}"\n\nSelect a studio and execution mode.\n\nAvailable studios:\n${studioDescriptions}`,
+					message: `Creating intent: "${description}"\n\n${uniqueRecs.length > 0 ? "Recommended studios" : "Available studios"}:\n${elicitDescriptions}`,
 					requestedSchema: {
 						type: "object" as const,
 						properties: {
 							studio: {
 								type: "string",
 								title: "Studio",
-								description: "Which studio lifecycle to use",
-								enum: studioNames,
+								description: uniqueRecs.length > 0 ? "Recommended studios (or show all)" : "Which studio lifecycle to use",
+								enum: elicitChoices,
 							},
 							mode: {
 								type: "string",
@@ -1643,28 +1682,43 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 
 				if (elicitResult.action === "accept" && elicitResult.content) {
 					const content = elicitResult.content as Record<string, string>
-					selectedStudio = content.studio || ""
-					selectedMode = content.mode || "continuous"
+					if (content.studio === "Show all studios...") {
+						// Re-elicit with full list
+						const allNames = studioEntries.map(s => s.name)
+						const allDescriptions = studioEntries.map(s => `${s.name}: ${s.description}`).join("\n")
+						const reElicit = await _elicitInput({
+							message: `All available studios:\n${allDescriptions}`,
+							requestedSchema: {
+								type: "object" as const,
+								properties: {
+									studio: { type: "string", title: "Studio", enum: allNames },
+									mode: { type: "string", title: "Execution Mode", enum: ["continuous", "discrete"] },
+								},
+								required: ["studio", "mode"],
+							},
+						})
+						if (reElicit.action === "accept" && reElicit.content) {
+							const reContent = reElicit.content as Record<string, string>
+							selectedStudio = reContent.studio || ""
+							selectedMode = reContent.mode || "continuous"
+						} else {
+							return text(JSON.stringify({ action: "cancelled", message: "Intent creation cancelled by user" }))
+						}
+					} else {
+						selectedStudio = content.studio || ""
+						selectedMode = content.mode || "continuous"
+					}
 				} else {
-					// User cancelled
 					return text(JSON.stringify({ action: "cancelled", message: "Intent creation cancelled by user" }))
 				}
 			} catch {
-				// Elicitation failed — fall through to auto-detection
+				// Elicitation failed — fall through to error
 			}
 		}
 
-		// Fallback: auto-detect studio from description
+		// No studio resolved — return error (never silently default)
 		if (!selectedStudio) {
-			const desc = description.toLowerCase()
-			if (/\b(software|code|build|feature|implement|develop|api|app)\b/.test(desc)) {
-				selectedStudio = "software"
-			} else if (/\b(doc|write|content|documentation|article|guide)\b/.test(desc)) {
-				selectedStudio = "documentation"
-			} else {
-				selectedStudio = "ideation"
-			}
-			selectedMode = "continuous"
+			return text(JSON.stringify({ error: "studio_required", message: "Studio selection required. Pass a studio argument or ask the user which studio to use.", available_studios: studioEntries.map(s => s.name) }))
 		}
 
 		// Resolve stages for the selected studio
@@ -1704,93 +1758,11 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 			writeFileSync(join(knowledgeDir, "CONVERSATION-CONTEXT.md"), `# Conversation Context\n\n${context}\n`)
 		}
 
-		// Git commit
+		// Git commit (+ push for git-persisted studios)
 		gitCommitState(`haiku: create intent ${slug}`)
 
 		emitTelemetry("haiku.intent.created", { intent: slug, studio: selectedStudio, mode: selectedMode })
 		if (stateFile) logSessionEvent(stateFile, { event: "intent_created", intent: slug, studio: selectedStudio, mode: selectedMode, stages: studioStages })
-
-		// Gap 6: Pre-start confirmation — open review UI to let user confirm intent before proceeding
-		if (_openReviewAndWait) {
-			try {
-				const intentDirPath = `.haiku/intents/${slug}`
-				const reviewResult = await _openReviewAndWait(intentDirPath, "intent", "ask")
-				if (stateFile) logSessionEvent(stateFile, { event: "intent_confirmation", intent: slug, decision: reviewResult.decision, feedback: reviewResult.feedback })
-				if (reviewResult.decision === "approved") {
-					return text(JSON.stringify({
-						action: "intent_created",
-						slug,
-						studio: selectedStudio,
-						mode: selectedMode,
-						stages: studioStages,
-						path: `.haiku/intents/${slug}`,
-						message: `Intent '${slug}' confirmed and created with studio '${selectedStudio}' (${selectedMode} mode). Run haiku_run_next { intent: "${slug}" } to begin.`,
-					}, null, 2))
-				}
-				// Changes requested — return feedback for the agent to adjust
-				return text(JSON.stringify({
-					action: "intent_changes_requested",
-					slug,
-					studio: selectedStudio,
-					mode: selectedMode,
-					stages: studioStages,
-					path: `.haiku/intents/${slug}`,
-					feedback: reviewResult.feedback,
-					message: `Intent '${slug}' created but user requested changes: ${reviewResult.feedback || "(see review)"}. Adjust the intent, then run haiku_run_next { intent: "${slug}" } to begin.`,
-				}, null, 2))
-			} catch {
-				// Review UI failed — fall back to elicitation
-				if (_elicitInput) {
-					try {
-						const elicitResult = await _elicitInput({
-							message: `Created intent '${slug}' with studio '${selectedStudio}'. Confirm to proceed?`,
-							requestedSchema: {
-								type: "object" as const,
-								properties: {
-									decision: {
-										type: "string",
-										title: "Decision",
-										description: "Approve intent or request changes",
-										enum: ["approve", "request_changes"],
-									},
-									feedback: {
-										type: "string",
-										title: "Feedback (optional)",
-										description: "Any changes to the intent",
-									},
-								},
-								required: ["decision"],
-							},
-						})
-						if (elicitResult.action === "accept" && elicitResult.content) {
-							const decision = (elicitResult.content as Record<string, string>).decision
-							const feedback = (elicitResult.content as Record<string, string>).feedback || ""
-							if (decision === "approve") {
-								return text(JSON.stringify({
-									action: "intent_created",
-									slug,
-									studio: selectedStudio,
-									mode: selectedMode,
-									stages: studioStages,
-									path: `.haiku/intents/${slug}`,
-									message: `Intent '${slug}' confirmed via elicitation and created with studio '${selectedStudio}' (${selectedMode} mode). Run haiku_run_next { intent: "${slug}" } to begin.`,
-								}, null, 2))
-							}
-							return text(JSON.stringify({
-								action: "intent_changes_requested",
-								slug,
-								studio: selectedStudio,
-								mode: selectedMode,
-								stages: studioStages,
-								path: `.haiku/intents/${slug}`,
-								feedback,
-								message: `Intent '${slug}' created but user requested changes: ${feedback}. Adjust the intent, then run haiku_run_next { intent: "${slug}" } to begin.`,
-							}, null, 2))
-						}
-					} catch { /* elicitation also failed — fall through to default return */ }
-				}
-			}
-		}
 
 		return text(JSON.stringify({
 			action: "intent_created",
@@ -1804,11 +1776,7 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 	}
 
 	if (name === "haiku_go_back") {
-		const result = goBack(
-			args.intent as string,
-			args.target_stage as string | undefined,
-			args.target_phase as string | undefined,
-		)
+		const result = goBack(args.intent as string)
 		emitTelemetry("haiku.orchestrator.action", { intent: args.intent as string, action: result.action })
 		syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
 		return text(JSON.stringify(result, null, 2))

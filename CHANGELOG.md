@@ -5,6 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.93.0] - 2026-04-09
+
+### Added
+- Researcher hat for inception stage that aligns discovery and problem-solving with product expectations.
+
+### Removed
+- Architect and decomposer hats from inception stage.
+
+### Changed
+- Discovery phase in inception stage updated to incorporate researcher workflows.
+
+## [1.92.0] - 2026-04-09
+
+### Added
+- Trace artifact outputs back to their source units with automatic FSM validation, ensuring consistency across your project's generated work.
+
+## [1.91.0] - 2026-04-09
+
+### Added
+- Intent details now display full content including knowledge, artifacts, and designs.
+
+## [1.89.1] - 2026-04-09
+
+```markdown
+### Fixed
+
+- Parallel execution prompts now provide more forceful guidance, and inception stage maintains business-level focus throughout planning.
+```
+
+## [1.89.0] - 2026-04-09
+
+### Added
+- Plugin now automatically detects your project type (git repository vs filesystem) and configures persistence accordingly, eliminating manual setup
+
+### Changed
+- Tool orchestration is now driven by a finite state machine, providing more reliable and predictable execution
+- Studio configurations are simplified with automatic persistence and state management setup
+
+## [1.88.0] - 2026-04-09
+
+```markdown
+### Added
+- Git provider integration enables remote repository browsing and file operations from the plugin.
+
+### Changed
+- Orchestrator execution engine refactored for more reliable stage transitions and state management.
+- Review sidebar redesigned to improve navigation and context visibility during unit and gate reviews.
+
+### Fixed
+- Validation catches configuration errors more reliably, preventing invalid states from progressing through stages.
+```
+
+## [1.87.6] - 2026-04-09
+
+### Fixed
+- Unit naming validation now runs before review across all stages, preventing naming inconsistencies from reaching the review phase.
+
 ## [1.87.5] - 2026-04-09
 
 ### Fixed

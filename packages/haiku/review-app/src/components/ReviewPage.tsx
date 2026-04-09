@@ -1,12 +1,11 @@
 import { useCallback, useRef, useState } from "react";
-import type { SessionData, ReviewAnnotations, ParsedUnit, MockupInfo, Section, KnowledgeFile, StageArtifact, StageStateInfo, OutputArtifact } from "../types";
+import type { SessionData, ReviewAnnotations, ParsedUnit, MockupInfo, Section, OutputArtifact } from "../types";
 import { StatusBadge, MarkdownViewer, CriteriaChecklist } from "@haiku/shared";
 import { Tabs, type TabDef } from "./Tabs";
 import { Card, SectionHeading } from "./Card";
-import { DecisionForm } from "./DecisionForm";
 import { AnnotationCanvas, type AnnotationPin } from "./AnnotationCanvas";
-import { InlineComments, type InlineComment, type InlineCommentEntry, scrollToInlineComment } from "./InlineComments";
-import { CommentTray, type TrayComment } from "./CommentTray";
+import { InlineComments, type InlineCommentEntry, scrollToInlineComment } from "./InlineComments";
+import { ReviewSidebar, type SidebarComment } from "./ReviewSidebar";
 import { MermaidDiagram } from "./MermaidDiagram";
 import { remark } from "remark";
 import remarkGfm from "remark-gfm";
@@ -86,8 +85,20 @@ export function ReviewPage({ session, sessionId, wsRef }: Props) {
     return hasAny ? annotations : undefined;
   }, []);
 
-  // Build tray comments from both sources
-  const trayComments: TrayComment[] = [
+  // General comments (added via sidebar)
+  const [generalComments, setGeneralComments] = useState<SidebarComment[]>([]);
+  let generalCounter = useRef(0);
+
+  const handleAddGeneral = useCallback((comment: string) => {
+    generalCounter.current++;
+    setGeneralComments((prev) => [
+      ...prev,
+      { type: "general", text: "", comment, id: `general-${generalCounter.current}-${Date.now()}` },
+    ]);
+  }, []);
+
+  // Build sidebar comments from all sources
+  const sidebarComments: SidebarComment[] = [
     ...allInlineComments.map((c) => ({
       type: "inline" as const,
       text: c.selectedText,
@@ -100,6 +111,7 @@ export function ReviewPage({ session, sessionId, wsRef }: Props) {
       comment: p.text,
       id: p.id,
     })),
+    ...generalComments,
   ];
 
   const handleDeleteComment = useCallback((id: string) => {
@@ -119,7 +131,12 @@ export function ReviewPage({ session, sessionId, wsRef }: Props) {
       return;
     }
     // Try pins
-    setAllPins((prev) => prev.filter((p) => p.id !== id));
+    if (pinsRef.current.find((p) => p.id === id)) {
+      setAllPins((prev) => prev.filter((p) => p.id !== id));
+      return;
+    }
+    // Try general comments
+    setGeneralComments((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
   const handleEditComment = useCallback((id: string, newComment: string) => {
@@ -139,8 +156,15 @@ export function ReviewPage({ session, sessionId, wsRef }: Props) {
       return;
     }
     // Try pins
-    setAllPins((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, text: newComment } : p))
+    if (pinsRef.current.find((p) => p.id === id)) {
+      setAllPins((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, text: newComment } : p))
+      );
+      return;
+    }
+    // Try general comments
+    setGeneralComments((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, comment: newComment } : c))
     );
   }, []);
 
@@ -158,6 +182,7 @@ export function ReviewPage({ session, sessionId, wsRef }: Props) {
     }
     setAllInlineComments([]);
     setAllPins([]);
+    setGeneralComments([]);
   }, []);
 
   const handleScrollTo = useCallback((id: string) => {
@@ -182,36 +207,38 @@ export function ReviewPage({ session, sessionId, wsRef }: Props) {
     setAllPins(pins);
   }, []);
 
-  const commentCount = allInlineComments.length + allPins.length;
-
   const commonProps = {
     session,
     sessionId,
     getAnnotations,
     wsRef,
-    commentCount,
-    onClearAllComments: handleClearAll,
     onInlineCommentsChange: handleInlineCommentsChange,
     onPinsChange: handlePinsChange,
   };
 
   return (
-    <>
-      {session.review_type === "unit" && session.target ? (
-        <UnitReview {...commonProps} />
-      ) : (
-        <IntentReview {...commonProps} />
-      )}
-      <CommentTray
-        comments={trayComments}
+    <div className="flex gap-6">
+      {/* Main content — grows to fill available space */}
+      <div className="flex-1 min-w-0">
+        {session.review_type === "unit" && session.target ? (
+          <UnitReview {...commonProps} />
+        ) : (
+          <IntentReview {...commonProps} />
+        )}
+      </div>
+      {/* Sticky review sidebar */}
+      <ReviewSidebar
+        sessionId={sessionId}
+        comments={sidebarComments}
+        getAnnotations={getAnnotations}
+        wsRef={wsRef}
         onDelete={handleDeleteComment}
         onEdit={handleEditComment}
         onClearAll={handleClearAll}
         onScrollTo={handleScrollTo}
+        onAddGeneral={handleAddGeneral}
       />
-      {/* Bottom padding to prevent tray overlap */}
-      {trayComments.length > 0 && <div className="h-16" />}
-    </>
+    </div>
   );
 }
 
@@ -222,19 +249,12 @@ interface SubReviewProps {
   sessionId: string;
   getAnnotations: () => ReviewAnnotations | undefined;
   wsRef?: React.RefObject<WebSocket | null>;
-  commentCount: number;
-  onClearAllComments: () => void;
   onInlineCommentsChange: (comments: InlineCommentEntry[]) => void;
   onPinsChange: (pins: AnnotationPin[]) => void;
 }
 
 function IntentReview({
   session,
-  sessionId,
-  getAnnotations,
-  wsRef,
-  commentCount,
-  onClearAllComments,
   onInlineCommentsChange,
   onPinsChange,
 }: SubReviewProps) {
@@ -278,8 +298,12 @@ function IntentReview({
   const remainingMockups = intentMockups.filter((m) => m !== firstImageMockup);
 
 
-  // Group units by stage for display
-  const stageNames = Object.keys(stageStates);
+  // Group units by stage for display — use intent's stage order, not alphabetical
+  const intentStageOrder = (intent.frontmatter.stages as string[]) ?? [];
+  const stageStateKeys = Object.keys(stageStates);
+  const stageNames = intentStageOrder.length > 0
+    ? intentStageOrder.filter(s => stageStateKeys.includes(s))
+    : stageStateKeys;
   const unitsByStage = new Map<string, ParsedUnit[]>();
   for (const unit of units) {
     const stage = unit.frontmatter.stage ?? "_root";
@@ -522,23 +546,13 @@ function IntentReview({
     return true;
   });
 
-  return (
-    <>
-      <Tabs groupId="intent" tabs={tabs} />
-      <DecisionForm sessionId={sessionId} collectAnnotations getAnnotations={getAnnotations} wsRef={wsRef} commentCount={commentCount} onClearAllComments={onClearAllComments} />
-    </>
-  );
+  return <Tabs groupId="intent" tabs={tabs} />;
 }
 
 // --- Unit Review ---
 
 function UnitReview({
   session,
-  sessionId,
-  getAnnotations,
-  wsRef,
-  commentCount,
-  onClearAllComments,
   onInlineCommentsChange,
   onPinsChange,
 }: SubReviewProps) {
@@ -706,12 +720,7 @@ function UnitReview({
     },
   ];
 
-  return (
-    <>
-      <Tabs groupId="unit" tabs={tabs} />
-      <DecisionForm sessionId={sessionId} collectAnnotations getAnnotations={getAnnotations} wsRef={wsRef} commentCount={commentCount} onClearAllComments={onClearAllComments} />
-    </>
-  );
+  return <Tabs groupId="unit" tabs={tabs} />;
 }
 
 // --- Helper components ---

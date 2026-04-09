@@ -43,12 +43,28 @@ function titleCase(s: string): string {
 		.join(" ")
 }
 
+function formatRelativeTime(date: Date): string {
+	const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
+	if (seconds < 5) return "just now"
+	if (seconds < 60) return `${seconds}s ago`
+	const minutes = Math.floor(seconds / 60)
+	if (minutes < 60) return `${minutes}m ago`
+	const hours = Math.floor(minutes / 60)
+	return `${hours}h ago`
+}
+
 const statusColors: Record<string, string> = {
 	active: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
 	completed:
 		"bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
 	archived: "bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400",
 	blocked: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+}
+
+const prStatusColors: Record<string, string> = {
+	open: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+	merged: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+	closed: "bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400",
 }
 
 export function PortfolioView({
@@ -79,6 +95,7 @@ export function PortfolioView({
 	} | null>(null)
 	const deepIndexAbort = useRef<AbortController | null>(null)
 	const cacheWriteBuffer = useRef<CachedDocument[]>([])
+	const [lastPolled, setLastPolled] = useState<Date | null>(null)
 
 	// Repo key for IndexedDB scoping
 	const repoKey = useMemo(() => {
@@ -179,14 +196,14 @@ export function PortfolioView({
 			}
 
 			// Index knowledge files
-			for (const file of detail.knowledge) {
+			for (const kf of detail.knowledge) {
 				addToIndex({
-					id: `knowledge:${detail.slug}:${file}`,
+					id: `knowledge:${detail.slug}:${kf.name}`,
 					type: "knowledge",
-					title: file,
+					title: kf.name,
 					slug: detail.slug,
-					content: file,
-					path: `.haiku/intents/${detail.slug}/knowledge/${file}`,
+					content: `${kf.name} ${kf.content || ""}`,
+					path: `.haiku/intents/${detail.slug}/knowledge/${kf.name}`,
 				})
 			}
 
@@ -215,6 +232,10 @@ export function PortfolioView({
 			provider.getIntent(location.intent).then((detail) => {
 				setSelectedIntent(detail)
 				if (detail) indexIntentDetail(detail)
+				setLoadingDetail(false)
+			}).catch((e) => {
+				console.error("[haiku-browse] Failed to load deeplinked intent:", e)
+				setIntentError(`Failed to load intent "${location.intent}": ${(e as Error).message}`)
 				setLoadingDetail(false)
 			})
 		}
@@ -253,31 +274,39 @@ export function PortfolioView({
 	}, [repoKey, addToIndex])
 
 	// Progressive loading — show each intent as it loads
+	// When deep-linked to a specific intent, defer list loading until user navigates back
+	const [listDeferred, setListDeferred] = useState(!!location?.intent)
+
 	useEffect(() => {
+		if (listDeferred) return // Skip list loading when deep-linked to a specific intent
 		async function load() {
 			setIntents([])
 			setLoadingMore(true)
 
-			await provider.listIntents((intent) => {
-				setIntents((prev) => [...prev, intent])
-				setLoading(false)
-				// Index this intent for search (now includes body content)
-				addToIndex({
-					id: `intent:${intent.slug}`,
-					type: "intent",
-					title: intent.title,
-					slug: intent.slug,
-					studio: intent.studio,
-					status: intent.status,
-					content: `${intent.title} ${intent.content || ""} ${intent.studio} ${intent.activeStage || ""} ${intent.mode}`,
+			try {
+				await provider.listIntents((intent) => {
+					setIntents((prev) => [...prev, intent])
+					setLoading(false)
+					addToIndex({
+						id: `intent:${intent.slug}`,
+						type: "intent",
+						title: intent.title,
+						slug: intent.slug,
+						studio: intent.studio,
+						status: intent.status,
+						content: `${intent.title} ${intent.content || ""} ${intent.studio} ${intent.activeStage || ""} ${intent.mode}`,
+					})
 				})
-			})
+			} catch (e) {
+				console.error("[haiku-browse] Failed to list intents:", e)
+				setIntentError(`Failed to load intents: ${(e as Error).message}`)
+			}
 
 			setLoadingMore(false)
 			setLoading(false)
 		}
 		load()
-	}, [provider, addToIndex])
+	}, [provider, addToIndex, listDeferred])
 
 	// Background deep indexing — fetch all intent details for unit search
 	useEffect(() => {
@@ -388,6 +417,59 @@ export function PortfolioView({
 			})
 	}, [provider])
 
+	// Smart polling — check for branch changes every 30s using ETags
+	useEffect(() => {
+		if (!provider?.checkForBranchChanges) return
+
+		const POLL_INTERVAL = 30_000 // 30 seconds
+		let intervalId: ReturnType<typeof setInterval> | null = null
+
+		const poll = async () => {
+			// Skip polling when tab is hidden
+			if (typeof document !== "undefined" && document.visibilityState === "hidden") return
+
+			try {
+				const changed = await provider.checkForBranchChanges!()
+				setLastPolled(new Date())
+				if (changed) {
+					// Clear caches and re-fetch
+					provider.clearBranchCache?.()
+					const refreshed = await provider.listIntents((intent) => {
+						// Index refreshed intents
+						addToIndex({
+							id: `intent:${intent.slug}`,
+							type: "intent",
+							title: intent.title,
+							slug: intent.slug,
+							studio: intent.studio,
+							status: intent.status,
+							content: `${intent.title} ${intent.content || ""} ${intent.studio} ${intent.activeStage || ""} ${intent.mode}`,
+						})
+					})
+					setIntents(refreshed)
+				}
+			} catch {
+				// Polling failure is non-fatal — silently continue
+			}
+		}
+
+		// Also pause/resume polling on visibility change
+		const handleVisibility = () => {
+			if (document.visibilityState === "visible") {
+				// Immediately poll when tab becomes visible again
+				poll()
+			}
+		}
+
+		intervalId = setInterval(poll, POLL_INTERVAL)
+		document.addEventListener("visibilitychange", handleVisibility)
+
+		return () => {
+			if (intervalId) clearInterval(intervalId)
+			document.removeEventListener("visibilitychange", handleVisibility)
+		}
+	}, [provider, addToIndex])
+
 	// Listen for browser back/forward (path-based navigation only)
 	useEffect(() => {
 		if (!hasPathNav) return
@@ -473,10 +555,11 @@ export function PortfolioView({
 
 	const handleBackFromIntent = useCallback(() => {
 		setSelectedIntent(null)
+		if (listDeferred) setListDeferred(false) // Trigger list loading on first back navigation
 		if (hasPathNav) {
 			window.history.back()
 		}
-	}, [hasPathNav])
+	}, [hasPathNav, listDeferred])
 
 	const handleViewModeChange = useCallback(
 		(mode: "list" | "board") => {
@@ -496,6 +579,7 @@ export function PortfolioView({
 				intent={selectedIntent}
 				provider={provider}
 				location={location}
+				initialStage={location?.stage}
 				onBack={handleBackFromIntent}
 			/>
 		)
@@ -535,6 +619,11 @@ export function PortfolioView({
 							</strong>{" "}
 							intent{intents.length !== 1 ? "s" : ""}
 						</div>
+						{lastPolled && (
+							<div className="text-xs text-stone-400">
+								Updated {formatRelativeTime(lastPolled)}
+							</div>
+						)}
 					</div>
 				</div>
 				{/* Search bar */}
@@ -662,6 +751,20 @@ export function PortfolioView({
 											>
 												{intent.status}
 											</span>
+											{intent.prUrl && intent.prStatus && (
+												<a
+													href={intent.prUrl}
+													target="_blank"
+													rel="noopener noreferrer"
+													onClick={(e) => e.stopPropagation()}
+													className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium hover:opacity-80 ${prStatusColors[intent.prStatus] || prStatusColors.open}`}
+												>
+													<svg className="h-3 w-3" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={2}>
+														<path d="M5 5.5v5m6-5v5M5 3a2 2 0 100-4 2 2 0 000 4zm6 0a2 2 0 100-4 2 2 0 000 4zM5 14.5a2 2 0 100-4 2 2 0 000 4z" />
+													</svg>
+													{provider.name === "GitLab" ? "MR" : "PR"} {intent.prNumber ? `${provider.name === "GitLab" ? "!" : "#"}${intent.prNumber}` : ""} {intent.prStatus}
+												</a>
+											)}
 										</div>
 										<div className="mt-1 flex items-center gap-4 text-sm text-stone-500 dark:text-stone-400">
 											<span>
@@ -684,6 +787,11 @@ export function PortfolioView({
 													{intent.mode}
 												</strong>
 											</span>
+											{intent.branch && (
+												<span className="font-mono text-xs text-stone-400 dark:text-stone-500" title={intent.branch}>
+													{intent.branch}
+												</span>
+											)}
 											{intent.startedAt && (
 												<span>
 													{formatDate(intent.startedAt)}

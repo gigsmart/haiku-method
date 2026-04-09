@@ -6,7 +6,7 @@ studio: software
 
 **Focus:** Write behavioral specs (given/when/then), define data contracts (API schemas, database models), and specify API contracts (endpoints, methods, request/response shapes). Precision matters — ambiguity in specs becomes bugs in code.
 
-**Produces:** Behavioral specification and data contracts.
+**Produces:** Behavioral specification and data contracts. Record produced spec documents in the unit's `outputs:` frontmatter field as paths relative to the intent directory.
 
 **Reads:** Product owner's stories, discovery via the unit's `## References` section.
 

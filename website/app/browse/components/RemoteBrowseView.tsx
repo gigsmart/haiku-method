@@ -75,13 +75,20 @@ export function RemoteBrowseView({ pathSegments, branch: branchParam }: Props) {
 				prov = new GitLabProvider(host, project, branch, storedToken)
 			}
 
-			const status = isGitHub
-				? await (prov as GitHubProvider).getAccessStatus()
-				: { ok: await (prov as GitLabProvider).isAccessible(), reason: "auth_required" as const }
-			if (!status.ok) {
-				clearToken(host)
-				setAuthReason(status.reason)
-				setNeedsAuth(true)
+			try {
+				const status = isGitHub
+					? await (prov as GitHubProvider).getAccessStatus()
+					: { ok: await (prov as GitLabProvider).isAccessible(), reason: "auth_required" as const }
+				if (!status.ok) {
+					clearToken(host)
+					setAuthReason(status.reason)
+					setNeedsAuth(true)
+					setLoading(false)
+					return
+				}
+			} catch (e) {
+				console.error("[haiku-browse] Access check failed:", e)
+				setError(`Failed to connect to ${host}: ${(e as Error).message}`)
 				setLoading(false)
 				return
 			}
@@ -230,7 +237,7 @@ export function RemoteBrowseView({ pathSegments, branch: branchParam }: Props) {
 	}
 
 	if (provider && location) {
-		const repoLabel = `${host}/${project}${branch ? ` (${branch})` : ""}`
+		const repoLabel = `${host}/${project}${branch ? ` @ ${branch}` : ""}`
 		return (
 			<PortfolioView
 				provider={provider}

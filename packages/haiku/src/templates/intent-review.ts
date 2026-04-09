@@ -1,4 +1,4 @@
-import type { ParsedIntent, ParsedUnit, CriterionItem, Section } from "./index.js";
+import type { ParsedIntent, ParsedUnit, CriterionItem, Section } from "../types.js";
 import type { MockupInfo } from "./types.js";
 import { escapeHtml, escapeAttr } from "./layout.js";
 import {

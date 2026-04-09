@@ -248,37 +248,58 @@ export function toMermaidDefinition(
 		}
 	}
 
-	// Add stage progression arrows (between stage groups)
+	// Add stage progression arrows (between stage subgraphs)
 	if (useStageSubgraphs && stageOrder.length > 1) {
 		for (let i = 0; i < stageOrder.length - 1; i++) {
-			const currentStageUnits = byStage.get(stageOrder[i]) || []
-			const nextStageUnits = byStage.get(stageOrder[i + 1]) || []
-			if (currentStageUnits.length > 0 && nextStageUnits.length > 0) {
-				// Arrow from last unit of current stage to first unit of next stage
-				const lastUnit = currentStageUnits[currentStageUnits.length - 1]
-				const firstUnit = nextStageUnits[0]
-				lines.push(`  ${sanitizeMermaidNodeId(lastUnit.slug)} -.-> ${sanitizeMermaidNodeId(firstUnit.slug)}`)
-			}
+			const currentId = sanitizeMermaidNodeId(`stage_${stageOrder[i]}`)
+			const nextId = sanitizeMermaidNodeId(`stage_${stageOrder[i + 1]}`)
+			lines.push(`  ${currentId} --> ${nextId}`)
 		}
 	}
 
-	// Add external dependency nodes (deps that reference units not in this set)
+	// Build unit-to-stage map for edge filtering
+	const unitStageMap = new Map<string, string>()
+	for (const unit of units) {
+		unitStageMap.set(unit.slug, unit.frontmatter.stage || "_root")
+	}
+
+	// Edges — only within the same stage (intra-stage dependencies)
+	for (const edge of dag.edges) {
+		const fromStage = unitStageMap.get(edge.from)
+		const toStage = unitStageMap.get(edge.to)
+		if (fromStage && toStage && fromStage === toStage) {
+			lines.push(
+				`  ${sanitizeMermaidNodeId(edge.from)} --> ${sanitizeMermaidNodeId(edge.to)}`,
+			)
+		}
+	}
+
+	// Add external dependency nodes — only those referenced by intra-stage edges
 	const externalNodes = new Set<string>()
 	for (const edge of dag.edges) {
-		if (!unitSlugs.has(edge.from)) externalNodes.add(edge.from)
-		if (!unitSlugs.has(edge.to)) externalNodes.add(edge.to)
+		const fromStage = unitStageMap.get(edge.from)
+		const toStage = unitStageMap.get(edge.to)
+		const fromIsExternal = !unitSlugs.has(edge.from)
+		const toIsExternal = !unitSlugs.has(edge.to)
+		// Include external node if it participates in an intra-stage edge
+		// (i.e., the non-external end's stage matches, or both are external)
+		if (fromIsExternal && toStage) {
+			externalNodes.add(edge.from)
+			lines.push(
+				`  ${sanitizeMermaidNodeId(edge.from)} --> ${sanitizeMermaidNodeId(edge.to)}`,
+			)
+		}
+		if (toIsExternal && fromStage) {
+			externalNodes.add(edge.to)
+			lines.push(
+				`  ${sanitizeMermaidNodeId(edge.from)} --> ${sanitizeMermaidNodeId(edge.to)}`,
+			)
+		}
 	}
 	for (const ext of externalNodes) {
 		const nodeId = sanitizeMermaidNodeId(ext)
 		const label = escapeMermaidLabel(ext)
 		lines.push(`  ${nodeId}["${label} (external)"]:::external`)
-	}
-
-	// Edges
-	for (const edge of dag.edges) {
-		lines.push(
-			`  ${sanitizeMermaidNodeId(edge.from)} --> ${sanitizeMermaidNodeId(edge.to)}`,
-		)
 	}
 
 	// Status-based CSS classes

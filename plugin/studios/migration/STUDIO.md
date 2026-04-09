@@ -3,9 +3,6 @@ name: migration
 description: System and data migration lifecycle for platform transitions, version upgrades, and data moves
 stages: [assessment, mapping, migrate, validation, cutover]
 category: operations
-persistence:
-  type: git
-  delivery: pull-request
 ---
 
 # Migration Studio
