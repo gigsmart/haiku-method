@@ -33,9 +33,7 @@ A studio defines which stages run and in what order. To create one:
 name: data-pipeline
 description: ETL and data pipeline development
 stages: [discovery, extraction, transformation, validation, deployment]
-persistence:
-  type: git
-  delivery: pull-request
+category: engineering
 ---
 ```
 
@@ -220,9 +218,7 @@ inputs:
 name: software
 description: Software development with compliance
 stages: [inception, design, product, development, operations, security, compliance]
-persistence:
-  type: git
-  delivery: pull-request
+category: engineering
 ---
 ```
 

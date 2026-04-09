@@ -25,7 +25,7 @@ When modifying any component, check if other components need corresponding updat
 | Terminology change | Update all references | Update all references | Update all references |
 | New principle | Document in Principles section | Implement if applicable | Update if referenced |
 | Concept refinement | Update definition | Update implementation | Update docs |
-| New persistence adapter | Document in Context Preservation | Implement in lib/adapters/ | Update docs if user-facing |
+| Persistence change | N/A (environment-detected) | Update state-tools.ts isGitRepo | Update docs if user-facing |
 
 ## Key File Locations
 
@@ -42,7 +42,7 @@ When modifying any component, check if other components need corresponding updat
 - Plugin hooks: `plugin/hooks/*.sh` + `plugin/.claude-plugin/hooks.json`
 - Plugin libraries: `plugin/lib/*.sh`
 - Plugin orchestration: `plugin/lib/orchestrator.sh`, `plugin/lib/stage.sh`, `plugin/lib/studio.sh`
-- Plugin persistence adapters: `plugin/lib/adapters/*.sh`
+- Plugin environment detection: `packages/haiku/src/state-tools.ts` (isGitRepo)
 - Plugin providers: `plugin/providers/*.md` (bidirectional translation instructions) + `plugin/schemas/providers/*.json`
 - Website docs: `website/content/docs/`
 - Infrastructure: `deploy/terraform/`
@@ -66,7 +66,7 @@ When modifying any component, check if other components need corresponding updat
 | Backpressure | Principles section | Quality gates enforced by harness, not agent | quality-gate.sh, orchestrator.ts |
 | Operating Modes | Operating Modes section | interactive=HITL, /haiku:resume=OHOTL, /haiku:autopilot=AHOTL | prompts/core.ts, prompts/complex.ts |
 | Hard Gates | Execution phase | exit code enforcement in quality-gate.sh | orchestrator.ts |
-| Persistence | Context Preservation | `plugin/lib/adapters/*.sh` (filesystem, git) | config.sh, adapters/ |
+| Persistence | Context Preservation | Environment-detected via `isGitRepo()` (git or filesystem) | state-tools.ts, git-worktree.ts |
 | Providers | Memory Providers section | `plugin/schemas/providers/*.json`, `plugin/providers/*.md` | config.sh |
 | Operations | Operation phase | /haiku:operate prompt | prompts/complex.ts |
 

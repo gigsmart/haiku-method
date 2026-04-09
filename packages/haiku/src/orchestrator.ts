@@ -26,6 +26,7 @@ import {
 	parseFrontmatter,
 	syncSessionMetadata,
 	setRunNextHandler,
+	validateBranch,
 } from "./state-tools.js"
 import { createIntentBranch, isOnIntentBranch, createUnitWorktree } from "./git-worktree.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
@@ -40,35 +41,6 @@ function readFrontmatter(filePath: string): Record<string, unknown> {
 	const raw = readFileSync(filePath, "utf8")
 	const { data } = parseFrontmatter(raw)
 	return data
-}
-
-// ── Persistence helpers ───────────────────────────────────────────────────
-
-/**
- * Determine if commits should be pushed for this intent's studio.
- * Returns true when the studio's persistence.type is "git".
- */
-function shouldPush(slug: string): boolean {
-	try {
-		const root = findHaikuRoot()
-		const intentFile = join(root, "intents", slug, "intent.md")
-		const fm = readFrontmatter(intentFile)
-		const studioName = fm.studio as string
-		if (!studioName) return false
-
-		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
-		for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
-			const studioFile = join(base, studioName, "STUDIO.md")
-			if (existsSync(studioFile)) {
-				const studioFm = readFrontmatter(studioFile)
-				const persistence = studioFm.persistence as Record<string, string> | undefined
-				return persistence?.type === "git"
-			}
-		}
-		return false
-	} catch {
-		return false
-	}
 }
 
 // ── Studio resolution ──────────────────────────────────────────────────────
@@ -423,7 +395,7 @@ function fsmStartStage(slug: string, stage: string): void {
 	}
 
 	emitTelemetry("haiku.stage.started", { intent: slug, stage })
-	gitCommitState(`haiku: start stage ${stage}`, shouldPush(slug))
+	gitCommitState(`haiku: start stage ${stage}`)
 }
 
 function fsmAdvancePhase(slug: string, stage: string, toPhase: string): void {
@@ -442,7 +414,7 @@ function fsmCompleteStage(slug: string, stage: string, gateOutcome: string): voi
 	data.gate_outcome = gateOutcome
 	writeJson(path, data)
 	emitTelemetry("haiku.stage.completed", { intent: slug, stage, gate_outcome: gateOutcome })
-	gitCommitState(`haiku: complete stage ${stage}`, shouldPush(slug))
+	gitCommitState(`haiku: complete stage ${stage}`)
 }
 
 function fsmAdvanceStage(slug: string, currentStage: string, nextStage: string): void {
@@ -472,7 +444,7 @@ function fsmIntentComplete(slug: string): void {
 		setFrontmatterField(intentFile, "completed_at", timestamp())
 	}
 	emitTelemetry("haiku.intent.completed", { intent: slug })
-	gitCommitState(`haiku: complete intent ${slug}`, shouldPush(slug))
+	gitCommitState(`haiku: complete intent ${slug}`)
 }
 
 function fsmStageCompleteDiscrete(slug: string, stage: string): void {
@@ -1178,7 +1150,7 @@ function currentWaveNumber(units: UnitInfo[], unitWave: Map<string, number>, tot
 
 // ── Go back (stage/phase regression) ──────────────────────────────────────
 
-function goBack(slug: string, targetStage?: string, targetPhase?: string): OrchestratorAction {
+function goBack(slug: string): OrchestratorAction {
 	const root = findHaikuRoot()
 	const iDir = join(root, "intents", slug)
 	const intentFile = join(iDir, "intent.md")
@@ -1191,28 +1163,24 @@ function goBack(slug: string, targetStage?: string, targetPhase?: string): Orche
 	const studio = (intent.studio as string) || "ideation"
 	const currentActiveStage = (intent.active_stage as string) || ""
 
-	if (targetStage) {
-		// Validate target stage exists in the studio
-		const allStages = resolveStudioStages(studio)
-		if (!allStages.includes(targetStage)) {
-			return { action: "error", message: `Stage '${targetStage}' not found in studio '${studio}'` }
-		}
+	if (!currentActiveStage) {
+		return { action: "error", message: `No active stage to go back from` }
+	}
 
-		// Reset the target stage's state
-		const path = stageStatePath(slug, targetStage)
-		const data: Record<string, unknown> = {
-			stage: targetStage,
-			status: "active",
-			phase: "elaborate",
-			started_at: timestamp(),
-			completed_at: null,
-			gate_entered_at: null,
-			gate_outcome: null,
-		}
-		writeJson(path, data)
+	// Read current phase
+	const path = stageStatePath(slug, currentActiveStage)
+	const stageState = readJson(path)
+	const currentPhase = (stageState.phase as string) || "elaborate"
 
-		// Re-queue all units in the target stage to pending
-		const unitsDir = join(iDir, "stages", targetStage, "units")
+	// If in execute/review/gate → go back to elaborate in current stage
+	if (currentPhase !== "elaborate") {
+		stageState.phase = "elaborate"
+		stageState.gate_entered_at = null
+		stageState.gate_outcome = null
+		writeJson(path, stageState)
+
+		// Re-queue all units to pending
+		const unitsDir = join(iDir, "stages", currentActiveStage, "units")
 		if (existsSync(unitsDir)) {
 			const files = readdirSync(unitsDir).filter(f => f.endsWith(".md"))
 			for (const f of files) {
@@ -1225,77 +1193,70 @@ function goBack(slug: string, targetStage?: string, targetPhase?: string): Orche
 			}
 		}
 
-		// Update intent's active_stage
-		setFrontmatterField(intentFile, "active_stage", targetStage)
-
-		emitTelemetry("haiku.go_back.stage", { intent: slug, from_stage: currentActiveStage, to_stage: targetStage })
-		gitCommitState(`haiku: go back to stage ${targetStage}`, shouldPush(slug))
-
-		return {
-			action: "went_back",
-			intent: slug,
-			target_stage: targetStage,
-			reset_phase: "elaborate",
-			message: `Went back to stage '${targetStage}' — stage reset to elaborate, all units re-queued`,
-		}
-	}
-
-	if (targetPhase) {
-		if (!currentActiveStage) {
-			return { action: "error", message: `No active stage to go back within` }
-		}
-
-		// Valid phases in order
-		const phaseOrder = ["elaborate", "execute", "review", "gate"]
-		const targetIdx = phaseOrder.indexOf(targetPhase)
-		if (targetIdx < 0) {
-			return { action: "error", message: `Invalid phase '${targetPhase}'. Valid phases: ${phaseOrder.join(", ")}` }
-		}
-
-		const path = stageStatePath(slug, currentActiveStage)
-		const stageState = readJson(path)
-		const currentPhase = (stageState.phase as string) || ""
-		const currentIdx = phaseOrder.indexOf(currentPhase)
-
-		if (targetIdx >= currentIdx) {
-			return { action: "error", message: `Cannot go back: '${targetPhase}' is not before current phase '${currentPhase}'` }
-		}
-
-		// Set phase back
-		stageState.phase = targetPhase
-		stageState.gate_entered_at = null
-		stageState.gate_outcome = null
-		writeJson(path, stageState)
-
-		// If going back to elaborate or execute, re-queue affected units
-		if (targetPhase === "elaborate" || targetPhase === "execute") {
-			const unitsDir = join(iDir, "stages", currentActiveStage, "units")
-			if (existsSync(unitsDir)) {
-				const files = readdirSync(unitsDir).filter(f => f.endsWith(".md"))
-				for (const f of files) {
-					const unitFile = join(unitsDir, f)
-					setFrontmatterField(unitFile, "status", "pending")
-					setFrontmatterField(unitFile, "bolt", 0)
-					setFrontmatterField(unitFile, "hat", "")
-					setFrontmatterField(unitFile, "started_at", null)
-					setFrontmatterField(unitFile, "completed_at", null)
-				}
-			}
-		}
-
-		emitTelemetry("haiku.go_back.phase", { intent: slug, stage: currentActiveStage, from_phase: currentPhase, to_phase: targetPhase })
-		gitCommitState(`haiku: go back to phase ${targetPhase} in ${currentActiveStage}`, shouldPush(slug))
+		emitTelemetry("haiku.go_back.phase", { intent: slug, stage: currentActiveStage, from_phase: currentPhase, to_phase: "elaborate" })
+		gitCommitState(`haiku: go back to elaborate in ${currentActiveStage}`)
 
 		return {
 			action: "went_back",
 			intent: slug,
 			stage: currentActiveStage,
-			target_phase: targetPhase,
-			message: `Went back to phase '${targetPhase}' in stage '${currentActiveStage}'`,
+			target_phase: "elaborate",
+			message: `Went back to elaborate phase in stage '${currentActiveStage}' — all units re-queued`,
 		}
 	}
 
-	return { action: "error", message: "Must specify either target_stage or target_phase" }
+	// Already in elaborate → go back to the previous stage
+	const allStages = resolveStudioStages(studio)
+	const skipStages = (intent.skip_stages as string[]) || []
+	const studioStages = allStages.filter(s => !skipStages.includes(s))
+	const currentIdx = studioStages.indexOf(currentActiveStage)
+
+	if (currentIdx <= 0) {
+		return { action: "error", message: `Already at the first stage ('${currentActiveStage}') — cannot go back further` }
+	}
+
+	const targetStage = studioStages[currentIdx - 1]
+
+	// Reset the target stage's state
+	const targetPath = stageStatePath(slug, targetStage)
+	const data: Record<string, unknown> = {
+		stage: targetStage,
+		status: "active",
+		phase: "elaborate",
+		started_at: timestamp(),
+		completed_at: null,
+		gate_entered_at: null,
+		gate_outcome: null,
+	}
+	writeJson(targetPath, data)
+
+	// Re-queue all units in the target stage to pending
+	const unitsDir = join(iDir, "stages", targetStage, "units")
+	if (existsSync(unitsDir)) {
+		const files = readdirSync(unitsDir).filter(f => f.endsWith(".md"))
+		for (const f of files) {
+			const unitFile = join(unitsDir, f)
+			setFrontmatterField(unitFile, "status", "pending")
+			setFrontmatterField(unitFile, "bolt", 0)
+			setFrontmatterField(unitFile, "hat", "")
+			setFrontmatterField(unitFile, "started_at", null)
+			setFrontmatterField(unitFile, "completed_at", null)
+		}
+	}
+
+	// Update intent's active_stage
+	setFrontmatterField(intentFile, "active_stage", targetStage)
+
+	emitTelemetry("haiku.go_back.stage", { intent: slug, from_stage: currentActiveStage, to_stage: targetStage })
+	gitCommitState(`haiku: go back to stage ${targetStage}`)
+
+	return {
+		action: "went_back",
+		intent: slug,
+		target_stage: targetStage,
+		reset_phase: "elaborate",
+		message: `Went back to stage '${targetStage}' — stage reset to elaborate, all units re-queued`,
+	}
 }
 
 // Register runNext callback so state-tools can call it without circular imports
@@ -1340,16 +1301,14 @@ export const orchestratorToolDefs = [
 	{
 		name: "haiku_go_back",
 		description:
-			"Go back to a previous stage or phase within the current stage. " +
-			"If target_stage is provided: resets that stage (status: active, phase: elaborate), re-queues all its units. " +
-			"If target_phase is provided: sets phase back within the current active stage, re-queues affected units. " +
-			"This is a human-initiated action — the agent should only call this when explicitly requested.",
+			"Go back to the previous stage or phase. The FSM determines the target based on current position: " +
+			"if in execute/review/gate phase, goes back to elaborate in the current stage; " +
+			"if already in elaborate phase, goes back to the previous stage. " +
+			"Agents can call this when they detect missing information from a prior stage.",
 		inputSchema: {
 			type: "object" as const,
 			properties: {
 				intent: { type: "string", description: "Intent slug" },
-				target_stage: { type: "string", description: "Stage to go back to (resets the stage entirely)" },
-				target_phase: { type: "string", description: "Phase to go back to within the current active stage (elaborate, execute, review)" },
 			},
 			required: ["intent"],
 		},
@@ -1401,6 +1360,12 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 					}
 				}
 			} catch { /* non-fatal */ }
+		}
+
+		// Validate we're on the correct intent branch
+		const branchCheck = validateBranch(slug, "intent")
+		if (branchCheck) {
+			return { content: [{ type: "text" as const, text: branchCheck }], isError: true }
 		}
 
 		const result = runNext(slug)
@@ -1794,7 +1759,7 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 		}
 
 		// Git commit (+ push for git-persisted studios)
-		gitCommitState(`haiku: create intent ${slug}`, shouldPush(slug))
+		gitCommitState(`haiku: create intent ${slug}`)
 
 		emitTelemetry("haiku.intent.created", { intent: slug, studio: selectedStudio, mode: selectedMode })
 		if (stateFile) logSessionEvent(stateFile, { event: "intent_created", intent: slug, studio: selectedStudio, mode: selectedMode, stages: studioStages })
@@ -1811,11 +1776,7 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 	}
 
 	if (name === "haiku_go_back") {
-		const result = goBack(
-			args.intent as string,
-			args.target_stage as string | undefined,
-			args.target_phase as string | undefined,
-		)
+		const result = goBack(args.intent as string)
 		emitTelemetry("haiku.orchestrator.action", { intent: args.intent as string, action: result.action })
 		syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
 		return text(JSON.stringify(result, null, 2))

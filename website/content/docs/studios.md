@@ -4,15 +4,16 @@ description: Named lifecycle templates that define how work progresses through s
 order: 31
 ---
 
-A **studio** is a named lifecycle template that defines which stages run and in what order. Studios also declare the persistence adapter used for workspace management and delivery.
+A **studio** is a named lifecycle template that defines which stages run and in what order. Persistence is environment-detected (git vs. filesystem), not studio-configured.
 
 ## How Studios Work
 
 When you create an intent with `/haiku:start`, H·AI·K·U selects or prompts for a studio. The studio determines:
 
 - **Which stages** the intent progresses through
-- **Persistence type** — how work is stored and delivered (git branches + PRs, or filesystem snapshots)
 - **Execution mode** — single-stage (all disciplines merged) or multi-stage (sequential progression)
+
+Persistence is handled automatically based on the environment — if you're in a git repo, state is committed and pushed. If not, state lives as files on disk.
 
 ## Built-in Studios
 
@@ -25,8 +26,6 @@ The default for code-producing work. Full software development lifecycle from in
 | Property | Value |
 |----------|-------|
 | **Stages** | inception, design, product, development, operations, security |
-| **Persistence** | git |
-| **Delivery** | Pull request |
 
 Supports both single-stage (all disciplines merged) and multi-stage (sequential progression) execution modes.
 
@@ -37,8 +36,6 @@ Data engineering lifecycle for ETL pipelines, data warehouses, and analytics wor
 | Property | Value |
 |----------|-------|
 | **Stages** | discovery, extraction, transformation, validation, deployment |
-| **Persistence** | git |
-| **Delivery** | Pull request |
 
 #### Migration
 
@@ -47,8 +44,6 @@ System and data migration lifecycle for platform transitions, version upgrades, 
 | Property | Value |
 |----------|-------|
 | **Stages** | assessment, mapping, migrate, validation, cutover |
-| **Persistence** | git |
-| **Delivery** | Pull request |
 
 #### Incident Response
 
@@ -57,8 +52,6 @@ Incident response lifecycle optimized for fast response with structured follow-t
 | Property | Value |
 |----------|-------|
 | **Stages** | triage, investigate, mitigate, resolve, postmortem |
-| **Persistence** | git |
-| **Delivery** | Pull request |
 
 #### Compliance
 
@@ -67,8 +60,6 @@ Regulatory compliance lifecycle for audits, certifications (SOC2, HIPAA, GDPR, I
 | Property | Value |
 |----------|-------|
 | **Stages** | scope, assess, remediate, document, certify |
-| **Persistence** | git |
-| **Delivery** | Pull request |
 
 #### Security Assessment
 
@@ -77,8 +68,6 @@ Structured offensive security lifecycle for penetration testing, vulnerability a
 | Property | Value |
 |----------|-------|
 | **Stages** | reconnaissance, enumeration, exploitation, post-exploitation, reporting |
-| **Persistence** | git |
-| **Delivery** | Pull request |
 
 The security-assessment studio is distinct from the software studio's security stage. The software studio's security stage is a defensive review phase within a development lifecycle. The security-assessment studio is a standalone offensive security lifecycle — its stages move from reconnaissance (mapping the attack surface) through exploitation (validating vulnerabilities) to reporting (structured findings with severity ratings and remediation guidance).
 
@@ -91,8 +80,6 @@ Sales cycle lifecycle for managing deals from prospect research through close an
 | Property | Value |
 |----------|-------|
 | **Stages** | research, qualification, proposal, negotiation, close |
-| **Persistence** | filesystem |
-| **Delivery** | Local |
 
 #### Marketing
 
@@ -101,8 +88,6 @@ Campaign and content marketing lifecycle from audience research through launch a
 | Property | Value |
 |----------|-------|
 | **Stages** | research, strategy, content, launch, measure |
-| **Persistence** | filesystem |
-| **Delivery** | Local |
 
 #### Customer Success
 
@@ -111,8 +96,6 @@ Customer success lifecycle from onboarding through adoption, health monitoring, 
 | Property | Value |
 |----------|-------|
 | **Stages** | onboarding, adoption, health-check, expansion, renewal |
-| **Persistence** | filesystem |
-| **Delivery** | Local |
 
 #### Product Strategy
 
@@ -121,8 +104,6 @@ Product strategy lifecycle for defining what to build and why — discovery thro
 | Property | Value |
 |----------|-------|
 | **Stages** | discovery, user-research, prioritization, roadmap, stakeholder-review |
-| **Persistence** | filesystem |
-| **Delivery** | Local |
 
 ### General Purpose
 
@@ -133,8 +114,6 @@ Universal lifecycle for creative, analytical, or exploratory work that doesn't f
 | Property | Value |
 |----------|-------|
 | **Stages** | research, create, review, deliver |
-| **Persistence** | filesystem |
-| **Delivery** | Local |
 
 #### Documentation
 
@@ -143,8 +122,6 @@ Technical documentation lifecycle for API docs, guides, runbooks, and knowledge 
 | Property | Value |
 |----------|-------|
 | **Stages** | audit, outline, draft, review, publish |
-| **Persistence** | git |
-| **Delivery** | Pull request |
 
 ## Configuring the Default Studio
 
@@ -165,9 +142,7 @@ Create a custom studio by adding a `STUDIO.md` file at `.haiku/studios/{name}/ST
 name: data-pipeline
 description: ETL and data pipeline development
 stages: [discovery, extraction, transformation, validation, deployment]
-persistence:
-  type: git
-  delivery: pull-request
+category: engineering
 ---
 ```
 

@@ -5,6 +5,8 @@ description: Git storage provider — sync H·AI·K·U intent state to remote vi
 
 # Git Provider — Default Instructions
 
+When running in a git repository, the MCP automatically commits and pushes state changes. This behavior is environment-detected, not studio-configured — if git is available, it is used.
+
 ## Branch Architecture
 
 H·AI·K·U uses two branch types with fundamentally different lifecycle rules:
@@ -69,6 +71,14 @@ When `auto_pr` is enabled:
 - Unit worktree branches (`haiku/{slug}/{unit}`) — strictly local
 - Temporary state files — only committed state goes to remote
 - In-progress unit work — only merged results via the intent branch
+
+## Non-Git Environments
+
+When not running in a git repository, the MCP operates in filesystem mode:
+- State is stored as files on disk in `.haiku/`
+- No commits, no pushes, no branches, no worktrees
+- Units work in-place rather than in worktree isolation
+- All lifecycle operations still function — just without version control
 
 ## Provider Config
 

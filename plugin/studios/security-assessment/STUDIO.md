@@ -3,9 +3,6 @@ name: security-assessment
 description: Security assessment and penetration testing lifecycle for evaluating existing systems
 stages: [reconnaissance, enumeration, exploitation, post-exploitation, reporting]
 category: engineering
-persistence:
-  type: git
-  delivery: pull-request
 ---
 
 # Security Assessment Studio

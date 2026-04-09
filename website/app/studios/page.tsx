@@ -148,7 +148,7 @@ export default function StudiosPage() {
 												</div>
 												<div className="mt-2 flex gap-4 text-xs text-stone-400 dark:text-stone-500">
 													<span>{studio.stageDefinitions.reduce((acc, s) => acc + s.hatDefinitions.length, 0)} hats</span>
-													<span>{studio.persistence.type} / {studio.persistence.delivery}</span>
+													<span>auto-detected persistence</span>
 												</div>
 											</div>
 										</Link>

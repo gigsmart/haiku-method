@@ -36,7 +36,6 @@ export interface StudioDefinition {
 	name: string
 	description: string
 	stages: string[]
-	persistence: { type: string; delivery: string }
 	content: string
 	stageDefinitions: StageDefinition[]
 	category: string
@@ -52,7 +51,7 @@ const categoryLabels: Record<string, string> = {
 	general: "General Purpose",
 }
 
-function categorizeStudio(slug: string, persistence: { type: string }, rawCategory?: string): string {
+function categorizeStudio(slug: string, rawCategory?: string): string {
 	if (rawCategory && categoryLabels[rawCategory]) return categoryLabels[rawCategory]
 	if (rawCategory) return rawCategory.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
 	// Legacy fallback for studios without category field
@@ -156,17 +155,14 @@ function parseStudio(studioDir: string): StudioDefinition | null {
 		if (stage) stageDefinitions.push(stage)
 	}
 
-	const persistence = data.persistence || { type: "filesystem", delivery: "local" }
-
 	return {
 		slug,
 		name: data.name || slug,
 		description: data.description || "",
 		stages: stageNames,
-		persistence,
 		content: content.trim(),
 		stageDefinitions,
-		category: categorizeStudio(slug, persistence, data.category as string | undefined),
+		category: categorizeStudio(slug, data.category as string | undefined),
 	}
 }
 

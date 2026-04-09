@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-import type { BrowseProvider, HaikuAsset, HaikuIntentDetail, HaikuStageState, HaikuUnit } from "@/lib/browse/types"
+import type { BrowseProvider, HaikuAsset, HaikuIntent, HaikuIntentDetail, HaikuStageState, HaikuUnit } from "@/lib/browse/types"
 import { formatDate, formatDuration } from "@/lib/browse/types"
 import { buildBrowseUrl } from "@/lib/browse/url"
 import type { BrowseLocation } from "@/lib/browse/url"
@@ -231,7 +231,7 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 			</header>
 
 			{/* Provider Links */}
-			<ProviderLinksSection frontmatter={intent.raw} settings={settings} />
+			<ProviderLinksSection frontmatter={intent.raw} settings={settings} intent={intent} providerName={provider.name} host={host} project={location?.project || ""} />
 
 			{/* View toggle */}
 			<div className="mb-4 flex gap-1 rounded-lg border border-stone-200 p-1 dark:border-stone-700 w-fit">
@@ -436,9 +436,30 @@ const FIELD_LABELS: Record<string, string> = {
 	branch: "Branch",
 }
 
-function ProviderLinksSection({ frontmatter, settings }: { frontmatter: Record<string, unknown>; settings: Record<string, unknown> | null }) {
+const prStatusColors: Record<string, string> = {
+	open: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+	opened: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+	merged: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
+	closed: "bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400",
+}
+
+function ProviderLinksSection({ frontmatter, settings, intent, providerName, host, project }: { frontmatter: Record<string, unknown>; settings: Record<string, unknown> | null; intent: HaikuIntent; providerName: string; host: string; project: string }) {
 	const links = resolveLinks(frontmatter, settings)
-	if (links.length === 0) return null
+	const hasPr = intent.prUrl && intent.prStatus
+	const isGitLab = providerName === "GitLab"
+	const prLabel = isGitLab ? "MR" : "PR"
+
+	// Build branch URL for the provider
+	let branchUrl: string | null = null
+	if (intent.branch) {
+		if (isGitLab) {
+			branchUrl = `https://${host}/${project}/-/tree/${encodeURIComponent(intent.branch)}`
+		} else {
+			branchUrl = `https://${host}/${project}/tree/${encodeURIComponent(intent.branch)}`
+		}
+	}
+
+	if (links.length === 0 && !hasPr && !intent.branch) return null
 
 	return (
 		<section className="mb-8">
@@ -446,6 +467,32 @@ function ProviderLinksSection({ frontmatter, settings }: { frontmatter: Record<s
 				References
 			</h2>
 			<div className="flex flex-wrap gap-3">
+				{hasPr && (
+					<a
+						href={intent.prUrl!}
+						target="_blank"
+						rel="noopener noreferrer"
+						className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium hover:opacity-80 transition-opacity ${prStatusColors[intent.prStatus!] || prStatusColors.open}`}
+					>
+						<svg className="h-4 w-4" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={2}>
+							<path d="M5 5.5v5m6-5v5M5 3a2 2 0 100-4 2 2 0 000 4zm6 0a2 2 0 100-4 2 2 0 000 4zM5 14.5a2 2 0 100-4 2 2 0 000 4z" />
+						</svg>
+						{prLabel} {intent.prNumber ? `${isGitLab ? "!" : "#"}${intent.prNumber}` : ""} {intent.prStatus}
+					</a>
+				)}
+				{intent.branch && (
+					<a
+						href={branchUrl || "#"}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="inline-flex items-center gap-1.5 rounded-lg bg-stone-100 dark:bg-stone-800 px-3 py-1.5 text-sm font-mono text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
+					>
+						<svg className="h-4 w-4" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={2}>
+							<path d="M6 3v10M6 3L3 6m3-3l3 3m4 7V3" />
+						</svg>
+						{intent.branch}
+					</a>
+				)}
 				{links.map((link) => (
 					<ProviderLinkBadge key={link.field} link={link} />
 				))}
