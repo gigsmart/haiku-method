@@ -245,7 +245,7 @@ Each stage's inputs reference specific outputs from prior stages. If a required 
 
 | Stage | Hats | Review Agents | Review | Purpose |
 |-------|------|---------------|--------|---------|
-| **inception** | architect, elaborator | completeness, feasibility | auto | Problem understanding, unit elaboration |
+| **inception** | researcher, elaborator | completeness, feasibility | auto | Problem understanding, unit elaboration |
 | **design** | designer, design-reviewer | consistency, accessibility | ask | Visual/interaction design |
 | **product** | product-owner, specification-writer | completeness, feasibility | external, ask | Behavioral specs, acceptance criteria |
 | **development** | planner, builder, reviewer | correctness, security, performance, architecture, test-quality + design:consistency, design:accessibility, product:completeness | ask | Implementation with quality gates |

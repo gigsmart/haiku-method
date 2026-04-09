@@ -15,4 +15,4 @@ studio: software
 - The agent **MUST NOT** create units with circular dependencies
 - The agent **MUST NOT** write vague criteria ("it works", "tests pass")
 - The agent **MUST** define clear boundaries between units
-- The agent **MUST NOT** elaborat by layer (all backend, then all frontend) instead of by feature slice
+- The agent **MUST NOT** elaborate by layer (all backend, then all frontend) instead of by feature slice

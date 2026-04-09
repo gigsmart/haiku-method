@@ -25,14 +25,17 @@ The software studio organizes hats into discipline-specific stages. Each stage r
 
 Hats used during `/haiku:start` to define the intent and elaborate work.
 
-#### Architect
+#### Researcher
 
-Explores the codebase and external systems to build a domain model and identify architectural constraints.
+Understands the problem space at a business level — what problem are we solving, who benefits, and what does success look like.
 
-- Reviews existing architecture, patterns, and conventions
-- Maps domain entities, relationships, and data flows
-- Identifies integration points and technical constraints
-- Proposes the system structure for the intent
+- Feature goal & vision — the problem today, desired outcome, and why now
+- Origin context — where the request came from and strategic alignment
+- Competitive landscape — how competitors handle this problem space
+- Considerations & risks — technical constraints, business considerations, open questions
+- UI impact — which screens, flows, or surfaces are affected
+- Success criteria — functional and outcome-based measures
+- Technical landscape — existing code structure, architecture patterns, and constraints
 
 #### Elaborator
 
