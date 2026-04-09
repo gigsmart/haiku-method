@@ -1,12 +1,5 @@
 ---
-title: >-
-  Move the review SPA from the local MCP server to the website at
-  haikumethod.ai. When a review is triggered, the MCP opens a localtunnel to
-  expose itself, generates a JWT (signed with an ephemeral per-session secret)
-  containing the tunnel URL, and opens the browser at
-  haikumethod.ai/review/:token. The website decodes the token, extracts the
-  tunnel URL, and establishes a WebSocket connection back to the local MCP
-  through the tunnel to conduct the review in real time.
+title: "Move the review SPA from the local MCP server to the website at haikumethod.ai. When a review is triggered, the MCP opens a localtunnel to expose itself, generates a JWT (signed with an ephemeral per-session secret) containing the tunnel URL, and opens the browser at haikumethod.ai/review/#token. The website decodes the token, extracts the tunnel URL, and establishes a WebSocket connection back to the local MCP through the tunnel to conduct the review in real time. Full cutover — remove local SPA entirely. CORS wildcard in dev, restricted in prod. Consolidated file route. MCP becomes a single minified node executable."
 studio: ideation
 mode: continuous
 status: active
@@ -15,15 +8,19 @@ stages:
   - create
   - review
   - deliver
-created_at: '2026-04-09'
-active_stage: create
+created_at: 2026-04-09T04:40:04Z
 ---
 
-# Move the review SPA from the local MCP server to the website at haikumethod.ai. When a review is triggered, the MCP opens a localtunnel to expose itself, generates a JWT (signed with an ephemeral per-session secret) containing the tunnel URL, and opens the browser at haikumethod.ai/review/:token. The website decodes the token, extracts the tunnel URL, and establishes a WebSocket connection back to the local MCP through the tunnel to conduct the review in real time.
+# Move the review SPA from the local MCP server to the website at haikumethod.ai. When a review is triggered, the MCP opens a localtunnel to expose itself, generates a JWT (signed with an ephemeral per-session secret) containing the tunnel URL, and opens the browser at haikumethod.ai/review/#token. The website decodes the token, extracts the tunnel URL, and establishes a WebSocket connection back to the local MCP through the tunnel to conduct the review in real time. Full cutover — remove local SPA entirely. CORS wildcard in dev, restricted in prod. Consolidated file route. MCP becomes a single minified node executable.
 
-User wants to externalize the review experience from the local MCP to the public website. Key decisions made:
-- The review SPA currently lives in and is served by the local MCP server
-- Transport: WebSocket through the localtunnel for real-time bidirectional communication
-- Token: JWT signed with an ephemeral secret generated per session, payload contains the tunnel URL
-- The website route will be haikumethod.ai/review/:token
-- Studio: software (spans plugin MCP changes + Next.js website changes)
+STUDIO: software — this is a multi-component software feature spanning the MCP plugin and Next.js website.
+
+Key decisions from prior research:
+- Localtunnel npm package for tunnel (TCP-level proxy, supports WebSocket + binary)
+- Hash fragment routing (haikumethod.ai/review/#jwt_token) — token never hits server
+- JWT with ephemeral per-server-lifetime secret, decoded client-side (no verification)
+- Full cutover: delete review-app/ entirely, remove from build pipeline
+- CORS: wildcard in dev, haikumethod.ai in prod
+- Consolidate 4 file-serving routes into single GET /files/:sessionId/*path
+- All SPA dependencies already exist in the website stack (no new deps)
+- Research brief and draft deliverable available in archived intent knowledge/
