@@ -196,14 +196,14 @@ export function PortfolioView({
 			}
 
 			// Index knowledge files
-			for (const file of detail.knowledge) {
+			for (const kf of detail.knowledge) {
 				addToIndex({
-					id: `knowledge:${detail.slug}:${file}`,
+					id: `knowledge:${detail.slug}:${kf.name}`,
 					type: "knowledge",
-					title: file,
+					title: kf.name,
 					slug: detail.slug,
-					content: file,
-					path: `.haiku/intents/${detail.slug}/knowledge/${file}`,
+					content: `${kf.name} ${kf.content || ""}`,
+					path: `.haiku/intents/${detail.slug}/knowledge/${kf.name}`,
 				})
 			}
 

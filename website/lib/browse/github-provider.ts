@@ -2,8 +2,10 @@ import { fetchQuery } from "relay-runtime"
 import { createRelayEnvironment } from "./graphql/environment"
 import type {
 	BrowseProvider,
+	HaikuArtifact,
 	HaikuIntent,
 	HaikuIntentDetail,
+	HaikuKnowledgeFile,
 	HaikuStageState,
 	HaikuUnit,
 } from "./types"
@@ -22,6 +24,14 @@ import ReadFileQuery from "./graphql/github/__generated__/operationsReadFileQuer
 
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 const apiCache = new Map<string, { data: unknown; ts: number }>()
+
+function classifyArtifact(name: string): HaikuArtifact["type"] {
+	const lower = name.toLowerCase()
+	if (lower.endsWith(".md")) return "markdown"
+	if (lower.endsWith(".html") || lower.endsWith(".htm")) return "html"
+	if (/\.(png|jpe?g|gif|svg|webp|avif|bmp|ico)$/.test(lower)) return "image"
+	return "other"
+}
 
 export class GitHubProvider implements BrowseProvider {
 	readonly name = "GitHub"
@@ -443,6 +453,28 @@ export class GitHubProvider implements BrowseProvider {
 				units.push(parseUnit(unitEntry.name, stageName, unitText))
 			}
 
+			// Parse artifacts from the "artifacts" subdirectory
+			const stageArtifacts: HaikuArtifact[] = []
+			const artifactsEntry = stageChildren.find(
+				(e) => e.name === "artifacts" && e.type === "tree",
+			)
+			const artifactEntries = artifactsEntry?.object?.entries ?? []
+
+			for (const artEntry of artifactEntries) {
+				if (artEntry.type !== "blob") continue
+				const artType = classifyArtifact(artEntry.name)
+				const textContent = artEntry.object?.text
+				if (textContent != null) {
+					stageArtifacts.push({ name: artEntry.name, content: textContent, type: artType })
+				} else {
+					// Binary file — build a raw URL via GitHub API
+					const ref = intentBranch || this.branch || "HEAD"
+					const filePath = `${basePath}/stages/${stageName}/artifacts/${artEntry.name}`
+					const rawUrl = `https://raw.githubusercontent.com/${this.owner}/${this.repo}/${encodeURIComponent(ref)}/${filePath}`
+					stageArtifacts.push({ name: artEntry.name, rawUrl, type: artType })
+				}
+			}
+
 			// Parse state.json
 			const stateEntry = stageChildren.find(
 				(e) => e.name === "state.json" && e.type === "blob",
@@ -477,20 +509,27 @@ export class GitHubProvider implements BrowseProvider {
 				completedAt: stageCompletedAt,
 				gateOutcome,
 				units,
+				artifacts: stageArtifacts.length > 0 ? stageArtifacts : undefined,
 			})
 		}
 
-		// Knowledge files
+		// Knowledge files (include content)
 		const knowledgeEntries = data.repository.knowledgeTree?.entries ?? []
-		const knowledgeFiles = knowledgeEntries
+		const knowledgeFiles: HaikuKnowledgeFile[] = knowledgeEntries
 			.filter((e) => e.type === "blob" && e.name.endsWith(".md"))
-			.map((e) => e.name)
+			.map((e) => ({
+				name: e.name,
+				content: e.object?.text || "",
+			}))
 
-		// Operations files
+		// Operations files (include content)
 		const operationsEntries = data.repository.operationsTree?.entries ?? []
-		const operationsFiles = operationsEntries
+		const operationsFiles: HaikuKnowledgeFile[] = operationsEntries
 			.filter((e) => e.type === "blob" && e.name.endsWith(".md"))
-			.map((e) => e.name)
+			.map((e) => ({
+				name: e.name,
+				content: e.object?.text || "",
+			}))
 
 		// Reflection
 		const reflection = data.repository.reflectionFile?.text ?? null

@@ -2,8 +2,10 @@ import { fetchQuery } from "relay-runtime"
 import { createRelayEnvironment } from "./graphql/environment"
 import type {
 	BrowseProvider,
+	HaikuArtifact,
 	HaikuIntent,
 	HaikuIntentDetail,
+	HaikuKnowledgeFile,
 	HaikuStageState,
 	HaikuUnit,
 } from "./types"
@@ -25,6 +27,14 @@ import ReadFileQuery from "./graphql/gitlab/__generated__/operationsReadFileQuer
 const glCache = new Map<string, { data: unknown; ts: number }>()
 const GL_CACHE_TTL = 5 * 60 * 1000
 const CHUNK_SIZE = 10
+
+function classifyArtifact(name: string): HaikuArtifact["type"] {
+	const lower = name.toLowerCase()
+	if (lower.endsWith(".md")) return "markdown"
+	if (lower.endsWith(".html") || lower.endsWith(".htm")) return "html"
+	if (/\.(png|jpe?g|gif|svg|webp|avif|bmp|ico)$/.test(lower)) return "image"
+	return "other"
+}
 
 export class GitLabProvider implements BrowseProvider {
 	readonly name = "GitLab"
@@ -542,6 +552,27 @@ export class GitLabProvider implements BrowseProvider {
 				units.push(parseUnit(fileName, stageName, unitRaw))
 			}
 
+			// Parse stage artifacts
+			const stageArtifacts: HaikuArtifact[] = []
+			const artifactsPrefix = `${stagePath}/artifacts/`
+			for (const blob of allBlobs) {
+				if (!blob?.path || !blob.path.startsWith(artifactsPrefix)) continue
+				const fileName = blob.path.slice(artifactsPrefix.length)
+				if (fileName.includes("/")) continue // direct children only
+
+				const artType = classifyArtifact(fileName)
+				const textContent = blobByPath.get(blob.path)
+				if (textContent != null) {
+					stageArtifacts.push({ name: fileName, content: textContent, type: artType })
+				} else {
+					// Binary — build rawUrl
+					const ref = intentBranch || this.branch || "HEAD"
+					const encodedFilePath = encodeURIComponent(blob.path)
+					const rawUrl = `https://${this.host}/api/v4/projects/${this.encodedProject}/repository/files/${encodedFilePath}/raw?ref=${encodeURIComponent(ref)}`
+					stageArtifacts.push({ name: fileName, rawUrl, type: artType })
+				}
+			}
+
 			// Parse state.json
 			const stateRaw = blobByPath.get(`${stagePath}/state.json`)
 			let stagePhase = ""
@@ -574,30 +605,37 @@ export class GitLabProvider implements BrowseProvider {
 				completedAt: stageCompletedAt,
 				gateOutcome,
 				units,
+				artifacts: stageArtifacts.length > 0 ? stageArtifacts : undefined,
 			})
 		}
 
-		// Knowledge files (from the tree listing)
+		// Knowledge files (from the tree listing — include content from blobByPath)
 		const knowledgePrefix = `${basePath}/knowledge/`
-		const knowledgeFiles = allBlobs
+		const knowledgeFiles: HaikuKnowledgeFile[] = allBlobs
 			.filter(
 				(b): b is { name: string; path: string } =>
 					!!b?.path.startsWith(knowledgePrefix) &&
 					!b.path.slice(knowledgePrefix.length).includes("/") &&
 					b.name.endsWith(".md"),
 			)
-			.map((b) => b.name)
+			.map((b) => ({
+				name: b.name,
+				content: blobByPath.get(b.path) || "",
+			}))
 
-		// Operations files
+		// Operations files (include content)
 		const operationsPrefix = `${basePath}/operations/`
-		const operationsFiles = allBlobs
+		const operationsFiles: HaikuKnowledgeFile[] = allBlobs
 			.filter(
 				(b): b is { name: string; path: string } =>
 					!!b?.path.startsWith(operationsPrefix) &&
 					!b.path.slice(operationsPrefix.length).includes("/") &&
 					b.name.endsWith(".md"),
 			)
-			.map((b) => b.name)
+			.map((b) => ({
+				name: b.name,
+				content: blobByPath.get(b.path) || "",
+			}))
 
 		// Reflection
 		const reflection = blobByPath.get(`${basePath}/reflection.md`) ?? null

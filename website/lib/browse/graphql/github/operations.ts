@@ -103,6 +103,11 @@ export const GitHubGetIntentQuery = graphql`
           entries {
             name
             type
+            object {
+              ... on Blob {
+                text
+              }
+            }
           }
         }
       }
@@ -111,6 +116,11 @@ export const GitHubGetIntentQuery = graphql`
           entries {
             name
             type
+            object {
+              ... on Blob {
+                text
+              }
+            }
           }
         }
       }

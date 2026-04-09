@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-import type { BrowseProvider, HaikuAsset, HaikuIntent, HaikuIntentDetail, HaikuStageState, HaikuUnit } from "@/lib/browse/types"
+import type { BrowseProvider, HaikuArtifact, HaikuAsset, HaikuIntent, HaikuIntentDetail, HaikuKnowledgeFile, HaikuStageState, HaikuUnit } from "@/lib/browse/types"
 import { formatDate, formatDuration } from "@/lib/browse/types"
 import { buildBrowseUrl } from "@/lib/browse/url"
 import type { BrowseLocation } from "@/lib/browse/url"
@@ -306,6 +306,8 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 						<StageDetail
 							stage={expandedStageData}
 							onSelectUnit={(unit) => handleSelectUnit(unit, expandedStage)}
+							assets={intent.assets}
+							host={host || undefined}
 						/>
 						{expandedStageData.phase === "gate" && !expandedStageData.gateOutcome && provider.writeFile && (
 							<div className="mt-4 rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-800/50">
@@ -376,8 +378,8 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 						Knowledge Artifacts
 					</h2>
 					<div className="space-y-2">
-						{intent.knowledge.map((file) => (
-							<KnowledgeFile key={file} file={file} intentSlug={intent.slug} provider={provider} assets={intent.assets} host={host || undefined} />
+						{intent.knowledge.map((kf) => (
+							<KnowledgeFileCard key={kf.name} file={kf} assets={intent.assets} host={host || undefined} basePath={`.haiku/intents/${intent.slug}/knowledge`} />
 						))}
 					</div>
 				</section>
@@ -390,8 +392,8 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 						Operations
 					</h2>
 					<div className="space-y-2">
-						{intent.operations.map((file) => (
-							<KnowledgeFile key={file} file={file} intentSlug={intent.slug} provider={provider} basePath="operations" assets={intent.assets} host={host || undefined} />
+						{intent.operations.map((kf) => (
+							<KnowledgeFileCard key={kf.name} file={kf} assets={intent.assets} host={host || undefined} basePath={`.haiku/intents/${intent.slug}/operations`} />
 						))}
 					</div>
 				</section>
@@ -529,33 +531,25 @@ function ProviderLinkBadge({ link }: { link: ProviderLink }) {
 	)
 }
 
-function KnowledgeFile({ file, intentSlug, provider, basePath = "knowledge", assets, host }: { file: string; intentSlug: string; provider: BrowseProvider; basePath?: string; assets?: HaikuAsset[]; host?: string }) {
-	const [content, setContent] = useState<string | null>(null)
+/** Renders a knowledge or operations file with content available inline (collapsible). */
+function KnowledgeFileCard({ file, assets, host, basePath }: { file: HaikuKnowledgeFile; assets?: HaikuAsset[]; host?: string; basePath?: string }) {
 	const [expanded, setExpanded] = useState(false)
-
-	const handleExpand = async () => {
-		if (content === null) {
-			const raw = await provider.readFile(`.haiku/intents/${intentSlug}/${basePath}/${file}`)
-			setContent(raw || "(empty)")
-		}
-		setExpanded(!expanded)
-	}
 
 	return (
 		<div className="rounded-lg border border-stone-200 dark:border-stone-700">
 			<button
-				onClick={handleExpand}
+				onClick={() => setExpanded(!expanded)}
 				className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-stone-50 dark:hover:bg-stone-800"
 			>
-				<span className="font-mono text-stone-600 dark:text-stone-400">{file}</span>
+				<span className="font-mono text-stone-600 dark:text-stone-400">{file.name}</span>
 				<svg className={`h-4 w-4 text-stone-400 transition ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
 					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
 				</svg>
 			</button>
-			{expanded && content && (
+			{expanded && (
 				<div className="border-t border-stone-100 px-4 py-4 dark:border-stone-800">
 					<div className="prose prose-sm prose-stone dark:prose-invert max-w-none">
-						<BrowseMarkdown assets={assets} host={host} basePath={`.haiku/intents/${intentSlug}/${basePath}`}>{content}</BrowseMarkdown>
+						<BrowseMarkdown assets={assets} host={host} basePath={basePath}>{file.content || "(empty)"}</BrowseMarkdown>
 					</div>
 				</div>
 			)}
@@ -563,8 +557,93 @@ function KnowledgeFile({ file, intentSlug, provider, basePath = "knowledge", ass
 	)
 }
 
-function StageDetail({ stage, onSelectUnit }: { stage: HaikuStageState; onSelectUnit: (u: HaikuUnit) => void }) {
-	if (stage.units.length === 0) {
+/** Renders a single stage artifact based on its type. */
+function ArtifactCard({ artifact, assets, host }: { artifact: HaikuArtifact; assets?: HaikuAsset[]; host?: string }) {
+	const [expanded, setExpanded] = useState(false)
+
+	if (artifact.type === "image") {
+		return (
+			<div className="rounded-lg border border-stone-200 dark:border-stone-700 overflow-hidden">
+				<div className="px-4 py-2 text-xs font-mono text-stone-500 dark:text-stone-400 bg-stone-50 dark:bg-stone-800/50">
+					{artifact.name}
+				</div>
+				{artifact.rawUrl && host ? (
+					<AuthenticatedMedia rawUrl={artifact.rawUrl} name={artifact.name} host={host} className="w-full" fullSize />
+				) : artifact.rawUrl ? (
+					<img src={artifact.rawUrl} alt={artifact.name} className="w-full" />
+				) : null}
+			</div>
+		)
+	}
+
+	if (artifact.type === "html" && artifact.content) {
+		return (
+			<div className="rounded-lg border border-stone-200 dark:border-stone-700">
+				<button
+					onClick={() => setExpanded(!expanded)}
+					className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-stone-50 dark:hover:bg-stone-800"
+				>
+					<span className="font-mono text-stone-600 dark:text-stone-400">{artifact.name}</span>
+					<svg className={`h-4 w-4 text-stone-400 transition ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+					</svg>
+				</button>
+				{expanded && (
+					<div className="border-t border-stone-100 dark:border-stone-800">
+						<iframe
+							srcDoc={artifact.content}
+							title={artifact.name}
+							className="w-full border-0"
+							style={{ minHeight: "400px" }}
+							sandbox="allow-same-origin"
+						/>
+					</div>
+				)}
+			</div>
+		)
+	}
+
+	if (artifact.type === "markdown" && artifact.content) {
+		return (
+			<div className="rounded-lg border border-stone-200 dark:border-stone-700">
+				<button
+					onClick={() => setExpanded(!expanded)}
+					className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-stone-50 dark:hover:bg-stone-800"
+				>
+					<span className="font-mono text-stone-600 dark:text-stone-400">{artifact.name}</span>
+					<svg className={`h-4 w-4 text-stone-400 transition ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+					</svg>
+				</button>
+				{expanded && (
+					<div className="border-t border-stone-100 px-4 py-4 dark:border-stone-800">
+						<div className="prose prose-sm prose-stone dark:prose-invert max-w-none">
+							<BrowseMarkdown assets={assets} host={host}>{artifact.content}</BrowseMarkdown>
+						</div>
+					</div>
+				)}
+			</div>
+		)
+	}
+
+	// "other" — show filename only with a note
+	return (
+		<div className="rounded-lg border border-stone-200 px-4 py-3 dark:border-stone-700">
+			<span className="font-mono text-sm text-stone-600 dark:text-stone-400">{artifact.name}</span>
+			{artifact.rawUrl && (
+				<a href={artifact.rawUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-xs text-teal-600 hover:underline dark:text-teal-400">
+					Download
+				</a>
+			)}
+		</div>
+	)
+}
+
+function StageDetail({ stage, onSelectUnit, assets, host }: { stage: HaikuStageState; onSelectUnit: (u: HaikuUnit) => void; assets?: HaikuAsset[]; host?: string }) {
+	const hasUnits = stage.units.length > 0
+	const hasArtifacts = (stage.artifacts?.length ?? 0) > 0
+
+	if (!hasUnits && !hasArtifacts) {
 		return (
 			<div className="rounded-xl border border-stone-200 px-6 py-8 text-center dark:border-stone-700">
 				<p className="text-stone-500">No units in this stage yet.</p>
@@ -573,45 +652,59 @@ function StageDetail({ stage, onSelectUnit }: { stage: HaikuStageState; onSelect
 	}
 
 	return (
-		<div className="space-y-2">
-			<h3 className="text-sm font-semibold text-stone-600 dark:text-stone-300">
-				{titleCase(stage.name)} — {stage.units.length} unit{stage.units.length !== 1 ? "s" : ""}
-			</h3>
-			{stage.units.map((unit) => {
-				const checkedCount = unit.criteria.filter((c) => c.checked).length
-				const totalCriteria = unit.criteria.length
-				return (
-					<button
-						key={unit.name}
-						onClick={() => onSelectUnit(unit)}
-						className="w-full rounded-lg border border-stone-200 px-5 py-3 text-left transition hover:border-teal-300 dark:border-stone-700 dark:hover:border-teal-700"
-					>
-						<div className="flex items-center justify-between">
-							<div className="flex items-center gap-3">
-								<span className="text-sm font-semibold text-stone-900 dark:text-stone-100">
-									{titleCase(unit.name)}
-								</span>
-								<span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${unitStatusColors[unit.status] || unitStatusColors.pending}`}>
-									{unit.status}
-								</span>
-								{unit.type && (
-									<span className="text-xs text-stone-400">{unit.type}</span>
+		<div className="space-y-4">
+			{hasUnits && (
+				<div className="space-y-2">
+					<h3 className="text-sm font-semibold text-stone-600 dark:text-stone-300">
+						{titleCase(stage.name)} — {stage.units.length} unit{stage.units.length !== 1 ? "s" : ""}
+					</h3>
+					{stage.units.map((unit) => {
+						const checkedCount = unit.criteria.filter((c) => c.checked).length
+						const totalCriteria = unit.criteria.length
+						return (
+							<button
+								key={unit.name}
+								onClick={() => onSelectUnit(unit)}
+								className="w-full rounded-lg border border-stone-200 px-5 py-3 text-left transition hover:border-teal-300 dark:border-stone-700 dark:hover:border-teal-700"
+							>
+								<div className="flex items-center justify-between">
+									<div className="flex items-center gap-3">
+										<span className="text-sm font-semibold text-stone-900 dark:text-stone-100">
+											{titleCase(unit.name)}
+										</span>
+										<span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${unitStatusColors[unit.status] || unitStatusColors.pending}`}>
+											{unit.status}
+										</span>
+										{unit.type && (
+											<span className="text-xs text-stone-400">{unit.type}</span>
+										)}
+									</div>
+									{totalCriteria > 0 && (
+										<span className="text-xs text-stone-400">
+											{checkedCount}/{totalCriteria} criteria
+										</span>
+									)}
+								</div>
+								{unit.dependsOn.length > 0 && (
+									<div className="mt-1 text-xs text-stone-400">
+										Depends on: {unit.dependsOn.join(", ")}
+									</div>
 								)}
-							</div>
-							{totalCriteria > 0 && (
-								<span className="text-xs text-stone-400">
-									{checkedCount}/{totalCriteria} criteria
-								</span>
-							)}
-						</div>
-						{unit.dependsOn.length > 0 && (
-							<div className="mt-1 text-xs text-stone-400">
-								Depends on: {unit.dependsOn.join(", ")}
-							</div>
-						)}
-					</button>
-				)
-			})}
+							</button>
+						)
+					})}
+				</div>
+			)}
+			{hasArtifacts && (
+				<div className="space-y-2">
+					<h4 className="text-xs font-semibold uppercase tracking-wider text-stone-400">
+						Stage Artifacts
+					</h4>
+					{stage.artifacts!.map((artifact) => (
+						<ArtifactCard key={artifact.name} artifact={artifact} assets={assets} host={host} />
+					))}
+				</div>
+			)}
 		</div>
 	)
 }
