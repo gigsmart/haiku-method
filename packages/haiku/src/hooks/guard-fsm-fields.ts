@@ -9,7 +9,7 @@ import { resolve } from "node:path"
 // FSM-controlled fields by file type
 const INTENT_PROTECTED = ["status", "active_stage", "completed_at", "started_at"]
 const STAGE_PROTECTED = ["status", "phase", "started_at", "completed_at", "gate_entered_at", "gate_outcome"]
-const UNIT_PROTECTED = ["status", "started_at", "completed_at", "bolt", "hat"]
+const UNIT_PROTECTED = ["status", "started_at", "completed_at", "bolt", "hat", "hat_started_at"]
 
 function out(s: string): void {
 	process.stdout.write(s)
@@ -19,7 +19,8 @@ export async function guardFsmFields(input: Record<string, unknown>): Promise<vo
 	const toolName = (input.tool_name as string) || ""
 	if (toolName !== "Write" && toolName !== "Edit") return
 
-	const filePath = (input.file_path as string) || ""
+	const toolInput = (input.tool_input || {}) as Record<string, unknown>
+	const filePath = (toolInput.file_path as string) || ""
 	if (!filePath) return
 
 	const absPath = resolve(process.cwd(), filePath)
@@ -31,8 +32,8 @@ export async function guardFsmFields(input: Record<string, unknown>): Promise<vo
 
 	if (!isIntentFile && !isStageState && !isUnitFile) return
 
-	// Determine what's being written
-	const content = (input.content as string) || (input.new_string as string) || ""
+	// Determine what's being written (content for Write, new_string for Edit)
+	const content = (toolInput.content as string) || (toolInput.new_string as string) || ""
 	if (!content) return
 
 	let protectedFields: string[]
@@ -63,7 +64,7 @@ export async function guardFsmFields(input: Record<string, unknown>): Promise<vo
 	if (violations.length > 0) {
 		// Block the edit
 		out(`BLOCKED: Cannot directly modify FSM-controlled fields in ${fileType} files: ${violations.join(", ")}. ` +
-			`Use the haiku MCP tools instead (haiku_run_next, haiku_unit_start, haiku_unit_complete, etc.). ` +
+			`Use the haiku MCP tools instead (haiku_run_next, haiku_unit_start, haiku_unit_advance_hat, etc.). ` +
 			`Direct file edits bypass the state machine and corrupt lifecycle state.`)
 		process.exit(2) // Exit code 2 signals "blocked" to Claude Code
 	}

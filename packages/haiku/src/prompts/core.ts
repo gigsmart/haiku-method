@@ -1,6 +1,6 @@
 // prompts/core.ts — Core workflow prompt handlers
 //
-// Registers the 5 core prompts: haiku:start, haiku:resume, haiku:refine, haiku:review, haiku:reflect
+// Registers the 6 core prompts: haiku:start, haiku:resume, haiku:refine, haiku:review, haiku:reflect, haiku:go-back
 // Each handler reads state, optionally triggers side effects, and returns PromptMessage[].
 
 import { spawnSync } from "node:child_process"
@@ -379,30 +379,24 @@ function buildRunInstructions(
 
 			// Mechanics — one subagent per hat, subagent calls advance/fail tools
 			const worktreePath = action.worktree as string || ""
-			const hatIdx = hats.indexOf(hat)
-			const nextHat = hatIdx < hats.length - 1 ? hats[hatIdx + 1] : null
-			const isLastHat = !nextHat
-
-			const singleUseTeams = ["true", "1"].includes(process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS || "")
-
 			sections.push(
 				`### Mechanics\n\n` +
-				`**You are the orchestrator.** Spawn ${singleUseTeams ? "a teammate" : "a subagent"} for the "${hat}" hat.\n` +
-				(singleUseTeams ? `**Agent Teams enabled** — use team \`haiku-${slug}\`.\n` : "") +
+				`**You are the orchestrator.** Spawn a subagent for the "${hat}" hat.\n` +
 				`Agent type: \`${hatAgentType}\`${hatModel ? ` | Model: \`${hatModel}\`` : ""}\n` +
 				(worktreePath ? `Worktree: \`${worktreePath}\`\n` : "") +
 				`\n**Subagent prompt must include:**\n` +
 				`- The hat definition, unit spec, and refs above\n` +
 				`- The stage scope constraint\n` +
+				(worktreePath ? `- **Git discipline:** Commit work frequently in the worktree (\`git add -A && git commit -m "..."\`). Do NOT push — the merge-back handles pushing.\n` : "") +
 				(action.action === "start_unit"
-					? `- Instruction to call \`haiku_unit_start { intent: "${slug}", stage: "${stage}", unit: "${unit}", hat: "${hat}" }\` first\n`
+					? `- Instruction to call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\` first\n`
 					: "") +
 				`\n**Subagent calls one of these when done:**\n` +
-				(isLastHat
-					? `- **Success:** \`haiku_unit_complete { intent: "${slug}", stage: "${stage}", unit: "${unit}" }\`\n`
-					: `- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", stage: "${stage}", unit: "${unit}", hat: "${nextHat}" }\`\n`) +
-				`- **Failure:** \`haiku_unit_fail { intent: "${slug}", stage: "${stage}", unit: "${unit}" }\` — moves back one hat, increments bolt\n` +
-				`\n**After subagent returns:** call \`haiku_run_next { intent: "${slug}" }\``,
+				`- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\` — auto-advances to the next hat, or auto-completes if this was the last hat\n` +
+				`- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\` — moves back one hat, increments bolt\n` +
+				`\n**After subagent returns:** The \`advance_hat\` result contains the next FSM action — spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately — advance_hat handles FSM progression internally.\n` +
+				`\n**If outputs from a previous stage are missing, incomplete, or incorrect:** call \`haiku_go_back { intent: "${slug}" }\` to return to the prior stage for corrections.\n` +
+				`\n**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` — do NOT open files in a browser and ask via text. The visual question tool provides a structured review experience.`,
 			)
 
 			// Check for ticketing provider — move ticket to "In Progress"
@@ -439,7 +433,6 @@ function buildRunInstructions(
 			sections.push(`Hats: ${hats.join(" → ")}\nUnits: ${units.join(", ")}`)
 
 			const worktrees = (action.worktrees as Record<string, string | null>) || {}
-			const useTeams = ["true", "1"].includes(process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS || "")
 
 			const wave = action.wave as number | undefined
 			const totalWaves = action.total_waves as number | undefined
@@ -449,21 +442,20 @@ function buildRunInstructions(
 				(wave !== undefined ? `**Wave ${wave}/${totalWaves ?? "?"}** — ` : "") +
 				`${units.length} units to run in parallel.\n` +
 				`**You are the orchestrator.** Do NOT do unit work yourself.\n\n` +
-				(useTeams
-					? `**Agent Teams enabled.** Use \`TeamCreate({ team_name: "haiku-${slug}", description: "H·AI·K·U: ${slug}" })\` if not already created. ` +
-					  `Then spawn teammates via the team for each unit. Each teammate runs the FIRST hat ("${firstHat}") only.\n\n`
-					: `Spawn one Agent subagent per unit. Each subagent runs the FIRST hat ("${firstHat}") only.\n\n`) +
-				`After all ${useTeams ? "teammates" : "subagents"} complete, call \`haiku_run_next\` — the orchestrator will advance hats or start the next wave.\n\n` +
+				`Spawn one Agent subagent per unit **in a single message** (all Agent tool calls in one response). Each subagent runs the FIRST hat ("${firstHat}") only.\n\n` +
+				`Each subagent calls \`advance_hat\` when done — it internally progresses the FSM. The last subagent to finish the wave triggers the next action automatically.\n\n` +
 				`**Each subagent prompt must include:**\n` +
 				`- The hat definition for "${firstHat}"\n` +
 				`- The unit spec and refs\n` +
 				`- The stage scope constraint\n` +
-				`- Instruction to call \`haiku_unit_start\` first\n\n` +
+				`- Instruction to call \`haiku_unit_start\` first\n` +
+				`- If outputs from a previous stage are missing, incomplete, or incorrect: call \`haiku_go_back { intent: "${slug}" }\` to return to the prior stage for corrections\n\n` +
 				units.map(u => {
 					const wt = worktrees[u]
-					return `- **${u}**${wt ? ` (worktree: \`${wt}\`)` : ""}: \`haiku_unit_start { intent: "${slug}", stage: "${stage}", unit: "${u}", hat: "${firstHat}" }\``
+					return `- **${u}**${wt ? ` (worktree: \`${wt}\`)` : ""}: \`haiku_unit_start { intent: "${slug}", unit: "${u}" }\``
 				}).join("\n") +
-				`\n\nAfter all subagents complete: \`haiku_run_next { intent: "${slug}" }\``,
+				`\n\n**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` — do NOT open files in a browser and ask via text.\n\n` +
+				`After all subagents return: check the last subagent's \`advance_hat\` result — it contains the next FSM action (next wave, phase advance, etc.). Act on it directly. Do NOT call haiku_run_next separately.`,
 			)
 			break
 		}
@@ -500,7 +492,7 @@ function buildRunInstructions(
 			break
 		}
 
-		case "gate_ask": {
+		case "gate_review": {
 			const stage = action.stage as string
 			const nextStage = action.next_stage as string | null
 
@@ -747,6 +739,16 @@ registerPrompt({
 		}
 
 		contextParts.push(
+			`## Quick Context Scan\n\n` +
+			`Before prelaboration, do a quick scan of the project to orient yourself (max 2-3 tool calls):\n` +
+			`- Check the project root structure (ls or glob for key files)\n` +
+			`- Read any project config or README that reveals the tech stack and project purpose\n` +
+			`- If the intent mentions specific areas, glance at relevant directories\n\n` +
+			`This gives you enough context to ask informed questions and recommend the right studio.\n` +
+			`Keep it brief — save deep exploration for the elaboration phase.`,
+		)
+
+		contextParts.push(
 			`## Prelaboration\n\n` +
 			`Before creating the intent, ensure the description is substantive enough to drive elaboration.\n\n` +
 			`**If the description is short (under ~2 sentences) or vague:**\n` +
@@ -760,14 +762,15 @@ registerPrompt({
 			`that elaboration can proceed without ambiguity.\n\n` +
 			`**If the description is already detailed (multiple sentences, clear scope):** proceed directly.\n\n` +
 			`## Implementation Steps\n\n` +
-			`1. ${args.description ? "Evaluate the provided description — if too brief, prelaborate with the user" : "Ask the user: 'What do you want to accomplish?' (free text, not a form)"}\n` +
-			`2. Convert the final description to kebab-case slug (max 40 chars)\n` +
-			`3. ${projectStudio ? `Use studio "${projectStudio}"` : "Select studio per the logic above"}\n` +
-			`4. Default to **continuous** mode (do not ask the user)\n` +
-			`5. Summarize the conversation so far into a concise context block (key decisions, constraints, technical details discussed)\n` +
-			`6. Call \`haiku_intent_create\` with the enriched description, slug, and the \`context\` argument containing your conversation summary\n` +
-			`7. The tool creates directories, writes intent.md, writes CONVERSATION-CONTEXT.md to knowledge/, and opens a review for user confirmation\n` +
-			`8. Invoke /haiku:resume — the orchestrator opens the review and advances automatically (continuous) or report ready (discrete)`,
+			`1. Quick context scan — explore the project structure and key config (2-3 tool calls max)\n` +
+			`2. ${args.description ? "Evaluate the provided description — if too brief, prelaborate with the user" : "Ask the user: 'What do you want to accomplish?' (free text, not a form)"}\n` +
+			`3. Convert the final description to kebab-case slug (max 40 chars)\n` +
+			`4. ${projectStudio ? `Use studio "${projectStudio}"` : "Select studio per the logic above"}\n` +
+			`5. Default to **continuous** mode (do not ask the user)\n` +
+			`6. Summarize the conversation so far into a concise context block (key decisions, constraints, technical details discussed)\n` +
+			`7. Call \`haiku_intent_create\` with the enriched description, slug, and the \`context\` argument containing your conversation summary\n` +
+			`8. The tool creates directories, writes intent.md, writes CONVERSATION-CONTEXT.md to knowledge/, and opens a review for user confirmation\n` +
+			`9. Invoke /haiku:resume — the orchestrator opens the review and advances automatically (continuous) or report ready (discrete)`,
 		)
 
 		const instructionText = contextParts.join("\n\n")
@@ -1125,5 +1128,32 @@ registerPrompt({
 				textMsg("user", instructions),
 			],
 		}
+	},
+})
+
+// ── haiku:go-back ──────────────────────────────────────────────────────────
+
+registerPrompt({
+	name: "haiku:go-back",
+	title: "Go Back",
+	description: "Go back to the previous stage or phase to address issues",
+	arguments: [
+		{
+			name: "intent",
+			description: "Intent slug (auto-detected if only one active)",
+			required: false,
+			completer: completeIntentSlug,
+		},
+	],
+	handler: async (args) => {
+		const resolved = resolveIntent(args)
+		if ("error" in resolved) return resolved.error
+
+		return singleMessage(
+			`Call \`haiku_go_back { intent: "${resolved.slug}" }\` to return to the previous stage or phase.\n\n` +
+			`The FSM determines the correct target based on current position:\n` +
+			`- If in execute/review/gate phase: goes back to elaborate in the current stage\n` +
+			`- If already in elaborate phase: goes back to the previous stage`,
+		)
 	},
 })

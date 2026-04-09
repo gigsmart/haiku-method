@@ -1,4 +1,4 @@
-import type { CriterionItem } from "../markdown.js";
+import type { CriterionItem } from "../types.js";
 import { markdownToHtml } from "../markdown.js";
 import { escapeHtml, escapeAttr } from "./layout.js";
 import { statusColors } from "./styles.js";

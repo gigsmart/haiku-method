@@ -157,3 +157,32 @@ export const GitHubListFilesQuery = graphql`
     }
   }
 `
+
+/**
+ * Lists haiku/* branches and their associated PRs.
+ * Used by the branch-scanning flow to discover active intents across branches.
+ */
+export const GitHubListHaikuBranchesQuery = graphql`
+  query operationsListHaikuBranchesQuery($owner: String!, $name: String!, $refPrefix: String!) {
+    repository(owner: $owner, name: $name) {
+      refs(refPrefix: $refPrefix, first: 100) {
+        nodes {
+          name
+          associatedPullRequests(first: 1, states: [OPEN, MERGED]) {
+            nodes {
+              number
+              title
+              url
+              state
+            }
+          }
+          target {
+            ... on Commit {
+              committedDate
+            }
+          }
+        }
+      }
+    }
+  }
+`

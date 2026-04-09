@@ -28,6 +28,10 @@ export interface BrowseProvider {
 	getSettings(): Promise<Record<string, unknown> | null>
 	/** Provider display name */
 	readonly name: string
+	/** Check if branches have changed since last poll (ETag-based). Returns true if re-fetch needed. */
+	checkForBranchChanges?(): Promise<boolean>
+	/** Clear cached branch/intent data so the next fetch gets fresh results. */
+	clearBranchCache?(): void
 }
 
 export function parseFrontmatter(raw: string): { data: Record<string, unknown>; content: string } {

@@ -84,10 +84,7 @@ export default async function StudioDetailPage({ params }: Props) {
 						review agents
 					</span>
 					<span>
-						Persistence: <strong className="text-stone-700 dark:text-stone-300">{studio.persistence.type}</strong>
-					</span>
-					<span>
-						Delivery: <strong className="text-stone-700 dark:text-stone-300">{studio.persistence.delivery}</strong>
+						Persistence: <strong className="text-stone-700 dark:text-stone-300">auto-detected</strong>
 					</span>
 				</div>
 				<div className="mt-6">

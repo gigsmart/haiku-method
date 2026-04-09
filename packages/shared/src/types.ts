@@ -16,6 +16,14 @@ export interface HaikuIntent {
   follows: string | null;
   content?: string;
   raw: Record<string, unknown>;
+  /** The git branch this intent lives on (populated when scanning haiku/* branches) */
+  branch?: string;
+  /** PR/MR URL if one exists for this intent's branch */
+  prUrl?: string | null;
+  /** PR/MR state: "open", "merged", "closed" */
+  prStatus?: string | null;
+  /** PR/MR number */
+  prNumber?: number | null;
 }
 
 export interface HaikuUnit {

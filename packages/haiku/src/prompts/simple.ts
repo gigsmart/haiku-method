@@ -448,7 +448,7 @@ registerPrompt({
 				`name: ${name}\n` +
 				"description: TODO -- describe this studio's purpose\n" +
 				"stages: []\n" +
-				"persistence:\n  type: git\n  delivery: pull-request\n" +
+				"category: general\n" +
 				"---\n\n" +
 				`# ${name} Studio\n\n` +
 				"Describe the lifecycle this studio supports.\n" +
@@ -742,12 +742,10 @@ registerPrompt({
 			"- Announcement formats\n" +
 			"- Visual review (browser-based review UI)\n" +
 			"- Review agents (core + optional)\n\n" +
-			"### Phase 6: VCS Strategy\n\n" +
-			"Ask about change strategy (intent/unit/trunk) and source branch.\n\n" +
-			"### Phase 7: Write Settings\n\n" +
+			"### Phase 6: Write Settings\n\n" +
 			"Write `.haiku/settings.yml` preserving any existing fields.\n" +
 			"Commit: `git add .haiku/settings.yml && git commit -m 'haiku: configure project settings'`\n\n" +
-			"### Phase 8: Confirmation\n\n" +
+			"### Phase 7: Confirmation\n\n" +
 			"Display summary table and suggest: `/haiku:start` to start first intent."
 		)
 	},

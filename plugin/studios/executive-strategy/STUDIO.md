@@ -3,9 +3,6 @@ name: executive-strategy
 description: Executive decision-making and strategic planning lifecycle
 stages: [landscape, options, evaluate, decide, communicate]
 category: back-office
-persistence:
-  type: filesystem
-  delivery: local
 ---
 
 # Executive Strategy Studio

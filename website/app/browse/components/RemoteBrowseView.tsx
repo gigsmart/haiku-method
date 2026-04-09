@@ -230,7 +230,7 @@ export function RemoteBrowseView({ pathSegments, branch: branchParam }: Props) {
 	}
 
 	if (provider && location) {
-		const repoLabel = `${host}/${project}${branch ? ` (${branch})` : ""}`
+		const repoLabel = `${host}/${project}${branch ? ` @ ${branch}` : ""}`
 		return (
 			<PortfolioView
 				provider={provider}

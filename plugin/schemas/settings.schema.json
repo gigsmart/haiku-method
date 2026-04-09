@@ -31,7 +31,7 @@
 			"type": "string",
 			"enum": ["ideation", "software"],
 			"default": "ideation",
-			"description": "The studio (lifecycle template) for this project. Studios define stage order and persistence type."
+			"description": "The studio (lifecycle template) for this project. Studios define stage order and execution mode."
 		},
 		"mockup_format": {
 			"type": "string",

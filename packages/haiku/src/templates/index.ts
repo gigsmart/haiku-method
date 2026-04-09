@@ -1,4 +1,5 @@
-import type { ParsedIntent, ParsedUnit, CriterionItem } from "./index.js";
+import type { ParsedIntent, ParsedUnit, CriterionItem } from "../types.js";
+export type { ParsedIntent, ParsedUnit, CriterionItem, Section } from "../types.js";
 import { renderLayout } from "./layout.js";
 import { renderIntentReview } from "./intent-review.js";
 import type { ReviewResult } from "./intent-review.js";

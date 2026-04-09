@@ -12,7 +12,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 - [ ] Unit state lives in `unit-*.md` frontmatter (`bolt`, `hat`, `status`, `started_at`, `completed_at`)
 - [ ] Stage state lives in `stages/{stage}/state.json` (`phase`, `status`, `started_at`, `completed_at`, `gate_entered_at`, `gate_outcome`)
 - [ ] No lifecycle state is stored in `state/iteration.json` (deprecated)
-- [ ] Stage/intent lifecycle transitions are performed by the `haiku_run_next` FSM driver — the agent never mutates stage or intent state directly. Intent creation goes through `haiku_intent_create`. Unit-level writes go through `haiku_unit_start`, `haiku_unit_advance_hat`, `haiku_unit_complete`, `haiku_unit_fail`, `haiku_unit_increment_bolt`, and `haiku_unit_set`. Exception: hooks may write directly for auto-reconciliation (post-merge, auto-complete)
+- [ ] Stage/intent lifecycle transitions are performed by the `haiku_run_next` FSM driver — the agent never mutates stage or intent state directly. Intent creation goes through `haiku_intent_create`. Unit-level writes go through `haiku_unit_start`, `haiku_unit_advance_hat`, `haiku_unit_reject_hat`, `haiku_unit_increment_bolt`, and `haiku_unit_set`. Exception: hooks may write directly for auto-reconciliation (post-merge, auto-complete)
 - [ ] Lifecycle transitions (stage start/complete, unit start/complete) are committed to git automatically. Incremental updates (hat advance, bolt increment, phase set) are committed by the agent as part of its workflow.
 
 ### Orchestration
@@ -65,7 +65,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 
 - [ ] Intent gets its own branch (`haiku/{intent-slug}/main`) on first stage start
 - [ ] Every unit gets its own worktree off the intent branch via `createUnitWorktree`
-- [ ] `haiku_unit_complete` merges unit worktree back to intent branch
+- [ ] `haiku_unit_advance_hat` (on last hat) merges unit worktree back to intent branch
 - [ ] Main agent stays on intent branch — only subagents work in unit worktrees
 - [ ] Worktree cleanup happens on unit completion (`mergeUnitWorktree`)
 - [ ] Intent branch is NOT merged to main automatically — user creates PR/MR
@@ -107,8 +107,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
    - [ ] Agent calls `haiku_unit_start { intent, stage, unit, hat }`
    - [ ] Agent loads hat definition from `stages/inception/hats/{hat}.md`
    - [ ] Subagent executes hat's work
-   - [ ] Subagent calls `haiku_unit_advance_hat` (success) or `haiku_unit_fail` (failure)
-   - [ ] Agent calls `haiku_unit_complete` when all hats pass
+   - [ ] Subagent calls `haiku_unit_advance_hat` (success — auto-completes on last hat) or `haiku_unit_reject_hat` (failure)
    - [ ] If criteria not met: `haiku_unit_increment_bolt` and retry
    - [ ] Output validation blocks execute to review transition if required outputs missing
 
@@ -413,14 +412,13 @@ packages/
 | `haiku_go_back` | Navigate to a prior stage or phase |
 | `haiku_intent_create` | Create a new intent (with elicitation) |
 
-**Unit write (6):**
+**Unit write (5):**
 
 | Tool | Purpose |
 |------|---------|
 | `haiku_unit_start` | Start a unit (set hat, status: active) |
-| `haiku_unit_advance_hat` | Advance to next hat (success) |
-| `haiku_unit_complete` | Mark unit complete |
-| `haiku_unit_fail` | Mark hat failure on a unit |
+| `haiku_unit_advance_hat` | Advance to next hat (auto-completes on last hat) |
+| `haiku_unit_reject_hat` | Reject hat's work — go back one hat, increment bolt |
 | `haiku_unit_increment_bolt` | Increment bolt (retry cycle) |
 | `haiku_unit_set` | Write arbitrary unit frontmatter fields |
 
@@ -464,8 +462,8 @@ Every MCP state transition emits its OTEL event — no manual calls needed:
 | `haiku_run_next` | `haiku.orchestrator.action` |
 | `haiku_go_back` | `haiku.go_back.stage` / `haiku.go_back.phase` |
 | `haiku_unit_start` | `haiku.unit.started` |
-| `haiku_unit_complete` | `haiku.unit.completed` |
-| `haiku_unit_fail` | `haiku.unit.failed` |
+| `haiku_unit_advance_hat` (last hat) | `haiku.unit.completed` |
+| `haiku_unit_reject_hat` | `haiku.unit.failed` |
 | `haiku_unit_advance_hat` | `haiku.hat.transition` |
 | `haiku_unit_increment_bolt` | `haiku.bolt.iteration` |
 

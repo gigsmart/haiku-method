@@ -239,24 +239,21 @@ export async function generateSubagentContext(_input: Record<string, unknown>, p
 		out("")
 	}
 
-	// Hat instructions (skip in team mode)
-	if (!process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS) {
-		// Hat instructions
-		const instructions = readHatInstructions(hat, activeStage, studio, pluginRoot)
-		const hatMeta = readHatMetadata(hat, activeStage, studio, pluginRoot)
+	// Hat instructions
+	const instructions = readHatInstructions(hat, activeStage, studio, pluginRoot)
+	const hatMeta = readHatMetadata(hat, activeStage, studio, pluginRoot)
 
-		out(`### Current Role: ${hat}`)
+	out(`### Current Role: ${hat}`)
+	out("")
+
+	if (instructions) {
+		out(`**${hatMeta.name || hat}**`)
 		out("")
-
-		if (instructions) {
-			out(`**${hatMeta.name || hat}**`)
-			out("")
-			out(instructions)
-			out("")
-		} else {
-			out(`**${hat}** orchestrates work by spawning discipline-specific agents based on unit requirements.`)
-			out("")
-		}
+		out(instructions)
+		out("")
+	} else {
+		out(`**${hat}** orchestrates work by spawning discipline-specific agents based on unit requirements.`)
+		out("")
 	}
 
 	// H·AI·K·U Workflow Rules
@@ -348,15 +345,5 @@ export async function generateSubagentContext(_input: Record<string, unknown>, p
 	out(`Document blockers in \`.haiku/intents/${intentSlug}/state/blockers.md\` for persistence (unit-scoped).`)
 	out("")
 
-	// Team communication (Agent Teams mode)
-	if (process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS) {
-		out("### Team Communication")
-		out("")
-		out("You are a **teammate** in an Agent Teams session.")
-		out("- Report completion/issues to team lead via SendMessage")
-		out("- Do NOT call /haiku:execute, or read/execute the advance or fail skill definitions directly \u2014 the lead handles orchestration")
-		out("- Use TaskUpdate to mark shared tasks as completed when done")
-		out("- Coordinate with other teammates through the team lead")
-		out("")
-	}
 }
+

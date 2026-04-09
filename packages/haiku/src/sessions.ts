@@ -45,7 +45,7 @@ export interface ReviewSession {
   intent_slug: string;
   review_type: "intent" | "unit";
   target: string;
-  status: "pending" | "approved" | "changes_requested";
+  status: "pending" | "approved" | "changes_requested" | "decided";
   decision: string;
   feedback: string;
   annotations?: ReviewAnnotations;

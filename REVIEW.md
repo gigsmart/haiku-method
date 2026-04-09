@@ -8,7 +8,7 @@ Read `plugin/VALIDATION.md` and verify the changed code against its criteria. Sp
 
 1. **State integrity** — state writes go through MCP tools, lifecycle transitions auto-commit to git
 2. **Orchestration** — `haiku_run_next` produces correct actions for the stage loop (elaborate → execute → review → gate)
-3. **Quality enforcement** — `haiku_unit_complete` rejects if criteria checkboxes are unchecked
+3. **Quality enforcement** — `haiku_unit_advance_hat` (on last hat) rejects if criteria checkboxes are unchecked
 4. **Hat isolation** — subagent context injects hat isolation directive; agents only receive their assigned hat's instructions
 5. **Mode handling** — continuous auto-advances on `auto` gates; discrete always stops
 6. **Composite intents** — sync points are checked; blocked stages are not returned as runnable
