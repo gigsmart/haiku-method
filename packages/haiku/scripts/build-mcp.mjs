@@ -2,11 +2,13 @@
 /**
  * Build the H·AI·K·U MCP server bundle.
  *
- * Runs pre-build steps (CSS, review SPA), then bundles with esbuild.
- * Injects Sentry DSNs via --define so they're baked into the binary
- * rather than read from env vars at runtime.
+ * Bundles with esbuild and injects Sentry DSNs via --define so they're
+ * baked into the binary rather than read from env vars at runtime.
+ *
+ * Pre-build steps (CSS, review SPA) are handled by package.json's
+ * "prebuild" hook — this script only handles the esbuild step.
  */
-import { execSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { chmodSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,14 +18,8 @@ const root = join(__dir, "..");
 const repoRoot = join(root, "..", "..");
 const outfile = join(repoRoot, "plugin", "bin", "haiku");
 
-// Pre-build steps
-execSync("node scripts/build-css.mjs", { cwd: root, stdio: "inherit" });
-execSync("node scripts/build-review-app.mjs", { cwd: root, stdio: "inherit" });
-
 // Build define flags — inline env vars at compile time
-const defines = [];
 const sentryDsn = process.env.HAIKU_SENTRY_DSN_MCP || "";
-defines.push(`--define:process.env.HAIKU_SENTRY_DSN_MCP=${JSON.stringify(sentryDsn)}`);
 
 const args = [
   "src/main.ts",
@@ -34,10 +30,13 @@ const args = [
   "--sourcemap=external",
   `--outfile=${outfile}`,
   '--banner:js=import{createRequire}from"module";const require=createRequire(import.meta.url);',
-  ...defines,
+  `--define:process.env.HAIKU_SENTRY_DSN_MCP=${JSON.stringify(sentryDsn)}`,
 ];
 
-execSync(`npx esbuild ${args.join(" ")}`, { cwd: root, stdio: "inherit" });
+const result = spawnSync("npx", ["esbuild", ...args], { cwd: root, stdio: "inherit" });
+if (result.status !== 0) {
+  process.exit(result.status || 1);
+}
 chmodSync(outfile, 0o755);
 
 console.error(`MCP server built -> ${outfile}`);

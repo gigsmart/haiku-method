@@ -2253,7 +2253,10 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 							}
 							// request_changes
 							syncSessionMetadata(slug, args.state_file as string | undefined)
-							const elicitChangesResult = { action: "changes_requested", intent: slug, stage, feedback, message: `Changes requested: ${feedback}. Call haiku_run_next { intent: "${slug}" } again after fixing.` }
+							const changeMsg = gateContext === "intent_review"
+								? `Changes requested on intent: ${feedback}. Revise the intent description, then call haiku_run_next { intent: "${slug}" } again.`
+								: `Changes requested: ${feedback}. Call haiku_run_next { intent: "${slug}" } again after fixing.`
+							const elicitChangesResult = { action: "changes_requested", intent: slug, stage, feedback, message: changeMsg }
 							return text(withInstructions(elicitChangesResult))
 						}
 						// User declined/cancelled elicitation — stay blocked
