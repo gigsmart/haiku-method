@@ -19,6 +19,7 @@ stages:
   - development
   - operations
   - security
+active_stage: inception
 ---
 
 # Add Cowork support to the H·AI·K·U plugin using MCP Apps for review UI. Detect Cowork via CLAUDE_CODE_IS_COWORK=1 env var, check CLAUDE_CODE_WORKSPACE_HOST_PATHS for workspace presence (prompt via request_cowork_directory if empty), and replace the HTTP server/localtunnel review flow with MCP Apps — bundling the review SPA as a ui:// resource rendered inline via sandboxed iframe, using @modelcontextprotocol/ext-apps App class for bidirectional postMessage communication between the review UI and the MCP server.
