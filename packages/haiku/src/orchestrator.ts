@@ -1809,6 +1809,7 @@ export const orchestratorToolDefs = [
 				description: { type: "string", description: "What the intent is about" },
 				slug: { type: "string", description: "URL-friendly slug for the intent (auto-generated from description if not provided)" },
 				context: { type: "string", description: "Conversation context summary — highlights from the conversation that led to this intent" },
+				mode: { type: "string", description: "Execution mode: continuous (stages auto-advance) or discrete (pause between stages). Defaults to continuous.", enum: ["continuous", "discrete"] },
 			},
 			required: ["description"],
 		},
@@ -2148,10 +2149,12 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 
 		// Build intent.md with frontmatter + body (no studio — selected separately)
 		const context = args.context as string | undefined
+		const mode = (args.mode as string) || "continuous"
 		const intentContent = [
 			"---",
 			`title: "${description.replace(/"/g, '\\"')}"`,
 			`studio: ""`,
+			`mode: ${mode}`,
 			`status: active`,
 			`created_at: ${timestamp()}`,
 			"---",

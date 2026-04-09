@@ -1,28 +1,17 @@
 ---
 name: quick
-description: Quick mode for small tasks — skip full elaboration when the task is trivial
+description: Quick mode for small tasks — single-stage intent with auto-advance
 ---
 
 # Quick Mode
 
-For trivial tasks (fix typos, rename variables, update configs, small refactors touching 1-2 files). If the task is bigger, recommend `/haiku:start` instead.
+A quick task is just a regular intent with a pruned stage list. No special mode or workflow needed.
 
 ## Process
 
-1. **Pre-checks:** Check for active intent conflicts, validate scope is truly trivial
-2. **Create temporary artifacts** in `.haiku/quick/` (gitignored, for hook integration)
-3. **Run hat loop** for the specified stage (default: development):
-   - Resolve hat sequence from stage definition
-   - Each hat runs as a subagent with hat-specific instructions
-   - Reviewer rejection loops back to builder (max 3 cycles)
-4. **Pre-delivery review** via `/haiku:review`
-5. **Create PR** (always delivers via PR, even for small tasks)
-6. **Cleanup:** Remove `.haiku/quick/` artifacts
+1. Prelaborate briefly — if the task description is vague, ask one clarifying question.
+2. Call `haiku_intent_create` with `mode: "continuous"` and the description.
+3. After studio selection, edit the intent's `stages:` frontmatter to keep only the relevant stage (usually `development`).
+4. Call `haiku_run_next` — the FSM runs through the single stage and completes.
 
-## Guardrails
-
-- MUST NOT create worktrees — work in current directory
-- MUST refuse if another active intent exists
-- MUST stop and recommend `/haiku:start` if task is not trivial
-- 3-cycle review limit — escalate if exceeded
-- Single session — no resume capability
+If the task turns out to be non-trivial (multiple stages needed, complex elaboration), suggest switching to `/haiku:start` instead.
