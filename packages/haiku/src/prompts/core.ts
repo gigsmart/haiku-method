@@ -487,7 +487,7 @@ function buildRunInstructions(
 			break
 		}
 
-		case "gate_ask": {
+		case "gate_review": {
 			const stage = action.stage as string
 			const nextStage = action.next_stage as string | null
 
