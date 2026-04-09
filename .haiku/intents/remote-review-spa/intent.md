@@ -19,7 +19,7 @@ stages:
   - development
   - operations
   - security
-active_stage: development
+active_stage: operations
 created_at: '2026-04-09'
 ---
 
