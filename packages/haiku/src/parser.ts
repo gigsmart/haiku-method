@@ -132,7 +132,7 @@ export async function parseAllUnits(
         const unitsDir = join(stagesDir, stageEntry.name, "units");
         const unitEntries = await readdir(unitsDir);
         const unitFiles = unitEntries
-          .filter((f) => /^unit-\d+.*\.md$/.test(f))
+          .filter((f) => /^unit-\d{2,}-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/.test(f))
           .sort();
 
         for (const file of unitFiles) {

@@ -273,12 +273,16 @@ function buildRunInstructions(
 				`## Mechanics\n\n` +
 				(elaboration === "collaborative"
 					? `Mode: **collaborative** — you MUST engage the user iteratively before finalizing.\n\n` +
-					  `**Use the right tool for the question type:**\n` +
-					  `- **Open-ended questions** ("tell me about...", clarifications) → conversation text\n` +
-					  `- **Multiple choice / A-B-C decisions** (scope, tradeoffs, priorities) → \`AskUserQuestion\` tool\n` +
-					  `- **Rich content with markdown** (specs, comparisons, detailed options) → \`ask_user_visual_question\` MCP tool\n` +
-					  `- **Design direction choices** (wireframe variants with previews) → \`pick_design_direction\` MCP tool\n\n` +
-					  `Do NOT present structured options as conversation text. Use the appropriate tool.\n\n`
+					  `## MANDATORY: Use tools for questions — NEVER plain text for structured choices\n\n` +
+					  `When you have questions for the user, you MUST use the correct tool:\n\n` +
+					  `| Question type | Tool | Example |\n` +
+					  `|---|---|---|\n` +
+					  `| Scope decisions, tradeoffs, A/B/C choices | \`AskUserQuestion\` | "Should we support X or Y?" |\n` +
+					  `| Specs, comparisons, detailed options (markdown) | \`ask_user_visual_question\` MCP tool | Domain model review, architecture options |\n` +
+					  `| Design direction with previews | \`pick_design_direction\` MCP tool | Wireframe variants |\n` +
+					  `| Simple open-ended clarification | Conversation text | "Tell me more about the use case" |\n\n` +
+					  `**Violation:** Outputting numbered questions, option lists, or "A) ... B) ... C) ..." as conversation text. ` +
+					  `If you catch yourself typing options inline, STOP and use \`AskUserQuestion\` instead.\n\n`
 					: `Mode: **autonomous** — elaborate independently.\n\n`) +
 				`**Elaboration produces the PLAN, not the deliverables:**\n` +
 				`1. Research the problem space and write discovery artifacts to \`knowledge/\`\n` +

@@ -3,11 +3,13 @@ import { inlineStyles } from "./styles.js";
 /**
  * Renders the full HTML document shell.
  * Includes inline Tailwind CSS, Mermaid ESM, dark-mode logic, and skip-nav.
+ * Uses a two-column layout: left for main content, right for sticky review sidebar.
  */
 export function renderLayout(
   title: string,
   bodyContent: string,
   reviewDataJson: string,
+  sidebarContent = "",
 ): string {
   return `<!DOCTYPE html>
 <html lang="en" class="">
@@ -23,6 +25,12 @@ export function renderLayout(
     html { transition: background-color 0.2s, color 0.2s; }
     /* Mermaid container sizing */
     .mermaid svg { max-width: 100%; height: auto; }
+    /* Pulse animation for scroll-to-highlight */
+    @keyframes review-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
+      50% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+    }
+    .review-pulse { animation: review-pulse 0.6s ease-in-out 2; }
   </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen transition-colors">
@@ -34,7 +42,7 @@ export function renderLayout(
 
   <!-- Header -->
   <header class="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
       <h1 class="text-lg font-semibold truncate">${escapeHtml(title)}</h1>
       <button id="theme-toggle"
               onclick="toggleTheme()"
@@ -46,10 +54,67 @@ export function renderLayout(
     </div>
   </header>
 
-  <!-- Main content -->
-  <main id="main-content" class="max-w-5xl mx-auto px-4 sm:px-6 py-6">
-    ${bodyContent}
-  </main>
+  <!-- Two-column layout: main content + review sidebar -->
+  <div class="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 ${sidebarContent ? "lg:flex lg:gap-6" : ""}">
+    <!-- Main content -->
+    <main id="main-content" class="${sidebarContent ? "flex-1 min-w-0" : "max-w-5xl mx-auto"}">
+      ${bodyContent}
+    </main>
+    ${sidebarContent ? `
+    <!-- Review sidebar: sticky on desktop, bottom-sheet on mobile -->
+    <div id="sidebar-desktop-slot" class="hidden lg:block w-80 shrink-0">
+      ${sidebarContent}
+    </div>
+    <!-- Mobile: FAB to open bottom sheet -->
+    <button id="mobile-sidebar-toggle"
+            class="lg:hidden fixed bottom-4 right-4 z-50 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
+            aria-label="Toggle review sidebar"
+            onclick="window._toggleMobileSidebar()">
+      <span class="text-xl" aria-hidden="true">&#128172;</span>
+      <span id="mobile-badge" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center hidden">0</span>
+    </button>
+    <div id="mobile-sidebar-sheet" class="lg:hidden hidden fixed inset-0 z-50">
+      <div class="absolute inset-0 bg-black/50" onclick="window._toggleMobileSidebar()"></div>
+      <div class="absolute bottom-0 left-0 right-0 max-h-[80vh] bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl overflow-hidden flex flex-col">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <span class="font-semibold">Review</span>
+          <button onclick="window._toggleMobileSidebar()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">&times;</button>
+        </div>
+        <div id="mobile-sidebar-slot" class="overflow-y-auto flex-1 p-4">
+          <!-- sidebar moves here on mobile open -->
+        </div>
+      </div>
+    </div>
+    <script>
+      // Move the single sidebar instance between desktop and mobile containers
+      (function() {
+        var sidebar = document.getElementById('review-sidebar');
+        var desktopSlot = document.getElementById('sidebar-desktop-slot');
+        var mobileSlot = document.getElementById('mobile-sidebar-slot');
+        var sheet = document.getElementById('mobile-sidebar-sheet');
+        window._toggleMobileSidebar = function() {
+          var isHidden = sheet.classList.contains('hidden');
+          if (isHidden) {
+            // Move sidebar to mobile slot
+            if (sidebar && mobileSlot) mobileSlot.appendChild(sidebar);
+            sheet.classList.remove('hidden');
+          } else {
+            sheet.classList.add('hidden');
+            // Move sidebar back to desktop slot
+            if (sidebar && desktopSlot) desktopSlot.appendChild(sidebar);
+          }
+        };
+        // On resize, if we go from mobile->desktop while sheet is open, move back
+        window.addEventListener('resize', function() {
+          if (window.innerWidth >= 1024 && !sheet.classList.contains('hidden')) {
+            sheet.classList.add('hidden');
+            if (sidebar && desktopSlot) desktopSlot.appendChild(sidebar);
+          }
+        });
+      })();
+    </script>
+    ` : ""}
+  </div>
 
   <!-- Embedded review data -->
   <script>const reviewData = ${reviewDataJson};</script>
