@@ -30108,9 +30108,9 @@ Units: ${units.join(", ")}`);
         `### Mechanics
 
 ` + (wave !== void 0 ? `**Wave ${wave}/${totalWaves ?? "?"}** \u2014 ` : "") + `${units.length} units to run in parallel.
-**You are the orchestrator.** Do NOT do unit work yourself.
+**You are the orchestrator.** Do NOT do unit work yourself. Do NOT ask the user which unit to start \u2014 launch ALL of them NOW.
 
-Spawn one Agent subagent per unit **in a single message** (all Agent tool calls in one response). Each subagent runs the FIRST hat ("${firstHat}") only.
+**IMMEDIATELY** spawn one Agent subagent per unit **in a single message** (all Agent tool calls in one response). No questions, no confirmation, no menu. Each subagent runs the FIRST hat ("${firstHat}") only.
 
 Each subagent calls \`advance_hat\` when done \u2014 it internally progresses the FSM. The last subagent to finish the wave triggers the next action automatically.
 
