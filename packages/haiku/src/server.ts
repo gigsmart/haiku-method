@@ -349,6 +349,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	}
 
 	if (name === "open_review") {
+		// open_review is blocked — the FSM (setOpenReviewHandler) has its own code path.
+		// Direct agent calls would bypass unit naming validation, type validation, and
+		// discovery artifact checks that the orchestrator enforces before opening a review.
+		return {
+			content: [{
+				type: "text" as const,
+				text: "Error: open_review cannot be called directly. Use haiku_run_next to advance — it validates units and opens the review automatically when ready.",
+			}],
+			isError: true,
+		}
+	}
+
+	if (name === "_open_review_internal_DISABLED") {
 		const input = OpenReviewInput.parse(args)
 
 		// Resolve intent_dir to an absolute path. When a relative path is provided
