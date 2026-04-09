@@ -372,7 +372,18 @@ export class GitHubProvider implements BrowseProvider {
 	 * In scan mode, uses the intentBranchMap to resolve which branch holds this intent.
 	 */
 	async getIntent(slug: string): Promise<HaikuIntentDetail | null> {
-		const intentBranch = this.intentBranchMap.get(slug)
+		let intentBranch = this.intentBranchMap.get(slug)
+
+		// If branch map isn't populated yet (deeplink before listIntents), try to resolve the branch
+		if (!intentBranch && !this.branch) {
+			const branchName = `haiku/${slug}/main`
+			const testRead = await this.readFileFromBranch(branchName, `.haiku/intents/${slug}/intent.md`)
+			if (testRead) {
+				intentBranch = branchName
+				this.intentBranchMap.set(slug, branchName)
+			}
+		}
+
 		const basePath = `.haiku/intents/${slug}`
 		const cacheKey = `gh:${this.owner}/${this.repo}:getIntent:${slug}:${intentBranch || this.branch || "HEAD"}`
 		const data = await this.cachedQuery<operationsGetIntentQuery$data>(
