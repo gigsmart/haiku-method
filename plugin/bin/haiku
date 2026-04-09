@@ -4982,12 +4982,12 @@ async function parseStageArtifacts(intentDir3) {
     for (const stageEntry of stageEntries) {
       if (!stageEntry.isDirectory()) continue;
       try {
-        const stageDir3 = join(stagesDir, stageEntry.name);
-        const files = await readdir(stageDir3);
+        const stageDir2 = join(stagesDir, stageEntry.name);
+        const files = await readdir(stageDir2);
         for (const file of files.sort()) {
           if (file.endsWith(".md")) {
             try {
-              const raw = await readFile(join(stageDir3, file), "utf-8");
+              const raw = await readFile(join(stageDir2, file), "utf-8");
               const { content } = (0, import_gray_matter.default)(raw);
               artifacts.push({
                 stage: stageEntry.name,
@@ -5078,9 +5078,15 @@ function buildDAG(units) {
   for (const u3 of units) {
     adjacency.set(u3.slug, []);
   }
+  const slugSet = new Set(units.map((u3) => u3.slug));
+  const unresolvedDeps = [];
   for (const u3 of units) {
     const deps = u3.frontmatter.depends_on ?? [];
     for (const dep of deps) {
+      if (!slugSet.has(dep)) {
+        unresolvedDeps.push({ unit: u3.slug, dep });
+        continue;
+      }
       edges.push({ from: dep, to: u3.slug });
       const existing = adjacency.get(dep);
       if (existing) {
@@ -5088,7 +5094,7 @@ function buildDAG(units) {
       }
     }
   }
-  return { nodes, edges, adjacency };
+  return { nodes, edges, adjacency, unresolvedDeps: unresolvedDeps.length > 0 ? unresolvedDeps : void 0 };
 }
 function topologicalSort(dag) {
   const inDegree = /* @__PURE__ */ new Map();
@@ -28531,9 +28537,10 @@ function runNext(slug) {
         message: `Collaborative elaboration requires engaging the user. ${updatedTurns} turn(s) so far \u2014 engage the user at least ${3 - updatedTurns} more time(s) before finalizing units.`
       };
     }
-    try {
+    {
       const unitsDir2 = join7(iDir, "stages", currentStage, "units");
       const unitFiles = readdirSync3(unitsDir2).filter((f) => f.endsWith(".md"));
+      const nodeIds = new Set(unitFiles.map((f) => f.replace(".md", "")));
       const dagNodes = unitFiles.map((f) => {
         const fm = readFrontmatter(join7(unitsDir2, f));
         return { id: f.replace(".md", ""), status: fm.status || "pending" };
@@ -28541,24 +28548,46 @@ function runNext(slug) {
       const dagEdges = [];
       const dagAdj = /* @__PURE__ */ new Map();
       for (const n of dagNodes) dagAdj.set(n.id, []);
+      const unresolvedDeps = [];
       for (const f of unitFiles) {
         const fm = readFrontmatter(join7(unitsDir2, f));
         const id = f.replace(".md", "");
         for (const dep of fm.depends_on || []) {
-          if (!dagAdj.has(dep)) continue;
-          dagEdges.push({ from: dep, to: id });
-          dagAdj.get(dep)?.push(id);
+          if (nodeIds.has(dep)) {
+            dagEdges.push({ from: dep, to: id });
+            dagAdj.get(dep)?.push(id);
+          } else {
+            unresolvedDeps.push({ unit: id, dep });
+          }
         }
       }
-      topologicalSort({ nodes: dagNodes, edges: dagEdges, adjacency: dagAdj });
-    } catch (err) {
-      if (err instanceof Error && err.message.includes("Circular dependency")) {
+      if (unresolvedDeps.length > 0) {
         return {
-          action: "dag_cycle_detected",
+          action: "unresolved_dependencies",
           intent: slug,
           stage: currentStage,
-          message: err.message + ". Fix the depends_on fields in the unit files to remove the cycle, then call haiku_run_next again."
+          unresolvedDeps,
+          message: `${unresolvedDeps.length} depends_on reference(s) don't match any unit filename:
+
+` + unresolvedDeps.map((d) => `- \`${d.unit}\` depends on \`${d.dep}\` \u2014 not found`).join("\n") + `
+
+Valid unit slugs: ${[...nodeIds].join(", ")}
+depends_on must use the full filename without .md (e.g., \`unit-01-data-model\`, not \`data-model\`).
+
+Fix the depends_on fields, then call \`haiku_run_next { intent: "${slug}" }\` again.`
         };
+      }
+      try {
+        topologicalSort({ nodes: dagNodes, edges: dagEdges, adjacency: dagAdj });
+      } catch (err) {
+        if (err instanceof Error && err.message.includes("Circular dependency")) {
+          return {
+            action: "dag_cycle_detected",
+            intent: slug,
+            stage: currentStage,
+            message: err.message + ". Fix the depends_on fields in the unit files to remove the cycle, then call haiku_run_next again."
+          };
+        }
       }
     }
     const namingViolation = validateUnitNaming(iDir, currentStage);
@@ -28793,7 +28822,7 @@ function runNext(slug) {
   }
   return { action: "error", message: `Unknown state for stage '${currentStage}' \u2014 phase: ${phase}, status: ${stageStatus}` };
 }
-function runNextComposite(slug, intent, intentDirPath) {
+function runNextComposite(slug, intent, _intentDirPath) {
   const composite = intent.composite;
   const compositeState = intent.composite_state || {};
   const syncRules = intent.sync || [];
