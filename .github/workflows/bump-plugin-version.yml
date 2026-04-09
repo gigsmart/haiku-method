@@ -139,6 +139,10 @@ jobs:
 
           git commit -m "$COMMIT_MSG"
 
+          # Clean unstaged build artifacts so rebase can proceed
+          git checkout -- . 2>/dev/null || true
+          git clean -fd 2>/dev/null || true
+
           # Pull latest and rebase, handling conflicts gracefully
           if ! git pull --rebase origin main; then
             echo "Rebase conflict detected - another workflow likely pushed first"
