@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.93.1] - 2026-04-09
+
+### Changed
+- Added comprehensive test suite for MCP handlers, orchestration logic, and core utilities to ensure plugin reliability and maintainability.
+
+---
+
+**Note:** This patch version contains only internal test infrastructure improvements with no user-facing changes.
+
 ## [1.93.0] - 2026-04-09
 
 ### Added
