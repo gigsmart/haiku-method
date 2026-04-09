@@ -217,12 +217,6 @@ async function withE2E(response: Response): Promise<Response> {
 	})
 }
 
-/** Apply CORS + E2E encryption to a response */
-async function wrapResponse(response: Response | Promise<Response>): Promise<Response> {
-	const res = await response
-	return withCors(await withE2E(res))
-}
-
 /** Consolidated file serving: GET /files/:sessionId/*path */
 async function handleFileGet(
 	sessionId: string,
@@ -776,25 +770,25 @@ function handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer): void
 	})
 }
 
-async function handleRequest(req: Request): Promise<Response> {
+function handleRequest(req: Request): Response | Promise<Response> {
 	const url = new URL(req.url)
 	const path = url.pathname
 
-	// CORS preflight
+	// CORS preflight (handled before E2E — preflight is plaintext)
 	if (req.method === "OPTIONS" && isRemoteReviewEnabled()) {
 		return withCors(new Response(null, { status: 204 }))
 	}
 
-	// GET /files/:sessionId/*path — consolidated file serving (E2E encrypted)
+	// GET /files/:sessionId/*path — consolidated file serving
 	const filesMatch = path.match(/^\/files\/([^/]+)\/(.+)$/)
 	if (filesMatch && req.method === "GET") {
-		return wrapResponse(handleFileGet(filesMatch[1], filesMatch[2]))
+		return handleFileGet(filesMatch[1], filesMatch[2])
 	}
 
-	// GET /api/session/:sessionId — JSON API for the SPA (E2E encrypted)
+	// GET /api/session/:sessionId — JSON API for the SPA
 	const apiSessionMatch = path.match(/^\/api\/session\/([^/]+)$/)
 	if (apiSessionMatch && req.method === "GET") {
-		return wrapResponse(handleSessionApi(apiSessionMatch[1]))
+		return handleSessionApi(apiSessionMatch[1])
 	}
 
 	// GET /review/:sessionId
@@ -803,28 +797,28 @@ async function handleRequest(req: Request): Promise<Response> {
 		return handleReviewGet(reviewMatch[1])
 	}
 
-	// POST /review/:sessionId/decide (E2E encrypted response)
+	// POST /review/:sessionId/decide
 	const decideMatch = path.match(/^\/review\/([^/]+)\/decide$/)
 	if (decideMatch && req.method === "POST") {
-		return wrapResponse(handleDecidePost(decideMatch[1], req))
+		return handleDecidePost(decideMatch[1], req)
 	}
 
-	// GET /mockups/:sessionId/:path (E2E encrypted)
+	// GET /mockups/:sessionId/:path
 	const mockupMatch = path.match(/^\/mockups\/([^/]+)\/(.+)$/)
 	if (mockupMatch && req.method === "GET") {
-		return wrapResponse(handleMockupGet(mockupMatch[1], mockupMatch[2]))
+		return handleMockupGet(mockupMatch[1], mockupMatch[2])
 	}
 
-	// GET /wireframe/:sessionId/:path (E2E encrypted)
+	// GET /wireframe/:sessionId/:path
 	const wireframeMatch = path.match(/^\/wireframe\/([^/]+)\/(.+)$/)
 	if (wireframeMatch && req.method === "GET") {
-		return wrapResponse(handleWireframeGet(wireframeMatch[1], wireframeMatch[2]))
+		return handleWireframeGet(wireframeMatch[1], wireframeMatch[2])
 	}
 
-	// GET /stage-artifacts/:sessionId/:path (E2E encrypted)
+	// GET /stage-artifacts/:sessionId/:path
 	const stageArtifactMatch = path.match(/^\/stage-artifacts\/([^/]+)\/(.+)$/)
 	if (stageArtifactMatch && req.method === "GET") {
-		return wrapResponse(handleStageArtifactGet(stageArtifactMatch[1], stageArtifactMatch[2]))
+		return handleStageArtifactGet(stageArtifactMatch[1], stageArtifactMatch[2])
 	}
 
 	// GET /direction/:sessionId
@@ -833,21 +827,21 @@ async function handleRequest(req: Request): Promise<Response> {
 		return handleDirectionGet(directionMatch[1])
 	}
 
-	// POST /direction/:sessionId/select (E2E encrypted response)
+	// POST /direction/:sessionId/select
 	const directionSelectMatch = path.match(/^\/direction\/([^/]+)\/select$/)
 	if (directionSelectMatch && req.method === "POST") {
-		return wrapResponse(handleDirectionSelectPost(directionSelectMatch[1], req))
+		return handleDirectionSelectPost(directionSelectMatch[1], req)
 	}
 
-	// GET /question-image/:sessionId/:index (E2E encrypted)
+	// GET /question-image/:sessionId/:index
 	const questionImageMatch = path.match(
 		/^\/question-image\/([^/]+)\/(\d+)$/,
 	)
 	if (questionImageMatch && req.method === "GET") {
-		return wrapResponse(handleQuestionImageGet(
+		return handleQuestionImageGet(
 			questionImageMatch[1],
 			Number.parseInt(questionImageMatch[2], 10),
-		))
+		)
 	}
 
 	// GET /question/:sessionId
@@ -856,10 +850,10 @@ async function handleRequest(req: Request): Promise<Response> {
 		return handleQuestionGet(questionMatch[1])
 	}
 
-	// POST /question/:sessionId/answer (E2E encrypted response)
+	// POST /question/:sessionId/answer
 	const questionAnswerMatch = path.match(/^\/question\/([^/]+)\/answer$/)
 	if (questionAnswerMatch && req.method === "POST") {
-		return wrapResponse(handleQuestionAnswerPost(questionAnswerMatch[1], req))
+		return handleQuestionAnswerPost(questionAnswerMatch[1], req)
 	}
 
 	return new Response("Not Found", { status: 404 })
@@ -935,7 +929,9 @@ function listenOnPort(port: number): Promise<void> {
 			})
 
 			try {
-				const webResponse = await handleRequest(webRequest)
+				let webResponse = await handleRequest(webRequest)
+				// Network-layer: apply CORS + E2E encryption to all responses
+				webResponse = await withE2E(withCors(webResponse))
 				res.writeHead(
 					webResponse.status,
 					Object.fromEntries(webResponse.headers.entries()),
