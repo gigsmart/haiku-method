@@ -27820,6 +27820,27 @@ ${scope}` : "ok") + pushWarning(gitResult));
           return text(JSON.stringify({ error: "hat_too_fast", elapsed_seconds: Math.round(elapsed), minimum_seconds: 30, message: "Cannot advance hat \u2014 the current hat started less than 30 seconds ago. Each hat must do meaningful work before advancing." }));
         }
       }
+      const unitOutputs = unitFm.outputs || [];
+      if (unitOutputs.length > 0) {
+        const iDir = intentDir(args2.intent);
+        const escaped = unitOutputs.filter((o) => {
+          const resolved = resolve2(iDir, o);
+          return !resolved.startsWith(resolve2(iDir) + "/");
+        });
+        if (escaped.length > 0) {
+          return text(JSON.stringify({ error: "unit_outputs_escaped", escaped, message: `Cannot advance hat: ${escaped.length} output path(s) escape the intent directory: ${escaped.join(", ")}. Fix the outputs in the unit frontmatter.` }));
+        }
+        const missing = unitOutputs.filter((o) => {
+          const resolved = resolve2(iDir, o);
+          if (!resolved.startsWith(resolve2(iDir) + "/")) return false;
+          return !existsSync3(resolved);
+        });
+        if (missing.length > 0) {
+          const sf = args2.state_file;
+          if (sf) logSessionEvent(sf, { event: "outputs_missing", intent: args2.intent, stage: advStage, unit: args2.unit, missing });
+          return text(JSON.stringify({ error: "unit_outputs_missing", missing, message: `Cannot advance hat: ${missing.length} declared output(s) not found: ${missing.join(", ")}. Create them or remove them from the outputs list.` }));
+        }
+      }
       const stageHats = resolveStageHats(args2.intent, advStage);
       const currentIdx = stageHats.indexOf(currentHat);
       const nextIdx = currentIdx + 1;
@@ -27830,27 +27851,6 @@ ${scope}` : "ok") + pushWarning(gitResult));
           const sf = args2.state_file;
           if (sf) logSessionEvent(sf, { event: "criteria_not_met", intent: args2.intent, stage: advStage, unit: args2.unit, unchecked });
           return text(JSON.stringify({ error: "criteria_not_met", unchecked, message: `Cannot complete unit: ${unchecked} completion criteria still unchecked. Address them, then call haiku_unit_advance_hat again.` }));
-        }
-        const unitOutputs = unitFm.outputs || [];
-        if (unitOutputs.length > 0) {
-          const iDir = intentDir(args2.intent);
-          const escaped = unitOutputs.filter((o) => {
-            const resolved = resolve2(iDir, o);
-            return !resolved.startsWith(resolve2(iDir) + "/");
-          });
-          if (escaped.length > 0) {
-            return text(JSON.stringify({ error: "unit_outputs_escaped", escaped, message: `Cannot complete unit: ${escaped.length} output path(s) escape the intent directory: ${escaped.join(", ")}. Fix the outputs in the unit frontmatter.` }));
-          }
-          const missing = unitOutputs.filter((o) => {
-            const resolved = resolve2(iDir, o);
-            if (!resolved.startsWith(resolve2(iDir) + "/")) return false;
-            return !existsSync3(resolved);
-          });
-          if (missing.length > 0) {
-            const sf = args2.state_file;
-            if (sf) logSessionEvent(sf, { event: "outputs_missing", intent: args2.intent, stage: advStage, unit: args2.unit, missing });
-            return text(JSON.stringify({ error: "unit_outputs_missing", missing, message: `Cannot complete unit: ${missing.length} declared output(s) not found: ${missing.join(", ")}. Create them, then call haiku_unit_advance_hat again.` }));
-          }
         }
         setFrontmatterField(advPath, "status", "completed");
         setFrontmatterField(advPath, "completed_at", timestamp());
@@ -30063,6 +30063,14 @@ Agent type: \`${hatAgentType}\`${hatModel ? ` | Model: \`${hatModel}\`` : ""}
 
 **After subagent returns:** The \`advance_hat\` result contains the next FSM action \u2014 spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately \u2014 advance_hat handles FSM progression internally.
 
+**Output tracking:** When your hat produces artifacts (files, designs, specs, code), record them in the unit's frontmatter \`outputs:\` field as paths relative to the intent directory:
+\`\`\`yaml
+outputs:
+  - stages/design/artifacts/landing-page.html
+  - stages/development/artifacts/api-schema.graphql
+\`\`\`
+The FSM validates that declared outputs exist before allowing hat advancement.
+
 **If outputs from a previous stage are missing, incomplete, or incorrect:** call \`haiku_go_back { intent: "${slug}" }\` to return to the prior stage for corrections.
 
 **Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` \u2014 do NOT open files in a browser and ask via text. The visual question tool provides a structured review experience.`
@@ -30119,6 +30127,7 @@ Each subagent calls \`advance_hat\` when done \u2014 it internally progresses th
 - The unit spec and refs
 - The stage scope constraint
 - Instruction to call \`haiku_unit_start\` first
+- Output tracking: record produced artifacts in the unit's \`outputs:\` frontmatter field (paths relative to intent dir)
 - If outputs from a previous stage are missing, incomplete, or incorrect: call \`haiku_go_back { intent: "${slug}" }\` to return to the prior stage for corrections
 
 ` + units.map((u3) => {
