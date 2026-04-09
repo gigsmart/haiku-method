@@ -42,7 +42,7 @@ if [ -z "$GIT_RANGE" ]; then
 fi
 
 # Collect raw commit subjects (filtered)
-COMMITS=$(git log $GIT_RANGE --no-merges --pretty=format:"%s" -- "$PATH_DIR" ':!website' ':!.ai-dlc' 2>/dev/null \
+COMMITS=$(git log $GIT_RANGE --no-merges --pretty=format:"%s" -- "plugin/" "packages/" 2>/dev/null \
 	| grep -v "\[skip ci\]" \
 	| grep -v "chore(release):" \
 	| grep -v "chore(plugin): bump" \
@@ -58,7 +58,7 @@ if [ -z "$COMMITS" ]; then
 	exit 0
 fi
 
-DIFF_STAT=$(git diff --stat "$GIT_RANGE" -- "$PATH_DIR" ':!website' ':!.ai-dlc' 2>/dev/null || true)
+DIFF_STAT=$(git diff --stat "$GIT_RANGE" -- "plugin/" "packages/" 2>/dev/null || true)
 
 # ---- Synthesize with Claude CLI ----
 CHANGELOG_ENTRY=""
