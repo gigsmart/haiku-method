@@ -8,7 +8,7 @@ studio: software
 
 **Produces:** Unit specs with completion criteria, dependencies, and scope boundaries.
 
-**Reads:** Architect's discovery output via the unit's `## References` section.
+**Reads:** Researcher's discovery output via the unit's `## References` section.
 
 **Anti-patterns (RFC 2119):**
 - The agent **MUST NOT** create units that are too large (more than one bolt to complete)
