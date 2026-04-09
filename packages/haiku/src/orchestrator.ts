@@ -1430,6 +1430,7 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 					errorMsg.includes("ENOENT") ||
 					errorMsg.includes("frontmatter") ||
 					errorMsg.includes("invalid identifier") ||
+					errorMsg.includes("Circular dependency") ||
 					errorMsg.includes("timeout") ||
 					errorMsg.includes("Timeout")
 
