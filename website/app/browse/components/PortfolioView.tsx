@@ -233,6 +233,10 @@ export function PortfolioView({
 				setSelectedIntent(detail)
 				if (detail) indexIntentDetail(detail)
 				setLoadingDetail(false)
+			}).catch((e) => {
+				console.error("[haiku-browse] Failed to load deeplinked intent:", e)
+				setIntentError(`Failed to load intent "${location.intent}": ${(e as Error).message}`)
+				setLoadingDetail(false)
 			})
 		}
 	}, [provider, location?.intent, indexIntentDetail])
@@ -275,20 +279,25 @@ export function PortfolioView({
 			setIntents([])
 			setLoadingMore(true)
 
-			await provider.listIntents((intent) => {
-				setIntents((prev) => [...prev, intent])
-				setLoading(false)
-				// Index this intent for search (now includes body content)
-				addToIndex({
-					id: `intent:${intent.slug}`,
-					type: "intent",
-					title: intent.title,
-					slug: intent.slug,
-					studio: intent.studio,
-					status: intent.status,
-					content: `${intent.title} ${intent.content || ""} ${intent.studio} ${intent.activeStage || ""} ${intent.mode}`,
+			try {
+				await provider.listIntents((intent) => {
+					setIntents((prev) => [...prev, intent])
+					setLoading(false)
+					// Index this intent for search (now includes body content)
+					addToIndex({
+						id: `intent:${intent.slug}`,
+						type: "intent",
+						title: intent.title,
+						slug: intent.slug,
+						studio: intent.studio,
+						status: intent.status,
+						content: `${intent.title} ${intent.content || ""} ${intent.studio} ${intent.activeStage || ""} ${intent.mode}`,
+					})
 				})
-			})
+			} catch (e) {
+				console.error("[haiku-browse] Failed to list intents:", e)
+				setIntentError(`Failed to load intents: ${(e as Error).message}`)
+			}
 
 			setLoadingMore(false)
 			setLoading(false)
