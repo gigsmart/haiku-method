@@ -1810,6 +1810,7 @@ export const orchestratorToolDefs = [
 				slug: { type: "string", description: "URL-friendly slug for the intent (auto-generated from description if not provided)" },
 				context: { type: "string", description: "Conversation context summary — highlights from the conversation that led to this intent" },
 				mode: { type: "string", description: "Execution mode: continuous (stages auto-advance) or discrete (pause between stages). Defaults to continuous.", enum: ["continuous", "discrete"] },
+				stages: { type: "array", items: { type: "string" }, description: "Explicit stage list — overrides the studio's default stages. Use to run a subset of stages (e.g. just ['development'] for quick tasks)." },
 			},
 			required: ["description"],
 		},
@@ -2150,12 +2151,14 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 		// Build intent.md with frontmatter + body (no studio — selected separately)
 		const context = args.context as string | undefined
 		const mode = (args.mode as string) || "continuous"
+		const stagesOverride = args.stages as string[] | undefined
 		const intentContent = [
 			"---",
 			`title: "${description.replace(/"/g, '\\"')}"`,
 			`studio: ""`,
 			`mode: ${mode}`,
 			`status: active`,
+			...(stagesOverride ? [`stages:\n${stagesOverride.map(s => `  - ${s}`).join("\n")}`] : []),
 			`created_at: ${timestamp()}`,
 			"---",
 			"",
@@ -2329,10 +2332,29 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 			}
 		}
 
-		// Update intent.md with selected studio and stages
-		const studioStages = resolveStudioStages(selectedStudio)
+		// Update intent.md with selected studio — only set stages if not already overridden
+		const intentFmCheck = readFrontmatter(intentFile)
+		const existingStages = intentFmCheck.stages as string[] | undefined
+		const allStudioStages = resolveStudioStages(selectedStudio)
+
+		// Validate pre-set stages exist in the selected studio
+		if (existingStages && existingStages.length > 0) {
+			const invalid = existingStages.filter(s => !allStudioStages.includes(s))
+			if (invalid.length > 0) {
+				return {
+					content: [{ type: "text" as const, text: `Invalid stages for studio '${selectedStudio}': ${invalid.join(", ")}. Available stages: ${allStudioStages.join(", ")}` }],
+					isError: true,
+				}
+			}
+		}
+
+		const activeStages = existingStages && existingStages.length > 0
+			? existingStages  // stages were set at creation time (e.g. quick mode)
+			: allStudioStages
 		setFrontmatterField(intentFile, "studio", selectedStudio)
-		setFrontmatterField(intentFile, "stages", studioStages)
+		if (!existingStages || existingStages.length === 0) {
+			setFrontmatterField(intentFile, "stages", activeStages)
+		}
 
 		gitCommitState(`haiku: select studio ${selectedStudio} for intent ${slug}`)
 		emitTelemetry("haiku.studio.selected", { intent: slug, studio: selectedStudio })
@@ -2341,7 +2363,8 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 			action: "studio_selected",
 			intent: slug,
 			studio: selectedStudio,
-			stages: studioStages,
+			stages: activeStages,
+			all_studio_stages: allStudioStages,
 			message: `Studio '${selectedStudio}' selected for intent '${slug}'. Call haiku_run_next { intent: "${slug}" } to begin.`,
 		}, null, 2))
 	}
