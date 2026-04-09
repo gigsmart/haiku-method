@@ -1,9 +1,10 @@
 {
   "stage": "operations",
-  "status": "active",
-  "phase": "elaborate",
+  "status": "completed",
+  "phase": "gate",
   "started_at": "2026-04-09T20:41:01Z",
-  "completed_at": null,
+  "completed_at": "2026-04-09T20:52:37Z",
   "gate_entered_at": null,
-  "gate_outcome": null
+  "gate_outcome": "advanced",
+  "elaboration_turns": 4
 }
