@@ -265,7 +265,7 @@ export class GitLabProvider implements BrowseProvider {
 		const branchesCacheKey = `gl:${this.host}:${this.projectPath}:listHaikuBranches`
 		const branchesData = await this.cachedQuery<operationsListBranchNamesQuery$data>(
 			ListBranchNamesQuery,
-			{ fullPath: this.projectPath, searchPattern: "haiku", offset: 0, limit: 100 },
+			{ fullPath: this.projectPath, searchPattern: "haiku/*", offset: 0, limit: 100 },
 			branchesCacheKey,
 		)
 
