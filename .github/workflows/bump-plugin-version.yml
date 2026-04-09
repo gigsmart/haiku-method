@@ -169,10 +169,13 @@ jobs:
         if: steps.commit.outputs.released == 'true'
         run: |
           VERSION="${{ steps.bump-version.outputs.new_version }}"
+          # Include CHANGELOG.md in the plugin package so /haiku:release-notes works
+          cp CHANGELOG.md plugin/CHANGELOG.md
           zip -r "ai-dlc-plugin-${VERSION}.zip" plugin/ \
             -x "plugin/node_modules/*" \
             -x "plugin/*/node_modules/*" \
             -x "plugin/*/.tsbuildinfo"
+          rm -f plugin/CHANGELOG.md
 
       - name: Extract release notes
         if: steps.commit.outputs.released == 'true'
