@@ -748,7 +748,7 @@ export function PortfolioView({
 													<svg className="h-3 w-3" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={2}>
 														<path d="M5 5.5v5m6-5v5M5 3a2 2 0 100-4 2 2 0 000 4zm6 0a2 2 0 100-4 2 2 0 000 4zM5 14.5a2 2 0 100-4 2 2 0 000 4z" />
 													</svg>
-													#{intent.prNumber} {intent.prStatus}
+													{provider.name === "GitLab" ? "MR" : "PR"} {intent.prNumber ? `${provider.name === "GitLab" ? "!" : "#"}${intent.prNumber}` : ""} {intent.prStatus}
 												</a>
 											)}
 										</div>

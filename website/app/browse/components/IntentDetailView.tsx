@@ -231,7 +231,7 @@ export function IntentDetailView({ intent, provider, location, onBack }: Props) 
 			</header>
 
 			{/* Provider Links */}
-			<ProviderLinksSection frontmatter={intent.raw} settings={settings} intent={intent} />
+			<ProviderLinksSection frontmatter={intent.raw} settings={settings} intent={intent} providerName={provider.name} host={host} project={location?.project || ""} />
 
 			{/* View toggle */}
 			<div className="mb-4 flex gap-1 rounded-lg border border-stone-200 p-1 dark:border-stone-700 w-fit">
@@ -443,10 +443,23 @@ const prStatusColors: Record<string, string> = {
 	closed: "bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400",
 }
 
-function ProviderLinksSection({ frontmatter, settings, intent }: { frontmatter: Record<string, unknown>; settings: Record<string, unknown> | null; intent: HaikuIntent }) {
+function ProviderLinksSection({ frontmatter, settings, intent, providerName, host, project }: { frontmatter: Record<string, unknown>; settings: Record<string, unknown> | null; intent: HaikuIntent; providerName: string; host: string; project: string }) {
 	const links = resolveLinks(frontmatter, settings)
 	const hasPr = intent.prUrl && intent.prStatus
-	if (links.length === 0 && !hasPr) return null
+	const isGitLab = providerName === "GitLab"
+	const prLabel = isGitLab ? "MR" : "PR"
+
+	// Build branch URL for the provider
+	let branchUrl: string | null = null
+	if (intent.branch) {
+		if (isGitLab) {
+			branchUrl = `https://${host}/${project}/-/tree/${encodeURIComponent(intent.branch)}`
+		} else {
+			branchUrl = `https://${host}/${project}/tree/${encodeURIComponent(intent.branch)}`
+		}
+	}
+
+	if (links.length === 0 && !hasPr && !intent.branch) return null
 
 	return (
 		<section className="mb-8">
@@ -464,16 +477,21 @@ function ProviderLinksSection({ frontmatter, settings, intent }: { frontmatter: 
 						<svg className="h-4 w-4" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={2}>
 							<path d="M5 5.5v5m6-5v5M5 3a2 2 0 100-4 2 2 0 000 4zm6 0a2 2 0 100-4 2 2 0 000 4zM5 14.5a2 2 0 100-4 2 2 0 000 4z" />
 						</svg>
-						{intent.prNumber ? `#${intent.prNumber}` : "MR"} {intent.prStatus}
+						{prLabel} {intent.prNumber ? `${isGitLab ? "!" : "#"}${intent.prNumber}` : ""} {intent.prStatus}
 					</a>
 				)}
 				{intent.branch && (
-					<span className="inline-flex items-center gap-1.5 rounded-lg bg-stone-100 dark:bg-stone-800 px-3 py-1.5 text-sm font-mono text-stone-600 dark:text-stone-400">
+					<a
+						href={branchUrl || "#"}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="inline-flex items-center gap-1.5 rounded-lg bg-stone-100 dark:bg-stone-800 px-3 py-1.5 text-sm font-mono text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
+					>
 						<svg className="h-4 w-4" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={2}>
 							<path d="M6 3v10M6 3L3 6m3-3l3 3m4 7V3" />
 						</svg>
 						{intent.branch}
-					</span>
+					</a>
 				)}
 				{links.map((link) => (
 					<ProviderLinkBadge key={link.field} link={link} />
