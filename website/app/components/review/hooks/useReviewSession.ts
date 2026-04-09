@@ -112,7 +112,9 @@ export function useReviewSession(baseUrl: string, sessionId: string, e2eKey?: st
 
     async function fetchSession() {
       try {
-        const res = await e2eFetch(`${baseUrl}/api/session/${sessionId}`, e2eKey ?? null)
+        const res = await e2eFetch(`${baseUrl}/api/session/${sessionId}`, e2eKey ?? null, {
+          signal: AbortSignal.timeout(10000),
+        })
         if (!res.ok) {
           if (res.status === 404) {
             throw new Error("Session not found. It may have expired.")
@@ -161,6 +163,7 @@ export function useReviewSession(baseUrl: string, sessionId: string, e2eKey?: st
           if (wsRef.current === ws) {
             wsRef.current = null
             setIsConnected(false)
+            attemptReconnect()
           }
         }
       } catch {

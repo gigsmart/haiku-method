@@ -191,17 +191,23 @@ function withCors(response: Response): Response {
 	})
 }
 
+/** Extract session ID from any request URL path */
+function extractSessionId(path: string): string | null {
+	const match = path.match(/\/(?:api\/session|review|question|direction|files|mockups|wireframe|stage-artifacts|question-image)\/([^/]+)/)
+	return match?.[1] ?? null
+}
+
 /**
- * Wrap a response with E2E encryption if active.
+ * Wrap a response with E2E encryption if active for this session.
  * Preserves the original Content-Type in X-Original-Content-Type header
  * so the client knows how to handle the decrypted data.
  */
-async function withE2E(response: Response): Promise<Response> {
-	if (!isE2EActive() || response.status >= 400) return response
+async function withE2E(response: Response, sessionId: string | null): Promise<Response> {
+	if (!sessionId || !isE2EActive(sessionId) || response.status >= 400) return response
 
 	const originalContentType = response.headers.get("Content-Type") ?? "application/octet-stream"
 	const body = await response.arrayBuffer()
-	const encrypted = e2eEncrypt(Buffer.from(body))
+	const encrypted = e2eEncrypt(sessionId, Buffer.from(body))
 
 	if (!encrypted) return response
 
@@ -248,8 +254,8 @@ async function handleFileGet(
 			if (!realResolved || (!realResolved.startsWith(realBase + "/") && realResolved !== realBase)) {
 				continue
 			}
-			const data = await readFile(resolved)
-			const ext = extname(resolved).toLowerCase()
+			const data = await readFile(realResolved)
+			const ext = extname(realResolved).toLowerCase()
 			const contentType = MIME_TYPES[ext] ?? "application/octet-stream"
 			return new Response(data, {
 				headers: { "Content-Type": contentType },
@@ -931,7 +937,8 @@ function listenOnPort(port: number): Promise<void> {
 			try {
 				let webResponse = await handleRequest(webRequest)
 				// Network-layer: apply CORS + E2E encryption to all responses
-				webResponse = await withE2E(withCors(webResponse))
+				const sessionId = extractSessionId(new URL(webRequest.url).pathname)
+				webResponse = await withE2E(withCors(webResponse), sessionId)
 				res.writeHead(
 					webResponse.status,
 					Object.fromEntries(webResponse.headers.entries()),

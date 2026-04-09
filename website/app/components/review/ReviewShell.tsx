@@ -46,8 +46,8 @@ export function ReviewShell() {
         })
         return
       }
-      if (!payload.tun || !payload.sid || !payload.typ) {
-        setState({ status: "error", message: "Invalid review token — missing required fields.", kind: "malformed" })
+      if (!payload.tun || !payload.sid || !payload.typ || !payload.tun.startsWith("https://")) {
+        setState({ status: "error", message: "Invalid review token — missing required fields or unsafe URL.", kind: "malformed" })
         return
       }
       setState({ status: "connected", config: payload })
