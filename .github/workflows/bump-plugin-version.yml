@@ -32,12 +32,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.BUMP_TOKEN || secrets.GITHUB_TOKEN }}
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
 
       - name: Pull latest changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Switch remote to SSH so pushes use the deploy key (bypass branch protection)
+          git remote set-url origin git@github.com:gigsmart/haiku-method.git
           git pull --rebase origin main
 
       - name: Determine version bump type
