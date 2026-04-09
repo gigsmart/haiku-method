@@ -4,6 +4,8 @@ export type {
   HaikuUnit,
   HaikuStageState,
   HaikuAsset,
+  HaikuArtifact,
+  HaikuKnowledgeFile,
   HaikuIntentDetail,
   CriterionItem,
   MockupInfo,

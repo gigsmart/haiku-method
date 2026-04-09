@@ -1,4 +1,4 @@
-import type { BrowseProvider, HaikuIntent, HaikuIntentDetail, HaikuStageState, HaikuUnit } from "./types"
+import type { BrowseProvider, HaikuArtifact, HaikuIntent, HaikuIntentDetail, HaikuKnowledgeFile, HaikuStageState, HaikuUnit } from "./types"
 import { normalizeIntentStatus, parseCriteria, parseFrontmatter, parseUnit } from "./types"
 import { parseSettingsYaml } from "./resolve-links"
 
@@ -163,11 +163,53 @@ export class LocalProvider implements BrowseProvider {
 			if (stageName === activeStage) status = "active"
 			else if (stageNames.indexOf(stageName) < stageNames.indexOf(activeStage)) status = "complete"
 
-			stages.push({ name: stageName, status, phase: stagePhase, startedAt: stageStartedAt, completedAt: stageCompletedAt, gateOutcome, units })
+			// Read stage artifacts
+			const artifactFiles = await this.listFiles(`.haiku/intents/${slug}/stages/${stageName}/artifacts`)
+			const stageArtifacts: HaikuArtifact[] = []
+			for (const af of artifactFiles) {
+				const lower = af.toLowerCase()
+				const artType: HaikuArtifact["type"] = lower.endsWith(".md") ? "markdown"
+					: (lower.endsWith(".html") || lower.endsWith(".htm")) ? "html"
+					: /\.(png|jpe?g|gif|svg|webp|avif|bmp|ico)$/.test(lower) ? "image"
+					: "other"
+				// For local FS, read text content (images won't work inline — would need object URLs)
+				const artContent = await this.readFile(`.haiku/intents/${slug}/stages/${stageName}/artifacts/${af}`)
+				if (artContent != null) {
+					stageArtifacts.push({ name: af, content: artContent, type: artType })
+				} else {
+					stageArtifacts.push({ name: af, type: artType })
+				}
+			}
+
+			stages.push({
+				name: stageName,
+				status,
+				phase: stagePhase,
+				startedAt: stageStartedAt,
+				completedAt: stageCompletedAt,
+				gateOutcome,
+				units,
+				artifacts: stageArtifacts.length > 0 ? stageArtifacts : undefined,
+			})
 		}
 
-		// Load knowledge files
-		const knowledgeFiles = await this.listFiles(`.haiku/intents/${slug}/knowledge`)
+		// Load knowledge files with content
+		const knowledgeFileNames = await this.listFiles(`.haiku/intents/${slug}/knowledge`)
+		const knowledge: HaikuKnowledgeFile[] = []
+		for (const name of knowledgeFileNames) {
+			if (!name.endsWith(".md")) continue
+			const kContent = await this.readFile(`.haiku/intents/${slug}/knowledge/${name}`)
+			knowledge.push({ name, content: kContent || "" })
+		}
+
+		// Load operations files with content
+		const operationsFileNames = await this.listFiles(`.haiku/intents/${slug}/operations`)
+		const operations: HaikuKnowledgeFile[] = []
+		for (const name of operationsFileNames) {
+			if (!name.endsWith(".md")) continue
+			const oContent = await this.readFile(`.haiku/intents/${slug}/operations/${name}`)
+			operations.push({ name, content: oContent || "" })
+		}
 
 		return {
 			slug,
@@ -189,8 +231,8 @@ export class LocalProvider implements BrowseProvider {
 			follows: (data.follows as string) || null,
 			raw: data,
 			stages,
-			knowledge: knowledgeFiles.filter((f) => f.endsWith(".md")),
-			operations: (await this.listFiles(`.haiku/intents/${slug}/operations`)).filter(f => f.endsWith(".md")),
+			knowledge,
+			operations,
 			reflection: await this.readFile(`.haiku/intents/${slug}/reflection.md`),
 			content,
 			assets: [],

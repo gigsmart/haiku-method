@@ -42,6 +42,18 @@ export interface HaikuUnit {
   raw: Record<string, unknown>;
 }
 
+export interface HaikuArtifact {
+  name: string;
+  content?: string;
+  rawUrl?: string;
+  type: "markdown" | "html" | "image" | "other";
+}
+
+export interface HaikuKnowledgeFile {
+  name: string;
+  content: string;
+}
+
 export interface HaikuStageState {
   name: string;
   status: "pending" | "active" | "complete";
@@ -50,6 +62,7 @@ export interface HaikuStageState {
   completedAt: string | null;
   gateOutcome: string | null;
   units: HaikuUnit[];
+  artifacts?: HaikuArtifact[];
 }
 
 export interface HaikuAsset {
@@ -60,8 +73,8 @@ export interface HaikuAsset {
 
 export interface HaikuIntentDetail extends HaikuIntent {
   stages: HaikuStageState[];
-  knowledge: string[];
-  operations: string[];
+  knowledge: HaikuKnowledgeFile[];
+  operations: HaikuKnowledgeFile[];
   reflection: string | null;
   content: string;
   assets: HaikuAsset[];

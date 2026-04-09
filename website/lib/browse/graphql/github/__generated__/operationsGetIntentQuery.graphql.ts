@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<7e19e2af15dec605236bac751a42439e>>
+ * @generated SignedSource<<6e563e99608a0417ce2859624cb7e48b>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -26,12 +26,18 @@ export type operationsGetIntentQuery$data = {
     readonly knowledgeTree: {
       readonly entries?: ReadonlyArray<{
         readonly name: string;
+        readonly object: {
+          readonly text?: string | null | undefined;
+        } | null | undefined;
         readonly type: string;
       }> | null | undefined;
     } | null | undefined;
     readonly operationsTree: {
       readonly entries?: ReadonlyArray<{
         readonly name: string;
+        readonly object: {
+          readonly text?: string | null | undefined;
+        } | null | undefined;
         readonly type: string;
       }> | null | undefined;
     } | null | undefined;
@@ -160,14 +166,7 @@ v13 = {
   "name": "type",
   "storageKey": null
 },
-v14 = [
-  {
-    "kind": "Variable",
-    "name": "expression",
-    "variableName": "knowledgeExpr"
-  }
-],
-v15 = {
+v14 = {
   "kind": "InlineFragment",
   "selections": [
     {
@@ -179,7 +178,17 @@ v15 = {
       "plural": true,
       "selections": [
         (v12/*: any*/),
-        (v13/*: any*/)
+        (v13/*: any*/),
+        {
+          "alias": null,
+          "args": null,
+          "concreteType": null,
+          "kind": "LinkedField",
+          "name": "object",
+          "plural": false,
+          "selections": (v10/*: any*/),
+          "storageKey": null
+        }
       ],
       "storageKey": null
     }
@@ -187,8 +196,15 @@ v15 = {
   "type": "Tree",
   "abstractKey": null
 },
+v15 = [
+  {
+    "kind": "Variable",
+    "name": "expression",
+    "variableName": "knowledgeExpr"
+  }
+],
 v16 = [
-  (v15/*: any*/)
+  (v14/*: any*/)
 ],
 v17 = [
   {
@@ -223,9 +239,39 @@ v21 = [
   (v9/*: any*/),
   (v20/*: any*/)
 ],
-v22 = [
+v22 = {
+  "kind": "InlineFragment",
+  "selections": [
+    {
+      "alias": null,
+      "args": null,
+      "concreteType": "TreeEntry",
+      "kind": "LinkedField",
+      "name": "entries",
+      "plural": true,
+      "selections": [
+        (v12/*: any*/),
+        (v13/*: any*/),
+        {
+          "alias": null,
+          "args": null,
+          "concreteType": null,
+          "kind": "LinkedField",
+          "name": "object",
+          "plural": false,
+          "selections": (v21/*: any*/),
+          "storageKey": null
+        }
+      ],
+      "storageKey": null
+    }
+  ],
+  "type": "Tree",
+  "abstractKey": null
+},
+v23 = [
   (v19/*: any*/),
-  (v15/*: any*/),
+  (v22/*: any*/),
   (v20/*: any*/)
 ];
 return {
@@ -312,36 +358,7 @@ return {
                                     "plural": false,
                                     "selections": [
                                       (v9/*: any*/),
-                                      {
-                                        "kind": "InlineFragment",
-                                        "selections": [
-                                          {
-                                            "alias": null,
-                                            "args": null,
-                                            "concreteType": "TreeEntry",
-                                            "kind": "LinkedField",
-                                            "name": "entries",
-                                            "plural": true,
-                                            "selections": [
-                                              (v12/*: any*/),
-                                              (v13/*: any*/),
-                                              {
-                                                "alias": null,
-                                                "args": null,
-                                                "concreteType": null,
-                                                "kind": "LinkedField",
-                                                "name": "object",
-                                                "plural": false,
-                                                "selections": (v10/*: any*/),
-                                                "storageKey": null
-                                              }
-                                            ],
-                                            "storageKey": null
-                                          }
-                                        ],
-                                        "type": "Tree",
-                                        "abstractKey": null
-                                      }
+                                      (v14/*: any*/)
                                     ],
                                     "storageKey": null
                                   }
@@ -367,7 +384,7 @@ return {
           },
           {
             "alias": "knowledgeTree",
-            "args": (v14/*: any*/),
+            "args": (v15/*: any*/),
             "concreteType": null,
             "kind": "LinkedField",
             "name": "object",
@@ -488,36 +505,7 @@ return {
                                     "selections": [
                                       (v19/*: any*/),
                                       (v9/*: any*/),
-                                      {
-                                        "kind": "InlineFragment",
-                                        "selections": [
-                                          {
-                                            "alias": null,
-                                            "args": null,
-                                            "concreteType": "TreeEntry",
-                                            "kind": "LinkedField",
-                                            "name": "entries",
-                                            "plural": true,
-                                            "selections": [
-                                              (v12/*: any*/),
-                                              (v13/*: any*/),
-                                              {
-                                                "alias": null,
-                                                "args": null,
-                                                "concreteType": null,
-                                                "kind": "LinkedField",
-                                                "name": "object",
-                                                "plural": false,
-                                                "selections": (v21/*: any*/),
-                                                "storageKey": null
-                                              }
-                                            ],
-                                            "storageKey": null
-                                          }
-                                        ],
-                                        "type": "Tree",
-                                        "abstractKey": null
-                                      },
+                                      (v22/*: any*/),
                                       (v20/*: any*/)
                                     ],
                                     "storageKey": null
@@ -546,12 +534,12 @@ return {
           },
           {
             "alias": "knowledgeTree",
-            "args": (v14/*: any*/),
+            "args": (v15/*: any*/),
             "concreteType": null,
             "kind": "LinkedField",
             "name": "object",
             "plural": false,
-            "selections": (v22/*: any*/),
+            "selections": (v23/*: any*/),
             "storageKey": null
           },
           {
@@ -561,7 +549,7 @@ return {
             "kind": "LinkedField",
             "name": "object",
             "plural": false,
-            "selections": (v22/*: any*/),
+            "selections": (v23/*: any*/),
             "storageKey": null
           },
           {
@@ -581,16 +569,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "7eee4f3dd09b5465e59cc7ff590e38e0",
+    "cacheID": "a6d10f3a75c82fea7be51419dea8a80b",
     "id": null,
     "metadata": {},
     "name": "operationsGetIntentQuery",
     "operationKind": "query",
-    "text": "query operationsGetIntentQuery(\n  $owner: String!\n  $name: String!\n  $intentExpr: String!\n  $stagesExpr: String!\n  $knowledgeExpr: String!\n  $operationsExpr: String!\n  $reflectionExpr: String!\n) {\n  repository(owner: $owner, name: $name) {\n    intentFile: object(expression: $intentExpr) {\n      __typename\n      ... on Blob {\n        text\n      }\n      id\n    }\n    stagesTree: object(expression: $stagesExpr) {\n      __typename\n      ... on Tree {\n        entries {\n          name\n          type\n          object {\n            __typename\n            ... on Tree {\n              entries {\n                name\n                type\n                object {\n                  __typename\n                  ... on Blob {\n                    text\n                  }\n                  ... on Tree {\n                    entries {\n                      name\n                      type\n                      object {\n                        __typename\n                        ... on Blob {\n                          text\n                        }\n                        id\n                      }\n                    }\n                  }\n                  id\n                }\n              }\n            }\n            id\n          }\n        }\n      }\n      id\n    }\n    knowledgeTree: object(expression: $knowledgeExpr) {\n      __typename\n      ... on Tree {\n        entries {\n          name\n          type\n        }\n      }\n      id\n    }\n    operationsTree: object(expression: $operationsExpr) {\n      __typename\n      ... on Tree {\n        entries {\n          name\n          type\n        }\n      }\n      id\n    }\n    reflectionFile: object(expression: $reflectionExpr) {\n      __typename\n      ... on Blob {\n        text\n      }\n      id\n    }\n    id\n  }\n}\n"
+    "text": "query operationsGetIntentQuery(\n  $owner: String!\n  $name: String!\n  $intentExpr: String!\n  $stagesExpr: String!\n  $knowledgeExpr: String!\n  $operationsExpr: String!\n  $reflectionExpr: String!\n) {\n  repository(owner: $owner, name: $name) {\n    intentFile: object(expression: $intentExpr) {\n      __typename\n      ... on Blob {\n        text\n      }\n      id\n    }\n    stagesTree: object(expression: $stagesExpr) {\n      __typename\n      ... on Tree {\n        entries {\n          name\n          type\n          object {\n            __typename\n            ... on Tree {\n              entries {\n                name\n                type\n                object {\n                  __typename\n                  ... on Blob {\n                    text\n                  }\n                  ... on Tree {\n                    entries {\n                      name\n                      type\n                      object {\n                        __typename\n                        ... on Blob {\n                          text\n                        }\n                        id\n                      }\n                    }\n                  }\n                  id\n                }\n              }\n            }\n            id\n          }\n        }\n      }\n      id\n    }\n    knowledgeTree: object(expression: $knowledgeExpr) {\n      __typename\n      ... on Tree {\n        entries {\n          name\n          type\n          object {\n            __typename\n            ... on Blob {\n              text\n            }\n            id\n          }\n        }\n      }\n      id\n    }\n    operationsTree: object(expression: $operationsExpr) {\n      __typename\n      ... on Tree {\n        entries {\n          name\n          type\n          object {\n            __typename\n            ... on Blob {\n              text\n            }\n            id\n          }\n        }\n      }\n      id\n    }\n    reflectionFile: object(expression: $reflectionExpr) {\n      __typename\n      ... on Blob {\n        text\n      }\n      id\n    }\n    id\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "7f066a48e3fe96d721749254834b0deb";
+(node as any).hash = "fb0c04dabc5c91ff77cab0bf1ce73c50";
 
 export default node;
