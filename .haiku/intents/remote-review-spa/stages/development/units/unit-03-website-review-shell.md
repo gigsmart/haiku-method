@@ -1,20 +1,26 @@
 ---
 title: Website — Review page shell with hash fragment routing
 type: frontend
-status: pending
+status: active
 depends_on: []
 quality_gates:
   - /app/review/page.tsx exists and builds successfully with next build
   - ReviewShell.tsx is a use client component that reads window.location.hash
-  - JWT decoded client-side (3-line decode, no library, base64url handling)
+  - 'JWT decoded client-side (3-line decode, no library, base64url handling)'
   - Expired token shows error state with clear messaging
   - Malformed token shows error state
   - useSession hook accepts baseUrl parameter from decoded JWT
   - All fetch calls use absolute tunnel URLs
-  - WebSocket connects via wss:// to tunnel host
-  - Auto-reconnect on WS drop with retry every 3s, amber banner while disconnected
-  - After 5 failed reconnects, show persistent connection error
+  - 'WebSocket connects via wss:// to tunnel host'
+  - >-
+    Auto-reconnect on WS drop with retry every 3s, amber banner while
+    disconnected
+  - 'After 5 failed reconnects, show persistent connection error'
   - bun run build in website/ succeeds with /review/index.html in output
+bolt: 1
+hat: planner
+started_at: '2026-04-09T19:57:40Z'
+hat_started_at: '2026-04-09T19:57:40Z'
 ---
 
 # Website — Review Page Shell
