@@ -37,6 +37,7 @@ export interface HaikuUnit {
   startedAt: string | null;
   completedAt: string | null;
   refs: string[];
+  outputs: string[];
   criteria: Array<{ text: string; checked: boolean }>;
   content: string;
   raw: Record<string, unknown>;
