@@ -41,6 +41,35 @@ function readFrontmatter(filePath: string): Record<string, unknown> {
 	return data
 }
 
+// ── Persistence helpers ───────────────────────────────────────────────────
+
+/**
+ * Determine if commits should be pushed for this intent's studio.
+ * Returns true when the studio's persistence.type is "git".
+ */
+function shouldPush(slug: string): boolean {
+	try {
+		const root = findHaikuRoot()
+		const intentFile = join(root, "intents", slug, "intent.md")
+		const fm = readFrontmatter(intentFile)
+		const studioName = fm.studio as string
+		if (!studioName) return false
+
+		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+		for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
+			const studioFile = join(base, studioName, "STUDIO.md")
+			if (existsSync(studioFile)) {
+				const studioFm = readFrontmatter(studioFile)
+				const persistence = studioFm.persistence as Record<string, string> | undefined
+				return persistence?.type === "git"
+			}
+		}
+		return false
+	} catch {
+		return false
+	}
+}
+
 // ── Studio resolution ──────────────────────────────────────────────────────
 
 function resolveStudioStages(studio: string): string[] {
@@ -393,7 +422,7 @@ function fsmStartStage(slug: string, stage: string): void {
 	}
 
 	emitTelemetry("haiku.stage.started", { intent: slug, stage })
-	gitCommitState(`haiku: start stage ${stage}`)
+	gitCommitState(`haiku: start stage ${stage}`, shouldPush(slug))
 }
 
 function fsmAdvancePhase(slug: string, stage: string, toPhase: string): void {
@@ -412,7 +441,7 @@ function fsmCompleteStage(slug: string, stage: string, gateOutcome: string): voi
 	data.gate_outcome = gateOutcome
 	writeJson(path, data)
 	emitTelemetry("haiku.stage.completed", { intent: slug, stage, gate_outcome: gateOutcome })
-	gitCommitState(`haiku: complete stage ${stage}`)
+	gitCommitState(`haiku: complete stage ${stage}`, shouldPush(slug))
 }
 
 function fsmAdvanceStage(slug: string, currentStage: string, nextStage: string): void {
@@ -442,7 +471,7 @@ function fsmIntentComplete(slug: string): void {
 		setFrontmatterField(intentFile, "completed_at", timestamp())
 	}
 	emitTelemetry("haiku.intent.completed", { intent: slug })
-	gitCommitState(`haiku: complete intent ${slug}`)
+	gitCommitState(`haiku: complete intent ${slug}`, shouldPush(slug))
 }
 
 function fsmStageCompleteDiscrete(slug: string, stage: string): void {
@@ -1199,7 +1228,7 @@ function goBack(slug: string, targetStage?: string, targetPhase?: string): Orche
 		setFrontmatterField(intentFile, "active_stage", targetStage)
 
 		emitTelemetry("haiku.go_back.stage", { intent: slug, from_stage: currentActiveStage, to_stage: targetStage })
-		gitCommitState(`haiku: go back to stage ${targetStage}`)
+		gitCommitState(`haiku: go back to stage ${targetStage}`, shouldPush(slug))
 
 		return {
 			action: "went_back",
@@ -1254,7 +1283,7 @@ function goBack(slug: string, targetStage?: string, targetPhase?: string): Orche
 		}
 
 		emitTelemetry("haiku.go_back.phase", { intent: slug, stage: currentActiveStage, from_phase: currentPhase, to_phase: targetPhase })
-		gitCommitState(`haiku: go back to phase ${targetPhase} in ${currentActiveStage}`)
+		gitCommitState(`haiku: go back to phase ${targetPhase} in ${currentActiveStage}`, shouldPush(slug))
 
 		return {
 			action: "went_back",
@@ -1299,6 +1328,7 @@ export const orchestratorToolDefs = [
 				description: { type: "string", description: "What the intent is about" },
 				slug: { type: "string", description: "URL-friendly slug for the intent (auto-generated from description if not provided)" },
 				context: { type: "string", description: "Conversation context summary — highlights from the conversation that led to this intent" },
+				studio: { type: "string", description: "Studio to use (skip studio selection elicitation when provided)" },
 			},
 			required: ["description"],
 		},
@@ -1344,7 +1374,7 @@ export function setElicitInputHandler(handler: typeof _elicitInput): void {
 	_elicitInput = handler
 }
 
-export async function handleOrchestratorTool(name: string, args: Record<string, unknown>): Promise<{ content: Array<{ type: "text"; text: string }> }> {
+export async function handleOrchestratorTool(name: string, args: Record<string, unknown>): Promise<{ content: Array<{ type: "text"; text: string }>; isError?: boolean }> {
 	const text = (s: string) => ({ content: [{ type: "text" as const, text: s }] })
 
 	if (name === "haiku_run_next") {
@@ -1621,12 +1651,12 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 			}
 		} catch { /* no .haiku dir */ }
 
-		let selectedStudio = ""
+		let selectedStudio = (args.studio as string) || ""
 		let selectedMode = "continuous"
 		let studioStages: string[] = []
 
-		// Try elicitation first
-		if (_elicitInput) {
+		// Skip elicitation if studio was provided by the agent
+		if (!selectedStudio && _elicitInput) {
 			try {
 				const studioNames = studioEntries.map(s => s.name)
 				const studioDescriptions = studioEntries.map(s => `${s.name}: ${s.description}`).join("\n")
@@ -1716,93 +1746,11 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 			writeFileSync(join(knowledgeDir, "CONVERSATION-CONTEXT.md"), `# Conversation Context\n\n${context}\n`)
 		}
 
-		// Git commit
-		gitCommitState(`haiku: create intent ${slug}`)
+		// Git commit (+ push for git-persisted studios)
+		gitCommitState(`haiku: create intent ${slug}`, shouldPush(slug))
 
 		emitTelemetry("haiku.intent.created", { intent: slug, studio: selectedStudio, mode: selectedMode })
 		if (stateFile) logSessionEvent(stateFile, { event: "intent_created", intent: slug, studio: selectedStudio, mode: selectedMode, stages: studioStages })
-
-		// Gap 6: Pre-start confirmation — open review UI to let user confirm intent before proceeding
-		if (_openReviewAndWait) {
-			try {
-				const intentDirPath = `.haiku/intents/${slug}`
-				const reviewResult = await _openReviewAndWait(intentDirPath, "intent", "ask")
-				if (stateFile) logSessionEvent(stateFile, { event: "intent_confirmation", intent: slug, decision: reviewResult.decision, feedback: reviewResult.feedback })
-				if (reviewResult.decision === "approved") {
-					return text(JSON.stringify({
-						action: "intent_created",
-						slug,
-						studio: selectedStudio,
-						mode: selectedMode,
-						stages: studioStages,
-						path: `.haiku/intents/${slug}`,
-						message: `Intent '${slug}' confirmed and created with studio '${selectedStudio}' (${selectedMode} mode). Run haiku_run_next { intent: "${slug}" } to begin.`,
-					}, null, 2))
-				}
-				// Changes requested — return feedback for the agent to adjust
-				return text(JSON.stringify({
-					action: "intent_changes_requested",
-					slug,
-					studio: selectedStudio,
-					mode: selectedMode,
-					stages: studioStages,
-					path: `.haiku/intents/${slug}`,
-					feedback: reviewResult.feedback,
-					message: `Intent '${slug}' created but user requested changes: ${reviewResult.feedback || "(see review)"}. Adjust the intent, then run haiku_run_next { intent: "${slug}" } to begin.`,
-				}, null, 2))
-			} catch {
-				// Review UI failed — fall back to elicitation
-				if (_elicitInput) {
-					try {
-						const elicitResult = await _elicitInput({
-							message: `Created intent '${slug}' with studio '${selectedStudio}'. Confirm to proceed?`,
-							requestedSchema: {
-								type: "object" as const,
-								properties: {
-									decision: {
-										type: "string",
-										title: "Decision",
-										description: "Approve intent or request changes",
-										enum: ["approve", "request_changes"],
-									},
-									feedback: {
-										type: "string",
-										title: "Feedback (optional)",
-										description: "Any changes to the intent",
-									},
-								},
-								required: ["decision"],
-							},
-						})
-						if (elicitResult.action === "accept" && elicitResult.content) {
-							const decision = (elicitResult.content as Record<string, string>).decision
-							const feedback = (elicitResult.content as Record<string, string>).feedback || ""
-							if (decision === "approve") {
-								return text(JSON.stringify({
-									action: "intent_created",
-									slug,
-									studio: selectedStudio,
-									mode: selectedMode,
-									stages: studioStages,
-									path: `.haiku/intents/${slug}`,
-									message: `Intent '${slug}' confirmed via elicitation and created with studio '${selectedStudio}' (${selectedMode} mode). Run haiku_run_next { intent: "${slug}" } to begin.`,
-								}, null, 2))
-							}
-							return text(JSON.stringify({
-								action: "intent_changes_requested",
-								slug,
-								studio: selectedStudio,
-								mode: selectedMode,
-								stages: studioStages,
-								path: `.haiku/intents/${slug}`,
-								feedback,
-								message: `Intent '${slug}' created but user requested changes: ${feedback}. Adjust the intent, then run haiku_run_next { intent: "${slug}" } to begin.`,
-							}, null, 2))
-						}
-					} catch { /* elicitation also failed — fall through to default return */ }
-				}
-			}
-		}
 
 		return text(JSON.stringify({
 			action: "intent_created",

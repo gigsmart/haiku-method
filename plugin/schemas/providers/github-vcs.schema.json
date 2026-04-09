@@ -1,0 +1,30 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://haiku.dev/schemas/providers/github-vcs.schema.json",
+	"title": "GitHub VCS Provider Config",
+	"description": "Provider-specific configuration for GitHub VCS (version control)",
+	"type": "object",
+	"properties": {
+		"auto_push": {
+			"type": "boolean",
+			"default": true,
+			"description": "Push to remote after every state commit. Disable for offline-first workflows."
+		},
+		"auto_pr": {
+			"type": "boolean",
+			"default": true,
+			"description": "Automatically create a pull request at intent completion"
+		},
+		"default_branch": {
+			"type": "string",
+			"default": "main",
+			"description": "Base branch for pull requests (target branch)"
+		},
+		"remote": {
+			"type": "string",
+			"default": "origin",
+			"description": "Git remote name to push to and create PRs against"
+		}
+	},
+	"additionalProperties": false
+}

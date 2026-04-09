@@ -169,7 +169,7 @@ User: [Payload]
   - Unit content (description, completion criteria)
   - Refs: resolved artifact content (read each path in refs array)
   - Stage artifact definitions
-  - MCP tools available: haiku_unit_start, haiku_unit_advance_hat, haiku_unit_complete, haiku_unit_increment_bolt
+  - MCP tools available: haiku_unit_start, haiku_unit_advance_hat, haiku_unit_reject_hat, haiku_unit_increment_bolt
   - "Call haiku_run_next when done"
 ```
 
