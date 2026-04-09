@@ -1171,7 +1171,10 @@ function goBack(slug: string): OrchestratorAction {
 	}
 
 	const intent = readFrontmatter(intentFile)
-	const studio = (intent.studio as string) || "ideation"
+	const studio = (intent.studio as string) || ""
+	if (!studio) {
+		return { action: "error", message: `Intent '${slug}' has no studio selected. Call haiku_select_studio first.` }
+	}
 	const currentActiveStage = (intent.active_stage as string) || ""
 
 	if (!currentActiveStage) {
@@ -1280,7 +1283,6 @@ function buildRunInstructions(
 	studio: string,
 	action: OrchestratorAction,
 	dir: string,
-	intentBody: string,
 ): string {
 	const actionJson = JSON.stringify(action, null, 2)
 	const sections: string[] = []
@@ -1464,7 +1466,7 @@ function buildRunInstructions(
 				const dirResolved = resolve(dir)
 				for (const ref of unitRefs) {
 					const refResolved = resolve(dir, ref)
-					if (!refResolved.startsWith(dirResolved)) continue
+					if (!refResolved.startsWith(dirResolved + "/") && refResolved !== dirResolved) continue
 					if (existsSync(join(dir, ref))) {
 						const content = readFileSync(join(dir, ref), "utf8")
 						sections.push(`#### ${ref}\n\n${content.slice(0, 2000)}${content.length > 2000 ? "\n...(truncated)" : ""}`)
@@ -1932,19 +1934,17 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 
 		// Read intent metadata for instruction building (used in all return paths)
 		let intentMeta: Record<string, unknown> = {}
-		let intentBody = ""
 		try {
 			const iDir = intentDir(slug)
 			const intentRaw = readFileSync(join(iDir, "intent.md"), "utf8")
 			const parsed = parseFrontmatter(intentRaw)
 			intentMeta = parsed.data
-			intentBody = parsed.body
 		} catch { /* intent might not exist for error actions */ }
 		const intentStudio = (intentMeta.studio as string) || ""
 
 		// Helper to append instructions to a result object
 		const withInstructions = (resultObj: Record<string, unknown>): string => {
-			const instructions = buildRunInstructions(slug, intentStudio, resultObj as OrchestratorAction, intentDir(slug), intentBody)
+			const instructions = buildRunInstructions(slug, intentStudio, resultObj as OrchestratorAction, intentDir(slug))
 			return JSON.stringify(resultObj, null, 2) + "\n\n---\n\n" + instructions
 		}
 
