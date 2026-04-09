@@ -31546,20 +31546,27 @@ Derive the slug from the description (lowercase, hyphens, max 50 chars).
       ],
       handler: async (args2) => {
         const version2 = args2.version || "";
-        let dir = process.cwd();
+        const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || "";
         let changelogPath = "";
-        for (let i = 0; i < 20; i++) {
-          const candidate = join11(dir, "CHANGELOG.md");
-          if (existsSync9(candidate)) {
-            changelogPath = candidate;
-            break;
-          }
-          const parent = join11(dir, "..");
-          if (parent === dir) break;
-          dir = parent;
+        if (pluginRoot) {
+          const pluginChangelog = join11(pluginRoot, "CHANGELOG.md");
+          if (existsSync9(pluginChangelog)) changelogPath = pluginChangelog;
         }
         if (!changelogPath) {
-          return singleMessage("No CHANGELOG.md found in the repository root.");
+          let dir = process.cwd();
+          for (let i = 0; i < 20; i++) {
+            const candidate = join11(dir, "CHANGELOG.md");
+            if (existsSync9(candidate)) {
+              changelogPath = candidate;
+              break;
+            }
+            const parent = join11(dir, "..");
+            if (parent === dir) break;
+            dir = parent;
+          }
+        }
+        if (!changelogPath) {
+          return singleMessage("No CHANGELOG.md found.");
         }
         const content = readFileSync8(changelogPath, "utf8");
         if (version2) {
@@ -31596,6 +31603,25 @@ Total releases: ${totalReleases}
 Full changelog: CHANGELOG.md
 RSS: https://haikumethod.ai/changelog/feed.xml`
         );
+      }
+    });
+    registerPrompt({
+      name: "haiku:version",
+      title: "Version",
+      description: "Show the running H\xB7AI\xB7K\xB7U plugin version",
+      arguments: [],
+      handler: async () => {
+        const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || "";
+        let version2 = "unknown";
+        if (pluginRoot) {
+          try {
+            const pluginJson = JSON.parse(readFileSync8(join11(pluginRoot, ".claude-plugin", "plugin.json"), "utf8"));
+            version2 = pluginJson.version || "unknown";
+          } catch {
+          }
+        }
+        return singleMessage(`H\xB7AI\xB7K\xB7U plugin version: **${version2}**
+Plugin root: \`${pluginRoot || "(not set)"}\``);
       }
     });
     registerPrompt({
@@ -31894,14 +31920,14 @@ Analyze the codebase and surface high-impact improvement ideas that survive adve
 // src/server.ts
 var server_exports = {};
 import { spawn } from "node:child_process";
-import { readFile as readFile3, readdir as readdir2 } from "node:fs/promises";
+import { readFile as readFile3 } from "node:fs/promises";
 import { dirname as dirname2, join as join12, resolve as resolve4 } from "node:path";
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error("H\xB7AI\xB7K\xB7U Review MCP server running on stdio");
 }
-var OpenReviewInput, GetReviewStatusInput, AskVisualQuestionInput, DesignArchetypeSchema, DesignParameterSchema, PickDesignDirectionInput, server;
+var GetReviewStatusInput, AskVisualQuestionInput, DesignArchetypeSchema, DesignParameterSchema, PickDesignDirectionInput, server;
 var init_server3 = __esm({
   "src/server.ts"() {
     "use strict";
@@ -31923,11 +31949,6 @@ var init_server3 = __esm({
     init_complex();
     init_simple();
     init_sentry();
-    OpenReviewInput = external_exports.object({
-      intent_dir: external_exports.string().describe("Path to the intent directory (e.g., .haiku/intents/my-intent)"),
-      review_type: external_exports.enum(["intent", "unit"]).describe("Type of review: intent-level or unit-level"),
-      target: external_exports.string().optional().describe("Unit slug to review (required for unit reviews)")
-    });
     GetReviewStatusInput = external_exports.object({
       session_id: external_exports.string().describe("The review session ID")
     });
@@ -32160,188 +32181,12 @@ var init_server3 = __esm({
         return handleStateTool(name, args2 ?? {});
       }
       if (name === "open_review") {
-        const input = OpenReviewInput.parse(args2);
-        const allowedBase = resolve4(process.cwd(), ".haiku");
-        const intentDir3 = resolve4(process.cwd(), input.intent_dir);
-        if (!intentDir3.startsWith(`${allowedBase}/`) && intentDir3 !== allowedBase) {
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Error: intent_dir must be within .haiku/ (got: ${input.intent_dir})`
-              }
-            ],
-            isError: true
-          };
-        }
-        const intent = await parseIntent(intentDir3);
-        if (!intent) {
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Error: Could not parse intent at ${intentDir3}`
-              }
-            ],
-            isError: true
-          };
-        }
-        const units = await parseAllUnits(intentDir3);
-        const dag = buildDAG(units);
-        const mermaid = toMermaidDefinition(dag, units);
-        const criteriaSection = intent.sections.find(
-          (s) => s.heading.toLowerCase().includes("completion criteria") || s.heading.toLowerCase().includes("success criteria")
-        );
-        const criteria = criteriaSection ? parseCriteria(criteriaSection.content) : [];
-        const session = createSession({
-          intent_dir: intentDir3,
-          intent_slug: intent.slug,
-          review_type: input.review_type,
-          target: input.target ?? "",
-          html: ""
-        });
-        const MOCKUP_IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"];
-        const MOCKUP_HTML_EXTS = [".html", ".htm"];
-        const MOCKUP_ALL_EXTS = [...MOCKUP_IMAGE_EXTS, ...MOCKUP_HTML_EXTS];
-        const intentMockups = [];
-        try {
-          const mockupsDir = join12(intentDir3, "mockups");
-          const entries = await readdir2(mockupsDir);
-          for (const entry of entries.sort()) {
-            const ext = entry.substring(entry.lastIndexOf(".")).toLowerCase();
-            if (MOCKUP_ALL_EXTS.includes(ext)) {
-              intentMockups.push({
-                label: entry.replace(/\.[^.]+$/, ""),
-                url: `/mockups/${session.session_id}/${entry}`
-              });
-            }
-          }
-        } catch {
-        }
-        const unitMockups = /* @__PURE__ */ new Map();
-        for (const unit of units) {
-          const wireframe = unit.frontmatter.wireframe;
-          if (wireframe && typeof wireframe === "string") {
-            unitMockups.set(unit.slug, [
-              {
-                label: `Wireframe: ${wireframe}`,
-                url: `/wireframe/${session.session_id}/${wireframe}`
-              }
-            ]);
-          }
-        }
-        for (const unit of units) {
-          if (!unitMockups.has(unit.slug)) {
-            try {
-              const mockupsDir = join12(intentDir3, "mockups");
-              const entries = await readdir2(mockupsDir);
-              const matches = entries.filter((f) => {
-                const name2 = f.substring(0, f.lastIndexOf("."));
-                const ext = f.substring(f.lastIndexOf(".")).toLowerCase();
-                return name2 === unit.slug && MOCKUP_ALL_EXTS.includes(ext);
-              }).sort();
-              if (matches.length > 0) {
-                unitMockups.set(
-                  unit.slug,
-                  matches.map((f) => ({
-                    label: `Wireframe: ${f}`,
-                    url: `/mockups/${session.session_id}/${f}`
-                  }))
-                );
-              }
-            } catch {
-            }
-          }
-        }
-        const stageStates = await parseStageStates(intentDir3);
-        const knowledgeFiles = await parseKnowledgeFiles(intentDir3);
-        const stageArtifacts = await parseStageArtifacts(intentDir3);
-        const outputArtifacts = await parseOutputArtifacts(intentDir3);
-        for (const oa of outputArtifacts) {
-          if (oa.type === "image" && oa.relativePath) {
-            oa.relativePath = `/stage-artifacts/${session.session_id}/stages/${oa.relativePath}`;
-          }
-        }
-        session.parsedIntent = intent;
-        session.parsedUnits = units;
-        session.parsedCriteria = criteria;
-        session.parsedMermaid = mermaid;
-        session.intentMockups = intentMockups;
-        session.unitMockups = unitMockups;
-        session.stageStates = stageStates;
-        session.knowledgeFiles = knowledgeFiles;
-        session.stageArtifacts = stageArtifacts;
-        session.outputArtifacts = outputArtifacts;
-        session.html = renderReviewPage({
-          intent,
-          units,
-          criteria,
-          reviewType: input.review_type,
-          target: input.target ?? "",
-          sessionId: session.session_id,
-          mermaid,
-          intentMockups,
-          unitMockups
-        });
-        const port = await startHttpServer();
-        const reviewUrl = `http://127.0.0.1:${port}/review/${session.session_id}`;
-        try {
-          const cmd2 = process.platform === "darwin" ? ["open", reviewUrl] : ["xdg-open", reviewUrl];
-          spawn(cmd2[0], cmd2.slice(1), { stdio: "ignore", detached: true }).unref();
-        } catch (err) {
-          console.error("Failed to open browser:", err);
-        }
-        const MAX_WAIT = 30 * 60 * 1e3;
-        try {
-          await waitForSession(session.session_id, MAX_WAIT);
-        } catch {
-          return {
-            content: [
-              {
-                type: "text",
-                text: JSON.stringify({
-                  status: "timeout",
-                  url: reviewUrl,
-                  session_id: session.session_id,
-                  message: "User did not respond within 30 minutes"
-                }, null, 2)
-              }
-            ]
-          };
-        }
-        const updatedReviewSession = getSession(session.session_id);
-        if (updatedReviewSession && updatedReviewSession.session_type === "review" && updatedReviewSession.status === "decided") {
-          const result = {
-            status: "decided",
-            url: reviewUrl,
-            decision: updatedReviewSession.decision,
-            feedback: updatedReviewSession.feedback,
-            review_type: updatedReviewSession.review_type,
-            target: updatedReviewSession.target
-          };
-          if (updatedReviewSession.annotations) {
-            const annot = {};
-            if (updatedReviewSession.annotations.pins?.length) annot.pins = updatedReviewSession.annotations.pins;
-            if (updatedReviewSession.annotations.comments?.length) annot.comments = updatedReviewSession.annotations.comments;
-            if (updatedReviewSession.annotations.screenshot) annot.has_screenshot = true;
-            result.annotations = annot;
-          }
-          return {
-            content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
-          };
-        }
         return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify({
-                status: "timeout",
-                url: reviewUrl,
-                session_id: session.session_id,
-                message: "User did not respond within 30 minutes"
-              }, null, 2)
-            }
-          ]
+          content: [{
+            type: "text",
+            text: "Error: open_review cannot be called directly. Use haiku_run_next to advance \u2014 it validates units and opens the review automatically when ready."
+          }],
+          isError: true
         };
       }
       if (name === "get_review_status") {
