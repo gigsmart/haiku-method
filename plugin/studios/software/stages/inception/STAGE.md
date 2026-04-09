@@ -1,7 +1,7 @@
 ---
 name: inception
 description: Understand the problem, define success, and elaborate into units
-hats: [architect, elaborator]
+hats: [researcher, elaborator]
 review: ask
 elaboration: collaborative
 unit_types: [research]
@@ -36,7 +36,7 @@ for branch in $(git branch -r --list 'origin/haiku/*/main' 2>/dev/null); do
 done
 ```
 
-If overlap is detected with files this intent plans to modify, note it in the discovery document. Not a blocker — just awareness for the architect hat to factor in.
+If overlap is detected with files this intent plans to modify, note it in the discovery document. Not a blocker — just awareness for the researcher hat to factor in.
 
 ## Completion Signal (RFC 2119)
 

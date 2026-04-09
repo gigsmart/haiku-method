@@ -207,7 +207,7 @@ H·AI·K·U ships with twelve studios organized into three categories — engine
 | Persistence | git |
 | Delivery | pull request |
 
-Each studio defines its own behavioral roles. The software studio's inception stage uses an architect and elaborator; its development stage uses a planner, builder, and reviewer; its security stage uses a threat modeler, red team, blue team, and security reviewer. The sales studio's qualification stage uses a research analyst and qualification specialist. Despite these differences, all twelve studios run on the same orchestration machinery.
+Each studio defines its own behavioral roles. The software studio's inception stage uses a researcher and elaborator; its development stage uses a planner, builder, and reviewer; its security stage uses a threat modeler, red team, blue team, and security reviewer. The sales studio's qualification stage uses a research analyst and qualification specialist. Despite these differences, all twelve studios run on the same orchestration machinery.
 
 ### Custom Studios
 
@@ -427,7 +427,7 @@ All twelve studios run on the same orchestration machinery. The same stage loop 
 ### What Changes Across Domains
 
 - **Stage names and sequences.** Software needs inception before development; ideation needs research before creation. The ordering reflects domain-specific dependencies.
-- **Hat roles and behavioral instructions.** A software architect and a research analyst have entirely different focus areas, anti-patterns, and output expectations — but both are markdown files resolved by the same hat-loading machinery.
+- **Hat roles and behavioral instructions.** A software researcher and a research analyst have entirely different focus areas, anti-patterns, and output expectations — but both are markdown files resolved by the same hat-loading machinery.
 - **Persistence type.** Software work benefits from git branching and pull requests. Creative work may only need local files.
 - **Output definitions and scopes.** A software stage might produce code scoped to the repository. An ideation stage might produce a research brief scoped to the intent's knowledge directory.
 - **Review gate strictness.** Security stages may require external review. Creative stages may use auto-advance.
