@@ -522,7 +522,8 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				}
 
 				syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
-				return text(mergeResult.message === "no worktree" ? "completed (last hat)" : `completed (last hat) (${mergeResult.message})`)
+				const completionMsg = mergeResult.message === "no worktree" ? "completed (last hat)" : `completed (last hat) (${mergeResult.message})`
+				return text(`${completionMsg}. IMPORTANT: Call haiku_run_next { intent: "${args.intent}" } immediately. Do NOT ask the user, do NOT summarize — just call the tool.`)
 			}
 
 			// ── NOT last hat: advance to next ──
@@ -542,7 +543,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			gitCommitState(`haiku: advance hat to ${nextHat} on ${args.unit as string}`, shouldPushForIntent(args.intent as string))
 			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
 			const hatScope = resolveStageScope(args.intent as string, args.stage as string)
-			return text(hatScope ? `advanced to ${nextHat}\n\n${hatScope}` : `advanced to ${nextHat}`)
+			return text((hatScope ? `advanced to ${nextHat}\n\n${hatScope}` : `advanced to ${nextHat}`) + `\n\nIMPORTANT: Call haiku_run_next { intent: "${args.intent}" } immediately. Do NOT ask the user — just call the tool.`)
 		}
 		case "haiku_unit_reject_hat": {
 			// Hat failed — move back one hat, increment bolt count
