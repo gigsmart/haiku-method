@@ -118,20 +118,28 @@ export function timestamp(): string {
  * No-op in non-git environments (filesystem mode).
  * Non-fatal: git failures are logged but never crash the MCP.
  */
-export function gitCommitState(message: string): void {
-	if (!isGitRepo()) return // Filesystem mode — no git operations
+export function gitCommitState(message: string): { committed: boolean; pushed: boolean; pushError?: string } {
+	if (!isGitRepo()) return { committed: false, pushed: false } // Filesystem mode — no git operations
 	try {
 		const haikuRoot = findHaikuRoot()
 		execFileSync("git", ["add", haikuRoot], { encoding: "utf8", stdio: "pipe" })
 		execFileSync("git", ["commit", "-m", message, "--allow-empty"], { encoding: "utf8", stdio: "pipe" })
 		try {
 			execFileSync("git", ["push"], { encoding: "utf8", stdio: "pipe" })
-		} catch {
-			// Push failures are non-fatal — commit was saved locally
+			return { committed: true, pushed: true }
+		} catch (pushErr) {
+			const pushError = pushErr instanceof Error ? pushErr.message : String(pushErr)
+			return { committed: true, pushed: false, pushError }
 		}
 	} catch {
-		// Git failures are non-fatal — state was already written to disk
+		return { committed: false, pushed: false }
 	}
+}
+
+/** Returns a warning string if git push failed, empty string otherwise. Agent sees this and can try to resolve. */
+function pushWarning(result: ReturnType<typeof gitCommitState>): string {
+	if (result.pushed || !result.committed) return ""
+	return `\n\n⚠️ GIT PUSH FAILED: ${result.pushError || "unknown error"}. Run \`git pull --rebase && git push\` to sync with remote. If there are conflicts, resolve them then push again.`
 }
 
 /**
@@ -484,10 +492,10 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			emitTelemetry("haiku.unit.started", { intent: args.intent as string, stage, unit: args.unit as string, hat: firstHat })
 			const sf = args.state_file as string | undefined
 			if (sf) logSessionEvent(sf, { event: "unit_started", intent: args.intent, stage, unit: args.unit, hat: firstHat })
-			gitCommitState(`haiku: start unit ${args.unit as string}`)
+			const gitResult = gitCommitState(`haiku: start unit ${args.unit as string}`)
 			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
 			const scope = resolveStageScope(args.intent as string, stage)
-			return text(scope ? `ok\n\n${scope}` : "ok")
+			return text((scope ? `ok\n\n${scope}` : "ok") + pushWarning(gitResult))
 		}
 		case "haiku_unit_advance_hat": {
 			// Resolve stage and unit path internally
@@ -556,7 +564,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 					const sf = args.state_file as string | undefined
 					if (sf) logSessionEvent(sf, { event: "unit_completed", intent: args.intent, stage: advStage, unit: args.unit })
 				}
-				gitCommitState(`haiku: complete unit ${args.unit as string}`)
+				const completeGit = gitCommitState(`haiku: complete unit ${args.unit as string}`)
 
 				// Merge unit worktree back to intent branch (if running in a worktree)
 				const mergeResult = mergeUnitWorktree(args.intent as string, args.unit as string)
@@ -572,13 +580,13 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 					const next = _runNext(args.intent as string)
 					// If other units in this wave are still active, this is a no-op for this agent
 					if (next.action === "continue_unit" || next.action === "blocked") {
-						return text(`completed (last hat)${mergeNote}. Other units still in progress — waiting on wave to finish.`)
+						return text(`completed (last hat)${mergeNote}. Other units still in progress — waiting on wave to finish.${pushWarning(completeGit)}`)
 					}
 					// Otherwise, return the next FSM action (next wave, phase advance, etc.)
-					return text(JSON.stringify({ ...next, _unit_completed: args.unit, _merge: mergeNote }, null, 2))
+					return text(JSON.stringify({ ...next, _unit_completed: args.unit, _merge: mergeNote }, null, 2) + pushWarning(completeGit))
 				}
 
-				return text(`completed (last hat)${mergeNote}`)
+				return text(`completed (last hat)${mergeNote}${pushWarning(completeGit)}`)
 			}
 
 			// ── NOT last hat: advance to next ──
@@ -591,16 +599,16 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				if (sf) logSessionEvent(sf, { event: "hat_advanced", intent: args.intent, stage: advStage, unit: args.unit, hat: nextHat })
 			}
 			emitTelemetry("haiku.hat.transition", { intent: args.intent as string, stage: advStage, unit: args.unit as string, hat: nextHat })
-			gitCommitState(`haiku: advance hat to ${nextHat} on ${args.unit as string}`)
+			const advGit = gitCommitState(`haiku: advance hat to ${nextHat} on ${args.unit as string}`)
 			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
 			// Internally call runNext — returns continue_unit with next hat context for the parent
 			if (_runNext) {
 				const next = _runNext(args.intent as string)
-				return text(JSON.stringify({ ...next, _hat_advanced: nextHat }, null, 2))
+				return text(JSON.stringify({ ...next, _hat_advanced: nextHat }, null, 2) + pushWarning(advGit))
 			}
 
 			const hatScope = resolveStageScope(args.intent as string, advStage)
-			return text(hatScope ? `advanced to ${nextHat}\n\n${hatScope}` : `advanced to ${nextHat}`)
+			return text((hatScope ? `advanced to ${nextHat}\n\n${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit))
 		}
 		case "haiku_unit_reject_hat": {
 			// Hat failed — move back one hat, increment bolt count
@@ -632,9 +640,9 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				if (sf) logSessionEvent(sf, { event: "unit_failed", intent: args.intent, stage: rejectStage, unit: args.unit, from_hat: currentHat, to_hat: prevHat, bolt: currentBolt + 1 })
 			}
 			emitTelemetry("haiku.unit.failed", { intent: args.intent as string, stage: rejectStage, unit: args.unit as string, hat: currentHat, prev_hat: prevHat, bolt: String(currentBolt + 1) })
-			gitCommitState(`haiku: fail ${args.unit as string} — back to ${prevHat}, bolt ${currentBolt + 1}`)
+			const rejectGit = gitCommitState(`haiku: fail ${args.unit as string} — back to ${prevHat}, bolt ${currentBolt + 1}`)
 			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
-			return text(`failed — back to ${prevHat}, bolt ${currentBolt + 1}`)
+			return text(`rejected — back to ${prevHat}, bolt ${currentBolt + 1}${pushWarning(rejectGit)}`)
 		}
 		case "haiku_unit_increment_bolt": {
 			const path = unitPath(args.intent as string, args.stage as string, args.unit as string)
