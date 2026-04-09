@@ -27372,6 +27372,7 @@ function isOnIntentBranch(slug) {
   return getCurrentBranch() === `haiku/${slug}/main`;
 }
 function createIntentBranch(slug) {
+  if (!isGitRepo()) return `haiku/${slug}/main`;
   const branch = `haiku/${slug}/main`;
   try {
     tryRun(["git", "rev-parse", "--verify", branch]);
@@ -27387,6 +27388,7 @@ function createIntentBranch(slug) {
   return branch;
 }
 function createUnitWorktree(slug, unit) {
+  if (!isGitRepo()) return null;
   const intentBranch = `haiku/${slug}/main`;
   const unitBranch = `haiku/${slug}/${unit}`;
   const worktreeBase = join4(process.cwd(), ".haiku", "worktrees", slug);
@@ -27404,6 +27406,7 @@ function createUnitWorktree(slug, unit) {
   }
 }
 function mergeUnitWorktree(slug, unit) {
+  if (!isGitRepo()) return { success: true, message: "no worktree" };
   const intentBranch = `haiku/${slug}/main`;
   const unitBranch = `haiku/${slug}/${unit}`;
   const worktreePath = join4(process.cwd(), ".haiku", "worktrees", slug, unit);
@@ -27427,6 +27430,7 @@ function mergeUnitWorktree(slug, unit) {
 var init_git_worktree = __esm({
   "src/git-worktree.ts"() {
     "use strict";
+    init_state_tools();
   }
 });
 
@@ -27434,6 +27438,16 @@ var init_git_worktree = __esm({
 import { execFileSync as execFileSync2 } from "node:child_process";
 import { existsSync as existsSync3, mkdirSync as mkdirSync3, readFileSync as readFileSync2, readdirSync, writeFileSync as writeFileSync2 } from "node:fs";
 import { join as join5, resolve as resolve2 } from "node:path";
+function isGitRepo() {
+  if (_isGitRepo !== null) return _isGitRepo;
+  try {
+    execFileSync2("git", ["rev-parse", "--git-dir"], { encoding: "utf8", stdio: "pipe" });
+    _isGitRepo = true;
+  } catch {
+    _isGitRepo = false;
+  }
+  return _isGitRepo;
+}
 function findHaikuRoot() {
   let dir = process.cwd();
   for (let i = 0; i < 20; i++) {
@@ -27503,16 +27517,15 @@ function writeJson(path, data) {
 function timestamp() {
   return (/* @__PURE__ */ new Date()).toISOString().replace(/\.\d{3}Z$/, "Z");
 }
-function gitCommitState(message, push) {
+function gitCommitState(message) {
+  if (!isGitRepo()) return;
   try {
     const haikuRoot = findHaikuRoot();
     execFileSync2("git", ["add", haikuRoot], { encoding: "utf8", stdio: "pipe" });
     execFileSync2("git", ["commit", "-m", message, "--allow-empty"], { encoding: "utf8", stdio: "pipe" });
-    if (push) {
-      try {
-        execFileSync2("git", ["push"], { encoding: "utf8", stdio: "pipe" });
-      } catch {
-      }
+    try {
+      execFileSync2("git", ["push"], { encoding: "utf8", stdio: "pipe" });
+    } catch {
     }
   } catch {
   }
@@ -27520,27 +27533,27 @@ function gitCommitState(message, push) {
 function setRunNextHandler(handler) {
   _runNext = handler;
 }
-function shouldPushForIntent(intent) {
-  try {
-    const root = findHaikuRoot();
-    const intentFile = join5(root, "intents", intent, "intent.md");
-    if (!existsSync3(intentFile)) return false;
-    const { data } = parseFrontmatter(readFileSync2(intentFile, "utf8"));
-    const studio = data.studio || "";
-    if (!studio) return false;
-    const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || "";
-    for (const base of [join5(process.cwd(), ".haiku", "studios"), join5(pluginRoot, "studios")]) {
-      const studioFile = join5(base, studio, "STUDIO.md");
-      if (existsSync3(studioFile)) {
-        const { data: studioFm } = parseFrontmatter(readFileSync2(studioFile, "utf8"));
-        const persistence = studioFm.persistence;
-        return persistence?.type === "git";
-      }
-    }
-    return false;
-  } catch {
-    return false;
+function resolveActiveStage(intent) {
+  const root = findHaikuRoot();
+  const intentFile = join5(root, "intents", intent, "intent.md");
+  if (!existsSync3(intentFile)) return "";
+  const { data } = parseFrontmatter(readFileSync2(intentFile, "utf8"));
+  return data.active_stage || "";
+}
+function findUnitFile(intent, unit) {
+  const root = findHaikuRoot();
+  const activeStage = resolveActiveStage(intent);
+  if (activeStage) {
+    const p = unitPath(intent, activeStage, unit);
+    if (existsSync3(p)) return { path: p, stage: activeStage };
   }
+  const stagesDir = join5(root, "intents", intent, "stages");
+  if (!existsSync3(stagesDir)) return null;
+  for (const stage of readdirSync(stagesDir)) {
+    const p = unitPath(intent, stage, unit);
+    if (existsSync3(p)) return { path: p, stage };
+  }
+  return null;
 }
 function resolveStageHats(intent, stage) {
   try {
@@ -27716,42 +27729,57 @@ function handleStateTool(name, args2) {
       return text(JSON.stringify(units, null, 2));
     }
     case "haiku_unit_start": {
-      const uPath = unitPath(args2.intent, args2.stage, args2.unit);
+      const stage = resolveActiveStage(args2.intent);
+      if (!stage) return text(JSON.stringify({ error: "no_active_stage", message: "No active stage found for this intent. Call haiku_run_next first." }));
+      const uPath = unitPath(args2.intent, stage, args2.unit);
+      const stageHats = resolveStageHats(args2.intent, stage);
+      const firstHat = stageHats[0] || "";
       if (existsSync3(uPath)) {
         const { data: unitFm } = parseFrontmatter(readFileSync2(uPath, "utf8"));
         const unitType = unitFm.type || "";
         if (unitType) {
-          const allowedTypes = resolveAllowedUnitTypes(args2.intent, args2.stage);
+          const allowedTypes = resolveAllowedUnitTypes(args2.intent, stage);
           if (allowedTypes.length > 0 && !allowedTypes.includes(unitType)) {
             return text(JSON.stringify({
               error: "unit_type_not_allowed",
               unit_type: unitType,
               allowed_types: allowedTypes,
-              message: `Unit type '${unitType}' is not allowed in stage '${args2.stage}'. Allowed types: ${allowedTypes.join(", ")}. Convert to knowledge for downstream stages, then call haiku_run_next again.`
+              message: `Unit type '${unitType}' is not allowed in stage '${stage}'. Allowed types: ${allowedTypes.join(", ")}. Convert to knowledge for downstream stages, then call haiku_run_next again.`
             }));
           }
         }
       }
       setFrontmatterField(uPath, "status", "active");
       setFrontmatterField(uPath, "bolt", 1);
-      setFrontmatterField(uPath, "hat", args2.hat);
+      setFrontmatterField(uPath, "hat", firstHat);
       setFrontmatterField(uPath, "started_at", timestamp());
-      emitTelemetry("haiku.unit.started", { intent: args2.intent, stage: args2.stage, unit: args2.unit, hat: args2.hat });
+      setFrontmatterField(uPath, "hat_started_at", timestamp());
+      emitTelemetry("haiku.unit.started", { intent: args2.intent, stage, unit: args2.unit, hat: firstHat });
       const sf = args2.state_file;
-      if (sf) logSessionEvent(sf, { event: "unit_started", intent: args2.intent, stage: args2.stage, unit: args2.unit, hat: args2.hat });
-      gitCommitState(`haiku: start unit ${args2.unit}`, shouldPushForIntent(args2.intent));
+      if (sf) logSessionEvent(sf, { event: "unit_started", intent: args2.intent, stage, unit: args2.unit, hat: firstHat });
+      gitCommitState(`haiku: start unit ${args2.unit}`);
       syncSessionMetadata(args2.intent, args2.state_file);
-      const scope = resolveStageScope(args2.intent, args2.stage);
+      const scope = resolveStageScope(args2.intent, stage);
       return text(scope ? `ok
 
 ${scope}` : "ok");
     }
     case "haiku_unit_advance_hat": {
-      const advPath = unitPath(args2.intent, args2.stage, args2.unit);
+      const unitInfo = findUnitFile(args2.intent, args2.unit);
+      if (!unitInfo) return text(JSON.stringify({ error: "unit_not_found", message: `Unit '${args2.unit}' not found in any stage of intent '${args2.intent}'.` }));
+      const advPath = unitInfo.path;
+      const advStage = unitInfo.stage;
       const unitRaw = readFileSync2(advPath, "utf8");
       const { data: unitFm } = parseFrontmatter(unitRaw);
       const currentHat = unitFm.hat || "";
-      const stageHats = resolveStageHats(args2.intent, args2.stage);
+      const hatStartedAt = unitFm.hat_started_at;
+      if (hatStartedAt) {
+        const elapsed = (Date.now() - new Date(hatStartedAt).getTime()) / 1e3;
+        if (elapsed < 30) {
+          return text(JSON.stringify({ error: "hat_too_fast", elapsed_seconds: Math.round(elapsed), minimum_seconds: 30, message: "Cannot advance hat \u2014 the current hat started less than 30 seconds ago. Each hat must do meaningful work before advancing." }));
+        }
+      }
+      const stageHats = resolveStageHats(args2.intent, advStage);
       const currentIdx = stageHats.indexOf(currentHat);
       const nextIdx = currentIdx + 1;
       const isLastHat = nextIdx >= stageHats.length;
@@ -27759,7 +27787,7 @@ ${scope}` : "ok");
         const unchecked = (unitRaw.match(/- \[ \]/g) || []).length;
         if (unchecked > 0) {
           const sf = args2.state_file;
-          if (sf) logSessionEvent(sf, { event: "criteria_not_met", intent: args2.intent, stage: args2.stage, unit: args2.unit, unchecked });
+          if (sf) logSessionEvent(sf, { event: "criteria_not_met", intent: args2.intent, stage: advStage, unit: args2.unit, unchecked });
           return text(JSON.stringify({ error: "criteria_not_met", unchecked, message: `Cannot complete unit: ${unchecked} completion criteria still unchecked. Address them, then call haiku_unit_advance_hat again.` }));
         }
         const unitOutputs = unitFm.outputs || [];
@@ -27779,18 +27807,18 @@ ${scope}` : "ok");
           });
           if (missing.length > 0) {
             const sf = args2.state_file;
-            if (sf) logSessionEvent(sf, { event: "outputs_missing", intent: args2.intent, stage: args2.stage, unit: args2.unit, missing });
+            if (sf) logSessionEvent(sf, { event: "outputs_missing", intent: args2.intent, stage: advStage, unit: args2.unit, missing });
             return text(JSON.stringify({ error: "unit_outputs_missing", missing, message: `Cannot complete unit: ${missing.length} declared output(s) not found: ${missing.join(", ")}. Create them, then call haiku_unit_advance_hat again.` }));
           }
         }
         setFrontmatterField(advPath, "status", "completed");
         setFrontmatterField(advPath, "completed_at", timestamp());
-        emitTelemetry("haiku.unit.completed", { intent: args2.intent, stage: args2.stage, unit: args2.unit });
+        emitTelemetry("haiku.unit.completed", { intent: args2.intent, stage: advStage, unit: args2.unit });
         {
           const sf = args2.state_file;
-          if (sf) logSessionEvent(sf, { event: "unit_completed", intent: args2.intent, stage: args2.stage, unit: args2.unit });
+          if (sf) logSessionEvent(sf, { event: "unit_completed", intent: args2.intent, stage: advStage, unit: args2.unit });
         }
-        gitCommitState(`haiku: complete unit ${args2.unit}`, shouldPushForIntent(args2.intent));
+        gitCommitState(`haiku: complete unit ${args2.unit}`);
         const mergeResult = mergeUnitWorktree(args2.intent, args2.unit);
         if (!mergeResult.success) {
           return text(JSON.stringify({ status: "completed_merge_failed", message: mergeResult.message }));
@@ -27806,29 +27834,30 @@ ${scope}` : "ok");
         }
         return text(`completed (last hat)${mergeNote}`);
       }
-      const nextHat = args2.hat || stageHats[nextIdx];
-      if (args2.hat && args2.hat !== stageHats[nextIdx]) {
-        return text(JSON.stringify({ error: "hat_sequence_violation", expected: stageHats[nextIdx], requested: args2.hat, message: `Cannot advance to "${args2.hat}" \u2014 next hat in sequence is "${stageHats[nextIdx]}".` }));
-      }
+      const nextHat = stageHats[nextIdx];
       setFrontmatterField(advPath, "hat", nextHat);
+      setFrontmatterField(advPath, "hat_started_at", timestamp());
       {
         const sf = args2.state_file;
-        if (sf) logSessionEvent(sf, { event: "hat_advanced", intent: args2.intent, stage: args2.stage, unit: args2.unit, hat: nextHat });
+        if (sf) logSessionEvent(sf, { event: "hat_advanced", intent: args2.intent, stage: advStage, unit: args2.unit, hat: nextHat });
       }
-      emitTelemetry("haiku.hat.transition", { intent: args2.intent, stage: args2.stage, unit: args2.unit, hat: nextHat });
-      gitCommitState(`haiku: advance hat to ${nextHat} on ${args2.unit}`, shouldPushForIntent(args2.intent));
+      emitTelemetry("haiku.hat.transition", { intent: args2.intent, stage: advStage, unit: args2.unit, hat: nextHat });
+      gitCommitState(`haiku: advance hat to ${nextHat} on ${args2.unit}`);
       syncSessionMetadata(args2.intent, args2.state_file);
       if (_runNext) {
         const next = _runNext(args2.intent);
         return text(JSON.stringify({ ...next, _hat_advanced: nextHat }, null, 2));
       }
-      const hatScope = resolveStageScope(args2.intent, args2.stage);
+      const hatScope = resolveStageScope(args2.intent, advStage);
       return text(hatScope ? `advanced to ${nextHat}
 
 ${hatScope}` : `advanced to ${nextHat}`);
     }
     case "haiku_unit_reject_hat": {
-      const failPath = unitPath(args2.intent, args2.stage, args2.unit);
+      const rejectInfo = findUnitFile(args2.intent, args2.unit);
+      if (!rejectInfo) return text(JSON.stringify({ error: "unit_not_found", message: `Unit '${args2.unit}' not found in any stage of intent '${args2.intent}'.` }));
+      const failPath = rejectInfo.path;
+      const rejectStage = rejectInfo.stage;
       const { data: failData } = parseFrontmatter(readFileSync2(failPath, "utf8"));
       const currentHat = failData.hat || "";
       const currentBolt = failData.bolt || 1;
@@ -27836,17 +27865,18 @@ ${hatScope}` : `advanced to ${nextHat}`);
       if (currentBolt + 1 > MAX_BOLTS_FAIL) {
         return text(JSON.stringify({ error: "max_bolts_exceeded", bolt: currentBolt, max: MAX_BOLTS_FAIL, message: `Unit has exceeded ${MAX_BOLTS_FAIL} bolt iterations. Escalate to the user \u2014 this unit may need to be redesigned or split.` }));
       }
-      const stageHats = resolveStageHats(args2.intent, args2.stage);
+      const stageHats = resolveStageHats(args2.intent, rejectStage);
       const hatIdx = stageHats.indexOf(currentHat);
       const prevHat = hatIdx > 0 ? stageHats[hatIdx - 1] : stageHats[0];
       setFrontmatterField(failPath, "hat", prevHat);
       setFrontmatterField(failPath, "bolt", currentBolt + 1);
+      setFrontmatterField(failPath, "hat_started_at", timestamp());
       {
         const sf = args2.state_file;
-        if (sf) logSessionEvent(sf, { event: "unit_failed", intent: args2.intent, stage: args2.stage, unit: args2.unit, from_hat: currentHat, to_hat: prevHat, bolt: currentBolt + 1 });
+        if (sf) logSessionEvent(sf, { event: "unit_failed", intent: args2.intent, stage: rejectStage, unit: args2.unit, from_hat: currentHat, to_hat: prevHat, bolt: currentBolt + 1 });
       }
-      emitTelemetry("haiku.unit.failed", { intent: args2.intent, stage: args2.stage, unit: args2.unit, hat: currentHat, prev_hat: prevHat, bolt: String(currentBolt + 1) });
-      gitCommitState(`haiku: fail ${args2.unit} \u2014 back to ${prevHat}, bolt ${currentBolt + 1}`, shouldPushForIntent(args2.intent));
+      emitTelemetry("haiku.unit.failed", { intent: args2.intent, stage: rejectStage, unit: args2.unit, hat: currentHat, prev_hat: prevHat, bolt: String(currentBolt + 1) });
+      gitCommitState(`haiku: fail ${args2.unit} \u2014 back to ${prevHat}, bolt ${currentBolt + 1}`);
       syncSessionMetadata(args2.intent, args2.state_file);
       return text(`failed \u2014 back to ${prevHat}, bolt ${currentBolt + 1}`);
     }
@@ -27955,7 +27985,7 @@ ${hatScope}` : `advanced to ${nextHat}`);
       return text(`Unknown tool: ${name}`);
   }
 }
-var import_gray_matter2, _runNext, stateToolDefs;
+var import_gray_matter2, _isGitRepo, _runNext, stateToolDefs;
 var init_state_tools = __esm({
   "src/state-tools.ts"() {
     "use strict";
@@ -27963,6 +27993,7 @@ var init_state_tools = __esm({
     init_telemetry();
     init_session_metadata();
     init_git_worktree();
+    _isGitRepo = null;
     _runNext = null;
     stateToolDefs = [
       // Intent tools
@@ -28000,18 +28031,18 @@ var init_state_tools = __esm({
       },
       {
         name: "haiku_unit_start",
-        description: "Mark a unit as started (sets status, bolt, hat, timestamp)",
-        inputSchema: { type: "object", properties: { intent: { type: "string" }, stage: { type: "string" }, unit: { type: "string" }, hat: { type: "string" } }, required: ["intent", "stage", "unit", "hat"] }
+        description: "Mark a unit as started. The system resolves the stage and first hat internally.",
+        inputSchema: { type: "object", properties: { intent: { type: "string" }, unit: { type: "string" } }, required: ["intent", "unit"] }
       },
       {
         name: "haiku_unit_advance_hat",
-        description: "Advance a unit to the next hat in the sequence. When called on the last hat, automatically completes the unit (validates criteria and outputs first). The hat param is optional \u2014 if omitted, advances to the next hat in the stage's sequence.",
-        inputSchema: { type: "object", properties: { intent: { type: "string" }, stage: { type: "string" }, unit: { type: "string" }, hat: { type: "string", description: "Next hat to advance to (optional \u2014 auto-resolved from stage hat sequence)" } }, required: ["intent", "stage", "unit"] }
+        description: "Advance a unit to the next hat in the sequence. When called on the last hat, auto-completes the unit and progresses the FSM. The system resolves the current hat, next hat, and stage internally.",
+        inputSchema: { type: "object", properties: { intent: { type: "string" }, unit: { type: "string" } }, required: ["intent", "unit"] }
       },
       {
         name: "haiku_unit_reject_hat",
-        description: "Reject the current hat's work \u2014 moves back to the previous hat and increments bolt count. Called when a reviewing hat determines the previous hat's output doesn't meet requirements.",
-        inputSchema: { type: "object", properties: { intent: { type: "string" }, stage: { type: "string" }, unit: { type: "string" } }, required: ["intent", "stage", "unit"] }
+        description: "Reject the current hat's work \u2014 moves back to the previous hat and increments bolt. The system resolves stage and hat positions internally.",
+        inputSchema: { type: "object", properties: { intent: { type: "string" }, unit: { type: "string" } }, required: ["intent", "unit"] }
       },
       {
         name: "haiku_unit_increment_bolt",
@@ -28191,27 +28222,6 @@ function readFrontmatter(filePath) {
   const raw = readFileSync4(filePath, "utf8");
   const { data } = parseFrontmatter(raw);
   return data;
-}
-function shouldPush(slug) {
-  try {
-    const root = findHaikuRoot();
-    const intentFile = join7(root, "intents", slug, "intent.md");
-    const fm = readFrontmatter(intentFile);
-    const studioName = fm.studio;
-    if (!studioName) return false;
-    const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || "";
-    for (const base of [join7(process.cwd(), ".haiku", "studios"), join7(pluginRoot, "studios")]) {
-      const studioFile = join7(base, studioName, "STUDIO.md");
-      if (existsSync5(studioFile)) {
-        const studioFm = readFrontmatter(studioFile);
-        const persistence = studioFm.persistence;
-        return persistence?.type === "git";
-      }
-    }
-    return false;
-  } catch {
-    return false;
-  }
 }
 function resolveStudioStages(studio) {
   const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || "";
@@ -28468,7 +28478,7 @@ function fsmStartStage(slug, stage) {
     createIntentBranch(slug);
   }
   emitTelemetry("haiku.stage.started", { intent: slug, stage });
-  gitCommitState(`haiku: start stage ${stage}`, shouldPush(slug));
+  gitCommitState(`haiku: start stage ${stage}`);
 }
 function fsmAdvancePhase(slug, stage, toPhase) {
   const path = stageStatePath(slug, stage);
@@ -28485,7 +28495,7 @@ function fsmCompleteStage(slug, stage, gateOutcome) {
   data.gate_outcome = gateOutcome;
   writeJson(path, data);
   emitTelemetry("haiku.stage.completed", { intent: slug, stage, gate_outcome: gateOutcome });
-  gitCommitState(`haiku: complete stage ${stage}`, shouldPush(slug));
+  gitCommitState(`haiku: complete stage ${stage}`);
 }
 function fsmAdvanceStage(slug, currentStage, nextStage) {
   fsmCompleteStage(slug, currentStage, "advanced");
@@ -28509,7 +28519,7 @@ function fsmIntentComplete(slug) {
     setFrontmatterField(intentFile, "completed_at", timestamp());
   }
   emitTelemetry("haiku.intent.completed", { intent: slug });
-  gitCommitState(`haiku: complete intent ${slug}`, shouldPush(slug));
+  gitCommitState(`haiku: complete intent ${slug}`);
 }
 function fsmStageCompleteDiscrete(slug, stage) {
   fsmCompleteStage(slug, stage, "paused");
@@ -29034,7 +29044,7 @@ function currentWaveNumber(units, unitWave, totalWaves) {
   }
   return 0;
 }
-function goBack(slug, targetStage, targetPhase) {
+function goBack(slug) {
   const root = findHaikuRoot();
   const iDir = join7(root, "intents", slug);
   const intentFile = join7(iDir, "intent.md");
@@ -29044,27 +29054,22 @@ function goBack(slug, targetStage, targetPhase) {
   const intent = readFrontmatter(intentFile);
   const studio = intent.studio || "ideation";
   const currentActiveStage = intent.active_stage || "";
-  if (targetStage) {
-    const allStages = resolveStudioStages(studio);
-    if (!allStages.includes(targetStage)) {
-      return { action: "error", message: `Stage '${targetStage}' not found in studio '${studio}'` };
-    }
-    const path = stageStatePath(slug, targetStage);
-    const data = {
-      stage: targetStage,
-      status: "active",
-      phase: "elaborate",
-      started_at: timestamp(),
-      completed_at: null,
-      gate_entered_at: null,
-      gate_outcome: null
-    };
-    writeJson(path, data);
-    const unitsDir = join7(iDir, "stages", targetStage, "units");
-    if (existsSync5(unitsDir)) {
-      const files = readdirSync3(unitsDir).filter((f) => f.endsWith(".md"));
+  if (!currentActiveStage) {
+    return { action: "error", message: `No active stage to go back from` };
+  }
+  const path = stageStatePath(slug, currentActiveStage);
+  const stageState = readJson(path);
+  const currentPhase = stageState.phase || "elaborate";
+  if (currentPhase !== "elaborate") {
+    stageState.phase = "elaborate";
+    stageState.gate_entered_at = null;
+    stageState.gate_outcome = null;
+    writeJson(path, stageState);
+    const unitsDir2 = join7(iDir, "stages", currentActiveStage, "units");
+    if (existsSync5(unitsDir2)) {
+      const files = readdirSync3(unitsDir2).filter((f) => f.endsWith(".md"));
       for (const f of files) {
-        const unitFile = join7(unitsDir, f);
+        const unitFile = join7(unitsDir2, f);
         setFrontmatterField(unitFile, "status", "pending");
         setFrontmatterField(unitFile, "bolt", 0);
         setFrontmatterField(unitFile, "hat", "");
@@ -29072,62 +29077,57 @@ function goBack(slug, targetStage, targetPhase) {
         setFrontmatterField(unitFile, "completed_at", null);
       }
     }
-    setFrontmatterField(intentFile, "active_stage", targetStage);
-    emitTelemetry("haiku.go_back.stage", { intent: slug, from_stage: currentActiveStage, to_stage: targetStage });
-    gitCommitState(`haiku: go back to stage ${targetStage}`, shouldPush(slug));
-    return {
-      action: "went_back",
-      intent: slug,
-      target_stage: targetStage,
-      reset_phase: "elaborate",
-      message: `Went back to stage '${targetStage}' \u2014 stage reset to elaborate, all units re-queued`
-    };
-  }
-  if (targetPhase) {
-    if (!currentActiveStage) {
-      return { action: "error", message: `No active stage to go back within` };
-    }
-    const phaseOrder = ["elaborate", "execute", "review", "gate"];
-    const targetIdx = phaseOrder.indexOf(targetPhase);
-    if (targetIdx < 0) {
-      return { action: "error", message: `Invalid phase '${targetPhase}'. Valid phases: ${phaseOrder.join(", ")}` };
-    }
-    const path = stageStatePath(slug, currentActiveStage);
-    const stageState = readJson(path);
-    const currentPhase = stageState.phase || "";
-    const currentIdx = phaseOrder.indexOf(currentPhase);
-    if (targetIdx >= currentIdx) {
-      return { action: "error", message: `Cannot go back: '${targetPhase}' is not before current phase '${currentPhase}'` };
-    }
-    stageState.phase = targetPhase;
-    stageState.gate_entered_at = null;
-    stageState.gate_outcome = null;
-    writeJson(path, stageState);
-    if (targetPhase === "elaborate" || targetPhase === "execute") {
-      const unitsDir = join7(iDir, "stages", currentActiveStage, "units");
-      if (existsSync5(unitsDir)) {
-        const files = readdirSync3(unitsDir).filter((f) => f.endsWith(".md"));
-        for (const f of files) {
-          const unitFile = join7(unitsDir, f);
-          setFrontmatterField(unitFile, "status", "pending");
-          setFrontmatterField(unitFile, "bolt", 0);
-          setFrontmatterField(unitFile, "hat", "");
-          setFrontmatterField(unitFile, "started_at", null);
-          setFrontmatterField(unitFile, "completed_at", null);
-        }
-      }
-    }
-    emitTelemetry("haiku.go_back.phase", { intent: slug, stage: currentActiveStage, from_phase: currentPhase, to_phase: targetPhase });
-    gitCommitState(`haiku: go back to phase ${targetPhase} in ${currentActiveStage}`, shouldPush(slug));
+    emitTelemetry("haiku.go_back.phase", { intent: slug, stage: currentActiveStage, from_phase: currentPhase, to_phase: "elaborate" });
+    gitCommitState(`haiku: go back to elaborate in ${currentActiveStage}`);
     return {
       action: "went_back",
       intent: slug,
       stage: currentActiveStage,
-      target_phase: targetPhase,
-      message: `Went back to phase '${targetPhase}' in stage '${currentActiveStage}'`
+      target_phase: "elaborate",
+      message: `Went back to elaborate phase in stage '${currentActiveStage}' \u2014 all units re-queued`
     };
   }
-  return { action: "error", message: "Must specify either target_stage or target_phase" };
+  const allStages = resolveStudioStages(studio);
+  const skipStages = intent.skip_stages || [];
+  const studioStages = allStages.filter((s) => !skipStages.includes(s));
+  const currentIdx = studioStages.indexOf(currentActiveStage);
+  if (currentIdx <= 0) {
+    return { action: "error", message: `Already at the first stage ('${currentActiveStage}') \u2014 cannot go back further` };
+  }
+  const targetStage = studioStages[currentIdx - 1];
+  const targetPath = stageStatePath(slug, targetStage);
+  const data = {
+    stage: targetStage,
+    status: "active",
+    phase: "elaborate",
+    started_at: timestamp(),
+    completed_at: null,
+    gate_entered_at: null,
+    gate_outcome: null
+  };
+  writeJson(targetPath, data);
+  const unitsDir = join7(iDir, "stages", targetStage, "units");
+  if (existsSync5(unitsDir)) {
+    const files = readdirSync3(unitsDir).filter((f) => f.endsWith(".md"));
+    for (const f of files) {
+      const unitFile = join7(unitsDir, f);
+      setFrontmatterField(unitFile, "status", "pending");
+      setFrontmatterField(unitFile, "bolt", 0);
+      setFrontmatterField(unitFile, "hat", "");
+      setFrontmatterField(unitFile, "started_at", null);
+      setFrontmatterField(unitFile, "completed_at", null);
+    }
+  }
+  setFrontmatterField(intentFile, "active_stage", targetStage);
+  emitTelemetry("haiku.go_back.stage", { intent: slug, from_stage: currentActiveStage, to_stage: targetStage });
+  gitCommitState(`haiku: go back to stage ${targetStage}`);
+  return {
+    action: "went_back",
+    intent: slug,
+    target_stage: targetStage,
+    reset_phase: "elaborate",
+    message: `Went back to stage '${targetStage}' \u2014 stage reset to elaborate, all units re-queued`
+  };
 }
 function setOpenReviewHandler(handler) {
   _openReviewAndWait = handler;
@@ -29483,7 +29483,7 @@ ${allDescriptions}`,
 ${context}
 `);
     }
-    gitCommitState(`haiku: create intent ${slug}`, shouldPush(slug));
+    gitCommitState(`haiku: create intent ${slug}`);
     emitTelemetry("haiku.intent.created", { intent: slug, studio: selectedStudio, mode: selectedMode });
     if (stateFile) logSessionEvent(stateFile, { event: "intent_created", intent: slug, studio: selectedStudio, mode: selectedMode, stages: studioStages });
     return text(JSON.stringify({
@@ -29497,11 +29497,7 @@ ${context}
     }, null, 2));
   }
   if (name === "haiku_go_back") {
-    const result = goBack(
-      args2.intent,
-      args2.target_stage,
-      args2.target_phase
-    );
+    const result = goBack(args2.intent);
     emitTelemetry("haiku.orchestrator.action", { intent: args2.intent, action: result.action });
     syncSessionMetadata(args2.intent, args2.state_file);
     return text(JSON.stringify(result, null, 2));
@@ -29552,13 +29548,11 @@ var init_orchestrator = __esm({
       },
       {
         name: "haiku_go_back",
-        description: "Go back to a previous stage or phase within the current stage. If target_stage is provided: resets that stage (status: active, phase: elaborate), re-queues all its units. If target_phase is provided: sets phase back within the current active stage, re-queues affected units. This is a human-initiated action \u2014 the agent should only call this when explicitly requested.",
+        description: "Go back to the previous stage or phase. The FSM determines the target based on current position: if in execute/review/gate phase, goes back to elaborate in the current stage; if already in elaborate phase, goes back to the previous stage. Agents can call this when they detect missing information from a prior stage.",
         inputSchema: {
           type: "object",
           properties: {
-            intent: { type: "string", description: "Intent slug" },
-            target_stage: { type: "string", description: "Stage to go back to (resets the stage entirely)" },
-            target_phase: { type: "string", description: "Phase to go back to within the current active stage (elaborate, execute, review)" }
+            intent: { type: "string", description: "Intent slug" }
           },
           required: ["intent"]
         }
@@ -30006,13 +30000,17 @@ Agent type: \`${hatAgentType}\`${hatModel ? ` | Model: \`${hatModel}\`` : ""}
 **Subagent prompt must include:**
 - The hat definition, unit spec, and refs above
 - The stage scope constraint
-` + (action.action === "start_unit" ? `- Instruction to call \`haiku_unit_start { intent: "${slug}", stage: "${stage}", unit: "${unit}", hat: "${hat}" }\` first
+` + (action.action === "start_unit" ? `- Instruction to call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\` first
 ` : "") + `
 **Subagent calls one of these when done:**
-- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", stage: "${stage}", unit: "${unit}" }\` \u2014 auto-advances to the next hat, or auto-completes if this was the last hat
-- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", stage: "${stage}", unit: "${unit}" }\` \u2014 moves back one hat, increments bolt
+- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\` \u2014 auto-advances to the next hat, or auto-completes if this was the last hat
+- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\` \u2014 moves back one hat, increments bolt
 
-**After subagent returns:** The \`advance_hat\` result contains the next FSM action \u2014 spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately \u2014 advance_hat handles FSM progression internally.`
+**After subagent returns:** The \`advance_hat\` result contains the next FSM action \u2014 spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately \u2014 advance_hat handles FSM progression internally.
+
+**If outputs from a previous stage are missing, incomplete, or incorrect:** call \`haiku_go_back { intent: "${slug}" }\` to return to the prior stage for corrections.
+
+**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` \u2014 do NOT open files in a browser and ask via text. The visual question tool provides a structured review experience.`
       );
       if (action.action === "start_unit") {
         try {
@@ -30066,11 +30064,14 @@ Each subagent calls \`advance_hat\` when done \u2014 it internally progresses th
 - The unit spec and refs
 - The stage scope constraint
 - Instruction to call \`haiku_unit_start\` first
+- If outputs from a previous stage are missing, incomplete, or incorrect: call \`haiku_go_back { intent: "${slug}" }\` to return to the prior stage for corrections
 
 ` + units.map((u3) => {
           const wt = worktrees[u3];
-          return `- **${u3}**${wt ? ` (worktree: \`${wt}\`)` : ""}: \`haiku_unit_start { intent: "${slug}", stage: "${stage}", unit: "${u3}", hat: "${firstHat}" }\``;
+          return `- **${u3}**${wt ? ` (worktree: \`${wt}\`)` : ""}: \`haiku_unit_start { intent: "${slug}", unit: "${u3}" }\``;
         }).join("\n") + `
+
+**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` \u2014 do NOT open files in a browser and ask via text.
 
 After all subagents return: check the last subagent's \`advance_hat\` result \u2014 it contains the next FSM action (next wave, phase advance, etc.). Act on it directly. Do NOT call haiku_run_next separately.`
       );
@@ -30864,6 +30865,30 @@ Present findings to user for validation. Then offer next steps:
             textMsg("user", instructions)
           ]
         };
+      }
+    });
+    registerPrompt({
+      name: "haiku:go-back",
+      title: "Go Back",
+      description: "Go back to the previous stage or phase to address issues",
+      arguments: [
+        {
+          name: "intent",
+          description: "Intent slug (auto-detected if only one active)",
+          required: false,
+          completer: completeIntentSlug
+        }
+      ],
+      handler: async (args2) => {
+        const resolved = resolveIntent(args2);
+        if ("error" in resolved) return resolved.error;
+        return singleMessage(
+          `Call \`haiku_go_back { intent: "${resolved.slug}" }\` to return to the previous stage or phase.
+
+The FSM determines the correct target based on current position:
+- If in execute/review/gate phase: goes back to elaborate in the current stage
+- If already in elaborate phase: goes back to the previous stage`
+        );
       }
     });
   }
@@ -31773,9 +31798,7 @@ Create the following structure:
 name: ${name}
 description: TODO -- describe this studio's purpose
 stages: []
-persistence:
-  type: git
-  delivery: pull-request
+category: general
 ---
 
 # ${name} Studio
@@ -33748,7 +33771,7 @@ var init_guard_fsm_fields = __esm({
     "use strict";
     INTENT_PROTECTED = ["status", "active_stage", "completed_at", "started_at"];
     STAGE_PROTECTED = ["status", "phase", "started_at", "completed_at", "gate_entered_at", "gate_outcome"];
-    UNIT_PROTECTED = ["status", "started_at", "completed_at", "bolt", "hat"];
+    UNIT_PROTECTED = ["status", "started_at", "completed_at", "bolt", "hat", "hat_started_at"];
   }
 });
 

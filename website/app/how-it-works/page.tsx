@@ -4,7 +4,7 @@ import Link from "next/link"
 export const metadata: Metadata = {
 	title: "How It Works",
 	description:
-		"Technical deep-dive into H·AI·K·U mechanics — stage loops, hat transitions, DAG-based unit management, persistence adapters, and what happens when you run /haiku:start.",
+		"Technical deep-dive into H·AI·K·U mechanics — stage loops, hat transitions, DAG-based unit management, environment-detected persistence, and what happens when you run /haiku:start.",
 }
 
 const stageLoop = [
@@ -40,25 +40,25 @@ const stageLoop = [
 
 const persistenceAdapters = [
 	{
-		name: "Git",
-		studio: "Software",
+		name: "Git (auto-detected)",
+		studio: "Any (in git repo)",
 		operations: {
 			workspace: "git worktree add",
-			save: "git commit",
+			save: "git commit + push",
 			version: "Commit history",
 			review: "Pull request",
 			deliver: "Merge PR",
 		},
 	},
 	{
-		name: "Filesystem",
-		studio: "Ideation (default)",
+		name: "Filesystem (auto-detected)",
+		studio: "Any (no git)",
 		operations: {
 			workspace: "mkdir",
 			save: "Write files",
 			version: "Timestamps",
 			review: "Export + review",
-			deliver: "Copy to output",
+			deliver: "Local output",
 		},
 	},
 	{
@@ -93,7 +93,7 @@ export default function HowItWorksPage() {
 					</h1>
 					<p className="text-lg text-stone-600 dark:text-stone-400">
 						The technical mechanics of H·AI·K·U — stage loops, hat transitions,
-						DAG-based unit management, persistence adapters, and concrete
+						DAG-based unit management, environment-detected persistence, and concrete
 						examples of what happens under the hood.
 					</p>
 				</div>
@@ -323,7 +323,7 @@ export default function HowItWorksPage() {
 								Software Studio — Development Stage
 							</h3>
 							<p className="mb-4 text-xs text-stone-500 dark:text-stone-400">
-								persistence: git | review: ask
+								review: ask
 							</p>
 							<div className="space-y-2">
 								{["planner", "builder", "reviewer"].map((hat, i) => (
@@ -355,7 +355,7 @@ export default function HowItWorksPage() {
 								Software Studio — Security Stage
 							</h3>
 							<p className="mb-4 text-xs text-stone-500 dark:text-stone-400">
-								persistence: git | review: external
+								review: external
 							</p>
 							<div className="space-y-2">
 								{["threat-modeler", "red-team", "blue-team", "security-reviewer"].map((hat, i) => (
@@ -521,9 +521,9 @@ Implement REST API endpoints for user authentication...
 							Persistence Adapters
 						</h2>
 						<p className="mx-auto max-w-2xl text-stone-600 dark:text-stone-400">
-							The studio declares how work is saved. Stages and the core loop
-							don&apos;t care — they call a persistence interface. The adapter
-							handles the details.
+							Persistence is environment-detected, not studio-configured. If you&apos;re
+							in a git repo, state is committed and pushed. If not, it&apos;s files on disk.
+							Studios don&apos;t need to know or care.
 						</p>
 					</div>
 
@@ -558,8 +558,9 @@ Implement REST API endpoints for user authentication...
 					<div className="mt-6 rounded-xl border border-teal-200 bg-teal-50 p-5 dark:border-teal-800 dark:bg-teal-950/20">
 						<p className="text-sm text-teal-800 dark:text-teal-200">
 							<strong>This is what makes H·AI·K·U domain-agnostic.</strong> The core loop
-							(elaborate, execute, review, gate) is universal. The persistence layer is the only
-							thing that changes between domains. Git is just one adapter.
+							(elaborate, execute, review, gate) is universal. Persistence adapts to the
+							environment automatically — git repos get commits and PRs, everything else
+							gets files on disk.
 						</p>
 					</div>
 				</div>
@@ -838,7 +839,7 @@ Implement REST API endpoints for user authentication...
 							</div>
 
 							<div className="mt-4 rounded-lg bg-indigo-100/50 p-3 text-xs text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-200">
-								<strong>Delivery:</strong> After the final stage, the persistence adapter delivers the work &mdash; git opens a PR, filesystem copies to output.
+								<strong>Delivery:</strong> After the final stage, the work is delivered based on environment &mdash; in git repos, a PR is opened; otherwise, output stays local.
 							</div>
 						</div>
 					</div>
@@ -955,7 +956,7 @@ Implement REST API endpoints for user authentication...
 									<span className="rounded-md bg-teal-100 px-2.5 py-1 text-xs font-semibold text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">
 										delivery
 									</span>
-									<span className="text-[10px] text-stone-400">persistence adapter delivers (PR, copy, publish)</span>
+									<span className="text-[10px] text-stone-400">delivers based on environment (PR in git, local otherwise)</span>
 								</div>
 							</div>
 						</div>
@@ -1003,7 +1004,7 @@ Implement REST API endpoints for user authentication...
 									<span className="rounded-md bg-teal-100 px-2.5 py-1 text-xs font-semibold text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">
 										delivery
 									</span>
-									<span className="text-[10px] text-stone-400">persistence adapter delivers (PR, copy, publish)</span>
+									<span className="text-[10px] text-stone-400">delivers based on environment (PR in git, local otherwise)</span>
 								</div>
 							</div>
 						</div>

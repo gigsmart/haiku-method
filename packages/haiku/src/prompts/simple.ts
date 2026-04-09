@@ -448,7 +448,7 @@ registerPrompt({
 				`name: ${name}\n` +
 				"description: TODO -- describe this studio's purpose\n" +
 				"stages: []\n" +
-				"persistence:\n  type: git\n  delivery: pull-request\n" +
+				"category: general\n" +
 				"---\n\n" +
 				`# ${name} Studio\n\n` +
 				"Describe the lifecycle this studio supports.\n" +

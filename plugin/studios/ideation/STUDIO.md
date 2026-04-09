@@ -3,9 +3,6 @@ name: ideation
 description: Universal lifecycle for any creative or analytical work
 stages: [research, create, review, deliver]
 category: general
-persistence:
-  type: filesystem
-  delivery: local
 ---
 
 # Ideation Studio

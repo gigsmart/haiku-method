@@ -9,7 +9,7 @@ import { resolve } from "node:path"
 // FSM-controlled fields by file type
 const INTENT_PROTECTED = ["status", "active_stage", "completed_at", "started_at"]
 const STAGE_PROTECTED = ["status", "phase", "started_at", "completed_at", "gate_entered_at", "gate_outcome"]
-const UNIT_PROTECTED = ["status", "started_at", "completed_at", "bolt", "hat"]
+const UNIT_PROTECTED = ["status", "started_at", "completed_at", "bolt", "hat", "hat_started_at"]
 
 function out(s: string): void {
 	process.stdout.write(s)

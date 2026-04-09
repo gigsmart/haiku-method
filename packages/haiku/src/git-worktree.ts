@@ -7,6 +7,7 @@
 import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, rmSync } from "node:fs"
 import { join } from "node:path"
+import { isGitRepo } from "./state-tools.js"
 
 function run(args: string[], cwd?: string): string {
 	return execFileSync(args[0], args.slice(1), { encoding: "utf8", stdio: "pipe", cwd }).trim()
@@ -33,9 +34,11 @@ export function isOnIntentBranch(slug: string): boolean {
 /**
  * Create the intent branch and switch to it.
  * If branch already exists, just switch.
+ * No-op in non-git environments.
  * Returns the branch name.
  */
 export function createIntentBranch(slug: string): string {
+	if (!isGitRepo()) return `haiku/${slug}/main`
 	const branch = `haiku/${slug}/main`
 	try {
 		// Check if branch exists
@@ -53,9 +56,10 @@ export function createIntentBranch(slug: string): string {
 
 /**
  * Create a worktree for a unit, branched from the intent branch.
- * Returns the absolute worktree path, or null if creation failed.
+ * Returns the absolute worktree path, or null if not in a git repo or creation failed.
  */
 export function createUnitWorktree(slug: string, unit: string): string | null {
+	if (!isGitRepo()) return null // Units work in-place in filesystem mode
 	const intentBranch = `haiku/${slug}/main`
 	const unitBranch = `haiku/${slug}/${unit}`
 	const worktreeBase = join(process.cwd(), ".haiku", "worktrees", slug)
@@ -83,9 +87,11 @@ export function createUnitWorktree(slug: string, unit: string): string | null {
 
 /**
  * Merge a unit's worktree back to the intent branch and clean up.
+ * No-op in non-git environments.
  * Returns merge result.
  */
 export function mergeUnitWorktree(slug: string, unit: string): { success: boolean; message: string } {
+	if (!isGitRepo()) return { success: true, message: "no worktree" }
 	const intentBranch = `haiku/${slug}/main`
 	const unitBranch = `haiku/${slug}/${unit}`
 	const worktreePath = join(process.cwd(), ".haiku", "worktrees", slug, unit)

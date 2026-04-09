@@ -1,6 +1,6 @@
 // prompts/core.ts — Core workflow prompt handlers
 //
-// Registers the 5 core prompts: haiku:start, haiku:resume, haiku:refine, haiku:review, haiku:reflect
+// Registers the 6 core prompts: haiku:start, haiku:resume, haiku:refine, haiku:review, haiku:reflect, haiku:go-back
 // Each handler reads state, optionally triggers side effects, and returns PromptMessage[].
 
 import { spawnSync } from "node:child_process"
@@ -388,12 +388,14 @@ function buildRunInstructions(
 				`- The hat definition, unit spec, and refs above\n` +
 				`- The stage scope constraint\n` +
 				(action.action === "start_unit"
-					? `- Instruction to call \`haiku_unit_start { intent: "${slug}", stage: "${stage}", unit: "${unit}", hat: "${hat}" }\` first\n`
+					? `- Instruction to call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\` first\n`
 					: "") +
 				`\n**Subagent calls one of these when done:**\n` +
-				`- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", stage: "${stage}", unit: "${unit}" }\` — auto-advances to the next hat, or auto-completes if this was the last hat\n` +
-				`- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", stage: "${stage}", unit: "${unit}" }\` — moves back one hat, increments bolt\n` +
-				`\n**After subagent returns:** The \`advance_hat\` result contains the next FSM action — spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately — advance_hat handles FSM progression internally.`,
+				`- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\` — auto-advances to the next hat, or auto-completes if this was the last hat\n` +
+				`- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\` — moves back one hat, increments bolt\n` +
+				`\n**After subagent returns:** The \`advance_hat\` result contains the next FSM action — spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately — advance_hat handles FSM progression internally.\n` +
+				`\n**If outputs from a previous stage are missing, incomplete, or incorrect:** call \`haiku_go_back { intent: "${slug}" }\` to return to the prior stage for corrections.\n` +
+				`\n**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` — do NOT open files in a browser and ask via text. The visual question tool provides a structured review experience.`,
 			)
 
 			// Check for ticketing provider — move ticket to "In Progress"
@@ -445,12 +447,14 @@ function buildRunInstructions(
 				`- The hat definition for "${firstHat}"\n` +
 				`- The unit spec and refs\n` +
 				`- The stage scope constraint\n` +
-				`- Instruction to call \`haiku_unit_start\` first\n\n` +
+				`- Instruction to call \`haiku_unit_start\` first\n` +
+				`- If outputs from a previous stage are missing, incomplete, or incorrect: call \`haiku_go_back { intent: "${slug}" }\` to return to the prior stage for corrections\n\n` +
 				units.map(u => {
 					const wt = worktrees[u]
-					return `- **${u}**${wt ? ` (worktree: \`${wt}\`)` : ""}: \`haiku_unit_start { intent: "${slug}", stage: "${stage}", unit: "${u}", hat: "${firstHat}" }\``
+					return `- **${u}**${wt ? ` (worktree: \`${wt}\`)` : ""}: \`haiku_unit_start { intent: "${slug}", unit: "${u}" }\``
 				}).join("\n") +
-				`\n\nAfter all subagents return: check the last subagent's \`advance_hat\` result — it contains the next FSM action (next wave, phase advance, etc.). Act on it directly. Do NOT call haiku_run_next separately.`,
+				`\n\n**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` — do NOT open files in a browser and ask via text.\n\n` +
+				`After all subagents return: check the last subagent's \`advance_hat\` result — it contains the next FSM action (next wave, phase advance, etc.). Act on it directly. Do NOT call haiku_run_next separately.`,
 			)
 			break
 		}
@@ -1123,5 +1127,32 @@ registerPrompt({
 				textMsg("user", instructions),
 			],
 		}
+	},
+})
+
+// ── haiku:go-back ──────────────────────────────────────────────────────────
+
+registerPrompt({
+	name: "haiku:go-back",
+	title: "Go Back",
+	description: "Go back to the previous stage or phase to address issues",
+	arguments: [
+		{
+			name: "intent",
+			description: "Intent slug (auto-detected if only one active)",
+			required: false,
+			completer: completeIntentSlug,
+		},
+	],
+	handler: async (args) => {
+		const resolved = resolveIntent(args)
+		if ("error" in resolved) return resolved.error
+
+		return singleMessage(
+			`Call \`haiku_go_back { intent: "${resolved.slug}" }\` to return to the previous stage or phase.\n\n` +
+			`The FSM determines the correct target based on current position:\n` +
+			`- If in execute/review/gate phase: goes back to elaborate in the current stage\n` +
+			`- If already in elaborate phase: goes back to the previous stage`,
+		)
 	},
 })
