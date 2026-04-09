@@ -1696,7 +1696,7 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 			}
 		}
 
-		// Fallback: auto-detect studio from description
+		// Fallback: auto-detect studio from description (never default to ideation — elicit if uncertain)
 		if (!selectedStudio) {
 			const desc = description.toLowerCase()
 			if (/\b(software|code|build|feature|implement|develop|api|app)\b/.test(desc)) {
@@ -1704,7 +1704,8 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 			} else if (/\b(doc|write|content|documentation|article|guide)\b/.test(desc)) {
 				selectedStudio = "documentation"
 			} else {
-				selectedStudio = "ideation"
+				// Cannot determine studio — return error so the agent elicits
+				return text(JSON.stringify({ error: "studio_required", message: "Cannot auto-detect studio from the description. Pass a studio argument or ask the user which studio to use.", available_studios: studioEntries.map(s => s.name) }))
 			}
 			selectedMode = "continuous"
 		}
