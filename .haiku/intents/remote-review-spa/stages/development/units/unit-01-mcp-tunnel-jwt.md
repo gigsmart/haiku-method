@@ -1,7 +1,7 @@
 ---
 title: MCP — Localtunnel + JWT token generation
 type: backend
-status: active
+status: completed
 depends_on: []
 quality_gates:
   - localtunnel added as dependency in packages/haiku/package.json
@@ -25,6 +25,7 @@ bolt: 1
 hat: reviewer
 started_at: '2026-04-09T19:52:01Z'
 hat_started_at: '2026-04-09T19:56:37Z'
+completed_at: '2026-04-09T19:57:28Z'
 ---
 
 # MCP — Localtunnel + JWT Token Generation
