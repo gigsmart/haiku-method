@@ -54,6 +54,7 @@ studio: ${studio}
 mode: ${opts.mode || "continuous"}
 active_stage: ${opts.active_stage || ""}
 status: ${opts.status || "active"}
+intent_reviewed: ${opts.intent_reviewed !== undefined ? opts.intent_reviewed : true}
 started_at: 2026-04-04T18:00:00Z
 completed_at: null
 ${opts.skip_stages ? `skip_stages: [${opts.skip_stages.join(", ")}]` : ""}
@@ -198,6 +199,26 @@ test("returns error for archived intent", () => {
   const result = runNext(slug)
   assert.strictEqual(result.action, "error")
   assert.ok(result.message.includes("archived"))
+})
+
+// ── runNext: intent review gate ──────────────────────────────────────────
+
+console.log("\n=== runNext: intent review gate ===")
+
+test("returns gate_review for unreviewed intent", () => {
+  const { projDir, slug } = createProject("intent-review-gate", { intent_reviewed: false })
+  process.chdir(projDir)
+  const result = runNext(slug)
+  assert.strictEqual(result.action, "gate_review")
+  assert.strictEqual(result.gate_context, "intent_review")
+  assert.strictEqual(result.gate_type, "ask")
+})
+
+test("skips intent review gate when already reviewed", () => {
+  const { projDir, slug } = createProject("intent-reviewed", { intent_reviewed: true })
+  process.chdir(projDir)
+  const result = runNext(slug)
+  assert.strictEqual(result.action, "start_stage")
 })
 
 // ── runNext: start first stage ────────────────────────────────────────────

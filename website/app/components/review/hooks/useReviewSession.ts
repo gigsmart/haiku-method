@@ -46,7 +46,9 @@ function base64urlToBytes(b64url: string): Uint8Array {
  * a new Response with the original Content-Type restored.
  */
 async function e2eFetch(url: string, e2eKey: string | null, init?: RequestInit): Promise<Response> {
-  const res = await fetch(url, init)
+  const headers = new Headers(init?.headers)
+  headers.set("bypass-tunnel-reminder", "1")
+  const res = await fetch(url, { ...init, headers })
   if (!e2eKey || !res.headers.get("X-E2E-Encrypted")) return res
 
   const originalContentType = res.headers.get("X-Original-Content-Type") ?? "application/octet-stream"
@@ -208,7 +210,7 @@ export function useReviewSession(baseUrl: string, sessionId: string, e2eKey?: st
       try {
         const res = await fetch(`${baseUrl}/review/${sessionId}/decide`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "bypass-tunnel-reminder": "1" },
           body: JSON.stringify(data),
         })
         return res.ok
@@ -231,7 +233,7 @@ export function useReviewSession(baseUrl: string, sessionId: string, e2eKey?: st
       try {
         const res = await fetch(`${baseUrl}/question/${sessionId}/answer`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "bypass-tunnel-reminder": "1" },
           body: JSON.stringify(data),
         })
         return res.ok
@@ -254,7 +256,7 @@ export function useReviewSession(baseUrl: string, sessionId: string, e2eKey?: st
       try {
         const res = await fetch(`${baseUrl}/direction/${sessionId}/select`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "bypass-tunnel-reminder": "1" },
           body: JSON.stringify(data),
         })
         return res.ok
