@@ -35,6 +35,7 @@ export class GitLabProvider implements BrowseProvider {
 	private env: ReturnType<typeof createRelayEnvironment>
 	/** Maps slug → branch for intents discovered via branch scanning */
 	private intentBranchMap = new Map<string, string>()
+	private intentMetaMap = new Map<string, { branch?: string; prUrl?: string | null; prStatus?: string | null; prNumber?: number | null }>()
 	/** ETag from the last branch-change poll */
 	private lastBranchesEtag: string | null = null
 
@@ -336,6 +337,7 @@ export class GitLabProvider implements BrowseProvider {
 			})
 			intentsBySlug.set(slug, intent)
 			this.intentBranchMap.set(slug, branchName)
+			this.intentMetaMap.set(slug, { branch: branchName, prUrl, prStatus, prNumber })
 			onProgress?.(intent)
 		})
 
@@ -589,6 +591,9 @@ export class GitLabProvider implements BrowseProvider {
 		// Reflection
 		const reflection = blobByPath.get(`${basePath}/reflection.md`) ?? null
 
+		// Carry forward branch/MR metadata from the listing scan
+		const meta = this.intentMetaMap.get(slug) || {}
+
 		return {
 			slug,
 			title: (frontmatter.title as string) || slug,
@@ -618,6 +623,7 @@ export class GitLabProvider implements BrowseProvider {
 			reflection,
 			content,
 			assets,
+			...meta,
 		}
 	}
 
