@@ -9,7 +9,7 @@
 // Returns an action object the agent follows.
 
 import { execFileSync } from "node:child_process"
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import matter from "gray-matter"
 import { emitTelemetry } from "./telemetry.js"
@@ -1846,6 +1846,17 @@ export const orchestratorToolDefs = [
 			required: ["intent"],
 		},
 	},
+	{
+		name: "haiku_intent_reset",
+		description: "Reset an intent — preserves the description, deletes all state, and recreates the intent from scratch. Asks for confirmation via elicitation before proceeding.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: { type: "string", description: "Intent slug to reset" },
+			},
+			required: ["intent"],
+		},
+	},
 ]
 
 // ── Tool handlers ──────────────────────────────────────────────────────────
@@ -2374,6 +2385,71 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 		emitTelemetry("haiku.orchestrator.action", { intent: args.intent as string, action: result.action })
 		syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
 		return text(JSON.stringify(result, null, 2))
+	}
+
+	if (name === "haiku_intent_reset") {
+		const slug = args.intent as string
+
+		// Validate intent exists
+		const root = findHaikuRoot()
+		const iDir = join(root, "intents", slug)
+		const intentFile = join(iDir, "intent.md")
+		if (!existsSync(intentFile)) {
+			return { content: [{ type: "text" as const, text: `Intent '${slug}' not found.` }], isError: true }
+		}
+
+		// Read the description before deleting
+		const raw = readFileSync(intentFile, "utf8")
+		const { data, body } = parseFrontmatter(raw)
+		const title = (data.title as string) || ""
+		const description = title || body.replace(/^#\s+.*\n/, "").trim()
+
+		// Ask for confirmation via elicitation
+		if (_elicitInput) {
+			const result = await _elicitInput({
+				message: `Reset intent "${slug}"?\n\nThis will DELETE all state (stages, units, knowledge) and recreate the intent with the same description.\n\nDescription: "${description}"`,
+				requestedSchema: {
+					type: "object" as const,
+					properties: {
+						confirm: {
+							type: "string",
+							title: "Confirm Reset",
+							description: "This cannot be undone",
+							enum: ["Reset", "Cancel"],
+						},
+					},
+					required: ["confirm"],
+				},
+			})
+
+			if (result.action !== "accept" || (result.content as Record<string, string>)?.confirm !== "Reset") {
+				return text(JSON.stringify({ action: "cancelled", message: "Reset cancelled." }))
+			}
+		} else {
+			return { content: [{ type: "text" as const, text: "Reset requires user confirmation via elicitation." }], isError: true }
+		}
+
+		// Read conversation context if it exists (preserve it)
+		let conversationContext = ""
+		const ctxFile = join(iDir, "knowledge", "CONVERSATION-CONTEXT.md")
+		if (existsSync(ctxFile)) {
+			conversationContext = readFileSync(ctxFile, "utf8").replace(/^# Conversation Context\n\n/, "")
+		}
+
+		// Delete the intent directory
+		rmSync(iDir, { recursive: true, force: true })
+
+		// Git commit the deletion
+		gitCommitState(`haiku: reset intent ${slug} (deleted)`)
+
+		// Return instruction to recreate
+		return text(JSON.stringify({
+			action: "intent_reset",
+			slug,
+			description,
+			context: conversationContext,
+			message: `Intent '${slug}' has been reset. Call haiku_intent_create { description: "${description.replace(/"/g, '\\"')}", slug: "${slug}"${conversationContext ? ', context: "<preserved context>"' : ""} } to recreate it.`,
+		}, null, 2))
 	}
 
 	return text(`Unknown orchestrator tool: ${name}`)
