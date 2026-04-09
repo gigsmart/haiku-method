@@ -41,6 +41,7 @@ export function ReviewSidebar({ sessionId, comments, getAnnotations, wsRef, onDe
   const [editText, setEditText] = useState("");
   const [generalText, setGeneralText] = useState("");
   const [promptForComment, setPromptForComment] = useState(false);
+  const [showApproveConfirm, setShowApproveConfirm] = useState(false);
   const generalRef = useRef<HTMLTextAreaElement>(null);
 
   const hasComments = comments.length > 0;
@@ -55,11 +56,20 @@ export function ReviewSidebar({ sessionId, comments, getAnnotations, wsRef, onDe
     );
   }
 
-  async function handleApprove() {
-    if (hasComments) return; // should be disabled
+  function handleApproveClick() {
+    if (hasComments) {
+      setShowApproveConfirm(true);
+      return;
+    }
+    doApprove();
+  }
+
+  async function doApprove() {
+    setShowApproveConfirm(false);
     setSubmitting(true);
     setError(null);
     try {
+      onClearAll();
       const annotations = getAnnotations();
       await submitDecision(sessionId, "approved", "", annotations, wsRef);
       tryCloseTab(setShowClose, { url: `/review/${sessionId}/decide`, body: { decision: "approved", feedback: "" } });
@@ -246,40 +256,57 @@ export function ReviewSidebar({ sessionId, comments, getAnnotations, wsRef, onDe
           <p className="text-xs text-amber-600 dark:text-amber-400">Add at least one comment before requesting changes.</p>
         )}
 
-        {/* Decision buttons */}
-        <div className="space-y-2">
-          {hasComments ? (
-            <>
-              <button
-                onClick={handleRequestChanges}
-                disabled={submitting}
-                className="w-full px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitting ? "Submitting\u2026" : "Request Changes"}
-              </button>
-              <p className="text-xs text-stone-500 dark:text-stone-400 text-center">
-                Clear all comments to approve instead.
-              </p>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={handleApprove}
-                disabled={submitting}
-                className="w-full px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitting ? "Submitting\u2026" : "Approve"}
-              </button>
-              <button
-                onClick={handleRequestChanges}
-                disabled={submitting}
-                className="w-full px-4 py-2 bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-700 dark:text-stone-200 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Request Changes
-              </button>
-            </>
-          )}
+        {/* Decision buttons — always show both */}
+        <div className="flex gap-2">
+          <button
+            onClick={handleApproveClick}
+            disabled={submitting}
+            className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              hasComments
+                ? "bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-600 dark:text-stone-300"
+                : "bg-teal-600 hover:bg-teal-700 text-white"
+            }`}
+          >
+            {submitting ? "Submitting\u2026" : "Approve"}
+          </button>
+          <button
+            onClick={handleRequestChanges}
+            disabled={submitting}
+            className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              hasComments
+                ? "bg-amber-600 hover:bg-amber-700 text-white"
+                : "bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-700 dark:text-stone-200"
+            }`}
+          >
+            Request Changes
+          </button>
         </div>
+
+        {/* Styled approve confirmation dialog */}
+        {showApproveConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-2xl p-6 max-w-sm mx-4">
+              <h3 className="text-base font-semibold text-stone-900 dark:text-stone-100 mb-2">Approve with comments?</h3>
+              <p className="text-sm text-stone-600 dark:text-stone-400 mb-4">
+                You have {comments.length} comment{comments.length !== 1 ? "s" : ""}. Approving will discard all comments and annotations.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowApproveConfirm(false)}
+                  className="flex-1 px-4 py-2 bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-700 dark:text-stone-200 text-sm font-medium rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={doApprove}
+                  className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                >
+                  Approve Anyway
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {error && (
           <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
