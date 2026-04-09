@@ -114,6 +114,13 @@ export function mergeUnitWorktree(slug: string, unit: string): { success: boolea
 		// Merge the unit branch
 		run(["git", "merge", unitBranch, "--no-edit", "-m", `haiku: merge ${unit}`])
 
+		// Push intent branch to keep remote in sync
+		try {
+			run(["git", "push"])
+		} catch {
+			// Push failure is non-fatal — will sync on next push
+		}
+
 		// Clean up worktree and branch
 		tryRun(["git", "worktree", "remove", worktreePath, "--force"])
 		tryRun(["git", "branch", "-d", unitBranch])

@@ -387,6 +387,7 @@ function buildRunInstructions(
 				`\n**Subagent prompt must include:**\n` +
 				`- The hat definition, unit spec, and refs above\n` +
 				`- The stage scope constraint\n` +
+				(worktreePath ? `- **Git discipline:** Commit work frequently in the worktree (\`git add -A && git commit -m "..."\`). Do NOT push — the merge-back handles pushing.\n` : "") +
 				(action.action === "start_unit"
 					? `- Instruction to call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\` first\n`
 					: "") +
