@@ -696,6 +696,18 @@ export function runNext(slug: string): OrchestratorAction {
 			}
 		}
 
+		// Validate unit naming and types across ALL stages — catch legacy issues from before validation existed
+		const stagesDir = join(iDir, "stages")
+		if (existsSync(stagesDir)) {
+			for (const stageEntry of readdirSync(stagesDir, { withFileTypes: true }).filter(e => e.isDirectory()).sort((a, b) => a.name.localeCompare(b.name))) {
+				if (stageEntry.name === currentStage) continue // already validated above
+				const crossNaming = validateUnitNaming(iDir, stageEntry.name)
+				if (crossNaming) return crossNaming
+				const crossTypes = validateUnitTypes(iDir, stageEntry.name, studio)
+				if (crossTypes) return crossTypes
+			}
+		}
+
 		// All units valid — open review gate before advancing to execute.
 		// The review UI blocks until the user approves the specs.
 		// This is handled by the handleOrchestratorTool wrapper which
