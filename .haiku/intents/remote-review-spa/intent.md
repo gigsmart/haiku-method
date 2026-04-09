@@ -1,14 +1,26 @@
 ---
-title: "Move the review SPA from the local MCP server to the website at haikumethod.ai. When a review is triggered, the MCP opens a localtunnel to expose itself, generates a JWT (signed with an ephemeral per-session secret) containing the tunnel URL, and opens the browser at haikumethod.ai/review/#token. The website decodes the token, extracts the tunnel URL, and establishes a WebSocket connection back to the local MCP through the tunnel to conduct the review in real time. Full cutover — remove local SPA entirely. CORS wildcard in dev, restricted in prod. Consolidated file route. MCP becomes a single minified node executable."
-studio: ideation
+title: >-
+  Move the review SPA from the local MCP server to the website at
+  haikumethod.ai. When a review is triggered, the MCP opens a localtunnel to
+  expose itself, generates a JWT (signed with an ephemeral per-session secret)
+  containing the tunnel URL, and opens the browser at
+  haikumethod.ai/review/#token. The website decodes the token, extracts the
+  tunnel URL, and establishes a WebSocket connection back to the local MCP
+  through the tunnel to conduct the review in real time. Full cutover — remove
+  local SPA entirely. CORS wildcard in dev, restricted in prod. Consolidated
+  file route. MCP becomes a single minified node executable.
+studio: software
 mode: continuous
 status: active
 stages:
-  - research
-  - create
-  - review
-  - deliver
-created_at: 2026-04-09T04:40:04Z
+  - inception
+  - design
+  - product
+  - development
+  - operations
+  - security
+active_stage: inception
+created_at: '2026-04-09'
 ---
 
 # Move the review SPA from the local MCP server to the website at haikumethod.ai. When a review is triggered, the MCP opens a localtunnel to expose itself, generates a JWT (signed with an ephemeral per-session secret) containing the tunnel URL, and opens the browser at haikumethod.ai/review/#token. The website decodes the token, extracts the tunnel URL, and establishes a WebSocket connection back to the local MCP through the tunnel to conduct the review in real time. Full cutover — remove local SPA entirely. CORS wildcard in dev, restricted in prod. Consolidated file route. MCP becomes a single minified node executable.
