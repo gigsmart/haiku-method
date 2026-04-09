@@ -3,7 +3,7 @@
 // One tool per resource per operation. Under the hood: frontmatter + JSON files.
 // The caller doesn't need to know file paths — just resource identifiers.
 
-import { execFileSync } from "node:child_process"
+import { execFileSync, spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import matter from "gray-matter"
@@ -431,6 +431,42 @@ export const stateToolDefs = [
 		description: "Read a field from .haiku/settings.yml (e.g. studio, stack.compute, providers, workspace, default_announcements, review_agents, operations_runtime). Returns empty string if not set.",
 		inputSchema: { type: "object" as const, properties: { field: { type: "string", description: "Dot-separated path (e.g. 'studio', 'stack.compute', 'review_agents')" } }, required: ["field"] },
 	},
+	// Aggregate / report tools
+	{
+		name: "haiku_dashboard",
+		description: "Returns a formatted dashboard of all intents showing status, studio, active stage, mode, and per-stage status tables.",
+		inputSchema: { type: "object" as const, properties: {} },
+	},
+	{
+		name: "haiku_capacity",
+		description: "Returns a capacity report grouped by studio — completed/active counts and median bolt counts per stage.",
+		inputSchema: { type: "object" as const, properties: { studio: { type: "string", description: "Optional: filter to a specific studio" } } },
+	},
+	{
+		name: "haiku_reflect",
+		description: "Returns detailed reflection data for an intent — per-stage summaries, unit completion counts, bolt counts, and analysis instructions.",
+		inputSchema: { type: "object" as const, properties: { intent: { type: "string" } }, required: ["intent"] },
+	},
+	{
+		name: "haiku_review",
+		description: "Runs a git diff against main/upstream and returns formatted pre-delivery code review instructions with diff, stats, review guidelines, and review-agent config.",
+		inputSchema: { type: "object" as const, properties: { intent: { type: "string", description: "Optional: intent slug for context" } } },
+	},
+	{
+		name: "haiku_backlog",
+		description: "Manage the backlog: list items, add new items, review items interactively, or promote items to intents.",
+		inputSchema: { type: "object" as const, properties: { action: { type: "string", description: "list | add | review | promote (default: list)" }, description: { type: "string", description: "Description for the new backlog item (used with add)" } } },
+	},
+	{
+		name: "haiku_seed",
+		description: "Manage seeds (future ideas): list by status, plant a new seed, or check planted seeds for trigger conditions.",
+		inputSchema: { type: "object" as const, properties: { action: { type: "string", description: "list | plant | check (default: list)" } } },
+	},
+	{
+		name: "haiku_release_notes",
+		description: "Extract release notes from CHANGELOG.md — a specific version or the 5 most recent entries.",
+		inputSchema: { type: "object" as const, properties: { version: { type: "string", description: "Optional: specific version to extract (e.g. '1.2.0')" } } },
+	},
 ]
 
 // ── Tool handlers ──────────────────────────────────────────────────────────
@@ -786,6 +822,402 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			const val = getNestedField(settings, field)
 			if (val == null) return text("")
 			return text(typeof val === "object" ? JSON.stringify(val) : String(val))
+		}
+
+		// ── Dashboard ──
+		case "haiku_dashboard": {
+			let root: string
+			try { root = findHaikuRoot() } catch { return text("No intents found. Use /haiku:start to create one.") }
+			const intentsDir = join(root, "intents")
+			if (!existsSync(intentsDir)) return text("No intents found. Use /haiku:start to create one.")
+			const slugs = readdirSync(intentsDir).filter(d => existsSync(join(intentsDir, d, "intent.md")))
+			if (slugs.length === 0) return text("No intents found. Use /haiku:start to create one.")
+
+			let out = "# Dashboard\n"
+			for (const slug of slugs) {
+				const { data } = parseFrontmatter(readFileSync(join(intentsDir, slug, "intent.md"), "utf8"))
+				out += `\n## ${slug}\n`
+				out += `- Status: ${data.status || "unknown"}\n`
+				out += `- Studio: ${data.studio || "none"}\n`
+				out += `- Active Stage: ${data.active_stage || "none"}\n`
+				out += `- Mode: ${data.mode || "interactive"}\n`
+
+				const stagesPath = join(intentsDir, slug, "stages")
+				if (existsSync(stagesPath)) {
+					const stages = readdirSync(stagesPath).filter(s => existsSync(join(stagesPath, s, "state.json")))
+					if (stages.length > 0) {
+						out += `\n| Stage | Status | Phase |\n|-------|--------|-------|\n`
+						for (const s of stages) {
+							const state = readJson(join(stagesPath, s, "state.json"))
+							out += `| ${s} | ${state.status || "pending"} | ${state.phase || ""} |\n`
+						}
+					}
+				}
+			}
+			return text(out)
+		}
+
+		// ── Capacity ──
+		case "haiku_capacity": {
+			const filterStudio = (args.studio as string) || ""
+			let root: string
+			try { root = findHaikuRoot() } catch { return text("No .haiku directory found.") }
+			const intentsDir = join(root, "intents")
+			if (!existsSync(intentsDir)) return text("No intents found.")
+			const slugs = readdirSync(intentsDir).filter(d => existsSync(join(intentsDir, d, "intent.md")))
+
+			const median = (arr: number[]): number => {
+				if (arr.length === 0) return 0
+				const sorted = [...arr].sort((a, b) => a - b)
+				const mid = Math.floor(sorted.length / 2)
+				return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+			}
+
+			// Group intents by studio
+			const byStudio = new Map<string, Array<{ slug: string; status: string; data: Record<string, unknown> }>>()
+			for (const slug of slugs) {
+				const { data } = parseFrontmatter(readFileSync(join(intentsDir, slug, "intent.md"), "utf8"))
+				const studio = (data.studio as string) || "unassigned"
+				if (filterStudio && studio !== filterStudio) continue
+				if (!byStudio.has(studio)) byStudio.set(studio, [])
+				byStudio.get(studio)!.push({ slug, status: (data.status as string) || "unknown", data })
+			}
+
+			if (byStudio.size === 0) return text(filterStudio ? `No intents found for studio '${filterStudio}'.` : "No intents found.")
+
+			let out = "# Capacity Report\n"
+			for (const [studio, intents] of byStudio) {
+				const completed = intents.filter(i => i.status === "completed").length
+				const active = intents.filter(i => i.status === "active").length
+				out += `\n## Studio: ${studio}\n`
+				out += `- Total intents: ${intents.length}\n`
+				out += `- Completed: ${completed}\n`
+				out += `- Active: ${active}\n`
+
+				// Collect bolt counts per stage across all intents in this studio
+				const stageBolts = new Map<string, number[]>()
+				for (const intent of intents) {
+					const stagesPath = join(intentsDir, intent.slug, "stages")
+					if (!existsSync(stagesPath)) continue
+					for (const stage of readdirSync(stagesPath)) {
+						const unitsDir = join(stagesPath, stage, "units")
+						if (!existsSync(unitsDir)) continue
+						if (!stageBolts.has(stage)) stageBolts.set(stage, [])
+						for (const f of readdirSync(unitsDir).filter(f => f.endsWith(".md"))) {
+							const { data: ud } = parseFrontmatter(readFileSync(join(unitsDir, f), "utf8"))
+							if (typeof ud.bolt === "number") stageBolts.get(stage)!.push(ud.bolt)
+						}
+					}
+				}
+
+				if (stageBolts.size > 0) {
+					out += `\n| Stage | Units | Median Bolts |\n|-------|-------|--------------|\n`
+					for (const [stage, bolts] of stageBolts) {
+						out += `| ${stage} | ${bolts.length} | ${median(bolts)} |\n`
+					}
+				}
+			}
+			return text(out)
+		}
+
+		// ── Reflect ──
+		case "haiku_reflect": {
+			const intentSlug = args.intent as string
+			let root: string
+			try { root = findHaikuRoot() } catch { return text("No .haiku directory found.") }
+			const intentFile = join(root, "intents", intentSlug, "intent.md")
+			if (!existsSync(intentFile)) return text(`Intent '${intentSlug}' not found.`)
+
+			const { data: intentData } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+			let out = "## Intent Metadata\n"
+			out += `- Slug: ${intentSlug}\n`
+			out += `- Studio: ${intentData.studio || "none"}\n`
+			out += `- Mode: ${intentData.mode || "interactive"}\n`
+			out += `- Status: ${intentData.status || "unknown"}\n`
+			out += `- Created: ${intentData.created_at || "unknown"}\n`
+			out += `- Completed: ${intentData.completed_at || "in progress"}\n`
+
+			const stagesPath = join(root, "intents", intentSlug, "stages")
+			if (existsSync(stagesPath)) {
+				out += "\n## Per-Stage Summary\n"
+				for (const stage of readdirSync(stagesPath)) {
+					const state = readJson(join(stagesPath, stage, "state.json"))
+					out += `\n### ${stage}\n`
+					out += `- Status: ${state.status || "pending"}\n`
+					out += `- Phase: ${state.phase || ""}\n`
+					out += `- Started: ${state.started_at || "not started"}\n`
+					out += `- Completed: ${state.completed_at || "in progress"}\n`
+
+					const unitsDir = join(stagesPath, stage, "units")
+					if (existsSync(unitsDir)) {
+						const unitFiles = readdirSync(unitsDir).filter(f => f.endsWith(".md"))
+						let completedUnits = 0
+						let totalBolts = 0
+						const unitDetails: string[] = []
+						for (const f of unitFiles) {
+							const { data: ud } = parseFrontmatter(readFileSync(join(unitsDir, f), "utf8"))
+							const uName = f.replace(".md", "")
+							const uBolt = (ud.bolt as number) || 0
+							totalBolts += uBolt
+							if (ud.status === "completed") completedUnits++
+							unitDetails.push(`  - ${uName}: status=${ud.status || "pending"}, bolts=${uBolt}, hat=${ud.hat || "none"}`)
+						}
+						out += `- Units: ${completedUnits}/${unitFiles.length} completed, Total bolts: ${totalBolts}\n`
+						if (unitDetails.length > 0) out += unitDetails.join("\n") + "\n"
+					}
+				}
+			}
+
+			out += "\n## Analysis Instructions\n"
+			out += "1. Execution patterns — which units went smoothly, which required retries\n"
+			out += "2. Criteria satisfaction\n"
+			out += "3. Process observations\n"
+			out += "4. Blocker analysis\n"
+			out += "\n## Output\n"
+			out += "Write reflection.md and settings-recommendations.md to the intent directory.\n"
+			return text(out)
+		}
+
+		// ── Review ──
+		case "haiku_review": {
+			// Determine diff base
+			let base = "main"
+			try {
+				const upstream = spawnSync("git", ["rev-parse", "--abbrev-ref", "@{upstream}"], { encoding: "utf8", stdio: "pipe" })
+				if (upstream.status === 0 && upstream.stdout.trim()) {
+					base = upstream.stdout.trim()
+				}
+			} catch { /* fallback to main */ }
+
+			// Get diff, stat, and changed files
+			let diff = ""
+			let stat = ""
+			let changedFiles = ""
+			try {
+				const diffResult = spawnSync("git", ["diff", base + "...HEAD"], { encoding: "utf8", stdio: "pipe", maxBuffer: 10 * 1024 * 1024 })
+				diff = diffResult.stdout || ""
+				const statResult = spawnSync("git", ["diff", "--stat", base + "...HEAD"], { encoding: "utf8", stdio: "pipe" })
+				stat = statResult.stdout || ""
+				const namesResult = spawnSync("git", ["diff", "--name-only", base + "...HEAD"], { encoding: "utf8", stdio: "pipe" })
+				changedFiles = namesResult.stdout || ""
+			} catch { /* git not available */ }
+
+			// Truncate diff at 100k chars
+			const MAX_DIFF = 100_000
+			if (diff.length > MAX_DIFF) {
+				diff = diff.slice(0, MAX_DIFF) + "\n\n... [TRUNCATED at 100k chars] ..."
+			}
+
+			// Read REVIEW.md and CLAUDE.md if they exist
+			let reviewGuidelines = ""
+			const cwd = process.cwd()
+			for (const name of ["REVIEW.md", "CLAUDE.md"]) {
+				const p = join(cwd, name)
+				if (existsSync(p)) {
+					reviewGuidelines += `\n### ${name}\n${readFileSync(p, "utf8").slice(0, 5000)}\n`
+				}
+			}
+
+			// Read review_agents from settings
+			let reviewAgents = ""
+			try {
+				const settingsPath = join(findHaikuRoot(), "settings.yml")
+				if (existsSync(settingsPath)) {
+					const settings = parseYaml(readFileSync(settingsPath, "utf8"))
+					const agents = getNestedField(settings, "review_agents")
+					if (agents) reviewAgents = `\n### Review Agents Config\n\`\`\`json\n${JSON.stringify(agents, null, 2)}\n\`\`\`\n`
+				}
+			} catch { /* no settings */ }
+
+			let out = "## Pre-Delivery Code Review\n"
+			out += `Diff base: ${base}\n\n`
+			out += `Changed files:\n\`\`\`\n${changedFiles || "none"}\`\`\`\n\n`
+			out += `Diff stats:\n\`\`\`\n${stat || "none"}\`\`\`\n`
+			if (reviewGuidelines) out += `\n### Review Guidelines\n${reviewGuidelines}\n`
+			if (reviewAgents) out += reviewAgents
+			out += `\n### Full Diff\n\`\`\`diff\n${diff || "No changes detected."}\n\`\`\`\n`
+			out += "\n### Instructions\n"
+			out += "1. Spawn review agents in parallel (one per configured agent or area)\n"
+			out += "2. Collect findings, deduplicate across agents\n"
+			out += "3. Fix all HIGH severity findings before delivery\n"
+			out += "4. Report findings summary to the user\n"
+			return text(out)
+		}
+
+		// ── Backlog ──
+		case "haiku_backlog": {
+			const action = (args.action as string) || "list"
+			let root: string
+			try { root = findHaikuRoot() } catch { return text("No .haiku directory found.") }
+			const backlogDir = join(root, "backlog")
+
+			switch (action) {
+				case "list": {
+					if (!existsSync(backlogDir)) return text("No backlog items found.")
+					const files = readdirSync(backlogDir).filter(f => f.endsWith(".md"))
+					if (files.length === 0) return text("No backlog items found.")
+
+					let out = "# Backlog\n\n| # | Item | Priority | Created |\n|---|------|----------|---------|\n"
+					for (let i = 0; i < files.length; i++) {
+						const { data } = parseFrontmatter(readFileSync(join(backlogDir, files[i]), "utf8"))
+						out += `| ${i + 1} | ${files[i].replace(".md", "")} | ${data.priority || "unset"} | ${data.created_at || "unknown"} |\n`
+					}
+					return text(out)
+				}
+				case "add": {
+					const desc = (args.description as string) || ""
+					let out = "## Add Backlog Item\n\n"
+					out += "Create a new file in `.haiku/backlog/` with this template:\n\n"
+					out += "```markdown\n---\npriority: medium\ncreated_at: " + timestamp() + "\n---\n\n"
+					out += (desc || "Description of the backlog item") + "\n```\n"
+					out += "\nFilename should be a slug of the item description (e.g. `improve-error-handling.md`).\n"
+					return text(out)
+				}
+				case "review": {
+					if (!existsSync(backlogDir)) return text("No backlog items to review.")
+					const files = readdirSync(backlogDir).filter(f => f.endsWith(".md"))
+					if (files.length === 0) return text("No backlog items to review.")
+
+					let out = "## Backlog Review\n\nPresent each item to the user and ask: **Keep / Reprioritize / Drop / Promote / Skip**\n\n"
+					for (let i = 0; i < files.length; i++) {
+						const raw = readFileSync(join(backlogDir, files[i]), "utf8")
+						const { data, body } = parseFrontmatter(raw)
+						out += `### ${i + 1}. ${files[i].replace(".md", "")}\n`
+						out += `- Priority: ${data.priority || "unset"}\n`
+						out += `- Created: ${data.created_at || "unknown"}\n`
+						out += `${body.slice(0, 300)}\n\n`
+					}
+					out += "---\nFor each item, ask the user and apply their choice.\n"
+					return text(out)
+				}
+				case "promote": {
+					let out = "## Promote Backlog Item\n\n"
+					out += "To promote a backlog item to an intent:\n"
+					out += "1. Read the backlog item file\n"
+					out += "2. Use /haiku:start to create an intent from its description\n"
+					out += "3. Delete the backlog file after the intent is created\n"
+					return text(out)
+				}
+				default:
+					return text(`Unknown backlog action: '${action}'. Valid actions: list, add, review, promote.`)
+			}
+		}
+
+		// ── Seed ──
+		case "haiku_seed": {
+			const action = (args.action as string) || "list"
+			let root: string
+			try { root = findHaikuRoot() } catch { return text("No .haiku directory found.") }
+			const seedsDir = join(root, "seeds")
+
+			switch (action) {
+				case "list": {
+					if (!existsSync(seedsDir)) return text("No seeds found.")
+					const files = readdirSync(seedsDir).filter(f => f.endsWith(".md"))
+					if (files.length === 0) return text("No seeds found.")
+
+					// Group by status
+					const groups = new Map<string, Array<{ name: string; data: Record<string, unknown> }>>()
+					for (const f of files) {
+						const { data } = parseFrontmatter(readFileSync(join(seedsDir, f), "utf8"))
+						const status = (data.status as string) || "planted"
+						if (!groups.has(status)) groups.set(status, [])
+						groups.get(status)!.push({ name: f.replace(".md", ""), data })
+					}
+
+					let out = "# Seeds\n"
+					for (const [status, seeds] of groups) {
+						out += `\n## ${status.charAt(0).toUpperCase() + status.slice(1)} (${seeds.length})\n\n`
+						out += "| Seed | Trigger | Planted |\n|------|---------|----------|\n"
+						for (const s of seeds) {
+							out += `| ${s.name} | ${s.data.trigger || "none"} | ${s.data.created_at || "unknown"} |\n`
+						}
+					}
+					return text(out)
+				}
+				case "plant": {
+					let out = "## Plant a Seed\n\n"
+					out += "Create a new file in `.haiku/seeds/` with this template:\n\n"
+					out += "```markdown\n---\nstatus: planted\ntrigger: \"<condition that should cause this to surface>\"\ncreated_at: " + timestamp() + "\n---\n\n"
+					out += "Description of the idea or future work.\n```\n"
+					out += "\nFilename should be a slug of the seed idea (e.g. `add-caching-layer.md`).\n"
+					return text(out)
+				}
+				case "check": {
+					if (!existsSync(seedsDir)) return text("No seeds to check.")
+					const files = readdirSync(seedsDir).filter(f => f.endsWith(".md"))
+					const planted = files.filter(f => {
+						const { data } = parseFrontmatter(readFileSync(join(seedsDir, f), "utf8"))
+						return (data.status as string) === "planted"
+					})
+					if (planted.length === 0) return text("No planted seeds to check.")
+
+					let out = "## Seed Check\n\nEvaluate each planted seed's trigger condition against the current project state:\n\n"
+					for (const f of planted) {
+						const { data, body } = parseFrontmatter(readFileSync(join(seedsDir, f), "utf8"))
+						out += `### ${f.replace(".md", "")}\n`
+						out += `- Trigger: ${data.trigger || "none defined"}\n`
+						out += `- Description: ${body.slice(0, 300)}\n\n`
+					}
+					out += "---\nFor each seed: if the trigger condition is met, update its status to 'surfaced'. If not, leave as 'planted'.\n"
+					return text(out)
+				}
+				default:
+					return text(`Unknown seed action: '${action}'. Valid actions: list, plant, check.`)
+			}
+		}
+
+		// ── Release Notes ──
+		case "haiku_release_notes": {
+			const version = (args.version as string) || ""
+			// Search for CHANGELOG.md — try plugin root first, then walk up from cwd
+			let changelogPath = ""
+			const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+			if (pluginRoot) {
+				const p = join(pluginRoot, "CHANGELOG.md")
+				if (existsSync(p)) changelogPath = p
+			}
+			if (!changelogPath) {
+				let dir = process.cwd()
+				for (let i = 0; i < 20; i++) {
+					const p = join(dir, "CHANGELOG.md")
+					if (existsSync(p)) { changelogPath = p; break }
+					const parent = join(dir, "..")
+					if (parent === dir) break
+					dir = parent
+				}
+			}
+			if (!changelogPath) return text("No CHANGELOG.md found.")
+
+			const changelog = readFileSync(changelogPath, "utf8")
+			// Split by ## [version] headers
+			const versionPattern = /^## \[([^\]]+)\]/gm
+			const matches: Array<{ version: string; start: number }> = []
+			let match: RegExpExecArray | null
+			while ((match = versionPattern.exec(changelog)) !== null) {
+				matches.push({ version: match[1], start: match.index })
+			}
+
+			if (matches.length === 0) return text("No versioned entries found in CHANGELOG.md.")
+
+			if (version) {
+				// Find the specific version
+				const idx = matches.findIndex(m => m.version === version)
+				if (idx === -1) return text(`Version '${version}' not found in CHANGELOG.md. Available: ${matches.slice(0, 10).map(m => m.version).join(", ")}`)
+				const endIdx = idx + 1 < matches.length ? matches[idx + 1].start : changelog.length
+				const section = changelog.slice(matches[idx].start, endIdx).trim()
+				return text(`# Release Notes\n\n${section}\n\n---\nTotal releases in changelog: ${matches.length}`)
+			}
+
+			// Return 5 most recent
+			const recent = matches.slice(0, 5)
+			let out = "# Recent Release Notes\n"
+			for (let i = 0; i < recent.length; i++) {
+				const endIdx = i + 1 < matches.length ? matches[i + 1].start : changelog.length
+				out += "\n" + changelog.slice(recent[i].start, endIdx).trim() + "\n"
+			}
+			out += `\n---\nTotal releases in changelog: ${matches.length}\n`
+			return text(out)
 		}
 
 		default:
