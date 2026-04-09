@@ -44,7 +44,7 @@ export function ReviewSidebar({ sessionId, comments, getAnnotations, wsRef, onDe
   const [showApproveConfirm, setShowApproveConfirm] = useState(false);
   const generalRef = useRef<HTMLTextAreaElement>(null);
 
-  const hasComments = comments.length > 0;
+  const hasComments = comments.length > 0 || generalText.trim().length > 0;
 
   if (showClose) {
     return (
@@ -80,15 +80,16 @@ export function ReviewSidebar({ sessionId, comments, getAnnotations, wsRef, onDe
   }
 
   async function handleRequestChanges() {
+    const pendingText = generalText.trim();
     // Must have at least one comment or general text
-    if (!hasComments && !generalText.trim()) {
+    if (!hasComments && !pendingText) {
       setPromptForComment(true);
       generalRef.current?.focus();
       return;
     }
     // If general text was typed but not added as a comment, add it
-    if (generalText.trim()) {
-      onAddGeneral(generalText.trim());
+    if (pendingText) {
+      onAddGeneral(pendingText);
       setGeneralText("");
     }
     setSubmitting(true);
@@ -97,8 +98,8 @@ export function ReviewSidebar({ sessionId, comments, getAnnotations, wsRef, onDe
       const annotations = getAnnotations();
       // Build feedback from all comments
       const allComments = [...comments];
-      if (generalText.trim()) {
-        allComments.push({ type: "general", text: "", comment: generalText.trim(), id: "pending-general" });
+      if (pendingText) {
+        allComments.push({ type: "general", text: "", comment: pendingText, id: "pending-general" });
       }
       const feedback = allComments
         .map((c) => c.type === "general" ? c.comment : `[${c.type}] "${truncate(c.text, 40)}": ${c.comment}`)
@@ -288,7 +289,7 @@ export function ReviewSidebar({ sessionId, comments, getAnnotations, wsRef, onDe
             <div className="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-2xl p-6 max-w-sm mx-4">
               <h3 className="text-base font-semibold text-stone-900 dark:text-stone-100 mb-2">Approve with comments?</h3>
               <p className="text-sm text-stone-600 dark:text-stone-400 mb-4">
-                You have {comments.length} comment{comments.length !== 1 ? "s" : ""}. Approving will discard all comments and annotations.
+                You have pending feedback. Approving will discard all comments and annotations.
               </p>
               <div className="flex gap-3">
                 <button
