@@ -440,7 +440,7 @@ test("advances phase when all units completed (auto review)", () => {
 console.log("\n=== runNext: skip_stages ===")
 
 test("skips stages listed in skip_stages", () => {
-  const { projDir, slug, intentDirPath } = createProject("skip-stages", {
+  const { projDir, slug } = createProject("skip-stages", {
     active_stage: "",
     skip_stages: ["plan"],
   })
@@ -484,5 +484,5 @@ console.log(`\n${passed} passed, ${failed} failed\n`)
 } finally {
   process.chdir(origCwd)
   rmSync(tmp, { recursive: true })
+  process.exit(failed > 0 ? 1 : 0)
 }
-process.exit(failed > 0 ? 1 : 0)

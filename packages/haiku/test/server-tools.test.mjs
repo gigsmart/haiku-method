@@ -75,7 +75,6 @@ console.log("\n=== Tool Definition Completeness ===")
 
 test("no duplicate tool names across all tool sets", () => {
   const names = serverTools.map((t) => t.name)
-  const uniqueNames = new Set(names)
   const duplicates = names.filter((n, i) => names.indexOf(n) !== i)
   assert.strictEqual(duplicates.length, 0, `Duplicate tool names: ${duplicates.join(", ")}`)
 })

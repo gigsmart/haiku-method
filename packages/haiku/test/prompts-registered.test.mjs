@@ -2,7 +2,7 @@
 // Test suite for H·AI·K·U registered prompts — core, simple, complex prompt handlers
 // Run: npx tsx test/prompts-registered.test.mjs
 
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync, chmodSync } from "node:fs"
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync, chmodSync } from "node:fs"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 import assert from "node:assert"
@@ -417,5 +417,5 @@ console.log(`\n${passed} passed, ${failed} failed\n`)
 } finally {
   process.chdir(origCwd)
   rmSync(tmp, { recursive: true })
+  process.exit(failed > 0 ? 1 : 0)
 }
-process.exit(failed > 0 ? 1 : 0)

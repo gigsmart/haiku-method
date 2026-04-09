@@ -2,7 +2,7 @@
 // Test suite for H·AI·K·U state tool MCP handlers — handleStateTool for every tool
 // Run: npx tsx test/state-tools-handlers.test.mjs
 
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync, chmodSync } from "node:fs"
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync, chmodSync } from "node:fs"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 import assert from "node:assert"
