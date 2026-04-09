@@ -12,7 +12,7 @@ const STAGE_PROTECTED = ["status", "phase", "started_at", "completed_at", "gate_
 const UNIT_PROTECTED = ["status", "started_at", "completed_at", "bolt", "hat", "hat_started_at"]
 
 function out(s: string): void {
-	process.stdout.write(s)
+	process.stderr.write(s)
 }
 
 export async function guardFsmFields(input: Record<string, unknown>): Promise<void> {
