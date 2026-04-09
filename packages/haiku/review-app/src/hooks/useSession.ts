@@ -67,7 +67,9 @@ export function useSession(sessionId: string) {
 
     async function fetchSession() {
       try {
-        const res = await fetch(`/api/session/${sessionId}`);
+        const res = await fetch(`/api/session/${sessionId}`, {
+          headers: { "bypass-tunnel-reminder": "1" },
+        });
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
@@ -122,7 +124,7 @@ export async function submitDecision(
 
   const res = await fetch(`/review/${sessionId}/decide`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "bypass-tunnel-reminder": "1" },
     body: JSON.stringify(payload),
     keepalive: true,
   });
@@ -159,7 +161,7 @@ export async function submitAnswers(
 
   const res = await fetch(`/question/${sessionId}/answer`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "bypass-tunnel-reminder": "1" },
     body: JSON.stringify(payload),
     keepalive: true,
   });
@@ -190,7 +192,7 @@ export async function submitDesignDirection(
   // Fall back to HTTP POST
   const res = await fetch(`/direction/${sessionId}/select`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "bypass-tunnel-reminder": "1" },
     body: JSON.stringify({ archetype, parameters }),
     keepalive: true,
   });
