@@ -23,9 +23,9 @@ quality_gates:
   - bun run build succeeds
   - No TypeScript errors
 bolt: 1
-hat: planner
+hat: builder
 started_at: '2026-04-09T20:11:26Z'
-hat_started_at: '2026-04-09T20:11:26Z'
+hat_started_at: '2026-04-09T20:12:33Z'
 ---
 
 # Website — Review Content Views (Browse Reuse + Standalone Forms)
