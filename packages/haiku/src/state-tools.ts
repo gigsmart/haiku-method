@@ -120,6 +120,15 @@ export function gitCommitState(message: string, push?: boolean): void {
 }
 
 /**
+ * Callback for runNext — registered by orchestrator at startup to avoid circular imports.
+ * Used by advance_hat to internally progress the FSM after unit completion.
+ */
+let _runNext: ((slug: string) => { action: string; [key: string]: unknown }) | null = null
+export function setRunNextHandler(handler: typeof _runNext): void {
+	_runNext = handler
+}
+
+/**
  * Check if an intent's studio uses git persistence (and should push after commits).
  * Reads the studio's STUDIO.md frontmatter for persistence.type === "git".
  */
@@ -522,8 +531,20 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				}
 
 				syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
-				const completionMsg = mergeResult.message === "no worktree" ? "completed (last hat)" : `completed (last hat) (${mergeResult.message})`
-				return text(`${completionMsg}. IMPORTANT: Call haiku_run_next { intent: "${args.intent}" } immediately. Do NOT ask the user, do NOT summarize — just call the tool.`)
+				const mergeNote = mergeResult.message === "no worktree" ? "" : ` (${mergeResult.message})`
+
+				// Internally call runNext to progress the FSM
+				if (_runNext) {
+					const next = _runNext(args.intent as string)
+					// If other units in this wave are still active, this is a no-op for this agent
+					if (next.action === "continue_unit" || next.action === "blocked") {
+						return text(`completed (last hat)${mergeNote}. Other units still in progress — waiting on wave to finish.`)
+					}
+					// Otherwise, return the next FSM action (next wave, phase advance, etc.)
+					return text(JSON.stringify({ ...next, _unit_completed: args.unit, _merge: mergeNote }, null, 2))
+				}
+
+				return text(`completed (last hat)${mergeNote}`)
 			}
 
 			// ── NOT last hat: advance to next ──
@@ -543,7 +564,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			gitCommitState(`haiku: advance hat to ${nextHat} on ${args.unit as string}`, shouldPushForIntent(args.intent as string))
 			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
 			const hatScope = resolveStageScope(args.intent as string, args.stage as string)
-			return text((hatScope ? `advanced to ${nextHat}\n\n${hatScope}` : `advanced to ${nextHat}`) + `\n\nIMPORTANT: Call haiku_run_next { intent: "${args.intent}" } immediately. Do NOT ask the user — just call the tool.`)
+			return text(hatScope ? `advanced to ${nextHat}\n\n${hatScope}` : `advanced to ${nextHat}`)
 		}
 		case "haiku_unit_reject_hat": {
 			// Hat failed — move back one hat, increment bolt count

@@ -25,6 +25,7 @@ import {
 	timestamp,
 	parseFrontmatter,
 	syncSessionMetadata,
+	setRunNextHandler,
 } from "./state-tools.js"
 import { createIntentBranch, isOnIntentBranch, createUnitWorktree } from "./git-worktree.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
@@ -1296,6 +1297,9 @@ function goBack(slug: string, targetStage?: string, targetPhase?: string): Orche
 
 	return { action: "error", message: "Must specify either target_stage or target_phase" }
 }
+
+// Register runNext callback so state-tools can call it without circular imports
+setRunNextHandler(runNext)
 
 // ── Tool definitions ───────────────────────────────────────────────────────
 
