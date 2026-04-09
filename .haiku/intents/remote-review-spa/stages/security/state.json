@@ -1,9 +1,10 @@
 {
   "stage": "security",
-  "status": "active",
-  "phase": "elaborate",
+  "status": "completed",
+  "phase": "gate",
   "started_at": "2026-04-09T20:52:47Z",
-  "completed_at": null,
-  "gate_entered_at": null,
-  "gate_outcome": null
+  "completed_at": "2026-04-09T20:58:11Z",
+  "gate_entered_at": "2026-04-09T20:57:53Z",
+  "gate_outcome": "advanced",
+  "elaboration_turns": 2
 }
