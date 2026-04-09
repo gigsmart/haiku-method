@@ -17,7 +17,6 @@ import { reportError } from "./sentry.js"
 import {
 	findHaikuRoot,
 	intentDir,
-	stageDir,
 	stageStatePath,
 	readJson,
 	writeJson,
@@ -25,12 +24,11 @@ import {
 	gitCommitState,
 	timestamp,
 	parseFrontmatter,
-	unitPath,
 	syncSessionMetadata,
 } from "./state-tools.js"
 import { createIntentBranch, isOnIntentBranch, createUnitWorktree } from "./git-worktree.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
-import { computeWaves, buildDAG, topologicalSort } from "./dag.js"
+import { computeWaves, topologicalSort } from "./dag.js"
 import type { DAGGraph } from "./types.js"
 import { validateIdentifier } from "./prompts/helpers.js"
 
@@ -609,10 +607,11 @@ export function runNext(slug: string): OrchestratorAction {
 			}
 		}
 
-		// Units exist — validate DAG for cycles
-		try {
+		// Units exist — validate DAG for unresolved deps and cycles
+		{
 			const unitsDir = join(iDir, "stages", currentStage, "units")
 			const unitFiles = readdirSync(unitsDir).filter(f => f.endsWith(".md"))
+			const nodeIds = new Set(unitFiles.map(f => f.replace(".md", "")))
 			const dagNodes = unitFiles.map(f => {
 				const fm = readFrontmatter(join(unitsDir, f))
 				return { id: f.replace(".md", ""), status: (fm.status as string) || "pending" }
@@ -620,23 +619,45 @@ export function runNext(slug: string): OrchestratorAction {
 			const dagEdges: Array<{ from: string; to: string }> = []
 			const dagAdj = new Map<string, string[]>()
 			for (const n of dagNodes) dagAdj.set(n.id, [])
+
+			const unresolvedDeps: Array<{ unit: string; dep: string }> = []
 			for (const f of unitFiles) {
 				const fm = readFrontmatter(join(unitsDir, f))
 				const id = f.replace(".md", "")
 				for (const dep of (fm.depends_on as string[]) || []) {
-					if (!dagAdj.has(dep)) continue // cross-stage dep — skip
-					dagEdges.push({ from: dep, to: id })
-					dagAdj.get(dep)?.push(id)
+					if (nodeIds.has(dep)) {
+						dagEdges.push({ from: dep, to: id })
+						dagAdj.get(dep)?.push(id)
+					} else {
+						unresolvedDeps.push({ unit: id, dep })
+					}
 				}
 			}
-			topologicalSort({ nodes: dagNodes, edges: dagEdges, adjacency: dagAdj })
-		} catch (err) {
-			if (err instanceof Error && err.message.includes("Circular dependency")) {
+
+			if (unresolvedDeps.length > 0) {
 				return {
-					action: "dag_cycle_detected",
+					action: "unresolved_dependencies",
 					intent: slug,
 					stage: currentStage,
-					message: err.message + ". Fix the depends_on fields in the unit files to remove the cycle, then call haiku_run_next again.",
+					unresolvedDeps,
+					message: `${unresolvedDeps.length} depends_on reference(s) don't match any unit filename:\n\n` +
+						unresolvedDeps.map(d => `- \`${d.unit}\` depends on \`${d.dep}\` — not found`).join("\n") +
+						`\n\nValid unit slugs: ${[...nodeIds].join(", ")}\n` +
+						`depends_on must use the full filename without .md (e.g., \`unit-01-data-model\`, not \`data-model\`).` +
+						`\n\nFix the depends_on fields, then call \`haiku_run_next { intent: "${slug}" }\` again.`,
+				}
+			}
+
+			try {
+				topologicalSort({ nodes: dagNodes, edges: dagEdges, adjacency: dagAdj })
+			} catch (err) {
+				if (err instanceof Error && err.message.includes("Circular dependency")) {
+					return {
+						action: "dag_cycle_detected",
+						intent: slug,
+						stage: currentStage,
+						message: err.message + ". Fix the depends_on fields in the unit files to remove the cycle, then call haiku_run_next again.",
+					}
 				}
 			}
 		}
@@ -961,7 +982,7 @@ export function runNext(slug: string): OrchestratorAction {
 
 // ── Composite orchestration ────────────────────────────────────────────────
 
-function runNextComposite(slug: string, intent: Record<string, unknown>, intentDirPath: string): OrchestratorAction {
+function runNextComposite(slug: string, intent: Record<string, unknown>, _intentDirPath: string): OrchestratorAction {
 	const composite = intent.composite as Array<{ studio: string; stages: string[] }>
 	const compositeState = (intent.composite_state || {}) as Record<string, string>
 	const syncRules = (intent.sync || []) as Array<{ wait: string[]; then: string[] }>

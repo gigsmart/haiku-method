@@ -17,10 +17,17 @@ export function buildDAG(units: ParsedUnit[]): DAGGraph {
 		adjacency.set(u.slug, [])
 	}
 
-	// Build edges from depends_on
+	// Build edges from depends_on, collecting unresolved references
+	const slugSet = new Set(units.map(u => u.slug))
+	const unresolvedDeps: Array<{ unit: string; dep: string }> = []
+
 	for (const u of units) {
 		const deps = u.frontmatter.depends_on ?? []
 		for (const dep of deps) {
+			if (!slugSet.has(dep)) {
+				unresolvedDeps.push({ unit: u.slug, dep })
+				continue
+			}
 			edges.push({ from: dep, to: u.slug })
 			const existing = adjacency.get(dep)
 			if (existing) {
@@ -29,7 +36,7 @@ export function buildDAG(units: ParsedUnit[]): DAGGraph {
 		}
 	}
 
-	return { nodes, edges, adjacency }
+	return { nodes, edges, adjacency, unresolvedDeps: unresolvedDeps.length > 0 ? unresolvedDeps : undefined }
 }
 
 /**
