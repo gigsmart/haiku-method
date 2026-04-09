@@ -696,6 +696,17 @@ export function runNext(slug: string): OrchestratorAction {
 			}
 		}
 
+		// Validate unit naming across ALL stages — catch legacy bad names from before validation existed
+		const stagesDir = join(iDir, "stages")
+		if (existsSync(stagesDir)) {
+			for (const stageEntry of readdirSync(stagesDir)) {
+				const stageUnitsDir = join(stagesDir, stageEntry, "units")
+				if (!existsSync(stageUnitsDir)) continue
+				const crossStageViolation = validateUnitNaming(iDir, stageEntry)
+				if (crossStageViolation) return crossStageViolation
+			}
+		}
+
 		// All units valid — open review gate before advancing to execute.
 		// The review UI blocks until the user approves the specs.
 		// This is handled by the handleOrchestratorTool wrapper which
