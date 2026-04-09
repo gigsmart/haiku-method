@@ -27420,8 +27420,17 @@ function mergeUnitWorktree(slug, unit) {
       run(["git", "checkout", intentBranch]);
     }
     run(["git", "merge", unitBranch, "--no-edit", "-m", `haiku: merge ${unit}`]);
+    let pushFailed = "";
+    try {
+      run(["git", "push"]);
+    } catch (pushErr) {
+      pushFailed = pushErr instanceof Error ? pushErr.message : String(pushErr);
+    }
     tryRun(["git", "worktree", "remove", worktreePath, "--force"]);
     tryRun(["git", "branch", "-d", unitBranch]);
+    if (pushFailed) {
+      return { success: true, message: `merged ${unitBranch} (\u26A0\uFE0F push failed: ${pushFailed}. Run git pull --rebase && git push to sync.)` };
+    }
     return { success: true, message: `merged ${unitBranch}` };
   } catch (err) {
     return { success: false, message: err instanceof Error ? err.message : String(err) };
@@ -27518,17 +27527,49 @@ function timestamp() {
   return (/* @__PURE__ */ new Date()).toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 function gitCommitState(message) {
-  if (!isGitRepo()) return;
+  if (!isGitRepo()) return { committed: false, pushed: false };
   try {
     const haikuRoot = findHaikuRoot();
     execFileSync2("git", ["add", haikuRoot], { encoding: "utf8", stdio: "pipe" });
     execFileSync2("git", ["commit", "-m", message, "--allow-empty"], { encoding: "utf8", stdio: "pipe" });
     try {
       execFileSync2("git", ["push"], { encoding: "utf8", stdio: "pipe" });
-    } catch {
+      return { committed: true, pushed: true };
+    } catch (pushErr) {
+      const pushError = pushErr instanceof Error ? pushErr.message : String(pushErr);
+      return { committed: true, pushed: false, pushError };
     }
   } catch {
+    return { committed: false, pushed: false };
   }
+}
+function validateBranch(intent, expectedType, unit) {
+  if (!isGitRepo()) return "";
+  const current = getCurrentBranch();
+  if (!current) return "";
+  if (expectedType === "intent") {
+    const expected = `haiku/${intent}/main`;
+    if (current !== expected) {
+      return `\u26A0\uFE0F WRONG BRANCH: Expected '${expected}' but on '${current}'. Run \`git checkout ${expected}\` to switch to the intent branch. Custom branch names break the H\xB7AI\xB7K\xB7U lifecycle.`;
+    }
+  } else if (expectedType === "unit" && unit) {
+    const expectedUnit = `haiku/${intent}/${unit}`;
+    const expectedIntent = `haiku/${intent}/main`;
+    if (current !== expectedUnit && current !== expectedIntent) {
+      return `\u26A0\uFE0F WRONG BRANCH: Expected '${expectedUnit}' or '${expectedIntent}' but on '${current}'. Ensure you're working in the correct worktree.`;
+    }
+  }
+  return "";
+}
+function pushWarning(result) {
+  if (result.pushed || !result.committed) return "";
+  return `
+
+\u26A0\uFE0F GIT PUSH FAILED: ${result.pushError || "unknown error"}. Run \`git pull --rebase && git push\` to sync with remote. If there are conflicts, resolve them then push again.`;
+}
+function injectPushWarning(obj, result) {
+  if (result.pushed || !result.committed) return obj;
+  return { ...obj, push_failed: true, push_error: result.pushError || "unknown error", message: `${obj.message || ""}. \u26A0\uFE0F GIT PUSH FAILED: ${result.pushError || "unknown error"}. Run \`git pull --rebase && git push\` to resolve.` };
 }
 function setRunNextHandler(handler) {
   _runNext = handler;
@@ -27757,12 +27798,12 @@ function handleStateTool(name, args2) {
       emitTelemetry("haiku.unit.started", { intent: args2.intent, stage, unit: args2.unit, hat: firstHat });
       const sf = args2.state_file;
       if (sf) logSessionEvent(sf, { event: "unit_started", intent: args2.intent, stage, unit: args2.unit, hat: firstHat });
-      gitCommitState(`haiku: start unit ${args2.unit}`);
+      const gitResult = gitCommitState(`haiku: start unit ${args2.unit}`);
       syncSessionMetadata(args2.intent, args2.state_file);
       const scope = resolveStageScope(args2.intent, stage);
-      return text(scope ? `ok
+      return text((scope ? `ok
 
-${scope}` : "ok");
+${scope}` : "ok") + pushWarning(gitResult));
     }
     case "haiku_unit_advance_hat": {
       const unitInfo = findUnitFile(args2.intent, args2.unit);
@@ -27818,21 +27859,30 @@ ${scope}` : "ok");
           const sf = args2.state_file;
           if (sf) logSessionEvent(sf, { event: "unit_completed", intent: args2.intent, stage: advStage, unit: args2.unit });
         }
-        gitCommitState(`haiku: complete unit ${args2.unit}`);
+        const completeGit = gitCommitState(`haiku: complete unit ${args2.unit}`);
         const mergeResult = mergeUnitWorktree(args2.intent, args2.unit);
         if (!mergeResult.success) {
-          return text(JSON.stringify({ status: "completed_merge_failed", message: mergeResult.message }));
+          const worktreePath = join5(process.cwd(), ".haiku", "worktrees", args2.intent, args2.unit);
+          return text(JSON.stringify({
+            action: "merge_conflict",
+            status: "completed_merge_failed",
+            intent: args2.intent,
+            unit: args2.unit,
+            worktree: worktreePath,
+            error: mergeResult.message,
+            message: `Unit completed but merge to intent branch failed: ${mergeResult.message}. RESOLVE: cd to the intent branch (\`git checkout haiku/${args2.intent}/main\`), merge manually (\`git merge haiku/${args2.intent}/${args2.unit} --no-edit\`), resolve any conflicts, then commit and push. If you cannot resolve, ask the user for help.`
+          }, null, 2));
         }
         syncSessionMetadata(args2.intent, args2.state_file);
         const mergeNote = mergeResult.message === "no worktree" ? "" : ` (${mergeResult.message})`;
         if (_runNext) {
           const next = _runNext(args2.intent);
           if (next.action === "continue_unit" || next.action === "blocked") {
-            return text(`completed (last hat)${mergeNote}. Other units still in progress \u2014 waiting on wave to finish.`);
+            return text(`completed (last hat)${mergeNote}. Other units still in progress \u2014 waiting on wave to finish.${pushWarning(completeGit)}`);
           }
-          return text(JSON.stringify({ ...next, _unit_completed: args2.unit, _merge: mergeNote }, null, 2));
+          return text(JSON.stringify(injectPushWarning({ ...next, _unit_completed: args2.unit, _merge: mergeNote }, completeGit), null, 2));
         }
-        return text(`completed (last hat)${mergeNote}`);
+        return text(`completed (last hat)${mergeNote}${pushWarning(completeGit)}`);
       }
       const nextHat = stageHats[nextIdx];
       setFrontmatterField(advPath, "hat", nextHat);
@@ -27842,16 +27892,16 @@ ${scope}` : "ok");
         if (sf) logSessionEvent(sf, { event: "hat_advanced", intent: args2.intent, stage: advStage, unit: args2.unit, hat: nextHat });
       }
       emitTelemetry("haiku.hat.transition", { intent: args2.intent, stage: advStage, unit: args2.unit, hat: nextHat });
-      gitCommitState(`haiku: advance hat to ${nextHat} on ${args2.unit}`);
+      const advGit = gitCommitState(`haiku: advance hat to ${nextHat} on ${args2.unit}`);
       syncSessionMetadata(args2.intent, args2.state_file);
       if (_runNext) {
         const next = _runNext(args2.intent);
-        return text(JSON.stringify({ ...next, _hat_advanced: nextHat }, null, 2));
+        return text(JSON.stringify(injectPushWarning({ ...next, _hat_advanced: nextHat }, advGit), null, 2));
       }
       const hatScope = resolveStageScope(args2.intent, advStage);
-      return text(hatScope ? `advanced to ${nextHat}
+      return text((hatScope ? `advanced to ${nextHat}
 
-${hatScope}` : `advanced to ${nextHat}`);
+${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit));
     }
     case "haiku_unit_reject_hat": {
       const rejectInfo = findUnitFile(args2.intent, args2.unit);
@@ -27876,9 +27926,9 @@ ${hatScope}` : `advanced to ${nextHat}`);
         if (sf) logSessionEvent(sf, { event: "unit_failed", intent: args2.intent, stage: rejectStage, unit: args2.unit, from_hat: currentHat, to_hat: prevHat, bolt: currentBolt + 1 });
       }
       emitTelemetry("haiku.unit.failed", { intent: args2.intent, stage: rejectStage, unit: args2.unit, hat: currentHat, prev_hat: prevHat, bolt: String(currentBolt + 1) });
-      gitCommitState(`haiku: fail ${args2.unit} \u2014 back to ${prevHat}, bolt ${currentBolt + 1}`);
+      const rejectGit = gitCommitState(`haiku: fail ${args2.unit} \u2014 back to ${prevHat}, bolt ${currentBolt + 1}`);
       syncSessionMetadata(args2.intent, args2.state_file);
-      return text(`failed \u2014 back to ${prevHat}, bolt ${currentBolt + 1}`);
+      return text(`rejected \u2014 back to ${prevHat}, bolt ${currentBolt + 1}${pushWarning(rejectGit)}`);
     }
     case "haiku_unit_increment_bolt": {
       const path = unitPath(args2.intent, args2.stage, args2.unit);
@@ -29157,6 +29207,10 @@ async function handleOrchestratorTool(name, args2) {
       } catch {
       }
     }
+    const branchCheck = validateBranch(slug, "intent");
+    if (branchCheck) {
+      return { content: [{ type: "text", text: branchCheck }], isError: true };
+    }
     const result = runNext(slug);
     emitTelemetry("haiku.orchestrator.action", { intent: slug, action: result.action });
     if (stFile) logSessionEvent(stFile, { event: "run_next", intent: slug, action: result.action, stage: result.stage, unit: result.unit, hat: result.hat, wave: result.wave });
@@ -30000,7 +30054,8 @@ Agent type: \`${hatAgentType}\`${hatModel ? ` | Model: \`${hatModel}\`` : ""}
 **Subagent prompt must include:**
 - The hat definition, unit spec, and refs above
 - The stage scope constraint
-` + (action.action === "start_unit" ? `- Instruction to call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\` first
+` + (worktreePath ? `- **Git discipline:** Commit work frequently in the worktree (\`git add -A && git commit -m "..."\`). Do NOT push \u2014 the merge-back handles pushing.
+` : "") + (action.action === "start_unit" ? `- Instruction to call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\` first
 ` : "") + `
 **Subagent calls one of these when done:**
 - **Success:** \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\` \u2014 auto-advances to the next hat, or auto-completes if this was the last hat
