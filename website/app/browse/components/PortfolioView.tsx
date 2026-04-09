@@ -274,7 +274,11 @@ export function PortfolioView({
 	}, [repoKey, addToIndex])
 
 	// Progressive loading — show each intent as it loads
+	// When deep-linked to a specific intent, defer list loading until user navigates back
+	const [listDeferred, setListDeferred] = useState(!!location?.intent)
+
 	useEffect(() => {
+		if (listDeferred) return // Skip list loading when deep-linked to a specific intent
 		async function load() {
 			setIntents([])
 			setLoadingMore(true)
@@ -283,7 +287,6 @@ export function PortfolioView({
 				await provider.listIntents((intent) => {
 					setIntents((prev) => [...prev, intent])
 					setLoading(false)
-					// Index this intent for search (now includes body content)
 					addToIndex({
 						id: `intent:${intent.slug}`,
 						type: "intent",
@@ -303,7 +306,7 @@ export function PortfolioView({
 			setLoading(false)
 		}
 		load()
-	}, [provider, addToIndex])
+	}, [provider, addToIndex, listDeferred])
 
 	// Background deep indexing — fetch all intent details for unit search
 	useEffect(() => {
@@ -552,10 +555,11 @@ export function PortfolioView({
 
 	const handleBackFromIntent = useCallback(() => {
 		setSelectedIntent(null)
+		if (listDeferred) setListDeferred(false) // Trigger list loading on first back navigation
 		if (hasPathNav) {
 			window.history.back()
 		}
-	}, [hasPathNav])
+	}, [hasPathNav, listDeferred])
 
 	const handleViewModeChange = useCallback(
 		(mode: "list" | "board") => {
