@@ -1,0 +1,136 @@
+import { randomBytes, createHmac, createCipheriv, createDecipheriv } from "node:crypto"
+import localtunnel from "localtunnel"
+
+// Ephemeral secret — generated once per MCP server lifetime
+const EPHEMERAL_SECRET = randomBytes(32)
+
+// Per-session E2E encryption key — regenerated for each review URL
+let activeE2EKey: Buffer | null = null
+
+let activeTunnel: Awaited<ReturnType<typeof localtunnel>> | null = null
+
+function base64url(data: string | Buffer): string {
+	const b64 = typeof data === "string" ? Buffer.from(data).toString("base64") : data.toString("base64")
+	return b64.replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_")
+}
+
+export function signJWT(payload: {
+	tun: string
+	sid: string
+	typ: string
+	key: string
+	iat: number
+	exp: number
+}): string {
+	const header = base64url(JSON.stringify({ alg: "HS256", typ: "JWT" }))
+	const body = base64url(JSON.stringify(payload))
+	const signature = createHmac("sha256", EPHEMERAL_SECRET)
+		.update(`${header}.${body}`)
+		.digest("base64url")
+	return `${header}.${body}.${signature}`
+}
+
+export async function openTunnel(port: number): Promise<string> {
+	if (activeTunnel) {
+		return activeTunnel.url
+	}
+
+	const maxRetries = 3
+	for (let attempt = 0; attempt < maxRetries; attempt++) {
+		try {
+			const tunnel = await localtunnel({ port })
+			activeTunnel = tunnel
+
+			tunnel.on("close", () => {
+				if (activeTunnel === tunnel) {
+					activeTunnel = null
+				}
+			})
+
+			tunnel.on("error", (err: Error) => {
+				console.error("[haiku] Tunnel error:", err.message)
+			})
+
+			console.error(`[haiku] Tunnel opened: ${tunnel.url}`)
+			return tunnel.url
+		} catch (err) {
+			console.error(`[haiku] Tunnel open failed (attempt ${attempt + 1}/${maxRetries}):`, err instanceof Error ? err.message : err)
+			if (attempt < maxRetries - 1) {
+				await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)))
+			}
+		}
+	}
+
+	throw new Error("Failed to open localtunnel after 3 attempts")
+}
+
+export function closeTunnel(): void {
+	if (activeTunnel) {
+		activeTunnel.close()
+		activeTunnel = null
+		console.error("[haiku] Tunnel closed")
+	}
+}
+
+export function getTunnelUrl(): string | null {
+	return activeTunnel?.url ?? null
+}
+
+export function isTunnelOpen(): boolean {
+	return activeTunnel !== null
+}
+
+export function isRemoteReviewEnabled(): boolean {
+	return process.env.HAIKU_REMOTE_REVIEW === "1"
+}
+
+const REVIEW_SITE_URL = process.env.HAIKU_REVIEW_SITE_URL ?? "https://haikumethod.ai"
+
+export function buildReviewUrl(sessionId: string, tunnelUrl: string, sessionType: string): string {
+	// Generate a fresh E2E encryption key for this session
+	activeE2EKey = randomBytes(32)
+	const now = Math.floor(Date.now() / 1000)
+	const token = signJWT({
+		tun: tunnelUrl,
+		sid: sessionId,
+		typ: sessionType,
+		key: activeE2EKey.toString("base64url"),
+		iat: now,
+		exp: now + 3600, // 1 hour TTL
+	})
+	return `${REVIEW_SITE_URL}/review/#${token}`
+}
+
+/**
+ * Encrypt data with AES-256-GCM using the active E2E key.
+ * Returns base64url-encoded string: iv(12 bytes) + authTag(16 bytes) + ciphertext
+ * Returns null if no E2E key is active (local mode).
+ */
+export function e2eEncrypt(data: string | Buffer): string | null {
+	if (!activeE2EKey) return null
+
+	const iv = randomBytes(12)
+	const cipher = createCipheriv("aes-256-gcm", activeE2EKey, iv)
+
+	const input = typeof data === "string" ? Buffer.from(data, "utf-8") : data
+	const encrypted = Buffer.concat([cipher.update(input), cipher.final()])
+	const authTag = cipher.getAuthTag()
+
+	// Pack: iv(12) + authTag(16) + ciphertext
+	const packed = Buffer.concat([iv, authTag, encrypted])
+	return packed.toString("base64url")
+}
+
+/**
+ * Check if E2E encryption is active (key exists from buildReviewUrl).
+ */
+export function isE2EActive(): boolean {
+	return activeE2EKey !== null
+}
+
+/**
+ * Clear the E2E key (called when tunnel/session closes).
+ */
+export function clearE2EKey(): void {
+	activeE2EKey = null
+}
