@@ -298,8 +298,12 @@ function IntentReview({
   const remainingMockups = intentMockups.filter((m) => m !== firstImageMockup);
 
 
-  // Group units by stage for display
-  const stageNames = Object.keys(stageStates);
+  // Group units by stage for display — use intent's stage order, not alphabetical
+  const intentStageOrder = (intent.frontmatter.stages as string[]) ?? [];
+  const stageStateKeys = Object.keys(stageStates);
+  const stageNames = intentStageOrder.length > 0
+    ? intentStageOrder.filter(s => stageStateKeys.includes(s))
+    : stageStateKeys;
   const unitsByStage = new Map<string, ParsedUnit[]>();
   for (const unit of units) {
     const stage = unit.frontmatter.stage ?? "_root";
