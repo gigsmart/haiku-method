@@ -18,9 +18,9 @@ quality_gates:
   - 'After 5 failed reconnects, show persistent connection error'
   - bun run build in website/ succeeds with /review/index.html in output
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-09T19:57:40Z'
-hat_started_at: '2026-04-09T19:58:42Z'
+hat_started_at: '2026-04-09T20:10:30Z'
 ---
 
 # Website — Review Page Shell
