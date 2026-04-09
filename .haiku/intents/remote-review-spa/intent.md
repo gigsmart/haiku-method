@@ -1,5 +1,12 @@
 ---
-title: "Move the review SPA from the local MCP server to the website at haikumethod.ai. When a review is triggered, the MCP opens a localtunnel to expose itself, generates a JWT (signed with an ephemeral per-session secret) containing the tunnel URL, and opens the browser at haikumethod.ai/review/:token. The website decodes the token, extracts the tunnel URL, and establishes a WebSocket connection back to the local MCP through the tunnel to conduct the review in real time."
+title: >-
+  Move the review SPA from the local MCP server to the website at
+  haikumethod.ai. When a review is triggered, the MCP opens a localtunnel to
+  expose itself, generates a JWT (signed with an ephemeral per-session secret)
+  containing the tunnel URL, and opens the browser at
+  haikumethod.ai/review/:token. The website decodes the token, extracts the
+  tunnel URL, and establishes a WebSocket connection back to the local MCP
+  through the tunnel to conduct the review in real time.
 studio: ideation
 mode: continuous
 status: active
@@ -8,7 +15,8 @@ stages:
   - create
   - review
   - deliver
-created_at: 2026-04-09T03:45:14Z
+created_at: '2026-04-09'
+active_stage: research
 ---
 
 # Move the review SPA from the local MCP server to the website at haikumethod.ai. When a review is triggered, the MCP opens a localtunnel to expose itself, generates a JWT (signed with an ephemeral per-session secret) containing the tunnel URL, and opens the browser at haikumethod.ai/review/:token. The website decodes the token, extracts the tunnel URL, and establishes a WebSocket connection back to the local MCP through the tunnel to conduct the review in real time.
