@@ -19,7 +19,7 @@ stages:
   - development
   - operations
   - security
-active_stage: inception
+active_stage: design
 created_at: '2026-04-09'
 ---
 
