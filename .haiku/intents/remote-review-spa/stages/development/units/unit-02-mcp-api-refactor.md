@@ -17,9 +17,9 @@ quality_gates:
   - Old file routes still work when feature flag is off (backwards compat)
   - TypeScript compiles with no errors
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-09T19:57:38Z'
-hat_started_at: '2026-04-09T19:58:41Z'
+hat_started_at: '2026-04-09T20:01:12Z'
 ---
 
 # MCP — CORS + Consolidated File Route
