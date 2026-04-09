@@ -1657,20 +1657,48 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 
 		// Skip elicitation if studio was provided by the agent
 		if (!selectedStudio && _elicitInput) {
-			try {
-				const studioNames = studioEntries.map(s => s.name)
-				const studioDescriptions = studioEntries.map(s => `${s.name}: ${s.description}`).join("\n")
+			// Recommend studios based on description keywords
+			const desc = description.toLowerCase()
+			const recommendations: string[] = []
+			for (const s of studioEntries) {
+				const name = s.name.toLowerCase()
+				const sdesc = (s.description || "").toLowerCase()
+				// Check if description keywords match studio name, description, or category
+				if (desc.includes(name) || name.includes(desc.split(" ")[0])) {
+					recommendations.push(s.name)
+				} else if (/\b(software|code|build|feature|implement|develop|api|app)\b/.test(desc) && (name === "software" || sdesc.includes("software") || sdesc.includes("develop"))) {
+					recommendations.push(s.name)
+				} else if (/\b(doc|write|content|documentation|article|guide)\b/.test(desc) && (name === "documentation" || sdesc.includes("document") || sdesc.includes("content"))) {
+					recommendations.push(s.name)
+				} else if (/\b(security|audit|compliance|pen.?test|vuln)\b/.test(desc) && (name === "security" || name === "compliance" || sdesc.includes("security"))) {
+					recommendations.push(s.name)
+				} else if (/\b(ops|deploy|infra|terraform|ci.?cd|pipeline)\b/.test(desc) && (name === "operations" || sdesc.includes("ops") || sdesc.includes("infra"))) {
+					recommendations.push(s.name)
+				}
+			}
 
+			// Deduplicate and cap at 3
+			const uniqueRecs = [...new Set(recommendations)].slice(0, 3)
+
+			// Build elicitation choices: recommended + "Show all studios"
+			const elicitChoices = uniqueRecs.length > 0
+				? [...uniqueRecs, "Show all studios..."]
+				: studioEntries.map(s => s.name)
+			const elicitDescriptions = uniqueRecs.length > 0
+				? studioEntries.filter(s => uniqueRecs.includes(s.name)).map(s => `${s.name}: ${s.description}`).join("\n")
+				: studioEntries.map(s => `${s.name}: ${s.description}`).join("\n")
+
+			try {
 				const elicitResult = await _elicitInput({
-					message: `Creating intent: "${description}"\n\nSelect a studio and execution mode.\n\nAvailable studios:\n${studioDescriptions}`,
+					message: `Creating intent: "${description}"\n\n${uniqueRecs.length > 0 ? "Recommended studios" : "Available studios"}:\n${elicitDescriptions}`,
 					requestedSchema: {
 						type: "object" as const,
 						properties: {
 							studio: {
 								type: "string",
 								title: "Studio",
-								description: "Which studio lifecycle to use",
-								enum: studioNames,
+								description: uniqueRecs.length > 0 ? "Recommended studios (or show all)" : "Which studio lifecycle to use",
+								enum: elicitChoices,
 							},
 							mode: {
 								type: "string",
@@ -1685,29 +1713,43 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 
 				if (elicitResult.action === "accept" && elicitResult.content) {
 					const content = elicitResult.content as Record<string, string>
-					selectedStudio = content.studio || ""
-					selectedMode = content.mode || "continuous"
+					if (content.studio === "Show all studios...") {
+						// Re-elicit with full list
+						const allNames = studioEntries.map(s => s.name)
+						const allDescriptions = studioEntries.map(s => `${s.name}: ${s.description}`).join("\n")
+						const reElicit = await _elicitInput({
+							message: `All available studios:\n${allDescriptions}`,
+							requestedSchema: {
+								type: "object" as const,
+								properties: {
+									studio: { type: "string", title: "Studio", enum: allNames },
+									mode: { type: "string", title: "Execution Mode", enum: ["continuous", "discrete"] },
+								},
+								required: ["studio", "mode"],
+							},
+						})
+						if (reElicit.action === "accept" && reElicit.content) {
+							const reContent = reElicit.content as Record<string, string>
+							selectedStudio = reContent.studio || ""
+							selectedMode = reContent.mode || "continuous"
+						} else {
+							return text(JSON.stringify({ action: "cancelled", message: "Intent creation cancelled by user" }))
+						}
+					} else {
+						selectedStudio = content.studio || ""
+						selectedMode = content.mode || "continuous"
+					}
 				} else {
-					// User cancelled
 					return text(JSON.stringify({ action: "cancelled", message: "Intent creation cancelled by user" }))
 				}
 			} catch {
-				// Elicitation failed — fall through to auto-detection
+				// Elicitation failed — fall through to error
 			}
 		}
 
-		// Fallback: auto-detect studio from description (never default to ideation — elicit if uncertain)
+		// No studio resolved — return error (never silently default)
 		if (!selectedStudio) {
-			const desc = description.toLowerCase()
-			if (/\b(software|code|build|feature|implement|develop|api|app)\b/.test(desc)) {
-				selectedStudio = "software"
-			} else if (/\b(doc|write|content|documentation|article|guide)\b/.test(desc)) {
-				selectedStudio = "documentation"
-			} else {
-				// Cannot determine studio — return error so the agent elicits
-				return text(JSON.stringify({ error: "studio_required", message: "Cannot auto-detect studio from the description. Pass a studio argument or ask the user which studio to use.", available_studios: studioEntries.map(s => s.name) }))
-			}
-			selectedMode = "continuous"
+			return text(JSON.stringify({ error: "studio_required", message: "Studio selection required. Pass a studio argument or ask the user which studio to use.", available_studios: studioEntries.map(s => s.name) }))
 		}
 
 		// Resolve stages for the selected studio
