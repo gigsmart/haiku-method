@@ -32,6 +32,8 @@ export class GitHubProvider implements BrowseProvider {
 	private env: ReturnType<typeof createRelayEnvironment>
 	/** Maps slug → branch for intents discovered via branch scanning */
 	private intentBranchMap = new Map<string, string>()
+	/** Maps slug → branch/PR metadata for carrying into detail views */
+	private intentMetaMap = new Map<string, { branch?: string; prUrl?: string | null; prStatus?: string | null; prNumber?: number | null }>()
 	/** ETag from the last branch-change poll */
 	private lastRefsEtag: string | null = null
 
@@ -264,6 +266,7 @@ export class GitHubProvider implements BrowseProvider {
 			})
 			intentsBySlug.set(slug, intent)
 			this.intentBranchMap.set(slug, branchName)
+			this.intentMetaMap.set(slug, { branch: branchName, ...prMeta })
 			onProgress?.(intent)
 		})
 
@@ -510,6 +513,7 @@ export class GitHubProvider implements BrowseProvider {
 			reflection,
 			content,
 			assets: [],
+			...(this.intentMetaMap.get(slug) || {}),
 		}
 	}
 
