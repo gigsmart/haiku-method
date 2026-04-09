@@ -441,8 +441,8 @@ function buildRunInstructions(
 				`### Mechanics\n\n` +
 				(wave !== undefined ? `**Wave ${wave}/${totalWaves ?? "?"}** — ` : "") +
 				`${units.length} units to run in parallel.\n` +
-				`**You are the orchestrator.** Do NOT do unit work yourself.\n\n` +
-				`Spawn one Agent subagent per unit **in a single message** (all Agent tool calls in one response). Each subagent runs the FIRST hat ("${firstHat}") only.\n\n` +
+				`**You are the orchestrator.** Do NOT do unit work yourself. Do NOT ask the user which unit to start — launch ALL of them NOW.\n\n` +
+				`**IMMEDIATELY** spawn one Agent subagent per unit **in a single message** (all Agent tool calls in one response). No questions, no confirmation, no menu. Each subagent runs the FIRST hat ("${firstHat}") only.\n\n` +
 				`Each subagent calls \`advance_hat\` when done — it internally progresses the FSM. The last subagent to finish the wave triggers the next action automatically.\n\n` +
 				`**Each subagent prompt must include:**\n` +
 				`- The hat definition for "${firstHat}"\n` +
