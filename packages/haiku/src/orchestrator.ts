@@ -17,7 +17,6 @@ import { reportError } from "./sentry.js"
 import {
 	findHaikuRoot,
 	intentDir,
-	stageDir,
 	stageStatePath,
 	readJson,
 	writeJson,
@@ -25,12 +24,11 @@ import {
 	gitCommitState,
 	timestamp,
 	parseFrontmatter,
-	unitPath,
 	syncSessionMetadata,
 } from "./state-tools.js"
 import { createIntentBranch, isOnIntentBranch, createUnitWorktree } from "./git-worktree.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
-import { computeWaves, buildDAG, topologicalSort } from "./dag.js"
+import { computeWaves, topologicalSort } from "./dag.js"
 import type { DAGGraph } from "./types.js"
 import { validateIdentifier } from "./prompts/helpers.js"
 
@@ -984,7 +982,7 @@ export function runNext(slug: string): OrchestratorAction {
 
 // ── Composite orchestration ────────────────────────────────────────────────
 
-function runNextComposite(slug: string, intent: Record<string, unknown>, intentDirPath: string): OrchestratorAction {
+function runNextComposite(slug: string, intent: Record<string, unknown>, _intentDirPath: string): OrchestratorAction {
 	const composite = intent.composite as Array<{ studio: string; stages: string[] }>
 	const compositeState = (intent.composite_state || {}) as Record<string, string>
 	const syncRules = (intent.sync || []) as Array<{ wait: string[]; then: string[] }>
