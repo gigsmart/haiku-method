@@ -467,6 +467,16 @@ export const stateToolDefs = [
 		description: "Extract release notes from CHANGELOG.md — a specific version or the 5 most recent entries.",
 		inputSchema: { type: "object" as const, properties: { version: { type: "string", description: "Optional: specific version to extract (e.g. '1.2.0')" } } },
 	},
+	{
+		name: "haiku_repair",
+		description: "Scan intents for metadata issues (missing fields, invalid studios, stages mismatch, legacy fields, unit naming). Returns a diagnostic report with fixes.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: { type: "string", description: "Specific intent slug to scan, or omit to scan all" },
+			},
+		},
+	},
 ]
 
 // ── Tool handlers ──────────────────────────────────────────────────────────
@@ -1218,6 +1228,260 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			}
 			out += `\n---\nTotal releases in changelog: ${matches.length}\n`
 			return text(out)
+		}
+
+		case "haiku_repair": {
+			// ── Repair: scan intents for metadata issues ──
+			let root: string
+			try {
+				root = findHaikuRoot()
+			} catch {
+				return text("No .haiku/ directory found.")
+			}
+
+			// Resolve available studios: name → stage names
+			const repairStudioMap = new Map<string, string[]>()
+			const repairPluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+			const repairSearchPaths = [join(root, "studios"), join(repairPluginRoot, "studios")]
+			for (const base of repairSearchPaths) {
+				if (!existsSync(base)) continue
+				for (const d of readdirSync(base, { withFileTypes: true })) {
+					if (!d.isDirectory() || repairStudioMap.has(d.name)) continue
+					const studioMd = join(base, d.name, "STUDIO.md")
+					if (!existsSync(studioMd)) continue
+					const { data: stData } = parseFrontmatter(readFileSync(studioMd, "utf8"))
+					const stStages = Array.isArray(stData.stages) ? (stData.stages as string[]) : []
+					repairStudioMap.set(d.name, stStages)
+				}
+			}
+
+			// Collect intent slugs to scan
+			const repairIntentsDir = join(root, "intents")
+			if (!existsSync(repairIntentsDir)) return text("No intents directory found.")
+
+			interface RepairIssue {
+				intent: string
+				field: string
+				severity: "error" | "warning"
+				message: string
+				fix: string
+			}
+
+			let repairSlugs: string[]
+			const repairIntentArg = args.intent as string | undefined
+			if (repairIntentArg) {
+				if (/[/\\]|\.\./.test(repairIntentArg)) return text(`Invalid intent slug: "${repairIntentArg}"`)
+				if (!existsSync(join(repairIntentsDir, repairIntentArg, "intent.md"))) {
+					return text(`Intent '${repairIntentArg}' not found.`)
+				}
+				repairSlugs = [repairIntentArg]
+			} else {
+				repairSlugs = readdirSync(repairIntentsDir, { withFileTypes: true })
+					.filter(d => d.isDirectory() && existsSync(join(repairIntentsDir, d.name, "intent.md")))
+					.map(d => d.name)
+			}
+
+			if (repairSlugs.length === 0) return text("No intents found.")
+
+			// Scan each intent
+			const allRepairIssues: RepairIssue[] = []
+			const cleanRepairIntents: string[] = []
+			const repairUnitPattern = /^unit-\d{2,}-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/
+
+			for (const slug of repairSlugs) {
+				const repairIntentPath = join(repairIntentsDir, slug, "intent.md")
+				const repairRaw = readFileSync(repairIntentPath, "utf8")
+				const { data: repairData } = parseFrontmatter(repairRaw)
+				const issues: RepairIssue[] = []
+
+				// a. Missing title
+				if (!repairData.title || (typeof repairData.title === "string" && repairData.title.trim() === "")) {
+					issues.push({ intent: slug, field: "title", severity: "error", message: "Missing title field", fix: "Add `title` field with a descriptive name" })
+				}
+
+				// b. Missing studio
+				if (!repairData.studio) {
+					issues.push({ intent: slug, field: "studio", severity: "error", message: "Missing studio field", fix: "Set `studio` to an available studio" })
+				}
+
+				// c. Invalid studio
+				const repairStudio = repairData.studio as string | undefined
+				if (repairStudio && !repairStudioMap.has(repairStudio)) {
+					const available = Array.from(repairStudioMap.keys()).join(", ")
+					issues.push({ intent: slug, field: "studio", severity: "error", message: `Studio '${repairStudio}' not found`, fix: `Studio '${repairStudio}' not found. Available: ${available}` })
+				}
+
+				// d. Missing stages
+				const repairStages = repairData.stages
+				if (!Array.isArray(repairStages) || repairStages.length === 0) {
+					if (repairStudio && repairStudioMap.has(repairStudio)) {
+						const expected = repairStudioMap.get(repairStudio)!.join(", ")
+						issues.push({ intent: slug, field: "stages", severity: "error", message: "Missing or empty stages array", fix: `Set \`stages\` to match studio definition: [${expected}]` })
+					} else {
+						issues.push({ intent: slug, field: "stages", severity: "error", message: "Missing or empty stages array", fix: "Set `stages` to match studio definition" })
+					}
+				}
+
+				// e. Stages mismatch
+				if (Array.isArray(repairStages) && repairStages.length > 0 && repairStudio && repairStudioMap.has(repairStudio)) {
+					const expected = repairStudioMap.get(repairStudio)!
+					const actual = repairStages as string[]
+					if (JSON.stringify(expected) !== JSON.stringify(actual)) {
+						issues.push({ intent: slug, field: "stages", severity: "warning", message: "Stages don't match studio definition", fix: `Stages don't match studio definition. Expected: [${expected.join(", ")}], got: [${actual.join(", ")}]` })
+					}
+				}
+
+				// f. Missing status
+				if (!repairData.status) {
+					issues.push({ intent: slug, field: "status", severity: "error", message: "Missing status field", fix: "Set `status` to 'active' or 'completed'" })
+				}
+
+				// g. Missing mode
+				if (!repairData.mode) {
+					issues.push({ intent: slug, field: "mode", severity: "error", message: "Missing mode field", fix: "Set `mode` to 'continuous' or 'discrete'" })
+				}
+
+				// h. Legacy created field
+				if (repairData.created && !repairData.created_at) {
+					issues.push({ intent: slug, field: "created", severity: "warning", message: "Legacy `created` field found", fix: "Rename `created` to `created_at`" })
+				}
+
+				// i. Missing created_at
+				if (!repairData.created && !repairData.created_at) {
+					issues.push({ intent: slug, field: "created_at", severity: "warning", message: "Missing created_at field", fix: "Add `created_at` with an ISO date" })
+				}
+
+				// j. Invalid active_stage
+				if (repairData.active_stage && Array.isArray(repairStages) && repairStages.length > 0) {
+					if (!repairStages.includes(repairData.active_stage)) {
+						issues.push({ intent: slug, field: "active_stage", severity: "error", message: `active_stage '${repairData.active_stage}' not in stages list`, fix: `active_stage '${repairData.active_stage}' not in stages list` })
+					}
+				}
+
+				// k. Missing active_stage for active intents
+				if (repairData.status === "active" && !repairData.active_stage) {
+					issues.push({ intent: slug, field: "active_stage", severity: "warning", message: "Active intent has no active_stage", fix: "Active intent has no active_stage. Set to the first stage." })
+				}
+
+				// l. Stage state consistency
+				if (Array.isArray(repairStages) && repairStages.length > 0) {
+					const repairStagesDir = join(repairIntentsDir, slug, "stages")
+					const repairActiveStage = repairData.active_stage as string | undefined
+					const validStatuses = ["pending", "active", "completed"]
+					for (const stageName of repairStages as string[]) {
+						const repairStageDir = join(repairStagesDir, stageName)
+						const repairStateFile = join(repairStageDir, "state.json")
+						if (existsSync(repairStateFile)) {
+							const state = readJson(repairStateFile)
+							if (state.status && !validStatuses.includes(state.status as string)) {
+								issues.push({ intent: slug, field: `stages/${stageName}/state.json`, severity: "error", message: `Invalid stage status: '${state.status}'`, fix: `Set status to one of: ${validStatuses.join(", ")}` })
+							}
+						} else if (existsSync(repairStageDir) && repairActiveStage) {
+							const activeIdx = (repairStages as string[]).indexOf(repairActiveStage)
+							const thisIdx = (repairStages as string[]).indexOf(stageName)
+							if (thisIdx < activeIdx) {
+								issues.push({ intent: slug, field: `stages/${stageName}/state.json`, severity: "warning", message: "Stage directory exists but has no state.json (before active_stage)", fix: `Create state.json with {"status": "pending", "phase": "elaborate"}` })
+							}
+						}
+					}
+				}
+
+				// m. Unit filename format
+				if (Array.isArray(repairStages)) {
+					for (const stageName of repairStages as string[]) {
+						const repairUnitsDir = join(repairIntentsDir, slug, "stages", stageName, "units")
+						if (!existsSync(repairUnitsDir)) continue
+						for (const f of readdirSync(repairUnitsDir, { withFileTypes: true })) {
+							if (!f.isFile() || !f.name.endsWith(".md")) continue
+							if (!repairUnitPattern.test(f.name)) {
+								issues.push({ intent: slug, field: `stages/${stageName}/units/${f.name}`, severity: "warning", message: `Unit filename doesn't match expected pattern`, fix: "Rename to match pattern: unit-NN-slug-name.md" })
+							}
+						}
+					}
+				}
+
+				// n. Unit required fields
+				if (Array.isArray(repairStages)) {
+					for (const stageName of repairStages as string[]) {
+						const repairUnitsDir = join(repairIntentsDir, slug, "stages", stageName, "units")
+						if (!existsSync(repairUnitsDir)) continue
+						for (const f of readdirSync(repairUnitsDir, { withFileTypes: true })) {
+							if (!f.isFile() || !f.name.endsWith(".md")) continue
+							const unitRaw = readFileSync(join(repairUnitsDir, f.name), "utf8")
+							const { data: unitData } = parseFrontmatter(unitRaw)
+							if (!unitData.type) {
+								issues.push({ intent: slug, field: `stages/${stageName}/units/${f.name}:type`, severity: "warning", message: `Unit missing 'type' field`, fix: "Add `type` field to unit frontmatter" })
+							}
+							if (!unitData.status) {
+								issues.push({ intent: slug, field: `stages/${stageName}/units/${f.name}:status`, severity: "warning", message: `Unit missing 'status' field`, fix: "Add `status` field to unit frontmatter" })
+							}
+						}
+					}
+				}
+
+				if (issues.length === 0) {
+					cleanRepairIntents.push(slug)
+				} else {
+					allRepairIssues.push(...issues)
+				}
+			}
+
+			// No issues
+			if (allRepairIssues.length === 0) {
+				return text("All intents passed validation. No repairs needed.")
+			}
+
+			// Build diagnostic report
+			const issuesByIntent = new Map<string, RepairIssue[]>()
+			for (const issue of allRepairIssues) {
+				const list = issuesByIntent.get(issue.intent) || []
+				list.push(issue)
+				issuesByIntent.set(issue.intent, list)
+			}
+
+			const reportLines: string[] = [
+				"# Intent Repair Report",
+				"",
+				`Scanned ${repairSlugs.length} intent(s). Found ${allRepairIssues.length} issue(s).`,
+				"",
+			]
+
+			for (const [slug, issues] of issuesByIntent) {
+				const errors = issues.filter(i => i.severity === "error").length
+				const warnings = issues.filter(i => i.severity === "warning").length
+				reportLines.push(`## ${slug} — ${errors} errors, ${warnings} warnings`)
+				reportLines.push("")
+				reportLines.push("| # | Severity | Field | Issue | Fix |")
+				reportLines.push("|---|----------|-------|-------|-----|")
+				issues.forEach((issue, idx) => {
+					reportLines.push(`| ${idx + 1} | ${issue.severity} | ${issue.field} | ${issue.message} | ${issue.fix} |`)
+				})
+				reportLines.push("")
+			}
+
+			if (cleanRepairIntents.length > 0) {
+				reportLines.push("## Intents with no issues")
+				for (const slug of cleanRepairIntents) {
+					reportLines.push(`- ${slug}`)
+				}
+				reportLines.push("")
+			}
+
+			reportLines.push(
+				"---",
+				"",
+				"Fix the issues listed above. For each intent:",
+				"1. Read the intent.md file",
+				"2. Apply the fixes listed in the report",
+				"3. For field renames, remove the old field and add the new one",
+				"4. For stages mismatches, update the stages array",
+				"5. For missing state.json, create them",
+				"6. After fixing each intent, report what you changed",
+				"",
+				"Do NOT auto-fix without confirming with the user first.",
+			)
+
+			return text(reportLines.join("\n"))
 		}
 
 		default:
