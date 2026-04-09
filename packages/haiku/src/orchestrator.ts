@@ -636,6 +636,22 @@ export function runNext(slug: string): OrchestratorAction {
 	const phase = (stageState.phase as string) || ""
 	const stageStatus = (stageState.status as string) || "pending"
 
+	// Intent review gate — first run_next on a fresh intent must be approved by user
+	if (currentStage === studioStages[0] && (!phase || stageStatus === "pending")) {
+		const intentReviewed = (intent.intent_reviewed as boolean) || false
+		if (!intentReviewed) {
+			return {
+				action: "gate_review",
+				intent: slug,
+				studio,
+				stage: currentStage,
+				gate_type: "ask",
+				gate_context: "intent_review",
+				message: `Intent '${slug}' is ready for review. Presenting the intent for your approval before starting work.`,
+			}
+		}
+	}
+
 	// Stage not started yet
 	if (!phase || stageStatus === "pending") {
 		const hats = resolveStageHats(studio, currentStage)
@@ -1675,8 +1691,16 @@ function buildRunInstructions(
 			break
 		}
 
+		case "intent_approved": {
+			sections.push(
+				`## Intent Approved\n\n` +
+				`The user has approved the intent.\n\n` +
+				`**Call \`haiku_run_next { intent: "${slug}" }\` immediately.** Do NOT ask the user — the transition was already approved.`,
+			)
+			break
+		}
+
 		case "advance_phase": {
-			const stage = action.stage as string
 			const toPhase = action.to_phase as string
 			sections.push(
 				`## Advance Phase\n\n` +
@@ -2082,6 +2106,15 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 				const reviewResult = await _openReviewAndWait(intentDirPath, "intent", gateType)
 				if (stFile) logSessionEvent(stFile, { event: "gate_decision", intent: slug, stage, decision: reviewResult.decision, feedback: reviewResult.feedback })
 				if (reviewResult.decision === "approved") {
+					if (gateContext === "intent_review") {
+						// Intent approved — mark as reviewed and tell agent to start
+						const intentFilePath = join(process.cwd(), intentDirPath, "intent.md")
+						setFrontmatterField(intentFilePath, "intent_reviewed", true)
+						gitCommitState(`haiku: intent ${slug} approved by user`)
+						syncSessionMetadata(slug, args.state_file as string | undefined)
+						const gateResult = { action: "intent_approved", intent: slug, message: `Intent approved — starting work. IMPORTANT: Call haiku_run_next { intent: "${slug}" } immediately. Do NOT ask the user — the transition was already approved.` }
+						return text(withInstructions(gateResult))
+					}
 					if (gateContext === "elaborate_to_execute" && nextPhase) {
 						// Phase advancement (specs approved → start execution)
 						fsmAdvancePhase(slug, stage, nextPhase)
@@ -2113,7 +2146,13 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 					}
 					return text(withInstructions(gateResult))
 				}
-				// changes_requested — go back to elaborate to fix specs
+				// changes_requested
+				if (gateContext === "intent_review") {
+					// Intent rejected — stay in pending, agent must revise intent.md
+					syncSessionMetadata(slug, args.state_file as string | undefined)
+					const gateResult = { action: "changes_requested", intent: slug, stage, feedback: reviewResult.feedback, annotations: reviewResult.annotations, message: `Changes requested on intent: ${reviewResult.feedback || "(see annotations)"}. Revise the intent description, then call haiku_run_next { intent: "${slug}" } again.` }
+					return text(withInstructions(gateResult))
+				}
 				if (gateContext === "elaborate_to_execute") {
 					// Don't advance phase — stay in elaborate so agent can fix
 					syncSessionMetadata(slug, args.state_file as string | undefined)
@@ -2161,7 +2200,9 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 				if (_elicitInput) {
 					try {
 						const elicitResult = await _elicitInput({
-							message: `Review UI failed (${errorMsg}). Approve stage '${stage}' specs to proceed to execution?`,
+							message: gateContext === "intent_review"
+								? `Review UI failed (${errorMsg}). Approve intent '${slug}' to begin work?`
+								: `Review UI failed (${errorMsg}). Approve stage '${stage}' specs to proceed to execution?`,
 							requestedSchema: {
 								type: "object" as const,
 								properties: {
@@ -2184,6 +2225,14 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 							const decision = (elicitResult.content as Record<string, string>).decision
 							const feedback = (elicitResult.content as Record<string, string>).feedback || ""
 							if (decision === "approve") {
+								if (gateContext === "intent_review") {
+									const intentFilePath = join(process.cwd(), intentDirPath, "intent.md")
+									setFrontmatterField(intentFilePath, "intent_reviewed", true)
+									gitCommitState(`haiku: intent ${slug} approved by user (elicitation)`)
+									syncSessionMetadata(slug, args.state_file as string | undefined)
+									const elicitApproveResult = { action: "intent_approved", intent: slug, message: `Intent approved — starting work. IMPORTANT: Call haiku_run_next { intent: "${slug}" } immediately.` }
+									return text(withInstructions(elicitApproveResult))
+								}
 								if (gateContext === "elaborate_to_execute" && nextPhase) {
 									fsmAdvancePhase(slug, stage, nextPhase)
 									syncSessionMetadata(slug, args.state_file as string | undefined)
@@ -2204,7 +2253,10 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 							}
 							// request_changes
 							syncSessionMetadata(slug, args.state_file as string | undefined)
-							const elicitChangesResult = { action: "changes_requested", intent: slug, stage, feedback, message: `Changes requested: ${feedback}. Call haiku_run_next { intent: "${slug}" } again after fixing.` }
+							const changeMsg = gateContext === "intent_review"
+								? `Changes requested on intent: ${feedback}. Revise the intent description, then call haiku_run_next { intent: "${slug}" } again.`
+								: `Changes requested: ${feedback}. Call haiku_run_next { intent: "${slug}" } again after fixing.`
+							const elicitChangesResult = { action: "changes_requested", intent: slug, stage, feedback, message: changeMsg }
 							return text(withInstructions(elicitChangesResult))
 						}
 						// User declined/cancelled elicitation — stay blocked
