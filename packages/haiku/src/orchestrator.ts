@@ -389,39 +389,13 @@ function runQualityGates(slug: string, stage: string): QualityGateResult[] {
 		repoRoot = process.cwd()
 	}
 
-	// Parse quality_gates from frontmatter (shared parser — handles name/command/dir objects)
+	// Parse quality_gates from frontmatter using gray-matter (already imported)
 	function parseGates(filePath: string): Array<{ name: string; command: string; dir: string }> {
-		if (!existsSync(filePath)) return []
-		const raw = readFileSync(filePath, "utf8")
-		const fmMatch = raw.match(/^---\n([\s\S]*?)\n---/)
-		if (!fmMatch) return []
-		const lines = fmMatch[1].split("\n")
-		let inField = false
-		let current: Record<string, string> = {}
-		const gates: Array<{ name: string; command: string; dir: string }> = []
-
-		for (const line of lines) {
-			if (line.match(/^quality_gates:/)) {
-				if (line.match(/\[\s*\]/)) return []
-				inField = true
-				continue
-			}
-			if (inField) {
-				if (!line.startsWith(" ") && !line.startsWith("\t") && line.trim() !== "") break
-				const itemStart = line.match(/^\s+-\s+(.*)/)
-				if (itemStart) {
-					if (current.command) gates.push({ name: current.name || "", command: current.command, dir: current.dir || "" })
-					current = {}
-					const kv = itemStart[1].match(/^(\w+):\s*(.+)/)
-					if (kv) current[kv[1]] = kv[2].replace(/^["']|["']$/g, "")
-				} else {
-					const kv = line.match(/^\s+(\w+):\s*(.+)/)
-					if (kv) current[kv[1]] = kv[2].replace(/^["']|["']$/g, "")
-				}
-			}
-		}
-		if (current.command) gates.push({ name: current.name || "", command: current.command, dir: current.dir || "" })
-		return gates
+		const data = readFrontmatter(filePath)
+		const raw = Array.isArray(data.quality_gates) ? data.quality_gates : []
+		return raw
+			.filter((g: Record<string, unknown>): g is Record<string, string> => !!g?.command)
+			.map((g: Record<string, string>) => ({ name: g.name ?? "", command: g.command, dir: g.dir ?? "" }))
 	}
 
 	// Collect gates from intent + all units in this stage
@@ -433,15 +407,16 @@ function runQualityGates(slug: string, stage: string): QualityGateResult[] {
 		}
 	}
 
-	// Deduplicate by command (intent-level + unit-level may overlap)
+	// Deduplicate by command+dir (same command in different dirs is legitimate in monorepos)
 	const seen = new Set<string>()
 	const uniqueGates = allGates.filter(g => {
-		if (seen.has(g.command)) return false
-		seen.add(g.command)
+		const key = `${g.command}::${g.dir}`
+		if (seen.has(key)) return false
+		seen.add(key)
 		return true
 	})
 
-	// Execute each gate
+	// Execute each gate (matches hook: 30s timeout, 500-char output truncation)
 	const failures: QualityGateResult[] = []
 	for (let i = 0; i < uniqueGates.length; i++) {
 		const gate = uniqueGates[i]
@@ -453,20 +428,20 @@ function runQualityGates(slug: string, stage: string): QualityGateResult[] {
 			output = execSync(gate.command, {
 				cwd,
 				encoding: "utf8",
-				timeout: 60_000,
+				timeout: 30_000,
 				stdio: ["pipe", "pipe", "pipe"],
 			})
 		} catch (err: unknown) {
 			const execErr = err as { status?: number; stdout?: string; stderr?: string }
 			exitCode = execErr.status ?? 1
-			output = ((execErr.stdout ?? "") + (execErr.stderr ?? "")).slice(0, 1000)
+			output = ((execErr.stdout ?? "") + (execErr.stderr ?? "")).slice(0, 500)
 		}
 
 		if (exitCode !== 0) {
 			failures.push({
 				name: gate.name || `gate-${i}`,
 				command: gate.command,
-				dir: gate.dir || repoRoot,
+				dir: gate.dir,
 				exit_code: exitCode,
 				output,
 			})
