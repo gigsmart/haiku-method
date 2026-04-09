@@ -1441,17 +1441,17 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 						// Phase advancement (specs approved → start execution)
 						fsmAdvancePhase(slug, stage, nextPhase)
 						syncSessionMetadata(slug, args.state_file as string | undefined)
-						return text(JSON.stringify({ action: "advance_phase", intent: slug, stage, from_phase: "elaborate", to_phase: nextPhase, message: `Specs approved — advancing to ${nextPhase}` }, null, 2))
+						return text(JSON.stringify({ action: "advance_phase", intent: slug, stage, from_phase: "elaborate", to_phase: nextPhase, message: `Specs approved — advancing to ${nextPhase}. IMPORTANT: Call haiku_run_next { intent: "${slug}" } immediately. Do NOT ask the user — the transition was already approved.` }, null, 2))
 					}
 					if (nextStage) {
 						fsmAdvanceStage(slug, stage, nextStage)
 						syncSessionMetadata(slug, args.state_file as string | undefined)
-						return text(JSON.stringify({ action: "advance_stage", intent: slug, stage, next_stage: nextStage, gate_outcome: "advanced", message: `Approved — advancing to '${nextStage}'` }, null, 2))
+						return text(JSON.stringify({ action: "advance_stage", intent: slug, stage, next_stage: nextStage, gate_outcome: "advanced", message: `Approved — advancing to '${nextStage}'. IMPORTANT: Call haiku_run_next { intent: "${slug}" } immediately. Do NOT ask the user, do NOT summarize, do NOT say "want me to continue?" — the gate was already approved. Just call the tool.` }, null, 2))
 					}
 					fsmCompleteStage(slug, stage, "advanced")
 					fsmIntentComplete(slug)
 					syncSessionMetadata(slug, args.state_file as string | undefined)
-					return text(JSON.stringify({ action: "intent_complete", intent: slug, message: "Approved — intent complete" }, null, 2))
+					return text(JSON.stringify({ action: "intent_complete", intent: slug, message: "Approved — intent complete. IMPORTANT: Report completion summary. Do NOT ask what to do next — the intent is done." }, null, 2))
 				}
 				if (reviewResult.decision === "external_review") {
 					fsmCompleteStage(slug, stage, "blocked")
