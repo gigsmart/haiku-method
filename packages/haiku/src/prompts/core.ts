@@ -393,7 +393,7 @@ function buildRunInstructions(
 				`\n**Subagent calls one of these when done:**\n` +
 				`- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", stage: "${stage}", unit: "${unit}" }\` — auto-advances to the next hat, or auto-completes if this was the last hat\n` +
 				`- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", stage: "${stage}", unit: "${unit}" }\` — moves back one hat, increments bolt\n` +
-				`\n**After subagent returns:** call \`haiku_run_next { intent: "${slug}" }\``,
+				`\n**After subagent returns:** The \`advance_hat\` result contains the next FSM action — spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately — advance_hat handles FSM progression internally.`,
 			)
 
 			// Check for ticketing provider — move ticket to "In Progress"
@@ -440,7 +440,7 @@ function buildRunInstructions(
 				`${units.length} units to run in parallel.\n` +
 				`**You are the orchestrator.** Do NOT do unit work yourself.\n\n` +
 				`Spawn one Agent subagent per unit **in a single message** (all Agent tool calls in one response). Each subagent runs the FIRST hat ("${firstHat}") only.\n\n` +
-				`After all subagents complete, call \`haiku_run_next\` — the orchestrator will advance hats or start the next wave.\n\n` +
+				`Each subagent calls \`advance_hat\` when done — it internally progresses the FSM. The last subagent to finish the wave triggers the next action automatically.\n\n` +
 				`**Each subagent prompt must include:**\n` +
 				`- The hat definition for "${firstHat}"\n` +
 				`- The unit spec and refs\n` +
@@ -450,7 +450,7 @@ function buildRunInstructions(
 					const wt = worktrees[u]
 					return `- **${u}**${wt ? ` (worktree: \`${wt}\`)` : ""}: \`haiku_unit_start { intent: "${slug}", stage: "${stage}", unit: "${u}", hat: "${firstHat}" }\``
 				}).join("\n") +
-				`\n\nAfter all subagents complete: \`haiku_run_next { intent: "${slug}" }\``,
+				`\n\nAfter all subagents return: check the last subagent's \`advance_hat\` result — it contains the next FSM action (next wave, phase advance, etc.). Act on it directly. Do NOT call haiku_run_next separately.`,
 			)
 			break
 		}

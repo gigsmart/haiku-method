@@ -563,6 +563,12 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			emitTelemetry("haiku.hat.transition", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string, hat: nextHat })
 			gitCommitState(`haiku: advance hat to ${nextHat} on ${args.unit as string}`, shouldPushForIntent(args.intent as string))
 			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
+			// Internally call runNext — returns continue_unit with next hat context for the parent
+			if (_runNext) {
+				const next = _runNext(args.intent as string)
+				return text(JSON.stringify({ ...next, _hat_advanced: nextHat }, null, 2))
+			}
+
 			const hatScope = resolveStageScope(args.intent as string, args.stage as string)
 			return text(hatScope ? `advanced to ${nextHat}\n\n${hatScope}` : `advanced to ${nextHat}`)
 		}
