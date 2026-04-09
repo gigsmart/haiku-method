@@ -19,7 +19,7 @@ stages:
   - development
   - operations
   - security
-active_stage: design
+active_stage: product
 created_at: '2026-04-09'
 ---
 
