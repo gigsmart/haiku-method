@@ -747,13 +747,25 @@ registerPrompt({
 		}
 
 		contextParts.push(
+			`## Prelaboration\n\n` +
+			`Before creating the intent, ensure the description is substantive enough to drive elaboration.\n\n` +
+			`**If the description is short (under ~2 sentences) or vague:**\n` +
+			`Ask 2-3 targeted questions via \`AskUserQuestion\` to flesh it out:\n` +
+			`- What's the core problem or goal?\n` +
+			`- Who are the users/stakeholders?\n` +
+			`- What are the key constraints or non-negotiables?\n` +
+			`- Any existing systems this integrates with?\n\n` +
+			`Fold the answers into a richer description (3-5 sentences) before proceeding.\n` +
+			`Do NOT create the intent until you have a description that would let someone ` +
+			`understand the scope without asking follow-up questions.\n\n` +
+			`**If the description is already detailed (multiple sentences, clear scope):** proceed directly.\n\n` +
 			`## Implementation Steps\n\n` +
-			`1. ${args.description ? "Use the provided description" : "Ask the user: 'What do you want to accomplish?' (free text, not a form)"}\n` +
-			`2. Convert description to kebab-case slug (max 40 chars)\n` +
+			`1. ${args.description ? "Evaluate the provided description — if too brief, prelaborate with the user" : "Ask the user: 'What do you want to accomplish?' (free text, not a form)"}\n` +
+			`2. Convert the final description to kebab-case slug (max 40 chars)\n` +
 			`3. ${projectStudio ? `Use studio "${projectStudio}"` : "Select studio per the logic above"}\n` +
 			`4. Default to **continuous** mode (do not ask the user)\n` +
 			`5. Summarize the conversation so far into a concise context block (key decisions, constraints, technical details discussed)\n` +
-			`6. Call \`haiku_intent_create\` with description, slug, and the \`context\` argument containing your conversation summary\n` +
+			`6. Call \`haiku_intent_create\` with the enriched description, slug, and the \`context\` argument containing your conversation summary\n` +
 			`7. The tool creates directories, writes intent.md, writes CONVERSATION-CONTEXT.md to knowledge/, and opens a review for user confirmation\n` +
 			`8. Invoke /haiku:resume — the orchestrator opens the review and advances automatically (continuous) or report ready (discrete)`,
 		)
