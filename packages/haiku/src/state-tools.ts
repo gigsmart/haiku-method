@@ -594,7 +594,19 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				// Merge unit worktree back to intent branch (if running in a worktree)
 				const mergeResult = mergeUnitWorktree(args.intent as string, args.unit as string)
 				if (!mergeResult.success) {
-					return text(JSON.stringify({ status: "completed_merge_failed", message: mergeResult.message }))
+					const worktreePath = join(process.cwd(), ".haiku", "worktrees", args.intent as string, args.unit as string)
+					return text(JSON.stringify({
+						action: "merge_conflict",
+						status: "completed_merge_failed",
+						intent: args.intent,
+						unit: args.unit,
+						worktree: worktreePath,
+						error: mergeResult.message,
+						message: `Unit completed but merge to intent branch failed: ${mergeResult.message}. ` +
+							`RESOLVE: cd to the intent branch (\`git checkout haiku/${args.intent}/main\`), ` +
+							`merge manually (\`git merge haiku/${args.intent}/${args.unit} --no-edit\`), resolve any conflicts, ` +
+							`then commit and push. If you cannot resolve, ask the user for help.`,
+					}, null, 2))
 				}
 
 				syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
