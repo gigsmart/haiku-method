@@ -24,6 +24,8 @@ studio: software
 - Design brief with component specs and interaction patterns
 - Design tokens (named values, not raw values)
 
+Record all produced wireframes and design artifacts in the unit's `outputs:` frontmatter field as paths relative to the intent directory.
+
 **Design provider workflow:**
 - If Pencil MCP is available (`mcp__pencil__*` tools): create designs in .pen format, then call `mcp__pencil__export_nodes` to export PNG/SVG previews to `stages/design/artifacts/`
 - If OpenPencil MCP is available (`mcp__openpencil__*` tools): same pattern

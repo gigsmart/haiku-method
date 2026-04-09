@@ -548,6 +548,29 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				}
 			}
 
+			// ── Validate declared outputs exist (every hat transition) ──
+			const unitOutputs = (unitFm.outputs as string[]) || []
+			if (unitOutputs.length > 0) {
+				const iDir = intentDir(args.intent as string)
+				const escaped = unitOutputs.filter(o => {
+					const resolved = resolve(iDir, o)
+					return !resolved.startsWith(resolve(iDir) + "/")
+				})
+				if (escaped.length > 0) {
+					return text(JSON.stringify({ error: "unit_outputs_escaped", escaped, message: `Cannot advance hat: ${escaped.length} output path(s) escape the intent directory: ${escaped.join(", ")}. Fix the outputs in the unit frontmatter.` }))
+				}
+				const missing = unitOutputs.filter(o => {
+					const resolved = resolve(iDir, o)
+					if (!resolved.startsWith(resolve(iDir) + "/")) return false // escaped — already caught above
+					return !existsSync(resolved)
+				})
+				if (missing.length > 0) {
+					const sf = args.state_file as string | undefined
+					if (sf) logSessionEvent(sf, { event: "outputs_missing", intent: args.intent, stage: advStage, unit: args.unit, missing })
+					return text(JSON.stringify({ error: "unit_outputs_missing", missing, message: `Cannot advance hat: ${missing.length} declared output(s) not found: ${missing.join(", ")}. Create them or remove them from the outputs list.` }))
+				}
+			}
+
 			// Resolve hat sequence
 			const stageHats = resolveStageHats(args.intent as string, advStage)
 			const currentIdx = stageHats.indexOf(currentHat)
@@ -563,29 +586,6 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 					const sf = args.state_file as string | undefined
 					if (sf) logSessionEvent(sf, { event: "criteria_not_met", intent: args.intent, stage: advStage, unit: args.unit, unchecked })
 					return text(JSON.stringify({ error: "criteria_not_met", unchecked, message: `Cannot complete unit: ${unchecked} completion criteria still unchecked. Address them, then call haiku_unit_advance_hat again.` }))
-				}
-
-				// Verify declared outputs exist (paths relative to intent directory)
-				const unitOutputs = (unitFm.outputs as string[]) || []
-				if (unitOutputs.length > 0) {
-					const iDir = intentDir(args.intent as string)
-					const escaped = unitOutputs.filter(o => {
-						const resolved = resolve(iDir, o)
-						return !resolved.startsWith(resolve(iDir) + "/")
-					})
-					if (escaped.length > 0) {
-						return text(JSON.stringify({ error: "unit_outputs_escaped", escaped, message: `Cannot complete unit: ${escaped.length} output path(s) escape the intent directory: ${escaped.join(", ")}. Fix the outputs in the unit frontmatter.` }))
-					}
-					const missing = unitOutputs.filter(o => {
-						const resolved = resolve(iDir, o)
-						if (!resolved.startsWith(resolve(iDir) + "/")) return false // escaped — already caught above
-						return !existsSync(resolved)
-					})
-					if (missing.length > 0) {
-						const sf = args.state_file as string | undefined
-						if (sf) logSessionEvent(sf, { event: "outputs_missing", intent: args.intent, stage: advStage, unit: args.unit, missing })
-						return text(JSON.stringify({ error: "unit_outputs_missing", missing, message: `Cannot complete unit: ${missing.length} declared output(s) not found: ${missing.join(", ")}. Create them, then call haiku_unit_advance_hat again.` }))
-					}
 				}
 
 				setFrontmatterField(advPath, "status", "completed")
