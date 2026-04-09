@@ -9,7 +9,7 @@ For trivial tasks (fix typos, rename variables, update configs, small refactors 
 
 ## Process
 
-1. **Pre-checks:** Reject cowork mode, check for active intent conflicts, validate scope is truly trivial
+1. **Pre-checks:** Check for active intent conflicts, validate scope is truly trivial
 2. **Create temporary artifacts** in `.haiku/quick/` (gitignored, for hook integration)
 3. **Run hat loop** for the specified stage (default: development):
    - Resolve hat sequence from stage definition

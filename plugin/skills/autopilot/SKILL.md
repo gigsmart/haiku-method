@@ -19,5 +19,4 @@ Run the full H·AI·K·U lifecycle autonomously from description to delivery.
 - MUST pause on blockers or ambiguity — never guess
 - MUST pause if >5 units generated during elaboration (scope check with user)
 - MUST pause before creating PR (delivery check)
-- MUST NOT run in cowork mode
 - MUST stop immediately on phase-level failures

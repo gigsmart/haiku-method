@@ -10,8 +10,6 @@ Reverse-engineer an existing feature into H·AI·K·U intent artifacts for `/hai
 ## Process
 
 ### Phase 0 — Pre-checks
-- Reject cowork mode
-- Verify git repository
 - Check for slug conflicts
 
 ### Phase 1 — Gather description
