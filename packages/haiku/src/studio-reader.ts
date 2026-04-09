@@ -2,7 +2,10 @@
 
 import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { join } from "node:path"
-import { studioSearchPaths, validateIdentifier } from "./prompts/helpers.js"
+import { studioSearchPaths as _studioSearchPaths, validateIdentifier } from "./prompts/helpers.js"
+
+// Re-export so consumers don't need to reach into prompts/helpers
+export const studioSearchPaths = _studioSearchPaths
 import { parseFrontmatter } from "./state-tools.js"
 
 /** Read a studio stage definition file */

@@ -32,8 +32,8 @@ import { createIntentBranch, isOnIntentBranch, createUnitWorktree } from "./git-
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
 import { computeWaves, topologicalSort } from "./dag.js"
 import type { DAGGraph } from "./types.js"
-import { studioSearchPaths, validateIdentifier } from "./prompts/helpers.js"
-import { readStageDef, readHatDefs, readReviewAgentDefs, listStudios } from "./studio-reader.js"
+import { validateIdentifier } from "./prompts/helpers.js"
+import { readStageDef, readHatDefs, readReviewAgentDefs, listStudios, studioSearchPaths } from "./studio-reader.js"
 
 // ── Path helpers ───────────────────────────────────────────────────────────
 
@@ -468,9 +468,13 @@ export function runNext(slug: string): OrchestratorAction {
 
 	// No studio selected yet — agent must call haiku_select_studio
 	if (!studio) {
+		// Include available studios so the agent can present them conversationally
+		// even if elicitation is unavailable (e.g., cowork mode)
+		const available = listStudios().map(s => ({ name: s.name, description: (s.data.description as string) || "" }))
 		return {
 			action: "select_studio",
 			intent: slug,
+			available_studios: available,
 			message: `Intent '${slug}' has no studio selected. Call haiku_select_studio { intent: "${slug}" } to choose a lifecycle studio.`,
 		}
 	}
@@ -1338,14 +1342,17 @@ function buildRunInstructions(
 				if (stageDef.data.inputs) sections.push(`**Inputs:** ${JSON.stringify(stageDef.data.inputs)}`)
 			}
 
-			// Discovery artifact definitions
-			for (const base of studioSearchPaths()) {
+			// Discovery artifact definitions (project overrides plugin for same-named files)
+			const discoveryFiles = new Map<string, string>()
+			for (const base of [...studioSearchPaths()].reverse()) {
 				const discoveryDir = join(base, studio, "stages", stage, "discovery")
 				if (!existsSync(discoveryDir)) continue
 				for (const f of readdirSync(discoveryDir).filter(f => f.endsWith(".md"))) {
-					sections.push(`### ${f}\n\n${readFileSync(join(discoveryDir, f), "utf8")}`)
+					discoveryFiles.set(f, readFileSync(join(discoveryDir, f), "utf8"))
 				}
-				break
+			}
+			for (const [f, content] of discoveryFiles) {
+				sections.push(`### ${f}\n\n${content}`)
 			}
 
 			// Detect design stages and add MCP provider instructions
@@ -2329,11 +2336,14 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 				}
 			}
 		} else {
-			// No elicitation available
-			return {
-				content: [{ type: "text" as const, text: `Elicitation unavailable. Pass a single studio in the options array to auto-select. Available: ${allStudioNames.join(", ")}` }],
-				isError: true,
-			}
+			// No elicitation available — return studio list so agent can ask conversationally
+			const studioDescriptions = allStudios.map(s => `- **${s.name}**: ${(s.data.description as string) || ""}`).join("\n")
+			return text(JSON.stringify({
+				action: "select_studio_conversational",
+				intent: slug,
+				available_studios: allStudios.map(s => ({ name: s.name, description: (s.data.description as string) || "" })),
+				message: `Elicitation unavailable. Ask the user which studio to use, then call haiku_select_studio { intent: "${slug}", options: ["<chosen-studio>"] } with a single option to auto-select.\n\nAvailable studios:\n${studioDescriptions}`,
+			}, null, 2))
 		}
 
 		if (!selectedStudio) {
