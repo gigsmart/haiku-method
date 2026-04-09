@@ -161,10 +161,16 @@ export function validateBranch(intent: string, expectedType: "intent" | "unit", 
 	return ""
 }
 
-/** Returns a warning string if git push failed, empty string otherwise. Agent sees this and can try to resolve. */
+/** Returns a warning string if git push failed, empty string otherwise. Safe to append to plain text responses. */
 function pushWarning(result: ReturnType<typeof gitCommitState>): string {
 	if (result.pushed || !result.committed) return ""
 	return `\n\n⚠️ GIT PUSH FAILED: ${result.pushError || "unknown error"}. Run \`git pull --rebase && git push\` to sync with remote. If there are conflicts, resolve them then push again.`
+}
+
+/** Injects push warning into a JSON object's message field if push failed. */
+function injectPushWarning(obj: Record<string, unknown>, result: ReturnType<typeof gitCommitState>): Record<string, unknown> {
+	if (result.pushed || !result.committed) return obj
+	return { ...obj, push_failed: true, push_error: result.pushError || "unknown error", message: `${obj.message || ""}. ⚠️ GIT PUSH FAILED: ${result.pushError || "unknown error"}. Run \`git pull --rebase && git push\` to resolve.` }
 }
 
 /**
@@ -620,7 +626,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 						return text(`completed (last hat)${mergeNote}. Other units still in progress — waiting on wave to finish.${pushWarning(completeGit)}`)
 					}
 					// Otherwise, return the next FSM action (next wave, phase advance, etc.)
-					return text(JSON.stringify({ ...next, _unit_completed: args.unit, _merge: mergeNote }, null, 2) + pushWarning(completeGit))
+					return text(JSON.stringify(injectPushWarning({ ...next, _unit_completed: args.unit, _merge: mergeNote }, completeGit), null, 2))
 				}
 
 				return text(`completed (last hat)${mergeNote}${pushWarning(completeGit)}`)
@@ -641,7 +647,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			// Internally call runNext — returns continue_unit with next hat context for the parent
 			if (_runNext) {
 				const next = _runNext(args.intent as string)
-				return text(JSON.stringify({ ...next, _hat_advanced: nextHat }, null, 2) + pushWarning(advGit))
+				return text(JSON.stringify(injectPushWarning({ ...next, _hat_advanced: nextHat }, advGit), null, 2))
 			}
 
 			const hatScope = resolveStageScope(args.intent as string, advStage)

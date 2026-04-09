@@ -115,16 +115,20 @@ export function mergeUnitWorktree(slug: string, unit: string): { success: boolea
 		run(["git", "merge", unitBranch, "--no-edit", "-m", `haiku: merge ${unit}`])
 
 		// Push intent branch to keep remote in sync
+		let pushFailed = ""
 		try {
 			run(["git", "push"])
-		} catch {
-			// Push failure is non-fatal — will sync on next push
+		} catch (pushErr) {
+			pushFailed = pushErr instanceof Error ? pushErr.message : String(pushErr)
 		}
 
 		// Clean up worktree and branch
 		tryRun(["git", "worktree", "remove", worktreePath, "--force"])
 		tryRun(["git", "branch", "-d", unitBranch])
 
+		if (pushFailed) {
+			return { success: true, message: `merged ${unitBranch} (⚠️ push failed: ${pushFailed}. Run git pull --rebase && git push to sync.)` }
+		}
 		return { success: true, message: `merged ${unitBranch}` }
 	} catch (err) {
 		return { success: false, message: err instanceof Error ? err.message : String(err) }
