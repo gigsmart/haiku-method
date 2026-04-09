@@ -10,6 +10,7 @@ export interface HaikuIntent {
   stagesComplete: number;
   stagesTotal: number;
   status: string;
+  createdAt: string | null;
   startedAt: string | null;
   completedAt: string | null;
   composite: Array<{ studio: string; stages: string[] }> | null;

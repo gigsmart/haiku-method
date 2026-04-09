@@ -715,19 +715,9 @@ export function PortfolioView({
 				<div className="space-y-3">
 					{[...intents]
 						.sort((a, b) => {
-							// Active first, then completed, then archived
-							const statusOrder: Record<string, number> = {
-								active: 0,
-								blocked: 1,
-								completed: 2,
-								archived: 3,
-							}
-							const sa = statusOrder[a.status] ?? 1
-							const sb = statusOrder[b.status] ?? 1
-							if (sa !== sb) return sa - sb
-							// Within same status, sort by start date descending (newest first)
-							const da = a.startedAt ? new Date(a.startedAt).getTime() : 0
-							const db = b.startedAt ? new Date(b.startedAt).getTime() : 0
+							// Chronological, newest first by created date
+							const da = a.createdAt ? new Date(a.createdAt).getTime() : a.startedAt ? new Date(a.startedAt).getTime() : 0
+							const db = b.createdAt ? new Date(b.createdAt).getTime() : b.startedAt ? new Date(b.startedAt).getTime() : 0
 							return db - da
 						})
 						.map((intent) => (
