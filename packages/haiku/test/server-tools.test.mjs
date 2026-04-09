@@ -124,9 +124,8 @@ const expectedStateTools = [
   "haiku_unit_set",
   "haiku_unit_list",
   "haiku_unit_start",
-  "haiku_unit_complete",
   "haiku_unit_advance_hat",
-  "haiku_unit_fail",
+  "haiku_unit_reject_hat",
   "haiku_unit_increment_bolt",
   "haiku_knowledge_list",
   "haiku_knowledge_read",
@@ -169,14 +168,14 @@ test("haiku_intent_get requires slug and field", () => {
   assert.deepStrictEqual(tool.inputSchema.required, ["slug", "field"])
 })
 
-test("haiku_unit_start requires intent, stage, unit, hat", () => {
+test("haiku_unit_start requires intent, unit", () => {
   const tool = stateToolDefs.find((t) => t.name === "haiku_unit_start")
-  assert.deepStrictEqual(tool.inputSchema.required, ["intent", "stage", "unit", "hat"])
+  assert.deepStrictEqual(tool.inputSchema.required, ["intent", "unit"])
 })
 
-test("haiku_unit_complete requires intent, stage, unit", () => {
-  const tool = stateToolDefs.find((t) => t.name === "haiku_unit_complete")
-  assert.deepStrictEqual(tool.inputSchema.required, ["intent", "stage", "unit"])
+test("haiku_unit_reject_hat requires intent, unit", () => {
+  const tool = stateToolDefs.find((t) => t.name === "haiku_unit_reject_hat")
+  assert.deepStrictEqual(tool.inputSchema.required, ["intent", "unit"])
 })
 
 test("haiku_unit_set requires intent, stage, unit, field, value", () => {
@@ -207,12 +206,10 @@ test("haiku_intent_create has optional slug and context", () => {
   assert.ok(!tool.inputSchema.required.includes("context"))
 })
 
-test("haiku_go_back has optional target_stage and target_phase", () => {
+test("haiku_go_back requires intent only", () => {
   const tool = orchestratorToolDefs.find((t) => t.name === "haiku_go_back")
-  assert.ok("target_stage" in tool.inputSchema.properties)
-  assert.ok("target_phase" in tool.inputSchema.properties)
-  assert.ok(!tool.inputSchema.required.includes("target_stage"))
-  assert.ok(!tool.inputSchema.required.includes("target_phase"))
+  assert.deepStrictEqual(tool.inputSchema.required, ["intent"])
+  assert.ok("intent" in tool.inputSchema.properties)
 })
 
 test("haiku_intent_list requires no arguments", () => {

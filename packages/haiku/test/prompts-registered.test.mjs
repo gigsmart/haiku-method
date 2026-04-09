@@ -51,6 +51,8 @@ async function testAsync(name, fn) {
   }
 }
 
+try {
+
 // ── Create a minimal .haiku project for prompts that read state ───────────
 
 let projectCounter = 0
@@ -410,8 +412,8 @@ await testAsync("returns empty completions for unknown argument", async () => {
 
 // ── Cleanup ───────────────────────────────────────────────────────────────
 
-try {
-  console.log(`\n${passed} passed, ${failed} failed\n`)
+console.log(`\n${passed} passed, ${failed} failed\n`)
+
 } finally {
   process.chdir(origCwd)
   rmSync(tmp, { recursive: true })

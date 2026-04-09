@@ -36,6 +36,8 @@ function test(name, fn) {
   }
 }
 
+try {
+
 // Helper: create a full project with .haiku, studio, stages
 function createProject(name, opts = {}) {
   const projDir = join(tmp, name)
@@ -477,8 +479,8 @@ stages: []
 
 // ── Cleanup ───────────────────────────────────────────────────────────────
 
-try {
-  console.log(`\n${passed} passed, ${failed} failed\n`)
+console.log(`\n${passed} passed, ${failed} failed\n`)
+
 } finally {
   process.chdir(origCwd)
   rmSync(tmp, { recursive: true })

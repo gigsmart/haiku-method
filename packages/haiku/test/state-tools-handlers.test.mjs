@@ -7,7 +7,7 @@ import { join } from "node:path"
 import { tmpdir } from "node:os"
 import assert from "node:assert"
 
-import { handleStateTool, stateToolDefs } from "../src/state-tools.ts"
+import { handleStateTool, stateToolDefs, setFrontmatterField, unitPath } from "../src/state-tools.ts"
 
 // ── Setup ──────────────────────────────────────────────────────────────────
 
@@ -360,7 +360,11 @@ test("increments again correctly", () => {
 })
 
 test("enforces max bolt limit", () => {
-  // Bolt on unit-01 is now at 4 from prior increment tests (2 → 3 → 4).
+  // Explicitly set bolt to 4 so this test doesn't depend on prior test side effects.
+  // Use setFrontmatterField directly to store bolt as a proper number (haiku_unit_set stores strings).
+  const uPath = unitPath(intentSlug, "inception", "unit-01-discovery")
+  setFrontmatterField(uPath, "bolt", 4)
+
   // Incrementing from 4 should go to 5 (the limit).
   const result = handleStateTool("haiku_unit_increment_bolt", { intent: intentSlug, stage: "inception", unit: "unit-01-discovery" })
   assert.strictEqual(getTextResult(result), "5")
@@ -371,31 +375,14 @@ test("enforces max bolt limit", () => {
   assert.strictEqual(parsed.error, "max_bolts_exceeded")
 })
 
-// ── haiku_unit_complete ───────────────────────────────────────────────────
+// ── haiku_unit_reject_hat ─────────────────────────────────────────────────
 
-console.log("\n=== haiku_unit_complete ===")
+console.log("\n=== haiku_unit_reject_hat ===")
 
-test("rejects completion when criteria unchecked", () => {
-  const result = handleStateTool("haiku_unit_complete", { intent: intentSlug, stage: "inception", unit: "unit-02-elaborate" })
+test("returns error for missing unit", () => {
+  const result = handleStateTool("haiku_unit_reject_hat", { intent: intentSlug, unit: "unit-99-missing" })
   const parsed = JSON.parse(getTextResult(result))
-  assert.strictEqual(parsed.error, "criteria_not_met")
-  assert.ok(parsed.unchecked > 0)
-})
-
-test("completes unit when all criteria checked", () => {
-  // unit-01 has all criteria checked
-  // Reset bolt to avoid max_bolts issue — need to set it manually
-  handleStateTool("haiku_unit_set", { intent: intentSlug, stage: "inception", unit: "unit-01-discovery", field: "bolt", value: "2" })
-  const result = handleStateTool("haiku_unit_complete", { intent: intentSlug, stage: "inception", unit: "unit-01-discovery" })
-  const text = getTextResult(result)
-  assert.ok(text.startsWith("ok"), `Expected 'ok', got: ${text}`)
-})
-
-test("completed unit has status and timestamp", () => {
-  const status = handleStateTool("haiku_unit_get", { intent: intentSlug, stage: "inception", unit: "unit-01-discovery", field: "status" })
-  assert.strictEqual(getTextResult(status), "completed")
-  const completed = handleStateTool("haiku_unit_get", { intent: intentSlug, stage: "inception", unit: "unit-01-discovery", field: "completed_at" })
-  assert.ok(getTextResult(completed).length > 0, "completed_at should be set")
+  assert.strictEqual(parsed.error, "unit_not_found")
 })
 
 // ── haiku_knowledge_list ──────────────────────────────────────────────────
