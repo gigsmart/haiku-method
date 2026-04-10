@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.95.1] - 2026-04-10
+
+### Added
+- Share remote review sessions with collaborators using localtunnel.
+
+### Fixed
+- Intent review gate now correctly enforces review stage gates.
+- Intent review workflow handles tunnel reconnections during code change review.
+
 ## [1.95.0] - 2026-04-09
 
 ### Added
