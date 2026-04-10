@@ -1,0 +1,3 @@
+# Conversation Context
+
+Discussion established three key pieces: (1) Cowork can't bind ports or connect to localhost, so the existing HTTP server + localtunnel review flow won't work. (2) MCP Apps extension (modelcontextprotocol.io/extensions/apps) solves this — tools declare _meta.ui.resourceUri pointing to ui:// resources, host renders bundled HTML in sandboxed iframes, bidirectional communication via postMessage. (3) The App class provides callServerTool(), updateModelContext(), and sendMessage() for the review app to submit decisions back to the FSM without polling. Also removed the dead get_review_status tool as part of cleanup.

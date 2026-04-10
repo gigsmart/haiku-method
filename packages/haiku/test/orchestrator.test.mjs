@@ -205,20 +205,34 @@ test("returns error for archived intent", () => {
 
 console.log("\n=== runNext: intent review gate ===")
 
-test("returns gate_review for unreviewed intent", () => {
-  const { projDir, slug } = createProject("intent-review-gate", { intent_reviewed: false })
+test("elaborate-to-execute gate uses intent_review context for unreviewed intent", () => {
+  const { projDir, slug, intentDirPath } = createProject("intent-review-elab", {
+    intent_reviewed: false,
+    active_stage: "plan",
+    stageConfig: { plan: { elaboration: "directed" } },
+  })
+  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
+  createUnit(intentDirPath, "plan", "unit-01-first")
   process.chdir(projDir)
   const result = runNext(slug)
   assert.strictEqual(result.action, "gate_review")
   assert.strictEqual(result.gate_context, "intent_review")
   assert.strictEqual(result.gate_type, "ask")
+  assert.strictEqual(result.next_phase, "execute")
 })
 
-test("skips intent review gate when already reviewed", () => {
-  const { projDir, slug } = createProject("intent-reviewed", { intent_reviewed: true })
+test("elaborate-to-execute gate uses normal context for reviewed intent", () => {
+  const { projDir, slug, intentDirPath } = createProject("intent-reviewed-elab", {
+    intent_reviewed: true,
+    active_stage: "plan",
+    stageConfig: { plan: { elaboration: "directed" } },
+  })
+  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
+  createUnit(intentDirPath, "plan", "unit-01-first")
   process.chdir(projDir)
   const result = runNext(slug)
-  assert.strictEqual(result.action, "start_stage")
+  assert.strictEqual(result.action, "gate_review")
+  assert.strictEqual(result.gate_context, "elaborate_to_execute")
 })
 
 // ── runNext: start first stage ────────────────────────────────────────────

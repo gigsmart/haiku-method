@@ -7,7 +7,62 @@ const EPHEMERAL_SECRET = randomBytes(32)
 // Per-session E2E encryption keys — keyed by session ID
 const e2eKeys = new Map<string, Buffer>()
 
+// Base58 alphabet (no 0/O/I/l ambiguity)
+const BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
+function base58encode(buf: Buffer): string {
+	let result = ""
+	for (const byte of buf) {
+		result += BASE58[byte % 58]
+	}
+	return result
+}
+
+// Unique per-process subdomain — UUIDv7-like timestamp + random, base58 encoded
+const PROCESS_SUBDOMAIN = (() => {
+	const ts = Buffer.alloc(6)
+	const now = Date.now()
+	ts.writeUIntBE(now, 0, 6)
+	const rand = randomBytes(4)
+	return `haiku-${base58encode(Buffer.concat([ts, rand]))}`
+})()
+
 let activeTunnel: Awaited<ReturnType<typeof localtunnel>> | null = null
+let tunnelPort: number | null = null
+let reconnecting = false
+let intentionallyClosed = false
+let healthCheckTimer: ReturnType<typeof setInterval> | null = null
+
+const HEALTH_CHECK_INTERVAL = 30_000 // 30s
+
+async function healthCheck(): Promise<void> {
+	if (!activeTunnel || intentionallyClosed || reconnecting) return
+	try {
+		const res = await fetch(`${activeTunnel.url}/health`, {
+			headers: { "bypass-tunnel-reminder": "1" },
+			signal: AbortSignal.timeout(10_000),
+		})
+		if (!res.ok) throw new Error(`HTTP ${res.status}`)
+	} catch {
+		console.error("[haiku] Tunnel health check failed — reconnecting")
+		activeTunnel?.close()
+		activeTunnel = null
+		reconnectTunnel()
+	}
+}
+
+function startHealthCheck(): void {
+	stopHealthCheck()
+	healthCheckTimer = setInterval(healthCheck, HEALTH_CHECK_INTERVAL)
+	healthCheckTimer.unref() // don't keep process alive
+}
+
+function stopHealthCheck(): void {
+	if (healthCheckTimer) {
+		clearInterval(healthCheckTimer)
+		healthCheckTimer = null
+	}
+}
 
 function base64url(data: string | Buffer): string {
 	const b64 = typeof data === "string" ? Buffer.from(data).toString("base64") : data.toString("base64")
@@ -30,28 +85,78 @@ export function signJWT(payload: {
 	return `${header}.${body}.${signature}`
 }
 
+async function reconnectTunnel(): Promise<void> {
+	if (reconnecting || intentionallyClosed || !tunnelPort) return
+	reconnecting = true
+	const maxRetries = 5
+	for (let attempt = 0; attempt < maxRetries; attempt++) {
+		if (intentionallyClosed) break
+		const delay = attempt === 0 ? 0 : Math.min(1000 * Math.pow(2, attempt - 1), 30000)
+		console.error(`[haiku] Tunnel reconnect attempt ${attempt + 1}/${maxRetries}${delay ? ` in ${delay}ms` : ""}`)
+		if (delay) await new Promise((r) => setTimeout(r, delay))
+		try {
+			const tunnel = await localtunnel({ port: tunnelPort, subdomain: PROCESS_SUBDOMAIN })
+			activeTunnel = tunnel
+			attachTunnelListeners(tunnel)
+			console.error(`[haiku] Tunnel reconnected: ${tunnel.url}`)
+			startHealthCheck()
+			reconnecting = false
+			return
+		} catch (err) {
+			console.error(`[haiku] Tunnel reconnect failed:`, err instanceof Error ? err.message : err)
+		}
+	}
+	reconnecting = false
+	console.error(`[haiku] Tunnel reconnect exhausted — giving up after ${maxRetries} attempts`)
+}
+
+function attachTunnelListeners(tunnel: Awaited<ReturnType<typeof localtunnel>>): void {
+	tunnel.on("close", () => {
+		if (activeTunnel === tunnel) {
+			activeTunnel = null
+			stopHealthCheck()
+			console.error("[haiku] Tunnel closed unexpectedly")
+			reconnectTunnel()
+		}
+	})
+
+	tunnel.on("error", (err: Error) => {
+		console.error("[haiku] Tunnel error:", err.message)
+		if (activeTunnel === tunnel) {
+			activeTunnel = null
+			stopHealthCheck()
+			reconnectTunnel()
+		}
+	})
+}
+
 export async function openTunnel(port: number): Promise<string> {
 	if (activeTunnel) {
 		return activeTunnel.url
 	}
 
+	// Wait for an in-progress reconnect rather than racing it
+	if (reconnecting) {
+		await new Promise<void>((resolve) => {
+			const check = setInterval(() => {
+				if (!reconnecting) { clearInterval(check); resolve() }
+			}, 100)
+		})
+		if (activeTunnel) return (activeTunnel as Awaited<ReturnType<typeof localtunnel>>).url
+	}
+
+	tunnelPort = port
+	intentionallyClosed = false
+
 	const maxRetries = 3
 	for (let attempt = 0; attempt < maxRetries; attempt++) {
 		try {
-			const tunnel = await localtunnel({ port })
+			const tunnel = await localtunnel({ port, subdomain: PROCESS_SUBDOMAIN })
 			activeTunnel = tunnel
-
-			tunnel.on("close", () => {
-				if (activeTunnel === tunnel) {
-					activeTunnel = null
-				}
-			})
-
-			tunnel.on("error", (err: Error) => {
-				console.error("[haiku] Tunnel error:", err.message)
-			})
+			attachTunnelListeners(tunnel)
 
 			console.error(`[haiku] Tunnel opened: ${tunnel.url}`)
+			startHealthCheck()
 			return tunnel.url
 		} catch (err) {
 			console.error(`[haiku] Tunnel open failed (attempt ${attempt + 1}/${maxRetries}):`, err instanceof Error ? err.message : err)
@@ -65,6 +170,8 @@ export async function openTunnel(port: number): Promise<string> {
 }
 
 export function closeTunnel(): void {
+	intentionallyClosed = true
+	stopHealthCheck()
 	if (activeTunnel) {
 		activeTunnel.close()
 		activeTunnel = null
