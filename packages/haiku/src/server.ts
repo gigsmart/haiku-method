@@ -31,10 +31,6 @@ import { renderQuestionPage } from "./templates/question-form.js"
 import { renderDesignDirectionPage } from "./templates/design-direction.js"
 import { findHaikuRoot, stageStatePath, readJson, writeJson, parseFrontmatter } from "./state-tools.js"
 
-const GetReviewStatusInput = z.object({
-	session_id: z.string().describe("The review session ID"),
-})
-
 const AskVisualQuestionInput = z.object({
 	questions: z
 		.array(
@@ -154,21 +150,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 		// State management tools
 		...stateToolDefs,
 		// open_review is internal — used by the FSM for gate_ask, not exposed to the agent
-		{
-			name: "get_review_status",
-			description:
-				"Check the status of a review session. Returns the current decision and feedback.",
-			inputSchema: {
-				type: "object" as const,
-				properties: {
-					session_id: {
-						type: "string",
-						description: "The review session ID",
-					},
-				},
-				required: ["session_id"],
-			},
-		},
 		{
 			name: "ask_user_visual_question",
 			description:
@@ -340,99 +321,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 				text: "Error: open_review cannot be called directly. Use haiku_run_next to advance — it validates units and opens the review automatically when ready.",
 			}],
 			isError: true,
-		}
-	}
-
-	if (name === "get_review_status") {
-		const input = GetReviewStatusInput.parse(args)
-		const session = getSession(input.session_id)
-
-		if (!session) {
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: `Error: Session ${input.session_id} not found`,
-					},
-				],
-				isError: true,
-			}
-		}
-
-		if (session.session_type === "question") {
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: JSON.stringify(
-							{
-								session_id: session.session_id,
-								session_type: session.session_type,
-								status: session.status,
-								answers: session.answers,
-							},
-							null,
-							2,
-						),
-					},
-				],
-			}
-		}
-
-		if (session.session_type === "design_direction") {
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: JSON.stringify(
-							{
-								session_id: session.session_id,
-								session_type: session.session_type,
-								status: session.status,
-								selection: session.selection,
-							},
-							null,
-							2,
-						),
-					},
-				],
-			}
-		}
-
-		// Build result with optional annotations
-		const reviewResult: Record<string, unknown> = {
-			session_id: session.session_id,
-			status: session.status,
-			decision: session.decision,
-			feedback: session.feedback,
-			review_type: session.review_type,
-			target: session.target,
-		}
-		if (session.annotations) {
-			// Include pins and comments directly, but only a truncated
-			// screenshot indicator to avoid bloating the text response.
-			// The full screenshot base64 is available via the session object.
-			const annot: Record<string, unknown> = {}
-			if (session.annotations.pins?.length) {
-				annot.pins = session.annotations.pins
-			}
-			if (session.annotations.comments?.length) {
-				annot.comments = session.annotations.comments
-			}
-			if (session.annotations.screenshot) {
-				annot.has_screenshot = true
-				annot.screenshot_length = session.annotations.screenshot.length
-			}
-			reviewResult.annotations = annot
-		}
-
-		return {
-			content: [
-				{
-					type: "text" as const,
-					text: JSON.stringify(reviewResult, null, 2),
-				},
-			],
 		}
 	}
 

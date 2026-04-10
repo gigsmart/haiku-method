@@ -68,10 +68,10 @@ Flag any usage that confuses these distinct concepts:
 - Unit state: `unit-*.md` frontmatter (`bolt`, `hat`, `status`, `started_at`, `completed_at`)
 - MCP tools are the primary state interface — hooks may read directly but should not write lifecycle state
 
-### MCP Tools (22 total)
+### MCP Tools (21 total)
 - 16 state/knowledge tools (`haiku_intent_*`, `haiku_stage_*`, `haiku_unit_*`, `haiku_knowledge_*`)
 - 2 orchestrator tools (`haiku_run_next`, `haiku_gate_approve`)
-- 4 review/visual tools (`open_review`, `get_review_status`, `ask_user_visual_question`, `pick_design_direction`)
+- 3 review/visual tools (`open_review`, `ask_user_visual_question`, `pick_design_direction`)
 
 ## Paper-Specific
 

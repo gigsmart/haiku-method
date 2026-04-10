@@ -54,6 +54,7 @@ studio: ${studio}
 mode: ${opts.mode || "continuous"}
 active_stage: ${opts.active_stage || ""}
 status: ${opts.status || "active"}
+intent_reviewed: ${opts.intent_reviewed !== undefined ? opts.intent_reviewed : true}
 started_at: 2026-04-04T18:00:00Z
 completed_at: null
 ${opts.skip_stages ? `skip_stages: [${opts.skip_stages.join(", ")}]` : ""}
@@ -198,6 +199,40 @@ test("returns error for archived intent", () => {
   const result = runNext(slug)
   assert.strictEqual(result.action, "error")
   assert.ok(result.message.includes("archived"))
+})
+
+// ── runNext: intent review gate ──────────────────────────────────────────
+
+console.log("\n=== runNext: intent review gate ===")
+
+test("elaborate-to-execute gate uses intent_review context for unreviewed intent", () => {
+  const { projDir, slug, intentDirPath } = createProject("intent-review-elab", {
+    intent_reviewed: false,
+    active_stage: "plan",
+    stageConfig: { plan: { elaboration: "directed" } },
+  })
+  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
+  createUnit(intentDirPath, "plan", "unit-01-first")
+  process.chdir(projDir)
+  const result = runNext(slug)
+  assert.strictEqual(result.action, "gate_review")
+  assert.strictEqual(result.gate_context, "intent_review")
+  assert.strictEqual(result.gate_type, "ask")
+  assert.strictEqual(result.next_phase, "execute")
+})
+
+test("elaborate-to-execute gate uses normal context for reviewed intent", () => {
+  const { projDir, slug, intentDirPath } = createProject("intent-reviewed-elab", {
+    intent_reviewed: true,
+    active_stage: "plan",
+    stageConfig: { plan: { elaboration: "directed" } },
+  })
+  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
+  createUnit(intentDirPath, "plan", "unit-01-first")
+  process.chdir(projDir)
+  const result = runNext(slug)
+  assert.strictEqual(result.action, "gate_review")
+  assert.strictEqual(result.gate_context, "elaborate_to_execute")
 })
 
 // ── runNext: start first stage ────────────────────────────────────────────
