@@ -41,13 +41,13 @@ Implement the core cascading model resolution system across the type system, stu
 
 ## Completion Criteria
 
-- [x] `UnitFrontmatter` in `packages/haiku/src/types.ts` includes `model?: string`
-- [x] `readStudio(studio)` function exists in `packages/haiku/src/studio-reader.ts`, exported, reads STUDIO.md using the same search paths as `readStageDef`
-- [x] Orchestrator extracts `unitModel` from unit frontmatter `data` at the same location it extracts `unitRefs`
-- [x] Orchestrator resolves `resolvedModel` using: `unitModel ?? hatModel ?? stageDefault ?? studioDefault`
-- [x] When `resolvedModel` is set, spawn instruction includes `Spawn with \`model: "${resolvedModel}"\`` (exact phrasing so orchestrating agent passes it to the Agent tool `model:` parameter)
-- [x] When `resolvedModel` is undefined, no model line is emitted in spawn instructions
-- [x] `npx tsc --noEmit` passes with zero errors in `packages/haiku/`
+- [ ] `UnitFrontmatter` in `packages/haiku/src/types.ts` includes `model?: string`
+- [ ] `readStudio(studio)` function exists in `packages/haiku/src/studio-reader.ts`, exported, reads STUDIO.md using the same search paths as `readStageDef`
+- [ ] Orchestrator extracts `unitModel` from unit frontmatter `data` at the same location it extracts `unitRefs`
+- [ ] Orchestrator resolves `resolvedModel` using: `unitModel ?? hatModel ?? stageDefault ?? studioDefault`
+- [ ] When `resolvedModel` is set, spawn instruction includes `Spawn with \`model: "${resolvedModel}"\`` (exact phrasing so orchestrating agent passes it to the Agent tool `model:` parameter)
+- [ ] When `resolvedModel` is undefined, no model line is emitted in spawn instructions
+- [ ] `npx tsc --noEmit` passes with zero errors in `packages/haiku/`
 
 ## Out of Scope
 
