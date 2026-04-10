@@ -17,7 +17,7 @@ created_at: '2026-04-10'
 stages:
   - inception
   - development
-active_stage: design
+active_stage: development
 intent_reviewed: true
 ---
 
