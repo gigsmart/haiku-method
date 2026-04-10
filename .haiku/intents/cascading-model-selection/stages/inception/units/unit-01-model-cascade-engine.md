@@ -47,6 +47,7 @@ Implement the core cascading model resolution system across the type system, stu
 - [ ] Orchestrator resolves `resolvedModel` using: `unitModel ?? hatModel ?? stageDefault ?? studioDefault`
 - [ ] When `resolvedModel` is set, spawn instruction includes `Spawn with \`model: "${resolvedModel}"\`` (exact phrasing so orchestrating agent passes it to the Agent tool `model:` parameter)
 - [ ] When `resolvedModel` is undefined, no model line is emitted in spawn instructions
+- [ ] Orchestrator emits a log line or includes `resolvedModel` in the spawn output for observability (so silent fallback to session default is distinguishable from "no model set")
 - [ ] `npx tsc --noEmit` passes with zero errors in `packages/haiku/`
 
 ## Out of Scope

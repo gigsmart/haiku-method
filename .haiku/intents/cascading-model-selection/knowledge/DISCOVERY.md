@@ -14,6 +14,22 @@ H·AI·K·U currently runs every hat on whatever model the parent session uses. 
 
 Cascading model resolution where hat definitions set baseline model preferences and the elaborator overrides per-unit based on complexity assessment. Resolution order: `unit.model > hat.model > stage default > studio default > session default`.
 
+## Considerations & Risks
+
+### Business Risks
+- **Elaborator miscategorization** — If the elaborator consistently assigns `opus` to units that could run on `sonnet`, the feature delivers no cost savings. The `sonnet`-as-default heuristic mitigates this by requiring justification upward.
+- **Opaque model assignments** — If users can't see which model a unit will run on, they can't course-correct bad assignments. Unit-03 (UI display) addresses this directly.
+- **Cost modeling** — No formal cost projections exist. The value proposition is directional (cheaper models for simpler work) rather than quantified. Real savings depend on the distribution of unit complexity across projects.
+
+### Technical Risks
+- **Silent fallback** — If the orchestrating agent doesn't reliably pass `model:` to the Agent tool, the cascade silently falls back to session default with no error signal. The orchestrator should log the resolved model for observability.
+- **`start_units` parallel path** — The multi-unit parallel spawn path (`orchestrator.ts` ~line 1646) is not covered by unit-01. Model cascade will be ignored in autopilot/parallel flows until this is addressed as follow-up work.
+- **Tailwind pre-generation** — Purple CSS classes for opus badge may not exist in `tailwind-generated.ts`. Unit-03 accounts for this.
+
+### Known Gaps (follow-up work)
+- Parallel `start_units` path needs model cascade support
+- No actual `default_model` values set in any STAGE.md or STUDIO.md files (infrastructure without content)
+
 ## Technical Landscape
 
 ### Existing Infrastructure (already in place)
