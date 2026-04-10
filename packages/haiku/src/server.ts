@@ -30,7 +30,7 @@ import { type MockupInfo, renderReviewPage } from "./templates/index.js"
 import { renderQuestionPage } from "./templates/question-form.js"
 import { renderDesignDirectionPage } from "./templates/design-direction.js"
 import { findHaikuRoot, stageStatePath, readJson, writeJson, parseFrontmatter } from "./state-tools.js"
-import { reportError, reportFeedback } from "./sentry.js"
+import { reportError, reportFeedback, isSentryConfigured, flush as flushSentry } from "./sentry.js"
 
 const AskVisualQuestionInput = z.object({
 	questions: z
@@ -333,6 +333,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 	// Feedback tool — submit user feedback to Sentry
 	if (name === "haiku_feedback") {
+		if (!isSentryConfigured()) {
+			return { content: [{ type: "text" as const, text: "Feedback is not available in this installation (Sentry DSN not configured)." }] }
+		}
 		const typedArgs = (args ?? {}) as Record<string, unknown>
 		const message = typedArgs.message as string | undefined
 		if (!message) {
@@ -739,12 +742,14 @@ async function main() {
 process.on("SIGINT", async () => {
 	console.error("Shutting down...")
 	await server.close()
+	await flushSentry()
 	process.exit(0)
 })
 
 process.on("SIGTERM", async () => {
 	console.error("Shutting down...")
 	await server.close()
+	await flushSentry()
 	process.exit(0)
 })
 

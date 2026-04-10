@@ -146,6 +146,7 @@ jobs:
           HAIKU_SENTRY_DSN_MCP: ${{ steps.sentry.outputs.dsn_mcp }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_URL: https://sentry.ops.gigsmart.com
+          SENTRY_ORG: gigsmart
 
       - name: Commit version bump
         id: commit

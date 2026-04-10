@@ -95,7 +95,7 @@ Everything in this section can be skipped entirely. The deployment works without
 | Variable | Purpose | Default |
 |----------|---------|---------|
 | `NEXT_PUBLIC_HAIKU_GITLAB_OAUTH_CLIENT_ID` | GitLab OAuth client ID | (none — GitLab auth disabled) |
-| `SENTRY_BASE_URL` | Sentry API URL (for self-hosted) | `https://sentry.ops.gigsmart.com/api/` |
+| `SENTRY_BASE_URL` | Sentry API URL | `https://sentry.io/api/` (SaaS; the maintainer's Terraform overrides this to a self-hosted instance) |
 | `SENTRY_ORGANIZATION` | Sentry org slug | `gigsmart` |
 
 ### Sentry Setup

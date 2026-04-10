@@ -64,3 +64,14 @@ export function reportFeedback(message: string, sessionCtx?: Record<string, stri
 		})
 	})
 }
+
+/** Whether Sentry is configured. */
+export function isSentryConfigured(): boolean {
+	return SENTRY_DSN !== ""
+}
+
+/** Flush buffered Sentry events before shutdown. */
+export async function flush(timeoutMs = 2000): Promise<void> {
+	if (!SENTRY_DSN) return
+	await Sentry.flush(timeoutMs)
+}
