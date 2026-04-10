@@ -26,7 +26,7 @@ In cowork mode, after elaboration writes `.haiku/` artifacts and creates tickets
 
 ## Execution in Cowork
 
-The `/haiku:resume` skill handles cowork transparently:
+The `/haiku:pickup` skill handles cowork transparently:
 
 - Ensures remote tracking is configured for the intent branch
 - Pulls latest changes before starting each unit

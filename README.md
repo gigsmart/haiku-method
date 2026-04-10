@@ -31,7 +31,7 @@ No external dependencies. The plugin ships a single binary (`plugin/bin/haiku`) 
 
 ```
 /haiku:start              # Create a new intent — describe what you want to do
-/haiku:resume              # The orchestrator tells you what to do next
+/haiku:pickup              # The orchestrator tells you what to do next
 ```
 
 That's it. The orchestrator (`haiku_run_next`) drives the stage loop. You follow the actions it returns.
@@ -77,10 +77,10 @@ Every stage runs the same five-step cycle:
 | Command | Purpose |
 |---------|---------|
 | `/haiku:start` | Create a new intent |
-| `/haiku:resume` | Advance through stages (orchestrator-driven) |
+| `/haiku:pickup` | Advance through stages (orchestrator-driven) |
 | `/haiku:composite` | Create multi-studio intent with sync points |
 | `/haiku:refine` | Amend specs mid-execution or refine upstream stages |
-| `/haiku:review` | Pre-delivery code review |
+| `/haiku:gate-review` | Pre-delivery code review |
 | `/haiku:reflect` | Post-completion analysis |
 | `/haiku:operate` | Post-delivery operational tasks |
 | `/haiku:capacity` | Historical throughput analysis |

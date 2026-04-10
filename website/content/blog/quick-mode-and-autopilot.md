@@ -29,7 +29,7 @@ The key design decisions:
 
 **Builder/reviewer cycle.** Builder hats produce one commit per cycle. If the reviewer rejects, work loops back to the builder. After three failed cycles, quick mode stops and recommends `/elaborate` — the task was not trivial after all. This is scope detection through execution rather than upfront estimation.
 
-**Pre-delivery review.** Every quick mode PR goes through `/haiku:review` before PR creation. The review skill catches issues locally before external CI or review bots see the work. No shortcuts on the way out.
+**Pre-delivery review.** Every quick mode PR goes through `/haiku:gate-review` before PR creation. The review skill catches issues locally before external CI or review bots see the work. No shortcuts on the way out.
 
 **Six named workflows.** Default, TDD, adversarial, design, hypothesis, BDD — each with a different hat sequence tuned for a different kind of task. `/quick tdd` runs test-first. `/quick adversarial` adds a skeptical reviewer. `/quick design` includes design consideration. The workflow shapes the discipline; the discipline runs at full strength regardless of task size.
 

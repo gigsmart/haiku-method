@@ -121,7 +121,7 @@ export function ReviewSidebar({ sessionId, comments, getAnnotations, wsRef, onDe
     setError(null);
     try {
       const annotations = getAnnotations();
-      await submitDecision(sessionId, "external_review", "Submitted for external review. Run /haiku:resume after approval.", annotations, wsRef);
+      await submitDecision(sessionId, "external_review", "Submitted for external review. Run /haiku:pickup after approval.", annotations, wsRef);
       tryCloseTab(setShowClose, { url: `/review/${sessionId}/decide`, body: { decision: "external_review", feedback: "Submitted for external review" } });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -311,7 +311,7 @@ export function ReviewSidebar({ sessionId, comments, getAnnotations, wsRef, onDe
             <div className="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-2xl p-6 max-w-sm mx-4">
               <h3 className="text-base font-semibold text-stone-900 dark:text-stone-100 mb-2">Submit for external review?</h3>
               <p className="text-sm text-stone-600 dark:text-stone-400 mb-4">
-                This will advance to the next stage and submit the work for external review (PR, MR, etc.). Run <code className="px-1 py-0.5 bg-stone-100 dark:bg-stone-800 rounded text-xs">/haiku:resume</code> after external approval to continue.
+                This will advance to the next stage and submit the work for external review (PR, MR, etc.). Run <code className="px-1 py-0.5 bg-stone-100 dark:bg-stone-800 rounded text-xs">/haiku:pickup</code> after external approval to continue.
               </p>
               <div className="flex gap-3">
                 <button

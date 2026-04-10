@@ -53,10 +53,10 @@ The core loop doesn't know or care how work is saved. It just calls the persiste
 The plugin commands shifted from `/ai-dlc:*` to `/haiku:*`:
 
 - `/haiku:start` — create a new intent and select a studio
-- `/haiku:resume` — run the stage pipeline (continuous mode)
+- `/haiku:pickup` — run the stage pipeline (continuous mode)
 - `/haiku:execute` — drive unit implementations within a stage
 - `/haiku:elaborate` — collaborative planning and elaboration
-- `/haiku:review` — pre-delivery quality review
+- `/haiku:gate-review` — pre-delivery quality review
 
 The old commands still work as aliases during the transition period.
 
