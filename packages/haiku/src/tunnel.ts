@@ -1,4 +1,5 @@
-import { randomBytes, createHmac, createCipheriv } from "node:crypto"
+import { randomBytes, createHmac, createHash, createCipheriv } from "node:crypto"
+import { hostname, userInfo } from "node:os"
 import localtunnel from "localtunnel"
 
 // Ephemeral secret — generated once per MCP server lifetime
@@ -9,8 +10,20 @@ const e2eKeys = new Map<string, Buffer>()
 
 let activeTunnel: Awaited<ReturnType<typeof localtunnel>> | null = null
 let tunnelPort: number | null = null
+let tunnelSubdomain: string | null = null
 let reconnecting = false
 let intentionallyClosed = false
+
+/**
+ * Generate a stable subdomain from machine identity.
+ * Hash of hostname + username → deterministic, URL-safe subdomain.
+ * Prefixed with "haiku-" for recognizability.
+ */
+function stableSubdomain(): string {
+	const identity = `${hostname()}:${userInfo().username}`
+	const hash = createHash("sha256").update(identity).digest("hex").slice(0, 12)
+	return `haiku-${hash}`
+}
 
 function base64url(data: string | Buffer): string {
 	const b64 = typeof data === "string" ? Buffer.from(data).toString("base64") : data.toString("base64")
@@ -43,7 +56,7 @@ async function reconnectTunnel(): Promise<void> {
 		console.error(`[haiku] Tunnel reconnect attempt ${attempt + 1}/${maxRetries} in ${delay}ms`)
 		await new Promise((r) => setTimeout(r, delay))
 		try {
-			const tunnel = await localtunnel({ port: tunnelPort })
+			const tunnel = await localtunnel({ port: tunnelPort, subdomain: tunnelSubdomain! })
 			activeTunnel = tunnel
 			attachTunnelListeners(tunnel)
 			console.error(`[haiku] Tunnel reconnected: ${tunnel.url}`)
@@ -81,12 +94,13 @@ export async function openTunnel(port: number): Promise<string> {
 	}
 
 	tunnelPort = port
+	tunnelSubdomain = stableSubdomain()
 	intentionallyClosed = false
 
 	const maxRetries = 3
 	for (let attempt = 0; attempt < maxRetries; attempt++) {
 		try {
-			const tunnel = await localtunnel({ port })
+			const tunnel = await localtunnel({ port, subdomain: tunnelSubdomain })
 			activeTunnel = tunnel
 			attachTunnelListeners(tunnel)
 
