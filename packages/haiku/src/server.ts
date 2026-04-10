@@ -30,6 +30,7 @@ import { type MockupInfo, renderReviewPage } from "./templates/index.js"
 import { renderQuestionPage } from "./templates/question-form.js"
 import { renderDesignDirectionPage } from "./templates/design-direction.js"
 import { findHaikuRoot, stageStatePath, readJson, writeJson, parseFrontmatter } from "./state-tools.js"
+import { reportError, reportFeedback } from "./sentry.js"
 
 const AskVisualQuestionInput = z.object({
 	questions: z
@@ -294,6 +295,30 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 				required: ["intent_slug"],
 			},
 		},
+		{
+			name: "haiku_feedback",
+			description:
+				"Submit user feedback or a bug report to the H·AI·K·U team via Sentry. " +
+				"Use this when a user wants to report an issue, suggest an improvement, or share feedback.",
+			inputSchema: {
+				type: "object" as const,
+				properties: {
+					message: {
+						type: "string",
+						description: "The feedback message or bug report",
+					},
+					contact_email: {
+						type: "string",
+						description: "Optional contact email for follow-up",
+					},
+					name: {
+						type: "string",
+						description: "Optional name of the person submitting feedback",
+					},
+				},
+				required: ["message"],
+			},
+		},
 	],
 }))
 
@@ -304,6 +329,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	// Orchestration tools (async — gate_ask blocks until user reviews)
 	if (name === "haiku_run_next" || name === "haiku_go_back" || name === "haiku_intent_create" || name === "haiku_select_studio" || name === "haiku_intent_reset") {
 		return handleOrchestratorTool(name, (args ?? {}) as Record<string, unknown>)
+	}
+
+	// Feedback tool — submit user feedback to Sentry
+	if (name === "haiku_feedback") {
+		const message = (args as Record<string, string>)?.message
+		if (!message) {
+			return { content: [{ type: "text" as const, text: "Error: message is required" }], isError: true }
+		}
+		const contactEmail = (args as Record<string, string>)?.contact_email
+		const userName = (args as Record<string, string>)?.name
+		reportFeedback(message, contactEmail, userName)
+		return { content: [{ type: "text" as const, text: "Feedback submitted. Thank you!" }] }
 	}
 
 	// State management tools
@@ -708,8 +745,6 @@ process.on("SIGTERM", async () => {
 	await server.close()
 	process.exit(0)
 })
-
-import { reportError } from "./sentry.js"
 
 // MCP server entry point — invoked by: haiku mcp
 main().catch((err) => {

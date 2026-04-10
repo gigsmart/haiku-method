@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.28.0",
+    "@sentry/node": "^10.47.0",
     "gray-matter": "^4.0.3",
     "localtunnel": "^2.0.2",
     "marked": "^17.0.5",
