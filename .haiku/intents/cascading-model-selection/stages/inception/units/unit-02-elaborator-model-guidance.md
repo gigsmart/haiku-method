@@ -5,9 +5,9 @@ discipline: documentation
 model: sonnet
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-10T22:14:07Z'
-hat_started_at: '2026-04-10T22:14:07Z'
+hat_started_at: '2026-04-10T22:23:20Z'
 ---
 
 # Elaborator Complexity Assessment & Model Guidance
