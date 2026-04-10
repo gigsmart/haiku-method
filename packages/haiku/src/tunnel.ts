@@ -1,5 +1,4 @@
-import { randomBytes, createHmac, createHash, createCipheriv } from "node:crypto"
-import { hostname, userInfo } from "node:os"
+import { randomBytes, createHmac, createCipheriv } from "node:crypto"
 import localtunnel from "localtunnel"
 
 // Ephemeral secret — generated once per MCP server lifetime
@@ -8,22 +7,30 @@ const EPHEMERAL_SECRET = randomBytes(32)
 // Per-session E2E encryption keys — keyed by session ID
 const e2eKeys = new Map<string, Buffer>()
 
+// Base58 alphabet (no 0/O/I/l ambiguity)
+const BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
+function base58encode(buf: Buffer): string {
+	let result = ""
+	for (const byte of buf) {
+		result += BASE58[byte % 58]
+	}
+	return result
+}
+
+// Unique per-process subdomain — UUIDv7-like timestamp + random, base58 encoded
+const PROCESS_SUBDOMAIN = (() => {
+	const ts = Buffer.alloc(6)
+	const now = Date.now()
+	ts.writeUIntBE(now, 0, 6)
+	const rand = randomBytes(4)
+	return `haiku-${base58encode(Buffer.concat([ts, rand]))}`
+})()
+
 let activeTunnel: Awaited<ReturnType<typeof localtunnel>> | null = null
 let tunnelPort: number | null = null
-let tunnelSubdomain: string | null = null
 let reconnecting = false
 let intentionallyClosed = false
-
-/**
- * Generate a stable subdomain from machine identity.
- * Hash of hostname + username → deterministic, URL-safe subdomain.
- * Prefixed with "haiku-" for recognizability.
- */
-function stableSubdomain(): string {
-	const identity = `${hostname()}:${userInfo().username}`
-	const hash = createHash("sha256").update(identity).digest("hex").slice(0, 12)
-	return `haiku-${hash}`
-}
 
 function base64url(data: string | Buffer): string {
 	const b64 = typeof data === "string" ? Buffer.from(data).toString("base64") : data.toString("base64")
@@ -56,7 +63,7 @@ async function reconnectTunnel(): Promise<void> {
 		console.error(`[haiku] Tunnel reconnect attempt ${attempt + 1}/${maxRetries} in ${delay}ms`)
 		await new Promise((r) => setTimeout(r, delay))
 		try {
-			const tunnel = await localtunnel({ port: tunnelPort, subdomain: tunnelSubdomain! })
+			const tunnel = await localtunnel({ port: tunnelPort, subdomain: PROCESS_SUBDOMAIN })
 			activeTunnel = tunnel
 			attachTunnelListeners(tunnel)
 			console.error(`[haiku] Tunnel reconnected: ${tunnel.url}`)
@@ -94,13 +101,12 @@ export async function openTunnel(port: number): Promise<string> {
 	}
 
 	tunnelPort = port
-	tunnelSubdomain = stableSubdomain()
 	intentionallyClosed = false
 
 	const maxRetries = 3
 	for (let attempt = 0; attempt < maxRetries; attempt++) {
 		try {
-			const tunnel = await localtunnel({ port, subdomain: tunnelSubdomain })
+			const tunnel = await localtunnel({ port, subdomain: PROCESS_SUBDOMAIN })
 			activeTunnel = tunnel
 			attachTunnelListeners(tunnel)
 
