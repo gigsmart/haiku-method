@@ -3,6 +3,11 @@ type: research
 depends_on: []
 discipline: documentation
 model: sonnet
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-10T22:14:07Z'
+hat_started_at: '2026-04-10T22:14:07Z'
 ---
 
 # Elaborator Complexity Assessment & Model Guidance
