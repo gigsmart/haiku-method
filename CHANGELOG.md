@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.95.3] - 2026-04-10
+
+```markdown
+### Added
+- New `/haiku:report` skill for generating structured project reports
+
+### Changed
+- Renamed skills for clarity: `/haiku:release-notes` → `/haiku:changelog`, `/haiku:review` → `/haiku:gate-review`, `/haiku:resume` → `/haiku:pickup`
+
+### Fixed
+- Error telemetry now correctly routes to self-hosted Sentry instance
+```
+
 ## [1.95.2] - 2026-04-10
 
 ### Fixed
