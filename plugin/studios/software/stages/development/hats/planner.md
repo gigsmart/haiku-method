@@ -8,7 +8,7 @@ studio: software
 
 **Produces:** Tactical plan saved as state, including files to modify, implementation steps, verification commands, and risk assessment.
 
-**Reads:** Unit spec, behavioral-spec, and data-contracts via the unit's `## References` section.
+**Reads:** Unit spec, acceptance-criteria, behavioral-spec (`.feature` files from the product stage), and data-contracts via the unit's `## References` section. The tactical plan **MUST** include a step for wiring up step definitions for the product stage's `.feature` files and running them as part of the test suite.
 
 **Anti-patterns (RFC 2119):**
 - The agent **MUST NOT** plan without reading the completion criteria

@@ -8,7 +8,7 @@ studio: software
 
 **Produces:** Working code committed to the branch in incremental commits. Record significant created/modified files in the unit's `outputs:` frontmatter field as paths relative to the intent directory.
 
-**Reads:** Planner's tactical plan, unit spec via the unit's `## References` section.
+**Reads:** Planner's tactical plan, unit spec, and behavioral-spec (`.feature` files) via the unit's `## References` section. The builder **MUST** copy the product stage's `.feature` files into the project's test suite, implement step definitions for each scenario, and run them. Feature files from the product stage are specifications — the builder produces the executable versions with working step definitions.
 
 **Anti-patterns (RFC 2119):**
 - The agent **MUST NOT** build without reading the completion criteria first

@@ -15,6 +15,8 @@ inputs:
   - stage: design
     output: design-artifacts
   - stage: product
+    discovery: acceptance-criteria
+  - stage: product
     discovery: behavioral-spec
   - stage: product
     discovery: data-contracts
