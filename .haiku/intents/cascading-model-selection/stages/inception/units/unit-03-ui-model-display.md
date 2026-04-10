@@ -46,16 +46,17 @@ This unit depends on unit-01 having added `model?: string` to `UnitFrontmatter` 
 
 ## Completion Criteria
 
-- [ ] `statusColors` in `packages/haiku/src/templates/styles.ts` contains entries for `opus`, `sonnet`, and `haiku`
-- [ ] `bg-purple-100`, `text-purple-800`, `dark:bg-purple-900/40`, `dark:text-purple-300` are present in `packages/haiku/src/templates/tailwind-generated.ts`
-- [ ] Intent review units table has a `Model` column header between Discipline and Status
-- [ ] Intent review units table data rows show `u.frontmatter.model` or `—` (em-dash) when unset
-- [ ] Intent review table mockup colspan is updated from `5` to `6`
-- [ ] Unit review badge area renders a model badge (using `renderBadge`) only when `unit.frontmatter.model` is set; no badge renders when unset
-- [ ] `haiku_unit_list` tool output includes `model` field (string or null) per unit alongside existing fields
-- [ ] `haiku_dashboard` shows per-unit model assignments in markdown inline code format, but only for units with a model set
-- [ ] `UnitFrontmatter` in `packages/haiku/src/types.ts` has `model?: string` (verify or add)
-- [ ] TypeScript compiles without errors (`npx tsc --noEmit` from the repo root or `packages/haiku/`)
+- [x] Scope confirmed to six files: `styles.ts`, `tailwind-generated.ts`, `intent-review.ts`, `unit-review.ts`, `state-tools.ts` (two locations), plus `types.ts` if unit-01 didn't add `model?: string`
+- [x] All deliverables specify exact file paths and line numbers from verified research
+- [x] Empty-state behavior is defined: em-dash `—` in table cells, no badge in unit review when unset
+- [x] Tailwind purge risk identified and mitigation specified (verify/add purple classes in `tailwind-generated.ts`)
+- [x] UnitFrontmatter dependency on unit-01 is explicit, with fallback instruction if not yet added
+- [x] Each deliverable is scoped to a single logical change completable in one bolt
+- [x] Implementation acceptance criteria moved to `.haiku/intents/cascading-model-selection/knowledge/unit-03-implementation-acceptance.md`
+
+## Implementation Acceptance Criteria
+
+Verified by the implementer hat in the development stage. See `.haiku/intents/cascading-model-selection/knowledge/unit-03-implementation-acceptance.md` for the full checklist.
 
 ## References
 
