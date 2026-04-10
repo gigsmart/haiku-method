@@ -42,15 +42,7 @@ Research confirmed this is a single-file change. All 21 studios were surveyed â€
 
 ## Implementation Acceptance Criteria
 
-These are verified by the implementer hat in the development stage:
-
-- [ ] `plugin/studios/software/stages/inception/hats/elaborator.md` has a new "Model Assignment" section
-- [ ] The section defines all three tiers (`opus`, `sonnet`, `haiku`) with specific, concrete signals (not vague descriptions)
-- [ ] `sonnet` is identified as the default when complexity is uncertain
-- [ ] The section includes a decision heuristic (start at sonnet, justify up/down)
-- [ ] All four anti-patterns appear as RFC 2119 MUST NOT statements in the updated hat file
-- [ ] The `model:` field is added to the `Produces` section as a required unit frontmatter field
-- [ ] No other studio files are modified (single-file scope confirmed by research)
+These are verified by the implementer hat in the development stage. See `.haiku/intents/cascading-model-selection/knowledge/unit-02-implementation-acceptance.md` for the full checklist.
 
 ## References
 
