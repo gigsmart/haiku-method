@@ -32,13 +32,25 @@ Research confirmed this is a single-file change. All 21 studios were surveyed â€
 
 ## Completion Criteria
 
+- [x] Scope is confirmed to a single file: `plugin/studios/software/stages/inception/hats/elaborator.md` (all 21 studios surveyed â€” only software/inception qualifies)
+- [x] All three complexity tiers are defined in Deliverables with concrete signals distinguishing each
+- [x] `sonnet` is named as the default with explicit justification (start there, justify up/down)
+- [x] Decision heuristic is documented: start at `sonnet`, justify upward to `opus` or downward to `haiku`
+- [x] All four RFC 2119 anti-patterns are specified in the Deliverables with exact MUST NOT language
+- [x] `model:` field addition to `Produces` section is specified as an explicit deliverable item
+- [x] References point to real, verified file paths with no cross-studio files listed
+
+## Implementation Acceptance Criteria
+
+These are verified by the implementer hat in the development stage:
+
 - [ ] `plugin/studios/software/stages/inception/hats/elaborator.md` has a new "Model Assignment" section
 - [ ] The section defines all three tiers (`opus`, `sonnet`, `haiku`) with specific, concrete signals (not vague descriptions)
 - [ ] `sonnet` is identified as the default when complexity is uncertain
 - [ ] The section includes a decision heuristic (start at sonnet, justify up/down)
-- [ ] All four anti-patterns above appear as RFC 2119 MUST NOT statements
+- [ ] All four anti-patterns appear as RFC 2119 MUST NOT statements in the updated hat file
 - [ ] The `model:` field is added to the `Produces` section as a required unit frontmatter field
-- [ ] No other studio files are modified (research confirmed single-file scope)
+- [ ] No other studio files are modified (single-file scope confirmed by research)
 
 ## References
 
