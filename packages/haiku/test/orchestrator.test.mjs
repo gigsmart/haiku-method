@@ -117,11 +117,13 @@ function createStageState(intentDirPath, stage, state) {
 function createUnit(intentDirPath, stage, unitName, opts = {}) {
   const unitsDir = join(intentDirPath, "stages", stage, "units")
   mkdirSync(unitsDir, { recursive: true })
+  const inputs = opts.inputs || ["intent.md"]
   writeFileSync(join(unitsDir, `${unitName}.md`), `---
 name: ${unitName}
 type: ${opts.type || "task"}
 status: ${opts.status || "pending"}
 depends_on: [${(opts.depends_on || []).join(", ")}]
+inputs: [${inputs.join(", ")}]
 bolt: ${opts.bolt || 0}
 hat: ${opts.hat || ""}
 ---
