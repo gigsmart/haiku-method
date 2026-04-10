@@ -1,7 +1,7 @@
 ---
 name: product
 description: Define behavioral specifications and acceptance criteria
-hats: [product]
+hats: [product, specification, validator]
 review: [external, ask]
 elaboration: collaborative
 unit_types: [product]
