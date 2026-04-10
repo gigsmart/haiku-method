@@ -70,8 +70,8 @@ Flag any usage that confuses these distinct concepts:
 
 ### MCP Tools (21 total)
 - 16 state/knowledge tools (`haiku_intent_*`, `haiku_stage_*`, `haiku_unit_*`, `haiku_knowledge_*`)
-- 2 orchestrator tools (`haiku_run_next`, `haiku_gate_approve`)
-- 3 review/visual tools (`open_review`, `ask_user_visual_question`, `pick_design_direction`)
+- 3 orchestrator tools (`haiku_run_next`, `haiku_intent_create`, `haiku_go_back`)
+- 2 review/visual tools (`ask_user_visual_question`, `pick_design_direction`)
 
 ## Paper-Specific
 

@@ -402,7 +402,7 @@ packages/
       hooks/                    # all hooks in TypeScript
 ```
 
-### MCP Tools (23 total)
+### MCP Tools (21 total)
 
 **Orchestrator (3):**
 
