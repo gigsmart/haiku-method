@@ -438,13 +438,12 @@ packages/
 | `haiku_studio_stage_get` | Read a stage definition within a studio |
 | `haiku_settings_get` | Read plugin settings |
 
-**Visual (3):**
+**Visual (2):**
 
 | Tool | Purpose |
 |------|---------|
 | `ask_user_visual_question` | Ask the user questions via a rich HTML page in the browser |
 | `pick_design_direction` | Open a browser-based visual picker for choosing a design direction |
-| `get_review_status` | Check the status and decision of a review session |
 
 ### Automatic Telemetry
 
