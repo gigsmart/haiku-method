@@ -5,9 +5,9 @@ discipline: backend
 model: sonnet
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-10T22:13:51Z'
-hat_started_at: '2026-04-10T22:13:52Z'
+hat_started_at: '2026-04-10T22:16:36Z'
 ---
 
 # Model Cascade Engine
