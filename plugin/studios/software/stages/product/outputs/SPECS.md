@@ -1,8 +1,8 @@
 ---
 name: specs
-location: .haiku/intents/{intent-slug}/stages/product/artifacts/
+location: .haiku/intents/{intent-slug}/
 scope: intent
-format: text
+format: mixed
 required: true
 ---
 
