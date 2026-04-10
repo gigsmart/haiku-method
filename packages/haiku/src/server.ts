@@ -333,13 +333,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 	// Feedback tool — submit user feedback to Sentry
 	if (name === "haiku_feedback") {
-		const message = (args as Record<string, string>)?.message
+		const typedArgs = (args ?? {}) as Record<string, unknown>
+		const message = typedArgs.message as string | undefined
 		if (!message) {
 			return { content: [{ type: "text" as const, text: "Error: message is required" }], isError: true }
 		}
-		const contactEmail = (args as Record<string, string>)?.contact_email
-		const userName = (args as Record<string, string>)?.name
-		reportFeedback(message, contactEmail, userName)
+		const contactEmail = typedArgs.contact_email as string | undefined
+		const userName = typedArgs.name as string | undefined
+		const sessionCtx = typedArgs._session_context as Record<string, string> | undefined
+		reportFeedback(message, sessionCtx, contactEmail, userName)
 		return { content: [{ type: "text" as const, text: "Feedback submitted. Thank you!" }] }
 	}
 
