@@ -822,6 +822,8 @@ export function runNext(slug: string): OrchestratorAction {
 		// For the first stage of a fresh intent (not yet reviewed), this gate
 		// doubles as the intent review — CC review agents have already run
 		// during the review phase, so the user sees validated specs.
+		// Note: if the user rejects and the agent revises, this re-presents
+		// with intent_review context until intent_reviewed is set to true.
 		const intentReviewed = (intent.intent_reviewed as boolean) || false
 		const isIntentReview = currentStage === studioStages[0] && !intentReviewed
 		return {

@@ -91,9 +91,9 @@ async function reconnectTunnel(): Promise<void> {
 	const maxRetries = 5
 	for (let attempt = 0; attempt < maxRetries; attempt++) {
 		if (intentionallyClosed) break
-		const delay = Math.min(1000 * Math.pow(2, attempt), 30000)
-		console.error(`[haiku] Tunnel reconnect attempt ${attempt + 1}/${maxRetries} in ${delay}ms`)
-		await new Promise((r) => setTimeout(r, delay))
+		const delay = attempt === 0 ? 0 : Math.min(1000 * Math.pow(2, attempt - 1), 30000)
+		console.error(`[haiku] Tunnel reconnect attempt ${attempt + 1}/${maxRetries}${delay ? ` in ${delay}ms` : ""}`)
+		if (delay) await new Promise((r) => setTimeout(r, delay))
 		try {
 			const tunnel = await localtunnel({ port: tunnelPort, subdomain: PROCESS_SUBDOMAIN })
 			activeTunnel = tunnel
@@ -133,6 +133,16 @@ function attachTunnelListeners(tunnel: Awaited<ReturnType<typeof localtunnel>>):
 export async function openTunnel(port: number): Promise<string> {
 	if (activeTunnel) {
 		return activeTunnel.url
+	}
+
+	// Wait for an in-progress reconnect rather than racing it
+	if (reconnecting) {
+		await new Promise<void>((resolve) => {
+			const check = setInterval(() => {
+				if (!reconnecting) { clearInterval(check); resolve() }
+			}, 100)
+		})
+		if (activeTunnel) return (activeTunnel as Awaited<ReturnType<typeof localtunnel>>).url
 	}
 
 	tunnelPort = port
