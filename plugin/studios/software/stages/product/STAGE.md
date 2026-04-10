@@ -39,4 +39,4 @@ Bad criteria examples:
 
 ## Completion Signal (RFC 2119)
 
-Behavioral spec **MUST** exist with user flows and error scenarios. Data contracts **MUST** define all API schemas with field types and validation rules. Every acceptance criterion **MUST** have a testable given/when/then scenario. Product owner **MUST** have approved scope.
+Acceptance criteria **MUST** cover all user-facing scenarios with edge cases. Behavioral spec `.feature` files **MUST** exist with scenarios for happy paths and error flows. Data contracts **MUST** define all API schemas with field types and validation rules. Validator hat **MUST** have produced an APPROVED coverage mapping with no gaps.

@@ -247,7 +247,7 @@ Each stage's inputs reference specific outputs from prior stages. If a required 
 |-------|------|---------------|--------|---------|
 | **inception** | researcher, elaborator | completeness, feasibility | auto | Problem understanding, unit elaboration |
 | **design** | designer, design-reviewer | consistency, accessibility | ask | Visual/interaction design |
-| **product** | product-owner, specification-writer | completeness, feasibility | external, ask | Behavioral specs, acceptance criteria |
+| **product** | product, specification, validator | completeness | external, ask | Acceptance criteria, behavioral specs, coverage validation |
 | **development** | planner, builder, reviewer | correctness, security, performance, architecture, test-quality + design:consistency, design:accessibility, product:completeness | ask | Implementation with quality gates |
 | **operations** | ops-engineer, sre | reliability, observability + development:security | auto | Deployment, monitoring, runbooks |
 | **security** | threat-modeler, red-team, blue-team, security-reviewer | threat-coverage, mitigation-effectiveness + development:security, development:architecture, operations:reliability | external, ask | Threat modeling, vulnerability assessment |
