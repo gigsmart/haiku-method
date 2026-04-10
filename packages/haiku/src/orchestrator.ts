@@ -636,22 +636,6 @@ export function runNext(slug: string): OrchestratorAction {
 	const phase = (stageState.phase as string) || ""
 	const stageStatus = (stageState.status as string) || "pending"
 
-	// Intent review gate — first run_next on a fresh intent must be approved by user
-	if (currentStage === studioStages[0] && (!phase || stageStatus === "pending")) {
-		const intentReviewed = (intent.intent_reviewed as boolean) || false
-		if (!intentReviewed) {
-			return {
-				action: "gate_review",
-				intent: slug,
-				studio,
-				stage: currentStage,
-				gate_type: "ask",
-				gate_context: "intent_review",
-				message: `Intent '${slug}' is ready for review. Presenting the intent for your approval before starting work.`,
-			}
-		}
-	}
-
 	// Stage not started yet
 	if (!phase || stageStatus === "pending") {
 		const hats = resolveStageHats(studio, currentStage)
@@ -834,6 +818,12 @@ export function runNext(slug: string): OrchestratorAction {
 		// The review UI blocks until the user approves the specs.
 		// This is handled by the handleOrchestratorTool wrapper which
 		// detects gate_review and calls _openReviewAndWait.
+		//
+		// For the first stage of a fresh intent (not yet reviewed), this gate
+		// doubles as the intent review — CC review agents have already run
+		// during the review phase, so the user sees validated specs.
+		const intentReviewed = (intent.intent_reviewed as boolean) || false
+		const isIntentReview = currentStage === studioStages[0] && !intentReviewed
 		return {
 			action: "gate_review",
 			intent: slug,
@@ -841,8 +831,10 @@ export function runNext(slug: string): OrchestratorAction {
 			stage: currentStage,
 			next_phase: "execute",
 			gate_type: "ask",
-			gate_context: "elaborate_to_execute",
-			message: `Specs validated — opening review before execution`,
+			gate_context: isIntentReview ? "intent_review" : "elaborate_to_execute",
+			message: isIntentReview
+				? `Intent '${slug}' specs ready for review — presenting for your approval`
+				: `Specs validated — opening review before execution`,
 		}
 	}
 
@@ -2107,12 +2099,13 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 				if (stFile) logSessionEvent(stFile, { event: "gate_decision", intent: slug, stage, decision: reviewResult.decision, feedback: reviewResult.feedback })
 				if (reviewResult.decision === "approved") {
 					if (gateContext === "intent_review") {
-						// Intent approved — mark as reviewed and tell agent to start
+						// Intent approved — mark as reviewed AND advance phase to execute
 						const intentFilePath = join(process.cwd(), intentDirPath, "intent.md")
 						setFrontmatterField(intentFilePath, "intent_reviewed", true)
+						if (nextPhase) fsmAdvancePhase(slug, stage, nextPhase)
 						gitCommitState(`haiku: intent ${slug} approved by user`)
 						syncSessionMetadata(slug, args.state_file as string | undefined)
-						const gateResult = { action: "intent_approved", intent: slug, message: `Intent approved — starting work. IMPORTANT: Call haiku_run_next { intent: "${slug}" } immediately. Do NOT ask the user — the transition was already approved.` }
+						const gateResult = { action: "intent_approved", intent: slug, stage, from_phase: "elaborate", to_phase: nextPhase, message: `Intent approved — advancing to ${nextPhase || "execute"}. IMPORTANT: Call haiku_run_next { intent: "${slug}" } immediately. Do NOT ask the user — the transition was already approved.` }
 						return text(withInstructions(gateResult))
 					}
 					if (gateContext === "elaborate_to_execute" && nextPhase) {
@@ -2228,9 +2221,10 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 								if (gateContext === "intent_review") {
 									const intentFilePath = join(process.cwd(), intentDirPath, "intent.md")
 									setFrontmatterField(intentFilePath, "intent_reviewed", true)
+									if (nextPhase) fsmAdvancePhase(slug, stage, nextPhase)
 									gitCommitState(`haiku: intent ${slug} approved by user (elicitation)`)
 									syncSessionMetadata(slug, args.state_file as string | undefined)
-									const elicitApproveResult = { action: "intent_approved", intent: slug, message: `Intent approved — starting work. IMPORTANT: Call haiku_run_next { intent: "${slug}" } immediately.` }
+									const elicitApproveResult = { action: "intent_approved", intent: slug, stage, from_phase: "elaborate", to_phase: nextPhase, message: `Intent approved — advancing to ${nextPhase || "execute"}. Call haiku_run_next immediately.` }
 									return text(withInstructions(elicitApproveResult))
 								}
 								if (gateContext === "elaborate_to_execute" && nextPhase) {

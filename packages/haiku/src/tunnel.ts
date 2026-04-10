@@ -8,6 +8,9 @@ const EPHEMERAL_SECRET = randomBytes(32)
 const e2eKeys = new Map<string, Buffer>()
 
 let activeTunnel: Awaited<ReturnType<typeof localtunnel>> | null = null
+let tunnelPort: number | null = null
+let reconnecting = false
+let intentionallyClosed = false
 
 function base64url(data: string | Buffer): string {
 	const b64 = typeof data === "string" ? Buffer.from(data).toString("base64") : data.toString("base64")
@@ -30,26 +33,62 @@ export function signJWT(payload: {
 	return `${header}.${body}.${signature}`
 }
 
+async function reconnectTunnel(): Promise<void> {
+	if (reconnecting || intentionallyClosed || !tunnelPort) return
+	reconnecting = true
+	const maxRetries = 5
+	for (let attempt = 0; attempt < maxRetries; attempt++) {
+		if (intentionallyClosed) break
+		const delay = Math.min(1000 * Math.pow(2, attempt), 30000)
+		console.error(`[haiku] Tunnel reconnect attempt ${attempt + 1}/${maxRetries} in ${delay}ms`)
+		await new Promise((r) => setTimeout(r, delay))
+		try {
+			const tunnel = await localtunnel({ port: tunnelPort })
+			activeTunnel = tunnel
+			attachTunnelListeners(tunnel)
+			console.error(`[haiku] Tunnel reconnected: ${tunnel.url}`)
+			reconnecting = false
+			return
+		} catch (err) {
+			console.error(`[haiku] Tunnel reconnect failed:`, err instanceof Error ? err.message : err)
+		}
+	}
+	reconnecting = false
+	console.error(`[haiku] Tunnel reconnect exhausted — giving up after ${maxRetries} attempts`)
+}
+
+function attachTunnelListeners(tunnel: Awaited<ReturnType<typeof localtunnel>>): void {
+	tunnel.on("close", () => {
+		if (activeTunnel === tunnel) {
+			activeTunnel = null
+			console.error("[haiku] Tunnel closed unexpectedly")
+			reconnectTunnel()
+		}
+	})
+
+	tunnel.on("error", (err: Error) => {
+		console.error("[haiku] Tunnel error:", err.message)
+		if (activeTunnel === tunnel) {
+			activeTunnel = null
+			reconnectTunnel()
+		}
+	})
+}
+
 export async function openTunnel(port: number): Promise<string> {
 	if (activeTunnel) {
 		return activeTunnel.url
 	}
+
+	tunnelPort = port
+	intentionallyClosed = false
 
 	const maxRetries = 3
 	for (let attempt = 0; attempt < maxRetries; attempt++) {
 		try {
 			const tunnel = await localtunnel({ port })
 			activeTunnel = tunnel
-
-			tunnel.on("close", () => {
-				if (activeTunnel === tunnel) {
-					activeTunnel = null
-				}
-			})
-
-			tunnel.on("error", (err: Error) => {
-				console.error("[haiku] Tunnel error:", err.message)
-			})
+			attachTunnelListeners(tunnel)
 
 			console.error(`[haiku] Tunnel opened: ${tunnel.url}`)
 			return tunnel.url
@@ -65,6 +104,7 @@ export async function openTunnel(port: number): Promise<string> {
 }
 
 export function closeTunnel(): void {
+	intentionallyClosed = true
 	if (activeTunnel) {
 		activeTunnel.close()
 		activeTunnel = null
