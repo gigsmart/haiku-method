@@ -1,5 +1,5 @@
 ---
-name: resume
+name: pickup
 description: Resume an active H·AI·K·U intent — pick up where you left off
 ---
 

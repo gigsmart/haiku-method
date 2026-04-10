@@ -18,7 +18,7 @@ By the end of inception, you'll have a set of spec files in `.haiku/{intent-slug
 | `discovery.md` | Technical exploration findings -- API schemas, codebase patterns, data sources |
 | `mockups/` | Wireframes for frontend/design units (if applicable) |
 
-These files are the contract that the execution phase (`/haiku:resume`) builds against.
+These files are the contract that the execution phase (`/haiku:pickup`) builds against.
 
 ## The Flow
 
@@ -159,14 +159,14 @@ When invoked via `/haiku:autopilot`, inception runs with minimal interaction -- 
 
 After inception, the typical flow is:
 
-1. **Run** (`/haiku:resume`) -- autonomous stage pipeline: stages execute their hat sequences per unit
+1. **Run** (`/haiku:pickup`) -- autonomous stage pipeline: stages execute their hat sequences per unit
 2. **Integration** -- cross-unit validation after all units complete
 3. **Pre-delivery review** -- full-diff, multi-agent code review before PR creation
 4. **PR creation** -- push and open a pull request
 
-The **pre-delivery review** (`/haiku:review`) deserves special mention. It runs specialized review agents in fresh contexts against the full diff -- catching issues that the per-unit reviewer might miss because it only saw one unit at a time. It reads your project's `REVIEW.md` and `CLAUDE.md` for project-specific review rules, and auto-fixes issues in a loop before the PR is created.
+The **pre-delivery review** (`/haiku:gate-review`) deserves special mention. It runs specialized review agents in fresh contexts against the full diff -- catching issues that the per-unit reviewer might miss because it only saw one unit at a time. It reads your project's `REVIEW.md` and `CLAUDE.md` for project-specific review rules, and auto-fixes issues in a loop before the PR is created.
 
-You can also run `/haiku:review` standalone -- after `/haiku:quick`, or on any branch before pushing -- to catch issues before they hit external CI or review bots.
+You can also run `/haiku:gate-review` standalone -- after `/haiku:quick`, or on any branch before pushing -- to catch issues before they hit external CI or review bots.
 
 ## Next Steps
 

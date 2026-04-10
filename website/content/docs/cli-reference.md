@@ -20,13 +20,13 @@ Create a new intent with studio and stage configuration.
 
 **Arguments:** `description` (optional) — describe what you want to build. `template` (optional) — instantiate from a studio intent template.
 
-### `/haiku:resume`
+### `/haiku:pickup`
 
 Run the stage pipeline for the current intent. Progresses through each stage in order, transitioning through the hats defined in each stage's `STAGE.md`.
 
 **Arguments:** `intent` (optional) — intent slug. Auto-detects if only one active intent.
 
-### `/haiku:review`
+### `/haiku:gate-review`
 
 Pre-delivery code review using multi-agent specialized review. Spawns parallel agents for correctness, security, performance, architecture, and test quality. Auto-fixes HIGH findings (up to 3 iterations).
 
@@ -34,7 +34,7 @@ Pre-delivery code review using multi-agent specialized review. Spawns parallel a
 
 ### `/haiku:autopilot`
 
-Full autonomous workflow — create intent, run stages, review, and deliver in one command. Sets mode=autopilot and chains to /haiku:resume.
+Full autonomous workflow — create intent, run stages, review, and deliver in one command. Sets mode=autopilot and chains to /haiku:pickup.
 
 **Arguments:** `description` (optional) — feature description.
 
@@ -78,7 +78,7 @@ Historical throughput analysis from local artifacts. Analyzes completed intents,
 
 **Arguments:** `studio` (optional) — scope analysis to a specific studio.
 
-### `/haiku:release-notes`
+### `/haiku:changelog`
 
 Show the project changelog and release notes.
 

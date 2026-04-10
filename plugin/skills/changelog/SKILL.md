@@ -1,5 +1,5 @@
 ---
-name: release-notes
+name: changelog
 description: Show the project changelog / release notes
 ---
 

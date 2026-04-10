@@ -18,7 +18,7 @@ Get H·AI·K·U running in your project and deliver your first feature. H·AI·K
 | Command | What it does |
 |---------|--------------|
 | `/haiku:start` | Create an intent — define what you're building and select a studio |
-| `/haiku:resume` | Run the stage pipeline — autonomous execution through each stage |
+| `/haiku:pickup` | Run the stage pipeline — autonomous execution through each stage |
 
 ## Your First Feature
 
@@ -44,13 +44,13 @@ AI: What do you want to build?
 User: Add user authentication with email/password
 AI: [Asks clarifying questions via interactive prompts]
 AI: Here are the success criteria I captured...
-AI: Intent created! Run /haiku:resume to start.
+AI: Intent created! Run /haiku:pickup to start.
 ```
 
 ### Step 2: Run Stages
 
 ```
-/haiku:resume
+/haiku:pickup
 ```
 
 The AI now works through the stages defined by your studio. For the **software studio**, stages progress through:
@@ -71,7 +71,7 @@ If the session runs long, the AI will suggest clearing context:
 ```
 AI: "Context getting full. Run /clear to continue."
 User: /clear
-User: /haiku:resume
+User: /haiku:pickup
 ```
 
 Your progress is preserved — the AI picks up where it left off.
@@ -81,9 +81,9 @@ Your progress is preserved — the AI picks up where it left off.
 | Command | Purpose |
 |---------|---------|
 | `/haiku:start` | Create a new intent |
-| `/haiku:resume` | Run the stage pipeline |
-| `/haiku:review` | Pre-delivery code review — catches issues before external CI/bots |
-| `/haiku:resume [slug]` | Resume an existing intent after a break |
+| `/haiku:pickup` | Run the stage pipeline |
+| `/haiku:gate-review` | Pre-delivery code review — catches issues before external CI/bots |
+| `/haiku:pickup [slug]` | Resume an existing intent after a break |
 | `/haiku:quick` | Quick mode for small tasks — skip full pipeline |
 | `/haiku:reset` | Abandon current work and start fresh |
 | `/haiku:autopilot` | Full autonomous workflow — create, run, review, deliver |
@@ -97,7 +97,7 @@ User: Add a dark mode toggle to the settings page
 AI: [Guides through requirements and criteria]
 AI: Intent created!
 
-User: /haiku:resume
+User: /haiku:pickup
 AI: [Works autonomously through inception → development → review]
 AI: Intent complete! All criteria satisfied.
 

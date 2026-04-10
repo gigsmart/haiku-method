@@ -1,5 +1,5 @@
 ---
-name: feedback
+name: report
 description: Submit feedback or a bug report to the H·AI·K·U team
 ---
 

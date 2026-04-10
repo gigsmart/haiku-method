@@ -1041,7 +1041,7 @@ export function runNext(slug: string): OrchestratorAction {
 			}
 			// FSM side effect: complete stage as discrete (paused)
 			fsmStageCompleteDiscrete(slug, currentStage)
-			return { action: "stage_complete_discrete", intent: slug, stage: currentStage, next_stage: nextStage, message: `Stage '${currentStage}' complete. Run /haiku:resume to start '${nextStage}'.` }
+			return { action: "stage_complete_discrete", intent: slug, stage: currentStage, next_stage: nextStage, message: `Stage '${currentStage}' complete. Run /haiku:pickup to start '${nextStage}'.` }
 		}
 
 		if (reviewType === "ask" || reviewType === "external" || reviewType.includes("ask") || reviewType.includes("external")) {
@@ -1095,7 +1095,7 @@ export function runNext(slug: string): OrchestratorAction {
 						intent: slug,
 						stage: currentStage,
 						external_review_url: externalUrl,
-						message: `Stage '${currentStage}' is awaiting external review at: ${externalUrl}. Run /haiku:resume again after approval.`,
+						message: `Stage '${currentStage}' is awaiting external review at: ${externalUrl}. Run /haiku:pickup again after approval.`,
 					}
 				}
 			} else {
@@ -1749,7 +1749,7 @@ function buildRunInstructions(
 				`### Instructions\n\n` +
 				`1. Push the branch and commit stage artifacts\n` +
 				`2. Share the review URL with the reviewer\n` +
-				`3. Report: "Awaiting external review. Run /haiku:resume when review is complete."`,
+				`3. Report: "Awaiting external review. Run /haiku:pickup when review is complete."`,
 			)
 			break
 		}
@@ -1761,7 +1761,7 @@ function buildRunInstructions(
 				`Stage "${stage}" is complete. The gate has been entered by the orchestrator.\n\n` +
 				`### Instructions\n\n` +
 				`1. Report what is being awaited\n` +
-				`2. Stop. Run /haiku:resume when the event occurs.`,
+				`2. Stop. Run /haiku:pickup when the event occurs.`,
 			)
 			break
 		}
@@ -1784,7 +1784,7 @@ function buildRunInstructions(
 				`## Stage Complete (Discrete Mode)\n\n` +
 				`Stage "${stage}" has been completed by the orchestrator.\n\n` +
 				`### Instructions\n\n` +
-				`Report: "Stage complete. Run /haiku:resume to start '${nextStage}'."`,
+				`Report: "Stage complete. Run /haiku:pickup to start '${nextStage}'."`,
 			)
 			break
 		}
@@ -1794,7 +1794,7 @@ function buildRunInstructions(
 				`## Intent Complete\n\n` +
 				`All stages are done for intent "${slug}". The orchestrator has marked it as completed.\n\n` +
 				`### Instructions\n\n` +
-				`Report completion summary. Suggest /haiku:review then PR creation.`,
+				`Report completion summary. Suggest /haiku:gate-review then PR creation.`,
 			)
 			break
 		}
@@ -2137,7 +2137,7 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 						intent: slug,
 						stage,
 						feedback: reviewResult.feedback,
-						message: "External review requested. Submit the work for review through your project's review process (PR, MR, review board, etc.). Include the H·AI·K·U browse link in the description so reviewers can see the intent, units, and knowledge artifacts. Record the review URL via haiku_run_next { intent, external_review_url }. Run /haiku:resume again after approval.",
+						message: "External review requested. Submit the work for review through your project's review process (PR, MR, review board, etc.). Include the H·AI·K·U browse link in the description so reviewers can see the intent, units, and knowledge artifacts. Record the review URL via haiku_run_next { intent, external_review_url }. Run /haiku:pickup again after approval.",
 					}
 					return text(withInstructions(gateResult))
 				}

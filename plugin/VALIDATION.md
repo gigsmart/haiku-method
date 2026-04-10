@@ -87,7 +87,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
    - [ ] Intent fields set during creation (mode, studio, etc.)
    - [ ] One intent per session — `haiku_intent_create` rejects if session already has an active intent
 
-2. **First `/haiku:resume`:**
+2. **First `/haiku:pickup`:**
    - [ ] `haiku_run_next` returns `start_stage` with stage: inception, hats: [architect, elaborator]
    - [ ] Orchestrator performs FSM side effects: writes `state.json` (status: active, phase: elaborate), sets `active_stage`, creates intent branch
    - [ ] Agent follows the returned action
@@ -151,7 +151,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 **Trigger:** User creates intent with mode: discrete.
 
 - [ ] After each stage gate passes, `haiku_run_next` returns `stage_complete_discrete` (not `advance_stage`)
-- [ ] Agent stops and tells user to run `/haiku:resume` for next stage
+- [ ] Agent stops and tells user to run `/haiku:pickup` for next stage
 - [ ] Even `review: auto` gates stop in discrete mode
 
 ---
@@ -173,7 +173,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 
 - [ ] `haiku_run_next` returns `gate_await` — orchestrator enters the gate (sets gate_entered_at)
 - [ ] Agent reports what is being awaited
-- [ ] Intent blocks until user runs `/haiku:resume` again
+- [ ] Intent blocks until user runs `/haiku:pickup` again
 - [ ] On resume: agent confirms event occurred, then advances
 
 ---
@@ -208,7 +208,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 - [ ] Template resolved from `studios/software/templates/new-feature.md`
 - [ ] Parameters substituted: `{{ feature }}` → "OAuth login" in all criteria
 - [ ] Pre-filled units created in appropriate stages
-- [ ] First `/haiku:resume` skips elaboration (units already exist)
+- [ ] First `/haiku:pickup` skips elaboration (units already exist)
 - [ ] `haiku_run_next` returns `advance_phase` from elaborate to execute
 
 ---

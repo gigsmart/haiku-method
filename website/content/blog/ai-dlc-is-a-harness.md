@@ -37,13 +37,13 @@ H·AI·K·U and Anthropic's harnesses occupy the same design space. The concepts
 | File-based inter-agent communication | Intent specs, unit specs, operational plans as file artifacts |
 | Generator-evaluator feedback loops | Operation, review, fail/advance cycle (bolts) |
 | External evaluation driving quality | Backpressure hooks, completion criteria, Stop gates |
-| Context resets with structured handoffs | `/haiku:resume` skill that reconstructs ephemeral state from file artifacts |
+| Context resets with structured handoffs | `/haiku:pickup` skill that reconstructs ephemeral state from file artifacts |
 | "Every component encodes an assumption" | Each hat and phase encodes a guardrail |
 | Harness complexity should decrease with model capability | Regular reassessment of which scaffolding remains necessary |
 
 The vocabulary differs. The architecture rhymes.
 
-H·AI·K·U's hats are Anthropic's specialized agent roles. Both systems assign distinct responsibilities — planning, generating, evaluating — to separate modes of operation rather than letting a single undifferentiated agent try to do everything at once. H·AI·K·U's file artifacts (intent specs, unit specs, scratchpads, iteration state) are the same pattern as Anthropic's file-based inter-agent communication: persistent, structured state that survives context boundaries and enables handoffs. The bolt cycle — operate, review, fail or advance — is a generator-evaluator feedback loop with explicit human-visible transitions. And `/haiku:resume`, which reconstructs ephemeral session state entirely from file artifacts, is a context reset with a structured handoff.
+H·AI·K·U's hats are Anthropic's specialized agent roles. Both systems assign distinct responsibilities — planning, generating, evaluating — to separate modes of operation rather than letting a single undifferentiated agent try to do everything at once. H·AI·K·U's file artifacts (intent specs, unit specs, scratchpads, iteration state) are the same pattern as Anthropic's file-based inter-agent communication: persistent, structured state that survives context boundaries and enables handoffs. The bolt cycle — operate, review, fail or advance — is a generator-evaluator feedback loop with explicit human-visible transitions. And `/haiku:pickup`, which reconstructs ephemeral session state entirely from file artifacts, is a context reset with a structured handoff.
 
 The alignment is not coincidental. These are convergent solutions to the same underlying problem: models cannot sustain complex work across long contexts without external structure.
 
@@ -81,7 +81,7 @@ Domain specificity buys you deterministic quality gates. Generic harnesses have 
 
 Anthropic's harnesses use the Claude Agent SDK to orchestrate separate agent processes. Each agent is a distinct subprocess with its own context window, coordinated by the harness through file-based communication. The harness is a separate orchestration layer that manages agents externally.
 
-H·AI·K·U uses Claude's plugin system — skills, hooks, and CLAUDE.md rules — to shape behavior *within* a single Claude session (Code or Cowork). Skills provide structured commands (`/haiku:elaborate`, `/haiku:resume`, `/haiku:refine`). Hooks enforce backpressure at tool-call boundaries. CLAUDE.md rules inject context and constraints that persist across the session. When Agent Teams is enabled, the plugin spawns independent teammates, but the orchestration still flows through plugin primitives rather than a separate SDK layer.
+H·AI·K·U uses Claude's plugin system — skills, hooks, and CLAUDE.md rules — to shape behavior *within* a single Claude session (Code or Cowork). Skills provide structured commands (`/haiku:elaborate`, `/haiku:pickup`, `/haiku:refine`). Hooks enforce backpressure at tool-call boundaries. CLAUDE.md rules inject context and constraints that persist across the session. When Agent Teams is enabled, the plugin spawns independent teammates, but the orchestration still flows through plugin primitives rather than a separate SDK layer.
 
 This means the harness *is* the development environment. There is no separate system to install, configure, or maintain. You install a plugin and your Claude session gains structured workflows, quality gates, and context management. The harness lives where the work happens.
 

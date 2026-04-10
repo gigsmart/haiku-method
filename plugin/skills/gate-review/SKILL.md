@@ -1,5 +1,5 @@
 ---
-name: review
+name: gate-review
 description: Pre-delivery code review with multi-agent fix loop
 ---
 

@@ -20,7 +20,7 @@ H·AI·K·U uses just two main commands:
 | Command | What it does |
 |---------|--------------|
 | `/haiku:start` | Define what you're building and how you'll know it's done |
-| `/haiku:resume` | Start the autonomous execution loop through the stage pipeline |
+| `/haiku:pickup` | Start the autonomous execution loop through the stage pipeline |
 
 ## Your First Feature
 
@@ -42,13 +42,13 @@ AI: What do you want to build?
 User: Add user authentication with email/password
 AI: [Asks clarifying questions via interactive prompts]
 AI: Here are the success criteria I captured...
-AI: Intent created! Run /haiku:resume to start.
+AI: Intent created! Run /haiku:pickup to start.
 ```
 
 ### Step 2: Run
 
 ```
-/haiku:resume
+/haiku:pickup
 ```
 
 The AI now works autonomously through the stage pipeline:
@@ -66,7 +66,7 @@ If the session runs long, the AI will suggest clearing context:
 ```
 AI: "Context getting full. Run /clear to continue."
 User: /clear
-User: /haiku:resume
+User: /haiku:pickup
 ```
 
 Your progress is preserved - the AI picks up where it left off.
@@ -75,8 +75,8 @@ Your progress is preserved - the AI picks up where it left off.
 
 | Command | Purpose |
 |---------|---------|
-| `/haiku:review` | Pre-delivery code review -- catches issues before external CI/bots |
-| `/haiku:resume [slug]` | Resume an existing intent after a break |
+| `/haiku:gate-review` | Pre-delivery code review -- catches issues before external CI/bots |
+| `/haiku:pickup [slug]` | Resume an existing intent after a break |
 | `/haiku:reset` | Abandon current work and start fresh |
 | `/methodology [question]` | Ask questions about H·AI·K·U |
 
@@ -89,7 +89,7 @@ User: Add a dark mode toggle to the settings page
 AI: [Guides through requirements and criteria]
 AI: Intent created!
 
-User: /haiku:resume
+User: /haiku:pickup
 AI: [Works autonomously through planner → builder → reviewer]
 AI: Intent complete! All criteria satisfied.
 

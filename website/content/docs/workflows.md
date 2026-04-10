@@ -38,7 +38,7 @@ The default studio for most development work. In its simplest form, it uses only
     ↓
 Define intent, criteria, units, and studio
     ↓
-/haiku:resume
+/haiku:pickup
     ↓
 [Development Stage]
   Planner (HITL): Plan how to build it
@@ -66,7 +66,7 @@ Next unit or intent complete
 You: "Name, email, avatar image editing on the profile page"
 (Intent and units are now defined)
 
-/haiku:resume kicks off:
+/haiku:pickup kicks off:
 
 [Development Stage]
 Planner: "I'll add an /api/profile endpoint, a ProfileForm
@@ -87,7 +87,7 @@ For cross-functional work, the software studio can include design and product st
 ```
 /haiku:start (select multi-stage software studio)
     ↓
-/haiku:resume
+/haiku:pickup
     ↓
 [Design Stage]
   Designer (OHOTL): Create visual designs and UX flows
@@ -231,7 +231,7 @@ status: pending
 Build the API endpoints for analytics data...
 ```
 
-When `/haiku:resume` processes each unit, it resolves the unit's context independently within the active stage.
+When `/haiku:pickup` processes each unit, it resolves the unit's context independently within the active stage.
 
 ## Operation and Reflection
 
