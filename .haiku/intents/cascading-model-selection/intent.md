@@ -1,9 +1,26 @@
 ---
-title: "Add cascading model selection to H·AI·K·U so different units and hats can run on different Claude models based on complexity. Hat definitions set baseline model preferences in their frontmatter (e.g., reviewer defaults to sonnet, researcher defaults to haiku). During elaboration, the elaborator assesses each unit's complexity and sets a model override in unit frontmatter. The orchestrator resolves models with cascading precedence: unit.model > hat.model > stage default > studio default. Model selections must be visible in the intent review UI and browse views. This optimizes token spend by matching model capability to task complexity — simple mechanical units run on cheaper models, complex architectural units get opus."
-studio: ""
+title: >-
+  Add cascading model selection to H·AI·K·U so different units and hats can run
+  on different Claude models based on complexity. Hat definitions set baseline
+  model preferences in their frontmatter (e.g., reviewer defaults to sonnet,
+  researcher defaults to haiku). During elaboration, the elaborator assesses
+  each unit's complexity and sets a model override in unit frontmatter. The
+  orchestrator resolves models with cascading precedence: unit.model > hat.model
+  > stage default > studio default. Model selections must be visible in the
+  intent review UI and browse views. This optimizes token spend by matching
+  model capability to task complexity — simple mechanical units run on cheaper
+  models, complex architectural units get opus.
+studio: software
 mode: continuous
 status: active
-created_at: 2026-04-10T21:59:32Z
+created_at: '2026-04-10'
+stages:
+  - inception
+  - design
+  - product
+  - development
+  - operations
+  - security
 ---
 
 # Add cascading model selection to H·AI·K·U so different units and hats can run on different Claude models based on complexity. Hat definitions set baseline model preferences in their frontmatter (e.g., reviewer defaults to sonnet, researcher defaults to haiku). During elaboration, the elaborator assesses each unit's complexity and sets a model override in unit frontmatter. The orchestrator resolves models with cascading precedence: unit.model > hat.model > stage default > studio default. Model selections must be visible in the intent review UI and browse views. This optimizes token spend by matching model capability to task complexity — simple mechanical units run on cheaper models, complex architectural units get opus.
