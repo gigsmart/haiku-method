@@ -12,6 +12,15 @@ inputs:
     discovery: design-brief
   - stage: design
     discovery: design-tokens
+outputs:
+  - discovery: acceptance-criteria
+    hat: product
+  - discovery: behavioral-spec
+    hat: specification
+  - discovery: data-contracts
+    hat: specification
+  - discovery: coverage-mapping
+    hat: validator
 ---
 
 # Product

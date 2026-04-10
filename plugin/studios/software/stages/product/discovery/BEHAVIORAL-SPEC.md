@@ -1,32 +1,31 @@
 ---
 name: behavioral-spec
-location: .haiku/intents/{intent-slug}/knowledge/BEHAVIORAL-SPEC.md
+location: .haiku/intents/{intent-slug}/features/
 scope: intent
-format: text
+format: gherkin
 required: true
 ---
 
 # Behavioral Spec
 
-Behavioral specification defining what the system does from the user's perspective. This output drives development — tests are written to verify these behaviors.
+Gherkin `.feature` files defining what the system does from the user's perspective. These files drive development — tests are written to verify these behaviors, and the features themselves can be executed by Cucumber-compatible test runners.
 
 ## Content Guide
 
-Organize by user flow. For each flow:
+Each `.feature` file should contain:
 
-- **Title** — descriptive name for the flow
-- **Actor** — who performs the action (user role, system, external service)
-- **Preconditions** — what must be true before the flow starts
-- **Happy path** — Given/When/Then for the expected successful scenario
-- **Error scenarios** — Given/When/Then for each error case (validation failure, auth error, not found, server error, etc.)
-- **Edge cases** — boundary conditions, concurrent access, empty states, maximum limits
-- **Acceptance criteria** — specific, testable conditions that must hold
-
-Cross-reference design tokens and discovery output where relevant (e.g., "error message uses `color-error` token").
+- **Feature** — descriptive name and summary of the capability
+- **Background** — shared preconditions across scenarios (Given steps common to all)
+- **Scenarios** — concrete examples covering:
+  - Happy path — the expected successful flow
+  - Error scenarios — validation failures, auth errors, not found, server errors
+  - Edge cases — boundary conditions, concurrent access, empty states, maximum limits
+- **Scenario Outlines** — parameterized scenarios for testing across multiple inputs
 
 ## Quality Signals
 
-- Every flow has at least one error scenario, not just the happy path
-- Given/When/Then scenarios are specific enough to write a test from
+- Every feature has at least one error scenario, not just the happy path
+- Scenarios are specific enough to execute as automated tests
 - Actors are named roles, not generic "user"
 - Edge cases cover boundaries (zero, one, max, empty, null)
+- Steps use domain language consistent with acceptance criteria from the product hat
