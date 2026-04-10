@@ -862,6 +862,11 @@ function handleRequest(req: Request): Response | Promise<Response> {
 		return handleQuestionAnswerPost(questionAnswerMatch[1], req)
 	}
 
+	// GET /health — tunnel keepalive check
+	if (path === "/health" && req.method === "GET") {
+		return new Response("ok", { status: 200 })
+	}
+
 	return new Response("Not Found", { status: 404 })
 }
 

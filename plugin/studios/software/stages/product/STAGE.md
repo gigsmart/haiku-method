@@ -1,7 +1,7 @@
 ---
 name: product
 description: Define behavioral specifications and acceptance criteria
-hats: [product-owner, specification-writer]
+hats: [product, specification, validator]
 review: [external, ask]
 elaboration: collaborative
 unit_types: [product]
@@ -12,6 +12,15 @@ inputs:
     discovery: design-brief
   - stage: design
     discovery: design-tokens
+outputs:
+  - discovery: acceptance-criteria
+    hat: product
+  - discovery: behavioral-spec
+    hat: specification
+  - discovery: data-contracts
+    hat: specification
+  - discovery: coverage-mapping
+    hat: validator
 ---
 
 # Product
@@ -30,4 +39,4 @@ Bad criteria examples:
 
 ## Completion Signal (RFC 2119)
 
-Behavioral spec **MUST** exist with user flows and error scenarios. Data contracts **MUST** define all API schemas with field types and validation rules. Every acceptance criterion **MUST** have a testable given/when/then scenario. Product owner **MUST** have approved scope.
+Acceptance criteria **MUST** cover all user-facing scenarios with edge cases. Behavioral spec `.feature` files **MUST** exist with scenarios for happy paths and error flows. Data contracts **MUST** define all API schemas with field types and validation rules. Validator hat **MUST** have produced an APPROVED coverage mapping with no gaps.

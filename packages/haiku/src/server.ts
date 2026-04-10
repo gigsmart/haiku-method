@@ -30,10 +30,7 @@ import { type MockupInfo, renderReviewPage } from "./templates/index.js"
 import { renderQuestionPage } from "./templates/question-form.js"
 import { renderDesignDirectionPage } from "./templates/design-direction.js"
 import { findHaikuRoot, stageStatePath, readJson, writeJson, parseFrontmatter } from "./state-tools.js"
-
-const GetReviewStatusInput = z.object({
-	session_id: z.string().describe("The review session ID"),
-})
+import { reportError, reportFeedback, isSentryConfigured, flush as flushSentry } from "./sentry.js"
 
 const AskVisualQuestionInput = z.object({
 	questions: z
@@ -154,21 +151,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 		// State management tools
 		...stateToolDefs,
 		// open_review is internal — used by the FSM for gate_ask, not exposed to the agent
-		{
-			name: "get_review_status",
-			description:
-				"Check the status of a review session. Returns the current decision and feedback.",
-			inputSchema: {
-				type: "object" as const,
-				properties: {
-					session_id: {
-						type: "string",
-						description: "The review session ID",
-					},
-				},
-				required: ["session_id"],
-			},
-		},
 		{
 			name: "ask_user_visual_question",
 			description:
@@ -313,6 +295,30 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 				required: ["intent_slug"],
 			},
 		},
+		{
+			name: "haiku_feedback",
+			description:
+				"Submit user feedback or a bug report to the H·AI·K·U team via Sentry. " +
+				"Use this when a user wants to report an issue, suggest an improvement, or share feedback.",
+			inputSchema: {
+				type: "object" as const,
+				properties: {
+					message: {
+						type: "string",
+						description: "The feedback message or bug report",
+					},
+					contact_email: {
+						type: "string",
+						description: "Optional contact email for follow-up",
+					},
+					name: {
+						type: "string",
+						description: "Optional name of the person submitting feedback",
+					},
+				},
+				required: ["message"],
+			},
+		},
 	],
 }))
 
@@ -323,6 +329,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	// Orchestration tools (async — gate_ask blocks until user reviews)
 	if (name === "haiku_run_next" || name === "haiku_go_back" || name === "haiku_intent_create" || name === "haiku_select_studio" || name === "haiku_intent_reset") {
 		return handleOrchestratorTool(name, (args ?? {}) as Record<string, unknown>)
+	}
+
+	// Feedback tool — submit user feedback to Sentry
+	if (name === "haiku_feedback") {
+		if (!isSentryConfigured()) {
+			return { content: [{ type: "text" as const, text: "Feedback is not available in this installation (Sentry DSN not configured)." }] }
+		}
+		const typedArgs = (args ?? {}) as Record<string, unknown>
+		const message = typedArgs.message as string | undefined
+		if (!message) {
+			return { content: [{ type: "text" as const, text: "Error: message is required" }], isError: true }
+		}
+		const contactEmail = typedArgs.contact_email as string | undefined
+		const userName = typedArgs.name as string | undefined
+		const sessionCtx = typedArgs._session_context as Record<string, string> | undefined
+		reportFeedback(message, sessionCtx, contactEmail, userName)
+		return { content: [{ type: "text" as const, text: "Feedback submitted. Thank you!" }] }
 	}
 
 	// State management tools
@@ -340,99 +363,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 				text: "Error: open_review cannot be called directly. Use haiku_run_next to advance — it validates units and opens the review automatically when ready.",
 			}],
 			isError: true,
-		}
-	}
-
-	if (name === "get_review_status") {
-		const input = GetReviewStatusInput.parse(args)
-		const session = getSession(input.session_id)
-
-		if (!session) {
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: `Error: Session ${input.session_id} not found`,
-					},
-				],
-				isError: true,
-			}
-		}
-
-		if (session.session_type === "question") {
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: JSON.stringify(
-							{
-								session_id: session.session_id,
-								session_type: session.session_type,
-								status: session.status,
-								answers: session.answers,
-							},
-							null,
-							2,
-						),
-					},
-				],
-			}
-		}
-
-		if (session.session_type === "design_direction") {
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: JSON.stringify(
-							{
-								session_id: session.session_id,
-								session_type: session.session_type,
-								status: session.status,
-								selection: session.selection,
-							},
-							null,
-							2,
-						),
-					},
-				],
-			}
-		}
-
-		// Build result with optional annotations
-		const reviewResult: Record<string, unknown> = {
-			session_id: session.session_id,
-			status: session.status,
-			decision: session.decision,
-			feedback: session.feedback,
-			review_type: session.review_type,
-			target: session.target,
-		}
-		if (session.annotations) {
-			// Include pins and comments directly, but only a truncated
-			// screenshot indicator to avoid bloating the text response.
-			// The full screenshot base64 is available via the session object.
-			const annot: Record<string, unknown> = {}
-			if (session.annotations.pins?.length) {
-				annot.pins = session.annotations.pins
-			}
-			if (session.annotations.comments?.length) {
-				annot.comments = session.annotations.comments
-			}
-			if (session.annotations.screenshot) {
-				annot.has_screenshot = true
-				annot.screenshot_length = session.annotations.screenshot.length
-			}
-			reviewResult.annotations = annot
-		}
-
-		return {
-			content: [
-				{
-					type: "text" as const,
-					text: JSON.stringify(reviewResult, null, 2),
-				},
-			],
 		}
 	}
 
@@ -812,16 +742,16 @@ async function main() {
 process.on("SIGINT", async () => {
 	console.error("Shutting down...")
 	await server.close()
+	await flushSentry()
 	process.exit(0)
 })
 
 process.on("SIGTERM", async () => {
 	console.error("Shutting down...")
 	await server.close()
+	await flushSentry()
 	process.exit(0)
 })
-
-import { reportError } from "./sentry.js"
 
 // MCP server entry point — invoked by: haiku mcp
 main().catch((err) => {

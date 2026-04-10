@@ -117,7 +117,7 @@ However, committing is recommended - it provides:
 
 ### Commands Not Recognized
 
-**Symptom:** `/haiku:start` or `/haiku:resume` don't activate
+**Symptom:** `/haiku:start` or `/haiku:pickup` don't activate
 
 **Solutions:**
 1. Restart Claude session

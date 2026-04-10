@@ -8,7 +8,7 @@ A **stage** is a phase of work within a studio's lifecycle. Each stage defines i
 
 ## How Stages Work
 
-When `/haiku:resume` executes an intent, it progresses through stages in the order defined by the studio. Each stage runs a four-step cycle:
+When `/haiku:pickup` executes an intent, it progresses through stages in the order defined by the studio. Each stage runs a four-step cycle:
 
 1. **Elaborate** — Break the stage's work into units with completion criteria and a dependency DAG. Check input freshness; if an upstream output has a gap, run a stage-scoped refinement (targeted side-trip to the upstream stage)
 2. **Execute** — For each unit, run the bolt loop through the stage's hat sequence. Artifacts are committed to git automatically as they are produced.
@@ -247,7 +247,7 @@ Each stage's inputs reference specific outputs from prior stages. If a required 
 |-------|------|---------------|--------|---------|
 | **inception** | researcher, elaborator | completeness, feasibility | auto | Problem understanding, unit elaboration |
 | **design** | designer, design-reviewer | consistency, accessibility | ask | Visual/interaction design |
-| **product** | product-owner, specification-writer | completeness, feasibility | external, ask | Behavioral specs, acceptance criteria |
+| **product** | product, specification, validator | completeness | external, ask | Acceptance criteria, behavioral specs, coverage validation |
 | **development** | planner, builder, reviewer | correctness, security, performance, architecture, test-quality + design:consistency, design:accessibility, product:completeness | ask | Implementation with quality gates |
 | **operations** | ops-engineer, sre | reliability, observability + development:security | auto | Deployment, monitoring, runbooks |
 | **security** | threat-modeler, red-team, blue-team, security-reviewer | threat-coverage, mitigation-effectiveness + development:security, development:architecture, operations:reliability | external, ask | Threat modeling, vulnerability assessment |

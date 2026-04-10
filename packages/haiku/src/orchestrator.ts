@@ -636,22 +636,6 @@ export function runNext(slug: string): OrchestratorAction {
 	const phase = (stageState.phase as string) || ""
 	const stageStatus = (stageState.status as string) || "pending"
 
-	// Intent review gate — first run_next on a fresh intent must be approved by user
-	if (currentStage === studioStages[0] && (!phase || stageStatus === "pending")) {
-		const intentReviewed = (intent.intent_reviewed as boolean) || false
-		if (!intentReviewed) {
-			return {
-				action: "gate_review",
-				intent: slug,
-				studio,
-				stage: currentStage,
-				gate_type: "ask",
-				gate_context: "intent_review",
-				message: `Intent '${slug}' is ready for review. Presenting the intent for your approval before starting work.`,
-			}
-		}
-	}
-
 	// Stage not started yet
 	if (!phase || stageStatus === "pending") {
 		const hats = resolveStageHats(studio, currentStage)
@@ -834,6 +818,14 @@ export function runNext(slug: string): OrchestratorAction {
 		// The review UI blocks until the user approves the specs.
 		// This is handled by the handleOrchestratorTool wrapper which
 		// detects gate_review and calls _openReviewAndWait.
+		//
+		// For the first stage of a fresh intent (not yet reviewed), this gate
+		// doubles as the intent review — CC review agents have already run
+		// during the review phase, so the user sees validated specs.
+		// Note: if the user rejects and the agent revises, this re-presents
+		// with intent_review context until intent_reviewed is set to true.
+		const intentReviewed = (intent.intent_reviewed as boolean) || false
+		const isIntentReview = currentStage === studioStages[0] && !intentReviewed
 		return {
 			action: "gate_review",
 			intent: slug,
@@ -841,8 +833,10 @@ export function runNext(slug: string): OrchestratorAction {
 			stage: currentStage,
 			next_phase: "execute",
 			gate_type: "ask",
-			gate_context: "elaborate_to_execute",
-			message: `Specs validated — opening review before execution`,
+			gate_context: isIntentReview ? "intent_review" : "elaborate_to_execute",
+			message: isIntentReview
+				? `Intent '${slug}' specs ready for review — presenting for your approval`
+				: `Specs validated — opening review before execution`,
 		}
 	}
 
@@ -1047,7 +1041,7 @@ export function runNext(slug: string): OrchestratorAction {
 			}
 			// FSM side effect: complete stage as discrete (paused)
 			fsmStageCompleteDiscrete(slug, currentStage)
-			return { action: "stage_complete_discrete", intent: slug, stage: currentStage, next_stage: nextStage, message: `Stage '${currentStage}' complete. Run /haiku:resume to start '${nextStage}'.` }
+			return { action: "stage_complete_discrete", intent: slug, stage: currentStage, next_stage: nextStage, message: `Stage '${currentStage}' complete. Run /haiku:pickup to start '${nextStage}'.` }
 		}
 
 		if (reviewType === "ask" || reviewType === "external" || reviewType.includes("ask") || reviewType.includes("external")) {
@@ -1101,7 +1095,7 @@ export function runNext(slug: string): OrchestratorAction {
 						intent: slug,
 						stage: currentStage,
 						external_review_url: externalUrl,
-						message: `Stage '${currentStage}' is awaiting external review at: ${externalUrl}. Run /haiku:resume again after approval.`,
+						message: `Stage '${currentStage}' is awaiting external review at: ${externalUrl}. Run /haiku:pickup again after approval.`,
 					}
 				}
 			} else {
@@ -1755,7 +1749,7 @@ function buildRunInstructions(
 				`### Instructions\n\n` +
 				`1. Push the branch and commit stage artifacts\n` +
 				`2. Share the review URL with the reviewer\n` +
-				`3. Report: "Awaiting external review. Run /haiku:resume when review is complete."`,
+				`3. Report: "Awaiting external review. Run /haiku:pickup when review is complete."`,
 			)
 			break
 		}
@@ -1767,7 +1761,7 @@ function buildRunInstructions(
 				`Stage "${stage}" is complete. The gate has been entered by the orchestrator.\n\n` +
 				`### Instructions\n\n` +
 				`1. Report what is being awaited\n` +
-				`2. Stop. Run /haiku:resume when the event occurs.`,
+				`2. Stop. Run /haiku:pickup when the event occurs.`,
 			)
 			break
 		}
@@ -1790,7 +1784,7 @@ function buildRunInstructions(
 				`## Stage Complete (Discrete Mode)\n\n` +
 				`Stage "${stage}" has been completed by the orchestrator.\n\n` +
 				`### Instructions\n\n` +
-				`Report: "Stage complete. Run /haiku:resume to start '${nextStage}'."`,
+				`Report: "Stage complete. Run /haiku:pickup to start '${nextStage}'."`,
 			)
 			break
 		}
@@ -1800,7 +1794,7 @@ function buildRunInstructions(
 				`## Intent Complete\n\n` +
 				`All stages are done for intent "${slug}". The orchestrator has marked it as completed.\n\n` +
 				`### Instructions\n\n` +
-				`Report completion summary. Suggest /haiku:review then PR creation.`,
+				`Report completion summary. Suggest /haiku:gate-review then PR creation.`,
 			)
 			break
 		}
@@ -2107,12 +2101,13 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 				if (stFile) logSessionEvent(stFile, { event: "gate_decision", intent: slug, stage, decision: reviewResult.decision, feedback: reviewResult.feedback })
 				if (reviewResult.decision === "approved") {
 					if (gateContext === "intent_review") {
-						// Intent approved — mark as reviewed and tell agent to start
+						// Intent approved — mark as reviewed AND advance phase to execute
 						const intentFilePath = join(process.cwd(), intentDirPath, "intent.md")
 						setFrontmatterField(intentFilePath, "intent_reviewed", true)
+						if (nextPhase) fsmAdvancePhase(slug, stage, nextPhase)
 						gitCommitState(`haiku: intent ${slug} approved by user`)
 						syncSessionMetadata(slug, args.state_file as string | undefined)
-						const gateResult = { action: "intent_approved", intent: slug, message: `Intent approved — starting work. IMPORTANT: Call haiku_run_next { intent: "${slug}" } immediately. Do NOT ask the user — the transition was already approved.` }
+						const gateResult = { action: "intent_approved", intent: slug, stage, from_phase: "elaborate", to_phase: nextPhase, message: `Intent approved — advancing to ${nextPhase || "execute"}. IMPORTANT: Call haiku_run_next { intent: "${slug}" } immediately. Do NOT ask the user — the transition was already approved.` }
 						return text(withInstructions(gateResult))
 					}
 					if (gateContext === "elaborate_to_execute" && nextPhase) {
@@ -2142,7 +2137,7 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 						intent: slug,
 						stage,
 						feedback: reviewResult.feedback,
-						message: "External review requested. Submit the work for review through your project's review process (PR, MR, review board, etc.). Include the H·AI·K·U browse link in the description so reviewers can see the intent, units, and knowledge artifacts. Record the review URL via haiku_run_next { intent, external_review_url }. Run /haiku:resume again after approval.",
+						message: "External review requested. Submit the work for review through your project's review process (PR, MR, review board, etc.). Include the H·AI·K·U browse link in the description so reviewers can see the intent, units, and knowledge artifacts. Record the review URL via haiku_run_next { intent, external_review_url }. Run /haiku:pickup again after approval.",
 					}
 					return text(withInstructions(gateResult))
 				}
@@ -2228,9 +2223,10 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 								if (gateContext === "intent_review") {
 									const intentFilePath = join(process.cwd(), intentDirPath, "intent.md")
 									setFrontmatterField(intentFilePath, "intent_reviewed", true)
+									if (nextPhase) fsmAdvancePhase(slug, stage, nextPhase)
 									gitCommitState(`haiku: intent ${slug} approved by user (elicitation)`)
 									syncSessionMetadata(slug, args.state_file as string | undefined)
-									const elicitApproveResult = { action: "intent_approved", intent: slug, message: `Intent approved — starting work. IMPORTANT: Call haiku_run_next { intent: "${slug}" } immediately.` }
+									const elicitApproveResult = { action: "intent_approved", intent: slug, stage, from_phase: "elaborate", to_phase: nextPhase, message: `Intent approved — advancing to ${nextPhase || "execute"}. Call haiku_run_next immediately.` }
 									return text(withInstructions(elicitApproveResult))
 								}
 								if (gateContext === "elaborate_to_execute" && nextPhase) {

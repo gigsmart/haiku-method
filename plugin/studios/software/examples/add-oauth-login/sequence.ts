@@ -68,7 +68,7 @@ export const config: DemoConfig = {
     { delay: 1200, actions: [{ type: "hideReview" }, { type: "msg", role: "agent", label: "agent", text: "Approved via visual review. Advancing to product stage." }] },
 
     // Step 9: Product stage (collaborative)
-    { delay: 1000, actions: [{ type: "activateStage", stage: "product" }, { type: "msg", role: "agent", label: "agent", text: "Entering product stage. Hat: product-owner.\nLoading design stage outputs as inputs..." }, { type: "file", path: `${P}/stages/product/state.json` }] },
+    { delay: 1000, actions: [{ type: "activateStage", stage: "product" }, { type: "msg", role: "agent", label: "agent", text: "Entering product stage. Hat: product.\nLoading design stage outputs as inputs..." }, { type: "file", path: `${P}/stages/product/state.json` }] },
     { delay: 800, actions: [{ type: "msg", role: "system", label: "system", text: "Resolved inputs \u2192 inception/discovery (knowledge/DISCOVERY.md), design/design-brief (stages/design/DESIGN-BRIEF.md)" }, { type: "msg", role: "agent", label: "agent", text: "Design brief specifies full-page login with social buttons and forgot-password link.\nElaborating product work from design artifacts..." }, { type: "file", path: `${P}/stages/product/units/unit-01-auth-spec.md` }, { type: "card", stage: "product", name: "auth-spec", status: "in-progress" }] },
     { delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
     { delay: 1800, actions: [{ type: "removeFastForward" }, { type: "msg", role: "agent", label: "agent", text: "Here are the acceptance criteria for the callback flow:" }] },
