@@ -28,7 +28,7 @@ import {
 	setRunNextHandler,
 	validateBranch,
 } from "./state-tools.js"
-import { createIntentBranch, isOnIntentBranch, createUnitWorktree } from "./git-worktree.js"
+import { createIntentBranch, isOnIntentBranch, createStageBranch, isOnStageBranch, mergeStageBranchForward, consolidateStageBranches, branchExists, createUnitWorktree } from "./git-worktree.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
 import { computeWaves, topologicalSort } from "./dag.js"
 import type { DAGGraph } from "./types.js"
@@ -461,6 +461,40 @@ export interface OrchestratorAction {
 
 // ── FSM side-effect helpers ────────────────────────────────────────────────
 
+/**
+ * Resolve the effective branching mode for a given stage.
+ * Returns "discrete" or "continuous".
+ */
+function resolveEffectiveBranchMode(slug: string, stage: string): "discrete" | "continuous" {
+	const intentFile = join(intentDir(slug), "intent.md")
+	const intent = readFrontmatter(intentFile)
+	const mode = (intent.mode as string) || "continuous"
+	if (mode === "continuous") return "continuous"
+	if (mode === "discrete") return "discrete"
+	// hybrid: check continuous_from threshold
+	const continuousFrom = (intent.continuous_from as string) || ""
+	if (!continuousFrom) return "discrete"
+	const studio = (intent.studio as string) || ""
+	const allStages = resolveStudioStages(studio)
+	const skipStages = (intent.skip_stages as string[]) || []
+	const studioStages = allStages.filter(s => !skipStages.includes(s))
+	const thresholdIdx = studioStages.indexOf(continuousFrom)
+	const stageIdx = studioStages.indexOf(stage)
+	return stageIdx >= thresholdIdx ? "continuous" : "discrete"
+}
+
+/** Find the previous completed stage for branch chaining in discrete mode */
+function findPreviousStage(slug: string, stage: string): string | undefined {
+	const intentFile = join(intentDir(slug), "intent.md")
+	const intent = readFrontmatter(intentFile)
+	const studio = (intent.studio as string) || ""
+	const allStages = resolveStudioStages(studio)
+	const skipStages = (intent.skip_stages as string[]) || []
+	const studioStages = allStages.filter(s => !skipStages.includes(s))
+	const idx = studioStages.indexOf(stage)
+	return idx > 0 ? studioStages[idx - 1] : undefined
+}
+
 function fsmStartStage(slug: string, stage: string): void {
 	const path = stageStatePath(slug, stage)
 	const data = readJson(path)
@@ -479,9 +513,36 @@ function fsmStartStage(slug: string, stage: string): void {
 		setFrontmatterField(intentFile, "active_stage", stage)
 	}
 
-	// Intent branch isolation: create/switch to haiku/{slug}/main on first stage
-	if (!isOnIntentBranch(slug)) {
-		createIntentBranch(slug)
+	// Branch isolation — mode-aware
+	const branchMode = resolveEffectiveBranchMode(slug, stage)
+	if (branchMode === "discrete") {
+		if (!isOnStageBranch(slug, stage)) {
+			const prevStage = findPreviousStage(slug, stage)
+			const stageBranch = `haiku/${slug}/${stage}`
+			if (branchExists(stageBranch) && prevStage) {
+				mergeStageBranchForward(slug, prevStage, stage)
+			} else {
+				createStageBranch(slug, stage, prevStage)
+			}
+		}
+	} else {
+		if (!isOnIntentBranch(slug)) {
+			const intent = readFrontmatter(intentFile)
+			const mode = (intent.mode as string) || "continuous"
+			if (mode === "hybrid") {
+				const studio = (intent.studio as string) || ""
+				const allStages = resolveStudioStages(studio)
+				const skipStages = (intent.skip_stages as string[]) || []
+				const studioStages = allStages.filter(s => !skipStages.includes(s))
+				const stageIdx = studioStages.indexOf(stage)
+				const discreteStages = studioStages.slice(0, stageIdx)
+				if (discreteStages.length > 0) {
+					consolidateStageBranches(slug, discreteStages)
+				}
+			} else {
+				createIntentBranch(slug)
+			}
+		}
 	}
 
 	emitTelemetry("haiku.stage.started", { intent: slug, stage })
@@ -902,9 +963,10 @@ export function runNext(slug: string): OrchestratorAction {
 		if (readyUnits.length > 1) {
 			// Multiple units ready — create worktrees for parallel execution
 			const hats = resolveStageHats(studio, currentStage)
+			const discreteStage = resolveEffectiveBranchMode(slug, currentStage) === "discrete" ? currentStage : undefined
 			const unitWorktrees: Record<string, string | null> = {}
 			for (const u of readyUnits) {
-				unitWorktrees[u.name] = createUnitWorktree(slug, u.name)
+				unitWorktrees[u.name] = createUnitWorktree(slug, u.name, discreteStage)
 			}
 			return {
 				action: "start_units",
@@ -926,7 +988,8 @@ export function runNext(slug: string): OrchestratorAction {
 			const unit = readyUnits[0]
 			const hats = resolveStageHats(studio, currentStage)
 			// Create worktree for solo unit too — all units are isolated
-			const worktreePath = createUnitWorktree(slug, unit.name)
+			const discreteStage2 = resolveEffectiveBranchMode(slug, currentStage) === "discrete" ? currentStage : undefined
+			const worktreePath = createUnitWorktree(slug, unit.name, discreteStage2)
 			return {
 				action: "start_unit",
 				intent: slug,
@@ -1351,6 +1414,13 @@ function goBack(slug: string): OrchestratorAction {
 	}
 
 	const targetStage = studioStages[currentIdx - 1]
+
+	// In discrete mode, switch to the target stage's branch
+	const branchMode = resolveEffectiveBranchMode(slug, targetStage)
+	if (branchMode === "discrete") {
+		gitCommitState(`haiku: go back from ${currentActiveStage}`)
+		createStageBranch(slug, targetStage) // switches to existing branch
+	}
 
 	// Reset the target stage's state
 	const targetPath = stageStatePath(slug, targetStage)

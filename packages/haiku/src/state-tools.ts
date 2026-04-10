@@ -9,7 +9,7 @@ import { join, resolve } from "node:path"
 import matter from "gray-matter"
 import { emitTelemetry } from "./telemetry.js"
 import { writeHaikuMetadata, logSessionEvent } from "./session-metadata.js"
-import { mergeUnitWorktree, getCurrentBranch } from "./git-worktree.js"
+import { mergeUnitWorktree, getCurrentBranch, readFileFromBranch } from "./git-worktree.js"
 
 // ── Environment detection ──────────────────────────────────────────────────
 
@@ -643,10 +643,16 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				}
 				const completeGit = gitCommitState(`haiku: complete unit ${args.unit as string}`)
 
-				// Merge unit worktree back to intent branch (if running in a worktree)
-				const mergeResult = mergeUnitWorktree(args.intent as string, args.unit as string)
+				// Merge unit worktree back to parent branch (if running in a worktree)
+				// In discrete mode, parent is the stage branch; in continuous, it's the intent main branch
+				const intentSlug = args.intent as string
+				const intentMd = join(intentDir(intentSlug), "intent.md")
+				const intentMode = existsSync(intentMd) ? (parseFrontmatter(readFileSync(intentMd, "utf8")).data.mode as string) || "continuous" : "continuous"
+				const discreteStage = intentMode !== "continuous" ? advStage : undefined
+				const parentBranchName = discreteStage ? `haiku/${intentSlug}/${discreteStage}` : `haiku/${intentSlug}/main`
+				const mergeResult = mergeUnitWorktree(intentSlug, args.unit as string, discreteStage)
 				if (!mergeResult.success) {
-					const worktreePath = join(process.cwd(), ".haiku", "worktrees", args.intent as string, args.unit as string)
+					const worktreePath = join(process.cwd(), ".haiku", "worktrees", intentSlug, args.unit as string)
 					return text(JSON.stringify({
 						action: "merge_conflict",
 						status: "completed_merge_failed",
@@ -654,9 +660,9 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 						unit: args.unit,
 						worktree: worktreePath,
 						error: mergeResult.message,
-						message: `Unit completed but merge to intent branch failed: ${mergeResult.message}. ` +
-							`RESOLVE: cd to the intent branch (\`git checkout haiku/${args.intent}/main\`), ` +
-							`merge manually (\`git merge haiku/${args.intent}/${args.unit} --no-edit\`), resolve any conflicts, ` +
+						message: `Unit completed but merge to parent branch failed: ${mergeResult.message}. ` +
+							`RESOLVE: cd to the parent branch (\`git checkout ${parentBranchName}\`), ` +
+							`merge manually (\`git merge haiku/${intentSlug}/${args.unit} --no-edit\`), resolve any conflicts, ` +
 							`then commit and push. If you cannot resolve, ask the user for help.`,
 					}, null, 2))
 				}
@@ -852,14 +858,46 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				out += `- Active Stage: ${data.active_stage || "none"}\n`
 				out += `- Mode: ${data.mode || "interactive"}\n`
 
+				const isDiscrete = (data.mode as string) === "discrete" || (data.mode as string) === "hybrid"
+
 				const stagesPath = join(intentsDir, slug, "stages")
 				if (existsSync(stagesPath)) {
 					const stages = readdirSync(stagesPath).filter(s => existsSync(join(stagesPath, s, "state.json")))
-					if (stages.length > 0) {
+					const stagesFromBranches: string[] = []
+					if (isDiscrete && isGitRepo()) {
+						try {
+							const branchList = execFileSync("git", ["branch", "--list", `haiku/${slug}/*`], { encoding: "utf8", stdio: "pipe" }).trim()
+							for (const line of branchList.split("\n")) {
+								const branch = line.trim().replace(/^\* /, "")
+								const stageName = branch.replace(`haiku/${slug}/`, "")
+								if (stageName && stageName !== "main" && !stages.includes(stageName)) {
+									stagesFromBranches.push(stageName)
+								}
+							}
+						} catch { /* non-fatal */ }
+					}
+
+					const allStages = [...stages, ...stagesFromBranches]
+					if (allStages.length > 0) {
 						out += `\n| Stage | Status | Phase |\n|-------|--------|-------|\n`
 						for (const s of stages) {
 							const state = readJson(join(stagesPath, s, "state.json"))
 							out += `| ${s} | ${state.status || "pending"} | ${state.phase || ""} |\n`
+						}
+						for (const s of stagesFromBranches) {
+							const branch = `haiku/${slug}/${s}`
+							const relPath = `.haiku/intents/${slug}/stages/${s}/state.json`
+							const raw = readFileFromBranch(branch, relPath)
+							if (raw) {
+								try {
+									const state = JSON.parse(raw)
+									out += `| ${s} | ${state.status || "pending"} | ${state.phase || ""} |\n`
+								} catch {
+									out += `| ${s} | ? | ? |\n`
+								}
+							} else {
+								out += `| ${s} | (on branch) | |\n`
+							}
 						}
 					}
 				}
