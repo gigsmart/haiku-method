@@ -33,7 +33,7 @@ import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
 import { computeWaves, topologicalSort } from "./dag.js"
 import type { DAGGraph } from "./types.js"
 import { validateIdentifier } from "./prompts/helpers.js"
-import { readStageDef, readHatDefs, readReviewAgentDefs, listStudios, studioSearchPaths } from "./studio-reader.js"
+import { readStageDef, readHatDefs, readReviewAgentDefs, listStudios, studioSearchPaths, resolveStageInputs } from "./studio-reader.js"
 
 // ── Path helpers ───────────────────────────────────────────────────────────
 
@@ -357,6 +357,49 @@ function validateUnitNaming(intentDirPath: string, stage: string): OrchestratorA
 				`Files MUST be named \`unit-NN-slug.md\` (e.g., \`unit-01-data-model.md\`):\n\n` +
 				violations.map(v => `- \`${v.file}\`: ${v.issue}`).join("\n") +
 				`\n\nRename the files to match the convention, then call \`haiku_run_next { intent: "${slug}" }\` again.`,
+		}
+	}
+
+	return null
+}
+
+// ── Unit inputs validation ───────────────────────────────────────────────
+
+/**
+ * Validate that all units in a stage have a non-empty `inputs:` field.
+ * Every unit must declare what upstream artifacts it references.
+ * Returns an error action if any units are missing inputs, null if all pass.
+ */
+function validateUnitInputs(intentDirPath: string, stage: string): OrchestratorAction | null {
+	const unitsDir = join(intentDirPath, "stages", stage, "units")
+	if (!existsSync(unitsDir)) return null
+
+	const unitFiles = readdirSync(unitsDir).filter(f => f.endsWith(".md"))
+	if (unitFiles.length === 0) return null
+
+	const missing: string[] = []
+	for (const f of unitFiles) {
+		const fm = readFrontmatter(join(unitsDir, f))
+		const inputs = (fm.inputs as string[]) || (fm.refs as string[]) || []
+		if (inputs.length === 0) {
+			missing.push(f.replace(/\.md$/, ""))
+		}
+	}
+
+	if (missing.length > 0) {
+		const slug = intentDirPath.split("/intents/")[1] || ""
+		return {
+			action: "unit_inputs_missing",
+			intent: slug,
+			stage,
+			missing_units: missing,
+			message: `Cannot advance to execution: ${missing.length} unit(s) have no \`inputs:\` field.\n\n` +
+				`Every unit MUST declare its inputs — the upstream artifacts, knowledge docs, ` +
+				`and prior-stage outputs it references. At minimum, include the intent document and discovery docs.\n\n` +
+				`Units missing inputs:\n` +
+				missing.map(u => `- ${u}`).join("\n") +
+				`\n\nAdd \`inputs:\` to each unit's frontmatter with paths relative to the intent directory ` +
+				`(e.g., \`knowledge/DISCOVERY.md\`, \`stages/design/DESIGN-BRIEF.md\`), then call \`haiku_run_next { intent: "${slug}" }\` again.`,
 		}
 	}
 
@@ -779,6 +822,10 @@ export function runNext(slug: string): OrchestratorAction {
 		// Validate discovery artifacts exist before advancing
 		const discoveryViolation = validateDiscoveryArtifacts(slug, currentStage, studio)
 		if (discoveryViolation) return discoveryViolation
+
+		// Validate all units have declared inputs
+		const inputsViolation = validateUnitInputs(iDir, currentStage)
+		if (inputsViolation) return inputsViolation
 
 		// Note: adversarial review of elaboration specs is included in the gate_review
 		// instructions. The gate review handler opens the review UI which shows specs
@@ -1456,7 +1503,56 @@ function buildRunInstructions(
 			if (stageDef) {
 				sections.push(`${stageDef.body}`)
 				if (unitTypes.length > 0) sections.push(`**Allowed unit types:** ${unitTypes.join(", ")}`)
-				if (stageDef.data.inputs) sections.push(`**Inputs:** ${JSON.stringify(stageDef.data.inputs)}`)
+			}
+
+			// Resolve upstream stage inputs — load actual content from prior stages
+			if (stageDef?.data?.inputs && Array.isArray(stageDef.data.inputs)) {
+				const inputs = stageDef.data.inputs as Array<{ stage: string; discovery?: string; output?: string }>
+				const resolved = resolveStageInputs(studio, inputs, dir, slug)
+				const found = resolved.filter(r => r.exists)
+				const missing = resolved.filter(r => !r.exists)
+
+				if (found.length > 0) {
+					sections.push(
+						`## Upstream Stage Inputs (MANDATORY CONTEXT)\n\n` +
+						`These artifacts were produced by prior stages. You **MUST** read and incorporate them.\n` +
+						`When creating units, add relevant paths to the \`inputs:\` frontmatter field so builders have access.\n`,
+					)
+					for (const r of found) {
+						const relPath = r.resolvedPath.startsWith(dir + "/")
+							? r.resolvedPath.slice(dir.length + 1)
+							: r.resolvedPath
+						sections.push(
+							`### ${r.stage}/${r.artifactName} (${r.kind})\n` +
+							`**Path:** \`${relPath}\`\n\n` +
+							`${r.content?.slice(0, 3000) ?? ""}${(r.content?.length ?? 0) > 3000 ? "\n...(truncated)" : ""}`,
+						)
+					}
+					// Build ref paths for unit creation guidance
+					const refPaths = found.map(r =>
+						r.resolvedPath.startsWith(dir + "/") ? r.resolvedPath.slice(dir.length + 1) : r.resolvedPath
+					)
+					sections.push(
+						`## Unit Inputs Requirement (MANDATORY)\n\n` +
+						`Every unit **MUST** have a non-empty \`inputs:\` field in its frontmatter. ` +
+						`At minimum, every unit should reference the intent document and discovery docs. ` +
+						`Units will be **blocked from execution** if \`inputs:\` is empty.\n\n` +
+						`Available upstream artifacts:\n` +
+						"```yaml\ninputs:\n" + refPaths.map(p => `  - ${p}`).join("\n") + "\n```\n" +
+						`Include all inputs relevant to the unit's scope. Frontend/UI units should reference design artifacts. ` +
+						`Backend units should reference behavioral specs and data contracts.`,
+					)
+				}
+
+				if (missing.length > 0) {
+					sections.push(
+						`## ⚠ Missing Upstream Artifacts\n\n` +
+						`The following inputs are declared but do not exist on disk:\n\n` +
+						missing.map(r => `- **${r.stage}/${r.artifactName}** (${r.kind}) — expected at \`${r.resolvedPath}\``).join("\n") +
+						`\n\nThese may not have been produced yet, or may have been saved to a different location. ` +
+						`If they are critical for this stage, consider using \`haiku_go_back\` to return to the producing stage.`,
+					)
+				}
 			}
 
 			// Discovery artifact definitions (project overrides plugin for same-named files)
@@ -1556,11 +1652,11 @@ function buildRunInstructions(
 			// Unit content
 			const unitFile = join(dir, "stages", stage, "units", unit.endsWith(".md") ? unit : `${unit}.md`)
 			let unitContent = ""
-			let unitRefs: string[] = []
+			let unitInputs: string[] = []
 			if (existsSync(unitFile)) {
 				const { data, body } = parseFrontmatter(readFileSync(unitFile, "utf8"))
 				unitContent = body
-				unitRefs = (data.refs as string[]) || []
+				unitInputs = (data.inputs as string[]) || (data.refs as string[]) || []
 			}
 
 			// Hat definition (structured — includes agent_type and model)
@@ -1584,16 +1680,40 @@ function buildRunInstructions(
 			sections.push(`### Unit Spec\n\n${unitContent}`)
 			sections.push(`### Hat: ${hat}\n\n${hatContent}`)
 
-			// Refs
-			if (unitRefs.length > 0) {
-				sections.push(`### Refs`)
+			// Unit inputs — load referenced artifacts
+			if (unitInputs.length > 0) {
+				sections.push(`### Inputs`)
 				const dirResolved = resolve(dir)
-				for (const ref of unitRefs) {
+				for (const ref of unitInputs) {
 					const refResolved = resolve(dir, ref)
 					if (!refResolved.startsWith(dirResolved + "/") && refResolved !== dirResolved) continue
 					if (existsSync(join(dir, ref))) {
 						const content = readFileSync(join(dir, ref), "utf8")
 						sections.push(`#### ${ref}\n\n${content.slice(0, 2000)}${content.length > 2000 ? "\n...(truncated)" : ""}`)
+					}
+				}
+			}
+
+			// Upstream stage inputs — always resolve and inject artifacts not already in unit inputs
+			if (stageDef?.data?.inputs && Array.isArray(stageDef.data.inputs)) {
+				const stageInputDefs = stageDef.data.inputs as Array<{ stage: string; discovery?: string; output?: string }>
+				const resolvedInputs = resolveStageInputs(studio, stageInputDefs, dir, slug)
+				const found = resolvedInputs.filter(r => r.exists)
+				// Filter out artifacts already included via explicit unit inputs
+				const inputSet = new Set(unitInputs.map(r => resolve(dir, r)))
+				const additional = found.filter(r => !inputSet.has(resolve(r.resolvedPath)))
+
+				if (additional.length > 0) {
+					sections.push(`### Upstream Context (from prior stages — not in unit inputs)`)
+					for (const r of additional) {
+						const relPath = r.resolvedPath.startsWith(dir + "/")
+							? r.resolvedPath.slice(dir.length + 1)
+							: r.resolvedPath
+						sections.push(
+							`#### ${r.stage}/${r.artifactName}\n` +
+							`**Path:** \`${relPath}\`\n\n` +
+							`${r.content?.slice(0, 2000) ?? ""}${(r.content?.length ?? 0) > 2000 ? "\n...(truncated)" : ""}`,
+						)
 					}
 				}
 			}
@@ -1606,7 +1726,7 @@ function buildRunInstructions(
 				`Agent type: \`${hatAgentType}\`${hatModel ? ` | Model: \`${hatModel}\`` : ""}\n` +
 				(worktreePath ? `Worktree: \`${worktreePath}\`\n` : "") +
 				`\n**Subagent prompt must include:**\n` +
-				`- The hat definition, unit spec, and refs above\n` +
+				`- The hat definition, unit spec, and inputs above\n` +
 				`- The stage scope constraint\n` +
 				(worktreePath ? `- **Git discipline:** Commit work frequently in the worktree (\`git add -A && git commit -m "..."\`). Do NOT push — the merge-back handles pushing.\n` : "") +
 				(action.action === "start_unit"
@@ -1656,6 +1776,26 @@ function buildRunInstructions(
 			}
 			sections.push(`Hats: ${hats.join(" → ")}\nUnits: ${units.join(", ")}`)
 
+			// Upstream stage inputs for parallel units
+			if (stageDef?.data?.inputs && Array.isArray(stageDef.data.inputs)) {
+				const inputs = stageDef.data.inputs as Array<{ stage: string; discovery?: string; output?: string }>
+				const resolvedInputs = resolveStageInputs(studio, inputs, dir, slug)
+				const found = resolvedInputs.filter(r => r.exists)
+				if (found.length > 0) {
+					sections.push(`### Upstream Context (from prior stages)\n\nInclude these in each subagent prompt.`)
+					for (const r of found) {
+						const relPath = r.resolvedPath.startsWith(dir + "/")
+							? r.resolvedPath.slice(dir.length + 1)
+							: r.resolvedPath
+						sections.push(
+							`#### ${r.stage}/${r.artifactName}\n` +
+							`**Path:** \`${relPath}\`\n\n` +
+							`${r.content?.slice(0, 2000) ?? ""}${(r.content?.length ?? 0) > 2000 ? "\n...(truncated)" : ""}`,
+						)
+					}
+				}
+			}
+
 			const worktrees = (action.worktrees as Record<string, string | null>) || {}
 
 			const wave = action.wave as number | undefined
@@ -1670,7 +1810,7 @@ function buildRunInstructions(
 				`Each subagent calls \`advance_hat\` when done — it internally progresses the FSM. The last subagent to finish the wave triggers the next action automatically.\n\n` +
 				`**Each subagent prompt must include:**\n` +
 				`- The hat definition for "${firstHat}"\n` +
-				`- The unit spec and refs\n` +
+				`- The unit spec and inputs\n` +
 				`- The stage scope constraint\n` +
 				`- Instruction to call \`haiku_unit_start\` first\n` +
 				`- Output tracking: record produced artifacts in the unit's \`outputs:\` frontmatter field (paths relative to intent dir)\n` +

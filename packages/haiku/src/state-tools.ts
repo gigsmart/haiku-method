@@ -1419,6 +1419,71 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 					}
 				}
 
+				// o. Missing unit inputs — every unit must declare its inputs
+				if (Array.isArray(repairStages)) {
+					for (const stageName of repairStages as string[]) {
+						const repairUnitsDir = join(repairIntentsDir, slug, "stages", stageName, "units")
+						if (!existsSync(repairUnitsDir)) continue
+
+						// Resolve available upstream artifacts (if stage has inputs declared)
+						const existingUpstreamPaths: string[] = []
+						if (repairStudio) {
+							let stageInputs: Array<{ stage: string; discovery?: string; output?: string }> | null = null
+							for (const base of repairSearchPaths) {
+								const stageMd = join(base, repairStudio, "stages", stageName, "STAGE.md")
+								if (!existsSync(stageMd)) continue
+								const { data: stageData } = parseFrontmatter(readFileSync(stageMd, "utf8"))
+								if (Array.isArray(stageData.inputs) && stageData.inputs.length > 0) {
+									stageInputs = stageData.inputs as Array<{ stage: string; discovery?: string; output?: string }>
+								}
+								break
+							}
+							if (stageInputs) {
+								const intentPath = join(repairIntentsDir, slug)
+								for (const input of stageInputs) {
+									for (const base of repairSearchPaths) {
+										for (const kind of ["discovery", "outputs"] as const) {
+											const artifactDir = join(base, repairStudio, "stages", input.stage, kind)
+											if (!existsSync(artifactDir)) continue
+											for (const f of readdirSync(artifactDir).filter(af => af.endsWith(".md"))) {
+												const raw = readFileSync(join(artifactDir, f), "utf8")
+												const { data: aData } = parseFrontmatter(raw)
+												const aName = (aData.name as string) || f.replace(/\.md$/, "")
+												const wanted = kind === "outputs" ? input.output : input.discovery
+												if (aName !== wanted) continue
+												const loc = (aData.location as string) || ""
+												if (!loc) continue
+												const relPath = loc.replace(/^\.haiku\/intents\/\{intent-slug\}\//, "")
+												const absPath = join(intentPath, relPath)
+												if (existsSync(absPath)) existingUpstreamPaths.push(relPath)
+											}
+										}
+									}
+								}
+							}
+						}
+
+						for (const f of readdirSync(repairUnitsDir, { withFileTypes: true })) {
+							if (!f.isFile() || !f.name.endsWith(".md")) continue
+							const unitRaw = readFileSync(join(repairUnitsDir, f.name), "utf8")
+							const { data: unitData } = parseFrontmatter(unitRaw)
+							const unitInputs = (unitData.inputs as string[]) || (unitData.refs as string[]) || []
+							if (unitInputs.length === 0) {
+								const fix = existingUpstreamPaths.length > 0
+									? `Add \`inputs:\` with upstream paths: ${existingUpstreamPaths.join(", ")}`
+									: `Add \`inputs:\` with at minimum the intent doc and discovery docs`
+								issues.push({
+									intent: slug,
+									field: `stages/${stageName}/units/${f.name}:inputs`,
+									severity: "error",
+									message: `Unit has no \`inputs:\` — execution will be blocked`,
+									fix,
+								})
+							}
+						}
+					}
+				}
+
 				if (issues.length === 0) {
 					cleanRepairIntents.push(slug)
 				} else {
