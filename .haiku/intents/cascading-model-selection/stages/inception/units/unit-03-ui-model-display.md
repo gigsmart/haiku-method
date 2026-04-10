@@ -1,8 +1,14 @@
 ---
 type: research
-depends_on: [unit-01-model-cascade-engine]
+depends_on:
+  - unit-01-model-cascade-engine
 discipline: frontend
 model: sonnet
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-10T22:35:11Z'
+hat_started_at: '2026-04-10T22:35:11Z'
 ---
 
 # UI Model Display
