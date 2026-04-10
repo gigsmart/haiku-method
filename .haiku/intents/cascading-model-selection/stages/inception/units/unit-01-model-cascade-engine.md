@@ -3,6 +3,11 @@ type: research
 depends_on: []
 discipline: backend
 model: sonnet
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-10T22:13:51Z'
+hat_started_at: '2026-04-10T22:13:52Z'
 ---
 
 # Model Cascade Engine
