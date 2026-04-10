@@ -31,6 +31,38 @@ let activeTunnel: Awaited<ReturnType<typeof localtunnel>> | null = null
 let tunnelPort: number | null = null
 let reconnecting = false
 let intentionallyClosed = false
+let healthCheckTimer: ReturnType<typeof setInterval> | null = null
+
+const HEALTH_CHECK_INTERVAL = 30_000 // 30s
+
+async function healthCheck(): Promise<void> {
+	if (!activeTunnel || intentionallyClosed || reconnecting) return
+	try {
+		const res = await fetch(`${activeTunnel.url}/health`, {
+			headers: { "bypass-tunnel-reminder": "1" },
+			signal: AbortSignal.timeout(10_000),
+		})
+		if (!res.ok) throw new Error(`HTTP ${res.status}`)
+	} catch {
+		console.error("[haiku] Tunnel health check failed — reconnecting")
+		activeTunnel?.close()
+		activeTunnel = null
+		reconnectTunnel()
+	}
+}
+
+function startHealthCheck(): void {
+	stopHealthCheck()
+	healthCheckTimer = setInterval(healthCheck, HEALTH_CHECK_INTERVAL)
+	healthCheckTimer.unref() // don't keep process alive
+}
+
+function stopHealthCheck(): void {
+	if (healthCheckTimer) {
+		clearInterval(healthCheckTimer)
+		healthCheckTimer = null
+	}
+}
 
 function base64url(data: string | Buffer): string {
 	const b64 = typeof data === "string" ? Buffer.from(data).toString("base64") : data.toString("base64")
@@ -67,6 +99,7 @@ async function reconnectTunnel(): Promise<void> {
 			activeTunnel = tunnel
 			attachTunnelListeners(tunnel)
 			console.error(`[haiku] Tunnel reconnected: ${tunnel.url}`)
+			startHealthCheck()
 			reconnecting = false
 			return
 		} catch (err) {
@@ -81,6 +114,7 @@ function attachTunnelListeners(tunnel: Awaited<ReturnType<typeof localtunnel>>):
 	tunnel.on("close", () => {
 		if (activeTunnel === tunnel) {
 			activeTunnel = null
+			stopHealthCheck()
 			console.error("[haiku] Tunnel closed unexpectedly")
 			reconnectTunnel()
 		}
@@ -90,6 +124,7 @@ function attachTunnelListeners(tunnel: Awaited<ReturnType<typeof localtunnel>>):
 		console.error("[haiku] Tunnel error:", err.message)
 		if (activeTunnel === tunnel) {
 			activeTunnel = null
+			stopHealthCheck()
 			reconnectTunnel()
 		}
 	})
@@ -111,6 +146,7 @@ export async function openTunnel(port: number): Promise<string> {
 			attachTunnelListeners(tunnel)
 
 			console.error(`[haiku] Tunnel opened: ${tunnel.url}`)
+			startHealthCheck()
 			return tunnel.url
 		} catch (err) {
 			console.error(`[haiku] Tunnel open failed (attempt ${attempt + 1}/${maxRetries}):`, err instanceof Error ? err.message : err)
@@ -125,6 +161,7 @@ export async function openTunnel(port: number): Promise<string> {
 
 export function closeTunnel(): void {
 	intentionallyClosed = true
+	stopHealthCheck()
 	if (activeTunnel) {
 		activeTunnel.close()
 		activeTunnel = null
