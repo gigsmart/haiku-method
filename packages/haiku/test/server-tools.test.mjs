@@ -32,14 +32,6 @@ const serverTools = [
   ...stateToolDefs,
   // The manually-defined tools from server.ts:
   {
-    name: "get_review_status",
-    inputSchema: {
-      type: "object",
-      properties: { session_id: { type: "string" } },
-      required: ["session_id"],
-    },
-  },
-  {
     name: "ask_user_visual_question",
     inputSchema: {
       type: "object",
@@ -486,10 +478,9 @@ test("orchestrator and state tools don't overlap", () => {
   assert.strictEqual(overlap.length, 0, `Overlapping tools: ${overlap.join(", ")}`)
 })
 
-test("non-haiku tools exist (get_review_status, ask_user_visual_question, pick_design_direction)", () => {
+test("non-haiku tools exist (ask_user_visual_question, pick_design_direction)", () => {
   const nonHaiku = serverTools.filter((t) => !t.name.startsWith("haiku_"))
   const names = nonHaiku.map((t) => t.name)
-  assert.ok(names.includes("get_review_status"))
   assert.ok(names.includes("ask_user_visual_question"))
   assert.ok(names.includes("pick_design_direction"))
 })
