@@ -16,8 +16,17 @@ status: active
 created_at: '2026-04-10'
 stages:
   - inception
+  - design
+  - product
   - development
-active_stage: design
+  - operations
+  - security
+skip_stages:
+  - design
+  - product
+  - operations
+  - security
+active_stage: development
 intent_reviewed: true
 ---
 
