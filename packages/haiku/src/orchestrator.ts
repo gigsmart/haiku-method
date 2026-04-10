@@ -514,22 +514,26 @@ function fsmStartStage(slug: string, stage: string): void {
 	}
 
 	// Branch isolation — mode-aware
+	const intent = readFrontmatter(intentFile)
+	const intentMode = (intent.mode as string) || "continuous"
 	const branchMode = resolveEffectiveBranchMode(slug, stage)
 	if (branchMode === "discrete") {
 		if (!isOnStageBranch(slug, stage)) {
 			const prevStage = findPreviousStage(slug, stage)
 			const stageBranch = `haiku/${slug}/${stage}`
 			if (branchExists(stageBranch) && prevStage) {
-				mergeStageBranchForward(slug, prevStage, stage)
+				const mergeResult = mergeStageBranchForward(slug, prevStage, stage)
+				if (!mergeResult.success) {
+					throw new Error(`Merge forward from '${prevStage}' to '${stage}' failed: ${mergeResult.message}. Resolve conflicts on branch '${stageBranch}' manually, then retry.`)
+				}
 			} else {
 				createStageBranch(slug, stage, prevStage)
 			}
 		}
 	} else {
 		if (!isOnIntentBranch(slug)) {
-			const intent = readFrontmatter(intentFile)
-			const mode = (intent.mode as string) || "continuous"
-			if (mode === "hybrid") {
+			if (intentMode === "hybrid") {
+				// Transitioning from discrete to continuous — consolidate stage branches
 				const studio = (intent.studio as string) || ""
 				const allStages = resolveStudioStages(studio)
 				const skipStages = (intent.skip_stages as string[]) || []
@@ -711,7 +715,11 @@ export function runNext(slug: string): OrchestratorAction {
 		}
 
 		// FSM side effect: start the stage
-		fsmStartStage(slug, currentStage)
+		try {
+			fsmStartStage(slug, currentStage)
+		} catch (err) {
+			return { action: "error", message: err instanceof Error ? err.message : String(err) }
+		}
 
 		return {
 			action: "start_stage",
@@ -960,13 +968,15 @@ export function runNext(slug: string): OrchestratorAction {
 			}
 		}
 
+		// Resolve once for unit worktree creation below
+		const worktreeStage = resolveEffectiveBranchMode(slug, currentStage) === "discrete" ? currentStage : undefined
+
 		if (readyUnits.length > 1) {
 			// Multiple units ready — create worktrees for parallel execution
 			const hats = resolveStageHats(studio, currentStage)
-			const discreteStage = resolveEffectiveBranchMode(slug, currentStage) === "discrete" ? currentStage : undefined
 			const unitWorktrees: Record<string, string | null> = {}
 			for (const u of readyUnits) {
-				unitWorktrees[u.name] = createUnitWorktree(slug, u.name, discreteStage)
+				unitWorktrees[u.name] = createUnitWorktree(slug, u.name, worktreeStage)
 			}
 			return {
 				action: "start_units",
@@ -988,8 +998,7 @@ export function runNext(slug: string): OrchestratorAction {
 			const unit = readyUnits[0]
 			const hats = resolveStageHats(studio, currentStage)
 			// Create worktree for solo unit too — all units are isolated
-			const discreteStage2 = resolveEffectiveBranchMode(slug, currentStage) === "discrete" ? currentStage : undefined
-			const worktreePath = createUnitWorktree(slug, unit.name, discreteStage2)
+			const worktreePath = createUnitWorktree(slug, unit.name, worktreeStage)
 			return {
 				action: "start_unit",
 				intent: slug,
@@ -1181,7 +1190,11 @@ export function runNext(slug: string): OrchestratorAction {
 		const hats = resolveStageHats(studio, nextStage)
 
 		// FSM side effect: start next stage
-		fsmStartStage(slug, nextStage)
+		try {
+			fsmStartStage(slug, nextStage)
+		} catch (err) {
+			return { action: "error", message: err instanceof Error ? err.message : String(err) }
+		}
 
 		return { action: "start_stage", intent: slug, studio, stage: nextStage, hats, phase: "elaborate", stage_metadata: resolveStageMetadata(studio, nextStage), message: `Start stage '${nextStage}'` }
 	}

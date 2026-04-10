@@ -145,17 +145,17 @@ export function validateBranch(intent: string, expectedType: "intent" | "unit", 
 	const current = getCurrentBranch()
 	if (!current) return ""
 
+	// Any haiku/{intent}/* branch is valid for this intent (covers both continuous main and discrete stage branches)
+	const intentPrefix = `haiku/${intent}/`
 	if (expectedType === "intent") {
-		const expected = `haiku/${intent}/main`
-		if (current !== expected) {
-			return `⚠️ WRONG BRANCH: Expected '${expected}' but on '${current}'. Run \`git checkout ${expected}\` to switch to the intent branch. Custom branch names break the H·AI·K·U lifecycle.`
+		if (!current.startsWith(intentPrefix)) {
+			return `⚠️ WRONG BRANCH: Expected a branch under '${intentPrefix}' but on '${current}'. Run \`git checkout haiku/${intent}/main\` or the appropriate stage branch. Custom branch names break the H·AI·K·U lifecycle.`
 		}
 	} else if (expectedType === "unit" && unit) {
 		const expectedUnit = `haiku/${intent}/${unit}`
-		const expectedIntent = `haiku/${intent}/main`
-		// Unit work can happen on the unit branch (worktree) or intent branch (non-worktree mode)
-		if (current !== expectedUnit && current !== expectedIntent) {
-			return `⚠️ WRONG BRANCH: Expected '${expectedUnit}' or '${expectedIntent}' but on '${current}'. Ensure you're working in the correct worktree.`
+		// Unit work can happen on the unit branch (worktree) or any intent/stage branch
+		if (current !== expectedUnit && !current.startsWith(intentPrefix)) {
+			return `⚠️ WRONG BRANCH: Expected '${expectedUnit}' or a branch under '${intentPrefix}' but on '${current}'. Ensure you're working in the correct worktree.`
 		}
 	}
 	return ""
@@ -646,9 +646,13 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				// Merge unit worktree back to parent branch (if running in a worktree)
 				// In discrete mode, parent is the stage branch; in continuous, it's the intent main branch
 				const intentSlug = args.intent as string
-				const intentMd = join(intentDir(intentSlug), "intent.md")
-				const intentMode = existsSync(intentMd) ? (parseFrontmatter(readFileSync(intentMd, "utf8")).data.mode as string) || "continuous" : "continuous"
-				const discreteStage = intentMode !== "continuous" ? advStage : undefined
+				// Use current branch as ground truth: if we're on a stage branch, merge back
+				// to the stage branch. If we're on the intent main branch, merge there.
+				// This correctly handles continuous, discrete, and hybrid (where the
+				// orchestrator already placed us on the right branch).
+				const currentBr = getCurrentBranch()
+				const onStageBranch = currentBr === `haiku/${intentSlug}/${advStage}`
+				const discreteStage = onStageBranch ? advStage : undefined
 				const parentBranchName = discreteStage ? `haiku/${intentSlug}/${discreteStage}` : `haiku/${intentSlug}/main`
 				const mergeResult = mergeUnitWorktree(intentSlug, args.unit as string, discreteStage)
 				if (!mergeResult.success) {
@@ -870,7 +874,8 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 							for (const line of branchList.split("\n")) {
 								const branch = line.trim().replace(/^\* /, "")
 								const stageName = branch.replace(`haiku/${slug}/`, "")
-								if (stageName && stageName !== "main" && !stages.includes(stageName)) {
+								// Skip main branch and unit branches (unit-NN-*)
+								if (stageName && stageName !== "main" && !/^unit-\d+/.test(stageName) && !stages.includes(stageName)) {
 									stagesFromBranches.push(stageName)
 								}
 							}

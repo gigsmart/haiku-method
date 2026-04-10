@@ -45,21 +45,16 @@ export function isOnStageBranch(slug: string, stage: string): boolean {
 
 /** Checkout an existing branch or create it. Returns the branch name. */
 function checkoutOrCreate(branch: string, baseBranch?: string): string {
-	try {
-		const exists = tryRun(["git", "rev-parse", "--verify", branch])
-		if (exists) {
-			if (getCurrentBranch() !== branch) {
-				run(["git", "checkout", branch])
-			}
-		} else {
-			if (baseBranch) {
-				run(["git", "checkout", baseBranch])
-				run(["git", "checkout", "-b", branch])
-			} else {
-				run(["git", "checkout", "-b", branch])
-			}
+	const exists = tryRun(["git", "rev-parse", "--verify", branch])
+	if (exists) {
+		if (getCurrentBranch() !== branch) {
+			run(["git", "checkout", branch])
 		}
-	} catch {
+	} else if (baseBranch) {
+		// baseBranch must exist — let it throw if not so the caller knows
+		run(["git", "checkout", baseBranch])
+		run(["git", "checkout", "-b", branch])
+	} else {
 		try {
 			run(["git", "checkout", "-b", branch])
 		} catch { /* already on it or can't create */ }
@@ -85,6 +80,7 @@ export function createIntentBranch(slug: string): string {
  * Returns the branch name.
  */
 export function createStageBranch(slug: string, stage: string, prevStage?: string): string {
+	if (stage === "main") throw new Error(`Stage name 'main' is reserved — it would collide with the continuous-mode intent branch`)
 	if (!isGitRepo()) return `haiku/${slug}/${stage}`
 	const baseBranch = prevStage ? `haiku/${slug}/${prevStage}` : undefined
 	return checkoutOrCreate(`haiku/${slug}/${stage}`, baseBranch)
@@ -109,6 +105,8 @@ export function mergeStageBranchForward(slug: string, fromStage: string, toStage
 
 		return { success: true, message: `merged ${fromBranch} → ${toBranch}` }
 	} catch (err) {
+		// Abort any in-progress merge to leave the repo clean
+		tryRun(["git", "merge", "--abort"])
 		return { success: false, message: err instanceof Error ? err.message : String(err) }
 	}
 }
@@ -126,6 +124,14 @@ export function consolidateStageBranches(slug: string, stages: string[]): string
 	try {
 		const lastStageBranch = `haiku/${slug}/${stages[stages.length - 1]}`
 		run(["git", "rev-parse", "--verify", lastStageBranch])
+
+		// If main already exists, check it out and merge the latest stage into it
+		if (branchExists(mainBranch)) {
+			checkoutOrCreate(mainBranch)
+			run(["git", "merge", lastStageBranch, "--no-edit", "-m", `haiku: consolidate discrete stages into main`])
+			return mainBranch
+		}
+		// Otherwise create main from the last stage branch
 		return checkoutOrCreate(mainBranch, lastStageBranch)
 	} catch {
 		return checkoutOrCreate(mainBranch)
