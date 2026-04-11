@@ -61,6 +61,7 @@ export function renderUnitReview(
       ${renderBadge("Unit", "unit")}
       ${renderBadge("Status", unit.frontmatter.status)}
       ${unit.frontmatter.discipline ? renderBadge("Discipline", unit.frontmatter.discipline) : ""}
+      ${unit.frontmatter.model ? renderBadge("Model", unit.frontmatter.model) : ""}
     </div>
 
     ${combinedSpecMarkdown ? card(`

@@ -532,7 +532,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			const files = readdirSync(dir).filter(f => f.endsWith(".md"))
 			const units = files.map(f => {
 				const { data } = parseFrontmatter(readFileSync(join(dir, f), "utf8"))
-				return { name: f.replace(".md", ""), status: data.status, bolt: data.bolt, hat: data.hat }
+				return { name: f.replace(".md", ""), status: data.status, bolt: data.bolt, hat: data.hat, model: data.model ?? null }
 			})
 			return text(JSON.stringify(units, null, 2))
 		}
@@ -860,6 +860,24 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 						for (const s of stages) {
 							const state = readJson(join(stagesPath, s, "state.json"))
 							out += `| ${s} | ${state.status || "pending"} | ${state.phase || ""} |\n`
+						}
+						// List units with model assignments for active stages
+						for (const s of stages) {
+							const unitsDir = join(stagesPath, s, "units")
+							if (!existsSync(unitsDir)) continue
+							const unitFiles = readdirSync(unitsDir).filter(f => f.endsWith(".md"))
+							const unitsWithModel = unitFiles
+								.map(f => {
+									const { data } = parseFrontmatter(readFileSync(join(unitsDir, f), "utf8"))
+									return { name: f.replace(".md", ""), model: data.model as string | undefined }
+								})
+								.filter(u => u.model)
+							if (unitsWithModel.length > 0) {
+								out += `\n**${s} unit models:**\n`
+								for (const u of unitsWithModel) {
+									out += `- ${u.name}: ${u.model}\n`
+								}
+							}
 						}
 					}
 				}

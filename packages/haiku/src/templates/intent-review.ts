@@ -110,10 +110,11 @@ export function renderIntentReview(
         <td class="py-3 pr-3 font-mono text-sm text-gray-500 dark:text-gray-400">${u.number.toString().padStart(2, "0")}</td>
         <td class="py-3 pr-3 font-medium">${escapeHtml(u.title)}</td>
         <td class="py-3 pr-3 text-sm">${escapeHtml(u.frontmatter.discipline ?? u.frontmatter.type ?? "")}</td>
+        <td class="py-3 pr-3 text-sm">${escapeHtml(u.frontmatter.model ?? "—")}</td>
         <td class="py-3 pr-3">${renderBadge("Status", u.frontmatter.status)}</td>
         <td class="py-3 text-sm text-gray-500 dark:text-gray-400">${escapeHtml(deps)}</td>
       </tr>
-      ${um.length > 0 ? `<tr><td colspan="5" class="pb-4">${renderMockupEmbeds(um)}</td></tr>` : ""}`;
+      ${um.length > 0 ? `<tr><td colspan="6" class="pb-4">${renderMockupEmbeds(um)}</td></tr>` : ""}`;
     })
     .join("");
 
@@ -134,6 +135,7 @@ export function renderIntentReview(
               <th class="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">#</th>
               <th class="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Name</th>
               <th class="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Discipline</th>
+              <th class="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Model</th>
               <th class="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Status</th>
               <th class="py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Dependencies</th>
             </tr>
