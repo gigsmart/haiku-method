@@ -1426,6 +1426,8 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 						if (!existsSync(repairUnitsDir)) continue
 
 						// Resolve available upstream artifacts (if stage has inputs declared)
+						// NOTE: This duplicates logic from studio-reader.ts:resolveStageInputs.
+						// Cannot import it here due to circular dependency (studio-reader → state-tools → studio-reader).
 						const existingUpstreamPaths: string[] = []
 						if (repairStudio) {
 							let stageInputs: Array<{ stage: string; discovery?: string; output?: string }> | null = null

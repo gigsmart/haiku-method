@@ -135,7 +135,7 @@ export function resolveStageInputs(
 
 		if (input.discovery) {
 			const def = artifactDefs.find(d => d.name === input.discovery && d.kind === "discovery")
-			if (def) {
+			if (def && def.location) {
 				const absPath = resolveArtifactPath(def.location, intentDir, intentSlug)
 				const exists = existsSync(absPath)
 				resolved.push({
@@ -151,7 +151,7 @@ export function resolveStageInputs(
 		}
 		if (input.output) {
 			const def = artifactDefs.find(d => d.name === input.output && d.kind === "output")
-			if (def) {
+			if (def && def.location) {
 				const absPath = resolveArtifactPath(def.location, intentDir, intentSlug)
 				const isDir = def.location.endsWith("/")
 				const exists = existsSync(absPath)

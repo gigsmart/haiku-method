@@ -48,6 +48,10 @@ export async function trackOutputs(input: Record<string, unknown>, _pluginRoot: 
 	if (!activeUnitPath) return
 
 	// Read the unit and update outputs
+	// NOTE: Unguarded read-modify-write. During parallel wave execution, two hooks
+	// can race on the same active unit (especially knowledge/ writes via findAnyActiveUnit).
+	// Last write wins — the other output entry is silently lost. Stage-specific writes
+	// are safer (findActiveUnitInStage). Future: lock file or append-only sidecar.
 	const unitRaw = readFileSync(activeUnitPath, "utf8")
 	const { data, content } = matter(unitRaw)
 	const outputs = (data.outputs as string[]) || []
