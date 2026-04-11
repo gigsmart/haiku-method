@@ -104,3 +104,22 @@ With:
 - Content is prescriptive but flexible — elaborators can apply judgment within the framework
 - Tiers are defined with concrete signals, not vague descriptions (matches existing "no vague criteria" anti-pattern)
 - The heuristic of "start at sonnet" prevents over-specification without removing guidance
+
+## Builder Hat Instructions
+
+The builder will:
+
+1. Open `plugin/studios/software/stages/inception/hats/elaborator.md` in an editor
+2. Locate the current "Produces" section (line 9)
+3. Locate the "Reads" section (line 11)
+4. Between them, insert the complete "Model Assignment" section (see above)
+5. Update line 9 to include `model:` field
+6. Verify markdown formatting: headers (##/###), bold (**text**), bullets, code blocks
+7. Run `git diff` to review changes before commit
+8. Commit with message: `haiku: add model assignment guidance to elaborator hat`
+
+No tests, no builds, no verification commands needed — this is documentation.
+
+### Output Definition
+
+**Produces:** Updated elaborator.md with Model Assignment section, updated Produces line

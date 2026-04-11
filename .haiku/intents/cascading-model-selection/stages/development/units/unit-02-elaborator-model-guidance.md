@@ -3,6 +3,11 @@ type: backend
 depends_on: []
 discipline: documentation
 model: haiku
+status: active
+bolt: 1
+hat: builder
+started_at: '2026-04-11T01:23:04Z'
+hat_started_at: '2026-04-11T01:24:13Z'
 ---
 
 # Elaborator Model Guidance — Implementation

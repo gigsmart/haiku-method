@@ -3,6 +3,11 @@ type: backend
 depends_on: []
 discipline: backend
 model: sonnet
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-11T01:22:51Z'
+hat_started_at: '2026-04-11T01:22:51Z'
 ---
 
 # Model Cascade Engine — Implementation
