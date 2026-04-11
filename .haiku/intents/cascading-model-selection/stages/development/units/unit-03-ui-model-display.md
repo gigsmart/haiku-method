@@ -27,14 +27,14 @@ Surface model selection in intent review, unit review, dashboard, and unit list 
 
 ## Completion Criteria
 
-- [ ] Intent review units table has 6 columns including Model
-- [ ] Colspan on mockup row updated to 6
-- [ ] Unit review shows model badge with color coding
-- [ ] `statusColors` has entries for opus, sonnet, haiku
-- [ ] Purple Tailwind classes present in tailwind-generated.ts
-- [ ] `haiku_unit_list` returns model field per unit
-- [ ] `haiku_dashboard` shows model when units have assignments
-- [ ] `npx tsc --noEmit` passes in `packages/haiku/`
+- [x] Intent review units table has 6 columns including Model
+- [x] Colspan on mockup row updated to 6
+- [x] Unit review shows model badge with color coding
+- [x] `statusColors` has entries for opus, sonnet, haiku
+- [x] Purple Tailwind classes present in tailwind-generated.ts
+- [x] `haiku_unit_list` returns model field per unit
+- [x] `haiku_dashboard` shows model when units have assignments
+- [x] `npx tsc --noEmit` passes in `packages/haiku/`
 
 ## References
 
