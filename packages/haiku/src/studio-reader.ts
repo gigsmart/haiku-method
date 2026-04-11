@@ -21,6 +21,18 @@ export function readStageDef(studio: string, stage: string): { data: Record<stri
 	return null
 }
 
+/** Read a studio definition file */
+export function readStudio(studio: string): { data: Record<string, unknown>; body: string } | null {
+	validateIdentifier(studio, "studio")
+	for (const base of studioSearchPaths()) {
+		const file = join(base, studio, "STUDIO.md")
+		if (existsSync(file)) {
+			return parseFrontmatter(readFileSync(file, "utf8"))
+		}
+	}
+	return null
+}
+
 /** Read all hat definitions for a stage (project overrides plugin for same-named hats) */
 export interface HatDef {
 	content: string          // full markdown body (without frontmatter)
