@@ -1580,7 +1580,9 @@ function buildRunInstructions(
 			const stageDefaultModel = (stageDef?.data?.default_model as string) || undefined
 
 			// Cascade: unit > hat > stage > studio
-			const resolvedModel = unitModel ?? hatModel ?? stageDefaultModel ?? studioDefaultModel
+			const rawModel = unitModel ?? hatModel ?? stageDefaultModel ?? studioDefaultModel
+			// Sanitize: only allow known model identifiers to prevent prompt injection
+			const resolvedModel = rawModel && /^[a-z][a-z0-9-]*$/.test(rawModel) ? rawModel : undefined
 
 			// Observability: log which level resolved the model
 			if (resolvedModel) {

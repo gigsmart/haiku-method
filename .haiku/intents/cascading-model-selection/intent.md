@@ -12,7 +12,7 @@ title: >-
   models, complex architectural units get opus.
 studio: software
 mode: continuous
-status: active
+status: completed
 created_at: '2026-04-10'
 stages:
   - inception
