@@ -532,7 +532,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			const files = readdirSync(dir).filter(f => f.endsWith(".md"))
 			const units = files.map(f => {
 				const { data } = parseFrontmatter(readFileSync(join(dir, f), "utf8"))
-				return { name: f.replace(".md", ""), status: data.status, bolt: data.bolt, hat: data.hat }
+				return { name: f.replace(".md", ""), status: data.status, bolt: data.bolt, hat: data.hat, model: data.model ?? null }
 			})
 			return text(JSON.stringify(units, null, 2))
 		}

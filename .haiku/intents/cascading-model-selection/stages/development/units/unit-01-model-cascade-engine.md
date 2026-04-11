@@ -3,11 +3,12 @@ type: backend
 depends_on: []
 discipline: backend
 model: sonnet
-status: active
+status: completed
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-11T01:22:51Z'
-hat_started_at: '2026-04-11T01:25:43Z'
+hat_started_at: '2026-04-11T01:32:20Z'
+completed_at: '2026-04-11T01:35:18Z'
 ---
 
 # Model Cascade Engine — Implementation
@@ -27,14 +28,14 @@ Implement the cascading model resolution system: type update, studio reader addi
 
 ## Completion Criteria
 
-- [ ] `UnitFrontmatter` in `types.ts` includes `model?: string`
-- [ ] `readStudio(studio)` function exists in `studio-reader.ts`, exported
-- [ ] Orchestrator extracts `unitModel` from unit frontmatter `data`
-- [ ] Orchestrator resolves `resolvedModel` using nullish coalescing cascade
-- [ ] Spawn instructions include explicit `model:` parameter directive when resolved
-- [ ] No model line emitted when resolvedModel is undefined
-- [ ] Resolved model source logged for observability
-- [ ] `npx tsc --noEmit` passes in `packages/haiku/`
+- [x] `UnitFrontmatter` in `types.ts` includes `model?: string`
+- [x] `readStudio(studio)` function exists in `studio-reader.ts`, exported
+- [x] Orchestrator extracts `unitModel` from unit frontmatter `data`
+- [x] Orchestrator resolves `resolvedModel` using nullish coalescing cascade
+- [x] Spawn instructions include explicit `model:` parameter directive when resolved
+- [x] No model line emitted when resolvedModel is undefined
+- [x] Resolved model source logged for observability
+- [x] `npx tsc --noEmit` passes in `packages/haiku/`
 
 ## References
 
