@@ -34,6 +34,7 @@ export interface UnitFrontmatter {
   depends_on: string[];
   bolt: number;
   hat: string;
+  model?: string;
   started_at?: string;
   completed_at?: string | null;
   // Injected by parseAllUnits when unit is in stages/{stage}/units/

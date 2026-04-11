@@ -33,7 +33,7 @@ import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
 import { computeWaves, topologicalSort } from "./dag.js"
 import type { DAGGraph } from "./types.js"
 import { validateIdentifier } from "./prompts/helpers.js"
-import { readStageDef, readHatDefs, readReviewAgentDefs, listStudios, studioSearchPaths } from "./studio-reader.js"
+import { readStageDef, readStudio, readHatDefs, readReviewAgentDefs, listStudios, studioSearchPaths } from "./studio-reader.js"
 
 // ── Path helpers ───────────────────────────────────────────────────────────
 
@@ -1557,10 +1557,12 @@ function buildRunInstructions(
 			const unitFile = join(dir, "stages", stage, "units", unit.endsWith(".md") ? unit : `${unit}.md`)
 			let unitContent = ""
 			let unitRefs: string[] = []
+			let unitModel: string | undefined = undefined
 			if (existsSync(unitFile)) {
 				const { data, body } = parseFrontmatter(readFileSync(unitFile, "utf8"))
 				unitContent = body
 				unitRefs = (data.refs as string[]) || []
+				unitModel = (data.model as string) || undefined
 			}
 
 			// Hat definition (structured — includes agent_type and model)
@@ -1569,6 +1571,26 @@ function buildRunInstructions(
 			const hatContent = hatDef?.content || `No hat definition found for "${hat}"`
 			const hatAgentType = hatDef?.agent_type || "general-purpose"
 			const hatModel = hatDef?.model
+
+			// Studio default model
+			const studioData = readStudio(studio)
+			const studioDefaultModel = (studioData?.data?.default_model as string) || undefined
+
+			// Stage default model
+			const stageDefaultModel = (stageDef?.data?.default_model as string) || undefined
+
+			// Cascade: unit > hat > stage > studio
+			const resolvedModel = unitModel ?? hatModel ?? stageDefaultModel ?? studioDefaultModel
+
+			// Observability: log which level resolved the model
+			if (resolvedModel) {
+				const source =
+					unitModel ? "unit" :
+					hatModel ? "hat" :
+					stageDefaultModel ? "stage" :
+					"studio"
+				console.error(`[haiku] resolved model: ${resolvedModel} (source: ${source})`)
+			}
 
 			sections.push(`## ${unit} — hat: ${hat} (${hats.join(" → ")}) — bolt ${bolt}`)
 
@@ -1603,7 +1625,8 @@ function buildRunInstructions(
 			sections.push(
 				`### Mechanics\n\n` +
 				`**You are the orchestrator.** Spawn a subagent for the "${hat}" hat.\n` +
-				`Agent type: \`${hatAgentType}\`${hatModel ? ` | Model: \`${hatModel}\`` : ""}\n` +
+				`Agent type: \`${hatAgentType}\`\n` +
+				(resolvedModel ? `Spawn with \`model: "${resolvedModel}"\` — pass this as the Agent tool's \`model:\` parameter.\n` : "") +
 				(worktreePath ? `Worktree: \`${worktreePath}\`\n` : "") +
 				`\n**Subagent prompt must include:**\n` +
 				`- The hat definition, unit spec, and refs above\n` +
