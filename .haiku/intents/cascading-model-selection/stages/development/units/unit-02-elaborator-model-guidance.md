@@ -4,10 +4,10 @@ depends_on: []
 discipline: documentation
 model: haiku
 status: active
-bolt: 1
-hat: builder
+bolt: 2
+hat: reviewer
 started_at: '2026-04-11T01:23:04Z'
-hat_started_at: '2026-04-11T01:24:13Z'
+hat_started_at: '2026-04-11T01:27:25Z'
 ---
 
 # Elaborator Model Guidance — Implementation
@@ -27,11 +27,11 @@ Update `plugin/studios/software/stages/inception/hats/elaborator.md` to include 
 
 ## Completion Criteria
 
-- [ ] `elaborator.md` contains a "Model Assignment" section
-- [ ] Three tiers defined with concrete distinguishing signals
-- [ ] `sonnet` named as default with explicit justification
-- [ ] All four anti-patterns present with MUST NOT language
-- [ ] `Produces:` section mentions `model:` field
+- [x] `elaborator.md` contains a "Model Assignment" section
+- [x] Three tiers defined with concrete distinguishing signals
+- [x] `sonnet` named as default with explicit justification
+- [x] All four anti-patterns present with MUST NOT language
+- [x] `Produces:` section mentions `model:` field
 
 ## References
 

@@ -5,9 +5,9 @@ discipline: backend
 model: sonnet
 status: active
 bolt: 1
-hat: planner
+hat: builder
 started_at: '2026-04-11T01:22:51Z'
-hat_started_at: '2026-04-11T01:22:51Z'
+hat_started_at: '2026-04-11T01:25:43Z'
 ---
 
 # Model Cascade Engine — Implementation
