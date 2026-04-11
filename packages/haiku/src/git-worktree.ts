@@ -116,10 +116,10 @@ export function mergeStageBranchForward(slug: string, fromStage: string, toStage
  * Creates the main branch from the last stage branch.
  * Returns the main branch name.
  */
-export function consolidateStageBranches(slug: string, stages: string[]): string {
+export function consolidateStageBranches(slug: string, stages: string[]): { branch: string; success: boolean; message: string } {
 	const mainBranch = `haiku/${slug}/main`
-	if (!isGitRepo()) return mainBranch
-	if (stages.length === 0) return mainBranch
+	if (!isGitRepo()) return { branch: mainBranch, success: true, message: "no git" }
+	if (stages.length === 0) return { branch: mainBranch, success: true, message: "no stages" }
 
 	try {
 		const lastStageBranch = `haiku/${slug}/${stages[stages.length - 1]}`
@@ -129,12 +129,14 @@ export function consolidateStageBranches(slug: string, stages: string[]): string
 		if (branchExists(mainBranch)) {
 			checkoutOrCreate(mainBranch)
 			run(["git", "merge", lastStageBranch, "--no-edit", "-m", `haiku: consolidate discrete stages into main`])
-			return mainBranch
+			return { branch: mainBranch, success: true, message: `merged ${lastStageBranch} into ${mainBranch}` }
 		}
 		// Otherwise create main from the last stage branch
-		return checkoutOrCreate(mainBranch, lastStageBranch)
-	} catch {
-		return checkoutOrCreate(mainBranch)
+		return { branch: checkoutOrCreate(mainBranch, lastStageBranch), success: true, message: `created ${mainBranch} from ${lastStageBranch}` }
+	} catch (err) {
+		// Abort any in-progress merge to leave the repo clean
+		tryRun(["git", "merge", "--abort"])
+		return { branch: mainBranch, success: false, message: err instanceof Error ? err.message : String(err) }
 	}
 }
 

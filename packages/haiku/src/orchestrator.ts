@@ -496,24 +496,9 @@ function findPreviousStage(slug: string, stage: string): string | undefined {
 }
 
 function fsmStartStage(slug: string, stage: string): void {
-	const path = stageStatePath(slug, stage)
-	const data = readJson(path)
-	data.stage = stage
-	data.status = "active"
-	data.phase = "elaborate"
-	data.started_at = timestamp()
-	data.completed_at = null
-	data.gate_entered_at = null
-	data.gate_outcome = null
-	writeJson(path, data)
-
-	// Set intent's active_stage
 	const intentFile = join(intentDir(slug), "intent.md")
-	if (existsSync(intentFile)) {
-		setFrontmatterField(intentFile, "active_stage", stage)
-	}
 
-	// Branch isolation — mode-aware
+	// Branch isolation first — if this fails (merge conflict), no state is mutated
 	const intent = readFrontmatter(intentFile)
 	const intentMode = (intent.mode as string) || "continuous"
 	const branchMode = resolveEffectiveBranchMode(slug, stage)
@@ -541,12 +526,31 @@ function fsmStartStage(slug: string, stage: string): void {
 				const stageIdx = studioStages.indexOf(stage)
 				const discreteStages = studioStages.slice(0, stageIdx)
 				if (discreteStages.length > 0) {
-					consolidateStageBranches(slug, discreteStages)
+					const consolResult = consolidateStageBranches(slug, discreteStages)
+					if (!consolResult.success) {
+						throw new Error(`Consolidation of discrete stages into main failed: ${consolResult.message}. Resolve conflicts on 'haiku/${slug}/main' manually, then retry.`)
+					}
 				}
 			} else {
 				createIntentBranch(slug)
 			}
 		}
+	}
+
+	// State mutations only after branch is ready
+	const path = stageStatePath(slug, stage)
+	const data = readJson(path)
+	data.stage = stage
+	data.status = "active"
+	data.phase = "elaborate"
+	data.started_at = timestamp()
+	data.completed_at = null
+	data.gate_entered_at = null
+	data.gate_outcome = null
+	writeJson(path, data)
+
+	if (existsSync(intentFile)) {
+		setFrontmatterField(intentFile, "active_stage", stage)
 	}
 
 	emitTelemetry("haiku.stage.started", { intent: slug, stage })
