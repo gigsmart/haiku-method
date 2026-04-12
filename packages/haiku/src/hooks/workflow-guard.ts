@@ -12,7 +12,10 @@ function findActiveIntent(): string | null {
 	return dirs.length === 1 ? join(intentsDir, dirs[0]) : null
 }
 
-export async function workflowGuard(input: Record<string, unknown>, _pluginRoot: string): Promise<void> {
+export async function workflowGuard(
+	input: Record<string, unknown>,
+	_pluginRoot: string,
+): Promise<void> {
 	const toolName = input.tool_name as string
 	if (toolName !== "Write" && toolName !== "Edit") return
 

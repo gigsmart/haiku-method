@@ -1,36 +1,63 @@
 import { spawn } from "node:child_process"
 import { readFile, readdir } from "node:fs/promises"
 import { dirname, join, resolve } from "node:path"
-import { openTunnel, closeTunnel, buildReviewUrl, isRemoteReviewEnabled, clearE2EKey } from "./tunnel.js"
+import { Server } from "@modelcontextprotocol/sdk/server/index.js"
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
+import {
+	CallToolRequestSchema,
+	CompleteRequestSchema,
+	GetPromptRequestSchema,
+	ListPromptsRequestSchema,
+	ListToolsRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js"
+import { z } from "zod"
+import { getActualPort, startHttpServer } from "./http.js"
 import {
 	buildDAG,
 	parseAllUnits,
 	parseCriteria,
 	parseIntent,
-	parseStageStates,
 	parseKnowledgeFiles,
-	parseStageArtifacts,
 	parseOutputArtifacts,
+	parseStageArtifacts,
+	parseStageStates,
 	toMermaidDefinition,
 } from "./index.js"
-import { Server } from "@modelcontextprotocol/sdk/server/index.js"
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
-	CallToolRequestSchema,
-	ListToolsRequestSchema,
-	ListPromptsRequestSchema,
-	GetPromptRequestSchema,
-	CompleteRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js"
-import { z } from "zod"
-import { getActualPort, startHttpServer } from "./http.js"
-import { createDesignDirectionSession, createQuestionSession, createSession, getSession, waitForSession } from "./sessions.js"
-import type { DesignArchetypeData, DesignParameterData, QuestionDef } from "./sessions.js"
+	flush as flushSentry,
+	isSentryConfigured,
+	reportError,
+	reportFeedback,
+} from "./sentry.js"
+import {
+	createDesignDirectionSession,
+	createQuestionSession,
+	createSession,
+	getSession,
+	waitForSession,
+} from "./sessions.js"
+import type {
+	DesignArchetypeData,
+	DesignParameterData,
+	QuestionDef,
+} from "./sessions.js"
+import {
+	findHaikuRoot,
+	parseFrontmatter,
+	readJson,
+	stageStatePath,
+	writeJson,
+} from "./state-tools.js"
+import { renderDesignDirectionPage } from "./templates/design-direction.js"
 import { type MockupInfo, renderReviewPage } from "./templates/index.js"
 import { renderQuestionPage } from "./templates/question-form.js"
-import { renderDesignDirectionPage } from "./templates/design-direction.js"
-import { findHaikuRoot, stageStatePath, readJson, writeJson, parseFrontmatter } from "./state-tools.js"
-import { reportError, reportFeedback, isSentryConfigured, flush as flushSentry } from "./sentry.js"
+import {
+	buildReviewUrl,
+	clearE2EKey,
+	closeTunnel,
+	isRemoteReviewEnabled,
+	openTunnel,
+} from "./tunnel.js"
 
 const AskVisualQuestionInput = z.object({
 	questions: z
@@ -69,9 +96,7 @@ const AskVisualQuestionInput = z.object({
 const DesignArchetypeSchema = z.object({
 	name: z.string().describe("Archetype name"),
 	description: z.string().describe("Brief description of this archetype"),
-	preview_html: z
-		.string()
-		.describe("HTML snippet to render as a preview"),
+	preview_html: z.string().describe("HTML snippet to render as a preview"),
 	default_parameters: z
 		.record(z.number())
 		.describe("Default parameter values for this archetype"),
@@ -80,7 +105,9 @@ const DesignArchetypeSchema = z.object({
 const DesignParameterSchema = z.object({
 	name: z.string().describe("Parameter key name"),
 	label: z.string().describe("Human-readable label"),
-	description: z.string().describe("Description of what this parameter controls"),
+	description: z
+		.string()
+		.describe("Description of what this parameter controls"),
 	min: z.number().describe("Minimum value"),
 	max: z.number().describe("Maximum value"),
 	step: z.number().describe("Step increment"),
@@ -100,7 +127,9 @@ const PickDesignDirectionInput = z.object({
 	archetypes_file: z
 		.string()
 		.optional()
-		.describe("Path to a JSON file containing the archetypes array (alternative to inline archetypes)"),
+		.describe(
+			"Path to a JSON file containing the archetypes array (alternative to inline archetypes)",
+		),
 	parameters: z
 		.array(DesignParameterSchema)
 		.optional()
@@ -108,7 +137,9 @@ const PickDesignDirectionInput = z.object({
 	parameters_file: z
 		.string()
 		.optional()
-		.describe("Path to a JSON file containing the parameters array (alternative to inline parameters)"),
+		.describe(
+			"Path to a JSON file containing the parameters array (alternative to inline parameters)",
+		),
 	title: z
 		.string()
 		.optional()
@@ -126,10 +157,15 @@ const server = new Server(
 	},
 )
 
-import { stateToolDefs, handleStateTool } from "./state-tools.js"
-import { orchestratorToolDefs, handleOrchestratorTool, setOpenReviewHandler, setElicitInputHandler } from "./orchestrator.js"
+import {
+	handleOrchestratorTool,
+	orchestratorToolDefs,
+	setElicitInputHandler,
+	setOpenReviewHandler,
+} from "./orchestrator.js"
 // Prompts migrated to skills (plugin/skills/) — prompt handlers kept for protocol compatibility
-import { listPrompts, getPrompt, completeArgument } from "./prompts/index.js"
+import { completeArgument, getPrompt, listPrompts } from "./prompts/index.js"
+import { handleStateTool, stateToolDefs } from "./state-tools.js"
 
 server.setRequestHandler(ListPromptsRequestSchema, async () => ({
 	prompts: listPrompts(),
@@ -244,7 +280,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 					},
 					archetypes_file: {
 						type: "string",
-						description: "Path to a JSON file containing the archetypes array (alternative to inline archetypes)",
+						description:
+							"Path to a JSON file containing the archetypes array (alternative to inline archetypes)",
 					},
 					parameters: {
 						type: "array",
@@ -285,7 +322,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 					},
 					parameters_file: {
 						type: "string",
-						description: "Path to a JSON file containing the parameters array (alternative to inline parameters)",
+						description:
+							"Path to a JSON file containing the parameters array (alternative to inline parameters)",
 					},
 					title: {
 						type: "string",
@@ -327,25 +365,49 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	const { name, arguments: args } = request.params
 
 	// Orchestration tools (async — gate_ask blocks until user reviews)
-	if (name === "haiku_run_next" || name === "haiku_go_back" || name === "haiku_intent_create" || name === "haiku_select_studio" || name === "haiku_intent_reset") {
+	if (
+		name === "haiku_run_next" ||
+		name === "haiku_go_back" ||
+		name === "haiku_intent_create" ||
+		name === "haiku_select_studio" ||
+		name === "haiku_intent_reset"
+	) {
 		return handleOrchestratorTool(name, (args ?? {}) as Record<string, unknown>)
 	}
 
 	// Feedback tool — submit user feedback to Sentry
 	if (name === "haiku_feedback") {
 		if (!isSentryConfigured()) {
-			return { content: [{ type: "text" as const, text: "Feedback is not available in this installation (Sentry DSN not configured)." }] }
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: "Feedback is not available in this installation (Sentry DSN not configured).",
+					},
+				],
+			}
 		}
 		const typedArgs = (args ?? {}) as Record<string, unknown>
 		const message = typedArgs.message as string | undefined
 		if (!message) {
-			return { content: [{ type: "text" as const, text: "Error: message is required" }], isError: true }
+			return {
+				content: [
+					{ type: "text" as const, text: "Error: message is required" },
+				],
+				isError: true,
+			}
 		}
 		const contactEmail = typedArgs.contact_email as string | undefined
 		const userName = typedArgs.name as string | undefined
-		const sessionCtx = typedArgs._session_context as Record<string, string> | undefined
+		const sessionCtx = typedArgs._session_context as
+			| Record<string, string>
+			| undefined
 		reportFeedback(message, sessionCtx, contactEmail, userName)
-		return { content: [{ type: "text" as const, text: "Feedback submitted. Thank you!" }] }
+		return {
+			content: [
+				{ type: "text" as const, text: "Feedback submitted. Thank you!" },
+			],
+		}
 	}
 
 	// State management tools
@@ -358,10 +420,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 		// Direct agent calls would bypass unit naming validation, type validation, and
 		// discovery artifact checks that the orchestrator enforces before opening a review.
 		return {
-			content: [{
-				type: "text" as const,
-				text: "Error: open_review cannot be called directly. Use haiku_run_next to advance — it validates units and opens the review automatically when ready.",
-			}],
+			content: [
+				{
+					type: "text" as const,
+					text: "Error: open_review cannot be called directly. Use haiku_run_next to advance — it validates units and opens the review automatically when ready.",
+				},
+			],
 			isError: true,
 		}
 	}
@@ -374,7 +438,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 		const imagePaths = input.image_paths ?? []
 
 		// Derive per-path base directories for path validation (defense-in-depth in the HTTP handler)
-		const imageBaseDirs = imagePaths.map(p => dirname(resolve(p)))
+		const imageBaseDirs = imagePaths.map((p) => dirname(resolve(p)))
 
 		// Create question session
 		const session = createQuestionSession({
@@ -430,12 +494,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 				content: [
 					{
 						type: "text" as const,
-						text: JSON.stringify({
-							status: "timeout",
-							url: questionUrl,
-							session_id: session.session_id,
-							message: "User did not respond within 30 minutes",
-						}, null, 2),
+						text: JSON.stringify(
+							{
+								status: "timeout",
+								url: questionUrl,
+								session_id: session.session_id,
+								message: "User did not respond within 30 minutes",
+							},
+							null,
+							2,
+						),
 					},
 				],
 			}
@@ -443,7 +511,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 		// Session was updated — read the latest state
 		const updatedQuestionSession = getSession(session.session_id)
-		if (updatedQuestionSession && updatedQuestionSession.session_type === "question" && updatedQuestionSession.status === "answered" && updatedQuestionSession.answers) {
+		if (
+			updatedQuestionSession &&
+			updatedQuestionSession.session_type === "question" &&
+			updatedQuestionSession.status === "answered" &&
+			updatedQuestionSession.answers
+		) {
 			const questionResult: Record<string, unknown> = {
 				status: "answered",
 				url: questionUrl,
@@ -469,12 +542,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 			content: [
 				{
 					type: "text" as const,
-					text: JSON.stringify({
-						status: "timeout",
-						url: questionUrl,
-						session_id: session.session_id,
-						message: "User did not respond within 30 minutes",
-					}, null, 2),
+					text: JSON.stringify(
+						{
+							status: "timeout",
+							url: questionUrl,
+							session_id: session.session_id,
+							message: "User did not respond within 30 minutes",
+						},
+						null,
+						2,
+					),
 				},
 			],
 		}
@@ -492,7 +569,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 			const raw = await readFile(resolve(input.archetypes_file), "utf-8")
 			archetypes = z.array(DesignArchetypeSchema).parse(JSON.parse(raw))
 		} else {
-			return { content: [{ type: "text" as const, text: "Error: provide either archetypes or archetypes_file" }] }
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: "Error: provide either archetypes or archetypes_file",
+					},
+				],
+			}
 		}
 
 		// Resolve parameters: inline or from file
@@ -503,7 +587,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 			const raw = await readFile(resolve(input.parameters_file), "utf-8")
 			parameters = z.array(DesignParameterSchema).parse(JSON.parse(raw))
 		} else {
-			return { content: [{ type: "text" as const, text: "Error: provide either parameters or parameters_file" }] }
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: "Error: provide either parameters or parameters_file",
+					},
+				],
+			}
 		}
 
 		// Create design direction session
@@ -552,12 +643,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 				content: [
 					{
 						type: "text" as const,
-						text: JSON.stringify({
-							status: "timeout",
-							url: directionUrl,
-							session_id: session.session_id,
-							message: "User did not respond within 30 minutes",
-						}, null, 2),
+						text: JSON.stringify(
+							{
+								status: "timeout",
+								url: directionUrl,
+								session_id: session.session_id,
+								message: "User did not respond within 30 minutes",
+							},
+							null,
+							2,
+						),
 					},
 				],
 			}
@@ -565,7 +660,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 		// Session was updated — read the latest state
 		const updatedDirectionSession = getSession(session.session_id)
-		if (updatedDirectionSession && updatedDirectionSession.session_type === "design_direction" && updatedDirectionSession.status === "answered" && updatedDirectionSession.selection) {
+		if (
+			updatedDirectionSession &&
+			updatedDirectionSession.session_type === "design_direction" &&
+			updatedDirectionSession.status === "answered" &&
+			updatedDirectionSession.selection
+		) {
 			// Persist design_direction_selected to stage state so the orchestrator
 			// knows to advance — the agent doesn't need to relay this flag.
 			try {
@@ -581,12 +681,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 					ssData.design_direction = {
 						archetype: updatedDirectionSession.selection.archetype,
 						parameters: updatedDirectionSession.selection.parameters,
-						...(updatedDirectionSession.selection.comments ? { comments: updatedDirectionSession.selection.comments } : {}),
-						...(updatedDirectionSession.selection.annotations ? { annotations: updatedDirectionSession.selection.annotations } : {}),
+						...(updatedDirectionSession.selection.comments
+							? { comments: updatedDirectionSession.selection.comments }
+							: {}),
+						...(updatedDirectionSession.selection.annotations
+							? { annotations: updatedDirectionSession.selection.annotations }
+							: {}),
 					}
 					writeJson(ssPath, ssData)
 				}
-			} catch { /* non-fatal — orchestrator flag may need manual set */ }
+			} catch {
+				/* non-fatal — orchestrator flag may need manual set */
+			}
 
 			// Return conversational context only — no action directives
 			const sel = updatedDirectionSession.selection
@@ -597,15 +703,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 				parts.push(`\nComments: ${sel.comments}`)
 			}
 			if (sel.annotations?.pins?.length) {
-				parts.push(`\nVisual annotations (${sel.annotations.pins.length} pins):`)
+				parts.push(
+					`\nVisual annotations (${sel.annotations.pins.length} pins):`,
+				)
 				for (const pin of sel.annotations.pins) {
-					parts.push(`  - [${pin.x.toFixed(1)}%, ${pin.y.toFixed(1)}%]: ${pin.text || "(no text)"}`)
+					parts.push(
+						`  - [${pin.x.toFixed(1)}%, ${pin.y.toFixed(1)}%]: ${pin.text || "(no text)"}`,
+					)
 				}
 			}
 			return {
-				content: [
-					{ type: "text" as const, text: parts.join("\n") },
-				],
+				content: [{ type: "text" as const, text: parts.join("\n") }],
 			}
 		}
 
@@ -637,7 +745,9 @@ setOpenReviewHandler(async (intentDirRel: string, reviewType: string) => {
 	const dag = buildDAG(units)
 	const mermaid = toMermaidDefinition(dag, units)
 	const criteriaSection = intent.sections.find(
-		(s) => s.heading?.toLowerCase().includes("completion criteria") || s.heading?.toLowerCase().includes("success criteria"),
+		(s) =>
+			s.heading?.toLowerCase().includes("completion criteria") ||
+			s.heading?.toLowerCase().includes("success criteria"),
 	)
 	const criteria = criteriaSection ? parseCriteria(criteriaSection.content) : []
 
@@ -650,7 +760,12 @@ setOpenReviewHandler(async (intentDirRel: string, reviewType: string) => {
 	})
 
 	// Store parsed data on session for the SPA
-	Object.assign(session, { parsedIntent: intent, parsedUnits: units, parsedCriteria: criteria, parsedMermaid: mermaid })
+	Object.assign(session, {
+		parsedIntent: intent,
+		parsedUnits: units,
+		parsedCriteria: criteria,
+		parsedMermaid: mermaid,
+	})
 
 	// Parse stage states + knowledge
 	const stageStates = await parseStageStates(intentDirAbs)
@@ -665,9 +780,24 @@ setOpenReviewHandler(async (intentDirRel: string, reviewType: string) => {
 		}
 	}
 
-	Object.assign(session, { stageStates, knowledgeFiles, stageArtifacts, outputArtifacts })
+	Object.assign(session, {
+		stageStates,
+		knowledgeFiles,
+		stageArtifacts,
+		outputArtifacts,
+	})
 
-	session.html = renderReviewPage({ intent, units, criteria, reviewType: reviewType as "intent" | "unit", target: "", sessionId: session.session_id, mermaid, intentMockups: [], unitMockups: new Map() })
+	session.html = renderReviewPage({
+		intent,
+		units,
+		criteria,
+		reviewType: reviewType as "intent" | "unit",
+		target: "",
+		sessionId: session.session_id,
+		mermaid,
+		intentMockups: [],
+		unitMockups: new Map(),
+	})
 
 	const port = await startHttpServer()
 	const useRemote = isRemoteReviewEnabled()
@@ -683,9 +813,12 @@ setOpenReviewHandler(async (intentDirRel: string, reviewType: string) => {
 	function openBrowser(url?: string) {
 		try {
 			const target = url ?? reviewUrl
-			const cmd = process.platform === "darwin" ? ["open", target] : ["xdg-open", target]
+			const cmd =
+				process.platform === "darwin" ? ["open", target] : ["xdg-open", target]
 			spawn(cmd[0], cmd.slice(1), { stdio: "ignore", detached: true }).unref()
-		} catch { /* */ }
+		} catch {
+			/* */
+		}
 	}
 
 	openBrowser()
@@ -697,16 +830,33 @@ setOpenReviewHandler(async (intentDirRel: string, reviewType: string) => {
 		} catch {
 			// Timeout — check if session is still pending (user might still be looking)
 			const check = getSession(session.session_id)
-			if (check && check.session_type === "review" && check.status === "decided") {
-				if (useRemote) { clearE2EKey(session.session_id); closeTunnel() }
-				return { decision: check.decision, feedback: check.feedback, annotations: check.annotations }
+			if (
+				check &&
+				check.session_type === "review" &&
+				check.status === "decided"
+			) {
+				if (useRemote) {
+					clearE2EKey(session.session_id)
+					closeTunnel()
+				}
+				return {
+					decision: check.decision,
+					feedback: check.feedback,
+					annotations: check.annotations,
+				}
 			}
 			// Still pending — try reopening the browser
 			if (attempt < 2) {
-				console.error(`[haiku] Review session timeout (attempt ${attempt + 1}/3) — reopening browser`)
+				console.error(
+					`[haiku] Review session timeout (attempt ${attempt + 1}/3) — reopening browser`,
+				)
 				if (useRemote) {
 					const tunnelUrl = await openTunnel(port)
-					const newUrl = buildReviewUrl(session.session_id, tunnelUrl, reviewType)
+					const newUrl = buildReviewUrl(
+						session.session_id,
+						tunnelUrl,
+						reviewType,
+					)
 					openBrowser(newUrl)
 				} else {
 					openBrowser()
@@ -716,13 +866,27 @@ setOpenReviewHandler(async (intentDirRel: string, reviewType: string) => {
 		}
 
 		const updated = getSession(session.session_id)
-		if (updated && updated.session_type === "review" && updated.status === "decided") {
-			if (useRemote) { clearE2EKey(session.session_id); closeTunnel() }
-			return { decision: updated.decision, feedback: updated.feedback, annotations: updated.annotations }
+		if (
+			updated &&
+			updated.session_type === "review" &&
+			updated.status === "decided"
+		) {
+			if (useRemote) {
+				clearE2EKey(session.session_id)
+				closeTunnel()
+			}
+			return {
+				decision: updated.decision,
+				feedback: updated.feedback,
+				annotations: updated.annotations,
+			}
 		}
 	}
 
-	if (useRemote) { clearE2EKey(session.session_id); closeTunnel() }
+	if (useRemote) {
+		clearE2EKey(session.session_id)
+		closeTunnel()
+	}
 	throw new Error("Review timeout after 3 attempts (30 min total)")
 })
 

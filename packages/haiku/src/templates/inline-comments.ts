@@ -12,7 +12,7 @@
  * @returns HTML string with inline commenting system (no built-in sidebar)
  */
 export function renderInlineComments(markdownHtml: string): string {
-  return `
+	return `
 <div id="inline-comments-container" class="relative">
   <!-- Content area (full width — sidebar is external) -->
   <div id="commentable-content"
@@ -263,5 +263,5 @@ export function renderInlineComments(markdownHtml: string): string {
     return comments.length > 0;
   };
 })();
-</script>`;
+</script>`
 }

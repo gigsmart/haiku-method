@@ -5,11 +5,14 @@
 // frontmatter field. This removes the need for the agent to manually track
 // what it produces — the harness does it deterministically.
 
-import { existsSync, readFileSync, writeFileSync, readdirSync } from "node:fs"
-import { join, resolve, relative } from "node:path"
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
+import { join, relative, resolve } from "node:path"
 import matter from "gray-matter"
 
-export async function trackOutputs(input: Record<string, unknown>, _pluginRoot: string): Promise<void> {
+export async function trackOutputs(
+	input: Record<string, unknown>,
+	_pluginRoot: string,
+): Promise<void> {
 	const filePath = (input.file_path as string) || (input.path as string) || ""
 	if (!filePath) return
 
@@ -42,7 +45,8 @@ export async function trackOutputs(input: Record<string, unknown>, _pluginRoot: 
 
 	// Find the active unit — prefer the specific stage, fall back to any active unit
 	const activeUnitPath = targetStage
-		? findActiveUnitInStage(intentDir, targetStage) || findAnyActiveUnit(intentDir)
+		? findActiveUnitInStage(intentDir, targetStage) ||
+			findAnyActiveUnit(intentDir)
 		: findAnyActiveUnit(intentDir)
 
 	if (!activeUnitPath) return
@@ -66,10 +70,13 @@ export async function trackOutputs(input: Record<string, unknown>, _pluginRoot: 
 	writeFileSync(activeUnitPath, updated)
 }
 
-function findActiveUnitInStage(intentDir: string, stage: string): string | null {
+function findActiveUnitInStage(
+	intentDir: string,
+	stage: string,
+): string | null {
 	const unitsDir = join(intentDir, "stages", stage, "units")
 	if (!existsSync(unitsDir)) return null
-	for (const f of readdirSync(unitsDir).filter(u => u.endsWith(".md"))) {
+	for (const f of readdirSync(unitsDir).filter((u) => u.endsWith(".md"))) {
 		const unitPath = join(unitsDir, f)
 		const { data } = matter(readFileSync(unitPath, "utf8"))
 		if (data.status === "active") return unitPath

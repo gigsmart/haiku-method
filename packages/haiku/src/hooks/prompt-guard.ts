@@ -1,8 +1,12 @@
 // prompt-guard — Advisory scan for prompt injection in spec file writes
 
-const INJECTION_PATTERNS = /ignore previous|disregard|override instructions|you are now|system prompt|<system>|<\/system>/i
+const INJECTION_PATTERNS =
+	/ignore previous|disregard|override instructions|you are now|system prompt|<system>|<\/system>/i
 
-export async function promptGuard(input: Record<string, unknown>, _pluginRoot: string): Promise<void> {
+export async function promptGuard(
+	input: Record<string, unknown>,
+	_pluginRoot: string,
+): Promise<void> {
 	const toolName = input.tool_name as string
 	if (toolName !== "Write" && toolName !== "Edit") return
 

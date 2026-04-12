@@ -9,10 +9,10 @@ import { existsSync, readdirSync } from "node:fs"
 import { join, resolve } from "node:path"
 import {
 	findActiveIntent,
-	readFrontmatterField,
-	readFrontmatterArray,
-	readJson,
 	getRepoRoot,
+	readFrontmatterArray,
+	readFrontmatterField,
+	readJson,
 } from "./utils.js"
 
 interface GateResult {
@@ -26,7 +26,10 @@ interface GateResult {
  * Find the first active unit file in a stage's units/ directory.
  * Returns the full path to the unit file, or null if none found.
  */
-function findActiveUnitInStage(intentDir: string, stage: string): string | null {
+function findActiveUnitInStage(
+	intentDir: string,
+	stage: string,
+): string | null {
 	const unitsDir = join(intentDir, "stages", stage, "units")
 	if (!existsSync(unitsDir)) return null
 	for (const file of readdirSync(unitsDir)) {
@@ -39,7 +42,10 @@ function findActiveUnitInStage(intentDir: string, stage: string): string | null 
 	return null
 }
 
-export async function qualityGate(input: Record<string, unknown>, _pluginRoot: string): Promise<void> {
+export async function qualityGate(
+	input: Record<string, unknown>,
+	_pluginRoot: string,
+): Promise<void> {
 	// Early exit: stop_hook_active guard
 	// When a Stop hook blocks the agent, the harness retries with stop_hook_active=true.
 	// Exit 0 on retry to avoid infinite loops.
@@ -60,11 +66,18 @@ export async function qualityGate(input: Record<string, unknown>, _pluginRoot: s
 	if (!activeStage) return
 
 	// Read stage state
-	const stageState = readJson(join(intentDir, "stages", activeStage, "state.json"))
+	const stageState = readJson(
+		join(intentDir, "stages", activeStage, "state.json"),
+	)
 	const stageStatus = (stageState.status as string) ?? ""
 
 	// Early exit: completed or blocked intent/stage
-	if (intentStatus === "completed" || stageStatus === "completed" || stageStatus === "blocked") return
+	if (
+		intentStatus === "completed" ||
+		stageStatus === "completed" ||
+		stageStatus === "blocked"
+	)
+		return
 
 	// Find the active unit and read its hat
 	const activeUnitFile = findActiveUnitInStage(intentDir, activeStage)
@@ -110,7 +123,11 @@ export async function qualityGate(input: Record<string, unknown>, _pluginRoot: s
 				stdio: ["pipe", "pipe", "pipe"],
 			})
 		} catch (err: unknown) {
-			const execErr = err as { status?: number; stdout?: string; stderr?: string }
+			const execErr = err as {
+				status?: number
+				stdout?: string
+				stderr?: string
+			}
 			gateExit = execErr.status ?? 1
 			gateOutput = (execErr.stdout ?? "") + (execErr.stderr ?? "")
 		}

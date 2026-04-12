@@ -46,3 +46,5 @@ Start at **sonnet**. Justify upward to **opus** if the unit involves architectur
 - The agent **MUST NOT** leave the `model:` field unset — every unit spec **MUST** include the field.
 - The agent **MUST NOT** assign the same model to all units without assessing each individually.
 - The agent **MUST NOT** use "this is important work" as justification for `opus` — importance and complexity are different concepts.
+
+> **Note:** Model assignments are always recorded in unit frontmatter. The orchestrator only uses them for subagent spawning when `HAIKU_MODEL_SELECTION` is set. When unset, all subagents inherit the session default.

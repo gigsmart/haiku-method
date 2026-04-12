@@ -34,7 +34,9 @@ function collectSessionContext(): Record<string, string> {
 	return ctx
 }
 
-export async function injectStateFile(input: Record<string, unknown>): Promise<void> {
+export async function injectStateFile(
+	input: Record<string, unknown>,
+): Promise<void> {
 	// Only inject for haiku_ tool calls
 	const toolName = (input.tool_name as string) || ""
 	if (!toolName.startsWith("haiku_")) return
@@ -42,11 +44,19 @@ export async function injectStateFile(input: Record<string, unknown>): Promise<v
 	const injected: Record<string, unknown> = {}
 
 	// Inject state_file for session metadata persistence
-	const sessionId = (input.session_id as string) || process.env.CLAUDE_SESSION_ID
+	const sessionId =
+		(input.session_id as string) || process.env.CLAUDE_SESSION_ID
 	if (sessionId) {
-		const configDir = process.env.CLAUDE_CONFIG_DIR || join(process.env.HOME || "", ".claude")
+		const configDir =
+			process.env.CLAUDE_CONFIG_DIR || join(process.env.HOME || "", ".claude")
 		const projectSlug = pathToSlug(process.cwd())
-		injected.state_file = join(configDir, "projects", projectSlug, sessionId, "haiku.json")
+		injected.state_file = join(
+			configDir,
+			"projects",
+			projectSlug,
+			sessionId,
+			"haiku.json",
+		)
 	}
 
 	// Always inject session context — the MCP server can't read these env vars itself

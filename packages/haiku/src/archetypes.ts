@@ -63,7 +63,8 @@ interface ArchetypeDataFile {
 // At runtime (Bun), import.meta.dir gives us the src/ directory,
 // so we go up two levels to reach plugin/, then into data/.
 const DATA_PATH = resolve(
-	(import.meta as unknown as Record<string, string>).dir ?? new URL(".", import.meta.url).pathname,
+	(import.meta as unknown as Record<string, string>).dir ??
+		new URL(".", import.meta.url).pathname,
 	"..",
 	"..",
 	"data",

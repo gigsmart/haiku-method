@@ -4,24 +4,32 @@
 // The caller doesn't need to know file paths — just resource identifiers.
 
 import { execFileSync, spawnSync } from "node:child_process"
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	readdirSync,
+	writeFileSync,
+} from "node:fs"
 import { join, resolve } from "node:path"
 import matter from "gray-matter"
-import { emitTelemetry } from "./telemetry.js"
-import { writeHaikuMetadata, logSessionEvent } from "./session-metadata.js"
+import { features } from "./config.js"
 import {
-	mergeUnitWorktree,
-	getCurrentBranch,
-	readFileFromBranch,
-	listIntentBranches,
 	addTempWorktree,
-	removeTempWorktree,
 	commitAndPushFromWorktree,
-	isBranchMerged,
+	getCurrentBranch,
 	getMainlineBranch,
+	isBranchMerged,
+	listIntentBranches,
+	mergeUnitWorktree,
 	openPullRequest,
+	readFileFromBranch,
+	removeTempWorktree,
 } from "./git-worktree.js"
+import { escalate } from "./model-selection.js"
+import { logSessionEvent, writeHaikuMetadata } from "./session-metadata.js"
 import { listStudios, resolveStudio } from "./studio-reader.js"
+import { emitTelemetry } from "./telemetry.js"
 
 // ── Intent title derivation ────────────────────────────────────────────────
 
@@ -158,7 +166,7 @@ export function applyAutoFixes(
 		if (issue.field === "stages" && issue.message.startsWith("Stages don't match")) {
 			const expectedMatch = issue.fix.match(/Expected: \[([^\]]+)\]/)
 			if (expectedMatch) {
-				const expected = expectedMatch[1].split(",").map(s => s.trim()).filter(Boolean)
+				const expected = expectedMatch[1].split(",").map((s) => s.trim()).filter(Boolean)
 				if (expected.length > 0) {
 					data.stages = expected
 					applied.push({
@@ -198,7 +206,6 @@ export function applyAutoFixes(
 
 function statSyncSafe(path: string): { mtime: Date } | null {
 	try {
-		// Lazy import to avoid touching the top-level fs imports
 		const { statSync } = require("node:fs") as { statSync: (p: string) => { mtime: Date } }
 		return statSync(path)
 	} catch {
@@ -268,7 +275,6 @@ function scanOneIntent(
 	// c. Invalid studio (allow legacy aliases via resolveStudio)
 	const repairStudio = repairData.studio as string | undefined
 	if (repairStudio && !studioMap.has(repairStudio)) {
-		// May still resolve via slug/alias — only flag if even resolveStudio can't find it
 		const resolved = resolveStudio(repairStudio)
 		if (!resolved) {
 			const available = Array.from(studioMap.keys()).join(", ")
@@ -377,7 +383,7 @@ function scanOneIntent(
 							for (const kind of ["discovery", "outputs"] as const) {
 								const artifactDir = join(base, repairStudio, "stages", input.stage, kind)
 								if (!existsSync(artifactDir)) continue
-								for (const f of readdirSync(artifactDir).filter(af => af.endsWith(".md"))) {
+								for (const f of readdirSync(artifactDir).filter((af) => af.endsWith(".md"))) {
 									const raw = readFileSync(join(artifactDir, f), "utf8")
 									const { data: aData } = parseFrontmatter(raw)
 									const aName = (aData.name as string) || f.replace(/\.md$/, "")
@@ -456,8 +462,8 @@ function repairCwd(intentArg: string | undefined, autoApply: boolean): RepairCwd
 		slugs = [intentArg]
 	} else {
 		slugs = readdirSync(intentsDir, { withFileTypes: true })
-			.filter(d => d.isDirectory() && existsSync(join(intentsDir, d.name, "intent.md")))
-			.map(d => d.name)
+			.filter((d) => d.isDirectory() && existsSync(join(intentsDir, d.name, "intent.md")))
+			.map((d) => d.name)
 	}
 
 	const allIssues: RepairIssue[] = []
@@ -470,7 +476,6 @@ function repairCwd(intentArg: string | undefined, autoApply: boolean): RepairCwd
 		if (autoApply && issues.length > 0) {
 			const result = applyAutoFixes(intentsDir, slug, issues)
 			allApplied.push(...result.applied)
-			// Re-scan after applying so the report reflects the post-fix state
 			if (result.applied.length > 0) {
 				issues = scanOneIntent(intentsDir, slug, studioMap, searchPaths)
 			}
@@ -516,8 +521,8 @@ function buildRepairReport(result: RepairCwdResult, headingPrefix = ""): string 
 	}
 
 	for (const [slug, issues] of issuesByIntent) {
-		const errors = issues.filter(i => i.severity === "error").length
-		const warnings = issues.filter(i => i.severity === "warning").length
+		const errors = issues.filter((i) => i.severity === "error").length
+		const warnings = issues.filter((i) => i.severity === "warning").length
 		lines.push(`## ${slug} — ${errors} error(s), ${warnings} warning(s)`)
 		lines.push("")
 		lines.push("| # | Severity | Field | Issue | Fix |")
@@ -596,7 +601,6 @@ function repairAllBranches(autoApply: boolean): { summaries: BranchRepairSummary
 		const originalCwd = process.cwd()
 		try {
 			process.chdir(worktreePath)
-			// Reset cached git-repo flag since cwd changed
 			_isGitRepo = null
 			const result = repairCwd(undefined, autoApply)
 			summary.scanned = result.scanned
@@ -607,7 +611,7 @@ function repairAllBranches(autoApply: boolean): { summaries: BranchRepairSummary
 				const messageLines = [
 					`repair: auto-fix ${result.applied.length} metadata issue(s)`,
 					"",
-					...result.applied.map(a => `- ${a.intent}/${a.field}: ${a.description}`),
+					...result.applied.map((a) => `- ${a.intent}/${a.field}: ${a.description}`),
 				]
 				const push = commitAndPushFromWorktree(worktreePath, branch, messageLines.join("\n"))
 				summary.committed = push.committed
@@ -619,7 +623,7 @@ function repairAllBranches(autoApply: boolean): { summaries: BranchRepairSummary
 						branch,
 						mainline,
 						`repair: metadata fixes for ${slug}`,
-						`Auto-applied repair fixes (branch was already merged into \`${mainline}\`):\n\n${result.applied.map(a => `- **${a.intent}/${a.field}**: ${a.description}`).join("\n")}`,
+						`Auto-applied repair fixes (branch was already merged into \`${mainline}\`):\n\n${result.applied.map((a) => `- **${a.intent}/${a.field}**: ${a.description}`).join("\n")}`,
 					)
 					if (prResult.ok) summary.prUrl = prResult.url
 					else summary.prError = prResult.error
@@ -649,8 +653,8 @@ function buildMultiBranchReport(summaries: BranchRepairSummary[], mainline: stri
 	]
 	const totalApplied = summaries.reduce((sum, s) => sum + s.applied.length, 0)
 	const totalRemaining = summaries.reduce((sum, s) => sum + s.remaining.length, 0)
-	const totalPushed = summaries.filter(s => s.pushed).length
-	const totalPRs = summaries.filter(s => s.prUrl).length
+	const totalPushed = summaries.filter((s) => s.pushed).length
+	const totalPRs = summaries.filter((s) => s.prUrl).length
 	lines.push(`**Summary:** ${totalApplied} fix(es) auto-applied across ${totalPushed} branch(es); ${totalPRs} PR(s) opened for already-merged branches; ${totalRemaining} issue(s) still need attention.`)
 	lines.push("")
 
@@ -693,7 +697,10 @@ let _isGitRepo: boolean | null = null
 export function isGitRepo(): boolean {
 	if (_isGitRepo !== null) return _isGitRepo
 	try {
-		execFileSync("git", ["rev-parse", "--git-dir"], { encoding: "utf8", stdio: "pipe" })
+		execFileSync("git", ["rev-parse", "--git-dir"], {
+			encoding: "utf8",
+			stdio: "pipe",
+		})
 		_isGitRepo = true
 	} catch {
 		_isGitRepo = false
@@ -734,7 +741,9 @@ export function stageStatePath(slug: string, stage: string): string {
 
 // ── Frontmatter helpers ────────────────────────────────────────────────────
 
-function normalizeDates(data: Record<string, unknown>): Record<string, unknown> {
+function normalizeDates(
+	data: Record<string, unknown>,
+): Record<string, unknown> {
 	const result = { ...data }
 	for (const key in result) {
 		if (result[key] instanceof Date) {
@@ -744,17 +753,33 @@ function normalizeDates(data: Record<string, unknown>): Record<string, unknown> 
 	return result
 }
 
-export function parseFrontmatter(raw: string): { data: Record<string, unknown>; body: string } {
+export function parseFrontmatter(raw: string): {
+	data: Record<string, unknown>
+	body: string
+} {
 	const { data, content } = matter(raw)
-	return { data: normalizeDates(data as Record<string, unknown>), body: content.trim() }
+	return {
+		data: normalizeDates(data as Record<string, unknown>),
+		body: content.trim(),
+	}
 }
 
-export function setFrontmatterField(filePath: string, field: string, value: unknown): void {
+export function setFrontmatterField(
+	filePath: string,
+	field: string,
+	value: unknown,
+): void {
 	const raw = readFileSync(filePath, "utf8")
 	const parsed = matter(raw)
 	parsed.data[field] = value
 	// gray-matter stringify: matter.stringify(content, data)
-	writeFileSync(filePath, matter.stringify(parsed.content, normalizeDates(parsed.data as Record<string, unknown>)))
+	writeFileSync(
+		filePath,
+		matter.stringify(
+			parsed.content,
+			normalizeDates(parsed.data as Record<string, unknown>),
+		),
+	)
 }
 
 function parseYaml(raw: string): Record<string, unknown> {
@@ -780,7 +805,7 @@ export function readJson(path: string): Record<string, unknown> {
 
 export function writeJson(path: string, data: Record<string, unknown>): void {
 	mkdirSync(join(path, ".."), { recursive: true })
-	writeFileSync(path, JSON.stringify(data, null, 2) + "\n")
+	writeFileSync(path, `${JSON.stringify(data, null, 2)}\n`)
 }
 
 export function timestamp(): string {
@@ -792,17 +817,25 @@ export function timestamp(): string {
  * No-op in non-git environments (filesystem mode).
  * Non-fatal: git failures are logged but never crash the MCP.
  */
-export function gitCommitState(message: string): { committed: boolean; pushed: boolean; pushError?: string } {
+export function gitCommitState(message: string): {
+	committed: boolean
+	pushed: boolean
+	pushError?: string
+} {
 	if (!isGitRepo()) return { committed: false, pushed: false } // Filesystem mode — no git operations
 	try {
 		const haikuRoot = findHaikuRoot()
 		execFileSync("git", ["add", haikuRoot], { encoding: "utf8", stdio: "pipe" })
-		execFileSync("git", ["commit", "-m", message, "--allow-empty"], { encoding: "utf8", stdio: "pipe" })
+		execFileSync("git", ["commit", "-m", message, "--allow-empty"], {
+			encoding: "utf8",
+			stdio: "pipe",
+		})
 		try {
 			execFileSync("git", ["push"], { encoding: "utf8", stdio: "pipe" })
 			return { committed: true, pushed: true }
 		} catch (pushErr) {
-			const pushError = pushErr instanceof Error ? pushErr.message : String(pushErr)
+			const pushError =
+				pushErr instanceof Error ? pushErr.message : String(pushErr)
 			return { committed: true, pushed: false, pushError }
 		}
 	} catch {
@@ -814,7 +847,11 @@ export function gitCommitState(message: string): { committed: boolean; pushed: b
  * Validate the agent is on the correct git branch for the current operation.
  * Returns an error message if on the wrong branch, empty string if OK.
  */
-export function validateBranch(intent: string, expectedType: "intent" | "unit", unit?: string): string {
+export function validateBranch(
+	intent: string,
+	expectedType: "intent" | "unit",
+	unit?: string,
+): string {
 	if (!isGitRepo()) return "" // No branch enforcement in filesystem mode
 	const current = getCurrentBranch()
 	if (!current) return ""
@@ -842,16 +879,26 @@ function pushWarning(result: ReturnType<typeof gitCommitState>): string {
 }
 
 /** Injects push warning into a JSON object's message field if push failed. */
-function injectPushWarning(obj: Record<string, unknown>, result: ReturnType<typeof gitCommitState>): Record<string, unknown> {
+function injectPushWarning(
+	obj: Record<string, unknown>,
+	result: ReturnType<typeof gitCommitState>,
+): Record<string, unknown> {
 	if (result.pushed || !result.committed) return obj
-	return { ...obj, push_failed: true, push_error: result.pushError || "unknown error", message: `${obj.message || ""}. ⚠️ GIT PUSH FAILED: ${result.pushError || "unknown error"}. Run \`git pull --rebase && git push\` to resolve.` }
+	return {
+		...obj,
+		push_failed: true,
+		push_error: result.pushError || "unknown error",
+		message: `${obj.message || ""}. ⚠️ GIT PUSH FAILED: ${result.pushError || "unknown error"}. Run \`git pull --rebase && git push\` to resolve.`,
+	}
 }
 
 /**
  * Callback for runNext — registered by orchestrator at startup to avoid circular imports.
  * Used by advance_hat to internally progress the FSM after unit completion.
  */
-let _runNext: ((slug: string) => { action: string; [key: string]: unknown }) | null = null
+let _runNext:
+	| ((slug: string) => { action: string; [key: string]: unknown })
+	| null = null
 export function setRunNextHandler(handler: typeof _runNext): void {
 	_runNext = handler
 }
@@ -866,7 +913,10 @@ function resolveActiveStage(intent: string): string {
 }
 
 /** Find a unit file by searching through stages. Returns { path, stage } or null. */
-function findUnitFile(intent: string, unit: string): { path: string; stage: string } | null {
+function findUnitFile(
+	intent: string,
+	unit: string,
+): { path: string; stage: string } | null {
 	const root = findHaikuRoot()
 	// First try the active stage (most common case)
 	const activeStage = resolveActiveStage(intent)
@@ -895,13 +945,20 @@ function resolveStageHats(intent: string, stage: string): string[] {
 		if (!studio) return []
 
 		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
-		for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
+		for (const base of [
+			join(process.cwd(), ".haiku", "studios"),
+			join(pluginRoot, "studios"),
+		]) {
 			const stageFile = join(base, studio, "stages", stage, "STAGE.md")
 			if (!existsSync(stageFile)) continue
-			const { data: stageFm } = parseFrontmatter(readFileSync(stageFile, "utf8"))
+			const { data: stageFm } = parseFrontmatter(
+				readFileSync(stageFile, "utf8"),
+			)
 			return (stageFm.hats as string[]) || []
 		}
-	} catch { /* */ }
+	} catch {
+		/* */
+	}
 	return []
 }
 
@@ -916,13 +973,20 @@ function resolveAllowedUnitTypes(intent: string, stage: string): string[] {
 		if (!studio) return []
 
 		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
-		for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
+		for (const base of [
+			join(process.cwd(), ".haiku", "studios"),
+			join(pluginRoot, "studios"),
+		]) {
 			const stageFile = join(base, studio, "stages", stage, "STAGE.md")
 			if (!existsSync(stageFile)) continue
-			const { data: stageFm } = parseFrontmatter(readFileSync(stageFile, "utf8"))
+			const { data: stageFm } = parseFrontmatter(
+				readFileSync(stageFile, "utf8"),
+			)
 			return (stageFm.unit_types as string[]) || []
 		}
-	} catch { /* */ }
+	} catch {
+		/* */
+	}
 	return []
 }
 
@@ -937,7 +1001,10 @@ function resolveStageScope(intent: string, stage: string): string {
 		if (!studio) return ""
 
 		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
-		for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
+		for (const base of [
+			join(process.cwd(), ".haiku", "studios"),
+			join(pluginRoot, "studios"),
+		]) {
 			const stageFile = join(base, studio, "stages", stage, "STAGE.md")
 			if (!existsSync(stageFile)) continue
 			const raw = readFileSync(stageFile, "utf8")
@@ -945,11 +1012,11 @@ function resolveStageScope(intent: string, stage: string): string {
 			const { content } = matter(raw)
 			const desc = (fm.data.description as string) || stage
 			const unitTypes = (fm.data.unit_types as string[]) || []
-			return `[stage_scope] ${stage}: ${desc}` +
-				(unitTypes.length > 0 ? ` | unit_types: ${unitTypes.join(", ")}` : "") +
-				` | ${content.trim().slice(0, 500)}`
+			return `[stage_scope] ${stage}: ${desc}${unitTypes.length > 0 ? ` | unit_types: ${unitTypes.join(", ")}` : ""} | ${content.trim().slice(0, 500)}`
 		}
-	} catch { /* */ }
+	} catch {
+		/* */
+	}
 	return ""
 }
 
@@ -958,13 +1025,18 @@ function resolveStageScope(intent: string, stage: string): string {
  * The state_file path is injected by the pre_tool_use hook — the MCP server
  * never resolves session IDs or config dirs. If no state_file, this is a no-op.
  */
-export function syncSessionMetadata(intent: string, stateFile: string | undefined): void {
+export function syncSessionMetadata(
+	intent: string,
+	stateFile: string | undefined,
+): void {
 	if (!stateFile) return
 	try {
 		const root = findHaikuRoot()
 		const intentFile = join(root, "intents", intent, "intent.md")
 		if (!existsSync(intentFile)) return
-		const { data: intentData } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+		const { data: intentData } = parseFrontmatter(
+			readFileSync(intentFile, "utf8"),
+		)
 		const studio = (intentData.studio as string) || ""
 		const activeStage = (intentData.active_stage as string) || ""
 
@@ -981,8 +1053,12 @@ export function syncSessionMetadata(intent: string, stateFile: string | undefine
 		if (activeStage) {
 			const unitsDir = join(stageDir(intent, activeStage), "units")
 			if (existsSync(unitsDir)) {
-				for (const f of readdirSync(unitsDir).filter(f => f.endsWith(".md"))) {
-					const { data: unitData } = parseFrontmatter(readFileSync(join(unitsDir, f), "utf8"))
+				for (const f of readdirSync(unitsDir).filter((f) =>
+					f.endsWith(".md"),
+				)) {
+					const { data: unitData } = parseFrontmatter(
+						readFileSync(join(unitsDir, f), "utf8"),
+					)
 					if (unitData.status === "active") {
 						activeUnit = f.replace(".md", "")
 						hat = (unitData.hat as string) || null
@@ -997,7 +1073,10 @@ export function syncSessionMetadata(intent: string, stateFile: string | undefine
 		let stageUnitTypes: string[] = []
 		if (studio && activeStage) {
 			const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
-			for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
+			for (const base of [
+				join(process.cwd(), ".haiku", "studios"),
+				join(pluginRoot, "studios"),
+			]) {
 				const sf = join(base, studio, "stages", activeStage, "STAGE.md")
 				if (!existsSync(sf)) continue
 				const { data: stageFm } = parseFrontmatter(readFileSync(sf, "utf8"))
@@ -1008,12 +1087,20 @@ export function syncSessionMetadata(intent: string, stateFile: string | undefine
 		}
 
 		writeHaikuMetadata(stateFile, {
-			intent, studio, active_stage: activeStage, phase,
-			active_unit: activeUnit, hat, bolt,
-			stage_description: stageDescription, stage_unit_types: stageUnitTypes,
+			intent,
+			studio,
+			active_stage: activeStage,
+			phase,
+			active_unit: activeUnit,
+			hat,
+			bolt,
+			stage_description: stageDescription,
+			stage_unit_types: stageUnitTypes,
 			updated_at: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
 		})
-	} catch { /* non-fatal */ }
+	} catch {
+		/* non-fatal */
+	}
 }
 
 // ── Tool definitions ───────────────────────────────────────────────────────
@@ -1023,7 +1110,11 @@ export const stateToolDefs = [
 	{
 		name: "haiku_intent_get",
 		description: "Read a field from an intent's frontmatter",
-		inputSchema: { type: "object" as const, properties: { slug: { type: "string" }, field: { type: "string" } }, required: ["slug", "field"] },
+		inputSchema: {
+			type: "object" as const,
+			properties: { slug: { type: "string" }, field: { type: "string" } },
+			required: ["slug", "field"],
+		},
 	},
 	{
 		name: "haiku_intent_list",
@@ -1034,120 +1125,273 @@ export const stateToolDefs = [
 	{
 		name: "haiku_stage_get",
 		description: "Read a field from a stage's state",
-		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, stage: { type: "string" }, field: { type: "string" } }, required: ["intent", "stage", "field"] },
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: { type: "string" },
+				stage: { type: "string" },
+				field: { type: "string" },
+			},
+			required: ["intent", "stage", "field"],
+		},
 	},
 	// Unit tools
 	{
 		name: "haiku_unit_get",
 		description: "Read a field from a unit's frontmatter",
-		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, stage: { type: "string" }, unit: { type: "string" }, field: { type: "string" } }, required: ["intent", "stage", "unit", "field"] },
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: { type: "string" },
+				stage: { type: "string" },
+				unit: { type: "string" },
+				field: { type: "string" },
+			},
+			required: ["intent", "stage", "unit", "field"],
+		},
 	},
 	{
 		name: "haiku_unit_set",
 		description: "Set a field in a unit's frontmatter",
-		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, stage: { type: "string" }, unit: { type: "string" }, field: { type: "string" }, value: { type: "string" } }, required: ["intent", "stage", "unit", "field", "value"] },
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: { type: "string" },
+				stage: { type: "string" },
+				unit: { type: "string" },
+				field: { type: "string" },
+				value: { type: "string" },
+			},
+			required: ["intent", "stage", "unit", "field", "value"],
+		},
 	},
 	{
 		name: "haiku_unit_list",
 		description: "List all units in a stage with their status",
-		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, stage: { type: "string" } }, required: ["intent", "stage"] },
+		inputSchema: {
+			type: "object" as const,
+			properties: { intent: { type: "string" }, stage: { type: "string" } },
+			required: ["intent", "stage"],
+		},
 	},
 	{
 		name: "haiku_unit_start",
-		description: "Mark a unit as started. The system resolves the stage and first hat internally.",
-		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, unit: { type: "string" } }, required: ["intent", "unit"] },
+		description:
+			"Mark a unit as started. The system resolves the stage and first hat internally.",
+		inputSchema: {
+			type: "object" as const,
+			properties: { intent: { type: "string" }, unit: { type: "string" } },
+			required: ["intent", "unit"],
+		},
 	},
 	{
 		name: "haiku_unit_advance_hat",
-		description: "Advance a unit to the next hat in the sequence. When called on the last hat, auto-completes the unit and progresses the FSM. The system resolves the current hat, next hat, and stage internally.",
-		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, unit: { type: "string" } }, required: ["intent", "unit"] },
+		description:
+			"Advance a unit to the next hat in the sequence. When called on the last hat, auto-completes the unit and progresses the FSM. The system resolves the current hat, next hat, and stage internally.",
+		inputSchema: {
+			type: "object" as const,
+			properties: { intent: { type: "string" }, unit: { type: "string" } },
+			required: ["intent", "unit"],
+		},
 	},
 	{
 		name: "haiku_unit_reject_hat",
-		description: "Reject the current hat's work — moves back to the previous hat and increments bolt. The system resolves stage and hat positions internally.",
-		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, unit: { type: "string" } }, required: ["intent", "unit"] },
+		description:
+			"Reject the current hat's work — moves back to the previous hat and increments bolt. The system resolves stage and hat positions internally.",
+		inputSchema: {
+			type: "object" as const,
+			properties: { intent: { type: "string" }, unit: { type: "string" } },
+			required: ["intent", "unit"],
+		},
 	},
 	{
 		name: "haiku_unit_increment_bolt",
 		description: "Increment a unit's bolt counter (new iteration cycle)",
-		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, stage: { type: "string" }, unit: { type: "string" } }, required: ["intent", "stage", "unit"] },
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: { type: "string" },
+				stage: { type: "string" },
+				unit: { type: "string" },
+			},
+			required: ["intent", "stage", "unit"],
+		},
 	},
 	// Knowledge tools
 	{
 		name: "haiku_knowledge_list",
 		description: "List knowledge artifacts for an intent",
-		inputSchema: { type: "object" as const, properties: { intent: { type: "string" } }, required: ["intent"] },
+		inputSchema: {
+			type: "object" as const,
+			properties: { intent: { type: "string" } },
+			required: ["intent"],
+		},
 	},
 	{
 		name: "haiku_knowledge_read",
 		description: "Read a knowledge artifact",
-		inputSchema: { type: "object" as const, properties: { intent: { type: "string" }, name: { type: "string" } }, required: ["intent", "name"] },
+		inputSchema: {
+			type: "object" as const,
+			properties: { intent: { type: "string" }, name: { type: "string" } },
+			required: ["intent", "name"],
+		},
 	},
 	// Studio tools
 	{
 		name: "haiku_studio_list",
-		description: "List all available studios with their description, stages, and category. Project-level studios (.haiku/studios/) override built-in ones on name collision.",
+		description:
+			"List all available studios with their description, stages, and category. Project-level studios (.haiku/studios/) override built-in ones on name collision.",
 		inputSchema: { type: "object" as const, properties: {} },
 	},
 	{
 		name: "haiku_studio_get",
-		description: "Read a studio's STUDIO.md — returns frontmatter fields and body text. Resolves project-level override first, then built-in.",
-		inputSchema: { type: "object" as const, properties: { studio: { type: "string" } }, required: ["studio"] },
+		description:
+			"Read a studio's STUDIO.md — returns frontmatter fields and body text. Resolves project-level override first, then built-in.",
+		inputSchema: {
+			type: "object" as const,
+			properties: { studio: { type: "string" } },
+			required: ["studio"],
+		},
 	},
 	{
 		name: "haiku_studio_stage_get",
-		description: "Read a stage's STAGE.md from a studio — returns frontmatter fields (hats, review, requires, produces) and body text. Resolves project-level override first, then built-in.",
-		inputSchema: { type: "object" as const, properties: { studio: { type: "string" }, stage: { type: "string" } }, required: ["studio", "stage"] },
+		description:
+			"Read a stage's STAGE.md from a studio — returns frontmatter fields (hats, review, requires, produces) and body text. Resolves project-level override first, then built-in.",
+		inputSchema: {
+			type: "object" as const,
+			properties: { studio: { type: "string" }, stage: { type: "string" } },
+			required: ["studio", "stage"],
+		},
 	},
 	// Settings tools
 	{
 		name: "haiku_settings_get",
-		description: "Read a field from .haiku/settings.yml (e.g. studio, stack.compute, providers, workspace, default_announcements, review_agents, operations_runtime). Returns empty string if not set.",
-		inputSchema: { type: "object" as const, properties: { field: { type: "string", description: "Dot-separated path (e.g. 'studio', 'stack.compute', 'review_agents')" } }, required: ["field"] },
+		description:
+			"Read a field from .haiku/settings.yml (e.g. studio, stack.compute, providers, workspace, default_announcements, review_agents, operations_runtime). Returns empty string if not set.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				field: {
+					type: "string",
+					description:
+						"Dot-separated path (e.g. 'studio', 'stack.compute', 'review_agents')",
+				},
+			},
+			required: ["field"],
+		},
 	},
 	// Aggregate / report tools
 	{
 		name: "haiku_dashboard",
-		description: "Returns a formatted dashboard of all intents showing status, studio, active stage, mode, and per-stage status tables.",
+		description:
+			"Returns a formatted dashboard of all intents showing status, studio, active stage, mode, and per-stage status tables.",
 		inputSchema: { type: "object" as const, properties: {} },
 	},
 	{
 		name: "haiku_capacity",
-		description: "Returns a capacity report grouped by studio — completed/active counts and median bolt counts per stage.",
-		inputSchema: { type: "object" as const, properties: { studio: { type: "string", description: "Optional: filter to a specific studio" } } },
-	},
-	{
-		name: "haiku_reflect",
-		description: "Returns detailed reflection data for an intent — per-stage summaries, unit completion counts, bolt counts, and analysis instructions.",
-		inputSchema: { type: "object" as const, properties: { intent: { type: "string" } }, required: ["intent"] },
-	},
-	{
-		name: "haiku_review",
-		description: "Runs a git diff against main/upstream and returns formatted pre-delivery code review instructions with diff, stats, review guidelines, and review-agent config.",
-		inputSchema: { type: "object" as const, properties: { intent: { type: "string", description: "Optional: intent slug for context" } } },
-	},
-	{
-		name: "haiku_backlog",
-		description: "Manage the backlog: list items, add new items, review items interactively, or promote items to intents.",
-		inputSchema: { type: "object" as const, properties: { action: { type: "string", description: "list | add | review | promote (default: list)" }, description: { type: "string", description: "Description for the new backlog item (used with add)" } } },
-	},
-	{
-		name: "haiku_seed",
-		description: "Manage seeds (future ideas): list by status, plant a new seed, or check planted seeds for trigger conditions.",
-		inputSchema: { type: "object" as const, properties: { action: { type: "string", description: "list | plant | check (default: list)" } } },
-	},
-	{
-		name: "haiku_release_notes",
-		description: "Extract release notes from CHANGELOG.md — a specific version or the 5 most recent entries.",
-		inputSchema: { type: "object" as const, properties: { version: { type: "string", description: "Optional: specific version to extract (e.g. '1.2.0')" } } },
-	},
-	{
-		name: "haiku_repair",
-		description: "Scan intents for metadata issues (missing fields, invalid studios, stages mismatch, legacy fields, unit naming). Returns a diagnostic report with fixes.",
+		description:
+			"Returns a capacity report grouped by studio — completed/active counts and median bolt counts per stage.",
 		inputSchema: {
 			type: "object" as const,
 			properties: {
-				intent: { type: "string", description: "Specific intent slug to scan, or omit to scan all" },
+				studio: {
+					type: "string",
+					description: "Optional: filter to a specific studio",
+				},
+			},
+		},
+	},
+	{
+		name: "haiku_reflect",
+		description:
+			"Returns detailed reflection data for an intent — per-stage summaries, unit completion counts, bolt counts, and analysis instructions.",
+		inputSchema: {
+			type: "object" as const,
+			properties: { intent: { type: "string" } },
+			required: ["intent"],
+		},
+	},
+	{
+		name: "haiku_review",
+		description:
+			"Runs a git diff against main/upstream and returns formatted pre-delivery code review instructions with diff, stats, review guidelines, and review-agent config.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: {
+					type: "string",
+					description: "Optional: intent slug for context",
+				},
+			},
+		},
+	},
+	{
+		name: "haiku_backlog",
+		description:
+			"Manage the backlog: list items, add new items, review items interactively, or promote items to intents.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				action: {
+					type: "string",
+					description: "list | add | review | promote (default: list)",
+				},
+				description: {
+					type: "string",
+					description: "Description for the new backlog item (used with add)",
+				},
+			},
+		},
+	},
+	{
+		name: "haiku_seed",
+		description:
+			"Manage seeds (future ideas): list by status, plant a new seed, or check planted seeds for trigger conditions.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				action: {
+					type: "string",
+					description: "list | plant | check (default: list)",
+				},
+			},
+		},
+	},
+	{
+		name: "haiku_release_notes",
+		description:
+			"Extract release notes from CHANGELOG.md — a specific version or the 5 most recent entries.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				version: {
+					type: "string",
+					description: "Optional: specific version to extract (e.g. '1.2.0')",
+				},
+			},
+		},
+	},
+	{
+		name: "haiku_repair",
+		description:
+			"Scan intents for metadata issues and auto-apply safe fixes. In a git repo, the default behavior is to scan ALL `haiku/<slug>/main` intent branches sequentially via temporary worktrees, auto-apply safe fixes (overlong title trim, legacy field renames, missing defaults, studio alias migration), commit and push the fixes to each branch, and open a PR/MR back to mainline if the branch was already merged. Pass `intent` to repair a single intent in the current working directory only. Pass `skip_branches: true` to force cwd-only mode in a git repo. Pass `apply: false` to scan without applying fixes.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: {
+					type: "string",
+					description:
+						"Specific intent slug to scan in the current working directory (skips multi-branch mode)",
+				},
+				apply: {
+					type: "boolean",
+					description: "Auto-apply safe mechanical fixes (default: true)",
+				},
+				skip_branches: {
+					type: "boolean",
+					description:
+						"Force cwd-only mode even when in a git repo (default: false)",
+				},
 			},
 		},
 	},
@@ -1155,8 +1399,13 @@ export const stateToolDefs = [
 
 // ── Tool handlers ──────────────────────────────────────────────────────────
 
-export function handleStateTool(name: string, args: Record<string, unknown>): { content: Array<{ type: "text"; text: string }> } {
-	const text = (s: string) => ({ content: [{ type: "text" as const, text: s }] })
+export function handleStateTool(
+	name: string,
+	args: Record<string, unknown>,
+): { content: Array<{ type: "text"; text: string }> } {
+	const text = (s: string) => ({
+		content: [{ type: "text" as const, text: s }],
+	})
 
 	switch (name) {
 		// ── Intent ──
@@ -1165,16 +1414,31 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			if (!existsSync(file)) return text("")
 			const { data } = parseFrontmatter(readFileSync(file, "utf8"))
 			const val = data[args.field as string]
-			return text(val == null ? "" : typeof val === "object" ? JSON.stringify(val) : String(val))
+			return text(
+				val == null
+					? ""
+					: typeof val === "object"
+						? JSON.stringify(val)
+						: String(val),
+			)
 		}
 		case "haiku_intent_list": {
 			const root = findHaikuRoot()
 			const intentsDir = join(root, "intents")
 			if (!existsSync(intentsDir)) return text("[]")
-			const slugs = readdirSync(intentsDir).filter(d => existsSync(join(intentsDir, d, "intent.md")))
-			const intents = slugs.map(slug => {
-				const { data } = parseFrontmatter(readFileSync(join(intentsDir, slug, "intent.md"), "utf8"))
-				return { slug, studio: data.studio, status: data.status, active_stage: data.active_stage }
+			const slugs = readdirSync(intentsDir).filter((d) =>
+				existsSync(join(intentsDir, d, "intent.md")),
+			)
+			const intents = slugs.map((slug) => {
+				const { data } = parseFrontmatter(
+					readFileSync(join(intentsDir, slug, "intent.md"), "utf8"),
+				)
+				return {
+					slug,
+					studio: data.studio,
+					status: data.status,
+					active_stage: data.active_stage,
+				}
 			})
 			return text(JSON.stringify(intents, null, 2))
 		}
@@ -1189,31 +1453,61 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 
 		// ── Unit ──
 		case "haiku_unit_get": {
-			const path = unitPath(args.intent as string, args.stage as string, args.unit as string)
+			const path = unitPath(
+				args.intent as string,
+				args.stage as string,
+				args.unit as string,
+			)
 			if (!existsSync(path)) return text("")
 			const { data } = parseFrontmatter(readFileSync(path, "utf8"))
 			const val = data[args.field as string]
-			return text(val == null ? "" : typeof val === "object" ? JSON.stringify(val) : String(val))
+			return text(
+				val == null
+					? ""
+					: typeof val === "object"
+						? JSON.stringify(val)
+						: String(val),
+			)
 		}
 		case "haiku_unit_set": {
-			const path = unitPath(args.intent as string, args.stage as string, args.unit as string)
+			const path = unitPath(
+				args.intent as string,
+				args.stage as string,
+				args.unit as string,
+			)
 			setFrontmatterField(path, args.field as string, args.value)
 			return text("ok")
 		}
 		case "haiku_unit_list": {
-			const dir = join(stageDir(args.intent as string, args.stage as string), "units")
+			const dir = join(
+				stageDir(args.intent as string, args.stage as string),
+				"units",
+			)
 			if (!existsSync(dir)) return text("[]")
-			const files = readdirSync(dir).filter(f => f.endsWith(".md"))
-			const units = files.map(f => {
+			const files = readdirSync(dir).filter((f) => f.endsWith(".md"))
+			const units = files.map((f) => {
 				const { data } = parseFrontmatter(readFileSync(join(dir, f), "utf8"))
-				return { name: f.replace(".md", ""), status: data.status, bolt: data.bolt, hat: data.hat, model: data.model ?? null }
+				return {
+					name: f.replace(".md", ""),
+					status: data.status,
+					bolt: data.bolt,
+					hat: data.hat,
+					model: data.model ?? null,
+				}
 			})
 			return text(JSON.stringify(units, null, 2))
 		}
 		case "haiku_unit_start": {
 			// Resolve stage and first hat internally
 			const stage = resolveActiveStage(args.intent as string)
-			if (!stage) return text(JSON.stringify({ error: "no_active_stage", message: "No active stage found for this intent. Call haiku_run_next first." }))
+			if (!stage)
+				return text(
+					JSON.stringify({
+						error: "no_active_stage",
+						message:
+							"No active stage found for this intent. Call haiku_run_next first.",
+					}),
+				)
 			const uPath = unitPath(args.intent as string, stage, args.unit as string)
 			const stageHats = resolveStageHats(args.intent as string, stage)
 			const firstHat = stageHats[0] || ""
@@ -1223,14 +1517,19 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				const { data: unitFm } = parseFrontmatter(readFileSync(uPath, "utf8"))
 				const unitType = (unitFm.type as string) || ""
 				if (unitType) {
-					const allowedTypes = resolveAllowedUnitTypes(args.intent as string, stage)
+					const allowedTypes = resolveAllowedUnitTypes(
+						args.intent as string,
+						stage,
+					)
 					if (allowedTypes.length > 0 && !allowedTypes.includes(unitType)) {
-						return text(JSON.stringify({
-							error: "unit_type_not_allowed",
-							unit_type: unitType,
-							allowed_types: allowedTypes,
-							message: `Unit type '${unitType}' is not allowed in stage '${stage}'. Allowed types: ${allowedTypes.join(", ")}. Convert to knowledge for downstream stages, then call haiku_run_next again.`,
-						}))
+						return text(
+							JSON.stringify({
+								error: "unit_type_not_allowed",
+								unit_type: unitType,
+								allowed_types: allowedTypes,
+								message: `Unit type '${unitType}' is not allowed in stage '${stage}'. Allowed types: ${allowedTypes.join(", ")}. Convert to knowledge for downstream stages, then call haiku_run_next again.`,
+							}),
+						)
 					}
 				}
 			}
@@ -1240,18 +1539,41 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			setFrontmatterField(uPath, "hat", firstHat)
 			setFrontmatterField(uPath, "started_at", timestamp())
 			setFrontmatterField(uPath, "hat_started_at", timestamp())
-			emitTelemetry("haiku.unit.started", { intent: args.intent as string, stage, unit: args.unit as string, hat: firstHat })
+			emitTelemetry("haiku.unit.started", {
+				intent: args.intent as string,
+				stage,
+				unit: args.unit as string,
+				hat: firstHat,
+			})
 			const sf = args.state_file as string | undefined
-			if (sf) logSessionEvent(sf, { event: "unit_started", intent: args.intent, stage, unit: args.unit, hat: firstHat })
-			const gitResult = gitCommitState(`haiku: start unit ${args.unit as string}`)
-			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
+			if (sf)
+				logSessionEvent(sf, {
+					event: "unit_started",
+					intent: args.intent,
+					stage,
+					unit: args.unit,
+					hat: firstHat,
+				})
+			const gitResult = gitCommitState(
+				`haiku: start unit ${args.unit as string}`,
+			)
+			syncSessionMetadata(
+				args.intent as string,
+				args.state_file as string | undefined,
+			)
 			const scope = resolveStageScope(args.intent as string, stage)
 			return text((scope ? `ok\n\n${scope}` : "ok") + pushWarning(gitResult))
 		}
 		case "haiku_unit_advance_hat": {
 			// Resolve stage and unit path internally
 			const unitInfo = findUnitFile(args.intent as string, args.unit as string)
-			if (!unitInfo) return text(JSON.stringify({ error: "unit_not_found", message: `Unit '${args.unit}' not found in any stage of intent '${args.intent}'.` }))
+			if (!unitInfo)
+				return text(
+					JSON.stringify({
+						error: "unit_not_found",
+						message: `Unit '${args.unit}' not found in any stage of intent '${args.intent}'.`,
+					}),
+				)
 			const advPath = unitInfo.path
 			const advStage = unitInfo.stage
 
@@ -1264,7 +1586,15 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			if (hatStartedAt) {
 				const elapsed = (Date.now() - new Date(hatStartedAt).getTime()) / 1000
 				if (elapsed < 30) {
-					return text(JSON.stringify({ error: "hat_too_fast", elapsed_seconds: Math.round(elapsed), minimum_seconds: 30, message: "Cannot advance hat — the current hat started less than 30 seconds ago. Each hat must do meaningful work before advancing." }))
+					return text(
+						JSON.stringify({
+							error: "hat_too_fast",
+							elapsed_seconds: Math.round(elapsed),
+							minimum_seconds: 30,
+							message:
+								"Cannot advance hat — the current hat started less than 30 seconds ago. Each hat must do meaningful work before advancing.",
+						}),
+					)
 				}
 			}
 
@@ -1272,22 +1602,41 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			const unitOutputs = (unitFm.outputs as string[]) || []
 			if (unitOutputs.length > 0) {
 				const iDir = intentDir(args.intent as string)
-				const escaped = unitOutputs.filter(o => {
+				const escaped = unitOutputs.filter((o) => {
 					const resolved = resolve(iDir, o)
-					return !resolved.startsWith(resolve(iDir) + "/")
+					return !resolved.startsWith(`${resolve(iDir)}/`)
 				})
 				if (escaped.length > 0) {
-					return text(JSON.stringify({ error: "unit_outputs_escaped", escaped, message: `Cannot advance hat: ${escaped.length} output path(s) escape the intent directory: ${escaped.join(", ")}. Fix the outputs in the unit frontmatter.` }))
+					return text(
+						JSON.stringify({
+							error: "unit_outputs_escaped",
+							escaped,
+							message: `Cannot advance hat: ${escaped.length} output path(s) escape the intent directory: ${escaped.join(", ")}. Fix the outputs in the unit frontmatter.`,
+						}),
+					)
 				}
-				const missing = unitOutputs.filter(o => {
+				const missing = unitOutputs.filter((o) => {
 					const resolved = resolve(iDir, o)
-					if (!resolved.startsWith(resolve(iDir) + "/")) return false // escaped — already caught above
+					if (!resolved.startsWith(`${resolve(iDir)}/`)) return false // escaped — already caught above
 					return !existsSync(resolved)
 				})
 				if (missing.length > 0) {
 					const sf = args.state_file as string | undefined
-					if (sf) logSessionEvent(sf, { event: "outputs_missing", intent: args.intent, stage: advStage, unit: args.unit, missing })
-					return text(JSON.stringify({ error: "unit_outputs_missing", missing, message: `Cannot advance hat: ${missing.length} declared output(s) not found: ${missing.join(", ")}. Create them or remove them from the outputs list.` }))
+					if (sf)
+						logSessionEvent(sf, {
+							event: "outputs_missing",
+							intent: args.intent,
+							stage: advStage,
+							unit: args.unit,
+							missing,
+						})
+					return text(
+						JSON.stringify({
+							error: "unit_outputs_missing",
+							missing,
+							message: `Cannot advance hat: ${missing.length} declared output(s) not found: ${missing.join(", ")}. Create them or remove them from the outputs list.`,
+						}),
+					)
 				}
 			}
 
@@ -1304,18 +1653,43 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				const unchecked = (unitRaw.match(/- \[ \]/g) || []).length
 				if (unchecked > 0) {
 					const sf = args.state_file as string | undefined
-					if (sf) logSessionEvent(sf, { event: "criteria_not_met", intent: args.intent, stage: advStage, unit: args.unit, unchecked })
-					return text(JSON.stringify({ error: "criteria_not_met", unchecked, message: `Cannot complete unit: ${unchecked} completion criteria still unchecked. Address them, then call haiku_unit_advance_hat again.` }))
+					if (sf)
+						logSessionEvent(sf, {
+							event: "criteria_not_met",
+							intent: args.intent,
+							stage: advStage,
+							unit: args.unit,
+							unchecked,
+						})
+					return text(
+						JSON.stringify({
+							error: "criteria_not_met",
+							unchecked,
+							message: `Cannot complete unit: ${unchecked} completion criteria still unchecked. Address them, then call haiku_unit_advance_hat again.`,
+						}),
+					)
 				}
 
 				setFrontmatterField(advPath, "status", "completed")
 				setFrontmatterField(advPath, "completed_at", timestamp())
-				emitTelemetry("haiku.unit.completed", { intent: args.intent as string, stage: advStage, unit: args.unit as string })
+				emitTelemetry("haiku.unit.completed", {
+					intent: args.intent as string,
+					stage: advStage,
+					unit: args.unit as string,
+				})
 				{
 					const sf = args.state_file as string | undefined
-					if (sf) logSessionEvent(sf, { event: "unit_completed", intent: args.intent, stage: advStage, unit: args.unit })
+					if (sf)
+						logSessionEvent(sf, {
+							event: "unit_completed",
+							intent: args.intent,
+							stage: advStage,
+							unit: args.unit,
+						})
 				}
-				const completeGit = gitCommitState(`haiku: complete unit ${args.unit as string}`)
+				const completeGit = gitCommitState(
+					`haiku: complete unit ${args.unit as string}`,
+				)
 
 				// Merge unit worktree back to parent branch (if running in a worktree)
 				// In discrete mode, parent is the stage branch; in continuous, it's the intent main branch
@@ -1327,39 +1701,73 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				const currentBr = getCurrentBranch()
 				const onStageBranch = currentBr === `haiku/${intentSlug}/${advStage}`
 				const discreteStage = onStageBranch ? advStage : undefined
-				const parentBranchName = discreteStage ? `haiku/${intentSlug}/${discreteStage}` : `haiku/${intentSlug}/main`
-				const mergeResult = mergeUnitWorktree(intentSlug, args.unit as string, discreteStage)
+				const parentBranchName = discreteStage
+					? `haiku/${intentSlug}/${discreteStage}`
+					: `haiku/${intentSlug}/main`
+				const mergeResult = mergeUnitWorktree(
+					intentSlug,
+					args.unit as string,
+					discreteStage,
+				)
 				if (!mergeResult.success) {
-					const worktreePath = join(process.cwd(), ".haiku", "worktrees", intentSlug, args.unit as string)
-					return text(JSON.stringify({
-						action: "merge_conflict",
-						status: "completed_merge_failed",
-						intent: args.intent,
-						unit: args.unit,
-						worktree: worktreePath,
-						error: mergeResult.message,
-						message: `Unit completed but merge to parent branch failed: ${mergeResult.message}. ` +
-							`RESOLVE: cd to the parent branch (\`git checkout ${parentBranchName}\`), ` +
-							`merge manually (\`git merge haiku/${intentSlug}/${args.unit} --no-edit\`), resolve any conflicts, ` +
-							`then commit and push. If you cannot resolve, ask the user for help.`,
-					}, null, 2))
+					const worktreePath = join(
+						process.cwd(),
+						".haiku",
+						"worktrees",
+						intentSlug,
+						args.unit as string,
+					)
+					return text(
+						JSON.stringify(
+							{
+								action: "merge_conflict",
+								status: "completed_merge_failed",
+								intent: args.intent,
+								unit: args.unit,
+								worktree: worktreePath,
+								error: mergeResult.message,
+								message: `Unit completed but merge to parent branch failed: ${mergeResult.message}. RESOLVE: cd to the parent branch (\`git checkout ${parentBranchName}\`), merge manually (\`git merge haiku/${intentSlug}/${args.unit} --no-edit\`), resolve any conflicts, then commit and push. If you cannot resolve, ask the user for help.`,
+							},
+							null,
+							2,
+						),
+					)
 				}
 
-				syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
-				const mergeNote = mergeResult.message === "no worktree" ? "" : ` (${mergeResult.message})`
+				syncSessionMetadata(
+					args.intent as string,
+					args.state_file as string | undefined,
+				)
+				const mergeNote =
+					mergeResult.message === "no worktree"
+						? ""
+						: ` (${mergeResult.message})`
 
 				// Internally call runNext to progress the FSM
 				if (_runNext) {
 					const next = _runNext(args.intent as string)
 					// If other units in this wave are still active, this is a no-op for this agent
 					if (next.action === "continue_unit" || next.action === "blocked") {
-						return text(`completed (last hat)${mergeNote}. Other units still in progress — waiting on wave to finish.${pushWarning(completeGit)}`)
+						return text(
+							`completed (last hat)${mergeNote}. Other units still in progress — waiting on wave to finish.${pushWarning(completeGit)}`,
+						)
 					}
 					// Otherwise, return the next FSM action (next wave, phase advance, etc.)
-					return text(JSON.stringify(injectPushWarning({ ...next, _unit_completed: args.unit, _merge: mergeNote }, completeGit), null, 2))
+					return text(
+						JSON.stringify(
+							injectPushWarning(
+								{ ...next, _unit_completed: args.unit, _merge: mergeNote },
+								completeGit,
+							),
+							null,
+							2,
+						),
+					)
 				}
 
-				return text(`completed (last hat)${mergeNote}${pushWarning(completeGit)}`)
+				return text(
+					`completed (last hat)${mergeNote}${pushWarning(completeGit)}`,
+				)
 			}
 
 			// ── NOT last hat: advance to next ──
@@ -1369,35 +1777,80 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			setFrontmatterField(advPath, "hat_started_at", timestamp())
 			{
 				const sf = args.state_file as string | undefined
-				if (sf) logSessionEvent(sf, { event: "hat_advanced", intent: args.intent, stage: advStage, unit: args.unit, hat: nextHat })
+				if (sf)
+					logSessionEvent(sf, {
+						event: "hat_advanced",
+						intent: args.intent,
+						stage: advStage,
+						unit: args.unit,
+						hat: nextHat,
+					})
 			}
-			emitTelemetry("haiku.hat.transition", { intent: args.intent as string, stage: advStage, unit: args.unit as string, hat: nextHat })
-			const advGit = gitCommitState(`haiku: advance hat to ${nextHat} on ${args.unit as string}`)
-			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
+			emitTelemetry("haiku.hat.transition", {
+				intent: args.intent as string,
+				stage: advStage,
+				unit: args.unit as string,
+				hat: nextHat,
+			})
+			const advGit = gitCommitState(
+				`haiku: advance hat to ${nextHat} on ${args.unit as string}`,
+			)
+			syncSessionMetadata(
+				args.intent as string,
+				args.state_file as string | undefined,
+			)
 			// Internally call runNext — returns continue_unit with next hat context for the parent
 			if (_runNext) {
 				const next = _runNext(args.intent as string)
-				return text(JSON.stringify(injectPushWarning({ ...next, _hat_advanced: nextHat }, advGit), null, 2))
+				return text(
+					JSON.stringify(
+						injectPushWarning({ ...next, _hat_advanced: nextHat }, advGit),
+						null,
+						2,
+					),
+				)
 			}
 
 			const hatScope = resolveStageScope(args.intent as string, advStage)
-			return text((hatScope ? `advanced to ${nextHat}\n\n${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit))
+			return text(
+				(hatScope
+					? `advanced to ${nextHat}\n\n${hatScope}`
+					: `advanced to ${nextHat}`) + pushWarning(advGit),
+			)
 		}
 		case "haiku_unit_reject_hat": {
 			// Hat failed — move back one hat, increment bolt count
-			const rejectInfo = findUnitFile(args.intent as string, args.unit as string)
-			if (!rejectInfo) return text(JSON.stringify({ error: "unit_not_found", message: `Unit '${args.unit}' not found in any stage of intent '${args.intent}'.` }))
+			const rejectInfo = findUnitFile(
+				args.intent as string,
+				args.unit as string,
+			)
+			if (!rejectInfo)
+				return text(
+					JSON.stringify({
+						error: "unit_not_found",
+						message: `Unit '${args.unit}' not found in any stage of intent '${args.intent}'.`,
+					}),
+				)
 			const failPath = rejectInfo.path
 			const rejectStage = rejectInfo.stage
 
-			const { data: failData } = parseFrontmatter(readFileSync(failPath, "utf8"))
+			const { data: failData } = parseFrontmatter(
+				readFileSync(failPath, "utf8"),
+			)
 			const currentHat = (failData.hat as string) || ""
 			const currentBolt = (failData.bolt as number) || 1
 
 			// Enforce max bolt limit
 			const MAX_BOLTS_FAIL = 5
 			if (currentBolt + 1 > MAX_BOLTS_FAIL) {
-				return text(JSON.stringify({ error: "max_bolts_exceeded", bolt: currentBolt, max: MAX_BOLTS_FAIL, message: `Unit has exceeded ${MAX_BOLTS_FAIL} bolt iterations. Escalate to the user — this unit may need to be redesigned or split.` }))
+				return text(
+					JSON.stringify({
+						error: "max_bolts_exceeded",
+						bolt: currentBolt,
+						max: MAX_BOLTS_FAIL,
+						message: `Unit has exceeded ${MAX_BOLTS_FAIL} bolt iterations. Escalate to the user — this unit may need to be redesigned or split.`,
+					}),
+				)
 			}
 
 			// Resolve the hat sequence to find the previous hat
@@ -1405,31 +1858,83 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			const hatIdx = stageHats.indexOf(currentHat)
 			const prevHat = hatIdx > 0 ? stageHats[hatIdx - 1] : stageHats[0]
 
+			// Auto-escalate model tier on rejection (gated by features.modelSelection)
+			if (features.modelSelection) {
+				const currentModel = failData.model as string | undefined
+				const escalated = escalate(currentModel)
+				if (currentModel && escalated) {
+					setFrontmatterField(failPath, "model_original", currentModel)
+					setFrontmatterField(failPath, "model", escalated)
+					console.error(
+						`[haiku] model escalated: ${currentModel} → ${escalated} (hat rejected, bolt ${currentBolt + 1})`,
+					)
+				}
+			}
+
 			setFrontmatterField(failPath, "hat", prevHat)
 			setFrontmatterField(failPath, "bolt", currentBolt + 1)
 			setFrontmatterField(failPath, "hat_started_at", timestamp())
 			{
 				const sf = args.state_file as string | undefined
-				if (sf) logSessionEvent(sf, { event: "unit_failed", intent: args.intent, stage: rejectStage, unit: args.unit, from_hat: currentHat, to_hat: prevHat, bolt: currentBolt + 1 })
+				if (sf)
+					logSessionEvent(sf, {
+						event: "unit_failed",
+						intent: args.intent,
+						stage: rejectStage,
+						unit: args.unit,
+						from_hat: currentHat,
+						to_hat: prevHat,
+						bolt: currentBolt + 1,
+					})
 			}
-			emitTelemetry("haiku.unit.failed", { intent: args.intent as string, stage: rejectStage, unit: args.unit as string, hat: currentHat, prev_hat: prevHat, bolt: String(currentBolt + 1) })
-			const rejectGit = gitCommitState(`haiku: fail ${args.unit as string} — back to ${prevHat}, bolt ${currentBolt + 1}`)
-			syncSessionMetadata(args.intent as string, args.state_file as string | undefined)
-			return text(`rejected — back to ${prevHat}, bolt ${currentBolt + 1}${pushWarning(rejectGit)}`)
+			emitTelemetry("haiku.unit.failed", {
+				intent: args.intent as string,
+				stage: rejectStage,
+				unit: args.unit as string,
+				hat: currentHat,
+				prev_hat: prevHat,
+				bolt: String(currentBolt + 1),
+			})
+			const rejectGit = gitCommitState(
+				`haiku: fail ${args.unit as string} — back to ${prevHat}, bolt ${currentBolt + 1}`,
+			)
+			syncSessionMetadata(
+				args.intent as string,
+				args.state_file as string | undefined,
+			)
+			return text(
+				`rejected — back to ${prevHat}, bolt ${currentBolt + 1}${pushWarning(rejectGit)}`,
+			)
 		}
 		case "haiku_unit_increment_bolt": {
-			const path = unitPath(args.intent as string, args.stage as string, args.unit as string)
+			const path = unitPath(
+				args.intent as string,
+				args.stage as string,
+				args.unit as string,
+			)
 			const { data } = parseFrontmatter(readFileSync(path, "utf8"))
 			const current = (data.bolt as number) || 0
 
 			// Enforce max bolt limit
 			const MAX_BOLTS_INC = 5
 			if (current + 1 > MAX_BOLTS_INC) {
-				return text(JSON.stringify({ error: "max_bolts_exceeded", bolt: current, max: MAX_BOLTS_INC, message: `Unit has exceeded ${MAX_BOLTS_INC} bolt iterations. Escalate to the user — this unit may need to be redesigned or split.` }))
+				return text(
+					JSON.stringify({
+						error: "max_bolts_exceeded",
+						bolt: current,
+						max: MAX_BOLTS_INC,
+						message: `Unit has exceeded ${MAX_BOLTS_INC} bolt iterations. Escalate to the user — this unit may need to be redesigned or split.`,
+					}),
+				)
 			}
 
 			setFrontmatterField(path, "bolt", current + 1)
-			emitTelemetry("haiku.bolt.iteration", { intent: args.intent as string, stage: args.stage as string, unit: args.unit as string, bolt: String(current + 1) })
+			emitTelemetry("haiku.bolt.iteration", {
+				intent: args.intent as string,
+				stage: args.stage as string,
+				unit: args.unit as string,
+				bolt: String(current + 1),
+			})
 			return text(String(current + 1))
 		}
 
@@ -1437,11 +1942,15 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 		case "haiku_knowledge_list": {
 			const dir = join(intentDir(args.intent as string), "knowledge")
 			if (!existsSync(dir)) return text("[]")
-			const files = readdirSync(dir).filter(f => f.endsWith(".md"))
+			const files = readdirSync(dir).filter((f) => f.endsWith(".md"))
 			return text(JSON.stringify(files))
 		}
 		case "haiku_knowledge_read": {
-			const path = join(intentDir(args.intent as string), "knowledge", args.name as string)
+			const path = join(
+				intentDir(args.intent as string),
+				"knowledge",
+				args.name as string,
+			)
 			if (!existsSync(path)) return text("")
 			return text(readFileSync(path, "utf8"))
 		}
@@ -1450,17 +1959,17 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 		case "haiku_studio_list": {
 			// Unified discovery — listStudios covers both plugin and project studios,
 			// honors name/slug/aliases from frontmatter, and exposes help links.
-			const studios = listStudios().map(s => ({
-				name: s.name,                     // canonical display name
-				slug: s.slug,                     // short alias
-				aliases: s.aliases,               // additional aliases
-				dir: s.dir,                       // stable on-disk identifier
+			const studios = listStudios().map((s) => ({
+				name: s.name,
+				slug: s.slug,
+				aliases: s.aliases,
+				dir: s.dir,
 				description: s.description,
 				category: s.category,
 				stages: s.stages,
-				source: s.source,                 // "plugin" | "project"
-				path: s.path,                     // directory path (help link target)
-				studio_md: s.studioFile,          // direct link to STUDIO.md
+				source: s.source,
+				path: s.path,
+				studio_md: s.studioFile,
 				body: s.body.slice(0, 200),
 			}))
 			return text(JSON.stringify(studios, null, 2))
@@ -1468,20 +1977,26 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 		case "haiku_studio_get": {
 			const studio = resolveStudio(args.studio as string)
 			if (!studio) return text("")
-			return text(JSON.stringify({
-				name: studio.name,
-				slug: studio.slug,
-				aliases: studio.aliases,
-				dir: studio.dir,
-				description: studio.description,
-				category: studio.category,
-				stages: studio.stages,
-				source: studio.source,
-				path: studio.path,
-				studio_md: studio.studioFile,
-				body: studio.body,
-				...studio.data,
-			}, null, 2))
+			return text(
+				JSON.stringify(
+					{
+						name: studio.name,
+						slug: studio.slug,
+						aliases: studio.aliases,
+						dir: studio.dir,
+						description: studio.description,
+						category: studio.category,
+						stages: studio.stages,
+						source: studio.source,
+						path: studio.path,
+						studio_md: studio.studioFile,
+						body: studio.body,
+						...studio.data,
+					},
+					null,
+					2,
+				),
+			)
 		}
 		case "haiku_studio_stage_get": {
 			const studio = resolveStudio(args.studio as string)
@@ -1491,20 +2006,30 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			if (!existsSync(stageFile)) return text("")
 			const raw = readFileSync(stageFile, "utf8")
 			const { data, body } = parseFrontmatter(raw)
-			return text(JSON.stringify({
-				...data,
-				body,
-				studio: studio.name,
-				studio_dir: studio.dir,
-				stage_md: stageFile,
-			}, null, 2))
+			return text(
+				JSON.stringify(
+					{
+						...data,
+						body,
+						studio: studio.name,
+						studio_dir: studio.dir,
+						stage_md: stageFile,
+					},
+					null,
+					2,
+				),
+			)
 		}
 
 		// ── Settings ──
 		case "haiku_settings_get": {
 			const field = args.field as string
 			let settingsPath = ""
-			try { settingsPath = join(findHaikuRoot(), "settings.yml") } catch { /* */ }
+			try {
+				settingsPath = join(findHaikuRoot(), "settings.yml")
+			} catch {
+				/* */
+			}
 			if (!settingsPath || !existsSync(settingsPath)) return text("")
 			const raw = readFileSync(settingsPath, "utf8")
 			const settings = parseYaml(raw)
@@ -1516,44 +2041,69 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 		// ── Dashboard ──
 		case "haiku_dashboard": {
 			let root: string
-			try { root = findHaikuRoot() } catch { return text("No intents found. Use /haiku:start to create one.") }
+			try {
+				root = findHaikuRoot()
+			} catch {
+				return text("No intents found. Use /haiku:start to create one.")
+			}
 			const intentsDir = join(root, "intents")
-			if (!existsSync(intentsDir)) return text("No intents found. Use /haiku:start to create one.")
-			const slugs = readdirSync(intentsDir).filter(d => existsSync(join(intentsDir, d, "intent.md")))
-			if (slugs.length === 0) return text("No intents found. Use /haiku:start to create one.")
+			if (!existsSync(intentsDir))
+				return text("No intents found. Use /haiku:start to create one.")
+			const slugs = readdirSync(intentsDir).filter((d) =>
+				existsSync(join(intentsDir, d, "intent.md")),
+			)
+			if (slugs.length === 0)
+				return text("No intents found. Use /haiku:start to create one.")
 
 			let out = "# Dashboard\n"
 			for (const slug of slugs) {
-				const { data } = parseFrontmatter(readFileSync(join(intentsDir, slug, "intent.md"), "utf8"))
+				const { data } = parseFrontmatter(
+					readFileSync(join(intentsDir, slug, "intent.md"), "utf8"),
+				)
 				out += `\n## ${slug}\n`
 				out += `- Status: ${data.status || "unknown"}\n`
 				out += `- Studio: ${data.studio || "none"}\n`
 				out += `- Active Stage: ${data.active_stage || "none"}\n`
 				out += `- Mode: ${data.mode || "interactive"}\n`
 
-				const isDiscrete = (data.mode as string) === "discrete" || (data.mode as string) === "hybrid"
+				const isDiscrete =
+					(data.mode as string) === "discrete" ||
+					(data.mode as string) === "hybrid"
 
 				const stagesPath = join(intentsDir, slug, "stages")
 				if (existsSync(stagesPath)) {
-					const stages = readdirSync(stagesPath).filter(s => existsSync(join(stagesPath, s, "state.json")))
+					const stages = readdirSync(stagesPath).filter((s) =>
+						existsSync(join(stagesPath, s, "state.json")),
+					)
 					const stagesFromBranches: string[] = []
 					if (isDiscrete && isGitRepo()) {
 						try {
-							const branchList = execFileSync("git", ["branch", "--list", `haiku/${slug}/*`], { encoding: "utf8", stdio: "pipe" }).trim()
+							const branchList = execFileSync(
+								"git",
+								["branch", "--list", `haiku/${slug}/*`],
+								{ encoding: "utf8", stdio: "pipe" },
+							).trim()
 							for (const line of branchList.split("\n")) {
 								const branch = line.trim().replace(/^\* /, "")
 								const stageName = branch.replace(`haiku/${slug}/`, "")
 								// Skip main branch and unit branches (unit-NN-*)
-								if (stageName && stageName !== "main" && !/^unit-\d+/.test(stageName) && !stages.includes(stageName)) {
+								if (
+									stageName &&
+									stageName !== "main" &&
+									!/^unit-\d+/.test(stageName) &&
+									!stages.includes(stageName)
+								) {
 									stagesFromBranches.push(stageName)
 								}
 							}
-						} catch { /* non-fatal */ }
+						} catch {
+							/* non-fatal */
+						}
 					}
 
 					const allStages = [...stages, ...stagesFromBranches]
 					if (allStages.length > 0) {
-						out += `\n| Stage | Status | Phase |\n|-------|--------|-------|\n`
+						out += "\n| Stage | Status | Phase |\n|-------|--------|-------|\n"
 						for (const s of stages) {
 							const state = readJson(join(stagesPath, s, "state.json"))
 							out += `| ${s} | ${state.status || "pending"} | ${state.phase || ""} |\n`
@@ -1577,13 +2127,20 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 						for (const s of stages) {
 							const unitsDir = join(stagesPath, s, "units")
 							if (!existsSync(unitsDir)) continue
-							const unitFiles = readdirSync(unitsDir).filter(f => f.endsWith(".md"))
+							const unitFiles = readdirSync(unitsDir).filter((f) =>
+								f.endsWith(".md"),
+							)
 							const unitsWithModel = unitFiles
-								.map(f => {
-									const { data } = parseFrontmatter(readFileSync(join(unitsDir, f), "utf8"))
-									return { name: f.replace(".md", ""), model: data.model as string | undefined }
+								.map((f) => {
+									const { data } = parseFrontmatter(
+										readFileSync(join(unitsDir, f), "utf8"),
+									)
+									return {
+										name: f.replace(".md", ""),
+										model: data.model as string | undefined,
+									}
 								})
-								.filter(u => u.model)
+								.filter((u) => u.model)
 							if (unitsWithModel.length > 0) {
 								out += `\n**${s} unit models:**\n`
 								for (const u of unitsWithModel) {
@@ -1601,34 +2158,54 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 		case "haiku_capacity": {
 			const filterStudio = (args.studio as string) || ""
 			let root: string
-			try { root = findHaikuRoot() } catch { return text("No .haiku directory found.") }
+			try {
+				root = findHaikuRoot()
+			} catch {
+				return text("No .haiku directory found.")
+			}
 			const intentsDir = join(root, "intents")
 			if (!existsSync(intentsDir)) return text("No intents found.")
-			const slugs = readdirSync(intentsDir).filter(d => existsSync(join(intentsDir, d, "intent.md")))
+			const slugs = readdirSync(intentsDir).filter((d) =>
+				existsSync(join(intentsDir, d, "intent.md")),
+			)
 
 			const median = (arr: number[]): number => {
 				if (arr.length === 0) return 0
 				const sorted = [...arr].sort((a, b) => a - b)
 				const mid = Math.floor(sorted.length / 2)
-				return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+				return sorted.length % 2 !== 0
+					? sorted[mid]
+					: (sorted[mid - 1] + sorted[mid]) / 2
 			}
 
 			// Group intents by studio
-			const byStudio = new Map<string, Array<{ slug: string; status: string; data: Record<string, unknown> }>>()
+			const byStudio = new Map<
+				string,
+				Array<{ slug: string; status: string; data: Record<string, unknown> }>
+			>()
 			for (const slug of slugs) {
-				const { data } = parseFrontmatter(readFileSync(join(intentsDir, slug, "intent.md"), "utf8"))
+				const { data } = parseFrontmatter(
+					readFileSync(join(intentsDir, slug, "intent.md"), "utf8"),
+				)
 				const studio = (data.studio as string) || "unassigned"
 				if (filterStudio && studio !== filterStudio) continue
 				if (!byStudio.has(studio)) byStudio.set(studio, [])
-				byStudio.get(studio)!.push({ slug, status: (data.status as string) || "unknown", data })
+				byStudio
+					.get(studio)
+					?.push({ slug, status: (data.status as string) || "unknown", data })
 			}
 
-			if (byStudio.size === 0) return text(filterStudio ? `No intents found for studio '${filterStudio}'.` : "No intents found.")
+			if (byStudio.size === 0)
+				return text(
+					filterStudio
+						? `No intents found for studio '${filterStudio}'.`
+						: "No intents found.",
+				)
 
 			let out = "# Capacity Report\n"
 			for (const [studio, intents] of byStudio) {
-				const completed = intents.filter(i => i.status === "completed").length
-				const active = intents.filter(i => i.status === "active").length
+				const completed = intents.filter((i) => i.status === "completed").length
+				const active = intents.filter((i) => i.status === "active").length
 				out += `\n## Studio: ${studio}\n`
 				out += `- Total intents: ${intents.length}\n`
 				out += `- Completed: ${completed}\n`
@@ -1643,15 +2220,21 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 						const unitsDir = join(stagesPath, stage, "units")
 						if (!existsSync(unitsDir)) continue
 						if (!stageBolts.has(stage)) stageBolts.set(stage, [])
-						for (const f of readdirSync(unitsDir).filter(f => f.endsWith(".md"))) {
-							const { data: ud } = parseFrontmatter(readFileSync(join(unitsDir, f), "utf8"))
-							if (typeof ud.bolt === "number") stageBolts.get(stage)!.push(ud.bolt)
+						for (const f of readdirSync(unitsDir).filter((f) =>
+							f.endsWith(".md"),
+						)) {
+							const { data: ud } = parseFrontmatter(
+								readFileSync(join(unitsDir, f), "utf8"),
+							)
+							if (typeof ud.bolt === "number")
+								stageBolts.get(stage)?.push(ud.bolt)
 						}
 					}
 				}
 
 				if (stageBolts.size > 0) {
-					out += `\n| Stage | Units | Median Bolts |\n|-------|-------|--------------|\n`
+					out +=
+						"\n| Stage | Units | Median Bolts |\n|-------|-------|--------------|\n"
 					for (const [stage, bolts] of stageBolts) {
 						out += `| ${stage} | ${bolts.length} | ${median(bolts)} |\n`
 					}
@@ -1664,11 +2247,18 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 		case "haiku_reflect": {
 			const intentSlug = args.intent as string
 			let root: string
-			try { root = findHaikuRoot() } catch { return text("No .haiku directory found.") }
+			try {
+				root = findHaikuRoot()
+			} catch {
+				return text("No .haiku directory found.")
+			}
 			const intentFile = join(root, "intents", intentSlug, "intent.md")
-			if (!existsSync(intentFile)) return text(`Intent '${intentSlug}' not found.`)
+			if (!existsSync(intentFile))
+				return text(`Intent '${intentSlug}' not found.`)
 
-			const { data: intentData } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+			const { data: intentData } = parseFrontmatter(
+				readFileSync(intentFile, "utf8"),
+			)
 			let out = "## Intent Metadata\n"
 			out += `- Slug: ${intentSlug}\n`
 			out += `- Studio: ${intentData.studio || "none"}\n`
@@ -1690,31 +2280,39 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 
 					const unitsDir = join(stagesPath, stage, "units")
 					if (existsSync(unitsDir)) {
-						const unitFiles = readdirSync(unitsDir).filter(f => f.endsWith(".md"))
+						const unitFiles = readdirSync(unitsDir).filter((f) =>
+							f.endsWith(".md"),
+						)
 						let completedUnits = 0
 						let totalBolts = 0
 						const unitDetails: string[] = []
 						for (const f of unitFiles) {
-							const { data: ud } = parseFrontmatter(readFileSync(join(unitsDir, f), "utf8"))
+							const { data: ud } = parseFrontmatter(
+								readFileSync(join(unitsDir, f), "utf8"),
+							)
 							const uName = f.replace(".md", "")
 							const uBolt = (ud.bolt as number) || 0
 							totalBolts += uBolt
 							if (ud.status === "completed") completedUnits++
-							unitDetails.push(`  - ${uName}: status=${ud.status || "pending"}, bolts=${uBolt}, hat=${ud.hat || "none"}`)
+							unitDetails.push(
+								`  - ${uName}: status=${ud.status || "pending"}, bolts=${uBolt}, hat=${ud.hat || "none"}`,
+							)
 						}
 						out += `- Units: ${completedUnits}/${unitFiles.length} completed, Total bolts: ${totalBolts}\n`
-						if (unitDetails.length > 0) out += unitDetails.join("\n") + "\n"
+						if (unitDetails.length > 0) out += `${unitDetails.join("\n")}\n`
 					}
 				}
 			}
 
 			out += "\n## Analysis Instructions\n"
-			out += "1. Execution patterns — which units went smoothly, which required retries\n"
+			out +=
+				"1. Execution patterns — which units went smoothly, which required retries\n"
 			out += "2. Criteria satisfaction\n"
 			out += "3. Process observations\n"
 			out += "4. Blocker analysis\n"
 			out += "\n## Output\n"
-			out += "Write reflection.md and settings-recommendations.md to the intent directory.\n"
+			out +=
+				"Write reflection.md and settings-recommendations.md to the intent directory.\n"
 			return text(out)
 		}
 
@@ -1723,29 +2321,49 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			// Determine diff base
 			let base = "main"
 			try {
-				const upstream = spawnSync("git", ["rev-parse", "--abbrev-ref", "@{upstream}"], { encoding: "utf8", stdio: "pipe" })
+				const upstream = spawnSync(
+					"git",
+					["rev-parse", "--abbrev-ref", "@{upstream}"],
+					{ encoding: "utf8", stdio: "pipe" },
+				)
 				if (upstream.status === 0 && upstream.stdout.trim()) {
 					base = upstream.stdout.trim()
 				}
-			} catch { /* fallback to main */ }
+			} catch {
+				/* fallback to main */
+			}
 
 			// Get diff, stat, and changed files
 			let diff = ""
 			let stat = ""
 			let changedFiles = ""
 			try {
-				const diffResult = spawnSync("git", ["diff", base + "...HEAD"], { encoding: "utf8", stdio: "pipe", maxBuffer: 10 * 1024 * 1024 })
+				const diffResult = spawnSync("git", ["diff", `${base}...HEAD`], {
+					encoding: "utf8",
+					stdio: "pipe",
+					maxBuffer: 10 * 1024 * 1024,
+				})
 				diff = diffResult.stdout || ""
-				const statResult = spawnSync("git", ["diff", "--stat", base + "...HEAD"], { encoding: "utf8", stdio: "pipe" })
+				const statResult = spawnSync(
+					"git",
+					["diff", "--stat", `${base}...HEAD`],
+					{ encoding: "utf8", stdio: "pipe" },
+				)
 				stat = statResult.stdout || ""
-				const namesResult = spawnSync("git", ["diff", "--name-only", base + "...HEAD"], { encoding: "utf8", stdio: "pipe" })
+				const namesResult = spawnSync(
+					"git",
+					["diff", "--name-only", `${base}...HEAD`],
+					{ encoding: "utf8", stdio: "pipe" },
+				)
 				changedFiles = namesResult.stdout || ""
-			} catch { /* git not available */ }
+			} catch {
+				/* git not available */
+			}
 
 			// Truncate diff at 100k chars
 			const MAX_DIFF = 100_000
 			if (diff.length > MAX_DIFF) {
-				diff = diff.slice(0, MAX_DIFF) + "\n\n... [TRUNCATED at 100k chars] ..."
+				diff = `${diff.slice(0, MAX_DIFF)}\n\n... [TRUNCATED at 100k chars] ...`
 			}
 
 			// Read REVIEW.md and CLAUDE.md if they exist
@@ -1765,19 +2383,24 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				if (existsSync(settingsPath)) {
 					const settings = parseYaml(readFileSync(settingsPath, "utf8"))
 					const agents = getNestedField(settings, "review_agents")
-					if (agents) reviewAgents = `\n### Review Agents Config\n\`\`\`json\n${JSON.stringify(agents, null, 2)}\n\`\`\`\n`
+					if (agents)
+						reviewAgents = `\n### Review Agents Config\n\`\`\`json\n${JSON.stringify(agents, null, 2)}\n\`\`\`\n`
 				}
-			} catch { /* no settings */ }
+			} catch {
+				/* no settings */
+			}
 
 			let out = "## Pre-Delivery Code Review\n"
 			out += `Diff base: ${base}\n\n`
 			out += `Changed files:\n\`\`\`\n${changedFiles || "none"}\`\`\`\n\n`
 			out += `Diff stats:\n\`\`\`\n${stat || "none"}\`\`\`\n`
-			if (reviewGuidelines) out += `\n### Review Guidelines\n${reviewGuidelines}\n`
+			if (reviewGuidelines)
+				out += `\n### Review Guidelines\n${reviewGuidelines}\n`
 			if (reviewAgents) out += reviewAgents
 			out += `\n### Full Diff\n\`\`\`diff\n${diff || "No changes detected."}\n\`\`\`\n`
 			out += "\n### Instructions\n"
-			out += "1. Spawn review agents in parallel (one per configured agent or area)\n"
+			out +=
+				"1. Spawn review agents in parallel (one per configured agent or area)\n"
 			out += "2. Collect findings, deduplicate across agents\n"
 			out += "3. Fix all HIGH severity findings before delivery\n"
 			out += "4. Report findings summary to the user\n"
@@ -1788,18 +2411,25 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 		case "haiku_backlog": {
 			const action = (args.action as string) || "list"
 			let root: string
-			try { root = findHaikuRoot() } catch { return text("No .haiku directory found.") }
+			try {
+				root = findHaikuRoot()
+			} catch {
+				return text("No .haiku directory found.")
+			}
 			const backlogDir = join(root, "backlog")
 
 			switch (action) {
 				case "list": {
 					if (!existsSync(backlogDir)) return text("No backlog items found.")
-					const files = readdirSync(backlogDir).filter(f => f.endsWith(".md"))
+					const files = readdirSync(backlogDir).filter((f) => f.endsWith(".md"))
 					if (files.length === 0) return text("No backlog items found.")
 
-					let out = "# Backlog\n\n| # | Item | Priority | Created |\n|---|------|----------|---------|\n"
+					let out =
+						"# Backlog\n\n| # | Item | Priority | Created |\n|---|------|----------|---------|\n"
 					for (let i = 0; i < files.length; i++) {
-						const { data } = parseFrontmatter(readFileSync(join(backlogDir, files[i]), "utf8"))
+						const { data } = parseFrontmatter(
+							readFileSync(join(backlogDir, files[i]), "utf8"),
+						)
 						out += `| ${i + 1} | ${files[i].replace(".md", "")} | ${data.priority || "unset"} | ${data.created_at || "unknown"} |\n`
 					}
 					return text(out)
@@ -1807,18 +2437,22 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				case "add": {
 					const desc = (args.description as string) || ""
 					let out = "## Add Backlog Item\n\n"
-					out += "Create a new file in `.haiku/backlog/` with this template:\n\n"
-					out += "```markdown\n---\npriority: medium\ncreated_at: " + timestamp() + "\n---\n\n"
-					out += (desc || "Description of the backlog item") + "\n```\n"
-					out += "\nFilename should be a slug of the item description (e.g. `improve-error-handling.md`).\n"
+					out +=
+						"Create a new file in `.haiku/backlog/` with this template:\n\n"
+					out += `\`\`\`markdown\n---\npriority: medium\ncreated_at: ${timestamp()}\n---\n\n`
+					out += `${desc || "Description of the backlog item"}\n\`\`\`\n`
+					out +=
+						"\nFilename should be a slug of the item description (e.g. `improve-error-handling.md`).\n"
 					return text(out)
 				}
 				case "review": {
-					if (!existsSync(backlogDir)) return text("No backlog items to review.")
-					const files = readdirSync(backlogDir).filter(f => f.endsWith(".md"))
+					if (!existsSync(backlogDir))
+						return text("No backlog items to review.")
+					const files = readdirSync(backlogDir).filter((f) => f.endsWith(".md"))
 					if (files.length === 0) return text("No backlog items to review.")
 
-					let out = "## Backlog Review\n\nPresent each item to the user and ask: **Keep / Reprioritize / Drop / Promote / Skip**\n\n"
+					let out =
+						"## Backlog Review\n\nPresent each item to the user and ask: **Keep / Reprioritize / Drop / Promote / Skip**\n\n"
 					for (let i = 0; i < files.length; i++) {
 						const raw = readFileSync(join(backlogDir, files[i]), "utf8")
 						const { data, body } = parseFrontmatter(raw)
@@ -1834,12 +2468,15 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 					let out = "## Promote Backlog Item\n\n"
 					out += "To promote a backlog item to an intent:\n"
 					out += "1. Read the backlog item file\n"
-					out += "2. Use /haiku:start to create an intent from its description\n"
+					out +=
+						"2. Use /haiku:start to create an intent from its description\n"
 					out += "3. Delete the backlog file after the intent is created\n"
 					return text(out)
 				}
 				default:
-					return text(`Unknown backlog action: '${action}'. Valid actions: list, add, review, promote.`)
+					return text(
+						`Unknown backlog action: '${action}'. Valid actions: list, add, review, promote.`,
+					)
 			}
 		}
 
@@ -1847,28 +2484,38 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 		case "haiku_seed": {
 			const action = (args.action as string) || "list"
 			let root: string
-			try { root = findHaikuRoot() } catch { return text("No .haiku directory found.") }
+			try {
+				root = findHaikuRoot()
+			} catch {
+				return text("No .haiku directory found.")
+			}
 			const seedsDir = join(root, "seeds")
 
 			switch (action) {
 				case "list": {
 					if (!existsSync(seedsDir)) return text("No seeds found.")
-					const files = readdirSync(seedsDir).filter(f => f.endsWith(".md"))
+					const files = readdirSync(seedsDir).filter((f) => f.endsWith(".md"))
 					if (files.length === 0) return text("No seeds found.")
 
 					// Group by status
-					const groups = new Map<string, Array<{ name: string; data: Record<string, unknown> }>>()
+					const groups = new Map<
+						string,
+						Array<{ name: string; data: Record<string, unknown> }>
+					>()
 					for (const f of files) {
-						const { data } = parseFrontmatter(readFileSync(join(seedsDir, f), "utf8"))
+						const { data } = parseFrontmatter(
+							readFileSync(join(seedsDir, f), "utf8"),
+						)
 						const status = (data.status as string) || "planted"
 						if (!groups.has(status)) groups.set(status, [])
-						groups.get(status)!.push({ name: f.replace(".md", ""), data })
+						groups.get(status)?.push({ name: f.replace(".md", ""), data })
 					}
 
 					let out = "# Seeds\n"
 					for (const [status, seeds] of groups) {
 						out += `\n## ${status.charAt(0).toUpperCase() + status.slice(1)} (${seeds.length})\n\n`
-						out += "| Seed | Trigger | Planted |\n|------|---------|----------|\n"
+						out +=
+							"| Seed | Trigger | Planted |\n|------|---------|----------|\n"
 						for (const s of seeds) {
 							out += `| ${s.name} | ${s.data.trigger || "none"} | ${s.data.created_at || "unknown"} |\n`
 						}
@@ -1878,32 +2525,41 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				case "plant": {
 					let out = "## Plant a Seed\n\n"
 					out += "Create a new file in `.haiku/seeds/` with this template:\n\n"
-					out += "```markdown\n---\nstatus: planted\ntrigger: \"<condition that should cause this to surface>\"\ncreated_at: " + timestamp() + "\n---\n\n"
+					out += `\`\`\`markdown\n---\nstatus: planted\ntrigger: \"<condition that should cause this to surface>\"\ncreated_at: ${timestamp()}\n---\n\n`
 					out += "Description of the idea or future work.\n```\n"
-					out += "\nFilename should be a slug of the seed idea (e.g. `add-caching-layer.md`).\n"
+					out +=
+						"\nFilename should be a slug of the seed idea (e.g. `add-caching-layer.md`).\n"
 					return text(out)
 				}
 				case "check": {
 					if (!existsSync(seedsDir)) return text("No seeds to check.")
-					const files = readdirSync(seedsDir).filter(f => f.endsWith(".md"))
-					const planted = files.filter(f => {
-						const { data } = parseFrontmatter(readFileSync(join(seedsDir, f), "utf8"))
+					const files = readdirSync(seedsDir).filter((f) => f.endsWith(".md"))
+					const planted = files.filter((f) => {
+						const { data } = parseFrontmatter(
+							readFileSync(join(seedsDir, f), "utf8"),
+						)
 						return (data.status as string) === "planted"
 					})
 					if (planted.length === 0) return text("No planted seeds to check.")
 
-					let out = "## Seed Check\n\nEvaluate each planted seed's trigger condition against the current project state:\n\n"
+					let out =
+						"## Seed Check\n\nEvaluate each planted seed's trigger condition against the current project state:\n\n"
 					for (const f of planted) {
-						const { data, body } = parseFrontmatter(readFileSync(join(seedsDir, f), "utf8"))
+						const { data, body } = parseFrontmatter(
+							readFileSync(join(seedsDir, f), "utf8"),
+						)
 						out += `### ${f.replace(".md", "")}\n`
 						out += `- Trigger: ${data.trigger || "none defined"}\n`
 						out += `- Description: ${body.slice(0, 300)}\n\n`
 					}
-					out += "---\nFor each seed: if the trigger condition is met, update its status to 'surfaced'. If not, leave as 'planted'.\n"
+					out +=
+						"---\nFor each seed: if the trigger condition is met, update its status to 'surfaced'. If not, leave as 'planted'.\n"
 					return text(out)
 				}
 				default:
-					return text(`Unknown seed action: '${action}'. Valid actions: list, plant, check.`)
+					return text(
+						`Unknown seed action: '${action}'. Valid actions: list, plant, check.`,
+					)
 			}
 		}
 
@@ -1921,7 +2577,10 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				let dir = process.cwd()
 				for (let i = 0; i < 20; i++) {
 					const p = join(dir, "CHANGELOG.md")
-					if (existsSync(p)) { changelogPath = p; break }
+					if (existsSync(p)) {
+						changelogPath = p
+						break
+					}
 					const parent = join(dir, "..")
 					if (parent === dir) break
 					dir = parent
@@ -1933,28 +2592,40 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			// Split by ## [version] headers
 			const versionPattern = /^## \[([^\]]+)\]/gm
 			const matches: Array<{ version: string; start: number }> = []
-			let match: RegExpExecArray | null
-			while ((match = versionPattern.exec(changelog)) !== null) {
+			let match = versionPattern.exec(changelog)
+			while (match !== null) {
 				matches.push({ version: match[1], start: match.index })
+				match = versionPattern.exec(changelog)
 			}
 
-			if (matches.length === 0) return text("No versioned entries found in CHANGELOG.md.")
+			if (matches.length === 0)
+				return text("No versioned entries found in CHANGELOG.md.")
 
 			if (version) {
 				// Find the specific version
-				const idx = matches.findIndex(m => m.version === version)
-				if (idx === -1) return text(`Version '${version}' not found in CHANGELOG.md. Available: ${matches.slice(0, 10).map(m => m.version).join(", ")}`)
-				const endIdx = idx + 1 < matches.length ? matches[idx + 1].start : changelog.length
+				const idx = matches.findIndex((m) => m.version === version)
+				if (idx === -1)
+					return text(
+						`Version '${version}' not found in CHANGELOG.md. Available: ${matches
+							.slice(0, 10)
+							.map((m) => m.version)
+							.join(", ")}`,
+					)
+				const endIdx =
+					idx + 1 < matches.length ? matches[idx + 1].start : changelog.length
 				const section = changelog.slice(matches[idx].start, endIdx).trim()
-				return text(`# Release Notes\n\n${section}\n\n---\nTotal releases in changelog: ${matches.length}`)
+				return text(
+					`# Release Notes\n\n${section}\n\n---\nTotal releases in changelog: ${matches.length}`,
+				)
 			}
 
 			// Return 5 most recent
 			const recent = matches.slice(0, 5)
 			let out = "# Recent Release Notes\n"
 			for (let i = 0; i < recent.length; i++) {
-				const endIdx = i + 1 < matches.length ? matches[i + 1].start : changelog.length
-				out += "\n" + changelog.slice(recent[i].start, endIdx).trim() + "\n"
+				const endIdx =
+					i + 1 < matches.length ? matches[i + 1].start : changelog.length
+				out += `\n${changelog.slice(recent[i].start, endIdx).trim()}\n`
 			}
 			out += `\n---\nTotal releases in changelog: ${matches.length}\n`
 			return text(out)
@@ -1963,33 +2634,34 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 		case "haiku_repair": {
 			// ── Repair: scan intents for metadata issues ──
 			//
-			// Default behavior in a git repo: scan ALL intent branches sequentially via
-			// temporary worktrees, auto-apply safe fixes, push to each branch, and open a
-			// PR/MR if the branch was already merged into mainline.
+			// Default behavior in a git repo: scan ALL intent branches sequentially
+			// via temporary worktrees, auto-apply safe fixes, push to each branch,
+			// and open a PR/MR if the branch was already merged into mainline.
 			//
 			// Args:
-			//   intent       — single intent slug to repair (cwd only, skips multi-branch)
-			//   apply        — auto-apply safe fixes (default: true)
+			//   intent        — single intent slug to repair (cwd only, skips multi-branch)
+			//   apply         — auto-apply safe fixes (default: true)
 			//   skip_branches — force cwd-only mode even in a git repo
 			//
 			// The MCP applies what it can mechanically; the agent handles judgment calls.
 			const repairIntentArg = args.intent as string | undefined
-			const repairAutoApply = args.apply !== false  // default true
+			const repairAutoApply = args.apply !== false // default true
 			const repairSkipBranches = args.skip_branches === true
 
 			// Multi-branch path: in a git repo, no single-intent restriction, branches not skipped
 			if (isGitRepo() && !repairIntentArg && !repairSkipBranches) {
 				const branches = listIntentBranches()
-				if (branches.length === 0) {
-					// Fall through to cwd repair if no intent branches exist yet
-				} else {
+				if (branches.length > 0) {
 					try {
 						const { summaries, mainline } = repairAllBranches(repairAutoApply)
 						return text(buildMultiBranchReport(summaries, mainline))
 					} catch (err) {
-						return text(`Multi-branch repair failed: ${err instanceof Error ? err.message : String(err)}`)
+						return text(
+							`Multi-branch repair failed: ${err instanceof Error ? err.message : String(err)}`,
+						)
 					}
 				}
+				// Fall through to cwd repair if no intent branches exist yet
 			}
 
 			// Single-cwd path
@@ -2003,7 +2675,9 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			try {
 				cwdResult = repairCwd(repairIntentArg, repairAutoApply)
 			} catch (err) {
-				return text(`Repair failed: ${err instanceof Error ? err.message : String(err)}`)
+				return text(
+					`Repair failed: ${err instanceof Error ? err.message : String(err)}`,
+				)
 			}
 
 			if (repairIntentArg && cwdResult.scanned === 0) {
@@ -2013,7 +2687,6 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 
 			return text(buildRepairReport(cwdResult))
 		}
-
 
 		default:
 			return text(`Unknown tool: ${name}`)
