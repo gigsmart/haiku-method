@@ -130,7 +130,9 @@ export default async function BlogPostPage({ params }: Props) {
 
 			<header className="mb-8">
 				<div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-stone-500 dark:text-stone-500">
-					<time>{formatDate(post.date)}</time>
+					<time dateTime={new Date(post.date).toISOString()}>
+						{formatDate(post.date)}
+					</time>
 					{post.category && (
 						<>
 							<span aria-hidden="true">·</span>
@@ -183,7 +185,7 @@ async function renderMdx(source: string) {
 		options: {
 			mdxOptions: {
 				remarkPlugins: [remarkGfm],
-				rehypePlugins: [rehypeSlug],
+				rehypePlugins: [rehypeSlug, rehypeHighlight],
 			},
 		},
 	})
