@@ -6,9 +6,9 @@ author: Jason Waldrip
 category: Architecture
 tags:
   - models
+  - model-selection
   - opus
   - sonnet
-  - haiku-model
   - cost
   - elaboration
 ---
@@ -89,4 +89,4 @@ The old world had one knob: what model is this session running on? The new world
 Model selection is a design decision now, not a session setting. It lives next to the work, gets decided when the work is planned, and shows up in review alongside everything else that matters. Opus is reserved for work that actually needs it. Haiku gets the scaffolding. Sonnet holds the middle. The bill reflects the judgment, not the session.
 </Callout>
 
-There's a line I keep coming back to: *the train can only move as fast as the tracks it's built on.* For a long time, model selection was a bad rail. It wasn't obviously broken — you could put any engine on it — but it was setting the ceiling on how efficient a run could be. Cascading selection is a better rail. The engine didn't get smarter. The rails got smarter about where to put the smart engine.
+The thing about invisible defaults is that they're still defaults. For a long time, model selection was the kind of setting nobody thought about — because there was nothing to think about. You picked one model at the start of the session and that was the decision, full stop. You were paying for Opus on boilerplate and running Haiku on cryptography because nothing was asking you to choose. The cascade isn't more clever than the old system. It's more honest. The question actually gets asked, at every layer, and the answer lives next to the work instead of next to the session. You'd be surprised how much of optimization is really just forcing the question into the open.

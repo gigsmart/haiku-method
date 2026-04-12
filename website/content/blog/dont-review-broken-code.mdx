@@ -84,7 +84,7 @@ It's not "something broke, figure it out." It's the exact gate name, the exact c
 
 ## The harness rule
 
-This pattern — cheap checks before expensive ones — is just the orchestrator doing what orchestrators are for. Anthropic's harness design post makes the same point from a different angle: every component in a harness encodes an assumption about what the model can't do on its own, and those assumptions are worth stress-testing. The assumption here is that the agent *could* run tests itself, but won't reliably, and when it does, it won't reliably *read* the failures before moving on. So the harness runs them. The harness reads them. The harness decides.
+This pattern — cheap checks before expensive ones — is just the orchestrator doing what orchestrators are for. Anthropic's [harness design post](https://www.anthropic.com/engineering/harness-design-long-running-apps) makes the same point from a different angle: every component in a harness encodes an assumption about what the model can't do on its own, and those assumptions are worth stress-testing. The assumption here is that the agent *could* run tests itself, but won't reliably, and when it does, it won't reliably *read* the failures before moving on. So the harness runs them. The harness reads them. The harness decides.
 
 <Callout tone="info" title="The seam">
 The agent doesn't decide whether its code is ready for review. The orchestrator does. And the orchestrator doesn't guess — it runs the gates.
