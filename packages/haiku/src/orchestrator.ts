@@ -1488,6 +1488,219 @@ function goBack(slug: string): OrchestratorAction {
 // Register runNext callback so state-tools can call it without circular imports
 setRunNextHandler(runNext)
 
+// ── Action preview enrichment ─────────────────────────────────────────────
+//
+// Adds `tell_user` (what the agent should announce) and `next_step` (what
+// comes after this action) to every orchestrator action. This lets the
+// agent tell the user what's happening and what's coming next.
+
+function enrichActionWithPreview(action: OrchestratorAction): void {
+	const stage = (action.stage as string) || ""
+	const unit = (action.unit as string) || ""
+	const hat = (action.hat as string) || (action.first_hat as string) || ""
+	const nextStage = (action.next_stage as string) || ""
+
+	let tell_user = ""
+	let next_step = ""
+
+	switch (action.action) {
+		case "select_studio":
+			tell_user = "I need to select a lifecycle studio for this intent before we can begin."
+			next_step = "After studio selection, the first stage will start with elaboration."
+			break
+
+		case "start_stage":
+			tell_user = `Starting stage '${stage}' — I'll elaborate the work into units with completion criteria.`
+			next_step = "Next I'll break the work down into units, then validate them and open a review gate for your approval."
+			break
+
+		case "elaborate":
+			tell_user = `Elaborating stage '${stage}' — defining units of work and their completion criteria.`
+			next_step = "After units are defined, the orchestrator validates them and opens a review gate for your approval before execution begins."
+			break
+
+		case "elaboration_insufficient":
+			tell_user = `I need to engage you more on the plan for stage '${stage}' before finalizing.`
+			next_step = "After sufficient collaboration, I'll finalize units and open the review gate."
+			break
+
+		case "gate_review": {
+			const gateContext = (action.gate_context as string) || "stage_gate"
+			if (gateContext === "intent_review") {
+				tell_user = "The intent specs are ready — opening the review gate for your approval."
+				next_step = "After approval, execution begins. If changes are requested, I'll revise and re-submit."
+			} else if (gateContext === "elaborate_to_execute") {
+				tell_user = "Unit specs are validated — opening the review gate for your approval before execution."
+				next_step = "After approval, I'll begin executing units in wave order. If changes are requested, I'll revise the specs."
+			} else {
+				tell_user = `Stage '${stage}' is complete — opening the review gate.`
+				next_step = nextStage
+					? `After approval, I'll advance to stage '${nextStage}'. If changes are requested, I'll address the feedback.`
+					: "After approval, the intent is complete."
+			}
+			break
+		}
+
+		case "intent_approved":
+			tell_user = "Intent approved — moving to execution."
+			next_step = "I'll begin executing units in wave order."
+			break
+
+		case "advance_phase": {
+			const toPhase = (action.to_phase as string) || ""
+			if (toPhase === "execute") {
+				tell_user = `Specs approved for stage '${stage}' — beginning execution.`
+				next_step = "I'll execute units in wave order, one hat at a time."
+			} else if (toPhase === "review") {
+				tell_user = `All units complete in stage '${stage}' — moving to review.`
+				next_step = "I'll run quality gates and adversarial review agents, then open the stage gate."
+			} else if (toPhase === "gate") {
+				tell_user = `Review complete for stage '${stage}' — moving to the gate.`
+				next_step = "The stage gate will determine whether to advance, request changes, or send for external review."
+			} else {
+				tell_user = `Advancing stage '${stage}' to ${toPhase} phase.`
+				next_step = ""
+			}
+			break
+		}
+
+		case "start_unit":
+			tell_user = `Starting unit '${unit}' with hat '${hat}' in stage '${stage}'.`
+			next_step = "I'll execute the unit work per the hat definition, then advance to the next hat or next unit."
+			break
+
+		case "start_units": {
+			const units = (action.units as string[]) || []
+			tell_user = `Starting ${units.length} units in parallel: ${units.join(", ")}.`
+			next_step = "Each unit runs in its own worktree. After all complete, the next wave starts or we advance to review."
+			break
+		}
+
+		case "continue_unit":
+			tell_user = `Continuing unit '${unit}' — hat: ${hat}, bolt: ${action.bolt || 1}.`
+			next_step = "I'll continue the work, then advance to the next hat or complete the unit."
+			break
+
+		case "review":
+			tell_user = `Quality gates passed — running adversarial review agents for stage '${stage}'.`
+			next_step = "After review agents pass, the stage gate opens for approval."
+			break
+
+		case "fix_quality_gates":
+			tell_user = `Quality gates failed in stage '${stage}' — I need to fix the issues before review.`
+			next_step = "After fixing, I'll retry the quality gates and then proceed to adversarial review."
+			break
+
+		case "advance_stage":
+			tell_user = `Stage '${stage}' complete — advancing to '${nextStage}'.`
+			next_step = nextStage ? `I'll start stage '${nextStage}' with elaboration.` : "The intent is complete."
+			break
+
+		case "stage_complete_discrete":
+			tell_user = `Stage '${stage}' is complete.`
+			next_step = nextStage
+				? `Run /haiku:pickup to start stage '${nextStage}'.`
+				: "The intent is complete."
+			break
+
+		case "intent_complete":
+			tell_user = "All stages are complete — the intent is done."
+			next_step = ""
+			break
+
+		case "changes_requested":
+			tell_user = "Changes were requested on the review — I'll address the feedback."
+			next_step = "After revisions, I'll re-submit for review."
+			break
+
+		case "external_review_requested":
+			tell_user = `Stage '${stage}' needs external review — submit the work through your project's review process.`
+			next_step = "After external approval, run /haiku:pickup to continue."
+			break
+
+		case "awaiting_external_review":
+			tell_user = `Stage '${stage}' is waiting on external review.`
+			next_step = "Run /haiku:pickup after the review is approved."
+			break
+
+		case "gate_await":
+			tell_user = `Stage '${stage}' is complete — waiting for an external event before advancing.`
+			next_step = "Run /haiku:pickup when the external event occurs."
+			break
+
+		case "blocked":
+			tell_user = `Some units in stage '${stage}' are blocked — dependencies not met.`
+			next_step = "Unblock the dependencies, then retry."
+			break
+
+		case "design_direction_required":
+			tell_user = `Stage '${stage}' requires a design direction selection before proceeding.`
+			next_step = "After you select a direction, elaboration continues."
+			break
+
+		case "outputs_missing":
+			tell_user = `Stage '${stage}' is missing required output artifacts.`
+			next_step = "Create the missing artifacts, then retry."
+			break
+
+		case "discovery_missing":
+			tell_user = `Stage '${stage}' is missing required discovery artifacts.`
+			next_step = "Create the missing artifacts, then retry."
+			break
+
+		case "unresolved_dependencies":
+			tell_user = "Some unit dependencies reference units that don't exist — I need to fix the references."
+			next_step = "After fixing, I'll retry advancement."
+			break
+
+		case "dag_cycle_detected":
+			tell_user = "A dependency cycle was detected in the unit graph — I need to break the cycle."
+			next_step = "After fixing, I'll retry advancement."
+			break
+
+		case "unit_naming_invalid":
+			tell_user = "Some unit files don't follow the required naming convention — I need to rename them."
+			next_step = "After fixing, I'll retry advancement."
+			break
+
+		case "spec_validation_failed":
+			tell_user = "Unit specs failed validation against the stage's allowed types — I need to fix them."
+			next_step = "After fixing, I'll retry advancement."
+			break
+
+		case "inputs_missing":
+			tell_user = "Some units are missing required input references — I need to add them."
+			next_step = "After fixing, I'll retry advancement."
+			break
+
+		case "gate_blocked":
+			tell_user = "Gate review couldn't be completed — the review UI and elicitation both failed."
+			next_step = "Run haiku_run_next again to retry the gate review."
+			break
+
+		case "complete":
+			tell_user = "Intent is already completed."
+			next_step = ""
+			break
+
+		case "composite_run_stage":
+			tell_user = `Running composite stage '${stage}'.`
+			next_step = "The composite orchestrator will advance through sub-stages."
+			break
+
+		case "error":
+			tell_user = (action.message as string) || "An error occurred."
+			next_step = ""
+			break
+
+		default:
+			break
+	}
+
+	if (tell_user) action.tell_user = tell_user
+	if (next_step) action.next_step = next_step
+}
+
 // ── Run instruction builder ───────────────────────────────────────────────
 
 function buildRunInstructions(
@@ -1496,8 +1709,23 @@ function buildRunInstructions(
 	action: OrchestratorAction,
 	dir: string,
 ): string {
-	const actionJson = JSON.stringify(action, null, 2)
+	// Strip tell_user/next_step from the JSON output — they appear in the
+	// announcement section already, no need to duplicate in the raw action.
+	const { tell_user, next_step, ...actionForJson } = action as OrchestratorAction & { tell_user?: string; next_step?: string }
+	const actionJson = JSON.stringify(actionForJson, null, 2)
 	const sections: string[] = []
+
+	// Agent announcement directive — tell the user what's happening
+	if (tell_user || next_step) {
+		const parts: string[] = [
+			`## Announce to User (MANDATORY)\n`,
+			`**Before doing ANY work**, tell the user what you're about to do:`,
+		]
+		if (tell_user) parts.push(`> ${tell_user}`)
+		if (next_step) parts.push(`\n_${next_step}_`)
+		parts.push(`\nKeep the announcement concise — one or two sentences. Do NOT skip this step.`)
+		sections.push(parts.join("\n"))
+	}
 
 	sections.push(`## Orchestrator Action\n\n\`\`\`json\n${actionJson}\n\`\`\``)
 
@@ -2165,10 +2393,13 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 		} catch { /* intent might not exist for error actions */ }
 		const intentStudio = (intentMeta.studio as string) || ""
 
-		// Helper to append instructions to a result object
+		// Helper to enrich result with preview and append instructions
 		const withInstructions = (resultObj: Record<string, unknown>): string => {
+			enrichActionWithPreview(resultObj as OrchestratorAction)
 			const instructions = buildRunInstructions(slug, intentStudio, resultObj as OrchestratorAction, intentDir(slug))
-			return JSON.stringify(resultObj, null, 2) + "\n\n---\n\n" + instructions
+			// Strip tell_user/next_step from outer JSON — they appear in the announcement section
+			const { tell_user: _tu, next_step: _ns, ...resultForJson } = resultObj
+			return JSON.stringify(resultForJson, null, 2) + "\n\n---\n\n" + instructions
 		}
 
 		// External review: include instructions about recording the URL
