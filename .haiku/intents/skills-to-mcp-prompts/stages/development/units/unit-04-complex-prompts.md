@@ -2,6 +2,7 @@
 name: unit-04-complex-prompts
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on:
   - unit-01-prompts-infrastructure
 bolt: 1

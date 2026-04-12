@@ -2,6 +2,7 @@
 name: unit-05-stage-definitions
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-04-studio-infrastructure]
 bolt: 0
 hat: ""

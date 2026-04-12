@@ -2,6 +2,7 @@
 name: unit-02-core-prompts
 type: backend
 status: completed
+inputs: ["intent.md"]
 depends_on:
   - unit-01-prompts-server
 bolt: 1

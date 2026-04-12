@@ -2,6 +2,7 @@
 name: unit-08-ai-dlc-updates
 type: documentation
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-06-ai-dlc-integration, unit-07-haiku-website]
 bolt: 0
 hat: ""

@@ -2,6 +2,7 @@
 title: Website — Component migration from review-app
 type: content
 status: pending
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on:
   - unit-03-website-review-page
 quality_gates:

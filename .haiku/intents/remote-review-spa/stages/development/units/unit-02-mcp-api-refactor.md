@@ -2,6 +2,7 @@
 title: MCP — CORS + consolidated file route
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: []
 quality_gates:
   - >-

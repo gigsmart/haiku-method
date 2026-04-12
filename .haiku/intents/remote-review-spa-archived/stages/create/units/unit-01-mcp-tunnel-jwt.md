@@ -2,6 +2,7 @@
 title: MCP — Localtunnel + JWT token generation
 type: content
 status: pending
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: []
 quality_gates:
   - localtunnel npm package added as dependency

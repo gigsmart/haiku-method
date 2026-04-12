@@ -2,6 +2,7 @@
 name: unit-11-website-developer-docs
 type: documentation
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-10-website-homepage-methodology]
 bolt: 0
 hat: ""

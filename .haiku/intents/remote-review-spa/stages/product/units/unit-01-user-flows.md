@@ -2,6 +2,7 @@
 title: Behavioral spec — user flows and error scenarios
 type: product
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 quality_gates:
   - >-
     Happy path flow specified for all 3 session types (review, question,

@@ -2,6 +2,7 @@
 name: unit-07-website-docs
 type: documentation
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: []
 bolt: 0
 hat: ""

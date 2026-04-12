@@ -2,6 +2,7 @@
 name: unit-05-elaboration-integration
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-02-knowledge-synthesis, unit-03-direction-picker-mcp, unit-04-archetype-library]
 bolt: 0
 hat: ""

@@ -2,6 +2,7 @@
 name: unit-04-reflection-phase
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-03-operation-phase]
 bolt: 0
 hat: ""

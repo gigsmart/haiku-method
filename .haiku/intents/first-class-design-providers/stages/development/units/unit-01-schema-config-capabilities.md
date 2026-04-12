@@ -2,6 +2,7 @@
 name: unit-01-schema-config-capabilities
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: []
 bolt: 0
 hat: ""

@@ -2,6 +2,7 @@
 name: unit-04-archetype-library
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-01-knowledge-infrastructure, unit-03-direction-picker-mcp]
 bolt: 0
 hat: ""

@@ -2,6 +2,7 @@
 name: unit-03-migrate-skill-docs
 type: documentation
 status: pending
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: []
 bolt: 0
 hat: ""

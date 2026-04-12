@@ -2,6 +2,7 @@
 name: unit-02-phase-7-5-orchestration
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-01-adversarial-review-skill]
 bolt: 0
 hat: ""

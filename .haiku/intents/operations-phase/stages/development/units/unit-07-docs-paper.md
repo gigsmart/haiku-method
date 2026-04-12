@@ -2,6 +2,7 @@
 name: unit-07-docs-paper
 type: documentation
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-02-elaboration-ops, unit-03-builder-ops, unit-04-reviewer-ops, unit-05-integration-ops, unit-06-operate-rewrite]
 bolt: 0
 hat: ""

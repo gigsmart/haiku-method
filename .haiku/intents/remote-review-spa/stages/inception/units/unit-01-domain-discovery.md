@@ -2,6 +2,7 @@
 title: Domain discovery and technical landscape
 type: research
 status: completed
+inputs: ["intent.md"]
 quality_gates:
   - Discovery document maps current SPA architecture (components, transport, session model)
   - Target architecture documented with domain model diagram

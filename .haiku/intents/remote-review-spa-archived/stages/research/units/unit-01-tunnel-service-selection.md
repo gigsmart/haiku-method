@@ -2,6 +2,7 @@
 title: Localtunnel integration and WebSocket/binary file support
 type: research
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 quality_gates:
   - Confirm localtunnel npm package supports WebSocket proxying
   - 'Verify binary data (images, files) can be served through the tunnel via HTTP'

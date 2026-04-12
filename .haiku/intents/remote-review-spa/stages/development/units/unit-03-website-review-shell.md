@@ -2,6 +2,7 @@
 title: Website — Review page shell with hash fragment routing
 type: frontend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: []
 quality_gates:
   - /app/review/page.tsx exists and builds successfully with next build

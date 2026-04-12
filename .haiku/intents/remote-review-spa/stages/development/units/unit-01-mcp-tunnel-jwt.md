@@ -2,6 +2,7 @@
 title: MCP — Localtunnel + JWT token generation
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: []
 quality_gates:
   - localtunnel added as dependency in packages/haiku/package.json
