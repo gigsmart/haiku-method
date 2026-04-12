@@ -1502,7 +1502,7 @@ function enrichActionWithPreview(action: OrchestratorAction): void {
 
 		case "advance_stage":
 			tell_user = `Stage '${stage}' complete — advancing to '${nextStage}'.`
-			next_step = `I'll start stage '${nextStage}' with elaboration.`
+			next_step = nextStage ? `I'll start stage '${nextStage}' with elaboration.` : "The intent is complete."
 			break
 
 		case "stage_complete_discrete":
@@ -1588,7 +1588,7 @@ function enrichActionWithPreview(action: OrchestratorAction): void {
 			break
 
 		case "complete":
-			tell_user = `Intent is already completed.`
+			tell_user = "Intent is already completed."
 			next_step = ""
 			break
 
