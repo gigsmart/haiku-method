@@ -40,32 +40,34 @@ export const INTENT_TITLE_MAX_LENGTH = 80
 
 /** Derive a short, one-line title from an arbitrary input string.
  *  - Collapses whitespace and newlines to single spaces
- *  - Prefers the first complete sentence if one fits in the limit
+ *  - If it fits in the limit, returns the collapsed input verbatim
  *  - Otherwise truncates at a word boundary and appends an ellipsis
  *  - Strips trailing periods (titles don't end in a period)
+ *
+ *  Intentionally does NOT try to detect sentence boundaries: regex-based
+ *  detection false-truncates on abbreviation periods ("e.g.", "i.e.", "Mr.",
+ *  version strings like "v1.0", etc.). Word-boundary truncation with an
+ *  ellipsis is deterministic and correct for all inputs.
+ *
  *  Exported so both intent creation and repair use the same logic. */
 export function deriveIntentTitle(input: string): string {
 	if (!input) return ""
 	const collapsed = input.replace(/\s+/g, " ").trim()
 	if (!collapsed) return ""
 
-	// Try to use the first complete sentence if it fits
-	const firstSentenceMatch = collapsed.match(/^(.{1,80}?[.?!])(?:\s|$)/)
-	let title = firstSentenceMatch ? firstSentenceMatch[1] : collapsed
-
-	// If still too long, truncate at a word boundary and append ellipsis
-	if (title.length > INTENT_TITLE_MAX_LENGTH) {
-		const hardLimit = INTENT_TITLE_MAX_LENGTH - 1 // leave room for ellipsis
-		const truncated = title.slice(0, hardLimit)
-		const lastSpace = truncated.lastIndexOf(" ")
-		title = `${
-			lastSpace > INTENT_TITLE_MAX_LENGTH / 2
-				? truncated.slice(0, lastSpace)
-				: truncated
-		}…`
+	if (collapsed.length <= INTENT_TITLE_MAX_LENGTH) {
+		return collapsed.replace(/\.$/, "")
 	}
 
-	return title.replace(/\.$/, "")
+	// Too long — truncate at a word boundary and append ellipsis
+	const hardLimit = INTENT_TITLE_MAX_LENGTH - 1 // leave room for ellipsis
+	const truncated = collapsed.slice(0, hardLimit)
+	const lastSpace = truncated.lastIndexOf(" ")
+	return `${
+		lastSpace > INTENT_TITLE_MAX_LENGTH / 2
+			? truncated.slice(0, lastSpace)
+			: truncated
+	}…`
 }
 
 /** Whether a title value needs repair (too long, multiline, or empty). */

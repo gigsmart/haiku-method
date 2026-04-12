@@ -118,7 +118,11 @@ function resolveStageReview(studio: string, stage: string): string {
 		if (existsSync(stageFile)) {
 			const fm = readFrontmatter(stageFile)
 			const review = fm.review
-			if (Array.isArray(review)) return review[0] as string
+			// Return every declared review kind joined with commas so downstream
+			// callers (which use `.includes("external")`, `.includes("ask")`, etc.)
+			// see all kinds. Previously this collapsed `[external, ask]` to just
+			// `"external"`, silently dropping the "ask" half of the gate.
+			if (Array.isArray(review)) return (review as string[]).join(",")
 			return (review as string) || "auto"
 		}
 	}
@@ -127,18 +131,25 @@ function resolveStageReview(studio: string, stage: string): string {
 
 /** Does the stage's `review:` field contain the given kind (e.g. "external")?
  *  Handles both scalar and array forms. Used to detect external-review stages
- *  that need branch isolation regardless of intent mode. */
+ *  that need branch isolation regardless of intent mode.
+ *
+ *  Resolves the studio identifier through `resolveStudio` first so callers can
+ *  pass the canonical name, slug, or alias — not just the directory name. If
+ *  resolveStudio returns null, falls back to using the identifier directly (for
+ *  robustness when called during bootstrap before the studio cache is warm). */
 function stageReviewIncludes(
 	studio: string,
 	stage: string,
 	kind: string,
 ): boolean {
+	const info = resolveStudio(studio)
+	const dir = info ? info.dir : studio
 	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
 	]) {
-		const stageFile = join(base, studio, "stages", stage, "STAGE.md")
+		const stageFile = join(base, dir, "stages", stage, "STAGE.md")
 		if (existsSync(stageFile)) {
 			const fm = readFrontmatter(stageFile)
 			const review = fm.review

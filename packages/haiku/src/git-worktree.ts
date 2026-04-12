@@ -139,14 +139,16 @@ export function commitAndPushFromWorktree(
 ): { committed: boolean; pushed: boolean; pushError?: string } {
 	if (!isGitRepo())
 		return { committed: false, pushed: false, pushError: "not a git repo" }
-	// Make the worktree's HEAD point at the branch (we created it detached for safety)
-	tryRun(["git", "-C", worktreePath, "checkout", "-B", branch])
-	// Stage everything
+	// The worktree is created with `--detach`, so HEAD is a detached snapshot
+	// of the target branch tip. We deliberately do NOT run `git checkout -B`
+	// to create or move the local branch ref — doing so would force-overwrite
+	// any local commits the user had on that branch and would collide with
+	// the branch being checked out in another worktree. Instead, we commit in
+	// the detached state and push the commit directly to `refs/heads/<branch>`
+	// on origin via an explicit refspec. No local ref is touched.
 	tryRun(["git", "-C", worktreePath, "add", "-A"])
-	// Check if anything is staged
 	const status = tryRun(["git", "-C", worktreePath, "status", "--porcelain"])
 	if (!status) return { committed: false, pushed: false }
-	// Commit
 	try {
 		execFileSync("git", ["-C", worktreePath, "commit", "-m", message], {
 			stdio: "pipe",
@@ -158,11 +160,12 @@ export function commitAndPushFromWorktree(
 			pushError: err instanceof Error ? err.message : String(err),
 		}
 	}
-	// Push
 	try {
-		execFileSync("git", ["-C", worktreePath, "push", "origin", branch], {
-			stdio: "pipe",
-		})
+		execFileSync(
+			"git",
+			["-C", worktreePath, "push", "origin", `HEAD:refs/heads/${branch}`],
+			{ stdio: "pipe" },
+		)
 		return { committed: true, pushed: true }
 	} catch (err) {
 		return {
