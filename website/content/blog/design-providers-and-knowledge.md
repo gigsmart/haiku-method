@@ -2,7 +2,6 @@
 title: "Design Providers and Knowledge Synthesis"
 description: "H·AI·K·U gains first-class integration with six design tools and a persistent knowledge system that gives agents institutional memory across features."
 date: 2026-04-01
-author: GigSmart
 ---
 
 Two features shipped today that address the same underlying problem from different angles: AI agents forget.

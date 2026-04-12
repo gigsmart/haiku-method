@@ -2,7 +2,6 @@
 title: "H·AI·K·U Is a Harness"
 description: "Anthropic's engineering blog defines 'harness' as orchestration scaffolding for long-running AI agent work. H·AI·K·U fits that definition — and extends it."
 date: 2026-03-29
-author: GigSmart
 ---
 
 Anthropic's engineering team recently published [Harness Design for Long-Running Application Development](https://www.anthropic.com/engineering/harness-design-long-running-apps), a detailed account of building multi-agent orchestration systems for complex, sustained AI work. The post introduces the term **harness** to describe the scaffolding that coordinates AI agents through structured phases, manages context across long-running tasks, and encodes assumptions about what models cannot do alone.

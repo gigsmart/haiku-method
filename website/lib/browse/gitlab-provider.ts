@@ -306,34 +306,23 @@ export class GitLabProvider implements BrowseProvider {
 			const rawText = await this.readFileFromRef(branchName, `.haiku/intents/${slug}/intent.md`)
 			if (!rawText) return
 
-			// Check for MR via REST
+			// Fetch the most recent MR for this branch in ANY state (opened, merged, closed).
+			// One call instead of the old two-call opened-then-merged probe.
+			// `state=all` + `order_by=updated_at` gives us the freshest MR regardless of
+			// outcome, so the browse UI can surface closed/rejected MRs too.
 			let prUrl: string | null = null
 			let prStatus: string | null = null
 			let prNumber: number | null = null
 			try {
 				const mrRes = await this.restApi(
-					`/merge_requests?source_branch=${encodeURIComponent(branchName)}&state=opened&per_page=1`,
+					`/merge_requests?source_branch=${encodeURIComponent(branchName)}&state=all&order_by=updated_at&sort=desc&per_page=1`,
 				)
 				if (mrRes.ok) {
 					const mrs = await mrRes.json()
 					if (Array.isArray(mrs) && mrs.length > 0) {
 						prUrl = mrs[0].web_url
-						prStatus = mrs[0].state
+						prStatus = mrs[0].state  // "opened" | "closed" | "merged" | "locked"
 						prNumber = mrs[0].iid
-					}
-				}
-				// If no open MR, check for merged
-				if (!prUrl) {
-					const mergedRes = await this.restApi(
-						`/merge_requests?source_branch=${encodeURIComponent(branchName)}&state=merged&per_page=1`,
-					)
-					if (mergedRes.ok) {
-						const merged = await mergedRes.json()
-						if (Array.isArray(merged) && merged.length > 0) {
-							prUrl = merged[0].web_url
-							prStatus = merged[0].state
-							prNumber = merged[0].iid
-						}
 					}
 				}
 			} catch {
@@ -781,6 +770,13 @@ export class GitLabProvider implements BrowseProvider {
 		clientId: string,
 		redirectUri: string,
 	): string {
-		return `https://${host}/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=read_api`
+		// Scope: `api` — full read/write access to the GitLab API.
+		// Required because the browse UI:
+		//   - Reads `.haiku/intents/` contents
+		//   - Reads branches and merge requests (including closed/merged)
+		//   - Writes stage gate approvals via `writeFile` (external review buttons)
+		// `read_api` alone is insufficient because it does not grant write access
+		// needed for the gate-approval and commit mutations the UI performs.
+		return `https://${host}/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=api`
 	}
 }

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<7673d4019d7e8c5faabe5487bb9a6f30>>
+ * @generated SignedSource<<73ebe3a942fc9f90c7ad1cb592af4c71>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -24,6 +24,7 @@ export type operationsListHaikuBranchesQuery$data = {
             readonly number: number;
             readonly state: PullRequestState;
             readonly title: string;
+            readonly updatedAt: string;
             readonly url: string;
           } | null | undefined> | null | undefined;
         };
@@ -91,13 +92,22 @@ v6 = [
   {
     "kind": "Literal",
     "name": "first",
-    "value": 1
+    "value": 5
+  },
+  {
+    "kind": "Literal",
+    "name": "orderBy",
+    "value": {
+      "direction": "DESC",
+      "field": "UPDATED_AT"
+    }
   },
   {
     "kind": "Literal",
     "name": "states",
     "value": [
       "OPEN",
+      "CLOSED",
       "MERGED"
     ]
   }
@@ -131,6 +141,13 @@ v10 = {
   "storageKey": null
 },
 v11 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "updatedAt",
+  "storageKey": null
+},
+v12 = {
   "kind": "InlineFragment",
   "selections": [
     {
@@ -144,7 +161,7 @@ v11 = {
   "type": "Commit",
   "abstractKey": null
 },
-v12 = {
+v13 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
@@ -206,12 +223,13 @@ return {
                           (v7/*: any*/),
                           (v8/*: any*/),
                           (v9/*: any*/),
-                          (v10/*: any*/)
+                          (v10/*: any*/),
+                          (v11/*: any*/)
                         ],
                         "storageKey": null
                       }
                     ],
-                    "storageKey": "associatedPullRequests(first:1,states:[\"OPEN\",\"MERGED\"])"
+                    "storageKey": "associatedPullRequests(first:5,orderBy:{\"direction\":\"DESC\",\"field\":\"UPDATED_AT\"},states:[\"OPEN\",\"CLOSED\",\"MERGED\"])"
                   },
                   {
                     "alias": null,
@@ -221,7 +239,7 @@ return {
                     "name": "target",
                     "plural": false,
                     "selections": [
-                      (v11/*: any*/)
+                      (v12/*: any*/)
                     ],
                     "storageKey": null
                   }
@@ -293,12 +311,13 @@ return {
                           (v8/*: any*/),
                           (v9/*: any*/),
                           (v10/*: any*/),
-                          (v12/*: any*/)
+                          (v11/*: any*/),
+                          (v13/*: any*/)
                         ],
                         "storageKey": null
                       }
                     ],
-                    "storageKey": "associatedPullRequests(first:1,states:[\"OPEN\",\"MERGED\"])"
+                    "storageKey": "associatedPullRequests(first:5,orderBy:{\"direction\":\"DESC\",\"field\":\"UPDATED_AT\"},states:[\"OPEN\",\"CLOSED\",\"MERGED\"])"
                   },
                   {
                     "alias": null,
@@ -315,35 +334,35 @@ return {
                         "name": "__typename",
                         "storageKey": null
                       },
-                      (v11/*: any*/),
-                      (v12/*: any*/)
+                      (v12/*: any*/),
+                      (v13/*: any*/)
                     ],
                     "storageKey": null
                   },
-                  (v12/*: any*/)
+                  (v13/*: any*/)
                 ],
                 "storageKey": null
               }
             ],
             "storageKey": null
           },
-          (v12/*: any*/)
+          (v13/*: any*/)
         ],
         "storageKey": null
       }
     ]
   },
   "params": {
-    "cacheID": "d4a1794db6cf4899d0453a937c462658",
+    "cacheID": "4efa956e3651347a00ebfcf5ad8df516",
     "id": null,
     "metadata": {},
     "name": "operationsListHaikuBranchesQuery",
     "operationKind": "query",
-    "text": "query operationsListHaikuBranchesQuery(\n  $owner: String!\n  $name: String!\n  $refPrefix: String!\n) {\n  repository(owner: $owner, name: $name) {\n    refs(refPrefix: $refPrefix, first: 100) {\n      nodes {\n        name\n        associatedPullRequests(first: 1, states: [OPEN, MERGED]) {\n          nodes {\n            number\n            title\n            url\n            state\n            id\n          }\n        }\n        target {\n          __typename\n          ... on Commit {\n            committedDate\n          }\n          id\n        }\n        id\n      }\n    }\n    id\n  }\n}\n"
+    "text": "query operationsListHaikuBranchesQuery(\n  $owner: String!\n  $name: String!\n  $refPrefix: String!\n) {\n  repository(owner: $owner, name: $name) {\n    refs(refPrefix: $refPrefix, first: 100) {\n      nodes {\n        name\n        associatedPullRequests(first: 5, states: [OPEN, CLOSED, MERGED], orderBy: {field: UPDATED_AT, direction: DESC}) {\n          nodes {\n            number\n            title\n            url\n            state\n            updatedAt\n            id\n          }\n        }\n        target {\n          __typename\n          ... on Commit {\n            committedDate\n          }\n          id\n        }\n        id\n      }\n    }\n    id\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "8772477977075856bc7c240ae09fdd9b";
+(node as any).hash = "2e214aa9eabc284961df034c5906c3c2";
 
 export default node;

@@ -2,7 +2,6 @@
 title: "The Agnostic Builder"
 description: "When AI handles implementation, the value of a human shifts from domain expertise to systems thinking. The agnostic builder doesn't specialize — they see the whole board."
 date: 2026-04-02
-author: GigSmart
 ---
 
 The job title says "designer" or "developer" or "product manager." The org chart draws neat boxes around each. The hiring pipeline filters for years of experience in one discipline. And for decades, this made sense — implementation was hard, domain expertise was the bottleneck, and specialization was how you scaled.

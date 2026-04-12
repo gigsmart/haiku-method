@@ -239,27 +239,113 @@ function resolveArtifactPath(
 	return join(intentDir, relativePath)
 }
 
-/** List studios with their metadata (project overrides plugin for same-named studios) */
-export function listStudios(): Array<{
-	name: string
-	data: Record<string, unknown>
+/** Studio metadata. `dir` is the stable on-disk identifier; `name` is the canonical
+ *  display name from frontmatter. Resolve user-supplied identifiers via `resolveStudio`. */
+export interface StudioInfo {
+	dir: string // directory name on disk — stable identifier for file ops
+	name: string // canonical display name (frontmatter.name, defaults to dir)
+	slug: string // short alias (frontmatter.slug, defaults to name)
+	aliases: string[] // additional aliases from frontmatter
+	description: string
+	category: string
+	stages: string[]
+	data: Record<string, unknown> // full frontmatter
 	body: string
-}> {
-	const seen = new Map<
-		string,
-		{ name: string; data: Record<string, unknown>; body: string }
-	>()
+	source: "plugin" | "project"
+	path: string // absolute path to the studio directory
+	studioFile: string // absolute path to STUDIO.md (for help links)
+}
+
+// ── Studio metadata cache ─────────────────────────────────────────────────
+//
+// `listStudios` walks the studio search paths and reads every STUDIO.md.
+// Several hot paths call `resolveStudio` (and therefore `listStudios`) many
+// times per request — hat resolution, stage reviews, branch-mode checks.
+// Without memoization these became an N·studios I/O multiplier on every FSM
+// step. We cache the scan for a short TTL so a single request sees a
+// consistent snapshot without re-walking disk, and we key the cache on the
+// search-path list so changes to cwd or plugin root invalidate it implicitly.
+const LIST_STUDIOS_TTL_MS = 2000
+interface ListStudiosCacheEntry {
+	key: string
+	expiresAt: number
+	value: StudioInfo[]
+}
+let listStudiosCache: ListStudiosCacheEntry | null = null
+
+/** Clear the listStudios cache. Exported for tests and explicit invalidation. */
+export function clearStudioCache(): void {
+	listStudiosCache = null
+}
+
+function scanStudiosFromDisk(): StudioInfo[] {
+	const seen = new Map<string, StudioInfo>()
+	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
 	const paths = studioSearchPaths()
-	// Reverse so plugin loads first, then project overwrites
+	// paths is [project, plugin]; reverse so plugin loads first, then project overwrites
 	for (const base of [...paths].reverse()) {
 		if (!existsSync(base)) continue
+		const source: "plugin" | "project" =
+			pluginRoot && base.startsWith(pluginRoot) ? "plugin" : "project"
 		for (const d of readdirSync(base, { withFileTypes: true })) {
 			if (!d.isDirectory()) continue
-			const file = join(base, d.name, "STUDIO.md")
+			const studioPath = join(base, d.name)
+			const file = join(studioPath, "STUDIO.md")
 			if (!existsSync(file)) continue
 			const { data, body } = parseFrontmatter(readFileSync(file, "utf8"))
-			seen.set(d.name, { name: d.name, data, body })
+			const name = (data.name as string) || d.name
+			const slug = (data.slug as string) || name
+			const aliases = Array.isArray(data.aliases)
+				? (data.aliases as string[])
+				: []
+			seen.set(d.name, {
+				dir: d.name,
+				name,
+				slug,
+				aliases,
+				description: (data.description as string) || "",
+				category: (data.category as string) || "general",
+				stages: Array.isArray(data.stages) ? (data.stages as string[]) : [],
+				data,
+				body,
+				source,
+				path: studioPath,
+				studioFile: file,
+			})
 		}
 	}
 	return Array.from(seen.values())
+}
+
+/** List studios with their metadata (project overrides plugin for same-named directories).
+ *  Returns `StudioInfo` with canonical name/slug/aliases from frontmatter.
+ *  Memoized for `LIST_STUDIOS_TTL_MS` — call `clearStudioCache()` to force refresh. */
+export function listStudios(): StudioInfo[] {
+	const key = studioSearchPaths().join("|")
+	const now = Date.now()
+	if (
+		listStudiosCache &&
+		listStudiosCache.key === key &&
+		listStudiosCache.expiresAt > now
+	) {
+		return listStudiosCache.value
+	}
+	const value = scanStudiosFromDisk()
+	listStudiosCache = { key, expiresAt: now + LIST_STUDIOS_TTL_MS, value }
+	return value
+}
+
+/** Resolve any studio identifier (directory name, canonical name, slug, or alias) to a StudioInfo.
+ *  Case-insensitive. Returns null if no match. Uses the memoized `listStudios` cache. */
+export function resolveStudio(identifier: string): StudioInfo | null {
+	if (!identifier) return null
+	const needle = identifier.toLowerCase()
+	const all = listStudios()
+	for (const s of all) {
+		if (s.dir.toLowerCase() === needle) return s
+		if (s.name.toLowerCase() === needle) return s
+		if (s.slug.toLowerCase() === needle) return s
+		if (s.aliases.some((a) => a.toLowerCase() === needle)) return s
+	}
+	return null
 }

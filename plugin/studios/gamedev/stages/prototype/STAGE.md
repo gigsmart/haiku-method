@@ -1,0 +1,29 @@
+---
+name: prototype
+description: Playable vertical slice that proves the fun before production
+hats: [prototype-engineer, game-designer, playtester]
+review: [external, ask]
+elaboration: collaborative
+unit_types: [prototype]
+inputs:
+  - stage: concept
+    discovery: concept-doc
+---
+
+# Prototype
+
+Build the smallest playable thing that can validate whether the core loop is
+actually fun. This is a hard gate before production — if the prototype isn't
+fun, committing production resources to it is wasted work. Playtesting with
+players outside the team is mandatory; the team always thinks their prototype
+is fun.
+
+The prototype is not meant to scale, look good, or be maintainable. It is
+meant to answer one question: does this work?
+
+## Completion Signal (RFC 2119)
+
+A playable prototype **MUST** exist demonstrating the core loop. Playtest
+sessions **MUST** be conducted with players outside the development team.
+The prototype **MUST** either validate the fun thesis or be iterated until it
+does — "I think it'll be fun once we add X" is not validation.

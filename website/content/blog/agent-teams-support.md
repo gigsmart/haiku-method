@@ -2,7 +2,6 @@
 title: "H·AI·K·U Meets Agent Teams"
 description: "H·AI·K·U's construction loop now leverages Claude Code's Agent Teams, turning each unit of work into an independent teammate with its own context, worktree, and permission model."
 date: 2026-02-05
-author: GigSmart
 ---
 
 Claude Code recently shipped [Agent Teams](https://code.claude.com/docs/en/agent-teams) - an experimental feature that coordinates multiple independent Claude Code instances working together. Each teammate gets its own context window, can message other teammates directly, and shares a task list for self-coordination.
