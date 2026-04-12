@@ -42,6 +42,7 @@ export interface UnitFrontmatter {
   last_updated?: string;
   branch?: string;
   discipline?: string;
+  model?: string;
   pass?: string;
   workflow?: string;
   ticket?: string;

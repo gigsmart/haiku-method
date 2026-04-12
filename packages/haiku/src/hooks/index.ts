@@ -18,6 +18,7 @@ import { injectContext } from "./inject-context.js"
 import { injectStateFile } from "./inject-state-file.js"
 import { validateUnitType } from "./validate-unit-type.js"
 import { guardFsmFields } from "./guard-fsm-fields.js"
+import { trackOutputs } from "./track-outputs.js"
 
 // Read stdin synchronously (hooks are synchronous)
 function readStdin(): string {
@@ -76,6 +77,9 @@ export async function runHook(name: string, _args: string[]): Promise<void> {
 			break
 		case "guard-fsm-fields":
 			await guardFsmFields(parsed)
+			break
+		case "track-outputs":
+			await trackOutputs(parsed, pluginRoot)
 			break
 		default:
 			// For hooks not yet ported to TypeScript, fall through
