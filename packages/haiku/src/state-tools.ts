@@ -9,7 +9,7 @@ import { join, resolve } from "node:path"
 import matter from "gray-matter"
 import { emitTelemetry } from "./telemetry.js"
 import { writeHaikuMetadata, logSessionEvent } from "./session-metadata.js"
-import { mergeUnitWorktree, getCurrentBranch } from "./git-worktree.js"
+import { mergeUnitWorktree, getCurrentBranch, readFileFromBranch } from "./git-worktree.js"
 
 // ── Environment detection ──────────────────────────────────────────────────
 
@@ -145,17 +145,17 @@ export function validateBranch(intent: string, expectedType: "intent" | "unit", 
 	const current = getCurrentBranch()
 	if (!current) return ""
 
+	// Any haiku/{intent}/* branch is valid for this intent (covers both continuous main and discrete stage branches)
+	const intentPrefix = `haiku/${intent}/`
 	if (expectedType === "intent") {
-		const expected = `haiku/${intent}/main`
-		if (current !== expected) {
-			return `⚠️ WRONG BRANCH: Expected '${expected}' but on '${current}'. Run \`git checkout ${expected}\` to switch to the intent branch. Custom branch names break the H·AI·K·U lifecycle.`
+		if (!current.startsWith(intentPrefix)) {
+			return `⚠️ WRONG BRANCH: Expected a branch under '${intentPrefix}' but on '${current}'. Run \`git checkout haiku/${intent}/main\` or the appropriate stage branch. Custom branch names break the H·AI·K·U lifecycle.`
 		}
 	} else if (expectedType === "unit" && unit) {
 		const expectedUnit = `haiku/${intent}/${unit}`
-		const expectedIntent = `haiku/${intent}/main`
-		// Unit work can happen on the unit branch (worktree) or intent branch (non-worktree mode)
-		if (current !== expectedUnit && current !== expectedIntent) {
-			return `⚠️ WRONG BRANCH: Expected '${expectedUnit}' or '${expectedIntent}' but on '${current}'. Ensure you're working in the correct worktree.`
+		// Unit work can happen on the unit branch (worktree) or any intent/stage branch
+		if (current !== expectedUnit && !current.startsWith(intentPrefix)) {
+			return `⚠️ WRONG BRANCH: Expected '${expectedUnit}' or a branch under '${intentPrefix}' but on '${current}'. Ensure you're working in the correct worktree.`
 		}
 	}
 	return ""
@@ -643,10 +643,20 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				}
 				const completeGit = gitCommitState(`haiku: complete unit ${args.unit as string}`)
 
-				// Merge unit worktree back to intent branch (if running in a worktree)
-				const mergeResult = mergeUnitWorktree(args.intent as string, args.unit as string)
+				// Merge unit worktree back to parent branch (if running in a worktree)
+				// In discrete mode, parent is the stage branch; in continuous, it's the intent main branch
+				const intentSlug = args.intent as string
+				// Use current branch as ground truth: if we're on a stage branch, merge back
+				// to the stage branch. If we're on the intent main branch, merge there.
+				// This correctly handles continuous, discrete, and hybrid (where the
+				// orchestrator already placed us on the right branch).
+				const currentBr = getCurrentBranch()
+				const onStageBranch = currentBr === `haiku/${intentSlug}/${advStage}`
+				const discreteStage = onStageBranch ? advStage : undefined
+				const parentBranchName = discreteStage ? `haiku/${intentSlug}/${discreteStage}` : `haiku/${intentSlug}/main`
+				const mergeResult = mergeUnitWorktree(intentSlug, args.unit as string, discreteStage)
 				if (!mergeResult.success) {
-					const worktreePath = join(process.cwd(), ".haiku", "worktrees", args.intent as string, args.unit as string)
+					const worktreePath = join(process.cwd(), ".haiku", "worktrees", intentSlug, args.unit as string)
 					return text(JSON.stringify({
 						action: "merge_conflict",
 						status: "completed_merge_failed",
@@ -654,9 +664,9 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 						unit: args.unit,
 						worktree: worktreePath,
 						error: mergeResult.message,
-						message: `Unit completed but merge to intent branch failed: ${mergeResult.message}. ` +
-							`RESOLVE: cd to the intent branch (\`git checkout haiku/${args.intent}/main\`), ` +
-							`merge manually (\`git merge haiku/${args.intent}/${args.unit} --no-edit\`), resolve any conflicts, ` +
+						message: `Unit completed but merge to parent branch failed: ${mergeResult.message}. ` +
+							`RESOLVE: cd to the parent branch (\`git checkout ${parentBranchName}\`), ` +
+							`merge manually (\`git merge haiku/${intentSlug}/${args.unit} --no-edit\`), resolve any conflicts, ` +
 							`then commit and push. If you cannot resolve, ask the user for help.`,
 					}, null, 2))
 				}
@@ -721,12 +731,14 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			const hatIdx = stageHats.indexOf(currentHat)
 			const prevHat = hatIdx > 0 ? stageHats[hatIdx - 1] : stageHats[0]
 
-			// Auto-escalate model tier on rejection
-			const modelEscalation: Record<string, string> = { haiku: "sonnet", sonnet: "opus" }
-			const currentModel = (failData.model as string) || ""
-			if (currentModel && modelEscalation[currentModel]) {
-				setFrontmatterField(failPath, "model", modelEscalation[currentModel])
-				console.error(`[haiku] model escalated: ${currentModel} → ${modelEscalation[currentModel]} (hat rejected, bolt ${currentBolt + 1})`)
+			// Auto-escalate model tier on rejection (gated by HAIKU_MODEL_SELECTION)
+			if (process.env.HAIKU_MODEL_SELECTION) {
+				const modelEscalation: Record<string, string> = { haiku: "sonnet", sonnet: "opus" }
+				const currentModel = (failData.model as string) || ""
+				if (currentModel && modelEscalation[currentModel]) {
+					setFrontmatterField(failPath, "model", modelEscalation[currentModel])
+					console.error(`[haiku] model escalated: ${currentModel} → ${modelEscalation[currentModel]} (hat rejected, bolt ${currentBolt + 1})`)
+				}
 			}
 
 			setFrontmatterField(failPath, "hat", prevHat)
@@ -860,15 +872,49 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				out += `- Active Stage: ${data.active_stage || "none"}\n`
 				out += `- Mode: ${data.mode || "interactive"}\n`
 
+				const isDiscrete = (data.mode as string) === "discrete" || (data.mode as string) === "hybrid"
+
 				const stagesPath = join(intentsDir, slug, "stages")
 				if (existsSync(stagesPath)) {
 					const stages = readdirSync(stagesPath).filter(s => existsSync(join(stagesPath, s, "state.json")))
-					if (stages.length > 0) {
+					const stagesFromBranches: string[] = []
+					if (isDiscrete && isGitRepo()) {
+						try {
+							const branchList = execFileSync("git", ["branch", "--list", `haiku/${slug}/*`], { encoding: "utf8", stdio: "pipe" }).trim()
+							for (const line of branchList.split("\n")) {
+								const branch = line.trim().replace(/^\* /, "")
+								const stageName = branch.replace(`haiku/${slug}/`, "")
+								// Skip main branch and unit branches (unit-NN-*)
+								if (stageName && stageName !== "main" && !/^unit-\d+/.test(stageName) && !stages.includes(stageName)) {
+									stagesFromBranches.push(stageName)
+								}
+							}
+						} catch { /* non-fatal */ }
+					}
+
+					const allStages = [...stages, ...stagesFromBranches]
+					if (allStages.length > 0) {
 						out += `\n| Stage | Status | Phase |\n|-------|--------|-------|\n`
 						for (const s of stages) {
 							const state = readJson(join(stagesPath, s, "state.json"))
 							out += `| ${s} | ${state.status || "pending"} | ${state.phase || ""} |\n`
 						}
+						for (const s of stagesFromBranches) {
+							const branch = `haiku/${slug}/${s}`
+							const relPath = `.haiku/intents/${slug}/stages/${s}/state.json`
+							const raw = readFileFromBranch(branch, relPath)
+							if (raw) {
+								try {
+									const state = JSON.parse(raw)
+									out += `| ${s} | ${state.status || "pending"} | ${state.phase || ""} |\n`
+								} catch {
+									out += `| ${s} | ? | ? |\n`
+								}
+							} else {
+								out += `| ${s} | (on branch) | |\n`
+							}
+						}
+						// Show per-unit model assignments
 						for (const s of stages) {
 							const unitsDir = join(stagesPath, s, "units")
 							if (!existsSync(unitsDir)) continue
