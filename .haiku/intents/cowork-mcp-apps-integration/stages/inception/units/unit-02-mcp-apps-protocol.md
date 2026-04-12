@@ -2,6 +2,7 @@
 title: "MCP Apps protocol and ext-apps SDK research"
 type: research
 depends_on: []
+inputs: ["intent.md"]
 ---
 
 # MCP Apps Protocol Research

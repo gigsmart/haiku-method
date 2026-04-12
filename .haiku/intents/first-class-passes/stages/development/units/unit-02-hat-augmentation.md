@@ -2,6 +2,7 @@
 name: unit-02-hat-augmentation
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-01-pass-definitions]
 bolt: 0
 hat: ""

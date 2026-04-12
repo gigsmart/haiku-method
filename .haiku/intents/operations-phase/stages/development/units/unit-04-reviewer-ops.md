@@ -2,6 +2,7 @@
 name: unit-04-reviewer-ops
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-03-builder-ops]
 bolt: 0
 hat: ""

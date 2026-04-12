@@ -5,6 +5,7 @@ depends_on:
 discipline: frontend
 model: sonnet
 status: completed
+inputs: ["intent.md"]
 bolt: 1
 hat: elaborator
 started_at: '2026-04-10T22:35:11Z'

@@ -2,6 +2,7 @@
 name: unit-03-review-ui
 type: frontend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: []
 bolt: 0
 hat: ""

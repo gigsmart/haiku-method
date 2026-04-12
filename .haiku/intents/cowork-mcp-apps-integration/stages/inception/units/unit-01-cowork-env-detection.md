@@ -2,6 +2,7 @@
 title: "Cowork environment detection research"
 type: research
 depends_on: []
+inputs: ["intent.md"]
 ---
 
 # Cowork Environment Detection

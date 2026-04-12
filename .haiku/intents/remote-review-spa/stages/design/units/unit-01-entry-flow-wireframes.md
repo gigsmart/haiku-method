@@ -2,6 +2,7 @@
 title: Entry flow and error state wireframes
 type: design
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 quality_gates:
   - Split panel layout wireframes for all connection states (loading, connected, error, expired, reconnecting)
   - Left sidebar shows connection status indicators and session metadata

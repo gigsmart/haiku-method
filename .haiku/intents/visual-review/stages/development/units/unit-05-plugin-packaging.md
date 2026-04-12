@@ -2,6 +2,7 @@
 name: unit-05-plugin-packaging
 type: devops
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: []
 bolt: 0
 hat: ""

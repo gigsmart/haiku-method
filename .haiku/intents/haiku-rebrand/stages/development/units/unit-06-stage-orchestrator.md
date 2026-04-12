@@ -2,6 +2,7 @@
 name: unit-06-stage-orchestrator
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-04-studio-infrastructure, unit-05-stage-definitions]
 bolt: 0
 hat: ""

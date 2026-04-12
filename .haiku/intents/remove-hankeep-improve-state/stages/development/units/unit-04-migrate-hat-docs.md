@@ -2,6 +2,7 @@
 name: unit-04-migrate-hat-docs
 type: documentation
 status: pending
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: []
 bolt: 0
 hat: ""

@@ -2,6 +2,7 @@
 name: unit-02-skills-metadata-rename
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-01-lib-hooks-rename]
 bolt: 0
 hat: ""

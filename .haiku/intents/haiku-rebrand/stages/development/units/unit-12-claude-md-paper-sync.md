@@ -2,6 +2,7 @@
 name: unit-12-claude-md-paper-sync
 type: documentation
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-05-stage-definitions, unit-07-dissolve-hats-workflows]
 bolt: 0
 hat: ""

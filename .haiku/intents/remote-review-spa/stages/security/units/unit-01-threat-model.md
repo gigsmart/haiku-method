@@ -2,6 +2,7 @@
 title: Threat model and security review
 type: security
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 quality_gates:
   - 'Threat model documents attack surface (tunnel, JWT, CORS, file serving)'
   - Path traversal protection verified via realpath guard

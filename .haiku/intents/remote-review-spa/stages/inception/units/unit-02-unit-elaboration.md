@@ -2,6 +2,7 @@
 title: Unit elaboration and dependency mapping
 type: research
 status: completed
+inputs: ["intent.md"]
 quality_gates:
   - 4 implementation units defined with verifiable completion criteria
   - Unit DAG is acyclic (verified by dependency analysis)

@@ -2,6 +2,7 @@
 name: unit-03-operation-phase
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-02-haiku-core-plugin]
 bolt: 0
 hat: ""

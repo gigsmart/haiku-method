@@ -4,6 +4,7 @@ depends_on: []
 discipline: backend
 model: sonnet
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 bolt: 1
 hat: reviewer
 started_at: '2026-04-11T01:22:51Z'

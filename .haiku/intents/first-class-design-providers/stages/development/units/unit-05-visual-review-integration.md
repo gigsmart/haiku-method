@@ -2,6 +2,7 @@
 name: unit-05-visual-review-integration
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: []
 bolt: 0
 hat: ""

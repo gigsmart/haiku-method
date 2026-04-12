@@ -3,6 +3,7 @@ title: "Review SPA bundling strategy for MCP Apps"
 type: research
 depends_on:
   - unit-02-mcp-apps-protocol
+inputs: ["intent.md"]
 ---
 
 # Review SPA Bundling Strategy

@@ -2,6 +2,7 @@
 name: unit-05-execute-skill-updates
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-01-pass-definitions, unit-02-hat-augmentation, unit-03-pass-context-injection]
 bolt: 0
 hat: ""
