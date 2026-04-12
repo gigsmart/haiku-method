@@ -33,7 +33,7 @@ import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
 import { computeWaves, topologicalSort } from "./dag.js"
 import type { DAGGraph } from "./types.js"
 import { validateIdentifier } from "./prompts/helpers.js"
-import { readStageDef, readStudio, readHatDefs, readReviewAgentDefs, listStudios, studioSearchPaths } from "./studio-reader.js"
+import { readStageDef, readStudio, readHatDefs, readReviewAgentDefs, listStudios, studioSearchPaths, resolveStageInputs } from "./studio-reader.js"
 
 // ── Path helpers ───────────────────────────────────────────────────────────
 
@@ -357,6 +357,51 @@ function validateUnitNaming(intentDirPath: string, stage: string): OrchestratorA
 				`Files MUST be named \`unit-NN-slug.md\` (e.g., \`unit-01-data-model.md\`):\n\n` +
 				violations.map(v => `- \`${v.file}\`: ${v.issue}`).join("\n") +
 				`\n\nRename the files to match the convention, then call \`haiku_run_next { intent: "${slug}" }\` again.`,
+		}
+	}
+
+	return null
+}
+
+// ── Unit inputs validation ───────────────────────────────────────────────
+
+/**
+ * Validate that all units in a stage have a non-empty `inputs:` field.
+ * Every unit must declare what upstream artifacts it references.
+ * Returns an error action if any units are missing inputs, null if all pass.
+ */
+function validateUnitInputs(intentDirPath: string, stage: string): OrchestratorAction | null {
+	const unitsDir = join(intentDirPath, "stages", stage, "units")
+	if (!existsSync(unitsDir)) return null
+
+	const unitFiles = readdirSync(unitsDir).filter(f => f.endsWith(".md"))
+	if (unitFiles.length === 0) return null
+
+	const missing: string[] = []
+	for (const f of unitFiles) {
+		const fm = readFrontmatter(join(unitsDir, f))
+		const status = (fm.status as string) || ""
+		if (["complete", "skipped", "failed"].includes(status)) continue
+		const inputs = (fm.inputs as string[]) || (fm.refs as string[]) || []
+		if (inputs.length === 0) {
+			missing.push(f.replace(/\.md$/, ""))
+		}
+	}
+
+	if (missing.length > 0) {
+		const slug = intentDirPath.split("/intents/")[1] || ""
+		return {
+			action: "unit_inputs_missing",
+			intent: slug,
+			stage,
+			missing_units: missing,
+			message: `Cannot advance to execution: ${missing.length} unit(s) have no \`inputs:\` field.\n\n` +
+				`Every unit MUST declare its inputs — the upstream artifacts, knowledge docs, ` +
+				`and prior-stage outputs it references. At minimum, include the intent document and discovery docs.\n\n` +
+				`Units missing inputs:\n` +
+				missing.map(u => `- ${u}`).join("\n") +
+				`\n\nAdd \`inputs:\` to each unit's frontmatter with paths relative to the intent directory ` +
+				`(e.g., \`knowledge/DISCOVERY.md\`, \`stages/design/DESIGN-BRIEF.md\`), then call \`haiku_run_next { intent: "${slug}" }\` again.`,
 		}
 	}
 
@@ -852,6 +897,10 @@ export function runNext(slug: string): OrchestratorAction {
 		// Validate discovery artifacts exist before advancing
 		const discoveryViolation = validateDiscoveryArtifacts(slug, currentStage, studio)
 		if (discoveryViolation) return discoveryViolation
+
+		// Validate all units have declared inputs
+		const inputsViolation = validateUnitInputs(iDir, currentStage)
+		if (inputsViolation) return inputsViolation
 
 		// Note: adversarial review of elaboration specs is included in the gate_review
 		// instructions. The gate review handler opens the review UI which shows specs
@@ -1488,6 +1537,219 @@ function goBack(slug: string): OrchestratorAction {
 // Register runNext callback so state-tools can call it without circular imports
 setRunNextHandler(runNext)
 
+// ── Action preview enrichment ─────────────────────────────────────────────
+//
+// Adds `tell_user` (what the agent should announce) and `next_step` (what
+// comes after this action) to every orchestrator action. This lets the
+// agent tell the user what's happening and what's coming next.
+
+function enrichActionWithPreview(action: OrchestratorAction): void {
+	const stage = (action.stage as string) || ""
+	const unit = (action.unit as string) || ""
+	const hat = (action.hat as string) || (action.first_hat as string) || ""
+	const nextStage = (action.next_stage as string) || ""
+
+	let tell_user = ""
+	let next_step = ""
+
+	switch (action.action) {
+		case "select_studio":
+			tell_user = "I need to select a lifecycle studio for this intent before we can begin."
+			next_step = "After studio selection, the first stage will start with elaboration."
+			break
+
+		case "start_stage":
+			tell_user = `Starting stage '${stage}' — I'll elaborate the work into units with completion criteria.`
+			next_step = "Next I'll break the work down into units, then validate them and open a review gate for your approval."
+			break
+
+		case "elaborate":
+			tell_user = `Elaborating stage '${stage}' — defining units of work and their completion criteria.`
+			next_step = "After units are defined, the orchestrator validates them and opens a review gate for your approval before execution begins."
+			break
+
+		case "elaboration_insufficient":
+			tell_user = `I need to engage you more on the plan for stage '${stage}' before finalizing.`
+			next_step = "After sufficient collaboration, I'll finalize units and open the review gate."
+			break
+
+		case "gate_review": {
+			const gateContext = (action.gate_context as string) || "stage_gate"
+			if (gateContext === "intent_review") {
+				tell_user = "The intent specs are ready — opening the review gate for your approval."
+				next_step = "After approval, execution begins. If changes are requested, I'll revise and re-submit."
+			} else if (gateContext === "elaborate_to_execute") {
+				tell_user = "Unit specs are validated — opening the review gate for your approval before execution."
+				next_step = "After approval, I'll begin executing units in wave order. If changes are requested, I'll revise the specs."
+			} else {
+				tell_user = `Stage '${stage}' is complete — opening the review gate.`
+				next_step = nextStage
+					? `After approval, I'll advance to stage '${nextStage}'. If changes are requested, I'll address the feedback.`
+					: "After approval, the intent is complete."
+			}
+			break
+		}
+
+		case "intent_approved":
+			tell_user = "Intent approved — moving to execution."
+			next_step = "I'll begin executing units in wave order."
+			break
+
+		case "advance_phase": {
+			const toPhase = (action.to_phase as string) || ""
+			if (toPhase === "execute") {
+				tell_user = `Specs approved for stage '${stage}' — beginning execution.`
+				next_step = "I'll execute units in wave order, one hat at a time."
+			} else if (toPhase === "review") {
+				tell_user = `All units complete in stage '${stage}' — moving to review.`
+				next_step = "I'll run quality gates and adversarial review agents, then open the stage gate."
+			} else if (toPhase === "gate") {
+				tell_user = `Review complete for stage '${stage}' — moving to the gate.`
+				next_step = "The stage gate will determine whether to advance, request changes, or send for external review."
+			} else {
+				tell_user = `Advancing stage '${stage}' to ${toPhase} phase.`
+				next_step = ""
+			}
+			break
+		}
+
+		case "start_unit":
+			tell_user = `Starting unit '${unit}' with hat '${hat}' in stage '${stage}'.`
+			next_step = "I'll execute the unit work per the hat definition, then advance to the next hat or next unit."
+			break
+
+		case "start_units": {
+			const units = (action.units as string[]) || []
+			tell_user = `Starting ${units.length} units in parallel: ${units.join(", ")}.`
+			next_step = "Each unit runs in its own worktree. After all complete, the next wave starts or we advance to review."
+			break
+		}
+
+		case "continue_unit":
+			tell_user = `Continuing unit '${unit}' — hat: ${hat}, bolt: ${action.bolt || 1}.`
+			next_step = "I'll continue the work, then advance to the next hat or complete the unit."
+			break
+
+		case "review":
+			tell_user = `Quality gates passed — running adversarial review agents for stage '${stage}'.`
+			next_step = "After review agents pass, the stage gate opens for approval."
+			break
+
+		case "fix_quality_gates":
+			tell_user = `Quality gates failed in stage '${stage}' — I need to fix the issues before review.`
+			next_step = "After fixing, I'll retry the quality gates and then proceed to adversarial review."
+			break
+
+		case "advance_stage":
+			tell_user = `Stage '${stage}' complete — advancing to '${nextStage}'.`
+			next_step = nextStage ? `I'll start stage '${nextStage}' with elaboration.` : "The intent is complete."
+			break
+
+		case "stage_complete_discrete":
+			tell_user = `Stage '${stage}' is complete.`
+			next_step = nextStage
+				? `Run /haiku:pickup to start stage '${nextStage}'.`
+				: "The intent is complete."
+			break
+
+		case "intent_complete":
+			tell_user = "All stages are complete — the intent is done."
+			next_step = ""
+			break
+
+		case "changes_requested":
+			tell_user = "Changes were requested on the review — I'll address the feedback."
+			next_step = "After revisions, I'll re-submit for review."
+			break
+
+		case "external_review_requested":
+			tell_user = `Stage '${stage}' needs external review — submit the work through your project's review process.`
+			next_step = "After external approval, run /haiku:pickup to continue."
+			break
+
+		case "awaiting_external_review":
+			tell_user = `Stage '${stage}' is waiting on external review.`
+			next_step = "Run /haiku:pickup after the review is approved."
+			break
+
+		case "gate_await":
+			tell_user = `Stage '${stage}' is complete — waiting for an external event before advancing.`
+			next_step = "Run /haiku:pickup when the external event occurs."
+			break
+
+		case "blocked":
+			tell_user = `Some units in stage '${stage}' are blocked — dependencies not met.`
+			next_step = "Unblock the dependencies, then retry."
+			break
+
+		case "design_direction_required":
+			tell_user = `Stage '${stage}' requires a design direction selection before proceeding.`
+			next_step = "After you select a direction, elaboration continues."
+			break
+
+		case "outputs_missing":
+			tell_user = `Stage '${stage}' is missing required output artifacts.`
+			next_step = "Create the missing artifacts, then retry."
+			break
+
+		case "discovery_missing":
+			tell_user = `Stage '${stage}' is missing required discovery artifacts.`
+			next_step = "Create the missing artifacts, then retry."
+			break
+
+		case "unresolved_dependencies":
+			tell_user = "Some unit dependencies reference units that don't exist — I need to fix the references."
+			next_step = "After fixing, I'll retry advancement."
+			break
+
+		case "dag_cycle_detected":
+			tell_user = "A dependency cycle was detected in the unit graph — I need to break the cycle."
+			next_step = "After fixing, I'll retry advancement."
+			break
+
+		case "unit_naming_invalid":
+			tell_user = "Some unit files don't follow the required naming convention — I need to rename them."
+			next_step = "After fixing, I'll retry advancement."
+			break
+
+		case "spec_validation_failed":
+			tell_user = "Unit specs failed validation against the stage's allowed types — I need to fix them."
+			next_step = "After fixing, I'll retry advancement."
+			break
+
+		case "inputs_missing":
+			tell_user = "Some units are missing required input references — I need to add them."
+			next_step = "After fixing, I'll retry advancement."
+			break
+
+		case "gate_blocked":
+			tell_user = "Gate review couldn't be completed — the review UI and elicitation both failed."
+			next_step = "Run haiku_run_next again to retry the gate review."
+			break
+
+		case "complete":
+			tell_user = "Intent is already completed."
+			next_step = ""
+			break
+
+		case "composite_run_stage":
+			tell_user = `Running composite stage '${stage}'.`
+			next_step = "The composite orchestrator will advance through sub-stages."
+			break
+
+		case "error":
+			tell_user = (action.message as string) || "An error occurred."
+			next_step = ""
+			break
+
+		default:
+			break
+	}
+
+	if (tell_user) action.tell_user = tell_user
+	if (next_step) action.next_step = next_step
+}
+
 // ── Run instruction builder ───────────────────────────────────────────────
 
 function buildRunInstructions(
@@ -1496,8 +1758,23 @@ function buildRunInstructions(
 	action: OrchestratorAction,
 	dir: string,
 ): string {
-	const actionJson = JSON.stringify(action, null, 2)
+	// Strip tell_user/next_step from the JSON output — they appear in the
+	// announcement section already, no need to duplicate in the raw action.
+	const { tell_user, next_step, ...actionForJson } = action as OrchestratorAction & { tell_user?: string; next_step?: string }
+	const actionJson = JSON.stringify(actionForJson, null, 2)
 	const sections: string[] = []
+
+	// Agent announcement directive — tell the user what's happening
+	if (tell_user || next_step) {
+		const parts: string[] = [
+			`## Announce to User (MANDATORY)\n`,
+			`**Before doing ANY work**, tell the user what you're about to do:`,
+		]
+		if (tell_user) parts.push(`> ${tell_user}`)
+		if (next_step) parts.push(`\n_${next_step}_`)
+		parts.push(`\nKeep the announcement concise — one or two sentences. Do NOT skip this step.`)
+		sections.push(parts.join("\n"))
+	}
 
 	sections.push(`## Orchestrator Action\n\n\`\`\`json\n${actionJson}\n\`\`\``)
 
@@ -1547,7 +1824,56 @@ function buildRunInstructions(
 			if (stageDef) {
 				sections.push(`${stageDef.body}`)
 				if (unitTypes.length > 0) sections.push(`**Allowed unit types:** ${unitTypes.join(", ")}`)
-				if (stageDef.data.inputs) sections.push(`**Inputs:** ${JSON.stringify(stageDef.data.inputs)}`)
+			}
+
+			// Resolve upstream stage inputs — load actual content from prior stages
+			if (stageDef?.data?.inputs && Array.isArray(stageDef.data.inputs)) {
+				const inputs = stageDef.data.inputs as Array<{ stage: string; discovery?: string; output?: string }>
+				const resolved = resolveStageInputs(studio, inputs, dir, slug)
+				const found = resolved.filter(r => r.exists)
+				const missing = resolved.filter(r => !r.exists)
+
+				if (found.length > 0) {
+					sections.push(
+						`## Upstream Stage Inputs (MANDATORY CONTEXT)\n\n` +
+						`These artifacts were produced by prior stages. You **MUST** read and incorporate them.\n` +
+						`When creating units, add relevant paths to the \`inputs:\` frontmatter field so builders have access.\n`,
+					)
+					for (const r of found) {
+						const relPath = r.resolvedPath.startsWith(dir + "/")
+							? r.resolvedPath.slice(dir.length + 1)
+							: r.resolvedPath
+						sections.push(
+							`### ${r.stage}/${r.artifactName} (${r.kind})\n` +
+							`**Path:** \`${relPath}\`\n\n` +
+							`${r.content?.slice(0, 3000) ?? ""}${(r.content?.length ?? 0) > 3000 ? "\n...(truncated)" : ""}`,
+						)
+					}
+					// Build ref paths for unit creation guidance
+					const refPaths = found.map(r =>
+						r.resolvedPath.startsWith(dir + "/") ? r.resolvedPath.slice(dir.length + 1) : r.resolvedPath
+					)
+					sections.push(
+						`## Unit Inputs Requirement (MANDATORY)\n\n` +
+						`Every unit **MUST** have a non-empty \`inputs:\` field in its frontmatter. ` +
+						`At minimum, every unit should reference the intent document and discovery docs. ` +
+						`Units will be **blocked from execution** if \`inputs:\` is empty.\n\n` +
+						`Available upstream artifacts:\n` +
+						"```yaml\ninputs:\n" + refPaths.map(p => `  - ${p}`).join("\n") + "\n```\n" +
+						`Include all inputs relevant to the unit's scope. Frontend/UI units should reference design artifacts. ` +
+						`Backend units should reference behavioral specs and data contracts.`,
+					)
+				}
+
+				if (missing.length > 0) {
+					sections.push(
+						`## ⚠ Missing Upstream Artifacts\n\n` +
+						`The following inputs are declared but do not exist on disk:\n\n` +
+						missing.map(r => `- **${r.stage}/${r.artifactName}** (${r.kind}) — expected at \`${r.resolvedPath}\``).join("\n") +
+						`\n\nThese may not have been produced yet, or may have been saved to a different location. ` +
+						`If they are critical for this stage, consider using \`haiku_go_back\` to return to the producing stage.`,
+					)
+				}
 			}
 
 			// Discovery artifact definitions (project overrides plugin for same-named files)
@@ -1647,12 +1973,12 @@ function buildRunInstructions(
 			// Unit content
 			const unitFile = join(dir, "stages", stage, "units", unit.endsWith(".md") ? unit : `${unit}.md`)
 			let unitContent = ""
-			let unitRefs: string[] = []
+			let unitInputs: string[] = []
 			let unitModel: string | undefined = undefined
 			if (existsSync(unitFile)) {
 				const { data, body } = parseFrontmatter(readFileSync(unitFile, "utf8"))
 				unitContent = body
-				unitRefs = (data.refs as string[]) || []
+				unitInputs = (data.inputs as string[]) || (data.refs as string[]) || []
 				unitModel = (data.model as string) || undefined
 			}
 
@@ -1702,16 +2028,40 @@ function buildRunInstructions(
 			sections.push(`### Unit Spec\n\n${unitContent}`)
 			sections.push(`### Hat: ${hat}\n\n${hatContent}`)
 
-			// Refs
-			if (unitRefs.length > 0) {
-				sections.push(`### Refs`)
+			// Unit inputs — load referenced artifacts
+			if (unitInputs.length > 0) {
+				sections.push(`### Inputs`)
 				const dirResolved = resolve(dir)
-				for (const ref of unitRefs) {
+				for (const ref of unitInputs) {
 					const refResolved = resolve(dir, ref)
 					if (!refResolved.startsWith(dirResolved + "/") && refResolved !== dirResolved) continue
 					if (existsSync(join(dir, ref))) {
 						const content = readFileSync(join(dir, ref), "utf8")
 						sections.push(`#### ${ref}\n\n${content.slice(0, 2000)}${content.length > 2000 ? "\n...(truncated)" : ""}`)
+					}
+				}
+			}
+
+			// Upstream stage inputs — always resolve and inject artifacts not already in unit inputs
+			if (stageDef?.data?.inputs && Array.isArray(stageDef.data.inputs)) {
+				const stageInputDefs = stageDef.data.inputs as Array<{ stage: string; discovery?: string; output?: string }>
+				const resolvedInputs = resolveStageInputs(studio, stageInputDefs, dir, slug)
+				const found = resolvedInputs.filter(r => r.exists)
+				// Filter out artifacts already included via explicit unit inputs
+				const inputSet = new Set(unitInputs.map(r => resolve(dir, r)))
+				const additional = found.filter(r => !inputSet.has(resolve(r.resolvedPath)))
+
+				if (additional.length > 0) {
+					sections.push(`### Upstream Context (from prior stages — not in unit inputs)`)
+					for (const r of additional) {
+						const relPath = r.resolvedPath.startsWith(dir + "/")
+							? r.resolvedPath.slice(dir.length + 1)
+							: r.resolvedPath
+						sections.push(
+							`#### ${r.stage}/${r.artifactName}\n` +
+							`**Path:** \`${relPath}\`\n\n` +
+							`${r.content?.slice(0, 2000) ?? ""}${(r.content?.length ?? 0) > 2000 ? "\n...(truncated)" : ""}`,
+						)
 					}
 				}
 			}
@@ -1725,7 +2075,7 @@ function buildRunInstructions(
 				(resolvedModel ? `Spawn with \`model: "${resolvedModel}"\` — pass this as the Agent tool's \`model:\` parameter.\n` : "") +
 				(worktreePath ? `Worktree: \`${worktreePath}\`\n` : "") +
 				`\n**Subagent prompt must include:**\n` +
-				`- The hat definition, unit spec, and refs above\n` +
+				`- The hat definition, unit spec, and inputs above\n` +
 				`- The stage scope constraint\n` +
 				(worktreePath ? `- **Git discipline:** Commit work frequently in the worktree (\`git add -A && git commit -m "..."\`). Do NOT push — the merge-back handles pushing.\n` : "") +
 				(action.action === "start_unit"
@@ -1775,6 +2125,26 @@ function buildRunInstructions(
 			}
 			sections.push(`Hats: ${hats.join(" → ")}\nUnits: ${units.join(", ")}`)
 
+			// Upstream stage inputs for parallel units
+			if (stageDef?.data?.inputs && Array.isArray(stageDef.data.inputs)) {
+				const inputs = stageDef.data.inputs as Array<{ stage: string; discovery?: string; output?: string }>
+				const resolvedInputs = resolveStageInputs(studio, inputs, dir, slug)
+				const found = resolvedInputs.filter(r => r.exists)
+				if (found.length > 0) {
+					sections.push(`### Upstream Context (from prior stages)\n\nInclude these in each subagent prompt.`)
+					for (const r of found) {
+						const relPath = r.resolvedPath.startsWith(dir + "/")
+							? r.resolvedPath.slice(dir.length + 1)
+							: r.resolvedPath
+						sections.push(
+							`#### ${r.stage}/${r.artifactName}\n` +
+							`**Path:** \`${relPath}\`\n\n` +
+							`${r.content?.slice(0, 2000) ?? ""}${(r.content?.length ?? 0) > 2000 ? "\n...(truncated)" : ""}`,
+						)
+					}
+				}
+			}
+
 			const worktrees = (action.worktrees as Record<string, string | null>) || {}
 
 			const wave = action.wave as number | undefined
@@ -1789,7 +2159,7 @@ function buildRunInstructions(
 				`Each subagent calls \`advance_hat\` when done — it internally progresses the FSM. The last subagent to finish the wave triggers the next action automatically.\n\n` +
 				`**Each subagent prompt must include:**\n` +
 				`- The hat definition for "${firstHat}"\n` +
-				`- The unit spec and refs\n` +
+				`- The unit spec and inputs\n` +
 				`- The stage scope constraint\n` +
 				`- Instruction to call \`haiku_unit_start\` first\n` +
 				`- Output tracking: record produced artifacts in the unit's \`outputs:\` frontmatter field (paths relative to intent dir)\n` +
@@ -2023,6 +2393,11 @@ function buildRunInstructions(
 			break
 		}
 
+		case "unit_inputs_missing": {
+			sections.push(`## Missing Unit Inputs\n\n${action.message}`)
+			break
+		}
+
 		default: {
 			sections.push(`## Unknown Action: ${action.action}\n\n${JSON.stringify(action, null, 2)}`)
 			break
@@ -2193,10 +2568,13 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 		} catch { /* intent might not exist for error actions */ }
 		const intentStudio = (intentMeta.studio as string) || ""
 
-		// Helper to append instructions to a result object
+		// Helper to enrich result with preview and append instructions
 		const withInstructions = (resultObj: Record<string, unknown>): string => {
+			enrichActionWithPreview(resultObj as OrchestratorAction)
 			const instructions = buildRunInstructions(slug, intentStudio, resultObj as OrchestratorAction, intentDir(slug))
-			return JSON.stringify(resultObj, null, 2) + "\n\n---\n\n" + instructions
+			// Strip tell_user/next_step from outer JSON — they appear in the announcement section
+			const { tell_user: _tu, next_step: _ns, ...resultForJson } = resultObj
+			return JSON.stringify(resultForJson, null, 2) + "\n\n---\n\n" + instructions
 		}
 
 		// External review: include instructions about recording the URL

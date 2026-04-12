@@ -19,23 +19,32 @@ studio: software
 
 ## Model Assignment
 
-Every unit **MUST** have a `model:` field in its frontmatter, set during elaboration based on complexity assessment. The elaborator assesses each unit individually and assigns one of three tiers:
+Every unit **MUST** be assigned a `model:` field during elaboration. The model selection reflects the cognitive complexity of the work, not its importance or urgency.
 
-### Complexity Tiers
+### Three Model Tiers
 
-| Model | When to use | Signals |
-|-------|-------------|---------|
-| `opus` | Complex architectural work | No existing pattern to follow, competing design approaches, high cascading-failure risk, core orchestration changes, security-critical decisions |
-| `sonnet` | Standard implementation (**default**) | Known patterns with judgment calls, cross-file changes, standard feature additions. **Use when uncertain.** |
-| `haiku` | Mechanical execution | Purely additive changes, copy-paste-adapt patterns, string/config changes, no decision-making required |
+**opus** — Architectural decisions, competing approaches, no established pattern to follow, high cascading-failure risk.
+- Signals: "How should we structure this?", "Should we use X or Y approach?", "What's the safest design here?", "This could break other systems if we get it wrong."
+- Example: "Redesign the state machine for intent lifecycle" — requires architectural judgment.
+
+**sonnet** — Known patterns with judgment calls, standard feature additions, cross-file changes requiring coordination.
+- Signals: "Here's the pattern, apply it consistently", "This feature uses our normal flow", "Multiple files change but integration is clear", "We've done similar work before."
+- **Default when uncertain.** If you can't decide between sonnet and opus, pick sonnet — the elaborator can always escalate upward.
+- Example: "Add a new field to unit frontmatter and wire it through the orchestrator" — standard pattern, clear scope.
+
+**haiku** — Purely mechanical execution, copy-paste-adapt patterns, additive-only changes, no decision-making required.
+- Signals: "Just repeat what we already do here", "No design choices involved", "Following a single clear path", "Zero risk of breaking other systems."
+- Example: "Add a new hat to the development stage" — copy existing hat template, update names, done.
 
 ### Decision Heuristic
 
-Start at `sonnet`. Justify **upward** to `opus` only when the unit requires genuine architectural judgment between competing approaches. Justify **downward** to `haiku` only when execution is fully mechanical with zero ambiguity.
+Start at **sonnet**. Justify upward to **opus** if the unit involves architectural or trade-off decisions. Justify downward to **haiku** if the unit is purely mechanical with no judgment calls.
 
 ### Anti-patterns (RFC 2119)
 
-- The agent **MUST NOT** assign `opus` to units with fully-specified mechanical execution paths
-- The agent **MUST NOT** leave `model:` unset — every unit spec **MUST** include the field
-- The agent **MUST NOT** assign the same model to all units without assessing each individually
-- The agent **MUST NOT** let "this is important work" justify `opus` — importance and complexity are different
+- The agent **MUST NOT** assign `opus` to units with fully-specified mechanical execution paths.
+- The agent **MUST NOT** leave the `model:` field unset — every unit spec **MUST** include the field.
+- The agent **MUST NOT** assign the same model to all units without assessing each individually.
+- The agent **MUST NOT** use "this is important work" as justification for `opus` — importance and complexity are different concepts.
+
+> **Note:** Model assignments are always recorded in unit frontmatter. The orchestrator only uses them for subagent spawning when `HAIKU_MODEL_SELECTION` is set. When unset, all subagents inherit the session default.

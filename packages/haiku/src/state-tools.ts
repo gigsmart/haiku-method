@@ -736,6 +736,7 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 				const modelEscalation: Record<string, string> = { haiku: "sonnet", sonnet: "opus" }
 				const currentModel = (failData.model as string) || ""
 				if (currentModel && modelEscalation[currentModel]) {
+					setFrontmatterField(failPath, "model_original", currentModel)
 					setFrontmatterField(failPath, "model", modelEscalation[currentModel])
 					console.error(`[haiku] model escalated: ${currentModel} → ${modelEscalation[currentModel]} (hat rejected, bolt ${currentBolt + 1})`)
 				}
@@ -914,19 +915,21 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 								out += `| ${s} | (on branch) | |\n`
 							}
 						}
-						// Show per-unit model assignments
+						// List units with model assignments for active stages
 						for (const s of stages) {
 							const unitsDir = join(stagesPath, s, "units")
 							if (!existsSync(unitsDir)) continue
 							const unitFiles = readdirSync(unitsDir).filter(f => f.endsWith(".md"))
-							const unitsWithModel = unitFiles.map(f => {
-								const { data: ud } = parseFrontmatter(readFileSync(join(unitsDir, f), "utf8"))
-								return { name: f.replace(".md", ""), model: (ud.model as string) || null }
-							}).filter(u => u.model)
+							const unitsWithModel = unitFiles
+								.map(f => {
+									const { data } = parseFrontmatter(readFileSync(join(unitsDir, f), "utf8"))
+									return { name: f.replace(".md", ""), model: data.model as string | undefined }
+								})
+								.filter(u => u.model)
 							if (unitsWithModel.length > 0) {
-								out += `\n**${s} units:**\n`
+								out += `\n**${s} unit models:**\n`
 								for (const u of unitsWithModel) {
-									out += `- ${u.name}: model=${u.model}\n`
+									out += `- ${u.name}: ${u.model}\n`
 								}
 							}
 						}
@@ -1483,6 +1486,75 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 							}
 							if (!unitData.status) {
 								issues.push({ intent: slug, field: `stages/${stageName}/units/${f.name}:status`, severity: "warning", message: `Unit missing 'status' field`, fix: "Add `status` field to unit frontmatter" })
+							}
+						}
+					}
+				}
+
+				// o. Missing unit inputs — every unit must declare its inputs
+				if (Array.isArray(repairStages)) {
+					for (const stageName of repairStages as string[]) {
+						const repairUnitsDir = join(repairIntentsDir, slug, "stages", stageName, "units")
+						if (!existsSync(repairUnitsDir)) continue
+
+						// Resolve available upstream artifacts (if stage has inputs declared)
+						// NOTE: This duplicates logic from studio-reader.ts:resolveStageInputs.
+						// Cannot import it here due to circular dependency (studio-reader → state-tools → studio-reader).
+						const existingUpstreamPaths: string[] = []
+						if (repairStudio) {
+							let stageInputs: Array<{ stage: string; discovery?: string; output?: string }> | null = null
+							for (const base of repairSearchPaths) {
+								const stageMd = join(base, repairStudio, "stages", stageName, "STAGE.md")
+								if (!existsSync(stageMd)) continue
+								const { data: stageData } = parseFrontmatter(readFileSync(stageMd, "utf8"))
+								if (Array.isArray(stageData.inputs) && stageData.inputs.length > 0) {
+									stageInputs = stageData.inputs as Array<{ stage: string; discovery?: string; output?: string }>
+								}
+								break
+							}
+							if (stageInputs) {
+								const intentPath = join(repairIntentsDir, slug)
+								for (const input of stageInputs) {
+									for (const base of repairSearchPaths) {
+										for (const kind of ["discovery", "outputs"] as const) {
+											const artifactDir = join(base, repairStudio, "stages", input.stage, kind)
+											if (!existsSync(artifactDir)) continue
+											for (const f of readdirSync(artifactDir).filter(af => af.endsWith(".md"))) {
+												const raw = readFileSync(join(artifactDir, f), "utf8")
+												const { data: aData } = parseFrontmatter(raw)
+												const aName = (aData.name as string) || f.replace(/\.md$/, "")
+												const wanted = kind === "outputs" ? input.output : input.discovery
+												if (aName !== wanted) continue
+												const loc = (aData.location as string) || ""
+												if (!loc) continue
+												const relPath = loc.replace(/^\.haiku\/intents\/\{intent-slug\}\//, "")
+												const absPath = join(intentPath, relPath)
+												if (existsSync(absPath)) existingUpstreamPaths.push(relPath)
+											}
+										}
+									}
+								}
+							}
+						}
+
+						for (const f of readdirSync(repairUnitsDir, { withFileTypes: true })) {
+							if (!f.isFile() || !f.name.endsWith(".md")) continue
+							const unitRaw = readFileSync(join(repairUnitsDir, f.name), "utf8")
+							const { data: unitData } = parseFrontmatter(unitRaw)
+							const unitStatus = (unitData.status as string) || ""
+							if (["complete", "skipped", "failed"].includes(unitStatus)) continue
+							const unitInputs = (unitData.inputs as string[]) || (unitData.refs as string[]) || []
+							if (unitInputs.length === 0) {
+								const fix = existingUpstreamPaths.length > 0
+									? `Add \`inputs:\` with upstream paths: ${existingUpstreamPaths.join(", ")}`
+									: `Add \`inputs:\` with at minimum the intent doc and discovery docs`
+								issues.push({
+									intent: slug,
+									field: `stages/${stageName}/units/${f.name}:inputs`,
+									severity: "error",
+									message: `Unit has no \`inputs:\` — execution will be blocked`,
+									fix,
+								})
 							}
 						}
 					}
