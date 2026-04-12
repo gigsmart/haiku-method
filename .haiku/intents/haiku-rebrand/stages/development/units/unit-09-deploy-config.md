@@ -2,6 +2,7 @@
 name: unit-09-deploy-config
 type: devops
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-02-skills-metadata-rename]
 bolt: 0
 hat: ""

@@ -2,6 +2,7 @@
 name: unit-03-builder-ops
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-01-stack-schema]
 bolt: 0
 hat: ""

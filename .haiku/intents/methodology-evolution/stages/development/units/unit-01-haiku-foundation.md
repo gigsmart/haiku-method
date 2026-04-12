@@ -2,6 +2,7 @@
 name: unit-01-haiku-foundation
 type: documentation
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: []
 bolt: 0
 hat: ""

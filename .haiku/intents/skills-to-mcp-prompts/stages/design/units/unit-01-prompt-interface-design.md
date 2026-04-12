@@ -2,6 +2,7 @@
 name: unit-01-prompt-interface-design
 type: design
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: []
 bolt: 1
 hat: design-reviewer

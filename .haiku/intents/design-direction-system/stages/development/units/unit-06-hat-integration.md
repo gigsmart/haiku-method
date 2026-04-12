@@ -2,6 +2,7 @@
 name: unit-06-hat-integration
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-01-knowledge-infrastructure]
 bolt: 0
 hat: ""

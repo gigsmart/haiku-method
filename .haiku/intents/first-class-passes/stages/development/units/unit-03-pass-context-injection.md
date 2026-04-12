@@ -2,6 +2,7 @@
 name: unit-03-pass-context-injection
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-01-pass-definitions, unit-02-hat-augmentation]
 bolt: 0
 hat: ""

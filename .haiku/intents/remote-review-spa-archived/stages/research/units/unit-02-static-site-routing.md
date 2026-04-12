@@ -2,6 +2,7 @@
 title: Hash fragment routing for review page on static site
 type: research
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 quality_gates:
   - >-
     Confirms hash fragment approach works with Next.js static export + GitHub

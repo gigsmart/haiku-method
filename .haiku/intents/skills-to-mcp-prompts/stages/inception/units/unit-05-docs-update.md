@@ -2,6 +2,7 @@
 name: unit-05-docs-update
 type: frontend
 status: completed
+inputs: ["intent.md"]
 depends_on:
   - unit-02-core-prompts
   - unit-03-supporting-prompts

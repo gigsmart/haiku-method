@@ -2,6 +2,7 @@
 name: unit-01-prompts-infrastructure
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: []
 bolt: 1
 hat: reviewer

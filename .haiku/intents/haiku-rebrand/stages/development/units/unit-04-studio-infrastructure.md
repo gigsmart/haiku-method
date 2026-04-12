@@ -2,6 +2,7 @@
 name: unit-04-studio-infrastructure
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-01-lib-hooks-rename]
 bolt: 0
 hat: ""

@@ -2,6 +2,7 @@
 title: Website — Stepped review UI component migration
 type: frontend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on:
   - unit-03-website-review-shell
 quality_gates:
