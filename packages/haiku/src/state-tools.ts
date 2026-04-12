@@ -861,6 +861,21 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 							const state = readJson(join(stagesPath, s, "state.json"))
 							out += `| ${s} | ${state.status || "pending"} | ${state.phase || ""} |\n`
 						}
+						for (const s of stages) {
+							const unitsDir = join(stagesPath, s, "units")
+							if (!existsSync(unitsDir)) continue
+							const unitFiles = readdirSync(unitsDir).filter(f => f.endsWith(".md"))
+							const unitsWithModel = unitFiles.map(f => {
+								const { data: ud } = parseFrontmatter(readFileSync(join(unitsDir, f), "utf8"))
+								return { name: f.replace(".md", ""), model: (ud.model as string) || null }
+							}).filter(u => u.model)
+							if (unitsWithModel.length > 0) {
+								out += `\n**${s} units:**\n`
+								for (const u of unitsWithModel) {
+									out += `- ${u.name}: model=${u.model}\n`
+								}
+							}
+						}
 					}
 				}
 			}

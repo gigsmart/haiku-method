@@ -110,7 +110,7 @@ export function renderIntentReview(
         <td class="py-3 pr-3 font-mono text-sm text-gray-500 dark:text-gray-400">${u.number.toString().padStart(2, "0")}</td>
         <td class="py-3 pr-3 font-medium">${escapeHtml(u.title)}</td>
         <td class="py-3 pr-3 text-sm">${escapeHtml(u.frontmatter.discipline ?? u.frontmatter.type ?? "")}</td>
-        <td class="py-3 pr-3 text-sm">${escapeHtml(u.frontmatter.model ?? "—")}</td>
+        <td class="py-3 pr-3">${u.frontmatter.model ? renderBadge("Model", u.frontmatter.model) : "—"}</td>
         <td class="py-3 pr-3">${renderBadge("Status", u.frontmatter.status)}</td>
         <td class="py-3 text-sm text-gray-500 dark:text-gray-400">${escapeHtml(deps)}</td>
       </tr>
