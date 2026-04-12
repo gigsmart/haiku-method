@@ -22,12 +22,7 @@ export async function validateUnitType(
 ): Promise<void> {
 	// Check if the written/edited file is a unit file
 	const toolInput = (input.tool_input || {}) as Record<string, unknown>
-	const filePath =
-		(toolInput.file_path as string) ||
-		(toolInput.path as string) ||
-		(input.file_path as string) ||
-		(input.path as string) ||
-		""
+	const filePath = (toolInput.file_path as string) || ""
 	if (!filePath) return
 
 	const absPath = resolve(process.cwd(), filePath)

@@ -989,7 +989,7 @@ export function handleStateTool(
 						JSON.stringify({
 							error: "unit_outputs_empty",
 							message:
-								"Cannot complete unit: no outputs were produced. A unit must write at least one artifact (file under stages/*/ or knowledge/*) before it can complete. If the work is truly done, list the produced files in the unit's `outputs:` frontmatter field.",
+								"Cannot complete unit: no outputs were produced. Every unit must write at least one artifact under the intent directory — either a stage artifact (stages/<stage>/... excluding units/ and state.json) or a knowledge document (knowledge/...). The track-outputs hook auto-populates `outputs:` as files are written; if your work is done but nothing was tracked, add the produced paths manually to the unit's `outputs:` frontmatter field.",
 						}),
 					)
 				}
