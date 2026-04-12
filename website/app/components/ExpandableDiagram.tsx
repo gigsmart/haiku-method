@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useId, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Mermaid } from "./Mermaid"
 
 interface ExpandableDiagramProps {
@@ -13,17 +13,20 @@ export function ExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 	const expandButtonRef = useRef<HTMLButtonElement>(null)
 	const closeButtonRef = useRef<HTMLButtonElement>(null)
 	const modalRef = useRef<HTMLDivElement>(null)
-	const labelId = useId()
+	const hasOpenedRef = useRef(false)
 
 	const close = useCallback(() => setExpanded(false), [])
 
 	useEffect(() => {
 		if (!expanded) {
-			// Return focus to the trigger when the modal closes
-			expandButtonRef.current?.focus()
+			// Return focus to the trigger when the modal closes, but not on initial mount
+			if (hasOpenedRef.current) {
+				expandButtonRef.current?.focus()
+			}
 			return
 		}
 
+		hasOpenedRef.current = true
 		document.body.style.overflow = "hidden"
 		// Move focus to the close button when the modal opens
 		closeButtonRef.current?.focus()
@@ -73,10 +76,7 @@ export function ExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 			</button>
 			<Mermaid chart={chart} />
 			{caption ? (
-				<figcaption
-					id={labelId}
-					className="mt-3 text-center text-sm text-stone-500 italic dark:text-stone-400"
-				>
+				<figcaption className="mt-3 text-center text-sm text-stone-500 italic dark:text-stone-400">
 					{caption}
 				</figcaption>
 			) : null}
@@ -90,8 +90,7 @@ export function ExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 					}}
 					role="dialog"
 					aria-modal="true"
-					aria-label={caption ? undefined : "Expanded diagram"}
-					aria-labelledby={caption ? labelId : undefined}
+					aria-label={caption ?? "Expanded diagram"}
 				>
 					<button
 						ref={closeButtonRef}
