@@ -7,7 +7,7 @@
 // This catches bad units at creation time — before haiku_unit_start.
 
 import { existsSync, readFileSync } from "node:fs"
-import { basename, dirname, join, resolve } from "node:path"
+import { basename, join, resolve } from "node:path"
 import matter from "gray-matter"
 
 function out(s: string): void {
@@ -21,7 +21,13 @@ export async function validateUnitType(
 	pluginRoot: string,
 ): Promise<void> {
 	// Check if the written/edited file is a unit file
-	const filePath = (input.file_path as string) || (input.path as string) || ""
+	const toolInput = (input.tool_input || {}) as Record<string, unknown>
+	const filePath =
+		(toolInput.file_path as string) ||
+		(toolInput.path as string) ||
+		(input.file_path as string) ||
+		(input.path as string) ||
+		""
 	if (!filePath) return
 
 	const absPath = resolve(process.cwd(), filePath)

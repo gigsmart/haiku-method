@@ -973,6 +973,27 @@ export function handleStateTool(
 			if (isLastHat) {
 				// ── AUTO-COMPLETE: This was the last hat ──
 
+				// Require at least one tracked output. The track-outputs PostToolUse
+				// hook auto-populates this as files are written, so an empty list
+				// means the unit produced no concrete artifacts.
+				if (unitOutputs.length === 0) {
+					const sf = args.state_file as string | undefined
+					if (sf)
+						logSessionEvent(sf, {
+							event: "outputs_empty",
+							intent: args.intent,
+							stage: advStage,
+							unit: args.unit,
+						})
+					return text(
+						JSON.stringify({
+							error: "unit_outputs_empty",
+							message:
+								"Cannot complete unit: no outputs were produced. A unit must write at least one artifact (file under stages/*/ or knowledge/*) before it can complete. If the work is truly done, list the produced files in the unit's `outputs:` frontmatter field.",
+						}),
+					)
+				}
+
 				// Verify completion criteria are checked
 				const unchecked = (unitRaw.match(/- \[ \]/g) || []).length
 				if (unchecked > 0) {
