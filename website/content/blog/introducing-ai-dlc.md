@@ -2,7 +2,6 @@
 title: Introducing H·AI·K·U
 description: A methodology for iterative AI-driven development with hat-based workflows
 date: 2026-02-02
-author: GigSmart
 ---
 
 We're excited to introduce **H·AI·K·U** (formerly AI-DLC), a methodology for structured, iterative software development with AI assistants.

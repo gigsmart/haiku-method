@@ -2,7 +2,6 @@
 title: "Libraries Don't Have a Design Phase"
 description: "Splitting the one-size-fits-all software studio into four product-family lifecycles — and why forcing a library through a UX design sprint was telling us something we didn't want to hear."
 date: 2026-04-12
-author: GigSmart
 ---
 
 For a long time, H·AI·K·U had one studio for "software." You'd kick off an intent to build a logging library and the lifecycle would helpfully route you through a product discovery phase and a UX design phase on your way to writing code. You'd stare at the prompt. "What's the user journey for `log.info()`?" Nobody wants to answer that question because it's not a real question.
