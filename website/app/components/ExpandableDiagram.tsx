@@ -13,7 +13,9 @@ export function ExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 	const expandButtonRef = useRef<HTMLButtonElement>(null)
 	const closeButtonRef = useRef<HTMLButtonElement>(null)
 	const modalRef = useRef<HTMLDivElement>(null)
+	const mermaidRef = useRef<HTMLDivElement>(null)
 	const hasOpenedRef = useRef(false)
+	const [modalSvg, setModalSvg] = useState("")
 
 	const close = useCallback(() => setExpanded(false), [])
 
@@ -66,7 +68,14 @@ export function ExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 			<button
 				ref={expandButtonRef}
 				type="button"
-				onClick={() => setExpanded(true)}
+				onClick={() => {
+					// Capture the inline SVG before opening the modal so we don't
+					// mount a second <Mermaid> instance (which races on the global
+					// mermaid.initialize singleton).
+					const svg = mermaidRef.current?.querySelector("svg")
+					if (svg) setModalSvg(svg.outerHTML)
+					setExpanded(true)
+				}}
 				className="absolute top-3 right-3 z-10 rounded-md border border-stone-300 bg-white/80 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-stone-600 backdrop-blur transition hover:border-blue-500 hover:text-blue-600 dark:border-stone-700 dark:bg-stone-900/80 dark:text-stone-400 dark:hover:border-blue-400 dark:hover:text-blue-400"
 				aria-label="Expand diagram"
 				aria-haspopup="dialog"
@@ -74,7 +83,9 @@ export function ExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 			>
 				⛶ Expand
 			</button>
-			<Mermaid chart={chart} />
+			<div ref={mermaidRef}>
+				<Mermaid chart={chart} />
+			</div>
 			{caption ? (
 				<figcaption className="mt-3 text-center text-sm text-stone-500 italic dark:text-stone-400">
 					{caption}
@@ -105,9 +116,11 @@ export function ExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 						onClick={(e) => e.stopPropagation()}
 						className="relative flex h-[min(90vh,900px)] w-[min(95vw,1400px)] items-center justify-center overflow-auto rounded-xl border border-stone-700 bg-stone-50 p-8 shadow-2xl dark:bg-stone-900"
 					>
-						<div className="flex w-full items-center justify-center [&_.mermaid]:w-full [&>div]:!max-w-none [&_svg]:!h-auto [&_svg]:!max-h-[calc(90vh-4rem)] [&_svg]:!w-full [&_svg]:!max-w-full">
-							<Mermaid chart={chart} />
-						</div>
+						<div
+							className="flex w-full items-center justify-center [&_svg]:!h-auto [&_svg]:!max-h-[calc(90vh-4rem)] [&_svg]:!w-full [&_svg]:!max-w-full"
+							// biome-ignore lint/security/noDangerouslySetInnerHtml: Reusing Mermaid's safe SVG output
+							dangerouslySetInnerHTML={{ __html: modalSvg }}
+						/>
 					</div>
 				</div>
 			) : null}

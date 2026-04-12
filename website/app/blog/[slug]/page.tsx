@@ -168,7 +168,7 @@ export default async function BlogPostPage({ params }: Props) {
 				{renderedContent ?? (
 					<ReactMarkdown
 						remarkPlugins={[remarkGfm]}
-						rehypePlugins={[rehypeHighlight, rehypeSlug]}
+						rehypePlugins={[rehypeSlug, rehypeHighlight]}
 					>
 						{post.content}
 					</ReactMarkdown>

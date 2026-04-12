@@ -113,11 +113,12 @@ export const mdxComponents: MDXComponents = {
 				</Link>
 			)
 		}
+		const isExternal = /^(https?:)?\/\//.test(href ?? "")
 		return (
 			<a
 				href={href}
-				target={href?.startsWith("http") ? "_blank" : undefined}
-				rel={href?.startsWith("http") ? "noopener noreferrer" : undefined}
+				target={isExternal ? "_blank" : undefined}
+				rel={isExternal ? "noopener noreferrer" : undefined}
 				className="text-blue-600 underline underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
 				{...rest}
 			>

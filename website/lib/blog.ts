@@ -31,7 +31,14 @@ export function getBlogSlugs(): string[] {
 	return [...seen]
 }
 
+const postCache = new Map<string, BlogPost | null>()
+
 export function getBlogPostBySlug(slug: string): BlogPost | null {
+	// Path traversal protection
+	if (slug !== path.basename(slug)) return null
+
+	if (postCache.has(slug)) return postCache.get(slug) ?? null
+
 	// Prefer .mdx over .md if both exist
 	const mdxPath = path.join(blogDirectory, `${slug}.mdx`)
 	const mdPath = path.join(blogDirectory, `${slug}.md`)
@@ -58,7 +65,7 @@ export function getBlogPostBySlug(slug: string): BlogPost | null {
 			? tagsRaw.split(",").map((t) => t.trim()).filter(Boolean)
 			: undefined
 
-	return {
+	const post: BlogPost = {
 		slug,
 		title: data.title || slug,
 		description: data.description,
@@ -69,6 +76,8 @@ export function getBlogPostBySlug(slug: string): BlogPost | null {
 		content,
 		format,
 	}
+	postCache.set(slug, post)
+	return post
 }
 
 export function getAllBlogPosts(): BlogPost[] {
