@@ -40,7 +40,9 @@ export default function BlogPage() {
 							className="rounded-lg border border-stone-200 p-6 transition hover:border-stone-300 dark:border-stone-800 dark:hover:border-stone-700"
 						>
 							<div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-stone-500 dark:text-stone-500">
-								<time>{formatDate(post.date)}</time>
+								<time dateTime={new Date(post.date).toISOString()}>
+									{formatDate(post.date)}
+								</time>
 								{post.category && (
 									<>
 										<span aria-hidden="true">·</span>

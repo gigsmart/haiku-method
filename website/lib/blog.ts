@@ -62,7 +62,7 @@ export function getBlogPostBySlug(slug: string): BlogPost | null {
 		slug,
 		title: data.title || slug,
 		description: data.description,
-		date: data.date || new Date().toISOString(),
+		date: data.date ? String(data.date) : "1970-01-01",
 		author: data.author,
 		category: data.category,
 		tags,
