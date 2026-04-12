@@ -45,12 +45,20 @@ export function studioSearchPaths(): string[] {
 }
 
 /** Find active intents from .haiku/intents/ */
-export function findActiveIntents(): Array<{ slug: string; data: Record<string, unknown>; body: string }> {
+export function findActiveIntents(): Array<{
+	slug: string
+	data: Record<string, unknown>
+	body: string
+}> {
 	try {
 		const root = findHaikuRoot()
 		const intentsDir = join(root, "intents")
 		if (!existsSync(intentsDir)) return []
-		const results: Array<{ slug: string; data: Record<string, unknown>; body: string }> = []
+		const results: Array<{
+			slug: string
+			data: Record<string, unknown>
+			body: string
+		}> = []
 		for (const d of readdirSync(intentsDir, { withFileTypes: true })) {
 			if (!d.isDirectory()) continue
 			const file = join(intentsDir, d.name, "intent.md")

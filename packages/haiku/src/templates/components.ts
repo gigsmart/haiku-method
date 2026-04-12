@@ -1,13 +1,13 @@
-import type { CriterionItem } from "../types.js";
-import { markdownToHtml } from "../markdown.js";
-import { escapeHtml, escapeAttr } from "./layout.js";
-import { statusColors } from "./styles.js";
+import { markdownToHtml } from "../markdown.js"
+import type { CriterionItem } from "../types.js"
+import { escapeAttr, escapeHtml } from "./layout.js"
+import { statusColors } from "./styles.js"
 
 export interface TabDef {
-  id: string;
-  label: string;
-  content: string;
-  disabled?: boolean;
+	id: string
+	label: string
+	content: string
+	disabled?: boolean
 }
 
 /**
@@ -15,47 +15,48 @@ export interface TabDef {
  * Each tab has role="tab", each panel has role="tabpanel".
  */
 export function renderTabs(tabGroupId: string, tabs: TabDef[]): string {
-  const enabledTabs = tabs.filter((t) => !t.disabled);
-  const firstEnabled = enabledTabs[0]?.id ?? "";
+	const enabledTabs = tabs.filter((t) => !t.disabled)
+	const firstEnabled = enabledTabs[0]?.id ?? ""
 
-  const tabButtons = tabs
-    .map((tab, i) => {
-      const isFirst = tab.id === firstEnabled;
-      const disabled = tab.disabled ?? false;
-      return `<button role="tab"
+	const tabButtons = tabs
+		.map((tab, i) => {
+			const isFirst = tab.id === firstEnabled
+			const disabled = tab.disabled ?? false
+			return `<button role="tab"
         id="tab-${tabGroupId}-${tab.id}"
         aria-selected="${isFirst && !disabled ? "true" : "false"}"
         aria-controls="panel-${tabGroupId}-${tab.id}"
         tabindex="${isFirst && !disabled ? "0" : "-1"}"
         ${disabled ? 'aria-disabled="true"' : ""}
         class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors
-          ${disabled
-            ? "border-transparent text-gray-400 dark:text-gray-600 cursor-not-allowed"
-            : isFirst
-              ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
-              : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 cursor-pointer"
-          }"
+          ${
+						disabled
+							? "border-transparent text-gray-400 dark:text-gray-600 cursor-not-allowed"
+							: isFirst
+								? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
+								: "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 cursor-pointer"
+					}"
         data-tab-group="${tabGroupId}"
-        data-tab-id="${tab.id}">${escapeHtml(tab.label)}</button>`;
-    })
-    .join("");
+        data-tab-id="${tab.id}">${escapeHtml(tab.label)}</button>`
+		})
+		.join("")
 
-  const tabPanels = tabs
-    .map((tab) => {
-      const isFirst = tab.id === firstEnabled;
-      const hidden = !isFirst || tab.disabled;
-      return `<div role="tabpanel"
+	const tabPanels = tabs
+		.map((tab) => {
+			const isFirst = tab.id === firstEnabled
+			const hidden = !isFirst || tab.disabled
+			return `<div role="tabpanel"
         id="panel-${tabGroupId}-${tab.id}"
         aria-labelledby="tab-${tabGroupId}-${tab.id}"
         ${hidden ? "hidden" : ""}
         tabindex="0"
         class="focus:outline-none">
         ${tab.content}
-      </div>`;
-    })
-    .join("");
+      </div>`
+		})
+		.join("")
 
-  return `<div data-tabs="${tabGroupId}">
+	return `<div data-tabs="${tabGroupId}">
     <div role="tablist" aria-label="Review sections"
          class="flex overflow-x-auto border-b border-gray-200 dark:border-gray-700 -mx-1 mb-6">
       ${tabButtons}
@@ -104,93 +105,97 @@ export function renderTabs(tabGroupId: string, tabs: TabDef[]): string {
         if (next) { e.preventDefault(); activate(next); }
       });
     })();
-  </script>`;
+  </script>`
 }
 
 /** Color-coded status badge with aria-label. */
 export function renderBadge(label: string, status: string): string {
-  const normalized = status.toLowerCase().replace(/\s+/g, "_");
-  const colors = statusColors[normalized] ?? statusColors.pending;
-  return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
+	const normalized = status.toLowerCase().replace(/\s+/g, "_")
+	const colors = statusColors[normalized] ?? statusColors.pending
+	return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
     ${colors.bg} ${colors.text} ${colors.darkBg} ${colors.darkText}"
-    aria-label="${escapeAttr(label)}: ${escapeAttr(status)}">${escapeHtml(status.replace(/_/g, " "))}</span>`;
+    aria-label="${escapeAttr(label)}: ${escapeAttr(status)}">${escapeHtml(status.replace(/_/g, " "))}</span>`
 }
 
 /** Numbered criteria checklist with checkbox icons. */
 export function renderCriteriaChecklist(criteria: CriterionItem[]): string {
-  if (criteria.length === 0) {
-    return `<p class="text-gray-500 dark:text-gray-400 italic">No criteria defined.</p>`;
-  }
-  return `<ol class="space-y-2">
+	if (criteria.length === 0) {
+		return `<p class="text-gray-500 dark:text-gray-400 italic">No criteria defined.</p>`
+	}
+	return `<ol class="space-y-2">
     ${criteria
-      .map(
-        (c, i) => `<li class="flex items-start gap-3 p-3 rounded-lg ${
-          c.checked
-            ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
-            : "bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700"
-        }">
+			.map(
+				(c, i) => `<li class="flex items-start gap-3 p-3 rounded-lg ${
+					c.checked
+						? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
+						: "bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700"
+				}">
           <span class="flex-shrink-0 mt-0.5 text-lg ${c.checked ? "text-green-600 dark:text-green-400" : "text-gray-400 dark:text-gray-500"}"
                 aria-hidden="true">${c.checked ? "&#9745;" : "&#9744;"}</span>
           <span class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold
             ${c.checked ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-300" : "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400"}">${i + 1}</span>
           <span class="${c.checked ? "text-green-800 dark:text-green-200" : "text-gray-700 dark:text-gray-300"}">${escapeHtml(c.text)}</span>
         </li>`,
-      )
-      .join("")}
-  </ol>`;
+			)
+			.join("")}
+  </ol>`
 }
 
 /** Breadcrumb navigation. */
-export function renderBreadcrumb(items: { label: string; href?: string }[]): string {
-  return `<nav aria-label="Breadcrumb" class="mb-4">
+export function renderBreadcrumb(
+	items: { label: string; href?: string }[],
+): string {
+	return `<nav aria-label="Breadcrumb" class="mb-4">
     <ol class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
       ${items
-        .map(
-          (item, i) =>
-            `<li class="flex items-center gap-1">
+				.map(
+					(item, i) =>
+						`<li class="flex items-center gap-1">
               ${i > 0 ? '<span aria-hidden="true" class="text-gray-400 dark:text-gray-600">/</span>' : ""}
-              ${item.href
-                ? `<a href="${escapeAttr(item.href)}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">${escapeHtml(item.label)}</a>`
-                : `<span class="text-gray-700 dark:text-gray-200 font-medium" aria-current="page">${escapeHtml(item.label)}</span>`
-              }
+              ${
+								item.href
+									? `<a href="${escapeAttr(item.href)}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">${escapeHtml(item.label)}</a>`
+									: `<span class="text-gray-700 dark:text-gray-200 font-medium" aria-current="page">${escapeHtml(item.label)}</span>`
+							}
             </li>`,
-        )
-        .join("")}
+				)
+				.join("")}
     </ol>
-  </nav>`;
+  </nav>`
 }
 
 /** Server-side markdown rendering via markdownToHtml(). */
 export function renderMarkdownBlock(id: string, markdown: string): string {
-  return `<div id="${escapeAttr(id)}"
+	return `<div id="${escapeAttr(id)}"
     class="prose prose-sm dark:prose-invert max-w-none
            prose-code:bg-gray-100 prose-code:dark:bg-gray-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
            prose-pre:bg-gray-100 prose-pre:dark:bg-gray-800 prose-pre:rounded-lg
            prose-table:border-collapse prose-th:border prose-th:border-gray-300 prose-th:dark:border-gray-600 prose-th:px-3 prose-th:py-1.5
            prose-td:border prose-td:border-gray-300 prose-td:dark:border-gray-600 prose-td:px-3 prose-td:py-1.5">
     ${markdownToHtml(markdown)}
-  </div>`;
+  </div>`
 }
 
-const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"];
+const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"]
 
 function isImageUrl(url: string): boolean {
-  const ext = url.substring(url.lastIndexOf(".")).toLowerCase();
-  return IMAGE_EXTS.includes(ext);
+	const ext = url.substring(url.lastIndexOf(".")).toLowerCase()
+	return IMAGE_EXTS.includes(ext)
 }
 
 /** Renders mockups inline — images as <img>, HTML as <iframe>.
  * Each embed is expandable (click to enlarge) and has an "Annotate" toggle
  * that opens a pin/pen annotation canvas overlay.
  */
-export function renderMockupEmbeds(mockups: { label: string; url: string }[]): string {
-  if (mockups.length === 0) return "";
-  return mockups
-    .map(
-      (m, i) => {
-        const uid = `mockup-${i}-${m.label.replace(/\W+/g, "-").toLowerCase()}`;
-        const isImage = isImageUrl(m.url);
-        return `<div class="mt-4 mockup-embed" data-mockup-id="${escapeAttr(uid)}">
+export function renderMockupEmbeds(
+	mockups: { label: string; url: string }[],
+): string {
+	if (mockups.length === 0) return ""
+	return mockups
+		.map((m, i) => {
+			const uid = `mockup-${i}-${m.label.replace(/\W+/g, "-").toLowerCase()}`
+			const isImage = isImageUrl(m.url)
+			return `<div class="mt-4 mockup-embed" data-mockup-id="${escapeAttr(uid)}">
         <div class="flex items-center justify-between mb-2">
           <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400">${escapeHtml(m.label)}</h4>
           <div class="flex items-center gap-2">
@@ -213,25 +218,25 @@ export function renderMockupEmbeds(mockups: { label: string; url: string }[]): s
           </div>
         </div>
         <div class="mockup-preview" data-uid="${escapeAttr(uid)}">
-          ${isImage
-            ? `<img src="${escapeAttr(m.url)}"
+          ${
+						isImage
+							? `<img src="${escapeAttr(m.url)}"
                    alt="${escapeAttr(m.label)}"
                    class="max-w-full h-auto border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer" />`
-            : `<iframe src="${escapeAttr(m.url)}"
+							: `<iframe src="${escapeAttr(m.url)}"
                       sandbox="allow-scripts allow-same-origin"
                       class="w-full h-[400px] border border-gray-200 dark:border-gray-700 rounded-lg bg-white"
                       title="${escapeAttr(m.label)}"></iframe>`
-          }
+					}
         </div>
-      </div>`;
-      },
-    )
-    .join("");
+      </div>`
+		})
+		.join("")
 }
 
 /** Client-side JS for mockup expand/annotate. Include once in the page. */
 export function renderMockupInteractionScript(): string {
-  return `<script>
+	return `<script>
 (function() {
   // --- Expand: open mockup in a fullscreen overlay ---
   document.querySelectorAll('.mockup-expand-btn').forEach(function(btn) {
@@ -551,7 +556,7 @@ export function renderMockupInteractionScript(): string {
     return results.length > 0 ? results : undefined;
   };
 })();
-</script>`;
+</script>`
 }
 
 /**
@@ -560,7 +565,7 @@ export function renderMockupInteractionScript(): string {
  * into a single sticky panel — GitHub/GitLab-style.
  */
 export function renderReviewSidebar(sessionId: string): string {
-  return `<aside id="review-sidebar"
+	return `<aside id="review-sidebar"
     class="sticky top-20 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col"
     style="max-height: calc(100vh - 6rem);">
   <!-- Header -->
@@ -603,7 +608,7 @@ export function renderReviewSidebar(sessionId: string): string {
     </div>
     <div id="sidebar-decision-result" class="hidden"></div>
   </div>
-</aside>`;
+</aside>`
 }
 
 /**
@@ -612,7 +617,7 @@ export function renderReviewSidebar(sessionId: string): string {
  * window.getReviewComments(), and submit logic.
  */
 export function renderReviewSidebarScript(sessionId: string): string {
-  return `<script>
+	return `<script>
 (function() {
   var sessionId = '${sessionId}';
   var comments = []; // { id, type, sourceId, sourceLabel, text, scrollTargetId, highlightEl, onDelete }
@@ -916,19 +921,19 @@ export function renderReviewSidebarScript(sessionId: string): string {
   // Update button states when general comment changes
   document.getElementById('sidebar-general-comment').addEventListener('input', updateDecisionButtons);
 })();
-</script>`;
+</script>`
 }
 
 /** Section card wrapper. */
 export function card(content: string, extra?: string): string {
-  return `<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 mb-6 ${extra ?? ""}">
+	return `<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 mb-6 ${extra ?? ""}">
     ${content}
-  </div>`;
+  </div>`
 }
 
 /** Section heading inside a card. */
 export function sectionHeading(text: string, level: 2 | 3 = 2): string {
-  const tag = level === 2 ? "h2" : "h3";
-  const size = level === 2 ? "text-lg" : "text-base";
-  return `<${tag} class="${size} font-semibold mb-3 text-gray-900 dark:text-gray-100">${escapeHtml(text)}</${tag}>`;
+	const tag = level === 2 ? "h2" : "h3"
+	const size = level === 2 ? "text-lg" : "text-base"
+	return `<${tag} class="${size} font-semibold mb-3 text-gray-900 dark:text-gray-100">${escapeHtml(text)}</${tag}>`
 }

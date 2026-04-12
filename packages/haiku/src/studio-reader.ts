@@ -2,14 +2,20 @@
 
 import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { join } from "node:path"
-import { studioSearchPaths as _studioSearchPaths, validateIdentifier } from "./prompts/helpers.js"
+import {
+	studioSearchPaths as _studioSearchPaths,
+	validateIdentifier,
+} from "./prompts/helpers.js"
 
 // Re-export so consumers don't need to reach into prompts/helpers
 export const studioSearchPaths = _studioSearchPaths
 import { parseFrontmatter } from "./state-tools.js"
 
 /** Read a studio stage definition file */
-export function readStageDef(studio: string, stage: string): { data: Record<string, unknown>; body: string } | null {
+export function readStageDef(
+	studio: string,
+	stage: string,
+): { data: Record<string, unknown>; body: string } | null {
 	validateIdentifier(studio, "studio")
 	validateIdentifier(stage, "stage")
 	for (const base of studioSearchPaths()) {
@@ -21,15 +27,32 @@ export function readStageDef(studio: string, stage: string): { data: Record<stri
 	return null
 }
 
-/** Read all hat definitions for a stage (project overrides plugin for same-named hats) */
-export interface HatDef {
-	content: string          // full markdown body (without frontmatter)
-	agent_type?: string      // e.g., "general-purpose", "plan", custom
-	model?: string           // e.g., "opus", "sonnet", "haiku"
-	raw: string              // full file content
+/** Read a studio definition file */
+export function readStudio(
+	studio: string,
+): { data: Record<string, unknown>; body: string } | null {
+	validateIdentifier(studio, "studio")
+	for (const base of studioSearchPaths()) {
+		const file = join(base, studio, "STUDIO.md")
+		if (existsSync(file)) {
+			return parseFrontmatter(readFileSync(file, "utf8"))
+		}
+	}
+	return null
 }
 
-export function readHatDefs(studio: string, stage: string): Record<string, HatDef> {
+/** Read all hat definitions for a stage (project overrides plugin for same-named hats) */
+export interface HatDef {
+	content: string // full markdown body (without frontmatter)
+	agent_type?: string // e.g., "general-purpose", "plan", custom
+	model?: string // e.g., "opus", "sonnet", "haiku"
+	raw: string // full file content
+}
+
+export function readHatDefs(
+	studio: string,
+	stage: string,
+): Record<string, HatDef> {
 	validateIdentifier(studio, "studio")
 	validateIdentifier(stage, "stage")
 	const hats: Record<string, HatDef> = {}
@@ -38,7 +61,7 @@ export function readHatDefs(studio: string, stage: string): Record<string, HatDe
 	for (const base of [...paths].reverse()) {
 		const hatsDir = join(base, studio, "stages", stage, "hats")
 		if (!existsSync(hatsDir)) continue
-		for (const f of readdirSync(hatsDir).filter(f => f.endsWith(".md"))) {
+		for (const f of readdirSync(hatsDir).filter((f) => f.endsWith(".md"))) {
 			const raw = readFileSync(join(hatsDir, f), "utf8")
 			const { data, body } = parseFrontmatter(raw)
 			hats[f.replace(/\.md$/, "")] = {
@@ -53,7 +76,10 @@ export function readHatDefs(studio: string, stage: string): Record<string, HatDe
 }
 
 /** Read review agent definitions for a stage (project overrides plugin for same-named agents) */
-export function readReviewAgentDefs(studio: string, stage: string): Record<string, string> {
+export function readReviewAgentDefs(
+	studio: string,
+	stage: string,
+): Record<string, string> {
 	validateIdentifier(studio, "studio")
 	validateIdentifier(stage, "stage")
 	const agents: Record<string, string> = {}
@@ -62,7 +88,7 @@ export function readReviewAgentDefs(studio: string, stage: string): Record<strin
 	for (const base of [...paths].reverse()) {
 		const agentsDir = join(base, studio, "stages", stage, "review-agents")
 		if (!existsSync(agentsDir)) continue
-		for (const f of readdirSync(agentsDir).filter(f => f.endsWith(".md"))) {
+		for (const f of readdirSync(agentsDir).filter((f) => f.endsWith(".md"))) {
 			agents[f.replace(/\.md$/, "")] = readFileSync(join(agentsDir, f), "utf8")
 		}
 	}
@@ -72,15 +98,18 @@ export function readReviewAgentDefs(studio: string, stage: string): Record<strin
 /** Read discovery and output artifact definitions for a stage */
 export interface ArtifactDef {
 	name: string
-	location: string   // template path, e.g. ".haiku/intents/{intent-slug}/stages/design/DESIGN-BRIEF.md"
+	location: string // template path, e.g. ".haiku/intents/{intent-slug}/stages/design/DESIGN-BRIEF.md"
 	scope: string
 	format: string
 	required: boolean
-	body: string       // markdown body describing the artifact
-	kind: "discovery" | "output"  // which subdirectory it came from
+	body: string // markdown body describing the artifact
+	kind: "discovery" | "output" // which subdirectory it came from
 }
 
-export function readStageArtifactDefs(studio: string, stage: string): ArtifactDef[] {
+export function readStageArtifactDefs(
+	studio: string,
+	stage: string,
+): ArtifactDef[] {
 	validateIdentifier(studio, "studio")
 	validateIdentifier(stage, "stage")
 	const defs: ArtifactDef[] = []
@@ -89,7 +118,9 @@ export function readStageArtifactDefs(studio: string, stage: string): ArtifactDe
 		for (const kind of ["discovery", "outputs"] as const) {
 			const artifactDir = join(base, studio, "stages", stage, kind)
 			if (!existsSync(artifactDir)) continue
-			for (const f of readdirSync(artifactDir).filter(f => f.endsWith(".md"))) {
+			for (const f of readdirSync(artifactDir).filter((f) =>
+				f.endsWith(".md"),
+			)) {
 				const key = `${kind}:${f}`
 				if (seen.has(key)) continue
 				seen.add(key)
@@ -116,10 +147,10 @@ export interface ResolvedInput {
 	stage: string
 	artifactName: string
 	kind: "discovery" | "output"
-	resolvedPath: string     // absolute path on disk
+	resolvedPath: string // absolute path on disk
 	exists: boolean
-	content: string | null   // file content if exists, null otherwise
-	description: string      // from the artifact definition body
+	content: string | null // file content if exists, null otherwise
+	description: string // from the artifact definition body
 }
 
 export function resolveStageInputs(
@@ -134,8 +165,10 @@ export function resolveStageInputs(
 		const artifactDefs = readStageArtifactDefs(studio, stageName)
 
 		if (input.discovery) {
-			const def = artifactDefs.find(d => d.name === input.discovery && d.kind === "discovery")
-			if (def && def.location) {
+			const def = artifactDefs.find(
+				(d) => d.name === input.discovery && d.kind === "discovery",
+			)
+			if (def?.location) {
 				const absPath = resolveArtifactPath(def.location, intentDir, intentSlug)
 				const exists = existsSync(absPath)
 				resolved.push({
@@ -150,18 +183,22 @@ export function resolveStageInputs(
 			}
 		}
 		if (input.output) {
-			const def = artifactDefs.find(d => d.name === input.output && d.kind === "output")
-			if (def && def.location) {
+			const def = artifactDefs.find(
+				(d) => d.name === input.output && d.kind === "output",
+			)
+			if (def?.location) {
 				const absPath = resolveArtifactPath(def.location, intentDir, intentSlug)
 				const isDir = def.location.endsWith("/")
 				const exists = existsSync(absPath)
 				if (isDir && exists) {
 					// Directory artifact — list files inside
-					const files = readdirSync(absPath).filter(f => !f.startsWith("."))
-					const contents = files.map(f => {
-						const content = readFileSync(join(absPath, f), "utf8")
-						return `### ${f}\n\n${content.slice(0, 1500)}${content.length > 1500 ? "\n...(truncated)" : ""}`
-					}).join("\n\n")
+					const files = readdirSync(absPath).filter((f) => !f.startsWith("."))
+					const contents = files
+						.map((f) => {
+							const content = readFileSync(join(absPath, f), "utf8")
+							return `### ${f}\n\n${content.slice(0, 1500)}${content.length > 1500 ? "\n...(truncated)" : ""}`
+						})
+						.join("\n\n")
 					resolved.push({
 						stage: stageName,
 						artifactName: input.output,
@@ -188,7 +225,11 @@ export function resolveStageInputs(
 	return resolved
 }
 
-function resolveArtifactPath(locationTemplate: string, intentDir: string, intentSlug: string): string {
+function resolveArtifactPath(
+	locationTemplate: string,
+	intentDir: string,
+	intentSlug: string,
+): string {
 	// Location templates look like: .haiku/intents/{intent-slug}/stages/design/DESIGN-BRIEF.md
 	// or: .haiku/intents/{intent-slug}/knowledge/DESIGN-TOKENS.md
 	// We need to resolve relative to the intent dir
@@ -199,8 +240,15 @@ function resolveArtifactPath(locationTemplate: string, intentDir: string, intent
 }
 
 /** List studios with their metadata (project overrides plugin for same-named studios) */
-export function listStudios(): Array<{ name: string; data: Record<string, unknown>; body: string }> {
-	const seen = new Map<string, { name: string; data: Record<string, unknown>; body: string }>()
+export function listStudios(): Array<{
+	name: string
+	data: Record<string, unknown>
+	body: string
+}> {
+	const seen = new Map<
+		string,
+		{ name: string; data: Record<string, unknown>; body: string }
+	>()
 	const paths = studioSearchPaths()
 	// Reverse so plugin loads first, then project overwrites
 	for (const base of [...paths].reverse()) {

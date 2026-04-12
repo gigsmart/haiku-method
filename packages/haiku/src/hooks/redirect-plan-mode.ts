@@ -1,6 +1,9 @@
 // redirect-plan-mode — Intercept EnterPlanMode and redirect to /haiku:elaborate
 
-export async function redirectPlanMode(input: Record<string, unknown>, _pluginRoot: string): Promise<void> {
+export async function redirectPlanMode(
+	input: Record<string, unknown>,
+	_pluginRoot: string,
+): Promise<void> {
 	if (input.tool_name !== "EnterPlanMode") return
 
 	const response = {

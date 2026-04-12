@@ -1,4 +1,4 @@
-import { escapeAttr } from "./layout.js";
+import { escapeAttr } from "./layout.js"
 
 /**
  * Renders an annotation canvas overlay for visual review of design/wireframe content.
@@ -14,7 +14,7 @@ import { escapeAttr } from "./layout.js";
  * @returns HTML string with canvas overlay and pin system (no built-in sidebar)
  */
 export function renderAnnotationCanvas(imageContent: string): string {
-  return `
+	return `
 <div id="annotation-container" class="relative">
   <!-- Toolbar -->
   <div class="flex items-center gap-2 mb-3 p-2 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
@@ -362,5 +362,5 @@ export function renderAnnotationCanvas(imageContent: string): string {
     return pins.length > 0 || drawHistory.length > 0;
   };
 })();
-</script>`;
+</script>`
 }

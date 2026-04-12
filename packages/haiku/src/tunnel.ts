@@ -1,5 +1,6 @@
-import { randomBytes, createHmac, createCipheriv } from "node:crypto"
+import { createCipheriv, createHmac, randomBytes } from "node:crypto"
 import localtunnel from "localtunnel"
+import { features, review } from "./config.js"
 
 // Ephemeral secret — generated once per MCP server lifetime
 const EPHEMERAL_SECRET = randomBytes(32)
@@ -65,7 +66,10 @@ function stopHealthCheck(): void {
 }
 
 function base64url(data: string | Buffer): string {
-	const b64 = typeof data === "string" ? Buffer.from(data).toString("base64") : data.toString("base64")
+	const b64 =
+		typeof data === "string"
+			? Buffer.from(data).toString("base64")
+			: data.toString("base64")
 	return b64.replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_")
 }
 
@@ -91,11 +95,16 @@ async function reconnectTunnel(): Promise<void> {
 	const maxRetries = 5
 	for (let attempt = 0; attempt < maxRetries; attempt++) {
 		if (intentionallyClosed) break
-		const delay = attempt === 0 ? 0 : Math.min(1000 * Math.pow(2, attempt - 1), 30000)
-		console.error(`[haiku] Tunnel reconnect attempt ${attempt + 1}/${maxRetries}${delay ? ` in ${delay}ms` : ""}`)
+		const delay = attempt === 0 ? 0 : Math.min(1000 * 2 ** (attempt - 1), 30000)
+		console.error(
+			`[haiku] Tunnel reconnect attempt ${attempt + 1}/${maxRetries}${delay ? ` in ${delay}ms` : ""}`,
+		)
 		if (delay) await new Promise((r) => setTimeout(r, delay))
 		try {
-			const tunnel = await localtunnel({ port: tunnelPort, subdomain: PROCESS_SUBDOMAIN })
+			const tunnel = await localtunnel({
+				port: tunnelPort,
+				subdomain: PROCESS_SUBDOMAIN,
+			})
 			activeTunnel = tunnel
 			attachTunnelListeners(tunnel)
 			console.error(`[haiku] Tunnel reconnected: ${tunnel.url}`)
@@ -103,14 +112,21 @@ async function reconnectTunnel(): Promise<void> {
 			reconnecting = false
 			return
 		} catch (err) {
-			console.error(`[haiku] Tunnel reconnect failed:`, err instanceof Error ? err.message : err)
+			console.error(
+				"[haiku] Tunnel reconnect failed:",
+				err instanceof Error ? err.message : err,
+			)
 		}
 	}
 	reconnecting = false
-	console.error(`[haiku] Tunnel reconnect exhausted — giving up after ${maxRetries} attempts`)
+	console.error(
+		`[haiku] Tunnel reconnect exhausted — giving up after ${maxRetries} attempts`,
+	)
 }
 
-function attachTunnelListeners(tunnel: Awaited<ReturnType<typeof localtunnel>>): void {
+function attachTunnelListeners(
+	tunnel: Awaited<ReturnType<typeof localtunnel>>,
+): void {
 	tunnel.on("close", () => {
 		if (activeTunnel === tunnel) {
 			activeTunnel = null
@@ -139,10 +155,14 @@ export async function openTunnel(port: number): Promise<string> {
 	if (reconnecting) {
 		await new Promise<void>((resolve) => {
 			const check = setInterval(() => {
-				if (!reconnecting) { clearInterval(check); resolve() }
+				if (!reconnecting) {
+					clearInterval(check)
+					resolve()
+				}
 			}, 100)
 		})
-		if (activeTunnel) return (activeTunnel as Awaited<ReturnType<typeof localtunnel>>).url
+		if (activeTunnel)
+			return (activeTunnel as Awaited<ReturnType<typeof localtunnel>>).url
 	}
 
 	tunnelPort = port
@@ -159,7 +179,10 @@ export async function openTunnel(port: number): Promise<string> {
 			startHealthCheck()
 			return tunnel.url
 		} catch (err) {
-			console.error(`[haiku] Tunnel open failed (attempt ${attempt + 1}/${maxRetries}):`, err instanceof Error ? err.message : err)
+			console.error(
+				`[haiku] Tunnel open failed (attempt ${attempt + 1}/${maxRetries}):`,
+				err instanceof Error ? err.message : err,
+			)
 			if (attempt < maxRetries - 1) {
 				await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)))
 			}
@@ -188,12 +211,16 @@ export function isTunnelOpen(): boolean {
 }
 
 export function isRemoteReviewEnabled(): boolean {
-	return process.env.HAIKU_REMOTE_REVIEW === "1"
+	return features.remoteReview
 }
 
-const REVIEW_SITE_URL = process.env.HAIKU_REVIEW_SITE_URL ?? "https://haikumethod.ai"
+const REVIEW_SITE_URL = review.siteUrl
 
-export function buildReviewUrl(sessionId: string, tunnelUrl: string, sessionType: string): string {
+export function buildReviewUrl(
+	sessionId: string,
+	tunnelUrl: string,
+	sessionType: string,
+): string {
 	// Generate a fresh E2E encryption key for this session
 	const key = randomBytes(32)
 	e2eKeys.set(sessionId, key)
@@ -214,7 +241,10 @@ export function buildReviewUrl(sessionId: string, tunnelUrl: string, sessionType
  * Returns base64url-encoded string: iv(12 bytes) + authTag(16 bytes) + ciphertext
  * Returns null if no E2E key exists for this session (local mode).
  */
-export function e2eEncrypt(sessionId: string, data: string | Buffer): string | null {
+export function e2eEncrypt(
+	sessionId: string,
+	data: string | Buffer,
+): string | null {
 	const key = e2eKeys.get(sessionId)
 	if (!key) return null
 

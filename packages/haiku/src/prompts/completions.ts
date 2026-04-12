@@ -1,6 +1,6 @@
 // prompts/completions.ts — Argument completion providers
 
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 import { findHaikuRoot, intentDir, parseFrontmatter } from "../state-tools.js"
 import { studioSearchPaths, validateIdentifier } from "./helpers.js"
@@ -29,13 +29,16 @@ export async function completeIntentSlug(value: string): Promise<string[]> {
 		const intentsDir = join(root, "intents")
 		if (!existsSync(intentsDir)) return []
 		const slugs = readdirSync(intentsDir, { withFileTypes: true })
-			.filter(d => d.isDirectory() && existsSync(join(intentsDir, d.name, "intent.md")))
-			.map(d => {
+			.filter(
+				(d) =>
+					d.isDirectory() && existsSync(join(intentsDir, d.name, "intent.md")),
+			)
+			.map((d) => {
 				const mtime = statSync(join(intentsDir, d.name, "intent.md")).mtimeMs
 				return { name: d.name, mtime }
 			})
 			.sort((a, b) => b.mtime - a.mtime)
-			.map(d => d.name)
+			.map((d) => d.name)
 		return filterAndSort(slugs, value)
 	} catch {
 		return []
@@ -43,7 +46,10 @@ export async function completeIntentSlug(value: string): Promise<string[]> {
 }
 
 /** Complete stage names from an intent's studio, or all studios if no context */
-export async function completeStage(value: string, context?: Record<string, string>): Promise<string[]> {
+export async function completeStage(
+	value: string,
+	context?: Record<string, string>,
+): Promise<string[]> {
 	try {
 		const studio = resolveStudioFromContext(context)
 		if (!studio) return []
@@ -65,7 +71,10 @@ export async function completeStudio(value: string): Promise<string[]> {
 }
 
 /** Complete template names from a studio's templates/ directory */
-export async function completeTemplate(value: string, context?: Record<string, string>): Promise<string[]> {
+export async function completeTemplate(
+	value: string,
+	context?: Record<string, string>,
+): Promise<string[]> {
 	try {
 		const studio = context?.studio
 		if (!studio) {
@@ -84,7 +93,9 @@ export async function completeTemplate(value: string, context?: Record<string, s
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function resolveStudioFromContext(context?: Record<string, string>): string | null {
+function resolveStudioFromContext(
+	context?: Record<string, string>,
+): string | null {
 	// If intent is in context, resolve its studio
 	if (context?.intent) {
 		try {
@@ -110,8 +121,11 @@ function resolveStudioStages(studio: string): string[] {
 		const stagesDir = join(studioDir, "stages")
 		if (!existsSync(stagesDir)) continue // fall through to next search path
 		const stages = readdirSync(stagesDir, { withFileTypes: true })
-			.filter(d => d.isDirectory() && existsSync(join(stagesDir, d.name, "STAGE.md")))
-			.map(d => d.name)
+			.filter(
+				(d) =>
+					d.isDirectory() && existsSync(join(stagesDir, d.name, "STAGE.md")),
+			)
+			.map((d) => d.name)
 		if (stages.length > 0) return stages
 		// STUDIO.md exists but stages/ is empty — fall through to next search path
 	}
@@ -123,7 +137,11 @@ function listStudios(): string[] {
 	for (const base of studioSearchPaths()) {
 		if (!existsSync(base)) continue
 		for (const d of readdirSync(base, { withFileTypes: true })) {
-			if (d.isDirectory() && existsSync(join(base, d.name, "STUDIO.md")) && !seen.has(d.name)) {
+			if (
+				d.isDirectory() &&
+				existsSync(join(base, d.name, "STUDIO.md")) &&
+				!seen.has(d.name)
+			) {
 				seen.add(d.name)
 			}
 		}

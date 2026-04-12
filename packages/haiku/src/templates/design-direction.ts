@@ -1,10 +1,7 @@
-import type {
-	DesignArchetypeData,
-	DesignParameterData,
-} from "../sessions.js"
-import { escapeAttr, escapeHtml, renderLayout } from "./layout.js"
-import { card, sectionHeading } from "./components.js"
+import type { DesignArchetypeData, DesignParameterData } from "../sessions.js"
 import { renderAnnotationCanvas } from "./annotation-canvas.js"
+import { card, sectionHeading } from "./components.js"
+import { escapeAttr, escapeHtml, renderLayout } from "./layout.js"
 
 export interface DesignDirectionPageData {
 	title: string
@@ -22,13 +19,15 @@ export function renderDesignDirectionPage(
 
 	// -- Section A: Archetype Gallery --
 	body += card(
-		sectionHeading("Design Direction", 2) +
-			`<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Select an archetype, tune the parameters, then submit your choice.</p>
+		`${sectionHeading("Design Direction", 2)}<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Select an archetype, tune the parameters, then submit your choice.</p>
     <div role="radiogroup" aria-label="Design archetypes" id="archetype-gallery"
          class="grid gap-4 sm:grid-cols-2 lg:grid-cols-${Math.min(archetypes.length, 3)}">
       ${archetypes
 				.map(
-					(a, i) => `<div role="radio" aria-checked="${i === 0 ? "true" : "false"}"
+					(
+						a,
+						i,
+					) => `<div role="radio" aria-checked="${i === 0 ? "true" : "false"}"
             tabindex="${i === 0 ? "0" : "-1"}"
             data-archetype="${escapeAttr(a.name)}"
             data-defaults='${escapeAttr(JSON.stringify(a.default_parameters))}'
@@ -58,8 +57,7 @@ export function renderDesignDirectionPage(
 	// -- Section B: Parameter Tuners --
 	if (parameters.length > 0) {
 		body += card(
-			sectionHeading("Parameters", 2) +
-				`<div class="space-y-5" id="parameter-tuners">
+			`${sectionHeading("Parameters", 2)}<div class="space-y-5" id="parameter-tuners">
         ${parameters
 					.map(
 						(p) => `<div class="parameter-row">
@@ -94,18 +92,14 @@ export function renderDesignDirectionPage(
 	// -- Section C: Visual Annotations --
 	// Render a placeholder annotation canvas; JS swaps the image when an archetype is selected
 	body += card(
-		sectionHeading("Annotate Preview", 2) +
-			`<p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Optional — draw on or pin comments to the selected archetype preview.</p>
-    <div id="annotation-area" class="hidden">` +
-			renderAnnotationCanvas("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7") +
-			`</div>
+		`${sectionHeading("Annotate Preview", 2)}<p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Optional — draw on or pin comments to the selected archetype preview.</p>
+    <div id="annotation-area" class="hidden">${renderAnnotationCanvas("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")}</div>
     <p id="annotation-placeholder" class="text-sm text-gray-400 dark:text-gray-500 italic">Select an archetype above to enable annotations.</p>`,
 	)
 
 	// -- Section D: Comments --
 	body += card(
-		sectionHeading("Comments", 2) +
-			`<p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Optional — note any tweaks or adjustments to the chosen direction.</p>
+		`${sectionHeading("Comments", 2)}<p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Optional — note any tweaks or adjustments to the chosen direction.</p>
     <textarea id="direction-comments"
               placeholder="e.g. 'Use rounded corners instead of sharp edges', 'Make the header more compact'..."
               rows="3"

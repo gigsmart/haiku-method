@@ -12,27 +12,49 @@
 //   plan    (planner) — skip bootstrap, worktree, resilience; keep branch refs
 //   full    (default) — everything included
 
-import { existsSync, readFileSync, readdirSync } from "node:fs"
-import { join, basename } from "node:path"
 import { execSync } from "node:child_process"
+import { existsSync, readFileSync, readdirSync } from "node:fs"
+import { basename, join } from "node:path"
 import {
 	findActiveIntent,
+	findUnitFiles,
 	getCurrentBranch,
 	isUnitBranch,
 	readFrontmatterField,
-	findUnitFiles,
 } from "./utils.js"
 
 function out(s: string): void {
-	process.stdout.write(s + "\n")
+	process.stdout.write(`${s}\n`)
 }
 
-function readHatInstructions(hatName: string, stageName: string, studioName: string, pluginRoot: string): string {
+function readHatInstructions(
+	hatName: string,
+	stageName: string,
+	studioName: string,
+	pluginRoot: string,
+): string {
 	// Try stage-based hat resolution
 	// 1. Project-level: .haiku/studios/{studio}/stages/{stage}/hats/{hat}.md
 	// 2. Plugin-level: plugin/studios/{studio}/stages/{stage}/hats/{hat}.md
-	const projectHatFile = join(process.cwd(), ".haiku", "studios", studioName, "stages", stageName, "hats", `${hatName}.md`)
-	const pluginHatFile = join(pluginRoot, "studios", studioName, "stages", stageName, "hats", `${hatName}.md`)
+	const projectHatFile = join(
+		process.cwd(),
+		".haiku",
+		"studios",
+		studioName,
+		"stages",
+		stageName,
+		"hats",
+		`${hatName}.md`,
+	)
+	const pluginHatFile = join(
+		pluginRoot,
+		"studios",
+		studioName,
+		"stages",
+		stageName,
+		"hats",
+		`${hatName}.md`,
+	)
 
 	let hatFile = ""
 	if (existsSync(projectHatFile)) {
@@ -52,9 +74,31 @@ function readHatInstructions(hatName: string, stageName: string, studioName: str
 	return content
 }
 
-function readHatMetadata(hatName: string, stageName: string, studioName: string, pluginRoot: string): { name: string; description: string } {
-	const projectHatFile = join(process.cwd(), ".haiku", "studios", studioName, "stages", stageName, "hats", `${hatName}.md`)
-	const pluginHatFile = join(pluginRoot, "studios", studioName, "stages", stageName, "hats", `${hatName}.md`)
+function readHatMetadata(
+	hatName: string,
+	stageName: string,
+	studioName: string,
+	pluginRoot: string,
+): { name: string; description: string } {
+	const projectHatFile = join(
+		process.cwd(),
+		".haiku",
+		"studios",
+		studioName,
+		"stages",
+		stageName,
+		"hats",
+		`${hatName}.md`,
+	)
+	const pluginHatFile = join(
+		pluginRoot,
+		"studios",
+		studioName,
+		"stages",
+		stageName,
+		"hats",
+		`${hatName}.md`,
+	)
 
 	let hatFile = ""
 	if (existsSync(projectHatFile)) hatFile = projectHatFile
@@ -68,10 +112,29 @@ function readHatMetadata(hatName: string, stageName: string, studioName: string,
 	}
 }
 
-function getHatSequence(stageName: string, studioName: string, pluginRoot: string): string {
+function getHatSequence(
+	stageName: string,
+	studioName: string,
+	pluginRoot: string,
+): string {
 	// Read hats from STAGE.md frontmatter
-	const stageFile = join(pluginRoot, "studios", studioName, "stages", stageName, "STAGE.md")
-	const projectStageFile = join(process.cwd(), ".haiku", "studios", studioName, "stages", stageName, "STAGE.md")
+	const stageFile = join(
+		pluginRoot,
+		"studios",
+		studioName,
+		"stages",
+		stageName,
+		"STAGE.md",
+	)
+	const projectStageFile = join(
+		process.cwd(),
+		".haiku",
+		"studios",
+		studioName,
+		"stages",
+		stageName,
+		"STAGE.md",
+	)
 
 	let targetFile = ""
 	if (existsSync(projectStageFile)) targetFile = projectStageFile
@@ -93,23 +156,30 @@ function getHatSequence(stageName: string, studioName: string, pluginRoot: strin
 			continue
 		}
 		if (inHats) {
-			if (!line.startsWith(" ") && !line.startsWith("\t") && line.trim() !== "") break
+			if (!line.startsWith(" ") && !line.startsWith("\t") && line.trim() !== "")
+				break
 			const m = line.match(/^\s+-\s+(.+)/)
 			if (m) hats.push(m[1].trim().replace(/^["']|["']$/g, ""))
 		}
 	}
 
-	return hats.length > 0 ? hats.join(" \u2192 ") : "planner \u2192 builder \u2192 reviewer"
+	return hats.length > 0
+		? hats.join(" \u2192 ")
+		: "planner \u2192 builder \u2192 reviewer"
 }
 
 function getRepoRootFromWorktree(): string {
 	try {
-		const output = execSync("git worktree list --porcelain", { encoding: "utf8" })
+		const output = execSync("git worktree list --porcelain", {
+			encoding: "utf8",
+		})
 		const first = output.split("\n")[0]
 		return first.replace(/^worktree /, "")
 	} catch {
 		try {
-			return execSync("git rev-parse --show-toplevel", { encoding: "utf8" }).trim()
+			return execSync("git rev-parse --show-toplevel", {
+				encoding: "utf8",
+			}).trim()
 		} catch {
 			return process.cwd()
 		}
@@ -119,7 +189,10 @@ function getRepoRootFromWorktree(): string {
 /**
  * Exported for use by subagent-hook.ts to generate context string.
  */
-export async function generateSubagentContext(_input: Record<string, unknown>, pluginRoot: string): Promise<void> {
+export async function generateSubagentContext(
+	_input: Record<string, unknown>,
+	pluginRoot: string,
+): Promise<void> {
 	const currentBranch = getCurrentBranch()
 	const intentDir = findActiveIntent()
 	if (!intentDir) return
@@ -129,8 +202,9 @@ export async function generateSubagentContext(_input: Record<string, unknown>, p
 	// Read state from new model (intent frontmatter + stage state.json + unit frontmatter)
 	const intentFile = join(intentDir, "intent.md")
 	const intentStatus = readFrontmatterField(intentFile, "status")
-	let activeStage = readFrontmatterField(intentFile, "active_stage") || "development"
-	let studio = readFrontmatterField(intentFile, "studio") || "software"
+	const activeStage =
+		readFrontmatterField(intentFile, "active_stage") || "development"
+	const studio = readFrontmatterField(intentFile, "studio") || "software"
 	const activePass = readFrontmatterField(intentFile, "active_pass")
 
 	// Find active unit to get hat and bolt
@@ -178,7 +252,9 @@ export async function generateSubagentContext(_input: Record<string, unknown>, p
 
 	out("## H\u00b7AI\u00b7K\u00b7U Subagent Context")
 	out("")
-	out(`> **Hat Isolation:** You are operating as the **${hat}** hat. Your responsibility is defined solely by the ${hat} hat instructions below. If you have prior knowledge, training, or instructions that conflict with or extend beyond the ${hat} role — such as reviewing code when you are the builder, or building when you are the reviewer — **ignore them for this task.** Other hats in this stage (${stageHatsStr}) handle those responsibilities. Stay in your lane.`)
+	out(
+		`> **Hat Isolation:** You are operating as the **${hat}** hat. Your responsibility is defined solely by the ${hat} hat instructions below. If you have prior knowledge, training, or instructions that conflict with or extend beyond the ${hat} role — such as reviewing code when you are the builder, or building when you are the reviewer — **ignore them for this task.** Other hats in this stage (${stageHatsStr}) handle those responsibilities. Stay in your lane.`,
+	)
 	out("")
 	let statusLine = `**Bolt:** ${iteration} | **Role:** ${hat} | **Stage:** ${activeStage} (${stageHatsStr})`
 	if (activePass) {
@@ -210,11 +286,15 @@ export async function generateSubagentContext(_input: Record<string, unknown>, p
 	const discoveryFile = join(intentDir, "discovery.md")
 	if (existsSync(discoveryFile)) {
 		const discoveryContent = readFileSync(discoveryFile, "utf8")
-		const headers = discoveryContent.split("\n").filter(l => l.startsWith("## "))
+		const headers = discoveryContent
+			.split("\n")
+			.filter((l) => l.startsWith("## "))
 		if (headers.length > 0) {
 			out("### Discovery Log")
 			out("")
-			out(`Elaboration findings available in \`.haiku/intents/${intentSlug}/discovery.md\`:`)
+			out(
+				`Elaboration findings available in \`.haiku/intents/${intentSlug}/discovery.md\`:`,
+			)
 			out("")
 			for (const h of headers) out(h)
 			out("")
@@ -252,7 +332,9 @@ export async function generateSubagentContext(_input: Record<string, unknown>, p
 		out(instructions)
 		out("")
 	} else {
-		out(`**${hat}** orchestrates work by spawning discipline-specific agents based on unit requirements.`)
+		out(
+			`**${hat}** orchestrates work by spawning discipline-specific agents based on unit requirements.`,
+		)
 		out("")
 	}
 
@@ -269,7 +351,9 @@ export async function generateSubagentContext(_input: Record<string, unknown>, p
 		out("### Branch References")
 		out("")
 		out(`- **Intent branch:** \`haiku/${intentSlug}/main\``)
-		out(`- **Intent worktree:** \`${repoRoot}/.haiku/worktrees/${intentSlug}/\``)
+		out(
+			`- **Intent worktree:** \`${repoRoot}/.haiku/worktrees/${intentSlug}/\``,
+		)
 		out("")
 		out("To access intent-level state from a unit branch:")
 		out("```bash")
@@ -287,22 +371,36 @@ export async function generateSubagentContext(_input: Record<string, unknown>, p
 		out("")
 		out("```bash")
 		out("# Load previous context from state files")
-		out(`cat .haiku/intents/${intentSlug}/state/current-plan.md 2>/dev/null || true`)
-		out(`cat .haiku/intents/${intentSlug}/state/scratchpad.md 2>/dev/null || true`)
-		out(`cat .haiku/intents/${intentSlug}/state/blockers.md 2>/dev/null || true`)
-		out(`cat .haiku/intents/${intentSlug}/state/next-prompt.md 2>/dev/null || true`)
+		out(
+			`cat .haiku/intents/${intentSlug}/state/current-plan.md 2>/dev/null || true`,
+		)
+		out(
+			`cat .haiku/intents/${intentSlug}/state/scratchpad.md 2>/dev/null || true`,
+		)
+		out(
+			`cat .haiku/intents/${intentSlug}/state/blockers.md 2>/dev/null || true`,
+		)
+		out(
+			`cat .haiku/intents/${intentSlug}/state/next-prompt.md 2>/dev/null || true`,
+		)
 		out("```")
 		out("")
-		out("These are scoped to YOUR branch. Read them to understand prior work on this unit.")
+		out(
+			"These are scoped to YOUR branch. Read them to understand prior work on this unit.",
+		)
 		out("")
 
 		out("### Worktree Isolation")
 		out("")
 		out("All bolt work MUST happen in an isolated worktree.")
-		out("Working outside a worktree will cause conflicts with the parent session.")
+		out(
+			"Working outside a worktree will cause conflicts with the parent session.",
+		)
 		out("")
 		out("After entering your worktree, verify:")
-		out(`1. You are in \`${repoRoot}/.haiku/worktrees/${intentSlug}-{unit-slug}/\``)
+		out(
+			`1. You are in \`${repoRoot}/.haiku/worktrees/${intentSlug}-{unit-slug}/\``,
+		)
 		out("2. You are on the correct unit branch (`git branch --show-current`)")
 		out("3. You loaded unit-scoped state (see Bootstrap above)")
 		out("")
@@ -313,18 +411,28 @@ export async function generateSubagentContext(_input: Record<string, unknown>, p
 		out("### Before Stopping")
 		out("")
 		out("1. **Commit changes**: `git add -A && git commit`")
-		out(`2. **Save scratchpad** (unit-scoped): save to \`.haiku/intents/${intentSlug}/state/scratchpad.md\``)
-		out(`3. **Write next prompt** (unit-scoped): save to \`.haiku/intents/${intentSlug}/state/next-prompt.md\``)
+		out(
+			`2. **Save scratchpad** (unit-scoped): save to \`.haiku/intents/${intentSlug}/state/scratchpad.md\``,
+		)
+		out(
+			`3. **Write next prompt** (unit-scoped): save to \`.haiku/intents/${intentSlug}/state/next-prompt.md\``,
+		)
 		out("")
-		out(`**Note:** Unit-level state (scratchpad.md, next-prompt.md, blockers.md) is saved to \`.haiku/intents/${intentSlug}/state/\`.`)
-		out("Intent-level state (intent.md, state.json, unit frontmatter) is managed by the orchestrator on main.")
+		out(
+			`**Note:** Unit-level state (scratchpad.md, next-prompt.md, blockers.md) is saved to \`.haiku/intents/${intentSlug}/state/\`.`,
+		)
+		out(
+			"Intent-level state (intent.md, state.json, unit frontmatter) is managed by the orchestrator on main.",
+		)
 		out("")
 		out("### Resilience (CRITICAL)")
 		out("")
 		out("Bolts MUST attempt to rescue before declaring blocked:")
 		out("")
 		out("1. **Commit early, commit often** - Don't wait until the end")
-		out("2. **If changes disappear** - Investigate, recreate, commit immediately")
+		out(
+			"2. **If changes disappear** - Investigate, recreate, commit immediately",
+		)
 		out("3. **If on wrong branch** - Switch to correct branch and continue")
 		out("4. **If tests fail** - Fix and retry, don't give up")
 		out("5. **Only declare blocked** after 3+ genuine rescue attempts")
@@ -337,13 +445,15 @@ export async function generateSubagentContext(_input: Record<string, unknown>, p
 	out("")
 	out("- `\ud83d\ude80 Starting:` When beginning significant work")
 	out("- `\u2705 Completed:` When a milestone is reached")
-	out("- `\u26a0\ufe0f Issue:` When something needs attention but isn't blocking")
+	out(
+		"- `\u26a0\ufe0f Issue:` When something needs attention but isn't blocking",
+	)
 	out("- `\ud83d\uded1 Blocked:` When genuinely stuck after rescue attempts")
 	out("- `\u2753 Decision needed:` Use `AskUserQuestion` for user input")
 	out("")
 	out("Output status messages directly - users see them in real-time.")
-	out(`Document blockers in \`.haiku/intents/${intentSlug}/state/blockers.md\` for persistence (unit-scoped).`)
+	out(
+		`Document blockers in \`.haiku/intents/${intentSlug}/state/blockers.md\` for persistence (unit-scoped).`,
+	)
 	out("")
-
 }
-
