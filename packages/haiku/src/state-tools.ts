@@ -57,7 +57,11 @@ export function deriveIntentTitle(input: string): string {
 		const hardLimit = INTENT_TITLE_MAX_LENGTH - 1 // leave room for ellipsis
 		const truncated = title.slice(0, hardLimit)
 		const lastSpace = truncated.lastIndexOf(" ")
-		title = (lastSpace > INTENT_TITLE_MAX_LENGTH / 2 ? truncated.slice(0, lastSpace) : truncated) + "…"
+		title = `${
+			lastSpace > INTENT_TITLE_MAX_LENGTH / 2
+				? truncated.slice(0, lastSpace)
+				: truncated
+		}…`
 	}
 
 	return title.replace(/\.$/, "")
@@ -114,7 +118,11 @@ export function applyAutoFixes(
 		let fixedHere = false
 
 		// Title: overlong, multiline, or otherwise non-conforming
-		if (issue.field === "title" && typeof data.title === "string" && intentTitleNeedsRepair(data.title)) {
+		if (
+			issue.field === "title" &&
+			typeof data.title === "string" &&
+			intentTitleNeedsRepair(data.title)
+		) {
 			const oldTitle = data.title as string
 			const newTitle = deriveIntentTitle(oldTitle)
 			data.title = newTitle
@@ -122,10 +130,13 @@ export function applyAutoFixes(
 			const h1Re = /^#\s+(.+?)\s*$/m
 			const h1Match = body.match(h1Re)
 			const oldDescription = oldTitle.replace(/\s+/g, " ").trim()
-			if (h1Match && h1Match[1].replace(/\s+/g, " ").trim() === oldDescription) {
+			if (
+				h1Match &&
+				h1Match[1].replace(/\s+/g, " ").trim() === oldDescription
+			) {
 				body = body.replace(h1Re, `# ${newTitle}\n\n${oldDescription}`)
 			} else if (!h1Match) {
-				body = `# ${newTitle}\n\n${oldDescription}\n\n${body}`.trimEnd() + "\n"
+				body = `${`# ${newTitle}\n\n${oldDescription}\n\n${body}`.trimEnd()}\n`
 			}
 			applied.push({
 				intent: slug,
@@ -139,8 +150,12 @@ export function applyAutoFixes(
 		// Legacy `created` field → `created_at`
 		if (issue.field === "created" && data.created && !data.created_at) {
 			data.created_at = data.created
-			delete data.created
-			applied.push({ intent: slug, field: "created", description: "Renamed legacy `created` to `created_at`" })
+			data.created = undefined
+			applied.push({
+				intent: slug,
+				field: "created",
+				description: "Renamed legacy `created` to `created_at`",
+			})
 			fixedHere = true
 			changed = true
 		}
@@ -148,8 +163,14 @@ export function applyAutoFixes(
 		// Missing `created_at`: use file mtime as the best-effort fallback
 		if (issue.field === "created_at" && !data.created && !data.created_at) {
 			const stat = statSyncSafe(intentPath)
-			data.created_at = stat ? stat.mtime.toISOString() : new Date().toISOString()
-			applied.push({ intent: slug, field: "created_at", description: "Added `created_at` from file mtime" })
+			data.created_at = stat
+				? stat.mtime.toISOString()
+				: new Date().toISOString()
+			applied.push({
+				intent: slug,
+				field: "created_at",
+				description: "Added `created_at` from file mtime",
+			})
 			fixedHere = true
 			changed = true
 		}
@@ -157,16 +178,26 @@ export function applyAutoFixes(
 		// Missing `mode`: default to continuous
 		if (issue.field === "mode" && !data.mode) {
 			data.mode = "continuous"
-			applied.push({ intent: slug, field: "mode", description: "Defaulted `mode` to 'continuous'" })
+			applied.push({
+				intent: slug,
+				field: "mode",
+				description: "Defaulted `mode` to 'continuous'",
+			})
 			fixedHere = true
 			changed = true
 		}
 
 		// Stages mismatch — apply the expected stages from the studio
-		if (issue.field === "stages" && issue.message.startsWith("Stages don't match")) {
+		if (
+			issue.field === "stages" &&
+			issue.message.startsWith("Stages don't match")
+		) {
 			const expectedMatch = issue.fix.match(/Expected: \[([^\]]+)\]/)
 			if (expectedMatch) {
-				const expected = expectedMatch[1].split(",").map((s) => s.trim()).filter(Boolean)
+				const expected = expectedMatch[1]
+					.split(",")
+					.map((s) => s.trim())
+					.filter(Boolean)
 				if (expected.length > 0) {
 					data.stages = expected
 					applied.push({
@@ -206,7 +237,9 @@ export function applyAutoFixes(
 
 function statSyncSafe(path: string): { mtime: Date } | null {
 	try {
-		const { statSync } = require("node:fs") as { statSync: (p: string) => { mtime: Date } }
+		const { statSync } = require("node:fs") as {
+			statSync: (p: string) => { mtime: Date }
+		}
 		return statSync(path)
 	} catch {
 		return null
@@ -218,7 +251,10 @@ function statSyncSafe(path: string): { mtime: Date } | null {
 const REPAIR_UNIT_PATTERN = /^unit-\d{2,}-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/
 
 /** Build a map of available studios → their stages, scanning project + plugin paths. */
-function buildStudioMap(root: string): { studioMap: Map<string, string[]>; searchPaths: string[] } {
+function buildStudioMap(root: string): {
+	studioMap: Map<string, string[]>
+	searchPaths: string[]
+} {
 	const studioMap = new Map<string, string[]>()
 	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
 	const searchPaths = [join(root, "studios"), join(pluginRoot, "studios")]
@@ -229,7 +265,9 @@ function buildStudioMap(root: string): { studioMap: Map<string, string[]>; searc
 			const studioMd = join(base, d.name, "STUDIO.md")
 			if (!existsSync(studioMd)) continue
 			const { data: stData } = parseFrontmatter(readFileSync(studioMd, "utf8"))
-			const stStages = Array.isArray(stData.stages) ? (stData.stages as string[]) : []
+			const stStages = Array.isArray(stData.stages)
+				? (stData.stages as string[])
+				: []
 			studioMap.set(d.name, stStages)
 		}
 	}
@@ -250,9 +288,21 @@ function scanOneIntent(
 	const issues: RepairIssue[] = []
 
 	// a. Missing, overlong, or multiline title
-	if (!repairData.title || (typeof repairData.title === "string" && repairData.title.trim() === "")) {
-		issues.push({ intent: slug, field: "title", severity: "error", message: "Missing title field", fix: "Add `title` field with a short one-line name (≤80 chars)" })
-	} else if (typeof repairData.title === "string" && intentTitleNeedsRepair(repairData.title)) {
+	if (
+		!repairData.title ||
+		(typeof repairData.title === "string" && repairData.title.trim() === "")
+	) {
+		issues.push({
+			intent: slug,
+			field: "title",
+			severity: "error",
+			message: "Missing title field",
+			fix: "Add `title` field with a short one-line name (≤80 chars)",
+		})
+	} else if (
+		typeof repairData.title === "string" &&
+		intentTitleNeedsRepair(repairData.title)
+	) {
 		const current = repairData.title as string
 		const derived = deriveIntentTitle(current)
 		const reason = /\n/.test(current)
@@ -269,7 +319,13 @@ function scanOneIntent(
 
 	// b. Missing studio
 	if (!repairData.studio) {
-		issues.push({ intent: slug, field: "studio", severity: "error", message: "Missing studio field", fix: "Set `studio` to an available studio" })
+		issues.push({
+			intent: slug,
+			field: "studio",
+			severity: "error",
+			message: "Missing studio field",
+			fix: "Set `studio` to an available studio",
+		})
 	}
 
 	// c. Invalid studio (allow legacy aliases via resolveStudio)
@@ -278,7 +334,13 @@ function scanOneIntent(
 		const resolved = resolveStudio(repairStudio)
 		if (!resolved) {
 			const available = Array.from(studioMap.keys()).join(", ")
-			issues.push({ intent: slug, field: "studio", severity: "error", message: `Studio '${repairStudio}' not found`, fix: `Studio '${repairStudio}' not found. Available: ${available}` })
+			issues.push({
+				intent: slug,
+				field: "studio",
+				severity: "error",
+				message: `Studio '${repairStudio}' not found`,
+				fix: `Studio '${repairStudio}' not found. Available: ${available}`,
+			})
 		}
 	}
 
@@ -286,52 +348,114 @@ function scanOneIntent(
 	const repairStages = repairData.stages
 	if (!Array.isArray(repairStages) || repairStages.length === 0) {
 		if (repairStudio && studioMap.has(repairStudio)) {
-			const expected = studioMap.get(repairStudio)!.join(", ")
-			issues.push({ intent: slug, field: "stages", severity: "error", message: "Missing or empty stages array", fix: `Set \`stages\` to match studio definition: [${expected}]` })
+			const expected = studioMap.get(repairStudio)?.join(", ")
+			issues.push({
+				intent: slug,
+				field: "stages",
+				severity: "error",
+				message: "Missing or empty stages array",
+				fix: `Set \`stages\` to match studio definition: [${expected}]`,
+			})
 		} else {
-			issues.push({ intent: slug, field: "stages", severity: "error", message: "Missing or empty stages array", fix: "Set `stages` to match studio definition" })
+			issues.push({
+				intent: slug,
+				field: "stages",
+				severity: "error",
+				message: "Missing or empty stages array",
+				fix: "Set `stages` to match studio definition",
+			})
 		}
 	}
 
 	// e. Stages mismatch
-	if (Array.isArray(repairStages) && repairStages.length > 0 && repairStudio && studioMap.has(repairStudio)) {
-		const expected = studioMap.get(repairStudio)!
-		const actual = repairStages as string[]
-		if (JSON.stringify(expected) !== JSON.stringify(actual)) {
-			issues.push({ intent: slug, field: "stages", severity: "warning", message: "Stages don't match studio definition", fix: `Stages don't match studio definition. Expected: [${expected.join(", ")}], got: [${actual.join(", ")}]` })
+	if (Array.isArray(repairStages) && repairStages.length > 0 && repairStudio) {
+		const expected = studioMap.get(repairStudio)
+		if (expected) {
+			const actual = repairStages as string[]
+			if (JSON.stringify(expected) !== JSON.stringify(actual)) {
+				issues.push({
+					intent: slug,
+					field: "stages",
+					severity: "warning",
+					message: "Stages don't match studio definition",
+					fix: `Stages don't match studio definition. Expected: [${expected.join(", ")}], got: [${actual.join(", ")}]`,
+				})
+			}
 		}
 	}
 
 	// f. Missing status
 	if (!repairData.status) {
-		issues.push({ intent: slug, field: "status", severity: "error", message: "Missing status field", fix: "Set `status` to 'active' or 'completed'" })
+		issues.push({
+			intent: slug,
+			field: "status",
+			severity: "error",
+			message: "Missing status field",
+			fix: "Set `status` to 'active' or 'completed'",
+		})
 	}
 
 	// g. Missing mode
 	if (!repairData.mode) {
-		issues.push({ intent: slug, field: "mode", severity: "error", message: "Missing mode field", fix: "Set `mode` to 'continuous' or 'discrete'" })
+		issues.push({
+			intent: slug,
+			field: "mode",
+			severity: "error",
+			message: "Missing mode field",
+			fix: "Set `mode` to 'continuous' or 'discrete'",
+		})
 	}
 
 	// h. Legacy created field
 	if (repairData.created && !repairData.created_at) {
-		issues.push({ intent: slug, field: "created", severity: "warning", message: "Legacy `created` field found", fix: "Rename `created` to `created_at`" })
+		issues.push({
+			intent: slug,
+			field: "created",
+			severity: "warning",
+			message: "Legacy `created` field found",
+			fix: "Rename `created` to `created_at`",
+		})
 	}
 
 	// i. Missing created_at
 	if (!repairData.created && !repairData.created_at) {
-		issues.push({ intent: slug, field: "created_at", severity: "warning", message: "Missing created_at field", fix: "Add `created_at` with an ISO date" })
+		issues.push({
+			intent: slug,
+			field: "created_at",
+			severity: "warning",
+			message: "Missing created_at field",
+			fix: "Add `created_at` with an ISO date",
+		})
 	}
 
 	// j. Invalid active_stage
-	if (repairData.active_stage && Array.isArray(repairStages) && repairStages.length > 0) {
-		if (!(repairStages as string[]).includes(repairData.active_stage as string)) {
-			issues.push({ intent: slug, field: "active_stage", severity: "error", message: `active_stage '${repairData.active_stage}' not in stages list`, fix: `active_stage '${repairData.active_stage}' not in stages list` })
+	if (
+		repairData.active_stage &&
+		Array.isArray(repairStages) &&
+		repairStages.length > 0
+	) {
+		if (
+			!(repairStages as string[]).includes(repairData.active_stage as string)
+		) {
+			issues.push({
+				intent: slug,
+				field: "active_stage",
+				severity: "error",
+				message: `active_stage '${repairData.active_stage}' not in stages list`,
+				fix: `active_stage '${repairData.active_stage}' not in stages list`,
+			})
 		}
 	}
 
 	// k. Missing active_stage for active intents
 	if (repairData.status === "active" && !repairData.active_stage) {
-		issues.push({ intent: slug, field: "active_stage", severity: "warning", message: "Active intent has no active_stage", fix: "Active intent has no active_stage. Set to the first stage." })
+		issues.push({
+			intent: slug,
+			field: "active_stage",
+			severity: "warning",
+			message: "Active intent has no active_stage",
+			fix: "Active intent has no active_stage. Set to the first stage.",
+		})
 	}
 
 	// l. Stage state consistency
@@ -345,13 +469,26 @@ function scanOneIntent(
 			if (existsSync(repairStateFile)) {
 				const state = readJson(repairStateFile)
 				if (state.status && !validStatuses.includes(state.status as string)) {
-					issues.push({ intent: slug, field: `stages/${stageName}/state.json`, severity: "error", message: `Invalid stage status: '${state.status}'`, fix: `Set status to one of: ${validStatuses.join(", ")}` })
+					issues.push({
+						intent: slug,
+						field: `stages/${stageName}/state.json`,
+						severity: "error",
+						message: `Invalid stage status: '${state.status}'`,
+						fix: `Set status to one of: ${validStatuses.join(", ")}`,
+					})
 				}
 			} else if (existsSync(repairStageDir) && repairActiveStage) {
 				const activeIdx = (repairStages as string[]).indexOf(repairActiveStage)
 				const thisIdx = (repairStages as string[]).indexOf(stageName)
 				if (thisIdx < activeIdx) {
-					issues.push({ intent: slug, field: `stages/${stageName}/state.json`, severity: "warning", message: "Stage directory exists but has no state.json (before active_stage)", fix: `Create state.json with {"status": "pending", "phase": "elaborate"}` })
+					issues.push({
+						intent: slug,
+						field: `stages/${stageName}/state.json`,
+						severity: "warning",
+						message:
+							"Stage directory exists but has no state.json (before active_stage)",
+						fix: `Create state.json with {"status": "pending", "phase": "elaborate"}`,
+					})
 				}
 			}
 		}
@@ -360,19 +497,41 @@ function scanOneIntent(
 	// m. Unit filename format + n. Unit required fields + o. Unit inputs
 	if (Array.isArray(repairStages)) {
 		for (const stageName of repairStages as string[]) {
-			const repairUnitsDir = join(intentsDir, slug, "stages", stageName, "units")
+			const repairUnitsDir = join(
+				intentsDir,
+				slug,
+				"stages",
+				stageName,
+				"units",
+			)
 			if (!existsSync(repairUnitsDir)) continue
 
 			// Build upstream artifact paths once for input checks
 			const existingUpstreamPaths: string[] = []
 			if (repairStudio) {
-				let stageInputs: Array<{ stage: string; discovery?: string; output?: string }> | null = null
+				let stageInputs: Array<{
+					stage: string
+					discovery?: string
+					output?: string
+				}> | null = null
 				for (const base of searchPaths) {
-					const stageMd = join(base, repairStudio, "stages", stageName, "STAGE.md")
+					const stageMd = join(
+						base,
+						repairStudio,
+						"stages",
+						stageName,
+						"STAGE.md",
+					)
 					if (!existsSync(stageMd)) continue
-					const { data: stageData } = parseFrontmatter(readFileSync(stageMd, "utf8"))
+					const { data: stageData } = parseFrontmatter(
+						readFileSync(stageMd, "utf8"),
+					)
 					if (Array.isArray(stageData.inputs) && stageData.inputs.length > 0) {
-						stageInputs = stageData.inputs as Array<{ stage: string; discovery?: string; output?: string }>
+						stageInputs = stageData.inputs as Array<{
+							stage: string
+							discovery?: string
+							output?: string
+						}>
 					}
 					break
 				}
@@ -381,17 +540,29 @@ function scanOneIntent(
 					for (const input of stageInputs) {
 						for (const base of searchPaths) {
 							for (const kind of ["discovery", "outputs"] as const) {
-								const artifactDir = join(base, repairStudio, "stages", input.stage, kind)
+								const artifactDir = join(
+									base,
+									repairStudio,
+									"stages",
+									input.stage,
+									kind,
+								)
 								if (!existsSync(artifactDir)) continue
-								for (const f of readdirSync(artifactDir).filter((af) => af.endsWith(".md"))) {
+								for (const f of readdirSync(artifactDir).filter((af) =>
+									af.endsWith(".md"),
+								)) {
 									const raw = readFileSync(join(artifactDir, f), "utf8")
 									const { data: aData } = parseFrontmatter(raw)
 									const aName = (aData.name as string) || f.replace(/\.md$/, "")
-									const wanted = kind === "outputs" ? input.output : input.discovery
+									const wanted =
+										kind === "outputs" ? input.output : input.discovery
 									if (aName !== wanted) continue
 									const loc = (aData.location as string) || ""
 									if (!loc) continue
-									const relPath = loc.replace(/^\.haiku\/intents\/\{intent-slug\}\//, "")
+									const relPath = loc.replace(
+										/^\.haiku\/intents\/\{intent-slug\}\//,
+										"",
+									)
 									const absPath = join(intentPath2, relPath)
 									if (existsSync(absPath)) existingUpstreamPaths.push(relPath)
 								}
@@ -404,28 +575,48 @@ function scanOneIntent(
 			for (const f of readdirSync(repairUnitsDir, { withFileTypes: true })) {
 				if (!f.isFile() || !f.name.endsWith(".md")) continue
 				if (!REPAIR_UNIT_PATTERN.test(f.name)) {
-					issues.push({ intent: slug, field: `stages/${stageName}/units/${f.name}`, severity: "warning", message: `Unit filename doesn't match expected pattern`, fix: "Rename to match pattern: unit-NN-slug-name.md" })
+					issues.push({
+						intent: slug,
+						field: `stages/${stageName}/units/${f.name}`,
+						severity: "warning",
+						message: `Unit filename doesn't match expected pattern`,
+						fix: "Rename to match pattern: unit-NN-slug-name.md",
+					})
 				}
 				const unitRaw = readFileSync(join(repairUnitsDir, f.name), "utf8")
 				const { data: unitData } = parseFrontmatter(unitRaw)
 				if (!unitData.type) {
-					issues.push({ intent: slug, field: `stages/${stageName}/units/${f.name}:type`, severity: "warning", message: `Unit missing 'type' field`, fix: "Add `type` field to unit frontmatter" })
+					issues.push({
+						intent: slug,
+						field: `stages/${stageName}/units/${f.name}:type`,
+						severity: "warning",
+						message: `Unit missing 'type' field`,
+						fix: "Add `type` field to unit frontmatter",
+					})
 				}
 				if (!unitData.status) {
-					issues.push({ intent: slug, field: `stages/${stageName}/units/${f.name}:status`, severity: "warning", message: `Unit missing 'status' field`, fix: "Add `status` field to unit frontmatter" })
+					issues.push({
+						intent: slug,
+						field: `stages/${stageName}/units/${f.name}:status`,
+						severity: "warning",
+						message: `Unit missing 'status' field`,
+						fix: "Add `status` field to unit frontmatter",
+					})
 				}
 				const unitStatus = (unitData.status as string) || ""
 				if (["complete", "skipped", "failed"].includes(unitStatus)) continue
-				const unitInputs = (unitData.inputs as string[]) || (unitData.refs as string[]) || []
+				const unitInputs =
+					(unitData.inputs as string[]) || (unitData.refs as string[]) || []
 				if (unitInputs.length === 0) {
-					const fix = existingUpstreamPaths.length > 0
-						? `Add \`inputs:\` with upstream paths: ${existingUpstreamPaths.join(", ")}`
-						: `Add \`inputs:\` with at minimum the intent doc and discovery docs`
+					const fix =
+						existingUpstreamPaths.length > 0
+							? `Add \`inputs:\` with upstream paths: ${existingUpstreamPaths.join(", ")}`
+							: "Add `inputs:` with at minimum the intent doc and discovery docs"
 					issues.push({
 						intent: slug,
 						field: `stages/${stageName}/units/${f.name}:inputs`,
 						severity: "error",
-						message: `Unit has no \`inputs:\` — execution will be blocked`,
+						message: "Unit has no `inputs:` — execution will be blocked",
 						fix,
 					})
 				}
@@ -445,24 +636,43 @@ interface RepairCwdResult {
 }
 
 /** Run repair scan + optional auto-fix in the current working directory's .haiku root. */
-function repairCwd(intentArg: string | undefined, autoApply: boolean): RepairCwdResult {
+function repairCwd(
+	intentArg: string | undefined,
+	autoApply: boolean,
+): RepairCwdResult {
 	const root = findHaikuRoot()
 	const intentsDir = join(root, "intents")
 	if (!existsSync(intentsDir)) {
-		return { scanned: 0, cleanIntents: [], issues: [], applied: [], remaining: [] }
+		return {
+			scanned: 0,
+			cleanIntents: [],
+			issues: [],
+			applied: [],
+			remaining: [],
+		}
 	}
 	const { studioMap, searchPaths } = buildStudioMap(root)
 
 	let slugs: string[]
 	if (intentArg) {
-		if (/[/\\]|\.\./.test(intentArg)) throw new Error(`Invalid intent slug: "${intentArg}"`)
+		if (/[/\\]|\.\./.test(intentArg))
+			throw new Error(`Invalid intent slug: "${intentArg}"`)
 		if (!existsSync(join(intentsDir, intentArg, "intent.md"))) {
-			return { scanned: 0, cleanIntents: [], issues: [], applied: [], remaining: [] }
+			return {
+				scanned: 0,
+				cleanIntents: [],
+				issues: [],
+				applied: [],
+				remaining: [],
+			}
 		}
 		slugs = [intentArg]
 	} else {
 		slugs = readdirSync(intentsDir, { withFileTypes: true })
-			.filter((d) => d.isDirectory() && existsSync(join(intentsDir, d.name, "intent.md")))
+			.filter(
+				(d) =>
+					d.isDirectory() && existsSync(join(intentsDir, d.name, "intent.md")),
+			)
 			.map((d) => d.name)
 	}
 
@@ -488,11 +698,20 @@ function repairCwd(intentArg: string | undefined, autoApply: boolean): RepairCwd
 		}
 	}
 
-	return { scanned: slugs.length, cleanIntents, issues: allIssues, applied: allApplied, remaining: allRemaining }
+	return {
+		scanned: slugs.length,
+		cleanIntents,
+		issues: allIssues,
+		applied: allApplied,
+		remaining: allRemaining,
+	}
 }
 
 /** Build a markdown report from a single-cwd repair result. */
-function buildRepairReport(result: RepairCwdResult, headingPrefix = ""): string {
+function buildRepairReport(
+	result: RepairCwdResult,
+	headingPrefix = "",
+): string {
 	if (result.issues.length === 0 && result.applied.length === 0) {
 		return `${headingPrefix}All intents passed validation. No repairs needed.`
 	}
@@ -528,7 +747,9 @@ function buildRepairReport(result: RepairCwdResult, headingPrefix = ""): string 
 		lines.push("| # | Severity | Field | Issue | Fix |")
 		lines.push("|---|----------|-------|-------|-----|")
 		issues.forEach((issue, idx) => {
-			lines.push(`| ${idx + 1} | ${issue.severity} | ${issue.field} | ${issue.message} | ${issue.fix} |`)
+			lines.push(
+				`| ${idx + 1} | ${issue.severity} | ${issue.field} | ${issue.message} | ${issue.fix} |`,
+			)
 		})
 		lines.push("")
 	}
@@ -572,7 +793,10 @@ interface BranchRepairSummary {
 /** Repair every haiku/<slug>/main branch sequentially using temporary worktrees.
  *  Auto-applies safe fixes, commits + pushes them, and opens a PR if the branch
  *  was already merged into the mainline. Returns a structured summary. */
-function repairAllBranches(autoApply: boolean): { summaries: BranchRepairSummary[]; mainline: string } {
+function repairAllBranches(autoApply: boolean): {
+	summaries: BranchRepairSummary[]
+	mainline: string
+} {
 	const branches = listIntentBranches()
 	const mainline = getMainlineBranch()
 	const summaries: BranchRepairSummary[] = []
@@ -611,9 +835,15 @@ function repairAllBranches(autoApply: boolean): { summaries: BranchRepairSummary
 				const messageLines = [
 					`repair: auto-fix ${result.applied.length} metadata issue(s)`,
 					"",
-					...result.applied.map((a) => `- ${a.intent}/${a.field}: ${a.description}`),
+					...result.applied.map(
+						(a) => `- ${a.intent}/${a.field}: ${a.description}`,
+					),
 				]
-				const push = commitAndPushFromWorktree(worktreePath, branch, messageLines.join("\n"))
+				const push = commitAndPushFromWorktree(
+					worktreePath,
+					branch,
+					messageLines.join("\n"),
+				)
 				summary.committed = push.committed
 				summary.pushed = push.pushed
 				summary.pushError = push.pushError
@@ -641,7 +871,10 @@ function repairAllBranches(autoApply: boolean): { summaries: BranchRepairSummary
 	return { summaries, mainline }
 }
 
-function buildMultiBranchReport(summaries: BranchRepairSummary[], mainline: string): string {
+function buildMultiBranchReport(
+	summaries: BranchRepairSummary[],
+	mainline: string,
+): string {
 	if (summaries.length === 0) {
 		return "No intent branches found in this repository."
 	}
@@ -652,10 +885,15 @@ function buildMultiBranchReport(summaries: BranchRepairSummary[], mainline: stri
 		"",
 	]
 	const totalApplied = summaries.reduce((sum, s) => sum + s.applied.length, 0)
-	const totalRemaining = summaries.reduce((sum, s) => sum + s.remaining.length, 0)
+	const totalRemaining = summaries.reduce(
+		(sum, s) => sum + s.remaining.length,
+		0,
+	)
 	const totalPushed = summaries.filter((s) => s.pushed).length
 	const totalPRs = summaries.filter((s) => s.prUrl).length
-	lines.push(`**Summary:** ${totalApplied} fix(es) auto-applied across ${totalPushed} branch(es); ${totalPRs} PR(s) opened for already-merged branches; ${totalRemaining} issue(s) still need attention.`)
+	lines.push(
+		`**Summary:** ${totalApplied} fix(es) auto-applied across ${totalPushed} branch(es); ${totalPRs} PR(s) opened for already-merged branches; ${totalRemaining} issue(s) still need attention.`,
+	)
 	lines.push("")
 
 	for (const s of summaries) {
@@ -664,11 +902,21 @@ function buildMultiBranchReport(summaries: BranchRepairSummary[], mainline: stri
 		lines.push(`- Scanned: ${s.scanned} intent(s)`)
 		lines.push(`- Auto-applied: ${s.applied.length}`)
 		lines.push(`- Remaining: ${s.remaining.length}`)
-		if (s.committed && s.pushed) lines.push(`- Committed and pushed to \`origin/${s.branch}\``)
-		else if (s.committed) lines.push(`- Committed locally; push failed: ${s.pushError || "unknown"}`)
+		if (s.committed && s.pushed)
+			lines.push(`- Committed and pushed to \`origin/${s.branch}\``)
+		else if (s.committed)
+			lines.push(
+				`- Committed locally; push failed: ${s.pushError || "unknown"}`,
+			)
 		else if (s.pushError) lines.push(`- Error: ${s.pushError}`)
-		if (s.merged && s.prUrl) lines.push(`- Branch already merged into \`${mainline}\` — opened PR/MR: ${s.prUrl}`)
-		else if (s.merged && s.prError) lines.push(`- Branch already merged into \`${mainline}\` — failed to open PR: ${s.prError}`)
+		if (s.merged && s.prUrl)
+			lines.push(
+				`- Branch already merged into \`${mainline}\` — opened PR/MR: ${s.prUrl}`,
+			)
+		else if (s.merged && s.prError)
+			lines.push(
+				`- Branch already merged into \`${mainline}\` — failed to open PR: ${s.prError}`,
+			)
 		if (s.applied.length > 0) {
 			lines.push("")
 			lines.push("**Fixes applied:**")
@@ -680,7 +928,9 @@ function buildMultiBranchReport(summaries: BranchRepairSummary[], mainline: stri
 			lines.push("")
 			lines.push("**Remaining issues (need agent attention):**")
 			for (const i of s.remaining) {
-				lines.push(`- **${i.intent}**/${i.field} (${i.severity}): ${i.message} → ${i.fix}`)
+				lines.push(
+					`- **${i.intent}**/${i.field} (${i.severity}): ${i.message} → ${i.fix}`,
+				)
 			}
 		}
 		lines.push("")

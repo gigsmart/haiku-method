@@ -3,7 +3,10 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 import { findHaikuRoot, intentDir, parseFrontmatter } from "../state-tools.js"
-import { listStudios as listStudioInfos, resolveStudio } from "../studio-reader.js"
+import {
+	listStudios as listStudioInfos,
+	resolveStudio,
+} from "../studio-reader.js"
 import { studioSearchPaths, validateIdentifier } from "./helpers.js"
 
 /**

@@ -128,7 +128,11 @@ function resolveStageReview(studio: string, stage: string): string {
 /** Does the stage's `review:` field contain the given kind (e.g. "external")?
  *  Handles both scalar and array forms. Used to detect external-review stages
  *  that need branch isolation regardless of intent mode. */
-function stageReviewIncludes(studio: string, stage: string, kind: string): boolean {
+function stageReviewIncludes(
+	studio: string,
+	stage: string,
+	kind: string,
+): boolean {
 	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
@@ -644,7 +648,8 @@ function resolveEffectiveBranchMode(
 	const studio = (intent.studio as string) || ""
 
 	// External-review stages always use a stage branch so their PR is isolated.
-	if (studio && stageReviewIncludes(studio, stage, "external")) return "discrete"
+	if (studio && stageReviewIncludes(studio, stage, "external"))
+		return "discrete"
 
 	if (mode === "continuous") return "continuous"
 	if (mode === "discrete") return "discrete"
@@ -716,7 +721,10 @@ function fsmStartStage(slug: string, stage: string): void {
 				.filter((s) => branchExists(`haiku/${slug}/${s}`))
 
 			if (previousBranchedStages.length > 0) {
-				const consolResult = consolidateStageBranches(slug, previousBranchedStages)
+				const consolResult = consolidateStageBranches(
+					slug,
+					previousBranchedStages,
+				)
 				if (!consolResult.success) {
 					throw new Error(
 						`Consolidation of stage branches into main failed: ${consolResult.message}. Resolve conflicts on 'haiku/${slug}/main' manually, then retry.`,

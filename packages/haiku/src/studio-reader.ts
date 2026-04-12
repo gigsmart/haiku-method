@@ -242,18 +242,18 @@ function resolveArtifactPath(
 /** Studio metadata. `dir` is the stable on-disk identifier; `name` is the canonical
  *  display name from frontmatter. Resolve user-supplied identifiers via `resolveStudio`. */
 export interface StudioInfo {
-	dir: string                      // directory name on disk — stable identifier for file ops
-	name: string                     // canonical display name (frontmatter.name, defaults to dir)
-	slug: string                     // short alias (frontmatter.slug, defaults to name)
-	aliases: string[]                // additional aliases from frontmatter
+	dir: string // directory name on disk — stable identifier for file ops
+	name: string // canonical display name (frontmatter.name, defaults to dir)
+	slug: string // short alias (frontmatter.slug, defaults to name)
+	aliases: string[] // additional aliases from frontmatter
 	description: string
 	category: string
 	stages: string[]
-	data: Record<string, unknown>    // full frontmatter
+	data: Record<string, unknown> // full frontmatter
 	body: string
 	source: "plugin" | "project"
-	path: string                     // absolute path to the studio directory
-	studioFile: string               // absolute path to STUDIO.md (for help links)
+	path: string // absolute path to the studio directory
+	studioFile: string // absolute path to STUDIO.md (for help links)
 }
 
 /** List studios with their metadata (project overrides plugin for same-named directories).
@@ -275,7 +275,9 @@ export function listStudios(): StudioInfo[] {
 			const { data, body } = parseFrontmatter(readFileSync(file, "utf8"))
 			const name = (data.name as string) || d.name
 			const slug = (data.slug as string) || name
-			const aliases = Array.isArray(data.aliases) ? (data.aliases as string[]) : []
+			const aliases = Array.isArray(data.aliases)
+				? (data.aliases as string[])
+				: []
 			seen.set(d.name, {
 				dir: d.name,
 				name,
@@ -305,7 +307,7 @@ export function resolveStudio(identifier: string): StudioInfo | null {
 		if (s.dir.toLowerCase() === needle) return s
 		if (s.name.toLowerCase() === needle) return s
 		if (s.slug.toLowerCase() === needle) return s
-		if (s.aliases.some(a => a.toLowerCase() === needle)) return s
+		if (s.aliases.some((a) => a.toLowerCase() === needle)) return s
 	}
 	return null
 }
