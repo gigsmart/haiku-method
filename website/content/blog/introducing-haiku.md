@@ -2,7 +2,6 @@
 title: "Introducing H·AI·K·U: Why We Rebranded and What Changes"
 description: From AI-DLC to H·AI·K·U — a methodology evolution from software-specific lifecycle to domain-agnostic work orchestration.
 date: 2026-04-02
-author: GigSmart
 ---
 
 We started with **AI-DLC** — the AI-Driven Development Lifecycle. It was a methodology built for software teams working with AI agents. Hats, units, bolts, quality gates. It worked. It worked well enough that people kept asking the same question: *can I use this for things that aren't code?*

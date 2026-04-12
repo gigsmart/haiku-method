@@ -171,6 +171,10 @@ export const GitHubListFilesQuery = graphql`
 /**
  * Lists haiku/* branches and their associated PRs.
  * Used by the branch-scanning flow to discover active intents across branches.
+ *
+ * Fetches PRs in every state (OPEN, CLOSED, MERGED) ordered by most-recently-updated
+ * so the UI can display whichever PR is most relevant for the branch — including
+ * rejected/closed PRs that users still want to be able to drill into.
  */
 export const GitHubListHaikuBranchesQuery = graphql`
   query operationsListHaikuBranchesQuery($owner: String!, $name: String!, $refPrefix: String!) {
@@ -178,12 +182,17 @@ export const GitHubListHaikuBranchesQuery = graphql`
       refs(refPrefix: $refPrefix, first: 100) {
         nodes {
           name
-          associatedPullRequests(first: 1, states: [OPEN, MERGED]) {
+          associatedPullRequests(
+            first: 5
+            states: [OPEN, CLOSED, MERGED]
+            orderBy: { field: UPDATED_AT, direction: DESC }
+          ) {
             nodes {
               number
               title
               url
               state
+              updatedAt
             }
           }
           target {

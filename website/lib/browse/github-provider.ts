@@ -386,12 +386,36 @@ export class GitHubProvider implements BrowseProvider {
 		let intentBranch = this.intentBranchMap.get(slug)
 
 		// If branch map isn't populated yet (deeplink before listIntents), try to resolve the branch
+		// and fetch its associated PR data. Without this, deep-linked intents render without
+		// branch name or PR link until a full listIntents() pass runs.
 		if (!intentBranch && !this.branch) {
 			const branchName = `haiku/${slug}/main`
 			const testRead = await this.readFileFromBranch(branchName, `.haiku/intents/${slug}/intent.md`)
 			if (testRead) {
 				intentBranch = branchName
 				this.intentBranchMap.set(slug, branchName)
+
+				// Fetch associated PRs (any state, most recent first) so the detail view
+				// shows the PR link on first render.
+				try {
+					const branchesCacheKey = `gh:${this.owner}/${this.repo}:listHaikuBranches:${slug}`
+					const branchesData = await this.cachedQuery<operationsListHaikuBranchesQuery$data>(
+						ListHaikuBranchesQuery,
+						{ owner: this.owner, name: this.repo, refPrefix: `refs/heads/haiku/${slug}/` },
+						branchesCacheKey,
+					)
+					const node = branchesData?.repository?.refs?.nodes?.find(
+						(n) => n?.name === `${slug}/main`,
+					)
+					const pr = node?.associatedPullRequests.nodes?.[0]
+					const prMeta = pr
+						? { prUrl: pr.url, prStatus: pr.state.toLowerCase(), prNumber: pr.number }
+						: { prUrl: null, prStatus: null, prNumber: null }
+					this.intentMetaMap.set(slug, { branch: branchName, ...prMeta })
+				} catch {
+					// Best-effort — if PR lookup fails, still show the branch
+					this.intentMetaMap.set(slug, { branch: branchName, prUrl: null, prStatus: null, prNumber: null })
+				}
 			}
 		}
 
@@ -665,7 +689,16 @@ export class GitHubProvider implements BrowseProvider {
 		return { ok: false, reason: "auth_required" }
 	}
 
-	/** Get the OAuth URL for GitHub */
+	/** Get the OAuth URL for GitHub.
+	 *
+	 * Scope: `repo` — full read/write access to public + private repositories.
+	 * This is required because the browse UI:
+	 *   - Reads `.haiku/intents/` contents (public + private repos)
+	 *   - Reads branches and associated PRs (including CLOSED/rejected ones)
+	 *   - Writes stage gate approvals via `writeFile` (external review buttons)
+	 *
+	 * Narrower alternatives like `public_repo` or `read:repo` would work for
+	 * read-only public access but would break gate approvals on private repos. */
 	static getOAuthUrl(clientId: string, redirectUri: string): string {
 		return `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo`
 	}

@@ -36,6 +36,7 @@ import { validateIdentifier } from "./prompts/helpers.js"
 import { reportError } from "./sentry.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
 import {
+	deriveIntentTitle,
 	findHaikuRoot,
 	gitCommitState,
 	intentDir,
@@ -56,6 +57,7 @@ import {
 	readStageDef,
 	readStudio,
 	resolveStageInputs,
+	resolveStudio,
 	studioSearchPaths,
 } from "./studio-reader.js"
 import { emitTelemetry } from "./telemetry.js"
@@ -73,8 +75,11 @@ function readFrontmatter(filePath: string): Record<string, unknown> {
 // ── Studio resolution ──────────────────────────────────────────────────────
 
 function resolveStudioStages(studio: string): string[] {
+	// Accept any identifier (dir, name, slug, alias); falls back to direct lookup
+	// for robustness with legacy callers that pass a dir name already.
+	const info = resolveStudio(studio)
+	if (info) return info.stages
 	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
-	// Check project override first, then plugin
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
@@ -89,12 +94,16 @@ function resolveStudioStages(studio: string): string[] {
 }
 
 function resolveStageHats(studio: string, stage: string): string[] {
+	// Accept any identifier (dir, name, slug, alias); falls back to raw arg
+	// for robustness when the studio cache isn't warm yet.
+	const info = resolveStudio(studio)
+	const dir = info ? info.dir : studio
 	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
 	]) {
-		const stageFile = join(base, studio, "stages", stage, "STAGE.md")
+		const stageFile = join(base, dir, "stages", stage, "STAGE.md")
 		if (existsSync(stageFile)) {
 			const fm = readFrontmatter(stageFile)
 			return (fm.hats as string[]) || []
@@ -104,32 +113,75 @@ function resolveStageHats(studio: string, stage: string): string[] {
 }
 
 function resolveStageReview(studio: string, stage: string): string {
+	// Accept any identifier (dir, name, slug, alias); falls back to raw arg
+	// for robustness when the studio cache isn't warm yet.
+	const info = resolveStudio(studio)
+	const dir = info ? info.dir : studio
 	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
 	]) {
-		const stageFile = join(base, studio, "stages", stage, "STAGE.md")
+		const stageFile = join(base, dir, "stages", stage, "STAGE.md")
 		if (existsSync(stageFile)) {
 			const fm = readFrontmatter(stageFile)
 			const review = fm.review
-			if (Array.isArray(review)) return review[0] as string
+			// Return every declared review kind joined with commas so downstream
+			// callers (which use `.includes("external")`, `.includes("ask")`, etc.)
+			// see all kinds. Previously this collapsed `[external, ask]` to just
+			// `"external"`, silently dropping the "ask" half of the gate.
+			if (Array.isArray(review)) return (review as string[]).join(",")
 			return (review as string) || "auto"
 		}
 	}
 	return "auto"
 }
 
-function resolveStageMetadata(
+/** Does the stage's `review:` field contain the given kind (e.g. "external")?
+ *  Handles both scalar and array forms. Used to detect external-review stages
+ *  that need branch isolation regardless of intent mode.
+ *
+ *  Resolves the studio identifier through `resolveStudio` first so callers can
+ *  pass the canonical name, slug, or alias — not just the directory name. If
+ *  resolveStudio returns null, falls back to using the identifier directly (for
+ *  robustness when called during bootstrap before the studio cache is warm). */
+function stageReviewIncludes(
 	studio: string,
 	stage: string,
-): { description: string; unit_types: string[]; body: string } | null {
+	kind: string,
+): boolean {
+	const info = resolveStudio(studio)
+	const dir = info ? info.dir : studio
 	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
 	]) {
-		const stageFile = join(base, studio, "stages", stage, "STAGE.md")
+		const stageFile = join(base, dir, "stages", stage, "STAGE.md")
+		if (existsSync(stageFile)) {
+			const fm = readFrontmatter(stageFile)
+			const review = fm.review
+			if (Array.isArray(review)) return (review as unknown[]).includes(kind)
+			return review === kind
+		}
+	}
+	return false
+}
+
+function resolveStageMetadata(
+	studio: string,
+	stage: string,
+): { description: string; unit_types: string[]; body: string } | null {
+	// Accept any identifier (dir, name, slug, alias); falls back to raw arg
+	// for robustness when the studio cache isn't warm yet.
+	const info = resolveStudio(studio)
+	const dir = info ? info.dir : studio
+	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	for (const base of [
+		join(process.cwd(), ".haiku", "studios"),
+		join(pluginRoot, "studios"),
+	]) {
+		const stageFile = join(base, dir, "stages", stage, "STAGE.md")
 		if (existsSync(stageFile)) {
 			const raw = readFileSync(stageFile, "utf8")
 			const fm = readFrontmatter(stageFile)
@@ -602,6 +654,12 @@ export interface OrchestratorAction {
 /**
  * Resolve the effective branching mode for a given stage.
  * Returns "discrete" or "continuous".
+ *
+ * Special case: stages with an `external` review gate are always isolated to
+ * their own stage branch regardless of the intent's mode. This prevents
+ * multiple external-review PRs from stacking on a shared intent main branch —
+ * each external-gated stage opens a distinct PR from its own
+ * `haiku/{slug}/{stage}` branch back to the intent main branch.
  */
 function resolveEffectiveBranchMode(
 	slug: string,
@@ -610,12 +668,17 @@ function resolveEffectiveBranchMode(
 	const intentFile = join(intentDir(slug), "intent.md")
 	const intent = readFrontmatter(intentFile)
 	const mode = (intent.mode as string) || "continuous"
+	const studio = (intent.studio as string) || ""
+
+	// External-review stages always use a stage branch so their PR is isolated.
+	if (studio && stageReviewIncludes(studio, stage, "external"))
+		return "discrete"
+
 	if (mode === "continuous") return "continuous"
 	if (mode === "discrete") return "discrete"
 	// hybrid: check continuous_from threshold
 	const continuousFrom = (intent.continuous_from as string) || ""
 	if (!continuousFrom) return "discrete"
-	const studio = (intent.studio as string) || ""
 	const allStages = resolveStudioStages(studio)
 	const skipStages = (intent.skip_stages as string[]) || []
 	const studioStages = allStages.filter((s) => !skipStages.includes(s))
@@ -639,9 +702,10 @@ function findPreviousStage(slug: string, stage: string): string | undefined {
 function fsmStartStage(slug: string, stage: string): void {
 	const intentFile = join(intentDir(slug), "intent.md")
 
-	// Branch isolation first — if this fails (merge conflict), no state is mutated
+	// Branch isolation first — if this fails (merge conflict), no state is mutated.
+	// Branch mode resolution is fully encapsulated in resolveEffectiveBranchMode,
+	// which reads intent mode + external-review flag internally.
 	const intent = readFrontmatter(intentFile)
-	const intentMode = (intent.mode as string) || "continuous"
 	const branchMode = resolveEffectiveBranchMode(slug, stage)
 	if (branchMode === "discrete") {
 		if (!isOnStageBranch(slug, stage)) {
@@ -659,22 +723,36 @@ function fsmStartStage(slug: string, stage: string): void {
 			}
 		}
 	} else {
+		// Continuous branch mode for this stage — make sure we're on intent main.
 		if (!isOnIntentBranch(slug)) {
-			if (intentMode === "hybrid") {
-				// Transitioning from discrete to continuous — consolidate stage branches
-				const studio = (intent.studio as string) || ""
-				const allStages = resolveStudioStages(studio)
-				const skipStages = (intent.skip_stages as string[]) || []
-				const studioStages = allStages.filter((s) => !skipStages.includes(s))
-				const stageIdx = studioStages.indexOf(stage)
-				const discreteStages = studioStages.slice(0, stageIdx)
-				if (discreteStages.length > 0) {
-					const consolResult = consolidateStageBranches(slug, discreteStages)
-					if (!consolResult.success) {
-						throw new Error(
-							`Consolidation of discrete stages into main failed: ${consolResult.message}. Resolve conflicts on 'haiku/${slug}/main' manually, then retry.`,
-						)
-					}
+			// We may be coming off a stage branch for one of three reasons:
+			//   1. Intent mode is "hybrid" (continuous_from threshold reached)
+			//   2. A previous stage had an external review → was isolated to a stage branch
+			//      even though the intent is in continuous mode
+			//   3. Previous stage was discrete and we're transitioning back
+			//
+			// In all cases, any previous stage branches must be consolidated (merged
+			// forward) into intent main so their commits are present locally. This
+			// mirrors how a server-side PR merge would land the work, without
+			// requiring a pull from the remote.
+			const studio = (intent.studio as string) || ""
+			const allStages = resolveStudioStages(studio)
+			const skipStages = (intent.skip_stages as string[]) || []
+			const studioStages = allStages.filter((s) => !skipStages.includes(s))
+			const stageIdx = studioStages.indexOf(stage)
+			const previousBranchedStages = studioStages
+				.slice(0, stageIdx)
+				.filter((s) => branchExists(`haiku/${slug}/${s}`))
+
+			if (previousBranchedStages.length > 0) {
+				const consolResult = consolidateStageBranches(
+					slug,
+					previousBranchedStages,
+				)
+				if (!consolResult.success) {
+					throw new Error(
+						`Consolidation of stage branches into main failed: ${consolResult.message}. Resolve conflicts on 'haiku/${slug}/main' manually, then retry.`,
+					)
 				}
 			} else {
 				createIntentBranch(slug)
@@ -787,7 +865,10 @@ export function runNext(slug: string): OrchestratorAction {
 		// even if elicitation is unavailable (e.g., cowork mode)
 		const available = listStudios().map((s) => ({
 			name: s.name,
-			description: (s.data.description as string) || "",
+			slug: s.slug,
+			aliases: s.aliases,
+			description: s.description,
+			category: s.category,
 		}))
 		return {
 			action: "select_studio",
@@ -3324,12 +3405,16 @@ export async function handleOrchestratorTool(
 		mkdirSync(join(iDir, "stages"), { recursive: true })
 
 		// Build intent.md with frontmatter + body (no studio — selected separately)
+		// Title is derived as a short one-liner; the full description lives in the body.
 		const context = args.context as string | undefined
 		const mode = (args.mode as string) || "continuous"
 		const stagesOverride = args.stages as string[] | undefined
+		const title = deriveIntentTitle(description)
+		const descriptionBody = description.trim()
+		const bodyHasDescription = descriptionBody && descriptionBody !== title
 		const intentContent = [
 			"---",
-			`title: "${description.replace(/"/g, '\\"')}"`,
+			`title: "${title.replace(/"/g, '\\"')}"`,
 			`studio: ""`,
 			`mode: ${mode}`,
 			"status: active",
@@ -3339,8 +3424,9 @@ export async function handleOrchestratorTool(
 			`created_at: ${timestamp()}`,
 			"---",
 			"",
-			`# ${description}`,
+			`# ${title}`,
 			"",
+			...(bodyHasDescription ? [descriptionBody, ""] : []),
 			...(context ? [context, ""] : []),
 		].join("\n")
 
@@ -3419,7 +3505,7 @@ export async function handleOrchestratorTool(
 		const allStudios = listStudios()
 		const allStudioNames = allStudios.map((s) => s.name)
 
-		if (allStudioNames.length === 0) {
+		if (allStudios.length === 0) {
 			return {
 				content: [{ type: "text" as const, text: "No studios available." }],
 				isError: true,
@@ -3427,11 +3513,14 @@ export async function handleOrchestratorTool(
 		}
 
 		const options = (args.options as string[] | undefined) || []
+		// selectedStudio stores the directory name (stable on-disk identifier) —
+		// UI displays the canonical `name`, but everything downstream reads by `dir`.
 		let selectedStudio = ""
 
-		// Single option — auto-select
+		// Single option — auto-select. Resolve by dir/name/slug/alias.
 		if (options.length === 1) {
-			if (!allStudioNames.includes(options[0])) {
+			const resolved = resolveStudio(options[0])
+			if (!resolved) {
 				return {
 					content: [
 						{
@@ -3442,34 +3531,38 @@ export async function handleOrchestratorTool(
 					isError: true,
 				}
 			}
-			selectedStudio = options[0]
+			selectedStudio = resolved.dir
 		} else if (_elicitInput) {
-			// Determine elicitation choices
+			// Determine elicitation choices — always display canonical names
 			let elicitChoices: string[]
 			let showAllOption = false
+
+			// Try to map provided options (which may be any alias form) to canonical names
+			const mappedOptions = options
+				.map((o) => resolveStudio(o))
+				.filter((s): s is NonNullable<typeof s> => s !== null)
+				.map((s) => s.name)
 
 			if (
 				!options ||
 				options.length === 0 ||
-				options.length >= allStudioNames.length
+				mappedOptions.length >= allStudioNames.length
 			) {
-				// Show all studios
+				elicitChoices = allStudioNames
+			} else if (mappedOptions.length === 0) {
 				elicitChoices = allStudioNames
 			} else {
-				// Show filtered options + "Show all studios..."
-				const validOptions = options.filter((o) => allStudioNames.includes(o))
-				if (validOptions.length === 0) {
-					elicitChoices = allStudioNames
-				} else {
-					elicitChoices = [...validOptions, "Show all studios..."]
-					showAllOption = true
-				}
+				elicitChoices = [...mappedOptions, "Show all studios..."]
+				showAllOption = true
 			}
 
-			// Build descriptions
+			// Build descriptions (canonical name + slug if distinct + description)
 			const descriptionLines = allStudios
 				.filter((s) => elicitChoices.includes(s.name))
-				.map((s) => `${s.name}: ${(s.data.description as string) || s.name}`)
+				.map((s) => {
+					const slugPart = s.slug && s.slug !== s.name ? ` (${s.slug})` : ""
+					return `${s.name}${slugPart}: ${s.description || s.name}`
+				})
 				.join("\n")
 
 			try {
@@ -3491,12 +3584,15 @@ export async function handleOrchestratorTool(
 
 				if (elicitResult.action === "accept" && elicitResult.content) {
 					const content = elicitResult.content as Record<string, string>
+					let chosen: string
 					if (content.studio === "Show all studios..." && showAllOption) {
 						// Re-elicit with full list
 						const allDescriptions = allStudios
-							.map(
-								(s) => `${s.name}: ${(s.data.description as string) || s.name}`,
-							)
+							.map((s) => {
+								const slugPart =
+									s.slug && s.slug !== s.name ? ` (${s.slug})` : ""
+								return `${s.name}${slugPart}: ${s.description || s.name}`
+							})
 							.join("\n")
 						const reElicit = await _elicitInput({
 							message: `All available studios:\n\n${allDescriptions}`,
@@ -3513,8 +3609,7 @@ export async function handleOrchestratorTool(
 							},
 						})
 						if (reElicit.action === "accept" && reElicit.content) {
-							selectedStudio =
-								(reElicit.content as Record<string, string>).studio || ""
+							chosen = (reElicit.content as Record<string, string>).studio || ""
 						} else {
 							return text(
 								JSON.stringify({
@@ -3524,8 +3619,11 @@ export async function handleOrchestratorTool(
 							)
 						}
 					} else {
-						selectedStudio = content.studio || ""
+						chosen = content.studio || ""
 					}
+					// Resolve the chosen canonical name back to its dir
+					const resolved = resolveStudio(chosen)
+					selectedStudio = resolved ? resolved.dir : ""
 				} else {
 					return text(
 						JSON.stringify({
@@ -3548,7 +3646,10 @@ export async function handleOrchestratorTool(
 		} else {
 			// No elicitation available — return studio list so agent can ask conversationally
 			const studioDescriptions = allStudios
-				.map((s) => `- **${s.name}**: ${(s.data.description as string) || ""}`)
+				.map((s) => {
+					const slugPart = s.slug && s.slug !== s.name ? ` _(${s.slug})_` : ""
+					return `- **${s.name}**${slugPart}: ${s.description || ""}`
+				})
 				.join("\n")
 			return text(
 				JSON.stringify(
@@ -3557,9 +3658,12 @@ export async function handleOrchestratorTool(
 						intent: slug,
 						available_studios: allStudios.map((s) => ({
 							name: s.name,
-							description: (s.data.description as string) || "",
+							slug: s.slug,
+							aliases: s.aliases,
+							description: s.description,
+							category: s.category,
 						})),
-						message: `Elicitation unavailable. Ask the user which studio to use, then call haiku_select_studio { intent: "${slug}", options: ["<chosen-studio>"] } with a single option to auto-select.\n\nAvailable studios:\n${studioDescriptions}`,
+						message: `Elicitation unavailable. Ask the user which studio to use, then call haiku_select_studio { intent: "${slug}", options: ["<chosen-studio>"] } with a single option to auto-select. The option may be the canonical name, slug, or any alias.\n\nAvailable studios:\n${studioDescriptions}`,
 					},
 					null,
 					2,

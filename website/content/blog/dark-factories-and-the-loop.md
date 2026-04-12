@@ -2,7 +2,6 @@
 title: "Dark Factories and the Loop"
 description: "The dark factory isn't a system you build. It's a knob you turn. H·AI·K·U treats full autonomy as a point-in-time decision, not an architectural commitment."
 date: 2026-02-20
-author: GigSmart
 ---
 
 Dan Shapiro recently published [The Five Levels](https://www.danshapiro.com/blog/2026/01/the-five-levels-from-spicy-autocomplete-to-the-software-factory/), a framework for understanding how teams adopt AI in software development. Modeled after NHTSA's driving automation levels, it maps a progression from Level 0 (spicy autocomplete) through Level 5 (the dark factory). Around the same time, StrongDM [went public](https://www.strongdm.com/blog/the-strongdm-software-factory-building-software-with-ai) with their Software Factory — a system where no human writes code and no human reviews code.

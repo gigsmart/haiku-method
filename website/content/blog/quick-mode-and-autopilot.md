@@ -2,7 +2,6 @@
 title: "Quick Mode and Autopilot"
 description: "Two new operating modes for H·AI·K·U — quick mode for trivial tasks with full hat discipline, and autopilot for autonomous feature delivery with strategic human checkpoints."
 date: 2026-03-31
-author: GigSmart
 ---
 
 In [Dark Factories and the Loop](/blog/dark-factories-and-the-loop), we argued that autonomy is a knob, not an architecture. The same harness, the same hats, the same backpressure — you just choose how much you are watching. That was the principle. This week, we shipped the two ends of that knob.
