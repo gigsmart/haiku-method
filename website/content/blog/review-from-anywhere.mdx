@@ -1,0 +1,97 @@
+---
+title: "Review From Anywhere"
+description: The review UI used to live on localhost. Now it lives on haikumethod.ai, reaches back to your machine over a tunnel, and lets you approve a stage from your phone at lunch.
+date: 2026-04-09
+author: Jason Waldrip
+category: Features
+tags:
+  - review
+  - tunnel
+  - websocket
+  - jwt
+  - ux
+---
+
+The review UI used to be local. Which is a nice way of saying: to review an intent, you had to be at the machine running H·AI·K·U. Your machine. Not your phone. Not your laptop at a coffee shop. Not your coworker's desk. *That* machine, the one where the agent was actually running. For solo work on a single desktop, fine. For a remote team, a Slack review request, or "I'm about to go to lunch but I want to approve this before I leave," completely broken.
+
+The review seam needs to be a URL anyone can open. Now it is.
+
+## The new flow
+
+When you trigger a review in H·AI·K·U, the MCP server opens a localtunnel, signs a short-lived JWT that encodes the tunnel URL, and opens your browser at **haikumethod.ai/review/**. The website decodes the token from the URL hash, connects back to your machine over WebSocket *through* the tunnel, and loads the session data. You click Approve. The site sends the decision back over the WebSocket. The orchestrator resumes.
+
+<ExpandableDiagram chart={`sequenceDiagram
+    participant A as Agent
+    participant M as MCP server
+    participant T as localtunnel
+    participant W as haikumethod.ai
+    participant U as You (phone/laptop/etc)
+    A->>M: haiku_run_next<br/>(gate_review)
+    M->>T: open tunnel
+    T-->>M: tunnel URL
+    M->>M: sign JWT<br/>with tunnel URL
+    M->>U: open browser<br/>haikumethod.ai/review/#<jwt>
+    U->>W: GET /review/
+    W->>U: load review SPA
+    U->>W: decode JWT from hash
+    W->>T: WebSocket connect
+    T->>M: forward WebSocket
+    M-->>W: session data
+    W-->>U: render review UI
+    U->>W: approve
+    W->>T: decision
+    T->>M: forward decision
+    M-->>A: unblock haiku_run_next`} />
+
+From your side, it looks like: trigger the review, your browser pops open to a URL, you approve, your machine keeps running. The tunnel, the JWT, the WebSocket reconnection — all of it happens underneath and you never see it.
+
+## Why the hash fragment
+
+The JWT lives in the URL's **hash fragment**, not a query parameter. That's deliberate.
+
+Query parameters get logged everywhere. Server logs. Browser history. Referrer headers. Analytics. If the JWT were in a query param, it would end up in places you didn't want it. The hash fragment — everything after the `#` — is never sent to the server. The browser keeps it local. haikumethod.ai never sees the token server-side; it's decoded client-side and used to open the WebSocket back to your tunnel. The website is just the delivery vehicle for the UI. Your machine is still the source of truth.
+
+<Callout tone="good" title="The security shape">
+The website hosts the SPA. Your machine hosts the data. The token never touches a server log because it rides in the hash fragment. The SPA is public; the review session it talks to is authenticated by the tunnel URL, which only you know.
+</Callout>
+
+## What the UI actually does
+
+The remote review SPA isn't a reskin of the old local one — it's a ground-up rebuild around the review flow actually being a flow:
+
+<Grid>
+  <Card eyebrow="Stepped review" title="One concern at a time" accent="info">
+    Instead of dumping every spec, every artifact, every comment thread onto one page, the review walks you through the sections. You see intent summary, then unit specs, then the diff, then the comment thread — each step with its own screen and its own decision.
+  </Card>
+  <Card eyebrow="Collapsible sidebar" title="Map of where you are" accent="info">
+    The sidebar shows the full review outline and which sections you've touched. You can jump around. You can collapse it when you need real estate. It remembers where you were if you navigate away.
+  </Card>
+  <Card eyebrow="Per-section comments" title="Comment in context" accent="info">
+    Comments are scoped to the section they belong to, not dumped in a single flat thread. "This acceptance criterion is underspecified" lives next to the acceptance criterion. "This diagram is wrong" lives next to the diagram.
+  </Card>
+  <Card eyebrow="Suggested decisions" title="The SPA has opinions" accent="info">
+    Each section comes with an auto-suggested decision based on the review agents' findings. If the quality gates passed and the adversarial review is clean, the suggestion is Approve. If something came back with changes requested, the suggestion is Request Changes — with the reasons pre-filled. You're always the one clicking, but the UI isn't making you start from scratch.
+  </Card>
+</Grid>
+
+## Reconnection
+
+Tunnels die. Network flakes. Laptops sleep. The review UI doesn't.
+
+If the WebSocket drops, the SPA shows an amber banner — "connection lost, reconnecting" — and **auto-reconnects**. If the tunnel comes back, you pick up where you were. If the tunnel is gone for good (session ended, machine shut down), the SPA tells you explicitly. No silent failures, no half-loaded UIs that look fine but can't actually send a decision.
+
+## Feature-flagged, not a rewrite
+
+The local SPA didn't get deleted. Remote review is feature-flagged behind `HAIKU_REMOTE_REVIEW=1`. Flip the flag, get the tunnel + haikumethod.ai flow. Leave it off, you keep the old localhost SPA exactly as it was. Both paths exercise the same underlying review session — the HTTP routes got consolidated behind `/files/`, CORS headers got added, the WebSocket protocol is the same shape — but nothing was broken in the old flow to ship the new one.
+
+<Callout tone="info" title="Rollout posture">
+Remote review is opt-in until we've hammered on it. Local review is the default. If you want to try remote, flip the flag. If you want to wait, don't.
+</Callout>
+
+## Why this matters
+
+The human checkpoints in H·AI·K·U — elaboration dialogue, review gates — are where the whole system slows down on purpose. They exist because some decisions shouldn't be made by an agent alone. But every slowdown is a risk. Every slowdown is a chance for the human in the loop to become a *bottleneck* instead of a safeguard, because they're not at their machine, because they're in a meeting, because they're waiting to get home.
+
+A URL is faster than a machine. A phone is always at hand. Moving review off of localhost is a small change in plumbing and a huge change in where the human seam can actually happen. Approve a review from the grocery store. Approve one from bed. Approve one from the airport. The agent doesn't care where you are. It just needs the answer.
+
+The seam is a URL now.
