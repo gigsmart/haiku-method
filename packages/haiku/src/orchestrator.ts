@@ -1403,7 +1403,7 @@ setRunNextHandler(runNext)
 // comes after this action) to every orchestrator action. This lets the
 // agent tell the user what's happening and what's coming next.
 
-function enrichActionWithPreview(action: OrchestratorAction): OrchestratorAction {
+function enrichActionWithPreview(action: OrchestratorAction): void {
 	const stage = (action.stage as string) || ""
 	const unit = (action.unit as string) || ""
 	const hat = (action.hat as string) || (action.first_hat as string) || ""
@@ -1501,7 +1501,7 @@ function enrichActionWithPreview(action: OrchestratorAction): OrchestratorAction
 			break
 
 		case "advance_stage":
-			tell_user = `Stage '${stage}' approved — advancing to '${nextStage}'.`
+			tell_user = `Stage '${stage}' complete — advancing to '${nextStage}'.`
 			next_step = `I'll start stage '${nextStage}' with elaboration.`
 			break
 
@@ -1532,6 +1532,11 @@ function enrichActionWithPreview(action: OrchestratorAction): OrchestratorAction
 			next_step = "Run /haiku:pickup after the review is approved."
 			break
 
+		case "gate_await":
+			tell_user = `Stage '${stage}' is complete — waiting for an external event before advancing.`
+			next_step = "Run /haiku:pickup when the external event occurs."
+			break
+
 		case "blocked":
 			tell_user = `Some units in stage '${stage}' are blocked — dependencies not met.`
 			next_step = "Unblock the dependencies, then retry."
@@ -1552,13 +1557,28 @@ function enrichActionWithPreview(action: OrchestratorAction): OrchestratorAction
 			next_step = "Create the missing artifacts, then retry."
 			break
 
-		// Validation errors — agent needs to fix
 		case "unresolved_dependencies":
+			tell_user = "Some unit dependencies reference units that don't exist — I need to fix the references."
+			next_step = "After fixing, I'll retry advancement."
+			break
+
 		case "dag_cycle_detected":
+			tell_user = "A dependency cycle was detected in the unit graph — I need to break the cycle."
+			next_step = "After fixing, I'll retry advancement."
+			break
+
 		case "unit_naming_invalid":
+			tell_user = "Some unit files don't follow the required naming convention — I need to rename them."
+			next_step = "After fixing, I'll retry advancement."
+			break
+
 		case "spec_validation_failed":
+			tell_user = "Unit specs failed validation against the stage's allowed types — I need to fix them."
+			next_step = "After fixing, I'll retry advancement."
+			break
+
 		case "inputs_missing":
-			tell_user = "There's a validation issue I need to fix before we can proceed."
+			tell_user = "Some units are missing required input references — I need to add them."
 			next_step = "After fixing, I'll retry advancement."
 			break
 
@@ -1573,7 +1593,6 @@ function enrichActionWithPreview(action: OrchestratorAction): OrchestratorAction
 
 	if (tell_user) action.tell_user = tell_user
 	if (next_step) action.next_step = next_step
-	return action
 }
 
 // ── Run instruction builder ───────────────────────────────────────────────
@@ -1584,17 +1603,20 @@ function buildRunInstructions(
 	action: OrchestratorAction,
 	dir: string,
 ): string {
-	const actionJson = JSON.stringify(action, null, 2)
+	// Strip tell_user/next_step from the JSON output — they appear in the
+	// announcement section already, no need to duplicate in the raw action.
+	const { tell_user, next_step, ...actionForJson } = action as OrchestratorAction & { tell_user?: string; next_step?: string }
+	const actionJson = JSON.stringify(actionForJson, null, 2)
 	const sections: string[] = []
 
 	// Agent announcement directive — tell the user what's happening
-	if (action.tell_user || action.next_step) {
+	if (tell_user || next_step) {
 		const parts: string[] = [
 			`## Announce to User (MANDATORY)\n`,
 			`**Before doing ANY work**, tell the user what you're about to do:`,
 		]
-		if (action.tell_user) parts.push(`> ${action.tell_user}`)
-		if (action.next_step) parts.push(`\n_${action.next_step}_`)
+		if (tell_user) parts.push(`> ${tell_user}`)
+		if (next_step) parts.push(`\n_${next_step}_`)
 		parts.push(`\nKeep the announcement concise — one or two sentences. Do NOT skip this step.`)
 		sections.push(parts.join("\n"))
 	}
