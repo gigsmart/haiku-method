@@ -1,0 +1,93 @@
+---
+title: "Don't Review Broken Code"
+description: Quality gates now run before adversarial review agents. Tests, lint, and typecheck fail fast, cheap, and loud — so expensive review cycles never get spent on code that doesn't compile.
+date: 2026-04-09
+author: Jason Waldrip
+category: Architecture
+tags:
+  - quality-gates
+  - review
+  - tests
+  - lint
+  - typecheck
+---
+
+Running an adversarial security reviewer on code that fails `tsc` is theater. You're spending expensive model time and an elaborate multi-agent review cycle on something a 50-millisecond command could have told you was broken before any of it started. The security reviewer is going to find issues, sure — but the first and biggest issue is that the code doesn't compile, and you didn't need an adversarial agent to figure that out.
+
+H·AI·K·U used to do that. It doesn't anymore.
+
+## The new order
+
+The review phase now runs in two stages:
+
+```
+execute → [quality gates] → [adversarial review] → gate
+             ↑                    ↑
+         cheap, fast          expensive, slow
+         hard failure         taste-driven
+```
+
+Quality gates — tests, lint, typecheck, whatever you configured — run **first**. They're the hard, objective, machine-verifiable checks. If any of them fail, the orchestrator returns `fix_quality_gates` and the agent gets bounced back to fix them before a single adversarial reviewer is even spawned. Only when everything's green does the orchestrator advance to the review agents, where the expensive taste-driven work happens.
+
+<Callout tone="good" title="The principle">
+Hard gates catch cheap failures. Soft gates catch expensive failures. Run them in that order — cheap first — or you'll spend a lot of money asking sophisticated reviewers to tell you what `npm test` could have told you for free.
+</Callout>
+
+## How it's configured
+
+Quality gates live in the intent's frontmatter as a list of `name` / `command` / `dir` tuples:
+
+```yaml
+quality_gates:
+  - name: typecheck
+    command: tsc --noEmit
+    dir: packages/haiku
+  - name: tests
+    command: bun test
+    dir: packages/haiku
+  - name: lint
+    command: biome check .
+```
+
+The `dir` field exists because monorepos exist. Commands resolve relative to the repo root, and you can scope each gate to the subdirectory where it belongs. Typecheck runs in `packages/haiku`, lint runs at the root, tests run wherever. One intent can touch multiple workspaces and each gate runs in the right place.
+
+## The elaborator now detects your tooling
+
+You don't write this by hand. When an intent is elaborated, the agent is now instructed to **detect the project's tooling** — is there a `package.json` with a test script? Is there a `Cargo.toml`? A `pyproject.toml` with `pytest`? — and populate `quality_gates` in `intent.md` automatically. By the time the intent reaches review for the first time, the gates are already wired up based on what the project actually has.
+
+If the elaborator gets it wrong, you fix it once and it's in the frontmatter forever. If it gets it right, you never thought about it.
+
+## What happens when a gate fails
+
+The agent gets a specific action back:
+
+```
+action: fix_quality_gates
+failures:
+  - name: typecheck
+    command: "tsc --noEmit"
+    dir: packages/haiku
+    exit_code: 2
+    output: |
+      src/orchestrator.ts:1245:14 — error TS2339:
+      Property 'foo' does not exist on type 'Unit'.
+```
+
+It's not "something broke, figure it out." It's the exact gate name, the exact command, the exact exit code, the truncated output with the first few lines of the error. The agent bounces back to execute, fixes the issue, and calls `haiku_run_next` again. The orchestrator re-runs the gates — no human intervention, no review agents, no context switch — and if they pass, advancement resumes.
+
+<KeyPoints title="Why this matters">
+  1. **Cheap failures stay cheap.** A typecheck error should cost a typecheck run, not a full review cycle.
+  2. **Expensive reviews stay expensive for a reason.** Taste-driven review is expensive because it's thinking about tradeoffs, not because it's rediscovering syntax errors.
+  3. **The feedback loop tightens.** The agent learns about a broken type in seconds, not minutes. Time-to-fix drops because detection moved upstream.
+  4. **Review signal improves.** When an adversarial reviewer finally does run, it's running on code that at least compiles. The issues it finds are real issues, not scaffolding noise.
+</KeyPoints>
+
+## The harness rule
+
+This pattern — cheap checks before expensive ones — is just the orchestrator doing what orchestrators are for. Anthropic's [harness design post](https://www.anthropic.com/engineering/harness-design-long-running-apps) makes the same point from a different angle: every component in a harness encodes an assumption about what the model can't do on its own, and those assumptions are worth stress-testing. The assumption here is that the agent *could* run tests itself, but won't reliably, and when it does, it won't reliably *read* the failures before moving on. So the harness runs them. The harness reads them. The harness decides.
+
+<Callout tone="info" title="The seam">
+The agent doesn't decide whether its code is ready for review. The orchestrator does. And the orchestrator doesn't guess — it runs the gates.
+</Callout>
+
+There's a cost savings here. There's also a signal savings. But the real win is that review stops being a lossy compression of compilation errors and lint warnings. Review gets reserved for the things that actually require judgment. Taste is expensive. Spend it on code that works.
