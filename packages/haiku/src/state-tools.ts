@@ -9,6 +9,7 @@ import {
 	mkdirSync,
 	readFileSync,
 	readdirSync,
+	statSync,
 	writeFileSync,
 } from "node:fs"
 import { join, resolve } from "node:path"
@@ -214,19 +215,12 @@ export function applyAutoFixes(
 		if (!fixedHere) remaining.push(issue)
 	}
 
-	// Independent of issues: migrate legacy studio alias `software` → `application-development`
-	if (data.studio === "software") {
-		const resolved = resolveStudio("software")
-		if (resolved && resolved.dir !== data.studio) {
-			data.studio = resolved.dir
-			applied.push({
-				intent: slug,
-				field: "studio",
-				description: `Migrated legacy studio alias 'software' → '${resolved.dir}'`,
-			})
-			changed = true
-		}
-	}
+	// Note: no studio alias migration here. Intents store the directory name
+	// as the stable identifier (see orchestrator.ts haiku_select_studio). The
+	// `software/` directory is intentionally preserved so legacy intents with
+	// `studio: software` continue to resolve via `resolveStudio` without any
+	// write to their frontmatter. Migrating to `application-development` would
+	// be a no-op since both forms resolve to the same studio.
 
 	if (changed) {
 		writeFileSync(intentPath, matter.stringify(body, data))
@@ -237,9 +231,6 @@ export function applyAutoFixes(
 
 function statSyncSafe(path: string): { mtime: Date } | null {
 	try {
-		const { statSync } = require("node:fs") as {
-			statSync: (p: string) => { mtime: Date }
-		}
 		return statSync(path)
 	} catch {
 		return null
@@ -635,12 +626,15 @@ interface RepairCwdResult {
 	remaining: RepairIssue[]
 }
 
-/** Run repair scan + optional auto-fix in the current working directory's .haiku root. */
+/** Run repair scan + optional auto-fix. `rootOverride` is the absolute path to a
+ *  `.haiku` directory — pass it when operating on a worktree other than `cwd`.
+ *  When omitted, falls back to walking up from the current working directory. */
 function repairCwd(
+	rootOverride: string | undefined,
 	intentArg: string | undefined,
 	autoApply: boolean,
 ): RepairCwdResult {
-	const root = findHaikuRoot()
+	const root = rootOverride ?? findHaikuRoot()
 	const intentsDir = join(root, "intents")
 	if (!existsSync(intentsDir)) {
 		return {
@@ -822,11 +816,15 @@ function repairAllBranches(autoApply: boolean): {
 			continue
 		}
 
-		const originalCwd = process.cwd()
 		try {
-			process.chdir(worktreePath)
-			_isGitRepo = null
-			const result = repairCwd(undefined, autoApply)
+			// Operate on the worktree by passing its `.haiku` root explicitly.
+			// We deliberately avoid `process.chdir()` here: the MCP process is
+			// shared and `cwd` is global state, so flipping it during a repair
+			// would race with any concurrent tool call. Every downstream helper
+			// (scanOneIntent, applyAutoFixes, commitAndPushFromWorktree, etc.)
+			// is already path-parameterized.
+			const worktreeHaikuRoot = join(worktreePath, ".haiku")
+			const result = repairCwd(worktreeHaikuRoot, undefined, autoApply)
 			summary.scanned = result.scanned
 			summary.applied = result.applied
 			summary.remaining = result.remaining
@@ -860,8 +858,6 @@ function repairAllBranches(autoApply: boolean): {
 				}
 			}
 		} finally {
-			process.chdir(originalCwd)
-			_isGitRepo = null
 			if (worktreePath) removeTempWorktree(worktreePath)
 		}
 
@@ -2923,7 +2919,7 @@ export function handleStateTool(
 
 			let cwdResult: RepairCwdResult
 			try {
-				cwdResult = repairCwd(repairIntentArg, repairAutoApply)
+				cwdResult = repairCwd(undefined, repairIntentArg, repairAutoApply)
 			} catch (err) {
 				return text(
 					`Repair failed: ${err instanceof Error ? err.message : String(err)}`,

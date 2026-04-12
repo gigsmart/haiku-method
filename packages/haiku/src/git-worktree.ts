@@ -225,7 +225,10 @@ export function openPullRequest(
 			).trim()
 			return { ok: true, url: out }
 		}
-		// glab
+		// glab: `glab mr list` returns a tabular row like `!123  title  branch  ...`,
+		// not JSON, so we extract the MR number via a !NNN regex (not a substring
+		// includes, which would false-positive on labels or error text) and then
+		// call `glab mr view --output json` to get a proper URL.
 		const existing = tryRun([
 			"glab",
 			"mr",
@@ -237,8 +240,18 @@ export function openPullRequest(
 			"--per-page",
 			"1",
 		])
-		if (existing?.includes("!")) {
-			return { ok: true, url: existing.split("\n")[0] }
+		const mrNumberMatch = existing.match(/^!(\d+)\b/m)
+		if (mrNumberMatch) {
+			const mrNum = mrNumberMatch[1]
+			const viewJson = tryRun(["glab", "mr", "view", mrNum, "--output", "json"])
+			if (viewJson) {
+				try {
+					const parsed = JSON.parse(viewJson) as { web_url?: string }
+					if (parsed.web_url) return { ok: true, url: parsed.web_url }
+				} catch {
+					// Fall through and create a new MR
+				}
+			}
 		}
 		const out = execFileSync(
 			"glab",

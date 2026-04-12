@@ -679,9 +679,10 @@ function findPreviousStage(slug: string, stage: string): string | undefined {
 function fsmStartStage(slug: string, stage: string): void {
 	const intentFile = join(intentDir(slug), "intent.md")
 
-	// Branch isolation first — if this fails (merge conflict), no state is mutated
+	// Branch isolation first — if this fails (merge conflict), no state is mutated.
+	// Branch mode resolution is fully encapsulated in resolveEffectiveBranchMode,
+	// which reads intent mode + external-review flag internally.
 	const intent = readFrontmatter(intentFile)
-	const intentMode = (intent.mode as string) || "continuous"
 	const branchMode = resolveEffectiveBranchMode(slug, stage)
 	if (branchMode === "discrete") {
 		if (!isOnStageBranch(slug, stage)) {
@@ -733,8 +734,6 @@ function fsmStartStage(slug: string, stage: string): void {
 			} else {
 				createIntentBranch(slug)
 			}
-			// Silence unused-var in this branch — intentMode is still relevant elsewhere
-			void intentMode
 		}
 	}
 
