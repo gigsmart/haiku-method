@@ -1436,7 +1436,11 @@ function goBack(slug: string): OrchestratorAction {
 	const branchMode = resolveEffectiveBranchMode(slug, targetStage)
 	if (branchMode === "discrete") {
 		gitCommitState(`haiku: go back from ${currentActiveStage}`)
-		createStageBranch(slug, targetStage) // switches to existing branch
+		try {
+			createStageBranch(slug, targetStage) // switches to existing branch
+		} catch (err) {
+			return { action: "error", message: `Failed to switch to stage branch '${targetStage}': ${err instanceof Error ? err.message : String(err)}` }
+		}
 	}
 
 	// Reset the target stage's state
