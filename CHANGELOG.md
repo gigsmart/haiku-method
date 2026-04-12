@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.98.0] - 2026-04-12
+
+### Added
+- Game Development studio for interactive products with concept, prototype, polish, production, and release stages — includes playtesting validation and scope discipline gates
+- Hardware Development studio for physical products with design, firmware, requirements, manufacturing, and validation stages — includes compliance mapping and manufacturability review
+- Library Development studio for APIs and packages with inception, development, security, and release stages — includes semantic versioning enforcement and API stability gates
+
 ## [1.97.3] - 2026-04-12
 
 ### Fixed
