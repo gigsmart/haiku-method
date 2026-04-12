@@ -1487,6 +1487,8 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 							if (!f.isFile() || !f.name.endsWith(".md")) continue
 							const unitRaw = readFileSync(join(repairUnitsDir, f.name), "utf8")
 							const { data: unitData } = parseFrontmatter(unitRaw)
+							const unitStatus = (unitData.status as string) || ""
+							if (["complete", "skipped", "failed"].includes(unitStatus)) continue
 							const unitInputs = (unitData.inputs as string[]) || (unitData.refs as string[]) || []
 							if (unitInputs.length === 0) {
 								const fix = existingUpstreamPaths.length > 0

@@ -380,6 +380,8 @@ function validateUnitInputs(intentDirPath: string, stage: string): OrchestratorA
 	const missing: string[] = []
 	for (const f of unitFiles) {
 		const fm = readFrontmatter(join(unitsDir, f))
+		const status = (fm.status as string) || ""
+		if (["complete", "skipped", "failed"].includes(status)) continue
 		const inputs = (fm.inputs as string[]) || (fm.refs as string[]) || []
 		if (inputs.length === 0) {
 			missing.push(f.replace(/\.md$/, ""))
@@ -2041,6 +2043,11 @@ function buildRunInstructions(
 
 		case "complete": {
 			sections.push(`## Already Complete\n\n${action.message}`)
+			break
+		}
+
+		case "unit_inputs_missing": {
+			sections.push(`## Missing Unit Inputs\n\n${action.message}`)
 			break
 		}
 
