@@ -39,9 +39,17 @@ export default function BlogPage() {
 							key={post.slug}
 							className="rounded-lg border border-stone-200 p-6 transition hover:border-stone-300 dark:border-stone-800 dark:hover:border-stone-700"
 						>
-							<time className="text-sm text-stone-500 dark:text-stone-500">
-								{formatDate(post.date)}
-							</time>
+							<div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-stone-500 dark:text-stone-500">
+								<time>{formatDate(post.date)}</time>
+								{post.category && (
+									<>
+										<span aria-hidden="true">·</span>
+										<span className="font-medium text-teal-700 uppercase tracking-wider text-xs dark:text-teal-400">
+											{post.category}
+										</span>
+									</>
+								)}
+							</div>
 							<h2 className="mt-2 text-2xl font-semibold">
 								<Link
 									href={`/blog/${post.slug}/`}
@@ -54,6 +62,18 @@ export default function BlogPage() {
 								<p className="mt-2 text-stone-600 dark:text-stone-400">
 									{post.description}
 								</p>
+							)}
+							{post.tags && post.tags.length > 0 && (
+								<div className="mt-4 flex flex-wrap gap-2">
+									{post.tags.map((tag) => (
+										<span
+											key={tag}
+											className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 font-mono text-xs text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-400"
+										>
+											{tag}
+										</span>
+									))}
+								</div>
 							)}
 							{post.author && (
 								<p className="mt-4 text-sm text-stone-500">By {post.author}</p>
