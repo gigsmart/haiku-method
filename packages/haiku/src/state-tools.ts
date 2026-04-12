@@ -721,6 +721,14 @@ export function handleStateTool(name: string, args: Record<string, unknown>): { 
 			const hatIdx = stageHats.indexOf(currentHat)
 			const prevHat = hatIdx > 0 ? stageHats[hatIdx - 1] : stageHats[0]
 
+			// Auto-escalate model tier on rejection
+			const modelEscalation: Record<string, string> = { haiku: "sonnet", sonnet: "opus" }
+			const currentModel = (failData.model as string) || ""
+			if (currentModel && modelEscalation[currentModel]) {
+				setFrontmatterField(failPath, "model", modelEscalation[currentModel])
+				console.error(`[haiku] model escalated: ${currentModel} → ${modelEscalation[currentModel]} (hat rejected, bolt ${currentBolt + 1})`)
+			}
+
 			setFrontmatterField(failPath, "hat", prevHat)
 			setFrontmatterField(failPath, "bolt", currentBolt + 1)
 			setFrontmatterField(failPath, "hat_started_at", timestamp())
