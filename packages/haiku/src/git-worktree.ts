@@ -33,6 +33,136 @@ export function branchExists(branch: string): boolean {
 	return tryRun(["git", "rev-parse", "--verify", branch]) !== ""
 }
 
+/** Detect the mainline branch (main, master, or git config init.defaultBranch). */
+export function getMainlineBranch(): string {
+	if (!isGitRepo()) return "main"
+	for (const candidate of ["main", "master"]) {
+		if (tryRun(["git", "rev-parse", "--verify", candidate])) return candidate
+		if (tryRun(["git", "rev-parse", "--verify", `origin/${candidate}`])) return candidate
+	}
+	const configured = tryRun(["git", "config", "--get", "init.defaultBranch"])
+	return configured || "main"
+}
+
+/** List all H·AI·K·U intent branches (`haiku/<slug>/main`) — local + remote, deduped.
+ *  Returns intent slugs in stable sort order. */
+export function listIntentBranches(): string[] {
+	if (!isGitRepo()) return []
+	const slugs = new Set<string>()
+	// Local
+	const local = tryRun(["git", "for-each-ref", "--format=%(refname:short)", "refs/heads/haiku"])
+	for (const line of local.split("\n").filter(Boolean)) {
+		const match = line.match(/^haiku\/([^/]+)\/main$/)
+		if (match) slugs.add(match[1])
+	}
+	// Remote
+	const remote = tryRun(["git", "for-each-ref", "--format=%(refname:short)", "refs/remotes/origin/haiku"])
+	for (const line of remote.split("\n").filter(Boolean)) {
+		const match = line.match(/^origin\/haiku\/([^/]+)\/main$/)
+		if (match) slugs.add(match[1])
+	}
+	return Array.from(slugs).sort()
+}
+
+/** Check whether `branch` has been merged into `mainline` (i.e., its tip is an ancestor). */
+export function isBranchMerged(branch: string, mainline: string): boolean {
+	if (!isGitRepo()) return false
+	// Try local first, then origin/<mainline>
+	const targets = [mainline, `origin/${mainline}`]
+	const branchRef = tryRun(["git", "rev-parse", "--verify", branch])
+		|| tryRun(["git", "rev-parse", "--verify", `origin/${branch}`])
+	if (!branchRef) return false
+	for (const target of targets) {
+		const targetRef = tryRun(["git", "rev-parse", "--verify", target])
+		if (!targetRef) continue
+		// merge-base --is-ancestor <branch> <target> exits 0 if branch is reachable from target
+		try {
+			execFileSync("git", ["merge-base", "--is-ancestor", branchRef, targetRef], { stdio: "ignore" })
+			return true
+		} catch {
+			// not merged into this target — try next
+		}
+	}
+	return false
+}
+
+/** Add a temporary worktree for an existing branch. Returns the worktree path. */
+export function addTempWorktree(branch: string, label = "haiku-repair"): string {
+	if (!isGitRepo()) throw new Error("not a git repo")
+	const path = join("/tmp", `${label}-${Date.now()}-${Math.floor(Math.random() * 1e6)}`)
+	// Prefer the local branch if it exists, fall back to origin
+	const localExists = tryRun(["git", "rev-parse", "--verify", branch])
+	const ref = localExists ? branch : `origin/${branch}`
+	run(["git", "worktree", "add", "--detach", path, ref])
+	return path
+}
+
+/** Remove a temporary worktree. Non-fatal — never throws. */
+export function removeTempWorktree(path: string): void {
+	if (!path || !existsSync(path)) return
+	tryRun(["git", "worktree", "remove", "--force", path])
+}
+
+/** Commit and push changes in a temporary worktree on the given branch.
+ *  Stages all changes (including untracked), commits with the given message, and pushes to origin.
+ *  Returns true if a commit was made, false if there was nothing to commit. */
+export function commitAndPushFromWorktree(worktreePath: string, branch: string, message: string): { committed: boolean; pushed: boolean; pushError?: string } {
+	if (!isGitRepo()) return { committed: false, pushed: false, pushError: "not a git repo" }
+	// Make the worktree's HEAD point at the branch (we created it detached for safety)
+	tryRun(["git", "-C", worktreePath, "checkout", "-B", branch])
+	// Stage everything
+	tryRun(["git", "-C", worktreePath, "add", "-A"])
+	// Check if anything is staged
+	const status = tryRun(["git", "-C", worktreePath, "status", "--porcelain"])
+	if (!status) return { committed: false, pushed: false }
+	// Commit
+	try {
+		execFileSync("git", ["-C", worktreePath, "commit", "-m", message], { stdio: "pipe" })
+	} catch (err) {
+		return { committed: false, pushed: false, pushError: err instanceof Error ? err.message : String(err) }
+	}
+	// Push
+	try {
+		execFileSync("git", ["-C", worktreePath, "push", "origin", branch], { stdio: "pipe" })
+		return { committed: true, pushed: true }
+	} catch (err) {
+		return { committed: true, pushed: false, pushError: err instanceof Error ? err.message : String(err) }
+	}
+}
+
+/** Detect a PR/MR creation tool (`gh` or `glab`) on PATH. */
+export function detectPrTool(): "gh" | "glab" | null {
+	if (tryRun(["which", "gh"])) return "gh"
+	if (tryRun(["which", "glab"])) return "glab"
+	return null
+}
+
+/** Open a PR/MR from `branch` into `mainline` using the detected tool.
+ *  Returns the PR URL on success, an error message on failure. */
+export function openPullRequest(branch: string, mainline: string, title: string, body: string): { ok: boolean; url?: string; error?: string } {
+	const tool = detectPrTool()
+	if (!tool) return { ok: false, error: "no PR tool (gh/glab) found on PATH" }
+	try {
+		if (tool === "gh") {
+			// Check for an existing PR for this branch first to avoid duplicates
+			const existing = tryRun(["gh", "pr", "list", "--head", branch, "--state", "open", "--json", "url", "--jq", ".[0].url"])
+			if (existing) return { ok: true, url: existing }
+			const out = execFileSync("gh", ["pr", "create", "--base", mainline, "--head", branch, "--title", title, "--body", body], { encoding: "utf8" }).trim()
+			return { ok: true, url: out }
+		} else {
+			// glab
+			const existing = tryRun(["glab", "mr", "list", "--source-branch", branch, "--state", "opened", "--per-page", "1"])
+			if (existing && existing.includes("!")) {
+				return { ok: true, url: existing.split("\n")[0] }
+			}
+			const out = execFileSync("glab", ["mr", "create", "--target-branch", mainline, "--source-branch", branch, "--title", title, "--description", body], { encoding: "utf8" }).trim()
+			return { ok: true, url: out }
+		}
+	} catch (err) {
+		return { ok: false, error: err instanceof Error ? err.message : String(err) }
+	}
+}
+
 /** Check if we're on the intent's main branch (continuous mode) */
 export function isOnIntentBranch(slug: string): boolean {
 	return getCurrentBranch() === `haiku/${slug}/main`

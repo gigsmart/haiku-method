@@ -27,13 +27,14 @@ import {
 	syncSessionMetadata,
 	setRunNextHandler,
 	validateBranch,
+	deriveIntentTitle,
 } from "./state-tools.js"
 import { createIntentBranch, isOnIntentBranch, createStageBranch, isOnStageBranch, mergeStageBranchForward, consolidateStageBranches, branchExists, createUnitWorktree } from "./git-worktree.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
 import { computeWaves, topologicalSort } from "./dag.js"
 import type { DAGGraph } from "./types.js"
 import { validateIdentifier } from "./prompts/helpers.js"
-import { readStageDef, readHatDefs, readReviewAgentDefs, listStudios, studioSearchPaths, resolveStageInputs } from "./studio-reader.js"
+import { readStageDef, readHatDefs, readReviewAgentDefs, listStudios, resolveStudio, studioSearchPaths, resolveStageInputs } from "./studio-reader.js"
 
 // ── Path helpers ───────────────────────────────────────────────────────────
 
@@ -47,8 +48,11 @@ function readFrontmatter(filePath: string): Record<string, unknown> {
 // ── Studio resolution ──────────────────────────────────────────────────────
 
 function resolveStudioStages(studio: string): string[] {
+	// Accept any identifier (dir, name, slug, alias); falls back to direct lookup
+	// for robustness with legacy callers that pass a dir name already.
+	const info = resolveStudio(studio)
+	if (info) return info.stages
 	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
-	// Check project override first, then plugin
 	for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
 		const studioFile = join(base, studio, "STUDIO.md")
 		if (existsSync(studioFile)) {
@@ -83,6 +87,23 @@ function resolveStageReview(studio: string, stage: string): string {
 		}
 	}
 	return "auto"
+}
+
+/** Does the stage's `review:` field contain the given kind (e.g. "external")?
+ *  Handles both scalar and array forms. Used to detect external-review stages
+ *  that need branch isolation regardless of intent mode. */
+function stageReviewIncludes(studio: string, stage: string, kind: string): boolean {
+	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	for (const base of [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]) {
+		const stageFile = join(base, studio, "stages", stage, "STAGE.md")
+		if (existsSync(stageFile)) {
+			const fm = readFrontmatter(stageFile)
+			const review = fm.review
+			if (Array.isArray(review)) return (review as unknown[]).includes(kind)
+			return review === kind
+		}
+	}
+	return false
 }
 
 function resolveStageMetadata(studio: string, stage: string): { description: string; unit_types: string[]; body: string } | null {
@@ -509,17 +530,27 @@ export interface OrchestratorAction {
 /**
  * Resolve the effective branching mode for a given stage.
  * Returns "discrete" or "continuous".
+ *
+ * Special case: stages with an `external` review gate are always isolated to
+ * their own stage branch regardless of the intent's mode. This prevents
+ * multiple external-review PRs from stacking on a shared intent main branch —
+ * each external-gated stage opens a distinct PR from its own
+ * `haiku/{slug}/{stage}` branch back to the intent main branch.
  */
 function resolveEffectiveBranchMode(slug: string, stage: string): "discrete" | "continuous" {
 	const intentFile = join(intentDir(slug), "intent.md")
 	const intent = readFrontmatter(intentFile)
 	const mode = (intent.mode as string) || "continuous"
+	const studio = (intent.studio as string) || ""
+
+	// External-review stages always use a stage branch so their PR is isolated.
+	if (studio && stageReviewIncludes(studio, stage, "external")) return "discrete"
+
 	if (mode === "continuous") return "continuous"
 	if (mode === "discrete") return "discrete"
 	// hybrid: check continuous_from threshold
 	const continuousFrom = (intent.continuous_from as string) || ""
 	if (!continuousFrom) return "discrete"
-	const studio = (intent.studio as string) || ""
 	const allStages = resolveStudioStages(studio)
 	const skipStages = (intent.skip_stages as string[]) || []
 	const studioStages = allStages.filter(s => !skipStages.includes(s))
@@ -561,24 +592,37 @@ function fsmStartStage(slug: string, stage: string): void {
 			}
 		}
 	} else {
+		// Continuous branch mode for this stage — make sure we're on intent main.
 		if (!isOnIntentBranch(slug)) {
-			if (intentMode === "hybrid") {
-				// Transitioning from discrete to continuous — consolidate stage branches
-				const studio = (intent.studio as string) || ""
-				const allStages = resolveStudioStages(studio)
-				const skipStages = (intent.skip_stages as string[]) || []
-				const studioStages = allStages.filter(s => !skipStages.includes(s))
-				const stageIdx = studioStages.indexOf(stage)
-				const discreteStages = studioStages.slice(0, stageIdx)
-				if (discreteStages.length > 0) {
-					const consolResult = consolidateStageBranches(slug, discreteStages)
-					if (!consolResult.success) {
-						throw new Error(`Consolidation of discrete stages into main failed: ${consolResult.message}. Resolve conflicts on 'haiku/${slug}/main' manually, then retry.`)
-					}
+			// We may be coming off a stage branch for one of three reasons:
+			//   1. Intent mode is "hybrid" (continuous_from threshold reached)
+			//   2. A previous stage had an external review → was isolated to a stage branch
+			//      even though the intent is in continuous mode
+			//   3. Previous stage was discrete and we're transitioning back
+			//
+			// In all cases, any previous stage branches must be consolidated (merged
+			// forward) into intent main so their commits are present locally. This
+			// mirrors how a server-side PR merge would land the work, without
+			// requiring a pull from the remote.
+			const studio = (intent.studio as string) || ""
+			const allStages = resolveStudioStages(studio)
+			const skipStages = (intent.skip_stages as string[]) || []
+			const studioStages = allStages.filter(s => !skipStages.includes(s))
+			const stageIdx = studioStages.indexOf(stage)
+			const previousBranchedStages = studioStages
+				.slice(0, stageIdx)
+				.filter(s => branchExists(`haiku/${slug}/${s}`))
+
+			if (previousBranchedStages.length > 0) {
+				const consolResult = consolidateStageBranches(slug, previousBranchedStages)
+				if (!consolResult.success) {
+					throw new Error(`Consolidation of stage branches into main failed: ${consolResult.message}. Resolve conflicts on 'haiku/${slug}/main' manually, then retry.`)
 				}
 			} else {
 				createIntentBranch(slug)
 			}
+			// Silence unused-var in this branch — intentMode is still relevant elsewhere
+			void intentMode
 		}
 	}
 
@@ -673,7 +717,13 @@ export function runNext(slug: string): OrchestratorAction {
 	if (!studio) {
 		// Include available studios so the agent can present them conversationally
 		// even if elicitation is unavailable (e.g., cowork mode)
-		const available = listStudios().map(s => ({ name: s.name, description: (s.data.description as string) || "" }))
+		const available = listStudios().map(s => ({
+			name: s.name,
+			slug: s.slug,
+			aliases: s.aliases,
+			description: s.description,
+			category: s.category,
+		}))
 		return {
 			action: "select_studio",
 			intent: slug,
@@ -2791,12 +2841,16 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 		mkdirSync(join(iDir, "stages"), { recursive: true })
 
 		// Build intent.md with frontmatter + body (no studio — selected separately)
+		// Title is derived as a short one-liner; the full description lives in the body.
 		const context = args.context as string | undefined
 		const mode = (args.mode as string) || "continuous"
 		const stagesOverride = args.stages as string[] | undefined
+		const title = deriveIntentTitle(description)
+		const descriptionBody = description.trim()
+		const bodyHasDescription = descriptionBody && descriptionBody !== title
 		const intentContent = [
 			"---",
-			`title: "${description.replace(/"/g, '\\"')}"`,
+			`title: "${title.replace(/"/g, '\\"')}"`,
 			`studio: ""`,
 			`mode: ${mode}`,
 			`status: active`,
@@ -2804,8 +2858,9 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 			`created_at: ${timestamp()}`,
 			"---",
 			"",
-			`# ${description}`,
+			`# ${title}`,
 			"",
+			...(bodyHasDescription ? [descriptionBody, ""] : []),
 			...(context ? [context, ""] : []),
 		].join("\n")
 
@@ -2864,7 +2919,7 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 		const allStudios = listStudios()
 		const allStudioNames = allStudios.map(s => s.name)
 
-		if (allStudioNames.length === 0) {
+		if (allStudios.length === 0) {
 			return {
 				content: [{ type: "text" as const, text: "No studios available." }],
 				isError: true,
@@ -2872,40 +2927,47 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 		}
 
 		const options = (args.options as string[] | undefined) || []
+		// selectedStudio stores the directory name (stable on-disk identifier) —
+		// UI displays the canonical `name`, but everything downstream reads by `dir`.
 		let selectedStudio = ""
 
-		// Single option — auto-select
+		// Single option — auto-select. Resolve by dir/name/slug/alias.
 		if (options.length === 1) {
-			if (!allStudioNames.includes(options[0])) {
+			const resolved = resolveStudio(options[0])
+			if (!resolved) {
 				return {
 					content: [{ type: "text" as const, text: `Studio '${options[0]}' not found. Available: ${allStudioNames.join(", ")}` }],
 					isError: true,
 				}
 			}
-			selectedStudio = options[0]
+			selectedStudio = resolved.dir
 		} else if (_elicitInput) {
-			// Determine elicitation choices
+			// Determine elicitation choices — always display canonical names
 			let elicitChoices: string[]
 			let showAllOption = false
 
-			if (!options || options.length === 0 || options.length >= allStudioNames.length) {
-				// Show all studios
+			// Try to map provided options (which may be any alias form) to canonical names
+			const mappedOptions = options
+				.map(o => resolveStudio(o))
+				.filter((s): s is NonNullable<typeof s> => s !== null)
+				.map(s => s.name)
+
+			if (!options || options.length === 0 || mappedOptions.length >= allStudioNames.length) {
+				elicitChoices = allStudioNames
+			} else if (mappedOptions.length === 0) {
 				elicitChoices = allStudioNames
 			} else {
-				// Show filtered options + "Show all studios..."
-				const validOptions = options.filter(o => allStudioNames.includes(o))
-				if (validOptions.length === 0) {
-					elicitChoices = allStudioNames
-				} else {
-					elicitChoices = [...validOptions, "Show all studios..."]
-					showAllOption = true
-				}
+				elicitChoices = [...mappedOptions, "Show all studios..."]
+				showAllOption = true
 			}
 
-			// Build descriptions
+			// Build descriptions (canonical name + slug if distinct + description)
 			const descriptionLines = allStudios
 				.filter(s => elicitChoices.includes(s.name))
-				.map(s => `${s.name}: ${(s.data.description as string) || s.name}`)
+				.map(s => {
+					const slugPart = s.slug && s.slug !== s.name ? ` (${s.slug})` : ""
+					return `${s.name}${slugPart}: ${s.description || s.name}`
+				})
 				.join("\n")
 
 			try {
@@ -2927,10 +2989,14 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 
 				if (elicitResult.action === "accept" && elicitResult.content) {
 					const content = elicitResult.content as Record<string, string>
+					let chosen: string
 					if (content.studio === "Show all studios..." && showAllOption) {
 						// Re-elicit with full list
 						const allDescriptions = allStudios
-							.map(s => `${s.name}: ${(s.data.description as string) || s.name}`)
+							.map(s => {
+								const slugPart = s.slug && s.slug !== s.name ? ` (${s.slug})` : ""
+								return `${s.name}${slugPart}: ${s.description || s.name}`
+							})
 							.join("\n")
 						const reElicit = await _elicitInput({
 							message: `All available studios:\n\n${allDescriptions}`,
@@ -2943,13 +3009,16 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 							},
 						})
 						if (reElicit.action === "accept" && reElicit.content) {
-							selectedStudio = (reElicit.content as Record<string, string>).studio || ""
+							chosen = (reElicit.content as Record<string, string>).studio || ""
 						} else {
 							return text(JSON.stringify({ action: "cancelled", message: "Studio selection cancelled by user" }))
 						}
 					} else {
-						selectedStudio = content.studio || ""
+						chosen = content.studio || ""
 					}
+					// Resolve the chosen canonical name back to its dir
+					const resolved = resolveStudio(chosen)
+					selectedStudio = resolved ? resolved.dir : ""
 				} else {
 					return text(JSON.stringify({ action: "cancelled", message: "Studio selection cancelled by user" }))
 				}
@@ -2961,12 +3030,23 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 			}
 		} else {
 			// No elicitation available — return studio list so agent can ask conversationally
-			const studioDescriptions = allStudios.map(s => `- **${s.name}**: ${(s.data.description as string) || ""}`).join("\n")
+			const studioDescriptions = allStudios
+				.map(s => {
+					const slugPart = s.slug && s.slug !== s.name ? ` _(${s.slug})_` : ""
+					return `- **${s.name}**${slugPart}: ${s.description || ""}`
+				})
+				.join("\n")
 			return text(JSON.stringify({
 				action: "select_studio_conversational",
 				intent: slug,
-				available_studios: allStudios.map(s => ({ name: s.name, description: (s.data.description as string) || "" })),
-				message: `Elicitation unavailable. Ask the user which studio to use, then call haiku_select_studio { intent: "${slug}", options: ["<chosen-studio>"] } with a single option to auto-select.\n\nAvailable studios:\n${studioDescriptions}`,
+				available_studios: allStudios.map(s => ({
+					name: s.name,
+					slug: s.slug,
+					aliases: s.aliases,
+					description: s.description,
+					category: s.category,
+				})),
+				message: `Elicitation unavailable. Ask the user which studio to use, then call haiku_select_studio { intent: "${slug}", options: ["<chosen-studio>"] } with a single option to auto-select. The option may be the canonical name, slug, or any alias.\n\nAvailable studios:\n${studioDescriptions}`,
 			}, null, 2))
 		}
 

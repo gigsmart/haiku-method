@@ -15,19 +15,62 @@ When you create an intent with `/haiku:start`, H·AI·K·U selects or prompts fo
 
 Persistence is handled automatically based on the environment — if you're in a git repo, state is committed and pushed. If not, state lives as files on disk.
 
+## Identifying Studios
+
+Every studio has three kinds of identifier, all of which resolve to the same studio:
+
+- **`name`** — the canonical display name shown in browse views (e.g., `application-development`)
+- **`slug`** — a short alias for CLI/agent input (e.g., `appdev`)
+- **`aliases`** — additional names, typically used for backward compatibility after a rename (e.g., `software`)
+
+You can pass any of these to `haiku_select_studio` or any tool that takes a studio identifier — the loader resolves it. Use `/studios` to browse the portfolio grouped by category with help links into each studio definition.
+
 ## Built-in Studios
 
 ### Engineering
 
-#### Software
+#### Application Development
 
-The default for code-producing work. Full software development lifecycle from inception through security review.
+The default for user-facing application work — web, mobile, desktop, and services. Full lifecycle from inception through security review.
 
 | Property | Value |
 |----------|-------|
-| **Stages** | inception, design, product, development, operations, security |
+| **Name** | `application-development` |
+| **Slug** | `appdev` |
+| **Aliases** | `software` (legacy) |
+| **Stages** | inception, product, design, development, security, operations |
 
-Supports both single-stage (all disciplines merged) and multi-stage (sequential progression) execution modes.
+Supports both single-stage (all disciplines merged) and multi-stage (sequential progression) execution modes. For libraries, games, and hardware products, use the specialized studios below.
+
+#### Library Development
+
+Lifecycle for libraries, SDKs, and CLI tools. Differs from application development: no product or design phases — inception directly covers discovery AND API surface, development builds against the contract, and release publishes rather than deploys.
+
+| Property | Value |
+|----------|-------|
+| **Name** | `library-development` |
+| **Slug** | `libdev` |
+| **Stages** | inception, development, security, release |
+
+#### Game Development
+
+Lifecycle for games. Concept absorbs discovery (pitches and market fit are inseparable), prototype is a gated fun-validation stage, and polish is its own dedicated stage because game feel needs iteration time that app work does not.
+
+| Property | Value |
+|----------|-------|
+| **Name** | `game-development` |
+| **Slug** | `gamedev` |
+| **Stages** | concept, prototype, production, polish, release |
+
+#### Hardware Development
+
+Lifecycle for hardware products — electronics, firmware, manufacturing. Unlike software, hardware has physical constraints, safety regulations, and a one-shot manufacturing gate. Requirements captures compliance upfront because it shapes every downstream decision.
+
+| Property | Value |
+|----------|-------|
+| **Name** | `hardware-development` |
+| **Slug** | `hwdev` |
+| **Stages** | inception, requirements, design, firmware, validation, manufacturing |
 
 #### Data Pipeline
 
@@ -128,10 +171,12 @@ Technical documentation lifecycle for API docs, guides, runbooks, and knowledge 
 Set the default studio for new intents in `.haiku/settings.yml`:
 
 ```yaml
-studio: software
+studio: appdev
 ```
 
-If not set, H·AI·K·U auto-detects: projects with a git remote default to `software`, others to `ideation`.
+You can use the canonical name (`application-development`), slug (`appdev`), or any alias (`software`). All resolve to the same studio.
+
+If not set, H·AI·K·U auto-detects: projects with a git remote default to `appdev`, others to `ideation`.
 
 ## Creating a Custom Studio
 
@@ -140,30 +185,36 @@ Create a custom studio by adding a `STUDIO.md` file at `.haiku/studios/{name}/ST
 ```yaml
 ---
 name: data-pipeline
+slug: etl
+aliases: [pipeline]
 description: ETL and data pipeline development
 stages: [discovery, extraction, transformation, validation, deployment]
 category: engineering
 ---
 ```
 
+The `slug` and `aliases` fields are optional — if omitted, the canonical `name` is used for all identifier forms.
+
 Then create `STAGE.md` files for each stage in `.haiku/studios/{name}/stages/{stage}/STAGE.md`. See [Stages](/docs/stages/) for the stage schema.
 
 ## Resolution Order
 
-When H·AI·K·U resolves a studio name, it checks:
+When H·AI·K·U resolves a studio identifier, it checks:
 
-1. **Project-level** — `.haiku/studios/{name}/STUDIO.md`
-2. **Built-in** — `plugin/studios/{name}/STUDIO.md`
+1. **Project-level** — `.haiku/studios/{name}/STUDIO.md` (first match by directory name, canonical name, slug, or alias wins)
+2. **Built-in** — `plugin/studios/{name}/STUDIO.md` (same matching rules)
 
-Project-level studios take precedence. This means you can override a built-in studio by creating a project-level studio with the same name.
+Project-level studios take precedence over built-in studios with the same directory name — this is how you override a built-in studio.
+
+The loader matches against four identifier fields: directory name, canonical `name`, `slug`, and any `aliases`. Any of them resolves to the same studio.
 
 ## Studio Selection During Intent Creation
 
 When you run `/haiku:start`:
 
 1. If `.haiku/settings.yml` has a `studio` field, that studio is used as the default
-2. If auto-detected (git repo → software, no git → ideation), that studio is suggested
-3. You can override by specifying a different studio
+2. If auto-detected (git repo → `appdev`, no git → `ideation`), that studio is suggested
+3. You can override by specifying a different studio using any of its identifier forms
 
 ## Next Steps
 
