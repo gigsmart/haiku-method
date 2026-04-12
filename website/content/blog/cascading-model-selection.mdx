@@ -1,0 +1,92 @@
+---
+title: "The Right Model for the Right Unit"
+description: Cascading model selection lets every unit pick the Claude model that fits its complexity — unit, hat, stage, studio, in that order. Cost goes down. Quality goes up. Both.
+date: 2026-04-12
+author: Jason Waldrip
+category: Architecture
+tags:
+  - models
+  - opus
+  - sonnet
+  - haiku-model
+  - cost
+  - elaboration
+---
+
+Here's a thing nobody wants to say out loud: **most of the code your agent writes doesn't need Opus.** A CRUD endpoint doesn't need the same model as a distributed-systems refactor. A migration script doesn't need the same model as a cryptography review. But until recently, you picked one model at session start and paid for it on every line of code for the rest of the run. A single wrong pick either burned cash on boilerplate or shipped a distributed systems refactor written by a model that couldn't hold the whole thing in its head.
+
+That's the wrong seam.
+
+## The cascade
+
+In H·AI·K·U, model selection is now a cascade with four layers:
+
+```
+unit.model  →  hat.model  →  stage.default_model  →  studio.default_model
+```
+
+The most specific wins. If a unit's frontmatter says `model: opus`, that unit runs on Opus — regardless of what the hat, the stage, or the studio default to. If nothing overrides at the unit level, the hat decides. If the hat has no opinion, the stage. If the stage has no opinion, the studio.
+
+Each layer exists because each layer has a different scope of knowledge about what the work needs. A studio default says "most work in this lifecycle is Sonnet-grade." A stage override says "but review phases need Opus for adversarial reasoning." A hat override says "but the builder hat can usually drop to Haiku for scaffolding." A unit override says "but *this particular* unit involves a consensus algorithm, and I want Opus regardless."
+
+<ExpandableDiagram chart={`flowchart LR
+    U[Unit<br/>model field] --> UD{set?}
+    UD -- Yes --> PICK[Resolved model]
+    UD -- No --> H[Hat<br/>model field]
+    H --> HD{set?}
+    HD -- Yes --> PICK
+    HD -- No --> S[Stage<br/>default_model]
+    S --> SD{set?}
+    SD -- Yes --> PICK
+    SD -- No --> ST[Studio<br/>default_model]
+    ST --> PICK`} />
+
+The cascade isn't decoration. It's the *decoupling* of "what model does this work need" from "what session am I in." Before, those two questions had the same answer. Now they don't.
+
+## The elaborator decides
+
+The cascade only works if someone is actually *assigning* models at the unit level. That someone is the **elaborator** hat, during the inception stage. When it decomposes an intent into units, it now assesses each unit's complexity and writes a `model:` field into the unit frontmatter. That's the whole decision, captured once, visible forever.
+
+The elaborator follows a simple heuristic:
+
+<KeyPoints title="The elaborator's decision heuristic">
+  1. **Start at Sonnet.** Sonnet is the default. Every unit begins there in the elaborator's head.
+  2. **Justify up to Opus.** If the unit involves deep reasoning, cross-system tradeoffs, security-critical logic, algorithm design, or "nobody on the team would get this right in one pass" — go to Opus and write why in the unit's notes.
+  3. **Justify down to Haiku.** If the unit is mechanical — scaffolding, boilerplate, renames, config files, test fixtures — drop to Haiku and write why.
+  4. **Don't batch.** Every unit gets assessed individually. "All units in this stage are Opus" is an anti-pattern — it means you didn't actually look at each unit.
+</KeyPoints>
+
+The point of the heuristic isn't to be clever. It's to force the elaborator to *think about complexity* instead of picking a model because the session happens to be running on it. "What model does this need" becomes a first-class design decision, documented in the unit file, visible in the intent review, reviewable by a human, and editable later if the assessment was wrong.
+
+## What you see as a reviewer
+
+Model selections aren't hidden. They show up everywhere:
+
+<Grid>
+  <Card eyebrow="Intent review" title="Per-unit column" accent="info">
+    When the intent review UI opens, the units table has a `Model` column. You can see at a glance which units got Opus, which got Sonnet, which got Haiku, and decide whether the split looks right before approving the specs.
+  </Card>
+  <Card eyebrow="Unit review" title="Color-coded badge" accent="info">
+    Each unit card shows its model as a colored badge — **Opus purple**, **Sonnet blue**, **Haiku green**. The colors are the same in the dashboard, the unit list tool, and the review UI. Glance at a stage and you immediately know the cost profile.
+  </Card>
+  <Card eyebrow="Dashboard" title="Assignments by unit" accent="info">
+    The dashboard surfaces per-unit model assignments alongside the usual bolt/phase/hat info. If you're wondering "why is this run so expensive," the answer is one command away.
+  </Card>
+  <Card eyebrow="State tools" title="Machine-readable" accent="info">
+    `haiku_unit_list` now returns the model field in its JSON output, so anything scripting around haiku state can read and act on the assignments.
+  </Card>
+</Grid>
+
+## A security note
+
+There's a real attack surface here. Frontmatter gets read from `.md` files, and `.md` files get edited by agents. If an attacker could sneak `model: opus` or something stranger into a frontmatter block via prompt injection, they could drive up cost or destabilize a run. The cascade resolution runs input sanitization on every `model:` value — unknown strings get rejected, not passed through to the spawn call. It's the kind of thing you don't notice when it works, and the kind of thing that eats an incident response when it doesn't.
+
+## Why this matters
+
+The old world had one knob: what model is this session running on? The new world has four, and the most specific wins. That's not just a cost optimization — it's a **decoupling**. The model you need for inception is different from the model you need for execution, which is different from the model you need for adversarial review. Treating them as one setting was lumping three different problems together.
+
+<Callout tone="good" title="The point">
+Model selection is a design decision now, not a session setting. It lives next to the work, gets decided when the work is planned, and shows up in review alongside everything else that matters. Opus is reserved for work that actually needs it. Haiku gets the scaffolding. Sonnet holds the middle. The bill reflects the judgment, not the session.
+</Callout>
+
+There's a line I keep coming back to: *the train can only move as fast as the tracks it's built on.* For a long time, model selection was a bad rail. It wasn't obviously broken — you could put any engine on it — but it was setting the ceiling on how efficient a run could be. Cascading selection is a better rail. The engine didn't get smarter. The rails got smarter about where to put the smart engine.
