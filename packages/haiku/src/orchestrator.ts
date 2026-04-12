@@ -1582,6 +1582,21 @@ function enrichActionWithPreview(action: OrchestratorAction): void {
 			next_step = "After fixing, I'll retry advancement."
 			break
 
+		case "gate_blocked":
+			tell_user = "Gate review couldn't be completed — the review UI and elicitation both failed."
+			next_step = "Run haiku_run_next again to retry the gate review."
+			break
+
+		case "complete":
+			tell_user = `Intent is already completed.`
+			next_step = ""
+			break
+
+		case "composite_run_stage":
+			tell_user = `Running composite stage '${stage}'.`
+			next_step = "The composite orchestrator will advance through sub-stages."
+			break
+
 		case "error":
 			tell_user = (action.message as string) || "An error occurred."
 			next_step = ""
@@ -2291,7 +2306,9 @@ export async function handleOrchestratorTool(name: string, args: Record<string, 
 		const withInstructions = (resultObj: Record<string, unknown>): string => {
 			enrichActionWithPreview(resultObj as OrchestratorAction)
 			const instructions = buildRunInstructions(slug, intentStudio, resultObj as OrchestratorAction, intentDir(slug))
-			return JSON.stringify(resultObj, null, 2) + "\n\n---\n\n" + instructions
+			// Strip tell_user/next_step from outer JSON — they appear in the announcement section
+			const { tell_user: _tu, next_step: _ns, ...resultForJson } = resultObj
+			return JSON.stringify(resultForJson, null, 2) + "\n\n---\n\n" + instructions
 		}
 
 		// External review: include instructions about recording the URL
