@@ -18,7 +18,7 @@ export function buildDAG(units: ParsedUnit[]): DAGGraph {
 	}
 
 	// Build edges from depends_on, collecting unresolved references
-	const slugSet = new Set(units.map(u => u.slug))
+	const slugSet = new Set(units.map((u) => u.slug))
 	const unresolvedDeps: Array<{ unit: string; dep: string }> = []
 
 	for (const u of units) {
@@ -36,7 +36,12 @@ export function buildDAG(units: ParsedUnit[]): DAGGraph {
 		}
 	}
 
-	return { nodes, edges, adjacency, unresolvedDeps: unresolvedDeps.length > 0 ? unresolvedDeps : undefined }
+	return {
+		nodes,
+		edges,
+		adjacency,
+		unresolvedDeps: unresolvedDeps.length > 0 ? unresolvedDeps : undefined,
+	}
 }
 
 /**
@@ -187,7 +192,7 @@ export function toMermaidDefinition(
 ): string {
 	const lines: string[] = ["graph TD"]
 
-	const unitSlugs = new Set(units.map(u => u.slug))
+	const unitSlugs = new Set(units.map((u) => u.slug))
 
 	// Group units by stage — only stages that have units in this set
 	const stageOrder: string[] = []
@@ -198,7 +203,7 @@ export function toMermaidDefinition(
 			byStage.set(stage, [])
 			stageOrder.push(stage)
 		}
-		byStage.get(stage)!.push(unit)
+		byStage.get(stage)?.push(unit)
 	}
 
 	// When there are multiple stages, group by stage; otherwise group by wave
@@ -207,8 +212,12 @@ export function toMermaidDefinition(
 	if (useStageSubgraphs) {
 		for (const stage of stageOrder) {
 			const stageUnits = byStage.get(stage) || []
-			const stageLabel = escapeMermaidLabel(stage.charAt(0).toUpperCase() + stage.slice(1))
-			lines.push(`  subgraph ${sanitizeMermaidNodeId(`stage_${stage}`)}["${stageLabel}"]`)
+			const stageLabel = escapeMermaidLabel(
+				stage.charAt(0).toUpperCase() + stage.slice(1),
+			)
+			lines.push(
+				`  subgraph ${sanitizeMermaidNodeId(`stage_${stage}`)}["${stageLabel}"]`,
+			)
 			for (const unit of stageUnits) {
 				const rawLabel = unit.title || unit.slug
 				const label = escapeMermaidLabel(rawLabel)
@@ -220,7 +229,7 @@ export function toMermaidDefinition(
 	} else {
 		// Single stage (or no stage) — group by dependency wave
 		const waves = computeWaves(dag)
-		const unitMap = new Map(units.map(u => [u.slug, u]))
+		const unitMap = new Map(units.map((u) => [u.slug, u]))
 		const waveNumbers = Array.from(waves.keys()).sort((a, b) => a - b)
 		const useWaveSubgraphs = waveNumbers.length > 1
 
@@ -228,13 +237,15 @@ export function toMermaidDefinition(
 			const waveNodeIds = waves.get(waveNum) ?? []
 			// Only include units that are in the provided units list
 			const waveUnits = waveNodeIds
-				.filter(id => unitMap.has(id))
-				.map(id => unitMap.get(id)!)
+				.map((id) => unitMap.get(id))
+				.filter((u): u is NonNullable<typeof u> => u !== undefined)
 
 			if (waveUnits.length === 0) continue
 
 			if (useWaveSubgraphs) {
-				lines.push(`  subgraph ${sanitizeMermaidNodeId(`wave_${waveNum}`)}["Wave ${waveNum}"]`)
+				lines.push(
+					`  subgraph ${sanitizeMermaidNodeId(`wave_${waveNum}`)}["Wave ${waveNum}"]`,
+				)
 			}
 			for (const unit of waveUnits) {
 				const rawLabel = unit.title || unit.slug
@@ -319,7 +330,9 @@ export function toMermaidDefinition(
 
 	// External nodes style — dashed border, muted
 	if (externalNodes.size > 0) {
-		lines.push(`  classDef external fill:#f5f5f5,stroke:#999,stroke-dasharray:5 5,color:#666`)
+		lines.push(
+			"  classDef external fill:#f5f5f5,stroke:#999,stroke-dasharray:5 5,color:#666",
+		)
 	}
 
 	return lines.join("\n")

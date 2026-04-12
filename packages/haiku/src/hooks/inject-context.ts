@@ -5,13 +5,13 @@
 // The pre_tool_use hook injects state_file into MCP tool calls so the
 // server writes metadata there without knowing about sessions.
 
-import { existsSync, readdirSync, readFileSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { join } from "node:path"
 import matter from "gray-matter"
 import { readHaikuMetadata } from "../session-metadata.js"
 
 function out(s: string): void {
-	process.stdout.write(s + "\n")
+	process.stdout.write(`${s}\n`)
 }
 
 function pathToSlug(fsPath: string): string {
@@ -21,9 +21,16 @@ function pathToSlug(fsPath: string): string {
 /** Resolve the haiku.json path for the current session */
 function resolveStateFile(sessionId: string | undefined): string | null {
 	if (!sessionId) return null
-	const configDir = process.env.CLAUDE_CONFIG_DIR || join(process.env.HOME || "", ".claude")
+	const configDir =
+		process.env.CLAUDE_CONFIG_DIR || join(process.env.HOME || "", ".claude")
 	const projectSlug = pathToSlug(process.cwd())
-	const stateFile = join(configDir, "projects", projectSlug, sessionId, "haiku.json")
+	const stateFile = join(
+		configDir,
+		"projects",
+		projectSlug,
+		sessionId,
+		"haiku.json",
+	)
 	if (existsSync(stateFile)) return stateFile
 	return null
 }
@@ -53,9 +60,13 @@ function findActiveSlug(root: string): { slug: string; stage: string } | null {
 	return null
 }
 
-export async function injectContext(input: Record<string, unknown>, _pluginRoot: string): Promise<void> {
+export async function injectContext(
+	input: Record<string, unknown>,
+	_pluginRoot: string,
+): Promise<void> {
 	// Extract session ID from hook payload or env
-	const sessionId = (input.session_id as string) || process.env.CLAUDE_SESSION_ID || undefined
+	const sessionId =
+		(input.session_id as string) || process.env.CLAUDE_SESSION_ID || undefined
 
 	// Try session metadata cache (fast path)
 	const stateFile = resolveStateFile(sessionId)
@@ -64,9 +75,13 @@ export async function injectContext(input: Record<string, unknown>, _pluginRoot:
 		if (metadata) {
 			out(`## H·AI·K·U: ${metadata.intent}`)
 			out("")
-			out(`**Stage:** ${metadata.active_stage} | **Phase:** ${metadata.phase} | **Studio:** ${metadata.studio}`)
+			out(
+				`**Stage:** ${metadata.active_stage} | **Phase:** ${metadata.phase} | **Studio:** ${metadata.studio}`,
+			)
 			if (metadata.active_unit) {
-				out(`**Unit:** ${metadata.active_unit} | **Hat:** ${metadata.hat} | **Bolt:** ${metadata.bolt}`)
+				out(
+					`**Unit:** ${metadata.active_unit} | **Hat:** ${metadata.hat} | **Bolt:** ${metadata.bolt}`,
+				)
 			}
 			out("")
 			if (metadata.stage_description) {
@@ -79,7 +94,9 @@ export async function injectContext(input: Record<string, unknown>, _pluginRoot:
 				out(`> All work MUST stay within this stage's scope.`)
 				out("")
 			}
-			out(`Call \`haiku_run_next { intent: "${metadata.intent}" }\` to get your current action.`)
+			out(
+				`Call \`haiku_run_next { intent: "${metadata.intent}" }\` to get your current action.`,
+			)
 			return
 		}
 	}
@@ -97,7 +114,11 @@ export async function injectContext(input: Record<string, unknown>, _pluginRoot:
 
 	out(`## H·AI·K·U: ${active.slug}`)
 	out("")
-	out(`Active intent: **${active.slug}** | Stage: **${active.stage || "not set"}**`)
+	out(
+		`Active intent: **${active.slug}** | Stage: **${active.stage || "not set"}**`,
+	)
 	out("")
-	out(`Call \`haiku_run_next { intent: "${active.slug}" }\` to get your current action and stage context.`)
+	out(
+		`Call \`haiku_run_next { intent: "${active.slug}" }\` to get your current action and stage context.`,
+	)
 }

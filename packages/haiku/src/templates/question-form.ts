@@ -1,91 +1,92 @@
-import type { QuestionDef } from "../sessions.js";
-import { renderLayout, escapeHtml, escapeAttr } from "./layout.js";
-import { card, sectionHeading, renderMarkdownBlock } from "./components.js";
+import type { QuestionDef } from "../sessions.js"
+import { card, renderMarkdownBlock, sectionHeading } from "./components.js"
+import { escapeAttr, escapeHtml, renderLayout } from "./layout.js"
 
 export interface QuestionPageData {
-  title: string;
-  questions: QuestionDef[];
-  context: string;
-  sessionId: string;
-  imageUrls?: string[];
+	title: string
+	questions: QuestionDef[]
+	context: string
+	sessionId: string
+	imageUrls?: string[]
 }
 
 export function renderQuestionPage(data: QuestionPageData): string {
-  const { title, questions, context, sessionId, imageUrls } = data;
+	const { title, questions, context, sessionId, imageUrls } = data
 
-  let bodyContent = "";
+	let bodyContent = ""
 
-  // Context block
-  if (context) {
-    bodyContent += card(
-      sectionHeading("Context", 2) + renderMarkdownBlock("question-context", context),
-    );
-  }
+	// Context block
+	if (context) {
+		bodyContent += card(
+			sectionHeading("Context", 2) +
+				renderMarkdownBlock("question-context", context),
+		)
+	}
 
-  // Image comparison block
-  if (imageUrls && imageUrls.length > 0) {
-    let imageContent = sectionHeading("Visual Comparison", 2);
+	// Image comparison block
+	if (imageUrls && imageUrls.length > 0) {
+		let imageContent = sectionHeading("Visual Comparison", 2)
 
-    if (imageUrls.length >= 2) {
-      // Pair images side-by-side (ref on left, built on right)
-      for (let i = 0; i < imageUrls.length; i += 2) {
-        imageContent += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">`;
-        imageContent += `<div>
+		if (imageUrls.length >= 2) {
+			// Pair images side-by-side (ref on left, built on right)
+			for (let i = 0; i < imageUrls.length; i += 2) {
+				imageContent += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">`
+				imageContent += `<div>
           <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Reference</p>
           <img src="${escapeAttr(imageUrls[i])}" alt="Reference image ${Math.floor(i / 2) + 1}"
                class="w-full rounded-lg border border-gray-200 dark:border-gray-700">
-        </div>`;
-        if (i + 1 < imageUrls.length) {
-          imageContent += `<div>
+        </div>`
+				if (i + 1 < imageUrls.length) {
+					imageContent += `<div>
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Built Output</p>
             <img src="${escapeAttr(imageUrls[i + 1])}" alt="Built output image ${Math.floor(i / 2) + 1}"
                  class="w-full rounded-lg border border-gray-200 dark:border-gray-700">
-          </div>`;
-        }
-        imageContent += "</div>";
-      }
-    } else {
-      // Single image display
-      for (let i = 0; i < imageUrls.length; i++) {
-        imageContent += `<div class="mb-4">
+          </div>`
+				}
+				imageContent += "</div>"
+			}
+		} else {
+			// Single image display
+			for (let i = 0; i < imageUrls.length; i++) {
+				imageContent += `<div class="mb-4">
           <img src="${escapeAttr(imageUrls[i])}" alt="Image ${i + 1}"
                class="w-full rounded-lg border border-gray-200 dark:border-gray-700">
-        </div>`;
-      }
-    }
+        </div>`
+			}
+		}
 
-    bodyContent += card(imageContent);
-  }
+		bodyContent += card(imageContent)
+	}
 
-  // Question form
-  bodyContent += `<form id="question-form" novalidate>`;
+	// Question form
+	bodyContent += `<form id="question-form" novalidate>`
 
-  for (let i = 0; i < questions.length; i++) {
-    const q = questions[i];
-    const inputType = q.multiSelect ? "checkbox" : "radio";
-    const fieldName = `q-${i}`;
+	for (let i = 0; i < questions.length; i++) {
+		const q = questions[i]
+		const inputType = q.multiSelect ? "checkbox" : "radio"
+		const fieldName = `q-${i}`
 
-    let fieldContent = `<fieldset>
-      <legend class="text-base font-semibold mb-1 text-gray-900 dark:text-gray-100">${escapeHtml(q.question)}</legend>`;
+		let fieldContent = `<fieldset>
+      <legend class="text-base font-semibold mb-1 text-gray-900 dark:text-gray-100">${escapeHtml(q.question)}</legend>`
 
-    if (q.header) {
-      fieldContent += `<p class="text-sm text-gray-500 dark:text-gray-400 mb-3">${escapeHtml(q.header)}</p>`;
-    }
+		if (q.header) {
+			fieldContent += `<p class="text-sm text-gray-500 dark:text-gray-400 mb-3">${escapeHtml(q.header)}</p>`
+		}
 
-    fieldContent += `<div class="space-y-2">`;
+		fieldContent += `<div class="space-y-2">`
 
-    // Render each option
-    for (const option of q.options) {
-      fieldContent += `<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors">
+		// Render each option
+		for (const option of q.options) {
+			fieldContent += `<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors">
         <input type="${inputType}" name="${escapeAttr(fieldName)}" value="${escapeAttr(option)}"
                class="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
                aria-label="${escapeAttr(option)}">
         <span class="text-gray-700 dark:text-gray-300">${escapeHtml(option)}</span>
-      </label>`;
-    }
+      </label>`
+		}
 
-    // "Other" option
-    fieldContent += `<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors">
+		// "Other" option
+		fieldContent += `<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors">
         <input type="${inputType}" name="${escapeAttr(fieldName)}" value="__other__"
                class="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
                aria-label="Other"
@@ -98,27 +99,27 @@ export function renderQuestionPage(data: QuestionPageData): string {
                        bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
                        focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y text-sm"
                 placeholder="Please specify..."
-                aria-label="Other answer for: ${escapeAttr(q.question)}"></textarea>`;
+                aria-label="Other answer for: ${escapeAttr(q.question)}"></textarea>`
 
-    fieldContent += `</div></fieldset>`;
+		fieldContent += "</div></fieldset>"
 
-    bodyContent += card(fieldContent);
-  }
+		bodyContent += card(fieldContent)
+	}
 
-  // Submit button
-  bodyContent += `<button type="submit"
+	// Submit button
+	bodyContent += `<button type="submit"
     class="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg
            transition-colors focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
     Submit Answers
-  </button>`;
+  </button>`
 
-  // Result area
-  bodyContent += `<div id="submit-result" class="hidden mt-4 p-4 rounded-lg"></div>`;
+	// Result area
+	bodyContent += `<div id="submit-result" class="hidden mt-4 p-4 rounded-lg"></div>`
 
-  bodyContent += `</form>`;
+	bodyContent += "</form>"
 
-  // Client-side JS
-  const clientScript = `
+	// Client-side JS
+	const clientScript = `
   <script>
   (function() {
     var sessionId = '${sessionId}';
@@ -212,9 +213,13 @@ export function renderQuestionPage(data: QuestionPageData): string {
       });
     });
   })();
-  </script>`;
+  </script>`
 
-  const clientData = { sessionId, questionCount: questions.length };
+	const clientData = { sessionId, questionCount: questions.length }
 
-  return renderLayout(title, bodyContent + clientScript, JSON.stringify(clientData));
+	return renderLayout(
+		title,
+		bodyContent + clientScript,
+		JSON.stringify(clientData),
+	)
 }

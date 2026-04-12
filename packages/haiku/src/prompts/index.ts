@@ -1,10 +1,19 @@
 // prompts/index.ts — Prompt registry and MCP handler implementations
 
-import type { GetPromptResult, Prompt, CompleteResult } from "@modelcontextprotocol/sdk/types.js"
-import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js"
+import type {
+	CompleteResult,
+	GetPromptResult,
+	Prompt,
+} from "@modelcontextprotocol/sdk/types.js"
+import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js"
 import type { PromptDef } from "./types.js"
 
-export type { PromptDef, PromptArgDef, PromptHandler, ArgumentCompleter } from "./types.js"
+export type {
+	PromptDef,
+	PromptArgDef,
+	PromptHandler,
+	ArgumentCompleter,
+} from "./types.js"
 
 // ── Registry ─────────────────────────────────────────────────────────────────
 
@@ -17,23 +26,27 @@ export function registerPrompt(def: PromptDef): void {
 // ── Handler: prompts/list ────────────────────────────────────────────────────
 
 export function listPrompts(): Prompt[] {
-	return Array.from(registry.values()).map(def => ({
+	return Array.from(registry.values()).map((def) => ({
 		name: def.name,
 		title: def.title,
 		description: def.description,
-		arguments: def.arguments.length > 0
-			? def.arguments.map(a => ({
-				name: a.name,
-				description: a.description,
-				required: a.required,
-			}))
-			: undefined,
+		arguments:
+			def.arguments.length > 0
+				? def.arguments.map((a) => ({
+						name: a.name,
+						description: a.description,
+						required: a.required,
+					}))
+				: undefined,
 	}))
 }
 
 // ── Handler: prompts/get ─────────────────────────────────────────────────────
 
-export async function getPrompt(name: string, args?: Record<string, string>): Promise<GetPromptResult> {
+export async function getPrompt(
+	name: string,
+	args?: Record<string, string>,
+): Promise<GetPromptResult> {
 	const def = registry.get(name)
 	if (!def) {
 		throw new McpError(ErrorCode.InvalidParams, `Unknown prompt: ${name}`)
@@ -69,11 +82,14 @@ export async function completeArgument(params: {
 	const def = registry.get(promptName)
 	if (!def) return empty
 
-	const argDef = def.arguments.find(a => a.name === params.argument.name)
+	const argDef = def.arguments.find((a) => a.name === params.argument.name)
 	if (!argDef?.completer) return empty
 
 	try {
-		const values = await argDef.completer(params.argument.value, params.context?.arguments)
+		const values = await argDef.completer(
+			params.argument.value,
+			params.context?.arguments,
+		)
 		return {
 			completion: {
 				values: values.slice(0, 100),

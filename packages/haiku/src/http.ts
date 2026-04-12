@@ -1,13 +1,26 @@
-import { createServer, type Server as HttpServer, type IncomingMessage } from "node:http"
 import { createHash } from "node:crypto"
 import { readFile, realpath } from "node:fs/promises"
+import {
+	type Server as HttpServer,
+	type IncomingMessage,
+	createServer,
+} from "node:http"
 import { dirname, extname, join, resolve } from "node:path"
 import type { Duplex } from "node:stream"
 import { z } from "zod"
-import { getSession, updateDesignDirectionSession, updateQuestionSession, updateSession } from "./sessions.js"
-import type { QuestionAnswer, QuestionAnnotations, ReviewAnnotations } from "./sessions.js"
 import { REVIEW_APP_HTML } from "./review-app-html.js"
-import { isRemoteReviewEnabled, e2eEncrypt, isE2EActive } from "./tunnel.js"
+import {
+	getSession,
+	updateDesignDirectionSession,
+	updateQuestionSession,
+	updateSession,
+} from "./sessions.js"
+import type {
+	QuestionAnnotations,
+	QuestionAnswer,
+	ReviewAnnotations,
+} from "./sessions.js"
+import { e2eEncrypt, isE2EActive, isRemoteReviewEnabled } from "./tunnel.js"
 
 let httpServer: HttpServer | null = null
 let actualPort: number | null = null
@@ -111,7 +124,11 @@ async function handleDecidePost(
 		return new Response("Session not found", { status: 404 })
 	}
 
-	let body: { decision: string; feedback?: string; annotations?: ReviewAnnotations }
+	let body: {
+		decision: string
+		feedback?: string
+		annotations?: ReviewAnnotations
+	}
 	try {
 		const DecideSchema = z.object({
 			decision: z.string(),
@@ -157,7 +174,6 @@ async function handleDecidePost(
 		annotations,
 	})
 
-
 	return Response.json({ ok: true, decision, feedback })
 }
 
@@ -193,7 +209,9 @@ function withCors(response: Response): Response {
 
 /** Extract session ID from any request URL path */
 function extractSessionId(path: string): string | null {
-	const match = path.match(/\/(?:api\/session|review|question|direction|files|mockups|wireframe|stage-artifacts|question-image)\/([^/]+)/)
+	const match = path.match(
+		/\/(?:api\/session|review|question|direction|files|mockups|wireframe|stage-artifacts|question-image)\/([^/]+)/,
+	)
 	return match?.[1] ?? null
 }
 
@@ -202,10 +220,15 @@ function extractSessionId(path: string): string | null {
  * Preserves the original Content-Type in X-Original-Content-Type header
  * so the client knows how to handle the decrypted data.
  */
-async function withE2E(response: Response, sessionId: string | null): Promise<Response> {
-	if (!sessionId || !isE2EActive(sessionId) || response.status >= 400) return response
+async function withE2E(
+	response: Response,
+	sessionId: string | null,
+): Promise<Response> {
+	if (!sessionId || !isE2EActive(sessionId) || response.status >= 400)
+		return response
 
-	const originalContentType = response.headers.get("Content-Type") ?? "application/octet-stream"
+	const originalContentType =
+		response.headers.get("Content-Type") ?? "application/octet-stream"
 	const body = await response.arrayBuffer()
 	const encrypted = e2eEncrypt(sessionId, Buffer.from(body))
 
@@ -233,9 +256,14 @@ async function handleFileGet(
 		return new Response("Session not found", { status: 404 })
 	}
 
-	const intentDir = session.session_type === "review" ? session.intent_dir : null
-	const haikuKnowledgeDir = intentDir ? resolve(dirname(dirname(intentDir)), "knowledge") : null
-	const allowedBases = [intentDir, haikuKnowledgeDir].filter((d): d is string => d !== null)
+	const intentDir =
+		session.session_type === "review" ? session.intent_dir : null
+	const haikuKnowledgeDir = intentDir
+		? resolve(dirname(dirname(intentDir)), "knowledge")
+		: null
+	const allowedBases = [intentDir, haikuKnowledgeDir].filter(
+		(d): d is string => d !== null,
+	)
 
 	if (allowedBases.length === 0) {
 		return new Response("Not found", { status: 404 })
@@ -244,14 +272,17 @@ async function handleFileGet(
 	for (const baseDir of allowedBases) {
 		const resolved = resolve(baseDir, filePath)
 		const resolvedBase = resolve(baseDir)
-		if (!resolved.startsWith(resolvedBase + "/") && resolved !== resolvedBase) {
+		if (!resolved.startsWith(`${resolvedBase}/`) && resolved !== resolvedBase) {
 			continue
 		}
 
 		try {
 			const realResolved = await realpath(resolved).catch(() => null)
 			const realBase = await realpath(baseDir).catch(() => resolvedBase)
-			if (!realResolved || (!realResolved.startsWith(realBase + "/") && realResolved !== realBase)) {
+			if (
+				!realResolved ||
+				(!realResolved.startsWith(`${realBase}/`) && realResolved !== realBase)
+			) {
 				continue
 			}
 			const data = await readFile(realResolved)
@@ -260,9 +291,7 @@ async function handleFileGet(
 			return new Response(data, {
 				headers: { "Content-Type": contentType },
 			})
-		} catch {
-			continue
-		}
+		} catch {}
 	}
 
 	return new Response("Not found", { status: 404 })
@@ -281,7 +310,7 @@ async function handleMockupGet(
 	const mockupsDir = join(session.intent_dir, "mockups")
 	const resolved = resolve(mockupsDir, filePath)
 	// Pre-check with resolve() before attempting realpath
-	if (!resolved.startsWith(resolve(mockupsDir) + "/")) {
+	if (!resolved.startsWith(`${resolve(mockupsDir)}/`)) {
 		return new Response("Forbidden", { status: 403 })
 	}
 
@@ -289,7 +318,7 @@ async function handleMockupGet(
 		// Symlink-safe check: ensure resolved real path stays within base dir
 		const realResolved = await realpath(resolved).catch(() => null)
 		const realBase = await realpath(mockupsDir).catch(() => resolve(mockupsDir))
-		if (!realResolved || !realResolved.startsWith(realBase + "/")) {
+		if (!realResolved || !realResolved.startsWith(`${realBase}/`)) {
 			return new Response("Forbidden", { status: 403 })
 		}
 		const data = await readFile(resolved)
@@ -315,7 +344,7 @@ async function handleWireframeGet(
 	// Wireframe paths are relative to the intent dir
 	const resolved = resolve(session.intent_dir, filePath)
 	// Pre-check with resolve() before attempting realpath
-	if (!resolved.startsWith(resolve(session.intent_dir) + "/")) {
+	if (!resolved.startsWith(`${resolve(session.intent_dir)}/`)) {
 		return new Response("Forbidden", { status: 403 })
 	}
 
@@ -325,7 +354,7 @@ async function handleWireframeGet(
 		const realBase = await realpath(session.intent_dir).catch(() =>
 			resolve(session.intent_dir),
 		)
-		if (!realResolved || !realResolved.startsWith(realBase + "/")) {
+		if (!realResolved || !realResolved.startsWith(`${realBase}/`)) {
 			return new Response("Forbidden", { status: 403 })
 		}
 		const data = await readFile(resolved)
@@ -351,7 +380,7 @@ async function handleStageArtifactGet(
 	// filePath is like "stages/{stage}/artifacts/{file}"
 	const resolved = resolve(session.intent_dir, filePath)
 	// Pre-check with resolve() before attempting realpath
-	if (!resolved.startsWith(resolve(session.intent_dir) + "/")) {
+	if (!resolved.startsWith(`${resolve(session.intent_dir)}/`)) {
 		return new Response("Forbidden", { status: 403 })
 	}
 
@@ -361,7 +390,7 @@ async function handleStageArtifactGet(
 		const realBase = await realpath(session.intent_dir).catch(() =>
 			resolve(session.intent_dir),
 		)
-		if (!realResolved || !realResolved.startsWith(realBase + "/")) {
+		if (!realResolved || !realResolved.startsWith(`${realBase}/`)) {
 			return new Response("Forbidden", { status: 403 })
 		}
 		const data = await readFile(resolved)
@@ -401,8 +430,13 @@ async function handleQuestionImageGet(
 	if (allowedBaseDir) {
 		try {
 			const realResolved = await realpath(imagePath).catch(() => null)
-			const realBase = await realpath(allowedBaseDir).catch(() => resolve(allowedBaseDir))
-			if (!realResolved || !realResolved.startsWith(realBase + "/") && realResolved !== realBase) {
+			const realBase = await realpath(allowedBaseDir).catch(() =>
+				resolve(allowedBaseDir),
+			)
+			if (
+				!realResolved ||
+				(!realResolved.startsWith(`${realBase}/`) && realResolved !== realBase)
+			) {
 				return new Response("Forbidden", { status: 403 })
 			}
 		} catch {
@@ -440,7 +474,11 @@ async function handleQuestionAnswerPost(
 		return new Response("Session not found", { status: 404 })
 	}
 
-	let body: { answers: QuestionAnswer[]; feedback?: string; annotations?: QuestionAnnotations }
+	let body: {
+		answers: QuestionAnswer[]
+		feedback?: string
+		annotations?: QuestionAnnotations
+	}
 	try {
 		const QuestionAnswerSchema = z.object({
 			answers: z.array(
@@ -476,7 +514,6 @@ async function handleQuestionAnswerPost(
 		feedback: body.feedback ?? "",
 		annotations: body.annotations,
 	})
-
 
 	return Response.json({ ok: true })
 }
@@ -524,7 +561,6 @@ async function handleDirectionSelectPost(
 		status: "answered",
 		selection: { archetype: body.archetype, parameters: body.parameters },
 	})
-
 
 	return Response.json({ ok: true })
 }
@@ -590,7 +626,9 @@ function encodeWebSocketFrame(payload: Buffer): Buffer {
  * payload is null for non-text frames (close, ping, pong, binary).
  * consumed is the number of bytes to advance the buffer regardless of frame type.
  */
-function decodeWebSocketFrame(buf: Buffer): { payload: string | null; opcode: number; consumed: number } | null {
+function decodeWebSocketFrame(
+	buf: Buffer,
+): { payload: string | null; opcode: number; consumed: number } | null {
 	if (buf.length < 2) return null
 
 	const opcode = buf[0] & 0x0f
@@ -630,7 +668,8 @@ function decodeWebSocketFrame(buf: Buffer): { payload: string | null; opcode: nu
 	// Handle close and ping frames — return consumed so buffer advances
 	if (opcode === 0x08) return { payload: null, opcode, consumed }
 	// Ping — caller should send pong (RFC 6455 §5.5.3)
-	if (opcode === 0x09) return { payload: payloadBuf.toString("utf8"), opcode, consumed }
+	if (opcode === 0x09)
+		return { payload: payloadBuf.toString("utf8"), opcode, consumed }
 	// Only process text frames
 	if (opcode !== 0x01) return { payload: null, opcode, consumed }
 
@@ -652,17 +691,28 @@ function handleWebSocketMessage(sessionId: string, raw: string): void {
 	const type = msg.type as string | undefined
 
 	if (session.session_type === "review" && type === "decide") {
-		const decision = msg.decision === "approved" ? "approved" : "changes_requested"
+		const decision =
+			msg.decision === "approved" ? "approved" : "changes_requested"
 		const feedback = (msg.feedback as string) ?? ""
 		const annotations = msg.annotations as ReviewAnnotations | undefined
-		updateSession(sessionId, { status: "decided" as never, decision, feedback, annotations })
+		updateSession(sessionId, {
+			status: "decided" as never,
+			decision,
+			feedback,
+			annotations,
+		})
 		sendToWebSocket(sessionId, { ok: true, decision, feedback })
 	} else if (session.session_type === "question" && type === "answer") {
 		const answers = msg.answers as QuestionAnswer[] | undefined
 		if (answers) {
 			const feedback = (msg.feedback as string) ?? ""
 			const annotations = msg.annotations as QuestionAnnotations | undefined
-			updateQuestionSession(sessionId, { status: "answered", answers, feedback, annotations })
+			updateQuestionSession(sessionId, {
+				status: "answered",
+				answers,
+				feedback,
+				annotations,
+			})
 			sendToWebSocket(sessionId, { ok: true })
 		}
 	} else if (session.session_type === "design_direction" && type === "select") {
@@ -673,7 +723,12 @@ function handleWebSocketMessage(sessionId: string, raw: string): void {
 		const archetype = msg.archetype as string
 		const parameters = msg.parameters as Record<string, number>
 		const comments = (msg.comments as string | undefined) || undefined
-		const annotations = msg.annotations as { screenshot?: string; pins?: Array<{ x: number; y: number; text: string }> } | undefined
+		const annotations = msg.annotations as
+			| {
+					screenshot?: string
+					pins?: Array<{ x: number; y: number; text: string }>
+			  }
+			| undefined
 		if (archetype && parameters) {
 			updateDesignDirectionSession(sessionId, {
 				status: "answered",
@@ -688,8 +743,15 @@ function handleWebSocketMessage(sessionId: string, raw: string): void {
  * Handle HTTP upgrade requests for WebSocket connections.
  * Path: /ws/session/:sessionId
  */
-function handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer): void {
-	const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "127.0.0.1"}`)
+function handleUpgrade(
+	req: IncomingMessage,
+	socket: Duplex,
+	head: Buffer,
+): void {
+	const url = new URL(
+		req.url ?? "/",
+		`http://${req.headers.host ?? "127.0.0.1"}`,
+	)
 	const match = url.pathname.match(/^\/ws\/session\/([^/]+)$/)
 
 	if (!match) {
@@ -719,10 +781,7 @@ function handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer): void
 		.digest("base64")
 
 	socket.write(
-		"HTTP/1.1 101 Switching Protocols\r\n" +
-		"Upgrade: websocket\r\n" +
-		"Connection: Upgrade\r\n" +
-		`Sec-WebSocket-Accept: ${accept}\r\n\r\n`,
+		`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`,
 	)
 
 	// Track this connection
@@ -751,7 +810,8 @@ function handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer): void
 				socket.write(closeFrame)
 				socket.destroy()
 				break
-			} else if (result.opcode === 0x09) {
+			}
+			if (result.opcode === 0x09) {
 				// Respond to ping with pong (RFC 6455 §5.5.3)
 				const pongHeader = Buffer.alloc(2)
 				pongHeader[0] = 0x8a // FIN + pong opcode
@@ -840,9 +900,7 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	}
 
 	// GET /question-image/:sessionId/:index
-	const questionImageMatch = path.match(
-		/^\/question-image\/([^/]+)\/(\d+)$/,
-	)
+	const questionImageMatch = path.match(/^\/question-image\/([^/]+)\/(\d+)$/)
 	if (questionImageMatch && req.method === "GET") {
 		return handleQuestionImageGet(
 			questionImageMatch[1],
@@ -876,16 +934,21 @@ export async function startHttpServer(): Promise<number> {
 	}
 
 	// Use port 0 to let the OS pick a random available port
-	const requestedPort = process.env.AI_DLC_REVIEW_PORT ? Number.parseInt(process.env.AI_DLC_REVIEW_PORT, 10) : 0
-	const maxAttempts = requestedPort === 0 ? 1 : 10
+	const requestedPort = 0
+	const maxAttempts = 1
 
 	for (let i = 0; i < maxAttempts; i++) {
 		const port = requestedPort + i
 		try {
 			await listenOnPort(port)
 			// For port 0, the OS assigns the actual port — read it from the server
-			actualPort = port === 0 ? (httpServer?.address() as { port: number })?.port ?? port : port
-			console.error(`Review HTTP server listening on http://127.0.0.1:${actualPort}`)
+			actualPort =
+				port === 0
+					? ((httpServer?.address() as { port: number })?.port ?? port)
+					: port
+			console.error(
+				`Review HTTP server listening on http://127.0.0.1:${actualPort}`,
+			)
 			return actualPort
 		} catch (err: unknown) {
 			if (

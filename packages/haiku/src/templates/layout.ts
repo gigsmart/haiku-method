@@ -1,4 +1,4 @@
-import { inlineStyles } from "./styles.js";
+import { inlineStyles } from "./styles.js"
 
 /**
  * Renders the full HTML document shell.
@@ -6,12 +6,12 @@ import { inlineStyles } from "./styles.js";
  * Uses a two-column layout: left for main content, right for sticky review sidebar.
  */
 export function renderLayout(
-  title: string,
-  bodyContent: string,
-  reviewDataJson: string,
-  sidebarContent = "",
+	title: string,
+	bodyContent: string,
+	reviewDataJson: string,
+	sidebarContent = "",
 ): string {
-  return `<!DOCTYPE html>
+	return `<!DOCTYPE html>
 <html lang="en" class="">
 <head>
   <meta charset="UTF-8">
@@ -60,7 +60,9 @@ export function renderLayout(
     <main id="main-content" class="${sidebarContent ? "flex-1 min-w-0" : "max-w-5xl mx-auto"}">
       ${bodyContent}
     </main>
-    ${sidebarContent ? `
+    ${
+			sidebarContent
+				? `
     <!-- Review sidebar: sticky on desktop, bottom-sheet on mobile -->
     <div id="sidebar-desktop-slot" class="hidden lg:block w-80 shrink-0">
       ${sidebarContent}
@@ -113,7 +115,9 @@ export function renderLayout(
         });
       })();
     </script>
-    ` : ""}
+    `
+				: ""
+		}
   </div>
 
   <!-- Embedded review data -->
@@ -200,17 +204,17 @@ export function renderLayout(
 
 
 </body>
-</html>`;
+</html>`
 }
 
 export function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+	return str
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
 }
 
 export function escapeAttr(str: string): string {
-  return escapeHtml(str).replace(/'/g, "&#39;");
+	return escapeHtml(str).replace(/'/g, "&#39;")
 }

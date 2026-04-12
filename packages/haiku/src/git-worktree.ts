@@ -11,7 +11,11 @@ import { join } from "node:path"
 import { isGitRepo } from "./state-tools.js"
 
 function run(args: string[], cwd?: string): string {
-	return execFileSync(args[0], args.slice(1), { encoding: "utf8", stdio: "pipe", cwd }).trim()
+	return execFileSync(args[0], args.slice(1), {
+		encoding: "utf8",
+		stdio: "pipe",
+		cwd,
+	}).trim()
 }
 
 function tryRun(args: string[], cwd?: string): string {
@@ -57,7 +61,9 @@ function checkoutOrCreate(branch: string, baseBranch?: string): string {
 	} else {
 		try {
 			run(["git", "checkout", "-b", branch])
-		} catch { /* already on it or can't create */ }
+		} catch {
+			/* already on it or can't create */
+		}
 	}
 	return branch
 }
@@ -79,8 +85,15 @@ export function createIntentBranch(slug: string): string {
  * No-op in non-git environments.
  * Returns the branch name.
  */
-export function createStageBranch(slug: string, stage: string, prevStage?: string): string {
-	if (stage === "main") throw new Error(`Stage name 'main' is reserved — it would collide with the continuous-mode intent branch`)
+export function createStageBranch(
+	slug: string,
+	stage: string,
+	prevStage?: string,
+): string {
+	if (stage === "main")
+		throw new Error(
+			`Stage name 'main' is reserved — it would collide with the continuous-mode intent branch`,
+		)
 	if (!isGitRepo()) return `haiku/${slug}/${stage}`
 	const baseBranch = prevStage ? `haiku/${slug}/${prevStage}` : undefined
 	return checkoutOrCreate(`haiku/${slug}/${stage}`, baseBranch)
@@ -91,7 +104,11 @@ export function createStageBranch(slug: string, stage: string, prevStage?: strin
  * Used after go-backs to propagate fixes into later stages.
  * Returns merge result.
  */
-export function mergeStageBranchForward(slug: string, fromStage: string, toStage: string): { success: boolean; message: string } {
+export function mergeStageBranchForward(
+	slug: string,
+	fromStage: string,
+	toStage: string,
+): { success: boolean; message: string } {
 	if (!isGitRepo()) return { success: true, message: "no git" }
 	const fromBranch = `haiku/${slug}/${fromStage}`
 	const toBranch = `haiku/${slug}/${toStage}`
@@ -101,13 +118,23 @@ export function mergeStageBranchForward(slug: string, fromStage: string, toStage
 		run(["git", "rev-parse", "--verify", toBranch])
 
 		run(["git", "checkout", toBranch])
-		run(["git", "merge", fromBranch, "--no-edit", "-m", `haiku: merge forward ${fromStage} → ${toStage}`])
+		run([
+			"git",
+			"merge",
+			fromBranch,
+			"--no-edit",
+			"-m",
+			`haiku: merge forward ${fromStage} → ${toStage}`,
+		])
 
 		return { success: true, message: `merged ${fromBranch} → ${toBranch}` }
 	} catch (err) {
 		// Abort any in-progress merge to leave the repo clean
 		tryRun(["git", "merge", "--abort"])
-		return { success: false, message: err instanceof Error ? err.message : String(err) }
+		return {
+			success: false,
+			message: err instanceof Error ? err.message : String(err),
+		}
 	}
 }
 
@@ -116,10 +143,15 @@ export function mergeStageBranchForward(slug: string, fromStage: string, toStage
  * Creates the main branch from the last stage branch.
  * Returns the main branch name.
  */
-export function consolidateStageBranches(slug: string, stages: string[]): { branch: string; success: boolean; message: string } {
+export function consolidateStageBranches(
+	slug: string,
+	stages: string[],
+): { branch: string; success: boolean; message: string } {
 	const mainBranch = `haiku/${slug}/main`
-	if (!isGitRepo()) return { branch: mainBranch, success: true, message: "no git" }
-	if (stages.length === 0) return { branch: mainBranch, success: true, message: "no stages" }
+	if (!isGitRepo())
+		return { branch: mainBranch, success: true, message: "no git" }
+	if (stages.length === 0)
+		return { branch: mainBranch, success: true, message: "no stages" }
 
 	try {
 		const lastStageBranch = `haiku/${slug}/${stages[stages.length - 1]}`
@@ -128,15 +160,34 @@ export function consolidateStageBranches(slug: string, stages: string[]): { bran
 		// If main already exists, check it out and merge the latest stage into it
 		if (branchExists(mainBranch)) {
 			checkoutOrCreate(mainBranch)
-			run(["git", "merge", lastStageBranch, "--no-edit", "-m", `haiku: consolidate discrete stages into main`])
-			return { branch: mainBranch, success: true, message: `merged ${lastStageBranch} into ${mainBranch}` }
+			run([
+				"git",
+				"merge",
+				lastStageBranch,
+				"--no-edit",
+				"-m",
+				"haiku: consolidate discrete stages into main",
+			])
+			return {
+				branch: mainBranch,
+				success: true,
+				message: `merged ${lastStageBranch} into ${mainBranch}`,
+			}
 		}
 		// Otherwise create main from the last stage branch
-		return { branch: checkoutOrCreate(mainBranch, lastStageBranch), success: true, message: `created ${mainBranch} from ${lastStageBranch}` }
+		return {
+			branch: checkoutOrCreate(mainBranch, lastStageBranch),
+			success: true,
+			message: `created ${mainBranch} from ${lastStageBranch}`,
+		}
 	} catch (err) {
 		// Abort any in-progress merge to leave the repo clean
 		tryRun(["git", "merge", "--abort"])
-		return { branch: mainBranch, success: false, message: err instanceof Error ? err.message : String(err) }
+		return {
+			branch: mainBranch,
+			success: false,
+			message: err instanceof Error ? err.message : String(err),
+		}
 	}
 }
 
@@ -144,7 +195,10 @@ export function consolidateStageBranches(slug: string, stages: string[]): { bran
  * Read a file from a specific branch ref without checking it out.
  * Returns file contents or null if not found.
  */
-export function readFileFromBranch(branch: string, filePath: string): string | null {
+export function readFileFromBranch(
+	branch: string,
+	filePath: string,
+): string | null {
 	if (!isGitRepo()) return null
 	try {
 		return run(["git", "show", `${branch}:${filePath}`])
@@ -159,7 +213,11 @@ export function readFileFromBranch(branch: string, filePath: string): string | n
  * In discrete mode, parent is haiku/{slug}/{stage}.
  * Returns the absolute worktree path, or null if not in a git repo or creation failed.
  */
-export function createUnitWorktree(slug: string, unit: string, stage?: string): string | null {
+export function createUnitWorktree(
+	slug: string,
+	unit: string,
+	stage?: string,
+): string | null {
 	if (!isGitRepo()) return null // Units work in-place in filesystem mode
 	const parentBranch = stage ? `haiku/${slug}/${stage}` : `haiku/${slug}/main`
 	const unitBranch = `haiku/${slug}/${unit}`
@@ -188,7 +246,11 @@ export function createUnitWorktree(slug: string, unit: string, stage?: string): 
  * No-op in non-git environments.
  * Returns merge result.
  */
-export function mergeUnitWorktree(slug: string, unit: string, stage?: string): { success: boolean; message: string } {
+export function mergeUnitWorktree(
+	slug: string,
+	unit: string,
+	stage?: string,
+): { success: boolean; message: string } {
 	if (!isGitRepo()) return { success: true, message: "no worktree" }
 	const parentBranch = stage ? `haiku/${slug}/${stage}` : `haiku/${slug}/main`
 	const unitBranch = `haiku/${slug}/${unit}`
@@ -200,7 +262,15 @@ export function mergeUnitWorktree(slug: string, unit: string, stage?: string): {
 		}
 
 		tryRun(["git", "-C", worktreePath, "add", "-A"])
-		tryRun(["git", "-C", worktreePath, "commit", "-m", `haiku: complete ${unit}`, "--allow-empty"])
+		tryRun([
+			"git",
+			"-C",
+			worktreePath,
+			"commit",
+			"-m",
+			`haiku: complete ${unit}`,
+			"--allow-empty",
+		])
 
 		if (getCurrentBranch() !== parentBranch) {
 			run(["git", "checkout", parentBranch])
@@ -219,13 +289,19 @@ export function mergeUnitWorktree(slug: string, unit: string, stage?: string): {
 		tryRun(["git", "branch", "-d", unitBranch])
 
 		if (pushFailed) {
-			return { success: true, message: `merged ${unitBranch} (⚠️ push failed: ${pushFailed}. Run git pull --rebase && git push to sync.)` }
+			return {
+				success: true,
+				message: `merged ${unitBranch} (⚠️ push failed: ${pushFailed}. Run git pull --rebase && git push to sync.)`,
+			}
 		}
 		return { success: true, message: `merged ${unitBranch}` }
 	} catch (err) {
 		// Abort any in-progress merge to leave the repo clean
 		tryRun(["git", "merge", "--abort"])
-		return { success: false, message: err instanceof Error ? err.message : String(err) }
+		return {
+			success: false,
+			message: err instanceof Error ? err.message : String(err),
+		}
 	}
 }
 
@@ -234,6 +310,10 @@ export function mergeUnitWorktree(slug: string, unit: string, stage?: string): {
  */
 export function cleanupIntentWorktrees(slug: string): void {
 	const worktreeBase = join(process.cwd(), ".haiku", "worktrees", slug)
-	try { rmSync(worktreeBase, { recursive: true, force: true }) } catch { /* non-fatal */ }
+	try {
+		rmSync(worktreeBase, { recursive: true, force: true })
+	} catch {
+		/* non-fatal */
+	}
 	tryRun(["git", "worktree", "prune"])
 }

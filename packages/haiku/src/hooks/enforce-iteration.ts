@@ -6,23 +6,26 @@
 // 2. All complete: intent is done
 // 3. Truly blocked: alert the user
 
-import {
-	findActiveIntent,
-	isUnitBranch,
-	getCurrentBranch,
-	readFrontmatterField,
-	setFrontmatterField,
-	readJson,
-	findUnitFiles,
-	checkIntentCriteria,
-} from "./utils.js"
 import { basename, join } from "node:path"
+import {
+	checkIntentCriteria,
+	findActiveIntent,
+	findUnitFiles,
+	getCurrentBranch,
+	isUnitBranch,
+	readFrontmatterField,
+	readJson,
+	setFrontmatterField,
+} from "./utils.js"
 
 function out(s: string): void {
-	process.stdout.write(s + "\n")
+	process.stdout.write(`${s}\n`)
 }
 
-export async function enforceIteration(_input: Record<string, unknown>, _pluginRoot: string): Promise<void> {
+export async function enforceIteration(
+	_input: Record<string, unknown>,
+	_pluginRoot: string,
+): Promise<void> {
 	const currentBranch = getCurrentBranch()
 	const onUnitBranch = isUnitBranch(currentBranch)
 
@@ -51,7 +54,9 @@ export async function enforceIteration(_input: Record<string, unknown>, _pluginR
 	if (!activeStage) return
 
 	// Read stage state for phase info
-	const stageState = readJson(join(intentDir, "stages", activeStage, "state.json"))
+	const stageState = readJson(
+		join(intentDir, "stages", activeStage, "state.json"),
+	)
 	const stageStatus = (stageState.status as string) ?? ""
 
 	// Find the active unit to get hat and bolt
@@ -111,7 +116,13 @@ export async function enforceIteration(_input: Record<string, unknown>, _pluginR
 			}
 		}
 
-		if (readyCount === 0 && inProgressCount === 0 && pending === 0 && blocked === 0 && unitFiles.length > 0) {
+		if (
+			readyCount === 0 &&
+			inProgressCount === 0 &&
+			pending === 0 &&
+			blocked === 0 &&
+			unitFiles.length > 0
+		) {
 			allComplete = true
 		}
 		// Also mark complete if all are completed
@@ -144,7 +155,9 @@ export async function enforceIteration(_input: Record<string, unknown>, _pluginR
 		out("### ACTION REQUIRED")
 		out("")
 		if (activeUnitName) {
-			out(`Call \`/haiku:execute ${intentSlug} ${activeUnitName}\` to continue targeted execution.`)
+			out(
+				`Call \`/haiku:execute ${intentSlug} ${activeUnitName}\` to continue targeted execution.`,
+			)
 		} else {
 			out("Call `/haiku:execute` to continue the autonomous loop.")
 		}
@@ -160,7 +173,9 @@ export async function enforceIteration(_input: Record<string, unknown>, _pluginR
 		out("No units are ready to work on. All remaining units are blocked.")
 		out("")
 		out("**User action required:**")
-		out(`1. Review blockers: read \`.haiku/intents/${intentSlug}/state/blockers.md\``)
+		out(
+			`1. Review blockers: read \`.haiku/intents/${intentSlug}/state/blockers.md\``,
+		)
 		out("2. Unblock units or resolve dependencies")
 		out("3. Run `/haiku:execute` to resume")
 		out("")

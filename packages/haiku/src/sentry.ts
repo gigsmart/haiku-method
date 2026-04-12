@@ -1,8 +1,9 @@
 // sentry.ts — Sentry integration for H·AI·K·U MCP server
 
 import * as Sentry from "@sentry/node"
+import { observability } from "./config.js"
 
-const SENTRY_DSN = process.env.HAIKU_SENTRY_DSN_MCP || ""
+const SENTRY_DSN = observability.sentryDsn
 
 // Read version for release tagging — tries plugin.json at CLAUDE_PLUGIN_ROOT
 function getRelease(): string {
@@ -11,10 +12,14 @@ function getRelease(): string {
 		if (pluginRoot) {
 			const { readFileSync } = require("node:fs")
 			const { join } = require("node:path")
-			const pkg = JSON.parse(readFileSync(join(pluginRoot, ".claude-plugin", "plugin.json"), "utf8"))
+			const pkg = JSON.parse(
+				readFileSync(join(pluginRoot, ".claude-plugin", "plugin.json"), "utf8"),
+			)
 			return `haiku-mcp@${pkg.version}`
 		}
-	} catch { /* */ }
+	} catch {
+		/* */
+	}
 	return "haiku-mcp@dev"
 }
 
@@ -27,20 +32,30 @@ if (SENTRY_DSN) {
 }
 
 /** Apply session context as Sentry scope tags and context. */
-function applySessionContext(scope: Sentry.Scope, sessionCtx?: Record<string, string>): void {
+function applySessionContext(
+	scope: Sentry.Scope,
+	sessionCtx?: Record<string, string>,
+): void {
 	if (!sessionCtx || Object.keys(sessionCtx).length === 0) return
 	scope.setContext("session", sessionCtx)
-	if (sessionCtx.CLAUDE_CODE_IS_COWORK) scope.setTag("cowork", sessionCtx.CLAUDE_CODE_IS_COWORK)
+	if (sessionCtx.CLAUDE_CODE_IS_COWORK)
+		scope.setTag("cowork", sessionCtx.CLAUDE_CODE_IS_COWORK)
 	if (sessionCtx.CLAUDE_MODEL) scope.setTag("model", sessionCtx.CLAUDE_MODEL)
-	if (sessionCtx.CLAUDE_SESSION_ID) scope.setTag("session_id", sessionCtx.CLAUDE_SESSION_ID)
-	if (sessionCtx.CLAUDE_CODE_ENTRYPOINT) scope.setTag("entrypoint", sessionCtx.CLAUDE_CODE_ENTRYPOINT)
+	if (sessionCtx.CLAUDE_SESSION_ID)
+		scope.setTag("session_id", sessionCtx.CLAUDE_SESSION_ID)
+	if (sessionCtx.CLAUDE_CODE_ENTRYPOINT)
+		scope.setTag("entrypoint", sessionCtx.CLAUDE_CODE_ENTRYPOINT)
 }
 
 /**
  * Report an error to Sentry with session context.
  * Session context is injected by the PreToolUse hook from the Claude Code process.
  */
-export function reportError(err: unknown, context?: Record<string, unknown>, sessionCtx?: Record<string, string>): void {
+export function reportError(
+	err: unknown,
+	context?: Record<string, unknown>,
+	sessionCtx?: Record<string, string>,
+): void {
 	if (!SENTRY_DSN) return
 	Sentry.withScope((scope) => {
 		applySessionContext(scope, sessionCtx)
@@ -52,7 +67,12 @@ export function reportError(err: unknown, context?: Record<string, unknown>, ses
  * Submit user feedback to Sentry with session context.
  * Session context is injected by the PreToolUse hook from the Claude Code process.
  */
-export function reportFeedback(message: string, sessionCtx?: Record<string, string>, contactEmail?: string, name?: string): void {
+export function reportFeedback(
+	message: string,
+	sessionCtx?: Record<string, string>,
+	contactEmail?: string,
+	name?: string,
+): void {
 	if (!SENTRY_DSN) return
 	Sentry.withScope((scope) => {
 		applySessionContext(scope, sessionCtx)
