@@ -1,7 +1,9 @@
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/app/components"
+import { mdxComponents } from "@/app/components/mdx-components"
 import { getAllBlogPosts, getBlogPostBySlug } from "@/lib/blog"
 import { SITE_URL } from "@/lib/constants"
 import type { Metadata } from "next"
+import { compileMDX } from "next-mdx-remote/rsc"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import ReactMarkdown from "react-markdown"
@@ -83,6 +85,9 @@ export default async function BlogPostPage({ params }: Props) {
 
 	const postUrl = `${SITE_URL}/blog/${post.slug}/`
 
+	const renderedContent =
+		post.format === "mdx" ? await renderMdx(post.content) : null
+
 	return (
 		<article>
 			<ArticleJsonLd
@@ -124,9 +129,19 @@ export default async function BlogPostPage({ params }: Props) {
 			</Link>
 
 			<header className="mb-8">
-				<time className="text-sm text-stone-500 dark:text-stone-500">
-					{formatDate(post.date)}
-				</time>
+				<div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-stone-500 dark:text-stone-500">
+					<time dateTime={new Date(post.date).toISOString()}>
+						{formatDate(post.date)}
+					</time>
+					{post.category && (
+						<>
+							<span aria-hidden="true">·</span>
+							<span className="font-medium text-teal-700 uppercase tracking-wider text-xs dark:text-teal-400">
+								{post.category}
+							</span>
+						</>
+					)}
+				</div>
 				<h1 className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
 					{post.title}
 				</h1>
@@ -135,16 +150,44 @@ export default async function BlogPostPage({ params }: Props) {
 						By {post.author}
 					</p>
 				)}
+				{post.tags && post.tags.length > 0 && (
+					<div className="mt-4 flex flex-wrap gap-2">
+						{post.tags.map((tag) => (
+							<span
+								key={tag}
+								className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 font-mono text-xs text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-400"
+							>
+								{tag}
+							</span>
+						))}
+					</div>
+				)}
 			</header>
 
 			<div className="prose prose-gray dark:prose-invert max-w-none">
-				<ReactMarkdown
-					remarkPlugins={[remarkGfm]}
-					rehypePlugins={[rehypeHighlight, rehypeSlug]}
-				>
-					{post.content}
-				</ReactMarkdown>
+				{renderedContent ?? (
+					<ReactMarkdown
+						remarkPlugins={[remarkGfm]}
+						rehypePlugins={[rehypeHighlight, rehypeSlug]}
+					>
+						{post.content}
+					</ReactMarkdown>
+				)}
 			</div>
 		</article>
 	)
+}
+
+async function renderMdx(source: string) {
+	const { content } = await compileMDX({
+		source,
+		components: mdxComponents,
+		options: {
+			mdxOptions: {
+				remarkPlugins: [remarkGfm],
+				rehypePlugins: [rehypeSlug, rehypeHighlight],
+			},
+		},
+	})
+	return content
 }
