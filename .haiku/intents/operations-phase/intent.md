@@ -1,12 +1,19 @@
 ---
-title: "Full AI-DLC Operations Phase"
+title: Full AI-DLC Operations Phase
 studio: software
-stages: [inception, design, product, development, operations, security]
+stages:
+  - inception
+  - design
+  - product
+  - development
+  - operations
+  - security
 mode: continuous
 active_stage: security
 status: completed
-started_at: 2026-03-27T23:06:56Z
-completed_at: 2026-04-01T13:21:44Z
+started_at: 2026-03-27T23:06:56.000Z
+completed_at: 2026-04-01T13:21:44.000Z
+created_at: '2026-04-12T23:20:53.051Z'
 ---
 
 

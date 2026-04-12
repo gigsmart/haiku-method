@@ -1,12 +1,19 @@
 ---
-title: "Visual Review & Intent Dashboard"
+title: Visual Review & Intent Dashboard
 studio: software
-stages: [inception, design, product, development, operations, security]
+stages:
+  - inception
+  - design
+  - product
+  - development
+  - operations
+  - security
 mode: continuous
 active_stage: security
 status: completed
-started_at: 2026-03-29T22:42:42Z
-completed_at: 2026-03-30T09:38:50Z
+started_at: 2026-03-29T22:42:42.000Z
+completed_at: 2026-03-30T09:38:50.000Z
+created_at: '2026-04-12T23:20:53.181Z'
 ---
 
 

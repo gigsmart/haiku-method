@@ -1,12 +1,19 @@
 ---
-title: "H•AI•K•U: Evolve AI-DLC into a Universal Human-AI Collaboration Framework"
+title: 'H•AI•K•U: Evolve AI-DLC into a Universal Human-AI Collaboration Framework'
 studio: software
-stages: [inception, design, product, development, operations, security]
+stages:
+  - inception
+  - design
+  - product
+  - development
+  - operations
+  - security
 mode: continuous
 active_stage: security
 status: completed
-started_at: 2026-03-06T06:49:58Z
-completed_at: 2026-04-01T13:21:44Z
+started_at: 2026-03-06T06:49:58.000Z
+completed_at: 2026-04-01T13:21:44.000Z
+created_at: '2026-04-12T23:20:53.047Z'
 ---
 
 
