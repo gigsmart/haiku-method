@@ -223,6 +223,8 @@ export function mergeUnitWorktree(slug: string, unit: string, stage?: string): {
 		}
 		return { success: true, message: `merged ${unitBranch}` }
 	} catch (err) {
+		// Abort any in-progress merge to leave the repo clean
+		tryRun(["git", "merge", "--abort"])
 		return { success: false, message: err instanceof Error ? err.message : String(err) }
 	}
 }
