@@ -1,3 +1,5 @@
+import matter from "gray-matter"
+
 // Re-export shared types from @haiku/shared
 export type {
 	HaikuIntent,
@@ -37,48 +39,8 @@ export interface BrowseProvider {
 }
 
 export function parseFrontmatter(raw: string): { data: Record<string, unknown>; content: string } {
-	const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
-	if (!match) return { data: {}, content: raw }
-
-	const yamlBlock = match[1]
-	const content = match[2].trim()
-	const data: Record<string, unknown> = {}
-
-	let currentKey = ""
-	for (const line of yamlBlock.split("\n")) {
-		const kvMatch = line.match(/^(\w[\w-]*):\s*(.*)$/)
-		if (kvMatch) {
-			currentKey = kvMatch[1]
-			const val = kvMatch[2].trim()
-			if (val === "" || val === "[]") {
-				data[currentKey] = val === "[]" ? [] : ""
-			} else if (val.startsWith("[") && val.endsWith("]")) {
-				data[currentKey] = val
-					.slice(1, -1)
-					.split(",")
-					.map((s) => s.trim().replace(/^["']|["']$/g, ""))
-					.filter(Boolean)
-			} else if (val === "true") {
-				data[currentKey] = true
-			} else if (val === "false") {
-				data[currentKey] = false
-			} else if (val === "null") {
-				data[currentKey] = null
-			} else if (/^\d+$/.test(val)) {
-				data[currentKey] = parseInt(val, 10)
-			} else {
-				data[currentKey] = val.replace(/^["']|["']$/g, "")
-			}
-		} else if (line.match(/^\s+-\s+(.+)$/) && currentKey) {
-			const item = line.match(/^\s+-\s+(.+)$/)
-			if (item) {
-				if (!Array.isArray(data[currentKey])) data[currentKey] = []
-				;(data[currentKey] as string[]).push(item[1].trim())
-			}
-		}
-	}
-
-	return { data, content }
+	const parsed = matter(raw)
+	return { data: parsed.data as Record<string, unknown>, content: parsed.content.trim() }
 }
 
 /** Parse a unit's frontmatter + content into a HaikuUnit */

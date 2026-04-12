@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.97.0] - 2026-04-12
+
+### Added
+- Run-next responses now preview the next step and upcoming actions before execution.
+
+## [1.96.0] - 2026-04-12
+
+### Added
+- Per-stage git branching with discrete mode (isolated branch per stage) or hybrid mode (customizable mix of shared and isolated stages) for flexible workflow organization.
+
 ## [1.95.4] - 2026-04-10
 
 ### Changed
