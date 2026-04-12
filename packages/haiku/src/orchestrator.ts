@@ -94,12 +94,16 @@ function resolveStudioStages(studio: string): string[] {
 }
 
 function resolveStageHats(studio: string, stage: string): string[] {
+	// Accept any identifier (dir, name, slug, alias); falls back to raw arg
+	// for robustness when the studio cache isn't warm yet.
+	const info = resolveStudio(studio)
+	const dir = info ? info.dir : studio
 	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
 	]) {
-		const stageFile = join(base, studio, "stages", stage, "STAGE.md")
+		const stageFile = join(base, dir, "stages", stage, "STAGE.md")
 		if (existsSync(stageFile)) {
 			const fm = readFrontmatter(stageFile)
 			return (fm.hats as string[]) || []
@@ -109,12 +113,16 @@ function resolveStageHats(studio: string, stage: string): string[] {
 }
 
 function resolveStageReview(studio: string, stage: string): string {
+	// Accept any identifier (dir, name, slug, alias); falls back to raw arg
+	// for robustness when the studio cache isn't warm yet.
+	const info = resolveStudio(studio)
+	const dir = info ? info.dir : studio
 	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
 	]) {
-		const stageFile = join(base, studio, "stages", stage, "STAGE.md")
+		const stageFile = join(base, dir, "stages", stage, "STAGE.md")
 		if (existsSync(stageFile)) {
 			const fm = readFrontmatter(stageFile)
 			const review = fm.review
@@ -164,12 +172,16 @@ function resolveStageMetadata(
 	studio: string,
 	stage: string,
 ): { description: string; unit_types: string[]; body: string } | null {
+	// Accept any identifier (dir, name, slug, alias); falls back to raw arg
+	// for robustness when the studio cache isn't warm yet.
+	const info = resolveStudio(studio)
+	const dir = info ? info.dir : studio
 	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
 	]) {
-		const stageFile = join(base, studio, "stages", stage, "STAGE.md")
+		const stageFile = join(base, dir, "stages", stage, "STAGE.md")
 		if (existsSync(stageFile)) {
 			const raw = readFileSync(stageFile, "utf8")
 			const fm = readFrontmatter(stageFile)
