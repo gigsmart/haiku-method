@@ -178,32 +178,6 @@ export class GitHubProvider implements BrowseProvider {
 		return data?.repository?.object?.text ?? null
 	}
 
-	/** Fetch the most recent PR for a given head branch. Returns nulls on failure. */
-	private async fetchPrForBranch(
-		branchName: string,
-	): Promise<{ prUrl: string | null; prStatus: string | null; prNumber: number | null }> {
-		try {
-			const head = `${this.owner}:${branchName}`
-			const res = await this.restApi(
-				`/pulls?head=${encodeURIComponent(head)}&state=all&sort=updated&direction=desc&per_page=1`,
-			)
-			if (res.ok) {
-				const prs = await res.json()
-				if (Array.isArray(prs) && prs.length > 0) {
-					const pr = prs[0]
-					return {
-						prUrl: pr.html_url,
-						prStatus: pr.merged_at ? "merged" : pr.state.toLowerCase(),
-						prNumber: pr.number,
-					}
-				}
-			}
-		} catch {
-			// Non-critical
-		}
-		return { prUrl: null, prStatus: null, prNumber: null }
-	}
-
 	/** Parse raw intent.md text into a HaikuIntent with optional branch/PR metadata. */
 	private parseIntentFromRaw(
 		slug: string,
@@ -615,19 +589,8 @@ export class GitHubProvider implements BrowseProvider {
 			reflection,
 			content,
 			assets: [],
-			...(await this.getOrFetchMeta(slug, intentBranch)),
+			...(this.intentMetaMap.get(slug) || {}),
 		}
-	}
-
-	/** Get cached meta or fetch MR/PR data on deeplink when listIntents hasn't populated the map. */
-	private async getOrFetchMeta(slug: string, intentBranch: string | undefined) {
-		const cached = this.intentMetaMap.get(slug)
-		if (cached) return cached
-		if (!intentBranch) return {}
-		const prMeta = await this.fetchPrForBranch(intentBranch)
-		const meta = { branch: intentBranch, ...prMeta }
-		this.intentMetaMap.set(slug, meta)
-		return meta
 	}
 
 	async getSettings(): Promise<Record<string, unknown> | null> {
@@ -706,6 +669,7 @@ export class GitHubProvider implements BrowseProvider {
 			}
 		}
 		this.intentBranchMap.clear()
+		this.intentMetaMap.clear()
 	}
 
 	/** Check if the repo is accessible. Returns status for error differentiation. */

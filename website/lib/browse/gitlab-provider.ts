@@ -237,6 +237,17 @@ export class GitLabProvider implements BrowseProvider {
 		return { prUrl: null, prStatus: null, prNumber: null }
 	}
 
+	/** Get cached meta or fetch MR data on deeplink when listIntents hasn't populated the map. */
+	private async getOrFetchMeta(slug: string, intentBranch: string | undefined) {
+		const cached = this.intentMetaMap.get(slug)
+		if (cached) return cached
+		if (!intentBranch) return {}
+		const mrMeta = await this.fetchMrForBranch(intentBranch)
+		const meta = { branch: intentBranch, ...mrMeta }
+		this.intentMetaMap.set(slug, meta)
+		return meta
+	}
+
 	/** Parse raw intent.md text into a HaikuIntent with optional branch/MR metadata. */
 	private parseIntentFromRaw(
 		slug: string,
@@ -636,13 +647,7 @@ export class GitLabProvider implements BrowseProvider {
 
 		// Carry forward branch/MR metadata from the listing scan, or fetch if missing
 		// (happens on deeplinks where listIntents hasn't run yet)
-		let meta = this.intentMetaMap.get(slug)
-		if (!meta && intentBranch) {
-			const mrMeta = await this.fetchMrForBranch(intentBranch)
-			meta = { branch: intentBranch, ...mrMeta }
-			this.intentMetaMap.set(slug, meta)
-		}
-		meta = meta || {}
+		const meta = await this.getOrFetchMeta(slug, intentBranch)
 
 		return {
 			slug,
@@ -769,6 +774,7 @@ export class GitLabProvider implements BrowseProvider {
 			}
 		}
 		this.intentBranchMap.clear()
+		this.intentMetaMap.clear()
 	}
 
 	async isAccessible(): Promise<boolean> {
