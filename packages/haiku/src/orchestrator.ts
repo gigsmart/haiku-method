@@ -1791,6 +1791,13 @@ function revisit(slug: string, requestedStage?: string): OrchestratorAction {
 	const studioStages = allStages.filter((s) => !skipStages.includes(s))
 	const currentIdx = studioStages.indexOf(currentActiveStage)
 
+	if (currentIdx < 0) {
+		return {
+			action: "error",
+			message: `Active stage '${currentActiveStage}' is not in the studio's stage list: [${studioStages.join(", ")}]. Run haiku_repair to fix.`,
+		}
+	}
+
 	// If a specific stage was requested, validate and jump there
 	if (requestedStage) {
 		const targetIdx = studioStages.indexOf(requestedStage)
@@ -1817,7 +1824,6 @@ function revisit(slug: string, requestedStage?: string): OrchestratorAction {
 			intentFile,
 			currentActiveStage,
 			requestedStage,
-			studioStages,
 		)
 	}
 
@@ -1846,7 +1852,6 @@ function revisit(slug: string, requestedStage?: string): OrchestratorAction {
 		intentFile,
 		currentActiveStage,
 		targetStage,
-		studioStages,
 	)
 }
 
@@ -1902,8 +1907,14 @@ function revisitEarlierStage(
 	intentFile: string,
 	fromStage: string,
 	targetStage: string,
-	_studioStages: string[],
 ): OrchestratorAction {
+	// Only the target stage is reset. Intermediate stages between target and
+	// fromStage keep their completed status — when the agent finishes the
+	// revisited stage and calls haiku_run_next, the FSM's consistency check
+	// sees them as completed and fast-forwards through to the next incomplete
+	// stage. This is intentional: revisit fixes one stage without forcing a
+	// full replay of everything that came after.
+
 	// In discrete mode, switch to the target stage's branch
 	const branchMode = resolveEffectiveBranchMode(slug, targetStage)
 	if (branchMode === "discrete") {
@@ -3796,7 +3807,10 @@ export async function handleOrchestratorTool(
 	}
 
 	if (name === "haiku_revisit") {
-		const result = revisit(args.intent as string, args.stage as string | undefined)
+		const result = revisit(
+			args.intent as string,
+			args.stage as string | undefined,
+		)
 		emitTelemetry("haiku.orchestrator.action", {
 			intent: args.intent as string,
 			action: result.action,

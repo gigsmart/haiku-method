@@ -153,6 +153,7 @@ export function applyAutoFixes(
 		// Legacy `created` field → `created_at`
 		if (issue.field === "created" && data.created && !data.created_at) {
 			data.created_at = data.created
+			// biome-ignore lint/performance/noDelete: gray-matter YAML serializer crashes on undefined values (#194)
 			delete data.created
 			applied.push({
 				intent: slug,
@@ -215,10 +216,7 @@ export function applyAutoFixes(
 		}
 
 		// Git-based date repair: created_at, started_at, completed_at
-		if (
-			issue.field === "created_at" &&
-			issue.message.includes("git history")
-		) {
+		if (issue.field === "created_at" && issue.message.includes("git history")) {
 			const dateMatch = issue.fix.match(/'([^']+)' \(from git/)
 			if (dateMatch) {
 				data.created_at = dateMatch[1]
@@ -232,10 +230,7 @@ export function applyAutoFixes(
 			}
 		}
 
-		if (
-			issue.field === "started_at" &&
-			issue.fix.includes("from git")
-		) {
+		if (issue.field === "started_at" && issue.fix.includes("from git")) {
 			const dateMatch = issue.fix.match(/'([^']+)' \(from git/)
 			if (dateMatch) {
 				data.started_at = dateMatch[1]
@@ -249,10 +244,7 @@ export function applyAutoFixes(
 			}
 		}
 
-		if (
-			issue.field === "completed_at" &&
-			issue.fix.includes("from git")
-		) {
+		if (issue.field === "completed_at" && issue.fix.includes("from git")) {
 			const dateMatch = issue.fix.match(/'([^']+)' \(from git/)
 			if (dateMatch) {
 				data.completed_at = dateMatch[1]
@@ -303,7 +295,8 @@ export function applyAutoFixes(
 					status: "completed",
 					phase: "gate",
 					started_at: data.started_at || data.created_at || now,
-					completed_at: data.started_at || data.created_at || now,
+					completed_at:
+						data.completed_at || data.started_at || data.created_at || now,
 					gate_entered_at: null,
 					gate_outcome: "advanced",
 				}
@@ -617,10 +610,7 @@ function scanOneIntent(
 						message: `Invalid stage status: '${state.status}'`,
 						fix: `Set status to one of: ${validStatuses.join(", ")}`,
 					})
-				} else if (
-					isBeforeActive &&
-					(state.status as string) !== "completed"
-				) {
+				} else if (isBeforeActive && (state.status as string) !== "completed") {
 					// Stage before active_stage should be completed — FSM will
 					// reset active_stage backwards if it isn't
 					issues.push({
@@ -780,9 +770,7 @@ function scanOneIntent(
 	if (isGitRepo()) {
 		const intentFilePath = join(intentsDir, slug, "intent.md")
 		const gitCreated = gitFirstCommitDateForRepair(intentFilePath)
-		const gitLastModified = gitLastCommitDateForRepair(
-			join(intentsDir, slug),
-		)
+		const gitLastModified = gitLastCommitDateForRepair(join(intentsDir, slug))
 		const currentCreatedAt = repairData.created_at as string | undefined
 		const currentStartedAt = repairData.started_at as string | undefined
 		const currentCompletedAt = repairData.completed_at as string | undefined
@@ -1087,12 +1075,7 @@ function repairAllBranches(autoApply: boolean): {
 			summary.remaining = result.remaining
 
 			// Verify completed intents are truly merged into mainline
-			const intentMd = join(
-				worktreeHaikuRoot,
-				"intents",
-				slug,
-				"intent.md",
-			)
+			const intentMd = join(worktreeHaikuRoot, "intents", slug, "intent.md")
 			if (existsSync(intentMd)) {
 				const fm = parseFrontmatter(readFileSync(intentMd, "utf8"))
 				if (
