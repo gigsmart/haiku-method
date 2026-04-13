@@ -190,9 +190,10 @@ export default async function StudioDetailPage({ params }: Props) {
 										const focusMatch = hat.content.match(/\*\*Focus:\*\*\s*(.+?)(?:\n|$)/)
 										const focus = focusMatch ? focusMatch[1].trim() : ""
 										return (
-											<div
+											<Link
 												key={hat.name}
-												className="rounded-lg border border-stone-100 bg-stone-50 px-4 py-3 dark:border-stone-800 dark:bg-stone-900/50"
+												href={`/studios/${studio.slug}/${stage.name}/#${hat.name}`}
+												className="block rounded-lg border border-stone-100 bg-stone-50 px-4 py-3 transition hover:border-blue-300 hover:bg-blue-50/60 dark:border-stone-800 dark:bg-stone-900/50 dark:hover:border-blue-500/60 dark:hover:bg-blue-950/30"
 											>
 												<div className="text-sm font-semibold text-stone-900 dark:text-stone-100">
 													{titleCase(hat.name)}
@@ -202,7 +203,7 @@ export default async function StudioDetailPage({ params }: Props) {
 														{focus}
 													</p>
 												)}
-											</div>
+											</Link>
 										)
 									})}
 								</div>
@@ -219,9 +220,10 @@ export default async function StudioDetailPage({ params }: Props) {
 											const mandateMatch = agent.content.match(/\*\*Mandate:\*\*\s*(.+?)(?:\n|$)/)
 											const mandate = mandateMatch ? mandateMatch[1].trim() : ""
 											return (
-												<div
+												<Link
 													key={agent.name}
-													className="rounded-lg border border-teal-100 bg-teal-50/50 px-4 py-3 dark:border-teal-900/50 dark:bg-teal-900/20"
+													href={`/studios/${studio.slug}/${stage.name}/#agent-${agent.name}`}
+													className="block rounded-lg border border-teal-100 bg-teal-50/50 px-4 py-3 transition hover:border-teal-400 hover:bg-teal-50 dark:border-teal-900/50 dark:bg-teal-900/20 dark:hover:border-teal-500/60 dark:hover:bg-teal-900/30"
 												>
 													<div className="text-sm font-semibold text-stone-900 dark:text-stone-100">
 														{titleCase(agent.name)}
@@ -231,14 +233,15 @@ export default async function StudioDetailPage({ params }: Props) {
 															{mandate}
 														</p>
 													)}
-												</div>
+												</Link>
 											)
 										})}
 										{stage.reviewAgentsInclude.map((inc) =>
 											inc.agents.map((agentName) => (
-												<div
+												<Link
 													key={`${inc.stage}-${agentName}`}
-													className="rounded-lg border border-stone-100 border-dashed bg-stone-50/50 px-4 py-3 dark:border-stone-800 dark:bg-stone-900/30"
+													href={`/studios/${studio.slug}/${inc.stage}/#agent-${agentName}`}
+													className="block rounded-lg border border-stone-100 border-dashed bg-stone-50/50 px-4 py-3 transition hover:border-stone-300 hover:bg-stone-100/50 dark:border-stone-800 dark:bg-stone-900/30 dark:hover:border-stone-600 dark:hover:bg-stone-800/50"
 												>
 													<div className="text-sm font-semibold text-stone-600 dark:text-stone-300">
 														{titleCase(agentName)}
@@ -246,7 +249,7 @@ export default async function StudioDetailPage({ params }: Props) {
 													<p className="mt-1 text-xs text-stone-400">
 														from {titleCase(inc.stage)} stage
 													</p>
-												</div>
+												</Link>
 											)),
 										)}
 									</div>
