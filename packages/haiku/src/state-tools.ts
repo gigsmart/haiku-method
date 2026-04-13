@@ -1064,7 +1064,7 @@ function buildMultiBranchReport(
 				`- **Mainline worktree setup failed:** ${archivedSummary.setupError}`,
 			)
 			lines.push(
-				`- No archived intents were scanned. Fix the underlying git/filesystem issue and re-run \`/repair\`.`,
+				"- No archived intents were scanned. Fix the underlying git/filesystem issue and re-run `/repair`.",
 			)
 			lines.push("")
 			return lines.join("\n")
