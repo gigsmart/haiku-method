@@ -108,7 +108,7 @@ export function listOrphanDiscreteIntents(): {
 			if (segment === "main") continue
 			if (mainSlugs.has(slug)) continue
 			if (!stageMap.has(slug)) stageMap.set(slug, [])
-			const branches = stageMap.get(slug)!
+			const branches = stageMap.get(slug) ?? []
 			const branchName = `haiku/${slug}/${segment}`
 			if (!branches.includes(branchName)) branches.push(branchName)
 		}
