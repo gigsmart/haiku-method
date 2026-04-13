@@ -1,6 +1,12 @@
 // studio-reader.ts — Shared readers for studio, stage, hat, and review-agent definitions
 
-import { existsSync, lstatSync, readFileSync, readdirSync, statSync } from "node:fs"
+import {
+	existsSync,
+	lstatSync,
+	readFileSync,
+	readdirSync,
+	statSync,
+} from "node:fs"
 import { join } from "node:path"
 import {
 	studioSearchPaths as _studioSearchPaths,
