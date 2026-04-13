@@ -784,6 +784,10 @@ interface BranchRepairSummary {
 	merged: boolean
 	prUrl?: string
 	prError?: string
+	// Worktree/setup failure — archived-intents pass only. When set, the
+	// archived report section should label the failure instead of reporting
+	// "0 intents scanned".
+	setupError?: string
 }
 
 /** Repair every haiku/<slug>/main branch sequentially using temporary worktrees.
@@ -902,7 +906,10 @@ function repairArchivedOnMainline(
 	try {
 		worktreePath = addTempWorktree(mainline, "haiku-repair-archived")
 	} catch (err) {
-		summary.pushError = `Failed to create mainline worktree: ${err instanceof Error ? err.message : String(err)}`
+		// Worktree setup failed — surface a dedicated failure shape so the report
+		// labels this as "Mainline worktree setup failed" rather than "0 archived
+		// intents scanned" (which would imply we looked and found nothing).
+		summary.setupError = `Failed to create mainline worktree: ${err instanceof Error ? err.message : String(err)}`
 		return summary
 	}
 
@@ -974,7 +981,10 @@ function repairArchivedOnMainline(
 		if (worktreePath) removeTempWorktree(worktreePath)
 	}
 
-	return summary.scanned > 0 ? summary : undefined
+	// Return the summary whenever there was something to report: scanned intents,
+	// or a setup failure that the operator needs to see. Nothing to report → undefined.
+	if (summary.scanned > 0 || summary.setupError) return summary
+	return undefined
 }
 
 function buildMultiBranchReport(
@@ -1049,6 +1059,16 @@ function buildMultiBranchReport(
 	if (archivedSummary) {
 		lines.push("## Archived intents (mainline only)")
 		lines.push("")
+		if (archivedSummary.setupError) {
+			lines.push(
+				`- **Mainline worktree setup failed:** ${archivedSummary.setupError}`,
+			)
+			lines.push(
+				`- No archived intents were scanned. Fix the underlying git/filesystem issue and re-run \`/repair\`.`,
+			)
+			lines.push("")
+			return lines.join("\n")
+		}
 		lines.push(`- Scanned: ${archivedSummary.scanned} archived intent(s)`)
 		lines.push(`- Auto-applied: ${archivedSummary.applied.length}`)
 		lines.push(`- Remaining: ${archivedSummary.remaining.length}`)
