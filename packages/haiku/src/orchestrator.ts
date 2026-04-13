@@ -1349,31 +1349,36 @@ export function runNext(slug: string): OrchestratorAction {
 
 	// Stage in gate phase — always open local review UI as a preliminary gate.
 	// The gate type determines what options are shown:
-	//   - Discrete mode: always "external" (Submit for External Review + Request Changes)
-	//   - Continuous mode: based on the stage's review field
+	//   - Discrete intent mode: always "external" (Submit for External Review + Request Changes)
+	//   - Continuous/hybrid intent mode: based on the stage's review field
 	//     - auto/ask → "ask" (Approve + Request Changes)
 	//     - external → "external" (Submit for External Review + Request Changes)
 	//     - [external, ask] → as-is (Approve + Submit for External Review + Request Changes)
 	//     - await → "external" (awaits external event after submission)
+	//   Note: continuous intents may have discrete branch isolation for external-review
+	//   stages (PR isolation), but the gate options still reflect the stage's review field.
 	if (phase === "gate") {
 		const reviewType = resolveStageReview(studio, currentStage)
 		const stageIdx = studioStages.indexOf(currentStage)
 		const nextStage =
 			stageIdx < studioStages.length - 1 ? studioStages[stageIdx + 1] : null
 
-		// Resolve effective branch mode for this stage
-		const effectiveBranchMode = resolveEffectiveBranchMode(slug, currentStage)
+		// Use the intent's declared mode (not effective branch mode) to determine gate UI.
+		// A continuous intent with PR-isolated external-review stages should still show
+		// the stage's full gate options, not be forced to external-only.
+		const intentMode = (intent.mode as string) || "continuous"
 
 		// Determine gate type for the review UI
 		let effectiveGateType: string
-		if (effectiveBranchMode === "discrete") {
-			// Discrete mode: always submit for external review (PR per stage)
+		if (intentMode === "discrete") {
+			// Pure discrete intent: always submit for external review (PR per stage)
 			effectiveGateType = "external"
 		} else if (reviewType === "auto" || reviewType === "ask") {
 			effectiveGateType = "ask"
 		} else if (reviewType === "await") {
 			effectiveGateType = "external"
 		} else {
+			// Compound gates (e.g., "external,ask") pass through as-is
 			effectiveGateType = reviewType
 		}
 
@@ -2027,11 +2032,6 @@ function enrichActionWithPreview(action: OrchestratorAction): void {
 			next_step = "Run /haiku:pickup after the review is approved."
 			break
 
-		case "gate_await":
-			tell_user = `Stage '${stage}' is complete — waiting for an external event before advancing.`
-			next_step = "Run /haiku:pickup when the external event occurs."
-			break
-
 		case "blocked":
 			tell_user = `Some units in stage '${stage}' are blocked — dependencies not met.`
 			next_step = "Unblock the dependencies, then retry."
@@ -2557,22 +2557,6 @@ function buildRunInstructions(
 
 			sections.push(
 				`## Gate: Awaiting Approval\n\nStage "${stage}" is complete and awaiting your approval to advance${nextStage ? ` to "${nextStage}"` : ""}.\n\n### Instructions\n\n1. Call \`haiku_run_next { intent: "${slug}" }\` — the orchestrator opens the review UI and blocks until the user responds\n2. If approved: the FSM advances automatically\n3. If changes_requested: analyze annotations and route to /haiku:refine for the appropriate upstream stage`,
-			)
-			break
-		}
-
-		case "gate_external": {
-			const stage = action.stage as string
-			sections.push(
-				`## Gate: External Review\n\nStage "${stage}" is complete. The gate has been entered by the orchestrator.\n\n### Instructions\n\n1. Push the branch and commit stage artifacts\n2. Share the review URL with the reviewer\n3. Report: "Awaiting external review. Run /haiku:pickup when review is complete."`,
-			)
-			break
-		}
-
-		case "gate_await": {
-			const stage = action.stage as string
-			sections.push(
-				`## Gate: Awaiting External Event\n\nStage "${stage}" is complete. The gate has been entered by the orchestrator.\n\n### Instructions\n\n1. Report what is being awaited\n2. Stop. Run /haiku:pickup when the event occurs.`,
 			)
 			break
 		}
