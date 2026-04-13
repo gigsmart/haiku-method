@@ -32,116 +32,130 @@ interface KanbanProps {
 // ── Portfolio Kanban: intents across stage columns ─────────────────────────
 
 export function PortfolioKanban({ provider, intents, onSelectIntent }: KanbanProps) {
-	// Build columns from lightweight intent data — no getIntent() calls needed
-	const allStagesOrdered: string[] = []
-	const seenStages = new Set<string>()
+	// Group intents by studio, then build per-studio stage columns (swim lanes)
+	const studioMap = new Map<string, { stages: string[]; intents: HaikuIntent[] }>()
 
 	for (const intent of intents) {
-		const stages = intent.studioStages.length > 0
-			? intent.studioStages
-			: intent.composite
-				? intent.composite.flatMap(c => c.stages.map(s => `${c.studio}:${s}`))
-				: []
-		for (const s of stages) {
-			if (!seenStages.has(s)) {
-				seenStages.add(s)
-				allStagesOrdered.push(s)
-			}
+		const studio = intent.studio || "unknown"
+		if (!studioMap.has(studio)) {
+			studioMap.set(studio, { stages: [], intents: [] })
+		}
+		const entry = studioMap.get(studio)!
+		entry.intents.push(intent)
+		// Collect stage ordering from the first intent that has stages for this studio
+		if (entry.stages.length === 0 && intent.studioStages.length > 0) {
+			entry.stages = [...intent.studioStages]
 		}
 	}
 
-	const stageGroups = new Map<string, HaikuIntent[]>()
-	stageGroups.set("Backlog", [])
-	for (const stage of allStagesOrdered) stageGroups.set(stage, [])
-	stageGroups.set("Completed", [])
-
-	for (const intent of intents) {
-		if (intent.status === "completed") {
-			stageGroups.get("Completed")!.push(intent)
-		} else if (intent.composite) {
-			const compositeState = (intent.raw.composite_state || {}) as Record<string, string>
-			for (const entry of intent.composite) {
-				const current = compositeState[entry.studio] || entry.stages[0]
-				if (current && current !== "complete") {
-					const key = `${entry.studio}:${current}`
-					if (!stageGroups.has(key)) stageGroups.set(key, [])
-					stageGroups.get(key)!.push(intent)
-					break
-				}
-			}
-		} else {
-			const stage = intent.activeStage || "Backlog"
-			if (!stageGroups.has(stage)) stageGroups.set(stage, [])
-			stageGroups.get(stage)!.push(intent)
-		}
-	}
-
-	const orderedKeys = ["Backlog", ...allStagesOrdered, "Completed"]
+	// Sort studios alphabetically, but push "unknown" to the end
+	const studioNames = [...studioMap.keys()].sort((a, b) => {
+		if (a === "unknown") return 1
+		if (b === "unknown") return -1
+		return a.localeCompare(b)
+	})
 
 	return (
-		<div className="overflow-x-auto pb-4">
-			<div className="flex gap-4" style={{ minWidth: `${orderedKeys.length * 280}px` }}>
-				{orderedKeys.map((stageName) => {
-					const items = stageGroups.get(stageName) || []
-					return (
-						<div
-							key={stageName}
-							className="w-[270px] flex-shrink-0 rounded-xl border border-stone-200 bg-stone-50 dark:border-stone-700 dark:bg-stone-900/50"
-						>
-							<div className="border-b border-stone-200 px-4 py-3 dark:border-stone-700">
-								<div className="flex items-center justify-between">
-									<h3 className="text-sm font-bold text-stone-700 dark:text-stone-300">
-										{titleCase(stageName)}
-									</h3>
-									<span className="rounded-full bg-stone-200 px-2 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-700 dark:text-stone-400">
-										{items.length}
-									</span>
-								</div>
-							</div>
-							<div className="space-y-2 p-3" style={{ minHeight: "100px" }}>
-								{items.map((intent) => (
-									<button
-										key={intent.slug}
-										onClick={() => onSelectIntent?.(intent.slug)}
-										className={`w-full rounded-lg border p-3 text-left transition hover:shadow-sm ${statusColors[intent.status] || statusColors.pending}`}
-									>
-										<div className="text-sm font-semibold text-stone-900 dark:text-stone-100 line-clamp-2">
-											{intent.title}
-										</div>
-										<div className="mt-1 flex items-center gap-2 flex-wrap">
-											<span className="text-xs text-stone-500">{titleCase(intent.studio)}</span>
-											{intent.composite && (
-												<span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
-													composite
-												</span>
-											)}
-										</div>
-										{intent.stagesTotal > 0 && intent.stagesComplete > 0 && (
-											<div className="mt-2">
-												<div className="flex items-center justify-between text-xs text-stone-400">
-													<span>{intent.stagesComplete}/{intent.stagesTotal} stages</span>
-													{intent.startedAt && (
-														<span>{formatDuration(intent.startedAt, intent.completedAt)}</span>
-													)}
-												</div>
-												<div className="mt-1 h-1 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700">
-													<div
-														className="h-full rounded-full bg-teal-500"
-														style={{ width: `${Math.max(0, (intent.stagesComplete / intent.stagesTotal) * 100)}%` }}
-													/>
+		<div className="space-y-8">
+			{studioNames.map((studioName) => {
+				const { stages, intents: studioIntents } = studioMap.get(studioName)!
+
+				// Build columns: Backlog → stages → Completed
+				const columns = ["Backlog", ...stages, "Completed"]
+				const groups = new Map<string, HaikuIntent[]>()
+				for (const col of columns) groups.set(col, [])
+
+				for (const intent of studioIntents) {
+					if (intent.status === "completed") {
+						groups.get("Completed")!.push(intent)
+					} else {
+						const stage = intent.activeStage || "Backlog"
+						if (groups.has(stage)) {
+							groups.get(stage)!.push(intent)
+						} else {
+							groups.get("Backlog")!.push(intent)
+						}
+					}
+				}
+
+				const total = studioIntents.length
+
+				return (
+					<div key={studioName}>
+						<div className="mb-3 flex items-center gap-3">
+							<h2 className="text-base font-bold text-stone-800 dark:text-stone-200">
+								{titleCase(studioName)}
+							</h2>
+							<span className="rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-700 dark:text-stone-400">
+								{total} intent{total !== 1 ? "s" : ""}
+							</span>
+						</div>
+						<div className="overflow-x-auto pb-4">
+							<div className="flex gap-4" style={{ minWidth: `${columns.length * 280}px` }}>
+								{columns.map((stageName) => {
+									const items = groups.get(stageName) || []
+									return (
+										<div
+											key={stageName}
+											className="w-[270px] flex-shrink-0 rounded-xl border border-stone-200 bg-stone-50 dark:border-stone-700 dark:bg-stone-900/50"
+										>
+											<div className="border-b border-stone-200 px-4 py-3 dark:border-stone-700">
+												<div className="flex items-center justify-between">
+													<h3 className="text-sm font-bold text-stone-700 dark:text-stone-300">
+														{titleCase(stageName)}
+													</h3>
+													<span className="rounded-full bg-stone-200 px-2 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-700 dark:text-stone-400">
+														{items.length}
+													</span>
 												</div>
 											</div>
-										)}
-									</button>
-								))}
-								{items.length === 0 && (
-									<div className="py-4 text-center text-xs text-stone-400">No intents</div>
-								)}
+											<div className="space-y-2 p-3" style={{ minHeight: "100px" }}>
+												{items.map((intent) => (
+													<button
+														key={intent.branch ? `${intent.branch}/${intent.slug}` : intent.slug}
+														onClick={() => onSelectIntent?.(intent.slug)}
+														className={`w-full rounded-lg border p-3 text-left transition hover:shadow-sm ${statusColors[intent.status] || statusColors.pending}`}
+													>
+														<div className="text-sm font-semibold text-stone-900 dark:text-stone-100 line-clamp-2">
+															{intent.title}
+														</div>
+														<div className="mt-1 flex items-center gap-2 flex-wrap">
+															{intent.composite && (
+																<span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+																	composite
+																</span>
+															)}
+														</div>
+														{intent.stagesTotal > 0 && intent.stagesComplete > 0 && (
+															<div className="mt-2">
+																<div className="flex items-center justify-between text-xs text-stone-400">
+																	<span>{intent.stagesComplete}/{intent.stagesTotal} stages</span>
+																	{intent.startedAt && (
+																		<span>{formatDuration(intent.startedAt, intent.completedAt)}</span>
+																	)}
+																</div>
+																<div className="mt-1 h-1 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700">
+																	<div
+																		className="h-full rounded-full bg-teal-500"
+																		style={{ width: `${Math.max(0, (intent.stagesComplete / intent.stagesTotal) * 100)}%` }}
+																	/>
+																</div>
+															</div>
+														)}
+													</button>
+												))}
+												{items.length === 0 && (
+													<div className="py-4 text-center text-xs text-stone-400">No intents</div>
+												)}
+											</div>
+										</div>
+									)
+								})}
 							</div>
 						</div>
-					)
-				})}
-			</div>
+					</div>
+				)
+			})}
 		</div>
 	)
 }

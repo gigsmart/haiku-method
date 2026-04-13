@@ -27,6 +27,7 @@ import {
 	createIntentBranch,
 	createStageBranch,
 	createUnitWorktree,
+	isBranchMerged,
 	isOnIntentBranch,
 	isOnStageBranch,
 	mergeStageBranchForward,
@@ -673,9 +674,14 @@ function fsmStartStage(slug: string, stage: string): void {
 		// 1. Ensure the hub branch exists
 		createIntentBranch(slug)
 
-		// 2. If there's a completed previous stage, merge it into main first
+		// 2. If there's a completed previous stage not yet merged, merge it into main first
 		const prevStage = findPreviousStage(slug, stage)
-		if (prevStage && branchExists(`haiku/${slug}/${prevStage}`)) {
+		const prevStageBranch = prevStage ? `haiku/${slug}/${prevStage}` : ""
+		if (
+			prevStage &&
+			branchExists(prevStageBranch) &&
+			!isBranchMerged(prevStageBranch, `haiku/${slug}/main`)
+		) {
 			const mergeResult = mergeStageBranchIntoMain(slug, prevStage)
 			if (!mergeResult.success) {
 				throw new Error(
@@ -1421,7 +1427,7 @@ export function runNext(slug: string): OrchestratorAction {
 					action: "awaiting_external_review",
 					intent: slug,
 					stage: currentStage,
-					message: `Stage '${currentStage}' is awaiting external review. Provide the review URL via haiku_stage_set or run /haiku:go_back to re-enter the gate.`,
+					message: `Stage '${currentStage}' is awaiting external review. Provide the review URL via haiku_stage_set or run /haiku:revisit to re-enter the gate.`,
 				}
 			}
 		}
@@ -1660,7 +1666,7 @@ function currentWaveNumber(
 
 // ── Go back (stage/phase regression) ──────────────────────────────────────
 
-function goBack(slug: string): OrchestratorAction {
+function revisit(slug: string, requestedStage?: string): OrchestratorAction {
 	const root = findHaikuRoot()
 	const iDir = join(root, "intents", slug)
 	const intentFile = join(iDir, "intent.md")
@@ -1680,71 +1686,142 @@ function goBack(slug: string): OrchestratorAction {
 	const currentActiveStage = (intent.active_stage as string) || ""
 
 	if (!currentActiveStage) {
-		return { action: "error", message: "No active stage to go back from" }
+		return { action: "error", message: "No active stage to revisit from" }
 	}
 
-	// Read current phase
-	const path = stageStatePath(slug, currentActiveStage)
-	const stageState = readJson(path)
-	const currentPhase = (stageState.phase as string) || "elaborate"
-
-	// If in execute/review/gate → go back to elaborate in current stage
-	if (currentPhase !== "elaborate") {
-		stageState.phase = "elaborate"
-		stageState.gate_entered_at = null
-		stageState.gate_outcome = null
-		writeJson(path, stageState)
-
-		// Re-queue all units to pending
-		const unitsDir = join(iDir, "stages", currentActiveStage, "units")
-		if (existsSync(unitsDir)) {
-			const files = readdirSync(unitsDir).filter((f) => f.endsWith(".md"))
-			for (const f of files) {
-				const unitFile = join(unitsDir, f)
-				setFrontmatterField(unitFile, "status", "pending")
-				setFrontmatterField(unitFile, "bolt", 0)
-				setFrontmatterField(unitFile, "hat", "")
-				setFrontmatterField(unitFile, "started_at", null)
-				setFrontmatterField(unitFile, "completed_at", null)
-			}
-		}
-
-		emitTelemetry("haiku.go_back.phase", {
-			intent: slug,
-			stage: currentActiveStage,
-			from_phase: currentPhase,
-			to_phase: "elaborate",
-		})
-		gitCommitState(`haiku: go back to elaborate in ${currentActiveStage}`)
-
-		return {
-			action: "went_back",
-			intent: slug,
-			stage: currentActiveStage,
-			target_phase: "elaborate",
-			message: `Went back to elaborate phase in stage '${currentActiveStage}' — all units re-queued`,
-		}
-	}
-
-	// Already in elaborate → go back to the previous stage
 	const allStages = resolveStudioStages(studio)
 	const skipStages = (intent.skip_stages as string[]) || []
 	const studioStages = allStages.filter((s) => !skipStages.includes(s))
 	const currentIdx = studioStages.indexOf(currentActiveStage)
 
+	if (currentIdx < 0) {
+		return {
+			action: "error",
+			message: `Active stage '${currentActiveStage}' is not in the studio's stage list: [${studioStages.join(", ")}]. Run haiku_repair to fix.`,
+		}
+	}
+
+	// If a specific stage was requested, validate and jump there
+	if (requestedStage) {
+		const targetIdx = studioStages.indexOf(requestedStage)
+		if (targetIdx < 0) {
+			return {
+				action: "error",
+				message: `Stage '${requestedStage}' not found in studio stages: [${studioStages.join(", ")}]`,
+			}
+		}
+		if (targetIdx > currentIdx) {
+			return {
+				action: "error",
+				message: `Cannot revisit '${requestedStage}' — it's ahead of current stage '${currentActiveStage}'. Use haiku_run_next to advance.`,
+			}
+		}
+		if (targetIdx === currentIdx) {
+			// Same stage — reset to elaborate
+			return revisitCurrentStage(slug, iDir, intentFile, currentActiveStage)
+		}
+		// Jump to the requested earlier stage
+		return revisitEarlierStage(
+			slug,
+			iDir,
+			intentFile,
+			currentActiveStage,
+			requestedStage,
+		)
+	}
+
+	// No stage specified — infer target from current position
+	// If in execute/review/gate → revisit elaborate in current stage
+	const path = stageStatePath(slug, currentActiveStage)
+	const stageState = readJson(path)
+	const currentPhase = (stageState.phase as string) || "elaborate"
+
+	if (currentPhase !== "elaborate") {
+		return revisitCurrentStage(slug, iDir, intentFile, currentActiveStage)
+	}
+
+	// Already in elaborate → revisit previous stage
 	if (currentIdx <= 0) {
 		return {
 			action: "error",
-			message: `Already at the first stage ('${currentActiveStage}') — cannot go back further`,
+			message: `Already at the first stage ('${currentActiveStage}') — cannot revisit further back`,
 		}
 	}
 
 	const targetStage = studioStages[currentIdx - 1]
+	return revisitEarlierStage(
+		slug,
+		iDir,
+		intentFile,
+		currentActiveStage,
+		targetStage,
+	)
+}
+
+function revisitCurrentStage(
+	slug: string,
+	iDir: string,
+	_intentFile: string,
+	currentActiveStage: string,
+): OrchestratorAction {
+	const path = stageStatePath(slug, currentActiveStage)
+	const stageState = readJson(path)
+	const currentPhase = (stageState.phase as string) || "elaborate"
+
+	stageState.phase = "elaborate"
+	stageState.gate_entered_at = null
+	stageState.gate_outcome = null
+	writeJson(path, stageState)
+
+	// Re-queue all units to pending
+	const unitsDir = join(iDir, "stages", currentActiveStage, "units")
+	if (existsSync(unitsDir)) {
+		const files = readdirSync(unitsDir).filter((f) => f.endsWith(".md"))
+		for (const f of files) {
+			const unitFile = join(unitsDir, f)
+			setFrontmatterField(unitFile, "status", "pending")
+			setFrontmatterField(unitFile, "bolt", 0)
+			setFrontmatterField(unitFile, "hat", "")
+			setFrontmatterField(unitFile, "started_at", null)
+			setFrontmatterField(unitFile, "completed_at", null)
+		}
+	}
+
+	emitTelemetry("haiku.revisit.phase", {
+		intent: slug,
+		stage: currentActiveStage,
+		from_phase: currentPhase,
+		to_phase: "elaborate",
+	})
+	gitCommitState(`haiku: revisit elaborate in ${currentActiveStage}`)
+
+	return {
+		action: "revisited",
+		intent: slug,
+		stage: currentActiveStage,
+		target_phase: "elaborate",
+		message: `Revisiting elaborate phase in stage '${currentActiveStage}' — all units re-queued`,
+	}
+}
+
+function revisitEarlierStage(
+	slug: string,
+	iDir: string,
+	intentFile: string,
+	fromStage: string,
+	targetStage: string,
+): OrchestratorAction {
+	// Only the target stage is reset. Intermediate stages between target and
+	// fromStage keep their completed status — when the agent finishes the
+	// revisited stage and calls haiku_run_next, the FSM's consistency check
+	// sees them as completed and fast-forwards through to the next incomplete
+	// stage. This is intentional: revisit fixes one stage without forcing a
+	// full replay of everything that came after.
 
 	// In discrete mode, switch to the target stage's branch
 	const branchMode = resolveEffectiveBranchMode(slug, targetStage)
 	if (branchMode === "discrete") {
-		gitCommitState(`haiku: go back from ${currentActiveStage}`)
+		gitCommitState(`haiku: revisit from ${fromStage}`)
 		try {
 			createStageBranch(slug, targetStage) // switches to existing branch
 		} catch (err) {
@@ -1785,19 +1862,19 @@ function goBack(slug: string): OrchestratorAction {
 	// Update intent's active_stage
 	setFrontmatterField(intentFile, "active_stage", targetStage)
 
-	emitTelemetry("haiku.go_back.stage", {
+	emitTelemetry("haiku.revisit.stage", {
 		intent: slug,
-		from_stage: currentActiveStage,
+		from_stage: fromStage,
 		to_stage: targetStage,
 	})
-	gitCommitState(`haiku: go back to stage ${targetStage}`)
+	gitCommitState(`haiku: revisit stage ${targetStage}`)
 
 	return {
-		action: "went_back",
+		action: "revisited",
 		intent: slug,
 		target_stage: targetStage,
 		reset_phase: "elaborate",
-		message: `Went back to stage '${targetStage}' — stage reset to elaborate, all units re-queued`,
+		message: `Revisiting stage '${targetStage}' — stage reset to elaborate, all units re-queued`,
 	}
 }
 
@@ -2148,7 +2225,7 @@ function buildRunInstructions(
 
 				if (missing.length > 0) {
 					sections.push(
-						`## ⚠ Missing Upstream Artifacts\n\nThe following inputs are declared but do not exist on disk:\n\n${missing.map((r) => `- **${r.stage}/${r.artifactName}** (${r.kind}) — expected at \`${r.resolvedPath}\``).join("\n")}\n\nThese may not have been produced yet, or may have been saved to a different location. If they are critical for this stage, consider using \`haiku_go_back\` to return to the producing stage.`,
+						`## ⚠ Missing Upstream Artifacts\n\nThe following inputs are declared but do not exist on disk:\n\n${missing.map((r) => `- **${r.stage}/${r.artifactName}** (${r.kind}) — expected at \`${r.resolvedPath}\``).join("\n")}\n\nThese may not have been produced yet, or may have been saved to a different location. If they are critical for this stage, consider using \`haiku_revisit\` to return to the producing stage.`,
 					)
 				}
 			}
@@ -2356,7 +2433,7 @@ function buildRunInstructions(
 					action.action === "start_unit"
 						? `- Instruction to call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\` first\n`
 						: ""
-				}\n**Subagent calls one of these when done:**\n- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\` — auto-advances to the next hat, or auto-completes if this was the last hat\n- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\` — moves back one hat, increments bolt\n\n**After subagent returns:** The \`advance_hat\` result contains the next FSM action — spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately — advance_hat handles FSM progression internally.\n\n**Output tracking:** When your hat produces artifacts (files, designs, specs, code), record them in the unit's frontmatter \`outputs:\` field as paths relative to the intent directory:\n\`\`\`yaml\noutputs:\n  - stages/design/artifacts/landing-page.html\n  - stages/development/artifacts/api-schema.graphql\n\`\`\`\nThe FSM validates that declared outputs exist before allowing hat advancement.\n\n**If outputs from a previous stage are missing, incomplete, or incorrect:** call \`haiku_go_back { intent: "${slug}" }\` to return to the prior stage for corrections.\n\n**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` — do NOT open files in a browser and ask via text. The visual question tool provides a structured review experience.`,
+				}\n**Subagent calls one of these when done:**\n- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\` — auto-advances to the next hat, or auto-completes if this was the last hat\n- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\` — moves back one hat, increments bolt\n\n**After subagent returns:** The \`advance_hat\` result contains the next FSM action — spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately — advance_hat handles FSM progression internally.\n\n**Output tracking:** When your hat produces artifacts (files, designs, specs, code), record them in the unit's frontmatter \`outputs:\` field as paths relative to the intent directory:\n\`\`\`yaml\noutputs:\n  - stages/design/artifacts/landing-page.html\n  - stages/development/artifacts/api-schema.graphql\n\`\`\`\nThe FSM validates that declared outputs exist before allowing hat advancement.\n\n**If outputs from a previous stage are missing, incomplete, or incorrect:** call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage for corrections.\n\n**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` — do NOT open files in a browser and ask via text. The visual question tool provides a structured review experience.`,
 			)
 
 			// Check for ticketing provider — move ticket to "In Progress"
@@ -2429,7 +2506,7 @@ function buildRunInstructions(
 			const totalWaves = action.total_waves as number | undefined
 
 			sections.push(
-				`### Mechanics\n\n${wave !== undefined ? `**Wave ${wave}/${totalWaves ?? "?"}** — ` : ""}${units.length} units to run in parallel.\n**You are the orchestrator.** Do NOT do unit work yourself. Do NOT ask the user which unit to start — launch ALL of them NOW.\n\n**IMMEDIATELY** spawn one Agent subagent per unit **in a single message** (all Agent tool calls in one response). No questions, no confirmation, no menu. Each subagent runs the FIRST hat ("${firstHat}") only.\n\nEach subagent calls \`advance_hat\` when done — it internally progresses the FSM. The last subagent to finish the wave triggers the next action automatically.\n\n**Each subagent prompt must include:**\n- The hat definition for "${firstHat}"\n- The unit spec and inputs\n- The stage scope constraint\n- Instruction to call \`haiku_unit_start\` first\n- Output tracking: record produced artifacts in the unit's \`outputs:\` frontmatter field (paths relative to intent dir)\n- If outputs from a previous stage are missing, incomplete, or incorrect: call \`haiku_go_back { intent: "${slug}" }\` to return to the prior stage for corrections\n\n${units
+				`### Mechanics\n\n${wave !== undefined ? `**Wave ${wave}/${totalWaves ?? "?"}** — ` : ""}${units.length} units to run in parallel.\n**You are the orchestrator.** Do NOT do unit work yourself. Do NOT ask the user which unit to start — launch ALL of them NOW.\n\n**IMMEDIATELY** spawn one Agent subagent per unit **in a single message** (all Agent tool calls in one response). No questions, no confirmation, no menu. Each subagent runs the FIRST hat ("${firstHat}") only.\n\nEach subagent calls \`advance_hat\` when done — it internally progresses the FSM. The last subagent to finish the wave triggers the next action automatically.\n\n**Each subagent prompt must include:**\n- The hat definition for "${firstHat}"\n- The unit spec and inputs\n- The stage scope constraint\n- Instruction to call \`haiku_unit_start\` first\n- Output tracking: record produced artifacts in the unit's \`outputs:\` frontmatter field (paths relative to intent dir)\n- If outputs from a previous stage are missing, incomplete, or incorrect: call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage for corrections\n\n${units
 					.map((u) => {
 						const wt = worktrees[u]
 						return `- **${u}**${wt ? ` (worktree: \`${wt}\`)` : ""}: \`haiku_unit_start { intent: "${slug}", unit: "${u}" }\``
@@ -2703,16 +2780,21 @@ export const orchestratorToolDefs = [
 		},
 	},
 	{
-		name: "haiku_go_back",
+		name: "haiku_revisit",
 		description:
-			"Go back to the previous stage or phase. The FSM determines the target based on current position: " +
-			"if in execute/review/gate phase, goes back to elaborate in the current stage; " +
-			"if already in elaborate phase, goes back to the previous stage. " +
+			"Revisit an earlier stage or phase. If `stage` is provided, jumps directly to that stage. " +
+			"Without `stage`, infers the target: if in execute/review/gate phase, revisits elaborate in the current stage; " +
+			"if already in elaborate, revisits the previous stage. " +
 			"Agents can call this when they detect missing information from a prior stage.",
 		inputSchema: {
 			type: "object" as const,
 			properties: {
 				intent: { type: "string", description: "Intent slug" },
+				stage: {
+					type: "string",
+					description:
+						"Target stage to revisit (optional — omit to let the FSM infer the target)",
+				},
 			},
 			required: ["intent"],
 		},
@@ -3607,8 +3689,11 @@ export async function handleOrchestratorTool(
 		)
 	}
 
-	if (name === "haiku_go_back") {
-		const result = goBack(args.intent as string)
+	if (name === "haiku_revisit") {
+		const result = revisit(
+			args.intent as string,
+			args.stage as string | undefined,
+		)
 		emitTelemetry("haiku.orchestrator.action", {
 			intent: args.intent as string,
 			action: result.action,
