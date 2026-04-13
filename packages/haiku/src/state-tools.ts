@@ -1023,6 +1023,7 @@ interface BranchRepairSummary {
 	remaining: RepairIssue[]
 	committed: boolean
 	pushed: boolean
+	error?: string
 	pushError?: string
 	merged: boolean
 	prUrl?: string
@@ -1056,7 +1057,7 @@ function repairAllBranches(autoApply: boolean): {
 		try {
 			worktreePath = addTempWorktree(branch, "haiku-repair")
 		} catch (err) {
-			summary.pushError = `Failed to create worktree: ${err instanceof Error ? err.message : String(err)}`
+			summary.error = `Failed to create worktree: ${err instanceof Error ? err.message : String(err)}`
 			summaries.push(summary)
 			continue
 		}
@@ -1094,6 +1095,9 @@ function repairAllBranches(autoApply: boolean): {
 			}
 
 			if (autoApply && result.applied.length > 0) {
+				// Check merge status before push — after push, the new commit
+				// won't be an ancestor of mainline so the check would always fail
+				const wasAlreadyMerged = isBranchMerged(branch, mainline)
 				const messageLines = [
 					`repair: auto-fix ${result.applied.length} metadata issue(s)`,
 					"",
@@ -1109,7 +1113,7 @@ function repairAllBranches(autoApply: boolean): {
 				summary.committed = push.committed
 				summary.pushed = push.pushed
 				summary.pushError = push.pushError
-				if (push.committed && push.pushed && isBranchMerged(branch, mainline)) {
+				if (push.committed && push.pushed && wasAlreadyMerged) {
 					summary.merged = true
 					const prResult = openPullRequest(
 						branch,
@@ -1168,7 +1172,8 @@ function buildMultiBranchReport(
 			lines.push(
 				`- Committed locally; push failed: ${s.pushError || "unknown"}`,
 			)
-		else if (s.pushError) lines.push(`- Error: ${s.pushError}`)
+		else if (s.error) lines.push(`- Error: ${s.error}`)
+		else if (s.pushError) lines.push(`- Push error: ${s.pushError}`)
 		if (s.merged && s.prUrl)
 			lines.push(
 				`- Branch already merged into \`${mainline}\` — opened PR/MR: ${s.prUrl}`,
