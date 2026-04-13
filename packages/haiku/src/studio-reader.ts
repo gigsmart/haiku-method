@@ -170,8 +170,10 @@ export function resolveStageInputs(
 			)
 			if (def?.location) {
 				const absPath = resolveArtifactPath(def.location, intentDir, intentSlug)
-				const isDir = def.location.endsWith("/")
 				const exists = existsSync(absPath)
+				const isDir =
+					def.location.endsWith("/") ||
+					(exists && statSync(absPath).isDirectory())
 				if (isDir && exists) {
 					// Directory artifact — recursively read all files inside
 					const contents = readDirFilesRecursive(absPath)
@@ -180,7 +182,7 @@ export function resolveStageInputs(
 						artifactName: input.discovery,
 						kind: "discovery",
 						resolvedPath: absPath,
-						exists: true,
+						exists,
 						content: contents || "(empty directory)",
 						description: def.body,
 					})
@@ -203,8 +205,10 @@ export function resolveStageInputs(
 			)
 			if (def?.location) {
 				const absPath = resolveArtifactPath(def.location, intentDir, intentSlug)
-				const isDir = def.location.endsWith("/")
 				const exists = existsSync(absPath)
+				const isDir =
+					def.location.endsWith("/") ||
+					(exists && statSync(absPath).isDirectory())
 				if (isDir && exists) {
 					// Directory artifact — recursively read all files inside
 					const contents = readDirFilesRecursive(absPath)
@@ -213,7 +217,7 @@ export function resolveStageInputs(
 						artifactName: input.output,
 						kind: "output",
 						resolvedPath: absPath,
-						exists: true,
+						exists,
 						content: contents || "(empty directory)",
 						description: def.body,
 					})
@@ -241,7 +245,12 @@ function readDirFilesRecursive(dir: string, prefix = ""): string {
 	for (const entry of entries) {
 		const fullPath = join(dir, entry)
 		const relPath = prefix ? `${prefix}/${entry}` : entry
-		const stat = statSync(fullPath)
+		let stat: ReturnType<typeof statSync>
+		try {
+			stat = statSync(fullPath)
+		} catch {
+			continue // file disappeared between readdirSync and statSync — skip it
+		}
 		if (stat.isDirectory()) {
 			sections.push(readDirFilesRecursive(fullPath, relPath))
 		} else {
