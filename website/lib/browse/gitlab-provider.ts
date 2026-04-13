@@ -172,34 +172,6 @@ export class GitLabProvider implements BrowseProvider {
 			.sort()
 	}
 
-	private async listDirs(dir: string): Promise<string[]> {
-		const cacheKey = `gl:${this.host}:${this.projectPath}:listDirs:${dir}`
-		type ListData = {
-			project: {
-				repository: {
-					tree: {
-						blobs: {
-							nodes: Array<{ name: string; path: string } | null> | null
-						} | null
-						trees: {
-							nodes: Array<{ name: string; path: string } | null> | null
-						} | null
-					} | null
-				} | null
-			} | null
-		}
-		const data = await this.cachedQuery<ListData>(
-			ListFilesQueryArtifact,
-			{ fullPath: this.projectPath, path: dir, ref: this.ref },
-			cacheKey,
-		)
-		const trees = data?.project?.repository?.tree?.trees?.nodes
-		if (!trees) return []
-		return trees
-			.filter((n): n is { name: string; path: string } => n != null)
-			.map((n) => n.name)
-			.sort()
-	}
 
 	/** Read a file from a specific ref (bypasses this.ref). */
 	private async readFileFromRef(ref: string, path: string): Promise<string | null> {
@@ -391,12 +363,17 @@ export class GitLabProvider implements BrowseProvider {
 			this.intentMetaMap.set(slug, { branch: branchName, prUrl, prStatus, prNumber })
 		})
 
+		// Stream default-branch intents immediately so the UI renders progressively
+		for (const [, intent] of intentsBySlug) {
+			onProgress?.(intent)
+		}
+
+		// Branch reads may update existing entries — re-emit after they resolve
 		await Promise.all([...branchReadPromises, ...stageBranchPromises])
 
-		// Emit all intents (merged result: one per slug)
 		const allIntents = Array.from(intentsBySlug.values())
 		for (const intent of allIntents) {
-			onProgress?.(intent)
+			if (intent.branch) onProgress?.(intent)
 		}
 
 		return allIntents
@@ -723,14 +700,18 @@ export class GitLabProvider implements BrowseProvider {
 			}
 			this.intentMetaMap.set(slug, { branch: branchName, prUrl, prStatus, prNumber })
 
-			// Discover stage branches (non-main)
-			for (const name of branchNames) {
-				const parts = name.split("/")
-				if (parts.length < 3 || parts[0] !== "haiku" || parts[parts.length - 1] === "main") continue
-				const stageSlug = parts.slice(1, -1).join("/")
-				if (stageSlug !== slug) continue
-				const stageName = parts[parts.length - 1]
+			// Discover stage branches (non-main) — fetch MR data in parallel
+			const stageBranchEntries = branchNames
+				.map((name: string) => {
+					const parts = name.split("/")
+					if (parts.length < 3 || parts[0] !== "haiku" || parts[parts.length - 1] === "main") return null
+					const stageSlug = parts.slice(1, -1).join("/")
+					if (stageSlug !== slug) return null
+					return { name, stageName: parts[parts.length - 1] }
+				})
+				.filter(Boolean) as Array<{ name: string; stageName: string }>
 
+			await Promise.all(stageBranchEntries.map(async ({ name, stageName }) => {
 				let stagePrUrl: string | null = null
 				let stagePrStatus: string | null = null
 				let stagePrNumber: number | null = null
@@ -756,7 +737,7 @@ export class GitLabProvider implements BrowseProvider {
 					prStatus: stagePrStatus,
 					prNumber: stagePrNumber,
 				})
-			}
+			}))
 		} catch {
 			this.intentMetaMap.set(slug, { branch: branchName, prUrl: null, prStatus: null, prNumber: null })
 		}
@@ -905,12 +886,14 @@ export class GitLabProvider implements BrowseProvider {
 			?? defaultData?.blobByPath.get(`${basePath}/reflection.md`)
 			?? null
 
-		// Assets: merge from all levels (intent branch is primary source)
-		const assets = [
-			...(defaultData?.assets ?? []),
-			...(intentData?.assets ?? []),
-			...Array.from(stageBranchData.values()).flatMap((d) => d?.assets ?? []),
-		]
+		// Assets: merge from all levels, de-duplicating by path (higher trust wins)
+		const assetsByPath = new Map<string, { path: string; name: string; rawUrl: string }>()
+		for (const a of defaultData?.assets ?? []) assetsByPath.set(a.path, a)
+		for (const a of intentData?.assets ?? []) assetsByPath.set(a.path, a)
+		for (const d of stageBranchData.values()) {
+			for (const a of d?.assets ?? []) assetsByPath.set(a.path, a)
+		}
+		const assets = Array.from(assetsByPath.values())
 
 		return {
 			slug,

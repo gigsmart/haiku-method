@@ -698,6 +698,7 @@ function StageDetail({ stage, providerName, host, project, onSelectUnit, assets 
 	const isGitLab = providerName === "GitLab"
 	const prLabel = isGitLab ? "MR" : "PR"
 	const prPrefix = isGitLab ? "!" : "#"
+	const prStatusLabel: Record<string, string> = { open: "Open", opened: "Open", merged: "Merged", closed: "Closed" }
 
 	// Split artifacts into thumbnailable (html/image) and non-thumbnailable (markdown/other)
 	const thumbnailArtifacts = stage.artifacts?.filter(a => a.type === "html" || a.type === "image") ?? []
@@ -739,12 +740,12 @@ function StageDetail({ stage, providerName, host, project, onSelectUnit, assets 
 						<svg className="h-3 w-3" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={2}>
 							<path d="M5 5.5v5m6-5v5M5 3a2 2 0 100-4 2 2 0 000 4zm6 0a2 2 0 100-4 2 2 0 000 4zM5 14.5a2 2 0 100-4 2 2 0 000 4z" />
 						</svg>
-						{prLabel} {stage.prNumber ? `${prPrefix}${stage.prNumber}` : ""} {stage.prStatus}
+						{prLabel} {stage.prNumber ? `${prPrefix}${stage.prNumber}` : ""} {prStatusLabel[stage.prStatus!] ?? stage.prStatus}
 					</a>
 				)}
-				{stage.branch && (
+				{stage.branch && branchUrl && (
 					<a
-						href={branchUrl || "#"}
+						href={branchUrl}
 						target="_blank"
 						rel="noopener noreferrer"
 						className="inline-flex items-center gap-1 rounded bg-stone-100 dark:bg-stone-800 px-2 py-0.5 text-xs font-mono text-stone-500 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"

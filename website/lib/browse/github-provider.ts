@@ -144,28 +144,6 @@ export class GitHubProvider implements BrowseProvider {
 			.sort()
 	}
 
-	private async listDirs(dir: string): Promise<string[]> {
-		const cacheKey = `gh:${this.owner}/${this.repo}:listDirs:${dir}`
-		type TreeData = {
-			repository: {
-				object: {
-					entries?: ReadonlyArray<{ name: string; type: string }> | null
-				} | null
-			} | null
-		}
-		const data = await this.cachedQuery<TreeData>(
-			ListFilesQuery,
-			{ owner: this.owner, name: this.repo, expression: this.expr(dir) },
-			cacheKey,
-		)
-		const entries = data?.repository?.object?.entries
-		if (!entries) return []
-		return entries
-			.filter((e) => e.type === "tree")
-			.map((e) => e.name)
-			.sort()
-	}
-
 	/** Read a file from a specific branch (bypasses this.branch). */
 	private async readFileFromBranch(branch: string, path: string): Promise<string | null> {
 		const expression = `${branch}:${path}`
@@ -259,10 +237,10 @@ export class GitHubProvider implements BrowseProvider {
 		// Capture stage-level branches (haiku/{slug}/{stageName}, where stageName != "main")
 		for (const node of branchNodes) {
 			if (!node || node.name.endsWith("/main")) continue
-			const slashIdx = node.name.indexOf("/")
-			if (slashIdx === -1) continue
-			const slug = node.name.substring(0, slashIdx)
-			const stageName = node.name.substring(slashIdx + 1)
+			const parts = node.name.split("/")
+			if (parts.length < 2) continue
+			const slug = parts.slice(0, -1).join("/")
+			const stageName = parts[parts.length - 1]
 			const branchName = `haiku/${node.name}`
 			const pr = node.associatedPullRequests.nodes?.[0]
 			this.stageBranchMap.set(`${slug}/${stageName}`, {
@@ -332,12 +310,17 @@ export class GitHubProvider implements BrowseProvider {
 			this.intentMetaMap.set(slug, { branch: branchName, ...prMeta })
 		})
 
+		// Stream default-branch intents immediately so the UI renders progressively
+		for (const [, intent] of intentsBySlug) {
+			onProgress?.(intent)
+		}
+
+		// Branch reads may update existing entries — re-emit after they resolve
 		await Promise.all(branchReadPromises)
 
-		// Emit all intents (merged result: one per slug)
 		const allIntents = Array.from(intentsBySlug.values())
 		for (const intent of allIntents) {
-			onProgress?.(intent)
+			if (intent.branch) onProgress?.(intent)
 		}
 
 		return allIntents
@@ -596,7 +579,7 @@ export class GitHubProvider implements BrowseProvider {
 					slug, stageName,
 					intentData.repository.stagesTree.entries,
 					activeStage, stageNames,
-					intentBranch!,
+					intentBranch ?? "HEAD",
 				)
 			}
 
@@ -704,8 +687,9 @@ export class GitHubProvider implements BrowseProvider {
 
 			for (const node of branchesData?.repository?.refs?.nodes ?? []) {
 				if (!node || node.name === `${slug}/main`) continue
-				const stageName = node.name.replace(`${slug}/`, "")
-				if (!stageName || stageName.includes("/")) continue
+				const parts = node.name.split("/")
+				const stageName = parts[parts.length - 1]
+				if (!stageName) continue
 				const stagePr = node.associatedPullRequests.nodes?.[0]
 				this.stageBranchMap.set(`${slug}/${stageName}`, {
 					branch: `haiku/${node.name}`,
