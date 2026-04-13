@@ -143,15 +143,19 @@ export async function layoutFlow(parsed: ParsedFlow): Promise<{ nodes: Node[]; e
     target: e.target,
     label: e.label,
     animated: false,
+    zIndex: 2,
     style: {
       strokeDasharray: e.dashed ? "6 4" : undefined,
       stroke: e.color ?? "var(--flow-edge, #94a3b8)",
       strokeWidth: 1.5,
     },
     labelStyle: { fill: "var(--flow-edge-label, #1f2937)", fontSize: 12, fontWeight: 500 },
-    labelBgStyle: { fill: "var(--flow-edge-label-bg, #f8fafc)", fillOpacity: 0.95 },
-    labelBgPadding: [6, 4] as [number, number],
-    labelBgBorderRadius: 4,
+    labelBgStyle: e.label
+      ? { fill: "var(--flow-edge-label-bg, #f8fafc)", fillOpacity: 0.85 }
+      : { fillOpacity: 0 },
+    labelBgPadding: [4, 2] as [number, number],
+    labelBgBorderRadius: 3,
+    labelShowBg: !!e.label,
   }))
 
   return { nodes: rfNodes, edges: rfEdges }

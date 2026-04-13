@@ -124,7 +124,7 @@ function tryParseEdge(input: string): EdgeTokenMatch | null {
   for (const { re, dashed, labelGroup } of patterns) {
     const m = trimmed.match(re)
     if (!m) continue
-    const label = labelGroup > 0 ? m[labelGroup] : undefined
+    const label = labelGroup > 0 ? sanitizeLabel(m[labelGroup]) : undefined
     return {
       dashed,
       label,

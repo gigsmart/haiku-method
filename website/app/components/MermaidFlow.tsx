@@ -92,7 +92,7 @@ const nodeTypes = {
 
 type LayoutResult = Awaited<ReturnType<typeof layoutFlow>>
 
-export function MermaidFlow({ chart, height = 600, showMiniMap = true }: Props) {
+export function MermaidFlow({ chart, height = 600, showMiniMap = false }: Props) {
   const parsed = useMemo(() => parseMermaidFlow(chart), [chart])
   const [layout, setLayout] = useState<LayoutResult | null>(null)
   const [error, setError] = useState<string | null>(null)
