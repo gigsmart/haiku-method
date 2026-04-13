@@ -4,7 +4,6 @@ description: Assess vendors and score against criteria
 hats: [evaluator, technical-reviewer]
 review: ask
 elaboration: collaborative
-unit_types: [vendor-assessment, scoring]
 inputs:
   - stage: requirements
     discovery: rfp-document

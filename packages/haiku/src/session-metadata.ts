@@ -25,7 +25,6 @@ export interface HaikuSessionMetadata {
 	hat: string | null
 	bolt: number | null
 	stage_description: string
-	stage_unit_types: string[]
 	updated_at: string
 }
 

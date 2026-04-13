@@ -4,7 +4,6 @@ description: Facilitate training delivery and coordinate logistics
 hats: [facilitator, coordinator]
 review: auto
 elaboration: autonomous
-unit_types: [facilitation, logistics]
 inputs:
   - stage: develop
     output: training-materials

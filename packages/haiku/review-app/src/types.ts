@@ -51,7 +51,6 @@ export interface Section {
 export interface UnitFrontmatter {
   status: string;
   discipline?: string;
-  type?: string;
   depends_on?: string[];
   wireframe?: string;
   stage?: string;
@@ -126,6 +125,7 @@ export interface SessionData {
   intent_slug?: string;
   intent_dir?: string;
   review_type?: "intent" | "unit";
+  gate_type?: string;
   target?: string;
   intent?: ParsedIntent;
   units?: ParsedUnit[];

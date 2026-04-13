@@ -4,7 +4,6 @@ description: Period close, reconciliation, and financial sign-off
 hats: [controller, reconciler]
 review: external
 elaboration: autonomous
-unit_types: [reconciliation, close-process]
 inputs:
   - stage: reporting
     output: financial-reports

@@ -4,7 +4,6 @@ description: Storefront submission, platform certification, and patch pipeline
 hats: [release-engineer, platform-cert-specialist]
 review: await
 elaboration: autonomous
-unit_types: [release]
 inputs:
   - stage: polish
     output: game-build

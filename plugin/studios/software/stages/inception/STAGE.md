@@ -4,7 +4,6 @@ description: Understand the problem, define success, and elaborate into units
 hats: [researcher, elaborator]
 review: ask
 elaboration: collaborative
-unit_types: [research]
 inputs: []
 ---
 

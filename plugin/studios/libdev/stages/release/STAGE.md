@@ -4,7 +4,6 @@ description: Publish, changelog, documentation, and deprecation policy
 hats: [release-engineer, doc-writer]
 review: auto
 elaboration: autonomous
-unit_types: [release]
 inputs:
   - stage: inception
     discovery: discovery

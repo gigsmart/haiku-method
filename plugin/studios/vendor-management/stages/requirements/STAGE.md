@@ -4,7 +4,6 @@ description: Define procurement needs and create RFP
 hats: [analyst, specifier]
 review: ask
 elaboration: collaborative
-unit_types: [requirements, rfp]
 inputs: []
 ---
 

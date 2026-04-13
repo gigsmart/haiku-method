@@ -49,7 +49,6 @@ export function parseUnit(unitFile: string, stageName: string, raw: string): imp
 	return {
 		name: unitFile.replace(".md", ""),
 		stage: stageName,
-		type: (data.type as string) || "",
 		status: (data.status as string) || "pending",
 		dependsOn: (data.depends_on as string[]) || [],
 		refs: (data.refs as string[]) || [],
@@ -78,9 +77,11 @@ export function parseCriteria(content: string): Array<{ text: string; checked: b
 	return criteria
 }
 
-/** Normalize status and compute stagesComplete. Handles "complete" vs "completed" and completedAt. */
-export function normalizeIntentStatus(status: string, completedAt: string | null, stagesComplete: number, stagesTotal: number): { status: string; stagesComplete: number } {
-	const isComplete = status === "completed" || status === "complete" || !!completedAt
+/** Normalize status and compute stagesComplete. Handles "complete" vs "completed".
+ *  The status field is the source of truth — completed_at is just a timestamp and
+ *  does not override an explicit non-complete status (e.g., a reopened intent). */
+export function normalizeIntentStatus(status: string, _completedAt: string | null, stagesComplete: number, stagesTotal: number): { status: string; stagesComplete: number } {
+	const isComplete = status === "completed" || status === "complete"
 	return {
 		status: isComplete ? "completed" : status,
 		stagesComplete: isComplete ? stagesTotal : Math.max(0, stagesComplete),

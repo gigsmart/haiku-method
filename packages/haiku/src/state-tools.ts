@@ -18,10 +18,12 @@ import { features } from "./config.js"
 import {
 	addTempWorktree,
 	commitAndPushFromWorktree,
+	consolidateStageBranches,
 	getCurrentBranch,
 	getMainlineBranch,
 	isBranchMerged,
 	listIntentBranches,
+	listOrphanDiscreteIntents,
 	mergeUnitWorktree,
 	openPullRequest,
 	readFileFromBranch,
@@ -270,6 +272,31 @@ export function applyAutoFixes(
 
 	if (changed) {
 		writeFileSync(intentPath, matter.stringify(body, data))
+	}
+
+	// Strip deprecated `type` field from all unit files
+	const stagesDir = join(intentRoot, slug, "stages")
+	if (existsSync(stagesDir)) {
+		for (const stageEntry of readdirSync(stagesDir, { withFileTypes: true })) {
+			if (!stageEntry.isDirectory()) continue
+			const unitsDir = join(stagesDir, stageEntry.name, "units")
+			if (!existsSync(unitsDir)) continue
+			for (const unitEntry of readdirSync(unitsDir, { withFileTypes: true })) {
+				if (!unitEntry.isFile() || !unitEntry.name.endsWith(".md")) continue
+				const unitPath = join(unitsDir, unitEntry.name)
+				const unitRaw = readFileSync(unitPath, "utf8")
+				const unitParsed = matter(unitRaw)
+				if ("type" in unitParsed.data) {
+					const { type: _removed, ...rest } = unitParsed.data
+					writeFileSync(unitPath, matter.stringify(unitParsed.content, rest))
+					applied.push({
+						intent: slug,
+						field: `stages/${stageEntry.name}/units/${unitEntry.name}:type`,
+						description: "Removed deprecated `type` field from unit",
+					})
+				}
+			}
+		}
 	}
 
 	// Second pass: fix stage-level state.json issues (completion synthesis)
@@ -727,15 +754,6 @@ function scanOneIntent(
 				}
 				const unitRaw = readFileSync(join(repairUnitsDir, f.name), "utf8")
 				const { data: unitData } = parseFrontmatter(unitRaw)
-				if (!unitData.type) {
-					issues.push({
-						intent: slug,
-						field: `stages/${stageName}/units/${f.name}:type`,
-						severity: "warning",
-						message: `Unit missing 'type' field`,
-						fix: "Add `type` field to unit frontmatter",
-					})
-				}
 				if (!unitData.status) {
 					issues.push({
 						intent: slug,
@@ -1036,15 +1054,93 @@ interface BranchRepairSummary {
 
 /** Repair every haiku/<slug>/main branch sequentially using temporary worktrees.
  *  Auto-applies safe fixes, commits + pushes them, and opens a PR if the branch
- *  was already merged into the mainline. Returns a structured summary. */
+ *  was already merged into the mainline. Returns a structured summary.
+ *
+ *  Also detects discrete-mode intents that have stage branches but no main branch
+ *  and consolidates their stage branches into a new main branch first. */
 function repairAllBranches(autoApply: boolean): {
 	summaries: BranchRepairSummary[]
 	mainline: string
 	archivedSummary?: BranchRepairSummary
 } {
-	const branches = listIntentBranches()
 	const mainline = getMainlineBranch()
 	const summaries: BranchRepairSummary[] = []
+
+	// Phase 1: Create missing main branches for orphan discrete intents.
+	// These have haiku/<slug>/<stage> branches but no haiku/<slug>/main,
+	// so listIntentBranches() can't see them. Consolidate stage branches
+	// into a new main branch so the standard repair loop can process them.
+	if (autoApply) {
+		const orphans = listOrphanDiscreteIntents()
+		for (const { slug, branches: stageBranches } of orphans) {
+			// Extract stage names from branch refs
+			const stageNames = stageBranches.map((b) =>
+				b.replace(`haiku/${slug}/`, ""),
+			)
+
+			// Sort by pipeline order if we can resolve the studio from a stage branch
+			try {
+				const firstBranch = stageBranches[0]
+				const intentRaw = readFileFromBranch(
+					firstBranch,
+					`.haiku/intents/${slug}/intent.md`,
+				)
+				if (intentRaw) {
+					const { data: intentFm } = parseFrontmatter(intentRaw)
+					const studioName = (intentFm.studio as string) || ""
+					if (studioName) {
+						const studioInfo = resolveStudio(studioName)
+						if (studioInfo && studioInfo.stages.length > 0) {
+							const pipelineOrder = studioInfo.stages
+							stageNames.sort((a, b) => {
+								const ai = pipelineOrder.indexOf(a)
+								const bi = pipelineOrder.indexOf(b)
+								// Unknown stages sort to the end
+								return (
+									(ai === -1 ? pipelineOrder.length : ai) -
+									(bi === -1 ? pipelineOrder.length : bi)
+								)
+							})
+						}
+					}
+				}
+			} catch {
+				// Can't resolve pipeline order — alphabetical fallback
+			}
+
+			try {
+				const result = consolidateStageBranches(slug, stageNames)
+				if (result.success) {
+					// Push the new main branch
+					try {
+						execFileSync(
+							"git",
+							["push", "-u", "origin", `haiku/${slug}/main`],
+							{ encoding: "utf8", stdio: "pipe" },
+						)
+					} catch {
+						// push failed — still continue with local repair
+					}
+				}
+			} catch (err) {
+				// Consolidation failed — record so it appears in the repair report
+				summaries.push({
+					slug,
+					branch: `haiku/${slug}/main`,
+					scanned: 0,
+					applied: [],
+					remaining: [],
+					committed: false,
+					pushed: false,
+					merged: false,
+					pushError: `Failed to create main from stage branches: ${err instanceof Error ? err.message : String(err)}`,
+				})
+			}
+		}
+	}
+
+	// Phase 2: Repair all main branches (including any just created above)
+	const branches = listIntentBranches()
 
 	for (const slug of branches) {
 		const branch = `haiku/${slug}/main`
@@ -1655,34 +1751,6 @@ function resolveStageHats(intent: string, stage: string): string[] {
 	return []
 }
 
-/** Resolve allowed unit types for a stage — used for enforcement */
-function resolveAllowedUnitTypes(intent: string, stage: string): string[] {
-	try {
-		const root = findHaikuRoot()
-		const intentFile = join(root, "intents", intent, "intent.md")
-		if (!existsSync(intentFile)) return []
-		const { data } = parseFrontmatter(readFileSync(intentFile, "utf8"))
-		const studio = (data.studio as string) || ""
-		if (!studio) return []
-
-		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
-		for (const base of [
-			join(process.cwd(), ".haiku", "studios"),
-			join(pluginRoot, "studios"),
-		]) {
-			const stageFile = join(base, studio, "stages", stage, "STAGE.md")
-			if (!existsSync(stageFile)) continue
-			const { data: stageFm } = parseFrontmatter(
-				readFileSync(stageFile, "utf8"),
-			)
-			return (stageFm.unit_types as string[]) || []
-		}
-	} catch {
-		/* */
-	}
-	return []
-}
-
 /** Resolve stage metadata for scope context in tool responses */
 function resolveStageScope(intent: string, stage: string): string {
 	try {
@@ -1704,8 +1772,7 @@ function resolveStageScope(intent: string, stage: string): string {
 			const fm = parseFrontmatter(raw)
 			const { content } = matter(raw)
 			const desc = (fm.data.description as string) || stage
-			const unitTypes = (fm.data.unit_types as string[]) || []
-			return `[stage_scope] ${stage}: ${desc}${unitTypes.length > 0 ? ` | unit_types: ${unitTypes.join(", ")}` : ""} | ${content.trim().slice(0, 500)}`
+			return `[stage_scope] ${stage}: ${desc} | ${content.trim().slice(0, 500)}`
 		}
 	} catch {
 		/* */
@@ -1763,7 +1830,6 @@ export function syncSessionMetadata(
 		}
 
 		let stageDescription = activeStage
-		let stageUnitTypes: string[] = []
 		if (studio && activeStage) {
 			const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
 			for (const base of [
@@ -1774,7 +1840,6 @@ export function syncSessionMetadata(
 				if (!existsSync(sf)) continue
 				const { data: stageFm } = parseFrontmatter(readFileSync(sf, "utf8"))
 				stageDescription = (stageFm.description as string) || activeStage
-				stageUnitTypes = (stageFm.unit_types as string[]) || []
 				break
 			}
 		}
@@ -1788,7 +1853,6 @@ export function syncSessionMetadata(
 			hat,
 			bolt,
 			stage_description: stageDescription,
-			stage_unit_types: stageUnitTypes,
 			updated_at: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
 		})
 	} catch {
@@ -2204,28 +2268,6 @@ export function handleStateTool(
 			const uPath = unitPath(args.intent as string, stage, args.unit as string)
 			const stageHats = resolveStageHats(args.intent as string, stage)
 			const firstHat = stageHats[0] || ""
-
-			// Enforce unit type matches stage's allowed unit_types
-			if (existsSync(uPath)) {
-				const { data: unitFm } = parseFrontmatter(readFileSync(uPath, "utf8"))
-				const unitType = (unitFm.type as string) || ""
-				if (unitType) {
-					const allowedTypes = resolveAllowedUnitTypes(
-						args.intent as string,
-						stage,
-					)
-					if (allowedTypes.length > 0 && !allowedTypes.includes(unitType)) {
-						return text(
-							JSON.stringify({
-								error: "unit_type_not_allowed",
-								unit_type: unitType,
-								allowed_types: allowedTypes,
-								message: `Unit type '${unitType}' is not allowed in stage '${stage}'. Allowed types: ${allowedTypes.join(", ")}. Convert to knowledge for downstream stages, then call haiku_run_next again.`,
-							}),
-						)
-					}
-				}
-			}
 
 			setFrontmatterField(uPath, "status", "active")
 			setFrontmatterField(uPath, "bolt", 1)

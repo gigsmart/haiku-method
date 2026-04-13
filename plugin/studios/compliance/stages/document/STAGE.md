@@ -4,7 +4,6 @@ description: Create evidence packages, audit trails, and compliance documentatio
 hats: [evidence-collector, documentation-writer]
 review: ask
 elaboration: autonomous
-unit_types: [evidence, documentation, audit-trail]
 inputs:
   - stage: remediate
     discovery: remediation-log

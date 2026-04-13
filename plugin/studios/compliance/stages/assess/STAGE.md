@@ -4,7 +4,6 @@ description: Evaluate current state against controls, identify gaps and risks
 hats: [auditor, risk-assessor]
 review: ask
 elaboration: collaborative
-unit_types: [gap-analysis, risk-assessment]
 inputs:
   - stage: scope
     discovery: control-mapping

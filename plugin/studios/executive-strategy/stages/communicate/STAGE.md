@@ -4,7 +4,6 @@ description: Develop stakeholder communications and rollout plan
 hats: [communicator, planner]
 review: ask
 elaboration: autonomous
-unit_types: [communication, rollout-plan]
 inputs:
   - stage: decide
     discovery: decision-brief

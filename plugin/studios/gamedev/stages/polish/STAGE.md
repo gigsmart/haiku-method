@@ -4,7 +4,6 @@ description: Tuning, game feel, performance, bug triage, and juice
 hats: [gameplay-engineer, tuner, performance-engineer, qa]
 review: [external, ask]
 elaboration: collaborative
-unit_types: [tuning, bugfix, performance]
 inputs:
   - stage: production
     output: game-build

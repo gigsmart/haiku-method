@@ -27,9 +27,11 @@ import {
 	createIntentBranch,
 	createStageBranch,
 	createUnitWorktree,
+	isBranchMerged,
 	isOnIntentBranch,
 	isOnStageBranch,
 	mergeStageBranchForward,
+	mergeStageBranchIntoMain,
 } from "./git-worktree.js"
 import { type ModelTier, resolveModel } from "./model-selection.js"
 import { validateIdentifier } from "./prompts/helpers.js"
@@ -171,7 +173,7 @@ function stageReviewIncludes(
 function resolveStageMetadata(
 	studio: string,
 	stage: string,
-): { description: string; unit_types: string[]; body: string } | null {
+): { description: string; body: string } | null {
 	// Accept any identifier (dir, name, slug, alias); falls back to raw arg
 	// for robustness when the studio cache isn't warm yet.
 	const info = resolveStudio(studio)
@@ -188,7 +190,6 @@ function resolveStageMetadata(
 			const { content } = matter(raw)
 			return {
 				description: (fm.description as string) || stage,
-				unit_types: (fm.unit_types as string[]) || [],
 				body: content.trim(),
 			}
 		}
@@ -373,48 +374,6 @@ function validateDiscoveryArtifacts(
 		break // Project-level discovery dir takes precedence over plugin-level (first match wins)
 	}
 
-	return null
-}
-
-// ── Unit type validation ──────────────────────────────────────────────────
-
-/**
- * Validate all units in a stage against the stage's allowed unit_types.
- * Returns violations or null if all pass.
- */
-function validateUnitTypes(
-	intentDirPath: string,
-	stage: string,
-	studio: string,
-): OrchestratorAction | null {
-	const unitsDir = join(intentDirPath, "stages", stage, "units")
-	if (!existsSync(unitsDir)) return null
-
-	const metadata = resolveStageMetadata(studio, stage)
-	const allowedTypes = metadata?.unit_types || []
-	if (allowedTypes.length === 0) return null
-
-	const unitFiles = readdirSync(unitsDir).filter((f) => f.endsWith(".md"))
-	const violations: Array<{ unit: string; type: string }> = []
-	for (const f of unitFiles) {
-		const fm = readFrontmatter(join(unitsDir, f))
-		const unitType = (fm.type as string) || ""
-		if (unitType && !allowedTypes.includes(unitType)) {
-			violations.push({ unit: f.replace(".md", ""), type: unitType })
-		}
-	}
-
-	if (violations.length > 0) {
-		const slug = intentDirPath.split("/intents/")[1] || ""
-		return {
-			action: "spec_validation_failed",
-			intent: slug,
-			stage,
-			violations,
-			allowed_types: allowedTypes,
-			message: `${violations.length} unit(s) have types not allowed in stage '${stage}' (allowed: ${allowedTypes.join(", ")}). ${violations.map((v) => `${v.unit} is '${v.type}'`).join(", ")}.\n\nDo NOT simply move these units to another stage. For each violation:\n1. Extract useful insights into the stage's discovery knowledge (e.g., "we'll need X with these properties")\n2. Delete the violating unit file\n3. Create a new unit with the correct type for this stage's purpose\n\nImplementation details belong in knowledge documents for downstream stages, not in units here.\n\nAfter making changes, call \`haiku_run_next { intent: "${slug}" }\` again to re-validate.`,
-		}
-	}
 	return null
 }
 
@@ -708,18 +667,42 @@ function fsmStartStage(slug: string, stage: string): void {
 	const intent = readFrontmatter(intentFile)
 	const branchMode = resolveEffectiveBranchMode(slug, stage)
 	if (branchMode === "discrete") {
+		// Discrete mode: haiku/<slug>/main is the hub branch.
+		// Stage branches branch from main, and merge back into main when approved.
+		// This ensures browse/repair can always find the intent on main.
+
+		// 1. Ensure the hub branch exists
+		createIntentBranch(slug)
+
+		// 2. If there's a completed previous stage not yet merged, merge it into main first
+		const prevStage = findPreviousStage(slug, stage)
+		const prevStageBranch = prevStage ? `haiku/${slug}/${prevStage}` : ""
+		if (
+			prevStage &&
+			branchExists(prevStageBranch) &&
+			!isBranchMerged(prevStageBranch, `haiku/${slug}/main`)
+		) {
+			const mergeResult = mergeStageBranchIntoMain(slug, prevStage)
+			if (!mergeResult.success) {
+				throw new Error(
+					`Merge of completed stage '${prevStage}' into main failed: ${mergeResult.message}. Resolve conflicts on 'haiku/${slug}/main' manually, then retry.`,
+				)
+			}
+		}
+
+		// 3. Create (or switch to) the stage branch from main
 		if (!isOnStageBranch(slug, stage)) {
-			const prevStage = findPreviousStage(slug, stage)
 			const stageBranch = `haiku/${slug}/${stage}`
 			if (branchExists(stageBranch) && prevStage) {
-				const mergeResult = mergeStageBranchForward(slug, prevStage, stage)
+				// Stage branch already exists (go-back scenario) — merge main forward
+				const mergeResult = mergeStageBranchForward(slug, "main", stage)
 				if (!mergeResult.success) {
 					throw new Error(
-						`Merge forward from '${prevStage}' to '${stage}' failed: ${mergeResult.message}. Resolve conflicts on branch '${stageBranch}' manually, then retry.`,
+						`Merge forward from main to '${stage}' failed: ${mergeResult.message}. Resolve conflicts on branch '${stageBranch}' manually, then retry.`,
 					)
 				}
 			} else {
-				createStageBranch(slug, stage, prevStage)
+				createStageBranch(slug, stage)
 			}
 		}
 	} else {
@@ -841,10 +824,6 @@ function fsmIntentComplete(slug: string): void {
 	gitCommitState(`haiku: complete intent ${slug}`)
 }
 
-function fsmStageCompleteDiscrete(slug: string, stage: string): void {
-	fsmCompleteStage(slug, stage, "paused")
-}
-
 // ── Main orchestration function ────────────────────────────────────────────
 
 export function runNext(slug: string): OrchestratorAction {
@@ -878,8 +857,6 @@ export function runNext(slug: string): OrchestratorAction {
 		}
 	}
 
-	const mode = (intent.mode as string) || "continuous"
-	const continuousFrom = (intent.continuous_from as string) || ""
 	const status = (intent.status as string) || "active"
 	const activeStage = (intent.active_stage as string) || ""
 
@@ -1117,10 +1094,6 @@ export function runNext(slug: string): OrchestratorAction {
 		const namingViolation = validateUnitNaming(iDir, currentStage)
 		if (namingViolation) return namingViolation
 
-		// Validate unit types before allowing execution
-		const typeViolation = validateUnitTypes(iDir, currentStage, studio)
-		if (typeViolation) return typeViolation
-
 		// Validate discovery artifacts exist before advancing
 		const discoveryViolation = validateDiscoveryArtifacts(
 			slug,
@@ -1166,8 +1139,6 @@ export function runNext(slug: string): OrchestratorAction {
 				if (stageEntry.name === currentStage) continue // already validated above
 				const crossNaming = validateUnitNaming(iDir, stageEntry.name)
 				if (crossNaming) return crossNaming
-				const crossTypes = validateUnitTypes(iDir, stageEntry.name, studio)
-				if (crossTypes) return crossTypes
 			}
 		}
 
@@ -1199,11 +1170,9 @@ export function runNext(slug: string): OrchestratorAction {
 
 	// Stage in execute phase
 	if (phase === "execute") {
-		// Validate unit naming and types on every execute call — catch violations that snuck through
+		// Validate unit naming on every execute call — catch violations that snuck through
 		const execNamingViolation = validateUnitNaming(iDir, currentStage)
 		if (execNamingViolation) return execNamingViolation
-		const execTypeViolation = validateUnitTypes(iDir, currentStage, studio)
-		if (execTypeViolation) return execTypeViolation
 
 		const units = listUnits(iDir, currentStage)
 		const activeUnits = units.filter((u) => u.status === "active")
@@ -1378,111 +1347,50 @@ export function runNext(slug: string): OrchestratorAction {
 		}
 	}
 
-	// Stage in gate phase
+	// Stage in gate phase — always open local review UI as a preliminary gate.
+	// The gate type determines what options are shown:
+	//   - Discrete intent mode: always "external" (Submit for External Review + Request Changes)
+	//   - Continuous/hybrid intent mode: based on the stage's review field
+	//     - auto/ask → "ask" (Approve + Request Changes)
+	//     - external → "external" (Submit for External Review + Request Changes)
+	//     - [external, ask] → as-is (Approve + Submit for External Review + Request Changes)
+	//     - await → "external" (awaits external event after submission)
+	//   Note: continuous intents may have discrete branch isolation for external-review
+	//   stages (PR isolation), but the gate options still reflect the stage's review field.
 	if (phase === "gate") {
 		const reviewType = resolveStageReview(studio, currentStage)
 		const stageIdx = studioStages.indexOf(currentStage)
 		const nextStage =
 			stageIdx < studioStages.length - 1 ? studioStages[stageIdx + 1] : null
-		const isLastStage = !nextStage
 
-		// Resolve effective mode for the *next* stage transition.
-		// hybrid: discrete until continuous_from, then continuous from that stage onward.
-		// await/external gates always pause regardless of mode — they need external triggers.
-		let effectiveMode = mode
-		if (mode === "hybrid" && continuousFrom && nextStage) {
-			const thresholdIdx = studioStages.indexOf(continuousFrom)
-			const nextIdx = studioStages.indexOf(nextStage)
-			effectiveMode = nextIdx >= thresholdIdx ? "continuous" : "discrete"
+		// Use the intent's declared mode (not effective branch mode) to determine gate UI.
+		// A continuous intent with PR-isolated external-review stages should still show
+		// the stage's full gate options, not be forced to external-only.
+		const intentMode = (intent.mode as string) || "continuous"
+
+		// Determine gate type for the review UI
+		let effectiveGateType: string
+		if (intentMode === "discrete") {
+			// Pure discrete intent: always submit for external review (PR per stage)
+			effectiveGateType = "external"
+		} else if (reviewType === "auto" || reviewType === "ask") {
+			effectiveGateType = "ask"
+		} else if (reviewType === "await") {
+			effectiveGateType = "external"
+		} else {
+			// Compound gates (e.g., "external,ask") pass through as-is
+			effectiveGateType = reviewType
 		}
 
-		if (reviewType === "auto") {
-			if (isLastStage) {
-				// FSM side effect: complete current stage + intent
-				fsmCompleteStage(slug, currentStage, "advanced")
-				fsmIntentComplete(slug)
-				return {
-					action: "intent_complete",
-					intent: slug,
-					studio,
-					message: `All stages complete for intent '${slug}'`,
-				}
-			}
-			if (effectiveMode === "continuous") {
-				// FSM side effect: advance stage
-				fsmAdvanceStage(slug, currentStage, nextStage)
-				return {
-					action: "advance_stage",
-					intent: slug,
-					stage: currentStage,
-					next_stage: nextStage,
-					gate_outcome: "advanced",
-					message: `Gate auto-passed — advancing to '${nextStage}'`,
-				}
-			}
-			// FSM side effect: complete stage as discrete (paused)
-			fsmStageCompleteDiscrete(slug, currentStage)
-			return {
-				action: "stage_complete_discrete",
-				intent: slug,
-				stage: currentStage,
-				next_stage: nextStage,
-				message: `Stage '${currentStage}' complete. Run /haiku:pickup to start '${nextStage}'.`,
-			}
-		}
-
-		if (
-			reviewType === "ask" ||
-			reviewType === "external" ||
-			reviewType.includes("ask") ||
-			reviewType.includes("external")
-		) {
-			// All non-auto gates open the review UI. Gate type determines the options shown.
-			// ask → Approve / Request Changes
-			// external → Request Changes / Open PR
-			// [external, ask] or [ask, external] → Approve / Request Changes / Open PR
-			fsmGateAsk(slug, currentStage)
-			return {
-				action: "gate_review",
-				intent: slug,
-				studio,
-				stage: currentStage,
-				next_stage: nextStage,
-				gate_type: reviewType,
-				message: `Stage '${currentStage}' complete — opening review`,
-			}
-		}
-
-		if (reviewType === "await") {
-			fsmGateAsk(slug, currentStage)
-			return {
-				action: "gate_await",
-				intent: slug,
-				stage: currentStage,
-				next_stage: nextStage,
-				message: `Stage '${currentStage}' complete — awaiting external event before advancing`,
-			}
-		}
-
-		// Fallback
-		if (!nextStage) {
-			fsmCompleteStage(slug, currentStage, "advanced")
-			fsmIntentComplete(slug)
-			return {
-				action: "intent_complete",
-				intent: slug,
-				studio,
-				message: `All stages complete for intent '${slug}'`,
-			}
-		}
-		fsmAdvanceStage(slug, currentStage, nextStage)
+		fsmGateAsk(slug, currentStage)
 		return {
-			action: "advance_stage",
+			action: "gate_review",
 			intent: slug,
+			studio,
 			stage: currentStage,
 			next_stage: nextStage,
-			gate_outcome: "advanced",
-			message: `Advancing to '${nextStage}'`,
+			gate_type: effectiveGateType,
+			message: `Stage '${currentStage}' complete — opening review`,
 		}
 	}
 
@@ -2103,13 +2011,6 @@ function enrichActionWithPreview(action: OrchestratorAction): void {
 				: "The intent is complete."
 			break
 
-		case "stage_complete_discrete":
-			tell_user = `Stage '${stage}' is complete.`
-			next_step = nextStage
-				? `Run /haiku:pickup to start stage '${nextStage}'.`
-				: "The intent is complete."
-			break
-
 		case "intent_complete":
 			tell_user = "All stages are complete — the intent is done."
 			next_step = ""
@@ -2129,11 +2030,6 @@ function enrichActionWithPreview(action: OrchestratorAction): void {
 		case "awaiting_external_review":
 			tell_user = `Stage '${stage}' is waiting on external review.`
 			next_step = "Run /haiku:pickup after the review is approved."
-			break
-
-		case "gate_await":
-			tell_user = `Stage '${stage}' is complete — waiting for an external event before advancing.`
-			next_step = "Run /haiku:pickup when the external event occurs."
 			break
 
 		case "blocked":
@@ -2283,13 +2179,10 @@ function buildRunInstructions(
 			const stage = action.stage as string
 			const elaboration = (action.elaboration as string) || "collaborative"
 			const stageDef = readStageDef(studio, stage)
-			const unitTypes = (stageDef?.data?.unit_types as string[]) || []
 
 			sections.push(`## Elaborate: ${stage}`)
 			if (stageDef) {
 				sections.push(`${stageDef.body}`)
-				if (unitTypes.length > 0)
-					sections.push(`**Allowed unit types:** ${unitTypes.join(", ")}`)
 			}
 
 			// Resolve upstream stage inputs — load actual content from prior stages
@@ -2369,7 +2262,7 @@ function buildRunInstructions(
 			}
 
 			sections.push(
-				`## Scope\n\nAll units MUST be within this stage's domain${unitTypes.length > 0 ? ` (${unitTypes.join(", ")})` : ""}. Work belonging to other stages goes in the discovery document, not in units.\n\n## Mechanics\n\n${
+				`## Scope\n\nAll units MUST be within this stage's domain. Work belonging to other stages goes in the discovery document, not in units.\n\n## Mechanics\n\n${
 					elaboration === "collaborative"
 						? "Mode: **collaborative** — you MUST engage the user iteratively before finalizing.\n\n" +
 							"## MANDATORY: Use tools for questions — NEVER plain text for structured choices\n\n" +
@@ -2418,7 +2311,6 @@ function buildRunInstructions(
 			const hats = (action.hats as string[]) || []
 			const bolt = (action.bolt as number) || 1
 			const stageDef = readStageDef(studio, stage)
-			const unitTypes = (stageDef?.data?.unit_types as string[]) || []
 
 			// Unit content
 			const unitFile = join(
@@ -2470,7 +2362,7 @@ function buildRunInstructions(
 			// Stage scope (once, concise)
 			if (stageDef) {
 				sections.push(
-					`### Stage: ${stage}\n\n${stageDef.body}\n\n**Unit types:** ${unitTypes.length > 0 ? unitTypes.join(", ") : "per stage definition"}. Stay within this stage's scope — do not produce outputs belonging to other stages.`,
+					`### Stage: ${stage}\n\n${stageDef.body}\n\nStay within this stage's scope — do not produce outputs belonging to other stages.`,
 				)
 			}
 
@@ -2669,36 +2561,11 @@ function buildRunInstructions(
 			break
 		}
 
-		case "gate_external": {
-			const stage = action.stage as string
-			sections.push(
-				`## Gate: External Review\n\nStage "${stage}" is complete. The gate has been entered by the orchestrator.\n\n### Instructions\n\n1. Push the branch and commit stage artifacts\n2. Share the review URL with the reviewer\n3. Report: "Awaiting external review. Run /haiku:pickup when review is complete."`,
-			)
-			break
-		}
-
-		case "gate_await": {
-			const stage = action.stage as string
-			sections.push(
-				`## Gate: Awaiting External Event\n\nStage "${stage}" is complete. The gate has been entered by the orchestrator.\n\n### Instructions\n\n1. Report what is being awaited\n2. Stop. Run /haiku:pickup when the event occurs.`,
-			)
-			break
-		}
-
 		case "advance_stage": {
 			const stage = action.stage as string
 			const nextStage = action.next_stage as string
 			sections.push(
 				`## Advance Stage\n\nGate passed. The orchestrator has advanced from "${stage}" to "${nextStage}".\n\n**Call \`haiku_run_next { intent: "${slug}" }\` immediately.** Do NOT ask the user for confirmation — the gate was already approved. Do NOT present summaries or ask "want me to continue?" — just call the tool.`,
-			)
-			break
-		}
-
-		case "stage_complete_discrete": {
-			const stage = action.stage as string
-			const nextStage = action.next_stage as string
-			sections.push(
-				`## Stage Complete (Discrete Mode)\n\nStage "${stage}" has been completed by the orchestrator.\n\n### Instructions\n\nReport: "Stage complete. Run /haiku:pickup to start '${nextStage}'."`,
 			)
 			break
 		}

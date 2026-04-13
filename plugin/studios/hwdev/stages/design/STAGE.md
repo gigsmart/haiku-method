@@ -4,7 +4,6 @@ description: Schematic, PCB layout, mechanical, and BOM
 hats: [electrical-engineer, mechanical-engineer, pcb-designer, design-reviewer]
 review: [external, ask]
 elaboration: collaborative
-unit_types: [electrical, mechanical, pcb]
 inputs:
   - stage: inception
     discovery: discovery

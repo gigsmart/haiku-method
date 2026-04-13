@@ -4,7 +4,6 @@ description: Research precedent and review regulatory requirements
 hats: [researcher, analyst]
 review: auto
 elaboration: autonomous
-unit_types: [precedent-research, regulatory-review]
 inputs:
   - stage: intake
     discovery: legal-brief

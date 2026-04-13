@@ -87,9 +87,6 @@ export async function injectContext(
 			if (metadata.stage_description) {
 				out(`### Stage: ${metadata.active_stage}`)
 				out(`**${metadata.stage_description}**`)
-				if (metadata.stage_unit_types.length > 0) {
-					out(`**Unit types:** ${metadata.stage_unit_types.join(", ")}`)
-				}
 				out("")
 				out(`> All work MUST stay within this stage's scope.`)
 				out("")

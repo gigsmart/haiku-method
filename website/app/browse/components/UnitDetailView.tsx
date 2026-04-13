@@ -61,11 +61,6 @@ export function UnitDetailView({ unit, stageName, intentSlug, provider, assets =
 				<div className="flex items-center gap-3">
 					<h1 className="text-2xl font-bold tracking-tight">{titleCase(unit.name)}</h1>
 					<StatusBadge status={unit.status} />
-					{unit.type && (
-						<span className="rounded bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-800 dark:text-stone-400">
-							{unit.type}
-						</span>
-					)}
 				</div>
 				<p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
 					Stage: {titleCase(stageName)}

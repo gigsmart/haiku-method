@@ -4,7 +4,6 @@ description: Design test cases and plan automation
 hats: [designer, automator]
 review: auto
 elaboration: autonomous
-unit_types: [test-design, automation-plan]
 inputs:
   - stage: plan
     discovery: test-strategy

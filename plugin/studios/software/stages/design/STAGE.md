@@ -4,7 +4,6 @@ description: Visual and interaction design for user-facing surfaces
 hats: [designer, design-reviewer]
 review: [external, ask]
 elaboration: collaborative
-unit_types: [design]
 inputs:
   - stage: inception
     discovery: discovery

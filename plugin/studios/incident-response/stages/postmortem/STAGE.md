@@ -4,7 +4,6 @@ description: Document timeline, root cause, action items, and prevention measure
 hats: [postmortem-author, action-item-tracker]
 review: external
 elaboration: autonomous
-unit_types: [postmortem, action-item]
 inputs:
   - stage: resolve
     discovery: resolution-summary

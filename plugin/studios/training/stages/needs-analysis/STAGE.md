@@ -4,7 +4,6 @@ description: Conduct skills gap analysis and define learning objectives
 hats: [analyst, consultant]
 review: auto
 elaboration: collaborative
-unit_types: [gap-analysis, objectives]
 inputs: []
 ---
 
