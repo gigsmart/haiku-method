@@ -4,7 +4,6 @@ description: Playable vertical slice that proves the fun before production
 hats: [prototype-engineer, game-designer, playtester]
 review: [external, ask]
 elaboration: collaborative
-unit_types: [prototype]
 inputs:
   - stage: concept
     discovery: concept-doc

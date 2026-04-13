@@ -230,6 +230,31 @@ export function applyAutoFixes(
 		writeFileSync(intentPath, matter.stringify(body, data))
 	}
 
+	// Strip deprecated `type` field from all unit files
+	const stagesDir = join(intentRoot, slug, "stages")
+	if (existsSync(stagesDir)) {
+		for (const stageEntry of readdirSync(stagesDir, { withFileTypes: true })) {
+			if (!stageEntry.isDirectory()) continue
+			const unitsDir = join(stagesDir, stageEntry.name, "units")
+			if (!existsSync(unitsDir)) continue
+			for (const unitEntry of readdirSync(unitsDir, { withFileTypes: true })) {
+				if (!unitEntry.isFile() || !unitEntry.name.endsWith(".md")) continue
+				const unitPath = join(unitsDir, unitEntry.name)
+				const unitRaw = readFileSync(unitPath, "utf8")
+				const unitParsed = matter(unitRaw)
+				if ("type" in unitParsed.data) {
+					const { type: _removed, ...rest } = unitParsed.data
+					writeFileSync(unitPath, matter.stringify(unitParsed.content, rest))
+					applied.push({
+						intent: slug,
+						field: `stages/${stageEntry.name}/units/${unitEntry.name}:type`,
+						description: "Removed deprecated `type` field from unit",
+					})
+				}
+			}
+		}
+	}
+
 	return { applied, remaining }
 }
 
@@ -580,15 +605,6 @@ function scanOneIntent(
 				}
 				const unitRaw = readFileSync(join(repairUnitsDir, f.name), "utf8")
 				const { data: unitData } = parseFrontmatter(unitRaw)
-				if (!unitData.type) {
-					issues.push({
-						intent: slug,
-						field: `stages/${stageName}/units/${f.name}:type`,
-						severity: "warning",
-						message: `Unit missing 'type' field`,
-						fix: "Add `type` field to unit frontmatter",
-					})
-				}
 				if (!unitData.status) {
 					issues.push({
 						intent: slug,
@@ -1248,34 +1264,6 @@ function resolveStageHats(intent: string, stage: string): string[] {
 	return []
 }
 
-/** Resolve allowed unit types for a stage — used for enforcement */
-function resolveAllowedUnitTypes(intent: string, stage: string): string[] {
-	try {
-		const root = findHaikuRoot()
-		const intentFile = join(root, "intents", intent, "intent.md")
-		if (!existsSync(intentFile)) return []
-		const { data } = parseFrontmatter(readFileSync(intentFile, "utf8"))
-		const studio = (data.studio as string) || ""
-		if (!studio) return []
-
-		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
-		for (const base of [
-			join(process.cwd(), ".haiku", "studios"),
-			join(pluginRoot, "studios"),
-		]) {
-			const stageFile = join(base, studio, "stages", stage, "STAGE.md")
-			if (!existsSync(stageFile)) continue
-			const { data: stageFm } = parseFrontmatter(
-				readFileSync(stageFile, "utf8"),
-			)
-			return (stageFm.unit_types as string[]) || []
-		}
-	} catch {
-		/* */
-	}
-	return []
-}
-
 /** Resolve stage metadata for scope context in tool responses */
 function resolveStageScope(intent: string, stage: string): string {
 	try {
@@ -1297,8 +1285,7 @@ function resolveStageScope(intent: string, stage: string): string {
 			const fm = parseFrontmatter(raw)
 			const { content } = matter(raw)
 			const desc = (fm.data.description as string) || stage
-			const unitTypes = (fm.data.unit_types as string[]) || []
-			return `[stage_scope] ${stage}: ${desc}${unitTypes.length > 0 ? ` | unit_types: ${unitTypes.join(", ")}` : ""} | ${content.trim().slice(0, 500)}`
+			return `[stage_scope] ${stage}: ${desc} | ${content.trim().slice(0, 500)}`
 		}
 	} catch {
 		/* */
@@ -1356,7 +1343,6 @@ export function syncSessionMetadata(
 		}
 
 		let stageDescription = activeStage
-		let stageUnitTypes: string[] = []
 		if (studio && activeStage) {
 			const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
 			for (const base of [
@@ -1367,7 +1353,6 @@ export function syncSessionMetadata(
 				if (!existsSync(sf)) continue
 				const { data: stageFm } = parseFrontmatter(readFileSync(sf, "utf8"))
 				stageDescription = (stageFm.description as string) || activeStage
-				stageUnitTypes = (stageFm.unit_types as string[]) || []
 				break
 			}
 		}
@@ -1381,7 +1366,6 @@ export function syncSessionMetadata(
 			hat,
 			bolt,
 			stage_description: stageDescription,
-			stage_unit_types: stageUnitTypes,
 			updated_at: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
 		})
 	} catch {
@@ -1797,28 +1781,6 @@ export function handleStateTool(
 			const uPath = unitPath(args.intent as string, stage, args.unit as string)
 			const stageHats = resolveStageHats(args.intent as string, stage)
 			const firstHat = stageHats[0] || ""
-
-			// Enforce unit type matches stage's allowed unit_types
-			if (existsSync(uPath)) {
-				const { data: unitFm } = parseFrontmatter(readFileSync(uPath, "utf8"))
-				const unitType = (unitFm.type as string) || ""
-				if (unitType) {
-					const allowedTypes = resolveAllowedUnitTypes(
-						args.intent as string,
-						stage,
-					)
-					if (allowedTypes.length > 0 && !allowedTypes.includes(unitType)) {
-						return text(
-							JSON.stringify({
-								error: "unit_type_not_allowed",
-								unit_type: unitType,
-								allowed_types: allowedTypes,
-								message: `Unit type '${unitType}' is not allowed in stage '${stage}'. Allowed types: ${allowedTypes.join(", ")}. Convert to knowledge for downstream stages, then call haiku_run_next again.`,
-							}),
-						)
-					}
-				}
-			}
 
 			setFrontmatterField(uPath, "status", "active")
 			setFrontmatterField(uPath, "bolt", 1)

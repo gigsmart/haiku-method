@@ -4,7 +4,6 @@ description: Guide new customers through setup, training, and initial value real
 hats: [onboarding-lead, technical-enabler]
 review: ask
 elaboration: collaborative
-unit_types: [setup, training, integration]
 inputs: []
 ---
 

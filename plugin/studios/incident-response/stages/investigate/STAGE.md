@@ -4,7 +4,6 @@ description: Root cause analysis, log analysis, and timeline reconstruction
 hats: [investigator, log-analyst]
 review: auto
 elaboration: autonomous
-unit_types: [investigation, analysis]
 inputs:
   - stage: triage
     discovery: incident-brief

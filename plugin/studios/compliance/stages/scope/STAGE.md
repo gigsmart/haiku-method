@@ -4,7 +4,6 @@ description: Define the compliance framework, identify applicable controls, and 
 hats: [compliance-analyst, scope-definer]
 review: auto
 elaboration: collaborative
-unit_types: [framework-mapping, system-inventory]
 inputs: []
 ---
 

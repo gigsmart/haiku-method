@@ -4,7 +4,6 @@ description: DFM, assembly process, QA sampling, and production ramp
 hats: [manufacturing-engineer, qa-lead]
 review: await
 elaboration: autonomous
-unit_types: [manufacturing]
 inputs:
   - stage: design
     output: schematic

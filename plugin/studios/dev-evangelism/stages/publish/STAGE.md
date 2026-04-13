@@ -4,7 +4,6 @@ description: Distribute content across channels
 hats: [distributor, community-manager]
 review: auto
 elaboration: autonomous
-unit_types: [distribution]
 inputs:
   - stage: create
     discovery: content-package

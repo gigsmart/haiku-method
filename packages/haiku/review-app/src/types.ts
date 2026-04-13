@@ -51,7 +51,6 @@ export interface Section {
 export interface UnitFrontmatter {
   status: string;
   discipline?: string;
-  type?: string;
   depends_on?: string[];
   wireframe?: string;
   stage?: string;

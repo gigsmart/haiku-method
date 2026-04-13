@@ -4,7 +4,6 @@ description: Write the documentation content following the approved outline
 hats: [writer, technical-reviewer]
 review: ask
 elaboration: autonomous
-unit_types: [content]
 inputs:
   - stage: outline
     discovery: document-outline

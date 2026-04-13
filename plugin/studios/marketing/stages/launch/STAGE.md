@@ -4,7 +4,6 @@ description: Coordinate multi-channel launch, schedule distribution, and activat
 hats: [campaign-manager, channel-coordinator]
 review: ask
 elaboration: autonomous
-unit_types: [launch, distribution]
 inputs:
   - stage: content
     discovery: assets

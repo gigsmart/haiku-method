@@ -172,7 +172,7 @@ function stageReviewIncludes(
 function resolveStageMetadata(
 	studio: string,
 	stage: string,
-): { description: string; unit_types: string[]; body: string } | null {
+): { description: string; body: string } | null {
 	// Accept any identifier (dir, name, slug, alias); falls back to raw arg
 	// for robustness when the studio cache isn't warm yet.
 	const info = resolveStudio(studio)
@@ -189,7 +189,6 @@ function resolveStageMetadata(
 			const { content } = matter(raw)
 			return {
 				description: (fm.description as string) || stage,
-				unit_types: (fm.unit_types as string[]) || [],
 				body: content.trim(),
 			}
 		}
@@ -374,48 +373,6 @@ function validateDiscoveryArtifacts(
 		break // Project-level discovery dir takes precedence over plugin-level (first match wins)
 	}
 
-	return null
-}
-
-// ── Unit type validation ──────────────────────────────────────────────────
-
-/**
- * Validate all units in a stage against the stage's allowed unit_types.
- * Returns violations or null if all pass.
- */
-function validateUnitTypes(
-	intentDirPath: string,
-	stage: string,
-	studio: string,
-): OrchestratorAction | null {
-	const unitsDir = join(intentDirPath, "stages", stage, "units")
-	if (!existsSync(unitsDir)) return null
-
-	const metadata = resolveStageMetadata(studio, stage)
-	const allowedTypes = metadata?.unit_types || []
-	if (allowedTypes.length === 0) return null
-
-	const unitFiles = readdirSync(unitsDir).filter((f) => f.endsWith(".md"))
-	const violations: Array<{ unit: string; type: string }> = []
-	for (const f of unitFiles) {
-		const fm = readFrontmatter(join(unitsDir, f))
-		const unitType = (fm.type as string) || ""
-		if (unitType && !allowedTypes.includes(unitType)) {
-			violations.push({ unit: f.replace(".md", ""), type: unitType })
-		}
-	}
-
-	if (violations.length > 0) {
-		const slug = intentDirPath.split("/intents/")[1] || ""
-		return {
-			action: "spec_validation_failed",
-			intent: slug,
-			stage,
-			violations,
-			allowed_types: allowedTypes,
-			message: `${violations.length} unit(s) have types not allowed in stage '${stage}' (allowed: ${allowedTypes.join(", ")}). ${violations.map((v) => `${v.unit} is '${v.type}'`).join(", ")}.\n\nDo NOT simply move these units to another stage. For each violation:\n1. Extract useful insights into the stage's discovery knowledge (e.g., "we'll need X with these properties")\n2. Delete the violating unit file\n3. Create a new unit with the correct type for this stage's purpose\n\nImplementation details belong in knowledge documents for downstream stages, not in units here.\n\nAfter making changes, call \`haiku_run_next { intent: "${slug}" }\` again to re-validate.`,
-		}
-	}
 	return null
 }
 
@@ -1137,10 +1094,6 @@ export function runNext(slug: string): OrchestratorAction {
 		const namingViolation = validateUnitNaming(iDir, currentStage)
 		if (namingViolation) return namingViolation
 
-		// Validate unit types before allowing execution
-		const typeViolation = validateUnitTypes(iDir, currentStage, studio)
-		if (typeViolation) return typeViolation
-
 		// Validate discovery artifacts exist before advancing
 		const discoveryViolation = validateDiscoveryArtifacts(
 			slug,
@@ -1186,8 +1139,6 @@ export function runNext(slug: string): OrchestratorAction {
 				if (stageEntry.name === currentStage) continue // already validated above
 				const crossNaming = validateUnitNaming(iDir, stageEntry.name)
 				if (crossNaming) return crossNaming
-				const crossTypes = validateUnitTypes(iDir, stageEntry.name, studio)
-				if (crossTypes) return crossTypes
 			}
 		}
 
@@ -1219,11 +1170,9 @@ export function runNext(slug: string): OrchestratorAction {
 
 	// Stage in execute phase
 	if (phase === "execute") {
-		// Validate unit naming and types on every execute call — catch violations that snuck through
+		// Validate unit naming on every execute call — catch violations that snuck through
 		const execNamingViolation = validateUnitNaming(iDir, currentStage)
 		if (execNamingViolation) return execNamingViolation
-		const execTypeViolation = validateUnitTypes(iDir, currentStage, studio)
-		if (execTypeViolation) return execTypeViolation
 
 		const units = listUnits(iDir, currentStage)
 		const activeUnits = units.filter((u) => u.status === "active")
@@ -2232,13 +2181,10 @@ function buildRunInstructions(
 			const stage = action.stage as string
 			const elaboration = (action.elaboration as string) || "collaborative"
 			const stageDef = readStageDef(studio, stage)
-			const unitTypes = (stageDef?.data?.unit_types as string[]) || []
 
 			sections.push(`## Elaborate: ${stage}`)
 			if (stageDef) {
 				sections.push(`${stageDef.body}`)
-				if (unitTypes.length > 0)
-					sections.push(`**Allowed unit types:** ${unitTypes.join(", ")}`)
 			}
 
 			// Resolve upstream stage inputs — load actual content from prior stages
@@ -2318,7 +2264,7 @@ function buildRunInstructions(
 			}
 
 			sections.push(
-				`## Scope\n\nAll units MUST be within this stage's domain${unitTypes.length > 0 ? ` (${unitTypes.join(", ")})` : ""}. Work belonging to other stages goes in the discovery document, not in units.\n\n## Mechanics\n\n${
+				`## Scope\n\nAll units MUST be within this stage's domain. Work belonging to other stages goes in the discovery document, not in units.\n\n## Mechanics\n\n${
 					elaboration === "collaborative"
 						? "Mode: **collaborative** — you MUST engage the user iteratively before finalizing.\n\n" +
 							"## MANDATORY: Use tools for questions — NEVER plain text for structured choices\n\n" +
@@ -2367,7 +2313,6 @@ function buildRunInstructions(
 			const hats = (action.hats as string[]) || []
 			const bolt = (action.bolt as number) || 1
 			const stageDef = readStageDef(studio, stage)
-			const unitTypes = (stageDef?.data?.unit_types as string[]) || []
 
 			// Unit content
 			const unitFile = join(
@@ -2419,7 +2364,7 @@ function buildRunInstructions(
 			// Stage scope (once, concise)
 			if (stageDef) {
 				sections.push(
-					`### Stage: ${stage}\n\n${stageDef.body}\n\n**Unit types:** ${unitTypes.length > 0 ? unitTypes.join(", ") : "per stage definition"}. Stay within this stage's scope — do not produce outputs belonging to other stages.`,
+					`### Stage: ${stage}\n\n${stageDef.body}\n\nStay within this stage's scope — do not produce outputs belonging to other stages.`,
 				)
 			}
 

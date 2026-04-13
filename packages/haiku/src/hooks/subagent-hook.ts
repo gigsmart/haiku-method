@@ -71,23 +71,10 @@ export async function subagentHook(
 			updatedInput.subagent_type = "general-purpose"
 		}
 
-		// If no specific agent type set, try to match based on unit type or context
+		// If no specific agent type set, add a generic H·AI·K·U hint
 		if (!currentType || currentType === "general-purpose") {
-			// Extract unit type from the injected context (if present)
-			const contextStr = (updatedInput[targetField] as string) ?? ""
-			const unitTypeMatch = contextStr.match(
-				/type:\s*(frontend|backend|fullstack|design|research|security|ops|data)/i,
-			)
-			if (unitTypeMatch) {
-				const unitType = unitTypeMatch[1].toLowerCase()
-				// Check if the user has specialized agents available
-				// The agent description in the prompt will help Claude Code match the right one
-				// We add a hint for the agent selection system
-				if (!updatedInput.description) {
-					updatedInput.description = `H·AI·K·U ${unitType} work`
-				} else {
-					updatedInput.description = `H·AI·K·U ${unitType}: ${updatedInput.description}`
-				}
+			if (!updatedInput.description) {
+				updatedInput.description = "H·AI·K·U work"
 			}
 		}
 	}

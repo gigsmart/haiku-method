@@ -4,7 +4,6 @@ description: Pillars, core loop, fantasy, target audience, and scope
 hats: [game-designer, creative-director, elaborator]
 review: ask
 elaboration: collaborative
-unit_types: [design, research]
 inputs: []
 ---
 

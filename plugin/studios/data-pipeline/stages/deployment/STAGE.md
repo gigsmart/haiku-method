@@ -4,7 +4,6 @@ description: Deploy pipelines to production with monitoring and alerting
 hats: [pipeline-engineer, sre]
 review: external
 elaboration: autonomous
-unit_types: [deployment]
 inputs:
   - stage: validation
     discovery: validation-report

@@ -4,7 +4,6 @@ description: Content and systems at scale
 hats: [gameplay-engineer, content-author, systems-designer, reviewer]
 review: [external, ask]
 elaboration: collaborative
-unit_types: [gameplay, content, systems]
 inputs:
   - stage: concept
     discovery: concept-doc

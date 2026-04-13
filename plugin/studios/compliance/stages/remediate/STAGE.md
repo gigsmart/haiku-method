@@ -4,7 +4,6 @@ description: Implement controls, fix gaps, update configurations and policies
 hats: [remediation-engineer, policy-writer]
 review: ask
 elaboration: autonomous
-unit_types: [control-implementation, policy, configuration]
 inputs:
   - stage: assess
     discovery: gap-report

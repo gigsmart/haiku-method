@@ -4,7 +4,6 @@ description: Validate data quality, schema compliance, and business rules
 hats: [validator, data-quality-reviewer]
 review: ask
 elaboration: autonomous
-unit_types: [validation]
 inputs:
   - stage: transformation
     discovery: modeled-data

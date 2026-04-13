@@ -4,7 +4,6 @@ description: Understand legal requirements and assess risk
 hats: [paralegal, risk-assessor]
 review: auto
 elaboration: collaborative
-unit_types: [requirements, risk-assessment]
 inputs: []
 ---
 

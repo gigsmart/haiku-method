@@ -17,7 +17,6 @@ import { redirectPlanMode } from "./redirect-plan-mode.js"
 import { generateSubagentContext } from "./subagent-context.js"
 import { subagentHook } from "./subagent-hook.js"
 import { trackOutputs } from "./track-outputs.js"
-import { validateUnitType } from "./validate-unit-type.js"
 import { workflowGuard } from "./workflow-guard.js"
 
 // Read stdin synchronously (hooks are synchronous)
@@ -73,9 +72,6 @@ export async function runHook(name: string, _args: string[]): Promise<void> {
 			break
 		case "inject-state-file":
 			await injectStateFile(parsed)
-			break
-		case "validate-unit-type":
-			await validateUnitType(parsed, pluginRoot)
 			break
 		case "guard-fsm-fields":
 			await guardFsmFields(parsed)

@@ -4,7 +4,6 @@ description: Explore market landscape, competitive positioning, and opportunity 
 hats: [market-explorer, competitive-analyst]
 review: auto
 elaboration: autonomous
-unit_types: [research, analysis]
 inputs: []
 ---
 

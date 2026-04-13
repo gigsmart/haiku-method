@@ -4,7 +4,6 @@ description: Track KPIs, analyze performance, and generate insights and recommen
 hats: [analyst, report-writer]
 review: auto
 elaboration: autonomous
-unit_types: [analysis, report]
 inputs:
   - stage: launch
     discovery: campaign-log

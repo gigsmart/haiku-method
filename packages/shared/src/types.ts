@@ -30,7 +30,6 @@ export interface HaikuIntent {
 export interface HaikuUnit {
   name: string;
   stage: string;
-  type: string;
   status: string;
   dependsOn: string[];
   bolt: number;

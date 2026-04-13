@@ -826,9 +826,6 @@ function StageDetail({ stage, onSelectUnit, assets, host }: { stage: HaikuStageS
 										<span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${unitStatusColors[unit.status] || unitStatusColors.pending}`}>
 											{unit.status}
 										</span>
-										{unit.type && (
-											<span className="text-xs text-stone-400">{unit.type}</span>
-										)}
 									</div>
 									{totalCriteria > 0 && (
 										<span className="text-xs text-stone-400">

@@ -4,7 +4,6 @@ description: Supply chain, dependency audit, and consumer-misuse threat model
 hats: [threat-modeler, security-reviewer]
 review: [external, ask]
 elaboration: autonomous
-unit_types: [security]
 inputs:
   - stage: inception
     discovery: discovery

@@ -4,7 +4,6 @@ description: Implement permanent fix with proper testing and review
 hats: [engineer, reviewer]
 review: ask
 elaboration: autonomous
-unit_types: [fix, test, deployment]
 inputs:
   - stage: mitigate
     discovery: mitigation-log

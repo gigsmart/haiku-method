@@ -4,7 +4,6 @@ description: Define behavioral specifications and acceptance criteria
 hats: [product, specification, validator]
 review: [external, ask]
 elaboration: collaborative
-unit_types: [product]
 inputs:
   - stage: inception
     discovery: discovery

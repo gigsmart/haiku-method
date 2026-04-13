@@ -342,32 +342,6 @@ test("accepts properly named units", () => {
 
 // ── runNext: unit type validation ─────────────────────────────────────────
 
-console.log("\n=== runNext: unit type validation ===")
-
-test("rejects units with wrong type for stage", () => {
-  const { projDir, slug, intentDirPath } = createProject("bad-type", {
-    active_stage: "plan",
-    stageConfig: { plan: { unit_types: ["research", "analysis"], elaboration: "directed" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
-  createUnit(intentDirPath, "plan", "unit-01-code-stuff", { type: "implementation" })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "spec_validation_failed")
-})
-
-test("accepts units with correct type", () => {
-  const { projDir, slug, intentDirPath } = createProject("good-type", {
-    active_stage: "plan",
-    stageConfig: { plan: { unit_types: ["task"], elaboration: "directed" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
-  createUnit(intentDirPath, "plan", "unit-01-proper-task", { type: "task" })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.notStrictEqual(result.action, "spec_validation_failed")
-})
-
 // ── runNext: DAG validation ───────────────────────────────────────────────
 
 console.log("\n=== runNext: DAG validation ===")

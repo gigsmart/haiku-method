@@ -4,7 +4,6 @@ description: Resume review and initial candidate qualification
 hats: [screener, assessor]
 review: auto
 elaboration: autonomous
-unit_types: [screening, assessment]
 inputs:
   - stage: sourcing
     discovery: candidate-pipeline

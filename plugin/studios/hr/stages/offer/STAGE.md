@@ -4,7 +4,6 @@ description: Develop compensation package and extend offer
 hats: [compensator, closer]
 review: external
 elaboration: collaborative
-unit_types: [compensation, offer]
 inputs:
   - stage: interview
     discovery: interview-scorecard

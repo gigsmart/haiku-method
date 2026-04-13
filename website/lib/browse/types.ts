@@ -49,7 +49,6 @@ export function parseUnit(unitFile: string, stageName: string, raw: string): imp
 	return {
 		name: unitFile.replace(".md", ""),
 		stage: stageName,
-		type: (data.type as string) || "",
 		status: (data.status as string) || "pending",
 		dependsOn: (data.depends_on as string[]) || [],
 		refs: (data.refs as string[]) || [],

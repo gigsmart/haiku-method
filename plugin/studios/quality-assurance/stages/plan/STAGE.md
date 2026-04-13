@@ -4,7 +4,6 @@ description: Define test strategy and coverage planning
 hats: [strategist, planner]
 review: ask
 elaboration: collaborative
-unit_types: [strategy, coverage-plan]
 inputs: []
 ---
 

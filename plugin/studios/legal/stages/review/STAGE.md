@@ -4,7 +4,6 @@ description: Conduct legal review and compliance check
 hats: [reviewer, compliance-officer]
 review: external
 elaboration: autonomous
-unit_types: [legal-review, compliance-check]
 inputs:
   - stage: draft
     output: draft-document

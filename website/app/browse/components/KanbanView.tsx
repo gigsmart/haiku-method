@@ -199,7 +199,6 @@ export function IntentKanban({ intent, onSelectUnit }: IntentKanbanProps) {
 											</span>
 											{unit.hat && <span>Hat: {titleCase(unit.hat)}</span>}
 											{unit.bolt > 0 && <span>Bolt {unit.bolt}</span>}
-											{unit.type && <span>{unit.type}</span>}
 										</div>
 										{total > 0 && (
 											<div className="mt-2">

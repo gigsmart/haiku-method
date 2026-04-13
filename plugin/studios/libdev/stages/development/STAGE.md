@@ -4,7 +4,6 @@ description: Implement the library against the API contract from inception
 hats: [planner, builder, reviewer]
 review: [external, ask]
 elaboration: collaborative
-unit_types: [backend, fullstack]
 inputs:
   - stage: inception
     discovery: discovery
