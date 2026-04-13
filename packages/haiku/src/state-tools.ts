@@ -792,6 +792,7 @@ interface BranchRepairSummary {
 function repairAllBranches(autoApply: boolean): {
 	summaries: BranchRepairSummary[]
 	mainline: string
+	archivedSummary?: BranchRepairSummary
 } {
 	const branches = listIntentBranches()
 	const mainline = getMainlineBranch()
@@ -866,15 +867,129 @@ function repairAllBranches(autoApply: boolean): {
 		summaries.push(summary)
 	}
 
-	return { summaries, mainline }
+	// Second pass: archived intents on mainline (no matching haiku/<slug>/main branch)
+	const archivedSummary = repairArchivedOnMainline(branches, mainline, autoApply)
+
+	return { summaries, mainline, archivedSummary }
+}
+
+/** Scan mainline for intents without a matching haiku/<slug>/main branch (archived)
+ *  and repair them via a new branch + PR. Returns a combined summary or undefined
+ *  if there's nothing to do. */
+function repairArchivedOnMainline(
+	activeBranches: string[],
+	mainline: string,
+	autoApply: boolean,
+): BranchRepairSummary | undefined {
+	const activeSet = new Set(activeBranches)
+	const repairBranch = `repair/archived-intents-${Date.now()}`
+	const summary: BranchRepairSummary = {
+		slug: "<archived intents>",
+		branch: repairBranch,
+		scanned: 0,
+		applied: [],
+		remaining: [],
+		committed: false,
+		pushed: false,
+		merged: false,
+	}
+
+	let worktreePath = ""
+	try {
+		worktreePath = addTempWorktree(mainline, "haiku-repair-archived")
+	} catch (err) {
+		summary.pushError = `Failed to create mainline worktree: ${err instanceof Error ? err.message : String(err)}`
+		return summary
+	}
+
+	try {
+		const worktreeHaikuRoot = join(worktreePath, ".haiku")
+		const intentsDir = join(worktreeHaikuRoot, "intents")
+		if (!existsSync(intentsDir)) {
+			return undefined
+		}
+
+		const mainlineSlugs = readdirSync(intentsDir, { withFileTypes: true })
+			.filter(
+				(d) =>
+					d.isDirectory() && existsSync(join(intentsDir, d.name, "intent.md")),
+			)
+			.map((d) => d.name)
+
+		const archivedSlugs = mainlineSlugs.filter((s) => !activeSet.has(s))
+		if (archivedSlugs.length === 0) {
+			return undefined
+		}
+
+		const { studioMap, searchPaths } = buildStudioMap(worktreeHaikuRoot)
+
+		for (const slug of archivedSlugs) {
+			let issues = scanOneIntent(intentsDir, slug, studioMap, searchPaths)
+			summary.scanned++
+			if (autoApply && issues.length > 0) {
+				const result = applyAutoFixes(intentsDir, slug, issues)
+				summary.applied.push(...result.applied)
+				if (result.applied.length > 0) {
+					issues = scanOneIntent(intentsDir, slug, studioMap, searchPaths)
+				}
+			}
+			if (issues.length > 0) summary.remaining.push(...issues)
+		}
+
+		if (autoApply && summary.applied.length > 0) {
+			// Create a repair branch in the worktree and push it, then open PR to mainline
+			try {
+				execFileSync(
+					"git",
+					["-C", worktreePath, "checkout", "-b", repairBranch],
+					{ stdio: "pipe" },
+				)
+			} catch (err) {
+				summary.pushError = `Failed to create repair branch: ${err instanceof Error ? err.message : String(err)}`
+				return summary
+			}
+
+			const messageLines = [
+				`repair: auto-fix ${summary.applied.length} issue(s) in archived intent(s)`,
+				"",
+				...summary.applied.map(
+					(a) => `- ${a.intent}/${a.field}: ${a.description}`,
+				),
+			]
+			const push = commitAndPushFromWorktree(
+				worktreePath,
+				repairBranch,
+				messageLines.join("\n"),
+			)
+			summary.committed = push.committed
+			summary.pushed = push.pushed
+			summary.pushError = push.pushError
+
+			if (push.committed && push.pushed) {
+				const prResult = openPullRequest(
+					repairBranch,
+					mainline,
+					"repair: metadata fixes for archived intents",
+					`Auto-applied repair fixes for archived intents on \`${mainline}\`:\n\n${summary.applied.map((a) => `- **${a.intent}/${a.field}**: ${a.description}`).join("\n")}`,
+				)
+				if (prResult.ok) summary.prUrl = prResult.url
+				else summary.prError = prResult.error
+			}
+		}
+	} finally {
+		if (worktreePath) removeTempWorktree(worktreePath)
+	}
+
+	return summary.scanned > 0 ? summary : undefined
 }
 
 function buildMultiBranchReport(
 	summaries: BranchRepairSummary[],
 	mainline: string,
+	archivedSummary?: BranchRepairSummary,
 ): string {
-	if (summaries.length === 0) {
-		return "No intent branches found in this repository."
+	if (summaries.length === 0 && !archivedSummary) {
+		return "No intent branches or archived intents found in this repository."
 	}
 	const lines: string[] = [
 		"# Multi-Branch Repair Report",
@@ -926,6 +1041,44 @@ function buildMultiBranchReport(
 			lines.push("")
 			lines.push("**Remaining issues (need agent attention):**")
 			for (const i of s.remaining) {
+				lines.push(
+					`- **${i.intent}**/${i.field} (${i.severity}): ${i.message} → ${i.fix}`,
+				)
+			}
+		}
+		lines.push("")
+	}
+
+	if (archivedSummary) {
+		lines.push("## Archived intents (mainline only)")
+		lines.push("")
+		lines.push(`Branch: \`${archivedSummary.branch}\``)
+		lines.push(`- Scanned: ${archivedSummary.scanned} archived intent(s)`)
+		lines.push(`- Auto-applied: ${archivedSummary.applied.length}`)
+		lines.push(`- Remaining: ${archivedSummary.remaining.length}`)
+		if (archivedSummary.committed && archivedSummary.pushed) {
+			lines.push(
+				`- Pushed repair branch \`origin/${archivedSummary.branch}\``,
+			)
+		} else if (archivedSummary.pushError) {
+			lines.push(`- Push error: ${archivedSummary.pushError}`)
+		}
+		if (archivedSummary.prUrl) {
+			lines.push(`- Opened PR/MR: ${archivedSummary.prUrl}`)
+		} else if (archivedSummary.prError) {
+			lines.push(`- Failed to open PR: ${archivedSummary.prError}`)
+		}
+		if (archivedSummary.applied.length > 0) {
+			lines.push("")
+			lines.push("**Fixes applied:**")
+			for (const f of archivedSummary.applied) {
+				lines.push(`- ${f.intent}/${f.field}: ${f.description}`)
+			}
+		}
+		if (archivedSummary.remaining.length > 0) {
+			lines.push("")
+			lines.push("**Remaining issues (need agent attention):**")
+			for (const i of archivedSummary.remaining) {
 				lines.push(
 					`- **${i.intent}**/${i.field} (${i.severity}): ${i.message} → ${i.fix}`,
 				)
@@ -2922,8 +3075,8 @@ export function handleStateTool(
 				const branches = listIntentBranches()
 				if (branches.length > 0) {
 					try {
-						const { summaries, mainline } = repairAllBranches(repairAutoApply)
-						return text(buildMultiBranchReport(summaries, mainline))
+						const { summaries, mainline, archivedSummary } = repairAllBranches(repairAutoApply)
+						return text(buildMultiBranchReport(summaries, mainline, archivedSummary))
 					} catch (err) {
 						return text(
 							`Multi-branch repair failed: ${err instanceof Error ? err.message : String(err)}`,
