@@ -947,7 +947,7 @@ function UnitsTable({ units, unitMockups, onInlineCommentsChange }: { units: Par
                         <div className="flex flex-wrap items-center gap-2 mb-3">
                           <StatusBadge label="Status" status={u.frontmatter.status} />
                           {u.frontmatter.stage && <StatusBadge label="Stage" status={u.frontmatter.stage} />}
-                          {(u.frontmatter.discipline ?? u.frontmatter.type) && <StatusBadge label="Type" status={u.frontmatter.discipline ?? u.frontmatter.type ?? ""} />}
+                          {u.frontmatter.discipline && <StatusBadge label="Discipline" status={u.frontmatter.discipline} />}
                         </div>
                         {unitContent.trim() && (
                           <InlineComments htmlContent={markdownToSimpleHtml(unitContent)} onCommentsChange={onInlineCommentsChange} />
@@ -970,7 +970,7 @@ function UnitsTable({ units, unitMockups, onInlineCommentsChange }: { units: Par
                       </button>
                     </td>
                     <td className="py-3 pr-3 text-sm capitalize">{u.frontmatter.stage ?? ""}</td>
-                    <td className="py-3 pr-3 text-sm">{u.frontmatter.discipline ?? u.frontmatter.type ?? ""}</td>
+                    <td className="py-3 pr-3 text-sm">{u.frontmatter.discipline ?? ""}</td>
                     <td className="py-3 pr-3">
                       <StatusBadge label="Status" status={u.frontmatter.status} />
                     </td>
