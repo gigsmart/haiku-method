@@ -53,6 +53,7 @@ function handleSessionApi(sessionId: string): Response {
 	if (session.session_type === "review") {
 		data.intent_slug = session.intent_slug
 		data.review_type = session.review_type
+		data.gate_type = session.gate_type || "ask"
 		data.target = session.target
 		data.decision = session.decision
 		data.feedback = session.feedback

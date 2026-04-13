@@ -818,10 +818,6 @@ function fsmIntentComplete(slug: string): void {
 	gitCommitState(`haiku: complete intent ${slug}`)
 }
 
-function fsmStageCompleteDiscrete(slug: string, stage: string): void {
-	fsmCompleteStage(slug, stage, "paused")
-}
-
 // ── Main orchestration function ────────────────────────────────────────────
 
 export function runNext(slug: string): OrchestratorAction {
@@ -855,8 +851,6 @@ export function runNext(slug: string): OrchestratorAction {
 		}
 	}
 
-	const mode = (intent.mode as string) || "continuous"
-	const continuousFrom = (intent.continuous_from as string) || ""
 	const status = (intent.status as string) || "active"
 	const activeStage = (intent.active_stage as string) || ""
 
@@ -1347,111 +1341,45 @@ export function runNext(slug: string): OrchestratorAction {
 		}
 	}
 
-	// Stage in gate phase
+	// Stage in gate phase — always open local review UI as a preliminary gate.
+	// The gate type determines what options are shown:
+	//   - Discrete mode: always "external" (Submit for External Review + Request Changes)
+	//   - Continuous mode: based on the stage's review field
+	//     - auto/ask → "ask" (Approve + Request Changes)
+	//     - external → "external" (Submit for External Review + Request Changes)
+	//     - [external, ask] → as-is (Approve + Submit for External Review + Request Changes)
+	//     - await → "external" (awaits external event after submission)
 	if (phase === "gate") {
 		const reviewType = resolveStageReview(studio, currentStage)
 		const stageIdx = studioStages.indexOf(currentStage)
 		const nextStage =
 			stageIdx < studioStages.length - 1 ? studioStages[stageIdx + 1] : null
-		const isLastStage = !nextStage
 
-		// Resolve effective mode for the *next* stage transition.
-		// hybrid: discrete until continuous_from, then continuous from that stage onward.
-		// await/external gates always pause regardless of mode — they need external triggers.
-		let effectiveMode = mode
-		if (mode === "hybrid" && continuousFrom && nextStage) {
-			const thresholdIdx = studioStages.indexOf(continuousFrom)
-			const nextIdx = studioStages.indexOf(nextStage)
-			effectiveMode = nextIdx >= thresholdIdx ? "continuous" : "discrete"
+		// Resolve effective branch mode for this stage
+		const effectiveBranchMode = resolveEffectiveBranchMode(slug, currentStage)
+
+		// Determine gate type for the review UI
+		let effectiveGateType: string
+		if (effectiveBranchMode === "discrete") {
+			// Discrete mode: always submit for external review (PR per stage)
+			effectiveGateType = "external"
+		} else if (reviewType === "auto" || reviewType === "ask") {
+			effectiveGateType = "ask"
+		} else if (reviewType === "await") {
+			effectiveGateType = "external"
+		} else {
+			effectiveGateType = reviewType
 		}
 
-		if (reviewType === "auto") {
-			if (isLastStage) {
-				// FSM side effect: complete current stage + intent
-				fsmCompleteStage(slug, currentStage, "advanced")
-				fsmIntentComplete(slug)
-				return {
-					action: "intent_complete",
-					intent: slug,
-					studio,
-					message: `All stages complete for intent '${slug}'`,
-				}
-			}
-			if (effectiveMode === "continuous") {
-				// FSM side effect: advance stage
-				fsmAdvanceStage(slug, currentStage, nextStage)
-				return {
-					action: "advance_stage",
-					intent: slug,
-					stage: currentStage,
-					next_stage: nextStage,
-					gate_outcome: "advanced",
-					message: `Gate auto-passed — advancing to '${nextStage}'`,
-				}
-			}
-			// FSM side effect: complete stage as discrete (paused)
-			fsmStageCompleteDiscrete(slug, currentStage)
-			return {
-				action: "stage_complete_discrete",
-				intent: slug,
-				stage: currentStage,
-				next_stage: nextStage,
-				message: `Stage '${currentStage}' complete. Run /haiku:pickup to start '${nextStage}'.`,
-			}
-		}
-
-		if (
-			reviewType === "ask" ||
-			reviewType === "external" ||
-			reviewType.includes("ask") ||
-			reviewType.includes("external")
-		) {
-			// All non-auto gates open the review UI. Gate type determines the options shown.
-			// ask → Approve / Request Changes
-			// external → Request Changes / Open PR
-			// [external, ask] or [ask, external] → Approve / Request Changes / Open PR
-			fsmGateAsk(slug, currentStage)
-			return {
-				action: "gate_review",
-				intent: slug,
-				studio,
-				stage: currentStage,
-				next_stage: nextStage,
-				gate_type: reviewType,
-				message: `Stage '${currentStage}' complete — opening review`,
-			}
-		}
-
-		if (reviewType === "await") {
-			fsmGateAsk(slug, currentStage)
-			return {
-				action: "gate_await",
-				intent: slug,
-				stage: currentStage,
-				next_stage: nextStage,
-				message: `Stage '${currentStage}' complete — awaiting external event before advancing`,
-			}
-		}
-
-		// Fallback
-		if (!nextStage) {
-			fsmCompleteStage(slug, currentStage, "advanced")
-			fsmIntentComplete(slug)
-			return {
-				action: "intent_complete",
-				intent: slug,
-				studio,
-				message: `All stages complete for intent '${slug}'`,
-			}
-		}
-		fsmAdvanceStage(slug, currentStage, nextStage)
+		fsmGateAsk(slug, currentStage)
 		return {
-			action: "advance_stage",
+			action: "gate_review",
 			intent: slug,
+			studio,
 			stage: currentStage,
 			next_stage: nextStage,
-			gate_outcome: "advanced",
-			message: `Advancing to '${nextStage}'`,
+			gate_type: effectiveGateType,
+			message: `Stage '${currentStage}' complete — opening review`,
 		}
 	}
 
@@ -1998,13 +1926,6 @@ function enrichActionWithPreview(action: OrchestratorAction): void {
 			tell_user = `Stage '${stage}' complete — advancing to '${nextStage}'.`
 			next_step = nextStage
 				? `I'll start stage '${nextStage}' with elaboration.`
-				: "The intent is complete."
-			break
-
-		case "stage_complete_discrete":
-			tell_user = `Stage '${stage}' is complete.`
-			next_step = nextStage
-				? `Run /haiku:pickup to start stage '${nextStage}'.`
 				: "The intent is complete."
 			break
 
@@ -2584,15 +2505,6 @@ function buildRunInstructions(
 			const nextStage = action.next_stage as string
 			sections.push(
 				`## Advance Stage\n\nGate passed. The orchestrator has advanced from "${stage}" to "${nextStage}".\n\n**Call \`haiku_run_next { intent: "${slug}" }\` immediately.** Do NOT ask the user for confirmation — the gate was already approved. Do NOT present summaries or ask "want me to continue?" — just call the tool.`,
-			)
-			break
-		}
-
-		case "stage_complete_discrete": {
-			const stage = action.stage as string
-			const nextStage = action.next_stage as string
-			sections.push(
-				`## Stage Complete (Discrete Mode)\n\nStage "${stage}" has been completed by the orchestrator.\n\n### Instructions\n\nReport: "Stage complete. Run /haiku:pickup to start '${nextStage}'."`,
 			)
 			break
 		}

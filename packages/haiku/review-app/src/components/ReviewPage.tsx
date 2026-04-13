@@ -229,6 +229,7 @@ export function ReviewPage({ session, sessionId, wsRef }: Props) {
       {/* Sticky review sidebar */}
       <ReviewSidebar
         sessionId={sessionId}
+        gateType={session.gate_type}
         comments={sidebarComments}
         getAnnotations={getAnnotations}
         wsRef={wsRef}

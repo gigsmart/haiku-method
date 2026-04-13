@@ -52,6 +52,7 @@ export interface ReviewSession {
 	decision: string
 	feedback: string
 	annotations?: ReviewAnnotations
+	gate_type?: string
 	html: string
 	/** Parsed data for the SPA — stored at session creation so /api/session can return it */
 	parsedIntent?: unknown

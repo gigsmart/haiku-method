@@ -12,6 +12,7 @@ export interface SidebarComment {
 
 interface Props {
   sessionId: string;
+  gateType?: string;
   comments: SidebarComment[];
   getAnnotations: () => ReviewAnnotations | undefined;
   wsRef?: React.RefObject<WebSocket | null>;
@@ -33,7 +34,7 @@ function typeIcon(type: string): string {
   return "\u{1F4AC}";
 }
 
-export function ReviewSidebar({ sessionId, comments, getAnnotations, wsRef, onDelete, onEdit, onClearAll, onScrollTo, onAddGeneral }: Props) {
+export function ReviewSidebar({ sessionId, gateType = "ask", comments, getAnnotations, wsRef, onDelete, onEdit, onClearAll, onScrollTo, onAddGeneral }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [showClose, setShowClose] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -272,19 +273,34 @@ export function ReviewSidebar({ sessionId, comments, getAnnotations, wsRef, onDe
           <p className="text-xs text-amber-600 dark:text-amber-400">Add at least one comment before requesting changes.</p>
         )}
 
-        {/* Decision buttons — always show both */}
+        {/* Decision buttons — shown based on gate type */}
         <div className="flex gap-2">
-          <button
-            onClick={handleApproveClick}
-            disabled={submitting}
-            className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-              hasComments
-                ? "bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-600 dark:text-stone-300"
-                : "bg-teal-600 hover:bg-teal-700 text-white"
-            }`}
-          >
-            {submitting ? "Submitting\u2026" : "Approve"}
-          </button>
+          {gateType.includes("ask") && (
+            <button
+              onClick={handleApproveClick}
+              disabled={submitting}
+              className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                hasComments
+                  ? "bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-600 dark:text-stone-300"
+                  : "bg-teal-600 hover:bg-teal-700 text-white"
+              }`}
+            >
+              {submitting ? "Submitting\u2026" : "Approve"}
+            </button>
+          )}
+          {gateType.includes("external") && (
+            <button
+              onClick={() => setShowExternalConfirm(true)}
+              disabled={submitting}
+              className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                hasComments
+                  ? "bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-600 dark:text-stone-300"
+                  : "bg-indigo-600 hover:bg-indigo-700 text-white"
+              }`}
+            >
+              {submitting ? "Submitting\u2026" : "Submit for External Review"}
+            </button>
+          )}
           <button
             onClick={handleRequestChanges}
             disabled={submitting}
@@ -297,13 +313,6 @@ export function ReviewSidebar({ sessionId, comments, getAnnotations, wsRef, onDe
             Request Changes
           </button>
         </div>
-        <button
-          onClick={() => setShowExternalConfirm(true)}
-          disabled={submitting}
-          className="w-full px-4 py-2 text-xs font-medium rounded-lg border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Submit for External Review
-        </button>
 
         {/* External review confirmation dialog */}
         {showExternalConfirm && (

@@ -125,6 +125,7 @@ export interface SessionData {
   intent_slug?: string;
   intent_dir?: string;
   review_type?: "intent" | "unit";
+  gate_type?: string;
   target?: string;
   intent?: ParsedIntent;
   units?: ParsedUnit[];
