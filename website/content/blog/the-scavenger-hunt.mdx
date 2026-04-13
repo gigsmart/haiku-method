@@ -30,7 +30,7 @@ This post is about what falls out of that flip — the architecture, the state m
 
 The easiest way to see the flip is to put the two side by side.
 
-<ExpandableDiagram chart={`flowchart LR
+<ExpandableDiagram chart={`flowchart TB
     subgraph AIDLC["AI-DLC: the download"]
         direction TB
         U1([User]) --> A1["Agent"]
@@ -125,6 +125,29 @@ Five layers: the user, the Claude Code harness (agent + hooks), the H·AI·K·U 
     Prompts -- "read" --> Defs`} />
 
 The orchestrator is the brain. Hooks are spinal reflexes. The orchestrator decides what should happen next. Hooks make sure the agent physically can't do anything else between orchestrator calls. The agent is the body that executes the current action. And everything the orchestrator knows, it knows from reading files on disk.
+
+## The software studio stage machine
+
+Every studio is a named lifecycle template — a DAG of stages with their own hats, review gates, and input dependencies. The default software studio has six stages, wired together by the `inputs:` declarations in each `STAGE.md`. The orchestrator won't start a stage until every stage it reads from has finished.
+
+<ExpandableDiagram chart={`flowchart TB
+    Start([Intent]) --> Inception["🎯 Inception<br/><i>review: ask</i><br/><i>collaborative</i>"]
+    Inception --> Design["🎨 Design<br/><i>review: external + ask</i><br/><i>collaborative</i>"]
+    Inception --> Product["📋 Product<br/><i>review: external + ask</i><br/><i>collaborative</i>"]
+    Design --> Product
+    Inception --> Development
+    Design --> Development
+    Product --> Development["🔨 Development<br/><i>review: external + ask</i><br/><i>collaborative</i>"]
+    Inception --> Operations
+    Product --> Operations
+    Development --> Operations["🚀 Operations<br/><i>review: auto</i><br/><i>autonomous</i>"]
+    Inception --> Security
+    Product --> Security
+    Development --> Security["🔐 Security<br/><i>review: external + ask</i><br/><i>autonomous</i>"]
+    Operations --> Done([Deployed])
+    Security --> Done`} caption="Software studio stages. Edges are input dependencies declared in each stage's STAGE.md. Review gates enforce human-in-the-loop at every stage except Operations." />
+
+Inception is the root — every other stage reads its discovery artifacts. Design and Product both feed Development. Operations and Security need code and architecture from Development. Security is the only stage that runs autonomously on every input, because threat modeling doesn't need elaboration turns.
 
 ## The per-stage phase machine
 

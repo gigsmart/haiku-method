@@ -147,7 +147,6 @@ export async function layoutFlow(parsed: ParsedFlow): Promise<{ nodes: Node[]; e
     source: e.source,
     target: e.target,
     label: e.label,
-    type: "smoothstep",
     animated: false,
     zIndex: 2,
     style: {
