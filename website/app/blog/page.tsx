@@ -21,10 +21,26 @@ export default function BlogPage() {
 
 	return (
 		<div>
-			<h1 className="mb-4 text-4xl font-bold tracking-tight">Blog</h1>
-			<p className="mb-12 text-lg text-stone-600 dark:text-stone-400">
-				News and updates about H·AI·K·U and structured human-AI collaboration.
-			</p>
+			<div className="mb-12 flex items-start justify-between gap-4">
+				<div>
+					<h1 className="mb-4 text-4xl font-bold tracking-tight">Blog</h1>
+					<p className="text-lg text-stone-600 dark:text-stone-400">
+						News and updates about H·AI·K·U and structured human-AI collaboration.
+					</p>
+				</div>
+				<div className="flex shrink-0 items-center gap-2">
+					<a
+						href="/blog/feed.xml"
+						className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-1.5 text-sm text-stone-600 transition hover:border-stone-300 hover:text-orange-600 dark:border-stone-700 dark:text-stone-400 dark:hover:border-stone-600 dark:hover:text-orange-400"
+						title="RSS Feed"
+					>
+						<svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+							<path d="M6.18 15.64a2.18 2.18 0 010 4.36 2.18 2.18 0 010-4.36M4 4.44A15.56 15.56 0 0119.56 20h-2.83A12.73 12.73 0 004 7.27V4.44m0 5.66a9.9 9.9 0 019.9 9.9h-2.83A7.07 7.07 0 004 12.93v-2.83z" />
+						</svg>
+						RSS
+					</a>
+				</div>
+			</div>
 
 			{posts.length === 0 ? (
 				<div className="rounded-lg border border-stone-200 bg-stone-50 p-8 text-center dark:border-stone-800 dark:bg-stone-900">
