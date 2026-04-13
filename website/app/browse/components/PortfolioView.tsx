@@ -190,7 +190,7 @@ export function PortfolioView({
 						stage: stage.name,
 						studio: detail.studio,
 						status: unit.status,
-						content: `${unit.name} ${unit.content || ""} ${criteriaText} ${unit.type} ${unit.hat}`,
+						content: `${unit.name} ${unit.content || ""} ${criteriaText} ${unit.hat}`,
 					})
 				}
 			}
