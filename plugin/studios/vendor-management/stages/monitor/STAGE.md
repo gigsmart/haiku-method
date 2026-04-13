@@ -4,7 +4,6 @@ description: Track vendor performance and SLA compliance
 hats: [monitor, relationship-manager]
 review: auto
 elaboration: autonomous
-unit_types: [performance-tracking, relationship-management]
 inputs:
   - stage: onboard
     discovery: onboarding-checklist

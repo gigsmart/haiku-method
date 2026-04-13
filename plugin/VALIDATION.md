@@ -409,7 +409,7 @@ packages/
 | Tool | Purpose |
 |------|---------|
 | `haiku_run_next` | Get next orchestrator action (FSM driver) |
-| `haiku_go_back` | Navigate to a prior stage or phase |
+| `haiku_revisit` | Revisit an earlier stage or phase |
 | `haiku_intent_create` | Create a new intent (with elicitation) |
 
 **Unit write (5):**
@@ -459,7 +459,7 @@ Every MCP state transition emits its OTEL event — no manual calls needed:
 | `haiku_run_next` (FSM: gate resolved) | `haiku.gate.resolved` |
 | `haiku_run_next` (FSM: intent_complete) | `haiku.intent.completed` |
 | `haiku_run_next` | `haiku.orchestrator.action` |
-| `haiku_go_back` | `haiku.go_back.stage` / `haiku.go_back.phase` |
+| `haiku_revisit` | `haiku.revisit.stage` / `haiku.revisit.phase` |
 | `haiku_unit_start` | `haiku.unit.started` |
 | `haiku_unit_advance_hat` (last hat) | `haiku.unit.completed` |
 | `haiku_unit_reject_hat` | `haiku.unit.failed` |

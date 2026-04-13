@@ -4,7 +4,6 @@ description: Create stakeholder updates and project dashboards
 hats: [reporter, communicator]
 review: ask
 elaboration: autonomous
-unit_types: [stakeholder-report, dashboard]
 inputs:
   - stage: track
     discovery: status-report

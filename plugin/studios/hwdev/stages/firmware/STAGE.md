@@ -4,7 +4,6 @@ description: Embedded software for the hardware platform
 hats: [firmware-engineer, reviewer]
 review: [external, ask]
 elaboration: collaborative
-unit_types: [firmware]
 inputs:
   - stage: requirements
     discovery: functional-requirements

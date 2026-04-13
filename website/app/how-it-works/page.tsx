@@ -34,7 +34,7 @@ const stageLoop = [
 		color: "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800",
 		textColor: "text-amber-600 dark:text-amber-400",
 		description: "The gate determines what happens next. Four modes: auto (advance immediately), ask (pause for user), await (wait for async signal), external (block for team review). The studio's stage definition declares which mode.",
-		output: "Advance to next stage, revise within stage, or go back",
+		output: "Advance to next stage, revise within stage, or revisit earlier stage",
 	},
 ]
 

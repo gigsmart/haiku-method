@@ -4,7 +4,6 @@ description: Assess existing documentation, identify gaps, and prioritize what t
 hats: [auditor, gap-analyst]
 review: auto
 elaboration: autonomous
-unit_types: [audit]
 inputs: []
 ---
 

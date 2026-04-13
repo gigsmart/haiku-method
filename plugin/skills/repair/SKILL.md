@@ -36,6 +36,8 @@ The MCP tool applies these without asking — they have no judgment component:
 - **Missing `mode`** — defaulted to `continuous`
 - **Stages mismatch** — updated to match the studio's stage definition
 - **Legacy `studio: software`** → migrated to `application-development` (the canonical name); aliases continue to resolve
+- **Missing stage completion records** — for stages before `active_stage` with no `state.json` or non-completed status, synthesizes `state.json` with `status: "completed"`. Fixes migrated intents that cause the FSM to reset backwards.
+- **Date repair from git** — `created_at`, `started_at`, and `completed_at` are derived from git commit history (first commit date, last commit date) when they don't match the frontmatter values.
 
 ## Issues Returned to Agent (Need Judgment)
 
@@ -47,6 +49,7 @@ These come back as remaining issues — handle them interactively:
 - **Stage `state.json` invalid status** — needs the right status set
 - **Unit filename pattern violations** — rename units explicitly
 - **Unit missing `inputs:`** — declare upstream artifact paths
+- **Completed but not merged** — intent marked `completed` but branch is not merged into mainline. Either merge the branch or downgrade status to `active`.
 
 ## Workflow
 

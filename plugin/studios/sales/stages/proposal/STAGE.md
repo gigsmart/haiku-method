@@ -4,7 +4,6 @@ description: Create tailored proposals, demos, and business cases
 hats: [proposal-writer, solution-architect]
 review: [ask, await]
 elaboration: collaborative
-unit_types: [proposal, demo, business-case]
 inputs:
   - stage: qualification
     discovery: deal-brief

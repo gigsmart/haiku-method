@@ -110,11 +110,12 @@ export function renderTabs(tabGroupId: string, tabs: TabDef[]): string {
 
 /** Color-coded status badge with aria-label. */
 export function renderBadge(label: string, status: string): string {
-	const normalized = status.toLowerCase().replace(/\s+/g, "_")
+	const safeStatus = status || "unknown"
+	const normalized = safeStatus.toLowerCase().replace(/\s+/g, "_")
 	const colors = statusColors[normalized] ?? statusColors.pending
 	return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
     ${colors.bg} ${colors.text} ${colors.darkBg} ${colors.darkText}"
-    aria-label="${escapeAttr(label)}: ${escapeAttr(status)}">${escapeHtml(status.replace(/_/g, " "))}</span>`
+    aria-label="${escapeAttr(label)}: ${escapeAttr(safeStatus)}">${escapeHtml(safeStatus.replace(/_/g, " "))}</span>`
 }
 
 /** Numbered criteria checklist with checkbox icons. */

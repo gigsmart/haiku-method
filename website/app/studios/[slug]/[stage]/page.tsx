@@ -119,14 +119,6 @@ export default async function StageDetailPage({ params }: Props) {
 				</div>
 				<div className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
 					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">
-						Unit Types
-					</div>
-					<div className="mt-1 text-sm font-medium">
-						{stage.unitTypes.length > 0 ? stage.unitTypes.map(titleCase).join(", ") : "Any"}
-					</div>
-				</div>
-				<div className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
-					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">
 						Inputs
 					</div>
 					<div className="mt-1 text-sm font-medium">

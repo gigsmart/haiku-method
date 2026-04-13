@@ -4,7 +4,6 @@ description: Execute the deal, handoff to customer success, and document learnin
 hats: [closer, handoff-coordinator]
 review: [external, await]
 elaboration: collaborative
-unit_types: [close, handoff]
 inputs:
   - stage: negotiation
     discovery: terms

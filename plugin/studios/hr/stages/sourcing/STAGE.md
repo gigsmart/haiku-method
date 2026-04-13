@@ -4,7 +4,6 @@ description: Identify candidate pools and conduct outreach
 hats: [sourcer, recruiter]
 review: auto
 elaboration: autonomous
-unit_types: [sourcing, outreach]
 inputs:
   - stage: requisition
     discovery: job-spec

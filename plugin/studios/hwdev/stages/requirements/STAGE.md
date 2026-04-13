@@ -4,7 +4,6 @@ description: Functional, safety, and regulatory requirements
 hats: [systems-engineer, compliance-officer, elaborator]
 review: [external, ask]
 elaboration: collaborative
-unit_types: [requirements]
 inputs:
   - stage: inception
     discovery: discovery

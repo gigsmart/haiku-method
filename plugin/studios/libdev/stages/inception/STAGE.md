@@ -4,7 +4,6 @@ description: Understand the problem, define API surface, and elaborate into unit
 hats: [researcher, api-architect, elaborator]
 review: ask
 elaboration: collaborative
-unit_types: [research]
 inputs: []
 ---
 

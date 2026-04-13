@@ -4,7 +4,6 @@ description: Conduct retrospective, capture lessons learned, and handoff
 hats: [closer, archivist]
 review: ask
 elaboration: autonomous
-unit_types: [retrospective, handoff]
 inputs:
   - stage: report
     output: project-dashboard

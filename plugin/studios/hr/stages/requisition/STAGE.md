@@ -4,7 +4,6 @@ description: Define role requirements and create job description
 hats: [hiring-manager, recruiter]
 review: ask
 elaboration: collaborative
-unit_types: [role-definition, job-description]
 inputs: []
 ---
 

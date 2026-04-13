@@ -140,7 +140,7 @@ console.log("\n=== Orchestrator Tool Coverage ===")
 const expectedOrchestratorTools = [
   "haiku_run_next",
   "haiku_intent_create",
-  "haiku_go_back",
+  "haiku_revisit",
 ]
 
 for (const toolName of expectedOrchestratorTools) {
@@ -197,10 +197,11 @@ test("haiku_intent_create has optional slug and context", () => {
   assert.ok(!tool.inputSchema.required.includes("context"))
 })
 
-test("haiku_go_back requires intent only", () => {
-  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_go_back")
+test("haiku_revisit requires intent, stage optional", () => {
+  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_revisit")
   assert.deepStrictEqual(tool.inputSchema.required, ["intent"])
   assert.ok("intent" in tool.inputSchema.properties)
+  assert.ok("stage" in tool.inputSchema.properties)
 })
 
 test("haiku_intent_list requires no arguments", () => {

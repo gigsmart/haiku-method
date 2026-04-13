@@ -4,7 +4,6 @@ description: Market research, user problem, and business case
 hats: [researcher, elaborator]
 review: ask
 elaboration: collaborative
-unit_types: [research]
 inputs: []
 ---
 

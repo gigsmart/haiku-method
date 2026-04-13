@@ -4,7 +4,6 @@ description: Craft story arcs, key messages, and takeaways
 hats: [storyteller, editor]
 review: ask
 elaboration: collaborative
-unit_types: [narrative]
 inputs:
   - stage: research
     discovery: audience-landscape

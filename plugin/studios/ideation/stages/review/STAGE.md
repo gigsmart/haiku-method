@@ -4,7 +4,6 @@ description: Adversarial quality review of the deliverable
 hats: [critic, fact-checker]
 review: ask
 elaboration: autonomous
-unit_types: [review]
 inputs:
   - stage: create
     discovery: draft-deliverable

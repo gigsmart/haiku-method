@@ -10,6 +10,8 @@
   "dependencies": {
     "@haiku/shared": "file:../../shared",
     "@sentry/react": "^10.47.0",
+    "@xyflow/react": "^12.10.2",
+    "elkjs": "^0.11.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",

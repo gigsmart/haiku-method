@@ -18,10 +18,12 @@ import { features } from "./config.js"
 import {
 	addTempWorktree,
 	commitAndPushFromWorktree,
+	consolidateStageBranches,
 	getCurrentBranch,
 	getMainlineBranch,
 	isBranchMerged,
 	listIntentBranches,
+	listOrphanDiscreteIntents,
 	mergeUnitWorktree,
 	openPullRequest,
 	readFileFromBranch,
@@ -153,7 +155,8 @@ export function applyAutoFixes(
 		// Legacy `created` field → `created_at`
 		if (issue.field === "created" && data.created && !data.created_at) {
 			data.created_at = data.created
-			data.created = undefined
+			// biome-ignore lint/performance/noDelete: gray-matter YAML serializer crashes on undefined values (#194)
+			delete data.created
 			applied.push({
 				intent: slug,
 				field: "created",
@@ -214,6 +217,49 @@ export function applyAutoFixes(
 			}
 		}
 
+		// Git-based date repair: created_at, started_at, completed_at
+		if (issue.field === "created_at" && issue.message.includes("git history")) {
+			const dateMatch = issue.fix.match(/'([^']+)' \(from git/)
+			if (dateMatch) {
+				data.created_at = dateMatch[1]
+				applied.push({
+					intent: slug,
+					field: "created_at",
+					description: `Updated created_at to '${dateMatch[1]}' from git history`,
+				})
+				fixedHere = true
+				changed = true
+			}
+		}
+
+		if (issue.field === "started_at" && issue.fix.includes("from git")) {
+			const dateMatch = issue.fix.match(/'([^']+)' \(from git/)
+			if (dateMatch) {
+				data.started_at = dateMatch[1]
+				applied.push({
+					intent: slug,
+					field: "started_at",
+					description: `Updated started_at to '${dateMatch[1]}' from git history`,
+				})
+				fixedHere = true
+				changed = true
+			}
+		}
+
+		if (issue.field === "completed_at" && issue.fix.includes("from git")) {
+			const dateMatch = issue.fix.match(/'([^']+)' \(from git/)
+			if (dateMatch) {
+				data.completed_at = dateMatch[1]
+				applied.push({
+					intent: slug,
+					field: "completed_at",
+					description: `Updated completed_at to '${dateMatch[1]}' from git history`,
+				})
+				fixedHere = true
+				changed = true
+			}
+		}
+
 		if (!fixedHere) remaining.push(issue)
 	}
 
@@ -228,12 +274,128 @@ export function applyAutoFixes(
 		writeFileSync(intentPath, matter.stringify(body, data))
 	}
 
-	return { applied, remaining }
+	// Strip deprecated `type` field from all unit files
+	const stagesDir = join(intentRoot, slug, "stages")
+	if (existsSync(stagesDir)) {
+		for (const stageEntry of readdirSync(stagesDir, { withFileTypes: true })) {
+			if (!stageEntry.isDirectory()) continue
+			const unitsDir = join(stagesDir, stageEntry.name, "units")
+			if (!existsSync(unitsDir)) continue
+			for (const unitEntry of readdirSync(unitsDir, { withFileTypes: true })) {
+				if (!unitEntry.isFile() || !unitEntry.name.endsWith(".md")) continue
+				const unitPath = join(unitsDir, unitEntry.name)
+				const unitRaw = readFileSync(unitPath, "utf8")
+				const unitParsed = matter(unitRaw)
+				if ("type" in unitParsed.data) {
+					const { type: _removed, ...rest } = unitParsed.data
+					writeFileSync(unitPath, matter.stringify(unitParsed.content, rest))
+					applied.push({
+						intent: slug,
+						field: `stages/${stageEntry.name}/units/${unitEntry.name}:type`,
+						description: "Removed deprecated `type` field from unit",
+					})
+				}
+			}
+		}
+	}
+
+	// Second pass: fix stage-level state.json issues (completion synthesis)
+	const stageRemaining: RepairIssue[] = []
+	for (const issue of remaining) {
+		let fixedHere = false
+
+		// Synthesize or update stage completion records for stages before active_stage
+		if (
+			issue.field.match(/^stages\/[^/]+\/state\.json$/) &&
+			issue.message.includes("before active_stage")
+		) {
+			const stageMatch = issue.field.match(/^stages\/([^/]+)\/state\.json$/)
+			if (stageMatch) {
+				const stageName = stageMatch[1]
+				const stageDir = join(intentRoot, slug, "stages", stageName)
+				const stateFile = join(stageDir, "state.json")
+				mkdirSync(stageDir, { recursive: true })
+
+				const now = new Date().toISOString()
+				const completedState: Record<string, unknown> = {
+					stage: stageName,
+					status: "completed",
+					phase: "gate",
+					started_at: data.started_at || data.created_at || now,
+					completed_at:
+						data.completed_at || data.started_at || data.created_at || now,
+					gate_entered_at: null,
+					gate_outcome: "advanced",
+				}
+				writeJson(stateFile, completedState)
+				applied.push({
+					intent: slug,
+					field: issue.field,
+					description: `Synthesized completion record for stage '${stageName}' (before active_stage)`,
+				})
+				fixedHere = true
+			}
+		}
+
+		if (!fixedHere) stageRemaining.push(issue)
+	}
+
+	return { applied, remaining: stageRemaining }
 }
 
 function statSyncSafe(path: string): { mtime: Date } | null {
 	try {
 		return statSync(path)
+	} catch {
+		return null
+	}
+}
+
+/** Get the first (oldest) commit date for a file from git history.
+ *  `gitCwd` allows running git from a worktree path. */
+function gitFirstCommitDateForRepair(
+	filePath: string,
+	gitCwd?: string,
+): string | null {
+	if (!isGitRepo()) return null
+	try {
+		const result = execFileSync(
+			"git",
+			["log", "--diff-filter=A", "--follow", "--format=%aI", "--", filePath],
+			{
+				encoding: "utf8",
+				timeout: 5000,
+				stdio: ["pipe", "pipe", "pipe"],
+				...(gitCwd ? { cwd: gitCwd } : {}),
+			},
+		).trim()
+		// Take the last line (oldest commit)
+		const lines = result.split("\n").filter(Boolean)
+		return lines.length > 0 ? lines[lines.length - 1] : null
+	} catch {
+		return null
+	}
+}
+
+/** Get the most recent commit date for a file/directory from git history.
+ *  `gitCwd` allows running git from a worktree path. */
+function gitLastCommitDateForRepair(
+	filePath: string,
+	gitCwd?: string,
+): string | null {
+	if (!isGitRepo()) return null
+	try {
+		const result = execFileSync(
+			"git",
+			["log", "-1", "--format=%aI", "--", filePath],
+			{
+				encoding: "utf8",
+				timeout: 5000,
+				stdio: ["pipe", "pipe", "pipe"],
+				...(gitCwd ? { cwd: gitCwd } : {}),
+			},
+		).trim()
+		return result || null
 	} catch {
 		return null
 	}
@@ -459,6 +621,12 @@ function scanOneIntent(
 		for (const stageName of repairStages as string[]) {
 			const repairStageDir = join(repairStagesDir, stageName)
 			const repairStateFile = join(repairStageDir, "state.json")
+			const activeIdx = repairActiveStage
+				? (repairStages as string[]).indexOf(repairActiveStage)
+				: -1
+			const thisIdx = (repairStages as string[]).indexOf(stageName)
+			const isBeforeActive = activeIdx > 0 && thisIdx < activeIdx
+
 			if (existsSync(repairStateFile)) {
 				const state = readJson(repairStateFile)
 				if (state.status && !validStatuses.includes(state.status as string)) {
@@ -469,20 +637,28 @@ function scanOneIntent(
 						message: `Invalid stage status: '${state.status}'`,
 						fix: `Set status to one of: ${validStatuses.join(", ")}`,
 					})
-				}
-			} else if (existsSync(repairStageDir) && repairActiveStage) {
-				const activeIdx = (repairStages as string[]).indexOf(repairActiveStage)
-				const thisIdx = (repairStages as string[]).indexOf(stageName)
-				if (thisIdx < activeIdx) {
+				} else if (isBeforeActive && (state.status as string) !== "completed") {
+					// Stage before active_stage should be completed — FSM will
+					// reset active_stage backwards if it isn't
 					issues.push({
 						intent: slug,
 						field: `stages/${stageName}/state.json`,
 						severity: "warning",
-						message:
-							"Stage directory exists but has no state.json (before active_stage)",
-						fix: `Create state.json with {"status": "pending", "phase": "elaborate"}`,
+						message: `Stage before active_stage has status '${state.status || "pending"}' — should be 'completed'`,
+						fix: `Update state.json to status: "completed" (stage is before active_stage '${repairActiveStage}')`,
 					})
 				}
+			} else if (isBeforeActive) {
+				// Missing state.json for a stage before active_stage — synthesize
+				// a completion record so the FSM doesn't reset backwards
+				issues.push({
+					intent: slug,
+					field: `stages/${stageName}/state.json`,
+					severity: "warning",
+					message:
+						"Missing state.json for stage before active_stage — FSM will reset backwards",
+					fix: `Create state.json with status: "completed" (stage is before active_stage '${repairActiveStage}')`,
+				})
 			}
 		}
 	}
@@ -578,15 +754,6 @@ function scanOneIntent(
 				}
 				const unitRaw = readFileSync(join(repairUnitsDir, f.name), "utf8")
 				const { data: unitData } = parseFrontmatter(unitRaw)
-				if (!unitData.type) {
-					issues.push({
-						intent: slug,
-						field: `stages/${stageName}/units/${f.name}:type`,
-						severity: "warning",
-						message: `Unit missing 'type' field`,
-						fix: "Add `type` field to unit frontmatter",
-					})
-				}
 				if (!unitData.status) {
 					issues.push({
 						intent: slug,
@@ -614,6 +781,100 @@ function scanOneIntent(
 					})
 				}
 			}
+		}
+	}
+
+	// p. Git-based date repair: derive dates from commit history
+	if (isGitRepo()) {
+		const intentFilePath = join(intentsDir, slug, "intent.md")
+		const gitCreated = gitFirstCommitDateForRepair(intentFilePath)
+		const gitLastModified = gitLastCommitDateForRepair(join(intentsDir, slug))
+		const currentCreatedAt = repairData.created_at as string | undefined
+		const currentStartedAt = repairData.started_at as string | undefined
+		const currentCompletedAt = repairData.completed_at as string | undefined
+
+		// created_at should match the first commit
+		if (gitCreated && currentCreatedAt) {
+			const gitDate = gitCreated.slice(0, 10)
+			const fmDate =
+				typeof currentCreatedAt === "string"
+					? currentCreatedAt.slice(0, 10)
+					: ""
+			if (gitDate !== fmDate) {
+				issues.push({
+					intent: slug,
+					field: "created_at",
+					severity: "warning",
+					message: `created_at '${fmDate}' doesn't match git history '${gitDate}'`,
+					fix: `Update created_at to '${gitCreated}' (from git first commit)`,
+				})
+			}
+		}
+
+		// started_at should match the first commit
+		if (gitCreated && currentStartedAt) {
+			const gitDate = gitCreated.slice(0, 10)
+			const fmDate =
+				typeof currentStartedAt === "string"
+					? currentStartedAt.slice(0, 10)
+					: ""
+			if (gitDate !== fmDate) {
+				issues.push({
+					intent: slug,
+					field: "started_at",
+					severity: "warning",
+					message: `started_at '${fmDate}' doesn't match git history '${gitDate}'`,
+					fix: `Update started_at to '${gitCreated}' (from git first commit)`,
+				})
+			}
+		}
+
+		// completed_at for completed intents should match the last commit
+		if (
+			repairData.status === "completed" &&
+			gitLastModified &&
+			currentCompletedAt
+		) {
+			const gitDate = gitLastModified.slice(0, 10)
+			const fmDate =
+				typeof currentCompletedAt === "string"
+					? currentCompletedAt.slice(0, 10)
+					: ""
+			if (gitDate !== fmDate) {
+				issues.push({
+					intent: slug,
+					field: "completed_at",
+					severity: "warning",
+					message: `completed_at '${fmDate}' doesn't match git history '${gitDate}'`,
+					fix: `Update completed_at to '${gitLastModified}' (from git last commit)`,
+				})
+			}
+		}
+
+		// Missing started_at — derive from git
+		if (gitCreated && !currentStartedAt) {
+			issues.push({
+				intent: slug,
+				field: "started_at",
+				severity: "warning",
+				message: "Missing started_at field",
+				fix: `Set started_at to '${gitCreated}' (from git first commit)`,
+			})
+		}
+
+		// Missing completed_at for completed intents — derive from git
+		if (
+			repairData.status === "completed" &&
+			gitLastModified &&
+			!currentCompletedAt
+		) {
+			issues.push({
+				intent: slug,
+				field: "completed_at",
+				severity: "warning",
+				message: "Completed intent missing completed_at field",
+				fix: `Set completed_at to '${gitLastModified}' (from git last commit)`,
+			})
 		}
 	}
 
@@ -780,22 +1041,106 @@ interface BranchRepairSummary {
 	remaining: RepairIssue[]
 	committed: boolean
 	pushed: boolean
+	error?: string
 	pushError?: string
 	merged: boolean
 	prUrl?: string
 	prError?: string
+	// Worktree/setup failure — archived-intents pass only. When set, the
+	// archived report section should label the failure instead of reporting
+	// "0 intents scanned".
+	setupError?: string
 }
 
 /** Repair every haiku/<slug>/main branch sequentially using temporary worktrees.
  *  Auto-applies safe fixes, commits + pushes them, and opens a PR if the branch
- *  was already merged into the mainline. Returns a structured summary. */
+ *  was already merged into the mainline. Returns a structured summary.
+ *
+ *  Also detects discrete-mode intents that have stage branches but no main branch
+ *  and consolidates their stage branches into a new main branch first. */
 function repairAllBranches(autoApply: boolean): {
 	summaries: BranchRepairSummary[]
 	mainline: string
+	archivedSummary?: BranchRepairSummary
 } {
-	const branches = listIntentBranches()
 	const mainline = getMainlineBranch()
 	const summaries: BranchRepairSummary[] = []
+
+	// Phase 1: Create missing main branches for orphan discrete intents.
+	// These have haiku/<slug>/<stage> branches but no haiku/<slug>/main,
+	// so listIntentBranches() can't see them. Consolidate stage branches
+	// into a new main branch so the standard repair loop can process them.
+	if (autoApply) {
+		const orphans = listOrphanDiscreteIntents()
+		for (const { slug, branches: stageBranches } of orphans) {
+			// Extract stage names from branch refs
+			const stageNames = stageBranches.map((b) =>
+				b.replace(`haiku/${slug}/`, ""),
+			)
+
+			// Sort by pipeline order if we can resolve the studio from a stage branch
+			try {
+				const firstBranch = stageBranches[0]
+				const intentRaw = readFileFromBranch(
+					firstBranch,
+					`.haiku/intents/${slug}/intent.md`,
+				)
+				if (intentRaw) {
+					const { data: intentFm } = parseFrontmatter(intentRaw)
+					const studioName = (intentFm.studio as string) || ""
+					if (studioName) {
+						const studioInfo = resolveStudio(studioName)
+						if (studioInfo && studioInfo.stages.length > 0) {
+							const pipelineOrder = studioInfo.stages
+							stageNames.sort((a, b) => {
+								const ai = pipelineOrder.indexOf(a)
+								const bi = pipelineOrder.indexOf(b)
+								// Unknown stages sort to the end
+								return (
+									(ai === -1 ? pipelineOrder.length : ai) -
+									(bi === -1 ? pipelineOrder.length : bi)
+								)
+							})
+						}
+					}
+				}
+			} catch {
+				// Can't resolve pipeline order — alphabetical fallback
+			}
+
+			try {
+				const result = consolidateStageBranches(slug, stageNames)
+				if (result.success) {
+					// Push the new main branch
+					try {
+						execFileSync(
+							"git",
+							["push", "-u", "origin", `haiku/${slug}/main`],
+							{ encoding: "utf8", stdio: "pipe" },
+						)
+					} catch {
+						// push failed — still continue with local repair
+					}
+				}
+			} catch (err) {
+				// Consolidation failed — record so it appears in the repair report
+				summaries.push({
+					slug,
+					branch: `haiku/${slug}/main`,
+					scanned: 0,
+					applied: [],
+					remaining: [],
+					committed: false,
+					pushed: false,
+					merged: false,
+					pushError: `Failed to create main from stage branches: ${err instanceof Error ? err.message : String(err)}`,
+				})
+			}
+		}
+	}
+
+	// Phase 2: Repair all main branches (including any just created above)
+	const branches = listIntentBranches()
 
 	for (const slug of branches) {
 		const branch = `haiku/${slug}/main`
@@ -813,7 +1158,7 @@ function repairAllBranches(autoApply: boolean): {
 		try {
 			worktreePath = addTempWorktree(branch, "haiku-repair")
 		} catch (err) {
-			summary.pushError = `Failed to create worktree: ${err instanceof Error ? err.message : String(err)}`
+			summary.error = `Failed to create worktree: ${err instanceof Error ? err.message : String(err)}`
 			summaries.push(summary)
 			continue
 		}
@@ -831,7 +1176,29 @@ function repairAllBranches(autoApply: boolean): {
 			summary.applied = result.applied
 			summary.remaining = result.remaining
 
+			// Verify completed intents are truly merged into mainline
+			const intentMd = join(worktreeHaikuRoot, "intents", slug, "intent.md")
+			if (existsSync(intentMd)) {
+				const fm = parseFrontmatter(readFileSync(intentMd, "utf8"))
+				if (
+					fm.data.status === "completed" &&
+					!isBranchMerged(branch, mainline)
+				) {
+					const issue: RepairIssue = {
+						intent: slug,
+						field: "status",
+						severity: "error",
+						message: `Intent marked 'completed' but branch '${branch}' is not merged into '${mainline}'`,
+						fix: `Either merge the branch into '${mainline}' or set status to 'active'`,
+					}
+					summary.remaining.push(issue)
+				}
+			}
+
 			if (autoApply && result.applied.length > 0) {
+				// Check merge status before push — after push, the new commit
+				// won't be an ancestor of mainline so the check would always fail
+				const wasAlreadyMerged = isBranchMerged(branch, mainline)
 				const messageLines = [
 					`repair: auto-fix ${result.applied.length} metadata issue(s)`,
 					"",
@@ -847,7 +1214,7 @@ function repairAllBranches(autoApply: boolean): {
 				summary.committed = push.committed
 				summary.pushed = push.pushed
 				summary.pushError = push.pushError
-				if (push.committed && push.pushed && isBranchMerged(branch, mainline)) {
+				if (push.committed && push.pushed && wasAlreadyMerged) {
 					summary.merged = true
 					const prResult = openPullRequest(
 						branch,
@@ -866,15 +1233,129 @@ function repairAllBranches(autoApply: boolean): {
 		summaries.push(summary)
 	}
 
-	return { summaries, mainline }
+	// Second pass: archived intents on mainline (no matching haiku/<slug>/main branch)
+	const archivedSummary = repairArchivedOnMainline(
+		branches,
+		mainline,
+		autoApply,
+	)
+
+	return { summaries, mainline, archivedSummary }
+}
+
+/** Scan mainline for intents without a matching haiku/<slug>/main branch (archived)
+ *  and repair them via a new branch + PR. Returns a combined summary or undefined
+ *  if there's nothing to do. */
+function repairArchivedOnMainline(
+	activeBranches: string[],
+	mainline: string,
+	autoApply: boolean,
+): BranchRepairSummary | undefined {
+	const activeSet = new Set(activeBranches)
+	const repairBranch = `repair/archived-intents-${Date.now()}`
+	const summary: BranchRepairSummary = {
+		slug: "<archived intents>",
+		branch: repairBranch,
+		scanned: 0,
+		applied: [],
+		remaining: [],
+		committed: false,
+		pushed: false,
+		merged: false,
+	}
+
+	let worktreePath = ""
+	try {
+		worktreePath = addTempWorktree(mainline, "haiku-repair-archived")
+	} catch (err) {
+		// Worktree setup failed — surface a dedicated failure shape so the report
+		// labels this as "Mainline worktree setup failed" rather than "0 archived
+		// intents scanned" (which would imply we looked and found nothing).
+		summary.setupError = `Failed to create mainline worktree: ${err instanceof Error ? err.message : String(err)}`
+		return summary
+	}
+
+	try {
+		const worktreeHaikuRoot = join(worktreePath, ".haiku")
+		const intentsDir = join(worktreeHaikuRoot, "intents")
+		if (!existsSync(intentsDir)) {
+			return undefined
+		}
+
+		const mainlineSlugs = readdirSync(intentsDir, { withFileTypes: true })
+			.filter(
+				(d) =>
+					d.isDirectory() && existsSync(join(intentsDir, d.name, "intent.md")),
+			)
+			.map((d) => d.name)
+
+		const archivedSlugs = mainlineSlugs.filter((s) => !activeSet.has(s))
+		if (archivedSlugs.length === 0) {
+			return undefined
+		}
+
+		const { studioMap, searchPaths } = buildStudioMap(worktreeHaikuRoot)
+
+		for (const slug of archivedSlugs) {
+			let issues = scanOneIntent(intentsDir, slug, studioMap, searchPaths)
+			summary.scanned++
+			if (autoApply && issues.length > 0) {
+				const result = applyAutoFixes(intentsDir, slug, issues)
+				summary.applied.push(...result.applied)
+				if (result.applied.length > 0) {
+					issues = scanOneIntent(intentsDir, slug, studioMap, searchPaths)
+				}
+			}
+			if (issues.length > 0) summary.remaining.push(...issues)
+		}
+
+		if (autoApply && summary.applied.length > 0) {
+			// commitAndPushFromWorktree commits in detached HEAD and pushes via
+			// `HEAD:refs/heads/<branch>` — no local branch ref needs to be created.
+			const messageLines = [
+				`repair: auto-fix ${summary.applied.length} issue(s) in archived intent(s)`,
+				"",
+				...summary.applied.map(
+					(a) => `- ${a.intent}/${a.field}: ${a.description}`,
+				),
+			]
+			const push = commitAndPushFromWorktree(
+				worktreePath,
+				repairBranch,
+				messageLines.join("\n"),
+			)
+			summary.committed = push.committed
+			summary.pushed = push.pushed
+			summary.pushError = push.pushError
+
+			if (push.committed && push.pushed) {
+				const prResult = openPullRequest(
+					repairBranch,
+					mainline,
+					"repair: metadata fixes for archived intents",
+					`Auto-applied repair fixes for archived intents on \`${mainline}\`:\n\n${summary.applied.map((a) => `- **${a.intent}/${a.field}**: ${a.description}`).join("\n")}`,
+				)
+				if (prResult.ok) summary.prUrl = prResult.url
+				else summary.prError = prResult.error
+			}
+		}
+	} finally {
+		if (worktreePath) removeTempWorktree(worktreePath)
+	}
+
+	// Return the summary whenever there was something to report: scanned intents,
+	// or a setup failure that the operator needs to see. Nothing to report → undefined.
+	if (summary.scanned > 0 || summary.setupError) return summary
+	return undefined
 }
 
 function buildMultiBranchReport(
 	summaries: BranchRepairSummary[],
 	mainline: string,
+	archivedSummary?: BranchRepairSummary,
 ): string {
-	if (summaries.length === 0) {
-		return "No intent branches found in this repository."
+	if (summaries.length === 0 && !archivedSummary) {
+		return "No intent branches or archived intents found in this repository."
 	}
 	const lines: string[] = [
 		"# Multi-Branch Repair Report",
@@ -882,15 +1363,29 @@ function buildMultiBranchReport(
 		`Scanned ${summaries.length} intent branch(es). Mainline: \`${mainline}\`.`,
 		"",
 	]
-	const totalApplied = summaries.reduce((sum, s) => sum + s.applied.length, 0)
-	const totalRemaining = summaries.reduce(
-		(sum, s) => sum + s.remaining.length,
-		0,
-	)
-	const totalPushed = summaries.filter((s) => s.pushed).length
-	const totalPRs = summaries.filter((s) => s.prUrl).length
+	const totalApplied =
+		summaries.reduce((sum, s) => sum + s.applied.length, 0) +
+		(archivedSummary?.applied.length ?? 0)
+	const totalRemaining =
+		summaries.reduce((sum, s) => sum + s.remaining.length, 0) +
+		(archivedSummary?.remaining.length ?? 0)
+	const totalPushed =
+		summaries.filter((s) => s.pushed).length + (archivedSummary?.pushed ? 1 : 0)
+	// Distinguish the two PR cases: active-branch repairs that were already merged
+	// (PR opens back to mainline) versus the archived-intents pass (PR opens from
+	// a fresh repair/* branch). Lumping them into one phrase misrepresents both.
+	const mergedBranchPRs = summaries.filter((s) => s.prUrl).length
+	const archivedRepairPR = archivedSummary?.prUrl ? 1 : 0
+	const prSummary =
+		mergedBranchPRs > 0 && archivedRepairPR > 0
+			? `${mergedBranchPRs} PR(s) for already-merged branches + 1 PR for archived intents`
+			: mergedBranchPRs > 0
+				? `${mergedBranchPRs} PR(s) opened for already-merged branches`
+				: archivedRepairPR > 0
+					? "1 PR opened for archived intents"
+					: "no PRs opened"
 	lines.push(
-		`**Summary:** ${totalApplied} fix(es) auto-applied across ${totalPushed} branch(es); ${totalPRs} PR(s) opened for already-merged branches; ${totalRemaining} issue(s) still need attention.`,
+		`**Summary:** ${totalApplied} fix(es) auto-applied across ${totalPushed} branch(es); ${prSummary}; ${totalRemaining} issue(s) still need attention.`,
 	)
 	lines.push("")
 
@@ -906,7 +1401,8 @@ function buildMultiBranchReport(
 			lines.push(
 				`- Committed locally; push failed: ${s.pushError || "unknown"}`,
 			)
-		else if (s.pushError) lines.push(`- Error: ${s.pushError}`)
+		else if (s.error) lines.push(`- Error: ${s.error}`)
+		else if (s.pushError) lines.push(`- Push error: ${s.pushError}`)
 		if (s.merged && s.prUrl)
 			lines.push(
 				`- Branch already merged into \`${mainline}\` — opened PR/MR: ${s.prUrl}`,
@@ -926,6 +1422,51 @@ function buildMultiBranchReport(
 			lines.push("")
 			lines.push("**Remaining issues (need agent attention):**")
 			for (const i of s.remaining) {
+				lines.push(
+					`- **${i.intent}**/${i.field} (${i.severity}): ${i.message} → ${i.fix}`,
+				)
+			}
+		}
+		lines.push("")
+	}
+
+	if (archivedSummary) {
+		lines.push("## Archived intents (mainline only)")
+		lines.push("")
+		if (archivedSummary.setupError) {
+			lines.push(
+				`- **Mainline worktree setup failed:** ${archivedSummary.setupError}`,
+			)
+			lines.push(
+				"- No archived intents were scanned. Fix the underlying git/filesystem issue and re-run `/repair`.",
+			)
+			lines.push("")
+			return lines.join("\n")
+		}
+		lines.push(`- Scanned: ${archivedSummary.scanned} archived intent(s)`)
+		lines.push(`- Auto-applied: ${archivedSummary.applied.length}`)
+		lines.push(`- Remaining: ${archivedSummary.remaining.length}`)
+		if (archivedSummary.committed && archivedSummary.pushed) {
+			lines.push(`- Pushed repair branch \`origin/${archivedSummary.branch}\``)
+		} else if (archivedSummary.pushError) {
+			lines.push(`- Push error: ${archivedSummary.pushError}`)
+		}
+		if (archivedSummary.prUrl) {
+			lines.push(`- Opened PR/MR: ${archivedSummary.prUrl}`)
+		} else if (archivedSummary.prError) {
+			lines.push(`- Failed to open PR: ${archivedSummary.prError}`)
+		}
+		if (archivedSummary.applied.length > 0) {
+			lines.push("")
+			lines.push("**Fixes applied:**")
+			for (const f of archivedSummary.applied) {
+				lines.push(`- ${f.intent}/${f.field}: ${f.description}`)
+			}
+		}
+		if (archivedSummary.remaining.length > 0) {
+			lines.push("")
+			lines.push("**Remaining issues (need agent attention):**")
+			for (const i of archivedSummary.remaining) {
 				lines.push(
 					`- **${i.intent}**/${i.field} (${i.severity}): ${i.message} → ${i.fix}`,
 				)
@@ -1210,34 +1751,6 @@ function resolveStageHats(intent: string, stage: string): string[] {
 	return []
 }
 
-/** Resolve allowed unit types for a stage — used for enforcement */
-function resolveAllowedUnitTypes(intent: string, stage: string): string[] {
-	try {
-		const root = findHaikuRoot()
-		const intentFile = join(root, "intents", intent, "intent.md")
-		if (!existsSync(intentFile)) return []
-		const { data } = parseFrontmatter(readFileSync(intentFile, "utf8"))
-		const studio = (data.studio as string) || ""
-		if (!studio) return []
-
-		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
-		for (const base of [
-			join(process.cwd(), ".haiku", "studios"),
-			join(pluginRoot, "studios"),
-		]) {
-			const stageFile = join(base, studio, "stages", stage, "STAGE.md")
-			if (!existsSync(stageFile)) continue
-			const { data: stageFm } = parseFrontmatter(
-				readFileSync(stageFile, "utf8"),
-			)
-			return (stageFm.unit_types as string[]) || []
-		}
-	} catch {
-		/* */
-	}
-	return []
-}
-
 /** Resolve stage metadata for scope context in tool responses */
 function resolveStageScope(intent: string, stage: string): string {
 	try {
@@ -1259,8 +1772,7 @@ function resolveStageScope(intent: string, stage: string): string {
 			const fm = parseFrontmatter(raw)
 			const { content } = matter(raw)
 			const desc = (fm.data.description as string) || stage
-			const unitTypes = (fm.data.unit_types as string[]) || []
-			return `[stage_scope] ${stage}: ${desc}${unitTypes.length > 0 ? ` | unit_types: ${unitTypes.join(", ")}` : ""} | ${content.trim().slice(0, 500)}`
+			return `[stage_scope] ${stage}: ${desc} | ${content.trim().slice(0, 500)}`
 		}
 	} catch {
 		/* */
@@ -1318,7 +1830,6 @@ export function syncSessionMetadata(
 		}
 
 		let stageDescription = activeStage
-		let stageUnitTypes: string[] = []
 		if (studio && activeStage) {
 			const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
 			for (const base of [
@@ -1329,7 +1840,6 @@ export function syncSessionMetadata(
 				if (!existsSync(sf)) continue
 				const { data: stageFm } = parseFrontmatter(readFileSync(sf, "utf8"))
 				stageDescription = (stageFm.description as string) || activeStage
-				stageUnitTypes = (stageFm.unit_types as string[]) || []
 				break
 			}
 		}
@@ -1343,7 +1853,6 @@ export function syncSessionMetadata(
 			hat,
 			bolt,
 			stage_description: stageDescription,
-			stage_unit_types: stageUnitTypes,
 			updated_at: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
 		})
 	} catch {
@@ -1759,28 +2268,6 @@ export function handleStateTool(
 			const uPath = unitPath(args.intent as string, stage, args.unit as string)
 			const stageHats = resolveStageHats(args.intent as string, stage)
 			const firstHat = stageHats[0] || ""
-
-			// Enforce unit type matches stage's allowed unit_types
-			if (existsSync(uPath)) {
-				const { data: unitFm } = parseFrontmatter(readFileSync(uPath, "utf8"))
-				const unitType = (unitFm.type as string) || ""
-				if (unitType) {
-					const allowedTypes = resolveAllowedUnitTypes(
-						args.intent as string,
-						stage,
-					)
-					if (allowedTypes.length > 0 && !allowedTypes.includes(unitType)) {
-						return text(
-							JSON.stringify({
-								error: "unit_type_not_allowed",
-								unit_type: unitType,
-								allowed_types: allowedTypes,
-								message: `Unit type '${unitType}' is not allowed in stage '${stage}'. Allowed types: ${allowedTypes.join(", ")}. Convert to knowledge for downstream stages, then call haiku_run_next again.`,
-							}),
-						)
-					}
-				}
-			}
 
 			setFrontmatterField(uPath, "status", "active")
 			setFrontmatterField(uPath, "bolt", 1)
@@ -2917,20 +3404,24 @@ export function handleStateTool(
 			const repairAutoApply = args.apply !== false // default true
 			const repairSkipBranches = args.skip_branches === true
 
-			// Multi-branch path: in a git repo, no single-intent restriction, branches not skipped
+			// Multi-branch path: in a git repo, no single-intent restriction, branches not skipped.
+			// Runs whether or not active haiku/<slug>/main branches exist — the archived pass
+			// handles the case where all intents have already been merged and their branches deleted.
 			if (isGitRepo() && !repairIntentArg && !repairSkipBranches) {
-				const branches = listIntentBranches()
-				if (branches.length > 0) {
-					try {
-						const { summaries, mainline } = repairAllBranches(repairAutoApply)
-						return text(buildMultiBranchReport(summaries, mainline))
-					} catch (err) {
+				try {
+					const { summaries, mainline, archivedSummary } =
+						repairAllBranches(repairAutoApply)
+					if (summaries.length > 0 || archivedSummary) {
 						return text(
-							`Multi-branch repair failed: ${err instanceof Error ? err.message : String(err)}`,
+							buildMultiBranchReport(summaries, mainline, archivedSummary),
 						)
 					}
+					// No active branches AND no archived intents — fall through to cwd repair
+				} catch (err) {
+					return text(
+						`Multi-branch repair failed: ${err instanceof Error ? err.message : String(err)}`,
+					)
 				}
-				// Fall through to cwd repair if no intent branches exist yet
 			}
 
 			// Single-cwd path

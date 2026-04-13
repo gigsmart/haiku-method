@@ -367,7 +367,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	// Orchestration tools (async — gate_ask blocks until user reviews)
 	if (
 		name === "haiku_run_next" ||
-		name === "haiku_go_back" ||
+		name === "haiku_revisit" ||
 		name === "haiku_intent_create" ||
 		name === "haiku_select_studio" ||
 		name === "haiku_intent_reset"
@@ -736,159 +736,166 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 // Wire up the review handler for the orchestrator's gate_ask flow.
 // This lets haiku_run_next open a review and block until the user decides,
 // without the agent needing to call open_review separately.
-setOpenReviewHandler(async (intentDirRel: string, reviewType: string) => {
-	const intentDirAbs = resolve(process.cwd(), intentDirRel)
-	const intent = await parseIntent(intentDirAbs)
-	if (!intent) throw new Error("Could not parse intent")
+setOpenReviewHandler(
+	async (intentDirRel: string, reviewType: string, gateType?: string) => {
+		const intentDirAbs = resolve(process.cwd(), intentDirRel)
+		const intent = await parseIntent(intentDirAbs)
+		if (!intent) throw new Error("Could not parse intent")
 
-	const units = await parseAllUnits(intentDirAbs)
-	const dag = buildDAG(units)
-	const mermaid = toMermaidDefinition(dag, units)
-	const criteriaSection = intent.sections.find(
-		(s) =>
-			s.heading?.toLowerCase().includes("completion criteria") ||
-			s.heading?.toLowerCase().includes("success criteria"),
-	)
-	const criteria = criteriaSection ? parseCriteria(criteriaSection.content) : []
+		const units = await parseAllUnits(intentDirAbs)
+		const dag = buildDAG(units)
+		const mermaid = toMermaidDefinition(dag, units)
+		const criteriaSection = intent.sections.find(
+			(s) =>
+				s.heading?.toLowerCase().includes("completion criteria") ||
+				s.heading?.toLowerCase().includes("success criteria"),
+		)
+		const criteria = criteriaSection
+			? parseCriteria(criteriaSection.content)
+			: []
 
-	const session = createSession({
-		intent_dir: intentDirAbs,
-		intent_slug: intent.slug,
-		review_type: reviewType as "intent" | "unit",
-		target: "",
-		html: "",
-	})
+		const session = createSession({
+			intent_dir: intentDirAbs,
+			intent_slug: intent.slug,
+			review_type: reviewType as "intent" | "unit",
+			gate_type: gateType,
+			target: "",
+			html: "",
+		})
 
-	// Store parsed data on session for the SPA
-	Object.assign(session, {
-		parsedIntent: intent,
-		parsedUnits: units,
-		parsedCriteria: criteria,
-		parsedMermaid: mermaid,
-	})
+		// Store parsed data on session for the SPA
+		Object.assign(session, {
+			parsedIntent: intent,
+			parsedUnits: units,
+			parsedCriteria: criteria,
+			parsedMermaid: mermaid,
+		})
 
-	// Parse stage states + knowledge
-	const stageStates = await parseStageStates(intentDirAbs)
-	const knowledgeFiles = await parseKnowledgeFiles(intentDirAbs)
-	const stageArtifacts = await parseStageArtifacts(intentDirAbs)
-	const outputArtifacts = await parseOutputArtifacts(intentDirAbs)
+		// Parse stage states + knowledge
+		const stageStates = await parseStageStates(intentDirAbs)
+		const knowledgeFiles = await parseKnowledgeFiles(intentDirAbs)
+		const stageArtifacts = await parseStageArtifacts(intentDirAbs)
+		const outputArtifacts = await parseOutputArtifacts(intentDirAbs)
 
-	// Resolve image output artifact URLs now that we have a session ID
-	for (const oa of outputArtifacts) {
-		if (oa.type === "image" && oa.relativePath) {
-			oa.relativePath = `/stage-artifacts/${session.session_id}/stages/${oa.relativePath}`
+		// Resolve image output artifact URLs now that we have a session ID
+		for (const oa of outputArtifacts) {
+			if (oa.type === "image" && oa.relativePath) {
+				oa.relativePath = `/stage-artifacts/${session.session_id}/stages/${oa.relativePath}`
+			}
 		}
-	}
 
-	Object.assign(session, {
-		stageStates,
-		knowledgeFiles,
-		stageArtifacts,
-		outputArtifacts,
-	})
+		Object.assign(session, {
+			stageStates,
+			knowledgeFiles,
+			stageArtifacts,
+			outputArtifacts,
+		})
 
-	session.html = renderReviewPage({
-		intent,
-		units,
-		criteria,
-		reviewType: reviewType as "intent" | "unit",
-		target: "",
-		sessionId: session.session_id,
-		mermaid,
-		intentMockups: [],
-		unitMockups: new Map(),
-	})
+		session.html = renderReviewPage({
+			intent,
+			units,
+			criteria,
+			reviewType: reviewType as "intent" | "unit",
+			target: "",
+			sessionId: session.session_id,
+			mermaid,
+			intentMockups: [],
+			unitMockups: new Map(),
+		})
 
-	const port = await startHttpServer()
-	const useRemote = isRemoteReviewEnabled()
+		const port = await startHttpServer()
+		const useRemote = isRemoteReviewEnabled()
 
-	let reviewUrl: string
-	if (useRemote) {
-		const tunnelUrl = await openTunnel(port)
-		reviewUrl = buildReviewUrl(session.session_id, tunnelUrl, reviewType)
-	} else {
-		reviewUrl = `http://127.0.0.1:${port}/review/${session.session_id}`
-	}
-
-	function openBrowser(url?: string) {
-		try {
-			const target = url ?? reviewUrl
-			const cmd =
-				process.platform === "darwin" ? ["open", target] : ["xdg-open", target]
-			spawn(cmd[0], cmd.slice(1), { stdio: "ignore", detached: true }).unref()
-		} catch {
-			/* */
+		let reviewUrl: string
+		if (useRemote) {
+			const tunnelUrl = await openTunnel(port)
+			reviewUrl = buildReviewUrl(session.session_id, tunnelUrl, reviewType)
+		} else {
+			reviewUrl = `http://127.0.0.1:${port}/review/${session.session_id}`
 		}
-	}
 
-	openBrowser()
+		function openBrowser(url?: string) {
+			try {
+				const target = url ?? reviewUrl
+				const cmd =
+					process.platform === "darwin"
+						? ["open", target]
+						: ["xdg-open", target]
+				spawn(cmd[0], cmd.slice(1), { stdio: "ignore", detached: true }).unref()
+			} catch {
+				/* */
+			}
+		}
 
-	// Retry loop: wait → check → reopen if needed → wait again
-	for (let attempt = 0; attempt < 3; attempt++) {
-		try {
-			await waitForSession(session.session_id, 10 * 60 * 1000) // 10 min per attempt
-		} catch {
-			// Timeout — check if session is still pending (user might still be looking)
-			const check = getSession(session.session_id)
+		openBrowser()
+
+		// Retry loop: wait → check → reopen if needed → wait again
+		for (let attempt = 0; attempt < 3; attempt++) {
+			try {
+				await waitForSession(session.session_id, 10 * 60 * 1000) // 10 min per attempt
+			} catch {
+				// Timeout — check if session is still pending (user might still be looking)
+				const check = getSession(session.session_id)
+				if (
+					check &&
+					check.session_type === "review" &&
+					check.status === "decided"
+				) {
+					if (useRemote) {
+						clearE2EKey(session.session_id)
+						closeTunnel()
+					}
+					return {
+						decision: check.decision,
+						feedback: check.feedback,
+						annotations: check.annotations,
+					}
+				}
+				// Still pending — try reopening the browser
+				if (attempt < 2) {
+					console.error(
+						`[haiku] Review session timeout (attempt ${attempt + 1}/3) — reopening browser`,
+					)
+					if (useRemote) {
+						const tunnelUrl = await openTunnel(port)
+						const newUrl = buildReviewUrl(
+							session.session_id,
+							tunnelUrl,
+							reviewType,
+						)
+						openBrowser(newUrl)
+					} else {
+						openBrowser()
+					}
+					continue
+				}
+			}
+
+			const updated = getSession(session.session_id)
 			if (
-				check &&
-				check.session_type === "review" &&
-				check.status === "decided"
+				updated &&
+				updated.session_type === "review" &&
+				updated.status === "decided"
 			) {
 				if (useRemote) {
 					clearE2EKey(session.session_id)
 					closeTunnel()
 				}
 				return {
-					decision: check.decision,
-					feedback: check.feedback,
-					annotations: check.annotations,
+					decision: updated.decision,
+					feedback: updated.feedback,
+					annotations: updated.annotations,
 				}
-			}
-			// Still pending — try reopening the browser
-			if (attempt < 2) {
-				console.error(
-					`[haiku] Review session timeout (attempt ${attempt + 1}/3) — reopening browser`,
-				)
-				if (useRemote) {
-					const tunnelUrl = await openTunnel(port)
-					const newUrl = buildReviewUrl(
-						session.session_id,
-						tunnelUrl,
-						reviewType,
-					)
-					openBrowser(newUrl)
-				} else {
-					openBrowser()
-				}
-				continue
 			}
 		}
 
-		const updated = getSession(session.session_id)
-		if (
-			updated &&
-			updated.session_type === "review" &&
-			updated.status === "decided"
-		) {
-			if (useRemote) {
-				clearE2EKey(session.session_id)
-				closeTunnel()
-			}
-			return {
-				decision: updated.decision,
-				feedback: updated.feedback,
-				annotations: updated.annotations,
-			}
+		if (useRemote) {
+			clearE2EKey(session.session_id)
+			closeTunnel()
 		}
-	}
-
-	if (useRemote) {
-		clearE2EKey(session.session_id)
-		closeTunnel()
-	}
-	throw new Error("Review timeout after 3 attempts (30 min total)")
-})
+		throw new Error("Review timeout after 3 attempts (30 min total)")
+	},
+)
 
 // Wire up elicitation fallback for when the review UI fails
 setElicitInputHandler(async (params) => {

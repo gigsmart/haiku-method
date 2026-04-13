@@ -4,7 +4,6 @@ description: Identify target audience, map the topic landscape, analyze competit
 hats: [audience-analyst, topic-scout]
 review: auto
 elaboration: collaborative
-unit_types: [research]
 inputs: []
 ---
 

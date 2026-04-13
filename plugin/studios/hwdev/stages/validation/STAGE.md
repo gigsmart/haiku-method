@@ -4,7 +4,6 @@ description: HIL testing, environmental, and regulatory certification
 hats: [test-engineer, compliance-officer, validation-lead]
 review: await
 elaboration: collaborative
-unit_types: [validation, compliance]
 inputs:
   - stage: requirements
     discovery: functional-requirements

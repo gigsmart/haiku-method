@@ -4,7 +4,6 @@ description: Identify and pursue upsell/cross-sell opportunities
 hats: [growth-strategist, value-consultant]
 review: [ask, await]
 elaboration: collaborative
-unit_types: [expansion, upsell]
 inputs:
   - stage: health-check
     discovery: health-report

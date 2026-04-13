@@ -4,7 +4,6 @@ description: Inventory what's being migrated, identify risks and dependencies
 hats: [migration-analyst, risk-assessor]
 review: auto
 elaboration: collaborative
-unit_types: [assessment]
 inputs: []
 ---
 

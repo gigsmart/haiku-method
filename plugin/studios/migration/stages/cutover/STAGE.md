@@ -4,7 +4,6 @@ description: Plan and execute the production cutover with rollback procedures
 hats: [cutover-coordinator, rollback-engineer]
 review: external
 elaboration: collaborative
-unit_types: [cutover]
 inputs:
   - stage: validation
     discovery: validation-report
