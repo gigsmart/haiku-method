@@ -937,18 +937,8 @@ function repairArchivedOnMainline(
 		}
 
 		if (autoApply && summary.applied.length > 0) {
-			// Create a repair branch in the worktree and push it, then open PR to mainline
-			try {
-				execFileSync(
-					"git",
-					["-C", worktreePath, "checkout", "-b", repairBranch],
-					{ stdio: "pipe" },
-				)
-			} catch (err) {
-				summary.pushError = `Failed to create repair branch: ${err instanceof Error ? err.message : String(err)}`
-				return summary
-			}
-
+			// commitAndPushFromWorktree commits in detached HEAD and pushes via
+			// `HEAD:refs/heads/<branch>` — no local branch ref needs to be created.
 			const messageLines = [
 				`repair: auto-fix ${summary.applied.length} issue(s) in archived intent(s)`,
 				"",
@@ -997,13 +987,17 @@ function buildMultiBranchReport(
 		`Scanned ${summaries.length} intent branch(es). Mainline: \`${mainline}\`.`,
 		"",
 	]
-	const totalApplied = summaries.reduce((sum, s) => sum + s.applied.length, 0)
-	const totalRemaining = summaries.reduce(
-		(sum, s) => sum + s.remaining.length,
-		0,
-	)
-	const totalPushed = summaries.filter((s) => s.pushed).length
-	const totalPRs = summaries.filter((s) => s.prUrl).length
+	const totalApplied =
+		summaries.reduce((sum, s) => sum + s.applied.length, 0) +
+		(archivedSummary?.applied.length ?? 0)
+	const totalRemaining =
+		summaries.reduce((sum, s) => sum + s.remaining.length, 0) +
+		(archivedSummary?.remaining.length ?? 0)
+	const totalPushed =
+		summaries.filter((s) => s.pushed).length +
+		(archivedSummary?.pushed ? 1 : 0)
+	const totalPRs =
+		summaries.filter((s) => s.prUrl).length + (archivedSummary?.prUrl ? 1 : 0)
 	lines.push(
 		`**Summary:** ${totalApplied} fix(es) auto-applied across ${totalPushed} branch(es); ${totalPRs} PR(s) opened for already-merged branches; ${totalRemaining} issue(s) still need attention.`,
 	)
@@ -1052,7 +1046,6 @@ function buildMultiBranchReport(
 	if (archivedSummary) {
 		lines.push("## Archived intents (mainline only)")
 		lines.push("")
-		lines.push(`Branch: \`${archivedSummary.branch}\``)
 		lines.push(`- Scanned: ${archivedSummary.scanned} archived intent(s)`)
 		lines.push(`- Auto-applied: ${archivedSummary.applied.length}`)
 		lines.push(`- Remaining: ${archivedSummary.remaining.length}`)
@@ -3070,20 +3063,24 @@ export function handleStateTool(
 			const repairAutoApply = args.apply !== false // default true
 			const repairSkipBranches = args.skip_branches === true
 
-			// Multi-branch path: in a git repo, no single-intent restriction, branches not skipped
+			// Multi-branch path: in a git repo, no single-intent restriction, branches not skipped.
+			// Runs whether or not active haiku/<slug>/main branches exist — the archived pass
+			// handles the case where all intents have already been merged and their branches deleted.
 			if (isGitRepo() && !repairIntentArg && !repairSkipBranches) {
-				const branches = listIntentBranches()
-				if (branches.length > 0) {
-					try {
-						const { summaries, mainline, archivedSummary } = repairAllBranches(repairAutoApply)
-						return text(buildMultiBranchReport(summaries, mainline, archivedSummary))
-					} catch (err) {
+				try {
+					const { summaries, mainline, archivedSummary } =
+						repairAllBranches(repairAutoApply)
+					if (summaries.length > 0 || archivedSummary) {
 						return text(
-							`Multi-branch repair failed: ${err instanceof Error ? err.message : String(err)}`,
+							buildMultiBranchReport(summaries, mainline, archivedSummary),
 						)
 					}
+					// No active branches AND no archived intents — fall through to cwd repair
+				} catch (err) {
+					return text(
+						`Multi-branch repair failed: ${err instanceof Error ? err.message : String(err)}`,
+					)
 				}
-				// Fall through to cwd repair if no intent branches exist yet
 			}
 
 			// Single-cwd path
