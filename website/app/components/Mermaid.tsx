@@ -2,9 +2,12 @@
 
 import mermaid from "mermaid"
 import { useEffect, useRef, useState } from "react"
+import { canRenderAsFlow } from "./mermaid-flow/detect"
+import { MermaidFlow } from "./MermaidFlow"
 
 interface MermaidProps {
 	chart: string
+	height?: number
 }
 
 /**
@@ -91,7 +94,14 @@ function darkenColorForDarkMode(hexColor: string): string {
 	return `#${toHex(newR)}${toHex(newG)}${toHex(newB)}`
 }
 
-export function Mermaid({ chart }: MermaidProps) {
+export function Mermaid({ chart, height }: MermaidProps) {
+	if (canRenderAsFlow(chart)) {
+		return <MermaidFlow chart={chart} height={height} />
+	}
+	return <MermaidSvg chart={chart} />
+}
+
+function MermaidSvg({ chart }: { chart: string }) {
 	const containerRef = useRef<HTMLDivElement>(null)
 	const [svg, setSvg] = useState<string>("")
 	const [error, setError] = useState<string | null>(null)

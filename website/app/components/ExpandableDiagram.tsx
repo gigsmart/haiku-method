@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Mermaid } from "./Mermaid"
+import { canRenderAsFlow } from "./mermaid-flow/detect"
 
 interface ExpandableDiagramProps {
 	chart: string
@@ -9,6 +10,22 @@ interface ExpandableDiagramProps {
 }
 
 export function ExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
+	if (canRenderAsFlow(chart)) {
+		return (
+			<figure className="not-prose my-8 rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-stone-800 dark:bg-stone-900/50">
+				<Mermaid chart={chart} height={560} />
+				{caption ? (
+					<figcaption className="mt-3 text-center text-sm text-stone-500 italic dark:text-stone-400">
+						{caption}
+					</figcaption>
+				) : null}
+			</figure>
+		)
+	}
+	return <LegacyExpandableDiagram chart={chart} caption={caption} />
+}
+
+function LegacyExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 	const [expanded, setExpanded] = useState(false)
 	const expandButtonRef = useRef<HTMLButtonElement>(null)
 	const closeButtonRef = useRef<HTMLButtonElement>(null)
