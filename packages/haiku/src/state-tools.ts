@@ -14,6 +14,7 @@ import {
 } from "node:fs"
 import { join, resolve } from "node:path"
 import matter from "gray-matter"
+import { getPendingVersion, hasPendingUpdate } from "./auto-update.js"
 import { features } from "./config.js"
 import {
 	addTempWorktree,
@@ -33,6 +34,7 @@ import { escalate } from "./model-selection.js"
 import { logSessionEvent, writeHaikuMetadata } from "./session-metadata.js"
 import { listStudios, resolveStudio } from "./studio-reader.js"
 import { emitTelemetry } from "./telemetry.js"
+import { MCP_VERSION, getPluginVersion } from "./version.js"
 
 // ── Intent title derivation ────────────────────────────────────────────────
 
@@ -2152,6 +2154,13 @@ export const stateToolDefs = [
 			},
 		},
 	},
+	{
+		name: "haiku_version_info",
+		description:
+			"Return the running MCP binary version and plugin version. " +
+			"MCP version is baked into the binary at build time; plugin version is read from plugin.json at runtime.",
+		inputSchema: { type: "object" as const, properties: {} },
+	},
 ]
 
 // ── Tool handlers ──────────────────────────────────────────────────────────
@@ -3446,6 +3455,19 @@ export function handleStateTool(
 			if (cwdResult.scanned === 0) return text("No intents found.")
 
 			return text(buildRepairReport(cwdResult))
+		}
+
+		case "haiku_version_info": {
+			const info: Record<string, string> = {
+				mcp_version: MCP_VERSION,
+				plugin_version: getPluginVersion(),
+			}
+			const pending = getPendingVersion()
+			if (pending) info.pending_update = pending
+			if (hasPendingUpdate())
+				info.update_note =
+					"A new version has been downloaded and will activate on the next tool call."
+			return text(JSON.stringify(info, null, 2))
 		}
 
 		default:

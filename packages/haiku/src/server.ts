@@ -11,6 +11,12 @@ import {
 	ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
 import { z } from "zod"
+import {
+	execNewBinary,
+	hasPendingUpdate,
+	startUpdateChecker,
+	stopUpdateChecker,
+} from "./auto-update.js"
 import { getActualPort, startHttpServer } from "./http.js"
 import {
 	buildDAG,
@@ -360,8 +366,31 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 	],
 }))
 
-// Call tools
+// Call tools — wrapped to trigger hot-swap after response when an update is staged
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
+	const result = await handleToolCall(request)
+
+	// After the response is written, check if we should yield to a new binary.
+	// setImmediate ensures the MCP SDK flushes the response first.
+	if (hasPendingUpdate()) {
+		setImmediate(() => {
+			console.error(
+				"[haiku] Pending update detected — hot-swapping after response",
+			)
+			stopUpdateChecker()
+			server
+				.close()
+				.then(() => execNewBinary())
+				.catch((err) => console.error("[haiku] Hot-swap failed:", err))
+		})
+	}
+
+	return result
+})
+
+async function handleToolCall(request: {
+	params: { name: string; arguments?: Record<string, unknown> }
+}) {
 	const { name, arguments: args } = request.params
 
 	// Orchestration tools (async — gate_ask blocks until user reviews)
@@ -731,7 +760,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 		content: [{ type: "text" as const, text: `Unknown tool: ${name}` }],
 		isError: true,
 	}
-})
+}
 
 // Wire up the review handler for the orchestrator's gate_ask flow.
 // This lets haiku_run_next open a review and block until the user decides,
@@ -907,11 +936,15 @@ async function main() {
 	const transport = new StdioServerTransport()
 	await server.connect(transport)
 	console.error("H·AI·K·U Review MCP server running on stdio")
+
+	// Start background auto-update checker after the server is live
+	startUpdateChecker()
 }
 
 // Graceful shutdown
 process.on("SIGINT", async () => {
 	console.error("Shutting down...")
+	stopUpdateChecker()
 	await server.close()
 	await flushSentry()
 	process.exit(0)
@@ -919,6 +952,7 @@ process.on("SIGINT", async () => {
 
 process.on("SIGTERM", async () => {
 	console.error("Shutting down...")
+	stopUpdateChecker()
 	await server.close()
 	await flushSentry()
 	process.exit(0)
