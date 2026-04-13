@@ -1,6 +1,6 @@
 // studio-reader.ts — Shared readers for studio, stage, hat, and review-agent definitions
 
-import { existsSync, readFileSync, readdirSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 import {
 	studioSearchPaths as _studioSearchPaths,
@@ -170,16 +170,31 @@ export function resolveStageInputs(
 			)
 			if (def?.location) {
 				const absPath = resolveArtifactPath(def.location, intentDir, intentSlug)
+				const isDir = def.location.endsWith("/")
 				const exists = existsSync(absPath)
-				resolved.push({
-					stage: stageName,
-					artifactName: input.discovery,
-					kind: "discovery",
-					resolvedPath: absPath,
-					exists,
-					content: exists ? readFileSync(absPath, "utf8") : null,
-					description: def.body,
-				})
+				if (isDir && exists) {
+					// Directory artifact — recursively read all files inside
+					const contents = readDirFilesRecursive(absPath)
+					resolved.push({
+						stage: stageName,
+						artifactName: input.discovery,
+						kind: "discovery",
+						resolvedPath: absPath,
+						exists: true,
+						content: contents || "(empty directory)",
+						description: def.body,
+					})
+				} else {
+					resolved.push({
+						stage: stageName,
+						artifactName: input.discovery,
+						kind: "discovery",
+						resolvedPath: absPath,
+						exists,
+						content: exists ? readFileSync(absPath, "utf8") : null,
+						description: def.body,
+					})
+				}
 			}
 		}
 		if (input.output) {
@@ -191,14 +206,8 @@ export function resolveStageInputs(
 				const isDir = def.location.endsWith("/")
 				const exists = existsSync(absPath)
 				if (isDir && exists) {
-					// Directory artifact — list files inside
-					const files = readdirSync(absPath).filter((f) => !f.startsWith("."))
-					const contents = files
-						.map((f) => {
-							const content = readFileSync(join(absPath, f), "utf8")
-							return `### ${f}\n\n${content.slice(0, 1500)}${content.length > 1500 ? "\n...(truncated)" : ""}`
-						})
-						.join("\n\n")
+					// Directory artifact — recursively read all files inside
+					const contents = readDirFilesRecursive(absPath)
 					resolved.push({
 						stage: stageName,
 						artifactName: input.output,
@@ -223,6 +232,26 @@ export function resolveStageInputs(
 		}
 	}
 	return resolved
+}
+
+/** Recursively read all files in a directory, returning formatted content sections. */
+function readDirFilesRecursive(dir: string, prefix = ""): string {
+	const entries = readdirSync(dir).filter((f) => !f.startsWith("."))
+	const sections: string[] = []
+	for (const entry of entries) {
+		const fullPath = join(dir, entry)
+		const relPath = prefix ? `${prefix}/${entry}` : entry
+		const stat = statSync(fullPath)
+		if (stat.isDirectory()) {
+			sections.push(readDirFilesRecursive(fullPath, relPath))
+		} else {
+			const content = readFileSync(fullPath, "utf8")
+			sections.push(
+				`### ${relPath}\n\n${content.slice(0, 1500)}${content.length > 1500 ? "\n...(truncated)" : ""}`,
+			)
+		}
+	}
+	return sections.filter(Boolean).join("\n\n")
 }
 
 function resolveArtifactPath(
