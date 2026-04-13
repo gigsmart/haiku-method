@@ -195,6 +195,30 @@ export class GitLabProvider implements BrowseProvider {
 		return nodes[0]?.rawTextBlob ?? null
 	}
 
+	/** Fetch the most recent MR for a given source branch. Returns nulls on failure. */
+	private async fetchMrForBranch(
+		branchName: string,
+	): Promise<{ prUrl: string | null; prStatus: string | null; prNumber: number | null }> {
+		try {
+			const mrRes = await this.restApi(
+				`/merge_requests?source_branch=${encodeURIComponent(branchName)}&state=all&order_by=updated_at&sort=desc&per_page=1`,
+			)
+			if (mrRes.ok) {
+				const mrs = await mrRes.json()
+				if (Array.isArray(mrs) && mrs.length > 0) {
+					return {
+						prUrl: mrs[0].web_url,
+						prStatus: mrs[0].state,
+						prNumber: mrs[0].iid,
+					}
+				}
+			}
+		} catch {
+			// Non-critical
+		}
+		return { prUrl: null, prStatus: null, prNumber: null }
+	}
+
 	/** Parse raw intent.md text into a HaikuIntent with optional branch/MR metadata. */
 	private parseIntentFromRaw(
 		slug: string,
@@ -283,24 +307,7 @@ export class GitLabProvider implements BrowseProvider {
 			const stageName = parts[parts.length - 1]
 			if (!slug || !stageName) return
 
-			let prUrl: string | null = null
-			let prStatus: string | null = null
-			let prNumber: number | null = null
-			try {
-				const mrRes = await this.restApi(
-					`/merge_requests?source_branch=${encodeURIComponent(branchName)}&state=all&order_by=updated_at&sort=desc&per_page=1`,
-				)
-				if (mrRes.ok) {
-					const mrs = await mrRes.json()
-					if (Array.isArray(mrs) && mrs.length > 0) {
-						prUrl = mrs[0].web_url
-						prStatus = mrs[0].state
-						prNumber = mrs[0].iid
-					}
-				}
-			} catch {
-				// MR lookup failure — non-critical
-			}
+			const { prUrl, prStatus, prNumber } = await this.fetchMrForBranch(branchName)
 
 			this.stageBranchMap.set(`${slug}/${stageName}`, {
 				branch: branchName,
@@ -333,24 +340,8 @@ export class GitLabProvider implements BrowseProvider {
 			const rawText = await this.readFileFromRef(branchName, `.haiku/intents/${slug}/intent.md`)
 			if (!rawText) return
 
-			let prUrl: string | null = null
-			let prStatus: string | null = null
-			let prNumber: number | null = null
-			try {
-				const mrRes = await this.restApi(
-					`/merge_requests?source_branch=${encodeURIComponent(branchName)}&state=all&order_by=updated_at&sort=desc&per_page=1`,
-				)
-				if (mrRes.ok) {
-					const mrs = await mrRes.json()
-					if (Array.isArray(mrs) && mrs.length > 0) {
-						prUrl = mrs[0].web_url
-						prStatus = mrs[0].state
-						prNumber = mrs[0].iid
-					}
-				}
-			} catch {
-				// MR lookup failure — non-critical
-			}
+			// Fetch the most recent MR for this branch in ANY state (opened, merged, closed).
+			const { prUrl, prStatus, prNumber } = await this.fetchMrForBranch(branchName)
 
 			const intent = this.parseIntentFromRaw(slug, rawText, {
 				branch: branchName,
@@ -680,25 +671,8 @@ export class GitLabProvider implements BrowseProvider {
 			const branchNames = branchesData?.project?.repository?.branchNames ?? []
 
 			// Fetch MR data for intent branch
-			let prUrl: string | null = null
-			let prStatus: string | null = null
-			let prNumber: number | null = null
-			try {
-				const mrRes = await this.restApi(
-					`/merge_requests?source_branch=${encodeURIComponent(branchName)}&state=all&order_by=updated_at&sort=desc&per_page=1`,
-				)
-				if (mrRes.ok) {
-					const mrs = await mrRes.json()
-					if (Array.isArray(mrs) && mrs.length > 0) {
-						prUrl = mrs[0].web_url
-						prStatus = mrs[0].state
-						prNumber = mrs[0].iid
-					}
-				}
-			} catch {
-				// MR lookup failure — non-critical
-			}
-			this.intentMetaMap.set(slug, { branch: branchName, prUrl, prStatus, prNumber })
+			const intentMr = await this.fetchMrForBranch(branchName)
+			this.intentMetaMap.set(slug, { branch: branchName, ...intentMr })
 
 			// Discover stage branches (non-main) — fetch MR data in parallel
 			const stageBranchEntries = branchNames
@@ -712,30 +686,10 @@ export class GitLabProvider implements BrowseProvider {
 				.filter(Boolean) as Array<{ name: string; stageName: string }>
 
 			await Promise.all(stageBranchEntries.map(async ({ name, stageName }) => {
-				let stagePrUrl: string | null = null
-				let stagePrStatus: string | null = null
-				let stagePrNumber: number | null = null
-				try {
-					const stageMrRes = await this.restApi(
-						`/merge_requests?source_branch=${encodeURIComponent(name)}&state=all&order_by=updated_at&sort=desc&per_page=1`,
-					)
-					if (stageMrRes.ok) {
-						const stageMrs = await stageMrRes.json()
-						if (Array.isArray(stageMrs) && stageMrs.length > 0) {
-							stagePrUrl = stageMrs[0].web_url
-							stagePrStatus = stageMrs[0].state
-							stagePrNumber = stageMrs[0].iid
-						}
-					}
-				} catch {
-					// MR lookup failure — non-critical
-				}
-
+				const stageMr = await this.fetchMrForBranch(name)
 				this.stageBranchMap.set(`${slug}/${stageName}`, {
 					branch: name,
-					prUrl: stagePrUrl,
-					prStatus: stagePrStatus,
-					prNumber: stagePrNumber,
+					...stageMr,
 				})
 			}))
 		} catch {
@@ -1081,6 +1035,7 @@ export class GitLabProvider implements BrowseProvider {
 		}
 		this.intentBranchMap.clear()
 		this.stageBranchMap.clear()
+		this.intentMetaMap.clear()
 	}
 
 	async isAccessible(): Promise<boolean> {
