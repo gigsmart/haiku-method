@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.100.0] - 2026-04-13
+
+### Added
+- Revisit command to pick up where you left off on previous work and intents
+
+### Changed
+- Repair command now handles migrated intents and edge cases more reliably
+
 ## [1.99.0] - 2026-04-13
 
 ### Added
