@@ -669,6 +669,7 @@ export class GitHubProvider implements BrowseProvider {
 			}
 		}
 		this.intentBranchMap.clear()
+		this.intentMetaMap.clear()
 	}
 
 	/** Check if the repo is accessible. Returns status for error differentiation. */

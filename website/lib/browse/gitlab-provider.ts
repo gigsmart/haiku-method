@@ -213,6 +213,41 @@ export class GitLabProvider implements BrowseProvider {
 		return nodes[0]?.rawTextBlob ?? null
 	}
 
+	/** Fetch the most recent MR for a given source branch. Returns nulls on failure. */
+	private async fetchMrForBranch(
+		branchName: string,
+	): Promise<{ prUrl: string | null; prStatus: string | null; prNumber: number | null }> {
+		try {
+			const mrRes = await this.restApi(
+				`/merge_requests?source_branch=${encodeURIComponent(branchName)}&state=all&order_by=updated_at&sort=desc&per_page=1`,
+			)
+			if (mrRes.ok) {
+				const mrs = await mrRes.json()
+				if (Array.isArray(mrs) && mrs.length > 0) {
+					return {
+						prUrl: mrs[0].web_url,
+						prStatus: mrs[0].state,
+						prNumber: mrs[0].iid,
+					}
+				}
+			}
+		} catch {
+			// Non-critical
+		}
+		return { prUrl: null, prStatus: null, prNumber: null }
+	}
+
+	/** Get cached meta or fetch MR data on deeplink when listIntents hasn't populated the map. */
+	private async getOrFetchMeta(slug: string, intentBranch: string | undefined) {
+		const cached = this.intentMetaMap.get(slug)
+		if (cached) return cached
+		if (!intentBranch) return {}
+		const mrMeta = await this.fetchMrForBranch(intentBranch)
+		const meta = { branch: intentBranch, ...mrMeta }
+		this.intentMetaMap.set(slug, meta)
+		return meta
+	}
+
 	/** Parse raw intent.md text into a HaikuIntent with optional branch/MR metadata. */
 	private parseIntentFromRaw(
 		slug: string,
@@ -307,27 +342,7 @@ export class GitLabProvider implements BrowseProvider {
 			if (!rawText) return
 
 			// Fetch the most recent MR for this branch in ANY state (opened, merged, closed).
-			// One call instead of the old two-call opened-then-merged probe.
-			// `state=all` + `order_by=updated_at` gives us the freshest MR regardless of
-			// outcome, so the browse UI can surface closed/rejected MRs too.
-			let prUrl: string | null = null
-			let prStatus: string | null = null
-			let prNumber: number | null = null
-			try {
-				const mrRes = await this.restApi(
-					`/merge_requests?source_branch=${encodeURIComponent(branchName)}&state=all&order_by=updated_at&sort=desc&per_page=1`,
-				)
-				if (mrRes.ok) {
-					const mrs = await mrRes.json()
-					if (Array.isArray(mrs) && mrs.length > 0) {
-						prUrl = mrs[0].web_url
-						prStatus = mrs[0].state  // "opened" | "closed" | "merged" | "locked"
-						prNumber = mrs[0].iid
-					}
-				}
-			} catch {
-				// MR lookup failure — non-critical
-			}
+			const { prUrl, prStatus, prNumber } = await this.fetchMrForBranch(branchName)
 
 			const intent = this.parseIntentFromRaw(slug, rawText, {
 				branch: branchName,
@@ -630,8 +645,9 @@ export class GitLabProvider implements BrowseProvider {
 		// Reflection
 		const reflection = blobByPath.get(`${basePath}/reflection.md`) ?? null
 
-		// Carry forward branch/MR metadata from the listing scan
-		const meta = this.intentMetaMap.get(slug) || {}
+		// Carry forward branch/MR metadata from the listing scan, or fetch if missing
+		// (happens on deeplinks where listIntents hasn't run yet)
+		const meta = await this.getOrFetchMeta(slug, intentBranch)
 
 		return {
 			slug,
@@ -758,6 +774,7 @@ export class GitLabProvider implements BrowseProvider {
 			}
 		}
 		this.intentBranchMap.clear()
+		this.intentMetaMap.clear()
 	}
 
 	async isAccessible(): Promise<boolean> {
