@@ -44,7 +44,8 @@ export const autoUpdate = {
 	/** How often to poll GitHub releases (ms). Default 30 min. */
 	intervalMs: Number(str("HAIKU_UPDATE_INTERVAL_MS", "1800000")) || 1_800_000,
 	/** Delay before the first check (ms). Default 60 s. */
-	initialDelayMs: Number(str("HAIKU_UPDATE_INITIAL_DELAY_MS", "60000")) || 60_000,
+	initialDelayMs:
+		Number(str("HAIKU_UPDATE_INITIAL_DELAY_MS", "60000")) || 60_000,
 }
 
 /** Observability configuration. */

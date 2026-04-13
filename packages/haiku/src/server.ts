@@ -4,12 +4,6 @@ import { dirname, join, resolve } from "node:path"
 import { Server } from "@modelcontextprotocol/sdk/server/index.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
-	execNewBinary,
-	hasPendingUpdate,
-	startUpdateChecker,
-	stopUpdateChecker,
-} from "./auto-update.js"
-import {
 	CallToolRequestSchema,
 	CompleteRequestSchema,
 	GetPromptRequestSchema,
@@ -17,6 +11,12 @@ import {
 	ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
 import { z } from "zod"
+import {
+	execNewBinary,
+	hasPendingUpdate,
+	startUpdateChecker,
+	stopUpdateChecker,
+} from "./auto-update.js"
 import { getActualPort, startHttpServer } from "./http.js"
 import {
 	buildDAG,
@@ -374,7 +374,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	// setImmediate ensures the MCP SDK flushes the response first.
 	if (hasPendingUpdate()) {
 		setImmediate(async () => {
-			console.error("[haiku] Pending update detected — hot-swapping after response")
+			console.error(
+				"[haiku] Pending update detected — hot-swapping after response",
+			)
 			stopUpdateChecker()
 			await server.close()
 			execNewBinary()
@@ -384,7 +386,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	return result
 })
 
-async function handleToolCall(request: { params: { name: string; arguments?: Record<string, unknown> } }) {
+async function handleToolCall(request: {
+	params: { name: string; arguments?: Record<string, unknown> }
+}) {
 	const { name, arguments: args } = request.params
 
 	// Orchestration tools (async — gate_ask blocks until user reviews)

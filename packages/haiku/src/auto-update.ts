@@ -17,8 +17,8 @@ import {
 } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { pipeline } from "node:stream/promises"
 import { Readable } from "node:stream"
+import { pipeline } from "node:stream/promises"
 import { autoUpdate } from "./config.js"
 import { reportError } from "./sentry.js"
 import { MCP_VERSION } from "./version.js"
@@ -107,7 +107,7 @@ async function downloadBinary(url: string, version: string): Promise<string> {
 		if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`)
 
 		const ws = createWriteStream(dest)
-		await pipeline(Readable.fromWeb(res.body as any), ws)
+		await pipeline(Readable.fromWeb(res.body as ReadableStream), ws)
 		chmodSync(dest, 0o755)
 		return dest
 	} catch (err) {
@@ -195,7 +195,7 @@ async function downloadAndExtractFromZip(
 		if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`)
 
 		const ws = createWriteStream(zipPath)
-		await pipeline(Readable.fromWeb(res.body as any), ws)
+		await pipeline(Readable.fromWeb(res.body as ReadableStream), ws)
 
 		// Extract just the binary using unzip
 		const result = spawn(
@@ -205,9 +205,7 @@ async function downloadAndExtractFromZip(
 		)
 		await new Promise<void>((resolve, reject) => {
 			result.on("close", (code) =>
-				code === 0
-					? resolve()
-					: reject(new Error(`unzip exited with ${code}`)),
+				code === 0 ? resolve() : reject(new Error(`unzip exited with ${code}`)),
 			)
 			result.on("error", reject)
 		})
@@ -246,7 +244,7 @@ async function downloadAndExtractFromZip(
  * The calling code must call `server.close()` first to release stdin.
  */
 export function execNewBinary(): void {
-	const newBinary = pendingBinaryPath!
+	const newBinary = pendingBinaryPath as string
 	const currentBinary = process.argv[1] // path to the running binary
 
 	// Try to replace the on-disk binary so future cold starts use the new

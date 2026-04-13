@@ -20,10 +20,7 @@ export function getPluginVersion(): string {
 		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
 		if (pluginRoot) {
 			const pkg = JSON.parse(
-				readFileSync(
-					join(pluginRoot, ".claude-plugin", "plugin.json"),
-					"utf8",
-				),
+				readFileSync(join(pluginRoot, ".claude-plugin", "plugin.json"), "utf8"),
 			)
 			return pkg.version ?? "unknown"
 		}

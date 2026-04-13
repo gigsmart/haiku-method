@@ -14,9 +14,8 @@ import {
 } from "node:fs"
 import { join, resolve } from "node:path"
 import matter from "gray-matter"
+import { getPendingVersion, hasPendingUpdate } from "./auto-update.js"
 import { features } from "./config.js"
-import { MCP_VERSION, getPluginVersion } from "./version.js"
-import { hasPendingUpdate, getPendingVersion } from "./auto-update.js"
 import {
 	addTempWorktree,
 	commitAndPushFromWorktree,
@@ -35,6 +34,7 @@ import { escalate } from "./model-selection.js"
 import { logSessionEvent, writeHaikuMetadata } from "./session-metadata.js"
 import { listStudios, resolveStudio } from "./studio-reader.js"
 import { emitTelemetry } from "./telemetry.js"
+import { MCP_VERSION, getPluginVersion } from "./version.js"
 
 // ── Intent title derivation ────────────────────────────────────────────────
 
