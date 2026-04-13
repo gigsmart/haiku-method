@@ -279,12 +279,14 @@ export function PortfolioView({
 
 	useEffect(() => {
 		if (listDeferred) return // Skip list loading when deep-linked to a specific intent
+		let cancelled = false
 		async function load() {
 			setIntents([])
 			setLoadingMore(true)
 
 			try {
 				await provider.listIntents((intent) => {
+					if (cancelled) return
 					setIntents((prev) => [...prev, intent])
 					setLoading(false)
 					addToIndex({
@@ -298,14 +300,18 @@ export function PortfolioView({
 					})
 				})
 			} catch (e) {
+				if (cancelled) return
 				console.error("[haiku-browse] Failed to list intents:", e)
 				setIntentError(`Failed to load intents: ${(e as Error).message}`)
 			}
 
-			setLoadingMore(false)
-			setLoading(false)
+			if (!cancelled) {
+				setLoadingMore(false)
+				setLoading(false)
+			}
 		}
 		load()
+		return () => { cancelled = true }
 	}, [provider, addToIndex, listDeferred])
 
 	// Background deep indexing — fetch all intent details for unit search
@@ -722,7 +728,7 @@ export function PortfolioView({
 						})
 						.map((intent) => (
 							<Link
-								key={intent.slug}
+								key={intent.branch ? `${intent.branch}/${intent.slug}` : intent.slug}
 								href={browseUrl({ intent: intent.slug })}
 								onClick={(e) => {
 									e.preventDefault()

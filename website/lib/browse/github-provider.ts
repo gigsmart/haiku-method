@@ -44,6 +44,8 @@ export class GitHubProvider implements BrowseProvider {
 	private intentBranchMap = new Map<string, string>()
 	/** Maps slug → branch/PR metadata for carrying into detail views */
 	private intentMetaMap = new Map<string, { branch?: string; prUrl?: string | null; prStatus?: string | null; prNumber?: number | null }>()
+	/** Maps "slug/stageName" → branch/PR metadata for stage-level branches */
+	private stageBranchMap = new Map<string, { branch: string; prUrl?: string | null; prStatus?: string | null; prNumber?: number | null }>()
 	/** ETag from the last branch-change poll */
 	private lastRefsEtag: string | null = null
 
@@ -238,7 +240,10 @@ export class GitHubProvider implements BrowseProvider {
 			return this.listIntentsSingleBranch(onProgress)
 		}
 
-		// Scan mode: discover intents across all haiku/* branches + default branch
+		// Scan mode: load all intents from HEAD, then merge branch data on top.
+		// HEAD is the canonical catalog. Each haiku/{slug}/main branch carries the
+		// most current version of its own intent — we read only that one file and
+		// merge it over the HEAD baseline.
 		const intentsBySlug = new Map<string, HaikuIntent>()
 
 		// Step 1: List haiku/* branches with PR data
@@ -251,39 +256,24 @@ export class GitHubProvider implements BrowseProvider {
 
 		const branchNodes = branchesData?.repository?.refs?.nodes ?? []
 
-		// Step 2: For each haiku/*/main branch, read the intent.md
-		// Branch name format: haiku/{slug}/main (refs strip the prefix, so name = "{slug}/main")
-		const mainBranches = branchNodes.filter(
-			(node) => node?.name.endsWith("/main"),
-		)
-
-		const branchReadPromises = mainBranches.map(async (node) => {
-			if (!node) return
-			const slug = node.name.replace(/\/main$/, "")
+		// Capture stage-level branches (haiku/{slug}/{stageName}, where stageName != "main")
+		for (const node of branchNodes) {
+			if (!node || node.name.endsWith("/main")) continue
+			const slashIdx = node.name.indexOf("/")
+			if (slashIdx === -1) continue
+			const slug = node.name.substring(0, slashIdx)
+			const stageName = node.name.substring(slashIdx + 1)
 			const branchName = `haiku/${node.name}`
-
-			// Extract PR info
 			const pr = node.associatedPullRequests.nodes?.[0]
-			const prMeta = pr
-				? { prUrl: pr.url, prStatus: pr.state.toLowerCase(), prNumber: pr.number }
-				: { prUrl: null, prStatus: null, prNumber: null }
-
-			const rawText = await this.readFileFromBranch(branchName, `.haiku/intents/${slug}/intent.md`)
-			if (!rawText) return
-
-			const intent = this.parseIntentFromRaw(slug, rawText, {
+			this.stageBranchMap.set(`${slug}/${stageName}`, {
 				branch: branchName,
-				...prMeta,
+				prUrl: pr?.url ?? null,
+				prStatus: pr?.state.toLowerCase() ?? null,
+				prNumber: pr?.number ?? null,
 			})
-			intentsBySlug.set(slug, intent)
-			this.intentBranchMap.set(slug, branchName)
-			this.intentMetaMap.set(slug, { branch: branchName, ...prMeta })
-			onProgress?.(intent)
-		})
+		}
 
-		await Promise.all(branchReadPromises)
-
-		// Step 3: Read completed/archived intents from the default branch (HEAD)
+		// Step 2: Load ALL intents from default branch — the canonical catalog
 		const defaultBranchCacheKey = `gh:${this.owner}/${this.repo}:listIntents:HEAD`
 		const defaultData = await this.cachedQuery<operationsListIntentsQuery$data>(
 			ListIntentsQuery,
@@ -300,9 +290,6 @@ export class GitHubProvider implements BrowseProvider {
 		for (const entry of defaultEntries) {
 			if (entry.type !== "tree") continue
 
-			// Skip if we already have this intent from a feature branch (branch version wins)
-			if (intentsBySlug.has(entry.name)) continue
-
 			const subEntries = entry.object?.entries
 			if (!subEntries) continue
 
@@ -314,10 +301,46 @@ export class GitHubProvider implements BrowseProvider {
 
 			const intent = this.parseIntentFromRaw(entry.name, rawText)
 			intentsBySlug.set(entry.name, intent)
+		}
+
+		// Step 3: For each haiku/{slug}/main branch, read ONLY the matching intent
+		// and merge it over the HEAD baseline. Branch version is more current for
+		// active work and carries branch/PR metadata.
+		const mainBranches = branchNodes.filter(
+			(node) => node?.name.endsWith("/main"),
+		)
+
+		const branchReadPromises = mainBranches.map(async (node) => {
+			if (!node) return
+			const slug = node.name.replace(/\/main$/, "")
+			const branchName = `haiku/${node.name}`
+
+			const pr = node.associatedPullRequests.nodes?.[0]
+			const prMeta = pr
+				? { prUrl: pr.url, prStatus: pr.state.toLowerCase(), prNumber: pr.number }
+				: { prUrl: null, prStatus: null, prNumber: null }
+
+			const rawText = await this.readFileFromBranch(branchName, `.haiku/intents/${slug}/intent.md`)
+			if (!rawText) return
+
+			const intent = this.parseIntentFromRaw(slug, rawText, {
+				branch: branchName,
+				...prMeta,
+			})
+			intentsBySlug.set(slug, intent)
+			this.intentBranchMap.set(slug, branchName)
+			this.intentMetaMap.set(slug, { branch: branchName, ...prMeta })
+		})
+
+		await Promise.all(branchReadPromises)
+
+		// Emit all intents (merged result: one per slug)
+		const allIntents = Array.from(intentsBySlug.values())
+		for (const intent of allIntents) {
 			onProgress?.(intent)
 		}
 
-		return Array.from(intentsBySlug.values())
+		return allIntents
 	}
 
 	/** Single-branch mode: read .haiku/intents/ from one specific branch. */
@@ -362,81 +385,347 @@ export class GitHubProvider implements BrowseProvider {
 		return intents
 	}
 
-	/** Build a git expression for a specific branch (or fallback to this.branch/HEAD). */
-	private exprForBranch(branch: string | undefined, path: string): string {
-		const ref = branch || this.branch || "HEAD"
-		return `${ref}:${path}`
-	}
+	// ── Three-level merge helpers ────────────────────────────────────────
 
-	/**
-	 * Get full intent detail using a single GraphQL query.
-	 *
-	 * Uses aliased object() fields to fetch in one round-trip:
-	 * - intent.md content
-	 * - Full stages tree (stages -> units, state.json)
-	 * - Knowledge directory listing
-	 * - Operations directory listing
-	 * - reflection.md content
-	 *
-	 * This replaces ~20+ REST calls with 1 GraphQL query.
-	 *
-	 * In scan mode, uses the intentBranchMap to resolve which branch holds this intent.
-	 */
-	async getIntent(slug: string): Promise<HaikuIntentDetail | null> {
-		let intentBranch = this.intentBranchMap.get(slug)
-
-		// If branch map isn't populated yet (deeplink before listIntents), try to resolve the branch
-		// and fetch its associated PR data. Without this, deep-linked intents render without
-		// branch name or PR link until a full listIntents() pass runs.
-		if (!intentBranch && !this.branch) {
-			const branchName = `haiku/${slug}/main`
-			const testRead = await this.readFileFromBranch(branchName, `.haiku/intents/${slug}/intent.md`)
-			if (testRead) {
-				intentBranch = branchName
-				this.intentBranchMap.set(slug, branchName)
-
-				// Fetch associated PRs (any state, most recent first) so the detail view
-				// shows the PR link on first render.
-				try {
-					const branchesCacheKey = `gh:${this.owner}/${this.repo}:listHaikuBranches:${slug}`
-					const branchesData = await this.cachedQuery<operationsListHaikuBranchesQuery$data>(
-						ListHaikuBranchesQuery,
-						{ owner: this.owner, name: this.repo, refPrefix: `refs/heads/haiku/${slug}/` },
-						branchesCacheKey,
-					)
-					const node = branchesData?.repository?.refs?.nodes?.find(
-						(n) => n?.name === `${slug}/main`,
-					)
-					const pr = node?.associatedPullRequests.nodes?.[0]
-					const prMeta = pr
-						? { prUrl: pr.url, prStatus: pr.state.toLowerCase(), prNumber: pr.number }
-						: { prUrl: null, prStatus: null, prNumber: null }
-					this.intentMetaMap.set(slug, { branch: branchName, ...prMeta })
-				} catch {
-					// Best-effort — if PR lookup fails, still show the branch
-					this.intentMetaMap.set(slug, { branch: branchName, prUrl: null, prStatus: null, prNumber: null })
-				}
-			}
-		}
-
+	/** Fetch the full intent tree from a specific ref via the GetIntentQuery. */
+	private async fetchIntentFromRef(
+		slug: string,
+		ref: string | undefined,
+	): Promise<operationsGetIntentQuery$data | null> {
 		const basePath = `.haiku/intents/${slug}`
-		const cacheKey = `gh:${this.owner}/${this.repo}:getIntent:${slug}:${intentBranch || this.branch || "HEAD"}`
-		const data = await this.cachedQuery<operationsGetIntentQuery$data>(
+		const effectiveRef = ref || this.branch || "HEAD"
+		const cacheKey = `gh:${this.owner}/${this.repo}:getIntent:${slug}:${effectiveRef}`
+		return (await this.cachedQuery<operationsGetIntentQuery$data>(
 			GetIntentQuery,
 			{
 				owner: this.owner,
 				name: this.repo,
-				intentExpr: this.exprForBranch(intentBranch, `${basePath}/intent.md`),
-				stagesExpr: this.exprForBranch(intentBranch, `${basePath}/stages`),
-				knowledgeExpr: this.exprForBranch(intentBranch, `${basePath}/knowledge`),
-				operationsExpr: this.exprForBranch(intentBranch, `${basePath}/operations`),
-				reflectionExpr: this.exprForBranch(intentBranch, `${basePath}/reflection.md`),
+				intentExpr: `${effectiveRef}:${basePath}/intent.md`,
+				stagesExpr: `${effectiveRef}:${basePath}/stages`,
+				knowledgeExpr: `${effectiveRef}:${basePath}/knowledge`,
+				operationsExpr: `${effectiveRef}:${basePath}/operations`,
+				reflectionExpr: `${effectiveRef}:${basePath}/reflection.md`,
 			},
 			cacheKey,
+		)) ?? null
+	}
+
+	/** Parse a single stage directory from the stagesTree entries. */
+	private parseStageFromTree(
+		slug: string,
+		stageName: string,
+		stageEntries: NonNullable<NonNullable<operationsGetIntentQuery$data["repository"]>["stagesTree"]>["entries"],
+		activeStage: string,
+		stageNames: string[],
+		ref: string,
+	): HaikuStageState | null {
+		const entries = stageEntries ?? []
+		const stageEntry = entries.find(
+			(e) => e.name === stageName && e.type === "tree",
 		)
+		if (!stageEntry) return null
+		const stageChildren = stageEntry?.object?.entries ?? []
+
+		// Units
+		const units: HaikuUnit[] = []
+		const unitsEntry = stageChildren.find((e) => e.name === "units" && e.type === "tree")
+		for (const ue of unitsEntry?.object?.entries ?? []) {
+			if (ue.type !== "blob" || !ue.name.endsWith(".md")) continue
+			const text = ue.object?.text
+			if (!text) continue
+			units.push(parseUnit(ue.name, stageName, text))
+		}
+
+		// Artifacts
+		const artifacts: HaikuArtifact[] = []
+		const artifactsEntry = stageChildren.find((e) => e.name === "artifacts" && e.type === "tree")
+		for (const ae of artifactsEntry?.object?.entries ?? []) {
+			if (ae.type !== "blob") continue
+			const artType = classifyArtifact(ae.name)
+			if (ae.object?.text != null) {
+				artifacts.push({ name: ae.name, content: ae.object.text, type: artType })
+			} else {
+				const basePath = `.haiku/intents/${slug}`
+				const filePath = `${basePath}/stages/${stageName}/artifacts/${ae.name}`
+				const rawUrl = `https://raw.githubusercontent.com/${this.owner}/${this.repo}/${encodeURIComponent(ref)}/${filePath}`
+				artifacts.push({ name: ae.name, rawUrl, type: artType })
+			}
+		}
+
+		// state.json
+		const stateEntry = stageChildren.find((e) => e.name === "state.json" && e.type === "blob")
+		let phase = ""
+		let startedAt: string | null = null
+		let completedAt: string | null = null
+		let gateOutcome: string | null = null
+		if (stateEntry?.object?.text) {
+			try {
+				const s = JSON.parse(stateEntry.object.text)
+				phase = s.phase || ""
+				startedAt = s.started_at || null
+				completedAt = s.completed_at || null
+				gateOutcome = s.gate_outcome || null
+			} catch { /* ignore */ }
+		}
+
+		let status: "pending" | "active" | "complete" = "pending"
+		if (stageName === activeStage) status = "active"
+		else if (stageNames.indexOf(stageName) < stageNames.indexOf(activeStage)) status = "complete"
+
+		return {
+			name: stageName,
+			status,
+			phase,
+			startedAt,
+			completedAt,
+			gateOutcome,
+			units,
+			artifacts: artifacts.length > 0 ? artifacts : undefined,
+		}
+	}
+
+	/** Extract knowledge files from a query result's knowledgeTree. */
+	private parseKnowledgeFromTree(
+		data: operationsGetIntentQuery$data | null,
+	): HaikuKnowledgeFile[] {
+		return (data?.repository?.knowledgeTree?.entries ?? [])
+			.filter((e) => e.type === "blob" && e.name.endsWith(".md"))
+			.map((e) => ({ name: e.name, content: e.object?.text || "" }))
+	}
+
+	/** Merge knowledge files — overlay wins on filename collision, new files are added. */
+	private mergeKnowledge(
+		base: HaikuKnowledgeFile[],
+		overlay: HaikuKnowledgeFile[],
+	): HaikuKnowledgeFile[] {
+		const byName = new Map<string, HaikuKnowledgeFile>()
+		for (const f of base) byName.set(f.name, f)
+		for (const f of overlay) byName.set(f.name, f)
+		return Array.from(byName.values())
+	}
+
+	// ── getIntent: three-level trust merge ───────────────────────────────
+
+	/**
+	 * Get full intent detail by merging data from three trust levels:
+	 *
+	 * 1. Default branch (baseline — all intents including completed/archived)
+	 * 2. Intent branch `haiku/{slug}/main` (overrides for active intent)
+	 * 3. Stage branches `haiku/{slug}/{stage}` (highest trust, scoped to own stage + knowledge)
+	 *
+	 * In single-branch mode (explicit `this.branch`), skips the merge and reads from that branch only.
+	 */
+	async getIntent(slug: string): Promise<HaikuIntentDetail | null> {
+		// Single-branch mode: explicit branch — no merge needed
+		if (this.branch) {
+			return this.getIntentSingleRef(slug)
+		}
+
+		let intentBranch = this.intentBranchMap.get(slug)
+
+		// Deep-link resolution: probe for branch + PR data if maps aren't populated yet
+		if (!intentBranch) {
+			intentBranch = await this.probeIntentBranch(slug)
+		}
+
+		// Collect stage branches for this slug
+		const stageBranches = new Map<string, { branch: string; prUrl?: string | null; prStatus?: string | null; prNumber?: number | null }>()
+		for (const [key, meta] of this.stageBranchMap) {
+			if (key.startsWith(`${slug}/`)) {
+				stageBranches.set(key.slice(slug.length + 1), meta)
+			}
+		}
+
+		// Fetch all trust levels in parallel
+		const stageBranchPromises = new Map<string, Promise<operationsGetIntentQuery$data | null>>()
+		for (const [stageName, meta] of stageBranches) {
+			stageBranchPromises.set(stageName, this.fetchIntentFromRef(slug, meta.branch))
+		}
+
+		const [defaultData, intentData] = await Promise.all([
+			this.fetchIntentFromRef(slug, undefined),
+			intentBranch ? this.fetchIntentFromRef(slug, intentBranch) : null,
+		])
+
+		// Resolve stage branch fetches (they ran in parallel with the above)
+		const stageBranchData = new Map<string, operationsGetIntentQuery$data | null>()
+		for (const [stageName, promise] of stageBranchPromises) {
+			stageBranchData.set(stageName, await promise)
+		}
+
+		// intent.md: intent branch wins, fallback to default
+		const intentRaw = intentData?.repository?.intentFile?.text
+			?? defaultData?.repository?.intentFile?.text
+		if (!intentRaw) return null
+
+		const { data: frontmatter, content } = parseFrontmatter(intentRaw)
+		const studio = (frontmatter.studio as string) || "ideation"
+		const stageNames = (frontmatter.stages as string[]) || []
+		const activeStage = (frontmatter.active_stage as string) || ""
+
+		// Determine ordered stage list from frontmatter or directory listing
+		const fallbackDirNames = (intentData ?? defaultData)?.repository?.stagesTree?.entries
+			?.filter((e) => e.type === "tree")
+			.map((e) => e.name)
+			.sort() ?? []
+		const orderedStages = stageNames.length > 0 ? stageNames : fallbackDirNames
+
+		// Build stages with three-level merge:
+		// default ← intent branch ← stage branch (scoped to own stage only)
+		const stages: HaikuStageState[] = []
+		for (const stageName of orderedStages) {
+			const stageBranchRef = stageBranches.get(stageName)
+			const stageBranchResult = stageBranchData.get(stageName)
+
+			// Try each trust level, highest first
+			let parsed: HaikuStageState | null = null
+
+			// Level 3: Stage branch (highest trust for its own stage)
+			if (stageBranchResult?.repository?.stagesTree?.entries) {
+				parsed = this.parseStageFromTree(
+					slug, stageName,
+					stageBranchResult.repository.stagesTree.entries,
+					activeStage, stageNames,
+					stageBranchRef!.branch,
+				)
+			}
+
+			// Level 2: Intent branch
+			if (!parsed && intentData?.repository?.stagesTree?.entries) {
+				parsed = this.parseStageFromTree(
+					slug, stageName,
+					intentData.repository.stagesTree.entries,
+					activeStage, stageNames,
+					intentBranch!,
+				)
+			}
+
+			// Level 1: Default branch (baseline)
+			if (!parsed && defaultData?.repository?.stagesTree?.entries) {
+				parsed = this.parseStageFromTree(
+					slug, stageName,
+					defaultData.repository.stagesTree.entries,
+					activeStage, stageNames,
+					"HEAD",
+				)
+			}
+
+			if (!parsed) {
+				// Stage declared in frontmatter but not found on any branch
+				parsed = { name: stageName, status: "pending", phase: "", startedAt: null, completedAt: null, gateOutcome: null, units: [] }
+			}
+
+			// Attach stage branch/PR metadata
+			const meta = stageBranches.get(stageName)
+			stages.push({
+				...parsed,
+				branch: meta?.branch,
+				prUrl: meta?.prUrl ?? null,
+				prStatus: meta?.prStatus ?? null,
+				prNumber: meta?.prNumber ?? null,
+			})
+		}
+
+		// Knowledge: merge from all levels (each can contribute)
+		let knowledge = this.parseKnowledgeFromTree(defaultData)
+		if (intentData) {
+			knowledge = this.mergeKnowledge(knowledge, this.parseKnowledgeFromTree(intentData))
+		}
+		for (const [, data] of stageBranchData) {
+			if (data) knowledge = this.mergeKnowledge(knowledge, this.parseKnowledgeFromTree(data))
+		}
+
+		// Operations: intent branch wins, fallback to default (stage branches cannot touch)
+		const opsSource = intentData ?? defaultData
+		const operations: HaikuKnowledgeFile[] = (opsSource?.repository?.operationsTree?.entries ?? [])
+			.filter((e) => e.type === "blob" && e.name.endsWith(".md"))
+			.map((e) => ({ name: e.name, content: e.object?.text || "" }))
+
+		// Reflection: intent branch wins (stage branches cannot touch)
+		const reflection = intentData?.repository?.reflectionFile?.text
+			?? defaultData?.repository?.reflectionFile?.text
+			?? null
+
+		return {
+			slug,
+			title: (frontmatter.title as string) || slug,
+			studio,
+			activeStage,
+			mode: (frontmatter.mode as string) || "continuous",
+			createdAt: (frontmatter.created_at as string) || (frontmatter.created as string) || null,
+			startedAt: (frontmatter.started_at as string) || null,
+			completedAt: (frontmatter.completed_at as string) || null,
+			studioStages: (frontmatter.stages as string[]) || [],
+			composite:
+				(frontmatter.composite as Array<{ studio: string; stages: string[] }>)
+				|| null,
+			...normalizeIntentStatus(
+				(frontmatter.status as string) || "active",
+				(frontmatter.completed_at as string) || null,
+				stageNames.indexOf(activeStage),
+				stageNames.length,
+			),
+			stagesTotal: stageNames.length,
+			follows: (frontmatter.follows as string) || null,
+			raw: frontmatter,
+			stages,
+			knowledge,
+			operations,
+			reflection,
+			content,
+			assets: [],
+			...(this.intentMetaMap.get(slug) || {}),
+		}
+	}
+
+	/** Deep-link probe: discover intent branch + stage branches when maps aren't populated. */
+	private async probeIntentBranch(slug: string): Promise<string | undefined> {
+		const branchName = `haiku/${slug}/main`
+		const testRead = await this.readFileFromBranch(branchName, `.haiku/intents/${slug}/intent.md`)
+		if (!testRead) return undefined
+
+		this.intentBranchMap.set(slug, branchName)
+
+		try {
+			const branchesCacheKey = `gh:${this.owner}/${this.repo}:listHaikuBranches:${slug}`
+			const branchesData = await this.cachedQuery<operationsListHaikuBranchesQuery$data>(
+				ListHaikuBranchesQuery,
+				{ owner: this.owner, name: this.repo, refPrefix: `refs/heads/haiku/${slug}/` },
+				branchesCacheKey,
+			)
+			const mainNode = branchesData?.repository?.refs?.nodes?.find(
+				(n) => n?.name === `${slug}/main`,
+			)
+			const pr = mainNode?.associatedPullRequests.nodes?.[0]
+			const prMeta = pr
+				? { prUrl: pr.url, prStatus: pr.state.toLowerCase(), prNumber: pr.number }
+				: { prUrl: null, prStatus: null, prNumber: null }
+			this.intentMetaMap.set(slug, { branch: branchName, ...prMeta })
+
+			for (const node of branchesData?.repository?.refs?.nodes ?? []) {
+				if (!node || node.name === `${slug}/main`) continue
+				const stageName = node.name.replace(`${slug}/`, "")
+				if (!stageName || stageName.includes("/")) continue
+				const stagePr = node.associatedPullRequests.nodes?.[0]
+				this.stageBranchMap.set(`${slug}/${stageName}`, {
+					branch: `haiku/${node.name}`,
+					prUrl: stagePr?.url ?? null,
+					prStatus: stagePr?.state.toLowerCase() ?? null,
+					prNumber: stagePr?.number ?? null,
+				})
+			}
+		} catch {
+			this.intentMetaMap.set(slug, { branch: branchName, prUrl: null, prStatus: null, prNumber: null })
+		}
+
+		return branchName
+	}
+
+	/** Single-ref fallback for explicit branch mode (no three-level merge). */
+	private async getIntentSingleRef(slug: string): Promise<HaikuIntentDetail | null> {
+		const data = await this.fetchIntentFromRef(slug, this.branch)
 
 		if (!data?.repository) return null
-
 		const rawText = data.repository.intentFile?.text
 		if (!rawText) return null
 
@@ -444,119 +733,28 @@ export class GitHubProvider implements BrowseProvider {
 		const studio = (frontmatter.studio as string) || "ideation"
 		const stageNames = (frontmatter.stages as string[]) || []
 		const activeStage = (frontmatter.active_stage as string) || ""
+		const ref = this.branch || "HEAD"
 
-		// Parse stages from the GraphQL tree response
-		const stageEntries = data.repository.stagesTree?.entries ?? []
-		const stageDirNames = stageEntries
-			.filter((e) => e.type === "tree")
+		const fallbackDirNames = data.repository.stagesTree?.entries
+			?.filter((e) => e.type === "tree")
 			.map((e) => e.name)
-			.sort()
+			.sort() ?? []
 
 		const stages: HaikuStageState[] = []
-
-		for (const stageName of stageNames.length > 0
-			? stageNames
-			: stageDirNames) {
-			const stageEntry = stageEntries.find(
-				(e) => e.name === stageName && e.type === "tree",
+		for (const stageName of stageNames.length > 0 ? stageNames : fallbackDirNames) {
+			const parsed = this.parseStageFromTree(
+				slug, stageName,
+				data.repository.stagesTree?.entries ?? null,
+				activeStage, stageNames,
+				ref,
 			)
-			const stageChildren = stageEntry?.object?.entries ?? []
-
-			// Parse units from the "units" subdirectory
-			const units: HaikuUnit[] = []
-			const unitsEntry = stageChildren.find(
-				(e) => e.name === "units" && e.type === "tree",
-			)
-			const unitEntries = unitsEntry?.object?.entries ?? []
-
-			for (const unitEntry of unitEntries) {
-				if (unitEntry.type !== "blob" || !unitEntry.name.endsWith(".md"))
-					continue
-				const unitText = unitEntry.object?.text
-				if (!unitText) continue
-
-				units.push(parseUnit(unitEntry.name, stageName, unitText))
-			}
-
-			// Parse artifacts from the "artifacts" subdirectory
-			const stageArtifacts: HaikuArtifact[] = []
-			const artifactsEntry = stageChildren.find(
-				(e) => e.name === "artifacts" && e.type === "tree",
-			)
-			const artifactEntries = artifactsEntry?.object?.entries ?? []
-
-			for (const artEntry of artifactEntries) {
-				if (artEntry.type !== "blob") continue
-				const artType = classifyArtifact(artEntry.name)
-				const textContent = artEntry.object?.text
-				if (textContent != null) {
-					stageArtifacts.push({ name: artEntry.name, content: textContent, type: artType })
-				} else {
-					// Binary file — build a raw URL via GitHub API
-					const ref = intentBranch || this.branch || "HEAD"
-					const filePath = `${basePath}/stages/${stageName}/artifacts/${artEntry.name}`
-					const rawUrl = `https://raw.githubusercontent.com/${this.owner}/${this.repo}/${encodeURIComponent(ref)}/${filePath}`
-					stageArtifacts.push({ name: artEntry.name, rawUrl, type: artType })
-				}
-			}
-
-			// Parse state.json
-			const stateEntry = stageChildren.find(
-				(e) => e.name === "state.json" && e.type === "blob",
-			)
-			let stagePhase = ""
-			let stageStartedAt: string | null = null
-			let stageCompletedAt: string | null = null
-			let gateOutcome: string | null = null
-
-			if (stateEntry?.object?.text) {
-				try {
-					const stateData = JSON.parse(stateEntry.object.text)
-					stagePhase = stateData.phase || ""
-					stageStartedAt = stateData.started_at || null
-					stageCompletedAt = stateData.completed_at || null
-					gateOutcome = stateData.gate_outcome || null
-				} catch {
-					/* ignore parse errors */
-				}
-			}
-
-			let status: "pending" | "active" | "complete" = "pending"
-			if (stageName === activeStage) status = "active"
-			else if (stageNames.indexOf(stageName) < stageNames.indexOf(activeStage))
-				status = "complete"
-
-			stages.push({
-				name: stageName,
-				status,
-				phase: stagePhase,
-				startedAt: stageStartedAt,
-				completedAt: stageCompletedAt,
-				gateOutcome,
-				units,
-				artifacts: stageArtifacts.length > 0 ? stageArtifacts : undefined,
-			})
+			if (parsed) stages.push(parsed)
 		}
 
-		// Knowledge files (include content)
-		const knowledgeEntries = data.repository.knowledgeTree?.entries ?? []
-		const knowledgeFiles: HaikuKnowledgeFile[] = knowledgeEntries
+		const knowledge = this.parseKnowledgeFromTree(data)
+		const operations: HaikuKnowledgeFile[] = (data.repository.operationsTree?.entries ?? [])
 			.filter((e) => e.type === "blob" && e.name.endsWith(".md"))
-			.map((e) => ({
-				name: e.name,
-				content: e.object?.text || "",
-			}))
-
-		// Operations files (include content)
-		const operationsEntries = data.repository.operationsTree?.entries ?? []
-		const operationsFiles: HaikuKnowledgeFile[] = operationsEntries
-			.filter((e) => e.type === "blob" && e.name.endsWith(".md"))
-			.map((e) => ({
-				name: e.name,
-				content: e.object?.text || "",
-			}))
-
-		// Reflection
+			.map((e) => ({ name: e.name, content: e.object?.text || "" }))
 		const reflection = data.repository.reflectionFile?.text ?? null
 
 		return {
@@ -570,10 +768,8 @@ export class GitHubProvider implements BrowseProvider {
 			completedAt: (frontmatter.completed_at as string) || null,
 			studioStages: (frontmatter.stages as string[]) || [],
 			composite:
-				(frontmatter.composite as Array<{
-					studio: string
-					stages: string[]
-				}>) || null,
+				(frontmatter.composite as Array<{ studio: string; stages: string[] }>)
+				|| null,
 			...normalizeIntentStatus(
 				(frontmatter.status as string) || "active",
 				(frontmatter.completed_at as string) || null,
@@ -584,12 +780,12 @@ export class GitHubProvider implements BrowseProvider {
 			follows: (frontmatter.follows as string) || null,
 			raw: frontmatter,
 			stages,
-			knowledge: knowledgeFiles,
-			operations: operationsFiles,
+			knowledge,
+			operations,
 			reflection,
 			content,
 			assets: [],
-			...(this.intentMetaMap.get(slug) || {}),
+			branch: this.branch,
 		}
 	}
 
@@ -669,6 +865,7 @@ export class GitHubProvider implements BrowseProvider {
 			}
 		}
 		this.intentBranchMap.clear()
+		this.stageBranchMap.clear()
 	}
 
 	/** Check if the repo is accessible. Returns status for error differentiation. */
@@ -691,14 +888,10 @@ export class GitHubProvider implements BrowseProvider {
 
 	/** Get the OAuth URL for GitHub.
 	 *
-	 * Scope: `repo` — full read/write access to public + private repositories.
+	 * Scope: `repo` — full read access to public + private repositories.
 	 * This is required because the browse UI:
 	 *   - Reads `.haiku/intents/` contents (public + private repos)
-	 *   - Reads branches and associated PRs (including CLOSED/rejected ones)
-	 *   - Writes stage gate approvals via `writeFile` (external review buttons)
-	 *
-	 * Narrower alternatives like `public_repo` or `read:repo` would work for
-	 * read-only public access but would break gate approvals on private repos. */
+	 *   - Reads branches and associated PRs (including CLOSED/rejected ones) */
 	static getOAuthUrl(clientId: string, redirectUri: string): string {
 		return `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo`
 	}
