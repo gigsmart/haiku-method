@@ -30,6 +30,7 @@ import {
 	isOnIntentBranch,
 	isOnStageBranch,
 	mergeStageBranchForward,
+	mergeStageBranchIntoMain,
 } from "./git-worktree.js"
 import { type ModelTier, resolveModel } from "./model-selection.js"
 import { validateIdentifier } from "./prompts/helpers.js"
@@ -708,18 +709,37 @@ function fsmStartStage(slug: string, stage: string): void {
 	const intent = readFrontmatter(intentFile)
 	const branchMode = resolveEffectiveBranchMode(slug, stage)
 	if (branchMode === "discrete") {
+		// Discrete mode: haiku/<slug>/main is the hub branch.
+		// Stage branches branch from main, and merge back into main when approved.
+		// This ensures browse/repair can always find the intent on main.
+
+		// 1. Ensure the hub branch exists
+		createIntentBranch(slug)
+
+		// 2. If there's a completed previous stage, merge it into main first
+		const prevStage = findPreviousStage(slug, stage)
+		if (prevStage && branchExists(`haiku/${slug}/${prevStage}`)) {
+			const mergeResult = mergeStageBranchIntoMain(slug, prevStage)
+			if (!mergeResult.success) {
+				throw new Error(
+					`Merge of completed stage '${prevStage}' into main failed: ${mergeResult.message}. Resolve conflicts on 'haiku/${slug}/main' manually, then retry.`,
+				)
+			}
+		}
+
+		// 3. Create (or switch to) the stage branch from main
 		if (!isOnStageBranch(slug, stage)) {
-			const prevStage = findPreviousStage(slug, stage)
 			const stageBranch = `haiku/${slug}/${stage}`
 			if (branchExists(stageBranch) && prevStage) {
-				const mergeResult = mergeStageBranchForward(slug, prevStage, stage)
+				// Stage branch already exists (go-back scenario) — merge main forward
+				const mergeResult = mergeStageBranchForward(slug, "main", stage)
 				if (!mergeResult.success) {
 					throw new Error(
-						`Merge forward from '${prevStage}' to '${stage}' failed: ${mergeResult.message}. Resolve conflicts on branch '${stageBranch}' manually, then retry.`,
+						`Merge forward from main to '${stage}' failed: ${mergeResult.message}. Resolve conflicts on branch '${stageBranch}' manually, then retry.`,
 					)
 				}
 			} else {
-				createStageBranch(slug, stage, prevStage)
+				createStageBranch(slug, stage)
 			}
 		}
 	} else {

@@ -18,10 +18,12 @@ import { features } from "./config.js"
 import {
 	addTempWorktree,
 	commitAndPushFromWorktree,
+	consolidateStageBranches,
 	getCurrentBranch,
 	getMainlineBranch,
 	isBranchMerged,
 	listIntentBranches,
+	listOrphanDiscreteIntents,
 	mergeUnitWorktree,
 	openPullRequest,
 	readFileFromBranch,
@@ -788,14 +790,50 @@ interface BranchRepairSummary {
 
 /** Repair every haiku/<slug>/main branch sequentially using temporary worktrees.
  *  Auto-applies safe fixes, commits + pushes them, and opens a PR if the branch
- *  was already merged into the mainline. Returns a structured summary. */
+ *  was already merged into the mainline. Returns a structured summary.
+ *
+ *  Also detects discrete-mode intents that have stage branches but no main branch
+ *  and consolidates their stage branches into a new main branch first. */
 function repairAllBranches(autoApply: boolean): {
 	summaries: BranchRepairSummary[]
 	mainline: string
 } {
-	const branches = listIntentBranches()
 	const mainline = getMainlineBranch()
 	const summaries: BranchRepairSummary[] = []
+
+	// Phase 1: Create missing main branches for orphan discrete intents.
+	// These have haiku/<slug>/<stage> branches but no haiku/<slug>/main,
+	// so listIntentBranches() can't see them. Consolidate stage branches
+	// into a new main branch so the standard repair loop can process them.
+	if (autoApply) {
+		const orphans = listOrphanDiscreteIntents()
+		for (const { slug, branches: stageBranches } of orphans) {
+			// Extract stage names from branch refs
+			const stageNames = stageBranches.map((b) =>
+				b.replace(`haiku/${slug}/`, ""),
+			)
+			try {
+				const result = consolidateStageBranches(slug, stageNames)
+				if (result.success) {
+					// Push the new main branch
+					try {
+						execFileSync(
+							"git",
+							["push", "-u", "origin", `haiku/${slug}/main`],
+							{ encoding: "utf8", stdio: "pipe" },
+						)
+					} catch {
+						// push failed — still continue with local repair
+					}
+				}
+			} catch {
+				// consolidation failed — skip this slug, it'll show up as an issue
+			}
+		}
+	}
+
+	// Phase 2: Repair all main branches (including any just created above)
+	const branches = listIntentBranches()
 
 	for (const slug of branches) {
 		const branch = `haiku/${slug}/main`

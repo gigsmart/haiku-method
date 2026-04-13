@@ -79,7 +79,49 @@ export function listIntentBranches(): string[] {
 	return Array.from(slugs).sort()
 }
 
-/** Check whether `branch` has been merged into `mainline` (i.e., its tip is an ancestor). */
+/** List intent slugs that have haiku/<slug>/<stage> branches but NO haiku/<slug>/main.
+ *  These are discrete-mode intents created before the hub-branch convention.
+ *  Returns { slug, branches } pairs so the caller knows what stage branches exist. */
+export function listOrphanDiscreteIntents(): {
+	slug: string
+	branches: string[]
+}[] {
+	if (!isGitRepo()) return []
+
+	const mainSlugs = new Set(listIntentBranches())
+	// Collect all haiku/<slug>/<not-main> branches
+	const stageMap = new Map<string, string[]>()
+	for (const prefix of ["refs/heads/haiku", "refs/remotes/origin/haiku"]) {
+		const out = tryRun([
+			"git",
+			"for-each-ref",
+			"--format=%(refname:short)",
+			prefix,
+		])
+		for (const line of out.split("\n").filter(Boolean)) {
+			const stripped = line.startsWith("origin/")
+				? line.slice("origin/".length)
+				: line
+			const match = stripped.match(/^haiku\/([^/]+)\/(.+)$/)
+			if (!match) continue
+			const [, slug, segment] = match
+			if (segment === "main") continue
+			if (mainSlugs.has(slug)) continue
+			if (!stageMap.has(slug)) stageMap.set(slug, [])
+			const branches = stageMap.get(slug)!
+			const branchName = `haiku/${slug}/${segment}`
+			if (!branches.includes(branchName)) branches.push(branchName)
+		}
+	}
+
+	return Array.from(stageMap.entries())
+		.map(([slug, branches]) => ({ slug, branches }))
+		.sort((a, b) => a.slug.localeCompare(b.slug))
+}
+
+/** Check whether `branch` has been merged into `mainline` (i.e., its tip is an ancestor).
+ *  Falls back to VCS platform (gh/glab) to detect squash merges where the
+ *  original commits are no longer ancestors of the target. */
 export function isBranchMerged(branch: string, mainline: string): boolean {
 	if (!isGitRepo()) return false
 	// Try local first, then origin/<mainline>
@@ -102,6 +144,46 @@ export function isBranchMerged(branch: string, mainline: string): boolean {
 		} catch {
 			// not merged into this target — try next
 		}
+	}
+
+	// Squash merges rewrite history so --is-ancestor fails.
+	// Fall back to VCS platform to check for a merged PR/MR from this branch.
+	const tool = detectPrTool()
+	const branchName = branch.startsWith("origin/")
+		? branch.slice("origin/".length)
+		: branch
+	if (tool === "gh") {
+		const out = tryRun([
+			"gh",
+			"pr",
+			"list",
+			"--head",
+			branchName,
+			"--base",
+			mainline,
+			"--state",
+			"merged",
+			"--json",
+			"number",
+			"--limit",
+			"1",
+		])
+		if (out && out.trim() !== "[]") return true
+	} else if (tool === "glab") {
+		const out = tryRun([
+			"glab",
+			"mr",
+			"list",
+			"--source-branch",
+			branchName,
+			"--target-branch",
+			mainline,
+			"--state",
+			"merged",
+			"--per-page",
+			"1",
+		])
+		if (out && /^!(\d+)\b/m.test(out)) return true
 	}
 	return false
 }
@@ -325,22 +407,18 @@ export function createIntentBranch(slug: string): string {
 
 /**
  * Create a stage branch (discrete mode) and switch to it.
- * Chains from the previous stage branch if provided, otherwise from current HEAD.
+ * Always branches from `haiku/<slug>/main` (the intent hub branch).
  * No-op in non-git environments.
  * Returns the branch name.
  */
-export function createStageBranch(
-	slug: string,
-	stage: string,
-	prevStage?: string,
-): string {
+export function createStageBranch(slug: string, stage: string): string {
 	if (stage === "main")
 		throw new Error(
-			`Stage name 'main' is reserved — it would collide with the continuous-mode intent branch`,
+			`Stage name 'main' is reserved — it would collide with the intent hub branch`,
 		)
 	if (!isGitRepo()) return `haiku/${slug}/${stage}`
-	const baseBranch = prevStage ? `haiku/${slug}/${prevStage}` : undefined
-	return checkoutOrCreate(`haiku/${slug}/${stage}`, baseBranch)
+	const mainBranch = `haiku/${slug}/main`
+	return checkoutOrCreate(`haiku/${slug}/${stage}`, mainBranch)
 }
 
 /**
@@ -372,6 +450,47 @@ export function mergeStageBranchForward(
 		])
 
 		return { success: true, message: `merged ${fromBranch} → ${toBranch}` }
+	} catch (err) {
+		// Abort any in-progress merge to leave the repo clean
+		tryRun(["git", "merge", "--abort"])
+		return {
+			success: false,
+			message: err instanceof Error ? err.message : String(err),
+		}
+	}
+}
+
+/**
+ * Merge a completed stage branch back into the intent hub branch (haiku/{slug}/main).
+ * Called when a discrete stage is approved and the next stage is about to start.
+ * Returns merge result.
+ */
+export function mergeStageBranchIntoMain(
+	slug: string,
+	stage: string,
+): { success: boolean; message: string } {
+	if (!isGitRepo()) return { success: true, message: "no git" }
+	const stageBranch = `haiku/${slug}/${stage}`
+	const mainBranch = `haiku/${slug}/main`
+
+	try {
+		run(["git", "rev-parse", "--verify", stageBranch])
+		run(["git", "rev-parse", "--verify", mainBranch])
+
+		run(["git", "checkout", mainBranch])
+		run([
+			"git",
+			"merge",
+			stageBranch,
+			"--no-edit",
+			"-m",
+			`haiku: merge stage ${stage} into main`,
+		])
+
+		return {
+			success: true,
+			message: `merged ${stageBranch} → ${mainBranch}`,
+		}
 	} catch (err) {
 		// Abort any in-progress merge to leave the repo clean
 		tryRun(["git", "merge", "--abort"])
