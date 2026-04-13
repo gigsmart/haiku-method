@@ -13,6 +13,8 @@ const V_PADDING = 32
 const H_PADDING = 40
 
 function estimateNodeSize(label: string, shape: string): { width: number; height: number } {
+  if (shape === "start_end") return { width: 20, height: 20 }
+
   const rawLines = label.split("\n")
   const longest = rawLines.reduce((m, l) => Math.max(m, l.length), 1)
 
@@ -74,13 +76,16 @@ export async function layoutFlow(parsed: ParsedFlow): Promise<{ nodes: Node[]; e
       "elk.algorithm": "layered",
       "elk.direction": mapDir(parsed.direction),
       "elk.layered.spacing.nodeNodeBetweenLayers": "80",
-      "elk.spacing.nodeNode": "56",
+      "elk.spacing.nodeNode": "64",
+      "elk.spacing.edgeNode": "28",
+      "elk.spacing.edgeEdge": "16",
       "elk.spacing.componentComponent": "80",
       "elk.hierarchyHandling": "INCLUDE_CHILDREN",
       "elk.layered.cycleBreaking.strategy": "GREEDY_MODEL_ORDER",
       "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
       "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
       "elk.layered.crossingMinimization.semiInteractive": "true",
+      "elk.edgeRouting": "ORTHOGONAL",
     },
     children: buildElkNode(null),
     edges: parsed.edges.map((e) => ({ id: e.id, sources: [e.source], targets: [e.target] })),
@@ -142,17 +147,16 @@ export async function layoutFlow(parsed: ParsedFlow): Promise<{ nodes: Node[]; e
     source: e.source,
     target: e.target,
     label: e.label,
+    type: "smoothstep",
     animated: false,
     zIndex: 2,
     style: {
       strokeDasharray: e.dashed ? "6 4" : undefined,
-      stroke: e.color ?? "var(--flow-edge, #94a3b8)",
+      stroke: e.color ?? "#94a3b8",
       strokeWidth: 1.5,
     },
-    labelStyle: { fill: "var(--flow-edge-label, #1f2937)", fontSize: 12, fontWeight: 500 },
-    labelBgStyle: e.label
-      ? { fill: "var(--flow-edge-label-bg, #f8fafc)", fillOpacity: 0.85 }
-      : { fillOpacity: 0 },
+    labelStyle: { fill: "#1f2937", fontSize: 12, fontWeight: 500 },
+    labelBgStyle: e.label ? { fill: "#f8fafc", fillOpacity: 0.9 } : { fillOpacity: 0 },
     labelBgPadding: [4, 2] as [number, number],
     labelBgBorderRadius: 3,
     labelShowBg: !!e.label,

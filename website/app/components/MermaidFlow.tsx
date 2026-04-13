@@ -72,6 +72,16 @@ function RoundNode({ data }: NodeProps<{ label: string }>) {
   )
 }
 
+function StartEndNode() {
+  return (
+    <div className="relative flex h-full w-full items-center justify-center">
+      <Handle type="target" position={Position.Top} className="!bg-transparent !border-0" />
+      <div className="h-3 w-3 rounded-full bg-neutral-900 dark:bg-neutral-100" />
+      <Handle type="source" position={Position.Bottom} className="!bg-transparent !border-0" />
+    </div>
+  )
+}
+
 function GroupNode({ data }: NodeProps<{ label: string }>) {
   return (
     <div className="relative h-full w-full rounded-lg border border-dashed border-neutral-400/60 bg-neutral-100/40 dark:border-neutral-600/60 dark:bg-neutral-800/30">
@@ -87,8 +97,10 @@ const nodeTypes = {
   diamond: DiamondNode,
   pill: PillNode,
   round: RoundNode,
+  start_end: StartEndNode,
   group: GroupNode,
 }
+
 
 type LayoutResult = Awaited<ReturnType<typeof layoutFlow>>
 

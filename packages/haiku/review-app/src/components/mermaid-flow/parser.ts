@@ -1,4 +1,4 @@
-export type NodeShape = "rect" | "diamond" | "pill" | "round"
+export type NodeShape = "rect" | "diamond" | "pill" | "round" | "start_end"
 
 export interface ParsedNode {
   id: string
@@ -134,7 +134,27 @@ function tryParseEdge(input: string): EdgeTokenMatch | null {
   return null
 }
 
-export function parseMermaidFlow(source: string): ParsedFlow {
+function preprocessStateDiagram(source: string): string {
+  let counter = 0
+  return source
+    .split("\n")
+    .map((raw) => {
+      const trimmed = raw.trim()
+      if (/^stateDiagram(-v2)?\s*$/.test(trimmed)) return "flowchart TB"
+      let line = raw.replace(/\[\*\]/g, () => `__star${counter++}__`)
+      line = line.replace(
+        /(-{2,}>|-\.->)\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.+?)\s*$/,
+        (_m, arrow, target, label) => `${arrow}|"${label}"| ${target}`,
+      )
+      return line
+    })
+    .join("\n")
+}
+
+export function parseMermaidFlow(rawSource: string): ParsedFlow {
+  const isStateDiagram = /^\s*stateDiagram(-v2)?\b/.test(rawSource)
+  const source = isStateDiagram ? preprocessStateDiagram(rawSource) : rawSource
+
   const nodes = new Map<string, ParsedNode>()
   const edges: ParsedEdge[] = []
   const groups: ParsedGroup[] = []
@@ -250,9 +270,15 @@ export function parseMermaidFlow(source: string): ParsedFlow {
     if (!edges[i].color && linkStyles.has(i)) edges[i].color = linkStyles.get(i)
   }
 
+  const finalNodes = Array.from(nodes.values()).map((n) =>
+    n.id.startsWith("__star")
+      ? { ...n, shape: "start_end" as NodeShape, label: "" }
+      : n,
+  )
+
   return {
     direction,
-    nodes: Array.from(nodes.values()),
+    nodes: finalNodes,
     edges,
     groups,
   }

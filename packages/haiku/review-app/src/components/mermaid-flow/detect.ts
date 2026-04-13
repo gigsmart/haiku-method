@@ -1,7 +1,7 @@
 import { parseMermaidFlow } from "./parser"
 
 export function isFlowchartSource(chart: string): boolean {
-  return /^\s*(flowchart|graph)\b/.test(chart)
+  return /^\s*(flowchart|graph|stateDiagram(-v2)?)\b/.test(chart)
 }
 
 export function canRenderAsFlow(chart: string): boolean {
