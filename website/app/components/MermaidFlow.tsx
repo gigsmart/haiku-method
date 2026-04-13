@@ -1,15 +1,18 @@
 "use client"
 
+import type { ReactNode } from "react"
 import { useEffect, useMemo, useState } from "react"
-import ReactFlow, {
+import {
   Background,
   Controls,
   Handle,
   MiniMap,
-  Position,
+  type Node,
   type NodeProps,
-} from "reactflow"
-import "reactflow/dist/style.css"
+  Position,
+  ReactFlow,
+} from "@xyflow/react"
+import "@xyflow/react/dist/style.css"
 import { layoutFlow } from "./mermaid-flow/layout"
 import { parseMermaidFlow } from "./mermaid-flow/parser"
 
@@ -17,9 +20,12 @@ interface Props {
   chart: string
   height?: number
   showMiniMap?: boolean
+  fallback?: ReactNode
 }
 
-function RectNode({ data }: NodeProps<{ label: string }>) {
+type LabeledNode = Node<{ label: string }>
+
+function RectNode({ data }: NodeProps<LabeledNode>) {
   return (
     <div className="relative flex h-full w-full items-center justify-center rounded-md border border-blue-500/60 bg-white px-3 py-2 text-center text-[13px] font-medium leading-snug text-neutral-900 shadow-sm dark:border-blue-400/60 dark:bg-neutral-900 dark:text-neutral-100">
       <Handle type="target" position={Position.Top} className="!bg-transparent !border-0" />
@@ -29,7 +35,7 @@ function RectNode({ data }: NodeProps<{ label: string }>) {
   )
 }
 
-function DiamondNode({ data }: NodeProps<{ label: string }>) {
+function DiamondNode({ data }: NodeProps<LabeledNode>) {
   return (
     <div className="relative flex h-full w-full items-center justify-center text-[13px] font-medium leading-snug text-neutral-900 dark:text-neutral-100">
       <svg
@@ -52,7 +58,7 @@ function DiamondNode({ data }: NodeProps<{ label: string }>) {
   )
 }
 
-function PillNode({ data }: NodeProps<{ label: string }>) {
+function PillNode({ data }: NodeProps<LabeledNode>) {
   return (
     <div className="relative flex h-full w-full items-center justify-center rounded-full border border-emerald-500/70 bg-emerald-50 px-4 py-2 text-[13px] font-medium text-neutral-900 dark:border-emerald-400/70 dark:bg-emerald-950/40 dark:text-neutral-100">
       <Handle type="target" position={Position.Top} className="!bg-transparent !border-0" />
@@ -62,7 +68,7 @@ function PillNode({ data }: NodeProps<{ label: string }>) {
   )
 }
 
-function RoundNode({ data }: NodeProps<{ label: string }>) {
+function RoundNode({ data }: NodeProps<LabeledNode>) {
   return (
     <div className="relative flex h-full w-full items-center justify-center rounded-lg border border-neutral-400/70 bg-neutral-50 px-3 py-2 text-[13px] font-medium text-neutral-900 dark:border-neutral-600/70 dark:bg-neutral-800 dark:text-neutral-100">
       <Handle type="target" position={Position.Top} className="!bg-transparent !border-0" />
@@ -82,7 +88,7 @@ function StartEndNode() {
   )
 }
 
-function GroupNode({ data }: NodeProps<{ label: string }>) {
+function GroupNode({ data }: NodeProps<LabeledNode>) {
   return (
     <div className="relative h-full w-full rounded-lg border border-dashed border-neutral-400/60 bg-neutral-100/40 dark:border-neutral-600/60 dark:bg-neutral-800/30">
       <div className="absolute left-3 top-1 text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-neutral-300">
@@ -104,10 +110,10 @@ const nodeTypes = {
 
 type LayoutResult = Awaited<ReturnType<typeof layoutFlow>>
 
-export function MermaidFlow({ chart, height = 600, showMiniMap = false }: Props) {
+export function MermaidFlow({ chart, height = 600, showMiniMap = false, fallback }: Props) {
   const parsed = useMemo(() => parseMermaidFlow(chart), [chart])
   const [layout, setLayout] = useState<LayoutResult | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -116,20 +122,17 @@ export function MermaidFlow({ chart, height = 600, showMiniMap = false }: Props)
         if (!cancelled) setLayout(r)
       })
       .catch((e) => {
-        if (!cancelled) setError(String(e))
+        if (!cancelled) {
+          console.error("[MermaidFlow] ELK layout failed, falling back:", e)
+          setFailed(true)
+        }
       })
     return () => {
       cancelled = true
     }
   }, [parsed])
 
-  if (error) {
-    return (
-      <pre className="overflow-x-auto rounded-lg bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">
-        {error}
-      </pre>
-    )
-  }
+  if (failed) return <>{fallback ?? null}</>
 
   if (!layout) {
     return (
@@ -151,7 +154,6 @@ export function MermaidFlow({ chart, height = 600, showMiniMap = false }: Props)
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.15 }}
-        proOptions={{ hideAttribution: true }}
         nodesDraggable
         nodesConnectable={false}
         elementsSelectable

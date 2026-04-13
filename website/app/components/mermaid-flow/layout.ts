@@ -1,8 +1,11 @@
 import ELK from "elkjs/lib/elk.bundled.js"
-import type { Edge, Node } from "reactflow"
+import type { Edge, Node } from "@xyflow/react"
 import type { ParsedFlow } from "./parser"
 
-const elk = new ELK()
+let elkInstance: InstanceType<typeof ELK> | null = null
+function getElk(): InstanceType<typeof ELK> {
+  return (elkInstance ??= new ELK())
+}
 
 const NODE_MIN_WIDTH = 180
 const NODE_MAX_WIDTH = 320
@@ -91,7 +94,7 @@ export async function layoutFlow(parsed: ParsedFlow): Promise<{ nodes: Node[]; e
     edges: parsed.edges.map((e) => ({ id: e.id, sources: [e.source], targets: [e.target] })),
   }
 
-  const result = await elk.layout(graph as never)
+  const result = await getElk().layout(graph as never)
 
   const rfNodes: Node[] = []
   const shapeById = new Map(parsed.nodes.map((n) => [n.id, n.shape]))
@@ -158,7 +161,6 @@ export async function layoutFlow(parsed: ParsedFlow): Promise<{ nodes: Node[]; e
     labelBgStyle: e.label ? { fill: "#f8fafc", fillOpacity: 0.9 } : { fillOpacity: 0 },
     labelBgPadding: [4, 2] as [number, number],
     labelBgBorderRadius: 3,
-    labelShowBg: !!e.label,
   }))
 
   return { nodes: rfNodes, edges: rfEdges }

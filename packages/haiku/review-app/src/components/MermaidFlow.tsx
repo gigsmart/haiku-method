@@ -1,13 +1,16 @@
+import type { ReactNode } from "react"
 import { useEffect, useMemo, useState } from "react"
-import ReactFlow, {
+import {
   Background,
   Controls,
   Handle,
   MiniMap,
-  Position,
+  type Node,
   type NodeProps,
-} from "reactflow"
-import "reactflow/dist/style.css"
+  Position,
+  ReactFlow,
+} from "@xyflow/react"
+import "@xyflow/react/dist/style.css"
 import { layoutFlow } from "./mermaid-flow/layout"
 import { parseMermaidFlow } from "./mermaid-flow/parser"
 
@@ -15,9 +18,12 @@ interface Props {
   chart: string
   height?: number
   showMiniMap?: boolean
+  fallback?: ReactNode
 }
 
-function RectNode({ data }: NodeProps<{ label: string }>) {
+type LabeledNode = Node<{ label: string }>
+
+function RectNode({ data }: NodeProps<LabeledNode>) {
   return (
     <div className="relative flex h-full w-full items-center justify-center rounded-md border border-teal-500/60 bg-stone-900 px-3 py-2 text-center text-[13px] font-medium leading-snug text-stone-100 shadow-sm">
       <Handle type="target" position={Position.Top} className="!bg-transparent !border-0" />
@@ -27,7 +33,7 @@ function RectNode({ data }: NodeProps<{ label: string }>) {
   )
 }
 
-function DiamondNode({ data }: NodeProps<{ label: string }>) {
+function DiamondNode({ data }: NodeProps<LabeledNode>) {
   return (
     <div className="relative flex h-full w-full items-center justify-center text-[13px] font-medium leading-snug text-stone-100">
       <svg
@@ -50,7 +56,7 @@ function DiamondNode({ data }: NodeProps<{ label: string }>) {
   )
 }
 
-function PillNode({ data }: NodeProps<{ label: string }>) {
+function PillNode({ data }: NodeProps<LabeledNode>) {
   return (
     <div className="relative flex h-full w-full items-center justify-center rounded-full border border-emerald-400/70 bg-emerald-950/40 px-4 py-2 text-[13px] font-medium text-stone-100">
       <Handle type="target" position={Position.Top} className="!bg-transparent !border-0" />
@@ -60,7 +66,7 @@ function PillNode({ data }: NodeProps<{ label: string }>) {
   )
 }
 
-function RoundNode({ data }: NodeProps<{ label: string }>) {
+function RoundNode({ data }: NodeProps<LabeledNode>) {
   return (
     <div className="relative flex h-full w-full items-center justify-center rounded-lg border border-stone-600/70 bg-stone-800 px-3 py-2 text-[13px] font-medium text-stone-100">
       <Handle type="target" position={Position.Top} className="!bg-transparent !border-0" />
@@ -80,7 +86,7 @@ function StartEndNode() {
   )
 }
 
-function GroupNode({ data }: NodeProps<{ label: string }>) {
+function GroupNode({ data }: NodeProps<LabeledNode>) {
   return (
     <div className="relative h-full w-full rounded-lg border border-dashed border-stone-600/60 bg-stone-800/30">
       <div className="absolute left-3 top-1 text-xs font-semibold uppercase tracking-wide text-stone-300">
@@ -101,10 +107,10 @@ const nodeTypes = {
 
 type LayoutResult = Awaited<ReturnType<typeof layoutFlow>>
 
-export function MermaidFlow({ chart, height = 520, showMiniMap = false }: Props) {
+export function MermaidFlow({ chart, height = 520, showMiniMap = false, fallback }: Props) {
   const parsed = useMemo(() => parseMermaidFlow(chart), [chart])
   const [layout, setLayout] = useState<LayoutResult | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -113,22 +119,28 @@ export function MermaidFlow({ chart, height = 520, showMiniMap = false }: Props)
         if (!cancelled) setLayout(r)
       })
       .catch((e) => {
-        if (!cancelled) setError(String(e))
+        if (!cancelled) {
+          console.error("[MermaidFlow] ELK layout failed, falling back:", e)
+          setFailed(true)
+        }
       })
     return () => {
       cancelled = true
     }
   }, [parsed])
 
-  if (error) {
-    return (
-      <pre className="overflow-x-auto rounded-lg bg-red-950/40 p-3 text-xs text-red-300">{error}</pre>
-    )
-  }
+  if (failed) return <>{fallback ?? null}</>
 
   if (!layout) {
     return <div className="animate-pulse rounded-lg bg-stone-900" style={{ height }} />
   }
+
+  const styledEdges = layout.edges.map((e) => ({
+    ...e,
+    style: { ...e.style, stroke: e.style?.stroke ?? "#78716c" },
+    labelStyle: { fill: "#e7e5e4", fontSize: 12, fontWeight: 500 },
+    labelBgStyle: e.label ? { fill: "#1c1917", fillOpacity: 0.85 } : { fillOpacity: 0 },
+  }))
 
   return (
     <div
@@ -137,16 +149,10 @@ export function MermaidFlow({ chart, height = 520, showMiniMap = false }: Props)
     >
       <ReactFlow
         nodes={layout.nodes}
-        edges={layout.edges.map((e) => ({
-          ...e,
-          style: { ...e.style, stroke: e.style?.stroke ?? "#78716c" },
-          labelStyle: { fill: "#e7e5e4", fontSize: 12, fontWeight: 500 },
-          labelBgStyle: { fill: "#1c1917", fillOpacity: 0.9 },
-        }))}
+        edges={styledEdges}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.15 }}
-        proOptions={{ hideAttribution: true }}
         nodesDraggable
         nodesConnectable={false}
         elementsSelectable

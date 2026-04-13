@@ -181,6 +181,10 @@ export function parseMermaidFlow(rawSource: string): ParsedFlow {
     }
     const parentId = groupStack.length > 0 ? groupStack[groupStack.length - 1] : null
     if (groups.some((g) => g.id === id)) {
+      // ID matches an existing subgraph — return a placeholder so callers
+      // that chain edges still see a node, but do not insert into the
+      // `nodes` map. Edges referencing a subgraph ID will be routed to
+      // the group node which ELK resolves via INCLUDE_CHILDREN hierarchy.
       return { id, label: label ?? id, shape, parentId }
     }
     const node: ParsedNode = { id, label: label ?? id, shape, parentId }
@@ -259,15 +263,18 @@ export function parseMermaidFlow(rawSource: string): ParsedFlow {
         target: nextDecl.id,
         label: edge.label,
         dashed: edge.dashed,
-        color: linkStyles.get(edgeCounter),
+        // color applied below in a post-pass so `linkStyle` lines that
+        // appear after their edge (the common mermaid pattern) still win
       })
       edgeCounter++
-      cursor = cursor
+      // cursor intentionally stays at nextDecl so the next iteration
+      // re-parses it as the chain source, enabling `A --> B --> C` chaining
     }
   }
 
   for (let i = 0; i < edges.length; i++) {
-    if (!edges[i].color && linkStyles.has(i)) edges[i].color = linkStyles.get(i)
+    const color = linkStyles.get(i)
+    if (color) edges[i].color = color
   }
 
   const finalNodes = Array.from(nodes.values()).map((n) =>

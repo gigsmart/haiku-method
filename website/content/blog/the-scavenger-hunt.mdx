@@ -128,26 +128,157 @@ The orchestrator is the brain. Hooks are spinal reflexes. The orchestrator decid
 
 ## The software studio stage machine
 
-Every studio is a named lifecycle template — a DAG of stages with their own hats, review gates, and input dependencies. The default software studio has six stages, wired together by the `inputs:` declarations in each `STAGE.md`. The orchestrator won't start a stage until every stage it reads from has finished.
+Every studio is a named lifecycle template — a DAG of stages, each of which runs its own five-phase machine. The default software studio has six stages running in strict order: **inception → design → product → development → operations → security**. Stages don't skip or parallelize; each one reads its prerequisite artifacts (declared by `inputs:` in `STAGE.md`) and won't start until those are present.
+
+The diagram below is the **complete** stage machine. Every phase, every transition — forward, self-loop, back-edge, and terminal. Every gate type. Mode decisions (continuous, discrete, hybrid). Revisit. External review blocking. Nothing elided.
 
 <ExpandableDiagram chart={`flowchart TB
-    Start([Intent]) --> Inception["🎯 Inception<br/><i>review: ask</i><br/><i>collaborative</i>"]
-    Inception --> Design["🎨 Design<br/><i>review: external + ask</i><br/><i>collaborative</i>"]
-    Inception --> Product["📋 Product<br/><i>review: external + ask</i><br/><i>collaborative</i>"]
-    Design --> Product
-    Inception --> Development
-    Design --> Development
-    Product --> Development["🔨 Development<br/><i>review: external + ask</i><br/><i>collaborative</i>"]
-    Inception --> Operations
-    Product --> Operations
-    Development --> Operations["🚀 Operations<br/><i>review: auto</i><br/><i>autonomous</i>"]
-    Inception --> Security
-    Product --> Security
-    Development --> Security["🔐 Security<br/><i>review: external + ask</i><br/><i>autonomous</i>"]
-    Operations --> Done([Deployed])
-    Security --> Done`} caption="Software studio stages. Edges are input dependencies declared in each stage's STAGE.md. Review gates enforce human-in-the-loop at every stage except Operations." />
+    Start([🎯 Intent created])
+    Start --> S1_P
 
-Inception is the root — every other stage reads its discovery artifacts. Design and Product both feed Development. Operations and Security need code and architecture from Development. Security is the only stage that runs autonomously on every input, because threat modeling doesn't need elaboration turns.
+    subgraph S1["1. INCEPTION · review: ask · collaborative"]
+        direction TB
+        S1_P([pending]) -->|start_stage| S1_E[elaborate]
+        S1_E -->|"elaboration_insufficient<br/>(< 3 user turns)"| S1_E
+        S1_E -->|"DAG valid +<br/>units validated"| S1_IR{"gate_review<br/>intent_review"}
+        S1_IR -->|"changes_requested"| S1_P
+        S1_IR -->|"approved"| S1_X[execute]
+        S1_X -->|"continue_unit /<br/>next wave"| S1_X
+        S1_X -->|"all units complete"| S1_R[review]
+        S1_R -->|"fix_quality_gates"| S1_X
+        S1_R -->|"gates pass +<br/>adversarial review done"| S1_G{"gate · ask"}
+        S1_G -->|"changes_requested"| S1_R
+        S1_G -->|"approved"| S1_Done([stage complete])
+    end
+
+    subgraph S2["2. DESIGN · review: [external, ask] · collaborative"]
+        direction TB
+        S2_P([pending]) -->|start_stage| S2_E[elaborate]
+        S2_E -->|"elaboration_insufficient"| S2_E
+        S2_E -->|"specs validated"| S2_GS{"gate_review<br/>elaborate_to_execute"}
+        S2_GS -->|"changes_requested"| S2_E
+        S2_GS -->|"approved"| S2_X[execute]
+        S2_X -->|"next wave"| S2_X
+        S2_X -->|"all units complete"| S2_R[review]
+        S2_R -->|"fix_quality_gates"| S2_X
+        S2_R -->|"gates pass"| S2_G{"gate · [external, ask]"}
+        S2_G -->|"changes_requested"| S2_R
+        S2_G -->|"approved"| S2_Done([stage complete])
+        S2_G -->|"external_review<br/>requested"| S2_B([blocked · awaiting PR])
+        S2_B -->|"PR merged"| S2_Done
+    end
+
+    subgraph S3["3. PRODUCT · review: [external, ask] · collaborative"]
+        direction TB
+        S3_P([pending]) -->|start_stage| S3_E[elaborate]
+        S3_E -->|"elaboration_insufficient"| S3_E
+        S3_E -->|"specs validated"| S3_GS{"gate_review<br/>elaborate_to_execute"}
+        S3_GS -->|"changes_requested"| S3_E
+        S3_GS -->|"approved"| S3_X[execute]
+        S3_X -->|"next wave"| S3_X
+        S3_X -->|"all units complete"| S3_R[review]
+        S3_R -->|"fix_quality_gates"| S3_X
+        S3_R -->|"gates pass"| S3_G{"gate · [external, ask]"}
+        S3_G -->|"changes_requested"| S3_R
+        S3_G -->|"approved"| S3_Done([stage complete])
+        S3_G -->|"external_review<br/>requested"| S3_B([blocked · awaiting PR])
+        S3_B -->|"PR merged"| S3_Done
+    end
+
+    subgraph S4["4. DEVELOPMENT · review: [external, ask] · collaborative"]
+        direction TB
+        S4_P([pending]) -->|start_stage| S4_E[elaborate]
+        S4_E -->|"elaboration_insufficient"| S4_E
+        S4_E -->|"specs validated"| S4_GS{"gate_review<br/>elaborate_to_execute"}
+        S4_GS -->|"changes_requested"| S4_E
+        S4_GS -->|"approved"| S4_X[execute]
+        S4_X -->|"next wave"| S4_X
+        S4_X -->|"all units complete"| S4_R[review]
+        S4_R -->|"fix_quality_gates"| S4_X
+        S4_R -->|"gates pass"| S4_G{"gate · [external, ask]"}
+        S4_G -->|"changes_requested"| S4_R
+        S4_G -->|"approved"| S4_Done([stage complete])
+        S4_G -->|"external_review<br/>requested"| S4_B([blocked · awaiting PR])
+        S4_B -->|"PR merged"| S4_Done
+    end
+
+    subgraph S5["5. OPERATIONS · review: auto · autonomous"]
+        direction TB
+        S5_P([pending]) -->|start_stage| S5_E[elaborate]
+        S5_E -->|"plan validated<br/>(no turn minimum)"| S5_X[execute]
+        S5_X -->|"next wave"| S5_X
+        S5_X -->|"all units complete"| S5_R[review]
+        S5_R -->|"fix_quality_gates"| S5_X
+        S5_R -->|"gates pass"| S5_G{"gate · auto"}
+        S5_G -->|"auto-advance"| S5_Done([stage complete])
+    end
+
+    subgraph S6["6. SECURITY · review: [external, ask] · autonomous"]
+        direction TB
+        S6_P([pending]) -->|start_stage| S6_E[elaborate]
+        S6_E -->|"threat model validated<br/>(no turn minimum)"| S6_X[execute]
+        S6_X -->|"next wave"| S6_X
+        S6_X -->|"all units complete"| S6_R[review]
+        S6_R -->|"fix_quality_gates"| S6_X
+        S6_R -->|"gates pass"| S6_G{"gate · [external, ask]"}
+        S6_G -->|"changes_requested"| S6_R
+        S6_G -->|"approved"| S6_Done([stage complete])
+        S6_G -->|"external_review<br/>requested"| S6_B([blocked · awaiting PR])
+        S6_B -->|"PR merged"| S6_Done
+    end
+
+    S1_Done --> M1{"mode resolution"}
+    M1 -->|"continuous /<br/>hybrid ≥ continuous_from"| S2_P
+    M1 -->|"discrete"| Pause1([paused])
+    Pause1 -->|"/haiku:pickup"| S2_P
+
+    S2_Done --> M2{"mode resolution"}
+    M2 -->|"continuous"| S3_P
+    M2 -->|"discrete"| Pause2([paused])
+    Pause2 -->|"/haiku:pickup"| S3_P
+
+    S3_Done --> M3{"mode resolution"}
+    M3 -->|"continuous"| S4_P
+    M3 -->|"discrete"| Pause3([paused])
+    Pause3 -->|"/haiku:pickup"| S4_P
+
+    S4_Done --> M4{"mode resolution"}
+    M4 -->|"continuous"| S5_P
+    M4 -->|"discrete"| Pause4([paused])
+    Pause4 -->|"/haiku:pickup"| S5_P
+
+    S5_Done --> M5{"mode resolution"}
+    M5 -->|"continuous"| S6_P
+    M5 -->|"discrete"| Pause5([paused])
+    Pause5 -->|"/haiku:pickup"| S6_P
+
+    S6_Done --> FIN([🏁 intent_complete])
+
+    S2_E -.->|"/haiku:revisit inception"| S1_E
+    S3_E -.->|"/haiku:revisit design"| S2_E
+    S4_E -.->|"/haiku:revisit product"| S3_E
+    S5_E -.->|"/haiku:revisit development"| S4_E
+    S6_E -.->|"/haiku:revisit security"| S5_E`} caption="The complete software studio state machine. Six stages × five phases, every transition the orchestrator can fire." />
+
+**What the diagram encodes:**
+
+- **Five phases per stage:** `pending → elaborate → gate_review → execute → review → gate`. Phase transitions are enforced by the orchestrator in `packages/haiku/src/orchestrator.ts`. The agent cannot skip a phase.
+- **Two elaboration gates:** the first stage uses the `intent_review` gate context (rejecting bounces all the way back to `pending` — because the intent itself is wrong). Every subsequent stage uses `elaborate_to_execute` (rejecting stays in `elaborate` so the agent can revise the unit specs).
+- **Self-loops:**
+  - `elaborate → elaborate` on `elaboration_insufficient` — collaborative stages force at least three user turns
+  - `execute → execute` on `continue_unit` or the next wave
+  - `review → execute` on `fix_quality_gates` — broken tests/types/lint bounce back without the adversarial agents even looking
+- **Four review gate types:**
+  - `auto` (Operations only) — FSM advances immediately, no user UI
+  - `ask` (Inception) — user approves in the review web UI
+  - `external` — requires a PR/MR to be opened; enters the `blocked` state until merged
+  - `[external, ask]` (Design, Product, Development, Security) — user can pick either path per review
+- **Mode-dependent stage transitions:**
+  - `continuous` — auto-advance to next stage's `pending`
+  - `discrete` — stage completes, intent enters `paused`, user runs `/haiku:pickup` to resume
+  - `hybrid` — discrete until `continuous_from: {stage}`, continuous after
+- **`/haiku:revisit`** — from any stage's `elaborate` phase, the user can jump back to a prior stage's `elaborate`, clearing that stage's `gate_outcome` and re-entering the FSM. Dotted edges show the reverse traversal.
+- **Terminal:** after Security's gate resolves, `intent_complete` fires and `intent.md` status flips to `completed`.
 
 ## The per-stage phase machine
 
