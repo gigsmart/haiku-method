@@ -9,7 +9,7 @@
  * "prebuild" hook — this script only handles the esbuild step.
  */
 import { spawnSync } from "node:child_process";
-import { chmodSync } from "node:fs";
+import { chmodSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -21,6 +21,12 @@ const outfile = join(repoRoot, "plugin", "bin", "haiku");
 // Build define flags — inline env vars at compile time
 const sentryDsn = process.env.HAIKU_SENTRY_DSN_MCP || "";
 
+// Read plugin version and bake it into the binary
+const pluginJson = JSON.parse(
+  readFileSync(join(repoRoot, "plugin", ".claude-plugin", "plugin.json"), "utf8")
+);
+const mcpVersion = pluginJson.version;
+
 const args = [
   "src/main.ts",
   "--bundle",
@@ -31,6 +37,7 @@ const args = [
   `--outfile=${outfile}`,
   '--banner:js=import{createRequire}from"module";const require=createRequire(import.meta.url);',
   `--define:process.env.HAIKU_SENTRY_DSN_MCP=${JSON.stringify(sentryDsn)}`,
+  `--define:process.env.HAIKU_MCP_VERSION=${JSON.stringify(mcpVersion)}`,
 ];
 
 const result = spawnSync("npx", ["esbuild", ...args], { cwd: root, stdio: "inherit" });
@@ -40,6 +47,7 @@ if (result.status !== 0) {
 chmodSync(outfile, 0o755);
 
 console.error(`MCP server built -> ${outfile}`);
+console.error(`MCP version: ${mcpVersion} (baked in)`);
 if (sentryDsn) {
   console.error(`Sentry DSN: baked in`);
 } else {

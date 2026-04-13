@@ -37,6 +37,16 @@ export const review = {
 	siteUrl: str("HAIKU_REVIEW_SITE_URL", "https://haikumethod.ai"),
 }
 
+/** Auto-update configuration. */
+export const autoUpdate = {
+	/** Kill-switch: set HAIKU_AUTO_UPDATE=0 to disable. */
+	enabled: flag("HAIKU_AUTO_UPDATE", true),
+	/** How often to poll GitHub releases (ms). Default 30 min. */
+	intervalMs: Number(str("HAIKU_UPDATE_INTERVAL_MS", "1800000")) || 1_800_000,
+	/** Delay before the first check (ms). Default 60 s. */
+	initialDelayMs: Number(str("HAIKU_UPDATE_INITIAL_DELAY_MS", "60000")) || 60_000,
+}
+
 /** Observability configuration. */
 export const observability = {
 	sentryDsn: str("HAIKU_SENTRY_DSN_MCP", ""),

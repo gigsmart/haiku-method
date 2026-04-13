@@ -224,9 +224,12 @@ jobs:
         run: |
           VERSION="${{ steps.bump-version.outputs.new_version }}"
           TAG="v${VERSION}"
+          # Copy standalone binary for direct download (used by auto-updater)
+          cp plugin/bin/haiku haiku-mcp
           # Delete existing release on retry to ensure idempotency
           gh release delete "$TAG" -y 2>/dev/null || true
           gh release create "$TAG" \
             --title "$TAG" \
             --notes-file /tmp/release-notes.md \
-            "ai-dlc-plugin-${VERSION}.zip#AI-DLC Plugin (zip)"
+            "ai-dlc-plugin-${VERSION}.zip#AI-DLC Plugin (zip)" \
+            "haiku-mcp#MCP Server Binary"

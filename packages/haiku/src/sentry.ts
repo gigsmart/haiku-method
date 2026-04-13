@@ -2,31 +2,14 @@
 
 import * as Sentry from "@sentry/node"
 import { observability } from "./config.js"
+import { MCP_VERSION } from "./version.js"
 
 const SENTRY_DSN = observability.sentryDsn
-
-// Read version for release tagging — tries plugin.json at CLAUDE_PLUGIN_ROOT
-function getRelease(): string {
-	try {
-		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
-		if (pluginRoot) {
-			const { readFileSync } = require("node:fs")
-			const { join } = require("node:path")
-			const pkg = JSON.parse(
-				readFileSync(join(pluginRoot, ".claude-plugin", "plugin.json"), "utf8"),
-			)
-			return `haiku-mcp@${pkg.version}`
-		}
-	} catch {
-		/* */
-	}
-	return "haiku-mcp@dev"
-}
 
 if (SENTRY_DSN) {
 	Sentry.init({
 		dsn: SENTRY_DSN,
-		release: getRelease(),
+		release: `haiku-mcp@${MCP_VERSION}`,
 		tracesSampleRate: 0,
 	})
 }
