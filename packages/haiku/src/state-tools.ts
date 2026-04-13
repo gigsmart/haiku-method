@@ -1009,10 +1009,21 @@ function buildMultiBranchReport(
 		(archivedSummary?.remaining.length ?? 0)
 	const totalPushed =
 		summaries.filter((s) => s.pushed).length + (archivedSummary?.pushed ? 1 : 0)
-	const totalPRs =
-		summaries.filter((s) => s.prUrl).length + (archivedSummary?.prUrl ? 1 : 0)
+	// Distinguish the two PR cases: active-branch repairs that were already merged
+	// (PR opens back to mainline) versus the archived-intents pass (PR opens from
+	// a fresh repair/* branch). Lumping them into one phrase misrepresents both.
+	const mergedBranchPRs = summaries.filter((s) => s.prUrl).length
+	const archivedRepairPR = archivedSummary?.prUrl ? 1 : 0
+	const prSummary =
+		mergedBranchPRs > 0 && archivedRepairPR > 0
+			? `${mergedBranchPRs} PR(s) for already-merged branches + 1 PR for archived intents`
+			: mergedBranchPRs > 0
+				? `${mergedBranchPRs} PR(s) opened for already-merged branches`
+				: archivedRepairPR > 0
+					? "1 PR opened for archived intents"
+					: "no PRs opened"
 	lines.push(
-		`**Summary:** ${totalApplied} fix(es) auto-applied across ${totalPushed} branch(es); ${totalPRs} PR(s) opened for already-merged branches; ${totalRemaining} issue(s) still need attention.`,
+		`**Summary:** ${totalApplied} fix(es) auto-applied across ${totalPushed} branch(es); ${prSummary}; ${totalRemaining} issue(s) still need attention.`,
 	)
 	lines.push("")
 
