@@ -373,13 +373,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	// After the response is written, check if we should yield to a new binary.
 	// setImmediate ensures the MCP SDK flushes the response first.
 	if (hasPendingUpdate()) {
-		setImmediate(async () => {
+		setImmediate(() => {
 			console.error(
 				"[haiku] Pending update detected — hot-swapping after response",
 			)
 			stopUpdateChecker()
-			await server.close()
-			execNewBinary()
+			server
+				.close()
+				.then(() => execNewBinary())
+				.catch((err) => console.error("[haiku] Hot-swap failed:", err))
 		})
 	}
 

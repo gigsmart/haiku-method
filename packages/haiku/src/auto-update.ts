@@ -9,6 +9,7 @@
 import { spawn } from "node:child_process"
 import {
 	chmodSync,
+	copyFileSync,
 	createWriteStream,
 	existsSync,
 	mkdirSync,
@@ -78,7 +79,10 @@ async function fetchLatestRelease(): Promise<GitHubRelease | null> {
 		const res = await fetch(
 			`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
 			{
-				headers: { Accept: "application/vnd.github+json" },
+				headers: {
+					Accept: "application/vnd.github+json",
+					"User-Agent": `haiku-mcp/${MCP_VERSION}`,
+				},
 				signal: controller.signal,
 			},
 		)
@@ -207,7 +211,14 @@ async function downloadAndExtractFromZip(
 			result.on("close", (code) =>
 				code === 0 ? resolve() : reject(new Error(`unzip exited with ${code}`)),
 			)
-			result.on("error", reject)
+			result.on("error", (err: NodeJS.ErrnoException) => {
+				if (err.code === "ENOENT") {
+					console.error(
+						"[haiku] Auto-update zip fallback requires 'unzip' (not found in PATH)",
+					)
+				}
+				reject(err)
+			})
 		})
 
 		// unzip -j flattens to stagingDir/haiku — rename to versioned name
@@ -255,11 +266,16 @@ export function execNewBinary(): void {
 		const dest = currentBinary
 		const tempDest = `${dest}.updating`
 		// Copy staged binary next to current, then atomic rename
-		const { copyFileSync } = require("node:fs")
 		copyFileSync(newBinary, tempDest)
 		chmodSync(tempDest, 0o755)
 		renameSync(tempDest, dest)
 		execPath = dest
+		// Clean up the staged binary now that it's been copied on-disk
+		try {
+			unlinkSync(newBinary)
+		} catch {
+			/* */
+		}
 		console.error(`[haiku] Binary replaced on disk: ${dest}`)
 	} catch (err) {
 		console.error("[haiku] Could not replace binary on disk:", err)
@@ -281,12 +297,8 @@ export function execNewBinary(): void {
 		process.exit(1)
 	})
 
-	// Stop our own timers so the only thing keeping the event loop alive
-	// is the child process. When it exits, the 'exit' handler calls
-	// process.exit() — so this function effectively never returns.
-	stopUpdateChecker()
-
-	// The child now owns stdio. The event loop stays alive because of the
+	// The child now owns stdio. The caller already stopped the update checker
+	// and closed the MCP server. The event loop stays alive because of the
 	// child's event listeners. When the child exits, process.exit() fires.
 }
 
@@ -308,10 +320,11 @@ export function startUpdateChecker(): void {
 	)
 
 	// First check after a short delay (let the server finish init)
-	timer = setTimeout(() => {
-		checkForUpdate()
-		// Then periodically
+	timer = setTimeout(async () => {
+		// Assign interval first so stopUpdateChecker can cancel it even if
+		// checkForUpdate triggers a hot-swap synchronously.
 		timer = setInterval(checkForUpdate, autoUpdate.intervalMs)
+		await checkForUpdate()
 	}, autoUpdate.initialDelayMs)
 }
 
