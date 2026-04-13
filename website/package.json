@@ -13,7 +13,9 @@
 	},
 	"dependencies": {
 		"@sentry/nextjs": "^10.47.0",
+		"@xyflow/react": "^12.10.2",
 		"diff": "^7.0.0",
+		"elkjs": "^0.11.1",
 		"framer-motion": "^12.30.0",
 		"graphql": "^16.13.2",
 		"gray-matter": "^4.0.3",

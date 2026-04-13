@@ -29,7 +29,7 @@ The most specific wins. If a unit's frontmatter says `model: opus`, that unit ru
 
 Each layer exists because each layer has a different scope of knowledge about what the work needs. A studio default says "most work in this lifecycle is Sonnet-grade." A stage override says "but review phases need Opus for adversarial reasoning." A hat override says "but the builder hat can usually drop to Haiku for scaffolding." A unit override says "but *this particular* unit involves a consensus algorithm, and I want Opus regardless."
 
-<ExpandableDiagram chart={`flowchart LR
+<ExpandableDiagram chart={`flowchart TB
     U[Unit<br/>model field] --> UD{set?}
     UD -- Yes --> PICK[Resolved model]
     UD -- No --> H[Hat<br/>model field]

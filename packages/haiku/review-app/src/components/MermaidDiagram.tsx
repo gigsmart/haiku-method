@@ -1,10 +1,20 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { canRenderAsFlow } from "./mermaid-flow/detect"
+import { MermaidFlow } from "./MermaidFlow"
 
 interface Props {
   definition: string
 }
 
 export function MermaidDiagram({ definition }: Props) {
+  const isFlow = useMemo(() => canRenderAsFlow(definition), [definition])
+  if (isFlow) {
+    return <MermaidFlow chart={definition} fallback={<MermaidSvgDiagram definition={definition} />} />
+  }
+  return <MermaidSvgDiagram definition={definition} />
+}
+
+function MermaidSvgDiagram({ definition }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)

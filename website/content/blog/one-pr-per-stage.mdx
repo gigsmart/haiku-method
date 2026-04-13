@@ -73,7 +73,7 @@ Not every intent wants discrete from start to finish. Sometimes the early stages
 
 Hybrid mode fixes that. You set a `continuous_from` stage. Before that stage, you're in discrete mode — per-stage branches, per-stage PRs, full ceremony. At or after that stage, the discrete branches **consolidate** into `haiku/{slug}/main` and the rest of the intent runs continuous from there. One branch, one moving PR, rapid iteration.
 
-<ExpandableDiagram chart={`flowchart LR
+<ExpandableDiagram chart={`flowchart TB
     I["haiku/slug/inception<br/>(discrete)"] --> P["haiku/slug/product<br/>(discrete)"]
     P --> D["haiku/slug/design<br/>(discrete)"]
     D -.->|"consolidate at<br/>continuous_from"| M["haiku/slug/main<br/>(continuous)"]
