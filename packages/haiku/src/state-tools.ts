@@ -868,7 +868,11 @@ function repairAllBranches(autoApply: boolean): {
 	}
 
 	// Second pass: archived intents on mainline (no matching haiku/<slug>/main branch)
-	const archivedSummary = repairArchivedOnMainline(branches, mainline, autoApply)
+	const archivedSummary = repairArchivedOnMainline(
+		branches,
+		mainline,
+		autoApply,
+	)
 
 	return { summaries, mainline, archivedSummary }
 }
@@ -994,8 +998,7 @@ function buildMultiBranchReport(
 		summaries.reduce((sum, s) => sum + s.remaining.length, 0) +
 		(archivedSummary?.remaining.length ?? 0)
 	const totalPushed =
-		summaries.filter((s) => s.pushed).length +
-		(archivedSummary?.pushed ? 1 : 0)
+		summaries.filter((s) => s.pushed).length + (archivedSummary?.pushed ? 1 : 0)
 	const totalPRs =
 		summaries.filter((s) => s.prUrl).length + (archivedSummary?.prUrl ? 1 : 0)
 	lines.push(
@@ -1050,9 +1053,7 @@ function buildMultiBranchReport(
 		lines.push(`- Auto-applied: ${archivedSummary.applied.length}`)
 		lines.push(`- Remaining: ${archivedSummary.remaining.length}`)
 		if (archivedSummary.committed && archivedSummary.pushed) {
-			lines.push(
-				`- Pushed repair branch \`origin/${archivedSummary.branch}\``,
-			)
+			lines.push(`- Pushed repair branch \`origin/${archivedSummary.branch}\``)
 		} else if (archivedSummary.pushError) {
 			lines.push(`- Push error: ${archivedSummary.pushError}`)
 		}
