@@ -154,8 +154,8 @@ test("haiku_intent_create tool defined with description required", () => {
   assert.ok(tool.inputSchema.required.includes("description"))
 })
 
-test("haiku_go_back tool defined with intent required", () => {
-  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_go_back")
+test("haiku_revisit tool defined with intent required", () => {
+  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_revisit")
   assert.ok(tool)
   assert.ok(tool.inputSchema.required.includes("intent"))
 })

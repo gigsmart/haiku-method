@@ -55,17 +55,17 @@ Each stage gets its own PR. Small, scoped, actually reviewable. Inception PR cov
 
 The stage isn't just a phase in the FSM anymore. It's a real unit of review.
 
-## Go-backs don't blow away later work
+## Revisiting stages doesn't blow away later work
 
-The scary thing about per-stage branches used to be the obvious one: what happens when you hit `/haiku:go-back` during development because the specs were wrong? Do you lose all your development work? No.
+The scary thing about per-stage branches used to be the obvious one: what happens when you hit `/haiku:revisit design` during development because the specs were wrong? Do you lose all your development work? No.
 
-Go-backs in discrete mode switch you to the **target stage branch** — the one you're going back to fix. Later stage branches stay intact, untouched. You fix the spec, the product PR gets updated, and when you return to development, the changes **merge forward**. Your development work is still there. Your new specs are reflected in it. Nothing is lost, nothing gets reinvented, and you didn't have to cherry-pick anything by hand.
+Revisiting in discrete mode switches you to the **target stage branch** — the one you're going back to fix. Later stage branches stay intact, untouched. You fix the spec, the product PR gets updated, and when you return to development, the changes **merge forward**. Your development work is still there. Your new specs are reflected in it. Nothing is lost, nothing gets reinvented, and you didn't have to cherry-pick anything by hand.
 
 <Callout tone="good" title="The guarantee">
-Going back never destroys later work. It switches branches, lets you fix the issue upstream, and merges the fix forward when you return. Your downstream branches keep everything they had, plus the fix.
+Revisiting never destroys later work. It switches branches, lets you fix the issue upstream, and merges the fix forward when you return. Your downstream branches keep everything they had, plus the fix.
 </Callout>
 
-This was the blocker for adopting per-stage branches in the first place. Once go-backs became non-destructive, stage branches stopped being scary.
+This was the blocker for adopting per-stage branches in the first place. Once revisits became non-destructive, stage branches stopped being scary.
 
 ## Hybrid mode: pick a threshold
 

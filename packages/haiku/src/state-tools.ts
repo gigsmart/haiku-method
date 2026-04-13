@@ -153,7 +153,7 @@ export function applyAutoFixes(
 		// Legacy `created` field → `created_at`
 		if (issue.field === "created" && data.created && !data.created_at) {
 			data.created_at = data.created
-			data.created = undefined
+			delete data.created
 			applied.push({
 				intent: slug,
 				field: "created",
@@ -214,6 +214,58 @@ export function applyAutoFixes(
 			}
 		}
 
+		// Git-based date repair: created_at, started_at, completed_at
+		if (
+			issue.field === "created_at" &&
+			issue.message.includes("git history")
+		) {
+			const dateMatch = issue.fix.match(/'([^']+)' \(from git/)
+			if (dateMatch) {
+				data.created_at = dateMatch[1]
+				applied.push({
+					intent: slug,
+					field: "created_at",
+					description: `Updated created_at to '${dateMatch[1]}' from git history`,
+				})
+				fixedHere = true
+				changed = true
+			}
+		}
+
+		if (
+			issue.field === "started_at" &&
+			issue.fix.includes("from git")
+		) {
+			const dateMatch = issue.fix.match(/'([^']+)' \(from git/)
+			if (dateMatch) {
+				data.started_at = dateMatch[1]
+				applied.push({
+					intent: slug,
+					field: "started_at",
+					description: `Updated started_at to '${dateMatch[1]}' from git history`,
+				})
+				fixedHere = true
+				changed = true
+			}
+		}
+
+		if (
+			issue.field === "completed_at" &&
+			issue.fix.includes("from git")
+		) {
+			const dateMatch = issue.fix.match(/'([^']+)' \(from git/)
+			if (dateMatch) {
+				data.completed_at = dateMatch[1]
+				applied.push({
+					intent: slug,
+					field: "completed_at",
+					description: `Updated completed_at to '${dateMatch[1]}' from git history`,
+				})
+				fixedHere = true
+				changed = true
+			}
+		}
+
 		if (!fixedHere) remaining.push(issue)
 	}
 
@@ -228,12 +280,102 @@ export function applyAutoFixes(
 		writeFileSync(intentPath, matter.stringify(body, data))
 	}
 
-	return { applied, remaining }
+	// Second pass: fix stage-level state.json issues (completion synthesis)
+	const stageRemaining: RepairIssue[] = []
+	for (const issue of remaining) {
+		let fixedHere = false
+
+		// Synthesize or update stage completion records for stages before active_stage
+		if (
+			issue.field.match(/^stages\/[^/]+\/state\.json$/) &&
+			issue.message.includes("before active_stage")
+		) {
+			const stageMatch = issue.field.match(/^stages\/([^/]+)\/state\.json$/)
+			if (stageMatch) {
+				const stageName = stageMatch[1]
+				const stageDir = join(intentRoot, slug, "stages", stageName)
+				const stateFile = join(stageDir, "state.json")
+				mkdirSync(stageDir, { recursive: true })
+
+				const now = new Date().toISOString()
+				const completedState: Record<string, unknown> = {
+					stage: stageName,
+					status: "completed",
+					phase: "gate",
+					started_at: data.started_at || data.created_at || now,
+					completed_at: data.started_at || data.created_at || now,
+					gate_entered_at: null,
+					gate_outcome: "advanced",
+				}
+				writeJson(stateFile, completedState)
+				applied.push({
+					intent: slug,
+					field: issue.field,
+					description: `Synthesized completion record for stage '${stageName}' (before active_stage)`,
+				})
+				fixedHere = true
+			}
+		}
+
+		if (!fixedHere) stageRemaining.push(issue)
+	}
+
+	return { applied, remaining: stageRemaining }
 }
 
 function statSyncSafe(path: string): { mtime: Date } | null {
 	try {
 		return statSync(path)
+	} catch {
+		return null
+	}
+}
+
+/** Get the first (oldest) commit date for a file from git history.
+ *  `gitCwd` allows running git from a worktree path. */
+function gitFirstCommitDateForRepair(
+	filePath: string,
+	gitCwd?: string,
+): string | null {
+	if (!isGitRepo()) return null
+	try {
+		const result = execFileSync(
+			"git",
+			["log", "--diff-filter=A", "--follow", "--format=%aI", "--", filePath],
+			{
+				encoding: "utf8",
+				timeout: 5000,
+				stdio: ["pipe", "pipe", "pipe"],
+				...(gitCwd ? { cwd: gitCwd } : {}),
+			},
+		).trim()
+		// Take the last line (oldest commit)
+		const lines = result.split("\n").filter(Boolean)
+		return lines.length > 0 ? lines[lines.length - 1] : null
+	} catch {
+		return null
+	}
+}
+
+/** Get the most recent commit date for a file/directory from git history.
+ *  `gitCwd` allows running git from a worktree path. */
+function gitLastCommitDateForRepair(
+	filePath: string,
+	gitCwd?: string,
+): string | null {
+	if (!isGitRepo()) return null
+	try {
+		const result = execFileSync(
+			"git",
+			["log", "-1", "--format=%aI", "--", filePath],
+			{
+				encoding: "utf8",
+				timeout: 5000,
+				stdio: ["pipe", "pipe", "pipe"],
+				...(gitCwd ? { cwd: gitCwd } : {}),
+			},
+		).trim()
+		return result || null
 	} catch {
 		return null
 	}
@@ -459,6 +601,12 @@ function scanOneIntent(
 		for (const stageName of repairStages as string[]) {
 			const repairStageDir = join(repairStagesDir, stageName)
 			const repairStateFile = join(repairStageDir, "state.json")
+			const activeIdx = repairActiveStage
+				? (repairStages as string[]).indexOf(repairActiveStage)
+				: -1
+			const thisIdx = (repairStages as string[]).indexOf(stageName)
+			const isBeforeActive = activeIdx > 0 && thisIdx < activeIdx
+
 			if (existsSync(repairStateFile)) {
 				const state = readJson(repairStateFile)
 				if (state.status && !validStatuses.includes(state.status as string)) {
@@ -469,20 +617,31 @@ function scanOneIntent(
 						message: `Invalid stage status: '${state.status}'`,
 						fix: `Set status to one of: ${validStatuses.join(", ")}`,
 					})
-				}
-			} else if (existsSync(repairStageDir) && repairActiveStage) {
-				const activeIdx = (repairStages as string[]).indexOf(repairActiveStage)
-				const thisIdx = (repairStages as string[]).indexOf(stageName)
-				if (thisIdx < activeIdx) {
+				} else if (
+					isBeforeActive &&
+					(state.status as string) !== "completed"
+				) {
+					// Stage before active_stage should be completed — FSM will
+					// reset active_stage backwards if it isn't
 					issues.push({
 						intent: slug,
 						field: `stages/${stageName}/state.json`,
 						severity: "warning",
-						message:
-							"Stage directory exists but has no state.json (before active_stage)",
-						fix: `Create state.json with {"status": "pending", "phase": "elaborate"}`,
+						message: `Stage before active_stage has status '${state.status || "pending"}' — should be 'completed'`,
+						fix: `Update state.json to status: "completed" (stage is before active_stage '${repairActiveStage}')`,
 					})
 				}
+			} else if (isBeforeActive) {
+				// Missing state.json for a stage before active_stage — synthesize
+				// a completion record so the FSM doesn't reset backwards
+				issues.push({
+					intent: slug,
+					field: `stages/${stageName}/state.json`,
+					severity: "warning",
+					message:
+						"Missing state.json for stage before active_stage — FSM will reset backwards",
+					fix: `Create state.json with status: "completed" (stage is before active_stage '${repairActiveStage}')`,
+				})
 			}
 		}
 	}
@@ -614,6 +773,102 @@ function scanOneIntent(
 					})
 				}
 			}
+		}
+	}
+
+	// p. Git-based date repair: derive dates from commit history
+	if (isGitRepo()) {
+		const intentFilePath = join(intentsDir, slug, "intent.md")
+		const gitCreated = gitFirstCommitDateForRepair(intentFilePath)
+		const gitLastModified = gitLastCommitDateForRepair(
+			join(intentsDir, slug),
+		)
+		const currentCreatedAt = repairData.created_at as string | undefined
+		const currentStartedAt = repairData.started_at as string | undefined
+		const currentCompletedAt = repairData.completed_at as string | undefined
+
+		// created_at should match the first commit
+		if (gitCreated && currentCreatedAt) {
+			const gitDate = gitCreated.slice(0, 10)
+			const fmDate =
+				typeof currentCreatedAt === "string"
+					? currentCreatedAt.slice(0, 10)
+					: ""
+			if (gitDate !== fmDate) {
+				issues.push({
+					intent: slug,
+					field: "created_at",
+					severity: "warning",
+					message: `created_at '${fmDate}' doesn't match git history '${gitDate}'`,
+					fix: `Update created_at to '${gitCreated}' (from git first commit)`,
+				})
+			}
+		}
+
+		// started_at should match the first commit
+		if (gitCreated && currentStartedAt) {
+			const gitDate = gitCreated.slice(0, 10)
+			const fmDate =
+				typeof currentStartedAt === "string"
+					? currentStartedAt.slice(0, 10)
+					: ""
+			if (gitDate !== fmDate) {
+				issues.push({
+					intent: slug,
+					field: "started_at",
+					severity: "warning",
+					message: `started_at '${fmDate}' doesn't match git history '${gitDate}'`,
+					fix: `Update started_at to '${gitCreated}' (from git first commit)`,
+				})
+			}
+		}
+
+		// completed_at for completed intents should match the last commit
+		if (
+			repairData.status === "completed" &&
+			gitLastModified &&
+			currentCompletedAt
+		) {
+			const gitDate = gitLastModified.slice(0, 10)
+			const fmDate =
+				typeof currentCompletedAt === "string"
+					? currentCompletedAt.slice(0, 10)
+					: ""
+			if (gitDate !== fmDate) {
+				issues.push({
+					intent: slug,
+					field: "completed_at",
+					severity: "warning",
+					message: `completed_at '${fmDate}' doesn't match git history '${gitDate}'`,
+					fix: `Update completed_at to '${gitLastModified}' (from git last commit)`,
+				})
+			}
+		}
+
+		// Missing started_at — derive from git
+		if (gitCreated && !currentStartedAt) {
+			issues.push({
+				intent: slug,
+				field: "started_at",
+				severity: "warning",
+				message: "Missing started_at field",
+				fix: `Set started_at to '${gitCreated}' (from git first commit)`,
+			})
+		}
+
+		// Missing completed_at for completed intents — derive from git
+		if (
+			repairData.status === "completed" &&
+			gitLastModified &&
+			!currentCompletedAt
+		) {
+			issues.push({
+				intent: slug,
+				field: "completed_at",
+				severity: "warning",
+				message: "Completed intent missing completed_at field",
+				fix: `Set completed_at to '${gitLastModified}' (from git last commit)`,
+			})
 		}
 	}
 
@@ -830,6 +1085,30 @@ function repairAllBranches(autoApply: boolean): {
 			summary.scanned = result.scanned
 			summary.applied = result.applied
 			summary.remaining = result.remaining
+
+			// Verify completed intents are truly merged into mainline
+			const intentMd = join(
+				worktreeHaikuRoot,
+				"intents",
+				slug,
+				"intent.md",
+			)
+			if (existsSync(intentMd)) {
+				const fm = parseFrontmatter(readFileSync(intentMd, "utf8"))
+				if (
+					fm.data.status === "completed" &&
+					!isBranchMerged(branch, mainline)
+				) {
+					const issue: RepairIssue = {
+						intent: slug,
+						field: "status",
+						severity: "error",
+						message: `Intent marked 'completed' but branch '${branch}' is not merged into '${mainline}'`,
+						fix: `Either merge the branch into '${mainline}' or set status to 'active'`,
+					}
+					summary.remaining.push(issue)
+				}
+			}
 
 			if (autoApply && result.applied.length > 0) {
 				const messageLines = [
