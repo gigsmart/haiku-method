@@ -1,6 +1,6 @@
 // studio-reader.ts — Shared readers for studio, stage, hat, and review-agent definitions
 
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
+import { existsSync, lstatSync, readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 import {
 	studioSearchPaths as _studioSearchPaths,
@@ -245,16 +245,24 @@ function readDirFilesRecursive(dir: string, prefix = ""): string {
 	for (const entry of entries) {
 		const fullPath = join(dir, entry)
 		const relPath = prefix ? `${prefix}/${entry}` : entry
-		let stat: ReturnType<typeof statSync>
+		let stat: ReturnType<typeof lstatSync>
 		try {
-			stat = statSync(fullPath)
+			stat = lstatSync(fullPath)
 		} catch {
-			continue // file disappeared between readdirSync and statSync — skip it
+			continue // file disappeared between readdirSync and lstatSync — skip it
+		}
+		if (stat.isSymbolicLink()) {
+			continue // skip symlinks to avoid infinite recursion from cycles
 		}
 		if (stat.isDirectory()) {
 			sections.push(readDirFilesRecursive(fullPath, relPath))
 		} else {
-			const content = readFileSync(fullPath, "utf8")
+			let content: string
+			try {
+				content = readFileSync(fullPath, "utf8")
+			} catch {
+				continue // file disappeared between lstatSync and readFileSync — skip it
+			}
 			sections.push(
 				`### ${relPath}\n\n${content.slice(0, 1500)}${content.length > 1500 ? "\n...(truncated)" : ""}`,
 			)
