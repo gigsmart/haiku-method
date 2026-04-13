@@ -65,6 +65,14 @@ export interface HaikuStageState {
   gateOutcome: string | null;
   units: HaikuUnit[];
   artifacts?: HaikuArtifact[];
+  /** The git branch for this stage (e.g. haiku/{slug}/{stage}) */
+  branch?: string;
+  /** PR/MR URL if one exists for this stage's branch */
+  prUrl?: string | null;
+  /** PR/MR state: "open", "merged", "closed" */
+  prStatus?: string | null;
+  /** PR/MR number */
+  prNumber?: number | null;
 }
 
 export interface HaikuAsset {
