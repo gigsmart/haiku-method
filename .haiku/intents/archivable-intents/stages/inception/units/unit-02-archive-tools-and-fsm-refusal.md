@@ -8,9 +8,9 @@ inputs:
   - knowledge/DISCOVERY.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-14T20:29:21Z'
-hat_started_at: '2026-04-14T20:29:21Z'
+hat_started_at: '2026-04-14T20:31:15Z'
 ---
 
 # unit-02-archive-tools-and-fsm-refusal
