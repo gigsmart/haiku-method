@@ -871,6 +871,13 @@ export function runNext(slug: string): OrchestratorAction {
 		return { action: "error", message: `Intent '${slug}' is archived` }
 	}
 
+	if (intent.archived === true) {
+		return {
+			action: "error",
+			message: `Intent '${slug}' is archived. Call haiku_intent_unarchive to restore it.`,
+		}
+	}
+
 	// Composite intent handling
 	if (intent.composite) {
 		return runNextComposite(slug, intent, iDir)
@@ -2816,6 +2823,30 @@ export const orchestratorToolDefs = [
 			required: ["intent"],
 		},
 	},
+	{
+		name: "haiku_intent_archive",
+		description:
+			"Archive an intent — sets the `archived: true` frontmatter flag so the intent is hidden from default list views. Reversible via haiku_intent_unarchive. Does not prompt for confirmation.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: { type: "string", description: "Intent slug to archive" },
+			},
+			required: ["intent"],
+		},
+	},
+	{
+		name: "haiku_intent_unarchive",
+		description:
+			"Unarchive an intent — clears the `archived` frontmatter flag so the intent reappears in default list views. Reversible via haiku_intent_archive. Does not prompt for confirmation.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: { type: "string", description: "Intent slug to unarchive" },
+			},
+			required: ["intent"],
+		},
+	},
 ]
 
 // ── Tool handlers ──────────────────────────────────────────────────────────
@@ -3795,6 +3826,102 @@ export async function handleOrchestratorTool(
 					description,
 					context: conversationContext,
 					message: `Intent '${slug}' has been reset. Call haiku_intent_create { description: "${description.replace(/"/g, '\\"')}", slug: "${slug}"${conversationContext ? ', context: "<preserved context>"' : ""} } to recreate it.`,
+				},
+				null,
+				2,
+			),
+		)
+	}
+
+	if (name === "haiku_intent_archive") {
+		const slug = args.intent as string
+		const root = findHaikuRoot()
+		const intentFile = join(root, "intents", slug, "intent.md")
+
+		if (!existsSync(intentFile)) {
+			return {
+				content: [
+					{ type: "text" as const, text: `Intent '${slug}' not found.` },
+				],
+				isError: true,
+			}
+		}
+
+		const { data } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+
+		if (data.archived === true) {
+			return text(
+				JSON.stringify(
+					{
+						action: "noop",
+						slug,
+						path: intentFile,
+						message: `Intent '${slug}' is already archived.`,
+					},
+					null,
+					2,
+				),
+			)
+		}
+
+		setFrontmatterField(intentFile, "archived", true)
+		gitCommitState(`haiku: archive intent ${slug}`)
+
+		return text(
+			JSON.stringify(
+				{
+					action: "intent_archived",
+					slug,
+					path: intentFile,
+					message: `Intent '${slug}' has been archived. Call haiku_intent_unarchive to restore it.`,
+				},
+				null,
+				2,
+			),
+		)
+	}
+
+	if (name === "haiku_intent_unarchive") {
+		const slug = args.intent as string
+		const root = findHaikuRoot()
+		const intentFile = join(root, "intents", slug, "intent.md")
+
+		if (!existsSync(intentFile)) {
+			return {
+				content: [
+					{ type: "text" as const, text: `Intent '${slug}' not found.` },
+				],
+				isError: true,
+			}
+		}
+
+		const { data } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+
+		if (data.archived !== true) {
+			return text(
+				JSON.stringify(
+					{
+						action: "noop",
+						slug,
+						path: intentFile,
+						message: `Intent '${slug}' is not archived.`,
+					},
+					null,
+					2,
+				),
+			)
+		}
+
+		setFrontmatterField(intentFile, "archived", false)
+		gitCommitState(`haiku: unarchive intent ${slug}`)
+
+		return text(
+			JSON.stringify(
+				{
+					action: "intent_unarchived",
+					slug,
+					path: intentFile,
+					message: `Intent '${slug}' has been unarchived.`,
 				},
 				null,
 				2,
