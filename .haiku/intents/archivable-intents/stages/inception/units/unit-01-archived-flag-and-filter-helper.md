@@ -7,6 +7,8 @@ inputs:
   - intent.md
   - knowledge/DISCOVERY.md
   - stages/inception/units/unit-01-archived-flag-and-filter-helper/research-notes.md
+outputs:
+  - stages/inception/artifacts/unit-01-elaboration-notes.md
 ---
 
 # unit-01-archived-flag-and-filter-helper
