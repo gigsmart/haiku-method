@@ -130,129 +130,135 @@ The orchestrator is the brain. Hooks are spinal reflexes. The orchestrator decid
 
 Every studio is a named lifecycle template — a DAG of stages, each of which runs its own five-phase machine. The default software studio has six stages running in strict order: **inception → design → product → development → operations → security**. Stages don't skip or parallelize; each one reads its prerequisite artifacts (declared by `inputs:` in `STAGE.md`) and won't start until those are present.
 
-The diagram below is the **complete** stage machine. Every phase, every transition — forward, self-loop, back-edge, and terminal. Every gate type. Mode decisions (continuous, discrete, hybrid). Revisit. External review blocking. Nothing elided.
+The diagram below is the **complete** stage machine as a mermaid stateDiagram-v2. Each stage is a composite state with its own five-phase FSM nested inside. Every phase, every transition — forward, self-loop, back-edge, and terminal. Every gate type. Mode decisions (continuous, discrete, hybrid). External review blocking. Nothing elided.
 
-<ExpandableDiagram chart={`flowchart TB
-    Start([🎯 Intent created])
-    Start --> S1_P
+<ExpandableDiagram chart={`stateDiagram-v2
+    direction TB
+    [*] --> Inception
 
-    subgraph S1["1. INCEPTION · review: ask · collaborative"]
+    state Inception {
         direction TB
-        S1_P([pending]) -->|start_stage| S1_E[elaborate]
-        S1_E -->|"elaboration_insufficient<br/>(< 3 user turns)"| S1_E
-        S1_E -->|"DAG valid +<br/>units validated"| S1_IR{"gate_review<br/>intent_review"}
-        S1_IR -->|"changes_requested"| S1_P
-        S1_IR -->|"approved"| S1_X[execute]
-        S1_X -->|"continue_unit /<br/>next wave"| S1_X
-        S1_X -->|"all units complete"| S1_R[review]
-        S1_R -->|"fix_quality_gates"| S1_X
-        S1_R -->|"gates pass +<br/>adversarial review done"| S1_G{"gate · ask"}
-        S1_G -->|"changes_requested"| S1_R
-        S1_G -->|"approved"| S1_Done([stage complete])
-    end
+        [*] --> I_pending
+        I_pending --> I_elaborate : start_stage
+        I_elaborate --> I_elaborate : elaboration_insufficient<br/>(< 3 user turns)
+        I_elaborate --> I_intent_review : DAG valid +<br/>units validated
+        I_intent_review --> I_pending : changes_requested
+        I_intent_review --> I_execute : approved
+        I_execute --> I_execute : continue_unit /<br/>next wave
+        I_execute --> I_review : all units complete
+        I_review --> I_execute : fix_quality_gates
+        I_review --> I_gate : gates pass +<br/>adversarial review done
+        I_gate --> I_review : changes_requested
+        I_gate --> [*] : approved (ask)
+    }
+    note right of Inception : review: ask · collaborative
 
-    subgraph S2["2. DESIGN · review: [external, ask] · collaborative"]
+    Inception --> Design : continuous mode
+    Inception --> Paused_I : discrete mode
+    Paused_I --> Design : /haiku:pickup
+
+    state Design {
         direction TB
-        S2_P([pending]) -->|start_stage| S2_E[elaborate]
-        S2_E -->|"elaboration_insufficient"| S2_E
-        S2_E -->|"specs validated"| S2_GS{"gate_review<br/>elaborate_to_execute"}
-        S2_GS -->|"changes_requested"| S2_E
-        S2_GS -->|"approved"| S2_X[execute]
-        S2_X -->|"next wave"| S2_X
-        S2_X -->|"all units complete"| S2_R[review]
-        S2_R -->|"fix_quality_gates"| S2_X
-        S2_R -->|"gates pass"| S2_G{"gate · [external, ask]"}
-        S2_G -->|"changes_requested"| S2_R
-        S2_G -->|"approved"| S2_Done([stage complete])
-        S2_G -->|"external_review<br/>requested"| S2_B([blocked · awaiting PR])
-        S2_B -->|"PR merged"| S2_Done
-    end
+        [*] --> D_pending
+        D_pending --> D_elaborate : start_stage
+        D_elaborate --> D_elaborate : elaboration_insufficient
+        D_elaborate --> D_specs_gate : specs validated
+        D_specs_gate --> D_elaborate : changes_requested
+        D_specs_gate --> D_execute : approved
+        D_execute --> D_execute : next wave
+        D_execute --> D_review : all units complete
+        D_review --> D_execute : fix_quality_gates
+        D_review --> D_gate : gates pass
+        D_gate --> D_review : changes_requested
+        D_gate --> [*] : approved
+        D_gate --> D_blocked : external_review_requested
+        D_blocked --> [*] : PR merged
+    }
+    note right of Design : review: [external, ask] · collaborative
 
-    subgraph S3["3. PRODUCT · review: [external, ask] · collaborative"]
+    Design --> Product : continuous
+    Design --> Paused_D : discrete
+    Paused_D --> Product : /haiku:pickup
+
+    state Product {
         direction TB
-        S3_P([pending]) -->|start_stage| S3_E[elaborate]
-        S3_E -->|"elaboration_insufficient"| S3_E
-        S3_E -->|"specs validated"| S3_GS{"gate_review<br/>elaborate_to_execute"}
-        S3_GS -->|"changes_requested"| S3_E
-        S3_GS -->|"approved"| S3_X[execute]
-        S3_X -->|"next wave"| S3_X
-        S3_X -->|"all units complete"| S3_R[review]
-        S3_R -->|"fix_quality_gates"| S3_X
-        S3_R -->|"gates pass"| S3_G{"gate · [external, ask]"}
-        S3_G -->|"changes_requested"| S3_R
-        S3_G -->|"approved"| S3_Done([stage complete])
-        S3_G -->|"external_review<br/>requested"| S3_B([blocked · awaiting PR])
-        S3_B -->|"PR merged"| S3_Done
-    end
+        [*] --> P_pending
+        P_pending --> P_elaborate : start_stage
+        P_elaborate --> P_elaborate : elaboration_insufficient
+        P_elaborate --> P_specs_gate : specs validated
+        P_specs_gate --> P_elaborate : changes_requested
+        P_specs_gate --> P_execute : approved
+        P_execute --> P_execute : next wave
+        P_execute --> P_review : all units complete
+        P_review --> P_execute : fix_quality_gates
+        P_review --> P_gate : gates pass
+        P_gate --> P_review : changes_requested
+        P_gate --> [*] : approved
+        P_gate --> P_blocked : external_review_requested
+        P_blocked --> [*] : PR merged
+    }
+    note right of Product : review: [external, ask] · collaborative
 
-    subgraph S4["4. DEVELOPMENT · review: [external, ask] · collaborative"]
+    Product --> Development : continuous
+    Product --> Paused_P : discrete
+    Paused_P --> Development : /haiku:pickup
+
+    state Development {
         direction TB
-        S4_P([pending]) -->|start_stage| S4_E[elaborate]
-        S4_E -->|"elaboration_insufficient"| S4_E
-        S4_E -->|"specs validated"| S4_GS{"gate_review<br/>elaborate_to_execute"}
-        S4_GS -->|"changes_requested"| S4_E
-        S4_GS -->|"approved"| S4_X[execute]
-        S4_X -->|"next wave"| S4_X
-        S4_X -->|"all units complete"| S4_R[review]
-        S4_R -->|"fix_quality_gates"| S4_X
-        S4_R -->|"gates pass"| S4_G{"gate · [external, ask]"}
-        S4_G -->|"changes_requested"| S4_R
-        S4_G -->|"approved"| S4_Done([stage complete])
-        S4_G -->|"external_review<br/>requested"| S4_B([blocked · awaiting PR])
-        S4_B -->|"PR merged"| S4_Done
-    end
+        [*] --> V_pending
+        V_pending --> V_elaborate : start_stage
+        V_elaborate --> V_elaborate : elaboration_insufficient
+        V_elaborate --> V_specs_gate : specs validated
+        V_specs_gate --> V_elaborate : changes_requested
+        V_specs_gate --> V_execute : approved
+        V_execute --> V_execute : next wave
+        V_execute --> V_review : all units complete
+        V_review --> V_execute : fix_quality_gates
+        V_review --> V_gate : gates pass
+        V_gate --> V_review : changes_requested
+        V_gate --> [*] : approved
+        V_gate --> V_blocked : external_review_requested
+        V_blocked --> [*] : PR merged
+    }
+    note right of Development : review: [external, ask] · collaborative
 
-    subgraph S5["5. OPERATIONS · review: auto · autonomous"]
+    Development --> Operations : continuous
+    Development --> Paused_V : discrete
+    Paused_V --> Operations : /haiku:pickup
+
+    state Operations {
         direction TB
-        S5_P([pending]) -->|start_stage| S5_E[elaborate]
-        S5_E -->|"plan validated<br/>(no turn minimum)"| S5_X[execute]
-        S5_X -->|"next wave"| S5_X
-        S5_X -->|"all units complete"| S5_R[review]
-        S5_R -->|"fix_quality_gates"| S5_X
-        S5_R -->|"gates pass"| S5_G{"gate · auto"}
-        S5_G -->|"auto-advance"| S5_Done([stage complete])
-    end
+        [*] --> O_pending
+        O_pending --> O_elaborate : start_stage
+        O_elaborate --> O_execute : plan validated
+        O_execute --> O_execute : next wave
+        O_execute --> O_review : all units complete
+        O_review --> O_execute : fix_quality_gates
+        O_review --> [*] : gates pass (auto)
+    }
+    note right of Operations : review: auto · autonomous
 
-    subgraph S6["6. SECURITY · review: [external, ask] · autonomous"]
+    Operations --> Security : continuous
+    Operations --> Paused_O : discrete
+    Paused_O --> Security : /haiku:pickup
+
+    state Security {
         direction TB
-        S6_P([pending]) -->|start_stage| S6_E[elaborate]
-        S6_E -->|"threat model validated<br/>(no turn minimum)"| S6_X[execute]
-        S6_X -->|"next wave"| S6_X
-        S6_X -->|"all units complete"| S6_R[review]
-        S6_R -->|"fix_quality_gates"| S6_X
-        S6_R -->|"gates pass"| S6_G{"gate · [external, ask]"}
-        S6_G -->|"changes_requested"| S6_R
-        S6_G -->|"approved"| S6_Done([stage complete])
-        S6_G -->|"external_review<br/>requested"| S6_B([blocked · awaiting PR])
-        S6_B -->|"PR merged"| S6_Done
-    end
+        [*] --> S_pending
+        S_pending --> S_elaborate : start_stage
+        S_elaborate --> S_execute : threat model validated
+        S_execute --> S_execute : next wave
+        S_execute --> S_review : all units complete
+        S_review --> S_execute : fix_quality_gates
+        S_review --> S_gate : gates pass
+        S_gate --> S_review : changes_requested
+        S_gate --> [*] : approved
+        S_gate --> S_blocked : external_review_requested
+        S_blocked --> [*] : PR merged
+    }
+    note right of Security : review: [external, ask] · autonomous
 
-    S1_Done --> M1{"mode resolution"}
-    M1 -->|"continuous /<br/>hybrid ≥ continuous_from"| S2_P
-    M1 -->|"discrete"| Pause1([paused])
-    Pause1 -->|"/haiku:pickup"| S2_P
-
-    S2_Done --> M2{"mode resolution"}
-    M2 -->|"continuous"| S3_P
-    M2 -->|"discrete"| Pause2([paused])
-    Pause2 -->|"/haiku:pickup"| S3_P
-
-    S3_Done --> M3{"mode resolution"}
-    M3 -->|"continuous"| S4_P
-    M3 -->|"discrete"| Pause3([paused])
-    Pause3 -->|"/haiku:pickup"| S4_P
-
-    S4_Done --> M4{"mode resolution"}
-    M4 -->|"continuous"| S5_P
-    M4 -->|"discrete"| Pause4([paused])
-    Pause4 -->|"/haiku:pickup"| S5_P
-
-    S5_Done --> M5{"mode resolution"}
-    M5 -->|"continuous"| S6_P
-    M5 -->|"discrete"| Pause5([paused])
-    Pause5 -->|"/haiku:pickup"| S6_P
-
-    S6_Done --> FIN([🏁 intent_complete])`} caption="The complete software studio state machine. Six stages × five phases, every transition the orchestrator can fire." />
+    Security --> [*] : intent_complete`} caption="The complete software studio state machine. Six composite stage states, each with its own five-phase FSM, wired together by mode-dependent stage transitions." />
 
 **What the diagram encodes:**
 
