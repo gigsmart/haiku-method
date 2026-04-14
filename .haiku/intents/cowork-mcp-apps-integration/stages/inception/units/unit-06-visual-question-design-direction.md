@@ -10,9 +10,11 @@ inputs:
   - stages/inception/units/unit-05-cowork-open-review-handler.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-14T22:26:55Z'
-hat_started_at: '2026-04-14T22:26:55Z'
+hat_started_at: '2026-04-14T22:32:17Z'
+outputs:
+  - knowledge/unit-06-visual-question-design-direction-research.md
 ---
 
 # Extend MCP Apps path to ask_user_visual_question and pick_design_direction
