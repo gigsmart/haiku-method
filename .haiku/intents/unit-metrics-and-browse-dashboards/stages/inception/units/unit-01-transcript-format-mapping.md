@@ -13,6 +13,8 @@ hat_started_at: '2026-04-14T21:40:59Z'
 outputs:
   - >-
     ../../worktrees/unit-metrics-and-browse-dashboards/unit-02-pricing-data-source/.haiku/intents/unit-metrics-and-browse-dashboards/knowledge/PRICING_STRATEGY.md
+  - >-
+    ../../worktrees/unit-metrics-and-browse-dashboards/unit-04-dashboard-architecture/.haiku/intents/unit-metrics-and-browse-dashboards/knowledge/DASHBOARD_ARCHITECTURE.md
 ---
 
 # Research: Claude Code transcript file format and token fields

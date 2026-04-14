@@ -7,9 +7,9 @@ inputs:
   - knowledge/DISCOVERY.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-14T21:41:38Z'
-hat_started_at: '2026-04-14T21:41:38Z'
+hat_started_at: '2026-04-14T21:43:49Z'
 ---
 
 # Research: Browse-app dashboard architecture — chart library and aggregation patterns
