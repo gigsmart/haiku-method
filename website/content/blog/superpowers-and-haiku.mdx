@@ -6,7 +6,6 @@ author: Jason Waldrip
 category: Architecture
 tags:
   - superpowers
-  - fsm
   - architecture
   - ai-dlc
   - dark-factory
@@ -124,8 +123,8 @@ Once the orchestrator is in charge and the plan lives on disk, the organizationa
 Because of where we put the complexity, the surface area looks different. Here's the concrete list:
 
 <Grid>
-  <Card eyebrow="Studios" title="21 domains, today" accent="info">
-    Software is one. The others include marketing, legal, HR, finance, sales, product-strategy, project-management, compliance, customer-success, data-pipeline, incident-response, documentation, quality-assurance, vendor-management, security-assessment, training, dev-evangelism, migration, executive-strategy, and ideation (the universal default). "Domain-agnostic" is not a methodology page — it's shipped code.
+  <Card eyebrow="Studios" title="24 domains, today" accent="info">
+    Software is one. The others include gamedev, hwdev (hardware), libdev (libraries and SDKs), marketing, legal, HR, finance, sales, product-strategy, project-management, compliance, customer-success, data-pipeline, incident-response, documentation, quality-assurance, vendor-management, security-assessment, training, dev-evangelism, migration, executive-strategy, and ideation (the universal default). "Domain-agnostic" is not a methodology page — it's shipped code.
   </Card>
   <Card eyebrow="Review" title="Parallel adversarial challenge" accent="info">
     At each checkpoint, multiple review agents run in parallel, each with an explicit challenge mandate. The security stage alone ships a red team, a blue team, a threat modeler, a security reviewer, and a mitigation-effectiveness reviewer. Adversarial challenge isn't a validation technique we bolt on — it's the default posture of every gate.
@@ -166,7 +165,7 @@ If you've read the introduction to either system, the other feels familiar. The 
 
 When I sat down to list things H·AI·K·U should learn from Superpowers, the list got shorter than I expected. Most of what I initially thought was a gap turns out to be something we already do, sometimes differently, sometimes more aggressively, given our mission. But a few real opportunities remain, and they're narrow:
 
-**1. Persuasion framing in the orchestrator's response.** Superpowers uses loud, dramatic tags in every skill to make the AI take the rules seriously — the kind of thing that reads overdone until you watch a calm version fail. Our role descriptions are plain prose. The right place for us to add the dramatic framing isn't inside each of twenty-one studios' files — it's around the orchestrator's response itself. Wrap every action the orchestrator hands the agent in the same defensive envelope. One place, every studio benefits.
+**1. Persuasion framing in the orchestrator's response.** Superpowers uses loud, dramatic tags in every skill to make the AI take the rules seriously — the kind of thing that reads overdone until you watch a calm version fail. Our role descriptions are plain prose. The right place for us to add the dramatic framing isn't inside each of twenty-four studios' files — it's around the orchestrator's response itself. Wrap every action the orchestrator hands the agent in the same defensive envelope. One place, every studio benefits.
 
 **2. Flow diagrams generated on the fly.** Superpowers hand-draws a flowchart inside every skill. We shouldn't. The orchestrator already knows the shape of the workflow, where we are, and which steps are allowed next — it can render the diagram on demand. Never written to disk, never maintained by hand, always reflects the live state.
 
@@ -188,7 +187,7 @@ For completeness, the things I considered and rejected:
 Most of what's in the shipping list above isn't optional for us — each piece is load-bearing for the mission, and the reasoning matters:
 
 - **Keeping the plan on disk, not in the agent's head,** is what lets execution survive context loss, which is what makes a one-shot run from a quality spec possible at all. A skills-library approach can't hit that target.
-- **Studios** exist because the mission is structured work across domains, not software specifically. Collapsing to a flat, software-shaped library would make the software case simpler and the other twenty cases impossible.
+- **Studios** exist because the mission is structured work across domains, not software specifically. Collapsing to a flat, software-shaped library would make the software case simpler and the other twenty-three cases impossible.
 - **Deterministic backpressure** exists because LLM-only quality gates are fragile. Where the toolchain can settle a question, it should. The human shows up where judgment is needed, not where a linter would do.
 - **Visual review and browse** exist because work needs to be reviewable — and *browsable* — by humans who aren't running Claude Code. A terminal can't reach the stakeholder gating a spec or the teammate catching up on in-flight work.
 - **User-to-user handoffs and composite intents** exist because real work crosses disciplines and departments. A product launch isn't one developer's workflow — it's marketing, engineering, and legal moving together. A harness that assumes one operator at one terminal can't support that.
@@ -199,7 +198,7 @@ Everything in that list serves one goal: make the spec good enough to execute on
 
 Superpowers is an excellent version of what H·AI·K·U used to be. Jesse built it with unusual craft, and if you want the clearest public example of how to do the skills-library approach well, that's the one. I recommend it, honestly.
 
-We're aiming somewhere different. Not disciplined assisted execution with checkpoints throughout — disciplined *spec* production, so that execution *can* run dark, with the user dialing in how dark based on the work. The on-disk plan, the twenty-one studios, the parallel adversarial review, the deterministic backpressure, the visual review, the browse portfolio, the MCP-native distribution, the simplicity principle — none of that is decoration. It all serves one idea: make the agent dumb, make the machine smart, make the spec right, and execution is whatever level of formality you want it to be.
+We're aiming somewhere different. Not disciplined assisted execution with checkpoints throughout — disciplined *spec* production, so that execution *can* run dark, with the user dialing in how dark based on the work. The on-disk plan, the twenty-four studios, the parallel adversarial review, the deterministic backpressure, the visual review, the browse portfolio, the MCP-native distribution, the simplicity principle — none of that is decoration. It all serves one idea: make the agent dumb, make the machine smart, make the spec right, and execution is whatever level of formality you want it to be.
 
 Two projects. Same observation about raw agents. Different definitions of *reliable*. Different products as a result.
 
