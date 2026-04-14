@@ -8,6 +8,8 @@ inputs:
   - knowledge/DISCOVERY.md
   - knowledge/ARCHITECTURE.md
   - stages/inception/units/unit-04-prototype-runtime-map-sync.md
+outputs:
+  - stages/development/artifacts/unit-04-implementation-notes.md
 ---
 
 # unit-04-implement-prototype-runtime-map-sync
