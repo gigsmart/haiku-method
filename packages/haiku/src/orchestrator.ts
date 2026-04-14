@@ -2290,13 +2290,27 @@ function buildRunInstructions(
 							"When you have questions for the user, you MUST use the correct tool:\n\n" +
 							"| Question type | Tool | Example |\n" +
 							"|---|---|---|\n" +
-							`| Scope decisions, tradeoffs, A/B/C choices | \`AskUserQuestion\` | "Should we support X or Y?" |\n` +
+							`| Scope decisions, tradeoffs, A/B/C choices | \`AskUserQuestion\` with options[] | "Should we support X or Y?" |\n` +
 							"| Specs, comparisons, detailed options (markdown) | `ask_user_visual_question` MCP tool | Domain model review, architecture options |\n" +
+							"| Visual artifacts, wireframes, designs | `ask_user_visual_question` with image_paths | Side-by-side design comparison |\n" +
 							"| Design direction with previews | `pick_design_direction` MCP tool | Wireframe variants |\n" +
-							`| Simple open-ended clarification | Conversation text | "Tell me more about the use case" |\n\n` +
+							`| Simple open-ended clarification (no known options) | Conversation text | "Tell me more about the use case" |\n\n` +
+							"### ALWAYS provide pre-selected options\n\n" +
+							"When using `AskUserQuestion`, you MUST provide an `options` array with concrete choices the user can pick from. " +
+							"You already know the domain — translate your knowledge into selectable options instead of forcing the user to type freeform answers. " +
+							"Include an \"Other (let me specify)\" option when the list may not be exhaustive.\n\n" +
+							"**Good:** `AskUserQuestion({ question: \"Which auth strategy?\", options: [\"OAuth 2.0 + PKCE\", \"Magic link (passwordless)\", \"SSO via SAML\", \"Other (let me specify)\"] })`\n" +
+							"**Bad:** Typing \"Which auth strategy should we use? We could do OAuth, magic links, or SSO...\" as plain text.\n\n" +
+							"### One question per tool call — break up compound questions\n\n" +
+							"If you have multiple independent questions (e.g., auth strategy AND database choice AND caching layer), " +
+							"do NOT combine them into a single long message. Instead:\n" +
+							"- Use **separate `AskUserQuestion` calls** for each independent decision, OR\n" +
+							"- Use **one `ask_user_visual_question` call** with multiple entries in the `questions[]` array (each with its own options) when the decisions are related and benefit from being seen together\n\n" +
+							"Never dump multiple questions as numbered plain-text paragraphs.\n\n" +
 							`**Violation:** Outputting numbered questions, option lists, or "A) ... B) ... C) ..." as conversation text. ` +
-							"If you catch yourself typing options inline, STOP and use `AskUserQuestion` instead.\n\n"
-						: "Mode: **autonomous** — elaborate independently.\n\n"
+							"If you catch yourself typing options inline, STOP and use `AskUserQuestion` with an `options` array instead.\n\n"
+						: "Mode: **autonomous** — elaborate independently. When you DO need user input (blockers, ambiguity), " +
+							"use `AskUserQuestion` with pre-selected `options[]` — never plain-text option lists.\n\n"
 				}**Elaboration produces the PLAN, not the deliverables:**\n1. Research the problem space and write discovery artifacts to \`knowledge/\`\n2. Define units with scope, completion criteria, and dependencies — NOT the actual work product\n   - A unit spec says WHAT will be produced and HOW to verify it\n   - The execution phase produces the actual deliverables\n   - Do NOT write full specs, schemas, or implementations during elaboration\n3. Write unit files to \`.haiku/intents/${slug}/stages/${stage}/units/\`\n4. Call \`haiku_run_next { intent: "${slug}" }\` — the orchestrator validates and opens the review gate\n\n**Unit file naming convention (REQUIRED):**\nFiles MUST be named \`unit-NN-slug.md\` where:\n- \`NN\` is a zero-padded sequence number (01, 02, 03...)\n- \`slug\` is a kebab-case descriptor (e.g., \`user-auth\`, \`data-model\`)\n- Example: \`unit-01-data-model.md\`, \`unit-02-api-endpoints.md\`\n\nFiles that don't match this pattern will not appear in the review UI and will block advancement.`,
 			)
 
@@ -2454,7 +2468,7 @@ function buildRunInstructions(
 					action.action === "start_unit"
 						? `- Instruction to call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\` first\n`
 						: ""
-				}\n**Subagent calls one of these when done:**\n- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\` — auto-advances to the next hat, or auto-completes if this was the last hat\n- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\` — moves back one hat, increments bolt\n\n**After subagent returns:** The \`advance_hat\` result contains the next FSM action — spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately — advance_hat handles FSM progression internally.\n\n**Output tracking:** When your hat produces artifacts (files, designs, specs, code), record them in the unit's frontmatter \`outputs:\` field as paths relative to the intent directory:\n\`\`\`yaml\noutputs:\n  - stages/design/artifacts/landing-page.html\n  - stages/development/artifacts/api-schema.graphql\n\`\`\`\nThe FSM validates that declared outputs exist before allowing hat advancement.\n\n**If outputs from a previous stage are missing, incomplete, or incorrect:** call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage for corrections.\n\n**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` — do NOT open files in a browser and ask via text. The visual question tool provides a structured review experience.`,
+				}\n**Subagent calls one of these when done:**\n- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\` — auto-advances to the next hat, or auto-completes if this was the last hat\n- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\` — moves back one hat, increments bolt\n\n**After subagent returns:** The \`advance_hat\` result contains the next FSM action — spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately — advance_hat handles FSM progression internally.\n\n**Output tracking:** When your hat produces artifacts (files, designs, specs, code), record them in the unit's frontmatter \`outputs:\` field as paths relative to the intent directory:\n\`\`\`yaml\noutputs:\n  - stages/design/artifacts/landing-page.html\n  - stages/development/artifacts/api-schema.graphql\n\`\`\`\nThe FSM validates that declared outputs exist before allowing hat advancement.\n\n**If outputs from a previous stage are missing, incomplete, or incorrect:** call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage for corrections.\n\n**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` — do NOT open files in a browser and ask via text. The visual question tool provides a structured review experience.\n\n**User questions (MANDATORY):** When the subagent needs user input:\n- Use \`AskUserQuestion\` with an \`options[]\` array for every decision that has known alternatives — NEVER output option lists as plain text\n- Use \`ask_user_visual_question\` when questions involve visual artifacts, rich markdown context, or multiple related decisions (use the \`questions[]\` array)\n- Break independent questions into separate tool calls — do NOT bundle unrelated decisions into one message\n- Always pre-populate options from your domain knowledge; include "Other (let me specify)" when the list may not be exhaustive`,
 			)
 
 			// Check for ticketing provider — move ticket to "In Progress"
@@ -2534,7 +2548,7 @@ function buildRunInstructions(
 					})
 					.join(
 						"\n",
-					)}\n\n**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` — do NOT open files in a browser and ask via text.\n\nAfter all subagents return: check the last subagent's \`advance_hat\` result — it contains the next FSM action (next wave, phase advance, etc.). Act on it directly. Do NOT call haiku_run_next separately.`,
+					)}\n\n**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` — do NOT open files in a browser and ask via text.\n\n**User questions (MANDATORY):** When a subagent needs user input:\n- Use \`AskUserQuestion\` with an \`options[]\` array for every decision that has known alternatives — NEVER output option lists as plain text\n- Use \`ask_user_visual_question\` when questions involve visual artifacts, rich markdown context, or multiple related decisions (use the \`questions[]\` array)\n- Break independent questions into separate tool calls — do NOT bundle unrelated decisions into one message\n- Always pre-populate options from your domain knowledge; include "Other (let me specify)" when the list may not be exhaustive\n\nAfter all subagents return: check the last subagent's \`advance_hat\` result — it contains the next FSM action (next wave, phase advance, etc.). Act on it directly. Do NOT call haiku_run_next separately.`,
 			)
 			break
 		}

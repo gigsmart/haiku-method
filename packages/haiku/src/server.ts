@@ -200,7 +200,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 			description:
 				"Ask the user one or more questions via a rich HTML page in the browser. " +
 				"Renders questions with selectable options (radio or checkbox) and an optional 'Other' field. " +
-				"The user's answers are pushed back as a channel event.",
+				"ALWAYS provide concrete options[] for each question — never leave the user to type freeform when you know the alternatives. " +
+				"Use this instead of AskUserQuestion when: (1) questions involve visual artifacts or image_paths, " +
+				"(2) you need rich markdown context above the questions, or (3) you have multiple related questions " +
+				"that benefit from being presented together (each as a separate entry in the questions[] array). " +
+				"For unrelated questions, make separate tool calls instead of bundling them.",
 			inputSchema: {
 				type: "object" as const,
 				properties: {
