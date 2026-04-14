@@ -7,6 +7,11 @@ inputs:
   - knowledge/DISCOVERY.md
   - knowledge/ARCHITECTURE.md
   - stages/inception/units/unit-01-archived-flag-and-filter-helper.md
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-14T21:41:10Z'
+hat_started_at: '2026-04-14T21:41:10Z'
 ---
 
 # unit-01-implement-archived-flag-and-filter
