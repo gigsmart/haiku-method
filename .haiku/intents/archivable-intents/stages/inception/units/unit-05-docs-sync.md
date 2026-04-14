@@ -50,12 +50,24 @@ Target: `website/content/docs/cli-reference.md`
 
 ## Success Criteria
 
-- [ ] `website/content/docs/cli-reference.md` contains a `### \`/haiku:archive\`` section following the file's existing skill-entry pattern, placed after the `/haiku:dashboard` block.
+Inception-scoped elaboration deliverables (checked by elaborator on completion):
+
+- [x] Single edit target pinned (`website/content/docs/cli-reference.md`) with zero ambiguity — no open-ended doc audit required by the builder.
+- [x] Exact insertion point pinned (after line 124, i.e. end of `/haiku:dashboard` block) so the builder skips re-discovery.
+- [x] Three concrete insertions enumerated with house-format references (`/haiku:dashboard` L121-123 and `/haiku:backlog` L115-119 as neighbor templates).
+- [x] Out-of-scope files enumerated with justification (`concepts.md` covered by wildcard glob; `getting-started.md` / `quick-start.md` / `migration.md` are curated shortlists; all other docs are narrative-only; paper and prototype out-of-scope).
+- [x] Build-verification success criterion retained with justification (Next.js build validates content tree even though runtime rendering is dynamic).
+- [x] Cross-unit dependency stated (builder must read unit-02 tool signatures and unit-03 skill frontmatter before writing `**Arguments:**` lines — no invented names).
+- [x] Elaboration-notes artifact captures scope decisions at `stages/inception/artifacts/unit-05-elaboration-notes.md`.
+
+## Forward-Looking Dev-Stage Acceptance (reference only; checked during the development stage)
+
+- [ ] `website/content/docs/cli-reference.md` contains a `### \`/haiku:archive\`` section following the house skill-entry pattern, placed after the `/haiku:dashboard` block.
 - [ ] Same file contains a `### \`/haiku:unarchive\`` section immediately after the archive section.
 - [ ] Same file contains a `## Managing Intents` subsection (≤5 sentences) that explains the archive/restore flow end-to-end in plain prose — what, how to trigger, what users see in list/dashboard output, how to restore.
-- [ ] Both skill entries use the house format: heading, 1-3 line description, `**Arguments:**` line matching existing sibling entries (compare `/haiku:dashboard`, `/haiku:backlog`).
+- [ ] Both skill entries use the house format: heading, 1-3 line description, `**Arguments:**` line matching existing sibling entries.
 - [ ] No other files in `website/content/docs/` are modified.
-- [ ] `cd website && npm run build` succeeds without errors or broken-link warnings. (Build verification is kept as a guard — even though docs render at runtime from markdown, the Next.js build still validates the content tree and catches frontmatter/link regressions.)
+- [ ] `cd website && npm run build` succeeds without errors or broken-link warnings.
 
 ## Notes
 
