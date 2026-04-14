@@ -1,6 +1,5 @@
 ---
 title: Hash fragment routing for review page on static site
-type: research
 status: completed
 quality_gates:
   - >-

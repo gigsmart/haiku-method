@@ -1,6 +1,5 @@
 ---
 title: Deployment validation and operational readiness
-type: ops
 status: completed
 quality_gates:
   - Website build succeeds with /review/ page in static output

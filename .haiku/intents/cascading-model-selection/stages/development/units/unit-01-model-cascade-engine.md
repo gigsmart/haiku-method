@@ -1,5 +1,4 @@
 ---
-type: backend
 depends_on: []
 discipline: backend
 model: sonnet

@@ -1,6 +1,5 @@
 ---
 title: Website — Stepped review UI component migration
-type: frontend
 status: completed
 depends_on:
   - unit-03-website-review-shell

@@ -1,12 +1,14 @@
 ---
 name: unit-05-execute-skill-updates
-type: backend
 status: completed
-depends_on: [unit-01-pass-definitions, unit-02-hat-augmentation, unit-03-pass-context-injection]
+depends_on:
+  - unit-01-pass-definitions
+  - unit-02-hat-augmentation
+  - unit-03-pass-context-injection
 bolt: 0
-hat: ""
-started_at: 2026-04-01T12:32:14Z
-completed_at: 2026-04-01T12:32:14Z
+hat: ''
+started_at: 2026-04-01T12:32:14.000Z
+completed_at: 2026-04-01T12:32:14.000Z
 ---
 
 

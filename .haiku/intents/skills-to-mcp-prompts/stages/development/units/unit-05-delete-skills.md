@@ -1,6 +1,5 @@
 ---
 name: unit-05-delete-skills
-type: backend
 status: completed
 depends_on:
   - unit-02-core-prompts

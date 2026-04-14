@@ -1,6 +1,5 @@
 ---
 title: Review UI document-view wireframes
-type: design
 status: completed
 quality_gates:
   - Document-view layout with ToC sidebar and prose content area
@@ -8,7 +7,9 @@ quality_gates:
   - Question page and direction picker variants wireframed
   - Inline margin comments shown as amber left-border annotations
   - Approve/Request Changes sticky footer bar
-  - Color-coded session type accents (review=teal, question=amber, direction=indigo)
+  - >-
+    Color-coded session type accents (review=teal, question=amber,
+    direction=indigo)
   - Mobile responsive layout (sidebar collapses to top bar)
 ---
 

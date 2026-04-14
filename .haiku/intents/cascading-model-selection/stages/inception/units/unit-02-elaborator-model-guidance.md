@@ -1,5 +1,4 @@
 ---
-type: research
 depends_on: []
 discipline: documentation
 model: sonnet

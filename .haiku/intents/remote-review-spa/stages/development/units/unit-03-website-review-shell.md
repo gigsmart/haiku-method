@@ -1,6 +1,5 @@
 ---
 title: Website — Review page shell with hash fragment routing
-type: frontend
 status: completed
 depends_on: []
 quality_gates:

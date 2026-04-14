@@ -1,6 +1,5 @@
 ---
 title: Threat model and security review
-type: security
 status: completed
 quality_gates:
   - 'Threat model documents attack surface (tunnel, JWT, CORS, file serving)'

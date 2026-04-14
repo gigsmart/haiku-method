@@ -1,17 +1,20 @@
 ---
 title: Website — Component migration from review-app
-type: content
 status: pending
 depends_on:
   - unit-03-website-review-page
 quality_gates:
   - All 20 review-app components ported to website/app/components/review/
-  - ReviewPage, QuestionPage, DesignPicker render correctly with remote session data
+  - >-
+    ReviewPage, QuestionPage, DesignPicker render correctly with remote session
+    data
   - AnnotationCanvas and InlineComments preserve full annotation functionality
   - ThemeToggle replaced with website's next-themes system
   - MermaidDiagram uses website's bundled mermaid (not CDN script injection)
   - Sentry uses @sentry/nextjs instead of @sentry/react
-  - All binary file URLs (mockups, wireframes, artifacts) use absolute tunnel URLs via /files/:sessionId/*path
+  - >-
+    All binary file URLs (mockups, wireframes, artifacts) use absolute tunnel
+    URLs via /files/:sessionId/*path
   - types.ts shared between review components
   - use client directives on all interactive components
 ---

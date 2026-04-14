@@ -1,12 +1,19 @@
 ---
-title: "Quick Mode Workflows + Intelligent Routing"
+title: Quick Mode Workflows + Intelligent Routing
 studio: software
-stages: [inception, design, product, development, operations, security]
+stages:
+  - inception
+  - design
+  - product
+  - development
+  - operations
+  - security
 mode: continuous
 active_stage: security
 status: completed
-started_at: 2026-03-30T23:13:58Z
-completed_at: 2026-03-31T07:15:57Z
+started_at: 2026-03-30T23:13:58.000Z
+completed_at: 2026-03-31T07:15:57.000Z
+created_at: '2026-04-14T22:17:30.379Z'
 ---
 
 

@@ -1,12 +1,12 @@
 ---
 name: unit-02-elaboration-ops
-type: backend
 status: completed
-depends_on: [unit-01-stack-schema]
+depends_on:
+  - unit-01-stack-schema
 bolt: 0
-hat: ""
-started_at: 2026-03-28T06:26:09Z
-completed_at: 2026-03-28T06:26:09Z
+hat: ''
+started_at: 2026-03-28T06:26:09.000Z
+completed_at: 2026-03-28T06:26:09.000Z
 ---
 
 

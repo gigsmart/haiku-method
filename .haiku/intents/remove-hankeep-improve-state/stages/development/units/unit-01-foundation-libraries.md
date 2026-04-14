@@ -1,10 +1,9 @@
 ---
 name: unit-01-foundation-libraries
-type: backend
 status: pending
 depends_on: []
 bolt: 0
-hat: ""
+hat: ''
 started_at: null
 completed_at: null
 ---

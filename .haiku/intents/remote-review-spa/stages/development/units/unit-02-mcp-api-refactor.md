@@ -1,6 +1,5 @@
 ---
 title: MCP — CORS + consolidated file route
-type: backend
 status: completed
 depends_on: []
 quality_gates:

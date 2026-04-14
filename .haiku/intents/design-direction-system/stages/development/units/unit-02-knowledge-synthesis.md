@@ -1,12 +1,12 @@
 ---
 name: unit-02-knowledge-synthesis
-type: backend
 status: completed
-depends_on: [unit-01-knowledge-infrastructure]
+depends_on:
+  - unit-01-knowledge-infrastructure
 bolt: 0
-hat: ""
-started_at: 2026-04-01T13:11:26Z
-completed_at: 2026-04-01T13:11:26Z
+hat: ''
+started_at: 2026-04-01T13:11:26.000Z
+completed_at: 2026-04-01T13:11:26.000Z
 ---
 
 

@@ -1,5 +1,4 @@
 ---
-type: frontend
 depends_on:
   - unit-01-model-cascade-engine
 discipline: frontend

@@ -1,6 +1,5 @@
 ---
 title: Behavioral spec — user flows and error scenarios
-type: product
 status: completed
 quality_gates:
   - >-

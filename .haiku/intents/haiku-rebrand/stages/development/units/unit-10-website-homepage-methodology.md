@@ -1,12 +1,12 @@
 ---
 name: unit-10-website-homepage-methodology
-type: frontend
 status: completed
-depends_on: [unit-09-deploy-config]
+depends_on:
+  - unit-09-deploy-config
 bolt: 0
-hat: ""
-started_at: 2026-04-03T02:20:53Z
-completed_at: 2026-04-03T02:20:53Z
+hat: ''
+started_at: 2026-04-03T02:20:53.000Z
+completed_at: 2026-04-03T02:20:53.000Z
 ---
 
 

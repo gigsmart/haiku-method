@@ -1,12 +1,11 @@
 ---
 name: unit-04-designer-hat-integration
-type: backend
 status: completed
 depends_on: []
 bolt: 0
-hat: ""
-started_at: 2026-04-01T20:08:11Z
-completed_at: 2026-04-01T20:08:11Z
+hat: ''
+started_at: 2026-04-01T20:08:11.000Z
+completed_at: 2026-04-01T20:08:11.000Z
 ---
 
 
