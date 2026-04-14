@@ -47,16 +47,27 @@ description: Bidirectional comms provider — notifications out, signals in
 
 ## Sync: Gate Resolution via Comms
 
-For `await` gates, the comms provider can serve as the event signal:
+For `await` and `external` gates, the comms provider can serve as a signal source:
 
 ```
 1. Stage completes → post "Waiting for {event}" to channel
 2. User replies "customer responded" or reacts with ✅
-3. Next session: Claude checks the thread, sees confirmation
-4. Advances the gate
+3. Next session: agent checks the thread via Slack/Teams/Discord MCP tools
+4. Agent confirms approval → calls haiku_run_next { intent, gate_signal: "approved" }
+5. Gate advances
 ```
 
 This turns the comms channel into a lightweight event bus for human-mediated events.
+
+### MCP-Based Signal Detection
+
+When the orchestrator's CLI-based check can't detect approval (no `gh`/`glab` installed, non-git review platform, or `await` gate with no URL), the agent is instructed to check via available MCP tools. For comms providers:
+
+- **Slack MCP** (`mcp__slack__*`) — search the configured channel for replies or reactions to the gate notification thread
+- **Teams MCP** (`mcp__teams__*`) — check for replies or approvals in the relevant channel/chat
+- **Discord MCP** (`mcp__discord__*`) — check for reactions or replies in the notification channel
+
+The agent uses whatever MCP tools are available in the user's environment. If the comms MCP confirms the event occurred, the agent calls `haiku_run_next { intent, gate_signal: "approved" }` to advance the gate without requiring CLI tools or URL pattern matching.
 
 ## Provider Config
 

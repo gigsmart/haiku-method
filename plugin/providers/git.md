@@ -37,7 +37,7 @@ On session start, check git state:
 | Provider Concept | H·AI·K·U Concept | Translation |
 |---|---|---|
 | Intent branch | Intent | `haiku/{slug}/main` maps to the active intent |
-| Pull Request / Merge Request | Delivery gate | PR state maps to external review outcome |
+| Pull Request / Merge Request | Delivery gate / external review signal | PR review decision (APPROVED) or merge state (MERGED) maps to external gate resolution |
 | PR review comments | Review feedback | Surface as context for review agents |
 | Merge conflict | Blocker | Flag intent as needing conflict resolution |
 | Remote ahead/behind | Sync state | Behind = pull needed; ahead = push needed |
@@ -71,6 +71,31 @@ When `auto_pr` is enabled:
 - Unit worktree branches (`haiku/{slug}/{unit}`) — strictly local
 - Temporary state files — only committed state goes to remote
 - In-progress unit work — only merged results via the intent branch
+
+## External Gate Signal Detection
+
+For stages with `external` review gates, the orchestrator checks PR/MR approval using two tiers:
+
+### Tier 1: CLI-Based (Automatic)
+
+The orchestrator synchronously probes the stored `external_review_url`:
+
+- **GitHub** — `gh pr view <url> --json state,reviewDecision` → advances on `MERGED` or `reviewDecision === "APPROVED"`
+- **GitLab** — `glab mr view <url> --output json` → advances on `merged` state or `approved === true`
+
+This runs automatically on every `/haiku:pickup`. If the CLI tool isn't installed or the URL format isn't recognized, Tier 1 returns false and Tier 2 activates.
+
+### Tier 2: Agent-Directed MCP (Fallback)
+
+When Tier 1 can't detect approval, the orchestrator instructs the agent to check using available MCP tools:
+
+- **GitHub MCP** (`mcp__github__pull_request_read`) — check `reviewDecision` field on the PR
+- **GitLab MCP** (`mcp__gitlab__*`) — check MR approval state
+- **Any other MCP** with access to the review platform
+
+If the agent confirms approval via MCP, it calls `haiku_run_next { intent, gate_signal: "approved" }` to advance the gate.
+
+This two-tier approach means external gates work whether the user has CLI tools installed, MCP servers configured, or both.
 
 ## Non-Git Environments
 

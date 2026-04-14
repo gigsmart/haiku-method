@@ -95,13 +95,34 @@ The order in the list communicates primary intent (first = preferred path) but d
 
 ### How External Signals Are Detected
 
-When a stage is blocked on `external` or `await`, the orchestrator stores the review URL in `external_review_url` within the stage state. On each `/haiku:pickup` invocation, the orchestrator calls `checkExternalApproval(url)`:
+Signal detection for `external` and `await` gates uses a two-tier approach:
 
-- **GitHub PRs** — checks merge state via `gh pr view <url> --json state`. Advances on `MERGED`.
-- **GitLab MRs** — checks state via `glab mr view <url> --output json`. Advances on `merged`.
-- **Other URLs** — cannot auto-detect; you must manually advance via `/haiku:revisit` to re-enter the gate, or set state directly.
+#### Tier 1: CLI-Based (Automatic)
 
-If no URL was recorded, the orchestrator asks the agent to obtain one. This is why the agent prompts you for the review URL after submitting work externally.
+When a stage is blocked, the orchestrator stores the review URL in `external_review_url` within the stage state. On each `/haiku:pickup`, the orchestrator synchronously probes this URL via CLI tools:
+
+- **GitHub PRs** — `gh pr view <url> --json state,reviewDecision`. Advances on `MERGED` or `reviewDecision === "APPROVED"` (reviews passed, even if not yet merged).
+- **GitLab MRs** — `glab mr view <url> --output json`. Advances on `merged` state or `approved === true`.
+
+This is fast and automatic but requires the CLI tool to be installed and only works with URL-based review platforms.
+
+#### Tier 2: Agent-Directed MCP (Fallback)
+
+When Tier 1 can't detect approval (CLI not installed, unknown URL format, non-git review platform, or `await` gate with no URL), the orchestrator instructs the agent to check using whatever MCP servers are available in your environment:
+
+- **GitHub MCP** — `mcp__github__pull_request_read` to check PR review decisions
+- **GitLab MCP** — `mcp__gitlab__*` tools to check MR approval state
+- **Slack MCP** — `mcp__slack__*` tools to check for approval messages or reactions in a channel thread
+- **Jira/Linear MCP** — `mcp__jira__*` or `mcp__linear__*` to check ticket status transitions
+- **Any other configured MCP** with authenticated access to the signal source
+
+If the agent confirms approval via MCP, it calls `haiku_run_next { intent, gate_signal: "approved" }` to advance the gate. This works regardless of whether CLI tools are installed.
+
+#### No Signal Source Available
+
+If neither tier can check the signal (no CLI, no relevant MCP server, no URL), the agent asks you for the status. You can also:
+- Provide the review URL via `haiku_stage_set` so Tier 1 can check on the next pickup
+- Run `/haiku:revisit` to re-enter the gate and change your decision
 
 ### Gate Protocol
 
