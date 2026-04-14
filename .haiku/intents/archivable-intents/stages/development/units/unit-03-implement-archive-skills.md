@@ -8,6 +8,11 @@ inputs:
   - knowledge/DISCOVERY.md
   - knowledge/ARCHITECTURE.md
   - stages/inception/units/unit-03-archive-skills.md
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-14T22:07:51Z'
+hat_started_at: '2026-04-14T22:07:51Z'
 ---
 
 # unit-03-implement-archive-skills
