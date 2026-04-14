@@ -1,6 +1,5 @@
 ---
 name: unit-01-transcript-format-mapping
-type: research
 depends_on: []
 inputs:
   - intent.md

@@ -1,6 +1,5 @@
 ---
 title: Unit elaboration and dependency mapping
-type: research
 status: completed
 quality_gates:
   - 4 implementation units defined with verifiable completion criteria

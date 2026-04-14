@@ -1,12 +1,12 @@
 ---
 name: unit-03-direction-picker-mcp
-type: backend
 status: completed
-depends_on: [unit-01-knowledge-infrastructure]
+depends_on:
+  - unit-01-knowledge-infrastructure
 bolt: 0
-hat: ""
-started_at: 2026-04-01T13:12:22Z
-completed_at: 2026-04-01T13:12:22Z
+hat: ''
+started_at: 2026-04-01T13:12:22.000Z
+completed_at: 2026-04-01T13:12:22.000Z
 ---
 
 

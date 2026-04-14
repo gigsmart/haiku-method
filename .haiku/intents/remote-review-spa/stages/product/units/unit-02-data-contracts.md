@@ -1,6 +1,5 @@
 ---
 title: Data contracts — API schemas and WebSocket protocol
-type: product
 status: completed
 quality_gates:
   - >-

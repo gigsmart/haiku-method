@@ -1,12 +1,13 @@
 ---
 name: unit-08-persistence-abstraction
-type: backend
 status: completed
-depends_on: [unit-04-studio-infrastructure, unit-06-stage-orchestrator]
+depends_on:
+  - unit-04-studio-infrastructure
+  - unit-06-stage-orchestrator
 bolt: 0
-hat: ""
-started_at: 2026-04-03T02:51:27Z
-completed_at: 2026-04-03T02:51:27Z
+hat: ''
+started_at: 2026-04-03T02:51:27.000Z
+completed_at: 2026-04-03T02:51:27.000Z
 ---
 
 

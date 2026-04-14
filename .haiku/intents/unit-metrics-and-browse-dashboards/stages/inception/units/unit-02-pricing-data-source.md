@@ -1,6 +1,5 @@
 ---
 name: unit-02-pricing-data-source
-type: research
 model: haiku
 depends_on: []
 inputs:

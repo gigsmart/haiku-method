@@ -1,6 +1,5 @@
 ---
 title: MCP — Localtunnel + JWT token generation
-type: backend
 status: completed
 depends_on: []
 quality_gates:

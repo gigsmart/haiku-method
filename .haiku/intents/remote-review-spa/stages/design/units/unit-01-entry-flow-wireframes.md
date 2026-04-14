@@ -1,9 +1,10 @@
 ---
 title: Entry flow and error state wireframes
-type: design
 status: completed
 quality_gates:
-  - Split panel layout wireframes for all connection states (loading, connected, error, expired, reconnecting)
+  - >-
+    Split panel layout wireframes for all connection states (loading, connected,
+    error, expired, reconnecting)
   - Left sidebar shows connection status indicators and session metadata
   - Right panel shows review content or error messaging
   - Dark mode styling using website's stone/teal design tokens

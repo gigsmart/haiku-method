@@ -1,12 +1,13 @@
 ---
 name: unit-06-stage-orchestrator
-type: backend
 status: completed
-depends_on: [unit-04-studio-infrastructure, unit-05-stage-definitions]
+depends_on:
+  - unit-04-studio-infrastructure
+  - unit-05-stage-definitions
 bolt: 0
-hat: ""
-started_at: 2026-04-03T02:19:56Z
-completed_at: 2026-04-03T02:19:56Z
+hat: ''
+started_at: 2026-04-03T02:19:56.000Z
+completed_at: 2026-04-03T02:19:56.000Z
 ---
 
 

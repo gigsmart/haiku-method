@@ -1,6 +1,5 @@
 ---
-title: "MCP Apps protocol and ext-apps SDK research"
-type: research
+title: MCP Apps protocol and ext-apps SDK research
 depends_on: []
 ---
 

@@ -1,10 +1,10 @@
 ---
 name: unit-04-reflection-phase
-type: backend
 status: completed
-depends_on: [unit-03-operation-phase]
+depends_on:
+  - unit-03-operation-phase
 bolt: 0
-hat: ""
+hat: ''
 started_at: null
 completed_at: null
 ---

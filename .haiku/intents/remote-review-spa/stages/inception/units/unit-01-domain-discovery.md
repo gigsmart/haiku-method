@@ -1,9 +1,10 @@
 ---
 title: Domain discovery and technical landscape
-type: research
 status: completed
 quality_gates:
-  - Discovery document maps current SPA architecture (components, transport, session model)
+  - >-
+    Discovery document maps current SPA architecture (components, transport,
+    session model)
   - Target architecture documented with domain model diagram
   - Key technical decisions recorded with rationale
   - Risks identified and assessed

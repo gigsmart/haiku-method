@@ -1,12 +1,13 @@
 ---
 title: Website — Review page shell with hash fragment routing
-type: content
 status: pending
 depends_on: []
 quality_gates:
   - /app/review/page.tsx exists as a static page with "use client" component
   - Hash fragment parsed on mount to extract JWT token
-  - JWT decoded client-side (no verification) to extract tunnel URL, session ID, type
+  - >-
+    JWT decoded client-side (no verification) to extract tunnel URL, session ID,
+    type
   - useSession hook adapted to accept remote base URL from decoded JWT
   - Expired/malformed token shows user-friendly error state
   - WebSocket connection established to tunnel URL for real-time transport

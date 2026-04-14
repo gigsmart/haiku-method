@@ -1,6 +1,5 @@
 ---
 name: unit-04-dashboard-architecture
-type: research
 model: sonnet
 depends_on: []
 inputs:

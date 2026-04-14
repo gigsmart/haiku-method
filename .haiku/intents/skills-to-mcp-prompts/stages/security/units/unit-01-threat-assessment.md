@@ -1,6 +1,5 @@
 ---
 name: unit-01-threat-assessment
-type: security
 status: completed
 depends_on: []
 bolt: 1

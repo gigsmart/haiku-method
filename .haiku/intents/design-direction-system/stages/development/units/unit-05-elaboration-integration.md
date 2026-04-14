@@ -1,12 +1,14 @@
 ---
 name: unit-05-elaboration-integration
-type: backend
 status: completed
-depends_on: [unit-02-knowledge-synthesis, unit-03-direction-picker-mcp, unit-04-archetype-library]
+depends_on:
+  - unit-02-knowledge-synthesis
+  - unit-03-direction-picker-mcp
+  - unit-04-archetype-library
 bolt: 0
-hat: ""
-started_at: 2026-04-01T13:34:23Z
-completed_at: 2026-04-01T13:34:23Z
+hat: ''
+started_at: 2026-04-01T13:34:23.000Z
+completed_at: 2026-04-01T13:34:23.000Z
 ---
 
 

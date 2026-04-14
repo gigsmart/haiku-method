@@ -1,6 +1,5 @@
 ---
-title: "Review SPA bundling strategy for MCP Apps"
-type: research
+title: Review SPA bundling strategy for MCP Apps
 depends_on:
   - unit-02-mcp-apps-protocol
 ---

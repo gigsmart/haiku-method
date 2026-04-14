@@ -1,6 +1,5 @@
 ---
 name: unit-03-bolt-to-transcript-correlation
-type: research
 model: opus
 depends_on:
   - unit-01-transcript-format-mapping

@@ -1,6 +1,5 @@
 ---
-title: "Cowork environment detection research"
-type: research
+title: Cowork environment detection research
 depends_on: []
 ---
 
