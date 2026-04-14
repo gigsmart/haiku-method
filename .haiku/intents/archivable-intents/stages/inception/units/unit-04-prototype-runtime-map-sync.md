@@ -10,29 +10,61 @@ inputs:
 # unit-04-prototype-runtime-map-sync
 
 ## Description
-Update the interactive runtime-architecture prototype at `website/public/prototype-stage-flow.html` so it reflects the new archive tools. Per `.claude/rules/architecture-prototype-sync.md`, any new MCP tool must be registered in the `TOOL_SPECS` registry and referenced from the Orchestrator actor modal's tool list. Also update `haiku_run_next` payload documentation in the prototype to note the new archived-intent refusal path.
+Update the interactive runtime-architecture prototype at `website/public/prototype-stage-flow.html` so it reflects the new archive tools introduced in unit-02 (`haiku_intent_archive`, `haiku_intent_unarchive`) and the archived-intent refusal path on `haiku_run_next`. Per `.claude/rules/architecture-prototype-sync.md`, any new MCP tool **MUST** be registered in `TOOL_SPECS` and referenced from the Orchestrator actor modal's tool list.
+
+All line numbers below refer to `website/public/prototype-stage-flow.html` at HEAD of the unit branch.
 
 ## Discipline
-website - HTML/JS edits in `website/public/prototype-stage-flow.html`.
+website — HTML/JS edits in `website/public/prototype-stage-flow.html` only. No sidecar rebuild.
+
+## Model
+sonnet — known pattern (extend `TOOL_SPECS` + modal notes string), multiple coordinated edits, no architectural decisions. Template entry and insertion points are fully pinned below.
 
 ## Scope
 
-**In scope:**
-- Register `haiku_intent_archive` in the prototype's `TOOL_SPECS` registry with its input, output, and state-write spec.
-- Register `haiku_intent_unarchive` similarly.
-- Add both tools to the Orchestrator actor modal's tool list (grouped under the appropriate category — likely "state tools" alongside `haiku_intent_reset`).
-- Update the `haiku_run_next` entry (if relevant) so readers see the archived-intent refusal as one of its possible error paths.
+**In scope — exact edits:**
+
+1. **`TOOL_SPECS` registry — lines 4585 – 4709.**
+   - Add `haiku_intent_archive` entry immediately after `haiku_intent_reset` (which closes at line **4646**) — i.e. new content inserted starting at the line that was 4647. Keeps all `haiku_intent_*` tools grouped.
+   - Add `haiku_intent_unarchive` entry directly after the new `haiku_intent_archive` entry.
+   - Clone the **shape** of `haiku_intent_reset` (lines 4631 – 4646) but:
+     - Input is only `{ intent: "string · the intent slug" }` — **DROP the `confirm` guard**; archive/unarchive is reversible.
+     - Output is `{ ok: "boolean", archived: "boolean · new flag value" }` (unarchive mirrors with the new value).
+     - `writes` is a single entry: `{ path: ".haiku/intents/{slug}/intent.md", change: "frontmatter: \`archived: true\`" }` (unarchive: `false`).
+   - Source of truth for the actual tool surface: unit-02 builder output in `packages/haiku/src/state-tools.ts`. If it disagrees with the above, the orchestrator code wins (per sync rule ground-truth clause) — match the code.
+
+2. **`haiku_run_next` amendment — lines 4605 – 4615.**
+   - Amend the existing `haiku_run_next` entry in `TOOL_SPECS` (do NOT add a new `payloadFor` map key — there is no UI chip to attach it to, so a new key would be unreachable).
+   - Update the `description` string (line ~4606) to note: `haiku_run_next` refuses to advance when the intent has `archived: true` in frontmatter, and returns a hint to call `haiku_intent_unarchive` first.
+   - Update the `writes` section (lines ~4613 – 4615) with an explicit line noting the archived-refusal path performs no state mutation.
+   - No `payloadFor` map key is added. No new map entries in the 3627 – 3900+ range.
+
+3. **Orchestrator actor modal — line 4025.**
+   - Edit the `ACTORS.orchestrator.notes` multi-line string (starts line 4008, tool list around **4025**).
+   - Add `haiku_intent_archive` and `haiku_intent_unarchive` to the `**FSM drivers** (orchestrator.ts):` bullet group, alongside `haiku_intent_reset`. They are lifecycle mutations and belong with the FSM drivers, NOT state tools.
+
+4. **Tool count bump — line 4011.**
+   - Change `exposes 27 haiku_* tools` → `exposes 29 haiku_* tools`. Exact text delta: `27` → `29`.
 
 **Out of scope:**
-- Changes to studio content (no new stages, hats, or review agents), so `node website/_build-prototype-content.mjs` does not need to run.
-- Docs in `website/content/docs/` (unit-05).
+- `node website/_build-prototype-content.mjs` — **DO NOT run.** Studio/stage/hat/review-agent/discovery/output template content is unchanged. Sidecar rebuild is not triggered by tool-spec additions.
+- New `payloadFor` map keys.
+- Website docs in `website/content/docs/` — owned by unit-05.
+- Plugin/paper edits — owned by unit-02 (done) and unit-05.
 
 ## Success Criteria
-- [ ] `TOOL_SPECS` in `website/public/prototype-stage-flow.html` contains entries for `haiku_intent_archive` and `haiku_intent_unarchive` with accurate input/output/writes fields.
-- [ ] The Orchestrator actor modal lists both new tools in the tool catalog, visible when the modal is opened in the live prototype.
-- [ ] Running `cd website && npm run dev` and opening `http://localhost:3000/prototype-stage-flow.html` shows the two new tools without console errors.
-- [ ] No regressions in other prototype interactions (tooltips, click modals, hover pairing still work).
+- [ ] `TOOL_SPECS` in `website/public/prototype-stage-flow.html` contains a `haiku_intent_archive` entry immediately after `haiku_intent_reset`, with `input: { intent }`, output shape, and a single `writes` entry touching `intent.md` frontmatter. **No `confirm` guard.**
+- [ ] `TOOL_SPECS` contains a `haiku_intent_unarchive` entry directly after `haiku_intent_archive`, same shape, `writes` toggles `archived: false`.
+- [ ] `haiku_run_next` entry in `TOOL_SPECS` (originally lines 4605 – 4615) has its `description` and `writes` amended to document the archived-intent refusal path and the `haiku_intent_unarchive` hint. No new `payloadFor` map key was added.
+- [ ] `ACTORS.orchestrator.notes` (line ~4025) lists both new tools under `**FSM drivers**` alongside `haiku_intent_reset`.
+- [ ] Tool count line 4011 reads `exposes 29 haiku_* tools` (was `27`).
+- [ ] `grep -c "haiku_intent_archive" website/public/prototype-stage-flow.html` returns at least `2` (TOOL_SPECS entry + modal notes). Same for `haiku_intent_unarchive`.
+- [ ] `cd website && npm run dev`, open `http://localhost:3000/prototype-stage-flow.html`: page renders without console errors; Orchestrator actor modal opens and shows both new tools under FSM drivers; clicking an existing `haiku_run_next` pill opens a modal with the amended description.
+- [ ] Spot-check: existing tool modals (`haiku_intent_create`, `haiku_unit_advance_hat`) still render — no regression from the edit.
+- [ ] `node website/_build-prototype-content.mjs` was NOT run as part of this unit (verified by no changes in the generated content sidecar files).
 
 ## Notes
-- The prototype is canonical per the sync rule — if the registry and the actual orchestrator code diverge later, the orchestrator is right and the prototype gets fixed.
-- There is no need to regenerate the prototype content sidecar (`_build-prototype-content.mjs`) because this change touches tool registration, not studio/stage/hat content.
+- Research notes at `.haiku/intents/archivable-intents/stages/inception/units/unit-04-prototype-runtime-map-sync/research-notes.md` contain the full template entry, grouping rationale, and verification steps.
+- The prototype is canonical per `.claude/rules/architecture-prototype-sync.md` — if the registry and the orchestrator code diverge, the orchestrator wins and the prototype gets fixed.
+- Archive is reversible, so unlike `haiku_intent_reset` neither new tool should carry a `confirm: boolean` guard field.
+- This is a website-only unit. Zero plugin code changes.
