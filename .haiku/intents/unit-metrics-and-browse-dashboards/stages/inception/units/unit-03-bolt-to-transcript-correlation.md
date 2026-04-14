@@ -9,9 +9,11 @@ inputs:
   - knowledge/TRANSCRIPT_FORMAT.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-14T21:53:22Z'
-hat_started_at: '2026-04-14T21:53:22Z'
+hat_started_at: '2026-04-14T21:57:50Z'
+outputs:
+  - knowledge/CORRELATION_STRATEGY.md
 ---
 
 # Research: How to correlate a bolt's execution window to transcript entries
