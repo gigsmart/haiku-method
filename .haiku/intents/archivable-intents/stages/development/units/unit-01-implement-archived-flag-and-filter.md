@@ -7,6 +7,8 @@ inputs:
   - knowledge/DISCOVERY.md
   - knowledge/ARCHITECTURE.md
   - stages/inception/units/unit-01-archived-flag-and-filter-helper.md
+outputs:
+  - stages/development/artifacts/unit-01-implementation-notes.md
 ---
 
 # unit-01-implement-archived-flag-and-filter

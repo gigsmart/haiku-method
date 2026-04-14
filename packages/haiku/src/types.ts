@@ -10,6 +10,7 @@ export interface IntentFrontmatter {
 	mode: string
 	active_stage: string
 	status: string
+	archived?: boolean
 	started_at?: string
 	completed_at?: string | null
 	// Legacy fields
