@@ -7,13 +7,14 @@ inputs:
   - intent.md
   - knowledge/DISCOVERY.md
   - stages/inception/units/unit-01-cowork-env-probe.md
-status: active
+status: completed
 bolt: 1
 hat: elaborator
 started_at: '2026-04-14T22:09:29Z'
 hat_started_at: '2026-04-14T22:10:58Z'
 outputs:
   - knowledge/unit-02-cowork-timeout-research.md
+completed_at: '2026-04-14T22:12:20Z'
 ---
 
 # Cowork tool-call timeout spike and blocking decision
