@@ -9,9 +9,11 @@ inputs:
   - stages/inception/units/unit-03-ui-resource-registration.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-14T22:15:58Z'
-hat_started_at: '2026-04-14T22:15:58Z'
+hat_started_at: '2026-04-14T22:17:58Z'
+outputs:
+  - knowledge/unit-04-host-bridge-research.md
 ---
 
 # Review SPA host bridge for MCP Apps runtime
