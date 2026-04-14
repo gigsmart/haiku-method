@@ -244,7 +244,11 @@ async function withE2E(
 	// Null-body statuses (204/205/304) cannot legally carry a body per the
 	// fetch spec, and constructing `new Response(body, { status: 204 })` throws
 	// "Invalid response status code 204" in modern Node. Skip encryption.
-	if (response.status === 204 || response.status === 205 || response.status === 304)
+	if (
+		response.status === 204 ||
+		response.status === 205 ||
+		response.status === 304
+	)
 		return response
 
 	const originalContentType =
