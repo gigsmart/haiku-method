@@ -7,9 +7,9 @@ inputs:
   - knowledge/DISCOVERY.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-14T20:18:31Z'
-hat_started_at: '2026-04-14T20:18:31Z'
+hat_started_at: '2026-04-14T20:21:17Z'
 ---
 
 # unit-01-archived-flag-and-filter-helper
