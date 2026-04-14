@@ -1,10 +1,16 @@
 ---
 name: unit-05-docs-sync
 type: website
-depends_on: ["unit-03-archive-skills"]
+depends_on:
+  - unit-03-archive-skills
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-14T20:53:01Z'
+hat_started_at: '2026-04-14T20:53:01Z'
 ---
 
 # unit-05-docs-sync
