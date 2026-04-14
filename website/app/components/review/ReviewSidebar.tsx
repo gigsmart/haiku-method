@@ -6,7 +6,8 @@ import type { SessionData } from "./hooks/useReviewSession"
 interface ReviewSidebarProps {
   sessionType: string
   accentColor: string
-  isConnected: boolean
+  // `null` = not yet checked (suppresses reconnecting indicator on first render)
+  isConnected: boolean | null
   session: SessionData
   onSubmitDecision: (
     decision: "approved" | "changes_requested",
@@ -160,7 +161,9 @@ export function ReviewSidebar({
         <div className="mt-auto">
           <div
             className="h-2 w-2 rounded-full"
-            style={{ backgroundColor: isConnected ? accentColor : "#dc2626" }}
+            style={{
+              backgroundColor: isConnected === false ? "#dc2626" : accentColor,
+            }}
           />
         </div>
       </aside>
@@ -193,10 +196,12 @@ export function ReviewSidebar({
 
       <div className="mb-5 flex items-center gap-1.5 text-xs text-stone-600">
         <div
-          className={`h-1.5 w-1.5 rounded-full ${!isConnected ? "animate-pulse" : ""}`}
-          style={{ backgroundColor: isConnected ? accentColor : "#fbbf24" }}
+          className={`h-1.5 w-1.5 rounded-full ${isConnected === false ? "animate-pulse" : ""}`}
+          style={{
+            backgroundColor: isConnected === false ? "#fbbf24" : accentColor,
+          }}
         />
-        {isConnected ? "Connected" : "Reconnecting..."}
+        {isConnected === false ? "Reconnecting..." : "Connected"}
       </div>
 
       {steps.length > 0 && (

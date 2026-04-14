@@ -1,6 +1,6 @@
 {
   "name": "haiku",
-  "version": "1.101.5",
+  "version": "1.101.6",
   "description": "H·AI·K·U methodology — universal lifecycle orchestration with hat-based workflows, completion criteria, and automatic context preservation.",
   "author": {
     "name": "GigSmart",

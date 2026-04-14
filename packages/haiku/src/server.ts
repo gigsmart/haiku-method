@@ -36,10 +36,12 @@ import {
 	reportFeedback,
 } from "./sentry.js"
 import {
+	clearHeartbeat,
 	createDesignDirectionSession,
 	createQuestionSession,
 	createSession,
 	getSession,
+	hasPresenceLost,
 	waitForSession,
 } from "./sessions.js"
 import type {
@@ -859,32 +861,41 @@ setOpenReviewHandler(
 		openBrowser()
 
 		// Retry loop: wait → check → reopen if needed → wait again
-		for (let attempt = 0; attempt < 3; attempt++) {
-			try {
-				await waitForSession(session.session_id, 10 * 60 * 1000) // 10 min per attempt
-			} catch {
-				// Timeout — check if session is still pending (user might still be looking)
-				const check = getSession(session.session_id)
+		attempts: for (let attempt = 0; attempt < 3; attempt++) {
+			// Inner loop: handle heartbeat-driven wakeups without burning an attempt
+			while (true) {
+				let timedOut = false
+				try {
+					await waitForSession(session.session_id, 10 * 60 * 1000) // 10 min per attempt
+				} catch {
+					timedOut = true
+				}
+
+				const updated = getSession(session.session_id)
 				if (
-					check &&
-					check.session_type === "review" &&
-					check.status === "decided"
+					updated &&
+					updated.session_type === "review" &&
+					updated.status === "decided"
 				) {
+					clearHeartbeat(session.session_id)
 					if (useRemote) {
 						clearE2EKey(session.session_id)
 						closeTunnel()
 					}
 					return {
-						decision: check.decision,
-						feedback: check.feedback,
-						annotations: check.annotations,
+						decision: updated.decision,
+						feedback: updated.feedback,
+						annotations: updated.annotations,
 					}
 				}
-				// Still pending — try reopening the browser
-				if (attempt < 2) {
+
+				if (hasPresenceLost(session.session_id)) {
+					// Heartbeat gap detected — user closed the tab. Reopen without
+					// consuming a retry attempt; the user may have just refreshed.
 					console.error(
-						`[haiku] Review session timeout (attempt ${attempt + 1}/3) — reopening browser`,
+						`[haiku] Review session ${session.session_id} lost presence — reopening browser`,
 					)
+					clearHeartbeat(session.session_id)
 					if (useRemote) {
 						const tunnelUrl = await openTunnel(port)
 						const newUrl = buildReviewUrl(
@@ -898,26 +909,33 @@ setOpenReviewHandler(
 					}
 					continue
 				}
-			}
 
-			const updated = getSession(session.session_id)
-			if (
-				updated &&
-				updated.session_type === "review" &&
-				updated.status === "decided"
-			) {
-				if (useRemote) {
-					clearE2EKey(session.session_id)
-					closeTunnel()
+				if (timedOut) {
+					if (attempt < 2) {
+						console.error(
+							`[haiku] Review session timeout (attempt ${attempt + 1}/3) — reopening browser`,
+						)
+						if (useRemote) {
+							const tunnelUrl = await openTunnel(port)
+							const newUrl = buildReviewUrl(
+								session.session_id,
+								tunnelUrl,
+								reviewType,
+							)
+							openBrowser(newUrl)
+						} else {
+							openBrowser()
+						}
+						continue attempts
+					}
+					break attempts
 				}
-				return {
-					decision: updated.decision,
-					feedback: updated.feedback,
-					annotations: updated.annotations,
-				}
+
+				// Spurious wakeup — loop and wait again.
 			}
 		}
 
+		clearHeartbeat(session.session_id)
 		if (useRemote) {
 			clearE2EKey(session.session_id)
 			closeTunnel()
