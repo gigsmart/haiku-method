@@ -12,6 +12,12 @@ bolt: 1
 hat: researcher
 started_at: '2026-04-14T22:09:29Z'
 hat_started_at: '2026-04-14T22:09:29Z'
+outputs:
+  - >-
+    ../../worktrees/cowork-mcp-apps-integration/unit-02-cowork-timeout-spike/.haiku/intents/cowork-mcp-apps-integration/knowledge/unit-02-cowork-timeout-research.md
+  - knowledge/unit-02-cowork-timeout-research.md
+  - >-
+    ../../worktrees/cowork-mcp-apps-integration/unit-03-ui-resource-registration/.haiku/intents/cowork-mcp-apps-integration/knowledge/unit-03-resource-registration-research.md
 ---
 
 # Cowork tool-call timeout spike and blocking decision

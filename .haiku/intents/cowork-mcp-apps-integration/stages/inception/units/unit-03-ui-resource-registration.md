@@ -9,9 +9,9 @@ inputs:
   - stages/inception/units/unit-01-cowork-env-probe.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-14T22:09:36Z'
-hat_started_at: '2026-04-14T22:09:36Z'
+hat_started_at: '2026-04-14T22:10:51Z'
 ---
 
 # ui:// resource registration and REVIEW_APP_HTML delivery
