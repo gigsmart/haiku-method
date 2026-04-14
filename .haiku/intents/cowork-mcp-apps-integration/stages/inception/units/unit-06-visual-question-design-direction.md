@@ -1,5 +1,5 @@
 ---
-title: "Extend MCP Apps path to ask_user_visual_question and pick_design_direction"
+title: Extend MCP Apps path to ask_user_visual_question and pick_design_direction
 type: feature
 depends_on:
   - unit-05-cowork-open-review-handler
@@ -8,6 +8,11 @@ inputs:
   - knowledge/DISCOVERY.md
   - stages/inception/units/unit-04-spa-host-bridge.md
   - stages/inception/units/unit-05-cowork-open-review-handler.md
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-14T22:26:55Z'
+hat_started_at: '2026-04-14T22:26:55Z'
 ---
 
 # Extend MCP Apps path to ask_user_visual_question and pick_design_direction
