@@ -1,9 +1,16 @@
 ---
-title: "Add archivable intents to H·AI·K·U. Users need a way to soft-hide completed,…"
-studio: ""
+title: 'Add archivable intents to H·AI·K·U. Users need a way to soft-hide completed,…'
+studio: software
 mode: continuous
 status: active
-created_at: 2026-04-14T19:18:23Z
+created_at: '2026-04-14'
+stages:
+  - inception
+  - design
+  - product
+  - development
+  - operations
+  - security
 ---
 
 # Add archivable intents to H·AI·K·U. Users need a way to soft-hide completed,…
