@@ -207,11 +207,41 @@ test("returns error for archived intent", () => {
 
 console.log("\n=== runNext: intent review gate ===")
 
-test("elaborate-to-execute gate uses intent_review context for unreviewed intent", () => {
+test("elaborate-to-execute gate auto-advances for unreviewed intent with auto review", () => {
   const { projDir, slug, intentDirPath } = createProject("intent-review-elab", {
     intent_reviewed: false,
     active_stage: "plan",
     stageConfig: { plan: { elaboration: "directed" } },
+  })
+  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
+  createUnit(intentDirPath, "plan", "unit-01-first")
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // review: auto → auto-advance, intent_review case returns intent_approved
+  assert.strictEqual(result.action, "intent_approved")
+  assert.strictEqual(result.to_phase, "execute")
+})
+
+test("elaborate-to-execute gate auto-advances for reviewed intent with auto review", () => {
+  const { projDir, slug, intentDirPath } = createProject("intent-reviewed-elab", {
+    intent_reviewed: true,
+    active_stage: "plan",
+    stageConfig: { plan: { elaboration: "directed" } },
+  })
+  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
+  createUnit(intentDirPath, "plan", "unit-01-first")
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // review: auto → auto-advance, already-reviewed returns advance_phase
+  assert.strictEqual(result.action, "advance_phase")
+  assert.strictEqual(result.to_phase, "execute")
+})
+
+test("elaborate-to-execute gate opens review UI for ask-review stages (intent_review)", () => {
+  const { projDir, slug, intentDirPath } = createProject("intent-review-ask", {
+    intent_reviewed: false,
+    active_stage: "plan",
+    stageConfig: { plan: { elaboration: "directed", review: "ask" } },
   })
   createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
   createUnit(intentDirPath, "plan", "unit-01-first")
@@ -223,11 +253,11 @@ test("elaborate-to-execute gate uses intent_review context for unreviewed intent
   assert.strictEqual(result.next_phase, "execute")
 })
 
-test("elaborate-to-execute gate uses normal context for reviewed intent", () => {
-  const { projDir, slug, intentDirPath } = createProject("intent-reviewed-elab", {
+test("elaborate-to-execute gate opens review UI for ask-review stages (normal)", () => {
+  const { projDir, slug, intentDirPath } = createProject("intent-reviewed-ask", {
     intent_reviewed: true,
     active_stage: "plan",
-    stageConfig: { plan: { elaboration: "directed" } },
+    stageConfig: { plan: { elaboration: "directed", review: "ask" } },
   })
   createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
   createUnit(intentDirPath, "plan", "unit-01-first")
