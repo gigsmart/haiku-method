@@ -8,6 +8,11 @@ inputs:
   - knowledge/DISCOVERY.md
   - knowledge/ARCHITECTURE.md
   - stages/inception/units/unit-02-archive-tools-and-fsm-refusal.md
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-14T21:51:33Z'
+hat_started_at: '2026-04-14T21:51:33Z'
 ---
 
 # unit-02-implement-archive-tools-and-fsm-refusal
