@@ -20,6 +20,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { Readable } from "node:stream"
 import { pipeline } from "node:stream/promises"
+import type { ReadableStream as NodeReadableStream } from "node:stream/web"
 import { autoUpdate } from "./config.js"
 import { reportError } from "./sentry.js"
 import { MCP_VERSION } from "./version.js"
@@ -111,7 +112,7 @@ async function downloadBinary(url: string, version: string): Promise<string> {
 		if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`)
 
 		const ws = createWriteStream(dest)
-		await pipeline(Readable.fromWeb(res.body as ReadableStream), ws)
+		await pipeline(Readable.fromWeb(res.body as NodeReadableStream), ws)
 		chmodSync(dest, 0o755)
 		return dest
 	} catch (err) {
@@ -199,7 +200,7 @@ async function downloadAndExtractFromZip(
 		if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`)
 
 		const ws = createWriteStream(zipPath)
-		await pipeline(Readable.fromWeb(res.body as ReadableStream), ws)
+		await pipeline(Readable.fromWeb(res.body as NodeReadableStream), ws)
 
 		// Extract just the binary using unzip
 		const result = spawn(
