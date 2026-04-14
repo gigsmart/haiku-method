@@ -5,6 +5,8 @@ depends_on: []
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
+outputs:
+  - stages/inception/units/unit-07-get-review-status-doc-scrub.knowledge/inventory.md
 ---
 
 # Scrub stale get_review_status references from docs
