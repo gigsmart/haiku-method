@@ -6,7 +6,7 @@ depends_on:
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
-status: active
+status: completed
 bolt: 1
 hat: elaborator
 started_at: '2026-04-14T20:40:38Z'
@@ -14,6 +14,7 @@ hat_started_at: '2026-04-14T20:41:30Z'
 outputs:
   - stages/inception/artifacts/unit-03-elaboration-notes.md
   - knowledge/unit-03-implementation-acceptance.md
+completed_at: '2026-04-14T20:51:01Z'
 ---
 
 # unit-03-archive-skills
