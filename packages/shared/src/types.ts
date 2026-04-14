@@ -10,6 +10,8 @@ export interface HaikuIntent {
   stagesComplete: number;
   stagesTotal: number;
   status: string;
+  /** Whether the intent has been archived (hidden from default listings) */
+  archived?: boolean;
   createdAt: string | null;
   startedAt: string | null;
   completedAt: string | null;
