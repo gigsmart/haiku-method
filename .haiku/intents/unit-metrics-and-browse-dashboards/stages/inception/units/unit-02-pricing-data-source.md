@@ -5,6 +5,11 @@ depends_on: []
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-14T21:41:20Z'
+hat_started_at: '2026-04-14T21:41:20Z'
 ---
 
 # Research: Source of truth for per-model USD pricing
