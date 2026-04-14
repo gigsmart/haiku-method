@@ -6,14 +6,16 @@ depends_on: []
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
-  - stages/inception/units/unit-07-get-review-status-doc-scrub.knowledge/inventory.md
+  - >-
+    stages/inception/units/unit-07-get-review-status-doc-scrub.knowledge/inventory.md
 outputs:
   - knowledge/unit-07-scoping-decisions.md
-status: active
+status: completed
 bolt: 1
 hat: elaborator
 started_at: '2026-04-14T21:47:49Z'
 hat_started_at: '2026-04-14T21:51:56Z'
+completed_at: '2026-04-14T21:57:14Z'
 ---
 
 # Scrub stale get_review_status references from docs
