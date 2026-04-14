@@ -3,11 +3,6 @@ name: Deploy Website
 on:
   push:
     branches: [main]
-    paths:
-      - "website/**"
-      - "plugin/studios/**"
-      - "deploy/**"
-      - ".github/workflows/deploy-website.yml"
   workflow_dispatch:
 
 env:
