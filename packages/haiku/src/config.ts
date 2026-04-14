@@ -50,7 +50,11 @@ export const autoUpdate = {
 
 /** Observability configuration. */
 export const observability = {
-	sentryDsn: str("HAIKU_SENTRY_DSN_MCP", ""),
+	// Read via literal dot-notation so esbuild's --define can inline the baked-in
+	// DSN at build time. Using str("HAIKU_SENTRY_DSN_MCP", "") here would route
+	// through process.env[name] (dynamic access), which --define cannot rewrite,
+	// leaving shipped binaries with an empty DSN.
+	sentryDsn: process.env.HAIKU_SENTRY_DSN_MCP ?? "",
 	otlpEndpoint: str(
 		"OTEL_EXPORTER_OTLP_ENDPOINT",
 		"http://localhost:4317",
