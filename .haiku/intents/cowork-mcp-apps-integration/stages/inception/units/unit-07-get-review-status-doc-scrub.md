@@ -1,10 +1,15 @@
 ---
-title: "Scrub stale get_review_status references from docs"
+title: Scrub stale get_review_status references from docs
 type: cleanup
 depends_on: []
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-14T21:47:49Z'
+hat_started_at: '2026-04-14T21:47:49Z'
 ---
 
 # Scrub stale get_review_status references from docs
