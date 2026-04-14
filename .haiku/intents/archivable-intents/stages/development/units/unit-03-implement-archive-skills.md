@@ -8,6 +8,8 @@ inputs:
   - knowledge/DISCOVERY.md
   - knowledge/ARCHITECTURE.md
   - stages/inception/units/unit-03-archive-skills.md
+outputs:
+  - stages/development/artifacts/unit-03-implementation-notes.md
 status: active
 bolt: 1
 hat: reviewer
@@ -28,11 +30,11 @@ Implement the specification in `stages/inception/units/unit-03-archive-skills.md
 - Do NOT use `AskUserQuestion` or structured pickers — plain prose, matching `reset`/`pickup`.
 
 ## Success Criteria
-- [ ] `plugin/skills/archive/SKILL.md` exists with frontmatter containing exactly `name` and `description` fields and a body length of 5-15 lines structurally matching `plugin/skills/reset/SKILL.md`.
-- [ ] `plugin/skills/unarchive/SKILL.md` exists with the same shape and delegates to `haiku_intent_unarchive`.
-- [ ] Both skills auto-discover at runtime: `/haiku:archive <slug>` and `/haiku:unarchive <slug>` resolve through the plugin's skill loader without any manifest edits.
-- [ ] End-to-end: `/haiku:archive <slug>` triggers `haiku_intent_archive` and the target intent's frontmatter gains `archived: true`. `/haiku:unarchive <slug>` reverses it.
-- [ ] No embedded behavioral logic — diff the skill bodies against `plugin/skills/reset/SKILL.md` and confirm structural parity (same numbered-step shape, same delegation pattern).
+- [x] `plugin/skills/archive/SKILL.md` exists with frontmatter containing exactly `name` and `description` fields and a body length of 5-15 lines structurally matching `plugin/skills/reset/SKILL.md`.
+- [x] `plugin/skills/unarchive/SKILL.md` exists with the same shape and delegates to `haiku_intent_unarchive`.
+- [x] Both skills auto-discover at runtime: `/haiku:archive <slug>` and `/haiku:unarchive <slug>` resolve through the plugin's skill loader without any manifest edits.
+- [x] End-to-end: `/haiku:archive <slug>` triggers `haiku_intent_archive` and the target intent's frontmatter gains `archived: true`. `/haiku:unarchive <slug>` reverses it.
+- [x] No embedded behavioral logic — diff the skill bodies against `plugin/skills/reset/SKILL.md` and confirm structural parity (same numbered-step shape, same delegation pattern).
 
 ## Notes
 Depends on unit-02 — both tools must exist before these skills are usable. The inception spec and the implementation-acceptance checklist in `knowledge/unit-03-implementation-acceptance.md` together are authoritative. Do not invent tool names or argument shapes; read unit-02's handler code to confirm before writing the skill body.

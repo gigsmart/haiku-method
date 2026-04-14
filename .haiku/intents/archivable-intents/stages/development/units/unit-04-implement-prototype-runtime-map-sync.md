@@ -8,11 +8,14 @@ inputs:
   - knowledge/DISCOVERY.md
   - knowledge/ARCHITECTURE.md
   - stages/inception/units/unit-04-prototype-runtime-map-sync.md
-status: active
+outputs:
+  - stages/development/artifacts/unit-04-implementation-notes.md
+status: completed
 bolt: 1
 hat: reviewer
 started_at: '2026-04-14T22:07:53Z'
 hat_started_at: '2026-04-14T22:09:55Z'
+completed_at: '2026-04-14T22:11:10Z'
 ---
 
 # unit-04-implement-prototype-runtime-map-sync
@@ -30,14 +33,14 @@ Implement the specification in `stages/inception/units/unit-04-prototype-runtime
 - Do NOT edit docs (unit-05).
 
 ## Success Criteria
-- [ ] `TOOL_SPECS` in `website/public/prototype-stage-flow.html` contains a `haiku_intent_archive` entry immediately after `haiku_intent_reset`, with `input: { intent }`, output shape, and a single `writes` entry touching `intent.md` frontmatter. No `confirm` guard.
-- [ ] `TOOL_SPECS` contains a `haiku_intent_unarchive` entry directly after `haiku_intent_archive`, same shape, `writes` toggles `archived: false`.
-- [ ] `haiku_run_next` entry in `TOOL_SPECS` has its `description` and `writes` amended to document the archived-intent refusal path and the `haiku_intent_unarchive` hint. No new `payloadFor` map key was added.
-- [ ] `ACTORS.orchestrator.notes` lists both new tools under `**FSM drivers**` alongside `haiku_intent_reset`.
-- [ ] Tool-count line reads `exposes 29 haiku_* tools` (was `27`).
-- [ ] `grep -c "haiku_intent_archive" website/public/prototype-stage-flow.html` returns at least `2` (TOOL_SPECS entry + modal notes). Same for `haiku_intent_unarchive`.
-- [ ] `cd website && npm run dev`, open `http://localhost:3000/prototype-stage-flow.html`: page renders without console errors; Orchestrator actor modal shows both new tools under FSM drivers; existing tool modals (`haiku_intent_create`, `haiku_unit_advance_hat`) still render — no regression.
-- [ ] `node website/_build-prototype-content.mjs` was NOT run as part of this unit.
+- [x] `TOOL_SPECS` in `website/public/prototype-stage-flow.html` contains a `haiku_intent_archive` entry immediately after `haiku_intent_reset`, with `input: { intent }`, output shape, and a single `writes` entry touching `intent.md` frontmatter. No `confirm` guard.
+- [x] `TOOL_SPECS` contains a `haiku_intent_unarchive` entry directly after `haiku_intent_archive`, same shape, `writes` toggles `archived: false`.
+- [x] `haiku_run_next` entry in `TOOL_SPECS` has its `description` and `writes` amended to document the archived-intent refusal path and the `haiku_intent_unarchive` hint. No new `payloadFor` map key was added.
+- [x] `ACTORS.orchestrator.notes` lists both new tools under `**FSM drivers**` alongside `haiku_intent_reset`.
+- [x] Tool-count line reads `exposes 29 haiku_* tools` (was `27`).
+- [x] `grep -c "haiku_intent_archive" website/public/prototype-stage-flow.html` returns at least `2` (TOOL_SPECS entry + modal notes). Same for `haiku_intent_unarchive`.
+- [x] `cd website && npm run dev`, open `http://localhost:3000/prototype-stage-flow.html`: page renders without console errors; Orchestrator actor modal shows both new tools under FSM drivers; existing tool modals (`haiku_intent_create`, `haiku_unit_advance_hat`) still render — no regression.
+- [x] `node website/_build-prototype-content.mjs` was NOT run as part of this unit.
 
 ## Notes
 The inception spec pins every line: `TOOL_SPECS` at 4585-4709, `haiku_intent_reset` template at 4631-4646, `haiku_run_next` at 4605-4615, `ACTORS.orchestrator.notes` around 4025, tool-count at 4011. If the runtime-map diverges from the orchestrator code, the orchestrator wins — fix the prototype to match.
