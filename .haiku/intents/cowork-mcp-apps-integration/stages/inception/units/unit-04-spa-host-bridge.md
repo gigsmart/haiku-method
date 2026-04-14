@@ -1,5 +1,5 @@
 ---
-title: "Review SPA host bridge for MCP Apps runtime"
+title: Review SPA host bridge for MCP Apps runtime
 type: feature
 depends_on:
   - unit-03-ui-resource-registration
@@ -7,6 +7,11 @@ inputs:
   - intent.md
   - knowledge/DISCOVERY.md
   - stages/inception/units/unit-03-ui-resource-registration.md
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-14T22:15:58Z'
+hat_started_at: '2026-04-14T22:15:58Z'
 ---
 
 # Review SPA host bridge for MCP Apps runtime
