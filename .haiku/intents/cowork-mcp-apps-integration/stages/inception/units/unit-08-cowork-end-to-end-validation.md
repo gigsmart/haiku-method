@@ -14,7 +14,8 @@ bolt: 1
 hat: researcher
 started_at: '2026-04-14T22:58:14Z'
 hat_started_at: '2026-04-14T22:58:14Z'
-outputs: '["knowledge/unit-08-cowork-e2e-validation-research.md"]'
+outputs:
+  - knowledge/unit-08-cowork-e2e-validation-research.md
 ---
 
 # End-to-end Cowork validation: /haiku:start through gate approval
