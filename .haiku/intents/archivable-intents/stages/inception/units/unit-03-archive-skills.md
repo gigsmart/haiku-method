@@ -13,6 +13,7 @@ started_at: '2026-04-14T20:40:38Z'
 hat_started_at: '2026-04-14T20:41:30Z'
 outputs:
   - stages/inception/artifacts/unit-03-elaboration-notes.md
+  - knowledge/unit-03-implementation-acceptance.md
 ---
 
 # unit-03-archive-skills
@@ -50,15 +51,7 @@ Elaborator-verifiable (checked during elaboration):
 
 ## Implementation Acceptance Criteria
 
-These are verified by the implementer / reviewer hats in the development stage:
-
-- [ ] `plugin/skills/archive/SKILL.md` exists with frontmatter `name: archive` + one-line `description`, invokable as `/haiku:archive`, and its body delegates to `haiku_intent_archive { intent: "<slug>" }`.
-- [ ] `plugin/skills/unarchive/SKILL.md` exists with frontmatter `name: unarchive` + one-line `description`, invokable as `/haiku:unarchive`, and its body delegates to `haiku_intent_unarchive { intent: "<slug>" }`.
-- [ ] Each skill handles both the "slug provided" and "no slug — list and ask" paths using plain prose (no `AskUserQuestion`).
-- [ ] Unarchive skill's listing step references `haiku_intent_list { include_archived: true }` and filters to archived entries.
-- [ ] Both files are 5–15 lines of markdown total and structurally clone `plugin/skills/reset/SKILL.md`.
-- [ ] No changes to `plugin/.claude-plugin/plugin.json`, hooks, prompt handlers, or TypeScript files.
-- [ ] Both skills pass any plugin linting / skill-file validation.
+Verified by the implementer hat in the development stage. See `knowledge/unit-03-implementation-acceptance.md` for the full checklist.
 
 ## Notes
 - **Reference to clone:** `plugin/skills/reset/SKILL.md` — the closest structural match (slug → single tool call → follow returned instructions). Secondary reference: `plugin/skills/pickup/SKILL.md`.
