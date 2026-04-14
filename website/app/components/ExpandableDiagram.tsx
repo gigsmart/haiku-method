@@ -65,7 +65,7 @@ function FlowExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 	}, [expanded, close])
 
 	return (
-		<figure className="not-prose group relative my-8 rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-stone-800 dark:bg-stone-900/50">
+		<figure className="not-prose relative my-8 rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-stone-800 dark:bg-stone-900/50">
 			<button
 				ref={expandButtonRef}
 				type="button"
@@ -172,7 +172,7 @@ function LegacyExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 	}, [expanded, close])
 
 	return (
-		<figure className="not-prose group relative my-8 rounded-xl border border-stone-200 bg-stone-50 p-6 dark:border-stone-800 dark:bg-stone-900/50">
+		<figure className="not-prose relative my-8 rounded-xl border border-stone-200 bg-stone-50 p-6 dark:border-stone-800 dark:bg-stone-900/50">
 			<button
 				ref={expandButtonRef}
 				type="button"

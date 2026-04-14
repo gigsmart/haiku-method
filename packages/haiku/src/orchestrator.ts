@@ -2253,20 +2253,16 @@ function buildRunInstructions(
 				const artifacts = Array.from(discoveryFiles.keys()).map((f) =>
 					f.replace(/\.md$/i, "").toLowerCase(),
 				)
+				const artifactList = artifacts.map((a) => `\`${a}\``).join(", ")
+				const perArtifactBullets = artifacts
+					.map(
+						(a) =>
+							`- subagent for \`${a}\`: research the relevant axis for this artifact and write the populated document to the stage's discovery path. Use the template above as the structure.`,
+					)
+					.join("\n")
+				const plural = artifacts.length !== 1 ? "s" : ""
 				sections.push(
-					`## Discovery Fan-Out (REQUIRED)\n\n` +
-						`This stage produces ${artifacts.length} discovery artifact${
-							artifacts.length !== 1 ? "s" : ""
-						}: ${artifacts.map((a) => `\`${a}\``).join(", ")}.\n\n` +
-						`**Spawn one \`Task\` subagent per artifact** to do the research AND produce the populated file. Spawn ALL of them in a single response (parallel). Do NOT do per-artifact research in this parent context — synthesize the structured returns instead.\n\n` +
-						artifacts
-							.map(
-								(a) =>
-									`- subagent for \`${a}\`: research the relevant axis for this artifact and write the populated document to the stage's discovery path. Use the template above as the structure.`,
-							)
-							.join("\n") +
-						`\n\n` +
-						`Each subagent inherits worktree scoping via the \`subagent-context\` hook. When all subagents return, proceed to the unit-decomposition step using the produced artifacts as your inputs.`,
+					`## Discovery Fan-Out (REQUIRED)\n\nThis stage produces ${artifacts.length} discovery artifact${plural}: ${artifactList}.\n\n**Spawn one \`Task\` subagent per artifact** to do the research AND produce the populated file. Spawn ALL of them in a single response (parallel). Do NOT do per-artifact research in this parent context — synthesize the structured returns instead.\n\n${perArtifactBullets}\n\nEach subagent inherits worktree scoping via the \`subagent-context\` hook. When all subagents return, proceed to the unit-decomposition step using the produced artifacts as your inputs.`,
 				)
 			}
 
