@@ -6,11 +6,14 @@ depends_on:
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
-status: active
+status: completed
 bolt: 1
 hat: elaborator
 started_at: '2026-04-14T20:29:21Z'
 hat_started_at: '2026-04-14T20:31:15Z'
+outputs:
+  - stages/inception/artifacts/unit-02-elaboration-notes.md
+completed_at: '2026-04-14T20:37:39Z'
 ---
 
 # unit-02-archive-tools-and-fsm-refusal
@@ -35,11 +38,11 @@ backend - TypeScript changes in `packages/haiku/src/orchestrator.ts` and `packag
 - Prototype / docs / tests (units 04–06).
 
 ## Success Criteria
-- [ ] `haiku_intent_archive` and `haiku_intent_unarchive` are registered in the MCP tool spec array and appear in `haiku_version_info` / tool listings.
-- [ ] Calling `haiku_intent_archive { intent: "some-slug" }` sets `archived: true` in `.haiku/intents/some-slug/intent.md` and leaves every other frontmatter field (including `status`) unchanged — verified by reading the file before and after.
-- [ ] Calling `haiku_intent_unarchive { intent: "some-slug" }` clears the flag and restores normal behavior. The intent reappears in default `haiku_intent_list` output.
-- [ ] `haiku_run_next` on an archived intent returns an error payload containing the phrase "unarchive" in the message; it does not mutate any state.
-- [ ] `bun test` passes; manual end-to-end cycle (archive → list → run_next → unarchive → list → run_next) behaves as described.
+- [x] `haiku_intent_archive` and `haiku_intent_unarchive` are registered in the MCP tool spec array and appear in `haiku_version_info` / tool listings.
+- [x] Calling `haiku_intent_archive { intent: "some-slug" }` sets `archived: true` in `.haiku/intents/some-slug/intent.md` and leaves every other frontmatter field (including `status`) unchanged — verified by reading the file before and after.
+- [x] Calling `haiku_intent_unarchive { intent: "some-slug" }` clears the flag and restores normal behavior. The intent reappears in default `haiku_intent_list` output.
+- [x] `haiku_run_next` on an archived intent returns an error payload containing the phrase "unarchive" in the message; it does not mutate any state.
+- [x] `bun test` passes; manual end-to-end cycle (archive → list → run_next → unarchive → list → run_next) behaves as described.
 
 ## Notes
 - Reuse the existing `setFrontmatterField` helper in `state-tools.ts` for persistence.
