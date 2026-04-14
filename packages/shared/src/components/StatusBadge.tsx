@@ -11,20 +11,24 @@ const colors: Record<string, string> = {
 
 interface Props {
   label?: string;
-  status: string;
+  status?: string | null;
   className?: string;
 }
 
 export function StatusBadge({ label, status, className = "" }: Props) {
-  const normalized = status.toLowerCase().replace(/\s+/g, "_");
+  // Frontmatter fields like `status` / `discipline` / `stage` are optional
+  // on some units and intents, so this component MUST tolerate undefined
+  // without crashing the whole review render.
+  const raw = typeof status === "string" && status.trim() ? status : "unknown";
+  const normalized = raw.toLowerCase().replace(/\s+/g, "_");
   const colorClass = colors[normalized] ?? colors.pending;
 
   return (
     <span
       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${colorClass} ${className}`}
-      aria-label={label ? `${label}: ${status}` : status}
+      aria-label={label ? `${label}: ${raw}` : raw}
     >
-      {status.replace(/_/g, " ")}
+      {raw.replace(/_/g, " ")}
     </span>
   );
 }
