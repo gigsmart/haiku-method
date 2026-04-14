@@ -8,7 +8,7 @@ inputs:
   - knowledge/DISCOVERY.md
   - stages/inception/units/unit-07-get-review-status-doc-scrub.knowledge/inventory.md
 outputs:
-  - stages/inception/units/unit-07-get-review-status-doc-scrub.knowledge/inventory.md
+  - knowledge/unit-07-scoping-decisions.md
 ---
 
 # Scrub stale get_review_status references from docs
