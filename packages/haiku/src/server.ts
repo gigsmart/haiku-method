@@ -935,6 +935,7 @@ setOpenReviewHandler(
 			}
 		}
 
+		clearHeartbeat(session.session_id)
 		if (useRemote) {
 			clearE2EKey(session.session_id)
 			closeTunnel()

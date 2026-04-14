@@ -122,8 +122,8 @@ function ReviewContent({ config }: { config: TokenPayload }) {
         onSubmitDecision={submitDecision}
       />
       <main className="flex-1 overflow-auto p-10">
-        {!isConnected && <ReconnectingBanner />}
-        <div className={!isConnected ? "opacity-60 pointer-events-none" : ""}>
+        {isConnected === false && <ReconnectingBanner />}
+        <div className={isConnected === false ? "opacity-60 pointer-events-none" : ""}>
           <ReviewRouter
             session={session}
             baseUrl={config.tun}

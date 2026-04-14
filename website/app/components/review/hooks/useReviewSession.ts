@@ -97,12 +97,16 @@ interface ReviewAnnotations {
 }
 
 const HEARTBEAT_INTERVAL_MS = 10_000
+const HEARTBEAT_TIMEOUT_MS = 8_000
 
 export function useReviewSession(baseUrl: string, sessionId: string, e2eKey?: string | null) {
   const [session, setSession] = useState<SessionData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isConnected, setIsConnected] = useState(false)
+  // `null` = not yet checked, `true` = last heartbeat ok, `false` = last heartbeat failed.
+  // Null suppresses the "Reconnecting…" banner on first render while the initial
+  // beat() is in flight — it only shows once we've definitively seen a failure.
+  const [isConnected, setIsConnected] = useState<boolean | null>(null)
 
   // Fetch session data
   useEffect(() => {
@@ -147,6 +151,7 @@ export function useReviewSession(baseUrl: string, sessionId: string, e2eKey?: st
         const res = await fetch(`${baseUrl}/api/session/${sessionId}/heartbeat`, {
           method: "HEAD",
           headers: { "bypass-tunnel-reminder": "1" },
+          signal: AbortSignal.timeout(HEARTBEAT_TIMEOUT_MS),
         })
         if (!cancelled) setIsConnected(res.ok)
       } catch {

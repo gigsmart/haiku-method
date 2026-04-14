@@ -40,6 +40,7 @@ function sweepPresence(): void {
 		const session = sessions.get(id)
 		if (!session) {
 			lastHeartbeatAt.delete(id)
+			presenceLost.delete(id)
 			continue
 		}
 		// Only interesting while a handler is still blocking on the session
@@ -222,6 +223,7 @@ function evictSessions(): void {
 		if (now - ts > SESSION_TTL_MS) {
 			sessions.delete(id)
 			sessionCreatedAt.delete(id)
+			clearHeartbeat(id)
 		}
 	}
 	// If still over cap, evict oldest
@@ -230,6 +232,7 @@ function evictSessions(): void {
 		if (!oldest) break
 		sessions.delete(oldest[0])
 		sessionCreatedAt.delete(oldest[0])
+		clearHeartbeat(oldest[0])
 	}
 }
 

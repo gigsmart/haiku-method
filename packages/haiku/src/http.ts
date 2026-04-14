@@ -241,9 +241,11 @@ async function withE2E(
 ): Promise<Response> {
 	if (!sessionId || !isE2EActive(sessionId) || response.status >= 400)
 		return response
-	// Null-body statuses (204/205/304) cannot legally carry a body per the
-	// fetch spec, and constructing `new Response(body, { status: 204 })` throws
-	// "Invalid response status code 204" in modern Node. Skip encryption.
+	// Null-body responses (HEAD endpoints, 204/205/304) have no payload to
+	// encrypt, and constructing `new Response(body, { status: 204 })` throws
+	// "Invalid response status code 204" in modern Node. Skip encryption
+	// and the associated crypto + allocation cost on every call.
+	if (response.body === null) return response
 	if (
 		response.status === 204 ||
 		response.status === 205 ||
@@ -864,9 +866,11 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	const url = new URL(req.url)
 	const path = url.pathname
 
-	// CORS preflight (handled before E2E — preflight is plaintext)
+	// CORS preflight (handled before E2E — preflight is plaintext).
+	// The network-layer middleware (see `listenOnPort`) already applies
+	// `withCors` to every response, so returning a bare 204 here is enough.
 	if (req.method === "OPTIONS" && isRemoteReviewEnabled()) {
-		return withCors(new Response(null, { status: 204 }))
+		return new Response(null, { status: 204 })
 	}
 
 	// GET /files/:sessionId/*path — consolidated file serving

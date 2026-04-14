@@ -54,7 +54,17 @@ if (process.argv.includes("--open")) {
 
 const holdMs = Number(process.env.SMOKE_HOLD_MS ?? 600_000)
 console.error(`holding open for ${Math.round(holdMs / 1000)}s — curl or browse the URL`)
-setTimeout(() => {
-	closeTunnel()
+
+function shutdown(): void {
+	try {
+		closeTunnel()
+	} catch {
+		/* best-effort */
+	}
 	process.exit(0)
-}, holdMs)
+}
+
+process.on("SIGINT", shutdown)
+process.on("SIGTERM", shutdown)
+
+setTimeout(shutdown, holdMs)
