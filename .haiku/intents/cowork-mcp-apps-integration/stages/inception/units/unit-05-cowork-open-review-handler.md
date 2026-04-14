@@ -14,13 +14,14 @@ inputs:
   - stages/inception/units/unit-02-cowork-timeout-spike.md
   - stages/inception/units/unit-03-ui-resource-registration.md
   - stages/inception/units/unit-04-spa-host-bridge.md
-status: active
+status: completed
 bolt: 1
 hat: elaborator
 started_at: '2026-04-14T22:20:29Z'
 hat_started_at: '2026-04-14T22:24:13Z'
 outputs:
   - knowledge/unit-05-open-review-handler-research.md
+completed_at: '2026-04-14T22:25:55Z'
 ---
 
 # Cowork-mode _openReviewAndWait implementation
