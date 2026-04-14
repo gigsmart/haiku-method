@@ -8,9 +8,9 @@ inputs:
   - knowledge/DISCOVERY.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-14T20:53:01Z'
-hat_started_at: '2026-04-14T20:53:01Z'
+hat_started_at: '2026-04-14T20:55:23Z'
 ---
 
 # unit-05-docs-sync
