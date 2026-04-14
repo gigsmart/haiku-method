@@ -6,6 +6,8 @@ model: sonnet
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
+outputs:
+  - stages/inception/artifacts/unit-02-elaboration-notes.md
 ---
 
 # unit-02-archive-tools-and-fsm-refusal
