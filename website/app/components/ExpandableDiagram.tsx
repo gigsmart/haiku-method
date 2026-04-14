@@ -17,6 +17,7 @@ export function ExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 
 function FlowExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 	const [expanded, setExpanded] = useState(false)
+	const [modalHeight, setModalHeight] = useState(0)
 	const expandButtonRef = useRef<HTMLButtonElement>(null)
 	const closeButtonRef = useRef<HTMLButtonElement>(null)
 	const modalRef = useRef<HTMLDivElement>(null)
@@ -31,6 +32,7 @@ function FlowExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 		}
 		hasOpenedRef.current = true
 		document.body.style.overflow = "hidden"
+		setModalHeight(Math.round(window.innerHeight * 0.9) - 32)
 		closeButtonRef.current?.focus()
 
 		const onKey = (e: KeyboardEvent) => {
@@ -104,9 +106,9 @@ function FlowExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 					</button>
 					<div
 						onClick={(e) => e.stopPropagation()}
-						className="relative h-[min(90vh,900px)] w-[min(95vw,1400px)] overflow-hidden rounded-xl border border-stone-700 bg-stone-50 shadow-2xl dark:bg-stone-900"
+						className="relative h-[min(90vh,900px)] w-[min(95vw,1400px)] overflow-auto rounded-xl border border-stone-700 bg-stone-50 shadow-2xl dark:bg-stone-900"
 					>
-						<Mermaid chart={chart} height={Math.round(window.innerHeight * 0.9) - 32} />
+						<Mermaid chart={chart} height={modalHeight} />
 					</div>
 				</div>
 			) : null}
