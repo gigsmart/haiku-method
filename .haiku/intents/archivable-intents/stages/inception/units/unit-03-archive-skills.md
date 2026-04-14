@@ -8,9 +8,9 @@ inputs:
   - knowledge/DISCOVERY.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-14T20:40:38Z'
-hat_started_at: '2026-04-14T20:40:38Z'
+hat_started_at: '2026-04-14T20:41:30Z'
 ---
 
 # unit-03-archive-skills
