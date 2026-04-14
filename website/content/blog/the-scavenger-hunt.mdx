@@ -252,13 +252,7 @@ The diagram below is the **complete** stage machine. Every phase, every transiti
     M5 -->|"discrete"| Pause5([paused])
     Pause5 -->|"/haiku:pickup"| S6_P
 
-    S6_Done --> FIN([🏁 intent_complete])
-
-    S2_E -.->|"/haiku:revisit inception"| S1_E
-    S3_E -.->|"/haiku:revisit design"| S2_E
-    S4_E -.->|"/haiku:revisit product"| S3_E
-    S5_E -.->|"/haiku:revisit development"| S4_E
-    S6_E -.->|"/haiku:revisit security"| S5_E`} caption="The complete software studio state machine. Six stages × five phases, every transition the orchestrator can fire." />
+    S6_Done --> FIN([🏁 intent_complete])`} caption="The complete software studio state machine. Six stages × five phases, every transition the orchestrator can fire." />
 
 **What the diagram encodes:**
 
@@ -277,7 +271,7 @@ The diagram below is the **complete** stage machine. Every phase, every transiti
   - `continuous` — auto-advance to next stage's `pending`
   - `discrete` — stage completes, intent enters `paused`, user runs `/haiku:pickup` to resume
   - `hybrid` — discrete until `continuous_from: {stage}`, continuous after
-- **`/haiku:revisit`** — from any stage's `elaborate` phase, the user can jump back to a prior stage's `elaborate`, clearing that stage's `gate_outcome` and re-entering the FSM. Dotted edges show the reverse traversal.
+- **`/haiku:revisit`** — from any stage's `elaborate` phase the user can jump back to a prior stage's `elaborate`, clearing that stage's `gate_outcome` and re-entering the FSM. Not shown in the diagram to keep the top-to-bottom flow readable, but it's a valid edge from every stage N's `elaborate` back to stage N-1's `elaborate`.
 - **Terminal:** after Security's gate resolves, `intent_complete` fires and `intent.md` status flips to `completed`.
 
 ## The per-stage phase machine
