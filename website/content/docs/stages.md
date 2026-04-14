@@ -46,24 +46,62 @@ review-agents-include:
 | `name` | string | Stage identifier |
 | `description` | string | What this stage accomplishes |
 | `hats` | list | Ordered sequence of hats (roles) for this stage |
-| `review` | enum | Review mode: `auto`, `ask`, `external`, or `await` |
+| `review` | enum or list | Review gate: `auto`, `ask`, `external`, `await`, or a compound list like `[external, ask]` |
 | `unit_types` | list | Which unit types this stage processes |
 | `inputs` | list | Artifacts required from prior stages |
 | `review-agents-include` | list | Review agents from other stages to include during adversarial review |
 | `gate-protocol` | object | Timeout, escalation, and conditions for the review gate (optional) |
 
-### Review Modes
+### Review Gates
 
-| Mode | Behavior |
-|------|----------|
-| `auto` | Stage completes without human review if criteria pass |
-| `ask` | Prompts the human to approve before advancing |
-| `external` | Requires external review (e.g., PR approval) before advancing |
-| `await` | Stage work is complete but blocks until an external event occurs (e.g., customer response, CI result, stakeholder decision) |
+Each gate type differs in *who decides*, *how the signal arrives*, and *what the user sees*:
 
-A stage can specify multiple review modes as a list (e.g., `[external, ask]`), meaning it uses external review first, with ask as fallback.
+| Gate | Who decides | Signal mechanism | Review UI buttons |
+|------|-------------|------------------|-------------------|
+| `auto` | The harness (quality gates only) | Quality gate exit codes | *(no review UI — advances automatically)* |
+| `ask` | The human, locally | MCP response from local review UI | **Approve** · **Request Changes** |
+| `external` | An external reviewer (GitHub, GitLab, manager, etc.) | Orchestrator probes the review URL on `/haiku:pickup` | **Submit for External Review** · **Request Changes** |
+| `await` | An external event (customer reply, contract, pipeline) | Orchestrator probes on `/haiku:pickup` (same mechanism as `external`) | **Submit for External Review** · **Request Changes** |
 
-The `await` gate is distinct from `external` — `external` pushes work for review by another person; `await` blocks because the ball is in someone else's court entirely (a customer needs to respond, a third-party approval needs to come through, a pipeline needs to finish).
+**`auto`** — No human interaction. If quality gates (tests, lint, typecheck, build) pass, the stage advances. Use for stages where mechanical verification is sufficient.
+
+**`ask`** — The framework opens a review UI on your machine. You see the work, optionally leave inline comments, and click **Approve** or **Request Changes**. The decision is immediate — the MCP response tells the orchestrator to advance or loop back. Everything stays local.
+
+**`external`** — The framework blocks until an external review system approves. The typical flow: the agent creates a PR (or MR, or submits to another channel), records the URL in state, and the stage enters a "blocked" status. You cannot bypass this by approving locally — doing so would defeat the purpose of requiring third-party review. On your next `/haiku:pickup`, the orchestrator checks the review URL for approval (GitHub: checks merge state via `gh`; GitLab: checks state via `glab`). If approved, the stage advances automatically. If not yet approved, the orchestrator tells you the stage is still waiting.
+
+**`await`** — Same blocking mechanics as `external`, but the semantic intent is different. There is no review artifact — `await` represents situations where something must happen in the world before you can continue: a customer needs to respond, a contract needs a countersignature, a prototype needs to ship, a third-party pipeline needs to complete. The orchestrator treats it identically to `external` at the mechanical level (blocked state, probe on pickup).
+
+### Compound Gates
+
+A stage can specify multiple gate types as a list:
+
+```yaml
+review: [external, ask]
+```
+
+A compound gate presents **all listed options simultaneously** in the review UI. For `[external, ask]`, you see both:
+- **Approve** (the `ask` path — approve locally, advance immediately)
+- **Submit for External Review** (the `external` path — block until external approval)
+
+This lets you *choose* to bypass external review when you decide it's unnecessary for a particular stage completion. Without the `ask` component, only the external submission path would be available and you'd have no way to approve locally.
+
+The order in the list communicates primary intent (first = preferred path) but does not restrict which button you click. Common compound gates:
+
+| Compound | Meaning |
+|----------|---------|
+| `[external, ask]` | Prefer external review, but allow local approval as an escape hatch |
+| `[external, await]` | Submit for external review, then also wait for an external event |
+| `[ask, await]` | Get local human approval, then wait for an external event |
+
+### How External Signals Are Detected
+
+When a stage is blocked on `external` or `await`, the orchestrator stores the review URL in `external_review_url` within the stage state. On each `/haiku:pickup` invocation, the orchestrator calls `checkExternalApproval(url)`:
+
+- **GitHub PRs** — checks merge state via `gh pr view <url> --json state`. Advances on `MERGED`.
+- **GitLab MRs** — checks state via `glab mr view <url> --output json`. Advances on `merged`.
+- **Other URLs** — cannot auto-detect; you must manually advance via `/haiku:revisit` to re-enter the gate, or set state directly.
+
+If no URL was recorded, the orchestrator asks the agent to obtain one. This is why the agent prompts you for the review URL after submitting work externally.
 
 ### Gate Protocol
 
