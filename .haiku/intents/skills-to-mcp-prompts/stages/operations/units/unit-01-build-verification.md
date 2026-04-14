@@ -1,8 +1,8 @@
 ---
 name: unit-01-build-verification
-type: ops
 status: completed
-inputs: ["knowledge/DISCOVERY.md"]
+inputs:
+  - knowledge/DISCOVERY.md
 depends_on: []
 bolt: 1
 hat: ops-engineer

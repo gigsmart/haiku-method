@@ -1,8 +1,8 @@
 ---
 name: unit-01-prompts-server
-type: backend
 status: completed
-inputs: ["intent.md"]
+inputs:
+  - intent.md
 depends_on: []
 bolt: 1
 hat: decomposer

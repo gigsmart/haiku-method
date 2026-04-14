@@ -1,8 +1,8 @@
 ---
 name: unit-05-delete-skills
-type: backend
 status: completed
-inputs: ["knowledge/DISCOVERY.md"]
+inputs:
+  - knowledge/DISCOVERY.md
 depends_on:
   - unit-02-core-prompts
   - unit-03-simple-prompts

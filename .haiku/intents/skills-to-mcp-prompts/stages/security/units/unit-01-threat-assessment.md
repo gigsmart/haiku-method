@@ -1,8 +1,8 @@
 ---
 name: unit-01-threat-assessment
-type: security
 status: completed
-inputs: ["knowledge/DISCOVERY.md"]
+inputs:
+  - knowledge/DISCOVERY.md
 depends_on: []
 bolt: 1
 hat: threat-modeler
