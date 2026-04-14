@@ -8,6 +8,8 @@ inputs:
   - knowledge/DISCOVERY.md
   - knowledge/ARCHITECTURE.md
   - stages/inception/units/unit-02-archive-tools-and-fsm-refusal.md
+outputs:
+  - stages/development/artifacts/unit-02-implementation-notes.md
 ---
 
 # unit-02-implement-archive-tools-and-fsm-refusal
