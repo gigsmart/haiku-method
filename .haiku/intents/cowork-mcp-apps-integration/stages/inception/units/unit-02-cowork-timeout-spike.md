@@ -1,5 +1,5 @@
 ---
-title: "Cowork tool-call timeout spike and blocking decision"
+title: Cowork tool-call timeout spike and blocking decision
 type: spike
 depends_on:
   - unit-01-cowork-env-probe
@@ -7,6 +7,11 @@ inputs:
   - intent.md
   - knowledge/DISCOVERY.md
   - stages/inception/units/unit-01-cowork-env-probe.md
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-14T22:09:29Z'
+hat_started_at: '2026-04-14T22:09:29Z'
 ---
 
 # Cowork tool-call timeout spike and blocking decision
