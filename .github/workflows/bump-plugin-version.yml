@@ -7,6 +7,7 @@ on:
     paths-ignore:
       - "plugin/.claude-plugin/plugin.json"
       - ".claude-plugin/marketplace.json"
+      - "plugin/bin/haiku"
       - "CHANGELOG.md"
       - "website/**"
 
@@ -23,10 +24,8 @@ concurrency:
 jobs:
   bump-version:
     runs-on: ubuntu-latest
-    # Skip if commit is from bot (prevent loops) or if it's a version bump commit
-    if: |
-      github.actor != 'github-actions[bot]' &&
-      !contains(github.event.head_commit.message, '[skip ci]')
+    # Skip if commit is from bot (prevent loops)
+    if: github.actor != 'github-actions[bot]'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -162,7 +161,7 @@ jobs:
           git add plugin/.claude-plugin/plugin.json .claude-plugin/marketplace.json CHANGELOG.md plugin/bin/haiku
 
           # Create commit message
-          COMMIT_MSG="chore(plugin): bump version ${{ steps.bump-version.outputs.old_version }} -> ${{ steps.bump-version.outputs.new_version }} [skip ci]"
+          COMMIT_MSG="chore(plugin): bump version ${{ steps.bump-version.outputs.old_version }} -> ${{ steps.bump-version.outputs.new_version }}"
 
           git commit -m "$COMMIT_MSG"
 
