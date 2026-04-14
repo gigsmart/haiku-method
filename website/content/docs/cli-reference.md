@@ -122,6 +122,22 @@ Parking lot for ideas not yet ready for planning.
 
 Current intent status overview with per-stage progress.
 
+### `/haiku:archive`
+
+Soft-hide an intent by setting an `archived` flag in its frontmatter — files stay in `.haiku/intents/{slug}`, history is preserved.
+
+**Arguments:** `intent` (required) — slug of intent to archive.
+
+### `/haiku:unarchive`
+
+Clear the `archived` flag so the intent reappears in default list and dashboard views.
+
+**Arguments:** `intent` (required) — slug of intent to restore.
+
+## Managing Intents
+
+Archiving is a soft-hide flag on the intent, not a move or delete — `.haiku/intents/{slug}` stays exactly where it is, branches and history untouched. Trigger it with `/haiku:archive <slug>` on anything completed, stale, or paused; archived intents drop out of `/haiku:dashboard`, `/haiku:capacity`, and the default `haiku_intent_list` output. To see them, call `haiku_intent_list` with `include_archived: true` — the response tags each entry with an `archived` field so you can tell what's hidden. Restore with `/haiku:unarchive <slug>` and the intent is back in every default view.
+
 ### `/haiku:scaffold`
 
 Generate custom studios, stages, hats, and provider overrides.
