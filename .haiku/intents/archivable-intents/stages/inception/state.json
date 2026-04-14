@@ -1,10 +1,10 @@
 {
   "stage": "inception",
-  "status": "active",
+  "status": "completed",
   "phase": "gate",
   "started_at": "2026-04-14T19:18:53Z",
-  "completed_at": null,
-  "gate_entered_at": null,
-  "gate_outcome": null,
+  "completed_at": "2026-04-14T21:09:17Z",
+  "gate_entered_at": "2026-04-14T21:09:13Z",
+  "gate_outcome": "advanced",
   "elaboration_turns": 4
 }
