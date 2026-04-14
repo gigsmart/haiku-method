@@ -7,11 +7,14 @@ inputs:
   - intent.md
   - knowledge/DISCOVERY.md
   - stages/inception/units/unit-01-cowork-env-probe.md
-status: active
+status: completed
 bolt: 1
 hat: elaborator
 started_at: '2026-04-14T22:09:36Z'
 hat_started_at: '2026-04-14T22:10:51Z'
+outputs:
+  - knowledge/unit-03-elaboration-notes.md
+completed_at: '2026-04-14T22:13:59Z'
 ---
 
 # ui:// resource registration and REVIEW_APP_HTML delivery
