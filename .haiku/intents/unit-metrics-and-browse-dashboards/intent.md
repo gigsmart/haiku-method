@@ -1,9 +1,24 @@
 ---
-title: "Add per-bolt metrics persistence to H·AI·K·U units (tokens in/out/cache, wall-clock duration, and derived USD cost estimates), sourced by parsing Claude Code transcript files (~/.claude/projects/**/*.jsonl) and aggregated up to unit totals. Then add workstream analytics dashboards to the browse app showing intent-level overviews, studio/stage throughput, hat efficiency, and time-series trends across all workstreams. Metrics live in unit state on disk so they survive across sessions and are queryable without re-parsing transcripts."
-studio: ""
+title: >-
+  Add per-bolt metrics persistence to H·AI·K·U units (tokens in/out/cache,
+  wall-clock duration, and derived USD cost estimates), sourced by parsing
+  Claude Code transcript files (~/.claude/projects/**/*.jsonl) and aggregated up
+  to unit totals. Then add workstream analytics dashboards to the browse app
+  showing intent-level overviews, studio/stage throughput, hat efficiency, and
+  time-series trends across all workstreams. Metrics live in unit state on disk
+  so they survive across sessions and are queryable without re-parsing
+  transcripts.
+studio: software
 mode: continuous
 status: active
-created_at: 2026-04-14T19:26:32Z
+created_at: '2026-04-14'
+stages:
+  - inception
+  - design
+  - product
+  - development
+  - operations
+  - security
 ---
 
 # Add per-bolt metrics persistence to H·AI·K·U units (tokens in/out/cache, wall-clock duration, and derived USD cost estimates), sourced by parsing Claude Code transcript files (~/.claude/projects/**/*.jsonl) and aggregated up to unit totals. Then add workstream analytics dashboards to the browse app showing intent-level overviews, studio/stage throughput, hat efficiency, and time-series trends across all workstreams. Metrics live in unit state on disk so they survive across sessions and are queryable without re-parsing transcripts.
