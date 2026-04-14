@@ -2245,6 +2245,27 @@ function buildRunInstructions(
 				sections.push(`### ${f}\n\n${content}`)
 			}
 
+			// Discovery fan-out — one Task subagent per declared discovery artifact.
+			// Keeps the parent agent's context focused on synthesis instead of swallowing
+			// raw research material. Each subagent owns the research AND production of
+			// its assigned artifact; subagent-context hook scopes them automatically.
+			if (discoveryFiles.size > 0) {
+				const artifacts = Array.from(discoveryFiles.keys()).map((f) =>
+					f.replace(/\.md$/i, "").toLowerCase(),
+				)
+				const artifactList = artifacts.map((a) => `\`${a}\``).join(", ")
+				const perArtifactBullets = artifacts
+					.map(
+						(a) =>
+							`- subagent for \`${a}\`: research the relevant axis for this artifact and write the populated document to the stage's discovery path. Use the template above as the structure.`,
+					)
+					.join("\n")
+				const plural = artifacts.length !== 1 ? "s" : ""
+				sections.push(
+					`## Discovery Fan-Out (REQUIRED)\n\nThis stage produces ${artifacts.length} discovery artifact${plural}: ${artifactList}.\n\n**Spawn one \`Task\` subagent per artifact** to do the research AND produce the populated file. Spawn ALL of them in a single response (parallel). Do NOT do per-artifact research in this parent context — synthesize the structured returns instead.\n\n${perArtifactBullets}\n\nEach subagent inherits worktree scoping via the \`subagent-context\` hook. When all subagents return, proceed to the unit-decomposition step using the produced artifacts as your inputs.`,
+				)
+			}
+
 			// Detect design stages and add MCP provider instructions
 			const stageHats = (stageDef?.data?.hats as string[]) || []
 			const isDesignStage =

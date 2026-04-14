@@ -87,6 +87,8 @@ export async function layoutFlow(parsed: ParsedFlow): Promise<{ nodes: Node[]; e
       "elk.layered.cycleBreaking.strategy": "GREEDY_MODEL_ORDER",
       "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
       "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+      "elk.layered.considerModelOrder.components": "MODEL_ORDER",
+      "elk.layered.crossingMinimization.forceNodeModelOrder": "true",
       "elk.layered.crossingMinimization.semiInteractive": "true",
       "elk.edgeRouting": "ORTHOGONAL",
     },

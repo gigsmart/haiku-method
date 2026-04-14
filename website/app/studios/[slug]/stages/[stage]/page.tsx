@@ -142,7 +142,7 @@ export default async function StageDetailPage({ params }: Props) {
 								className="flex items-center gap-2 rounded-lg border border-stone-200 px-4 py-2 dark:border-stone-700"
 							>
 								<Link
-									href={`/studios/${slug}/${inp.stage}/`}
+									href={`/studios/${slug}/stages/${inp.stage}/`}
 									className="font-medium text-teal-600 hover:text-teal-700 dark:text-teal-400"
 								>
 									{titleCase(inp.stage)}
@@ -228,7 +228,7 @@ export default async function StageDetailPage({ params }: Props) {
 										inc.agents.map((agentName) => (
 											<Link
 												key={`${inc.stage}-${agentName}`}
-												href={`/studios/${slug}/${inc.stage}/#agent-${agentName}`}
+												href={`/studios/${slug}/stages/${inc.stage}/#agent-${agentName}`}
 												className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm hover:border-teal-300 dark:border-stone-700 dark:hover:border-teal-700"
 											>
 												<span className="font-medium">{titleCase(agentName)}</span>
@@ -258,7 +258,7 @@ export default async function StageDetailPage({ params }: Props) {
 			<footer className="mt-12 flex items-center justify-between border-t border-stone-200 pt-8 dark:border-stone-800">
 				{prevStage ? (
 					<Link
-						href={`/studios/${slug}/${prevStage.name}/`}
+						href={`/studios/${slug}/stages/${prevStage.name}/`}
 						className="text-sm text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-white"
 					>
 						&larr; {titleCase(prevStage.name)}
@@ -273,7 +273,7 @@ export default async function StageDetailPage({ params }: Props) {
 				)}
 				{nextStage ? (
 					<Link
-						href={`/studios/${slug}/${nextStage.name}/`}
+						href={`/studios/${slug}/stages/${nextStage.name}/`}
 						className="text-sm text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300"
 					>
 						{titleCase(nextStage.name)} &rarr;

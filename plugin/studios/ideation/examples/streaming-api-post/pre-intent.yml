@@ -1,0 +1,17 @@
+related:
+  - dev-evangelism
+  - marketing
+  - documentation
+turns:
+  - role: user
+    text: "Help me write a blog post about our new streaming API."
+  - role: agent
+    text: "Who's the audience — existing customers, prospects, or the broader dev community?"
+  - role: user
+    text: "Developer community. Mostly backend engineers running polling loops today."
+  - role: agent
+    text: "What's the key takeaway you want them to leave with?"
+  - role: user
+    text: "That our streaming API eliminates the need for a polling layer entirely."
+  - role: agent
+    text: "Got it — I have enough to outline and draft the post."

@@ -1,0 +1,17 @@
+related:
+  - data-pipeline
+  - software
+  - operations
+turns:
+  - role: user
+    text: "Primary Postgres is unreachable — writes are failing everywhere."
+  - role: agent
+    text: "Is the failover standby healthy and accepting writes?"
+  - role: user
+    text: "Replica is up, replication lag < 1s. Failover not triggered yet."
+  - role: agent
+    text: "Any recent changes — deploy, schema migration, infra change?"
+  - role: user
+    text: "Migration merged 40 minutes ago. Running on primary only so far."
+  - role: agent
+    text: "Got it — opening incident, starting triage with the migration as the prime suspect."

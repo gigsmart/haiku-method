@@ -26,6 +26,10 @@ This post is about what falls out of that flip — the architecture, the state m
   3. **Hooks are seatbelts.** They can't decide anything, but they can stop the agent from editing the wrong files or skipping quality gates.
 </KeyPoints>
 
+<Callout tone="info" title="Prefer to click around than read?">
+Every diagram below has a live, fully-interactive version. The [runtime architecture map](/prototype-stage-flow.html) renders the whole thing — actors, hooks, FSM phases, every `haiku_run_next` tick, every state write — and lets you click any node for its real source file. Each studio has its own view: [software](/studios/software/architecture/), [ideation](/studios/ideation/architecture/), [legal](/studios/legal/architecture/), [hwdev](/studios/hwdev/architecture/), and [20 others](/studios/). The rest of this post is the story; the map is the ground truth.
+</Callout>
+
 ## The download vs. the scavenger hunt
 
 The easiest way to see the flip is to put the two side by side.
@@ -126,189 +130,15 @@ Five layers: the user, the Claude Code harness (agent + hooks), the H·AI·K·U 
 
 The orchestrator is the brain. Hooks are spinal reflexes. The orchestrator decides what should happen next. Hooks make sure the agent physically can't do anything else between orchestrator calls. The agent is the body that executes the current action. And everything the orchestrator knows, it knows from reading files on disk.
 
-## The software studio stage machine
+<Callout tone="good" title="See it live">
+This diagram is static; the [interactive runtime map](/prototype-stage-flow.html) isn't. Every actor, hook, MCP tool, hat, review-agent, and artifact chip on the live page is clickable and opens the real source file (`STAGE.md`, `hats/*.md`, `review-agents/*.md`, `discovery/*.md`, `outputs/*.md`). Swap studios from the picker in the top bar, or jump straight to any studio's architecture: `/studios/<slug>/architecture`.
+</Callout>
 
-Every studio is a named lifecycle template — a DAG of stages, each of which runs its own five-phase machine. The default software studio has six stages running in strict order: **inception → design → product → development → operations → security**. Stages don't skip or parallelize; each one reads its prerequisite artifacts (declared by `inputs:` in `STAGE.md`) and won't start until those are present.
+## Stages and phases
 
-The diagram below is the **complete** stage machine. Every phase, every transition — forward, self-loop, back-edge, and terminal. Every gate type. Mode decisions (continuous, discrete, hybrid). Revisit. External review blocking. Nothing elided.
+Every studio is a named lifecycle template — a DAG of stages, each running its own phase FSM. H·AI·K·U ships with 24 studios (software, ideation, legal, hwdev, incident-response, marketing, hr, finance, and 16 more). The shape is the same across all of them; only the stage names and gate types differ. The default software studio has six stages in strict order: **inception → design → product → development → operations → security**. Every stage walks the same phase sequence: `pending → elaborate → execute → review → gate`. The orchestrator enforces the transitions; the agent can only move forward when the preconditions are actually met, not when it thinks they are.
 
-<ExpandableDiagram chart={`flowchart TB
-    Start([🎯 Intent created])
-    Start --> S1_P
-
-    subgraph S1["1. INCEPTION · review: ask · collaborative"]
-        direction TB
-        S1_P([pending]) -->|start_stage| S1_E[elaborate]
-        S1_E -->|"elaboration_insufficient<br/>(< 3 user turns)"| S1_E
-        S1_E -->|"DAG valid +<br/>units validated"| S1_IR{"gate_review<br/>intent_review"}
-        S1_IR -->|"changes_requested"| S1_P
-        S1_IR -->|"approved"| S1_X[execute]
-        S1_X -->|"continue_unit /<br/>next wave"| S1_X
-        S1_X -->|"all units complete"| S1_R[review]
-        S1_R -->|"fix_quality_gates"| S1_X
-        S1_R -->|"gates pass +<br/>adversarial review done"| S1_G{"gate · ask"}
-        S1_G -->|"changes_requested"| S1_R
-        S1_G -->|"approved"| S1_Done([stage complete])
-    end
-
-    subgraph S2["2. DESIGN · review: [external, ask] · collaborative"]
-        direction TB
-        S2_P([pending]) -->|start_stage| S2_E[elaborate]
-        S2_E -->|"elaboration_insufficient"| S2_E
-        S2_E -->|"specs validated"| S2_GS{"gate_review<br/>elaborate_to_execute"}
-        S2_GS -->|"changes_requested"| S2_E
-        S2_GS -->|"approved"| S2_X[execute]
-        S2_X -->|"next wave"| S2_X
-        S2_X -->|"all units complete"| S2_R[review]
-        S2_R -->|"fix_quality_gates"| S2_X
-        S2_R -->|"gates pass"| S2_G{"gate · [external, ask]"}
-        S2_G -->|"changes_requested"| S2_R
-        S2_G -->|"approved"| S2_Done([stage complete])
-        S2_G -->|"external_review<br/>requested"| S2_B([blocked · awaiting PR])
-        S2_B -->|"PR merged"| S2_Done
-    end
-
-    subgraph S3["3. PRODUCT · review: [external, ask] · collaborative"]
-        direction TB
-        S3_P([pending]) -->|start_stage| S3_E[elaborate]
-        S3_E -->|"elaboration_insufficient"| S3_E
-        S3_E -->|"specs validated"| S3_GS{"gate_review<br/>elaborate_to_execute"}
-        S3_GS -->|"changes_requested"| S3_E
-        S3_GS -->|"approved"| S3_X[execute]
-        S3_X -->|"next wave"| S3_X
-        S3_X -->|"all units complete"| S3_R[review]
-        S3_R -->|"fix_quality_gates"| S3_X
-        S3_R -->|"gates pass"| S3_G{"gate · [external, ask]"}
-        S3_G -->|"changes_requested"| S3_R
-        S3_G -->|"approved"| S3_Done([stage complete])
-        S3_G -->|"external_review<br/>requested"| S3_B([blocked · awaiting PR])
-        S3_B -->|"PR merged"| S3_Done
-    end
-
-    subgraph S4["4. DEVELOPMENT · review: [external, ask] · collaborative"]
-        direction TB
-        S4_P([pending]) -->|start_stage| S4_E[elaborate]
-        S4_E -->|"elaboration_insufficient"| S4_E
-        S4_E -->|"specs validated"| S4_GS{"gate_review<br/>elaborate_to_execute"}
-        S4_GS -->|"changes_requested"| S4_E
-        S4_GS -->|"approved"| S4_X[execute]
-        S4_X -->|"next wave"| S4_X
-        S4_X -->|"all units complete"| S4_R[review]
-        S4_R -->|"fix_quality_gates"| S4_X
-        S4_R -->|"gates pass"| S4_G{"gate · [external, ask]"}
-        S4_G -->|"changes_requested"| S4_R
-        S4_G -->|"approved"| S4_Done([stage complete])
-        S4_G -->|"external_review<br/>requested"| S4_B([blocked · awaiting PR])
-        S4_B -->|"PR merged"| S4_Done
-    end
-
-    subgraph S5["5. OPERATIONS · review: auto · autonomous"]
-        direction TB
-        S5_P([pending]) -->|start_stage| S5_E[elaborate]
-        S5_E -->|"plan validated<br/>(no turn minimum)"| S5_X[execute]
-        S5_X -->|"next wave"| S5_X
-        S5_X -->|"all units complete"| S5_R[review]
-        S5_R -->|"fix_quality_gates"| S5_X
-        S5_R -->|"gates pass"| S5_G{"gate · auto"}
-        S5_G -->|"auto-advance"| S5_Done([stage complete])
-    end
-
-    subgraph S6["6. SECURITY · review: [external, ask] · autonomous"]
-        direction TB
-        S6_P([pending]) -->|start_stage| S6_E[elaborate]
-        S6_E -->|"threat model validated<br/>(no turn minimum)"| S6_X[execute]
-        S6_X -->|"next wave"| S6_X
-        S6_X -->|"all units complete"| S6_R[review]
-        S6_R -->|"fix_quality_gates"| S6_X
-        S6_R -->|"gates pass"| S6_G{"gate · [external, ask]"}
-        S6_G -->|"changes_requested"| S6_R
-        S6_G -->|"approved"| S6_Done([stage complete])
-        S6_G -->|"external_review<br/>requested"| S6_B([blocked · awaiting PR])
-        S6_B -->|"PR merged"| S6_Done
-    end
-
-    S1_Done --> M1{"mode resolution"}
-    M1 -->|"continuous /<br/>hybrid ≥ continuous_from"| S2_P
-    M1 -->|"discrete"| Pause1([paused])
-    Pause1 -->|"/haiku:pickup"| S2_P
-
-    S2_Done --> M2{"mode resolution"}
-    M2 -->|"continuous"| S3_P
-    M2 -->|"discrete"| Pause2([paused])
-    Pause2 -->|"/haiku:pickup"| S3_P
-
-    S3_Done --> M3{"mode resolution"}
-    M3 -->|"continuous"| S4_P
-    M3 -->|"discrete"| Pause3([paused])
-    Pause3 -->|"/haiku:pickup"| S4_P
-
-    S4_Done --> M4{"mode resolution"}
-    M4 -->|"continuous"| S5_P
-    M4 -->|"discrete"| Pause4([paused])
-    Pause4 -->|"/haiku:pickup"| S5_P
-
-    S5_Done --> M5{"mode resolution"}
-    M5 -->|"continuous"| S6_P
-    M5 -->|"discrete"| Pause5([paused])
-    Pause5 -->|"/haiku:pickup"| S6_P
-
-    S6_Done --> FIN([🏁 intent_complete])
-
-    S2_E -.->|"/haiku:revisit inception"| S1_E
-    S3_E -.->|"/haiku:revisit design"| S2_E
-    S4_E -.->|"/haiku:revisit product"| S3_E
-    S5_E -.->|"/haiku:revisit development"| S4_E
-    S6_E -.->|"/haiku:revisit security"| S5_E`} caption="The complete software studio state machine. Six stages × five phases, every transition the orchestrator can fire." />
-
-**What the diagram encodes:**
-
-- **Five phases per stage:** `pending → elaborate → gate_review → execute → review → gate`. Phase transitions are enforced by the orchestrator in `packages/haiku/src/orchestrator.ts`. The agent cannot skip a phase.
-- **Two elaboration gates:** the first stage uses the `intent_review` gate context (rejecting bounces all the way back to `pending` — because the intent itself is wrong). Every subsequent stage uses `elaborate_to_execute` (rejecting stays in `elaborate` so the agent can revise the unit specs).
-- **Self-loops:**
-  - `elaborate → elaborate` on `elaboration_insufficient` — collaborative stages force at least three user turns
-  - `execute → execute` on `continue_unit` or the next wave
-  - `review → execute` on `fix_quality_gates` — broken tests/types/lint bounce back without the adversarial agents even looking
-- **Four review gate types:**
-  - `auto` (Operations only) — FSM advances immediately, no user UI
-  - `ask` (Inception) — user approves in the review web UI
-  - `external` — requires a PR/MR to be opened; enters the `blocked` state until merged
-  - `[external, ask]` (Design, Product, Development, Security) — user can pick either path per review
-- **Mode-dependent stage transitions:**
-  - `continuous` — auto-advance to next stage's `pending`
-  - `discrete` — stage completes, intent enters `paused`, user runs `/haiku:pickup` to resume
-  - `hybrid` — discrete until `continuous_from: {stage}`, continuous after
-- **`/haiku:revisit`** — from any stage's `elaborate` phase, the user can jump back to a prior stage's `elaborate`, clearing that stage's `gate_outcome` and re-entering the FSM. Dotted edges show the reverse traversal.
-- **Terminal:** after Security's gate resolves, `intent_complete` fires and `intent.md` status flips to `completed`.
-
-## The per-stage phase machine
-
-Every stage walks this state machine. The orchestrator enforces the transitions — the agent can only move forward when the preconditions are satisfied. Not when it thinks they are. When they actually are.
-
-<ExpandableDiagram chart={`stateDiagram-v2
-    [*] --> pending
-    pending --> elaborate: start_stage
-    elaborate --> elaborate: elaboration_insufficient<br/>(collaborative < 3 turns)
-    elaborate --> gate_review_specs: DAG valid +<br/>units validated
-    gate_review_specs --> elaborate: user rejects
-    gate_review_specs --> execute: user approves
-    execute --> execute: next wave / continue_unit
-    execute --> review: all units complete
-    review --> execute: fix_quality_gates
-    review --> gate: quality gates pass +<br/>adversarial review done
-    gate --> next_stage: review=auto or<br/>user approves
-    gate --> gate: await / external<br/>(blocked)
-    next_stage --> [*]: intent_complete`} />
-
-Four phases per stage, each with its own gate:
-
-- **`elaborate`** — the agent decomposes the work into unit files with `depends_on`. Collaborative stages force at least three user turns before the specs can be finalized. Then the DAG gets validated, unit naming gets validated, unit types get validated, declared inputs get validated, and required discovery artifacts have to exist. Miss any of that and you're stuck in elaborate.
-- **`execute`** — units run wave-by-wave based on a topological sort. Each unit gets its own git worktree. Hats rotate through the unit's bolts.
-- **`review`** — quality gates run first. Tests, lint, typecheck. If any of them fail, the agent bounces back to fix them before the adversarial review agents even look at the code. We don't waste review cycles on code that doesn't compile.
-- **`gate`** — reads the `review:` field from `STAGE.md`. `auto` advances. Everything else — `ask`, `external`, `await`, combos — opens the review UI and blocks until the user or an external event says go.
-
-## Where the user actually touches the loop
-
-Two places. Only two.
+Two seams demand a human:
 
 <Grid>
   <Card eyebrow="Seam 1" title="Elaboration conversation" accent="info">
@@ -320,6 +150,8 @@ Two places. Only two.
 </Grid>
 
 Everything else is the agent in a tight loop: call `haiku_run_next`, do the work the action described, call `haiku_run_next` again. No meetings. No status updates. No "what should I do next?" Just clues.
+
+The full state machine — six stages × five phases, every gate type, mode resolution, `/haiku:revisit` back-edges — lives in `packages/haiku/src/orchestrator.ts`. You don't have to take my word for it: the [runtime architecture map](/prototype-stage-flow.html) lays out every phase, every `haiku_run_next` action, every validation check, and every state write per stage. Toggle between continuous / discrete / hybrid / autopilot modes in the top bar to see how the gates change shape.
 
 ## Where hooks come in
 
@@ -360,3 +192,12 @@ H·AI·K·U asks: *what's the smallest next step, and how do we make it impossib
 </Callout>
 
 The agent never sees the whole map. It doesn't need to. It just needs the next clue.
+
+<Grid>
+  <Card eyebrow="Interactive" title="Runtime architecture map" accent="info">
+    The full map — actors, hooks, FSM phases, MCP tools, knowledge pool, pre- and post-intent flows. Every chip clicks through to real source. [Open the map →](/prototype-stage-flow.html)
+  </Card>
+  <Card eyebrow="Per studio" title="Browse by domain" accent="good">
+    Same map, pre-filtered to one studio's stages and artifacts. [software](/studios/software/architecture/) · [ideation](/studios/ideation/architecture/) · [legal](/studios/legal/architecture/) · [hwdev](/studios/hwdev/architecture/) · [all 24](/studios/)
+  </Card>
+</Grid>

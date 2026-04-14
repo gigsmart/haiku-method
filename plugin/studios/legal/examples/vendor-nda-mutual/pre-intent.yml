@@ -1,0 +1,17 @@
+related:
+  - vendor-management
+  - compliance
+  - security-assessment
+turns:
+  - role: user
+    text: "Draft a vendor NDA — we're onboarding a new data processor."
+  - role: agent
+    text: "One-way or mutual?"
+  - role: user
+    text: "Mutual. We share customer data; they share proprietary pipeline internals."
+  - role: agent
+    text: "Governing law and term?"
+  - role: user
+    text: "Delaware. 3 years from effective date."
+  - role: agent
+    text: "Got it — I'll pull our template, tailor the definitions, and draft."

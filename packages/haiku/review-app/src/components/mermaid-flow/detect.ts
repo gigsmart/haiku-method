@@ -1,15 +1,9 @@
-import { parseMermaidFlow } from "./parser"
-
-export function isFlowchartSource(chart: string): boolean {
-  return /^\s*(flowchart|graph|stateDiagram(-v2)?)\b/.test(chart)
+export function isFlowchartSource(_chart: string): boolean {
+  // React Flow rendering is disabled — all diagrams route to the mermaid
+  // CDN renderer. Re-enable once the flow pipeline is more robust.
+  return false
 }
 
-export function canRenderAsFlow(chart: string): boolean {
-  if (!isFlowchartSource(chart)) return false
-  try {
-    const parsed = parseMermaidFlow(chart)
-    return parsed.nodes.length > 0
-  } catch {
-    return false
-  }
+export function canRenderAsFlow(_chart: string): boolean {
+  return false
 }
