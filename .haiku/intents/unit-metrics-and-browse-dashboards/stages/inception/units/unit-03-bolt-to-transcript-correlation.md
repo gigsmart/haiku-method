@@ -1,19 +1,21 @@
 ---
 name: unit-03-bolt-to-transcript-correlation
 type: research
+model: opus
 depends_on:
   - unit-01-transcript-format-mapping
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
   - knowledge/TRANSCRIPT_FORMAT.md
-status: active
+status: completed
 bolt: 1
 hat: elaborator
 started_at: '2026-04-14T21:53:22Z'
 hat_started_at: '2026-04-14T21:57:50Z'
 outputs:
   - knowledge/CORRELATION_STRATEGY.md
+completed_at: '2026-04-14T22:15:36Z'
 ---
 
 # Research: How to correlate a bolt's execution window to transcript entries
@@ -39,10 +41,10 @@ A single artifact at `.haiku/intents/unit-metrics-and-browse-dashboards/knowledg
 
 ## Completion Criteria
 
-- [ ] `CORRELATION_STRATEGY.md` exists in the intent's `knowledge/` directory.
-- [ ] The document enumerates at least four candidate approaches with pros and cons.
-- [ ] The document recommends exactly one approach and justifies the choice against the alternatives.
-- [ ] The document names the exact MCP tool call(s) that mark bolt-start and bolt-end.
-- [ ] The document includes a worked example showing entry-to-bolt attribution.
-- [ ] The document lists at least four edge cases and describes the behavior of the recommended approach on each.
-- [ ] The document specifies the minimal new state (fields, files) that must be added to make the approach work.
+- [x] `CORRELATION_STRATEGY.md` exists in the intent's `knowledge/` directory.
+- [x] The document enumerates at least four candidate approaches with pros and cons.
+- [x] The document recommends exactly one approach and justifies the choice against the alternatives.
+- [x] The document names the exact MCP tool call(s) that mark bolt-start and bolt-end.
+- [x] The document includes a worked example showing entry-to-bolt attribution.
+- [x] The document lists at least four edge cases and describes the behavior of the recommended approach on each.
+- [x] The document specifies the minimal new state (fields, files) that must be added to make the approach work.
