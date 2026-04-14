@@ -14,6 +14,7 @@ stages:
   - operations
   - security
 active_stage: inception
+intent_reviewed: true
 ---
 
 # Add Cowork support to the H·AI·K·U plugin using MCP Apps for review UI. Detect…
