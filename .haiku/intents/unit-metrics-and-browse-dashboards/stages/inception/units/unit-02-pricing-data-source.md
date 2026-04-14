@@ -1,18 +1,19 @@
 ---
 name: unit-02-pricing-data-source
 type: research
+model: haiku
 depends_on: []
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
-status: active
+status: completed
 bolt: 1
 hat: elaborator
 started_at: '2026-04-14T21:41:20Z'
 hat_started_at: '2026-04-14T21:43:03Z'
-outputs: |
-
+outputs:
   - knowledge/PRICING_STRATEGY.md
+completed_at: '2026-04-14T21:48:01Z'
 ---
 
 # Research: Source of truth for per-model USD pricing
@@ -37,10 +38,10 @@ A single artifact at `.haiku/intents/unit-metrics-and-browse-dashboards/knowledg
 
 ## Completion Criteria
 
-- [ ] `PRICING_STRATEGY.md` exists in the intent's `knowledge/` directory.
-- [ ] The document recommends exactly one storage location with at least two discarded alternatives and the reason each was discarded.
-- [ ] The document defines a JSON schema for pricing entries with every field named and typed.
-- [ ] The document includes a seed table with real rates for every model ID listed in `TRANSCRIPT_FORMAT.md` (unit-01's output).
-- [ ] The document specifies how `pricing_version` flows from the pricing table through to the unit's metrics block.
-- [ ] The document specifies the unknown-model fallback behavior explicitly (one of: skip cost / zero with warning / fail).
-- [ ] Every rate in the seed table cites a source URL (Anthropic pricing page or similar public reference).
+- [x] `PRICING_STRATEGY.md` exists in the intent's `knowledge/` directory.
+- [x] The document recommends exactly one storage location with at least two discarded alternatives and the reason each was discarded.
+- [x] The document defines a JSON schema for pricing entries with every field named and typed.
+- [x] The document includes a seed table with real rates for every model ID listed in `TRANSCRIPT_FORMAT.md` (unit-01's output).
+- [x] The document specifies how `pricing_version` flows from the pricing table through to the unit's metrics block.
+- [x] The document specifies the unknown-model fallback behavior explicitly (one of: skip cost / zero with warning / fail).
+- [x] Every rate in the seed table cites a source URL (Anthropic pricing page or similar public reference).

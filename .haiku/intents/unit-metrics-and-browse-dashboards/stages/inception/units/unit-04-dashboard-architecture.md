@@ -10,6 +10,7 @@ bolt: 1
 hat: elaborator
 started_at: '2026-04-14T21:41:38Z'
 hat_started_at: '2026-04-14T21:43:49Z'
+outputs: knowledge/DASHBOARD_ARCHITECTURE.md
 ---
 
 # Research: Browse-app dashboard architecture — chart library and aggregation patterns
