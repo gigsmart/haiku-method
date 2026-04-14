@@ -5,6 +5,7 @@ depends_on: []
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
+  - stages/inception/units/unit-01-archived-flag-and-filter-helper/research-notes.md
 status: completed
 bolt: 1
 hat: elaborator
