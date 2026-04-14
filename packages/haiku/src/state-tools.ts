@@ -1555,6 +1555,39 @@ export function parseFrontmatter(raw: string): {
 	}
 }
 
+/**
+ * Enumerate intent slugs under `intentsDir`, optionally filtering out archived ones.
+ *
+ * Archival is a soft-hide flag orthogonal to `status`: an intent with
+ * `archived: true` in its frontmatter is hidden from default list views but
+ * its prior status is preserved for lossless unarchival.
+ *
+ * By default (`opts.includeArchived !== true`) archived intents are filtered
+ * out. Passing `{ includeArchived: true }` returns every intent slug that has
+ * an `intent.md` regardless of the archived flag.
+ *
+ * This is the single source of truth for archived-filtering across the three
+ * user-facing enumeration sites (`haiku_intent_list`, `haiku_dashboard`,
+ * `haiku_capacity`). Do NOT duplicate the `archived === true` predicate —
+ * call this helper instead so miss-one-site regressions are impossible.
+ */
+export function listVisibleIntentSlugs(
+	intentsDir: string,
+	opts?: { includeArchived?: boolean },
+): string[] {
+	if (!existsSync(intentsDir)) return []
+	const slugs = readdirSync(intentsDir).filter((d) =>
+		existsSync(join(intentsDir, d, "intent.md")),
+	)
+	if (opts?.includeArchived === true) return slugs
+	return slugs.filter((slug) => {
+		const { data } = parseFrontmatter(
+			readFileSync(join(intentsDir, slug, "intent.md"), "utf8"),
+		)
+		return data.archived !== true
+	})
+}
+
 export function setFrontmatterField(
 	filePath: string,
 	field: string,
@@ -1878,7 +1911,16 @@ export const stateToolDefs = [
 	{
 		name: "haiku_intent_list",
 		description: "List all intents in the workspace",
-		inputSchema: { type: "object" as const, properties: {} },
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				include_archived: {
+					type: "boolean",
+					description:
+						"When true, include archived intents in the result and add an 'archived' field to each response object. Defaults to false.",
+				},
+			},
+		},
 	},
 	// Stage tools
 	{
@@ -2192,19 +2234,22 @@ export function handleStateTool(
 			const root = findHaikuRoot()
 			const intentsDir = join(root, "intents")
 			if (!existsSync(intentsDir)) return text("[]")
-			const slugs = readdirSync(intentsDir).filter((d) =>
-				existsSync(join(intentsDir, d, "intent.md")),
-			)
+			const includeArchived = args.include_archived === true
+			const slugs = listVisibleIntentSlugs(intentsDir, { includeArchived })
 			const intents = slugs.map((slug) => {
 				const { data } = parseFrontmatter(
 					readFileSync(join(intentsDir, slug, "intent.md"), "utf8"),
 				)
-				return {
+				const base: Record<string, unknown> = {
 					slug,
 					studio: data.studio,
 					status: data.status,
 					active_stage: data.active_stage,
 				}
+				if (includeArchived) {
+					base.archived = data.archived === true
+				}
+				return base
 			})
 			return text(JSON.stringify(intents, null, 2))
 		}
@@ -2814,9 +2859,7 @@ export function handleStateTool(
 			const intentsDir = join(root, "intents")
 			if (!existsSync(intentsDir))
 				return text("No intents found. Use /haiku:start to create one.")
-			const slugs = readdirSync(intentsDir).filter((d) =>
-				existsSync(join(intentsDir, d, "intent.md")),
-			)
+			const slugs = listVisibleIntentSlugs(intentsDir)
 			if (slugs.length === 0)
 				return text("No intents found. Use /haiku:start to create one.")
 
@@ -2930,9 +2973,7 @@ export function handleStateTool(
 			}
 			const intentsDir = join(root, "intents")
 			if (!existsSync(intentsDir)) return text("No intents found.")
-			const slugs = readdirSync(intentsDir).filter((d) =>
-				existsSync(join(intentsDir, d, "intent.md")),
-			)
+			const slugs = listVisibleIntentSlugs(intentsDir)
 
 			const median = (arr: number[]): number => {
 				if (arr.length === 0) return 0
