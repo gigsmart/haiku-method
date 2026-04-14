@@ -1,10 +1,16 @@
 ---
 name: unit-02-archive-tools-and-fsm-refusal
 type: backend
-depends_on: ["unit-01-archived-flag-and-filter-helper"]
+depends_on:
+  - unit-01-archived-flag-and-filter-helper
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-14T20:29:21Z'
+hat_started_at: '2026-04-14T20:29:21Z'
 ---
 
 # unit-02-archive-tools-and-fsm-refusal
