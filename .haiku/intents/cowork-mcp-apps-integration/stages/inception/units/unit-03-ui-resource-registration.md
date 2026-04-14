@@ -1,5 +1,5 @@
 ---
-title: "ui:// resource registration and REVIEW_APP_HTML delivery"
+title: 'ui:// resource registration and REVIEW_APP_HTML delivery'
 type: feature
 depends_on:
   - unit-01-cowork-env-probe
@@ -7,6 +7,11 @@ inputs:
   - intent.md
   - knowledge/DISCOVERY.md
   - stages/inception/units/unit-01-cowork-env-probe.md
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-14T22:09:36Z'
+hat_started_at: '2026-04-14T22:09:36Z'
 ---
 
 # ui:// resource registration and REVIEW_APP_HTML delivery
