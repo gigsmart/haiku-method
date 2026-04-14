@@ -12,6 +12,7 @@ stages:
   - operations
   - security
 active_stage: inception
+intent_reviewed: true
 ---
 
 # Add archivable intents to H·AI·K·U. Users need a way to soft-hide completed,…
