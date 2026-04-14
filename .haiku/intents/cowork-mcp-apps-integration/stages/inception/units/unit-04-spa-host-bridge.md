@@ -7,6 +7,8 @@ inputs:
   - intent.md
   - knowledge/DISCOVERY.md
   - stages/inception/units/unit-03-ui-resource-registration.md
+outputs:
+  - knowledge/unit-04-host-bridge-research.md
 ---
 
 # Review SPA host bridge for MCP Apps runtime
