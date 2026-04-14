@@ -1,0 +1,195 @@
+---
+title: "Superpowers and H·AI·K·U"
+description: "Jesse Vincent's Superpowers and H·AI·K·U look like the same kind of thing and aren't. A field report on where they overlap, where they genuinely differ, and what we're actually aiming for."
+date: 2026-04-14
+author: Jason Waldrip
+category: Architecture
+tags:
+  - superpowers
+  - architecture
+  - ai-dlc
+  - dark-factory
+---
+
+> **Build the spec in the light. Let execution run in the dark.**
+
+That's the H·AI·K·U bet in ten words. The rest of this post is why we're making it, and why Jesse Vincent's Superpowers — the other well-known harness in this space — is making a different one.
+
+Jesse shipped [Superpowers](https://github.com/obra/superpowers) in October, and the [post that introduced it](https://blog.fsck.com/2025/10/09/superpowers/) has been passed around heavily since — deservedly so. The repo is popular because the thinking is good and the craft is visible. If you're building in this space and haven't read either, stop and go do that first.
+
+People keep asking us where H·AI·K·U fits relative to it, and the honest answer is: we're two projects working on the same underlying problem with different bets about how to solve it. Both exist because a raw AI agent is powerful but undirected. Both are scaffolding that compensates for what the model can't yet do on its own. The missions diverge, and once you see where, everything else follows.
+
+The short version, for people who want to leave now and not read the rest:
+
+<KeyPoints title="Two bets, two architectures">
+  1. **Superpowers is a skills library built for disciplined assisted execution.** Each skill is a self-contained document the agent loads and runs; the human stays in the loop throughout — brainstorm, plan, per-task review, code review. Continuous human partnership *is* the product.
+  2. **H·AI·K·U is an orchestrator that hands the agent one step at a time from a plan kept on disk, built for a spec that *can* run as dark as you want it to.** The human works hard upstream so execution *can* go [lights-out](/blog/dark-factories-and-the-loop), with per-stage autonomy controls to keep as much supervision as the work calls for. Dark factory is the ceiling, not the mandate.
+</KeyPoints>
+
+Different targets, different architectures. Everything else below is commentary on that.
+
+## What Superpowers actually is
+
+Superpowers is a **skills library**. Each skill is a standalone document — a flowchart, a checklist, and a set of hard rules for one capability — written with unusual discipline and a lot of craft. The library ships around a dozen skills covering the work you'd expect from a coding agent: brainstorming, planning, writing tests first, debugging methodically, running helper agents in isolated workspaces, code review, and more.
+
+The plumbing under it is minimal and genuinely elegant. When a session starts, a short preamble gets auto-loaded that teaches the agent how to find and use the rest. There's a "how to write a skill" skill, along with a clever technique for stress-testing new skills: you point a fresh agent at a realistic scenario — with time pressure, sunk cost, confident-sounding wrong paths — and see whether the skill holds up. The whole thing installs across six platforms: Claude Code, Cursor, Codex, OpenCode, Copilot CLI, and Gemini CLI. That breadth is meaningful, and it's one of the things we admire most about the project — it meets people on whatever tool they already use.
+
+The default workflow is linear: brainstorm the idea, set up an isolated workspace, write a plan, delegate the work to helper agents, test-first, review, merge. Each skill in the chain activates when the prior one hands off.
+
+One technique in Superpowers is worth calling out specifically: Jesse pulls persuasion principles from social psychology — authority, commitment, scarcity — into every skill, stamped on with loud tags like `<EXTREMELY-IMPORTANT>` and `<HARD-GATE>`. The loud framing is deliberate. AI models rationalize their way around soft guidance, and the dramatic tagging is there because calm guidance doesn't survive contact with that failure mode. It's load-bearing for an architecture where the agent is doing the driving, and it's the kind of design choice you only make after watching the polite version fail.
+
+## What we're aiming for
+
+If we had to write the H·AI·K·U mission in one sentence, it would be:
+
+<Callout tone="info" title="The mission, stated plainly">
+Deliver a spec that *can* execute as a **dark factory** — lights-out, one shot, minimal user turns after completion — and let the user dial down from there to whatever level of supervision the work calls for.
+</Callout>
+
+The whole design follows from that. The human's effort moves upstream into the spec. Discovery, elaboration, criteria, adversarial review, quality gates — all front-loaded, so that when execution runs, nothing bounces back through a rejection loop. Post-completion turns approach zero because the spec was right.
+
+How dark the factory actually runs is a user choice. Each phase of work declares how it wants to be reviewed — auto-advance, ask the user, wait for external sign-off, or pause for an outside event — and whether its planning is done with the user or on its own. The same system can run one phase unattended and the next with a human in the conversation at every turn. You might run early discovery collaboratively, development automatically, and security with external sign-off, all in the same piece of work. Dark factory is the *ceiling* of what the system can do, not the only setting it supports. The mission is to make that ceiling reachable; the knob lets you stop short of it whenever you want.
+
+Superpowers is aiming somewhere different on purpose. It keeps the user in the loop throughout execution by design — brainstorm, plan review, per-task checkpoints, code review between tasks — because continuous human partnership *is* the product. That's a coherent bet, and a good one if that's what you're after.
+
+Two different targets, two different architectures. Once the missions diverge, the code can't help diverging with them.
+
+## The simplicity principle
+
+There's one thing we believe that we haven't seen articulated anywhere else in the harness conversation, and it's underneath everything else we do:
+
+<Callout tone="good" title="The principle">
+**Simplicity at every step increases the probability of success at each step — and success overall. Wire the steps together with rich knowledge and complex orchestration.**
+</Callout>
+
+Every harness in this space has to decide where the complexity lives. Superpowers hands the agent a rich, multi-step skill and trusts the agent to execute it coherently, with the human at the next checkpoint if anything drifts. We made a different bet: we moved the complexity *off* the agent and *onto* the machine.
+
+At any turn, the agent sees one action. Play this role (we call it a *hat* — designer, developer, reviewer, etc.) on this specific piece of work. Here are the references. That's it. No multi-step plan in context, no branching tree to navigate, no priorities to juggle. Simple input, high per-step success rate.
+
+The orchestrator does the hard work behind that simplicity — figures out what phase we're in, gathers outputs from earlier phases, picks the next piece of work that's ready to go, assigns the right role, enforces the checkpoint rules, spawns parallel workers in isolated copies of the project, tracks how many iterations have run, and escalates when an automated check fails. None of that is visible to the agent, and none of it depends on the agent remembering anything.
+
+The math matters a lot more than it sounds. Total success is the product of per-step success. At 98% per step, ten steps succeed 82% of the time. At 85% per step — which is what you get when each step is a complex skill the agent has to interpret — ten steps succeed about 20% of the time. It compounds fast. Every step you keep simple is a step you don't lose.
+
+The operational form: **make the agent dumb, make the machine smart**. The agent isn't incapable. It's just being asked only to do the things it's reliably good at. Moving between phases, tracking what depends on what, gathering prior outputs, enforcing checkpoints — those are the orchestrator's problem. The agent does one thing and hands back.
+
+This is why the scavenger-hunt shape works. It's not *just* a trick to survive context loss. It's the only shape that keeps per-step simplicity across a workflow that may span many stages, many units, and many studios. Which is the only shape that comes near lights-out at realistic lengths.
+
+## The architectural divide
+
+We wrote up the full mechanics in [The Scavenger Hunt](/blog/the-scavenger-hunt), but this is the central difference and it's worth pulling out again.
+
+Superpowers is a **download**. When a skill activates, the whole skill body lands in the agent's context — the workflow, the checklists, every hard gate, the whole plan. The agent executes from context. This is exactly how AI-DLC (H·AI·K·U's predecessor) worked, right up to the day we rewrote it.
+
+H·AI·K·U is a **scavenger hunt**. The agent doesn't hold a plan. It calls `haiku_run_next`, gets back one action, executes it, and calls again. Behind the orchestrator is a simple engine that tracks where we are in the workflow, what's done, what's next, and which steps are allowed to come next. The map lives on disk at `.haiku/intents/{slug}/…`. The agent is stateless between calls.
+
+<ExpandableDiagram chart={`flowchart LR
+    subgraph SP["Superpowers: the download"]
+        direction TB
+        U1([User]) --> A1["Agent"]
+        Skill["Skill file<br/>(multi-step plan)"] -. "loaded once<br/>at invocation" .-> A1
+        A1 --> Work1["Agent executes<br/>the whole plan<br/>from context"]
+        Work1 --> Done1([Output])
+    end
+
+    subgraph HK["H·AI·K·U: the scavenger hunt"]
+        direction TB
+        U2([User]) --> A2["Agent"]
+        A2 -- "what now?" --> O["Orchestrator<br/>haiku_run_next"]
+        O -- "do exactly<br/>this one thing" --> A2
+        A2 --> Step["Agent executes<br/>the one step"]
+        Step -- "what now?" --> O
+        O -. "reads" .-> ST[("State on disk<br/>(.haiku/…)")]
+        O --> Done2([Output])
+    end`} />
+
+| | Superpowers (and old AI-DLC) | H·AI·K·U |
+|---|---|---|
+| Instructions | Front-loaded: the whole skill is poured into the agent's memory | Drip-fed: one action at a time |
+| Where the plan lives | In the agent's head (the conversation) | On disk; the agent remembers nothing between turns |
+| Who decides what's next | The agent | The orchestrator, by reading the saved plan |
+| Recovery from a lost conversation | Start over | Next turn picks up exactly where the last one left off |
+| Enforcement | Trust the agent to follow the skill | The orchestrator refuses out-of-order moves; automated checks block violations |
+| Failure mode | The agent drifts several steps in | The agent gets corrected on the next turn |
+
+This isn't stylistic. It was AI-DLC's failure mode in production. Context compacts. The agent forgets what the skill told it in paragraph two. Someone hits `/clear` mid-run and the scaffolding is gone. We saw it over and over, and we eventually stopped trying to fix it in context and rewrote the whole thing.
+
+The payoff of moving the plan to disk: a H·AI·K·U run survives context compaction, `/clear`, crashes, and — genuinely — a different agent picking up the intent mid-flight. That's a property you only get if there's state outside the conversation for a new session to read. It's a trade: we gave up the in-context execution model Superpowers uses so well, in exchange for recovery properties we needed for the dark-factory target. Neither choice is free.
+
+Once the orchestrator is in charge and the plan lives on disk, the organizational structure on top of that — studios, stages, hats, review agents, quality gates — is just data the orchestrator walks. You can see it concretely in the [stage-flow prototype](/prototype-stage-flow.html): the software studio expanded into inception, design, product, development, operations, and security, every node with its hats, review agents, artifacts, and *must-do-this, must-not-do-that* completion criteria attached. All data. The orchestrator walks it.
+
+## What H·AI·K·U actually ships
+
+Because of where we put the complexity, the surface area looks different. Here's the concrete list:
+
+<Grid>
+  <Card eyebrow="Studios" title="24 domains, today" accent="info">
+    Software is one. The others include gamedev, hwdev (hardware), libdev (libraries and SDKs), marketing, legal, HR, finance, sales, product-strategy, project-management, compliance, customer-success, data-pipeline, incident-response, documentation, quality-assurance, vendor-management, security-assessment, training, dev-evangelism, migration, executive-strategy, and ideation (the universal default). "Domain-agnostic" is not a methodology page — it's shipped code.
+  </Card>
+  <Card eyebrow="Review" title="Parallel adversarial challenge" accent="info">
+    At each checkpoint, multiple review agents run in parallel, each with an explicit challenge mandate. The security stage alone ships a red team, a blue team, a threat modeler, a security reviewer, and a mitigation-effectiveness reviewer. Adversarial challenge isn't a validation technique we bolt on — it's the default posture of every gate.
+  </Card>
+  <Card eyebrow="Quality" title="Automated checks, not AI opinions" accent="info">
+    In software-family studios, quality isn't judged by the AI. Tests pass or they don't. Types check or they don't. Automated checks block advancement regardless of what the agent claims. The AI is reserved for the subjective questions — is this actually a good design? Does it solve the problem? — while the mechanical checks are settled by the toolchain.
+  </Card>
+  <Card eyebrow="Autonomy" title="Per-stage, not per-session" accent="info">
+    Each phase of work declares how it wants to be reviewed (auto-advance, ask the user, wait for external sign-off, or pause for an outside event) and how it wants to plan (with the user, or on its own). One piece of work can run a conversation-heavy discovery phase, an auto-advancing build phase, and an external-review security gate without ever crossing a session boundary.
+  </Card>
+  <Card eyebrow="Review UI" title="A visual surface for reviewers" accent="info">
+    Reviews open in the browser, not on the command line. The orchestrator can ask rich questions, show live wireframes to choose between, and render mockups inline — so non-technical reviewers can participate without leaving their browser. Different audience than a terminal-native flow.
+  </Card>
+  <Card eyebrow="Browse" title="A portfolio, not a log" accent="info">
+    A public browsable catalog of the work itself. Anyone with the URL can walk the history, read specs, inspect artifacts, and approve checkpoints without running Claude Code. Teams showcase what they're building; other groups discover in-flight work. The project directory becomes a portfolio — [here's ours](https://haikumethod.ai/browse/github.com/thebushidocollective/haiku-method/).
+  </Card>
+  <Card eyebrow="Distribution" title="Works with any AI agent, not just Claude" accent="info">
+    The core tooling speaks MCP — the open protocol AI agents use to call outside tools. Any agent that speaks it can drive a H·AI·K·U run today: Cursor, Codex, Copilot CLI, Gemini, Claude. The Claude-specific slash commands (`/haiku:start`, `/haiku:resume`) are convenient wrappers; they aren't the product.
+  </Card>
+  <Card eyebrow="Handoffs" title="Built for user-to-user, not solo" accent="info">
+    State lives on disk, so intents survive handoffs between *humans*, not just sessions. A researcher starts it; a designer picks up the design stage; a developer takes construction; a security reviewer gates release. Each human opens a fresh session, the orchestrator reads state, next action is right there. Context and breadcrumbs aren't lost.
+  </Card>
+  <Card eyebrow="Composition" title="Cross-department by design" accent="info">
+    A single piece of work can combine multiple studios under one parent with sync points between them. A product launch might run a marketing track, a software track, and a legal-review track in parallel, coordinating at checkpoints. Real work crosses disciplines, and the orchestrator treats that as first-class.
+  </Card>
+  <Card eyebrow="Scaffolding" title="A tool for extending the system" accent="info">
+    A built-in command generates the folders and templates for custom studios, stages, roles, and integrations. People extending H·AI·K·U aren't on their own.
+  </Card>
+</Grid>
+
+## Where the DNA actually overlaps
+
+It would be dishonest to skip this. H·AI·K·U and Superpowers agree on more than either disagrees with. Both separate planning from implementation and treat that separation as load-bearing. Both spin up isolated helper agents for each chunk of work so they don't step on one another. Both enforce explicit review rather than trusting the agent to self-assess. Both refuse to declare something "done" without an automated check (Superpowers has a verification step; we halt on failing tests). And both treat the scaffolding itself as temporary — things worth removing as the underlying AI models get better — which is the argument we made in [H·AI·K·U Is a Harness](/blog/ai-dlc-is-a-harness).
+
+If you've read the introduction to either system, the other feels familiar. The principles overlap. The targets are what diverge.
+
+## What we're taking from Superpowers
+
+Reading Superpowers carefully gave us three concrete things to bring into H·AI·K·U. These aren't "gaps we needed to fix" so much as techniques we saw working in Jesse's system and wanted to adapt for ours:
+
+**1. Persuasion framing, centralized at the orchestrator.** Superpowers' loud tags — `<EXTREMELY-IMPORTANT>`, `<HARD-GATE>` — are there because calm guidance gets rationalized away. We want that same defensive envelope in H·AI·K·U, but centralized: rather than stamping it inside every studio's files, wrap every action the orchestrator hands back to the agent in the same framing. One place, every studio benefits. Credit where it's due — Jesse's writing is what convinced us the loud version is load-bearing, not overdone.
+
+**2. Flow diagrams rendered from live state.** Superpowers hand-draws a flowchart inside every skill, and reading those taught us how much a clear visual helps an agent orient itself. In H·AI·K·U the orchestrator already knows the workflow shape and which steps are allowed next, so it can render the diagram on demand instead of storing one per skill. Same benefit, different mechanism, and we owe the idea to the Superpowers skill files.
+
+**3. Easier install on non-Claude platforms.** The H·AI·K·U tooling already speaks MCP, so an agent in Cursor or Codex can drive a run today. What we *haven't* shipped is the convenient one-click entry point for each platform — a Cursor plugin, a Codex extension, an OpenCode manifest. Superpowers' six-platform install matrix is a reminder that ease of install drives adoption, and we want to close that gap. The protocol work is done; the packaging is what's left.
+
+## Why our shipping list looks the way it does
+
+Most of what's in the list above is load-bearing for the dark-factory mission — none of it is decoration, and the reasoning is worth making explicit:
+
+- **Keeping the plan on disk, not in the agent's head,** is what lets execution survive context loss. That recovery property is what makes a one-shot run from a good spec possible for us. It's also the biggest thing we traded away from the in-context model Superpowers uses — different target, different tradeoff.
+- **Twenty-four studios** exist because H·AI·K·U's target is structured work across domains, not software specifically. If the mission were software only, a tighter shape would make more sense.
+- **Deterministic backpressure** exists because LLM-only quality gates are fragile in our experience. Where the toolchain can settle a question, we let it; human judgment is reserved for the parts that actually need judgment.
+- **Visual review and browse** exist because our target includes reviewers who aren't running a CLI. A terminal-first flow is great for the developer; we also need to reach the stakeholder gating a spec or the teammate catching up on in-flight work.
+- **User-to-user handoffs and composite intents** exist because real work crosses disciplines and departments. A product launch is marketing, engineering, and legal moving together — we wanted a harness that treats that as first-class.
+
+Everything in that list serves one idea: make the spec good enough to execute once, and let the human review the *spec* rather than every step of the implementation.
+
+## Closing
+
+Jesse built Superpowers with unusual craft. If you want the clearest public example of the skills-library approach done well, that's the one — we recommend it genuinely, and we've learned from reading it.
+
+H·AI·K·U is aiming at a different target: disciplined *spec* production, so that execution *can* run dark, with the user dialing in how dark based on the work. The on-disk plan, the twenty-four studios, the parallel adversarial review, the deterministic backpressure, the visual review, the browse portfolio, the MCP-native distribution, the simplicity principle — all of it serves one idea: make the agent's job simple at every step, make the machine hold the structure, make the spec right up front, and let execution be whatever level of formality the work calls for.
+
+Two projects. Same observation about raw agents. Different bets about how reliability gets built. Different products as a result — and the space is better for having both of them in it.
+
+<Callout tone="info" title="The one-liner">
+Build the spec in the light. Let execution run in the dark.
+</Callout>

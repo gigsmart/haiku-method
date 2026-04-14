@@ -103,17 +103,43 @@ The four-phase lifecycle is universal, but *how* each phase manifests depends on
 
 ### Built-in Studios
 
-H·AI·K·U ships with twelve studios organized into three categories — engineering, go-to-market, and general purpose — covering work from software development through sales cycles to content creation.
+H·AI·K·U ships with fifteen studios organized into three categories — engineering, go-to-market, and general purpose — covering work from application development through sales cycles to content creation. The engineering category has four product-family studios (`appdev`, `libdev`, `gamedev`, `hwdev`) because the lifecycles differ at the stage level, not just the hat level: a library has no product or design phase, a game needs a prototype-validation gate and a dedicated polish stage, and hardware has requirements-driven compliance and a one-shot manufacturing gate.
+
+Every studio has three kinds of identifier — a canonical `name` (shown in browse views), a short `slug` (for CLI input), and optional `aliases` (for backward compatibility after renames). The loader resolves any of them to the same studio.
 
 #### Engineering Studios
 
-**Software** is the default for code-producing work — a full development lifecycle from problem understanding through security review.
+**Application Development** (`appdev`, aliased from `software`) is the default for user-facing application work — web, mobile, desktop, and services. Full development lifecycle from problem understanding through security review.
 
 | Property | Value |
 |---|---|
-| Stages | inception → design → product → development → operations → security |
+| Stages | inception → product → design → development → security → operations |
 | Persistence | git (branches, worktrees) |
 | Delivery | pull request |
+
+**Library Development** (`libdev`) covers libraries, SDKs, and CLI tools. Differs from application development: no product or design phases — inception directly covers discovery AND API surface, and release publishes rather than deploys.
+
+| Property | Value |
+|---|---|
+| Stages | inception → development → security → release |
+| Persistence | git |
+| Delivery | registry publish |
+
+**Game Development** (`gamedev`) covers games. Concept absorbs discovery, prototype is a gated fun-validation stage before production commits resources, and polish is its own dedicated stage because game feel needs iteration time application work does not.
+
+| Property | Value |
+|---|---|
+| Stages | concept → prototype → production → polish → release |
+| Persistence | git |
+| Delivery | storefront submission (platform cert) |
+
+**Hardware Development** (`hwdev`) covers hardware products — electronics, firmware, manufacturing. Unlike software, hardware has physical constraints, safety regulations, and a one-shot manufacturing gate. Requirements captures compliance upfront because it cannot be retrofitted.
+
+| Property | Value |
+|---|---|
+| Stages | inception → requirements → design → firmware → validation → manufacturing |
+| Persistence | git |
+| Delivery | manufacturing ramp |
 
 **Data Pipeline** covers ETL pipelines, data warehouses, and analytics workflows.
 
@@ -207,7 +233,7 @@ H·AI·K·U ships with twelve studios organized into three categories — engine
 | Persistence | git |
 | Delivery | pull request |
 
-Each studio defines its own behavioral roles. The software studio's inception stage uses a researcher and elaborator; its development stage uses a planner, builder, and reviewer; its security stage uses a threat modeler, red team, blue team, and security reviewer. The sales studio's qualification stage uses a research analyst and qualification specialist. Despite these differences, all twelve studios run on the same orchestration machinery.
+Each studio defines its own behavioral roles. The application-development studio's inception stage uses a researcher and elaborator; its development stage uses a planner, builder, and reviewer; its security stage uses a threat modeler, red team, blue team, and security reviewer. The library-development studio's inception folds in an api-architect because the API surface is the product. The game-development studio's prototype stage uses a prototype-engineer, game-designer, and playtester because prototype validation is gated on external player feedback. Despite these differences, all fifteen studios run on the same orchestration machinery.
 
 ### Custom Studios
 
@@ -219,7 +245,7 @@ This is the structural answer to the "no domain awareness" failure mode. Securit
 
 ## 4. Stages: The Implementation Layer
 
-A studio's lifecycle is a sequence of stages. Each stage is a self-contained execution environment with its own behavioral roles, quality standards, and a review gate that controls advancement. The software studio declares six stages — inception, design, product, development, operations, security — while the ideation studio declares four: research, create, review, deliver. Stages execute sequentially within a studio; each must complete before the next begins.
+A studio's lifecycle is a sequence of stages. Each stage is a self-contained execution environment with its own behavioral roles, quality standards, and a review gate that controls advancement. The application-development studio declares six stages — inception, product, design, development, security, operations — while the library-development studio declares four (inception, development, security, release) because libraries have no product or design phase, and the ideation studio declares just four: research, create, review, deliver. Stages execute sequentially within a studio; each must complete before the next begins.
 
 ### What a Stage Defines
 
@@ -334,7 +360,7 @@ This separation is deliberate. The same four-step stage loop that drives softwar
 
 Two persistence backends ship with H·AI·K·U:
 
-**Git persistence** (used by the software studio) maps the lifecycle onto git's collaboration model. Each intent gets its own branch and isolated worktree. Saves are commits. Delivery is a single pull request per intent targeting the mainline. Units are internal iterations within the intent branch — they do not produce separate PRs.
+**Git persistence** (used by the application-development studio and most engineering studios) maps the lifecycle onto git's collaboration model. Each intent gets its own branch and isolated worktree. Saves are commits. Delivery is a single pull request per intent targeting the mainline. Units are internal iterations within the intent branch — they do not produce separate PRs.
 
 **Filesystem persistence** (used by the ideation studio) provides versioned storage without version control infrastructure. Saves create timestamped snapshots. Reviews produce local review documents. Delivery moves the workspace to a delivered state. There is no remote to synchronize with — the work is local by design.
 
@@ -380,7 +406,7 @@ The concepts described above are implemented as a Claude Code plugin with two us
 
 **`/haiku:start`** creates an intent — gathering a description, detecting the appropriate studio, selecting continuous or discrete mode, and setting up the workspace and persistence backend.
 
-**`/haiku:resume`** advances the intent through its next stage — resolving the current state, loading the stage definition, and executing the five-phase stage loop.
+**`/haiku:pickup`** advances the intent through its next stage — resolving the current state, loading the stage definition, and executing the five-phase stage loop.
 
 ### Enforcement Through Hooks
 
@@ -412,17 +438,17 @@ Configuration follows a three-level precedence: intent-level overrides take prio
 
 H·AI·K·U's universal core — the four-phase lifecycle, the stage loop, hat-based role separation, and quality enforcement — is domain-agnostic. Studios map this core to specific domains.
 
-### Twelve Studios in Practice
+### Fifteen Studios in Practice
 
-The plugin ships with twelve studios across three categories that demonstrate the framework's range.
+The plugin ships with fifteen studios across three categories that demonstrate the framework's range.
 
-The **engineering studios** (software, data-pipeline, migration, incident-response, compliance, security-assessment) use git persistence with pull-request delivery. Their stages span domain-specific concerns — the software studio moves from inception through security; the incident-response studio moves from triage through postmortem; the security-assessment studio moves from reconnaissance through reporting. Quality gates run test suites, linters, type checkers, and build commands where applicable.
+The **engineering studios** fall into two groups. The product-family studios (`appdev`, `libdev`, `gamedev`, `hwdev`) cover distinct product types where the lifecycle itself differs — application development has product and design phases, library development does not (inception folds in the API surface), game development has a prototype-validation gate and a dedicated polish stage, and hardware development has compliance-driven requirements and a one-shot manufacturing gate. The domain-engineering studios (`data-pipeline`, `migration`, `incident-response`, `compliance`, `security-assessment`) cover specialized engineering work. All use git persistence with pull-request delivery (except hardware, which delivers into manufacturing). Quality gates run test suites, linters, type checkers, and build commands where applicable.
 
 The **go-to-market studios** (sales, marketing, customer-success, product-strategy) use filesystem persistence with local delivery. Their stages reflect business workflows — the sales studio moves from research through close; the customer-success studio moves from onboarding through renewal. Quality enforcement relies on adversarial review rather than machine-verifiable gates.
 
 The **general-purpose studios** (ideation, documentation) serve creative, analytical, and documentation work. The ideation studio uses filesystem persistence; the documentation studio uses git persistence with pull-request delivery.
 
-All twelve studios run on the same orchestration machinery. The same stage loop function drives inception in the software studio, triage in the incident-response studio, and research in the ideation studio. The same gate resolution function handles every domain. The same context injection hook loads context for any studio's hats.
+All fifteen studios run on the same orchestration machinery. The same stage loop function drives inception in the application-development studio, concept in the game-development studio, triage in the incident-response studio, and research in the ideation studio. The same gate resolution function handles every domain. The same context injection hook loads context for any studio's hats.
 
 ### What Changes Across Domains
 
@@ -464,7 +490,7 @@ The universal layer provides: a four-phase lifecycle that maps to any initiative
 
 The domain-specific layer provides: studios that define stage sequences appropriate to the domain; hats that carry behavioral instructions tuned to specific roles; quality gates that run domain-appropriate verification; and output definitions that scope deliverables correctly.
 
-The plugin implementation demonstrates that this separation works in practice. The same orchestration machinery drives twelve studios — from a six-stage software development lifecycle with git persistence and pull-request delivery, to a five-stage sales cycle with filesystem persistence, to a five-stage security assessment with git-backed reporting. Adding a new domain requires defining stages and hats, not modifying orchestration code.
+The plugin implementation demonstrates that this separation works in practice. The same orchestration machinery drives fifteen studios — from a six-stage application-development lifecycle with git persistence and pull-request delivery, to a four-stage library-development lifecycle that publishes to package registries, to a five-stage game-development lifecycle with a prototype-validation gate, to a six-stage hardware-development lifecycle with compliance-driven requirements and a one-shot manufacturing gate, to a five-stage sales cycle with filesystem persistence, to a five-stage security assessment with git-backed reporting. Adding a new domain requires defining stages and hats, not modifying orchestration code.
 
 The framework is intentionally extensible through studios rather than through core modifications. The orchestration layer is stable; the studio layer is where domain expertise accumulates.
 

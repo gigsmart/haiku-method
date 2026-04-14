@@ -12,7 +12,10 @@
 
 import { generateSubagentContext } from "./subagent-context.js"
 
-export async function subagentHook(input: Record<string, unknown>, pluginRoot: string): Promise<void> {
+export async function subagentHook(
+	input: Record<string, unknown>,
+	pluginRoot: string,
+): Promise<void> {
 	const toolName = input.tool_name as string
 
 	// Determine target field: prompt for Agent/Task, args for Skill
@@ -35,13 +38,15 @@ export async function subagentHook(input: Record<string, unknown>, pluginRoot: s
 	const contextOutput = await generateSubagentContextString(pluginRoot)
 
 	// Extract permission_mode from hook payload (for Agent/Task only)
-	const permissionMode = isAgentTool ? (input.permission_mode as string) ?? "" : ""
+	const permissionMode = isAgentTool
+		? ((input.permission_mode as string) ?? "")
+		: ""
 
 	// If no context and no permission_mode to inject, exit silently
 	if (!contextOutput && !permissionMode) return
 
 	// Start with the original tool_input
-	let updatedInput = { ...toolInput }
+	const updatedInput = { ...toolInput }
 
 	// Inject context if present
 	if (contextOutput) {
@@ -66,21 +71,10 @@ export async function subagentHook(input: Record<string, unknown>, pluginRoot: s
 			updatedInput.subagent_type = "general-purpose"
 		}
 
-		// If no specific agent type set, try to match based on unit type or context
+		// If no specific agent type set, add a generic H·AI·K·U hint
 		if (!currentType || currentType === "general-purpose") {
-			// Extract unit type from the injected context (if present)
-			const contextStr = (updatedInput[targetField] as string) ?? ""
-			const unitTypeMatch = contextStr.match(/type:\s*(frontend|backend|fullstack|design|research|security|ops|data)/i)
-			if (unitTypeMatch) {
-				const unitType = unitTypeMatch[1].toLowerCase()
-				// Check if the user has specialized agents available
-				// The agent description in the prompt will help Claude Code match the right one
-				// We add a hint for the agent selection system
-				if (!updatedInput.description) {
-					updatedInput.description = `H·AI·K·U ${unitType} work`
-				} else {
-					updatedInput.description = `H·AI·K·U ${unitType}: ${updatedInput.description}`
-				}
+			if (!updatedInput.description) {
+				updatedInput.description = "H·AI·K·U work"
 			}
 		}
 	}
@@ -100,7 +94,9 @@ export async function subagentHook(input: Record<string, unknown>, pluginRoot: s
  * Internal wrapper that captures subagent-context output as a string.
  * The subagentContext function writes to stdout, so we capture it.
  */
-async function generateSubagentContextString(pluginRoot: string): Promise<string> {
+async function generateSubagentContextString(
+	pluginRoot: string,
+): Promise<string> {
 	// Capture stdout by temporarily replacing process.stdout.write
 	let captured = ""
 	const origWrite = process.stdout.write.bind(process.stdout)

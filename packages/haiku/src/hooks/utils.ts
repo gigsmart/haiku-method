@@ -1,8 +1,15 @@
 // hooks/utils.ts — Shared utilities for H·AI·K·U hooks
 
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from "node:fs"
-import { join, basename, dirname } from "node:path"
 import { execSync } from "node:child_process"
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	readdirSync,
+	statSync,
+	writeFileSync,
+} from "node:fs"
+import { basename, dirname, join } from "node:path"
 
 /**
  * Read a frontmatter field from a markdown file.
@@ -30,7 +37,10 @@ export function readJson(filePath: string): Record<string, unknown> {
 /**
  * Write a JSON object to a file atomically.
  */
-export function writeJson(filePath: string, data: Record<string, unknown>): void {
+export function writeJson(
+	filePath: string,
+	data: Record<string, unknown>,
+): void {
 	const dir = dirname(filePath)
 	if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
 	writeFileSync(filePath, JSON.stringify(data))
@@ -44,7 +54,9 @@ export function writeJson(filePath: string, data: Record<string, unknown>): void
 export function findActiveIntent(): string | null {
 	let repoRoot: string
 	try {
-		repoRoot = execSync("git rev-parse --show-toplevel", { encoding: "utf8" }).trim()
+		repoRoot = execSync("git rev-parse --show-toplevel", {
+			encoding: "utf8",
+		}).trim()
 	} catch {
 		repoRoot = process.cwd()
 	}
@@ -75,7 +87,11 @@ export function stateLoad(intentDir: string, key: string): string {
 /**
  * Save a value to the legacy state/ directory.
  */
-export function stateSave(intentDir: string, key: string, content: string): void {
+export function stateSave(
+	intentDir: string,
+	key: string,
+	content: string,
+): void {
 	const stateDir = join(intentDir, "state")
 	if (!existsSync(stateDir)) mkdirSync(stateDir, { recursive: true })
 	writeFileSync(join(stateDir, key), content)
@@ -107,7 +123,9 @@ export function getCurrentBranch(): string {
  */
 export function getRepoRoot(): string {
 	try {
-		return execSync("git rev-parse --show-toplevel", { encoding: "utf8" }).trim()
+		return execSync("git rev-parse --show-toplevel", {
+			encoding: "utf8",
+		}).trim()
 	} catch {
 		return process.cwd()
 	}
@@ -151,7 +169,10 @@ export function findUnitFiles(intentDir: string): string[] {
  * Handles both inline arrays [a, b] and multi-line - item format.
  * Returns parsed array or empty array.
  */
-export function readFrontmatterArray(filePath: string, field: string): Array<Record<string, string>> {
+export function readFrontmatterArray(
+	filePath: string,
+	field: string,
+): Array<Record<string, string>> {
 	if (!existsSync(filePath)) return []
 	const content = readFileSync(filePath, "utf8")
 
@@ -180,7 +201,11 @@ export function readFrontmatterArray(filePath: string, field: string): Array<Rec
 
 		if (inField) {
 			// Non-indented line that isn't a continuation = end of field
-			if (!line.startsWith(" ") && !line.startsWith("\t") && line.trim() !== "") {
+			if (
+				!line.startsWith(" ") &&
+				!line.startsWith("\t") &&
+				line.trim() !== ""
+			) {
 				break
 			}
 
@@ -217,7 +242,11 @@ export function readFrontmatterArray(filePath: string, field: string): Array<Rec
  * Set a field in a frontmatter-bearing markdown file.
  * Updates in-place if the field exists, appends to frontmatter if not.
  */
-export function setFrontmatterField(filePath: string, field: string, value: string): void {
+export function setFrontmatterField(
+	filePath: string,
+	field: string,
+	value: string,
+): void {
 	if (!existsSync(filePath)) return
 	let content = readFileSync(filePath, "utf8")
 	const regex = new RegExp(`^(${field}:)\\s*.+$`, "m")
@@ -270,7 +299,10 @@ export function checkIntentCriteria(intentDir: string): void {
 		}
 	}
 
-	for (const f of [join(intentDir, "completion-criteria.md"), join(intentDir, "state", "completion-criteria.md")]) {
+	for (const f of [
+		join(intentDir, "completion-criteria.md"),
+		join(intentDir, "state", "completion-criteria.md"),
+	]) {
 		if (existsSync(f)) checkAllCriteria(f)
 	}
 }

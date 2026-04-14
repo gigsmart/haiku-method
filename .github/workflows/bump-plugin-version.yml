@@ -7,6 +7,7 @@ on:
     paths-ignore:
       - "plugin/.claude-plugin/plugin.json"
       - ".claude-plugin/marketplace.json"
+      - "plugin/bin/haiku"
       - "CHANGELOG.md"
       - "website/**"
 
@@ -23,10 +24,8 @@ concurrency:
 jobs:
   bump-version:
     runs-on: ubuntu-latest
-    # Skip if commit is from bot (prevent loops) or if it's a version bump commit
-    if: |
-      github.actor != 'github-actions[bot]' &&
-      !contains(github.event.head_commit.message, '[skip ci]')
+    # Skip if commit is from bot (prevent loops)
+    if: github.actor != 'github-actions[bot]'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -120,11 +119,33 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Fetch Sentry DSNs from Terraform
+        id: sentry
+        working-directory: deploy/terraform/sentry
+        run: |
+          terraform init -input=false
+          echo "dsn_mcp=$(terraform output -raw sentry_dsn_mcp)" >> $GITHUB_OUTPUT
+          echo "dsn_spa=$(terraform output -raw sentry_dsn_spa)" >> $GITHUB_OUTPUT
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
       - name: Build MCP server bundle
         run: npm run --prefix packages/haiku build
         env:
-          SENTRY_DSN_REVIEW_SPA: ${{ vars.SENTRY_DSN_REVIEW_SPA }}
-          HAIKU_SENTRY_DSN_MCP: ${{ vars.SENTRY_DSN_MCP }}
+          SENTRY_DSN_REVIEW_SPA: ${{ steps.sentry.outputs.dsn_spa }}
+          HAIKU_SENTRY_DSN_MCP: ${{ steps.sentry.outputs.dsn_mcp }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_URL: https://sentry.ops.gigsmart.com
+          SENTRY_ORG: gigsmart
 
       - name: Commit version bump
         id: commit
@@ -140,7 +161,7 @@ jobs:
           git add plugin/.claude-plugin/plugin.json .claude-plugin/marketplace.json CHANGELOG.md plugin/bin/haiku
 
           # Create commit message
-          COMMIT_MSG="chore(plugin): bump version ${{ steps.bump-version.outputs.old_version }} -> ${{ steps.bump-version.outputs.new_version }} [skip ci]"
+          COMMIT_MSG="chore(plugin): bump version ${{ steps.bump-version.outputs.old_version }} -> ${{ steps.bump-version.outputs.new_version }}"
 
           git commit -m "$COMMIT_MSG"
 
@@ -202,9 +223,12 @@ jobs:
         run: |
           VERSION="${{ steps.bump-version.outputs.new_version }}"
           TAG="v${VERSION}"
+          # Copy standalone binary for direct download (used by auto-updater)
+          cp plugin/bin/haiku haiku-mcp
           # Delete existing release on retry to ensure idempotency
           gh release delete "$TAG" -y 2>/dev/null || true
           gh release create "$TAG" \
             --title "$TAG" \
             --notes-file /tmp/release-notes.md \
-            "ai-dlc-plugin-${VERSION}.zip#AI-DLC Plugin (zip)"
+            "ai-dlc-plugin-${VERSION}.zip#AI-DLC Plugin (zip)" \
+            "haiku-mcp#MCP Server Binary"

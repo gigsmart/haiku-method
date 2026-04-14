@@ -4,7 +4,6 @@ description: Score and rank opportunities using impact/effort frameworks
 hats: [prioritizer, stakeholder-proxy]
 review: ask
 elaboration: collaborative
-unit_types: [scoring, trade-off-analysis]
 inputs:
   - stage: user-research
     discovery: insights-report

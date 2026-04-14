@@ -5,6 +5,109 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.101.4] - 2026-04-14
+
+### Added
+- Example intents for hardware development, content creation, incident response, legal review, and OAuth implementation workflows
+
+### Changed
+- Improved Mermaid diagram rendering for scavenger hunt feature visualization
+
+## [1.101.3] - 2026-04-14
+
+### Fixed
+
+- Sentry error monitoring is now properly embedded in the plugin binary and reliably captures errors in production.
+
+## [1.101.1] - 2026-04-14
+
+### Fixed
+- Directory-type artifact locations are now properly resolved in stage inputs.
+
+## [1.101.0] - 2026-04-13
+
+### Added
+- MCP binary now automatically updates from GitHub releases without requiring manual intervention.
+
+## [1.100.1] - 2026-04-13
+
+### Added
+- Mermaid flowcharts now render as interactive React Flow diagrams you can explore, pan, and zoom.
+- Automatic detection and handling of discrete commits and squash merges on hub branches for improved state tracking.
+
+### Fixed
+- Removed references to deleted unit.type frontmatter field from review application.
+
+## [1.100.0] - 2026-04-13
+
+### Added
+- Revisit command to pick up where you left off on previous work and intents
+
+### Changed
+- Repair command now handles migrated intents and edge cases more reliably
+
+## [1.99.0] - 2026-04-13
+
+### Added
+- Discrete branching with three-level trust merge in browse for safer, more granular code exploration and integration.
+
+## [1.98.1] - 2026-04-13
+
+### Fixed
+- Archived intents stored only on the mainline branch now properly load and are available for work.
+
+## [1.98.0] - 2026-04-12
+
+### Added
+- Game Development studio for interactive products with concept, prototype, polish, production, and release stages — includes playtesting validation and scope discipline gates
+- Hardware Development studio for physical products with design, firmware, requirements, manufacturing, and validation stages — includes compliance mapping and manufacturability review
+- Library Development studio for APIs and packages with inception, development, security, and release stages — includes semantic versioning enforcement and API stability gates
+
+## [1.97.3] - 2026-04-12
+
+### Fixed
+- Output validation now properly enforces that stage outputs cannot be empty, preventing invalid state progression.
+
+## [1.97.2] - 2026-04-12
+
+### Added
+- Cascading model selection: specify which Claude model to use at different workflow levels (studio, stage, or unit) with automatic inheritance from parent scopes
+
+## [1.97.1] - 2026-04-12
+
+### Fixed
+- Stage inputs now correctly resolve from previous stage outputs, enabling reliable data flow between stages
+- Unit inputs are tracked and enforced throughout execution, preventing silent loss of input context
+
+## [1.97.0] - 2026-04-12
+
+### Added
+- Run-next responses now preview the next step and upcoming actions before execution.
+
+## [1.96.0] - 2026-04-12
+
+### Added
+- Per-stage git branching with discrete mode (isolated branch per stage) or hybrid mode (customizable mix of shared and isolated stages) for flexible workflow organization.
+
+## [1.95.4] - 2026-04-10
+
+### Changed
+
+- Product stage now separates product ownership, specification writing, and validation into three independent roles for more granular control of product definition workflows.
+
+## [1.95.3] - 2026-04-10
+
+```markdown
+### Added
+- New `/haiku:report` skill for generating structured project reports
+
+### Changed
+- Renamed skills for clarity: `/haiku:release-notes` → `/haiku:changelog`, `/haiku:review` → `/haiku:gate-review`, `/haiku:resume` → `/haiku:pickup`
+
+### Fixed
+- Error telemetry now correctly routes to self-hosted Sentry instance
+```
+
 ## [1.95.2] - 2026-04-10
 
 ### Fixed

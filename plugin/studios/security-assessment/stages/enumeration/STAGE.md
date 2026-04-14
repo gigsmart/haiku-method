@@ -4,7 +4,6 @@ description: Service discovery, version detection, vulnerability scanning, and a
 hats: [enumerator, vulnerability-scanner]
 review: ask
 elaboration: autonomous
-unit_types: [service-enum, vuln-scan, attack-surface]
 inputs:
   - stage: reconnaissance
     discovery: target-profile

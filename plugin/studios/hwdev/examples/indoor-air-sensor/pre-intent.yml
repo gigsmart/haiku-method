@@ -1,0 +1,17 @@
+related:
+  - compliance
+  - data-pipeline
+  - software
+turns:
+  - role: user
+    text: "Design a battery-powered environmental sensor."
+  - role: agent
+    text: "Which measurements — temp/humidity, VOC, CO₂, or a custom mix?"
+  - role: user
+    text: "Temp, humidity, CO₂. Indoor air quality focus."
+  - role: agent
+    text: "Battery-life target and wireless — LoRa, BLE, or WiFi?"
+  - role: user
+    text: "12 months on 2×AA, BLE."
+  - role: agent
+    text: "Got it — I'll start the inception brief with those constraints."

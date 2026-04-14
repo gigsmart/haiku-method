@@ -2,7 +2,6 @@
 title: "Adopting Existing Features"
 description: "H·AI·K·U now supports reverse-engineering existing codebases into structured intent artifacts, enabling brownfield systems to participate in the full lifecycle."
 date: 2026-03-30
-author: GigSmart
 ---
 
 H·AI·K·U had a greenfield problem. Every entry point assumed you were building something new.

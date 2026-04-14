@@ -1,87 +1,104 @@
-import type { ParsedIntent, ParsedUnit, CriterionItem, Section } from "../types.js";
-import type { MockupInfo } from "./types.js";
-import { escapeHtml, escapeAttr } from "./layout.js";
+import { markdownToHtml } from "../markdown.js"
+import type {
+	CriterionItem,
+	ParsedIntent,
+	ParsedUnit,
+	Section,
+} from "../types.js"
+import { renderAnnotationCanvas } from "./annotation-canvas.js"
 import {
-  renderTabs,
-  renderBadge,
-  renderCriteriaChecklist,
-  renderReviewSidebar,
-  renderReviewSidebarScript,
-  renderMarkdownBlock,
-  renderMockupEmbeds,
-  card,
-  sectionHeading,
-  type TabDef,
-} from "./components.js";
-import { renderAnnotationCanvas } from "./annotation-canvas.js";
-import { renderInlineComments } from "./inline-comments.js";
-import { markdownToHtml } from "../markdown.js";
+	type TabDef,
+	card,
+	renderBadge,
+	renderCriteriaChecklist,
+	renderMarkdownBlock,
+	renderMockupEmbeds,
+	renderReviewSidebar,
+	renderReviewSidebarScript,
+	renderTabs,
+	sectionHeading,
+} from "./components.js"
+import { renderInlineComments } from "./inline-comments.js"
+import { escapeAttr, escapeHtml } from "./layout.js"
+import type { MockupInfo } from "./types.js"
 
 export interface ReviewResult {
-  body: string;
-  sidebar: string;
-  sidebarScript: string;
+	body: string
+	sidebar: string
+	sidebarScript: string
 }
 
 export function renderIntentReview(
-  intent: ParsedIntent,
-  units: ParsedUnit[],
-  criteria: CriterionItem[],
-  sessionId: string,
-  mermaid: string,
-  intentMockups: MockupInfo[],
-  unitMockups: Map<string, MockupInfo[]>,
+	intent: ParsedIntent,
+	units: ParsedUnit[],
+	criteria: CriterionItem[],
+	sessionId: string,
+	mermaid: string,
+	intentMockups: MockupInfo[],
+	unitMockups: Map<string, MockupInfo[]>,
 ): ReviewResult {
-  const findSection = (name: string): string => {
-    const section = intent.sections.find(
-      (s: Section) => s.heading?.toLowerCase() === name.toLowerCase(),
-    );
-    return section?.content ?? "";
-  };
+	const findSection = (name: string): string => {
+		const section = intent.sections.find(
+			(s: Section) => s.heading?.toLowerCase() === name.toLowerCase(),
+		)
+		return section?.content ?? ""
+	}
 
-  const findSectionWithSubs = (name: string): Section | undefined => {
-    return intent.sections.find(
-      (s: Section) => s.heading?.toLowerCase() === name.toLowerCase(),
-    );
-  };
+	const findSectionWithSubs = (name: string): Section | undefined => {
+		return intent.sections.find(
+			(s: Section) => s.heading?.toLowerCase() === name.toLowerCase(),
+		)
+	}
 
-  const problem = findSection("Problem");
-  const solution = findSection("Solution");
+	const problem = findSection("Problem")
+	const solution = findSection("Solution")
 
-  // Tab 1: Overview (with inline comments on text, annotation canvas on mockups)
-  const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"];
-  function isImageUrl(url: string): boolean {
-    const ext = url.substring(url.lastIndexOf(".")).toLowerCase();
-    return IMAGE_EXTS.includes(ext);
-  }
+	// Tab 1: Overview (with inline comments on text, annotation canvas on mockups)
+	const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"]
+	function isImageUrl(url: string): boolean {
+		const ext = url.substring(url.lastIndexOf(".")).toLowerCase()
+		return IMAGE_EXTS.includes(ext)
+	}
 
-  // Build inline-commentable text content from problem + solution
-  let overviewMarkdown = "";
-  if (problem) overviewMarkdown += `## Problem\n\n${problem}\n\n`;
-  if (solution) overviewMarkdown += `## Solution\n\n${solution}\n\n`;
+	// Build inline-commentable text content from problem + solution
+	let overviewMarkdown = ""
+	if (problem) overviewMarkdown += `## Problem\n\n${problem}\n\n`
+	if (solution) overviewMarkdown += `## Solution\n\n${solution}\n\n`
 
-  // Find first image mockup for annotation canvas
-  const firstIntentImageMockup = intentMockups.find((m) => isImageUrl(m.url));
-  const remainingIntentMockups = intentMockups.filter((m) => m !== firstIntentImageMockup);
+	// Find first image mockup for annotation canvas
+	const firstIntentImageMockup = intentMockups.find((m) => isImageUrl(m.url))
+	const remainingIntentMockups = intentMockups.filter(
+		(m) => m !== firstIntentImageMockup,
+	)
 
-  const overviewContent = `
+	const overviewContent = `
     <div class="flex flex-wrap items-center gap-2 mb-6">
       ${renderBadge("Review type", "intent")}
       ${renderBadge("Status", intent.frontmatter.status)}
     </div>
 
-    ${overviewMarkdown ? card(`
+    ${
+			overviewMarkdown
+				? card(`
       ${sectionHeading("Overview — Comment on text")}
       <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Select text to add inline comments.</p>
       ${renderInlineComments(markdownToHtml(overviewMarkdown))}
-    `) : ""}
+    `)
+				: ""
+		}
 
-    ${criteria.length > 0 ? card(`
+    ${
+			criteria.length > 0
+				? card(`
       ${sectionHeading("Success Criteria")}
       ${renderCriteriaChecklist(criteria)}
-    `) : ""}
+    `)
+				: ""
+		}
 
-    ${firstIntentImageMockup ? card(`
+    ${
+			firstIntentImageMockup
+				? card(`
       ${sectionHeading("Mockup — Annotate")}
       <div class="flex items-center justify-between mb-3">
         <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400">${escapeHtml(firstIntentImageMockup.label)}</h4>
@@ -91,39 +108,50 @@ export function renderIntentReview(
         </a>
       </div>
       ${renderAnnotationCanvas(firstIntentImageMockup.url)}
-    `) : ""}
+    `)
+				: ""
+		}
 
-    ${remainingIntentMockups.length > 0 ? card(`
+    ${
+			remainingIntentMockups.length > 0
+				? card(`
       ${sectionHeading(firstIntentImageMockup ? "Additional Mockups" : "Mockups")}
       ${renderMockupEmbeds(remainingIntentMockups)}
-    `) : ""}
-  `;
+    `)
+				: ""
+		}
+  `
 
-  // Tab 2: Units & DAG
-  const unitRows = units
-    .map((u) => {
-      const deps = u.frontmatter.depends_on?.length
-        ? u.frontmatter.depends_on.join(", ")
-        : "—";
-      const um = unitMockups.get(u.slug) ?? [];
-      return `<tr class="border-b border-gray-100 dark:border-gray-800">
+	// Tab 2: Units & DAG
+	const unitRows = units
+		.map((u) => {
+			const deps = u.frontmatter.depends_on?.length
+				? u.frontmatter.depends_on.join(", ")
+				: "—"
+			const um = unitMockups.get(u.slug) ?? []
+			return `<tr class="border-b border-gray-100 dark:border-gray-800">
         <td class="py-3 pr-3 font-mono text-sm text-gray-500 dark:text-gray-400">${u.number.toString().padStart(2, "0")}</td>
         <td class="py-3 pr-3 font-medium">${escapeHtml(u.title)}</td>
         <td class="py-3 pr-3 text-sm">${escapeHtml(u.frontmatter.discipline ?? u.frontmatter.type ?? "")}</td>
+        <td class="py-3 pr-3">${u.frontmatter.model ? renderBadge("Model", u.frontmatter.model) : "—"}</td>
         <td class="py-3 pr-3">${renderBadge("Status", u.frontmatter.status)}</td>
         <td class="py-3 text-sm text-gray-500 dark:text-gray-400">${escapeHtml(deps)}</td>
       </tr>
-      ${um.length > 0 ? `<tr><td colspan="5" class="pb-4">${renderMockupEmbeds(um)}</td></tr>` : ""}`;
-    })
-    .join("");
+      ${um.length > 0 ? `<tr><td colspan="6" class="pb-4">${renderMockupEmbeds(um)}</td></tr>` : ""}`
+		})
+		.join("")
 
-  const unitsAndDagContent = `
-    ${mermaid ? card(`
+	const unitsAndDagContent = `
+    ${
+			mermaid
+				? card(`
       ${sectionHeading("Dependency Graph")}
       <div class="overflow-x-auto p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
         <pre class="mermaid">${mermaid}</pre>
       </div>
-    `) : ""}
+    `)
+				: ""
+		}
 
     ${card(`
       ${sectionHeading("Units")}
@@ -134,6 +162,7 @@ export function renderIntentReview(
               <th class="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">#</th>
               <th class="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Name</th>
               <th class="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Discipline</th>
+              <th class="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Model</th>
               <th class="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Status</th>
               <th class="py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Dependencies</th>
             </tr>
@@ -142,43 +171,51 @@ export function renderIntentReview(
         </table>
       </div>
     `)}
-  `;
+  `
 
-  // Tab 3: Domain Model
-  const domainSection = findSectionWithSubs("Domain Model");
-  let domainContent = "";
-  if (domainSection) {
-    domainContent = card(`
+	// Tab 3: Domain Model
+	const domainSection = findSectionWithSubs("Domain Model")
+	let domainContent = ""
+	if (domainSection) {
+		domainContent = card(`
       ${sectionHeading("Domain Model")}
       ${renderMarkdownBlock("domain-overview", domainSection.content)}
       ${domainSection.subsections
-        .map(
-          (sub: Section, i: number) => `
+				.map(
+					(sub: Section, i: number) => `
         <div class="mt-6">
           ${sectionHeading(sub.heading, 3)}
-          ${renderMarkdownBlock("domain-sub-" + i, sub.content)}
+          ${renderMarkdownBlock(`domain-sub-${i}`, sub.content)}
         </div>`,
-        )
-        .join("")}
-    `);
-  } else {
-    domainContent = card(`
+				)
+				.join("")}
+    `)
+	} else {
+		domainContent = card(`
       ${sectionHeading("Domain Model")}
       <p class="text-gray-500 dark:text-gray-400 italic">No domain model defined.</p>
-    `);
-  }
+    `)
+	}
 
-  // Tab 4: Technical Details
-  const gitConfig = intent.frontmatter.git ?? { change_strategy: "", auto_merge: false, auto_squash: false };
-  const workflow = intent.frontmatter.workflow ?? "";
-  const announcements = intent.frontmatter.announcements ?? [];
-  const contextSection = findSection("Context");
+	// Tab 4: Technical Details
+	const gitConfig = intent.frontmatter.git ?? {
+		change_strategy: "",
+		auto_merge: false,
+		auto_squash: false,
+	}
+	const workflow = intent.frontmatter.workflow ?? ""
+	const announcements = intent.frontmatter.announcements ?? []
+	const contextSection = findSection("Context")
 
-  const technicalContent = `
-    ${contextSection ? card(`
+	const technicalContent = `
+    ${
+			contextSection
+				? card(`
       ${sectionHeading("Context")}
       ${renderMarkdownBlock("tech-context", contextSection)}
-    `) : ""}
+    `)
+				: ""
+		}
 
     ${card(`
       ${sectionHeading("Git Configuration")}
@@ -202,27 +239,35 @@ export function renderIntentReview(
       </dl>
     `)}
 
-    ${announcements.length > 0 ? card(`
+    ${
+			announcements.length > 0
+				? card(`
       ${sectionHeading("Announcements")}
       <ul class="space-y-2">
-        ${announcements.map((a: string) => `<li class="flex items-start gap-2">
+        ${announcements
+					.map(
+						(a: string) => `<li class="flex items-start gap-2">
           <span class="text-blue-500 mt-0.5" aria-hidden="true">&#8226;</span>
           <span>${escapeHtml(a)}</span>
-        </li>`).join("")}
+        </li>`,
+					)
+					.join("")}
       </ul>
-    `) : ""}
-  `;
+    `)
+				: ""
+		}
+  `
 
-  const tabs: TabDef[] = [
-    { id: "overview", label: "Overview", content: overviewContent },
-    { id: "units-dag", label: "Units & DAG", content: unitsAndDagContent },
-    { id: "domain", label: "Domain Model", content: domainContent },
-    { id: "technical", label: "Technical Details", content: technicalContent },
-  ];
+	const tabs: TabDef[] = [
+		{ id: "overview", label: "Overview", content: overviewContent },
+		{ id: "units-dag", label: "Units & DAG", content: unitsAndDagContent },
+		{ id: "domain", label: "Domain Model", content: domainContent },
+		{ id: "technical", label: "Technical Details", content: technicalContent },
+	]
 
-  return {
-    body: renderTabs("intent", tabs),
-    sidebar: renderReviewSidebar(sessionId),
-    sidebarScript: renderReviewSidebarScript(sessionId),
-  };
+	return {
+		body: renderTabs("intent", tabs),
+		sidebar: renderReviewSidebar(sessionId),
+		sidebarScript: renderReviewSidebarScript(sessionId),
+	}
 }

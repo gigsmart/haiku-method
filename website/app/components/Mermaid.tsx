@@ -1,10 +1,13 @@
 "use client"
 
 import mermaid from "mermaid"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { canRenderAsFlow } from "./mermaid-flow/detect"
+import { MermaidFlow } from "./MermaidFlow"
 
 interface MermaidProps {
 	chart: string
+	height?: number
 }
 
 /**
@@ -91,7 +94,13 @@ function darkenColorForDarkMode(hexColor: string): string {
 	return `#${toHex(newR)}${toHex(newG)}${toHex(newB)}`
 }
 
-export function Mermaid({ chart }: MermaidProps) {
+export function Mermaid({ chart, height }: MermaidProps) {
+	const isFlow = useMemo(() => canRenderAsFlow(chart), [chart])
+	if (isFlow) return <MermaidFlow chart={chart} height={height} fallback={<MermaidSvg chart={chart} />} />
+	return <MermaidSvg chart={chart} />
+}
+
+function MermaidSvg({ chart }: { chart: string }) {
 	const containerRef = useRef<HTMLDivElement>(null)
 	const [svg, setSvg] = useState<string>("")
 	const [error, setError] = useState<string | null>(null)
@@ -181,7 +190,7 @@ export function Mermaid({ chart }: MermaidProps) {
 		// Render the diagram
 		const renderDiagram = async () => {
 			try {
-				const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`
+				const id = `mermaid-${Math.random().toString(36).substring(2, 11)}`
 				const { svg } = await mermaid.render(id, chart)
 				setSvg(svg)
 				setError(null)

@@ -4,7 +4,6 @@ description: Monitor progress, track risks, and manage issues
 hats: [tracker, risk-monitor]
 review: auto
 elaboration: autonomous
-unit_types: [status-tracking, risk-management]
 inputs:
   - stage: plan
     discovery: project-plan

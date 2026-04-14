@@ -4,7 +4,6 @@ description: Create campaign assets — copy, visuals, landing pages, emails
 hats: [content-creator, copy-editor]
 review: ask
 elaboration: collaborative
-unit_types: [copy, visual, landing-page, email]
 inputs:
   - stage: strategy
     discovery: messaging-framework

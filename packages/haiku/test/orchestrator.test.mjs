@@ -117,11 +117,13 @@ function createStageState(intentDirPath, stage, state) {
 function createUnit(intentDirPath, stage, unitName, opts = {}) {
   const unitsDir = join(intentDirPath, "stages", stage, "units")
   mkdirSync(unitsDir, { recursive: true })
+  const inputs = opts.inputs || ["intent.md"]
   writeFileSync(join(unitsDir, `${unitName}.md`), `---
 name: ${unitName}
 type: ${opts.type || "task"}
 status: ${opts.status || "pending"}
 depends_on: [${(opts.depends_on || []).join(", ")}]
+inputs: [${inputs.join(", ")}]
 bolt: ${opts.bolt || 0}
 hat: ${opts.hat || ""}
 ---
@@ -152,8 +154,8 @@ test("haiku_intent_create tool defined with description required", () => {
   assert.ok(tool.inputSchema.required.includes("description"))
 })
 
-test("haiku_go_back tool defined with intent required", () => {
-  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_go_back")
+test("haiku_revisit tool defined with intent required", () => {
+  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_revisit")
   assert.ok(tool)
   assert.ok(tool.inputSchema.required.includes("intent"))
 })
@@ -339,32 +341,6 @@ test("accepts properly named units", () => {
 })
 
 // ── runNext: unit type validation ─────────────────────────────────────────
-
-console.log("\n=== runNext: unit type validation ===")
-
-test("rejects units with wrong type for stage", () => {
-  const { projDir, slug, intentDirPath } = createProject("bad-type", {
-    active_stage: "plan",
-    stageConfig: { plan: { unit_types: ["research", "analysis"], elaboration: "directed" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
-  createUnit(intentDirPath, "plan", "unit-01-code-stuff", { type: "implementation" })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "spec_validation_failed")
-})
-
-test("accepts units with correct type", () => {
-  const { projDir, slug, intentDirPath } = createProject("good-type", {
-    active_stage: "plan",
-    stageConfig: { plan: { unit_types: ["task"], elaboration: "directed" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
-  createUnit(intentDirPath, "plan", "unit-01-proper-task", { type: "task" })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.notStrictEqual(result.action, "spec_validation_failed")
-})
 
 // ── runNext: DAG validation ───────────────────────────────────────────────
 

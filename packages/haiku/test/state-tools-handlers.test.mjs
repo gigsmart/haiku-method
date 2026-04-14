@@ -81,6 +81,63 @@ hat: ""
 writeFileSync(join(intentDirPath, "knowledge", "discovery.md"), "# Discovery Document\n\nKey findings here.")
 writeFileSync(join(intentDirPath, "knowledge", "architecture.md"), "# Architecture\n\nTech stack decisions.")
 
+// Single-hat analysis stage fixture for advance_hat last-hat backpressure tests
+mkdirSync(join(intentDirPath, "stages", "analysis", "units"), { recursive: true })
+writeFileSync(join(intentDirPath, "stages", "analysis", "state.json"), JSON.stringify({
+  stage: "analysis",
+  status: "active",
+  phase: "execute",
+  started_at: "2026-04-04T18:05:00Z",
+  completed_at: null,
+  gate_entered_at: null,
+  gate_outcome: null,
+}, null, 2))
+// Unit on last hat (single-hat stage) with NO outputs — should trip unit_outputs_empty
+writeFileSync(join(intentDirPath, "stages", "analysis", "units", "unit-01-no-outputs.md"), `---
+name: unit-01-no-outputs
+type: research
+status: active
+depends_on: []
+bolt: 1
+hat: analyst
+hat_started_at: 2020-01-01T00:00:00Z
+outputs: []
+---
+
+## Completion Criteria
+
+- [x] Analysis complete
+`)
+// Unit on last hat with an output that exists — should complete cleanly
+writeFileSync(join(intentDirPath, "stages", "analysis", "units", "unit-02-with-outputs.md"), `---
+name: unit-02-with-outputs
+type: research
+status: active
+depends_on: []
+bolt: 1
+hat: analyst
+hat_started_at: 2020-01-01T00:00:00Z
+outputs:
+  - knowledge/findings.md
+---
+
+## Completion Criteria
+
+- [x] Analysis complete
+`)
+writeFileSync(join(intentDirPath, "knowledge", "findings.md"), "# Findings\n")
+
+// Studio stage definition with a single hat so analysis/analyst is the last hat
+mkdirSync(join(haikuRoot, "studios", "software", "stages", "analysis"), { recursive: true })
+writeFileSync(join(haikuRoot, "studios", "software", "stages", "analysis", "STAGE.md"), `---
+name: analysis
+hats: [analyst]
+unit_types: [research]
+---
+
+Analysis stage.
+`)
+
 // Create second intent for list testing
 const intent2Dir = join(haikuRoot, "intents", "second-intent")
 mkdirSync(intent2Dir, { recursive: true })
@@ -448,6 +505,37 @@ test("returns JSON for object settings", () => {
   const parsed = JSON.parse(getTextResult(result))
   assert.strictEqual(parsed.compute, "lambda")
   assert.strictEqual(parsed.db, "postgres")
+})
+
+// ── haiku_unit_advance_hat: unit_outputs_empty backpressure ───────────────
+
+console.log("\n=== haiku_unit_advance_hat: outputs backpressure ===")
+
+test("blocks completion when last hat has empty outputs", () => {
+  const result = handleStateTool("haiku_unit_advance_hat", {
+    intent: intentSlug,
+    unit: "unit-01-no-outputs",
+  })
+  const parsed = JSON.parse(getTextResult(result))
+  assert.strictEqual(parsed.error, "unit_outputs_empty")
+  assert.ok(parsed.message.includes("no outputs were produced"))
+})
+
+test("allows completion when last hat has tracked outputs", () => {
+  const result = handleStateTool("haiku_unit_advance_hat", {
+    intent: intentSlug,
+    unit: "unit-02-with-outputs",
+  })
+  const text = getTextResult(result)
+  // Should not error — response is a success payload, not an error JSON
+  let errored = false
+  try {
+    const parsed = JSON.parse(text)
+    if (parsed && parsed.error) errored = true
+  } catch {
+    /* non-JSON success response is fine */
+  }
+  assert.ok(!errored, `expected success, got: ${text}`)
 })
 
 // ── unknown tool ──────────────────────────────────────────────────────────

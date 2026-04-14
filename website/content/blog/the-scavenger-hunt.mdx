@@ -1,0 +1,203 @@
+---
+title: The Scavenger Hunt
+description: Why H·AI·K·U makes the agent dumb on purpose, keeps state on disk, and only lets the user enter the loop at two seams.
+date: 2026-04-12
+author: Jason Waldrip
+category: Architecture
+tags:
+  - fsm
+  - orchestrator
+  - hooks
+  - ai-dlc
+  - context
+---
+
+Back in January we shipped **AI-DLC** — our first real attempt at making AI agents do actual engineering work, not just write code snippets. It was a methodology built on *skills*: big, structured prompts you'd load into the agent at the start of a task, describing the whole workflow in one pass. The agent would read the skill, internalize it, and run. Researcher hat, planner hat, builder hat, reviewer hat. Units with clear success criteria. Quality gates. It was an honest attempt to give a language model the scaffolding it needed to do sustained, multi-step engineering instead of one-shot tasks.
+
+For a while, it worked. Then it didn't. Context compacted. The agent drifted. Six units in, it would forget what the skill told it in paragraph two. Someone hit `/clear` and the entire plan evaporated. We saw the same failure mode over and over: *the agent couldn't hold the whole plan in its head, and the moment it tried, we lost the plan.*
+
+**H·AI·K·U is what AI-DLC became when we stopped trying to fix that and rewrote the whole thing.** Same goal — structured, multi-agent engineering work with quality gates, review cycles, and human checkpoints. Completely different mechanism. Instead of handing the agent a map, H·AI·K·U makes it run a scavenger hunt: ask for the next clue, execute it, come back, ask for the next clue. The agent never sees the whole map. It doesn't need to.
+
+This post is about what falls out of that flip — the architecture, the state machine, the hooks, and the two places where the user is still in the loop.
+
+<KeyPoints title="Three things to remember">
+  1. **The agent is dumb on purpose.** It never decides what's next — it asks `haiku_run_next`.
+  2. **State lives on disk, not in context.** Every turn starts fresh from `.haiku/intents/{slug}/...`. Context compaction, `/clear`, crashes — none of it matters.
+  3. **Hooks are seatbelts.** They can't decide anything, but they can stop the agent from editing the wrong files or skipping quality gates.
+</KeyPoints>
+
+<Callout tone="info" title="Prefer to click around than read?">
+Every diagram below has a live, fully-interactive version. The [runtime architecture map](/prototype-stage-flow.html) renders the whole thing — actors, hooks, FSM phases, every `haiku_run_next` tick, every state write — and lets you click any node for its real source file. Each studio has its own view: [software](/studios/software/architecture/), [ideation](/studios/ideation/architecture/), [legal](/studios/legal/architecture/), [hwdev](/studios/hwdev/architecture/), and [20 others](/studios/). The rest of this post is the story; the map is the ground truth.
+</Callout>
+
+## The download vs. the scavenger hunt
+
+The easiest way to see the flip is to put the two side by side.
+
+<ExpandableDiagram chart={`flowchart TB
+    subgraph AIDLC["AI-DLC: the download"]
+        direction TB
+        U1([User]) --> A1["Agent"]
+        Skill1["Skill file<br/>(one giant prompt)"] -. "loaded once<br/>at invocation" .-> A1
+        A1 --> Work1["Agent does<br/>everything<br/>in one shot"]
+        Work1 --> Done1([Output])
+    end
+
+    subgraph HAIKU["H·AI·K·U: the scavenger hunt"]
+        direction TB
+        U2([User]) --> A2["Agent"]
+        A2 -- "what now?" --> O["Orchestrator<br/>haiku_run_next"]
+        O -- "do exactly<br/>this one thing" --> A2
+        A2 --> Step["Agent executes<br/>the one step"]
+        Step -- "what now?" --> O
+        O -. "reads" .-> FSM[("FSM state<br/>on disk")]
+        Hooks["Hooks"] -. "block wrong<br/>moves" .-> A2
+        O --> Done2([Output])
+    end`} />
+
+AI-DLC front-loaded everything. One big prompt, delivered once, and then the agent was on its own. H·AI·K·U inverts that. The agent sees one clue at a time — `start_unit`, `gate_review`, `fix_quality_gates` — executes it, and comes back for the next one. The map only exists in the orchestrator and the FSM files on disk.
+
+<Callout tone="good" title="The best part">
+In H·AI·K·U, **it doesn't matter if the agent loses context.** The next `haiku_run_next` call hands it back everything it needs to know — what stage it's in, what phase, what unit is active, what hat it's wearing, what's done, what's next. Context loss stops being a failure mode. It becomes a non-event. Hit `/clear` mid-run. Let the context compact. Crash the session and start a new one. The next tool call tells the agent exactly where it left off, because the state was never in the conversation to begin with.
+</Callout>
+
+That's why a H·AI·K·U run survives context compaction, `/clear`, crashes, and even a different agent picking it up mid-flight. The state isn't in the conversation. It's in the filesystem.
+
+| | AI-DLC skills | H·AI·K·U |
+|---|---|---|
+| **Instructions** | Front-loaded — entire skill dumped into context at start | Drip-fed — one action per `haiku_run_next` call |
+| **State** | Lives in the agent's head (conversation context) | Lives on disk; agent is stateless between ticks |
+| **Control flow** | Agent decides what's next | Orchestrator decides what's next |
+| **Recovery** | Context lost = start over | Context lost = next turn reads state.json and resumes |
+| **Enforcement** | Trust the agent to follow the prompt | Hooks physically block violations; orchestrator refuses invalid transitions |
+| **Parallelism** | One agent, one thread | Waves of units in isolated worktrees |
+| **User checkpoints** | Wherever the skill happens to ask | Forced at elaboration + review gates, can't be skipped |
+| **Failure mode** | Agent hallucinates a plan and runs off the rails | Agent gets told "no, do X" on the next tick |
+
+## The full architecture
+
+Five layers: the user, the Claude Code harness (agent + hooks), the H·AI·K·U MCP server, the FSM state on disk, and external systems — git worktrees, the review UI, quality gates.
+
+<ExpandableDiagram chart={`flowchart TB
+    User([User])
+    subgraph CC["Claude Code harness"]
+        Agent["Agent (Claude)"]
+        Hooks["Hooks<br/>prompt-guard · workflow-guard<br/>guard-fsm-fields · enforce-iteration<br/>inject-context · track-outputs<br/>quality-gate · subagent-context"]
+    end
+
+    subgraph MCP["haiku MCP server"]
+        Orchestrator["Orchestrator<br/>haiku_run_next"]
+        StateTools["State tools<br/>haiku_stage_get · haiku_unit_*<br/>haiku_intent_* · haiku_studio_*"]
+        Prompts["Prompt handlers<br/>prompts/core.ts · complex.ts"]
+    end
+
+    subgraph FSM["FSM state on disk (.haiku/)"]
+        Intent["intents/{slug}/intent.md<br/>status · active_stage · studio"]
+        Stage["stages/{stage}/state.json<br/>phase · elaboration_turns · gate_outcome"]
+        Units["stages/{stage}/units/*.md<br/>depends_on · hat · bolt · status"]
+    end
+
+    subgraph Defs["Studio definitions (read-only)"]
+        Studio["studios/{name}/STUDIO.md"]
+        StageMD["stages/{stage}/STAGE.md<br/>review · elaboration · quality_gates"]
+        Hats["hats/*.md · review-agents/*.md"]
+    end
+
+    subgraph Ext["External systems"]
+        Worktrees["Git worktrees<br/>(one per unit)"]
+        ReviewUI["Review web UI<br/>approve / reject / open PR"]
+        Gates["Quality gates<br/>tests · lint · typecheck"]
+        Telemetry["Telemetry / Sentry"]
+    end
+
+    User -- "conversation +<br/>review clicks" --> Agent
+    Agent -- "tool calls" --> Orchestrator
+    Agent -- "tool calls" --> StateTools
+    Agent -. "intercepted by" .-> Hooks
+    Hooks -- "block / inject context" --> Agent
+    Hooks -- "read" --> FSM
+
+    Orchestrator -- "read + write<br/>(FSM side effects)" --> FSM
+    Orchestrator -- "read" --> Defs
+    Orchestrator -- "spawn" --> Worktrees
+    Orchestrator -- "openReviewAndWait()<br/>(blocks)" --> ReviewUI
+    Orchestrator -- "runQualityGates()" --> Gates
+    Orchestrator -- "emit" --> Telemetry
+    ReviewUI -- "approval" --> User
+
+    StateTools -- "read + write" --> FSM
+    Prompts -- "read" --> Defs`} />
+
+The orchestrator is the brain. Hooks are spinal reflexes. The orchestrator decides what should happen next. Hooks make sure the agent physically can't do anything else between orchestrator calls. The agent is the body that executes the current action. And everything the orchestrator knows, it knows from reading files on disk.
+
+<Callout tone="good" title="See it live">
+This diagram is static; the [interactive runtime map](/prototype-stage-flow.html) isn't. Every actor, hook, MCP tool, hat, review-agent, and artifact chip on the live page is clickable and opens the real source file (`STAGE.md`, `hats/*.md`, `review-agents/*.md`, `discovery/*.md`, `outputs/*.md`). Swap studios from the picker in the top bar, or jump straight to any studio's architecture: `/studios/<slug>/architecture`.
+</Callout>
+
+## Stages and phases
+
+Every studio is a named lifecycle template — a DAG of stages, each running its own phase FSM. H·AI·K·U ships with 24 studios (software, ideation, legal, hwdev, incident-response, marketing, hr, finance, and 16 more). The shape is the same across all of them; only the stage names and gate types differ. The default software studio has six stages in strict order: **inception → design → product → development → operations → security**. Every stage walks the same phase sequence: `pending → elaborate → execute → review → gate`. The orchestrator enforces the transitions; the agent can only move forward when the preconditions are actually met, not when it thinks they are.
+
+Two seams demand a human:
+
+<Grid>
+  <Card eyebrow="Seam 1" title="Elaboration conversation" accent="info">
+    Collaborative stages require at least three back-and-forth turns with the user before units can be finalized. `elaboration_turns` is tracked in `state.json`. Until it hits the threshold, the orchestrator returns `elaboration_insufficient` no matter what the agent does.
+  </Card>
+  <Card eyebrow="Seam 2" title="Review gates" accent="good">
+    The orchestrator returns `gate_review` and `handleOrchestratorTool` calls `_openReviewAndWait`, which literally blocks the MCP tool call until the user clicks Approve, Request Changes, or Open PR in the web UI.
+  </Card>
+</Grid>
+
+Everything else is the agent in a tight loop: call `haiku_run_next`, do the work the action described, call `haiku_run_next` again. No meetings. No status updates. No "what should I do next?" Just clues.
+
+The full state machine — six stages × five phases, every gate type, mode resolution, `/haiku:revisit` back-edges — lives in `packages/haiku/src/orchestrator.ts`. You don't have to take my word for it: the [runtime architecture map](/prototype-stage-flow.html) lays out every phase, every `haiku_run_next` action, every validation check, and every state write per stage. Toggle between continuous / discrete / hybrid / autopilot modes in the top bar to see how the gates change shape.
+
+## Where hooks come in
+
+Hooks live in `packages/haiku/src/hooks/*.ts` and run inside Claude Code's hook system — not inside the agent's reasoning. They exist because the agent can't be trusted to enforce its own rules. That's not an insult. It's a design decision. If you have to trust the agent to follow the rules, you'll find out it didn't the moment something goes wrong.
+
+<Grid>
+  <Card eyebrow="Guardrails" title="Block bad moves" accent="bad">
+    - `prompt-guard` — rejects bad prompts
+    - `workflow-guard` — prevents edits outside the active unit/stage
+    - `redirect-plan-mode` — routes plan mode through haiku
+    - `enforce-iteration` — forces bolt counter increment
+    - `guard-fsm-fields` — blocks direct edits to FSM-managed frontmatter
+    - `validate-unit-type` — rejects wrong-typed unit files
+    - `ensure-deps` — verifies deps before running gates
+  </Card>
+  <Card eyebrow="Context injection" title="Keep the agent honest" accent="good">
+    - `inject-context` + `inject-state-file` — automatically injects FSM state so the agent never has to ask
+    - `subagent-context` / `subagent-hook` — scopes context for spawned subagents
+    - `track-outputs` — records which files the agent produced for a unit
+    - `context-monitor` — watches token budget
+    - `quality-gate` — hook wrapper around `runQualityGates`
+  </Card>
+</Grid>
+
+<Callout tone="info" title="Mental model">
+The orchestrator is the brain. Hooks are spinal reflexes. The orchestrator decides what should happen next. Hooks make sure the agent physically can't do anything else between orchestrator calls. The agent is the body that executes the current action.
+</Callout>
+
+## Why this works
+
+There's a story I keep coming back to. A senior engineer once told me, "the train can only move as fast as the tracks that it's built on." You can put any engine you want on top of bad rails. It doesn't matter. The rails are the ceiling. Agent frameworks spent years trying to put a bigger engine on the same bad rails — longer context windows, better prompts, more clever reasoning. And the rails kept failing in the same places: memory, state, recovery, enforcement.
+
+H·AI·K·U is a bet on the rails. The engine doesn't need to be smarter. It needs to be asked the right question at the right time, and it needs to be stopped when it tries to do the wrong thing. The filesystem is the memory. The orchestrator is the brain. The hooks are the reflexes. The agent is the body. And the user, when the user is needed, is called into exactly the right place — not because the agent remembered to ask, but because the FSM refuses to advance until they do.
+
+<Callout tone="warn" title="The question that matters">
+AI-DLC asked: *can the agent hold the whole plan in its head?*<br/>
+H·AI·K·U asks: *what's the smallest next step, and how do we make it impossible to skip?*
+</Callout>
+
+The agent never sees the whole map. It doesn't need to. It just needs the next clue.
+
+<Grid>
+  <Card eyebrow="Interactive" title="Runtime architecture map" accent="info">
+    The full map — actors, hooks, FSM phases, MCP tools, knowledge pool, pre- and post-intent flows. Every chip clicks through to real source. [Open the map →](/prototype-stage-flow.html)
+  </Card>
+  <Card eyebrow="Per studio" title="Browse by domain" accent="good">
+    Same map, pre-filtered to one studio's stages and artifacts. [software](/studios/software/architecture/) · [ideation](/studios/ideation/architecture/) · [legal](/studios/legal/architecture/) · [hwdev](/studios/hwdev/architecture/) · [all 24](/studios/)
+  </Card>
+</Grid>

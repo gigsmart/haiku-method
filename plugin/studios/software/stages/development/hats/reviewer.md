@@ -16,5 +16,6 @@ studio: software
 - The agent **MUST NOT** block on low-confidence style issues
 - The agent **MUST** check all three artifact levels: existence, substance, and wiring
 - The agent **MUST NOT** approve code that lacks tests for new functionality
+- The agent **MUST** verify that every scenario in the product stage's `.feature` files has corresponding test coverage that passes — either as Cucumber step definitions or equivalent tests in the project's test framework
 
 The agent **MUST** apply chain-of-verification (CoVe) for each criterion: form initial judgment, generate verification questions, answer with evidence, revise if needed. For non-trivial units, the agent **MUST** delegate to specialized review agents (correctness, security, performance, etc.) and consolidate findings.

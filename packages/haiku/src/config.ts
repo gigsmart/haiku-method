@@ -1,0 +1,64 @@
+// config.ts — Centralized configuration for H·AI·K·U
+//
+// All user-facing feature flags and tunable defaults live here. Environment
+// variables are read once at module load. Import this module instead of
+// reading process.env directly for Haiku-specific config.
+//
+// Harness-provided env vars (CLAUDE_PLUGIN_ROOT, CLAUDE_CONFIG_DIR,
+// CLAUDE_SESSION_ID, HOME) are NOT centralized — they're environment inputs,
+// not configuration, and are read inline where needed.
+
+function flag(name: string, defaultValue: boolean): boolean {
+	const raw = process.env[name]
+	if (raw === undefined) return defaultValue
+	const v = raw.trim().toLowerCase()
+	if (v === "1" || v === "true" || v === "yes" || v === "on") return true
+	if (v === "0" || v === "false" || v === "no" || v === "off" || v === "")
+		return false
+	return defaultValue
+}
+
+function str(name: string, defaultValue: string): string {
+	return process.env[name] ?? defaultValue
+}
+
+/** Feature flags. */
+export const features = {
+	/** Cascading model selection: unit > hat > stage > studio resolution. */
+	modelSelection: flag("HAIKU_MODEL_SELECTION", true),
+	/** Remote review via tunnel. */
+	remoteReview: flag("HAIKU_REMOTE_REVIEW", false),
+	/** OTEL telemetry export. */
+	telemetry: flag("CLAUDE_CODE_ENABLE_TELEMETRY", false),
+}
+
+/** Review-related configuration. */
+export const review = {
+	siteUrl: str("HAIKU_REVIEW_SITE_URL", "https://haikumethod.ai"),
+}
+
+/** Auto-update configuration. */
+export const autoUpdate = {
+	/** Kill-switch: set HAIKU_AUTO_UPDATE=0 to disable. */
+	enabled: flag("HAIKU_AUTO_UPDATE", true),
+	/** How often to poll GitHub releases (ms). Default 30 min. */
+	intervalMs: Number(str("HAIKU_UPDATE_INTERVAL_MS", "1800000")) || 1_800_000,
+	/** Delay before the first check (ms). Default 60 s. */
+	initialDelayMs:
+		Number(str("HAIKU_UPDATE_INITIAL_DELAY_MS", "60000")) || 60_000,
+}
+
+/** Observability configuration. */
+export const observability = {
+	// Read via literal dot-notation so esbuild's --define can inline the baked-in
+	// DSN at build time. Using str("HAIKU_SENTRY_DSN_MCP", "") here would route
+	// through process.env[name] (dynamic access), which --define cannot rewrite,
+	// leaving shipped binaries with an empty DSN.
+	sentryDsn: process.env.HAIKU_SENTRY_DSN_MCP ?? "",
+	otlpEndpoint: str(
+		"OTEL_EXPORTER_OTLP_ENDPOINT",
+		"http://localhost:4317",
+	).replace(/\/$/, ""),
+	otlpHeadersRaw: str("OTEL_EXPORTER_OTLP_HEADERS", ""),
+	resourceAttrsRaw: str("OTEL_RESOURCE_ATTRIBUTES", ""),
+}

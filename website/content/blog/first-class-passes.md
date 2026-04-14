@@ -2,7 +2,6 @@
 title: "First-Class Passes"
 description: "H·AI·K·U now supports typed iteration through disciplinary lenses — design, product, dev — where each pass shapes how hats behave and which workflows are available."
 date: 2026-03-31
-author: GigSmart
 ---
 
 Software teams do not build features in a single pass. A designer produces mockups. A product manager writes behavioral specs. A developer implements code. Each discipline looks at the same unit of work through a different lens, producing different artifacts, applying different quality standards, and asking different questions.

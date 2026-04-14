@@ -4,7 +4,6 @@ description: Integrate vendor and complete setup
 hats: [integrator, coordinator]
 review: auto
 elaboration: autonomous
-unit_types: [integration, setup]
 inputs:
   - stage: negotiate
     discovery: negotiation-terms

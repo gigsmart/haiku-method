@@ -28,6 +28,14 @@ const glCache = new Map<string, { data: unknown; ts: number }>()
 const GL_CACHE_TTL = 5 * 60 * 1000
 const CHUNK_SIZE = 10
 
+/** Resolved intent tree data from a single ref — used for three-level merge. */
+interface GitLabIntentRefData {
+	blobByPath: Map<string, string>
+	allBlobs: Array<{ name: string; path: string }>
+	allTrees: Array<{ name: string; path: string }>
+	assets: Array<{ path: string; name: string; rawUrl: string }>
+}
+
 function classifyArtifact(name: string): HaikuArtifact["type"] {
 	const lower = name.toLowerCase()
 	if (lower.endsWith(".md")) return "markdown"
@@ -46,6 +54,8 @@ export class GitLabProvider implements BrowseProvider {
 	/** Maps slug → branch for intents discovered via branch scanning */
 	private intentBranchMap = new Map<string, string>()
 	private intentMetaMap = new Map<string, { branch?: string; prUrl?: string | null; prStatus?: string | null; prNumber?: number | null }>()
+	/** Maps "slug/stageName" → branch/MR metadata for stage-level branches */
+	private stageBranchMap = new Map<string, { branch: string; prUrl?: string | null; prStatus?: string | null; prNumber?: number | null }>()
 	/** ETag from the last branch-change poll */
 	private lastBranchesEtag: string | null = null
 
@@ -162,34 +172,6 @@ export class GitLabProvider implements BrowseProvider {
 			.sort()
 	}
 
-	private async listDirs(dir: string): Promise<string[]> {
-		const cacheKey = `gl:${this.host}:${this.projectPath}:listDirs:${dir}`
-		type ListData = {
-			project: {
-				repository: {
-					tree: {
-						blobs: {
-							nodes: Array<{ name: string; path: string } | null> | null
-						} | null
-						trees: {
-							nodes: Array<{ name: string; path: string } | null> | null
-						} | null
-					} | null
-				} | null
-			} | null
-		}
-		const data = await this.cachedQuery<ListData>(
-			ListFilesQueryArtifact,
-			{ fullPath: this.projectPath, path: dir, ref: this.ref },
-			cacheKey,
-		)
-		const trees = data?.project?.repository?.tree?.trees?.nodes
-		if (!trees) return []
-		return trees
-			.filter((n): n is { name: string; path: string } => n != null)
-			.map((n) => n.name)
-			.sort()
-	}
 
 	/** Read a file from a specific ref (bypasses this.ref). */
 	private async readFileFromRef(ref: string, path: string): Promise<string | null> {
@@ -211,6 +193,30 @@ export class GitLabProvider implements BrowseProvider {
 		const nodes = data?.project?.repository?.blobs?.nodes
 		if (!nodes || nodes.length === 0) return null
 		return nodes[0]?.rawTextBlob ?? null
+	}
+
+	/** Fetch the most recent MR for a given source branch. Returns nulls on failure. */
+	private async fetchMrForBranch(
+		branchName: string,
+	): Promise<{ prUrl: string | null; prStatus: string | null; prNumber: number | null }> {
+		try {
+			const mrRes = await this.restApi(
+				`/merge_requests?source_branch=${encodeURIComponent(branchName)}&state=all&order_by=updated_at&sort=desc&per_page=1`,
+			)
+			if (mrRes.ok) {
+				const mrs = await mrRes.json()
+				if (Array.isArray(mrs) && mrs.length > 0) {
+					return {
+						prUrl: mrs[0].web_url,
+						prStatus: mrs[0].state,
+						prNumber: mrs[0].iid,
+					}
+				}
+			}
+		} catch {
+			// Non-critical
+		}
+		return { prUrl: null, prStatus: null, prNumber: null }
 	}
 
 	/** Parse raw intent.md text into a HaikuIntent with optional branch/MR metadata. */
@@ -288,57 +294,54 @@ export class GitLabProvider implements BrowseProvider {
 			console.log(`[haiku-browse] No haiku branches found via branchNames query`)
 		}
 
+		// Capture stage-level branches (haiku/{slug}/{stageName}, where stageName != "main")
+		const stageBranchNames = branchNames.filter((name: string) => {
+			const parts = name.split("/")
+			return parts.length >= 3 && parts[0] === "haiku" && parts[parts.length - 1] !== "main"
+		})
+
+		// Fetch MR data for stage branches in parallel
+		const stageBranchPromises = stageBranchNames.map(async (branchName: string) => {
+			const parts = branchName.split("/")
+			const slug = parts.slice(1, -1).join("/")
+			const stageName = parts[parts.length - 1]
+			if (!slug || !stageName) return
+
+			const { prUrl, prStatus, prNumber } = await this.fetchMrForBranch(branchName)
+
+			this.stageBranchMap.set(`${slug}/${stageName}`, {
+				branch: branchName,
+				prUrl,
+				prStatus,
+				prNumber,
+			})
+		})
+
 		// Filter to haiku/*/main branches and extract slugs
 		const mainBranches = branchNames.filter((name: string) => {
 			const parts = name.split("/")
 			return parts.length >= 2 && parts[parts.length - 1] === "main"
 		})
 
-		// Step 2: For each haiku/*/main branch, read intent.md and check for MRs
+		// Step 2: Load ALL intents from default branch — the canonical catalog
+		const defaultIntents = await this.listIntentsFromRef(null)
+		for (const intent of defaultIntents) {
+			intentsBySlug.set(intent.slug, intent)
+		}
+
+		// Step 3: For each haiku/{slug}/main branch, read ONLY the matching intent
+		// and merge it over the default branch baseline. Branch version is more
+		// current for active work and carries branch/MR metadata.
 		const branchReadPromises = mainBranches.map(async (branchName) => {
-			// Extract slug: "haiku/my-feature/main" -> "my-feature"
-			// branchNames returns the full name including "haiku/" prefix
 			const parts = branchName.split("/")
-			// Remove first part ("haiku") and last part ("main"), rest is the slug
 			const slug = parts.slice(1, -1).join("/")
 			if (!slug) return
 
 			const rawText = await this.readFileFromRef(branchName, `.haiku/intents/${slug}/intent.md`)
 			if (!rawText) return
 
-			// Check for MR via REST
-			let prUrl: string | null = null
-			let prStatus: string | null = null
-			let prNumber: number | null = null
-			try {
-				const mrRes = await this.restApi(
-					`/merge_requests?source_branch=${encodeURIComponent(branchName)}&state=opened&per_page=1`,
-				)
-				if (mrRes.ok) {
-					const mrs = await mrRes.json()
-					if (Array.isArray(mrs) && mrs.length > 0) {
-						prUrl = mrs[0].web_url
-						prStatus = mrs[0].state
-						prNumber = mrs[0].iid
-					}
-				}
-				// If no open MR, check for merged
-				if (!prUrl) {
-					const mergedRes = await this.restApi(
-						`/merge_requests?source_branch=${encodeURIComponent(branchName)}&state=merged&per_page=1`,
-					)
-					if (mergedRes.ok) {
-						const merged = await mergedRes.json()
-						if (Array.isArray(merged) && merged.length > 0) {
-							prUrl = merged[0].web_url
-							prStatus = merged[0].state
-							prNumber = merged[0].iid
-						}
-					}
-				}
-			} catch {
-				// MR lookup failure — non-critical
-			}
+			// Fetch the most recent MR for this branch in ANY state (opened, merged, closed).
+			const { prUrl, prStatus, prNumber } = await this.fetchMrForBranch(branchName)
 
 			const intent = this.parseIntentFromRaw(slug, rawText, {
 				branch: branchName,
@@ -349,21 +352,22 @@ export class GitLabProvider implements BrowseProvider {
 			intentsBySlug.set(slug, intent)
 			this.intentBranchMap.set(slug, branchName)
 			this.intentMetaMap.set(slug, { branch: branchName, prUrl, prStatus, prNumber })
-			onProgress?.(intent)
 		})
 
-		await Promise.all(branchReadPromises)
-
-		// Step 3: Read completed/archived intents from default branch
-		const defaultIntents = await this.listIntentsFromRef(null)
-		for (const intent of defaultIntents) {
-			// Skip if we already have this intent from a feature branch (branch version wins)
-			if (intentsBySlug.has(intent.slug)) continue
-			intentsBySlug.set(intent.slug, intent)
+		// Stream default-branch intents immediately so the UI renders progressively
+		for (const [, intent] of intentsBySlug) {
 			onProgress?.(intent)
 		}
 
-		return Array.from(intentsBySlug.values())
+		// Branch reads may update existing entries — re-emit after they resolve
+		await Promise.all([...branchReadPromises, ...stageBranchPromises])
+
+		const allIntents = Array.from(intentsBySlug.values())
+		for (const intent of allIntents) {
+			if (intent.branch) onProgress?.(intent)
+		}
+
+		return allIntents
 	}
 
 	/** Single-branch mode: read .haiku/intents/ from one specific branch. */
@@ -435,59 +439,51 @@ export class GitLabProvider implements BrowseProvider {
 		return intents
 	}
 
-	/**
-	 * Get full intent detail using 3 GraphQL queries:
-	 * 1. Recursive tree of the intent's stages directory
-	 * 2. Batch-fetch all file contents (intent.md, state.json, units, etc.)
-	 * 3. Tree listing for knowledge/operations directories
-	 *
-	 * This replaces ~20+ REST calls with 3 GraphQL queries.
-	 *
-	 * In scan mode, uses the intentBranchMap to resolve which branch holds this intent.
-	 */
-	async getIntent(slug: string): Promise<HaikuIntentDetail | null> {
-		let intentBranch = this.intentBranchMap.get(slug)
+	// ── Three-level merge helpers ────────────────────────────────────────
 
-		// If branch map isn't populated yet (deeplink before listIntents), try to resolve the branch
-		if (!intentBranch && !this.branch) {
-			const branchName = `haiku/${slug}/main`
-			const testRead = await this.readFileFromRef(branchName, `.haiku/intents/${slug}/intent.md`)
-			if (testRead) {
-				intentBranch = branchName
-				this.intentBranchMap.set(slug, branchName)
-			}
-		}
+	/** Data returned by fetchIntentTreeFromRef — all blobs, trees, and resolved assets for one ref. */
+	private static readonly EMPTY_REF_DATA: GitLabIntentRefData = {
+		blobByPath: new Map(),
+		allBlobs: [],
+		allTrees: [],
+		assets: [],
+	}
 
-		const effectiveRef = intentBranch || this.ref
+	/** Fetch the full intent tree + blob contents from a specific ref. Pass null for default branch. */
+	private async fetchIntentTreeFromRef(
+		slug: string,
+		ref: string | null,
+	): Promise<GitLabIntentRefData | null> {
 		const basePath = `.haiku/intents/${slug}`
+		const refLabel = ref || "HEAD"
 
-		// Step 1: Get the recursive tree for the intent directory
-		const treeCacheKey = `gl:${this.host}:${this.projectPath}:intentTree:${slug}:${effectiveRef || "HEAD"}`
+		// Step 1: Recursive tree listing
+		const treeCacheKey = `gl:${this.host}:${this.projectPath}:intentTree:${slug}:${refLabel}`
 		const treeData = await this.cachedQuery<operationsIntentTreeQuery$data>(
 			IntentTreeQuery,
-			{ fullPath: this.projectPath, path: basePath, ref: effectiveRef },
+			{ fullPath: this.projectPath, path: basePath, ref },
 			treeCacheKey,
 		)
 
-		const allBlobs = treeData?.project?.repository?.tree?.blobs?.nodes ?? []
-		const allTrees = treeData?.project?.repository?.tree?.trees?.nodes ?? []
-
-		// Collect all file paths from tree, then batch-fetch via rawTextBlob
-		// rawTextBlob returns null for binary files — safe to request everything
-		const filePaths = allBlobs
+		const allBlobs = (treeData?.project?.repository?.tree?.blobs?.nodes ?? [])
 			.filter((b): b is { name: string; path: string } => b?.path != null)
-			.map((b) => b.path)
+		const allTrees = (treeData?.project?.repository?.tree?.trees?.nodes ?? [])
+			.filter((t): t is { name: string; path: string } => t?.path != null)
 
+		if (allBlobs.length === 0 && allTrees.length === 0) return null
+
+		// Step 2: Batch-fetch blob contents
+		const filePaths = allBlobs.map((b) => b.path)
 		const blobByPath = new Map<string, string>()
 		const assets: Array<{ path: string; name: string; rawUrl: string }> = []
 
 		for (let i = 0; i < filePaths.length; i += CHUNK_SIZE) {
 			const chunk = filePaths.slice(i, i + CHUNK_SIZE)
-			const blobsCacheKey = `gl:${this.host}:${this.projectPath}:intentBlobs:${slug}:${effectiveRef || "HEAD"}:${i}`
+			const blobsCacheKey = `gl:${this.host}:${this.projectPath}:intentBlobs:${slug}:${refLabel}:${i}`
 			try {
 				const blobsData = await this.cachedQuery<operationsBatchBlobsQuery$data>(
 					BatchBlobsQuery,
-					{ fullPath: this.projectPath, paths: chunk, ref: effectiveRef },
+					{ fullPath: this.projectPath, paths: chunk, ref },
 					blobsCacheKey,
 				)
 				for (const blob of blobsData?.project?.repository?.blobs?.nodes ?? []) {
@@ -495,154 +491,363 @@ export class GitLabProvider implements BrowseProvider {
 					if (blob.rawTextBlob != null) {
 						blobByPath.set(blob.path, blob.rawTextBlob)
 					} else {
-						// Binary file — use REST API for CORS-compatible authenticated download
-						const ref = intentBranch || this.branch || "HEAD"
+						// Binary file — REST API for CORS-compatible authenticated download
 						const encodedFilePath = encodeURIComponent(blob.path)
-						const rawUrl = `https://${this.host}/api/v4/projects/${this.encodedProject}/repository/files/${encodedFilePath}/raw?ref=${encodeURIComponent(ref)}`
+						const rawUrl = `https://${this.host}/api/v4/projects/${this.encodedProject}/repository/files/${encodedFilePath}/raw?ref=${encodeURIComponent(ref || "HEAD")}`
 						assets.push({ path: blob.path, name: blob.name || blob.path.split("/").pop() || "", rawUrl })
 					}
 				}
 			} catch {
 				for (const path of chunk) {
-					const raw = await this.readFile(path)
+					const raw = ref ? await this.readFileFromRef(ref, path) : await this.readFile(path)
 					if (raw) blobByPath.set(path, raw)
 				}
 			}
 		}
 
-		// Parse intent.md
-		const rawText = blobByPath.get(`${basePath}/intent.md`)
-		if (!rawText) return null
+		return { blobByPath, allBlobs, allTrees, assets }
+	}
 
-		const { data: frontmatter, content } = parseFrontmatter(rawText)
-		const studio = (frontmatter.studio as string) || "ideation"
-		const stageNames = (frontmatter.stages as string[]) || []
-		const activeStage = (frontmatter.active_stage as string) || ""
+	/** Parse a single stage from fetched blob data. Returns null if the stage has no content. */
+	private parseStageFromBlobs(
+		slug: string,
+		stageName: string,
+		data: GitLabIntentRefData,
+		activeStage: string,
+		stageNames: string[],
+		ref: string,
+	): HaikuStageState | null {
+		const basePath = `.haiku/intents/${slug}`
+		const stagePath = `${basePath}/stages/${stageName}`
 
-		// Derive stage directories from the tree
-		const stagesPrefix = `${basePath}/stages/`
-		const stageDirNames = allTrees
-			.filter(
-				(t): t is { name: string; path: string } =>
-					!!t?.path.startsWith(stagesPrefix) &&
-					!t.path.slice(stagesPrefix.length).includes("/"),
-			)
-			.map((t) => t.name)
-			.sort()
+		// Check if this stage has any blobs at all
+		const hasStageContent = data.allBlobs.some((b) => b.path.startsWith(`${stagePath}/`))
+		if (!hasStageContent) return null
 
-		const stages: HaikuStageState[] = []
-
-		for (const stageName of stageNames.length > 0
-			? stageNames
-			: stageDirNames) {
-			const stagePath = `${basePath}/stages/${stageName}`
-
-			// Parse units
-			const units: HaikuUnit[] = []
-			const unitPrefix = `${stagePath}/units/`
-
-			for (const blob of allBlobs) {
-				if (!blob?.path || !blob.path.startsWith(unitPrefix)) continue
-				const fileName = blob.path.slice(unitPrefix.length)
-				// Only direct children (no sub-paths), must be .md
-				if (fileName.includes("/") || !fileName.endsWith(".md")) continue
-
-				const unitRaw = blobByPath.get(blob.path)
-				if (!unitRaw) continue
-
-				units.push(parseUnit(fileName, stageName, unitRaw))
-			}
-
-			// Parse stage artifacts
-			const stageArtifacts: HaikuArtifact[] = []
-			const artifactsPrefix = `${stagePath}/artifacts/`
-			for (const blob of allBlobs) {
-				if (!blob?.path || !blob.path.startsWith(artifactsPrefix)) continue
-				const fileName = blob.path.slice(artifactsPrefix.length)
-				if (fileName.includes("/")) continue // direct children only
-
-				const artType = classifyArtifact(fileName)
-				const textContent = blobByPath.get(blob.path)
-				if (textContent != null) {
-					stageArtifacts.push({ name: fileName, content: textContent, type: artType })
-				} else {
-					// Binary — build rawUrl
-					const ref = intentBranch || this.branch || "HEAD"
-					const encodedFilePath = encodeURIComponent(blob.path)
-					const rawUrl = `https://${this.host}/api/v4/projects/${this.encodedProject}/repository/files/${encodedFilePath}/raw?ref=${encodeURIComponent(ref)}`
-					stageArtifacts.push({ name: fileName, rawUrl, type: artType })
-				}
-			}
-
-			// Parse state.json
-			const stateRaw = blobByPath.get(`${stagePath}/state.json`)
-			let stagePhase = ""
-			let stageStartedAt: string | null = null
-			let stageCompletedAt: string | null = null
-			let gateOutcome: string | null = null
-
-			if (stateRaw) {
-				try {
-					const stateData = JSON.parse(stateRaw)
-					stagePhase = stateData.phase || ""
-					stageStartedAt = stateData.started_at || null
-					stageCompletedAt = stateData.completed_at || null
-					gateOutcome = stateData.gate_outcome || null
-				} catch {
-					/* ignore */
-				}
-			}
-
-			let status: "pending" | "active" | "complete" = "pending"
-			if (stageName === activeStage) status = "active"
-			else if (stageNames.indexOf(stageName) < stageNames.indexOf(activeStage))
-				status = "complete"
-
-			stages.push({
-				name: stageName,
-				status,
-				phase: stagePhase,
-				startedAt: stageStartedAt,
-				completedAt: stageCompletedAt,
-				gateOutcome,
-				units,
-				artifacts: stageArtifacts.length > 0 ? stageArtifacts : undefined,
-			})
+		// Parse units
+		const units: HaikuUnit[] = []
+		const unitPrefix = `${stagePath}/units/`
+		for (const blob of data.allBlobs) {
+			if (!blob.path.startsWith(unitPrefix)) continue
+			const fileName = blob.path.slice(unitPrefix.length)
+			if (fileName.includes("/") || !fileName.endsWith(".md")) continue
+			const unitRaw = data.blobByPath.get(blob.path)
+			if (!unitRaw) continue
+			units.push(parseUnit(fileName, stageName, unitRaw))
 		}
 
-		// Knowledge files (from the tree listing — include content from blobByPath)
-		const knowledgePrefix = `${basePath}/knowledge/`
-		const knowledgeFiles: HaikuKnowledgeFile[] = allBlobs
+		// Parse artifacts
+		const artifacts: HaikuArtifact[] = []
+		const artifactsPrefix = `${stagePath}/artifacts/`
+		for (const blob of data.allBlobs) {
+			if (!blob.path.startsWith(artifactsPrefix)) continue
+			const fileName = blob.path.slice(artifactsPrefix.length)
+			if (fileName.includes("/")) continue
+			const artType = classifyArtifact(fileName)
+			const textContent = data.blobByPath.get(blob.path)
+			if (textContent != null) {
+				artifacts.push({ name: fileName, content: textContent, type: artType })
+			} else {
+				const encodedFilePath = encodeURIComponent(blob.path)
+				const rawUrl = `https://${this.host}/api/v4/projects/${this.encodedProject}/repository/files/${encodedFilePath}/raw?ref=${encodeURIComponent(ref)}`
+				artifacts.push({ name: fileName, rawUrl, type: artType })
+			}
+		}
+
+		// state.json
+		const stateRaw = data.blobByPath.get(`${stagePath}/state.json`)
+		let phase = ""
+		let startedAt: string | null = null
+		let completedAt: string | null = null
+		let gateOutcome: string | null = null
+		if (stateRaw) {
+			try {
+				const s = JSON.parse(stateRaw)
+				phase = s.phase || ""
+				startedAt = s.started_at || null
+				completedAt = s.completed_at || null
+				gateOutcome = s.gate_outcome || null
+			} catch { /* ignore */ }
+		}
+
+		let status: "pending" | "active" | "complete" = "pending"
+		if (stageName === activeStage) status = "active"
+		else if (stageNames.indexOf(stageName) < stageNames.indexOf(activeStage)) status = "complete"
+
+		return {
+			name: stageName,
+			status,
+			phase,
+			startedAt,
+			completedAt,
+			gateOutcome,
+			units,
+			artifacts: artifacts.length > 0 ? artifacts : undefined,
+		}
+	}
+
+	/** Extract knowledge files from fetched blob data. */
+	private parseKnowledgeFromBlobs(
+		slug: string,
+		data: GitLabIntentRefData,
+	): HaikuKnowledgeFile[] {
+		const knowledgePrefix = `.haiku/intents/${slug}/knowledge/`
+		return data.allBlobs
 			.filter(
-				(b): b is { name: string; path: string } =>
-					!!b?.path.startsWith(knowledgePrefix) &&
+				(b) =>
+					b.path.startsWith(knowledgePrefix) &&
 					!b.path.slice(knowledgePrefix.length).includes("/") &&
 					b.name.endsWith(".md"),
 			)
 			.map((b) => ({
 				name: b.name,
-				content: blobByPath.get(b.path) || "",
+				content: data.blobByPath.get(b.path) || "",
 			}))
+	}
 
-		// Operations files (include content)
-		const operationsPrefix = `${basePath}/operations/`
-		const operationsFiles: HaikuKnowledgeFile[] = allBlobs
+	/** Extract operations files from fetched blob data. */
+	private parseOperationsFromBlobs(
+		slug: string,
+		data: GitLabIntentRefData,
+	): HaikuKnowledgeFile[] {
+		const operationsPrefix = `.haiku/intents/${slug}/operations/`
+		return data.allBlobs
 			.filter(
-				(b): b is { name: string; path: string } =>
-					!!b?.path.startsWith(operationsPrefix) &&
+				(b) =>
+					b.path.startsWith(operationsPrefix) &&
 					!b.path.slice(operationsPrefix.length).includes("/") &&
 					b.name.endsWith(".md"),
 			)
 			.map((b) => ({
 				name: b.name,
-				content: blobByPath.get(b.path) || "",
+				content: data.blobByPath.get(b.path) || "",
 			}))
+	}
 
-		// Reflection
-		const reflection = blobByPath.get(`${basePath}/reflection.md`) ?? null
+	/** Merge knowledge files — overlay wins on filename collision, new files are added. */
+	private mergeKnowledge(
+		base: HaikuKnowledgeFile[],
+		overlay: HaikuKnowledgeFile[],
+	): HaikuKnowledgeFile[] {
+		const byName = new Map<string, HaikuKnowledgeFile>()
+		for (const f of base) byName.set(f.name, f)
+		for (const f of overlay) byName.set(f.name, f)
+		return Array.from(byName.values())
+	}
 
-		// Carry forward branch/MR metadata from the listing scan
-		const meta = this.intentMetaMap.get(slug) || {}
+	/** Derive ordered stage dir names from tree listing. */
+	private deriveStageDirNames(
+		slug: string,
+		data: GitLabIntentRefData,
+	): string[] {
+		const stagesPrefix = `.haiku/intents/${slug}/stages/`
+		return data.allTrees
+			.filter(
+				(t) =>
+					t.path.startsWith(stagesPrefix) &&
+					!t.path.slice(stagesPrefix.length).includes("/"),
+			)
+			.map((t) => t.name)
+			.sort()
+	}
+
+	/** Deep-link probe: discover intent branch + stage branches when maps aren't populated. */
+	private async probeIntentBranch(slug: string): Promise<string | undefined> {
+		const branchName = `haiku/${slug}/main`
+		const testRead = await this.readFileFromRef(branchName, `.haiku/intents/${slug}/intent.md`)
+		if (!testRead) return undefined
+
+		this.intentBranchMap.set(slug, branchName)
+
+		// Discover stage branches and MR metadata
+		try {
+			const branchesCacheKey = `gl:${this.host}:${this.projectPath}:listHaikuBranches:${slug}`
+			const branchesData = await this.cachedQuery<operationsListBranchNamesQuery$data>(
+				ListBranchNamesQuery,
+				{ fullPath: this.projectPath, searchPattern: `haiku/${slug}/*`, offset: 0, limit: 100 },
+				branchesCacheKey,
+			)
+
+			const branchNames = branchesData?.project?.repository?.branchNames ?? []
+
+			// Fetch MR data for intent branch
+			const intentMr = await this.fetchMrForBranch(branchName)
+			this.intentMetaMap.set(slug, { branch: branchName, ...intentMr })
+
+			// Discover stage branches (non-main) — fetch MR data in parallel
+			const stageBranchEntries = branchNames
+				.map((name: string) => {
+					const parts = name.split("/")
+					if (parts.length < 3 || parts[0] !== "haiku" || parts[parts.length - 1] === "main") return null
+					const stageSlug = parts.slice(1, -1).join("/")
+					if (stageSlug !== slug) return null
+					return { name, stageName: parts[parts.length - 1] }
+				})
+				.filter(Boolean) as Array<{ name: string; stageName: string }>
+
+			await Promise.all(stageBranchEntries.map(async ({ name, stageName }) => {
+				const stageMr = await this.fetchMrForBranch(name)
+				this.stageBranchMap.set(`${slug}/${stageName}`, {
+					branch: name,
+					...stageMr,
+				})
+			}))
+		} catch {
+			this.intentMetaMap.set(slug, { branch: branchName, prUrl: null, prStatus: null, prNumber: null })
+		}
+
+		return branchName
+	}
+
+	// ── getIntent: three-level trust merge ───────────────────────────────
+
+	/**
+	 * Get full intent detail by merging data from three trust levels:
+	 *
+	 * 1. Default branch (baseline — all intents including completed/archived)
+	 * 2. Intent branch `haiku/{slug}/main` (overrides for active intent)
+	 * 3. Stage branches `haiku/{slug}/{stage}` (highest trust, scoped to own stage + knowledge)
+	 *
+	 * In single-branch mode (explicit `this.branch`), skips the merge and reads from that branch only.
+	 */
+	async getIntent(slug: string): Promise<HaikuIntentDetail | null> {
+		// Single-branch mode: explicit branch — no merge needed
+		if (this.branch) {
+			return this.getIntentSingleRef(slug)
+		}
+
+		let intentBranch = this.intentBranchMap.get(slug)
+
+		// Deep-link resolution: probe for branch + MR data if maps aren't populated yet
+		if (!intentBranch) {
+			intentBranch = await this.probeIntentBranch(slug)
+		}
+
+		// Collect stage branches for this slug
+		const stageBranches = new Map<string, { branch: string; prUrl?: string | null; prStatus?: string | null; prNumber?: number | null }>()
+		for (const [key, meta] of this.stageBranchMap) {
+			if (key.startsWith(`${slug}/`)) {
+				stageBranches.set(key.slice(slug.length + 1), meta)
+			}
+		}
+
+		// Fetch all trust levels in parallel
+		const stageBranchPromises = new Map<string, Promise<GitLabIntentRefData | null>>()
+		for (const [stageName, meta] of stageBranches) {
+			stageBranchPromises.set(stageName, this.fetchIntentTreeFromRef(slug, meta.branch))
+		}
+
+		const [defaultData, intentData] = await Promise.all([
+			this.fetchIntentTreeFromRef(slug, null),
+			intentBranch ? this.fetchIntentTreeFromRef(slug, intentBranch) : null,
+		])
+
+		// Resolve stage branch fetches (they ran in parallel with the above)
+		const stageBranchData = new Map<string, GitLabIntentRefData | null>()
+		for (const [stageName, promise] of stageBranchPromises) {
+			stageBranchData.set(stageName, await promise)
+		}
+
+		// intent.md: intent branch wins, fallback to default
+		const basePath = `.haiku/intents/${slug}`
+		const intentRaw = intentData?.blobByPath.get(`${basePath}/intent.md`)
+			?? defaultData?.blobByPath.get(`${basePath}/intent.md`)
+		if (!intentRaw) return null
+
+		const { data: frontmatter, content } = parseFrontmatter(intentRaw)
+		const studio = (frontmatter.studio as string) || "ideation"
+		const stageNames = (frontmatter.stages as string[]) || []
+		const activeStage = (frontmatter.active_stage as string) || ""
+
+		// Determine ordered stage list from frontmatter or directory listing
+		const fallbackDirNames = this.deriveStageDirNames(
+			slug,
+			intentData ?? defaultData ?? GitLabProvider.EMPTY_REF_DATA,
+		)
+		const orderedStages = stageNames.length > 0 ? stageNames : fallbackDirNames
+
+		// Build stages with three-level merge:
+		// default ← intent branch ← stage branch (scoped to own stage only)
+		const stages: HaikuStageState[] = []
+		for (const stageName of orderedStages) {
+			const stageBranchRef = stageBranches.get(stageName)
+			const stageBranchResult = stageBranchData.get(stageName)
+
+			// Try each trust level, highest first
+			let parsed: HaikuStageState | null = null
+
+			// Level 3: Stage branch (highest trust for its own stage)
+			if (stageBranchResult) {
+				parsed = this.parseStageFromBlobs(
+					slug, stageName,
+					stageBranchResult,
+					activeStage, stageNames,
+					stageBranchRef!.branch,
+				)
+			}
+
+			// Level 2: Intent branch
+			if (!parsed && intentData) {
+				parsed = this.parseStageFromBlobs(
+					slug, stageName,
+					intentData,
+					activeStage, stageNames,
+					intentBranch!,
+				)
+			}
+
+			// Level 1: Default branch (baseline)
+			if (!parsed && defaultData) {
+				parsed = this.parseStageFromBlobs(
+					slug, stageName,
+					defaultData,
+					activeStage, stageNames,
+					"HEAD",
+				)
+			}
+
+			if (!parsed) {
+				// Stage declared in frontmatter but not found on any branch
+				parsed = { name: stageName, status: "pending", phase: "", startedAt: null, completedAt: null, gateOutcome: null, units: [] }
+			}
+
+			// Attach stage branch/MR metadata
+			const meta = stageBranches.get(stageName)
+			stages.push({
+				...parsed,
+				branch: meta?.branch,
+				prUrl: meta?.prUrl ?? null,
+				prStatus: meta?.prStatus ?? null,
+				prNumber: meta?.prNumber ?? null,
+			})
+		}
+
+		// Knowledge: merge from all levels (each can contribute)
+		let knowledge = defaultData ? this.parseKnowledgeFromBlobs(slug, defaultData) : []
+		if (intentData) {
+			knowledge = this.mergeKnowledge(knowledge, this.parseKnowledgeFromBlobs(slug, intentData))
+		}
+		for (const [, data] of stageBranchData) {
+			if (data) knowledge = this.mergeKnowledge(knowledge, this.parseKnowledgeFromBlobs(slug, data))
+		}
+
+		// Operations: intent branch wins, fallback to default (stage branches cannot touch)
+		const opsSource = intentData ?? defaultData
+		const operations = opsSource ? this.parseOperationsFromBlobs(slug, opsSource) : []
+
+		// Reflection: intent branch wins (stage branches cannot touch)
+		const reflection = intentData?.blobByPath.get(`${basePath}/reflection.md`)
+			?? defaultData?.blobByPath.get(`${basePath}/reflection.md`)
+			?? null
+
+		// Assets: merge from all levels, de-duplicating by path (higher trust wins)
+		const assetsByPath = new Map<string, { path: string; name: string; rawUrl: string }>()
+		for (const a of defaultData?.assets ?? []) assetsByPath.set(a.path, a)
+		for (const a of intentData?.assets ?? []) assetsByPath.set(a.path, a)
+		for (const d of stageBranchData.values()) {
+			for (const a of d?.assets ?? []) assetsByPath.set(a.path, a)
+		}
+		const assets = Array.from(assetsByPath.values())
 
 		return {
 			slug,
@@ -655,10 +860,8 @@ export class GitLabProvider implements BrowseProvider {
 			completedAt: (frontmatter.completed_at as string) || null,
 			studioStages: (frontmatter.stages as string[]) || [],
 			composite:
-				(frontmatter.composite as Array<{
-					studio: string
-					stages: string[]
-				}>) || null,
+				(frontmatter.composite as Array<{ studio: string; stages: string[] }>)
+				|| null,
 			...normalizeIntentStatus(
 				(frontmatter.status as string) || "active",
 				(frontmatter.completed_at as string) || null,
@@ -669,12 +872,74 @@ export class GitLabProvider implements BrowseProvider {
 			follows: (frontmatter.follows as string) || null,
 			raw: frontmatter,
 			stages,
-			knowledge: knowledgeFiles,
-			operations: operationsFiles,
+			knowledge,
+			operations,
 			reflection,
 			content,
 			assets,
-			...meta,
+			...(this.intentMetaMap.get(slug) || {}),
+		}
+	}
+
+	/** Single-ref fallback for explicit branch mode (no three-level merge). */
+	private async getIntentSingleRef(slug: string): Promise<HaikuIntentDetail | null> {
+		const data = await this.fetchIntentTreeFromRef(slug, this.ref)
+		if (!data) return null
+
+		const basePath = `.haiku/intents/${slug}`
+		const rawText = data.blobByPath.get(`${basePath}/intent.md`)
+		if (!rawText) return null
+
+		const { data: frontmatter, content } = parseFrontmatter(rawText)
+		const studio = (frontmatter.studio as string) || "ideation"
+		const stageNames = (frontmatter.stages as string[]) || []
+		const activeStage = (frontmatter.active_stage as string) || ""
+		const ref = this.branch || "HEAD"
+
+		const fallbackDirNames = this.deriveStageDirNames(slug, data)
+
+		const stages: HaikuStageState[] = []
+		for (const stageName of stageNames.length > 0 ? stageNames : fallbackDirNames) {
+			const parsed = this.parseStageFromBlobs(
+				slug, stageName, data,
+				activeStage, stageNames, ref,
+			)
+			if (parsed) stages.push(parsed)
+		}
+
+		const knowledge = this.parseKnowledgeFromBlobs(slug, data)
+		const operations = this.parseOperationsFromBlobs(slug, data)
+		const reflection = data.blobByPath.get(`${basePath}/reflection.md`) ?? null
+
+		return {
+			slug,
+			title: (frontmatter.title as string) || slug,
+			studio,
+			activeStage,
+			mode: (frontmatter.mode as string) || "continuous",
+			createdAt: (frontmatter.created_at as string) || (frontmatter.created as string) || null,
+			startedAt: (frontmatter.started_at as string) || null,
+			completedAt: (frontmatter.completed_at as string) || null,
+			studioStages: (frontmatter.stages as string[]) || [],
+			composite:
+				(frontmatter.composite as Array<{ studio: string; stages: string[] }>)
+				|| null,
+			...normalizeIntentStatus(
+				(frontmatter.status as string) || "active",
+				(frontmatter.completed_at as string) || null,
+				stageNames.indexOf(activeStage),
+				stageNames.length,
+			),
+			stagesTotal: stageNames.length,
+			follows: (frontmatter.follows as string) || null,
+			raw: frontmatter,
+			stages,
+			knowledge,
+			operations,
+			reflection,
+			content,
+			assets: data.assets,
+			branch: this.branch,
 		}
 	}
 
@@ -769,6 +1034,8 @@ export class GitLabProvider implements BrowseProvider {
 			}
 		}
 		this.intentBranchMap.clear()
+		this.stageBranchMap.clear()
+		this.intentMetaMap.clear()
 	}
 
 	async isAccessible(): Promise<boolean> {
@@ -781,6 +1048,10 @@ export class GitLabProvider implements BrowseProvider {
 		clientId: string,
 		redirectUri: string,
 	): string {
-		return `https://${host}/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=read_api`
+		// Scope: `api` — full access to the GitLab API.
+		// Required because the browse UI:
+		//   - Reads `.haiku/intents/` contents
+		//   - Reads branches and merge requests (including closed/merged)
+		return `https://${host}/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=api`
 	}
 }

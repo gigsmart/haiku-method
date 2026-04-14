@@ -1,0 +1,105 @@
+---
+title: "One PR Per Stage"
+description: Discrete mode now creates a branch per stage. Each stage becomes its own PR. Go-backs merge forward instead of blowing away later work. Hybrid mode picks a threshold and consolidates from there.
+date: 2026-04-12
+author: Jason Waldrip
+category: Architecture
+tags:
+  - git
+  - branching
+  - discrete-mode
+  - hybrid-mode
+  - workflow
+---
+
+Discrete mode used to put everything on a single intent branch. Inception, product, design, development, security — all of it, one branch, one PR at the end. That's fine for a 200-line change. It's a **death march** for anything real, because nobody reviews a 500-file PR that spans four lifecycle stages. They either rubber-stamp it or they give up.
+
+So we stopped doing that.
+
+## The branch is the stage
+
+In discrete mode, H·AI·K·U now creates a branch per stage:
+
+```
+haiku/{slug}/inception
+haiku/{slug}/product
+haiku/{slug}/design
+haiku/{slug}/development
+```
+
+Each stage gets its own PR. Small, scoped, actually reviewable. Inception PR covers the elaboration artifacts. Product PR covers the specs. Design PR covers the wireframes and design tokens. Development PR covers the code. Your reviewer sees the work for one concern at a time and can give it real attention instead of scrolling past 400 file diffs hoping nothing blew up.
+
+<ExpandableDiagram chart={`gitGraph
+    commit id: "main"
+    branch "haiku/slug/inception"
+    commit id: "elaborate"
+    commit id: "specs approved"
+    checkout main
+    merge "haiku/slug/inception"
+    branch "haiku/slug/product"
+    commit id: "ACs + Gherkin"
+    commit id: "validator passes"
+    checkout main
+    merge "haiku/slug/product"
+    branch "haiku/slug/design"
+    commit id: "wireframes"
+    commit id: "tokens"
+    checkout main
+    merge "haiku/slug/design"
+    branch "haiku/slug/development"
+    commit id: "wave 1"
+    commit id: "wave 2"
+    commit id: "review passes"
+    checkout main
+    merge "haiku/slug/development"`} />
+
+The stage isn't just a phase in the FSM anymore. It's a real unit of review.
+
+## Revisiting stages doesn't blow away later work
+
+The scary thing about per-stage branches used to be the obvious one: what happens when you hit `/haiku:revisit design` during development because the specs were wrong? Do you lose all your development work? No.
+
+Revisiting in discrete mode switches you to the **target stage branch** — the one you're going back to fix. Later stage branches stay intact, untouched. You fix the spec, the product PR gets updated, and when you return to development, the changes **merge forward**. Your development work is still there. Your new specs are reflected in it. Nothing is lost, nothing gets reinvented, and you didn't have to cherry-pick anything by hand.
+
+<Callout tone="good" title="The guarantee">
+Revisiting never destroys later work. It switches branches, lets you fix the issue upstream, and merges the fix forward when you return. Your downstream branches keep everything they had, plus the fix.
+</Callout>
+
+This was the blocker for adopting per-stage branches in the first place. Once revisits became non-destructive, stage branches stopped being scary.
+
+## Hybrid mode: pick a threshold
+
+Not every intent wants discrete from start to finish. Sometimes the early stages are high-ceremony (specs, reviews, legal sign-off on privacy) and the late stages are a tight build-test-iterate loop where you don't want to wait for a PR per wave.
+
+Hybrid mode fixes that. You set a `continuous_from` stage. Before that stage, you're in discrete mode — per-stage branches, per-stage PRs, full ceremony. At or after that stage, the discrete branches **consolidate** into `haiku/{slug}/main` and the rest of the intent runs continuous from there. One branch, one moving PR, rapid iteration.
+
+<ExpandableDiagram chart={`flowchart TB
+    I["haiku/slug/inception<br/>(discrete)"] --> P["haiku/slug/product<br/>(discrete)"]
+    P --> D["haiku/slug/design<br/>(discrete)"]
+    D -.->|"consolidate at<br/>continuous_from"| M["haiku/slug/main<br/>(continuous)"]
+    M --> DEV["development"]
+    DEV --> SEC["security"]`} />
+
+You get ceremony where ceremony helps and speed where speed helps. Same intent, two different gears.
+
+## How the dashboard sees across branches
+
+There's a subtle problem with per-stage branches: when you run `haiku_dashboard` from the development branch, how does it know the state of the product stage? That state lives on a *different* branch, and `git checkout` -ing five branches to read `state.json` from each would be obnoxious and slow.
+
+It doesn't checkout. It uses `git show haiku/{slug}/{stage}:.haiku/intents/{slug}/stages/{stage}/state.json` to read the state from each branch **without leaving the current worktree.** The dashboard aggregates stage state across all the stage branches in one pass, and you see the whole intent's status regardless of which branch you happen to be sitting on.
+
+It's the kind of thing that's invisible when it works. Which is what you want.
+
+## Unit worktrees are mode-aware too
+
+Unit worktrees (H·AI·K·U creates a worktree per unit so parallel execution in waves actually works) now know what mode they're in. In discrete mode, a unit worktree branches from its **stage branch**, not from `main`. In continuous mode, it branches from the intent branch. In hybrid, it picks the right parent based on where the consolidation threshold sits. You don't configure this. The orchestrator figures it out from the intent's mode and stage position.
+
+## Why this matters
+
+Stages used to be a lifecycle concept — an FSM phase, a point in time where the agent was doing "elaboration" or "execution." Now they're also a **version control concept.** A stage is a branch. A stage is a PR. A stage is a unit of review with a clear diff, a clear description, and a clear merge commit.
+
+<Callout tone="info" title="The mental shift">
+A stage isn't just "what phase of the lifecycle is this." It's "what's the diff you're asking your team to review?" Per-stage branches make the two match.
+</Callout>
+
+The old single-branch model was asking one question — "is the work done?" — and answering it with a giant PR. The per-stage model asks four smaller questions — "is the inception done? is the spec done? is the design done? is the code done?" — and answers each with its own PR. Smaller questions get better answers.

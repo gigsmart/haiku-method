@@ -4,7 +4,6 @@ description: Apply immediate fixes to stop the bleeding — rollbacks, feature f
 hats: [mitigator, verifier]
 review: [ask, await]
 elaboration: collaborative
-unit_types: [hotfix, rollback, workaround]
 inputs:
   - stage: investigate
     discovery: root-cause

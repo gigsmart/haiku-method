@@ -4,7 +4,6 @@ description: Create financial reports and dashboards for stakeholders
 hats: [reporter, visualizer]
 review: ask
 elaboration: autonomous
-unit_types: [report, dashboard]
 inputs:
   - stage: analysis
     discovery: variance-report

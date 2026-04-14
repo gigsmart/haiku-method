@@ -284,6 +284,7 @@ export const footerNavigation = {
 			{ title: "The Paper", href: "/paper/" },
 			{ title: "Blog", href: "/blog/" },
 			{ title: "Glossary", href: "/glossary/" },
+			{ title: "RSS Feed", href: "/feed.xml" },
 			{
 				title: "GitHub",
 				href: "https://github.com/gigsmart/haiku-method",

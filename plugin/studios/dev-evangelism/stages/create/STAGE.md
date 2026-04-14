@@ -4,7 +4,6 @@ description: Produce the content — posts, slides, demos, videos
 hats: [content-creator, demo-builder]
 review: ask
 elaboration: autonomous
-unit_types: [blog-post, talk, demo, video]
 inputs:
   - stage: narrative
     discovery: story-arc

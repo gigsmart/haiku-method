@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import type { BrowseProvider, HaikuArtifact, HaikuAsset, HaikuIntent, HaikuIntentDetail, HaikuKnowledgeFile, HaikuStageState, HaikuUnit } from "@/lib/browse/types"
-import { formatDate, formatDuration } from "@/lib/browse/types"
 import { buildBrowseUrl } from "@/lib/browse/url"
 import type { BrowseLocation } from "@/lib/browse/url"
 import { resolveLinks } from "@/lib/browse/resolve-links"
@@ -48,7 +47,6 @@ export function IntentDetailView({ intent, provider, location, initialStage, onB
 	const [expandedStage, setExpandedStage] = useState<string | null>(initialStage || intent.activeStage || null)
 	const stageRefs = useRef<Record<string, HTMLElement | null>>({})
 	const [viewMode, setViewMode] = useState<"pipeline" | "board">("pipeline")
-	const [gateAction, setGateAction] = useState<"idle" | "approving" | "rejecting" | "success" | "error">("idle")
 	const [settings, setSettings] = useState<Record<string, unknown> | null>(null)
 	const [lightboxAsset, setLightboxAsset] = useState<HaikuAsset | null>(null)
 
@@ -73,58 +71,6 @@ export function IntentDetailView({ intent, provider, location, initialStage, onB
 			...overrides,
 		})
 	}, [location, intent.slug])
-
-	async function handleApproveStage(stageName: string) {
-		if (!provider.writeFile) return
-		setGateAction("approving")
-		try {
-			const statePath = `.haiku/intents/${intent.slug}/stages/${stageName}/state.json`
-			const currentState = await provider.readFile(statePath)
-			if (!currentState) { setGateAction("error"); return }
-			const state = JSON.parse(currentState)
-			state.gate_outcome = "advanced"
-			state.completed_at = new Date().toISOString().replace(/\.\d{3}Z$/, "Z")
-			state.status = "completed"
-			const success = await provider.writeFile(
-				statePath,
-				JSON.stringify(state, null, 2) + "\n",
-				`haiku: approve stage ${stageName} (external review)`
-			)
-			if (success) {
-				setGateAction("success")
-				setTimeout(() => window.location.reload(), 1500)
-			} else {
-				setGateAction("error")
-			}
-		} catch {
-			setGateAction("error")
-		}
-	}
-
-	async function handleRejectStage(stageName: string) {
-		if (!provider.writeFile) return
-		setGateAction("rejecting")
-		try {
-			const statePath = `.haiku/intents/${intent.slug}/stages/${stageName}/state.json`
-			const currentState = await provider.readFile(statePath)
-			if (!currentState) { setGateAction("error"); return }
-			const state = JSON.parse(currentState)
-			state.gate_outcome = "changes_requested"
-			const success = await provider.writeFile(
-				statePath,
-				JSON.stringify(state, null, 2) + "\n",
-				`haiku: request changes for stage ${stageName} (external review)`
-			)
-			if (success) {
-				setGateAction("success")
-				setTimeout(() => window.location.reload(), 1500)
-			} else {
-				setGateAction("error")
-			}
-		} catch {
-			setGateAction("error")
-		}
-	}
 
 	// Restore state from URL on mount
 	useEffect(() => {
@@ -338,51 +284,12 @@ export function IntentDetailView({ intent, provider, location, initialStage, onB
 					<section className="mb-8" ref={(el) => { stageRefs.current[expandedStage] = el }}>
 						<StageDetail
 							stage={expandedStageData}
+							providerName={provider.name}
+							host={host || undefined}
+							project={location?.project || ""}
 							onSelectUnit={(unit) => handleSelectUnit(unit, expandedStage)}
 							assets={intent.assets}
-							host={host || undefined}
 						/>
-						{expandedStageData.phase === "gate" && !expandedStageData.gateOutcome && provider.writeFile && (
-							<div className="mt-4 rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-800/50">
-								<h4 className="mb-3 text-sm font-semibold text-stone-700 dark:text-stone-300">
-									External Review Gate
-								</h4>
-								{gateAction === "success" ? (
-									<p className="text-sm text-green-600 dark:text-green-400">
-										Decision recorded. Refreshing...
-									</p>
-								) : gateAction === "error" ? (
-									<div>
-										<p className="mb-2 text-sm text-red-600 dark:text-red-400">
-											Failed to write gate decision. Ensure you have write access to this repository.
-										</p>
-										<button
-											onClick={() => setGateAction("idle")}
-											className="text-sm text-stone-500 underline hover:text-stone-700 dark:hover:text-stone-300"
-										>
-											Try again
-										</button>
-									</div>
-								) : (
-									<div className="flex gap-3">
-										<button
-											onClick={() => handleApproveStage(expandedStage)}
-											disabled={gateAction !== "idle"}
-											className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
-										>
-											{gateAction === "approving" ? "Approving..." : "Approve Stage"}
-										</button>
-										<button
-											onClick={() => handleRejectStage(expandedStage)}
-											disabled={gateAction !== "idle"}
-											className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-										>
-											{gateAction === "rejecting" ? "Requesting..." : "Request Changes"}
-										</button>
-									</div>
-								)}
-							</div>
-						)}
 					</section>
 				)
 			})()}
@@ -784,10 +691,14 @@ function OtherArtifactCard({ artifact }: { artifact: HaikuArtifact }) {
 	)
 }
 
-function StageDetail({ stage, onSelectUnit, assets, host }: { stage: HaikuStageState; onSelectUnit: (u: HaikuUnit) => void; assets?: HaikuAsset[]; host?: string }) {
+function StageDetail({ stage, providerName, host, project, onSelectUnit, assets }: { stage: HaikuStageState; providerName: string; host?: string; project?: string; onSelectUnit: (u: HaikuUnit) => void; assets?: HaikuAsset[] }) {
 	const hasUnits = stage.units.length > 0
 	const hasArtifacts = (stage.artifacts?.length ?? 0) > 0
 	const [fullscreenArtifact, setFullscreenArtifact] = useState<HaikuArtifact | null>(null)
+	const isGitLab = providerName === "GitLab"
+	const prLabel = isGitLab ? "MR" : "PR"
+	const prPrefix = isGitLab ? "!" : "#"
+	const prStatusLabel: Record<string, string> = { open: "Open", opened: "Open", merged: "Merged", closed: "Closed" }
 
 	// Split artifacts into thumbnailable (html/image) and non-thumbnailable (markdown/other)
 	const thumbnailArtifacts = stage.artifacts?.filter(a => a.type === "html" || a.type === "image") ?? []
@@ -802,13 +713,67 @@ function StageDetail({ stage, onSelectUnit, assets, host }: { stage: HaikuStageS
 		)
 	}
 
+	// Build branch URL for the provider
+	let branchUrl: string | null = null
+	if (stage.branch && host && project) {
+		if (isGitLab) {
+			branchUrl = `https://${host}/${project}/-/tree/${encodeURIComponent(stage.branch)}`
+		} else {
+			branchUrl = `https://${host}/${project}/tree/${encodeURIComponent(stage.branch)}`
+		}
+	}
+
 	return (
 		<div className="space-y-4">
+			{/* Stage header with branch/PR info */}
+			<div className="flex flex-wrap items-center gap-3">
+				<h3 className="text-sm font-semibold text-stone-600 dark:text-stone-300">
+					{titleCase(stage.name)} — {stage.units.length} unit{stage.units.length !== 1 ? "s" : ""}
+				</h3>
+				{stage.prUrl && stage.prStatus && (
+					<a
+						href={stage.prUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium hover:opacity-80 transition-opacity ${prStatusColors[stage.prStatus] || prStatusColors.open}`}
+					>
+						<svg className="h-3 w-3" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={2}>
+							<path d="M5 5.5v5m6-5v5M5 3a2 2 0 100-4 2 2 0 000 4zm6 0a2 2 0 100-4 2 2 0 000 4zM5 14.5a2 2 0 100-4 2 2 0 000 4z" />
+						</svg>
+						{prLabel} {stage.prNumber ? `${prPrefix}${stage.prNumber}` : ""} {prStatusLabel[stage.prStatus!] ?? stage.prStatus}
+					</a>
+				)}
+				{stage.branch && branchUrl && (
+					<a
+						href={branchUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="inline-flex items-center gap-1 rounded bg-stone-100 dark:bg-stone-800 px-2 py-0.5 text-xs font-mono text-stone-500 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
+					>
+						<svg className="h-3 w-3" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={2}>
+							<path d="M6 3v10M6 3L3 6m3-3l3 3m4 7V3" />
+						</svg>
+						{stage.branch.replace(/^haiku\//, "")}
+					</a>
+				)}
+				{stage.phase === "gate" && (
+					<span className={`rounded px-2 py-0.5 text-xs font-medium ${
+						stage.gateOutcome === "advanced"
+							? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+							: stage.gateOutcome === "changes_requested"
+								? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+								: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+					}`}>
+						{stage.gateOutcome === "advanced"
+							? "Gate: Approved"
+							: stage.gateOutcome === "changes_requested"
+								? "Gate: Changes Requested"
+								: "Gate: Awaiting Review"}
+					</span>
+				)}
+			</div>
 			{hasUnits && (
 				<div className="space-y-2">
-					<h3 className="text-sm font-semibold text-stone-600 dark:text-stone-300">
-						{titleCase(stage.name)} — {stage.units.length} unit{stage.units.length !== 1 ? "s" : ""}
-					</h3>
 					{stage.units.map((unit) => {
 						const checkedCount = unit.criteria.filter((c) => c.checked).length
 						const totalCriteria = unit.criteria.length
@@ -826,9 +791,6 @@ function StageDetail({ stage, onSelectUnit, assets, host }: { stage: HaikuStageS
 										<span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${unitStatusColors[unit.status] || unitStatusColors.pending}`}>
 											{unit.status}
 										</span>
-										{unit.type && (
-											<span className="text-xs text-stone-400">{unit.type}</span>
-										)}
 									</div>
 									{totalCriteria > 0 && (
 										<span className="text-xs text-stone-400">

@@ -34,7 +34,7 @@ const stageLoop = [
 		color: "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800",
 		textColor: "text-amber-600 dark:text-amber-400",
 		description: "The gate determines what happens next. Four modes: auto (advance immediately), ask (pause for user), await (wait for async signal), external (block for team review). The studio's stage definition declares which mode.",
-		output: "Advance to next stage, revise within stage, or go back",
+		output: "Advance to next stage, revise within stage, or revisit earlier stage",
 	},
 ]
 
@@ -196,7 +196,7 @@ export default function HowItWorksPage() {
 										<strong className="text-stone-900 dark:text-stone-100">Elaboration:</strong> Same interactive process — AI proposes criteria and elaboration, human validates.
 									</p>
 									<p>
-										<strong className="text-stone-900 dark:text-stone-100">Execution:</strong> Human invokes each stage manually with <code className="text-purple-600 dark:text-purple-400">/haiku:resume</code>. Within a stage, the AI runs autonomously through that stage&apos;s hat sequence (e.g., planner→builder→reviewer for development, or threat-modeler→red-team→blue-team→security-reviewer for security), but it stops after the stage completes.
+										<strong className="text-stone-900 dark:text-stone-100">Execution:</strong> Human invokes each stage manually with <code className="text-purple-600 dark:text-purple-400">/haiku:pickup</code>. Within a stage, the AI runs autonomously through that stage&apos;s hat sequence (e.g., planner→builder→reviewer for development, or threat-modeler→red-team→blue-team→security-reviewer for security), but it stops after the stage completes.
 									</p>
 									<p>
 										<strong className="text-stone-900 dark:text-stone-100">Human re-enters at:</strong> Every stage boundary. The human decides when to proceed, skip stages, or revise previous work. Maximum control over the pipeline.
@@ -766,10 +766,10 @@ Implement REST API endpoints for user authentication...
 							</svg>
 						</div>
 
-						{/* /haiku:resume */}
+						{/* /haiku:pickup */}
 						<div className="rounded-xl border-2 border-indigo-200 bg-indigo-50/20 p-6 dark:border-indigo-800 dark:bg-indigo-950/10">
 							<div className="mb-5 flex items-center gap-3">
-								<code className="rounded-lg bg-indigo-100 px-3 py-1.5 text-lg font-bold text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">/haiku:resume</code>
+								<code className="rounded-lg bg-indigo-100 px-3 py-1.5 text-lg font-bold text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">/haiku:pickup</code>
 								<span className="text-stone-500 dark:text-stone-400">Continue, resume, or run the next stage</span>
 							</div>
 
@@ -983,7 +983,7 @@ Implement REST API endpoints for user authentication...
 											<span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-purple-200 dark:bg-purple-800" title="Human invokes">
 												<svg className="h-3 w-3 text-purple-700 dark:text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
 											</span>
-											<code className="text-[10px] text-purple-600 dark:text-purple-400">/haiku:resume {s.stage}</code>
+											<code className="text-[10px] text-purple-600 dark:text-purple-400">/haiku:pickup {s.stage}</code>
 											<span className={`rounded-md px-2.5 py-1 text-xs font-semibold ${s.color}`}>
 												{s.stage}
 											</span>
@@ -1067,7 +1067,7 @@ Implement REST API endpoints for user authentication...
 						</div>
 						<div className="mt-4 rounded-lg bg-purple-50 p-4 dark:bg-purple-950/20">
 							<p className="text-xs text-purple-800 dark:text-purple-200">
-								<strong>Discrete mode and handoffs:</strong> In discrete mode, every stage transition is effectively external — the user explicitly invokes each stage with <code>/haiku:resume</code>. This naturally supports team workflows where different people own different stages. A designer runs inception and design, then hands off to an engineer who runs development.
+								<strong>Discrete mode and handoffs:</strong> In discrete mode, every stage transition is effectively external — the user explicitly invokes each stage with <code>/haiku:pickup</code>. This naturally supports team workflows where different people own different stages. A designer runs inception and design, then hands off to an engineer who runs development.
 							</p>
 						</div>
 					</div>

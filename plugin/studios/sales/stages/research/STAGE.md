@@ -4,7 +4,6 @@ description: Understand the prospect, their business, pain points, and competiti
 hats: [prospect-researcher, industry-analyst]
 review: auto
 elaboration: autonomous
-unit_types: [research, competitive-intel]
 inputs: []
 ---
 

@@ -1,0 +1,17 @@
+related:
+  - security-assessment
+  - data-pipeline
+  - documentation
+turns:
+  - role: user
+    text: "I want to add OAuth login to the app."
+  - role: agent
+    text: "Which providers — Google, GitHub, both?"
+  - role: user
+    text: "Google and GitHub. Maybe Apple later."
+  - role: agent
+    text: "Full-page login screen or a modal? Session via cookies or tokens?"
+  - role: user
+    text: "Full page, httpOnly cookies. Rate-limit the callback."
+  - role: agent
+    text: "Got it — I have everything I need to draft the intent."

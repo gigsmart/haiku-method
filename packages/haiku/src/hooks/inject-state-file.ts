@@ -1,11 +1,11 @@
 // inject-state-file — PreToolUse hook for H·AI·K·U
 //
-// Injects a `state_file` argument into haiku MCP tool calls so the
-// server can write session metadata without knowing about session IDs.
-// The state file path is: ${CLAUDE_CONFIG_DIR}/projects/{slug}/{sessionId}/haiku.json
+// Injects arguments into haiku MCP tool calls:
+// 1. `state_file` — session metadata persistence path
+// 2. `_session_context` — environment metadata (session ID, model, cowork, etc.)
 //
-// If no session ID is available, no state_file is injected and the
-// MCP server skips metadata persistence.
+// The hook runs inside the Claude Code process, so it has access to env vars
+// that the MCP server (a separate process) cannot see at call time.
 
 import { join } from "node:path"
 
@@ -13,21 +13,54 @@ function pathToSlug(fsPath: string): string {
 	return fsPath.replace(/^\//, "-").replace(/[/.]/g, "-")
 }
 
-export async function injectStateFile(input: Record<string, unknown>): Promise<void> {
+/** Collect session metadata from the Claude Code process environment. */
+function collectSessionContext(): Record<string, string> {
+	const ctx: Record<string, string> = {}
+	const vars = [
+		"CLAUDE_SESSION_ID",
+		"CLAUDE_CODE_IS_COWORK",
+		"CLAUDE_MODEL",
+		"CLAUDE_CODE_VERSION",
+		"CLAUDE_CODE_ENTRYPOINT",
+		"USER",
+	]
+	for (const key of vars) {
+		const val = process.env[key]
+		if (val) ctx[key] = val
+	}
+	ctx.platform = process.platform
+	ctx.node_version = process.version
+	ctx.cwd = process.cwd()
+	return ctx
+}
+
+export async function injectStateFile(
+	input: Record<string, unknown>,
+): Promise<void> {
 	// Only inject for haiku_ tool calls
 	const toolName = (input.tool_name as string) || ""
 	if (!toolName.startsWith("haiku_")) return
 
-	// Resolve session ID
-	const sessionId = (input.session_id as string) || process.env.CLAUDE_SESSION_ID
-	if (!sessionId) return
+	const injected: Record<string, unknown> = {}
 
-	// Build the state file path
-	const configDir = process.env.CLAUDE_CONFIG_DIR || join(process.env.HOME || "", ".claude")
-	const projectSlug = pathToSlug(process.cwd())
-	const stateFile = join(configDir, "projects", projectSlug, sessionId, "haiku.json")
+	// Inject state_file for session metadata persistence
+	const sessionId =
+		(input.session_id as string) || process.env.CLAUDE_SESSION_ID
+	if (sessionId) {
+		const configDir =
+			process.env.CLAUDE_CONFIG_DIR || join(process.env.HOME || "", ".claude")
+		const projectSlug = pathToSlug(process.cwd())
+		injected.state_file = join(
+			configDir,
+			"projects",
+			projectSlug,
+			sessionId,
+			"haiku.json",
+		)
+	}
 
-	// Output the modified input with state_file injected
-	// The hook system merges this into the tool call arguments
-	process.stdout.write(JSON.stringify({ state_file: stateFile }))
+	// Always inject session context — the MCP server can't read these env vars itself
+	injected._session_context = collectSessionContext()
+
+	process.stdout.write(JSON.stringify(injected))
 }

@@ -12,6 +12,7 @@ export interface SidebarComment {
 
 interface Props {
   sessionId: string;
+  gateType?: string;
   comments: SidebarComment[];
   getAnnotations: () => ReviewAnnotations | undefined;
   wsRef?: React.RefObject<WebSocket | null>;
@@ -33,7 +34,7 @@ function typeIcon(type: string): string {
   return "\u{1F4AC}";
 }
 
-export function ReviewSidebar({ sessionId, comments, getAnnotations, wsRef, onDelete, onEdit, onClearAll, onScrollTo, onAddGeneral }: Props) {
+export function ReviewSidebar({ sessionId, gateType = "ask", comments, getAnnotations, wsRef, onDelete, onEdit, onClearAll, onScrollTo, onAddGeneral }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [showClose, setShowClose] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -121,7 +122,7 @@ export function ReviewSidebar({ sessionId, comments, getAnnotations, wsRef, onDe
     setError(null);
     try {
       const annotations = getAnnotations();
-      await submitDecision(sessionId, "external_review", "Submitted for external review. Run /haiku:resume after approval.", annotations, wsRef);
+      await submitDecision(sessionId, "external_review", "Submitted for external review. Run /haiku:pickup after approval.", annotations, wsRef);
       tryCloseTab(setShowClose, { url: `/review/${sessionId}/decide`, body: { decision: "external_review", feedback: "Submitted for external review" } });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -272,19 +273,34 @@ export function ReviewSidebar({ sessionId, comments, getAnnotations, wsRef, onDe
           <p className="text-xs text-amber-600 dark:text-amber-400">Add at least one comment before requesting changes.</p>
         )}
 
-        {/* Decision buttons — always show both */}
+        {/* Decision buttons — shown based on gate type */}
         <div className="flex gap-2">
-          <button
-            onClick={handleApproveClick}
-            disabled={submitting}
-            className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-              hasComments
-                ? "bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-600 dark:text-stone-300"
-                : "bg-teal-600 hover:bg-teal-700 text-white"
-            }`}
-          >
-            {submitting ? "Submitting\u2026" : "Approve"}
-          </button>
+          {gateType.includes("ask") && (
+            <button
+              onClick={handleApproveClick}
+              disabled={submitting}
+              className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                hasComments
+                  ? "bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-600 dark:text-stone-300"
+                  : "bg-teal-600 hover:bg-teal-700 text-white"
+              }`}
+            >
+              {submitting ? "Submitting\u2026" : "Approve"}
+            </button>
+          )}
+          {gateType.includes("external") && (
+            <button
+              onClick={() => setShowExternalConfirm(true)}
+              disabled={submitting}
+              className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                hasComments
+                  ? "bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-600 dark:text-stone-300"
+                  : "bg-indigo-600 hover:bg-indigo-700 text-white"
+              }`}
+            >
+              {submitting ? "Submitting\u2026" : "Submit for External Review"}
+            </button>
+          )}
           <button
             onClick={handleRequestChanges}
             disabled={submitting}
@@ -297,13 +313,6 @@ export function ReviewSidebar({ sessionId, comments, getAnnotations, wsRef, onDe
             Request Changes
           </button>
         </div>
-        <button
-          onClick={() => setShowExternalConfirm(true)}
-          disabled={submitting}
-          className="w-full px-4 py-2 text-xs font-medium rounded-lg border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Submit for External Review
-        </button>
 
         {/* External review confirmation dialog */}
         {showExternalConfirm && (
@@ -311,7 +320,7 @@ export function ReviewSidebar({ sessionId, comments, getAnnotations, wsRef, onDe
             <div className="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-2xl p-6 max-w-sm mx-4">
               <h3 className="text-base font-semibold text-stone-900 dark:text-stone-100 mb-2">Submit for external review?</h3>
               <p className="text-sm text-stone-600 dark:text-stone-400 mb-4">
-                This will advance to the next stage and submit the work for external review (PR, MR, etc.). Run <code className="px-1 py-0.5 bg-stone-100 dark:bg-stone-800 rounded text-xs">/haiku:resume</code> after external approval to continue.
+                This will advance to the next stage and submit the work for external review (PR, MR, etc.). Run <code className="px-1 py-0.5 bg-stone-100 dark:bg-stone-800 rounded text-xs">/haiku:pickup</code> after external approval to continue.
               </p>
               <div className="flex gap-3">
                 <button

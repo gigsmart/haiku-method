@@ -4,7 +4,6 @@ description: Analyze test results and compute quality metrics
 hats: [analyst, statistician]
 review: ask
 elaboration: autonomous
-unit_types: [results-analysis, quality-metrics]
 inputs:
   - stage: execute-tests
     output: test-results

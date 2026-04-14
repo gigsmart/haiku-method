@@ -4,7 +4,6 @@ description: Map source schemas and systems to target, define transformation rul
 hats: [schema-mapper, compatibility-reviewer]
 review: ask
 elaboration: collaborative
-unit_types: [mapping]
 inputs:
   - stage: assessment
     discovery: migration-inventory

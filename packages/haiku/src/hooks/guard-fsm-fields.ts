@@ -7,15 +7,36 @@
 import { resolve } from "node:path"
 
 // FSM-controlled fields by file type
-const INTENT_PROTECTED = ["status", "active_stage", "completed_at", "started_at"]
-const STAGE_PROTECTED = ["status", "phase", "started_at", "completed_at", "gate_entered_at", "gate_outcome"]
-const UNIT_PROTECTED = ["status", "started_at", "completed_at", "bolt", "hat", "hat_started_at"]
+const INTENT_PROTECTED = [
+	"status",
+	"active_stage",
+	"completed_at",
+	"started_at",
+]
+const STAGE_PROTECTED = [
+	"status",
+	"phase",
+	"started_at",
+	"completed_at",
+	"gate_entered_at",
+	"gate_outcome",
+]
+const UNIT_PROTECTED = [
+	"status",
+	"started_at",
+	"completed_at",
+	"bolt",
+	"hat",
+	"hat_started_at",
+]
 
 function out(s: string): void {
 	process.stderr.write(s)
 }
 
-export async function guardFsmFields(input: Record<string, unknown>): Promise<void> {
+export async function guardFsmFields(
+	input: Record<string, unknown>,
+): Promise<void> {
 	const toolName = (input.tool_name as string) || ""
 	if (toolName !== "Write" && toolName !== "Edit") return
 
@@ -27,13 +48,18 @@ export async function guardFsmFields(input: Record<string, unknown>): Promise<vo
 
 	// Check if this is a haiku state file
 	const isIntentFile = absPath.match(/\.haiku\/intents\/[^/]+\/intent\.md$/)
-	const isStageState = absPath.match(/\.haiku\/intents\/[^/]+\/stages\/[^/]+\/state\.json$/)
-	const isUnitFile = absPath.match(/\.haiku\/intents\/[^/]+\/stages\/[^/]+\/units\/[^/]+\.md$/)
+	const isStageState = absPath.match(
+		/\.haiku\/intents\/[^/]+\/stages\/[^/]+\/state\.json$/,
+	)
+	const isUnitFile = absPath.match(
+		/\.haiku\/intents\/[^/]+\/stages\/[^/]+\/units\/[^/]+\.md$/,
+	)
 
 	if (!isIntentFile && !isStageState && !isUnitFile) return
 
 	// Determine what's being written (content for Write, new_string for Edit)
-	const content = (toolInput.content as string) || (toolInput.new_string as string) || ""
+	const content =
+		(toolInput.content as string) || (toolInput.new_string as string) || ""
 	if (!content) return
 
 	let protectedFields: string[]
@@ -63,9 +89,9 @@ export async function guardFsmFields(input: Record<string, unknown>): Promise<vo
 
 	if (violations.length > 0) {
 		// Block the edit
-		out(`BLOCKED: Cannot directly modify FSM-controlled fields in ${fileType} files: ${violations.join(", ")}. ` +
-			`Use the haiku MCP tools instead (haiku_run_next, haiku_unit_start, haiku_unit_advance_hat, etc.). ` +
-			`Direct file edits bypass the state machine and corrupt lifecycle state.`)
+		out(
+			`BLOCKED: Cannot directly modify FSM-controlled fields in ${fileType} files: ${violations.join(", ")}. Use the haiku MCP tools instead (haiku_run_next, haiku_unit_start, haiku_unit_advance_hat, etc.). Direct file edits bypass the state machine and corrupt lifecycle state.`,
+		)
 		process.exit(2) // Exit code 2 signals "blocked" to Claude Code
 	}
 }

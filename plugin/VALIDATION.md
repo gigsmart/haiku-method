@@ -87,7 +87,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
    - [ ] Intent fields set during creation (mode, studio, etc.)
    - [ ] One intent per session — `haiku_intent_create` rejects if session already has an active intent
 
-2. **First `/haiku:resume`:**
+2. **First `/haiku:pickup`:**
    - [ ] `haiku_run_next` returns `start_stage` with stage: inception, hats: [architect, elaborator]
    - [ ] Orchestrator performs FSM side effects: writes `state.json` (status: active, phase: elaborate), sets `active_stage`, creates intent branch
    - [ ] Agent follows the returned action
@@ -151,7 +151,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 **Trigger:** User creates intent with mode: discrete.
 
 - [ ] After each stage gate passes, `haiku_run_next` returns `stage_complete_discrete` (not `advance_stage`)
-- [ ] Agent stops and tells user to run `/haiku:resume` for next stage
+- [ ] Agent stops and tells user to run `/haiku:pickup` for next stage
 - [ ] Even `review: auto` gates stop in discrete mode
 
 ---
@@ -173,7 +173,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 
 - [ ] `haiku_run_next` returns `gate_await` — orchestrator enters the gate (sets gate_entered_at)
 - [ ] Agent reports what is being awaited
-- [ ] Intent blocks until user runs `/haiku:resume` again
+- [ ] Intent blocks until user runs `/haiku:pickup` again
 - [ ] On resume: agent confirms event occurred, then advances
 
 ---
@@ -208,7 +208,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 - [ ] Template resolved from `studios/software/templates/new-feature.md`
 - [ ] Parameters substituted: `{{ feature }}` → "OAuth login" in all criteria
 - [ ] Pre-filled units created in appropriate stages
-- [ ] First `/haiku:resume` skips elaboration (units already exist)
+- [ ] First `/haiku:pickup` skips elaboration (units already exist)
 - [ ] `haiku_run_next` returns `advance_phase` from elaborate to execute
 
 ---
@@ -409,7 +409,7 @@ packages/
 | Tool | Purpose |
 |------|---------|
 | `haiku_run_next` | Get next orchestrator action (FSM driver) |
-| `haiku_go_back` | Navigate to a prior stage or phase |
+| `haiku_revisit` | Revisit an earlier stage or phase |
 | `haiku_intent_create` | Create a new intent (with elicitation) |
 
 **Unit write (5):**
@@ -459,7 +459,7 @@ Every MCP state transition emits its OTEL event — no manual calls needed:
 | `haiku_run_next` (FSM: gate resolved) | `haiku.gate.resolved` |
 | `haiku_run_next` (FSM: intent_complete) | `haiku.intent.completed` |
 | `haiku_run_next` | `haiku.orchestrator.action` |
-| `haiku_go_back` | `haiku.go_back.stage` / `haiku.go_back.phase` |
+| `haiku_revisit` | `haiku.revisit.stage` / `haiku.revisit.phase` |
 | `haiku_unit_start` | `haiku.unit.started` |
 | `haiku_unit_advance_hat` (last hat) | `haiku.unit.completed` |
 | `haiku_unit_reject_hat` | `haiku.unit.failed` |

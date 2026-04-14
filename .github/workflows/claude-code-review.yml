@@ -61,3 +61,62 @@ jobs:
 
             Always post your review, even if this is a re-review after new commits were pushed. Review the full PR diff, not just the latest commits.
 
+  # Review Gate — runs AFTER claude-review so it sees any new review threads
+  # that Claude posted against the current PR head. If this lived in a separate
+  # workflow that also triggered on `pull_request: synchronize`, it'd race the
+  # reviewer and pass on stale (already-resolved) state from the previous commit.
+  # Using `needs: [claude-review]` here orders the two jobs.
+  #
+  # `if: always()` keeps the gate running even when claude-review is skipped
+  # (fork PRs) or fails — the gate still provides its unresolved-threads check.
+  review-gate:
+    name: Review Gate
+    needs: [claude-review]
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Check for unresolved review comments
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # Fetch all review threads via GraphQL and check for unresolved ones
+          UNRESOLVED=$(gh api graphql -f query='
+            query($owner: String!, $repo: String!, $pr: Int!) {
+              repository(owner: $owner, name: $repo) {
+                pullRequest(number: $pr) {
+                  reviewThreads(first: 100) {
+                    nodes {
+                      isResolved
+                      comments(first: 1) {
+                        nodes {
+                          author { login }
+                          body
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ' -f owner="${{ github.repository_owner }}" \
+            -f repo="$(echo '${{ github.repository }}' | cut -d/ -f2)" \
+            -F pr="${PR_NUMBER}" \
+            --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)')
+
+          if [ -z "$UNRESOLVED" ]; then
+            echo "No unresolved review threads."
+            exit 0
+          fi
+
+          COUNT=$(echo "$UNRESOLVED" | jq -s 'length')
+          echo ""
+          echo "::error::$COUNT unresolved review thread(s) found. Resolve all review comments before merging."
+          echo ""
+
+          # Print details of unresolved threads
+          echo "$UNRESOLVED" | jq -r '.comments.nodes[0] | "  - \(.author.login): \(.body | split("\n") | .[0])"'
+          echo ""
+          exit 1

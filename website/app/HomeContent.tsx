@@ -1163,7 +1163,7 @@ export default function HomeContent({
 						className="mb-2 text-gray-500 dark:text-gray-400"
 					>
 						Now the AI works. You typed{" "}
-						<code className="text-amber-500">/haiku:resume</code>. Three loops
+						<code className="text-amber-500">/haiku:pickup</code>. Three loops
 						nest inside each other, from big to small.
 					</motion.p>
 
@@ -1315,7 +1315,7 @@ export default function HomeContent({
 						The <code className="text-amber-500">enforce-iteration</code> hook fires
 						when a session ends. It checks what work remains. If units are still
 						in progress, it tells the next session to call{" "}
-						<code className="text-amber-500">/haiku:resume</code> to continue.
+						<code className="text-amber-500">/haiku:pickup</code> to continue.
 						The AI never &ldquo;forgets&rdquo; mid-task.
 					</ChatBubble>
 
@@ -1366,7 +1366,7 @@ export default function HomeContent({
 						</div>
 						<p className="mt-3">
 							If ephemeral state is lost,{" "}
-							<code className="text-amber-500">/haiku:resume</code> can
+							<code className="text-amber-500">/haiku:pickup</code> can
 							reconstruct it from the committed artifacts and git history.
 						</p>
 					</DeepDive>
@@ -1892,7 +1892,7 @@ export default function HomeContent({
 							</p>
 						</ToolkitCard>
 						<ToolkitCard
-							cmd="/haiku:resume"
+							cmd="/haiku:pickup"
 							tagline="Continue, resume, or run the next stage"
 							color="amber"
 						>
@@ -1919,7 +1919,7 @@ export default function HomeContent({
 						>
 							<p>
 								Legacy command. Use{" "}
-								<code className="text-amber-500">/haiku:resume</code> instead,
+								<code className="text-amber-500">/haiku:pickup</code> instead,
 								which handles all stage execution.
 							</p>
 						</ToolkitCard>
@@ -1945,7 +1945,7 @@ export default function HomeContent({
 					{/* When Things Go Sideways */}
 					<ToolkitGroup title="When Things Go Sideways" color="rose">
 						<ToolkitCard
-							cmd="/haiku:resume"
+							cmd="/haiku:pickup"
 							tagline="Pick up where you left off"
 							color="rose"
 						>

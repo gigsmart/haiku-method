@@ -2,7 +2,6 @@
 title: "Design as a First-Class Concern"
 description: "H·AI·K·U now includes a design direction system and persistent project knowledge layer, making visual design and domain understanding part of the methodology — not an afterthought."
 date: 2026-04-01
-author: GigSmart
 ---
 
 Every AI-generated interface looks the same. Sidebar on the left. Header across the top. Card grid in the content area. Tailwind defaults. Blue buttons. Rounded corners. The aesthetic is competent, inoffensive, and utterly interchangeable.

@@ -30,10 +30,10 @@ Complete these steps before beginning your first intent:
 
 ## Phase 1: Elaboration
 
-Use `/haiku:start` to create your intent, then `/haiku:resume` to elaborate it collaboratively with Claude.
+Use `/haiku:start` to create your intent, then `/haiku:pickup` to elaborate it collaboratively with Claude.
 
 ### Start Elaboration
-- [ ] Run `/haiku:start` then `/haiku:resume`
+- [ ] Run `/haiku:start` then `/haiku:pickup`
 - [ ] Describe what you want to build in 2-3 sentences
 
 ### Define the Intent
@@ -76,10 +76,10 @@ Use `/haiku:start` to create your intent, then `/haiku:resume` to elaborate it c
 
 ## Phase 2: First Unit
 
-Work through your first unit using `/haiku:resume`.
+Work through your first unit using `/haiku:pickup`.
 
 ### Start Execution
-- [ ] Run `/haiku:resume`
+- [ ] Run `/haiku:pickup`
 - [ ] Verify Claude loaded the correct unit
 
 ### Planner Hat
@@ -137,7 +137,7 @@ Continue with remaining units.
 
 ### For Each Remaining Unit
 
-- [ ] Run `/haiku:resume` to load next unit
+- [ ] Run `/haiku:pickup` to load next unit
 - [ ] Review any dependencies are satisfied
 - [ ] Complete Planner → Builder → Reviewer cycle
 - [ ] Commit with unit reference
@@ -146,7 +146,7 @@ Continue with remaining units.
 ### Between Units
 
 - [ ] Check if context is getting heavy
-- [ ] `/clear` if needed, then `/haiku:resume` to continue
+- [ ] `/clear` if needed, then `/haiku:pickup` to continue
 - [ ] Verify committed artifacts reflect current state
 
 ### Handling Blockers
@@ -214,7 +214,7 @@ Answer these questions honestly:
 
 **Tooling:**
 - [ ] Any friction with the commands?
-- [ ] Did `/clear` + `/haiku:resume` work smoothly?
+- [ ] Did `/clear` + `/haiku:pickup` work smoothly?
 - [ ] Were artifacts helpful?
 
 ### Metrics to Note
@@ -240,7 +240,7 @@ Based on this experience:
 | Command | When to Use |
 |---------|-------------|
 | `/haiku:start` | Start new intent |
-| `/haiku:resume` | Continue/start unit work |
+| `/haiku:pickup` | Continue/start unit work |
 | `/researcher` | Need more understanding |
 | `/planner` | Need to redesign approach |
 | `/builder` | Ready to implement |

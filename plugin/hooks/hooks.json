@@ -58,7 +58,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook validate-unit-type",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook track-outputs",
             "timeout": 5
           }
         ]
