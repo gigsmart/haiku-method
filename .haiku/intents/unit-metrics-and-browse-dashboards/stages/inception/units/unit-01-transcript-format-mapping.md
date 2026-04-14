@@ -5,13 +5,15 @@ depends_on: []
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
-status: active
+model: sonnet
+status: completed
 bolt: 1
 hat: elaborator
 started_at: '2026-04-14T21:40:59Z'
 hat_started_at: '2026-04-14T21:44:29Z'
 outputs:
   - knowledge/TRANSCRIPT_FORMAT.md
+completed_at: '2026-04-14T21:46:15Z'
 ---
 
 # Research: Claude Code transcript file format and token fields
@@ -36,9 +38,9 @@ A single artifact at `.haiku/intents/unit-metrics-and-browse-dashboards/knowledg
 
 ## Completion Criteria
 
-- [ ] `TRANSCRIPT_FORMAT.md` exists in the intent's `knowledge/` directory.
-- [ ] The document includes at least one real sanitized sample entry from a local transcript file, reproduced inline.
-- [ ] Every token-bearing field on an assistant turn is named with its JSON path (e.g., `message.usage.input_tokens`).
-- [ ] The document explicitly names the timestamp field used to sequence entries and gives its format (ISO 8601 / epoch).
-- [ ] The document lists every distinct `model` ID observed in the sampled transcripts.
-- [ ] `grep -r "input_tokens\|cache_read" ~/.claude/projects | head -5` output is captured or referenced to prove the fields exist in real data.
+- [x] `TRANSCRIPT_FORMAT.md` exists in the intent's `knowledge/` directory.
+- [x] The document includes at least one real sanitized sample entry from a local transcript file, reproduced inline.
+- [x] Every token-bearing field on an assistant turn is named with its JSON path (e.g., `message.usage.input_tokens`).
+- [x] The document explicitly names the timestamp field used to sequence entries and gives its format (ISO 8601 / epoch).
+- [x] The document lists every distinct `model` ID observed in the sampled transcripts.
+- [x] `grep -r "input_tokens\|cache_read" ~/.claude/projects | head -5` output is captured or referenced to prove the fields exist in real data.

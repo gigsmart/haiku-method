@@ -10,6 +10,9 @@ bolt: 1
 hat: elaborator
 started_at: '2026-04-14T21:41:20Z'
 hat_started_at: '2026-04-14T21:43:03Z'
+outputs: |
+
+  - knowledge/PRICING_STRATEGY.md
 ---
 
 # Research: Source of truth for per-model USD pricing
