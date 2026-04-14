@@ -11,9 +11,9 @@ inputs:
   - stages/inception/units/unit-06-visual-question-design-direction.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-14T22:58:14Z'
-hat_started_at: '2026-04-14T22:58:14Z'
+hat_started_at: '2026-04-14T23:02:37Z'
 outputs:
   - knowledge/unit-08-cowork-e2e-validation-research.md
 ---
