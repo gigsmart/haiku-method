@@ -10,11 +10,12 @@ inputs:
   - stages/inception/units/unit-03-archive-skills.md
 outputs:
   - stages/development/artifacts/unit-03-implementation-notes.md
-status: active
+status: completed
 bolt: 1
 hat: reviewer
 started_at: '2026-04-14T22:07:51Z'
 hat_started_at: '2026-04-14T22:09:32Z'
+completed_at: '2026-04-14T22:11:55Z'
 ---
 
 # unit-03-implement-archive-skills
