@@ -7,9 +7,9 @@ inputs:
   - knowledge/DISCOVERY.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-14T21:47:49Z'
-hat_started_at: '2026-04-14T21:47:49Z'
+hat_started_at: '2026-04-14T21:51:56Z'
 ---
 
 # Scrub stale get_review_status references from docs
