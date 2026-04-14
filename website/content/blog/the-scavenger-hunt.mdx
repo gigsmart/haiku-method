@@ -151,7 +151,9 @@ The diagram below is the **complete** stage machine as a mermaid stateDiagram-v2
         I_gate --> I_review : changes_requested
         I_gate --> [*] : approved (ask)
     }
-    note right of Inception : review: ask · collaborative
+    note right of Inception
+        review=ask · collaborative
+    end note
 
     Inception --> Design : continuous mode
     Inception --> Paused_I : discrete mode
@@ -174,7 +176,9 @@ The diagram below is the **complete** stage machine as a mermaid stateDiagram-v2
         D_gate --> D_blocked : external_review_requested
         D_blocked --> [*] : PR merged
     }
-    note right of Design : review: [external, ask] · collaborative
+    note right of Design
+        review=[external, ask] · collaborative
+    end note
 
     Design --> Product : continuous
     Design --> Paused_D : discrete
@@ -197,7 +201,9 @@ The diagram below is the **complete** stage machine as a mermaid stateDiagram-v2
         P_gate --> P_blocked : external_review_requested
         P_blocked --> [*] : PR merged
     }
-    note right of Product : review: [external, ask] · collaborative
+    note right of Product
+        review=[external, ask] · collaborative
+    end note
 
     Product --> Development : continuous
     Product --> Paused_P : discrete
@@ -220,7 +226,9 @@ The diagram below is the **complete** stage machine as a mermaid stateDiagram-v2
         V_gate --> V_blocked : external_review_requested
         V_blocked --> [*] : PR merged
     }
-    note right of Development : review: [external, ask] · collaborative
+    note right of Development
+        review=[external, ask] · collaborative
+    end note
 
     Development --> Operations : continuous
     Development --> Paused_V : discrete
@@ -236,7 +244,9 @@ The diagram below is the **complete** stage machine as a mermaid stateDiagram-v2
         O_review --> O_execute : fix_quality_gates
         O_review --> [*] : gates pass (auto)
     }
-    note right of Operations : review: auto · autonomous
+    note right of Operations
+        review=auto · autonomous
+    end note
 
     Operations --> Security : continuous
     Operations --> Paused_O : discrete
@@ -256,7 +266,9 @@ The diagram below is the **complete** stage machine as a mermaid stateDiagram-v2
         S_gate --> S_blocked : external_review_requested
         S_blocked --> [*] : PR merged
     }
-    note right of Security : review: [external, ask] · autonomous
+    note right of Security
+        review=[external, ask] · autonomous
+    end note
 
     Security --> [*] : intent_complete`} caption="The complete software studio state machine. Six composite stage states, each with its own five-phase FSM, wired together by mode-dependent stage transitions." />
 
