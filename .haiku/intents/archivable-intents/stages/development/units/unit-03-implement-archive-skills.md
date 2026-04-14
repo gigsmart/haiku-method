@@ -8,6 +8,8 @@ inputs:
   - knowledge/DISCOVERY.md
   - knowledge/ARCHITECTURE.md
   - stages/inception/units/unit-03-archive-skills.md
+outputs:
+  - stages/development/artifacts/unit-03-implementation-notes.md
 ---
 
 # unit-03-implement-archive-skills
