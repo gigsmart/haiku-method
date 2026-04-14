@@ -8,13 +8,14 @@ inputs:
   - knowledge/DISCOVERY.md
   - stages/inception/units/unit-04-spa-host-bridge.md
   - stages/inception/units/unit-05-cowork-open-review-handler.md
-status: active
+status: completed
 bolt: 1
 hat: elaborator
 started_at: '2026-04-14T22:26:55Z'
 hat_started_at: '2026-04-14T22:32:17Z'
 outputs:
   - knowledge/unit-06-visual-question-design-direction-research.md
+completed_at: '2026-04-14T22:33:39Z'
 ---
 
 # Extend MCP Apps path to ask_user_visual_question and pick_design_direction
