@@ -10,6 +10,7 @@ inputs:
   - stages/inception/units/unit-01-cowork-env-probe/knowledge/cowork-env-contract.md
 outputs:
   - stages/inception/units/unit-01-cowork-env-probe/knowledge/cowork-env-contract.md
+  - stages/inception/units/unit-01-cowork-env-probe/knowledge/elaboration-notes.md
 ---
 
 # Cowork environment probe and workspace handshake
