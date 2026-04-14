@@ -10,9 +10,9 @@ inputs:
   - stages/inception/units/unit-05-docs-sync.md
 status: active
 bolt: 1
-hat: planner
+hat: builder
 started_at: '2026-04-14T22:13:27Z'
-hat_started_at: '2026-04-14T22:13:27Z'
+hat_started_at: '2026-04-14T22:13:57Z'
 ---
 
 # unit-05-implement-docs-sync
