@@ -1,10 +1,11 @@
 ---
 name: unit-08-ai-dlc-updates
-type: documentation
 status: completed
-depends_on: [unit-06-ai-dlc-integration, unit-07-haiku-website]
+depends_on:
+  - unit-06-ai-dlc-integration
+  - unit-07-haiku-website
 bolt: 0
-hat: ""
+hat: ''
 started_at: null
 completed_at: null
 ---

@@ -1,10 +1,11 @@
 ---
 name: unit-07-haiku-website
-type: documentation
 status: completed
-depends_on: [unit-01-haiku-foundation, unit-05-haiku-paper]
+depends_on:
+  - unit-01-haiku-foundation
+  - unit-05-haiku-paper
 bolt: 0
-hat: ""
+hat: ''
 started_at: null
 completed_at: null
 ---

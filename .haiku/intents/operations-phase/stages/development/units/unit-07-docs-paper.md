@@ -1,12 +1,16 @@
 ---
 name: unit-07-docs-paper
-type: documentation
 status: completed
-depends_on: [unit-02-elaboration-ops, unit-03-builder-ops, unit-04-reviewer-ops, unit-05-integration-ops, unit-06-operate-rewrite]
+depends_on:
+  - unit-02-elaboration-ops
+  - unit-03-builder-ops
+  - unit-04-reviewer-ops
+  - unit-05-integration-ops
+  - unit-06-operate-rewrite
 bolt: 0
-hat: ""
-started_at: 2026-03-28T08:54:14Z
-completed_at: 2026-03-28T08:54:14Z
+hat: ''
+started_at: 2026-03-28T08:54:14.000Z
+completed_at: 2026-03-28T08:54:14.000Z
 ---
 
 

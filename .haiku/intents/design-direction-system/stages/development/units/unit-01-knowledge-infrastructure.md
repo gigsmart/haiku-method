@@ -1,12 +1,11 @@
 ---
 name: unit-01-knowledge-infrastructure
-type: backend
 status: completed
 depends_on: []
 bolt: 0
-hat: ""
-started_at: 2026-04-01T13:05:43Z
-completed_at: 2026-04-01T13:05:43Z
+hat: ''
+started_at: 2026-04-01T13:05:43.000Z
+completed_at: 2026-04-01T13:05:43.000Z
 ---
 
 

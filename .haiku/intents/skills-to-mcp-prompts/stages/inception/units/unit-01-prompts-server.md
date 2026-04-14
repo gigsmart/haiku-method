@@ -1,6 +1,5 @@
 ---
 name: unit-01-prompts-server
-type: backend
 status: completed
 depends_on: []
 bolt: 1

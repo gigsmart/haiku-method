@@ -1,6 +1,5 @@
 ---
 name: unit-06-docs-update
-type: frontend
 status: completed
 depends_on:
   - unit-05-delete-skills

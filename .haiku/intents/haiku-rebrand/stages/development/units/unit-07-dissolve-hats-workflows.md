@@ -1,12 +1,14 @@
 ---
 name: unit-07-dissolve-hats-workflows
-type: backend
 status: completed
-depends_on: [unit-01-lib-hooks-rename, unit-05-stage-definitions, unit-06-stage-orchestrator]
+depends_on:
+  - unit-01-lib-hooks-rename
+  - unit-05-stage-definitions
+  - unit-06-stage-orchestrator
 bolt: 0
-hat: ""
-started_at: 2026-04-03T02:50:41Z
-completed_at: 2026-04-03T02:50:41Z
+hat: ''
+started_at: 2026-04-03T02:50:41.000Z
+completed_at: 2026-04-03T02:50:41.000Z
 ---
 
 

@@ -1,12 +1,12 @@
 ---
 name: unit-02-paper-sync
-type: documentation
 status: completed
-depends_on: [unit-01-adopt-skill]
+depends_on:
+  - unit-01-adopt-skill
 bolt: 0
-hat: ""
-started_at: 2026-03-30T05:24:00Z
-completed_at: 2026-03-30T05:24:00Z
+hat: ''
+started_at: 2026-03-30T05:24:00.000Z
+completed_at: 2026-03-30T05:24:00.000Z
 ---
 
 

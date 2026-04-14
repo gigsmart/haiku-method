@@ -1,12 +1,12 @@
 ---
 name: unit-08-website-updates
-type: documentation
 status: completed
-depends_on: [unit-07-paper-updates]
+depends_on:
+  - unit-07-paper-updates
 bolt: 0
-hat: ""
-started_at: 2026-03-31T21:05:22Z
-completed_at: 2026-03-31T21:05:22Z
+hat: ''
+started_at: 2026-03-31T21:05:22.000Z
+completed_at: 2026-03-31T21:05:22.000Z
 ---
 
 

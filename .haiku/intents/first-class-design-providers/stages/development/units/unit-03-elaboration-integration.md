@@ -1,12 +1,11 @@
 ---
 name: unit-03-elaboration-integration
-type: backend
 status: completed
 depends_on: []
 bolt: 0
-hat: ""
-started_at: 2026-04-01T20:03:51Z
-completed_at: 2026-04-01T20:03:51Z
+hat: ''
+started_at: 2026-04-01T20:03:51.000Z
+completed_at: 2026-04-01T20:03:51.000Z
 ---
 
 

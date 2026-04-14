@@ -1,6 +1,5 @@
 ---
 name: unit-03-supporting-prompts
-type: backend
 status: completed
 depends_on:
   - unit-01-prompts-server

@@ -1,12 +1,12 @@
 ---
 name: unit-05-integration-ops
-type: backend
 status: completed
-depends_on: [unit-04-reviewer-ops]
+depends_on:
+  - unit-04-reviewer-ops
 bolt: 0
-hat: ""
-started_at: 2026-03-28T08:30:28Z
-completed_at: 2026-03-28T08:30:28Z
+hat: ''
+started_at: 2026-03-28T08:30:28.000Z
+completed_at: 2026-03-28T08:30:28.000Z
 ---
 
 

@@ -1,12 +1,12 @@
 ---
 name: unit-03-schemas-types-settings
-type: backend
 status: completed
-depends_on: [unit-01-lib-hooks-rename]
+depends_on:
+  - unit-01-lib-hooks-rename
 bolt: 0
-hat: ""
-started_at: 2026-04-03T01:35:22Z
-completed_at: 2026-04-03T01:35:22Z
+hat: ''
+started_at: 2026-04-03T01:35:22.000Z
+completed_at: 2026-04-03T01:35:22.000Z
 ---
 
 

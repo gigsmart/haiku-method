@@ -1,10 +1,10 @@
 ---
 name: unit-03-operation-phase
-type: backend
 status: completed
-depends_on: [unit-02-haiku-core-plugin]
+depends_on:
+  - unit-02-haiku-core-plugin
 bolt: 0
-hat: ""
+hat: ''
 started_at: null
 completed_at: null
 ---

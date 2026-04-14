@@ -1,12 +1,11 @@
 ---
 name: unit-01-adopt-skill
-type: documentation
 status: completed
 depends_on: []
 bolt: 0
-hat: ""
-started_at: 2026-03-30T05:04:56Z
-completed_at: 2026-03-30T05:04:56Z
+hat: ''
+started_at: 2026-03-30T05:04:56.000Z
+completed_at: 2026-03-30T05:04:56.000Z
 ---
 
 
