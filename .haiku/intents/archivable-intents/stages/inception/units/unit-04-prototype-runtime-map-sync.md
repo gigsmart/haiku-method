@@ -1,10 +1,16 @@
 ---
 name: unit-04-prototype-runtime-map-sync
 type: website
-depends_on: ["unit-02-archive-tools-and-fsm-refusal"]
+depends_on:
+  - unit-02-archive-tools-and-fsm-refusal
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-14T20:40:50Z'
+hat_started_at: '2026-04-14T20:40:50Z'
 ---
 
 # unit-04-prototype-runtime-map-sync
