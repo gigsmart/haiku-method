@@ -14,6 +14,8 @@ inputs:
   - stages/inception/units/unit-02-cowork-timeout-spike.md
   - stages/inception/units/unit-03-ui-resource-registration.md
   - stages/inception/units/unit-04-spa-host-bridge.md
+outputs:
+  - knowledge/unit-05-open-review-handler-research.md
 ---
 
 # Cowork-mode _openReviewAndWait implementation
