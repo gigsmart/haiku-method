@@ -5,6 +5,8 @@ depends_on: ["unit-02-archive-tools-and-fsm-refusal"]
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
+outputs:
+  - stages/inception/artifacts/unit-04-elaboration-notes.md
 ---
 
 # unit-04-prototype-runtime-map-sync
