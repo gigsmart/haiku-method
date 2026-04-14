@@ -8,6 +8,8 @@ inputs:
   - knowledge/DISCOVERY.md
   - knowledge/ARCHITECTURE.md
   - stages/inception/units/unit-05-docs-sync.md
+outputs:
+  - stages/development/artifacts/unit-05-implementation-notes.md
 ---
 
 # unit-05-implement-docs-sync
