@@ -2,7 +2,7 @@
 title: 'Add archivable intents to H·AI·K·U. Users need a way to soft-hide completed,…'
 studio: software
 mode: continuous
-status: active
+status: completed
 created_at: '2026-04-14'
 stages:
   - inception
@@ -18,6 +18,7 @@ skip_stages:
   - security
 active_stage: development
 intent_reviewed: true
+completed_at: '2026-04-14T22:23:03Z'
 ---
 
 # Add archivable intents to H·AI·K·U. Users need a way to soft-hide completed,…
