@@ -1,11 +1,17 @@
 ---
 name: unit-03-bolt-to-transcript-correlation
 type: research
-depends_on: [unit-01-transcript-format-mapping]
+depends_on:
+  - unit-01-transcript-format-mapping
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
   - knowledge/TRANSCRIPT_FORMAT.md
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-14T21:53:22Z'
+hat_started_at: '2026-04-14T21:53:22Z'
 ---
 
 # Research: How to correlate a bolt's execution window to transcript entries
