@@ -34,7 +34,7 @@ export default async function StudioArchitecturePage({ params }: Props) {
 	if (!studio) notFound()
 
 	return (
-		<div className="flex h-screen flex-col">
+		<>
 			<nav className="flex flex-wrap items-center gap-2 border-b border-stone-200 bg-white px-4 py-2 text-sm dark:border-stone-700 dark:bg-stone-900">
 				<Link href="/studios/" className="text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-white">
 					Studios
@@ -52,8 +52,8 @@ export default async function StudioArchitecturePage({ params }: Props) {
 			<iframe
 				src={`/prototype-stage-flow.html?studio=${slug}`}
 				title={`${titleCase(studio.name)} architecture`}
-				className="flex-1 w-full border-0"
+				className="block w-full border-0 h-[calc(100svh-8rem)]"
 			/>
-		</div>
+		</>
 	)
 }
