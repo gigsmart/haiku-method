@@ -11,6 +11,7 @@ import { z } from "zod"
 import { REVIEW_APP_HTML } from "./review-app-html.js"
 import {
 	getSession,
+	recordHeartbeat,
 	updateDesignDirectionSession,
 	updateQuestionSession,
 	updateSession,
@@ -199,8 +200,21 @@ function withCors(response: Response): Response {
 	if (!isRemoteReviewEnabled()) return response
 	const headers = new Headers(response.headers)
 	headers.set("Access-Control-Allow-Origin", "*")
-	headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-	headers.set("Access-Control-Allow-Headers", "Content-Type")
+	headers.set("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS")
+	// `bypass-tunnel-reminder` is the custom header the SPA sends to skip
+	// loca.lt's interstitial reminder page. Custom headers trigger a CORS
+	// preflight and must be explicitly allowed.
+	headers.set(
+		"Access-Control-Allow-Headers",
+		"Content-Type, bypass-tunnel-reminder",
+	)
+	// `X-E2E-Encrypted` / `X-Original-Content-Type` are read by the SPA's
+	// e2eFetch helper to decide whether to decrypt. Custom response headers
+	// are only visible to cross-origin JS when exposed here.
+	headers.set(
+		"Access-Control-Expose-Headers",
+		"X-E2E-Encrypted, X-Original-Content-Type",
+	)
 	return new Response(response.body, {
 		status: response.status,
 		statusText: response.statusText,
@@ -226,6 +240,11 @@ async function withE2E(
 	sessionId: string | null,
 ): Promise<Response> {
 	if (!sessionId || !isE2EActive(sessionId) || response.status >= 400)
+		return response
+	// Null-body statuses (204/205/304) cannot legally carry a body per the
+	// fetch spec, and constructing `new Response(body, { status: 204 })` throws
+	// "Invalid response status code 204" in modern Node. Skip encryption.
+	if (response.status === 204 || response.status === 205 || response.status === 304)
 		return response
 
 	const originalContentType =
@@ -856,6 +875,13 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	const apiSessionMatch = path.match(/^\/api\/session\/([^/]+)$/)
 	if (apiSessionMatch && req.method === "GET") {
 		return handleSessionApi(apiSessionMatch[1])
+	}
+
+	// HEAD /api/session/:sessionId/heartbeat — client presence ping
+	const heartbeatMatch = path.match(/^\/api\/session\/([^/]+)\/heartbeat$/)
+	if (heartbeatMatch && req.method === "HEAD") {
+		const ok = recordHeartbeat(heartbeatMatch[1])
+		return new Response(null, { status: ok ? 200 : 404 })
 	}
 
 	// GET /review/:sessionId

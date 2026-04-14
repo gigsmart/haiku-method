@@ -19,7 +19,9 @@ function flag(name: string, defaultValue: boolean): boolean {
 }
 
 function str(name: string, defaultValue: string): string {
-	return process.env[name] ?? defaultValue
+	const raw = process.env[name]
+	if (raw === undefined || raw === "") return defaultValue
+	return raw
 }
 
 /** Feature flags. */

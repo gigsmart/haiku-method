@@ -29,6 +29,33 @@ type ShellState =
 export function ReviewShell() {
   const [state, setState] = useState<ShellState>({ status: "loading" })
 
+  // Hide site chrome (header/footer) and strip main padding for the review
+  // route so the review UI renders full-pane with zero branding. Scoped via
+  // a data attribute on the html element so it only applies while the shell
+  // is mounted, and torn down cleanly on unmount.
+  useEffect(() => {
+    const html = document.documentElement
+    html.setAttribute("data-haiku-review", "true")
+    const style = document.createElement("style")
+    style.setAttribute("data-haiku-review-style", "true")
+    style.textContent = `
+      html[data-haiku-review="true"] body > div > header,
+      html[data-haiku-review="true"] body > div > footer,
+      html[data-haiku-review="true"] body header[role],
+      html[data-haiku-review="true"] body footer[role],
+      html[data-haiku-review="true"] body > header,
+      html[data-haiku-review="true"] body > footer { display: none !important; }
+      html[data-haiku-review="true"] body > div > main,
+      html[data-haiku-review="true"] body > main { padding: 0 !important; flex: 1 1 auto !important; min-height: 100vh !important; }
+      html[data-haiku-review="true"] body { background: #1c1917 !important; }
+    `
+    document.head.appendChild(style)
+    return () => {
+      html.removeAttribute("data-haiku-review")
+      style.remove()
+    }
+  }, [])
+
   useEffect(() => {
     const hash = window.location.hash.slice(1)
     if (!hash) {

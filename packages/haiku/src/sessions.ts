@@ -4,6 +4,69 @@ const sessionEvents = new EventEmitter()
 // Prevent warnings when many sessions are active concurrently
 sessionEvents.setMaxListeners(200)
 
+// ─── Presence / heartbeat tracking ───────────────────────────────────
+// Browser clients HEAD /api/session/:id/heartbeat every 10s. If no
+// heartbeat arrives within HEARTBEAT_GRACE_MS we mark the session as
+// disconnected and wake up any waiting handler so it can reopen the
+// browser or bail out. This replaces the WebSocket-based presence
+// detection that didn't work across tunnel proxies.
+const HEARTBEAT_GRACE_MS = 25_000
+const HEARTBEAT_SWEEP_INTERVAL = 5_000
+const lastHeartbeatAt = new Map<string, number>()
+const presenceLost = new Set<string>()
+
+export function recordHeartbeat(sessionId: string): boolean {
+	if (!sessions.has(sessionId)) return false
+	lastHeartbeatAt.set(sessionId, Date.now())
+	if (presenceLost.delete(sessionId)) {
+		console.error(`[haiku] Presence restored for session ${sessionId}`)
+	}
+	return true
+}
+
+export function hasPresenceLost(sessionId: string): boolean {
+	return presenceLost.has(sessionId)
+}
+
+export function clearHeartbeat(sessionId: string): void {
+	lastHeartbeatAt.delete(sessionId)
+	presenceLost.delete(sessionId)
+}
+
+function sweepPresence(): void {
+	const now = Date.now()
+	for (const [id, ts] of lastHeartbeatAt) {
+		if (now - ts <= HEARTBEAT_GRACE_MS) continue
+		const session = sessions.get(id)
+		if (!session) {
+			lastHeartbeatAt.delete(id)
+			continue
+		}
+		// Only interesting while a handler is still blocking on the session
+		if (
+			(session.session_type === "review" && session.status !== "pending") ||
+			(session.session_type === "question" && session.status !== "pending") ||
+			(session.session_type === "design_direction" &&
+				session.status !== "pending")
+		) {
+			continue
+		}
+		if (!presenceLost.has(id)) {
+			presenceLost.add(id)
+			console.error(
+				`[haiku] Presence lost for session ${id} — no heartbeat in ${Math.round(
+					(now - ts) / 1000,
+				)}s`,
+			)
+			sessionEvents.emit(`session:${id}`)
+		}
+	}
+}
+
+// Watchdog sweeps every HEARTBEAT_SWEEP_INTERVAL. unref() so the timer
+// never prevents the MCP process from exiting cleanly.
+setInterval(sweepPresence, HEARTBEAT_SWEEP_INTERVAL).unref()
+
 /**
  * Notify that a session's status has been updated.
  * Tool handlers awaiting waitForSession() will resolve.

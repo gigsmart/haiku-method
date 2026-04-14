@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useEffect, useState, useCallback } from "react"
 
 /**
  * Decrypt an E2E-encrypted response using AES-256-GCM.
@@ -96,17 +96,13 @@ interface ReviewAnnotations {
   comments?: Array<{ selectedText: string; comment: string; paragraph: number }>
 }
 
-const RECONNECT_INTERVAL = 3000
-const MAX_RECONNECTS = 5
+const HEARTBEAT_INTERVAL_MS = 10_000
 
 export function useReviewSession(baseUrl: string, sessionId: string, e2eKey?: string | null) {
   const [session, setSession] = useState<SessionData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
-  const wsRef = useRef<WebSocket | null>(null)
-  const reconnectCount = useRef(0)
-  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Fetch session data
   useEffect(() => {
@@ -138,75 +134,37 @@ export function useReviewSession(baseUrl: string, sessionId: string, e2eKey?: st
 
     fetchSession()
     return () => { cancelled = true }
-  }, [baseUrl, sessionId])
+  }, [baseUrl, sessionId, e2eKey])
 
-  // WebSocket connection with auto-reconnect
+  // Heartbeat: tell the MCP server we're still here so it knows when
+  // the user closes the tab and can reopen the review if needed.
   useEffect(() => {
-    function connect() {
+    let cancelled = false
+
+    async function beat() {
+      if (cancelled) return
       try {
-        const wsUrl = baseUrl.replace(/^http/, "ws")
-        const ws = new WebSocket(`${wsUrl}/ws/session/${sessionId}`)
-
-        ws.onopen = () => {
-          wsRef.current = ws
-          setIsConnected(true)
-          reconnectCount.current = 0
-        }
-
-        ws.onclose = () => {
-          if (wsRef.current === ws) {
-            wsRef.current = null
-            setIsConnected(false)
-            attemptReconnect()
-          }
-        }
-
-        ws.onerror = () => {
-          if (wsRef.current === ws) {
-            wsRef.current = null
-            setIsConnected(false)
-            attemptReconnect()
-          }
-        }
+        const res = await fetch(`${baseUrl}/api/session/${sessionId}/heartbeat`, {
+          method: "HEAD",
+          headers: { "bypass-tunnel-reminder": "1" },
+        })
+        if (!cancelled) setIsConnected(res.ok)
       } catch {
-        setIsConnected(false)
-        attemptReconnect()
+        if (!cancelled) setIsConnected(false)
       }
     }
 
-    function attemptReconnect() {
-      if (reconnectCount.current >= MAX_RECONNECTS) {
-        setError("Connection lost. Please request a new review link from Claude Code.")
-        return
-      }
-      reconnectCount.current++
-      reconnectTimer.current = setTimeout(connect, RECONNECT_INTERVAL)
-    }
-
-    connect()
-
+    beat()
+    const timer = setInterval(beat, HEARTBEAT_INTERVAL_MS)
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close()
-        wsRef.current = null
-      }
-      if (reconnectTimer.current) {
-        clearTimeout(reconnectTimer.current)
-      }
+      cancelled = true
+      clearInterval(timer)
     }
   }, [baseUrl, sessionId])
 
   const submitDecision = useCallback(
     async (decision: "approved" | "changes_requested", feedback: string, annotations?: ReviewAnnotations) => {
       const data = { decision, feedback, annotations }
-
-      // Try WebSocket first
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ type: "decide", ...data }))
-        return true
-      }
-
-      // Fallback to HTTP POST
       try {
         const res = await fetch(`${baseUrl}/review/${sessionId}/decide`, {
           method: "POST",
@@ -224,12 +182,6 @@ export function useReviewSession(baseUrl: string, sessionId: string, e2eKey?: st
   const submitAnswers = useCallback(
     async (answers: Array<{ question: string; selectedOptions: string[]; otherText?: string }>, feedback?: string) => {
       const data = { answers, feedback }
-
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ type: "answer", ...data }))
-        return true
-      }
-
       try {
         const res = await fetch(`${baseUrl}/question/${sessionId}/answer`, {
           method: "POST",
@@ -247,12 +199,6 @@ export function useReviewSession(baseUrl: string, sessionId: string, e2eKey?: st
   const submitDirection = useCallback(
     async (archetype: string, parameters: Record<string, number>, comments?: string) => {
       const data = { archetype, parameters, comments }
-
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ type: "select", ...data }))
-        return true
-      }
-
       try {
         const res = await fetch(`${baseUrl}/direction/${sessionId}/select`, {
           method: "POST",
