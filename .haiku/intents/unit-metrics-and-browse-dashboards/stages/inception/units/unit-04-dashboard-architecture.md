@@ -1,16 +1,19 @@
 ---
 name: unit-04-dashboard-architecture
 type: research
+model: sonnet
 depends_on: []
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
-status: active
+status: completed
 bolt: 1
 hat: elaborator
 started_at: '2026-04-14T21:41:38Z'
 hat_started_at: '2026-04-14T21:43:49Z'
-outputs: knowledge/DASHBOARD_ARCHITECTURE.md
+outputs:
+  - knowledge/DASHBOARD_ARCHITECTURE.md
+completed_at: '2026-04-14T21:51:30Z'
 ---
 
 # Research: Browse-app dashboard architecture — chart library and aggregation patterns
@@ -39,9 +42,9 @@ A single artifact at `.haiku/intents/unit-metrics-and-browse-dashboards/knowledg
 
 ## Completion Criteria
 
-- [ ] `DASHBOARD_ARCHITECTURE.md` exists in the intent's `knowledge/` directory.
-- [ ] The document names exactly one chart library and lists at least two discarded alternatives with per-option reasoning.
-- [ ] The document picks exactly one aggregation strategy (write-time / read-time / hybrid) and explains how it works across local, GitHub, and GitLab providers.
-- [ ] The document lists every new `BrowseProvider` method with full TypeScript signature.
-- [ ] The document maps each of the four dashboards to the specific files/fields it will read.
-- [ ] The document includes a rough scale target (e.g., "designed for up to 200 intents × 20 units each before we need pagination").
+- [x] `DASHBOARD_ARCHITECTURE.md` exists in the intent's `knowledge/` directory.
+- [x] The document names exactly one chart library and lists at least two discarded alternatives with per-option reasoning.
+- [x] The document picks exactly one aggregation strategy (write-time / read-time / hybrid) and explains how it works across local, GitHub, and GitLab providers.
+- [x] The document lists every new `BrowseProvider` method with full TypeScript signature.
+- [x] The document maps each of the four dashboards to the specific files/fields it will read.
+- [x] The document includes a rough scale target (e.g., "designed for up to 200 intents × 20 units each before we need pagination").
