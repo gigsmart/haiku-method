@@ -8,6 +8,8 @@ inputs:
   - knowledge/DISCOVERY.md
   - stages/inception/units/unit-04-spa-host-bridge.md
   - stages/inception/units/unit-05-cowork-open-review-handler.md
+outputs:
+  - knowledge/unit-06-visual-question-design-direction-research.md
 ---
 
 # Extend MCP Apps path to ask_user_visual_question and pick_design_direction
