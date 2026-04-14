@@ -3,12 +3,6 @@ name: Deploy Website
 on:
   push:
     branches: [main]
-    paths:
-      - "website/**"
-      - "plugin/studios/**"
-      - "deploy/**"
-      - "CHANGELOG.md"
-      - ".github/workflows/deploy-website.yml"
   workflow_dispatch:
 
 env:
