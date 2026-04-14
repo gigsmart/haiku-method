@@ -1,5 +1,5 @@
 ---
-title: "Cowork-mode _openReviewAndWait implementation"
+title: Cowork-mode _openReviewAndWait implementation
 type: feature
 depends_on:
   - unit-01-cowork-env-probe
@@ -14,6 +14,11 @@ inputs:
   - stages/inception/units/unit-02-cowork-timeout-spike.md
   - stages/inception/units/unit-03-ui-resource-registration.md
   - stages/inception/units/unit-04-spa-host-bridge.md
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-14T22:20:29Z'
+hat_started_at: '2026-04-14T22:20:29Z'
 ---
 
 # Cowork-mode _openReviewAndWait implementation
