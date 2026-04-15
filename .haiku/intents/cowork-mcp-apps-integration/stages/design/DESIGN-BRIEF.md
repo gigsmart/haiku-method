@@ -41,11 +41,13 @@ Plus the wrapper screens that bracket all of the above:
 
 ### Per-screen layout deltas vs browser-tab today
 
-- **Intent review:** Sidebar collapses to a top accordion bar. Decision panel pins to the bottom of the iframe (sticky), not to the right.
-- **Unit review:** Same collapse pattern.
-- **Question session:** No layout change — already single-column.
-- **Design direction picker:** Archetype cards stack vertically below 768px iframe width. Parameter sliders move below the preview, not beside it.
-- **Annotation canvas:** Already responsive, no change.
+**Selected layout direction: bottom-sheet decision panel** (chosen via `pick_design_direction`). Content fills the iframe; the decision panel is a draggable bottom sheet that starts collapsed (just buttons + drag handle) and expands to half-pane to reveal feedback fields. The full sidebar metadata moves into the scrollable content area; only a minimal status strip lives at the top.
+
+- **Intent review:** Sidebar metadata (units, dependencies, criteria) becomes inline sections in the scrollable content. Decision panel is the bottom sheet.
+- **Unit review:** Same pattern — sidebar inline, decision in the sheet.
+- **Question session:** Question form lives in the content area; submit lives in the bottom sheet.
+- **Design direction picker:** Archetype cards stack vertically; selection commit lives in the bottom sheet.
+- **Annotation canvas:** Canvas fills the content area; "Apply annotations" / "Clear" actions live in the bottom sheet.
 - **Iframe boot:** Centered loading spinner with three-phase status text (`Loading…` → `Connecting…` → `Ready`).
 - **Capability-negotiation error:** Centered card with icon, error code, retry button (calls `App.callServerTool` again), and an escalate-link to copy the session ID for a bug report.
 - **Sandbox-restricted error:** Centered card with the blocked feature name and a "Why this happens" disclosure.
