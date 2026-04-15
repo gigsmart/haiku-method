@@ -10,9 +10,9 @@ inputs:
   - stages/inception/units/unit-05-cowork-open-review-handler.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-15T04:41:26Z'
-hat_started_at: '2026-04-15T04:41:26Z'
+hat_started_at: '2026-04-15T04:43:11Z'
 outputs:
   - knowledge/unit-06-visual-question-design-direction-research.md
 completed_at: null
