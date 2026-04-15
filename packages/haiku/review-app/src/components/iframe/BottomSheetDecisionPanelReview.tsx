@@ -167,10 +167,12 @@ export function BottomSheetDecisionPanelReview({
 
 	return (
 		<>
-			{/* Backdrop dim when expanded */}
+			{/* Backdrop dim when expanded.
+			 *  `absolute` (not `fixed`) so it stays within the iframe's scroll
+			 *  container and doesn't punch through the host boundary (GR-10). */}
 			{isHalfPane && (
 				<div
-					className="fixed inset-0 bg-stone-950/60 pointer-events-none"
+					className="absolute inset-0 bg-stone-950/60 pointer-events-none"
 					aria-hidden="true"
 					style={{ zIndex: 29 }}
 				/>

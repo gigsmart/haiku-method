@@ -272,7 +272,13 @@ export function renderDesignDirectionPage(
         var result = document.getElementById('submit-result');
         result.className = 'mt-4 p-4 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200';
         result.classList.remove('hidden');
-        result.innerHTML = '<p class="font-semibold">Direction selected: ' + archetype + '</p><p class="text-sm mt-1">You can close this tab.</p>';
+        var p1 = document.createElement('p');
+        p1.className = 'font-semibold';
+        p1.textContent = 'Direction selected: ' + archetype;
+        var p2 = document.createElement('p');
+        p2.className = 'text-sm mt-1';
+        p2.textContent = 'You can close this tab.';
+        result.replaceChildren(p1, p2);
       })
       .catch(function(err) {
         var result = document.getElementById('submit-result');

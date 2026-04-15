@@ -34,9 +34,18 @@ const _pendingRequests = new Map<number, {
   reject: (reason: Error) => void;
 }>();
 
+// Captured on the first inbound host message and reused for postMessage
+// targetOrigin + subsequent origin checks. Falls back to the parent's origin
+// if available, else a strict ancestor-origin check via event.origin.
+let _hostOrigin: string | null = null;
+
 // Listen for postMessage responses from the host
 if (typeof window !== "undefined") {
   window.addEventListener("message", (event) => {
+    // Pin the host origin on first message; reject mismatched origins after.
+    if (_hostOrigin === null) _hostOrigin = event.origin;
+    if (event.origin !== _hostOrigin) return;
+
     const msg = event.data;
     if (
       msg &&
@@ -65,6 +74,22 @@ export class App {
     return new Promise<CallToolResult>((resolve, reject) => {
       const id = ++_requestId;
       _pendingRequests.set(id, { resolve, reject });
+      // Use the captured host origin for targetOrigin so the message is
+      // only deliverable to the trusted host. If the host hasn't sent
+      // anything yet, fall back to the document.referrer's origin.
+      let targetOrigin = _hostOrigin;
+      if (!targetOrigin && typeof document !== "undefined" && document.referrer) {
+        try {
+          targetOrigin = new URL(document.referrer).origin;
+        } catch {
+          targetOrigin = null;
+        }
+      }
+      if (!targetOrigin) {
+        _pendingRequests.delete(id);
+        reject(new Error("callServerTool: no trusted host origin available"));
+        return;
+      }
       window.parent.postMessage(
         {
           jsonrpc: "2.0",
@@ -75,7 +100,7 @@ export class App {
             arguments: params.arguments,
           },
         },
-        "*",
+        targetOrigin,
       );
       // Timeout after 30 seconds
       setTimeout(() => {

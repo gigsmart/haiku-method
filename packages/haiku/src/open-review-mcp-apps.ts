@@ -113,6 +113,12 @@ export async function openReviewMcpApps(
 		html: "",
 	})
 
+	// Set _meta synchronously before any further awaits so the session and
+	// the meta callback are visible to observers (tests, handleToolCall) at
+	// the same time. Delaying this past subsequent awaits introduced a race
+	// where listSessions() returned the session before _meta was populated.
+	setReviewResultMeta(buildUiResourceMeta(REVIEW_RESOURCE_URI))
+
 	// Store parsed data on session for the SPA
 	Object.assign(session, {
 		parsedIntent: intent,
@@ -140,10 +146,6 @@ export async function openReviewMcpApps(
 		stageArtifacts,
 		outputArtifacts,
 	})
-
-	// Store _meta for handleToolCall to attach to the tool result.
-	// handleToolCall clears _reviewResultMeta in its finally block.
-	setReviewResultMeta(buildUiResourceMeta(REVIEW_RESOURCE_URI))
 
 	// Single await — blocking path (unit-02-outcome: blocking)
 	const abortPromise = new Promise<never>((_, reject) => {
