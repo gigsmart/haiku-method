@@ -1,66 +1,49 @@
----
-title: Input Validation Audit — Findings
-unit: unit-02-input-validation-audit
-created_at: '2026-04-15'
-status: pass
----
+# Input Validation Audit — unit-02
 
-# Input Validation Audit — Findings
+**Date:** 2026-04-15
+**Hat:** threat-modeler
+**Unit:** unit-02-input-validation-audit
 
-## Scope
+## Audit Scope
 
-`packages/haiku/src/server.ts` — `haiku_cowork_review_submit` handler and Zod schema definitions.
+`haiku_cowork_review_submit` tool dispatch in `packages/haiku/src/server.ts` (lines 950–1116) and the session update functions in `packages/haiku/src/sessions.ts`.
 
-## Criterion 1: `.min(1)` constraints
+## Schema Verification
 
-| Schema location | Constraint | Present? |
+| Criterion | Code Location | Result |
 |---|---|---|
-| `question` branch → `answers` array | `.min(1)` | YES — server.ts:1006 |
-| `design_direction` branch → `archetype` string | `.min(1)` | YES — server.ts:1013 |
+| `answers` array uses `.min(1)` | `server.ts:1006` — `z.array(QuestionAnswerSchema).min(1)` | PASS |
+| `archetype` string uses `.min(1)` | `server.ts:1013` — `z.string().min(1)` | PASS |
+| `session_id` uses `.uuid()` | `server.ts:998,1005,1012` — `z.string().uuid()` all three branches | PASS |
+| `decision` uses `.enum(...)` | `server.ts:999` — `z.enum(["approved","changes_requested","external_review"])` | PASS |
+| `session_type` uses discriminated union | `server.ts:995` — `z.discriminatedUnion("session_type", [...])` | PASS |
+| All data to update functions flows through `parsed.data` | `server.ts:1045` — `const input = parsed.data`; all downstream calls use `input.*` | PASS |
+| No raw `args` passed to `updateSession`/`updateQuestionSession`/`updateDesignDirectionSession` | Lines 1085–1114 — `input.answers`, `input.archetype`, `input.parameters`, `input.decision`, `input.feedback` exclusively | PASS |
 
-Evidence:
+## Malformed Payload Trace
+
+| Payload | Expected | Actual |
+|---|---|---|
+| Missing `session_type` | `Invalid input: ...` (Zod) | PASS (Zod discriminated union rejects) |
+| Empty `session_id` `""` | `Invalid input: ...` (`.uuid()` fails) | PASS |
+| `answers: []` | `Invalid input: ...` (`.min(1)`) | PASS — confirmed by test "question answers empty array fails Zod min(1) validation" |
+| `archetype: ""` | `Invalid input: ...` (`.min(1)`) | PASS — confirmed by test "design_direction empty archetype fails Zod min(1) validation" |
+| XSS string in `feedback` | Accepted (feedback is free-form string) | PASS — server stores `input.feedback` as-is; no server-side rendering; SPA handles display safely |
+| Bad `decision` enum | `Invalid input: ...` (`.enum(...)`) | PASS — confirmed by test "bad decision enum fails Zod validation with Invalid input prefix" |
+
+## Test Suite Run
+
 ```
-rg 'min(1)' packages/haiku/src/server.ts
-1006: answers: z.array(QuestionAnswerSchema).min(1),
-1013: archetype: z.string().min(1),
+npm test — 308 passed, 0 failed across 11 test files
 ```
 
-**PASS.**
+Key malformed-payload rejection tests:
+- `"question answers empty array fails Zod min(1) validation"` — open-review-mcp-apps.test.mjs:860
+- `"design_direction empty archetype fails Zod min(1) validation"` — open-review-mcp-apps.test.mjs:874
+- `"bad decision enum fails Zod validation with Invalid input prefix"` — open-review-mcp-apps.test.mjs:832
+- `"missing session_id fails Zod validation"` — open-review-mcp-apps.test.mjs:847
+- `"unknown session_id returns Session not found error"` — open-review-mcp-apps.test.mjs:772
 
-## Criterion 2: No raw `arguments` to session updates
+## Verdict: PASS
 
-Data flow trace:
-1. `args` (raw) → `ReviewSubmitInput.safeParse(args ?? {})` — validated
-2. `parsed.success` check — returns error if invalid
-3. `const input = parsed.data` — only Zod-parsed data assigned to `input`
-4. All downstream calls use `input.session_id`, `input.answers`, `input.archetype`, etc. — never `args`
-
-Verified: `updateSession`, `updateQuestionSession`, `updateDesignDirectionSession` are all called with fields from `input` (Zod-parsed), not from `args`.
-
-**PASS.**
-
-## Criterion 3: `session_id` UUID enforcement
-
-All three branches: `session_id: z.string().uuid()` — rejects empty strings, path traversal attempts, non-UUID strings.
-
-**PASS.**
-
-## Malformed Payload Traces
-
-| Payload | Schema response |
-|---|---|
-| Missing `session_type` | `discriminatedUnion` parse failure → isError response |
-| `session_id: ""` | `.uuid()` validation failure → isError response |
-| `feedback: "<script>alert(1)</script>"` | Accepted (string) — stored in-memory only; server templates use `escapeHtml()` |
-| `answers: []` | `.min(1)` rejection → isError response |
-| `session_type: "admin"` | Not a known literal → discriminatedUnion failure |
-
-## Test Verification
-
-`cd packages/haiku && npm test` — exit code 0.
-
-The test suite (`packages/haiku/review-app`) includes host-bridge tests that verify `haiku_cowork_review_submit` arguments are passed through correctly in MCP mode (see `host-bridge.test.ts` lines 169–178).
-
-## Conclusion
-
-All audit criteria pass. The `haiku_cowork_review_submit` Zod schemas are strict and correctly structured. No unvalidated data reaches session state mutation.
+All DATA-CONTRACTS.md validation requirements are implemented correctly. No unvalidated `args` pass through to session update functions. Test suite exits 0.

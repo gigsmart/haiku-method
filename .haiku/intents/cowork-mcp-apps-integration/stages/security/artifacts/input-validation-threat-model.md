@@ -1,43 +1,46 @@
----
-title: Input Validation Threat Model — Unit 02
-unit: unit-02-input-validation-audit
-hat: threat-modeler
-created_at: '2026-04-15'
-status: pass
----
+# Input Validation Threat Model — security stage
 
-# Input Validation Threat Model — Unit 02
+**Date:** 2026-04-15
+**Unit:** unit-02-input-validation-audit
 
-## Attack Surface
+## Trust Boundary: Tool Arguments → Session State
 
-The `haiku_cowork_review_submit` tool is the only external input path for the MCP Apps review flow. All three session types flow through one discriminated union validator.
+The `haiku_cowork_review_submit` tool is the only write path from the MCP client into the in-memory session store. The Zod discriminated union is the sole validation gate between raw tool arguments and any session state mutation.
 
-## Threat Vectors
+### Data Flow
 
-### TV-1: Missing or unknown `session_type`
-Attack: Omit `session_type` or pass an unknown value (e.g., `"admin"`)
-Defense: `z.discriminatedUnion("session_type", [...])` — only three literal values accepted; anything else fails Zod parsing immediately before reaching handler logic.
+```
+MCP Client
+  → callTool("haiku_cowork_review_submit", args)
+    → ReviewSubmitInput.safeParse(args ?? {})
+      → [fail] → return { isError: true, content: ["Invalid input: ..."] }
+      → [pass] → const input = parsed.data
+        → getSession(input.session_id)              [existence check]
+        → session.session_type === input.session_type  [type match]
+        → session.status === "pending"               [replay protection]
+        → updateSession/updateQuestionSession/updateDesignDirectionSession(input.*)
+```
 
-### TV-2: Non-UUID `session_id`
-Attack: Pass `session_id: "../../etc/passwd"` or empty string
-Defense: `z.string().uuid()` on every branch — only RFC 4122 UUID format accepted.
+### Validation Gates (in order)
 
-### TV-3: Empty `answers` array in question branch
-Attack: Pass `answers: []` to bypass `.min(1)` validation
-Defense: `z.array(QuestionAnswerSchema).min(1)` rejects empty arrays. Empty string as archetype in design_direction branch also rejected by `.min(1)`.
+1. **Zod schema** — rejects malformed type, missing required fields, bad enum, non-UUID session_id, empty answers array, empty archetype string
+2. **Session existence** — `getSession(id)` returns null → 404-equivalent
+3. **Session type match** — stored vs submitted `session_type` → 400-equivalent
+4. **Session status** — `status !== "pending"` → 409-equivalent (replay protection)
 
-### TV-4: XSS payload in `feedback` field
-Attack: `feedback: "<script>alert(1)</script>"`
-Defense: `feedback` is a free-form `z.string()` — schema accepts it (correct behavior; feedback is text data). Server stores it in-memory only. It never reaches `innerHTML` in any server-side template path (templates use `escapeHtml()`).
+### Threats Mitigated by This Gate
 
-### TV-5: Tampered `session_id` pointing to another session
-Attack: Craft a valid UUID that belongs to a different session type
-Defense: `session.session_type !== input.session_type` check at server.ts:1060 returns error. Also `session.status !== "pending"` check prevents double-submission.
+| Threat | Mitigation Layer |
+|---|---|
+| Type confusion (wrong session_type submitted) | Gate 1 (Zod) + Gate 3 (stored type check) |
+| UUID forgery (non-UUID session_id) | Gate 1 (`.uuid()` constraint) |
+| Empty payload injection | Gate 1 (required fields, `.min(1)`) |
+| Replay / double-submit | Gate 4 (pending status check) |
+| Session hijacking (unknown session_id) | Gate 2 (existence check) |
+| Decision enum injection | Gate 1 (`.enum([...])`) |
 
-### TV-6: Extra fields injected into payload
-Attack: Add fields like `admin: true` to influence session state
-Defense: Zod schemas use `.object()` which strips unknown keys by default in Zod v3. The `input` object only contains validated fields from the schema.
+### Residual Risks
 
-## Assessment
-
-All identified input validation attack vectors are covered by the schema design. No injection path to session state mutation via raw input exists. The audit hat can proceed to verify the evidence directly.
+- **Unbounded `screenshot` string** — no `maxLength`. Requires connected MCP client. LOW, accepted.
+- **Unbounded `parameters` record** — no key count limit. Requires connected MCP client. INFO, accepted.
+- **Free-form `feedback` string** — no sanitization server-side (correct); rendering layer handles display safety.
