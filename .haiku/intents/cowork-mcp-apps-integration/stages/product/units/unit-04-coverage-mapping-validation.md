@@ -13,9 +13,9 @@ inputs:
   - knowledge/DATA-CONTRACTS.md
 status: active
 bolt: 1
-hat: specification
+hat: validator
 started_at: '2026-04-15T14:26:02Z'
-hat_started_at: '2026-04-15T14:30:11Z'
+hat_started_at: '2026-04-15T14:31:29Z'
 outputs:
   - knowledge/COVERAGE-MAPPING.md
 ---
