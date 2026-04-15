@@ -13,6 +13,11 @@ inputs:
   - .haiku/knowledge/THREAT-MODEL.md
 outputs:
   - .haiku/intents/cowork-mcp-apps-integration/knowledge/OWASP-COVERAGE.md
+status: active
+bolt: 1
+hat: threat-modeler
+started_at: '2026-04-15T19:52:12Z'
+hat_started_at: '2026-04-15T19:52:12Z'
 ---
 
 # Unit 03 — OWASP Coverage Matrix
