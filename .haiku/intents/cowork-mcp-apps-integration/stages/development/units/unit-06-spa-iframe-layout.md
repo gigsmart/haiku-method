@@ -14,11 +14,14 @@ inputs:
   - features/accessibility-iframe.feature
   - features/error-recovery.feature
   - .haiku/knowledge/ARCHITECTURE.md
-status: active
+status: completed
 bolt: 1
 hat: reviewer
 started_at: '2026-04-15T17:02:19Z'
 hat_started_at: '2026-04-15T17:21:36Z'
+outputs:
+  - stages/development/artifacts/iframe-components/INDEX.md
+completed_at: '2026-04-15T17:27:07Z'
 ---
 
 # SPA iframe layout — conditional decision panels + boot/error/success screens
