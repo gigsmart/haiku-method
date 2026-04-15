@@ -17,7 +17,7 @@ bolt: 1
 hat: design-reviewer
 started_at: '2026-04-15T12:44:41Z'
 hat_started_at: '2026-04-15T12:56:12Z'
-outputs: |-
+outputs:
   - stages/design/artifacts/intent-review-narrow.html
   - stages/design/artifacts/intent-review-medium.html
   - stages/design/artifacts/intent-review-wide.html
