@@ -11,11 +11,12 @@ inputs:
 outputs:
   - knowledge/unit-01-threat-model-assessment.md
   - stages/security/artifacts/threat-model-review.md
+  - stages/security/artifacts/blue-team-assessment.md
 status: active
 bolt: 1
-hat: blue-team
+hat: security-reviewer
 started_at: '2026-04-15T19:45:20Z'
-hat_started_at: '2026-04-15T19:47:22Z'
+hat_started_at: '2026-04-15T19:48:02Z'
 ---
 
 # Unit 01 — Threat Model Review
