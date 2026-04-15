@@ -131,7 +131,8 @@
   .shortcut-desc { font-size: 11px; color: rgb(120,113,108); }
   .shortcut-pair { display: flex; align-items: center; gap: 4px; }
   @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
-</style>
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  </style>
 </head>
 <body>
 <div class="iframe-sim">
@@ -145,6 +146,7 @@
   </header>
 
   <main class="content-area" id="main-content" role="main">
+    <h1 class="sr-only">Intent review</h1>
 
     <section class="section">
       <div class="section-title">Intent</div>

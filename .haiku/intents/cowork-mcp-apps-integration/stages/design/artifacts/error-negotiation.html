@@ -530,15 +530,9 @@
           NEGOTIATION_HANDSHAKE_FAILED
         </div>
 
-        <button
-          class="btn btn-retry btn-retry--pending"
-          type="button"
-          aria-disabled="true"
-          disabled
-        >
-          <span class="spinner" aria-hidden="true"></span>
-          Retrying…
-        </button>
+        <p class="error-body" style="margin-bottom:16px;color:rgb(214,211,208)">
+          Three retry attempts exhausted. Copy the session ID below and paste it into the chat to escalate.
+        </p>
 
         <hr class="divider" />
 
@@ -546,8 +540,7 @@
         <div class="escalate-panel" role="region" aria-label="Escalation: session ID for bug report">
           <p class="escalate-heading">Session ID</p>
           <p class="escalate-body">
-            Copy this ID and paste it into the chat:
-            <em style="font-style:normal;color:rgb(214,211,208)">"The review panel failed — session <span style="font-family:ui-monospace,monospace">PASTE_ID_HERE</span>"</em>
+            Copy the session ID below and paste it into the chat with a short description of what happened.
           </p>
           <div class="session-id-row">
             <input

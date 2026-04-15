@@ -154,7 +154,8 @@
   @media (prefers-reduced-motion: reduce) {
     .btn { transition: none; }
   }
-</style>
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  </style>
 </head>
 <body>
 <div class="iframe-sim">
@@ -170,6 +171,7 @@
 
   <!-- Scrollable content -->
   <main class="content-area" id="main-content" role="main">
+    <h1 class="sr-only">Intent review</h1>
 
     <!-- Overview -->
     <section class="section">
