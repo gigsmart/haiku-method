@@ -2,8 +2,7 @@
 title: Operational telemetry and SLOs for MCP Apps review path
 type: ops
 model: sonnet
-depends_on:
-  - development/unit-07-doc-scrub-and-validation
+depends_on: []
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md

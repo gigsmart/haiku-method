@@ -3,8 +3,7 @@ title: Cross-link VALIDATION.md and RUNBOOK.md
 type: ops
 model: sonnet
 depends_on:
-  - development/unit-07-doc-scrub-and-validation
-  - operations/unit-02-monitoring-and-slos
+  - unit-02-monitoring-and-slos
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
