@@ -13,11 +13,14 @@ inputs:
   - knowledge/DATA-CONTRACTS.md
   - features/iframe-decision-submit.feature
   - .haiku/knowledge/ARCHITECTURE.md
-status: active
+status: completed
 bolt: 1
 hat: reviewer
 started_at: '2026-04-15T17:02:14Z'
 hat_started_at: '2026-04-15T17:14:51Z'
+outputs:
+  - knowledge/unit-04-dev-visual-question-design-direction-implementation.md
+completed_at: '2026-04-15T17:16:43Z'
 ---
 
 # ask_user_visual_question + pick_design_direction MCP Apps branches
