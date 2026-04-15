@@ -15,9 +15,9 @@ inputs:
   - .haiku/knowledge/ARCHITECTURE.md
 status: active
 bolt: 1
-hat: planner
+hat: builder
 started_at: '2026-04-15T17:02:14Z'
-hat_started_at: '2026-04-15T17:02:14Z'
+hat_started_at: '2026-04-15T17:06:43Z'
 ---
 
 # ask_user_visual_question + pick_design_direction MCP Apps branches
