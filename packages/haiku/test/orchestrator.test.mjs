@@ -509,6 +509,60 @@ ${(opts.criteria || ["- [ ] Default criteria"]).join("\n")}
 		assert.ok(res.content[0].text.includes("not found"))
 	})
 
+	// ── Slug path-traversal hardening (Finding B) ────────────────────────────
+
+	console.log("\n=== handleOrchestratorTool: slug validation ===")
+
+	await test("haiku_intent_archive rejects slug with path traversal", async () => {
+		const { projDir } = createProject("archive-traversal")
+		process.chdir(projDir)
+		const res = await handleOrchestratorTool("haiku_intent_archive", {
+			intent: "../../../etc/passwd",
+		})
+		assert.strictEqual(res.isError, true)
+		assert.ok(
+			res.content[0].text.includes("path separators") ||
+				res.content[0].text.includes("traversal"),
+			`expected traversal rejection message, got: ${res.content[0].text}`,
+		)
+	})
+
+	await test("haiku_intent_archive rejects slug with forward slash", async () => {
+		const { projDir } = createProject("archive-slash")
+		process.chdir(projDir)
+		const res = await handleOrchestratorTool("haiku_intent_archive", {
+			intent: "foo/bar",
+		})
+		assert.strictEqual(res.isError, true)
+		assert.ok(res.content[0].text.includes("Invalid intent"))
+	})
+
+	await test(
+		"haiku_intent_unarchive rejects slug with path traversal",
+		async () => {
+			const { projDir } = createProject("unarchive-traversal")
+			process.chdir(projDir)
+			const res = await handleOrchestratorTool("haiku_intent_unarchive", {
+				intent: "../../../etc/passwd",
+			})
+			assert.strictEqual(res.isError, true)
+			assert.ok(
+				res.content[0].text.includes("path separators") ||
+					res.content[0].text.includes("traversal"),
+			)
+		},
+	)
+
+	await test("haiku_run_next rejects slug with backslash", async () => {
+		const { projDir } = createProject("runnext-backslash")
+		process.chdir(projDir)
+		const res = await handleOrchestratorTool("haiku_run_next", {
+			intent: "foo\\bar",
+		})
+		assert.strictEqual(res.isError, true)
+		assert.ok(res.content[0].text.includes("Invalid intent"))
+	})
+
 	// ── runNext: intent review gate ──────────────────────────────────────────
 
 	console.log("\n=== runNext: intent review gate ===")

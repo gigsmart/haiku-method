@@ -34,7 +34,7 @@ import {
 	mergeStageBranchIntoMain,
 } from "./git-worktree.js"
 import { type ModelTier, resolveModel } from "./model-selection.js"
-import { validateIdentifier } from "./prompts/helpers.js"
+import { validateIdentifier, validateSlugArgs } from "./prompts/helpers.js"
 import { reportError } from "./sentry.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
 import {
@@ -3560,6 +3560,9 @@ export async function handleOrchestratorTool(
 		content: [{ type: "text" as const, text: s }],
 	})
 
+	const validationError = validateSlugArgs(args)
+	if (validationError) return validationError
+
 	if (name === "haiku_run_next") {
 		const slug = args.intent as string
 		const stFile = args.state_file as string | undefined
@@ -4625,6 +4628,10 @@ export async function handleOrchestratorTool(
 			}
 		}
 
+		// Single-read idempotency check: parse once with parseFrontmatter (which
+		// normalizes dates). If already archived, noop. Otherwise delegate the
+		// write to setFrontmatterField — it re-reads but preserves the
+		// normalizeDates() pass we depend on for stable YAML output.
 		const { data } = parseFrontmatter(readFileSync(intentFile, "utf8"))
 
 		if (data.archived === true) {
@@ -4673,9 +4680,14 @@ export async function handleOrchestratorTool(
 			}
 		}
 
-		const { data } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+		// Single-pass read: parse once with gray-matter, use it for both the
+		// idempotency check and the write. Previously we parseFrontmatter'd
+		// the file, checked archived, then re-read and re-parsed inside matter()
+		// for the write — two full reads per call.
+		const raw = readFileSync(intentFile, "utf8")
+		const parsed = matter(raw)
 
-		if (data.archived !== true) {
+		if (parsed.data.archived !== true) {
 			return text(
 				JSON.stringify(
 					{
@@ -4692,8 +4704,6 @@ export async function handleOrchestratorTool(
 
 		// Remove the `archived` key entirely rather than leaving `archived: false`.
 		// Cleaner: an unarchived intent looks pristine, no trace of prior archival.
-		const raw = readFileSync(intentFile, "utf8")
-		const parsed = matter(raw)
 		const { archived: _archived, ...dataWithoutArchived } = parsed.data
 		writeFileSync(
 			intentFile,

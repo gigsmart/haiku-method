@@ -31,6 +31,7 @@ import {
 	removeTempWorktree,
 } from "./git-worktree.js"
 import { escalate } from "./model-selection.js"
+import { validateSlugArgs } from "./prompts/helpers.js"
 import { logSessionEvent, writeHaikuMetadata } from "./session-metadata.js"
 import {
 	listStudios,
@@ -1615,21 +1616,37 @@ export function parseFrontmatter(raw: string): {
  * `haiku_capacity`). Do NOT duplicate the `archived === true` predicate —
  * call this helper instead so miss-one-site regressions are impossible.
  */
+/**
+ * Enumerate visible (non-archived) intents in a directory, returning both
+ * slug and parsed frontmatter data. Reuses parseFrontmatter so callers don't
+ * have to re-parse each intent.md for downstream work (response shaping,
+ * dashboard rendering, capacity aggregation).
+ *
+ * Set `opts.includeArchived` to true to return all intents (both archived
+ * and non-archived).
+ */
+export function listVisibleIntents(
+	intentsDir: string,
+	opts?: { includeArchived?: boolean },
+): Array<{ slug: string; data: Record<string, unknown> }> {
+	if (!existsSync(intentsDir)) return []
+	const includeArchived = opts?.includeArchived === true
+	const results: Array<{ slug: string; data: Record<string, unknown> }> = []
+	for (const d of readdirSync(intentsDir)) {
+		const intentFile = join(intentsDir, d, "intent.md")
+		if (!existsSync(intentFile)) continue
+		const { data } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+		if (!includeArchived && data.archived === true) continue
+		results.push({ slug: d, data })
+	}
+	return results
+}
+
 export function listVisibleIntentSlugs(
 	intentsDir: string,
 	opts?: { includeArchived?: boolean },
 ): string[] {
-	if (!existsSync(intentsDir)) return []
-	const slugs = readdirSync(intentsDir).filter((d) =>
-		existsSync(join(intentsDir, d, "intent.md")),
-	)
-	if (opts?.includeArchived === true) return slugs
-	return slugs.filter((slug) => {
-		const { data } = parseFrontmatter(
-			readFileSync(join(intentsDir, slug, "intent.md"), "utf8"),
-		)
-		return data.archived !== true
-	})
+	return listVisibleIntents(intentsDir, opts).map((i) => i.slug)
 }
 
 export function setFrontmatterField(
@@ -2257,10 +2274,13 @@ export const stateToolDefs = [
 export function handleStateTool(
 	name: string,
 	args: Record<string, unknown>,
-): { content: Array<{ type: "text"; text: string }> } {
+): { content: Array<{ type: "text"; text: string }>; isError?: boolean } {
 	const text = (s: string) => ({
 		content: [{ type: "text" as const, text: s }],
 	})
+
+	const validationError = validateSlugArgs(args)
+	if (validationError) return validationError
 
 	switch (name) {
 		// ── Intent ──
@@ -2282,11 +2302,8 @@ export function handleStateTool(
 			const intentsDir = join(root, "intents")
 			if (!existsSync(intentsDir)) return text("[]")
 			const includeArchived = args.include_archived === true
-			const slugs = listVisibleIntentSlugs(intentsDir, { includeArchived })
-			const intents = slugs.map((slug) => {
-				const { data } = parseFrontmatter(
-					readFileSync(join(intentsDir, slug, "intent.md"), "utf8"),
-				)
+			const entries = listVisibleIntents(intentsDir, { includeArchived })
+			const intents = entries.map(({ slug, data }) => {
 				const base: Record<string, unknown> = {
 					slug,
 					studio: data.studio,
@@ -2937,15 +2954,12 @@ export function handleStateTool(
 			const intentsDir = join(root, "intents")
 			if (!existsSync(intentsDir))
 				return text("No intents found. Use /haiku:start to create one.")
-			const slugs = listVisibleIntentSlugs(intentsDir)
-			if (slugs.length === 0)
+			const entries = listVisibleIntents(intentsDir)
+			if (entries.length === 0)
 				return text("No intents found. Use /haiku:start to create one.")
 
 			let out = "# Dashboard\n"
-			for (const slug of slugs) {
-				const { data } = parseFrontmatter(
-					readFileSync(join(intentsDir, slug, "intent.md"), "utf8"),
-				)
+			for (const { slug, data } of entries) {
 				out += `\n## ${slug}\n`
 				out += `- Status: ${data.status || "unknown"}\n`
 				out += `- Studio: ${data.studio || "none"}\n`
@@ -3051,7 +3065,7 @@ export function handleStateTool(
 			}
 			const intentsDir = join(root, "intents")
 			if (!existsSync(intentsDir)) return text("No intents found.")
-			const slugs = listVisibleIntentSlugs(intentsDir)
+			const entries = listVisibleIntents(intentsDir)
 
 			const median = (arr: number[]): number => {
 				if (arr.length === 0) return 0
@@ -3067,10 +3081,7 @@ export function handleStateTool(
 				string,
 				Array<{ slug: string; status: string; data: Record<string, unknown> }>
 			>()
-			for (const slug of slugs) {
-				const { data } = parseFrontmatter(
-					readFileSync(join(intentsDir, slug, "intent.md"), "utf8"),
-				)
+			for (const { slug, data } of entries) {
 				const studio = (data.studio as string) || "unassigned"
 				if (filterStudio && studio !== filterStudio) continue
 				if (!byStudio.has(studio)) byStudio.set(studio, [])

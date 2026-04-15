@@ -36,6 +36,32 @@ export function validateIdentifier(value: string, label: string): string {
 	return value
 }
 
+/**
+ * Validate every slug-shaped arg in a tool args object. Returns null if
+ * everything is fine, or a pre-built MCP error response if any arg contains
+ * path traversal / separator characters. Use at the top of MCP tool
+ * handlers to reject malicious slugs before any filesystem access.
+ */
+export function validateSlugArgs(
+	args: Record<string, unknown>,
+): { content: Array<{ type: "text"; text: string }>; isError: true } | null {
+	for (const key of ["intent", "slug"]) {
+		const val = args[key]
+		if (typeof val === "string" && /[/\\]|\.\./.test(val)) {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: `Invalid ${key}: "${val}" — slugs must not contain path separators or traversal sequences.`,
+					},
+				],
+				isError: true,
+			}
+		}
+	}
+	return null
+}
+
 // ── Studio resolution ────────────────────────────────────────────────────────
 
 /** Studio search paths: project-local first (overrides), then plugin built-in */

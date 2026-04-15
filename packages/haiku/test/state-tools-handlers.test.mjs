@@ -7,7 +7,7 @@ import { join } from "node:path"
 import { tmpdir } from "node:os"
 import assert from "node:assert"
 
-import { handleStateTool, stateToolDefs, setFrontmatterField, unitPath, listVisibleIntentSlugs } from "../src/state-tools.ts"
+import { handleStateTool, stateToolDefs, setFrontmatterField, unitPath, listVisibleIntentSlugs, listVisibleIntents } from "../src/state-tools.ts"
 
 // ── Setup ──────────────────────────────────────────────────────────────────
 
@@ -378,6 +378,72 @@ test("helper treats missing archived field as not-archived", () => {
   const intentsDir = join(haikuRoot, "intents")
   const slugs = listVisibleIntentSlugs(intentsDir)
   assert.ok(slugs.includes(intentSlug), "intent with no archived field must be visible")
+})
+
+test("listVisibleIntents returns {slug, data} tuples with frontmatter", () => {
+  const intentsDir = join(haikuRoot, "intents")
+  const entries = listVisibleIntents(intentsDir)
+  assert.ok(Array.isArray(entries))
+  const testEntry = entries.find((e) => e.slug === intentSlug)
+  assert.ok(testEntry, "test-intent should appear in entries")
+  assert.strictEqual(typeof testEntry.data, "object")
+  assert.strictEqual(testEntry.data.studio, "software")
+  assert.strictEqual(testEntry.data.status, "active")
+  // archived filtering still applies
+  assert.ok(
+    !entries.find((e) => e.slug === "archived-intent"),
+    "archived intents filtered by default",
+  )
+})
+
+test("listVisibleIntents exposes archived flag when includeArchived=true", () => {
+  const intentsDir = join(haikuRoot, "intents")
+  const entries = listVisibleIntents(intentsDir, { includeArchived: true })
+  const archived = entries.find((e) => e.slug === "archived-intent")
+  assert.ok(archived, "archived intent must appear")
+  assert.strictEqual(archived.data.archived, true)
+})
+
+// ── Slug path-traversal hardening (Finding B) ────────────────────────────
+
+console.log("\n=== handleStateTool: slug validation ===")
+
+test("haiku_intent_get rejects slug with path traversal", () => {
+  const result = handleStateTool("haiku_intent_get", {
+    slug: "../../../etc/passwd",
+    field: "title",
+  })
+  assert.strictEqual(result.isError, true)
+  assert.ok(
+    result.content[0].text.includes("path separators") ||
+      result.content[0].text.includes("traversal"),
+  )
+})
+
+test("haiku_intent_get rejects slug with forward slash", () => {
+  const result = handleStateTool("haiku_intent_get", {
+    slug: "foo/bar",
+    field: "title",
+  })
+  assert.strictEqual(result.isError, true)
+  assert.ok(result.content[0].text.includes("Invalid slug"))
+})
+
+test("haiku_stage_get rejects intent with path traversal", () => {
+  const result = handleStateTool("haiku_stage_get", {
+    intent: "../../../etc/passwd",
+    stage: "inception",
+    field: "phase",
+  })
+  assert.strictEqual(result.isError, true)
+  assert.ok(result.content[0].text.includes("Invalid intent"))
+})
+
+test("haiku_intent_list still works (no slug to validate)", () => {
+  const result = handleStateTool("haiku_intent_list", {})
+  const intents = JSON.parse(getTextResult(result))
+  assert.ok(Array.isArray(intents))
+  assert.ok(intents.length >= 1)
 })
 
 test("helper treats archived:false as not-archived", () => {
