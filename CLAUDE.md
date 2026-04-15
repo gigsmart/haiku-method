@@ -62,7 +62,7 @@ When modifying any component, check if other components need corresponding updat
 | Hat | Profiles section | `plugin/studios/{name}/stages/{stage}/hats/{hat}.md` | prompts/core.ts |
 | Review Agent | Quality Enforcement | `plugin/studios/{name}/stages/{stage}/review-agents/{agent}.md` | orchestrator.ts, prompts/core.ts |
 | Phase Override | Stages section | `plugin/studios/{name}/stages/{stage}/phases/{PHASE}.md` | orchestrator.ts |
-| Review Gate | Quality Enforcement | `review:` field in STAGE.md (auto/ask/external/await/[external,ask]) | orchestrator.ts |
+| Review Gate | Quality Enforcement | `review:` field in STAGE.md — `auto` (harness advances), `ask` (local human approval), `external` (blocks for external review system), `await` (blocks for external event), or compound list like `[external, ask]` (user chooses path) | orchestrator.ts |
 | Operation Template | Operation phase | `plugin/studios/{name}/operations/{op}.md` | prompts/complex.ts |
 | Reflection Dimension | Reflection phase | `plugin/studios/{name}/reflections/{dim}.md` | prompts/core.ts |
 | Completion Criteria | Throughout | `quality_gates:` in unit/intent frontmatter, harness-enforced | orchestrator.ts, quality-gate.sh |
@@ -83,7 +83,7 @@ When modifying any component, check if other components need corresponding updat
 | Studio | (no equivalent) | A named lifecycle template (profile implementation) containing stages |
 | Stage | (no equivalent) | A lifecycle phase within a studio, containing hats and review gates |
 | Hat | Role | A behavioral role scoped to a stage, defined in `hats/{hat}.md` files within the stage directory |
-| Review Gate | Quality Gate | A checkpoint between stages (auto, ask, or external) |
+| Review Gate | Quality Gate | A checkpoint between stages controlling advancement. `auto` = harness-only (no human). `ask` = local review UI, human approves/rejects via MCP response. `external` = blocks until external system (GitHub/GitLab) approves; signal detected primarily by branch merge detection, with URL-based CLI probing as fallback. `await` = blocks until an external event occurs (not a review — e.g., customer response, pipeline). Compound: `[external, ask]` = user chooses between external submission or local approval. |
 
 ### Hierarchy
 
