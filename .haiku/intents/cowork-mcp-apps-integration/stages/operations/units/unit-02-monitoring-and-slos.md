@@ -7,6 +7,8 @@ inputs:
   - intent.md
   - knowledge/DISCOVERY.md
   - .haiku/knowledge/RUNBOOK.md
+outputs:
+  - knowledge/unit-02-telemetry-notes.md
 status: active
 bolt: 1
 hat: sre

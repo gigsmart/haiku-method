@@ -12,6 +12,8 @@ bolt: 1
 hat: sre
 started_at: '2026-04-15T19:25:09Z'
 hat_started_at: '2026-04-15T19:27:36Z'
+outputs:
+  - knowledge/unit-01-ci-update-notes.md
 ---
 
 # CI/CD workflow updates for MCP Apps review path
