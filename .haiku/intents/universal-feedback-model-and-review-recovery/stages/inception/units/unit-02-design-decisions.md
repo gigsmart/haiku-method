@@ -4,7 +4,9 @@ type: research
 depends_on:
   - unit-01-discovery-document
 quality_gates: []
-inputs: '[intent.md, knowledge/DISCOVERY.md]'
+inputs:
+  - intent.md
+  - knowledge/DISCOVERY.md
 ---
 
 # Design Decisions Document

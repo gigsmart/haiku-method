@@ -5,7 +5,10 @@ depends_on:
   - unit-01-discovery-document
   - unit-02-design-decisions
 quality_gates: []
-inputs: '[intent.md, knowledge/DISCOVERY.md, knowledge/DESIGN-DECISIONS.md]'
+inputs:
+  - intent.md
+  - knowledge/DISCOVERY.md
+  - knowledge/DESIGN-DECISIONS.md
 ---
 
 # Implementation Map

@@ -3,7 +3,13 @@ title: Discovery document
 type: research
 depends_on: []
 quality_gates: []
-inputs: '[intent.md]'
+inputs:
+  - intent.md
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-15T20:37:07Z'
+hat_started_at: '2026-04-15T20:37:07Z'
 ---
 
 # Discovery Document
