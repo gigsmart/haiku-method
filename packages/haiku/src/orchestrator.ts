@@ -3338,12 +3338,24 @@ export async function handleOrchestratorTool(
 				}),
 			)
 		}
+		// Reject newlines explicitly before normalization — otherwise `\s+` would
+		// collapse them to spaces and hide the intent (a multi-line title input
+		// is a sign the agent pasted a paragraph, not wrote a title).
+		if (/[\r\n]/.test(titleInput)) {
+			return text(
+				JSON.stringify({
+					error: "invalid_title",
+					message:
+						"`title` must be a single line — got newlines. Rewrite as a crisp 3–8 word summary (≤80 chars) and call again.",
+				}),
+			)
+		}
 		const title = titleInput.trim().replace(/\s+/g, " ")
 		if (intentTitleNeedsRepair(title)) {
 			return text(
 				JSON.stringify({
 					error: "invalid_title",
-					message: `\`title\` must be a single line, non-empty, and ≤80 chars. Got ${title.length} chars${/\n/.test(titleInput) ? " with newlines" : ""}. Rewrite as a 3–8 word summary and call again.`,
+					message: `\`title\` must be non-empty and ≤80 chars after trimming. Got ${title.length} chars. Rewrite as a 3–8 word summary and call again.`,
 				}),
 			)
 		}

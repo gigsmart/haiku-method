@@ -306,7 +306,7 @@ export function applyAutoFixes(
 		if (
 			!m ||
 			!issue.message.includes("Unit has no `inputs:`") ||
-			(typeof issue.fix !== "string" && true)
+			typeof issue.fix !== "string"
 		) {
 			inputsRemaining.push(issue)
 			continue
