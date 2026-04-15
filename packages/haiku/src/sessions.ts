@@ -385,9 +385,7 @@ export function updateSession(
 	// a stale "previous review" banner.
 	if (updates.status === "decided") {
 		if (session.decision === "changes_requested") {
-			const intent = session.parsedIntent as
-				| { rawContent?: string }
-				| undefined
+			const intent = session.parsedIntent as { rawContent?: string } | undefined
 			const units =
 				(session.parsedUnits as
 					| Array<{ slug?: string; rawContent?: string }>
