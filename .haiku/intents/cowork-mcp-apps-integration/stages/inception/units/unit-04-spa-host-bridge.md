@@ -7,11 +7,11 @@ inputs:
   - intent.md
   - knowledge/DISCOVERY.md
   - stages/inception/units/unit-03-ui-resource-registration.md
-status: pending
-bolt: 0
-hat: ''
-started_at: null
-hat_started_at: '2026-04-14T22:17:58Z'
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-15T04:34:41Z'
+hat_started_at: '2026-04-15T04:34:41Z'
 outputs:
   - knowledge/unit-04-host-bridge-research.md
 completed_at: null
