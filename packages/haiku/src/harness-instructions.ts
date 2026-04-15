@@ -80,9 +80,15 @@ function rewriteSubagentReferences(
 			/Agent tool's `model:`/g,
 			`\`${primaryTool}\` tool's model`,
 		)
+		// Rewrite the XML attribute form too — the orchestrator builds
+		// <subagent tool="Agent"> / <subagent tool="Task"> blocks that would
+		// otherwise contradict the prose rewrites above for Kiro, Gemini CLI,
+		// OpenCode, etc.
+		result = result.replace(/tool="Agent"/g, `tool="${primaryTool}"`)
 	}
 	if (primaryTool !== "Task") {
 		result = result.replace(/`Task` subagent/g, `\`${primaryTool}\``)
+		result = result.replace(/tool="Task"/g, `tool="${primaryTool}"`)
 	}
 
 	// Remove Claude-specific subagent-context hook reference for non-Claude harnesses
