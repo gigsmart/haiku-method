@@ -11,6 +11,7 @@ outputs:
   - packages/haiku/src/sentry.ts
   - packages/haiku/src/server.ts
   - packages/haiku/VALIDATION.md
+  - knowledge/unit-02-telemetry-notes.md
 ---
 
 # Operational telemetry and SLOs for MCP Apps review path
