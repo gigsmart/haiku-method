@@ -161,6 +161,8 @@ const server = new Server(
 			tools: {},
 			prompts: { listChanged: true },
 			completions: {},
+			resources: {},
+			experimental: { apps: {} },
 		},
 	},
 )
@@ -173,7 +175,13 @@ import {
 } from "./orchestrator.js"
 // Prompts migrated to skills (plugin/skills/) — prompt handlers kept for protocol compatibility
 import { completeArgument, getPrompt, listPrompts } from "./prompts/index.js"
-import { handleStateTool, stateToolDefs } from "./state-tools.js"
+import {
+	handleStateTool,
+	setMcpServerInstance,
+	stateToolDefs,
+} from "./state-tools.js"
+
+setMcpServerInstance(server)
 
 server.setRequestHandler(ListPromptsRequestSchema, async () => ({
 	prompts: listPrompts(),

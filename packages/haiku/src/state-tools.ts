@@ -1499,6 +1499,160 @@ export function isGitRepo(): boolean {
 	return _isGitRepo
 }
 
+// ── MCP Apps capability negotiation ───────────────────────────────────────
+
+/** Narrow interface — only what the accessors need. Avoids circular import. */
+interface McpServerRef {
+	getClientCapabilities(): unknown
+	listRoots(
+		params?: unknown,
+	): Promise<{ roots: Array<{ uri: string; name?: string }> }>
+}
+
+let _mcpServer: McpServerRef | null = null
+let _mcpAppsSupported: boolean | null = null
+let _cachedWorkspacePath: string | null = null
+
+/** Called by server.ts immediately after the Server instance is created.
+ *  Must be called before any tool handler runs. */
+export function setMcpServerInstance(server: McpServerRef): void {
+	_mcpServer = server
+	_mcpAppsSupported = null // reset cache on new connection
+	_cachedWorkspacePath = null
+}
+
+/**
+ * Returns true iff the connected MCP client echoed `experimental.apps`
+ * during the initialize handshake. Result is cached for the connection lifetime.
+ * Never reads env vars.
+ */
+export function hostSupportsMcpApps(): boolean {
+	if (_mcpAppsSupported !== null) return _mcpAppsSupported
+	if (!_mcpServer) {
+		_mcpAppsSupported = false
+		return false
+	}
+	const caps = _mcpServer.getClientCapabilities() as
+		| Record<string, unknown>
+		| undefined
+	_mcpAppsSupported =
+		caps != null &&
+		typeof caps === "object" &&
+		"experimental" in caps &&
+		caps.experimental != null &&
+		typeof caps.experimental === "object" &&
+		"apps" in (caps.experimental as Record<string, unknown>)
+	return _mcpAppsSupported
+}
+
+/**
+ * Returns the workspace paths from the MCP `roots` capability.
+ * Returns empty array when roots are not advertised or the server is not injected.
+ * Does NOT read CLAUDE_CODE_WORKSPACE_HOST_PATHS.
+ */
+export function getMcpHostWorkspacePaths(): Promise<string[]> {
+	if (!_mcpServer) return Promise.resolve([])
+	return _mcpServer
+		.listRoots()
+		.then((result) =>
+			(result.roots ?? []).map((r) => r.uri.replace(/^file:\/\//, "")),
+		)
+		.catch(() => [])
+}
+
+/**
+ * Fires when hostSupportsMcpApps() === true and roots.length === 0.
+ * Uses elicitInput to ask the reviewer to open a workspace folder.
+ * Returns the selected path, or throws on timeout/cancellation.
+ */
+export async function requestHostWorkspace(): Promise<string> {
+	if (!_mcpServer) throw new Error("MCP server not injected")
+	const serverAny = _mcpServer as unknown as {
+		elicitInput(params: {
+			message: string
+			requestedSchema: unknown
+		}): Promise<{ action: string; content?: unknown }>
+	}
+	const result = await serverAny.elicitInput({
+		message:
+			"Please open a workspace folder in your host application to continue.",
+		requestedSchema: {
+			type: "object",
+			properties: {
+				workspace_path: {
+					type: "string",
+					description: "The path to the workspace folder you opened",
+				},
+			},
+			required: ["workspace_path"],
+		},
+	})
+	if (result.action !== "submit" || !result.content) {
+		throw new Error("Workspace selection cancelled")
+	}
+	const content = result.content as Record<string, unknown>
+	const path = content.workspace_path as string
+	if (!path) throw new Error("No workspace path provided")
+	return path
+}
+
+/**
+ * Resolve the workspace root for MCP Apps hosts:
+ * - 1 root: auto-select
+ * - 0 roots: call requestHostWorkspace(), cache result
+ * - >1 roots: call elicitInput to pick, cache result
+ *
+ * Returns the selected workspace path. Throws if resolution fails.
+ * Caches selection for the session lifetime.
+ */
+export async function resolveWorkspaceRoot(): Promise<string> {
+	if (_cachedWorkspacePath !== null) return _cachedWorkspacePath
+
+	const paths = await getMcpHostWorkspacePaths()
+
+	if (paths.length === 1) {
+		_cachedWorkspacePath = paths[0]
+		return _cachedWorkspacePath
+	}
+
+	if (paths.length === 0) {
+		const selected = await requestHostWorkspace()
+		_cachedWorkspacePath = selected
+		return _cachedWorkspacePath
+	}
+
+	// Multiple roots — let the reviewer pick
+	const serverAny = _mcpServer as unknown as {
+		elicitInput(params: {
+			message: string
+			requestedSchema: unknown
+		}): Promise<{ action: string; content?: unknown }>
+	}
+	const result = await serverAny.elicitInput({
+		message:
+			"Multiple workspace folders are open. Please select one to use for this H·AI·K·U session.",
+		requestedSchema: {
+			type: "object",
+			properties: {
+				workspace_path: {
+					type: "string",
+					enum: paths,
+					description: "Select the workspace folder to use",
+				},
+			},
+			required: ["workspace_path"],
+		},
+	})
+	if (result.action !== "submit" || !result.content) {
+		throw new Error("Workspace selection cancelled")
+	}
+	const content = result.content as Record<string, unknown>
+	const selected = content.workspace_path as string
+	if (!selected) throw new Error("No workspace path selected")
+	_cachedWorkspacePath = selected
+	return _cachedWorkspacePath
+}
+
 // ── Path resolution ────────────────────────────────────────────────────────
 
 export function findHaikuRoot(): string {
