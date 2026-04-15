@@ -61,9 +61,23 @@ function loadDraft(sessionId: string): ReviewDraft {
     const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY(sessionId));
     if (!raw) return { generalText: "", generalComments: [] };
     const parsed = JSON.parse(raw) as Partial<ReviewDraft>;
+    // Element-level validation guards against older schemas lingering in
+    // localStorage from prior builds — silently drop anything that doesn't
+    // satisfy the current SidebarComment shape.
+    const generalComments = Array.isArray(parsed.generalComments)
+      ? parsed.generalComments.filter(
+          (c): c is SidebarComment =>
+            c !== null &&
+            typeof c === "object" &&
+            typeof (c as SidebarComment).id === "string" &&
+            typeof (c as SidebarComment).type === "string" &&
+            typeof (c as SidebarComment).text === "string" &&
+            typeof (c as SidebarComment).comment === "string",
+        )
+      : [];
     return {
       generalText: typeof parsed.generalText === "string" ? parsed.generalText : "",
-      generalComments: Array.isArray(parsed.generalComments) ? parsed.generalComments : [],
+      generalComments,
     };
   } catch {
     return { generalText: "", generalComments: [] };
@@ -243,7 +257,14 @@ export function ReviewPage({ session, sessionId, wsRef }: Props) {
     setAllPins([]);
     setGeneralComments([]);
     setGeneralText("");
-  }, []);
+    // Flush the persisted draft immediately — the 250ms debounce would
+    // otherwise let a fast refresh rehydrate the state we just cleared.
+    try {
+      window.localStorage.removeItem(DRAFT_STORAGE_KEY(sessionId));
+    } catch {
+      /* ignore */
+    }
+  }, [sessionId]);
 
   const handleScrollTo = useCallback((id: string) => {
     // Inline comment: scroll to highlight
@@ -1137,20 +1158,16 @@ function markdownToSimpleHtml(md: string): string {
 }
 
 function formatRelativeTime(iso: string): string {
-  try {
-    const then = new Date(iso).getTime();
-    if (!Number.isFinite(then)) return "";
-    const diffMs = Date.now() - then;
-    const mins = Math.round(diffMs / 60_000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins} minute${mins === 1 ? "" : "s"} ago`;
-    const hours = Math.round(mins / 60);
-    if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
-    const days = Math.round(hours / 24);
-    return `${days} day${days === 1 ? "" : "s"} ago`;
-  } catch {
-    return "";
-  }
+  const then = new Date(iso).getTime();
+  if (!Number.isFinite(then)) return "";
+  const diffMs = Date.now() - then;
+  const mins = Math.round(diffMs / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} minute${mins === 1 ? "" : "s"} ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.round(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
 /** Banner shown at the top of a re-review session. Displays the previous

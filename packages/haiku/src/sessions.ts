@@ -260,23 +260,42 @@ const MAX_SESSIONS = 100
 const SESSION_TTL_MS = 30 * 60 * 1000
 const sessionCreatedAt = new Map<string, number>()
 
+/** Drop the previous-review snapshot for an intent_dir if no remaining
+ *  review session still references that intent. Called when a review
+ *  session is evicted so abandoned snapshots don't pile up. */
+function maybeClearOrphanedSnapshot(intentDir: string): void {
+	if (!previousReviewByIntentDir.has(intentDir)) return
+	for (const s of sessions.values()) {
+		if (s.session_type === "review" && s.intent_dir === intentDir) return
+	}
+	previousReviewByIntentDir.delete(intentDir)
+}
+
 function evictSessions(): void {
 	const now = Date.now()
 	// Evict expired sessions
 	for (const [id, ts] of sessionCreatedAt) {
 		if (now - ts > SESSION_TTL_MS) {
+			const evicted = sessions.get(id)
 			sessions.delete(id)
 			sessionCreatedAt.delete(id)
 			clearHeartbeat(id)
+			if (evicted?.session_type === "review") {
+				maybeClearOrphanedSnapshot(evicted.intent_dir)
+			}
 		}
 	}
 	// If still over cap, evict oldest
 	while (sessions.size >= MAX_SESSIONS) {
 		const oldest = sessionCreatedAt.entries().next().value
 		if (!oldest) break
+		const evicted = sessions.get(oldest[0])
 		sessions.delete(oldest[0])
 		sessionCreatedAt.delete(oldest[0])
 		clearHeartbeat(oldest[0])
+		if (evicted?.session_type === "review") {
+			maybeClearOrphanedSnapshot(evicted.intent_dir)
+		}
 	}
 }
 
