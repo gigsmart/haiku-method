@@ -14,6 +14,8 @@ bolt: 1
 hat: researcher
 started_at: '2026-04-15T20:43:00Z'
 hat_started_at: '2026-04-15T20:43:00Z'
+outputs:
+  - knowledge/IMPLEMENTATION-MAP.md
 ---
 
 # Implementation Map
