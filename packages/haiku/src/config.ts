@@ -8,8 +8,8 @@
 // logic: CLAUDE_PLUGIN_ROOT env var first, then self-resolve from the
 // binary's own location (plugin/bin/haiku → plugin/).
 
-import { dirname, join } from "node:path"
 import { existsSync } from "node:fs"
+import { dirname, join } from "node:path"
 
 function flag(name: string, defaultValue: boolean): boolean {
 	const raw = process.env[name]

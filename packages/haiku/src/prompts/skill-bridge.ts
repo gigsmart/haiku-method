@@ -83,9 +83,7 @@ export function registerSkillPrompts(): number {
 		registerPrompt({
 			name: promptName,
 			title: `H·AI·K·U: ${skillName}`,
-			description:
-				data.description ||
-				`Run the H·AI·K·U ${skillName} workflow`,
+			description: data.description || `Run the H·AI·K·U ${skillName} workflow`,
 			arguments: [
 				{
 					name: "args",
@@ -141,7 +139,7 @@ export function registerSkillPrompts(): number {
 							text:
 								"Check if there is active H·AI·K·U work in this project.\n\n" +
 								"1. Call `haiku_dashboard` to see all intents and their status\n" +
-								"2. If there is an active intent, call `haiku_run_next { intent: \"<slug>\" }` to get your current action\n" +
+								'2. If there is an active intent, call `haiku_run_next { intent: "<slug>" }` to get your current action\n' +
 								"3. If no active intents exist, let me know — I can start one with `haiku:start`\n\n" +
 								"Do this silently — just check and report what you find.",
 						},

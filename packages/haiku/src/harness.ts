@@ -214,7 +214,7 @@ const HARNESS_REGISTRY: Record<string, HarnessCapabilities> = {
 
 // ── Runtime state ───────────────────────────────────────────────────────────
 
-let activeHarness: string = "claude-code"
+let activeHarness = "claude-code"
 
 /**
  * Set the active harness. Called once at MCP startup.
@@ -230,7 +230,9 @@ export function setHarness(name: string): void {
 		)
 		activeHarness = "claude-code"
 	}
-	console.error(`[haiku] Harness: ${HARNESS_REGISTRY[activeHarness].displayName}`)
+	console.error(
+		`[haiku] Harness: ${HARNESS_REGISTRY[activeHarness].displayName}`,
+	)
 }
 
 /** Get the active harness key. */
@@ -271,10 +273,7 @@ export function subagentInstruction(opts: {
 	if (!caps.subagents.supported) {
 		// Harness can't spawn subagents — instruct sequential execution
 		if (opts.count && opts.count > 1) {
-			return (
-				`Execute ${opts.count} tasks sequentially for: ${opts.purpose}. ` +
-				`Complete each task fully before starting the next.`
-			)
+			return `Execute ${opts.count} tasks sequentially for: ${opts.purpose}. Complete each task fully before starting the next.`
 		}
 		return `Execute the following task directly: ${opts.purpose}.`
 	}

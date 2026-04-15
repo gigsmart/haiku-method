@@ -24,74 +24,70 @@ import {
  * Claude Code uses `Agent` and `Task` tool names. Other harnesses use
  * different mechanisms or don't support subagents at all.
  */
-function rewriteSubagentReferences(text: string, caps: HarnessCapabilities): string {
+function rewriteSubagentReferences(
+	text: string,
+	caps: HarnessCapabilities,
+): string {
+	let result = text
+
 	if (!caps.subagents.supported) {
 		// No subagent support — rewrite to sequential execution
-		text = text.replace(
+		result = result.replace(
 			/Spawn one `Task` subagent per artifact\b[^.]*\./g,
 			"Execute each artifact task sequentially — complete one before starting the next.",
 		)
-		text = text.replace(
+		result = result.replace(
 			/Spawn a subagent for the "([^"]+)" hat\./g,
 			'Execute the "$1" hat task directly.',
 		)
-		text = text.replace(
+		result = result.replace(
 			/spawn one Agent subagent per unit \*\*in a single message\*\*/g,
 			"execute each unit sequentially",
 		)
-		text = text.replace(
+		result = result.replace(
 			/Spawn one subagent per review agent \(in parallel\)/g,
 			"Execute each review agent check sequentially",
 		)
-		text = text.replace(
+		result = result.replace(
 			/Spawn ALL of them in a single response \(parallel\)\./g,
 			"Execute them one at a time.",
 		)
-		text = text.replace(
+		result = result.replace(
 			/\*\*IMMEDIATELY\*\* spawn one Agent subagent per unit \*\*in a single message\*\*[^.]*\./g,
 			"**IMMEDIATELY** start executing units one at a time. No questions, no confirmation, no menu.",
 		)
-		text = text.replace(
-			/Agent type: `[^`]+`\n?/g,
-			"",
-		)
-		text = text.replace(
+		result = result.replace(/Agent type: `[^`]+`\n?/g, "")
+		result = result.replace(
 			/Each subagent inherits worktree scoping via the `subagent-context` hook\./g,
 			"",
 		)
-		text = text.replace(/\bsubagent\b/g, "task")
-		text = text.replace(/\bSubagent\b/g, "Task")
-		return text
+		result = result.replace(/\bsubagent\b/g, "task")
+		result = result.replace(/\bSubagent\b/g, "Task")
+		return result
 	}
 
 	const primaryTool = caps.subagents.toolNames[0] || "Agent"
 
 	// Replace Claude-specific tool names with harness-appropriate ones
 	if (primaryTool !== "Agent") {
-		text = text.replace(/`Agent`/g, `\`${primaryTool}\``)
-		text = text.replace(
+		result = result.replace(/`Agent`/g, `\`${primaryTool}\``)
+		result = result.replace(
 			/one Agent subagent/g,
 			`one \`${primaryTool}\` call`,
 		)
-		text = text.replace(
-			/Agent tool calls/g,
-			`\`${primaryTool}\` calls`,
-		)
-		text = text.replace(
+		result = result.replace(/Agent tool calls/g, `\`${primaryTool}\` calls`)
+		result = result.replace(
 			/Agent tool's `model:`/g,
 			`\`${primaryTool}\` tool's model`,
 		)
 	}
 	if (primaryTool !== "Task") {
-		text = text.replace(
-			/`Task` subagent/g,
-			`\`${primaryTool}\``,
-		)
+		result = result.replace(/`Task` subagent/g, `\`${primaryTool}\``)
 	}
 
 	// Remove Claude-specific subagent-context hook reference for non-Claude harnesses
 	if (!caps.hooks) {
-		text = text.replace(
+		result = result.replace(
 			/Each subagent inherits worktree scoping via the `subagent-context` hook\. /g,
 			"",
 		)
@@ -99,17 +95,14 @@ function rewriteSubagentReferences(text: string, caps: HarnessCapabilities): str
 
 	// Remove parallel spawn instructions if not supported
 	if (!caps.subagents.parallelSpawn) {
-		text = text.replace(
-			/\*\*in a single message\*\* \(all [^)]+\)/g,
-			"",
-		)
-		text = text.replace(
+		result = result.replace(/\*\*in a single message\*\* \(all [^)]+\)/g, "")
+		result = result.replace(
 			/Spawn ALL of them in a single response \(parallel\)\./g,
 			"Execute them one at a time.",
 		)
 	}
 
-	return text
+	return result
 }
 
 // ── Skill / slash-command rewriting ─────────────────────────────────────────
@@ -117,16 +110,18 @@ function rewriteSubagentReferences(text: string, caps: HarnessCapabilities): str
 /**
  * Rewrite /haiku:skillname references for the active harness.
  */
-function rewriteSkillReferences(text: string, caps: HarnessCapabilities): string {
+function rewriteSkillReferences(
+	text: string,
+	caps: HarnessCapabilities,
+): string {
 	if (caps.promptsAsSlashCommands) {
 		// /haiku:skill syntax works natively — no changes needed
 		return text
 	}
 
 	// Replace /haiku:skillname with the harness-appropriate phrasing
-	return text.replace(
-		/\/haiku:(\w[\w-]*)/g,
-		(_match, name) => skillReference(name),
+	return text.replace(/\/haiku:(\w[\w-]*)/g, (_match, name) =>
+		skillReference(name),
 	)
 }
 
@@ -135,32 +130,36 @@ function rewriteSkillReferences(text: string, caps: HarnessCapabilities): string
 /**
  * Rewrite AskUserQuestion references for harnesses that don't have it.
  */
-function rewriteAskUserReferences(text: string, caps: HarnessCapabilities): string {
+function rewriteAskUserReferences(
+	text: string,
+	caps: HarnessCapabilities,
+): string {
 	if (caps.nativeAskUser) return text
 
 	// Replace AskUserQuestion with generic phrasing
-	text = text.replace(
+	let result = text
+	result = result.replace(
 		/`AskUserQuestion`\s*with\s*(an\s*)?`options\[\]`\s*array/g,
 		"a numbered list of options",
 	)
-	text = text.replace(
+	result = result.replace(
 		/\| Scope decisions, tradeoffs, A\/B\/C choices \| `AskUserQuestion` with options\[\] \|[^\n]*/g,
 		"| Scope decisions, tradeoffs, A/B/C choices | Present a numbered list of options |",
 	)
-	text = text.replace(
+	result = result.replace(
 		/Use `AskUserQuestion`\b/g,
 		"Present options to the user",
 	)
-	text = text.replace(
+	result = result.replace(
 		/`AskUserQuestion`/g,
 		"a structured question with options",
 	)
-	text = text.replace(
+	result = result.replace(
 		/\*\*Good:\*\* `AskUserQuestion\(\{[^}]+\}\)`/g,
 		'**Good:** Presenting clear numbered options like "1. OAuth 2.0 + PKCE, 2. Magic link, 3. SSO via SAML, 4. Other"',
 	)
 
-	return text
+	return result
 }
 
 // ── Model tier rewriting ────────────────────────────────────────────────────
@@ -168,21 +167,25 @@ function rewriteAskUserReferences(text: string, caps: HarnessCapabilities): stri
 /**
  * Map model tier references in instructions.
  */
-function rewriteModelReferences(text: string, caps: HarnessCapabilities): string {
+function rewriteModelReferences(
+	text: string,
+	caps: HarnessCapabilities,
+): string {
 	if (caps.modelProvider === "anthropic") return text
 
+	let result = text
 	// Replace Anthropic-specific model tier names
 	for (const [canonical, mapped] of Object.entries(caps.modelTierMap)) {
 		if (canonical !== mapped) {
 			// Only replace in model-context strings (e.g., model: "sonnet")
-			text = text.replace(
+			result = result.replace(
 				new RegExp(`model: "${canonical}"`, "g"),
 				`model: "${mapped}"`,
 			)
 		}
 	}
 
-	return text
+	return result
 }
 
 // ── Permission mode rewriting ───────────────────────────────────────────────
@@ -190,14 +193,13 @@ function rewriteModelReferences(text: string, caps: HarnessCapabilities): string
 /**
  * Remove permission_mode references for harnesses that don't support it.
  */
-function rewritePermissionReferences(text: string, caps: HarnessCapabilities): string {
+function rewritePermissionReferences(
+	text: string,
+	caps: HarnessCapabilities,
+): string {
 	if (caps.hooks) return text // Claude Code / Kiro handle permissions via hooks
 
-	text = text.replace(
-		/\bpermission_mode\b[^\n]*/g,
-		"",
-	)
-	return text
+	return text.replace(/\bpermission_mode\b[^\n]*/g, "")
 }
 
 // ── Hook references ─────────────────────────────────────────────────────────
@@ -205,18 +207,16 @@ function rewritePermissionReferences(text: string, caps: HarnessCapabilities): s
 /**
  * Remove hook-specific references for harnesses without hook support.
  */
-function rewriteHookReferences(text: string, caps: HarnessCapabilities): string {
+function rewriteHookReferences(
+	text: string,
+	caps: HarnessCapabilities,
+): string {
 	if (caps.hooks) return text
 
-	text = text.replace(
-		/via the `subagent-context` hook/g,
-		"automatically",
-	)
-	text = text.replace(
-		/`subagent-context` hook/g,
-		"context injection",
-	)
-	return text
+	let result = text
+	result = result.replace(/via the `subagent-context` hook/g, "automatically")
+	result = result.replace(/`subagent-context` hook/g, "context injection")
+	return result
 }
 
 // ── Public API ──────────────────────────────────────────────────────────────
