@@ -11,9 +11,9 @@ inputs:
   - knowledge/unit-03-resource-registration-research.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-15T04:30:59Z'
-hat_started_at: '2026-04-15T04:30:59Z'
+hat_started_at: '2026-04-15T04:33:23Z'
 outputs:
   - knowledge/unit-03-elaboration-notes.md
 completed_at: null
