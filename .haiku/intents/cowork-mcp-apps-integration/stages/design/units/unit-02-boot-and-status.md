@@ -10,6 +10,16 @@ inputs:
   - stages/design/DESIGN-BRIEF.md
   - knowledge/DESIGN-TOKENS.md
   - stages/design/units/unit-01-iframe-shell-layout.md
+status: active
+bolt: 1
+hat: designer
+started_at: '2026-04-15T12:44:12Z'
+hat_started_at: '2026-04-15T12:44:12Z'
+outputs:
+  - stages/design/artifacts/boot-screen.html
+  - stages/design/artifacts/host-bridge-status.html
+  - >-
+    ../../worktrees/cowork-mcp-apps-integration/unit-04-iframe-content-screens/.haiku/intents/cowork-mcp-apps-integration/stages/design/artifacts/unit-review-medium.html
 ---
 
 # Iframe boot screen + HostBridgeStatus pill
