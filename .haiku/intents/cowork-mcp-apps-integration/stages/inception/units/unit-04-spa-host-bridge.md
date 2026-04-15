@@ -7,14 +7,14 @@ inputs:
   - intent.md
   - knowledge/DISCOVERY.md
   - stages/inception/units/unit-03-ui-resource-registration.md
-status: completed
-bolt: 1
-hat: elaborator
-started_at: '2026-04-14T22:15:58Z'
+status: pending
+bolt: 0
+hat: ''
+started_at: null
 hat_started_at: '2026-04-14T22:17:58Z'
 outputs:
   - knowledge/unit-04-host-bridge-research.md
-completed_at: '2026-04-14T22:19:33Z'
+completed_at: null
 ---
 
 # Review SPA host bridge for MCP Apps runtime

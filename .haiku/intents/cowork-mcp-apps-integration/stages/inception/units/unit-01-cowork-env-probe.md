@@ -11,12 +11,12 @@ inputs:
 outputs:
   - knowledge/unit-01-cowork-env-contract.md
   - knowledge/unit-01-elaboration-notes.md
-status: completed
+status: active
 bolt: 1
-hat: elaborator
-started_at: '2026-04-14T21:47:39Z'
-hat_started_at: '2026-04-14T21:48:37Z'
-completed_at: '2026-04-14T21:57:06Z'
+hat: researcher
+started_at: '2026-04-15T04:29:06Z'
+hat_started_at: '2026-04-15T04:29:06Z'
+completed_at: null
 ---
 
 # Cowork environment probe and workspace handshake

@@ -11,13 +11,14 @@ inputs:
   - stages/inception/units/unit-05-cowork-open-review-handler.md
   - stages/inception/units/unit-06-visual-question-design-direction.md
   - knowledge/unit-08-cowork-e2e-validation-research.md
-status: active
-bolt: 1
-hat: elaborator
-started_at: '2026-04-14T22:58:14Z'
+status: pending
+bolt: 0
+hat: ''
+started_at: null
 hat_started_at: '2026-04-14T23:02:37Z'
 outputs:
   - knowledge/unit-08-cowork-e2e-validation-research.md
+completed_at: null
 ---
 
 # End-to-end Cowork validation: /haiku:start through gate approval

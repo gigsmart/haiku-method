@@ -10,12 +10,12 @@ inputs:
     stages/inception/units/unit-07-get-review-status-doc-scrub.knowledge/inventory.md
 outputs:
   - knowledge/unit-07-scoping-decisions.md
-status: completed
-bolt: 1
-hat: elaborator
-started_at: '2026-04-14T21:47:49Z'
+status: pending
+bolt: 0
+hat: ''
+started_at: null
 hat_started_at: '2026-04-14T21:51:56Z'
-completed_at: '2026-04-14T21:57:14Z'
+completed_at: null
 ---
 
 # Scrub stale get_review_status references from docs

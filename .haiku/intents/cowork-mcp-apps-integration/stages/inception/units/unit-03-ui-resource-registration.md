@@ -1,5 +1,5 @@
 ---
-title: "ui:// resource registration and REVIEW_APP_HTML delivery"
+title: 'ui:// resource registration and REVIEW_APP_HTML delivery'
 type: feature
 model: sonnet
 depends_on:
@@ -9,14 +9,14 @@ inputs:
   - knowledge/DISCOVERY.md
   - stages/inception/units/unit-01-cowork-env-probe.md
   - knowledge/unit-03-resource-registration-research.md
-status: completed
-bolt: 1
-hat: elaborator
-started_at: '2026-04-14T22:09:36Z'
+status: pending
+bolt: 0
+hat: ''
+started_at: null
 hat_started_at: '2026-04-14T22:10:51Z'
 outputs:
   - knowledge/unit-03-elaboration-notes.md
-completed_at: '2026-04-14T22:13:59Z'
+completed_at: null
 ---
 
 # ui:// resource registration and REVIEW_APP_HTML delivery
