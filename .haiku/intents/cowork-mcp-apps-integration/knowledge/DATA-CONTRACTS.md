@@ -619,3 +619,24 @@ rules are fully specified. Error shapes are consistent with the existing pattern
 Items 3 and 4 are the only schema/implementation divergences: the stated validation
 rules are stricter than the written Zod snippets. Add `.min(1)` to `answers` array
 and `archetype` string before implementation. Everything else is clear and complete.
+
+---
+
+## Validation log
+
+Validator: validator hat · unit-03-finalize-data-contracts · 2026-04-15
+
+| Criterion | Check | Result |
+|-----------|-------|--------|
+| 1. Every contract section has `Source:` line (ui://, setOpenReviewHandler, discriminated union) | Lines 11, 67, 165, 280, 332, 500 all present | PASS |
+| 2. Every endpoint/tool has explicit `## Error` shapes (`grep -c '## Error'` ≥ tool count) | 4 matches (3 × `### Errors` + 1 × `## Error Response Shapes`) ≥ 3 tools | PASS |
+| 3. Every schema has `sessions.ts:NNN` citation (`grep -c 'sessions.ts:'` ≥ schema count) | 20 citations present; all 5 existing schemas cited with line numbers | PASS |
+| 4. No env-var coupling (`CLAUDE_CODE_IS_COWORK`, `isCoworkHost`) | Zero matches | PASS |
+| 5. TypeScript/Zod syntax (`z.(object\|discriminatedUnion\|literal)` ≥ 3) | 12 matches | PASS |
+| 6. Validation rules summary present with touch-target floor, discriminator match, session-id existence, decision enum | Section at line 498; all four items present (lines 507, 512, 514, 521) | PASS |
+
+### Decision: APPROVED
+
+All six completion criteria pass. The document is complete and internally consistent.
+Implementors should note specification hat observations 3 and 4 (add `.min(1)` to
+`answers` and `archetype` Zod schemas before cutting code).
