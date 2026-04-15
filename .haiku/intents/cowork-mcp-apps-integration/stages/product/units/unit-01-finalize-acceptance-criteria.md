@@ -11,9 +11,9 @@ inputs:
   - knowledge/DESIGN-TOKENS.md
 status: active
 bolt: 1
-hat: specification
+hat: validator
 started_at: '2026-04-15T13:53:30Z'
-hat_started_at: '2026-04-15T14:03:18Z'
+hat_started_at: '2026-04-15T14:10:13Z'
 outputs:
   - knowledge/ACCEPTANCE-CRITERIA.md
   - knowledge/DATA-CONTRACTS.md
