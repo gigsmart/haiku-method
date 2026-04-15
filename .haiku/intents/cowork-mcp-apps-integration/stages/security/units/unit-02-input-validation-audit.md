@@ -10,12 +10,13 @@ inputs:
   - knowledge/DATA-CONTRACTS.md
   - .haiku/knowledge/THREAT-MODEL.md
 outputs:
-  - audit findings inline (pass/fail per criterion)
+  - knowledge/unit-02-input-validation-audit.md
+  - stages/security/artifacts/input-validation-threat-model.md
 status: active
 bolt: 1
-hat: threat-modeler
+hat: red-team
 started_at: '2026-04-15T19:48:49Z'
-hat_started_at: '2026-04-15T19:48:49Z'
+hat_started_at: '2026-04-15T19:49:47Z'
 ---
 
 # Unit 02 — Input Validation Audit
