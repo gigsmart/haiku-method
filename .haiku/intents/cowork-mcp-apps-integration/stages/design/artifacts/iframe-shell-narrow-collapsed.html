@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<!--
+  iframe-shell-narrow-collapsed.html
+  Breakpoint: narrow (≤ 480px) — bottom sheet COLLAPSED state
+  Design direction: bottom sheet (drag-to-expand)
+
+  Token map:
+  --iframe-bg          → stone-950  (#0c0a09 equivalent — Tailwind stone-950)
+  --topbar-bg          → stone-900
+  --topbar-border      → stone-800
+  --content-bg         → stone-950
+  --content-text       → stone-100
+  --content-muted      → stone-400
+  --sheet-bg           → stone-900
+  --sheet-border-top   → teal-500
+  --sheet-shadow       → 0 -8px 24px rgba(0,0,0,0.4)
+  --btn-approve-bg     → teal-500
+  --btn-approve-hover  → teal-400
+  --btn-approve-focus  → teal-300
+  --btn-approve-active → teal-600
+  --btn-approve-text   → stone-950
+  --btn-changes-bg     → stone-700
+  --btn-changes-hover  → stone-600
+  --btn-changes-focus  → stone-500
+  --btn-changes-active → stone-800
+  --btn-changes-text   → stone-100
+  --btn-disabled-bg    → stone-800
+  --btn-disabled-text  → stone-500
+  --pill-connected     → teal-500
+  --pill-reconnecting  → amber-400
+  --pill-error         → red-500
+  --drag-handle        → stone-600
+  --drag-handle-hover  → stone-400
+  --hint-text          → stone-400
+
+  CSS positioning strategy for bottom sheet:
+  The iframe document is the scroll container. The sheet uses
+  position: sticky; bottom: 0; on the sheet wrapper inside a flex
+  column layout (height: 100%; display: flex; flex-direction: column).
+  The content area is flex: 1; overflow-y: auto. This keeps the sheet
+  glued to the bottom of the iframe viewport without escaping it.
+
+  Drag gesture spec:
+  - Minimum drag distance to trigger expand: 24px
+  - Velocity threshold for fling-to-expand: 0.5px/ms
+  - Snap points: collapsed (default), half-pane (~50% iframe height)
+  - No full-pane snap — sheet never covers entire iframe
+  - Keyboard: Up arrow on drag-handle = expand, Down arrow = collapse
+
+  prefers-reduced-motion: sheet snaps without CSS transition (see @media below)
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=480, initial-scale=1.0">
+<title>iframe-shell narrow – collapsed</title>
+<style>
+  /* ── Reset ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Iframe simulation container ── */
+  .iframe-sim {
+    width: 480px;
+    height: 640px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 14px;
+    /* stone-950 */
+    background-color: rgb(12, 10, 9);
+    color: rgb(245, 245, 244); /* stone-100 */
+    border: 1px solid rgb(41, 37, 36); /* stone-800 */
+    position: relative;
+  }
+
+  /* ── Topbar (minimal status strip, height 36px) ── */
+  .topbar {
+    height: 36px;
+    min-height: 36px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 8px;
+    background-color: rgb(28, 25, 23); /* stone-900 */
+    border-bottom: 1px solid rgb(41, 37, 36); /* stone-800 */
+    overflow: hidden;
+  }
+
+  .topbar-slug {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgb(245, 245, 244); /* stone-100 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+  }
+
+  .topbar-session-type {
+    font-size: 11px;
+    color: rgb(168, 162, 158); /* stone-400 */
+    white-space: nowrap;
+  }
+
+  /* ── HostBridgeStatus pill ── */
+  .bridge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    min-height: 20px;
+    border: 1px solid transparent;
+    cursor: default;
+    user-select: none;
+  }
+
+  .bridge-pill--connected {
+    background-color: rgba(20, 184, 166, 0.15); /* teal-500 10% */
+    color: rgb(20, 184, 166); /* teal-500 */
+    border-color: rgba(20, 184, 166, 0.3);
+  }
+
+  .bridge-pill--reconnecting {
+    background-color: rgba(251, 191, 36, 0.15); /* amber-400 10% */
+    color: rgb(251, 191, 36); /* amber-400 */
+    border-color: rgba(251, 191, 36, 0.3);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .bridge-pill--error {
+    background-color: rgba(239, 68, 68, 0.15); /* red-500 10% */
+    color: rgb(239, 68, 68); /* red-500 */
+    border-color: rgba(239, 68, 68, 0.3);
+    cursor: pointer;
+  }
+
+  .bridge-pill--error:hover {
+    background-color: rgba(239, 68, 68, 0.25);
+  }
+
+  .bridge-pill--error:focus-visible {
+    outline: 2px solid rgb(239, 68, 68);
+    outline-offset: 2px;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+    flex-shrink: 0;
+  }
+
+  /* ── Scrollable content area ── */
+  .content-area {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 12px; /* narrow: p-3 */
+    display: flex;
+    flex-direction: column;
+    gap: 14px; /* section_gap */
+    scroll-behavior: smooth;
+  }
+
+  /* Placeholder content sections */
+  .content-section {
+    background-color: rgb(28, 25, 23); /* stone-900 */
+    border: 1px solid rgb(41, 37, 36); /* stone-800 */
+    border-radius: 8px; /* rounded-lg */
+    padding: 12px;
+  }
+
+  .content-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgb(168, 162, 158); /* stone-400 */
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+
+  .content-section-body {
+    font-size: 13px;
+    color: rgb(214, 211, 208); /* stone-300 */
+    line-height: 1.5;
+  }
+
+  /* ── Bottom sheet — COLLAPSED state ── */
+  /*
+    CSS positioning spec:
+    The sheet is position: sticky; bottom: 0 on the sheet-wrapper,
+    which is a direct flex child of .iframe-sim (not inside .content-area).
+    This sticks the sheet to the bottom of the iframe without position: fixed,
+    so it doesn't escape the iframe boundary.
+  */
+  .sheet-wrapper {
+    position: sticky;
+    bottom: 0;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  .sheet {
+    background-color: rgb(28, 25, 23); /* stone-900 */
+    border-top: 2px solid rgb(20, 184, 166); /* teal-500 — emphasis: 3 */
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4); /* emphasis: 3 drop shadow */
+    border-radius: 12px 12px 0 0;
+    overflow: hidden;
+  }
+
+  /* ── Drag handle ── */
+  .drag-handle-zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px; /* touch target ≥ 44px */
+    padding: 10px 0 4px;
+    cursor: grab;
+    background: transparent;
+    border: none;
+    -webkit-appearance: none;
+    appearance: none;
+    touch-action: none; /* let JS handle drag */
+  }
+
+  .drag-handle-zone:hover .drag-bar { background-color: rgb(120, 113, 108); } /* stone-400 */
+  .drag-handle-zone:focus-visible { outline: 2px solid rgb(20, 184, 166); outline-offset: -2px; }
+  .drag-handle-zone:active { cursor: grabbing; }
+  .drag-handle-zone:active .drag-bar { background-color: rgb(168, 162, 158); } /* stone-400 lighter */
+
+  .drag-bar {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background-color: rgb(87, 83, 78); /* stone-600 */
+    transition: background-color 150ms ease;
+    pointer-events: none;
+  }
+
+  /* ── Drag hint text ── */
+  .drag-hint {
+    text-align: center;
+    font-size: 11px;
+    color: rgb(168, 162, 158); /* stone-400 */
+    padding: 0 12px 8px;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* ── Sheet collapsed buttons row ── */
+  .sheet-buttons {
+    display: flex;
+    gap: 8px;
+    padding: 0 12px 16px;
+  }
+
+  /* Approve button */
+  .btn {
+    flex: 1;
+    min-height: 44px; /* touch target */
+    padding: 0 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background-color 120ms ease, opacity 120ms ease;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .btn-approve {
+    background-color: rgb(20, 184, 166); /* teal-500 */
+    color: rgb(12, 10, 9); /* stone-950 */
+  }
+  .btn-approve:hover { background-color: rgb(45, 212, 191); } /* teal-400 */
+  .btn-approve:focus-visible {
+    outline: 2px solid rgb(94, 234, 212); /* teal-300 */
+    outline-offset: 2px;
+    background-color: rgb(45, 212, 191);
+  }
+  .btn-approve:active { background-color: rgb(13, 148, 136); } /* teal-600 */
+
+  .btn-changes {
+    background-color: rgb(68, 64, 60); /* stone-700 */
+    color: rgb(245, 245, 244); /* stone-100 */
+  }
+  .btn-changes:hover { background-color: rgb(87, 83, 78); } /* stone-600 */
+  .btn-changes:focus-visible {
+    outline: 2px solid rgb(120, 113, 108); /* stone-400 */
+    outline-offset: 2px;
+    background-color: rgb(87, 83, 78);
+  }
+  .btn-changes:active { background-color: rgb(41, 37, 36); } /* stone-800 */
+
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    background-color: rgb(41, 37, 36); /* stone-800 */
+    color: rgb(120, 113, 108); /* stone-500 */
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  /* ── Reduced motion ── */
+  @media (prefers-reduced-motion: reduce) {
+    .bridge-pill--reconnecting { animation: none; }
+    .drag-bar { transition: none; }
+    .btn { transition: none; }
+    /* Sheet snap: no transition applied when prefers-reduced-motion is set.
+       JS should omit the transition on the sheet height when this media query matches. */
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* ── State showcase section ── */
+  .state-showcase {
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .showcase-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .showcase-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgb(168, 162, 158); /* stone-400 */
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid rgb(41, 37, 36);
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+  }
+
+  .state-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .state-tag {
+    font-size: 10px;
+    color: rgb(120, 113, 108); /* stone-500 */
+    width: 56px;
+    flex-shrink: 0;
+    font-family: ui-monospace, monospace;
+  }
+
+  .tab-order {
+    padding: 12px 16px 24px;
+    font-size: 12px;
+    color: rgb(120, 113, 108); /* stone-500 */
+    border-top: 1px solid rgb(41, 37, 36);
+    line-height: 1.8;
+  }
+
+  .tab-order strong {
+    display: block;
+    color: rgb(168, 162, 158);
+    margin-bottom: 4px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════
+     MAIN MOCKUP: narrow-collapsed
+     Width: 480px | Sheet: collapsed
+     ══════════════════════════════════════════════════ -->
+<div class="iframe-sim">
+
+  <!-- Topbar: 36px status strip -->
+  <header class="topbar" role="banner">
+    <span class="topbar-slug">cowork-mcp-apps-integration</span>
+    <span class="topbar-session-type">intent review</span>
+    <!-- HostBridgeStatus pill — connected state shown in live UI -->
+    <span class="bridge-pill bridge-pill--connected" role="status" aria-live="polite" aria-label="MCP Apps: Connected">
+      <span class="dot" aria-hidden="true"></span>
+      Connected
+    </span>
+  </header>
+
+  <!-- Scrollable content area -->
+  <main class="content-area" id="main-content" role="main">
+    <div class="content-section">
+      <div class="content-section-title">Intent overview</div>
+      <div class="content-section-body">cowork-mcp-apps-integration · inception review</div>
+    </div>
+    <div class="content-section">
+      <div class="content-section-title">Units (8 total)</div>
+      <div class="content-section-body">unit-01 · unit-02 · unit-03 · unit-04 · unit-05 · unit-06 · unit-07 · unit-08</div>
+    </div>
+    <div class="content-section">
+      <div class="content-section-title">Criteria</div>
+      <div class="content-section-body">8 quality gates · 0 blocked · 8 passing</div>
+    </div>
+    <div class="content-section">
+      <div class="content-section-title">Knowledge artifacts</div>
+      <div class="content-section-body">DISCOVERY.md · DESIGN-TOKENS.md · INDEX.md</div>
+    </div>
+  </main>
+
+  <!-- Bottom sheet — COLLAPSED state -->
+  <div class="sheet-wrapper" role="region" aria-label="Decision panel">
+    <div class="sheet">
+      <!-- Drag handle: 44px touch zone, keyboard Up/Down to expand/collapse -->
+      <button
+        class="drag-handle-zone"
+        aria-label="Drag up to expand feedback panel. Press Up arrow to expand, Down arrow to collapse."
+        aria-expanded="false"
+        aria-controls="sheet-expanded-region"
+        role="button"
+        tabindex="0"
+      >
+        <span class="drag-bar" aria-hidden="true"></span>
+      </button>
+      <div class="drag-hint" aria-hidden="true">Drag up for feedback ↑</div>
+
+      <!-- Decision buttons -->
+      <form class="sheet-buttons" aria-labelledby="decision-heading">
+        <span id="decision-heading" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Review decision</span>
+        <button class="btn btn-approve" type="submit" name="decision" value="approved" aria-keyshortcuts="1">
+          ✓ Approve
+        </button>
+        <button class="btn btn-changes" type="submit" name="decision" value="changes_requested" aria-keyshortcuts="2">
+          ↩ Changes
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     STATE SHOWCASE — all interactive element states
+     (visible variants per spec)
+     ══════════════════════════════════════════════════ -->
+<div style="background-color: rgb(12, 10, 9); color: rgb(245, 245, 244); padding: 24px 16px; font-family: ui-sans-serif, system-ui, sans-serif; width: 480px; border: 1px solid rgb(41,37,36); border-top: none;">
+
+  <div style="font-size: 13px; font-weight: 700; color: rgb(168,162,158); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.08em;">
+    Interactive State Showcase — narrow-collapsed
+  </div>
+
+  <!-- HostBridgeStatus pill states -->
+  <div class="showcase-group">
+    <div class="showcase-label">HostBridgeStatus pill</div>
+    <div class="state-row">
+      <span class="state-tag" state="connected">connected</span>
+      <span class="bridge-pill bridge-pill--connected" role="status" aria-live="polite">
+        <span class="dot" aria-hidden="true"></span>MCP Apps · Connected
+      </span>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="reconnect">reconnecting</span>
+      <span class="bridge-pill bridge-pill--reconnecting" role="status" aria-live="polite">
+        <span class="dot" aria-hidden="true"></span>MCP Apps · Reconnecting
+      </span>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="error">error</span>
+      <span class="bridge-pill bridge-pill--error" role="button" tabindex="0" aria-label="MCP Apps: Error – click to retry">
+        <span class="dot" aria-hidden="true"></span>MCP Apps · Error ↺
+      </span>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="hover">hover</span>
+      <span class="bridge-pill bridge-pill--error" style="background-color: rgba(239,68,68,0.25);" role="button" tabindex="-1">
+        <span class="dot" aria-hidden="true"></span>MCP Apps · Error ↺
+      </span>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="focus">focus</span>
+      <span class="bridge-pill bridge-pill--error" style="outline: 2px solid rgb(239,68,68); outline-offset: 2px;" role="button" tabindex="-1">
+        <span class="dot" aria-hidden="true"></span>MCP Apps · Error ↺
+      </span>
+    </div>
+  </div>
+
+  <div style="margin: 20px 0; border-top: 1px solid rgb(41,37,36);"></div>
+
+  <!-- Drag handle states -->
+  <div class="showcase-group">
+    <div class="showcase-label">Drag handle (44px touch zone)</div>
+    <div class="state-row">
+      <span class="state-tag" state="default">default</span>
+      <button class="drag-handle-zone" style="width:160px; border-radius:8px; background: rgb(28,25,23);" aria-label="Drag handle" tabindex="-1">
+        <span class="drag-bar"></span>
+      </button>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="hover">hover</span>
+      <button class="drag-handle-zone" style="width:160px; border-radius:8px; background: rgb(28,25,23);" aria-label="Drag handle" tabindex="-1">
+        <span class="drag-bar" style="background-color: rgb(120,113,108);"></span>
+      </button>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="focus">focus</span>
+      <button class="drag-handle-zone" style="width:160px; border-radius:8px; background: rgb(28,25,23); outline: 2px solid rgb(20,184,166); outline-offset: -2px;" aria-label="Drag handle" tabindex="-1">
+        <span class="drag-bar" style="background-color: rgb(120,113,108);"></span>
+      </button>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="active">active</span>
+      <button class="drag-handle-zone" style="width:160px; border-radius:8px; background: rgb(28,25,23); cursor: grabbing;" aria-label="Drag handle" tabindex="-1">
+        <span class="drag-bar" style="background-color: rgb(168,162,158);"></span>
+      </button>
+    </div>
+    <!-- disabled: drag handle is never disabled; showing for completeness -->
+    <div class="state-row">
+      <span class="state-tag" state="disabled">disabled</span>
+      <button class="drag-handle-zone" style="width:160px; border-radius:8px; background: rgb(28,25,23); opacity:0.4; cursor:not-allowed;" aria-label="Drag handle" disabled tabindex="-1">
+        <span class="drag-bar"></span>
+      </button>
+    </div>
+  </div>
+
+  <div style="margin: 20px 0; border-top: 1px solid rgb(41,37,36);"></div>
+
+  <!-- Approve button states -->
+  <div class="showcase-group">
+    <div class="showcase-label">Approve button</div>
+    <div class="state-row">
+      <span class="state-tag" state="default">default</span>
+      <button class="btn btn-approve" style="flex:0; min-width:120px;" tabindex="-1">✓ Approve</button>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="hover">hover</span>
+      <button class="btn btn-approve" style="flex:0; min-width:120px; background-color: rgb(45,212,191);" tabindex="-1">✓ Approve</button>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="focus">focus</span>
+      <button class="btn btn-approve" style="flex:0; min-width:120px; background-color: rgb(45,212,191); outline: 2px solid rgb(94,234,212); outline-offset: 2px;" tabindex="-1">✓ Approve</button>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="active">active</span>
+      <button class="btn btn-approve" style="flex:0; min-width:120px; background-color: rgb(13,148,136);" tabindex="-1">✓ Approve</button>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="disabled">disabled</span>
+      <button class="btn btn-approve" style="flex:0; min-width:120px;" disabled tabindex="-1">✓ Approve</button>
+    </div>
+  </div>
+
+  <div style="margin: 20px 0; border-top: 1px solid rgb(41,37,36);"></div>
+
+  <!-- Changes button states -->
+  <div class="showcase-group">
+    <div class="showcase-label">Changes button</div>
+    <div class="state-row">
+      <span class="state-tag" state="default">default</span>
+      <button class="btn btn-changes" style="flex:0; min-width:120px;" tabindex="-1">↩ Changes</button>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="hover">hover</span>
+      <button class="btn btn-changes" style="flex:0; min-width:120px; background-color: rgb(87,83,78);" tabindex="-1">↩ Changes</button>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="focus">focus</span>
+      <button class="btn btn-changes" style="flex:0; min-width:120px; background-color: rgb(87,83,78); outline: 2px solid rgb(120,113,108); outline-offset: 2px;" tabindex="-1">↩ Changes</button>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="active">active</span>
+      <button class="btn btn-changes" style="flex:0; min-width:120px; background-color: rgb(41,37,36);" tabindex="-1">↩ Changes</button>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="disabled">disabled</span>
+      <button class="btn btn-changes" style="flex:0; min-width:120px;" disabled tabindex="-1">↩ Changes</button>
+    </div>
+  </div>
+
+  <!-- Tab order -->
+  <div class="tab-order">
+    <strong>Tab order: (narrow-collapsed)</strong>
+    <ol style="padding-left: 20px;">
+      <li>Topbar: HostBridgeStatus pill (if error — has role=button)</li>
+      <li>Drag handle button (aria-expanded=false; Up=expand, Down=collapse)</li>
+      <li>Approve button (keyboard shortcut: 1)</li>
+      <li>Changes button (keyboard shortcut: 2)</li>
+    </ol>
+    <div style="margin-top: 8px; font-size: 11px; color: rgb(120,113,108);">
+      Shift+Tab from item 1 returns focus to host (no manual trap).
+      When bridge pill is connected or reconnecting, it is not focusable (role=status, not button).
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

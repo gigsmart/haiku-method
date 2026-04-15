@@ -13,6 +13,13 @@ bolt: 1
 hat: designer
 started_at: '2026-04-15T12:32:00Z'
 hat_started_at: '2026-04-15T12:32:00Z'
+outputs: |-
+  - stages/design/artifacts/iframe-shell-narrow-collapsed.html
+  - stages/design/artifacts/iframe-shell-narrow-expanded.html
+  - stages/design/artifacts/iframe-shell-medium-collapsed.html
+  - stages/design/artifacts/iframe-shell-medium-expanded.html
+  - stages/design/artifacts/iframe-shell-wide-collapsed.html
+  - stages/design/artifacts/iframe-shell-wide-expanded.html
 ---
 
 # Iframe shell layout — bottom-sheet decision panel
