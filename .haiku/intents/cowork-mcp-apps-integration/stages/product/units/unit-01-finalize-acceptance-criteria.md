@@ -9,6 +9,11 @@ inputs:
   - knowledge/ACCEPTANCE-CRITERIA.md
   - stages/design/DESIGN-BRIEF.md
   - knowledge/DESIGN-TOKENS.md
+status: active
+bolt: 1
+hat: product
+started_at: '2026-04-15T13:53:30Z'
+hat_started_at: '2026-04-15T13:53:30Z'
 ---
 
 # Finalize ACCEPTANCE-CRITERIA.md
