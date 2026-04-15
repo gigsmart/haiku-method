@@ -12,9 +12,9 @@ outputs:
   - knowledge/unit-07-scoping-decisions.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-15T04:29:11Z'
-hat_started_at: '2026-04-15T04:29:11Z'
+hat_started_at: '2026-04-15T04:29:52Z'
 completed_at: null
 ---
 
