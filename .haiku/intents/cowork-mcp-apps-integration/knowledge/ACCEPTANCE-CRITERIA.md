@@ -596,3 +596,21 @@ Criteria that required no new AC items (already covered):
 - inception `unit-04` bundle budget (≤ 50 KB gzip growth) → implementation-time check, not a user-observable acceptance criterion; recorded as a PR gate in unit-04 spec, not duplicated here
 - inception `unit-07` doc scrub (get_review_status references) → cleanup unit, no user-observable behavior
 - inception `unit-08` E2E plan existence → delivery artifact, not a behavioral AC; covered by the unit-08 completion criteria which are self-contained
+
+---
+
+## Specification review
+
+Reviewed by specification hat (unit-01-finalize-acceptance-criteria, bolt 1).
+
+All 60 AC items (GR-01 through GR-11, V1-01 through V6-08, SC-01, SC-02) have concrete
+`Test:` lines. Each names a specific, observable behavior: grep return counts, Vitest
+spy `callCount` assertions, exact DOM property values, ARIA attribute literals, or pixel
+measurements. No item uses vague language such as "works correctly" or "looks right".
+
+Vague `Test:` lines: **(none)**
+
+One note for the feature-file author: V3-01 and V3-07 both set up the narrow breakpoint
+context. A shared Gherkin `Background` step — `Given the iframe root observes a width
+of 400px` — would eliminate duplicated `Given` setup across those scenarios and the
+narrow-breakpoint variants in V6-04 and V6-05.
