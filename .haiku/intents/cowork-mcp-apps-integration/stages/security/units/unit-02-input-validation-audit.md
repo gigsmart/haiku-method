@@ -15,9 +15,9 @@ outputs:
   - stages/security/artifacts/red-team-input-validation.md
 status: active
 bolt: 1
-hat: blue-team
+hat: security-reviewer
 started_at: '2026-04-15T19:48:49Z'
-hat_started_at: '2026-04-15T19:50:32Z'
+hat_started_at: '2026-04-15T19:51:04Z'
 ---
 
 # Unit 02 — Input Validation Audit
