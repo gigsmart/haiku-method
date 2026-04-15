@@ -13,9 +13,9 @@ outputs:
   - stages/security/artifacts/threat-model-review.md
 status: active
 bolt: 1
-hat: red-team
+hat: blue-team
 started_at: '2026-04-15T19:45:20Z'
-hat_started_at: '2026-04-15T19:46:43Z'
+hat_started_at: '2026-04-15T19:47:22Z'
 ---
 
 # Unit 01 — Threat Model Review
