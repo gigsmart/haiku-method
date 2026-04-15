@@ -13,9 +13,9 @@ inputs:
   - .haiku/knowledge/ARCHITECTURE.md
 status: active
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-15T15:21:26Z'
-hat_started_at: '2026-04-15T15:26:22Z'
+hat_started_at: '2026-04-15T15:32:09Z'
 ---
 
 # Capability negotiation probe + workspace handshake
