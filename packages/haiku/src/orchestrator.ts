@@ -3053,23 +3053,23 @@ function buildRunInstructions(
 				}
 
 				const wt = worktrees[unitName]
-				const unitInstrLines: string[] = [
-					"## Instructions",
-					"",
-					`1. Call \`haiku_unit_start { intent: "${slug}", unit: "${unitName}" }\``,
-				]
+				const unitInstrLines: string[] = ["## Instructions", ""]
+				let unitStep = 1
+				unitInstrLines.push(
+					`${unitStep++}. Call \`haiku_unit_start { intent: "${slug}", unit: "${unitName}" }\``,
+				)
 				if (wt) {
-					unitInstrLines.push(`2. Work in worktree: \`${wt}\``)
+					unitInstrLines.push(`${unitStep++}. Work in worktree: \`${wt}\``)
 					unitInstrLines.push(
-						'3. Commit frequently: `git add -A && git commit -m "..."`. Do NOT push.',
+						`${unitStep++}. Commit frequently: \`git add -A && git commit -m "..."\`. Do NOT push.`,
 					)
 				}
 				unitInstrLines.push(
-					`4. Call \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unitName}" }\` when done`,
-					`5. If blocked: call \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unitName}" }\``,
-					"6. Track outputs in unit frontmatter `outputs:` field",
-					"7. Use `ask_user_visual_question` for visual artifacts — do NOT open files in a browser",
-					`8. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
+					`${unitStep++}. Call \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unitName}" }\` when done`,
+					`${unitStep++}. If blocked: call \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unitName}" }\``,
+					`${unitStep++}. Track outputs in unit frontmatter \`outputs:\` field`,
+					`${unitStep++}. Use \`ask_user_visual_question\` for visual artifacts — do NOT open files in a browser`,
+					`${unitStep++}. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
 					"",
 					"**User questions (MANDATORY):** When you need user input:",
 					"- Use `AskUserQuestion` with an `options[]` array for every decision that has known alternatives — NEVER output option lists as plain text",
