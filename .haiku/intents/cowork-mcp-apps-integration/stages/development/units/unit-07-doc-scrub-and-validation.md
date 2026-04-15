@@ -11,6 +11,11 @@ inputs:
   - knowledge/ACCEPTANCE-CRITERIA.md
   - knowledge/DATA-CONTRACTS.md
   - .haiku/knowledge/ARCHITECTURE.md
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-15T17:32:26Z'
+hat_started_at: '2026-04-15T17:32:26Z'
 ---
 
 # Doc scrub + VALIDATION.md + end-to-end smoke
