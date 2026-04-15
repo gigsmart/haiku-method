@@ -17,11 +17,12 @@ bolt: 1
 hat: design-reviewer
 started_at: '2026-04-15T12:44:23Z'
 hat_started_at: '2026-04-15T12:49:50Z'
-outputs:
+outputs: |-
   - stages/design/artifacts/error-negotiation.html
   - stages/design/artifacts/error-sandbox.html
   - stages/design/artifacts/error-expired.html
   - stages/design/artifacts/error-stale.html
+  - stages/design/artifacts/unit-03-design-review.md
 ---
 
 # Error states for the iframe review experience
