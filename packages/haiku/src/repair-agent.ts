@@ -7,8 +7,9 @@
 //
 // Falls back gracefully when the Agent SDK is not installed.
 
+import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { join } from "node:path"
-import { existsSync, readdirSync, readFileSync } from "node:fs"
+import matter from "gray-matter"
 
 export interface RepairDiagnosis {
 	slug: string
@@ -25,7 +26,6 @@ export interface RepairDiagnosis {
 export interface RepairResult {
 	success: boolean
 	summary: string
-	filesModified: string[]
 	fallbackUsed: boolean // true if SDK wasn't available and mechanical fallback ran
 }
 
@@ -37,9 +37,9 @@ export async function runRepairAgent(
 	diagnosis: RepairDiagnosis,
 ): Promise<RepairResult> {
 	// Try to import the SDK dynamically — it might not be installed
+	// biome-ignore lint/suspicious/noExplicitAny: SDK type depends on optional peer dep
 	let query: any
 	try {
-		// @ts-ignore — SDK may not be installed; dynamic import is guarded by try/catch
 		const sdk = await import("@anthropic-ai/claude-agent-sdk")
 		query = sdk.query
 	} catch {
@@ -48,7 +48,6 @@ export async function runRepairAgent(
 			success: false,
 			summary:
 				"Claude Agent SDK not available — mechanical repair applied, remaining issues need manual attention",
-			filesModified: [],
 			fallbackUsed: true,
 		}
 	}
@@ -59,39 +58,49 @@ export async function runRepairAgent(
 	// Build the task prompt
 	const taskPrompt = buildTaskPrompt(diagnosis)
 
-	try {
-		let result = ""
-		const filesModified: string[] = []
+	const REPAIR_TIMEOUT_MS = 120_000
 
-		for await (const message of query({
-			prompt: taskPrompt,
-			options: {
-				model: "claude-haiku-4-5-20251001",
-				cwd: diagnosis.intentDir,
-				additionalDirectories: [diagnosis.studioDir],
-				allowedTools: ["Read", "Write", "Edit", "Glob", "Grep"],
-				disallowedTools: ["Bash", "Agent", "WebSearch", "WebFetch"],
-				permissionMode: "dontAsk",
-				maxTurns: 25,
-				systemPrompt,
-			},
-		})) {
-			if (message.type === "result") {
-				result = message.result || ""
+	try {
+		const queryPromise = (async () => {
+			let result = ""
+			for await (const message of query({
+				prompt: taskPrompt,
+				options: {
+					model: "claude-haiku-4-5-20251001",
+					cwd: diagnosis.intentDir,
+					additionalDirectories: [diagnosis.studioDir],
+					allowedTools: ["Read", "Write", "Edit", "Glob", "Grep"],
+					disallowedTools: ["Bash", "Agent", "WebSearch", "WebFetch"],
+					permissionMode: "dontAsk",
+					maxTurns: 25,
+					systemPrompt,
+				},
+			})) {
+				if (message.type === "result") {
+					result = message.result || ""
+				}
 			}
-		}
+			return result
+		})()
+
+		const timeoutPromise = new Promise<never>((_, reject) =>
+			setTimeout(
+				() => reject(new Error("repair agent timed out")),
+				REPAIR_TIMEOUT_MS,
+			),
+		)
+
+		const result = await Promise.race([queryPromise, timeoutPromise])
 
 		return {
-			success: true,
-			summary: result,
-			filesModified,
+			success: result.trim().length > 0,
+			summary: result || "Repair agent completed but produced no output",
 			fallbackUsed: false,
 		}
 	} catch (err) {
 		return {
 			success: false,
 			summary: `Repair agent failed: ${err instanceof Error ? err.message : String(err)}`,
-			filesModified: [],
 			fallbackUsed: true,
 		}
 	}
@@ -358,9 +367,13 @@ function readStageDefinitions(studioDir: string): string {
 		const stageMd = join(stagesDir, stageName, "STAGE.md")
 		try {
 			const raw = readFileSync(stageMd, "utf8")
-			// Extract frontmatter
-			const fmMatch = raw.match(/^---\n([\s\S]*?)\n---/)
-			const frontmatter = fmMatch ? fmMatch[1] : "(no frontmatter)"
+			const { data: stageFm } = matter(raw)
+			const frontmatter =
+				Object.keys(stageFm).length > 0
+					? Object.entries(stageFm)
+							.map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+							.join("\n")
+					: "(no frontmatter)"
 			stages.push(`### ${stageName}\n\`\`\`yaml\n${frontmatter}\n\`\`\``)
 		} catch {
 			stages.push(`### ${stageName}\n(could not read STAGE.md)`)
@@ -388,20 +401,41 @@ function findMissingDiscoveryArtifacts(
 
 	if (!existsSync(stagesDir)) return missing
 
-	// Map of discovery artifact name -> the stage that produces it
-	// (based on the output/discovery templates in the studio)
-	const discoveryLocations: Record<string, string> = {
-		discovery: "knowledge/DISCOVERY.md",
-		"design-brief": "stages/design/DESIGN-BRIEF.md",
-		"design-tokens": "stages/design/DESIGN-TOKENS.md",
-		"acceptance-criteria": "stages/product/ACCEPTANCE-CRITERIA.md",
-		"behavioral-spec": "stages/product/BEHAVIORAL-SPEC.md",
-		"data-contracts": "stages/product/DATA-CONTRACTS.md",
-		"coverage-mapping": "stages/product/COVERAGE-MAPPING.md",
-		architecture: "stages/development/ARCHITECTURE.md",
-		"threat-model": "stages/security/THREAT-MODEL.md",
-		"vuln-report": "stages/security/VULN-REPORT.md",
-		runbook: "stages/operations/RUNBOOK.md",
+	// Build discovery locations dynamically from the studio's discovery templates.
+	// Each stage may have a discovery/ directory containing *.md templates with
+	// `name` and `location` fields in their frontmatter.
+	const discoveryLocations: Record<string, string> = {}
+	let stageEntries: string[]
+	try {
+		stageEntries = readdirSync(stagesDir).filter((d) =>
+			existsSync(join(stagesDir, d, "STAGE.md")),
+		)
+	} catch {
+		return missing
+	}
+
+	for (const stageName of stageEntries) {
+		const discoveryDir = join(stagesDir, stageName, "discovery")
+		if (!existsSync(discoveryDir)) continue
+		try {
+			for (const file of readdirSync(discoveryDir).filter((f) =>
+				f.endsWith(".md"),
+			)) {
+				const { data } = matter(readFileSync(join(discoveryDir, file), "utf8"))
+				const name =
+					(data.name as string) || file.replace(/\.md$/, "").toLowerCase()
+				const location = (data.location as string) || ""
+				// Resolve {intent-slug} template variable out of the location path
+				// to get the relative path within an intent directory
+				if (location) {
+					discoveryLocations[name] = location
+						.replace(/\{intent-slug\}/g, "")
+						.replace(/^\.haiku\/intents\/\//, "")
+				}
+			}
+		} catch {
+			// Skip unreadable discovery directories
+		}
 	}
 
 	// Read the active stage's STAGE.md to find what inputs it expects
@@ -410,31 +444,25 @@ function findMissingDiscoveryArtifacts(
 
 	try {
 		const raw = readFileSync(activeStageMd, "utf8")
-		const fmMatch = raw.match(/^---\n([\s\S]*?)\n---/)
-		if (!fmMatch) return missing
-
-		// Parse the inputs: field from frontmatter
-		// Format: inputs:\n  - stage: inception\n    discovery: discovery
-		const inputsMatch = fmMatch[1].match(
-			/inputs:\s*\n((?:\s+-\s+[\s\S]*?)(?=\n\w|\n---|$))/,
-		)
-		if (!inputsMatch) return missing
-
-		// Extract each input entry's discovery field
-		const inputEntries = Array.from(
-			inputsMatch[1].matchAll(/discovery:\s*(\S+)/g),
-		)
-		for (const match of inputEntries) {
-			const artifactName = match[1]
-			const localPath = discoveryLocations[artifactName]
-			if (localPath) {
-				const fullPath = join(diagnosis.intentDir, localPath)
-				if (!existsSync(fullPath)) {
-					missing.push({
-						name: artifactName,
-						path: localPath,
-						neededBy: diagnosis.activeStage,
-					})
+		const { data: stageFm } = matter(raw)
+		const inputs =
+			(stageFm.inputs as Array<{
+				stage?: string
+				discovery?: string
+				output?: string
+			}>) || []
+		for (const input of inputs) {
+			if (input.discovery) {
+				const localPath = discoveryLocations[input.discovery]
+				if (localPath) {
+					const fullPath = join(diagnosis.intentDir, localPath)
+					if (!existsSync(fullPath)) {
+						missing.push({
+							name: input.discovery,
+							path: localPath,
+							neededBy: diagnosis.activeStage,
+						})
+					}
 				}
 			}
 		}

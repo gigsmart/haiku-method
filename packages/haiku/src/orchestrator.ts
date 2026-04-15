@@ -937,9 +937,7 @@ export function runNext(slug: string): OrchestratorAction {
 				const needsManualReview: string[] = []
 				const now = timestamp()
 				const intentStarted =
-					(intent.started_at as string) ||
-					(intent.created_at as string) ||
-					now
+					(intent.started_at as string) || (intent.created_at as string) || now
 
 				for (const stageName of incompletePrior) {
 					const priorUnitsDir = join(iDir, "stages", stageName, "units")
@@ -976,14 +974,12 @@ export function runNext(slug: string): OrchestratorAction {
 				)
 				const activePhase = (activeStageState.phase as string) || ""
 				let phaseRegressed = false
+				const missingInputs: string[] = []
 				if (activePhase === "execute") {
-					const missingInputs: string[] = []
 					for (const f of activeUnitFiles) {
 						const fm = readFrontmatter(join(activeUnitsDir, f))
 						const unitStatus = (fm.status as string) || ""
-						if (
-							["completed", "skipped", "failed"].includes(unitStatus)
-						)
+						if (["completed", "skipped", "failed"].includes(unitStatus))
 							continue
 						const inputs =
 							(fm.inputs as string[]) || (fm.refs as string[]) || []
@@ -1026,13 +1022,8 @@ export function runNext(slug: string): OrchestratorAction {
 						synthesized_stages: synthesized,
 						needs_manual_review: needsManualReview,
 						phase_regressed: phaseRegressed,
-						message:
-							`Intent '${slug}' was in an inconsistent state — work exists in '${currentStage}' but earlier stages were incomplete.\n\n` +
-							(synthesized.length > 0
-								? `Synthesized completion records for empty stages: [${synthesized.join(", ")}]\n`
-								: "") +
-							`Stages needing manual review (have units but aren't completed): [${needsManualReview.join(", ")}]\n` +
-							`Resolve these stages manually, then call haiku_run_next again.`,
+						units_missing_inputs: missingInputs,
+						message: `Intent '${slug}' was in an inconsistent state — work exists in '${currentStage}' but earlier stages were incomplete.\n\n${synthesized.length > 0 ? `Synthesized completion records for empty stages: [${synthesized.join(", ")}]\n` : ""}Stages needing manual review (have units but aren't completed): [${needsManualReview.join(", ")}]\n${phaseRegressed ? `\nAdditionally, phase was regressed from 'execute' to 'elaborate' because some units are missing \`inputs:\` declarations.\n` : ""}Resolve these stages manually, then call haiku_run_next again.`,
 					}
 				}
 
@@ -1048,10 +1039,8 @@ export function runNext(slug: string): OrchestratorAction {
 						synthesized_stages: synthesized,
 						needs_manual_review: [],
 						phase_regressed: true,
-						message:
-							`Intent '${slug}' repaired — synthesized completion for [${synthesized.join(", ")}]. ` +
-							`Phase regressed from 'execute' to 'elaborate' because some units are missing \`inputs:\` declarations. ` +
-							`Add inputs to the flagged units, then call haiku_run_next to proceed.`,
+						units_missing_inputs: missingInputs,
+						message: `Intent '${slug}' repaired — synthesized completion for [${synthesized.join(", ")}]. Phase regressed from 'execute' to 'elaborate' because some units are missing \`inputs:\` declarations. Add inputs to the flagged units, then call haiku_run_next to proceed.`,
 					}
 				}
 
@@ -2849,6 +2838,24 @@ function buildRunInstructions(
 			break
 		}
 
+		case "safe_intent_repair": {
+			const synthesizedStages = (action.synthesized_stages as string[]) || []
+			const phaseWasRegressed = (action.phase_regressed as boolean) || false
+			sections.push(`## Safe Intent Repair\n\n${action.message}`)
+			if (synthesizedStages.length > 0) {
+				sections.push(`**Synthesized stages:** ${synthesizedStages.join(", ")}`)
+			}
+			if (phaseWasRegressed) {
+				sections.push(
+					"**Phase regressed:** The active stage was regressed from `execute` to `elaborate` because some units are missing `inputs:` declarations. Address the missing inputs before proceeding.",
+				)
+			}
+			sections.push(
+				`### Instructions\n\nResolve any stages needing manual review, then call \`haiku_run_next { intent: "${slug}" }\` again.`,
+			)
+			break
+		}
+
 		default: {
 			sections.push(
 				`## Unknown Action: ${action.action}\n\n${JSON.stringify(action, null, 2)}`,
@@ -3476,7 +3483,12 @@ export async function handleOrchestratorTool(
 
 				// Resolve studio directory via the cached studio reader
 				const studioInfo = resolveStudio(intentStudio)
-				const studioDir = studioInfo?.path || ""
+				const studioDir = studioInfo?.path
+				if (!studioDir) {
+					// Can't find studio — fall through to normal handling
+					syncSessionMetadata(slug, args.state_file as string | undefined)
+					return text(withInstructions(result))
+				}
 
 				const activeStage = (result.stage as string) || ""
 				const diagnosis = {
@@ -3485,41 +3497,10 @@ export async function handleOrchestratorTool(
 					studio: intentStudio,
 					studioDir,
 					activeStage,
-					synthesizedStages:
-						(result.synthesized_stages as string[]) || [],
-					needsManualReview:
-						(result.needs_manual_review as string[]) || [],
-					phaseRegressed:
-						(result.phase_regressed as boolean) || false,
-					unitsMissingInputs: [] as string[],
-				}
-
-				// Find units missing inputs in the active stage
-				const activeUnitsDir = join(
-					iDir,
-					"stages",
-					activeStage,
-					"units",
-				)
-				if (existsSync(activeUnitsDir)) {
-					for (const f of readdirSync(activeUnitsDir).filter((f) =>
-						f.endsWith(".md"),
-					)) {
-						const fm = readFrontmatter(join(activeUnitsDir, f))
-						const status = (fm.status as string) || ""
-						if (
-							["completed", "skipped", "failed"].includes(
-								status,
-							)
-						)
-							continue
-						const inputs =
-							(fm.inputs as string[]) ||
-							(fm.refs as string[]) ||
-							[]
-						if (inputs.length === 0)
-							diagnosis.unitsMissingInputs.push(f)
-					}
+					synthesizedStages: (result.synthesized_stages as string[]) || [],
+					needsManualReview: (result.needs_manual_review as string[]) || [],
+					phaseRegressed: (result.phase_regressed as boolean) || false,
+					unitsMissingInputs: (result.units_missing_inputs as string[]) || [],
 				}
 
 				const repairResult = await runRepairAgent(diagnosis)
@@ -3527,36 +3508,37 @@ export async function handleOrchestratorTool(
 				if (repairResult.success && !repairResult.fallbackUsed) {
 					// Repair agent succeeded — run FSM again to get the real next action
 					const postRepairResult = runNext(slug)
-					emitTelemetry("haiku.orchestrator.action", {
-						intent: slug,
-						action: postRepairResult.action,
-					})
-					if (stFile)
-						logSessionEvent(stFile, {
-							event: "run_next",
+
+					// Guard: if repair didn't actually fix things, don't loop
+					if (postRepairResult.action === "safe_intent_repair") {
+						// Fall through to return the original result as-is
+					} else {
+						emitTelemetry("haiku.orchestrator.action", {
 							intent: slug,
 							action: postRepairResult.action,
-							stage: postRepairResult.stage,
-							unit: postRepairResult.unit,
-							hat: postRepairResult.hat,
-							wave: postRepairResult.wave,
 						})
+						if (stFile)
+							logSessionEvent(stFile, {
+								event: "run_next",
+								intent: slug,
+								action: postRepairResult.action,
+								stage: postRepairResult.stage,
+								unit: postRepairResult.unit,
+								hat: postRepairResult.hat,
+								wave: postRepairResult.wave,
+							})
 
-					syncSessionMetadata(
-						slug,
-						args.state_file as string | undefined,
-					)
+						syncSessionMetadata(slug, args.state_file as string | undefined)
 
-					const repairNote = `**Intent repaired automatically:** ${repairResult.summary}\n\n---\n\n`
-					return {
-						content: [
-							{
-								type: "text" as const,
-								text:
-									repairNote +
-									withInstructions(postRepairResult),
-							},
-						],
+						const repairNote = `**Intent repaired automatically:** ${repairResult.summary}\n\n---\n\n`
+						return {
+							content: [
+								{
+									type: "text" as const,
+									text: repairNote + withInstructions(postRepairResult),
+								},
+							],
+						}
 					}
 				}
 				// Repair failed or used fallback — fall through to return safe_intent_repair as-is
