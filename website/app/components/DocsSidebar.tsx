@@ -22,7 +22,7 @@ export function DocsSidebar({ navigation }: DocsSidebarProps) {
 	const pathname = usePathname()
 
 	return (
-		<aside className="fixed right-[max(1rem,calc((100vw-80rem)/2+1rem))] top-20 z-30 hidden h-[calc(100vh-5rem)] w-64 overflow-y-auto pb-8 lg:block">
+		<aside className="sticky top-20 hidden max-h-[calc(100vh-5rem)] w-64 shrink-0 self-start overflow-y-auto pb-8 lg:block">
 			<nav className="space-y-6">
 				{navigation.map((section) => (
 					<div key={section.title}>
