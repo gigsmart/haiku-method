@@ -12,7 +12,7 @@ inputs:
   - knowledge/DESIGN-TOKENS.md
   - stages/design/units/unit-01-iframe-shell-layout.md
   - stages/design/units/unit-04-iframe-content-screens.md
-status: active
+status: completed
 bolt: 1
 hat: design-reviewer
 started_at: '2026-04-15T13:01:06Z'
@@ -21,6 +21,7 @@ outputs:
   - stages/design/artifacts/success-approved.html
   - stages/design/artifacts/success-changes-requested.html
   - stages/design/artifacts/success-external-review.html
+completed_at: '2026-04-15T13:05:28Z'
 ---
 
 # Decision-submitted success state and iframe unmount
