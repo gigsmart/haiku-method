@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<!--
+  error-expired.html
+  Error state: Session expired — JWT-derived session is stale
+  Variant: single (default)
+
+  Token map:
+  --iframe-bg            → stone-950  rgb(12,10,9)
+  --topbar-bg            → stone-900  rgb(28,25,23)
+  --topbar-border        → stone-800  rgb(41,37,36)
+  --card-bg              → stone-900  rgb(28,25,23)
+  --card-border-error    → red-700    rgb(185,28,28)
+  --error-icon-bg        → red-950    rgba(127,29,29,0.4)
+  --error-icon-fg        → red-400    rgb(248,113,113)
+  --error-heading        → stone-100  rgb(245,245,244)
+  --error-body           → stone-300  rgb(214,211,208)
+  --error-code-bg        → stone-950  rgb(12,10,9)
+  --error-code-text      → red-400    rgb(248,113,113)
+  --error-code-border    → stone-800  rgb(41,37,36)
+  --input-bg             → stone-950  rgb(12,10,9)
+  --input-border         → stone-800  rgb(41,37,36)
+  --input-text           → stone-300  rgb(214,211,208)
+  --input-focus          → teal-500   rgb(20,184,166)
+  --btn-copy-bg          → stone-800  rgb(41,37,36)
+  --btn-copy-hover       → stone-700  rgb(68,64,60)
+  --btn-copy-focus       → teal-500   rgb(20,184,166)
+  --btn-copy-text        → stone-300  rgb(214,211,208)
+  --hint-text            → stone-500  rgb(120,113,108)
+  --muted                → stone-500  rgb(120,113,108)
+  --pill-error           → red-500    rgb(239,68,68)
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=480, initial-scale=1.0">
+<title>Error: Session Expired</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background-color: rgb(5, 5, 5);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 14px;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .variant-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgb(120, 113, 108); /* stone-500 */
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+    font-family: ui-monospace, monospace;
+  }
+
+  .iframe-sim {
+    width: 480px;
+    min-height: 480px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: rgb(12, 10, 9); /* stone-950 */
+    color: rgb(245, 245, 244); /* stone-100 */
+    border: 1px solid rgb(41, 37, 36); /* stone-800 */
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    height: 36px;
+    min-height: 36px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 8px;
+    background-color: rgb(28, 25, 23); /* stone-900 */
+    border-bottom: 1px solid rgb(41, 37, 36); /* stone-800 */
+  }
+
+  .topbar-slug {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgb(245, 245, 244);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+  }
+
+  .bridge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+
+  .bridge-pill--error {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: rgb(239, 68, 68); /* red-500 */
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+    flex-shrink: 0;
+  }
+
+  /* ── Content area ── */
+  .content-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 12px;
+  }
+
+  /* ── Error card ── */
+  .error-card {
+    width: 100%;
+    max-width: 400px;
+    background-color: rgb(28, 25, 23); /* stone-900 */
+    border: 1px solid rgb(185, 28, 28); /* red-700 */
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── Error icon ── */
+  .error-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background-color: rgba(127, 29, 29, 0.4); /* red-950 40% */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .error-icon {
+    font-size: 22px;
+    line-height: 1;
+    color: rgb(248, 113, 113); /* red-400 */
+    user-select: none;
+  }
+
+  .error-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .error-heading-group { flex: 1; }
+
+  .error-heading {
+    font-size: 15px;
+    font-weight: 700;
+    color: rgb(245, 245, 244); /* stone-100 */
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+
+  .error-subheading {
+    font-size: 12px;
+    color: rgb(120, 113, 108); /* stone-500 */
+  }
+
+  /* ── Error message ── */
+  .error-message {
+    font-size: 13px;
+    color: rgb(214, 211, 208); /* stone-300 */
+    line-height: 1.6;
+  }
+
+  /* ── Error code badge ── */
+  .error-code-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: rgb(12, 10, 9); /* stone-950 */
+    border: 1px solid rgb(41, 37, 36); /* stone-800 */
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    color: rgb(248, 113, 113); /* red-400 */
+  }
+
+  .error-code-label {
+    color: rgb(120, 113, 108); /* stone-500 */
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 11px;
+  }
+
+  /* ── New-link request section ── */
+  .new-link-section {
+    background-color: rgb(12, 10, 9); /* stone-950 */
+    border: 1px solid rgb(41, 37, 36); /* stone-800 */
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .new-link-heading {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgb(168, 162, 158); /* stone-400 */
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .new-link-instruction {
+    font-size: 12px;
+    color: rgb(168, 162, 158); /* stone-400 */
+    line-height: 1.5;
+  }
+
+  /* ── Copy-to-clipboard input ── */
+  .copy-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .copy-input {
+    flex: 1;
+    background-color: rgb(28, 25, 23); /* stone-900 — --input-bg */
+    border: 1px solid rgb(41, 37, 36); /* stone-800 — --input-border */
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 12px;
+    color: rgb(214, 211, 208); /* stone-300 — --input-text */
+    min-height: 44px; /* --iframe-min-touch */
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: text;
+    line-height: 1.4;
+  }
+
+  .copy-input:focus {
+    outline: 2px solid rgb(20, 184, 166); /* teal-500 — --input-focus */
+    outline-offset: 0;
+  }
+
+  .copy-input::selection {
+    background-color: rgba(20, 184, 166, 0.3);
+  }
+
+  .btn-copy {
+    background-color: rgb(41, 37, 36); /* stone-800 — --btn-copy-bg */
+    color: rgb(214, 211, 208); /* stone-300 — --btn-copy-text */
+    border: 1px solid rgb(68, 64, 60); /* stone-700 */
+    border-radius: 6px;
+    padding: 0 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    min-height: 44px; /* --iframe-min-touch */
+    min-width: 64px;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: background-color 120ms ease;
+  }
+
+  .btn-copy:hover { background-color: rgb(68, 64, 60); } /* stone-700 — --btn-copy-hover */
+
+  .btn-copy:focus-visible {
+    outline: 2px solid rgb(20, 184, 166); /* teal-500 — --btn-copy-focus */
+    outline-offset: 2px;
+  }
+
+  .btn-copy:active { background-color: rgb(28, 25, 23); } /* stone-900 */
+
+  .copy-hint {
+    font-size: 11px;
+    color: rgb(120, 113, 108); /* stone-500 — --hint-text */
+    line-height: 1.5;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn-copy { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════
+     VARIANT: default (single variant)
+     variant=default
+     ══════════════════════════════════════════════════ -->
+<div>
+  <div class="variant-label">variant=default</div>
+  <div class="iframe-sim">
+    <header class="topbar" role="banner">
+      <span class="topbar-slug">cowork-mcp-apps-integration</span>
+      <span class="bridge-pill bridge-pill--error" role="status" aria-live="polite" aria-label="MCP Apps: Error">
+        <span class="dot" aria-hidden="true"></span>
+        MCP Apps · Error
+      </span>
+    </header>
+
+    <main class="content-area" role="main">
+      <div class="error-card" role="alertdialog" aria-labelledby="exp-heading" aria-describedby="exp-msg">
+        <div class="error-header">
+          <div class="error-icon-wrap" aria-hidden="true">
+            <span class="error-icon">⏱</span>
+          </div>
+          <div class="error-heading-group">
+            <h1 id="exp-heading" class="error-heading">Review session expired</h1>
+            <p class="error-subheading">This link is no longer valid</p>
+          </div>
+        </div>
+
+        <div
+          id="exp-msg"
+          class="error-message"
+          role="alert"
+          aria-live="assertive"
+        >
+          Review sessions expire after 2 hours of inactivity. The session token for
+          <strong style="color:rgb(245,245,244)">cowork-mcp-apps-integration</strong> is no longer valid.
+          Ask Claude Code to generate a new review link by copying the message below
+          and pasting it into the chat.
+        </div>
+
+        <div class="error-code-badge" aria-label="Error code: SESSION_TOKEN_EXPIRED">
+          <span class="error-code-label">Error code:</span>
+          SESSION_TOKEN_EXPIRED
+        </div>
+
+        <!-- New-link request section -->
+        <div class="new-link-section" role="region" aria-label="Request a new review link">
+          <p class="new-link-heading">Request a new link</p>
+          <p class="new-link-instruction">
+            Copy the message below and paste it into the chat to get a fresh review link:
+          </p>
+          <div class="copy-row">
+            <input
+              type="text"
+              class="copy-input"
+              value="Please regenerate the review link for intent: cowork-mcp-apps-integration"
+              readonly
+              aria-label="Message to request a new review link — select and copy"
+            />
+            <button
+              class="btn-copy"
+              type="button"
+              aria-label="Copy request message to clipboard"
+            >
+              Copy
+            </button>
+          </div>
+          <p class="copy-hint">
+            If clipboard access is blocked, select the text above and use
+            <kbd style="background:rgb(28,25,23);border:1px solid rgb(41,37,36);border-radius:3px;padding:1px 5px;font-size:10px">Ctrl+C</kbd> /
+            <kbd style="background:rgb(28,25,23);border:1px solid rgb(41,37,36);border-radius:3px;padding:1px 5px;font-size:10px">⌘C</kbd>.
+          </p>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+</body>
+</html>
