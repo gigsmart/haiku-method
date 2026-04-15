@@ -1,7 +1,7 @@
 {
   "name": "haiku-method",
   "private": true,
-  "workspaces": ["website", "packages/haiku", "packages/shared"],
+  "workspaces": ["website", "packages/haiku", "packages/shared", "packages/review-ui"],
   "scripts": {
     "build": "bun run --filter '*' build",
     "dev": "bun run --cwd website dev",

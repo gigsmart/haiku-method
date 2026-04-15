@@ -1,44 +1,44 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useReviewSession } from "./hooks/useReviewSession"
-import { ReviewSidebar } from "./ReviewSidebar"
-import { ReviewRouter } from "./ReviewRouter"
+import { ReviewApp, type ReviewTransport } from "@haiku/review-ui"
+import { createHttpTransport } from "@haiku/review-ui/transports"
+import { useEffect, useMemo, useState } from "react"
 
 interface TokenPayload {
-  tun: string
-  sid: string
-  typ: string
-  key?: string
-  iat: number
-  exp: number
+	tun: string
+	sid: string
+	typ: string
+	key?: string
+	iat: number
+	exp: number
 }
 
 function decodeJWT(token: string): TokenPayload {
-  const payload = token.split(".")[1]
-  if (!payload) throw new Error("Invalid token format")
-  const base64 = payload.replace(/-/g, "+").replace(/_/g, "/")
-  return JSON.parse(atob(base64))
+	const payload = token.split(".")[1]
+	if (!payload) throw new Error("Invalid token format")
+	const base64 = payload.replace(/-/g, "+").replace(/_/g, "/")
+	return JSON.parse(atob(base64))
 }
 
 type ShellState =
-  | { status: "loading" }
-  | { status: "error"; message: string; kind: "expired" | "malformed" | "connection" }
-  | { status: "connected"; config: TokenPayload }
+	| { status: "loading" }
+	| {
+			status: "error"
+			message: string
+			kind: "expired" | "malformed" | "connection"
+	  }
+	| { status: "connected"; config: TokenPayload }
 
 export function ReviewShell() {
-  const [state, setState] = useState<ShellState>({ status: "loading" })
+	const [state, setState] = useState<ShellState>({ status: "loading" })
 
-  // Hide site chrome (header/footer) and strip main padding for the review
-  // route so the review UI renders full-pane with zero branding. Scoped via
-  // a data attribute on the html element so it only applies while the shell
-  // is mounted, and torn down cleanly on unmount.
-  useEffect(() => {
-    const html = document.documentElement
-    html.setAttribute("data-haiku-review", "true")
-    const style = document.createElement("style")
-    style.setAttribute("data-haiku-review-style", "true")
-    style.textContent = `
+	// Hide site chrome while the review shell is mounted. Torn down on unmount.
+	useEffect(() => {
+		const html = document.documentElement
+		html.setAttribute("data-haiku-review", "true")
+		const style = document.createElement("style")
+		style.setAttribute("data-haiku-review-style", "true")
+		style.textContent = `
       html[data-haiku-review="true"] body > div > header,
       html[data-haiku-review="true"] body > div > footer,
       html[data-haiku-review="true"] body header[role],
@@ -49,139 +49,149 @@ export function ReviewShell() {
       html[data-haiku-review="true"] body > main { padding: 0 !important; flex: 1 1 auto !important; min-height: 100vh !important; }
       html[data-haiku-review="true"] body { background: #1c1917 !important; }
     `
-    document.head.appendChild(style)
-    return () => {
-      html.removeAttribute("data-haiku-review")
-      style.remove()
-    }
-  }, [])
+		document.head.appendChild(style)
+		return () => {
+			html.removeAttribute("data-haiku-review")
+			style.remove()
+		}
+	}, [])
 
-  useEffect(() => {
-    const hash = window.location.hash.slice(1)
-    if (!hash) {
-      setState({ status: "error", message: "No review token found in URL.", kind: "malformed" })
-      return
-    }
+	useEffect(() => {
+		const hash = window.location.hash.slice(1)
+		if (!hash) {
+			setState({
+				status: "error",
+				message: "No review token found in URL.",
+				kind: "malformed",
+			})
+			return
+		}
 
-    try {
-      const payload = decodeJWT(hash)
-      if (payload.exp && payload.exp < Date.now() / 1000) {
-        setState({
-          status: "error",
-          message: "This review link has expired. Ask for a new link from Claude Code.",
-          kind: "expired",
-        })
-        return
-      }
-      if (!payload.tun || !payload.sid || !payload.typ || !payload.tun.startsWith("https://")) {
-        setState({ status: "error", message: "Invalid review token — missing required fields or unsafe URL.", kind: "malformed" })
-        return
-      }
-      setState({ status: "connected", config: payload })
-    } catch {
-      setState({ status: "error", message: "Invalid review token. Make sure you copied the full URL.", kind: "malformed" })
-    }
-  }, [])
+		try {
+			const payload = decodeJWT(hash)
+			if (payload.exp && payload.exp < Date.now() / 1000) {
+				setState({
+					status: "error",
+					message:
+						"This review link has expired. Ask for a new link from Claude Code.",
+					kind: "expired",
+				})
+				return
+			}
+			if (
+				!payload.tun ||
+				!payload.sid ||
+				!payload.typ ||
+				!payload.tun.startsWith("https://")
+			) {
+				setState({
+					status: "error",
+					message:
+						"Invalid review token — missing required fields or unsafe URL.",
+					kind: "malformed",
+				})
+				return
+			}
+			setState({ status: "connected", config: payload })
+		} catch {
+			setState({
+				status: "error",
+				message: "Invalid review token. Make sure you copied the full URL.",
+				kind: "malformed",
+			})
+		}
+	}, [])
 
-  if (state.status === "loading") {
-    return <LoadingState />
-  }
-
-  if (state.status === "error") {
-    return <ErrorState message={state.message} kind={state.kind} />
-  }
-
-  return <ReviewContent config={state.config} />
+	if (state.status === "loading") return <LoadingState />
+	if (state.status === "error")
+		return <ErrorState message={state.message} kind={state.kind} />
+	return <ReviewContent config={state.config} />
 }
 
 function ReviewContent({ config }: { config: TokenPayload }) {
-  const { session, loading, error, isConnected, submitDecision, submitAnswers, submitDirection } =
-    useReviewSession(config.tun, config.sid, config.key)
+	const transport: ReviewTransport = useMemo(
+		() =>
+			createHttpTransport({
+				baseUrl: config.tun,
+				sessionId: config.sid,
+				e2eKey: config.key ?? null,
+				heartbeat: true,
+			}),
+		[config.tun, config.sid, config.key],
+	)
 
-  if (loading) {
-    return <LoadingState message="Loading review session..." />
-  }
-
-  if (error) {
-    return <ErrorState message={error} kind="connection" />
-  }
-
-  if (!session) {
-    return <ErrorState message="Session not found. It may have expired." kind="connection" />
-  }
-
-  const accentColor = getAccentColor(config.typ)
-
-  return (
-    <div className="flex min-h-screen bg-stone-900">
-      <ReviewSidebar
-        sessionType={config.typ}
-        accentColor={accentColor}
-        isConnected={isConnected}
-        session={session}
-        onSubmitDecision={submitDecision}
-      />
-      <main className="flex-1 overflow-auto p-10">
-        {isConnected === false && <ReconnectingBanner />}
-        <div className={isConnected === false ? "opacity-60 pointer-events-none" : ""}>
-          <ReviewRouter
-            session={session}
-            baseUrl={config.tun}
-            onSubmitDecision={submitDecision}
-            onSubmitAnswers={submitAnswers}
-            onSubmitDirection={submitDirection}
-          />
-        </div>
-      </main>
-    </div>
-  )
+	return (
+		<ReviewApp
+			transport={transport}
+			renderLoading={() => <LoadingState message="Loading review session..." />}
+			renderError={(msg) => <ErrorState message={msg} kind="connection" />}
+			chrome={(inner, { isConnected }) => (
+				<div className="min-h-screen bg-stone-900">
+					<main className="flex-1 overflow-auto p-6 lg:p-10">
+						{isConnected === false && <ReconnectingBanner />}
+						<div
+							className={
+								isConnected === false ? "opacity-60 pointer-events-none" : ""
+							}
+						>
+							{inner}
+						</div>
+					</main>
+				</div>
+			)}
+		/>
+	)
 }
 
-function LoadingState({ message = "Connecting to review session..." }: { message?: string }) {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-stone-900">
-      <div className="text-center">
-        <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-[3px] border-stone-700 border-t-teal-500" />
-        <p className="text-stone-400 text-sm">{message}</p>
-      </div>
-    </div>
-  )
+function LoadingState({
+	message = "Connecting to review session...",
+}: { message?: string }) {
+	return (
+		<div className="flex min-h-screen items-center justify-center bg-stone-900">
+			<div className="text-center">
+				<div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-[3px] border-stone-700 border-t-teal-500" />
+				<p className="text-stone-400 text-sm">{message}</p>
+			</div>
+		</div>
+	)
 }
 
-function ErrorState({ message, kind }: { message: string; kind: "expired" | "malformed" | "connection" }) {
-  const icons: Record<string, string> = { expired: "\u23F0", malformed: "\u26A0\uFE0F", connection: "\uD83D\uDD0C" }
-  const titles: Record<string, string> = {
-    expired: "Review Link Expired",
-    malformed: "Invalid Review Link",
-    connection: "Connection Failed",
-  }
+function ErrorState({
+	message,
+	kind,
+}: {
+	message: string
+	kind: "expired" | "malformed" | "connection"
+}) {
+	const icons: Record<string, string> = {
+		expired: "\u23F0",
+		malformed: "\u26A0\uFE0F",
+		connection: "\uD83D\uDD0C",
+	}
+	const titles: Record<string, string> = {
+		expired: "Review Link Expired",
+		malformed: "Invalid Review Link",
+		connection: "Connection Failed",
+	}
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-stone-900">
-      <div className="max-w-md rounded-xl border border-stone-700 bg-stone-800 p-8 text-center">
-        <div className="mb-3 text-3xl">{icons[kind]}</div>
-        <h2 className="mb-2 text-lg font-semibold text-stone-200">{titles[kind]}</h2>
-        <p className="text-sm leading-relaxed text-stone-400">{message}</p>
-      </div>
-    </div>
-  )
+	return (
+		<div className="flex min-h-screen items-center justify-center bg-stone-900">
+			<div className="max-w-md rounded-xl border border-stone-700 bg-stone-800 p-8 text-center">
+				<div className="mb-3 text-3xl">{icons[kind]}</div>
+				<h2 className="mb-2 text-lg font-semibold text-stone-200">
+					{titles[kind]}
+				</h2>
+				<p className="text-sm leading-relaxed text-stone-400">{message}</p>
+			</div>
+		</div>
+	)
 }
 
 function ReconnectingBanner() {
-  return (
-    <div className="mb-4 flex items-center justify-center gap-2 rounded-lg border border-yellow-800 bg-yellow-900/20 px-4 py-2 text-sm text-yellow-400">
-      <div className="h-3 w-3 animate-spin rounded-full border-2 border-yellow-800 border-t-yellow-400" />
-      Reconnecting to review session...
-    </div>
-  )
+	return (
+		<div className="mb-4 flex items-center justify-center gap-2 rounded-lg border border-yellow-800 bg-yellow-900/20 px-4 py-2 text-sm text-yellow-400">
+			<div className="h-3 w-3 animate-spin rounded-full border-2 border-yellow-800 border-t-yellow-400" />
+			Reconnecting to review session...
+		</div>
+	)
 }
-
-function getAccentColor(typ: string): string {
-  switch (typ) {
-    case "review": return "#14b8a6"
-    case "question": return "#f59e0b"
-    case "direction": return "#6366f1"
-    default: return "#14b8a6"
-  }
-}
-

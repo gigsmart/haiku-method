@@ -12,6 +12,8 @@
 		"lint": "biome check ."
 	},
 	"dependencies": {
+		"@haiku/review-ui": "file:../packages/review-ui",
+		"@haiku/shared": "file:../packages/shared",
 		"@sentry/nextjs": "^10.47.0",
 		"@xyflow/react": "^12.10.2",
 		"diff": "^7.0.0",
