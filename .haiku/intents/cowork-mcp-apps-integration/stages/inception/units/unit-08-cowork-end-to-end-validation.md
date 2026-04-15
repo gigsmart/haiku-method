@@ -11,11 +11,11 @@ inputs:
   - stages/inception/units/unit-05-cowork-open-review-handler.md
   - stages/inception/units/unit-06-visual-question-design-direction.md
   - knowledge/unit-08-cowork-e2e-validation-research.md
-status: pending
-bolt: 0
-hat: ''
-started_at: null
-hat_started_at: '2026-04-14T23:02:37Z'
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-15T04:46:00Z'
+hat_started_at: '2026-04-15T04:46:00Z'
 outputs:
   - knowledge/unit-08-cowork-e2e-validation-research.md
 completed_at: null
