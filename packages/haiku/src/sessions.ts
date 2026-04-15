@@ -305,6 +305,17 @@ export function getSession(
 	return sessions.get(sessionId)
 }
 
+/**
+ * List all currently-tracked sessions. Used by tests and diagnostic tooling
+ * to discover sessions created internally by handlers that don't return the
+ * session_id to the caller (e.g. openReviewMcpApps).
+ */
+export function listSessions(): Array<
+	ReviewSession | QuestionSession | DesignDirectionSession
+> {
+	return Array.from(sessions.values())
+}
+
 export function updateSession(
 	sessionId: string,
 	updates: Partial<

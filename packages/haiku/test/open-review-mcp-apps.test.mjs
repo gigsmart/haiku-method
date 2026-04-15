@@ -4,7 +4,7 @@
 // Run: npx tsx test/open-review-mcp-apps.test.mjs
 
 import assert from "node:assert"
-import { mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs"
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { setTimeout as delay } from "node:timers/promises"
@@ -12,17 +12,16 @@ import { setTimeout as delay } from "node:timers/promises"
 import {
   createSession,
   getSession,
+  listSessions,
   updateSession,
-  notifySessionUpdate,
   waitForSession,
 } from "../src/sessions.ts"
 import {
   setMcpServerInstance,
   hostSupportsMcpApps,
-  setFrontmatterField,
 } from "../src/state-tools.ts"
 import { REVIEW_RESOURCE_URI, buildUiResourceMeta } from "../src/ui-resource.ts"
-import { logSessionEvent } from "../src/session-metadata.ts"
+import { openReviewMcpApps } from "../src/open-review-mcp-apps.ts"
 
 // ── Test infrastructure ────────────────────────────────────────────────────
 
@@ -177,9 +176,65 @@ function dispatchReviewSubmit(args) {
   return { content: [{ type: "text", text: '{"ok":true}' }] }
 }
 
+// ── Helpers: setup a minimal real intent directory + cwd switcher ────────
+//
+// The tests call the REAL openReviewMcpApps() function from
+// src/open-review-mcp-apps.ts. That function calls parseIntent() which
+// reads `${intentDirRel}/intent.md` from process.cwd(). Each test builds a
+// tmp dir with a minimal real intent.md, chdirs into a parent, and passes
+// the relative intentDir path to openReviewMcpApps. No mocks.
+//
+// Every run also restores the original cwd so tests stay isolated.
+
+import { chdir, cwd as getCwd } from "node:process"
+import { rmSync } from "node:fs"
+
+const _origCwd = getCwd()
+function setupIntentDir() {
+  const root = join(tmpdir(), `haiku-test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
+  const intentRel = ".haiku/intents/test-intent"
+  const intentAbs = join(root, intentRel)
+  mkdirSync(intentAbs, { recursive: true })
+  const intentMdPath = join(intentAbs, "intent.md")
+  writeFileSync(
+    intentMdPath,
+    "---\ntitle: Test Intent\nstatus: active\n---\n\n# Test Intent\n\n## Completion Criteria\n\n- [ ] It works\n",
+  )
+  return { root, intentRel, intentAbs, intentMdPath }
+}
+
+function enterRoot(root) {
+  chdir(root)
+}
+function restoreCwd() {
+  chdir(_origCwd)
+}
+function cleanup(root) {
+  try { rmSync(root, { recursive: true, force: true }) } catch { /* */ }
+}
+
+// Structural guarantee check: the extracted module must NOT import http/tunnel/child_process.
+// This is a file-level assertion — if the real function ever starts calling HTTP, this fails.
+function assertNoHttpImports() {
+  const src = readFileSync(
+    new URL("../src/open-review-mcp-apps.ts", import.meta.url),
+    "utf8",
+  )
+  // Forbidden imports: any form of http.js / tunnel.js / child_process
+  if (/from\s+["']\.\/http\.js["']/.test(src)) {
+    throw new Error("open-review-mcp-apps.ts imports ./http.js — MCP Apps arm must not touch HTTP")
+  }
+  if (/from\s+["']\.\/tunnel\.js["']/.test(src)) {
+    throw new Error("open-review-mcp-apps.ts imports ./tunnel.js — MCP Apps arm must not touch tunnel")
+  }
+  if (/from\s+["']node:child_process["']/.test(src)) {
+    throw new Error("open-review-mcp-apps.ts imports node:child_process — MCP Apps arm must not spawn processes")
+  }
+}
+
 // ── Group A: MCP Apps arm skips local I/O (CC-2) ──────────────────────────
 
-console.log("\n=== Group A: hostSupportsMcpApps drives arm selection ===")
+console.log("\n=== Group A: MCP Apps arm skips local I/O — spy assertions (CC-2) ===")
 
 test("returns true for MCP Apps server (precondition for arm selection)", () => {
   setMcpServerInstance(makeMcpAppsServer())
@@ -191,8 +246,117 @@ test("returns false for non-MCP-Apps server", () => {
   assert.strictEqual(hostSupportsMcpApps(), false)
 })
 
-// The actual HTTP server / spawn / tunnel spying is done via the HTTP path
-// test (Group G). Here we verify the flag correctly discriminates.
+test("structural: open-review-mcp-apps.ts does NOT import http.js / tunnel.js / child_process", () => {
+  // CC-2 structural guarantee — grep the extracted module's source.
+  // If the real function ever adds an http/tunnel import, this fails.
+  assertNoHttpImports()
+})
+
+await testAsync("real openReviewMcpApps: approved round-trip + _meta.ui.resourceUri set", async () => {
+  setMcpServerInstance(makeMcpAppsServer())
+  assert.ok(hostSupportsMcpApps(), "precondition: MCP Apps mode must be active")
+
+  const { root, intentRel } = setupIntentDir()
+  const idsBefore = new Set(listSessions().map((s) => s.session_id))
+  enterRoot(root)
+  try {
+    let capturedMeta = undefined
+    // Kick off the real function — it parses the real intent.md, creates a
+    // real session, and awaits waitForSession(). The test will discover the
+    // session via listSessions() and submit a decision to unblock it.
+    const armPromise = openReviewMcpApps({
+      intentDirRel: intentRel,
+      reviewType: "intent",
+      gateType: undefined,
+      signal: undefined,
+      setReviewResultMeta: (m) => { capturedMeta = m },
+    })
+
+    // Poll briefly for the new session to appear. openReviewMcpApps is async
+    // but the createSession call happens before any I/O other than parseIntent,
+    // so this resolves within a few milliseconds.
+    let newSession = null
+    for (let i = 0; i < 200; i++) {
+      await delay(5)
+      const current = listSessions()
+      newSession = current.find(
+        (s) => !idsBefore.has(s.session_id) && s.intent_slug === "test-intent",
+      )
+      if (newSession) break
+    }
+    assert.ok(newSession, "openReviewMcpApps should have created a new session")
+    assert.ok(
+      capturedMeta,
+      "setReviewResultMeta must be called before the arm awaits (CC-3)",
+    )
+    assert.strictEqual(capturedMeta.ui.resourceUri, REVIEW_RESOURCE_URI)
+
+    // Unblock the real function by submitting a decision via the real
+    // updateSession + notifySessionUpdate path (this is exactly what
+    // haiku_cowork_review_submit does in server.ts).
+    updateSession(newSession.session_id, {
+      status: "decided",
+      decision: "approved",
+      feedback: "ok",
+    })
+
+    const result = await armPromise
+    assert.strictEqual(result.decision, "approved")
+    assert.strictEqual(result.feedback, "ok")
+  } finally {
+    restoreCwd()
+    cleanup(root)
+  }
+})
+
+for (const decision of ["changes_requested", "external_review"]) {
+  await testAsync(
+    `real openReviewMcpApps: ${decision} round-trip returns real session decision`,
+    async () => {
+      setMcpServerInstance(makeMcpAppsServer())
+      const { root, intentRel } = setupIntentDir()
+      const idsBefore = new Set(listSessions().map((s) => s.session_id))
+      enterRoot(root)
+      try {
+        const armPromise = openReviewMcpApps({
+          intentDirRel: intentRel,
+          reviewType: "intent",
+          gateType: undefined,
+          signal: undefined,
+          setReviewResultMeta: () => {},
+        })
+
+        let newSession = null
+        for (let i = 0; i < 200; i++) {
+          await delay(5)
+          const current = listSessions()
+          newSession = current.find(
+            (s) => !idsBefore.has(s.session_id) && s.intent_slug === "test-intent",
+          )
+          if (newSession) break
+        }
+        assert.ok(newSession)
+
+        updateSession(newSession.session_id, {
+          status: "decided",
+          decision,
+          feedback: decision === "changes_requested" ? "Fix Y" : "",
+        })
+
+        const result = await armPromise
+        assert.strictEqual(result.decision, decision)
+        assert.strictEqual(
+          result.feedback,
+          decision === "changes_requested" ? "Fix Y" : "",
+        )
+        assert.ok("annotations" in result, "result must include annotations key")
+      } finally {
+        restoreCwd()
+        cleanup(root)
+      }
+    },
+  )
+}
 
 // ── Group B: Tool result carries _meta.ui.resourceUri (CC-3) ─────────────
 
@@ -363,110 +527,136 @@ test("MCP Apps server: hostSupportsMcpApps returns true", () => {
 
 console.log("\n=== Group H: V5-10 host-timeout fallback (CC-7) ===")
 
-await testAsync("timeout fallback resolves with changes_requested synthetic payload", async () => {
-  const tmpDir = join(tmpdir(), `haiku-test-${Date.now()}`)
-  mkdirSync(tmpDir, { recursive: true })
+await testAsync("real openReviewMcpApps: AbortSignal.abort() drives timeout path — resolved value shape", async () => {
+  setMcpServerInstance(makeMcpAppsServer())
+  const { root, intentRel } = setupIntentDir()
+  enterRoot(root)
+  try {
+    const controller = new AbortController()
+    // Abort after 50ms — gives createSession/parseIntent time to set up before aborting
+    const abortTimer = setTimeout(() => controller.abort(), 50)
 
-  // Create a minimal intent.md with frontmatter
-  const intentPath = join(tmpDir, "intent.md")
-  writeFileSync(intentPath, "---\ntitle: Test Intent\nstatus: active\n---\n\n# Test\n")
+    const result = await openReviewMcpApps({
+      intentDirRel: intentRel,
+      reviewType: "intent",
+      gateType: undefined,
+      signal: controller.signal,
+      setReviewResultMeta: () => { /* ignore */ },
+    })
 
-  const stFile = join(tmpDir, "session.log")
+    clearTimeout(abortTimer)
 
-  // Simulate the V5-10 path by calling the timeout handler logic directly
-  let handlerResult = null
-
-  // Run the timeout handler inline (mirrors server.ts MCP Apps arm timeout path)
-  const runTimeoutPath = async (signal) => {
-    if (signal?.aborted || true) {
-      try {
-        logSessionEvent(stFile, {
-          event: "gate_review_host_timeout",
-          detected_at_seconds: Date.now() / 1000,
-        })
-      } catch { /* non-fatal */ }
-      try {
-        setFrontmatterField(intentPath, "blocking_timeout_observed", true)
-      } catch { /* non-fatal */ }
-      return {
-        decision: "changes_requested",
-        feedback: "Review timed out before decision was submitted. Please retry.",
-        annotations: undefined,
-      }
-    }
+    // Assert resolved value shape (CC-7)
+    assert.strictEqual(result.decision, "changes_requested")
+    assert.strictEqual(
+      result.feedback,
+      "Review timed out before decision was submitted. Please retry.",
+    )
+    assert.strictEqual(result.annotations, undefined)
+  } finally {
+    restoreCwd()
+    cleanup(root)
   }
-
-  handlerResult = await runTimeoutPath(AbortSignal.timeout(1))
-  await delay(10) // let signal fire
-
-  // Assert handler resolves with correct synthetic payload
-  assert.strictEqual(handlerResult.decision, "changes_requested")
-  assert.strictEqual(
-    handlerResult.feedback,
-    "Review timed out before decision was submitted. Please retry.",
-  )
-  assert.strictEqual(handlerResult.annotations, undefined)
 })
 
-await testAsync("timeout path logs gate_review_host_timeout event to stFile", async () => {
-  const tmpDir = join(tmpdir(), `haiku-test-${Date.now()}`)
-  mkdirSync(tmpDir, { recursive: true })
-  // logSessionEvent replaces .json extension with .jsonl — use .json suffix
-  const stFile = join(tmpDir, "session.json")
-  const jsonlPath = stFile.replace(/\.json$/, ".jsonl")
+await testAsync("real openReviewMcpApps: timeout writes gate_review_host_timeout event to session.log", async () => {
+  setMcpServerInstance(makeMcpAppsServer())
+  const { root, intentRel } = setupIntentDir()
+  // The real function computes: join(cwd, intentDirRel, "..", "..", "session.log")
+  // For intentRel = ".haiku/intents/test-intent", that resolves to cwd/.haiku/session.log.
+  // logSessionEvent replaces /\.json$/ → .jsonl; "session.log" has no match,
+  // so the file stays as session.log.
+  const expectedStLog = join(root, ".haiku", "session.log")
+  enterRoot(root)
+  try {
+    const controller = new AbortController()
+    setTimeout(() => controller.abort(), 50)
+    await openReviewMcpApps({
+      intentDirRel: intentRel,
+      reviewType: "intent",
+      gateType: undefined,
+      signal: controller.signal,
+      setReviewResultMeta: () => {},
+    })
 
-  logSessionEvent(stFile, {
-    event: "gate_review_host_timeout",
-    detected_at_seconds: Date.now() / 1000,
-  })
-
-  // logSessionEvent writes to .jsonl path
-  const content = readFileSync(jsonlPath, "utf8")
-  const line = JSON.parse(content.trim().split("\n")[0])
-
-  assert.strictEqual(line.event, "gate_review_host_timeout")
-  assert.strictEqual(typeof line.detected_at_seconds, "number")
-  assert.ok(line.detected_at_seconds > 0)
+    const content = readFileSync(expectedStLog, "utf8")
+    const firstLine = content.trim().split("\n")[0]
+    const event = JSON.parse(firstLine)
+    assert.strictEqual(event.event, "gate_review_host_timeout")
+    assert.strictEqual(typeof event.detected_at_seconds, "number")
+    assert.ok(event.detected_at_seconds > 0)
+  } finally {
+    restoreCwd()
+    cleanup(root)
+  }
 })
 
-await testAsync("timeout path writes blocking_timeout_observed to intent.md frontmatter", async () => {
-  const tmpDir = join(tmpdir(), `haiku-test-${Date.now()}`)
-  mkdirSync(tmpDir, { recursive: true })
-  const intentPath = join(tmpDir, "intent.md")
-  writeFileSync(intentPath, "---\ntitle: Test Intent\nstatus: active\n---\n\n# Test\n")
-
-  setFrontmatterField(intentPath, "blocking_timeout_observed", true)
-
-  const content = readFileSync(intentPath, "utf8")
-  assert.ok(
-    content.includes("blocking_timeout_observed: true"),
-    `Expected blocking_timeout_observed: true in:\n${content}`,
-  )
+await testAsync("real openReviewMcpApps: timeout writes blocking_timeout_observed to intent.md", async () => {
+  setMcpServerInstance(makeMcpAppsServer())
+  const { root, intentRel, intentMdPath } = setupIntentDir()
+  enterRoot(root)
+  try {
+    const controller = new AbortController()
+    setTimeout(() => controller.abort(), 50)
+    await openReviewMcpApps({
+      intentDirRel: intentRel,
+      reviewType: "intent",
+      gateType: undefined,
+      signal: controller.signal,
+      setReviewResultMeta: () => {},
+    })
+    const content = readFileSync(intentMdPath, "utf8")
+    assert.ok(
+      content.includes("blocking_timeout_observed: true"),
+      `Expected blocking_timeout_observed: true in:\n${content}`,
+    )
+  } finally {
+    restoreCwd()
+    cleanup(root)
+  }
 })
 
-// ── Group I: V5-11 state byte-identity on timeout (CC-8) ──────────────────
+await testAsync("real openReviewMcpApps: timeout path does NOT touch state.json (V5-11)", async () => {
+  setMcpServerInstance(makeMcpAppsServer())
+  const { root, intentRel, intentAbs } = setupIntentDir()
 
-console.log("\n=== Group I: V5-11 state.json byte-identity on timeout (CC-8) ===")
-
-await testAsync("state.json is byte-identical before and after timeout path", async () => {
-  const tmpDir = join(tmpdir(), `haiku-test-${Date.now()}`)
-  mkdirSync(tmpDir, { recursive: true })
-
-  // Write a minimal state.json
-  const stateJsonPath = join(tmpDir, "state.json")
+  // Write a minimal state.json inside the intent dir — the timeout path must NOT touch it
+  const stateJsonPath = join(intentAbs, "state.json")
   const stateContent = JSON.stringify({ phase: "gate_ask", iteration: 1 }, null, 2) + "\n"
   writeFileSync(stateJsonPath, stateContent)
 
-  // Read snapshot before timeout
-  const before = readFileSync(stateJsonPath, "utf8")
+  enterRoot(root)
+  try {
+    const controller = new AbortController()
+    setTimeout(() => controller.abort(), 50)
+    await openReviewMcpApps({
+      intentDirRel: intentRel,
+      reviewType: "intent",
+      gateType: undefined,
+      signal: controller.signal,
+      setReviewResultMeta: () => {},
+    })
 
-  // The V5-11 constraint: timeout path does NOT touch state.json
-  // (We simulate by NOT calling writeJson or modifying the state)
-  // Read snapshot after — should be identical
-  const after = readFileSync(stateJsonPath, "utf8")
-
-  assert.strictEqual(before, after, "state.json must be byte-identical before and after timeout")
+    // state.json must be byte-identical — no resume token written
+    const after = readFileSync(stateJsonPath, "utf8")
+    assert.strictEqual(
+      after,
+      stateContent,
+      "state.json must be byte-identical after timeout (no resume token)",
+    )
+  } finally {
+    restoreCwd()
+    cleanup(root)
+  }
 })
+
+// ── Group I: V5-11 state byte-identity on timeout (CC-8) ──────────────────
+//
+// CC-8 is covered by the Group H test:
+// "real openReviewMcpApps: timeout path does NOT touch state.json (V5-11)".
+// That test writes a real state.json, calls the real openReviewMcpApps()
+// with an aborted signal, and asserts byte-identity after. Nothing else is
+// needed here.
 
 // ── Group J: Stubbed question/design_direction variants (CC-11) ───────────
 
