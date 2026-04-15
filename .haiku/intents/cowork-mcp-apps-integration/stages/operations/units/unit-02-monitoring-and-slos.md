@@ -9,9 +9,9 @@ inputs:
   - .haiku/knowledge/RUNBOOK.md
 status: active
 bolt: 1
-hat: ops-engineer
+hat: sre
 started_at: '2026-04-15T19:25:11Z'
-hat_started_at: '2026-04-15T19:25:11Z'
+hat_started_at: '2026-04-15T19:27:38Z'
 ---
 
 # Operational telemetry and SLOs for MCP Apps review path
