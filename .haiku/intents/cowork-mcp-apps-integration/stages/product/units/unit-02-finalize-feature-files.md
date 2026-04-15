@@ -15,7 +15,7 @@ inputs:
   - features/host-bridge-detection.feature
   - features/error-recovery.feature
   - features/accessibility-iframe.feature
-status: active
+status: completed
 bolt: 1
 hat: validator
 started_at: '2026-04-15T14:14:16Z'
@@ -29,6 +29,7 @@ outputs:
   - features/error-recovery.feature
   - features/accessibility-iframe.feature
   - knowledge/PRODUCT-UNIT-02-VALIDATION.md
+completed_at: '2026-04-15T14:25:00Z'
 ---
 
 # Finalize Gherkin behavioral specs
