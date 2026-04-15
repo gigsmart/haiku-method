@@ -10,11 +10,11 @@ inputs:
     stages/inception/units/unit-07-get-review-status-doc-scrub.knowledge/inventory.md
 outputs:
   - knowledge/unit-07-scoping-decisions.md
-status: pending
-bolt: 0
-hat: ''
-started_at: null
-hat_started_at: '2026-04-14T21:51:56Z'
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-15T04:29:11Z'
+hat_started_at: '2026-04-15T04:29:11Z'
 completed_at: null
 ---
 
