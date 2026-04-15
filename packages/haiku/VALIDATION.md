@@ -192,3 +192,25 @@ in `src/sentry.ts`) with two tags:
 | `review_transport_used` | `"mcp_apps"` / `"http_tunnel"` | Transport branch is entered |
 
 Filter on `host_supports_mcp_apps=true` in Sentry to isolate MCP Apps-specific issues.
+
+---
+
+## Operational runbook
+
+For step-by-step diagnostic and remediation commands, see
+[`.haiku/knowledge/RUNBOOK.md`](../../.haiku/knowledge/RUNBOOK.md) §&nbsp;"MCP Apps Review Path (Cowork)".
+
+Scenarios covered:
+
+- **iframe fails to load** — `App.callServerTool` or `resources/read` errors; how to
+  rebuild the review SPA and verify `REVIEW_APP_HTML` is correctly inlined.
+- **V5-10 host timeout** — unexpected `gate_review_host_timeout` events; how to increase
+  the AbortSignal timeout and capture protocol traces.
+- **HTTP fallback broken** — `hostSupportsMcpApps() === false` path fails; localtunnel
+  connectivity checks and `siteUrl` config verification.
+- **Session lost after FSM advance** — stale iframe after the gate completes; session
+  cleanup and MCP server restart procedure.
+- **Bundle size regression** — gzipped `REVIEW_APP_HTML` exceeds the 1MB budget; Vite
+  bundle analyzer workflow and remediation options.
+- **Standard operations** — service restart, rollback (`git revert` + rebuild), and
+  log collection commands.
