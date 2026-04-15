@@ -15,9 +15,9 @@ inputs:
   - .haiku/knowledge/ARCHITECTURE.md
 status: active
 bolt: 3
-hat: builder
+hat: reviewer
 started_at: '2026-04-15T16:05:33Z'
-hat_started_at: '2026-04-15T16:33:48Z'
+hat_started_at: '2026-04-15T16:55:24Z'
 model_original: sonnet
 ---
 
