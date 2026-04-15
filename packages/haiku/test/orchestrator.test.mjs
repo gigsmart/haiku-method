@@ -207,11 +207,41 @@ test("returns error for archived intent", () => {
 
 console.log("\n=== runNext: intent review gate ===")
 
-test("elaborate-to-execute gate uses intent_review context for unreviewed intent", () => {
+test("elaborate-to-execute gate auto-advances for unreviewed intent with auto review", () => {
   const { projDir, slug, intentDirPath } = createProject("intent-review-elab", {
     intent_reviewed: false,
     active_stage: "plan",
     stageConfig: { plan: { elaboration: "directed" } },
+  })
+  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
+  createUnit(intentDirPath, "plan", "unit-01-first")
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // review: auto → auto-advance, intent_review case returns intent_approved
+  assert.strictEqual(result.action, "intent_approved")
+  assert.strictEqual(result.to_phase, "execute")
+})
+
+test("elaborate-to-execute gate auto-advances for reviewed intent with auto review", () => {
+  const { projDir, slug, intentDirPath } = createProject("intent-reviewed-elab", {
+    intent_reviewed: true,
+    active_stage: "plan",
+    stageConfig: { plan: { elaboration: "directed" } },
+  })
+  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
+  createUnit(intentDirPath, "plan", "unit-01-first")
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // review: auto → auto-advance, already-reviewed returns advance_phase
+  assert.strictEqual(result.action, "advance_phase")
+  assert.strictEqual(result.to_phase, "execute")
+})
+
+test("elaborate-to-execute gate opens review UI for ask-review stages (intent_review)", () => {
+  const { projDir, slug, intentDirPath } = createProject("intent-review-ask", {
+    intent_reviewed: false,
+    active_stage: "plan",
+    stageConfig: { plan: { elaboration: "directed", review: "ask" } },
   })
   createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
   createUnit(intentDirPath, "plan", "unit-01-first")
@@ -223,11 +253,11 @@ test("elaborate-to-execute gate uses intent_review context for unreviewed intent
   assert.strictEqual(result.next_phase, "execute")
 })
 
-test("elaborate-to-execute gate uses normal context for reviewed intent", () => {
-  const { projDir, slug, intentDirPath } = createProject("intent-reviewed-elab", {
+test("elaborate-to-execute gate opens review UI for ask-review stages (normal)", () => {
+  const { projDir, slug, intentDirPath } = createProject("intent-reviewed-ask", {
     intent_reviewed: true,
     active_stage: "plan",
-    stageConfig: { plan: { elaboration: "directed" } },
+    stageConfig: { plan: { elaboration: "directed", review: "ask" } },
   })
   createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
   createUnit(intentDirPath, "plan", "unit-01-first")
@@ -451,11 +481,68 @@ test("advances phase when all units completed (auto review)", () => {
   createUnit(intentDirPath, "plan", "unit-01-only", { status: "completed", criteria: ["- [x] Done"] })
   process.chdir(projDir)
   const result = runNext(slug)
-  // Auto review advances phase or stage automatically
+  // Auto review advances phase or stage automatically — gate_review is the old broken behavior
   assert.ok(
-    result.action === "gate_review" || result.action === "advance_stage" || result.action === "start_stage" || result.action === "advance_phase",
-    `Expected gate_review/advance_stage/start_stage/advance_phase, got: ${result.action}`
+    result.action === "advance_stage" || result.action === "start_stage" || result.action === "advance_phase",
+    `Expected advance_stage/start_stage/advance_phase, got: ${result.action}`
   )
+})
+
+test("stage gate auto-advances for review: auto (phase: gate)", () => {
+  const { projDir, slug, intentDirPath } = createProject("gate-auto", {
+    active_stage: "plan",
+    stageConfig: { plan: { review: "auto" } },
+  })
+  createStageState(intentDirPath, "plan", { phase: "gate", status: "active" })
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // review: auto in continuous mode → auto-advance, not gate_review
+  assert.strictEqual(result.action, "advance_stage")
+  assert.strictEqual(result.next_stage, "build")
+  assert.strictEqual(result.gate_outcome, "advanced")
+})
+
+test("stage gate auto-advances to intent_complete for last stage with review: auto", () => {
+  const { projDir, slug, intentDirPath } = createProject("gate-auto-last", {
+    active_stage: "review",
+    stageConfig: { review: { review: "auto" } },
+  })
+  // Prior stages must be completed for the consistency check to accept active_stage: "review"
+  createStageState(intentDirPath, "plan", { phase: "gate", status: "completed", gate_outcome: "advanced" })
+  createStageState(intentDirPath, "build", { phase: "gate", status: "completed", gate_outcome: "advanced" })
+  createStageState(intentDirPath, "review", { phase: "gate", status: "active" })
+  process.chdir(projDir)
+  const result = runNext(slug)
+  assert.strictEqual(result.action, "intent_complete")
+})
+
+test("review: auto still opens gate_review in discrete mode (elaborate-to-execute)", () => {
+  const { projDir, slug, intentDirPath } = createProject("discrete-auto-elab", {
+    mode: "discrete",
+    intent_reviewed: true,
+    active_stage: "plan",
+    stageConfig: { plan: { elaboration: "directed", review: "auto" } },
+  })
+  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
+  createUnit(intentDirPath, "plan", "unit-01-first")
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // Discrete mode overrides auto → always gate_review
+  assert.strictEqual(result.action, "gate_review")
+})
+
+test("review: auto still opens gate_review in discrete mode (stage gate)", () => {
+  const { projDir, slug, intentDirPath } = createProject("discrete-auto-gate", {
+    mode: "discrete",
+    active_stage: "plan",
+    stageConfig: { plan: { review: "auto" } },
+  })
+  createStageState(intentDirPath, "plan", { phase: "gate", status: "active" })
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // Discrete mode overrides auto → always gate_review with external type
+  assert.strictEqual(result.action, "gate_review")
+  assert.strictEqual(result.gate_type, "external")
 })
 
 // ── runNext: skip_stages ──────────────────────────────────────────────────
@@ -498,6 +585,176 @@ stages: []
   const result = runNext("feat")
   assert.strictEqual(result.action, "error")
   assert.ok(result.message.includes("no stages"))
+})
+
+// ── runNext: safe intent repair ──────────────────────────────────────────
+
+console.log("\n=== runNext: safe intent repair ===")
+
+test("synthesizes completion for empty prior stages when active stage has units", () => {
+  // Simulates a migrated intent: active_stage=build but plan has no state.json
+  const { projDir, intentDirPath, slug } = createProject("repair-synthesize", {
+    active_stage: "build",
+    intent_reviewed: true,
+  })
+  // Only create state for build (the active stage) — plan has no state.json
+  createStageState(intentDirPath, "build", { phase: "elaborate", status: "active" })
+  createUnit(intentDirPath, "build", "unit-01-impl", { inputs: ["intent.md"] })
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // Should NOT reset to plan — should synthesize plan completion and proceed
+  assert.notStrictEqual(result.action, "error")
+  // The plan stage should now have a completed state.json
+  const planState = readJson(join(intentDirPath, "stages", "plan", "state.json"))
+  assert.strictEqual(planState.status, "completed")
+  assert.strictEqual(planState.phase, "gate")
+  assert.strictEqual(planState.gate_outcome, "advanced")
+})
+
+test("synthesizes completion for multiple empty prior stages", () => {
+  const stages = ["inception", "design", "build", "review"]
+  const { projDir, intentDirPath, slug } = createProject("repair-multi", {
+    active_stage: "build",
+    stages,
+  })
+  // Only build has state and units
+  createStageState(intentDirPath, "build", { phase: "elaborate", status: "active" })
+  createUnit(intentDirPath, "build", "unit-01-code", { inputs: ["intent.md"] })
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // inception and design should both be synthesized
+  const inceptionState = readJson(join(intentDirPath, "stages", "inception", "state.json"))
+  const designState = readJson(join(intentDirPath, "stages", "design", "state.json"))
+  assert.strictEqual(inceptionState.status, "completed")
+  assert.strictEqual(designState.status, "completed")
+})
+
+test("falls through to normal processing after clean repair", () => {
+  const { projDir, intentDirPath, slug } = createProject("repair-fallthrough", {
+    active_stage: "build",
+    intent_reviewed: true,
+  })
+  createStageState(intentDirPath, "build", { phase: "elaborate", status: "active" })
+  createUnit(intentDirPath, "build", "unit-01-work", { inputs: ["intent.md"] })
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // After repair, should fall through to normal elaborate handling
+  // (gate_review since units have inputs, or elaborate if collaborative)
+  assert.ok(
+    ["elaborate", "gate_review", "elaboration_insufficient"].includes(result.action),
+    `Expected normal action after repair, got: ${result.action}`
+  )
+  assert.strictEqual(result.stage, "build")
+})
+
+test("regresses phase to elaborate when units lack inputs", () => {
+  const { projDir, intentDirPath, slug } = createProject("repair-regress", {
+    active_stage: "build",
+    intent_reviewed: true,
+  })
+  // Build stage in execute phase but units missing inputs
+  createStageState(intentDirPath, "build", { phase: "execute", status: "active" })
+  // Create unit WITHOUT inputs (empty inputs array)
+  const unitsDir = join(intentDirPath, "stages", "build", "units")
+  mkdirSync(unitsDir, { recursive: true })
+  writeFileSync(join(unitsDir, "unit-01-legacy.md"), `---
+name: unit-01-legacy
+type: task
+status: pending
+depends_on: []
+bolt: 0
+hat: ""
+---
+
+Legacy unit without inputs.
+`)
+  process.chdir(projDir)
+  const result = runNext(slug)
+  assert.strictEqual(result.action, "safe_intent_repair")
+  assert.strictEqual(result.phase_regressed, true)
+  // Phase should be regressed in state.json
+  const buildState = readJson(join(intentDirPath, "stages", "build", "state.json"))
+  assert.strictEqual(buildState.phase, "elaborate")
+})
+
+test("does not regress phase when all units have inputs", () => {
+  const { projDir, intentDirPath, slug } = createProject("repair-no-regress", {
+    active_stage: "build",
+    intent_reviewed: true,
+  })
+  createStageState(intentDirPath, "build", { phase: "execute", status: "active" })
+  createUnit(intentDirPath, "build", "unit-01-good", {
+    inputs: ["intent.md", "knowledge/DISCOVERY.md"],
+    status: "pending",
+  })
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // Should NOT return safe_intent_repair — should fall through to normal execute
+  assert.notStrictEqual(result.action, "safe_intent_repair")
+  const buildState = readJson(join(intentDirPath, "stages", "build", "state.json"))
+  assert.strictEqual(buildState.phase, "execute")
+})
+
+test("skips completed units when checking for missing inputs", () => {
+  const { projDir, intentDirPath, slug } = createProject("repair-skip-completed", {
+    active_stage: "build",
+    intent_reviewed: true,
+  })
+  createStageState(intentDirPath, "build", { phase: "execute", status: "active" })
+  // One completed unit without inputs (legacy) — should be skipped
+  const unitsDir = join(intentDirPath, "stages", "build", "units")
+  mkdirSync(unitsDir, { recursive: true })
+  writeFileSync(join(unitsDir, "unit-01-done.md"), `---
+name: unit-01-done
+type: task
+status: completed
+depends_on: []
+bolt: 0
+hat: ""
+started_at: 2026-04-04T18:00:00Z
+completed_at: 2026-04-04T19:00:00Z
+---
+
+Done unit.
+`)
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // Should NOT regress — only completed units exist
+  assert.notStrictEqual(result.action, "safe_intent_repair")
+})
+
+test("flags stages with units as needing manual review", () => {
+  const stages = ["plan", "build", "review"]
+  const { projDir, intentDirPath, slug } = createProject("repair-manual", {
+    active_stage: "review",
+    stages,
+    intent_reviewed: true,
+  })
+  // plan has units but isn't completed
+  createStageState(intentDirPath, "plan", { phase: "elaborate", status: "active" })
+  createUnit(intentDirPath, "plan", "unit-01-plan-work")
+  // build is completed
+  createStageState(intentDirPath, "build", { phase: "gate", status: "completed", gate_outcome: "advanced" })
+  // review is the active stage with units
+  createStageState(intentDirPath, "review", { phase: "elaborate", status: "active" })
+  createUnit(intentDirPath, "review", "unit-01-review-work")
+  process.chdir(projDir)
+  const result = runNext(slug)
+  assert.strictEqual(result.action, "safe_intent_repair")
+  assert.ok(result.needs_manual_review.includes("plan"))
+})
+
+test("resets active_stage backwards when active stage has no units", () => {
+  // This is the normal consistency fix — no safe repair
+  const { projDir, intentDirPath, slug } = createProject("repair-normal-reset", {
+    active_stage: "build",
+  })
+  // No units in build, no state.json for plan
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // Should reset to plan (first incomplete stage) and start it
+  assert.strictEqual(result.action, "start_stage")
+  assert.strictEqual(result.stage, "plan")
 })
 
 // ── Cleanup ───────────────────────────────────────────────────────────────

@@ -47,16 +47,27 @@ description: Bidirectional comms provider — notifications out, signals in
 
 ## Sync: Gate Resolution via Comms
 
-For `await` gates, the comms provider can serve as the event signal:
+The comms provider can post gate notifications and receive replies, but the agent cannot use comms MCP tools to self-approve a gate. Gate advancement is controlled by the orchestrator through structural signals (branch merge detection, URL-based CLI probing), not by agent self-confirmation.
+
+For `await` gates where a comms signal is the expected resolution (e.g., a customer reply in a Slack thread), the flow is:
 
 ```
 1. Stage completes → post "Waiting for {event}" to channel
 2. User replies "customer responded" or reacts with ✅
-3. Next session: Claude checks the thread, sees confirmation
-4. Advances the gate
+3. User runs /haiku:pickup after the event occurs
+4. Orchestrator checks gate status and advances
 ```
 
-This turns the comms channel into a lightweight event bus for human-mediated events.
+For `await` gates where the user wants to approve locally after confirming the event occurred, the stage must have a compound gate `[await, ask]` — the `ask` component allows local approval through the review UI.
+
+### Comms as Notification, Not Signal Source
+
+Comms MCP tools (Slack, Teams, Discord) are used for:
+
+- **Outbound notifications** — posting gate status, intent completion, blockers
+- **Inbound context** — surfacing stakeholder feedback, thread replies relevant to active intents
+
+They are NOT used for gate advancement. The agent cannot confirm its own gate — that would be a process bypass.
 
 ## Provider Config
 
