@@ -18,11 +18,12 @@ outputs:
   - stages/security/artifacts/blue-team-owasp-coverage.md
   - stages/security/artifacts/security-reviewer-signoff-unit03.md
   - stages/security/artifacts/red-team-owasp-matrix.md
-status: active
+status: completed
 bolt: 1
 hat: security-reviewer
 started_at: '2026-04-15T19:52:12Z'
 hat_started_at: '2026-04-15T19:56:57Z'
+completed_at: '2026-04-15T19:57:35Z'
 ---
 
 # Unit 03 — OWASP Coverage Matrix
