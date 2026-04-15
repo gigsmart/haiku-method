@@ -42,6 +42,7 @@ import {
 	findHaikuRoot,
 	gitCommitState,
 	intentDir,
+	isGitRepo,
 	parseFrontmatter,
 	readJson,
 	setFrontmatterField,
@@ -198,22 +199,61 @@ function resolveStageMetadata(
 }
 
 // ── External review detection ─────────────────────────────────────────────
+//
+// Two-tier signal detection for external/await gates:
+//
+// Tier 1: Branch merge detection (structural). In git workflows, external
+//   review gates use a stage branch (`haiku/{slug}/{stage}`) that gets merged
+//   into the intent hub (`haiku/{slug}/main`) when the review is approved.
+//   `isBranchMerged()` detects this — including squash merges. This is the
+//   primary, tamper-resistant signal: the merge is a structural fact, not
+//   something the agent can self-assert.
+//
+// Tier 2: URL-based CLI probing (fallback). The orchestrator shells out to
+//   `gh` or `glab` to check PR/MR status when a review URL was recorded.
+//   Used when branch detection is unavailable (non-git workflows) or as a
+//   secondary check. Supports GitHub `reviewDecision` and GitLab `approved`.
+//
+// The agent never self-approves gates. If neither tier detects approval,
+// the orchestrator returns `awaiting_external_review` and the user must
+// run `/haiku:pickup` after the external review is actually approved.
 
 /**
- * Best-effort check if an external review URL has been approved.
- * Supports GitHub PRs (gh), GitLab MRs (glab), and generic URLs.
- * Returns true if approved/merged, false otherwise. Never throws.
+ * Tier 2 (fallback): URL-based synchronous check if an external review URL
+ * has been approved. Supports GitHub PRs (gh) and GitLab MRs (glab). Returns
+ * true if approved or merged, false otherwise. Never throws.
+ *
+ * This is the fallback detection path — Tier 1 is branch merge detection via
+ * `isBranchMerged()`, which is structural and tamper-resistant.
+ *
+ * For GitHub: checks both `reviewDecision` (APPROVED = reviews passed) and
+ * `state` (MERGED = already accepted). A PR with approved reviews that hasn't
+ * been merged yet still passes the gate — the review was approved, which is
+ * what the gate cares about.
+ *
+ * For GitLab: checks both approval status and merge state.
  */
 function checkExternalApproval(url: string): boolean {
 	try {
 		if (url.includes("github.com") && url.includes("/pull/")) {
-			// GitHub PR — check via gh CLI (argument array avoids shell injection)
-			const state = execFileSync(
+			// GitHub PR — check review decision AND merge state (argument array avoids shell injection)
+			const output = execFileSync(
 				"gh",
-				["pr", "view", url, "--json", "state", "-q", ".state"],
+				[
+					"pr",
+					"view",
+					url,
+					"--json",
+					"state,reviewDecision",
+					"-q",
+					"[.state, .reviewDecision]",
+				],
 				{ encoding: "utf8", stdio: "pipe" },
 			).trim()
-			return state === "MERGED" // CLOSED means rejected/abandoned, not approved
+			const parsed = JSON.parse(output) as [string, string]
+			const [state, reviewDecision] = parsed
+			// Gate passes if PR is merged OR if reviews are approved (even if not yet merged)
+			return state === "MERGED" || reviewDecision === "APPROVED"
 		}
 		if (url.includes("gitlab") && url.includes("/merge_requests/")) {
 			// GitLab MR — check via glab CLI (argument array avoids shell injection)
@@ -222,11 +262,14 @@ function checkExternalApproval(url: string): boolean {
 				["mr", "view", url, "--output", "json"],
 				{ encoding: "utf8", stdio: "pipe" },
 			).trim()
-			return (JSON.parse(output) as { state?: string }).state === "merged"
+			const mr = JSON.parse(output) as { state?: string; approved?: boolean }
+			// Gate passes if MR is merged OR if it has been approved
+			return mr.state === "merged" || mr.approved === true
 		}
-		// Unknown URL type — can't check automatically
+		// Unknown URL type — can't check via CLI
 		return false
 	} catch {
+		// CLI not available or network error
 		return false
 	}
 }
@@ -1357,6 +1400,11 @@ export function runNext(slug: string): OrchestratorAction {
 	//     - await → "external" (awaits external event after submission)
 	//   Note: continuous intents may have discrete branch isolation for external-review
 	//   stages (PR isolation), but the gate options still reflect the stage's review field.
+	//
+	//   Non-git environments: `external` gates fall back to `ask` because there is no
+	//   structural signal (branch merge) to enforce external review. Without git, the
+	//   only safe option is local human approval. Compound gates containing `external`
+	//   strip it and keep remaining types (e.g., [external, ask] → ask).
 	if (phase === "gate") {
 		const reviewType = resolveStageReview(studio, currentStage)
 		const stageIdx = studioStages.indexOf(currentStage)
@@ -1367,10 +1415,20 @@ export function runNext(slug: string): OrchestratorAction {
 		// A continuous intent with PR-isolated external-review stages should still show
 		// the stage's full gate options, not be forced to external-only.
 		const intentMode = (intent.mode as string) || "continuous"
+		const gitAvailable = isGitRepo()
 
 		// Determine gate type for the review UI
 		let effectiveGateType: string
-		if (intentMode === "discrete") {
+		if (!gitAvailable && reviewType.includes("external")) {
+			// Non-git environment: external gates have no structural signal (no branch
+			// merge to detect). Fall back to ask — local human approval is the only
+			// safe option. For compound gates like "external,ask", strip external.
+			const remaining = reviewType
+				.split(",")
+				.filter((t) => t !== "external")
+				.join(",")
+			effectiveGateType = remaining || "ask"
+		} else if (intentMode === "discrete") {
 			// Pure discrete intent: always submit for external review (PR per stage)
 			effectiveGateType = "external"
 		} else if (reviewType === "auto" || reviewType === "ask") {
@@ -1400,39 +1458,48 @@ export function runNext(slug: string): OrchestratorAction {
 
 		// Blocked on external review — check if it's been approved
 		if (gateOutcome === "blocked") {
-			const externalUrl = (stageState.external_review_url as string) || ""
-			if (externalUrl) {
-				// Best-effort: check if the external review was approved
-				const approved = checkExternalApproval(externalUrl)
-				if (approved) {
-					// External approval detected — advance
-					const path = stageStatePath(slug, currentStage)
-					const data = readJson(path)
-					data.gate_outcome = "advanced"
-					writeJson(path, data)
-					emitTelemetry("haiku.gate.resolved", {
-						intent: slug,
-						stage: currentStage,
-						gate_type: "external",
-						outcome: "approved",
-					})
-					// Fall through to advance logic below
-				} else {
-					return {
-						action: "awaiting_external_review",
-						intent: slug,
-						stage: currentStage,
-						external_review_url: externalUrl,
-						message: `Stage '${currentStage}' is awaiting external review at: ${externalUrl}. Run /haiku:pickup again after approval.`,
-					}
+			let approved = false
+
+			// Tier 1: Branch merge detection (structural, tamper-resistant)
+			if (isGitRepo()) {
+				const stageBranch = `haiku/${slug}/${currentStage}`
+				const mainline = `haiku/${slug}/main`
+				if (isBranchMerged(stageBranch, mainline)) {
+					approved = true
 				}
+			}
+
+			// Tier 2: URL-based CLI probing (fallback)
+			if (!approved) {
+				const externalUrl = (stageState.external_review_url as string) || ""
+				if (externalUrl) {
+					approved = checkExternalApproval(externalUrl)
+				}
+			}
+
+			if (approved) {
+				// External approval detected — advance
+				const path = stageStatePath(slug, currentStage)
+				const data = readJson(path)
+				data.gate_outcome = "advanced"
+				writeJson(path, data)
+				emitTelemetry("haiku.gate.resolved", {
+					intent: slug,
+					stage: currentStage,
+					gate_type: "external",
+					outcome: "approved",
+				})
+				// Fall through to advance logic below
 			} else {
-				// No URL recorded — ask the agent to provide it or manually advance
+				const externalUrl = (stageState.external_review_url as string) || ""
 				return {
 					action: "awaiting_external_review",
 					intent: slug,
 					stage: currentStage,
-					message: `Stage '${currentStage}' is awaiting external review. Provide the review URL via haiku_stage_set or run /haiku:revisit to re-enter the gate.`,
+					...(externalUrl ? { external_review_url: externalUrl } : {}),
+					message: externalUrl
+						? `Stage '${currentStage}' is awaiting external review at: ${externalUrl}. Neither branch merge detection nor CLI-based check detected approval yet. Run /haiku:pickup after the review is approved.`
+						: `Stage '${currentStage}' is awaiting external review but no review URL was recorded. Run /haiku:pickup after the review is approved.`,
 				}
 			}
 		}
@@ -2655,9 +2722,9 @@ function buildRunInstructions(
 			sections.push(
 				`## Awaiting External Review\n\n${
 					externalUrl
-						? `The stage is awaiting external review at: ${externalUrl}\n\n`
-						: "The stage is awaiting external review but no review URL has been recorded.\n\n"
-				}Ask the user for the status of the external review. If approved, call \`haiku_run_next { intent: "${slug}" }\` — the FSM will detect the approval and advance.\n\n${externalUrl ? "" : `If the user provides a review URL, pass it: \`haiku_run_next { intent: "${slug}", external_review_url: "<url>" }\`\n`}`,
+						? `The stage is awaiting external review at: ${externalUrl}`
+						: "The stage is awaiting external review but no review URL has been recorded."
+				}\n\nThe orchestrator checks for approval automatically (branch merge detection + URL-based CLI probing). Neither detected approval yet.\n\nInform the user that the stage is waiting on external review. After the review is approved, run \`/haiku:pickup\` to continue.`,
 			)
 			break
 		}
