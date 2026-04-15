@@ -39,6 +39,7 @@ import {
 	reportError,
 	reportFeedback,
 } from "./sentry.js"
+import { logSessionEvent } from "./session-metadata.js"
 import {
 	clearHeartbeat,
 	createDesignDirectionSession,
@@ -46,6 +47,8 @@ import {
 	createSession,
 	getSession,
 	hasPresenceLost,
+	notifySessionUpdate,
+	updateSession,
 	waitForSession,
 } from "./sessions.js"
 import type {
@@ -55,8 +58,10 @@ import type {
 } from "./sessions.js"
 import {
 	findHaikuRoot,
+	hostSupportsMcpApps,
 	parseFrontmatter,
 	readJson,
+	setFrontmatterField,
 	stageStatePath,
 	writeJson,
 } from "./state-tools.js"
@@ -171,6 +176,7 @@ const server = new Server(
 	},
 )
 
+import { openReviewMcpApps } from "./open-review-mcp-apps.js"
 import {
 	handleOrchestratorTool,
 	orchestratorToolDefs,
@@ -185,9 +191,17 @@ import {
 	setMcpServerInstance,
 	stateToolDefs,
 } from "./state-tools.js"
-import { REVIEW_RESOURCE_URI } from "./ui-resource.js"
+import { REVIEW_RESOURCE_URI, buildUiResourceMeta } from "./ui-resource.js"
 
 setMcpServerInstance(server)
+
+// Threading: AbortSignal from the current haiku_run_next tool call,
+// captured before handleOrchestratorTool so _openReviewAndWait can observe it.
+let _currentReviewSignal: AbortSignal | undefined = undefined
+
+// Threading: _meta.ui to attach to the tool result after _openReviewAndWait resolves.
+// Set by the MCP Apps branch of setOpenReviewHandler, cleared by handleToolCall.
+let _reviewResultMeta: { ui: { resourceUri: string } } | undefined = undefined
 
 server.setRequestHandler(ListPromptsRequestSchema, async () => ({
 	prompts: listPrompts(),
@@ -410,12 +424,62 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 				required: ["message"],
 			},
 		},
+		{
+			name: "haiku_cowork_review_submit",
+			description:
+				"Submit a review decision, question answer, or design-direction selection from the MCP Apps review SPA. " +
+				"Called by the host bridge when the user completes the review form.",
+			inputSchema: {
+				type: "object" as const,
+				properties: {
+					session_type: {
+						type: "string",
+						enum: ["review", "question", "design_direction"],
+					},
+					session_id: { type: "string", format: "uuid" },
+					decision: {
+						type: "string",
+						enum: ["approved", "changes_requested", "external_review"],
+						description: "Required when session_type is 'review'",
+					},
+					feedback: {
+						type: "string",
+						description:
+							"Required (may be empty) when session_type is 'review'",
+					},
+					answers: {
+						type: "array",
+						items: { type: "object" },
+						description: "Required (min 1) when session_type is 'question'",
+					},
+					archetype: {
+						type: "string",
+						description:
+							"Required (non-empty) when session_type is 'design_direction'",
+					},
+					parameters: {
+						type: "object",
+						additionalProperties: { type: "number" },
+						description: "Required when session_type is 'design_direction'",
+					},
+					annotations: {
+						type: "object",
+						description: "Optional",
+					},
+					comments: {
+						type: "string",
+						description: "Optional, design_direction only",
+					},
+				},
+				required: ["session_type", "session_id"],
+			},
+		},
 	],
 }))
 
 // Call tools — wrapped to trigger hot-swap after response when an update is staged
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-	const result = await handleToolCall(request)
+server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+	const result = await handleToolCall(request, extra.signal)
 
 	// After the response is written, check if we should yield to a new binary.
 	// setImmediate ensures the MCP SDK flushes the response first.
@@ -435,9 +499,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	return result
 })
 
-async function handleToolCall(request: {
-	params: { name: string; arguments?: Record<string, unknown> }
-}) {
+async function handleToolCall(
+	request: {
+		params: { name: string; arguments?: Record<string, unknown> }
+	},
+	signal?: AbortSignal,
+) {
 	const { name, arguments: args } = request.params
 
 	// Orchestration tools (async — gate_ask blocks until user reviews)
@@ -448,7 +515,21 @@ async function handleToolCall(request: {
 		name === "haiku_select_studio" ||
 		name === "haiku_intent_reset"
 	) {
-		return handleOrchestratorTool(name, (args ?? {}) as Record<string, unknown>)
+		_currentReviewSignal = signal
+		try {
+			const result = await handleOrchestratorTool(
+				name,
+				(args ?? {}) as Record<string, unknown>,
+			)
+			// Attach _meta if the MCP Apps review path set it
+			if (_reviewResultMeta) {
+				return { ...result, _meta: _reviewResultMeta }
+			}
+			return result
+		} finally {
+			_currentReviewSignal = undefined
+			_reviewResultMeta = undefined
+		}
 	}
 
 	// Feedback tool — submit user feedback to Sentry
@@ -803,6 +884,160 @@ async function handleToolCall(request: {
 		}
 	}
 
+	if (name === "haiku_cowork_review_submit") {
+		const ReviewAnnotationsSchema = z
+			.object({
+				screenshot: z.string().optional(),
+				pins: z
+					.array(
+						z.object({
+							x: z.number(),
+							y: z.number(),
+							text: z.string(),
+						}),
+					)
+					.optional(),
+				comments: z
+					.array(
+						z.object({
+							selectedText: z.string(),
+							comment: z.string(),
+							paragraph: z.number(),
+						}),
+					)
+					.optional(),
+			})
+			.optional()
+
+		const QuestionAnswerSchema = z.object({
+			question: z.string(),
+			selectedOptions: z.array(z.string()),
+			otherText: z.string().optional(),
+		})
+
+		const QuestionAnnotationsSchema = z
+			.object({
+				comments: z
+					.array(
+						z.object({
+							selectedText: z.string(),
+							comment: z.string(),
+							paragraph: z.number(),
+						}),
+					)
+					.optional(),
+			})
+			.optional()
+
+		const ReviewSubmitInput = z.discriminatedUnion("session_type", [
+			z.object({
+				session_type: z.literal("review"),
+				session_id: z.string().uuid(),
+				decision: z.enum(["approved", "changes_requested", "external_review"]),
+				feedback: z.string(),
+				annotations: ReviewAnnotationsSchema,
+			}),
+			z.object({
+				session_type: z.literal("question"),
+				session_id: z.string().uuid(),
+				answers: z.array(QuestionAnswerSchema).min(1),
+				feedback: z.string().optional(),
+				annotations: QuestionAnnotationsSchema,
+			}),
+			z.object({
+				session_type: z.literal("design_direction"),
+				session_id: z.string().uuid(),
+				archetype: z.string().min(1),
+				parameters: z.record(z.number()),
+				comments: z.string().optional(),
+				annotations: z
+					.object({
+						screenshot: z.string().optional(),
+						pins: z
+							.array(
+								z.object({
+									x: z.number(),
+									y: z.number(),
+									text: z.string(),
+								}),
+							)
+							.optional(),
+					})
+					.optional(),
+			}),
+		])
+
+		const parsed = ReviewSubmitInput.safeParse(args ?? {})
+		if (!parsed.success) {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: `Invalid input: ${parsed.error.message}`,
+					},
+				],
+				isError: true,
+			}
+		}
+		const input = parsed.data
+
+		// session_type: "question" and "design_direction" are stubbed for unit-04
+		if (
+			input.session_type === "question" ||
+			input.session_type === "design_direction"
+		) {
+			return {
+				content: [
+					{ type: "text" as const, text: "unimplemented — see unit-04" },
+				],
+				isError: true,
+			}
+		}
+
+		// review path
+		const session = getSession(input.session_id)
+		if (!session) {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: `Session not found: ${input.session_id}`,
+					},
+				],
+				isError: true,
+			}
+		}
+		if (session.session_type !== input.session_type) {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: `session_type mismatch: expected ${session.session_type}, got ${input.session_type}`,
+					},
+				],
+				isError: true,
+			}
+		}
+		if (session.status !== "pending") {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: `Session already closed: ${input.session_id}`,
+					},
+				],
+				isError: true,
+			}
+		}
+		updateSession(input.session_id, {
+			status: "decided",
+			decision: input.decision,
+			feedback: input.feedback,
+			annotations: input.annotations,
+		})
+		return { content: [{ type: "text" as const, text: '{"ok":true}' }] }
+	}
+
 	return {
 		content: [{ type: "text" as const, text: `Unknown tool: ${name}` }],
 		isError: true,
@@ -814,6 +1049,22 @@ async function handleToolCall(request: {
 // without the agent needing to call open_review separately.
 setOpenReviewHandler(
 	async (intentDirRel: string, reviewType: string, gateType?: string) => {
+		if (hostSupportsMcpApps()) {
+			// ── MCP Apps arm (unit-03) ──────────────────────────────────────────
+			// Body extracted to ./open-review-mcp-apps.ts so it can be unit
+			// tested directly. Pass the AbortSignal captured by handleToolCall
+			// and a setter callback for the module-scoped _reviewResultMeta.
+			return openReviewMcpApps({
+				intentDirRel,
+				reviewType,
+				gateType,
+				signal: _currentReviewSignal,
+				setReviewResultMeta: (meta) => {
+					_reviewResultMeta = meta
+				},
+			})
+		}
+		// ── HTTP + tunnel + browser arm (existing — byte-identical to main) ──
 		const intentDirAbs = resolve(process.cwd(), intentDirRel)
 		const intent = await parseIntent(intentDirAbs)
 		if (!intent) throw new Error("Could not parse intent")
