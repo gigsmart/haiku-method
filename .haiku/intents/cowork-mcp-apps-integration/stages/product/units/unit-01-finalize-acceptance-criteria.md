@@ -14,6 +14,10 @@ bolt: 1
 hat: product
 started_at: '2026-04-15T13:53:30Z'
 hat_started_at: '2026-04-15T13:53:30Z'
+outputs:
+  - knowledge/DATA-CONTRACTS.md
+  - >-
+    ../../worktrees/cowork-mcp-apps-integration/unit-01-finalize-acceptance-criteria/.haiku/intents/cowork-mcp-apps-integration/knowledge/ACCEPTANCE-CRITERIA.md
 ---
 
 # Finalize ACCEPTANCE-CRITERIA.md
