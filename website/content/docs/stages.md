@@ -221,6 +221,25 @@ review-agents-include:
 
 The included agents run alongside the stage's own review agents during adversarial review. For example, the development stage includes the design stage's consistency and accessibility agents to verify the implementation respects the design intent.
 
+## Phase Overrides
+
+Stages can customize behavior for specific lifecycle phases by adding files to a `phases/` subdirectory:
+
+```
+plugin/studios/{name}/stages/{stage}/phases/
+├── ELABORATION.md    # Criteria guidance, wireframe fidelity, skip/add steps
+└── EXECUTION.md      # Builder focus, reviewer focus, completion signals
+```
+
+These override files are injected by the orchestrator at the corresponding phase:
+
+- **ELABORATION.md** — Injected during the elaborate phase. Can define criteria guidance specific to this stage (e.g., design criteria vs. product criteria), configure wireframe fidelity, or skip/add elaboration steps via frontmatter fields (`skip`, `add`, `wireframe_fidelity`, `criteria_focus`).
+- **EXECUTION.md** — Injected during execution (`start_unit`, `continue_unit`, `start_units`). Typically defines builder focus (what to prioritize), reviewer focus (what to check), and a completion signal for the stage's execution phase.
+
+Not all stages need phase overrides — only stages where the default elaboration or execution behavior needs stage-specific customization. In the software studio, the `design` and `product` stages use phase overrides to tailor criteria guidance and elaboration steps to their domains.
+
+Project-level overrides follow the same path convention: `.haiku/studios/{studio}/stages/{stage}/phases/ELABORATION.md`.
+
 ## The requires/produces Pipeline
 
 Stages can declare **inputs** (what they need from earlier stages) and produce **outputs** (artifacts in the stage's outputs directory). This creates a pipeline:
@@ -277,8 +296,9 @@ To add a custom stage to a studio:
 2. Write `STAGE.md` with frontmatter
 3. Create a `hats/` subdirectory with per-hat instruction files
 4. Create a `review-agents/` subdirectory with per-agent review mandate files
-5. Add the stage name to the studio's `stages` list in `STUDIO.md`
-6. If this stage should verify upstream work, add entries to `review-agents-include`
+5. Optionally create a `phases/` subdirectory with `ELABORATION.md` and/or `EXECUTION.md` to customize phase behavior
+6. Add the stage name to the studio's `stages` list in `STUDIO.md`
+7. If this stage should verify upstream work, add entries to `review-agents-include`
 
 Example custom stage:
 

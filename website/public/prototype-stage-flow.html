@@ -2985,9 +2985,9 @@ function renderStudio() {
           if (slugs.length === 0) return ""
           return `
             <div class="elab-step">
-              <div class="step-label">② discovery artifacts <span style="text-transform:none; letter-spacing:0; color:#7c3aed; font-weight:600;">· FSM fans out one ↗ subagent per artifact</span></div>
+              <div class="step-label">② discovery artifacts <span style="text-transform:none; letter-spacing:0; color:#7c3aed; font-weight:600;">· FSM fans out one ↗ subagent per artifact, each receiving its template in <code>&lt;discovery-template&gt;</code> XML tags with Content Guide + Quality Signals</span></div>
               <div class="elab-discovery">
-                ${slugs.map(s => `<span class="disc artifact" data-artifact="${lower}.${s}" title="${escHTML(defs[s].path)} — orchestrator instructs spawning a Task subagent to research + produce this artifact">${escHTML(s)} <span style="color:#7c3aed; font-weight:700;">↗</span></span>`).join("")}
+                ${slugs.map(s => `<span class="disc artifact" data-artifact="${lower}.${s}" title="${escHTML(defs[s].path)} — orchestrator embeds the template in <discovery-template> XML tags per-subagent (Content Guide + Quality Signals), not a generic relay">${escHTML(s)} <span style="color:#7c3aed; font-weight:700;">↗</span></span>`).join("")}
               </div>
             </div>
           `
@@ -3660,7 +3660,10 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
         { hook: "MCP tool result", target: "agent's `tool_use_result`", what: "**blocking** until user clicks; on resolve the click outcome (`approved`/`changes_requested`)" },
         { hook: "_openReviewAndWait", target: "Review web UI", what: "the elaborated unit specs + DAG + `inputs:` declarations are rendered for human inspection" },
         { hook: "inject-context", target: "next agent prompt prepend (after click)", what: "if approved: `phase=execute`, first wave's units. if rejected: revision instructions + previous attempt's content" },
-        { hook: "FSM elaborate-tick instruction", target: "agent prompt (this same `haiku_run_next` call)", what: "**Discovery Fan-Out (REQUIRED)** — orchestrator enumerates the stage's `discovery/*.md` templates and instructs the agent to spawn one `Task` subagent per artifact, in parallel, for research + production. Lives in `orchestrator.ts` elaborate-case `tool_use_result`." },
+        { hook: "FSM elaborate-tick instruction", target: "agent prompt (this same `haiku_run_next` call)", what: "**Discovery Fan-Out (REQUIRED)** — orchestrator enumerates the stage's `discovery/*.md` templates and instructs the agent to spawn one `Task` subagent per artifact, in parallel, for research + production. Each subagent receives its template embedded in `<discovery-template>` XML tags with explicit Content Guide and Quality Signals (per-subagent, not generic relay). Lives in `orchestrator.ts` elaborate-case `tool_use_result`." },
+        { hook: "FSM elaborate-tick instruction", target: "agent prompt (this same `haiku_run_next` call)", what: "**`<discovery-template>` per-subagent embedding** — each discovery subagent gets its own `<discovery-template>` XML block containing the template's Content Guide and Quality Signals sections, ensuring targeted instructions rather than a blanket relay of all templates." },
+        { hook: "readPhaseOverride()", target: "agent prompt prepend", what: "**Phase override injection** — `phases/ELABORATION.md` is read via `readPhaseOverride()` and injected during elaborate, providing studio-level elaboration guidance." },
+        { hook: "readStageArtifactDefs()", target: "agent prompt prepend", what: "**Stage Output Expectations** — output definitions from `outputs/*.md` are injected as 'Stage Output Expectations' so the agent can plan units with knowledge of what artifacts each stage must produce (name, location, format, content guide)." },
       ],
       action: "gate_review",
       summary: `elaboration complete — open ${isFirst ? "intent_review" : "elaborate_to_execute"} gate`,
@@ -3690,6 +3693,8 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
         { hook: "MCP tool result", target: "agent's `tool_use_result`", what: "first wave's unit list, target hat, target unit's worktree path" },
         { hook: "inject-context", target: "next agent prompt prepend", what: "current unit's frontmatter, the active hat's `hats/{hat}.md` content, allowed file paths" },
         { hook: "inject-state-file", target: "`.haiku/_inject.md`", what: "full state.json + active unit metadata for the agent to consult" },
+        { hook: "readPhaseOverride()", target: "agent prompt prepend", what: "**Phase override injection** — `phases/EXECUTION.md` is read via `readPhaseOverride()` and injected during `start_unit`/`continue_unit`/`start_units`, providing studio-level execution guidance." },
+        { hook: "readStageArtifactDefs()", target: "agent prompt prepend", what: "**Stage Output Requirements** — `readStageArtifactDefs()` loads output definitions from `outputs/*.md` and injects them as 'Stage Output Requirements' with name, location, format, and content guide per artifact." },
       ],
       action: "advance_phase",
       summary: "user approved specs — start wave 1",
@@ -3709,7 +3714,7 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
         ...(isFirst ? [{ path: `.haiku/intents/{slug}/intent.md`, change: "frontmatter: `intent_reviewed: true` (first stage only)" }] : []),
         { path: `.haiku/worktrees/{unit}/` , change: `git worktree created for each unit in wave 1 (${(stage.waves[0]?.units ?? []).join(", ")})` },
       ],
-      instructions: "Spawn the first wave of units in parallel. Each unit runs in its own worktree under `.haiku/worktrees/{unit}`. The agent dons the first hat for the first unit it touches.",
+      instructions: "Spawn the first wave of units in parallel. Each unit runs in its own worktree under `.haiku/worktrees/{unit}`. The agent dons the first hat for the first unit it touches. Output definitions from `outputs/*.md` are injected as 'Stage Output Requirements' (name, location, format, content guide) so each subagent knows what artifacts to produce.",
     },
     "hat-to-hat": {
       injection: [
@@ -3794,8 +3799,8 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
     "review-quality-to-agents": {
       injection: [
         { hook: "MCP tool result", target: "agent's `tool_use_result`", what: "**on failure:** structured findings list (file/line/message). **on success:** review-agent list to dispatch" },
-        { hook: "inject-context", target: "next agent prompt prepend", what: "**on failure:** the failing unit's worktree path + structured findings. **on success:** each review-agent's `review-agents/{name}.md` content per spawned subagent" },
-        { hook: "subagent-context", target: "each parallel review-agent subagent", what: "scoped to the stage's outputs only (read-only access to artifacts)" },
+        { hook: "inject-context", target: "next agent prompt prepend", what: "**on failure:** the failing unit's worktree path + structured findings. **on success:** each review-agent's instructions wrapped in `<review-agent-instructions>` XML tags per spawned subagent. Cross-stage agents loaded via `review-agents-include` field in STAGE.md." },
+        { hook: "subagent-context", target: "each parallel review-agent subagent", what: "scoped to the stage's outputs only (read-only access to artifacts). A `review_elaboration` action exists for pre-gate elaboration review." },
       ],
       action: "fix_quality_gates _or_ advance_review",
       summary: "branch on the gate outcome that just ran",
@@ -3823,7 +3828,7 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
       writes: [
         { path: `.haiku/intents/{slug}/stages/${stageLower}/state.json`, change: "on success: `quality_gates_passed: true`. on failure: `quality_gate_failures: [...]` (cleared on next pass)" },
       ],
-      instructions: `This is the same \`haiku_run_next\` tick from above, returning AFTER gates have run. **On failure** the agent gets back \`fix_quality_gates\` with structured findings — agent fixes in place, calls \`haiku_run_next\` again, gates rerun. **On success** the agent gets back \`advance_review\` and dispatches the parallel review-agents (${stage.reviewAgents.map(a => `\`${a}\``).join(", ")}).`,
+      instructions: `This is the same \`haiku_run_next\` tick from above, returning AFTER gates have run. **On failure** the agent gets back \`fix_quality_gates\` with structured findings — agent fixes in place, calls \`haiku_run_next\` again, gates rerun. **On success** the agent gets back \`advance_review\` and dispatches the parallel review-agents (${stage.reviewAgents.map(a => `\`${a}\``).join(", ")}). Each agent's instructions are wrapped in \`<review-agent-instructions>\` XML tags per-subagent. Cross-stage agents are loaded via the \`review-agents-include\` field in STAGE.md. A separate \`review_elaboration\` action handles pre-gate elaboration review.`,
     },
     "review-to-gate": {
       injection: [
@@ -4608,7 +4613,7 @@ const TOOL_SPECS = {
       intent: "string · the intent slug (e.g. `add-billing`)",
     },
     output: {
-      action: "string · `start_stage` | `gate_review` | `start_unit(s)` | `advance_phase` | `advance_review` | `fix_quality_gates` | `advance_stage` | `stage_complete_discrete` | `intent_complete`",
+      action: "string · lifecycle: `select_studio` | `start_stage` | `elaborate` | `start_unit` | `continue_unit` | `start_units` | `review` | `review_elaboration` | `gate_review` | `advance_phase` | `advance_stage` | `intent_approved` | `intent_complete` | `complete` | `composite_run_stage` | `fix_quality_gates` | `changes_requested` | `external_review_requested` | `awaiting_external_review` · blocked: `design_direction_required` | `blocked` | `outputs_missing` | `discovery_missing` | `elaboration_insufficient` | `spec_validation_failed` | `unresolved_dependencies` | `dag_cycle_detected` | `unit_naming_invalid` | `unit_inputs_missing` | `inputs_missing` | `gate_blocked` | `error`",
       context: "object · action-specific payload (next phase, hat, units, gate context, etc. — see the per-transition pills throughout this diagram)",
     },
     writes: ["Depends on the action returned. Click any of the labeled `haiku_run_next` pills above to see the exact `state.json` / `intent.md` / unit-frontmatter mutations for that specific tick."],

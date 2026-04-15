@@ -32,7 +32,7 @@ import {
 } from "./git-worktree.js"
 import { escalate } from "./model-selection.js"
 import { logSessionEvent, writeHaikuMetadata } from "./session-metadata.js"
-import { listStudios, readReflectionDefs, resolveStudio } from "./studio-reader.js"
+import { listStudios, readOperationDefs, readReflectionDefs, resolveStudio } from "./studio-reader.js"
 import { emitTelemetry } from "./telemetry.js"
 import { MCP_VERSION, getPluginVersion } from "./version.js"
 
@@ -3094,6 +3094,18 @@ export function handleStateTool(
 				out += "3. Process observations\n"
 				out += "4. Blocker analysis\n"
 			}
+			// Studio operations — surface available post-intent operations
+			if (studio) {
+				const ops = readOperationDefs(studio)
+				if (Object.keys(ops).length > 0) {
+					out += "\n## Available Operations\n\n"
+					out += "The following post-delivery operations are defined for this studio:\n\n"
+					for (const [name, content] of Object.entries(ops)) {
+						out += `### ${name}\n\n${content}\n\n`
+					}
+				}
+			}
+
 			out += "\n## Output\n"
 			out +=
 				"Write reflection.md and settings-recommendations.md to the intent directory.\n"

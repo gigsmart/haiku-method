@@ -2279,9 +2279,21 @@ function buildRunInstructions(
 					fanOutText += `### Subagent: \`${name}\`\n\n<discovery-template>\n${content}\n</discovery-template>\n\nSpawn a Task subagent with the template above included verbatim in its prompt. The subagent must research the relevant axis and write the populated document to the stage's discovery path. Use the template's Content Guide as the structure and Quality Signals as the acceptance bar.\n\n`
 				}
 
-				fanOutText += `Each subagent inherits worktree scoping via the \`subagent-context\` hook. When all subagents return, proceed to the unit-decomposition step using the produced artifacts as your inputs.`
+				fanOutText += `**Note:** During elaboration, the subagent-context hook does not fire (no active unit/hat). Each subagent receives its full context from the prompt you construct — include the discovery template above, the intent description, and the stage scope. When all subagents return, proceed to the unit-decomposition step using the produced artifacts as your inputs.`
 
 				sections.push(fanOutText)
+			}
+
+			// Output template definitions — inform the elaboration agent what this stage must produce
+			{
+				const artifactDefs = readStageArtifactDefs(studio, stage)
+				const outputDefs = artifactDefs.filter(d => d.kind === "output")
+				if (outputDefs.length > 0) {
+					sections.push("## Stage Output Expectations\n\nThis stage must ultimately produce the following outputs during execution. Plan units accordingly:\n")
+					for (const od of outputDefs) {
+						sections.push(`### ${od.name}${od.required ? " (REQUIRED)" : ""}\n**Location:** \`${od.location}\` | **Format:** ${od.format}\n\n${od.body}`)
+					}
+				}
 			}
 
 			// Detect design stages and add MCP provider instructions
