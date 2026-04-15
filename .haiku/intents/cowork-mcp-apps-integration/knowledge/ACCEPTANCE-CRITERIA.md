@@ -614,3 +614,19 @@ One note for the feature-file author: V3-01 and V3-07 both set up the narrow bre
 context. A shared Gherkin `Background` step — `Given the iframe root observes a width
 of 400px` — would eliminate duplicated `Given` setup across those scenarios and the
 narrow-breakpoint variants in V6-04 and V6-05.
+
+---
+
+## Validation log
+
+_validator hat · unit-01-finalize-acceptance-criteria · bolt 1 · 2026-04-15_
+
+| Criterion | Verdict | Evidence |
+|---|---|---|
+| 1. Every inception/design criterion referenced | PASS | All 8 inception units (01–08) and 5 design units (01–05) appear in the traceability index. Unit-07 (doc-scrub) explicitly documented as needing no new AC items in the audit log. |
+| 2. Every AC item has a `Test:` line | PASS | `grep -c '^Test:' ACCEPTANCE-CRITERIA.md` = 55; `grep -c AC items` = 55. Exact 1:1 match. |
+| 3. Variability brief lists all six axes | PASS | All six `### Axis N` headers present: capability negotiation, workspace roots, iframe breakpoint, decision outcome, session type, connection state. |
+| 4. P0/P1 split justified per item | PASS | Every AC item carries an inline `(P0)` or `(P1)` label. Prioritization section summarizes rationale (P0 = required for v1 ship; P1 = follow-up). 48 P0, 10 P1 — split aligns with MCP Apps core-path vs. enhanced-UX boundary. |
+| 5. No env-var coupling | PASS | `rg 'CLAUDE_CODE_IS_COWORK\|isCoworkHost' ACCEPTANCE-CRITERIA.md` hits only appear in GR-05 and V1-05 ban-text and their `Test:` grep commands — zero behavioral coupling. |
+
+**APPROVED** — no gaps found. Stage may advance.
