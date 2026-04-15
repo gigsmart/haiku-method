@@ -35,9 +35,25 @@ process.env.PATH = `${join(tmp, "fake-bin")}:${process.env.PATH}`
 let passed = 0
 let failed = 0
 
+// Supports both sync and async callbacks. Async tests are awaited via the
+// returned promise so failures in async `fn` surface as failed instead of
+// silently passing (a sync catch wouldn't see rejections from an unawaited
+// promise).
 function test(name, fn) {
 	try {
-		fn()
+		const result = fn()
+		if (result && typeof result.then === "function") {
+			return result.then(
+				() => {
+					passed++
+					console.log(`  ✓ ${name}`)
+				},
+				(e) => {
+					failed++
+					console.log(`  ✗ ${name}: ${e.message}`)
+				},
+			)
+		}
 		passed++
 		console.log(`  ✓ ${name}`)
 	} catch (e) {
@@ -218,7 +234,7 @@ ${(opts.criteria || ["- [ ] Default criteria"]).join("\n")}
 		return JSON.parse(result.content[0].text)
 	}
 
-	test("haiku_intent_create rejects missing title", async () => {
+	await test("haiku_intent_create rejects missing title", async () => {
 		createIntentCreateCwd("missing-title")
 		const result = await handleOrchestratorTool("haiku_intent_create", {
 			description:
@@ -228,7 +244,7 @@ ${(opts.criteria || ["- [ ] Default criteria"]).join("\n")}
 		assert.strictEqual(body.error, "missing_title")
 	})
 
-	test("haiku_intent_create rejects empty title", async () => {
+	await test("haiku_intent_create rejects empty title", async () => {
 		createIntentCreateCwd("empty-title")
 		const result = await handleOrchestratorTool("haiku_intent_create", {
 			title: "   ",
@@ -238,7 +254,7 @@ ${(opts.criteria || ["- [ ] Default criteria"]).join("\n")}
 		assert.strictEqual(body.error, "invalid_title")
 	})
 
-	test("haiku_intent_create rejects overlong title", async () => {
+	await test("haiku_intent_create rejects overlong title", async () => {
 		createIntentCreateCwd("overlong-title")
 		const overlong =
 			"This is an extremely long title that clearly exceeds the eighty character limit established by the schema"
@@ -251,7 +267,7 @@ ${(opts.criteria || ["- [ ] Default criteria"]).join("\n")}
 		assert.ok(body.message.includes(String(overlong.length)))
 	})
 
-	test("haiku_intent_create rejects multi-line title", async () => {
+	await test("haiku_intent_create rejects multi-line title", async () => {
 		createIntentCreateCwd("multiline-title")
 		const result = await handleOrchestratorTool("haiku_intent_create", {
 			title: "Add archivable\nintents",
@@ -262,7 +278,7 @@ ${(opts.criteria || ["- [ ] Default criteria"]).join("\n")}
 		assert.ok(body.message.toLowerCase().includes("single line"))
 	})
 
-	test("haiku_intent_create writes distinct title and description", async () => {
+	await test("haiku_intent_create writes distinct title and description", async () => {
 		const dir = createIntentCreateCwd("happy-path")
 		const result = await handleOrchestratorTool("haiku_intent_create", {
 			title: "Add archivable intents",
