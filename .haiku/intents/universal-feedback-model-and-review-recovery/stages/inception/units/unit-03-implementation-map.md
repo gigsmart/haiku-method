@@ -9,6 +9,11 @@ inputs:
   - intent.md
   - knowledge/DISCOVERY.md
   - knowledge/DESIGN-DECISIONS.md
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-15T20:43:00Z'
+hat_started_at: '2026-04-15T20:43:00Z'
 ---
 
 # Implementation Map
