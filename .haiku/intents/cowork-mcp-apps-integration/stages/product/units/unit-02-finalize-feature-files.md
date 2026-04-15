@@ -28,6 +28,7 @@ outputs:
   - features/host-bridge-detection.feature
   - features/error-recovery.feature
   - features/accessibility-iframe.feature
+  - knowledge/PRODUCT-UNIT-02-VALIDATION.md
 ---
 
 # Finalize Gherkin behavioral specs
