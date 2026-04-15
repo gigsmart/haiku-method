@@ -16,6 +16,7 @@ started_at: '2026-04-15T13:53:30Z'
 hat_started_at: '2026-04-15T14:10:13Z'
 outputs:
   - knowledge/ACCEPTANCE-CRITERIA.md
+  - knowledge/DATA-CONTRACTS.md
 ---
 
 # Finalize ACCEPTANCE-CRITERIA.md
