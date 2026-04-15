@@ -15,9 +15,9 @@ outputs:
   - knowledge/OWASP-COVERAGE.md
 status: active
 bolt: 1
-hat: threat-modeler
+hat: red-team
 started_at: '2026-04-15T19:52:12Z'
-hat_started_at: '2026-04-15T19:52:12Z'
+hat_started_at: '2026-04-15T19:55:29Z'
 ---
 
 # Unit 03 — OWASP Coverage Matrix
