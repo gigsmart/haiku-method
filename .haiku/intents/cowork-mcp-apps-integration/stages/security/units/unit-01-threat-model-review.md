@@ -9,7 +9,7 @@ inputs:
   - knowledge/DATA-CONTRACTS.md
   - .haiku/knowledge/THREAT-MODEL.md
 outputs:
-  - .haiku/knowledge/THREAT-MODEL.md
+  - knowledge/unit-01-threat-model-assessment.md
 status: active
 bolt: 1
 hat: threat-modeler
