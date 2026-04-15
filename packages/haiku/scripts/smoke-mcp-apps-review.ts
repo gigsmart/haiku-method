@@ -19,11 +19,11 @@ import { setTimeout as delay } from "node:timers/promises"
 import {
   handleOrchestratorTool,
   setOpenReviewHandler,
-} from "../src/orchestrator.ts"
-import { openReviewMcpApps } from "../src/open-review-mcp-apps.ts"
-import { listSessions, updateSession } from "../src/sessions.ts"
-import { setMcpServerInstance } from "../src/state-tools.ts"
-import { clearStudioCache } from "../src/studio-reader.ts"
+} from "../src/orchestrator.js"
+import { openReviewMcpApps } from "../src/open-review-mcp-apps.js"
+import { listSessions, updateSession } from "../src/sessions.js"
+import { setMcpServerInstance } from "../src/state-tools.js"
+import { clearStudioCache } from "../src/studio-reader.js"
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
