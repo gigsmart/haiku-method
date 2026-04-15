@@ -1,0 +1,17 @@
+related:
+  - product-strategy
+  - sales
+  - documentation
+turns:
+  - role: user
+    text: "Relaunch the pricing page. The current one buries enterprise."
+  - role: agent
+    text: "Three tiers like today, or restructure the plans too?"
+  - role: user
+    text: "Three tiers, but rename Growth → Team, and add a real Enterprise tier with a contact-sales CTA."
+  - role: agent
+    text: "Per-seat, flat, or usage-based for the Team tier?"
+  - role: user
+    text: "Per-seat with a platform fee. Usage add-ons for storage and API calls."
+  - role: agent
+    text: "Got it — three-tier page with a real Enterprise row and per-seat + usage Team pricing."

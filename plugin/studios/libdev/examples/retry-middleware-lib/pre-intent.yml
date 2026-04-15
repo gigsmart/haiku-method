@@ -1,0 +1,17 @@
+related:
+  - software
+  - documentation
+  - security-assessment
+turns:
+  - role: user
+    text: "Extract our retry logic into an open-source middleware library."
+  - role: agent
+    text: "Which runtimes — Node only, or also Bun and Deno?"
+  - role: user
+    text: "Node and Bun. Skip Deno for now."
+  - role: agent
+    text: "Backoff strategies — exponential, decorrelated jitter, user-defined?"
+  - role: user
+    text: "Exponential with decorrelated jitter as the default. Let users plug their own."
+  - role: agent
+    text: "Got it — Node + Bun, decorrelated-jitter default, pluggable strategies."

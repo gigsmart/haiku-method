@@ -1,0 +1,17 @@
+related:
+  - software
+  - gamedev
+  - security-assessment
+turns:
+  - role: user
+    text: "Certify the mobile app v4.0 for release — iOS and Android."
+  - role: agent
+    text: "Regression scope — full matrix, or smoke + impacted areas?"
+  - role: user
+    text: "Smoke + impacted areas. Full matrix takes too long for the release cadence."
+  - role: agent
+    text: "Accessibility and localization covered separately or part of this cert?"
+  - role: user
+    text: "A11y in this cert. Localization has its own track."
+  - role: agent
+    text: "Got it — smoke + impacted + a11y for iOS and Android v4.0 certification."

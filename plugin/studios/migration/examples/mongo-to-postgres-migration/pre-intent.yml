@@ -1,0 +1,17 @@
+related:
+  - data-pipeline
+  - software
+  - security-assessment
+turns:
+  - role: user
+    text: "Move the user service from MongoDB to Postgres."
+  - role: agent
+    text: "Is this a clean cut-over or a dual-write period first?"
+  - role: user
+    text: "Dual-write for 2 weeks, then read from Postgres, then drop Mongo."
+  - role: agent
+    text: "What's the schema story — flatten the nested documents or relational model?"
+  - role: user
+    text: "Relational. The nesting was accidental; the real model has foreign keys."
+  - role: agent
+    text: "Got it — dual-write migration to a proper relational model, 2-week overlap."

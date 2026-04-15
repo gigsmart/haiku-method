@@ -1,0 +1,17 @@
+related:
+  - customer-success
+  - marketing
+  - finance
+turns:
+  - role: user
+    text: "Close the Acme Corp deal — they're in legal review."
+  - role: agent
+    text: "What's the deal size and contract length?"
+  - role: user
+    text: "$480K ACV, 3-year term with an annual ramp."
+  - role: agent
+    text: "Main blockers in legal — redlines, DPA, indemnity?"
+  - role: user
+    text: "DPA. They want unlimited liability on data breach and we cap at annual fees."
+  - role: agent
+    text: "Got it — DPA unlimited-liability pushback is the live issue, going to negotiation with legal."
