@@ -437,7 +437,9 @@ async function handleToolCall(request: {
 		name === "haiku_revisit" ||
 		name === "haiku_intent_create" ||
 		name === "haiku_select_studio" ||
-		name === "haiku_intent_reset"
+		name === "haiku_intent_reset" ||
+		name === "haiku_intent_archive" ||
+		name === "haiku_intent_unarchive"
 	) {
 		return handleOrchestratorTool(name, (args ?? {}) as Record<string, unknown>)
 	}

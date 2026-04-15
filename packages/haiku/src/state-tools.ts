@@ -21,6 +21,7 @@ import {
 	addTempWorktree,
 	commitAndPushFromWorktree,
 	consolidateStageBranches,
+	fetchOrigin,
 	getCurrentBranch,
 	getMainlineBranch,
 	isBranchMerged,
@@ -32,6 +33,7 @@ import {
 	removeTempWorktree,
 } from "./git-worktree.js"
 import { escalate } from "./model-selection.js"
+import { validateSlugArgs } from "./prompts/helpers.js"
 import { logSessionEvent, writeHaikuMetadata } from "./session-metadata.js"
 import {
 	listStudios,
@@ -1110,6 +1112,12 @@ function repairAllBranches(autoApply: boolean): {
 	mainline: string
 	archivedSummary?: BranchRepairSummary
 } {
+	// Fetch upfront so getMainlineBranch() sees current origin/HEAD and every
+	// worktree created below reflects the latest remote state. Without this,
+	// a stale local ref could cause the repair tool to "fix" issues that were
+	// already fixed on the remote by a previous run, then fail to push with
+	// non-fast-forward, and loop forever. (#206)
+	fetchOrigin()
 	const mainline = getMainlineBranch()
 	const summaries: BranchRepairSummary[] = []
 
@@ -1203,7 +1211,7 @@ function repairAllBranches(autoApply: boolean): {
 			merged: false,
 		}
 		try {
-			worktreePath = addTempWorktree(branch, "haiku-repair")
+			worktreePath = addTempWorktree(branch, "haiku-repair", true)
 		} catch (err) {
 			summary.error = `Failed to create worktree: ${err instanceof Error ? err.message : String(err)}`
 			summaries.push(summary)
@@ -1313,7 +1321,7 @@ function repairArchivedOnMainline(
 
 	let worktreePath = ""
 	try {
-		worktreePath = addTempWorktree(mainline, "haiku-repair-archived")
+		worktreePath = addTempWorktree(mainline, "haiku-repair-archived", true)
 	} catch (err) {
 		// Worktree setup failed — surface a dedicated failure shape so the report
 		// labels this as "Mainline worktree setup failed" rather than "0 archived
@@ -1671,6 +1679,55 @@ export function parseFrontmatter(raw: string): {
 	}
 }
 
+/**
+ * Enumerate intent slugs under `intentsDir`, optionally filtering out archived ones.
+ *
+ * Archival is a soft-hide flag orthogonal to `status`: an intent with
+ * `archived: true` in its frontmatter is hidden from default list views but
+ * its prior status is preserved for lossless unarchival.
+ *
+ * By default (`opts.includeArchived !== true`) archived intents are filtered
+ * out. Passing `{ includeArchived: true }` returns every intent slug that has
+ * an `intent.md` regardless of the archived flag.
+ *
+ * This is the single source of truth for archived-filtering across the three
+ * user-facing enumeration sites (`haiku_intent_list`, `haiku_dashboard`,
+ * `haiku_capacity`). Do NOT duplicate the `archived === true` predicate —
+ * call this helper instead so miss-one-site regressions are impossible.
+ */
+/**
+ * Enumerate visible (non-archived) intents in a directory, returning both
+ * slug and parsed frontmatter data. Reuses parseFrontmatter so callers don't
+ * have to re-parse each intent.md for downstream work (response shaping,
+ * dashboard rendering, capacity aggregation).
+ *
+ * Set `opts.includeArchived` to true to return all intents (both archived
+ * and non-archived).
+ */
+export function listVisibleIntents(
+	intentsDir: string,
+	opts?: { includeArchived?: boolean },
+): Array<{ slug: string; data: Record<string, unknown> }> {
+	if (!existsSync(intentsDir)) return []
+	const includeArchived = opts?.includeArchived === true
+	const results: Array<{ slug: string; data: Record<string, unknown> }> = []
+	for (const d of readdirSync(intentsDir)) {
+		const intentFile = join(intentsDir, d, "intent.md")
+		if (!existsSync(intentFile)) continue
+		const { data } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+		if (!includeArchived && data.archived === true) continue
+		results.push({ slug: d, data })
+	}
+	return results
+}
+
+export function listVisibleIntentSlugs(
+	intentsDir: string,
+	opts?: { includeArchived?: boolean },
+): string[] {
+	return listVisibleIntents(intentsDir, opts).map((i) => i.slug)
+}
+
 export function setFrontmatterField(
 	filePath: string,
 	field: string,
@@ -1997,7 +2054,16 @@ export const stateToolDefs = [
 	{
 		name: "haiku_intent_list",
 		description: "List all intents in the workspace",
-		inputSchema: { type: "object" as const, properties: {} },
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				include_archived: {
+					type: "boolean",
+					description:
+						"When true, include archived intents in the result and add an 'archived' field to each response object. Defaults to false.",
+				},
+			},
+		},
 	},
 	// Stage tools
 	{
@@ -2287,10 +2353,13 @@ export const stateToolDefs = [
 export function handleStateTool(
 	name: string,
 	args: Record<string, unknown>,
-): { content: Array<{ type: "text"; text: string }> } {
+): { content: Array<{ type: "text"; text: string }>; isError?: boolean } {
 	const text = (s: string) => ({
 		content: [{ type: "text" as const, text: s }],
 	})
+
+	const validationError = validateSlugArgs(args)
+	if (validationError) return validationError
 
 	switch (name) {
 		// ── Intent ──
@@ -2311,19 +2380,22 @@ export function handleStateTool(
 			const root = findHaikuRoot()
 			const intentsDir = join(root, "intents")
 			if (!existsSync(intentsDir)) return text("[]")
-			const slugs = readdirSync(intentsDir).filter((d) =>
-				existsSync(join(intentsDir, d, "intent.md")),
-			)
-			const intents = slugs.map((slug) => {
-				const { data } = parseFrontmatter(
-					readFileSync(join(intentsDir, slug, "intent.md"), "utf8"),
-				)
-				return {
+			const includeArchived = args.include_archived === true
+			// Single-pass: listVisibleIntents already parsed each intent.md once
+			// for the archived-flag filter. Reuse the parsed `data` object for
+			// the response body — do NOT call parseFrontmatter again.
+			const entries = listVisibleIntents(intentsDir, { includeArchived })
+			const intents = entries.map(({ slug, data }) => {
+				const base: Record<string, unknown> = {
 					slug,
 					studio: data.studio,
 					status: data.status,
 					active_stage: data.active_stage,
 				}
+				if (includeArchived) {
+					base.archived = data.archived === true
+				}
+				return base
 			})
 			return text(JSON.stringify(intents, null, 2))
 		}
@@ -2999,17 +3071,12 @@ export function handleStateTool(
 			const intentsDir = join(root, "intents")
 			if (!existsSync(intentsDir))
 				return text("No intents found. Use /haiku:start to create one.")
-			const slugs = readdirSync(intentsDir).filter((d) =>
-				existsSync(join(intentsDir, d, "intent.md")),
-			)
-			if (slugs.length === 0)
+			const entries = listVisibleIntents(intentsDir)
+			if (entries.length === 0)
 				return text("No intents found. Use /haiku:start to create one.")
 
 			let out = "# Dashboard\n"
-			for (const slug of slugs) {
-				const { data } = parseFrontmatter(
-					readFileSync(join(intentsDir, slug, "intent.md"), "utf8"),
-				)
+			for (const { slug, data } of entries) {
 				out += `\n## ${slug}\n`
 				out += `- Status: ${data.status || "unknown"}\n`
 				out += `- Studio: ${data.studio || "none"}\n`
@@ -3115,9 +3182,7 @@ export function handleStateTool(
 			}
 			const intentsDir = join(root, "intents")
 			if (!existsSync(intentsDir)) return text("No intents found.")
-			const slugs = readdirSync(intentsDir).filter((d) =>
-				existsSync(join(intentsDir, d, "intent.md")),
-			)
+			const entries = listVisibleIntents(intentsDir)
 
 			const median = (arr: number[]): number => {
 				if (arr.length === 0) return 0
@@ -3133,10 +3198,7 @@ export function handleStateTool(
 				string,
 				Array<{ slug: string; status: string; data: Record<string, unknown> }>
 			>()
-			for (const slug of slugs) {
-				const { data } = parseFrontmatter(
-					readFileSync(join(intentsDir, slug, "intent.md"), "utf8"),
-				)
+			for (const { slug, data } of entries) {
 				const studio = (data.studio as string) || "unassigned"
 				if (filterStudio && studio !== filterStudio) continue
 				if (!byStudio.has(studio)) byStudio.set(studio, [])
@@ -3300,8 +3362,9 @@ export function handleStateTool(
 
 		// ── Review ──
 		case "haiku_review": {
-			// Determine diff base
-			let base = "main"
+			// Determine diff base — prefer the tracked upstream, fall back to the
+			// detected mainline (origin/HEAD-aware), then to a last-resort "main".
+			let base = getMainlineBranch()
 			try {
 				const upstream = spawnSync(
 					"git",
@@ -3312,7 +3375,7 @@ export function handleStateTool(
 					base = upstream.stdout.trim()
 				}
 			} catch {
-				/* fallback to main */
+				/* fallback to detected mainline */
 			}
 
 			// Get diff, stat, and changed files

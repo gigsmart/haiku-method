@@ -1,0 +1,3 @@
+# Conversation Context
+
+User wants archivable intents for three reasons (all of the above): decluttering the active list, reducing state bloat, and preserving paused intents for later revisit. Behavior: soft-hide via a flag in intent state, filtered from list commands, restorable via a single tool call. Trigger: manual only (a tool/skill the user invokes); no auto-archive on completion or staleness in this intent. Files stay in .haiku/intents/{slug} — no physical move, no git-tag archiving. Needs to integrate with existing haiku_intent_list and any dashboard/backlog views that enumerate intents.

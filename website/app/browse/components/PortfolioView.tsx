@@ -97,6 +97,16 @@ export function PortfolioView({
 	const cacheWriteBuffer = useRef<CachedDocument[]>([])
 	const [lastPolled, setLastPolled] = useState<Date | null>(null)
 
+	// Archived opt-in — read from URL query param `?archived=1` (or `?archived=true`).
+	// When true, archived intents are shown alongside active ones with a visual badge.
+	// Defaults to false so archived intents are hidden from the default portfolio view.
+	const [showArchived, setShowArchived] = useState(false)
+	useEffect(() => {
+		if (typeof window === "undefined") return
+		const v = new URLSearchParams(window.location.search).get("archived")
+		setShowArchived(v === "1" || v === "true")
+	}, [])
+
 	// Repo key for IndexedDB scoping
 	const repoKey = useMemo(() => {
 		if (!location) return "local"
@@ -579,6 +589,12 @@ export function PortfolioView({
 		[browseUrl, hasPathNav],
 	)
 
+	// Filter out archived intents unless ?archived=1 was set in the URL.
+	const visibleIntents = useMemo(
+		() => (showArchived ? intents : intents.filter((i) => i.archived !== true)),
+		[intents, showArchived],
+	)
+
 	if (selectedIntent) {
 		return (
 			<IntentDetailView
@@ -621,9 +637,14 @@ export function PortfolioView({
 						</div>
 						<div>
 							<strong className="text-stone-700 dark:text-stone-300">
-								{intents.length}
+								{visibleIntents.length}
 							</strong>{" "}
-							intent{intents.length !== 1 ? "s" : ""}
+							intent{visibleIntents.length !== 1 ? "s" : ""}
+							{showArchived && intents.some((i) => i.archived) && (
+								<span className="ml-1 text-xs text-stone-400">
+									(incl. archived)
+								</span>
+							)}
 						</div>
 						{lastPolled && (
 							<div className="text-xs text-stone-400">
@@ -633,7 +654,7 @@ export function PortfolioView({
 					</div>
 				</div>
 				{/* Search bar */}
-				{!loading && intents.length > 0 && (
+				{!loading && visibleIntents.length > 0 && (
 					<div className="mt-4">
 						<SearchBar
 							index={searchIndexVersion >= 0 ? searchIndex : null}
@@ -656,7 +677,7 @@ export function PortfolioView({
 			)}
 
 			{/* View toggle */}
-			{!loading && intents.length > 0 && (
+			{!loading && visibleIntents.length > 0 && (
 				<div className="mb-4 flex gap-1 rounded-lg border border-stone-200 p-1 dark:border-stone-700 w-fit">
 					<button
 						onClick={() => handleViewModeChange("list")}
@@ -679,7 +700,7 @@ export function PortfolioView({
 				</div>
 			)}
 
-			{loading && intents.length === 0 ? (
+			{loading && visibleIntents.length === 0 ? (
 				<div className="space-y-3">
 					{[1, 2, 3, 4].map((i) => (
 						<div
@@ -701,25 +722,34 @@ export function PortfolioView({
 						</div>
 					))}
 				</div>
-			) : !loading && intents.length === 0 ? (
+			) : !loading && visibleIntents.length === 0 ? (
 				<div className="rounded-xl border border-stone-200 px-8 py-16 text-center dark:border-stone-700">
 					<p className="text-lg font-medium text-stone-600 dark:text-stone-400">
 						No intents found
 					</p>
 					<p className="mt-2 text-sm text-stone-500">
-						This workspace has no <code>.haiku/intents/</code> directory, or
-						it's empty.
+						{intents.length > 0 && !showArchived ? (
+							<>
+								All intents in this workspace are archived. Append{" "}
+								<code>?archived=1</code> to the URL to view them.
+							</>
+						) : (
+							<>
+								This workspace has no <code>.haiku/intents/</code> directory,
+								or it's empty.
+							</>
+						)}
 					</p>
 				</div>
 			) : viewMode === "board" ? (
 				<PortfolioKanban
 					provider={provider}
-					intents={intents}
+					intents={visibleIntents}
 					onSelectIntent={handleSelectIntent}
 				/>
 			) : (
 				<div className="space-y-3">
-					{[...intents]
+					{[...visibleIntents]
 						.sort((a, b) => {
 							// Chronological, newest first by created date
 							const da = a.createdAt ? new Date(a.createdAt).getTime() : a.startedAt ? new Date(a.startedAt).getTime() : 0
@@ -734,12 +764,12 @@ export function PortfolioView({
 									e.preventDefault()
 									handleSelectIntent(intent.slug)
 								}}
-								className="block w-full rounded-xl border border-stone-200 px-6 py-4 text-left transition hover:border-teal-300 hover:shadow-sm dark:border-stone-700 dark:hover:border-teal-700"
+								className={`block w-full rounded-xl border border-stone-200 px-6 py-4 text-left transition hover:border-teal-300 hover:shadow-sm dark:border-stone-700 dark:hover:border-teal-700 ${intent.archived ? "opacity-60" : ""}`}
 							>
 								<div className="flex items-center justify-between">
 									<div>
 										<div className="flex items-center gap-3">
-											<h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">
+											<h2 className={`text-lg font-bold text-stone-900 dark:text-stone-100 ${intent.archived ? "line-through decoration-stone-400" : ""}`}>
 												{intent.title}
 											</h2>
 											<span
@@ -747,6 +777,13 @@ export function PortfolioView({
 											>
 												{intent.status}
 											</span>
+											{intent.archived && (
+												<span
+													className={`rounded px-2 py-0.5 text-xs font-medium ${statusColors.archived}`}
+												>
+													archived
+												</span>
+											)}
 											{intent.prUrl && intent.prStatus && (
 												<a
 													href={intent.prUrl}

@@ -305,13 +305,13 @@
     "revisions": [
       {
         "version": "2",
-        "date": "2026-04-07",
-        "commitHash": "9c2f591",
-        "fullCommitHash": "9c2f59141748c5a710755043078d461688bb3135",
-        "commitMessage": "refactor: rename decompose phase to elaborate across entire project",
+        "date": "2026-04-12",
+        "commitHash": "f76f306",
+        "fullCommitHash": "f76f306484ebc031c2c4e41b05db6fc3f0a23aa6",
+        "commitMessage": "feat: split software studio into product-family studios + fixes (#187)",
         "stats": {
-          "linesAdded": 264,
-          "linesRemoved": 992
+          "linesAdded": 284,
+          "linesRemoved": 993
         },
         "sectionChanges": [
           {
@@ -402,7 +402,7 @@
             "section": "Built-in Studios",
             "originalSection": "Built-in Studios",
             "isNew": true,
-            "linesAdded": 105,
+            "linesAdded": 131,
             "linesRemoved": 0
           },
           {
@@ -575,8 +575,8 @@
             "linesRemoved": 0
           },
           {
-            "section": "Twelve Studios in Practice",
-            "originalSection": "Twelve Studios in Practice",
+            "section": "Fifteen Studios in Practice",
+            "originalSection": "Fifteen Studios in Practice",
             "isNew": true,
             "linesAdded": 9,
             "linesRemoved": 0
@@ -1532,7 +1532,7 @@
       "Enforcement Through Hooks",
       "Configuration",
       "9. Beyond Software",
-      "Twelve Studios in Practice",
+      "Fifteen Studios in Practice",
       "What Changes Across Domains",
       "What Stays the Same",
       "Creating a Custom Studio",
