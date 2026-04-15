@@ -4,7 +4,7 @@ title: >-
   Detect…
 studio: software
 mode: continuous
-status: active
+status: completed
 created_at: '2026-04-09'
 stages:
   - inception
@@ -15,6 +15,7 @@ stages:
   - security
 active_stage: security
 intent_reviewed: true
+completed_at: '2026-04-15T20:01:37Z'
 ---
 
 # Add Cowork support to the H·AI·K·U plugin using MCP Apps for review UI. Detect…
