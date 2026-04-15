@@ -434,6 +434,33 @@ does not appear in the production `list_tools` response.
 Test: `list_tools` in non-debug build returns zero entries for `haiku_cowork_timeout_probe`;
 `knowledge/COWORK-TIMEOUT-SPIKE.md` contains `recommendation: blocking`.
 
+**V5-10 (P0)** **Blocking-path host-timeout fallback.** If the host tears down the
+`_openReviewAndWait` tool call before the reviewer submits a decision (host ceiling
+lower than the 30-min await), the MCP Apps branch MUST NOT leave the FSM wedged.
+The handler observes the cancellation (via the `AbortSignal` the MCP SDK threads
+through the tool call) and:
+
+1. Logs the host-timeout to `stFile` as `event: "gate_review_host_timeout"` with a
+   `detected_at_seconds` field recording how long the await was held before teardown.
+2. Clears the in-memory pending-decision promise for the session.
+3. Resolves `_openReviewAndWait` with a synthetic `{decision: "changes_requested", feedback: "Review timed out before decision was submitted. Please retry.", annotations: undefined}` so the orchestrator's existing `gate_review` branching at `orchestrator.ts:3032` fires the retry path rather than crashing.
+4. Marks the intent with an `intent.blocking_timeout_observed: true` frontmatter flag so a followup bolt can trigger the unit-02 spike's `resumable` switch without re-discovering the issue.
+
+Test: Vitest injects an `AbortSignal` that fires after 100ms, asserts the handler
+resolves with the synthetic `changes_requested` payload, asserts the session log
+contains a `gate_review_host_timeout` event, asserts the intent frontmatter now
+contains `blocking_timeout_observed: true`. This is the ONLY fallback — the handler
+MUST NOT retry internally, MUST NOT hold a new tool call open, MUST NOT attempt to
+write a resume token (that's the resumable branch's job if unit-02 switches outcomes).
+
+**V5-11 (P0)** **Blocking-path host-timeout does not corrupt state.** After V5-10
+fires, the `.haiku/intents/<slug>/stages/<stage>/state.json` is unchanged from its
+pre-timeout snapshot — `phase`, `gate_outcome`, `completed_at` are all untouched.
+The synthetic `changes_requested` only resolves the handler promise; it does not
+advance the FSM.
+Test: Vitest snapshots the state.json before and after the timeout, asserts they
+are byte-identical.
+
 ### V6 — Connection State
 
 _Sources: `stages/design/DESIGN-BRIEF.md`, design `unit-02`, design `unit-03`._

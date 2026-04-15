@@ -66,10 +66,26 @@ server silently falls back to the HTTP+tunnel path when
 
 Source: unit-03-ui-resource-registration
 
-### Capability prerequisite
+### Capability prerequisite — atomic with `experimental.apps`
 
-`resources: {}` must appear in the server capabilities block (same
-`server.ts:158` block). Without it the SDK rejects `resources/*` requests.
+`resources: {}` and `experimental: { apps: {} }` MUST be added to the
+`Server` constructor capabilities block at `packages/haiku/src/server.ts:157`
+as a **single atomic change**. Omitting either key breaks the feature
+silently:
+
+- Without `resources: {}`: the SDK rejects all `resources/list` and
+  `resources/read` requests before they reach the handlers registered by
+  unit-03. `hostSupportsMcpApps()` may still return `true`, but any
+  `ui://haiku/review/…` resolution fails, which collapses the whole
+  MCP Apps path.
+- Without `experimental: { apps: {} }`: the `initialize` handshake never
+  advertises MCP Apps support. Clients that DO support it have nothing to
+  echo back, so `hostSupportsMcpApps()` always returns `false`, and the
+  MCP Apps path is never selected even on capable hosts.
+
+Implementation order: add both keys in the same commit. Any staging commit
+that adds one but not the other is broken-by-construction and MUST be
+rejected at code review.
 
 ### `resources/list`
 

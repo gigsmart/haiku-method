@@ -120,6 +120,32 @@ Feature: haiku_cowork_review_submit tool — decision submission
     Then the awaiting promise rejects with a timeout error
     And no resume token or partial state is written to intent.md or state.json
 
+  # ─── Blocking host-timeout fallback (V5-10, V5-11) ───
+
+  Scenario: Host aborts the _openReviewAndWait tool call before a decision is submitted
+    Given the host supports MCP Apps
+    And an active review session with a pending gate_review
+    And the _openReviewAndWait handler is awaiting a decision via haiku_cowork_review_submit
+    When the host cancels the tool call via the AbortSignal before any decision arrives
+    Then the handler logs a "gate_review_host_timeout" event to the session log with a "detected_at_seconds" field
+    And the handler clears the in-memory pending-decision promise for the session
+    And the handler resolves _openReviewAndWait with decision "changes_requested"
+    And the feedback field reads "Review timed out before decision was submitted. Please retry."
+    And the intent.md frontmatter gains "blocking_timeout_observed: true"
+    And the orchestrator's gate_review changes_requested branch at orchestrator.ts:3032 fires the retry path
+    And the handler does not retry internally
+    And the handler does not hold a new tool call open
+    And the handler does not write a resume token
+
+  Scenario: Host-timeout fallback leaves state.json unchanged
+    Given the host aborted the _openReviewAndWait tool call per the previous scenario
+    When the V5-10 synthetic changes_requested payload resolves the handler
+    Then the stages/<stage>/state.json file is byte-identical to its pre-timeout snapshot
+    And the "phase" field is unchanged
+    And the "gate_outcome" field is unchanged
+    And the "completed_at" field is unchanged
+    And the FSM does not advance
+
   # ─── QuestionPage layout (SC-01) ───
 
   Scenario Outline: QuestionPage layout adapts correctly at each breakpoint
