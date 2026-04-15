@@ -7,6 +7,11 @@ inputs:
   - intent.md
   - knowledge/DISCOVERY.md
   - .haiku/knowledge/RUNBOOK.md
+status: active
+bolt: 1
+hat: ops-engineer
+started_at: '2026-04-15T19:25:11Z'
+hat_started_at: '2026-04-15T19:25:11Z'
 ---
 
 # Operational telemetry and SLOs for MCP Apps review path
