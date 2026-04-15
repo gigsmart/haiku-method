@@ -3093,7 +3093,7 @@ function buildRunInstructions(
 					"",
 					"**When you genuinely must ask** (unblock-only — truly ambiguous requirements, missing external context that stops work):",
 					"- Use `AskUserQuestion` with an `options[]` array when alternatives are known — never plain-text option lists.",
-					"- Use `ask_user_visual_question` for visual artifacts or multi-question decisions.",
+					"- Use `ask_user_visual_question` for visual artifacts, wireframes, or multi-question decisions that need rich markdown/images.",
 					"- Break independent questions into separate calls.",
 					'- Always pre-populate options; include "Other (let me specify)" when the list may not be exhaustive.',
 				)
