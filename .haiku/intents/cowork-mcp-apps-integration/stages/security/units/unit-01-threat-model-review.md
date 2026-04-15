@@ -10,6 +10,11 @@ inputs:
   - .haiku/knowledge/THREAT-MODEL.md
 outputs:
   - .haiku/knowledge/THREAT-MODEL.md (validated or updated)
+status: active
+bolt: 1
+hat: threat-modeler
+started_at: '2026-04-15T19:45:20Z'
+hat_started_at: '2026-04-15T19:45:20Z'
 ---
 
 # Unit 01 — Threat Model Review
