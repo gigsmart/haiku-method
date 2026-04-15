@@ -9,9 +9,11 @@ inputs:
   - knowledge/DISCOVERY.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-15T20:39:17Z'
-hat_started_at: '2026-04-15T20:39:17Z'
+hat_started_at: '2026-04-15T20:41:33Z'
+outputs:
+  - knowledge/DESIGN-DECISIONS.md
 ---
 
 # Design Decisions Document
