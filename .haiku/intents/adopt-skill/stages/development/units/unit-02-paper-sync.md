@@ -2,6 +2,7 @@
 name: unit-02-paper-sync
 type: documentation
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-01-adopt-skill]
 bolt: 0
 hat: ""

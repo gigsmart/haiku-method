@@ -1,12 +1,19 @@
 ---
-title: "Visual Review Full Integration & Bug Fixes"
+title: Visual Review Full Integration & Bug Fixes
 studio: software
-stages: [inception, design, product, development, operations, security]
+stages:
+  - inception
+  - design
+  - product
+  - development
+  - operations
+  - security
 mode: continuous
 active_stage: security
 status: completed
-started_at: 2026-03-30T07:06:24Z
-completed_at: 2026-03-30T23:05:08Z
+started_at: 2026-03-30T07:06:24.000Z
+completed_at: 2026-03-30T23:05:08.000Z
+created_at: '2026-04-13T19:18:37.721Z'
 ---
 
 

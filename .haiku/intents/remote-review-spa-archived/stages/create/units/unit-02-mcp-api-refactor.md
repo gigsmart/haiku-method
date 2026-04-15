@@ -2,6 +2,7 @@
 title: MCP — API refactor (CORS, consolidated file route, remove SPA)
 type: content
 status: pending
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: []
 quality_gates:
   - "CORS: wildcard (*) in dev, haikumethod.ai in prod, with OPTIONS preflight handling"

@@ -2,6 +2,7 @@
 title: Review UI document-view wireframes
 type: design
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 quality_gates:
   - Document-view layout with ToC sidebar and prose content area
   - Intent review and unit review variants wireframed

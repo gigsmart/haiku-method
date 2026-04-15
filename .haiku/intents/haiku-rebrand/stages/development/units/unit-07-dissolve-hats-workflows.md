@@ -2,6 +2,7 @@
 name: unit-07-dissolve-hats-workflows
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-01-lib-hooks-rename, unit-05-stage-definitions, unit-06-stage-orchestrator]
 bolt: 0
 hat: ""

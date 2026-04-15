@@ -2,6 +2,7 @@
 title: Review SPA component audit and migration scope
 type: research
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 quality_gates:
   - Complete inventory of all SPA components with purpose and dependencies
   - Documents data flow changes (local fetch vs tunnel-proxied fetch)

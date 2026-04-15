@@ -2,6 +2,7 @@
 title: Website — Review page shell with hash fragment routing
 type: content
 status: pending
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: []
 quality_gates:
   - /app/review/page.tsx exists as a static page with "use client" component

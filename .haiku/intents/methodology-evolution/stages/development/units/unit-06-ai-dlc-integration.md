@@ -2,6 +2,7 @@
 name: unit-06-ai-dlc-integration
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-04-reflection-phase]
 bolt: 0
 hat: ""

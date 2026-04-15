@@ -2,6 +2,7 @@
 name: unit-13-legacy-intent-migration
 type: backend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-01-lib-hooks-rename, unit-03-schemas-types-settings, unit-04-studio-infrastructure, unit-06-stage-orchestrator]
 bolt: 0
 hat: ""

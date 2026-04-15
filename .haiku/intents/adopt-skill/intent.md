@@ -1,12 +1,19 @@
 ---
-title: "/adopt — Reverse-Engineer Existing Features into AI-DLC"
+title: /adopt — Reverse-Engineer Existing Features into AI-DLC
 studio: software
-stages: [inception, design, product, development, operations, security]
+stages:
+  - inception
+  - design
+  - product
+  - development
+  - operations
+  - security
 mode: continuous
 active_stage: security
 status: completed
-started_at: 2026-03-29T21:53:17Z
-completed_at: 2026-03-30T05:53:03Z
+started_at: 2026-03-29T21:53:17.000Z
+completed_at: 2026-03-30T05:53:03.000Z
+created_at: '2026-04-13T19:18:37.676Z'
 ---
 
 

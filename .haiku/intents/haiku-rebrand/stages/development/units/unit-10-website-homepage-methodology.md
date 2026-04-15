@@ -2,6 +2,7 @@
 name: unit-10-website-homepage-methodology
 type: frontend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on: [unit-09-deploy-config]
 bolt: 0
 hat: ""

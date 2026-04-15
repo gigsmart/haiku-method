@@ -2,6 +2,7 @@
 title: Data contracts — API schemas and WebSocket protocol
 type: product
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 quality_gates:
   - >-
     Request/response schemas for all HTTP endpoints with field types and

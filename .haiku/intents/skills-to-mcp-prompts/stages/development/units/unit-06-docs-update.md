@@ -2,6 +2,7 @@
 name: unit-06-docs-update
 type: frontend
 status: completed
+inputs: ["knowledge/DISCOVERY.md"]
 depends_on:
   - unit-05-delete-skills
 bolt: 1
