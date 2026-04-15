@@ -2302,6 +2302,9 @@ export function handleStateTool(
 			const intentsDir = join(root, "intents")
 			if (!existsSync(intentsDir)) return text("[]")
 			const includeArchived = args.include_archived === true
+			// Single-pass: listVisibleIntents already parsed each intent.md once
+			// for the archived-flag filter. Reuse the parsed `data` object for
+			// the response body — do NOT call parseFrontmatter again.
 			const entries = listVisibleIntents(intentsDir, { includeArchived })
 			const intents = entries.map(({ slug, data }) => {
 				const base: Record<string, unknown> = {
