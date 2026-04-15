@@ -18,24 +18,6 @@ hat_started_at: '2026-04-15T12:49:13Z'
 outputs:
   - stages/design/artifacts/boot-screen.html
   - stages/design/artifacts/host-bridge-status.html
-  - >-
-    ../../worktrees/cowork-mcp-apps-integration/unit-04-iframe-content-screens/.haiku/intents/cowork-mcp-apps-integration/stages/design/artifacts/question-narrow.html
-  - >-
-    ../../worktrees/cowork-mcp-apps-integration/unit-04-iframe-content-screens/.haiku/intents/cowork-mcp-apps-integration/stages/design/artifacts/question-medium.html
-  - >-
-    ../../worktrees/cowork-mcp-apps-integration/unit-04-iframe-content-screens/.haiku/intents/cowork-mcp-apps-integration/stages/design/artifacts/question-wide.html
-  - >-
-    ../../worktrees/cowork-mcp-apps-integration/unit-04-iframe-content-screens/.haiku/intents/cowork-mcp-apps-integration/stages/design/artifacts/design-picker-narrow.html
-  - >-
-    ../../worktrees/cowork-mcp-apps-integration/unit-04-iframe-content-screens/.haiku/intents/cowork-mcp-apps-integration/stages/design/artifacts/design-picker-medium.html
-  - >-
-    ../../worktrees/cowork-mcp-apps-integration/unit-04-iframe-content-screens/.haiku/intents/cowork-mcp-apps-integration/stages/design/artifacts/design-picker-wide.html
-  - >-
-    ../../worktrees/cowork-mcp-apps-integration/unit-04-iframe-content-screens/.haiku/intents/cowork-mcp-apps-integration/stages/design/artifacts/annotation-canvas-narrow.html
-  - >-
-    ../../worktrees/cowork-mcp-apps-integration/unit-04-iframe-content-screens/.haiku/intents/cowork-mcp-apps-integration/stages/design/artifacts/annotation-canvas-medium.html
-  - >-
-    ../../worktrees/cowork-mcp-apps-integration/unit-04-iframe-content-screens/.haiku/intents/cowork-mcp-apps-integration/stages/design/artifacts/annotation-canvas-wide.html
 ---
 
 # Iframe boot screen + HostBridgeStatus pill
