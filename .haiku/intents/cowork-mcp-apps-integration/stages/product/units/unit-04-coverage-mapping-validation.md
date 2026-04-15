@@ -11,13 +11,14 @@ inputs:
   - knowledge/COVERAGE-MAPPING.md
   - knowledge/ACCEPTANCE-CRITERIA.md
   - knowledge/DATA-CONTRACTS.md
-status: active
+status: completed
 bolt: 1
 hat: validator
 started_at: '2026-04-15T14:26:02Z'
 hat_started_at: '2026-04-15T14:31:29Z'
 outputs:
   - knowledge/COVERAGE-MAPPING.md
+completed_at: '2026-04-15T14:32:46Z'
 ---
 
 # Validate coverage mapping
