@@ -15,7 +15,8 @@ bolt: 1
 hat: product
 started_at: '2026-04-15T13:53:42Z'
 hat_started_at: '2026-04-15T13:53:42Z'
-outputs: '- knowledge/DATA-CONTRACTS.md'
+outputs:
+  - knowledge/DATA-CONTRACTS.md
 ---
 
 # Finalize DATA-CONTRACTS.md
