@@ -14,9 +14,9 @@ inputs:
   - stages/design/units/unit-01-iframe-shell-layout.md
 status: active
 bolt: 1
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-15T12:44:41Z'
-hat_started_at: '2026-04-15T12:44:41Z'
+hat_started_at: '2026-04-15T12:56:12Z'
 outputs:
   - stages/design/artifacts/intent-review-narrow.html
   - stages/design/artifacts/intent-review-medium.html
