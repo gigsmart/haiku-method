@@ -16,9 +16,9 @@ inputs:
   - .haiku/knowledge/ARCHITECTURE.md
 status: active
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-15T17:02:19Z'
-hat_started_at: '2026-04-15T17:06:55Z'
+hat_started_at: '2026-04-15T17:21:36Z'
 ---
 
 # SPA iframe layout — conditional decision panels + boot/error/success screens
