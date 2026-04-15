@@ -13,9 +13,11 @@ inputs:
   - knowledge/DATA-CONTRACTS.md
 status: active
 bolt: 1
-hat: product
+hat: specification
 started_at: '2026-04-15T14:26:02Z'
-hat_started_at: '2026-04-15T14:26:02Z'
+hat_started_at: '2026-04-15T14:30:11Z'
+outputs:
+  - knowledge/COVERAGE-MAPPING.md
 ---
 
 # Validate coverage mapping
