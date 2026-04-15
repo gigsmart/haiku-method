@@ -11,6 +11,7 @@ stages:
   - development
   - operations
   - security
+active_stage: inception
 ---
 
 # Universal feedback model and review recovery
