@@ -152,3 +152,43 @@ via Zod, calls `updateSession()` (or `updateQuestionSession()` /
 `updateDesignDirectionSession()` for non-review session types), and returns `{"ok":true}`.
 `notifySessionUpdate()` wakes the blocked `waitForSession()` promise, which causes
 `openReviewMcpApps` to return the decision to the orchestrator.
+
+---
+
+## SLOs
+
+### `gate_review_host_timeout` error rate
+
+**Target:** < 1% of review gate invocations fire `gate_review_host_timeout` over a
+rolling 30-day window.
+
+**How to measure:** In Sentry (`haiku-mcp` project), filter breadcrumbs where
+`review_transport_used = mcp_apps` and search for `gate_review_host_timeout` events in
+the session log. Divide timeout event count by total `gate_review_opened` event count.
+
+**Enforcement:** Manual — the plugin has no production host to page. Review Sentry data
+monthly and open a fix issue if the rate exceeds 1%.
+
+**Escalation:** If the rate exceeds 5% in any 7-day window, investigate the AbortSignal
+timeout value and whether the host is sending early cancellations. See `RUNBOOK.md`
+§ "V5-10 host timeout fires unexpectedly" for diagnostic steps.
+
+### Bundle size budget
+
+**Target:** Gzipped `REVIEW_APP_HTML` < 1,000,403 bytes (CI hard-fail). Runtime warning
+at 950KB raw (`Buffer.byteLength(REVIEW_APP_HTML, 'utf8') > 950_000` in `server.ts`).
+
+**Enforcement:** CI — the `test` job in `.github/workflows/ci.yml` runs the gzip size
+check after `npm run prebuild` and fails the build if the hard limit is exceeded.
+
+### Telemetry tags
+
+Every review gate invocation emits a Sentry breadcrumb (via `addReviewTransportBreadcrumb`
+in `src/sentry.ts`) with two tags:
+
+| Tag | Values | Set when |
+|-----|--------|----------|
+| `host_supports_mcp_apps` | `"true"` / `"false"` | Transport branch is entered |
+| `review_transport_used` | `"mcp_apps"` / `"http_tunnel"` | Transport branch is entered |
+
+Filter on `host_supports_mcp_apps=true` in Sentry to isolate MCP Apps-specific issues.

@@ -68,6 +68,29 @@ export function reportFeedback(
 	})
 }
 
+/**
+ * Add a breadcrumb recording which review transport was selected and whether
+ * the host supports MCP Apps. Call once per review-gate invocation.
+ *
+ * @param hostSupportsMcpApps - result of hostSupportsMcpApps() at gate entry
+ * @param transport - actual transport branch entered: "mcp_apps" | "http_tunnel"
+ */
+export function addReviewTransportBreadcrumb(
+	hostSupportsMcpApps: boolean,
+	transport: "mcp_apps" | "http_tunnel",
+): void {
+	if (!SENTRY_DSN) return
+	Sentry.addBreadcrumb({
+		category: "review_transport",
+		message: `Review gate entered via ${transport}`,
+		data: {
+			host_supports_mcp_apps: String(hostSupportsMcpApps),
+			review_transport_used: transport,
+		},
+		level: "info",
+	})
+}
+
 /** Whether Sentry is configured. */
 export function isSentryConfigured(): boolean {
 	return SENTRY_DSN !== ""
