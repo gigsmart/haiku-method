@@ -11,11 +11,14 @@ inputs:
   - knowledge/ACCEPTANCE-CRITERIA.md
   - knowledge/DATA-CONTRACTS.md
   - .haiku/knowledge/ARCHITECTURE.md
-status: active
+status: completed
 bolt: 1
 hat: reviewer
 started_at: '2026-04-15T17:32:26Z'
 hat_started_at: '2026-04-15T17:40:27Z'
+outputs:
+  - knowledge/unit-07-doc-scrub-and-validation.md
+completed_at: '2026-04-15T17:48:10Z'
 ---
 
 # Doc scrub + VALIDATION.md + end-to-end smoke
