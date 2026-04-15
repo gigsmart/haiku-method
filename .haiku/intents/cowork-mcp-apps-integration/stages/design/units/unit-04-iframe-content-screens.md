@@ -12,7 +12,7 @@ inputs:
   - stages/design/DESIGN-BRIEF.md
   - knowledge/DESIGN-TOKENS.md
   - stages/design/units/unit-01-iframe-shell-layout.md
-status: active
+status: completed
 bolt: 1
 hat: design-reviewer
 started_at: '2026-04-15T12:44:41Z'
@@ -34,6 +34,7 @@ outputs:
   - stages/design/artifacts/annotation-canvas-medium.html
   - stages/design/artifacts/annotation-canvas-wide.html
   - stages/design/artifacts/unit-04-design-review.md
+completed_at: '2026-04-15T12:59:54Z'
 ---
 
 # Iframe-mode layouts for the five existing review screens
