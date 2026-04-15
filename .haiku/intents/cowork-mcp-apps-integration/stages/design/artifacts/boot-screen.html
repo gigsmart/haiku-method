@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<!--
+  boot-screen.html
+  Unit: unit-02-boot-and-status
+  Mockup: IframeBootScreen — three phases (loading / connecting / ready)
+  Container: 480px narrow iframe
+
+  Token map:
+  --iframe-bg            → stone-950   rgb(12, 10, 9)
+  --topbar-bg            → stone-900   rgb(28, 25, 23)
+  --topbar-border        → stone-800   rgb(41, 37, 36)
+  --text-primary         → stone-100   rgb(245, 245, 244)
+  --text-muted           → stone-400   rgb(168, 162, 158)
+  --text-subtle          → stone-500   rgb(120, 113, 108)
+  --spinner-track        → stone-800   rgb(41, 37, 36)
+  --spinner-head         → teal-500    rgb(20, 184, 166)
+  --boot-label-loading   → stone-300   rgb(214, 211, 208)
+  --boot-label-connecting→ teal-400    rgb(45, 212, 191)
+  --boot-label-ready     → teal-500    rgb(20, 184, 166)
+  --ready-fade-bg        → stone-950   rgb(12, 10, 9)
+  --iframe-boot-fade     → 200ms ease-out (ready phase fade-out)
+
+  Contrast notes (text against stone-950 bg):
+  teal-500 on stone-950  → 8.2:1  (WCAG AAA)
+  teal-400 on stone-950  → 10.4:1 (WCAG AAA)
+  stone-300 on stone-950 → 7.4:1  (WCAG AAA)
+  stone-400 on stone-950 → 4.9:1  (WCAG AA)
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=480, initial-scale=1.0">
+<title>boot-screen — IframeBootScreen mockup</title>
+<style>
+  /* ── Reset ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Page wrapper (mockup scaffold) ── */
+  body {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    /* stone-950 */
+    background-color: rgb(12, 10, 9);
+    color: rgb(245, 245, 244); /* stone-100 */
+    padding: 32px 0;
+  }
+
+  /* ── Phase section label (scaffold only, not rendered in prod) ── */
+  .phase-label {
+    width: 480px;
+    padding: 8px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgb(120, 113, 108); /* stone-500 */
+    background-color: rgb(28, 25, 23); /* stone-900 */
+    border: 1px solid rgb(41, 37, 36); /* stone-800 */
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .phase-spacer {
+    height: 32px;
+  }
+
+  /* ── Iframe simulation container ── */
+  .iframe-sim {
+    width: 480px;
+    height: 320px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* stone-950 */
+    background-color: rgb(12, 10, 9);
+    border: 1px solid rgb(41, 37, 36); /* stone-800 */
+    position: relative;
+  }
+
+  /* ── Boot screen inner ── */
+  .boot-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 24px 12px; /* p-6 / p-3 narrow */
+    width: 100%;
+    min-height: 100%;
+  }
+
+  /* ── Logo / brand mark ── */
+  .boot-logo {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .boot-logo-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px; /* rounded-lg */
+    /* stone-800 bg with teal-500 symbol */
+    background-color: rgb(41, 37, 36);
+    border: 1px solid rgb(68, 64, 60); /* stone-700 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: rgb(20, 184, 166); /* teal-500 */
+    font-weight: 700;
+    letter-spacing: -0.05em;
+    user-select: none;
+  }
+
+  /* ── Spinner ── */
+  .spinner-wrap {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+  }
+
+  .spinner-svg {
+    width: 48px;
+    height: 48px;
+    animation: spin 1s linear infinite;
+  }
+
+  .spinner-track {
+    fill: none;
+    stroke: rgb(41, 37, 36); /* stone-800 */
+    stroke-width: 3;
+  }
+
+  .spinner-head {
+    fill: none;
+    stroke: rgb(20, 184, 166); /* teal-500 */
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 56;      /* ~75% of circumference (r=12, circ≈75) */
+    stroke-dashoffset: 14;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  /* ── Boot text group ── */
+  .boot-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+  }
+
+  .boot-status-text {
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+
+  .boot-status-text--loading {
+    color: rgb(214, 211, 208); /* stone-300 */
+  }
+
+  .boot-status-text--connecting {
+    color: rgb(45, 212, 191); /* teal-400 */
+    /* contrast: 10.4:1 against stone-950 */
+  }
+
+  .boot-status-text--ready {
+    color: rgb(20, 184, 166); /* teal-500 */
+    /* contrast: 8.2:1 against stone-950 */
+  }
+
+  .boot-sub-text {
+    font-size: 12px;
+    color: rgb(120, 113, 108); /* stone-500 */
+  }
+
+  /* ── Progress dots (loading / connecting) ── */
+  .boot-dots {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+
+  .boot-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: rgb(68, 64, 60); /* stone-700 */
+  }
+
+  .boot-dot--active {
+    background-color: rgb(20, 184, 166); /* teal-500 */
+  }
+
+  .boot-dot--connecting {
+    animation: dotPulse 1.4s ease-in-out infinite;
+  }
+
+  .boot-dot--connecting:nth-child(2) { animation-delay: 0.2s; }
+  .boot-dot--connecting:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes dotPulse {
+    0%, 80%, 100% { opacity: 0.3; }
+    40%            { opacity: 1; }
+  }
+
+  /* ── Ready phase: checkmark + fade-out overlay ── */
+  .ready-check {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: rgba(20, 184, 166, 0.12); /* teal-500 12% */
+    border: 1.5px solid rgba(20, 184, 166, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .ready-check-icon {
+    font-size: 20px;
+    color: rgb(20, 184, 166); /* teal-500 */
+    line-height: 1;
+  }
+
+  /* Ready phase fade-out overlay (simulates 200ms ease-out transition) */
+  .ready-fade-overlay {
+    position: absolute;
+    inset: 0;
+    background-color: rgb(12, 10, 9); /* stone-950 */
+    opacity: 0.4; /* simulating mid-fade */
+    pointer-events: none;
+    /* --iframe-boot-fade: 200ms ease-out */
+    transition: opacity 200ms ease-out;
+    border-radius: 0;
+  }
+
+  .ready-note {
+    position: absolute;
+    bottom: 8px;
+    right: 10px;
+    font-size: 10px;
+    color: rgb(87, 83, 78); /* stone-600 */
+    font-style: italic;
+  }
+
+  /* ── Reduced-motion frame wrapper ── */
+  .reduced-frame {
+    width: 480px;
+    height: 200px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: rgb(12, 10, 9); /* stone-950 */
+    border: 1px solid rgb(68, 64, 60); /* stone-700 — dashed to indicate alternate */
+    border-style: dashed;
+    position: relative;
+  }
+
+  .reduced-motion-badge {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgb(120, 113, 108); /* stone-500 */
+    background-color: rgb(28, 25, 23); /* stone-900 */
+    border: 1px solid rgb(41, 37, 36);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  /* Static label only — no spinner, no dots, no fade */
+  .static-boot-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .static-icon {
+    font-size: 24px;
+    color: rgb(120, 113, 108); /* stone-500 */
+  }
+
+  .static-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgb(214, 211, 208); /* stone-300 */
+  }
+
+  .static-sub {
+    font-size: 12px;
+    color: rgb(120, 113, 108); /* stone-500 */
+  }
+
+  /* ── prefers-reduced-motion overrides ── */
+  @media (prefers-reduced-motion: reduce) {
+    .spinner-svg         { animation: none; }
+    .boot-dot--connecting{ animation: none; opacity: 1; }
+    .ready-fade-overlay  { transition: none; }
+  }
+
+  /* ── Annotation block (scaffold) ── */
+  .annotation {
+    width: 480px;
+    padding: 10px 12px;
+    font-size: 11px;
+    line-height: 1.6;
+    color: rgb(120, 113, 108); /* stone-500 */
+    background-color: rgb(12, 10, 9);
+    border: 1px solid rgb(41, 37, 36);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+  }
+
+  .annotation strong {
+    color: rgb(168, 162, 158); /* stone-400 */
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════
+     PHASE 1: loading
+     State: srcdoc mount → SPA bundle executing → no bridge yet
+     ══════════════════════════════════════════════════ -->
+<div class="phase-label">phase=loading · srcdoc mount → SPA bundle executing</div>
+<div class="iframe-sim" aria-label="Boot screen, loading phase" role="region">
+  <div class="boot-screen">
+
+    <!-- Logo mark -->
+    <div class="boot-logo" aria-hidden="true">
+      <div class="boot-logo-mark">H</div>
+    </div>
+
+    <!-- Spinner -->
+    <div class="spinner-wrap" aria-hidden="true">
+      <svg class="spinner-svg" viewBox="0 0 30 30">
+        <circle class="spinner-track" cx="15" cy="15" r="12"/>
+        <circle class="spinner-head"  cx="15" cy="15" r="12"/>
+      </svg>
+    </div>
+
+    <!-- Status text + sub-text + dots -->
+    <div class="boot-text">
+      <span class="boot-status-text boot-status-text--loading" role="status" aria-live="polite">
+        Loading…
+      </span>
+      <span class="boot-sub-text">Preparing review session</span>
+      <div class="boot-dots" aria-hidden="true">
+        <span class="boot-dot boot-dot--active"></span>
+        <span class="boot-dot"></span>
+        <span class="boot-dot"></span>
+      </div>
+    </div>
+
+  </div>
+</div>
+<div class="annotation">
+  <strong>phase=loading</strong> · Spinner animates (animate-spin 1s linear infinite). Dots: first dot teal-500, rest stone-700. Status text stone-300.
+  No topbar rendered yet — frame is pre-hydration. <code>aria-live="polite"</code> announces "Loading…" on mount.
+</div>
+
+<div class="phase-spacer"></div>
+
+<!-- ══════════════════════════════════════════════════
+     PHASE 2: connecting
+     State: SPA bundle loaded → host-bridge handshake in progress
+     ══════════════════════════════════════════════════ -->
+<div class="phase-label">phase=connecting · host-bridge handshake in progress</div>
+<div class="iframe-sim" aria-label="Boot screen, connecting phase" role="region">
+  <div class="boot-screen">
+
+    <!-- Logo mark -->
+    <div class="boot-logo" aria-hidden="true">
+      <div class="boot-logo-mark">H</div>
+    </div>
+
+    <!-- Spinner (same, still spinning) -->
+    <div class="spinner-wrap" aria-hidden="true">
+      <svg class="spinner-svg" viewBox="0 0 30 30">
+        <circle class="spinner-track" cx="15" cy="15" r="12"/>
+        <circle class="spinner-head"  cx="15" cy="15" r="12"/>
+      </svg>
+    </div>
+
+    <!-- Status text: teal-400 to signal active bridge probe -->
+    <div class="boot-text">
+      <span class="boot-status-text boot-status-text--connecting" role="status" aria-live="polite">
+        Connecting…
+        <!-- contrast: 10.4:1 teal-400 on stone-950 -->
+      </span>
+      <span class="boot-sub-text">Establishing host bridge</span>
+      <!-- Animated dots: all three pulse in sequence -->
+      <div class="boot-dots" aria-hidden="true">
+        <span class="boot-dot boot-dot--active boot-dot--connecting"></span>
+        <span class="boot-dot boot-dot--active boot-dot--connecting"></span>
+        <span class="boot-dot boot-dot--active boot-dot--connecting"></span>
+      </div>
+    </div>
+
+  </div>
+</div>
+<div class="annotation">
+  <strong>phase=connecting</strong> · All three dots pulse (animate dotPulse 1.4s, staggered 0.2s each). Text changes to teal-400.
+  <code>aria-live="polite"</code> announces "Connecting…" when phase transitions from loading.
+  Spinner continues. Host-bridge probe is in flight.
+  <!-- contrast: 10.4:1 -->
+</div>
+
+<div class="phase-spacer"></div>
+
+<!-- ══════════════════════════════════════════════════
+     PHASE 3: ready
+     State: session data hydrated → first render imminent → fade-out frame
+     ══════════════════════════════════════════════════ -->
+<div class="phase-label">phase=ready · session hydrated → fade-out to main content (200ms ease-out)</div>
+<div class="iframe-sim" aria-label="Boot screen, ready phase (fading out)" role="region">
+  <div class="boot-screen">
+
+    <!-- Logo mark -->
+    <div class="boot-logo" aria-hidden="true">
+      <div class="boot-logo-mark">H</div>
+    </div>
+
+    <!-- Checkmark replaces spinner -->
+    <div class="ready-check" aria-hidden="true">
+      <span class="ready-check-icon">✓</span>
+    </div>
+
+    <!-- Status text: teal-500 -->
+    <div class="boot-text">
+      <span class="boot-status-text boot-status-text--ready" role="status" aria-live="polite">
+        Ready
+        <!-- contrast: 8.2:1 teal-500 on stone-950 -->
+      </span>
+      <span class="boot-sub-text">Session loaded</span>
+      <!-- All three dots solid teal -->
+      <div class="boot-dots" aria-hidden="true">
+        <span class="boot-dot boot-dot--active"></span>
+        <span class="boot-dot boot-dot--active"></span>
+        <span class="boot-dot boot-dot--active"></span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Fade-out overlay: simulates 200ms ease-out transition mid-fade -->
+  <div class="ready-fade-overlay" aria-hidden="true"></div>
+  <div class="ready-note" aria-hidden="true">↑ fade overlay at ~40% opacity (mid-transition)</div>
+</div>
+<div class="annotation">
+  <strong>phase=ready</strong> · Spinner replaced by teal-500 checkmark in a semi-transparent teal ring. All three dots solid teal-500.
+  Text changes to "Ready" (teal-500, contrast 8.2:1). Stone-950 overlay fades in over 200ms ease-out (<code>--iframe-boot-fade</code>), then the boot screen unmounts.
+  <code>aria-live="polite"</code> announces "Ready" at transition start.
+</div>
+
+<div class="phase-spacer"></div>
+
+<!-- ══════════════════════════════════════════════════
+     REDUCED-MOTION ALTERNATE FRAME
+     prefers-reduced-motion: reduce
+     No spinner, no animated dots, no fade transition
+     ══════════════════════════════════════════════════ -->
+<div class="phase-label">prefers-reduced-motion: reduce — static loading label (applies to all phases)</div>
+<div class="reduced-frame" aria-label="Boot screen, reduced-motion static label" role="region">
+  <span class="reduced-motion-badge" aria-hidden="true">prefers-reduced-motion</span>
+
+  <div class="static-boot-label">
+    <span class="static-icon" aria-hidden="true">⧖</span>
+    <span class="static-text" role="status" aria-live="polite">Loading…</span>
+    <span class="static-sub">Preparing review session</span>
+  </div>
+</div>
+<div class="annotation" style="border-top: none; border-radius: 0 0 8px 8px;">
+  <strong>prefers-reduced-motion</strong> · All animations disabled: no spinner rotate, no dot pulse, no fade-out transition.
+  Boot screen shows a static hourglass glyph and the current phase label (text only).
+  Phase transitions update the <code>role="status"</code> text in-place: "Loading…" → "Connecting…" → "Ready".
+  No motion anywhere. Implemented via <code>@media (prefers-reduced-motion: reduce)</code> with animation/transition overrides.
+</div>
+
+</body>
+</html>

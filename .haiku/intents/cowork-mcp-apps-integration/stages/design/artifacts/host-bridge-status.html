@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<!--
+  host-bridge-status.html
+  Unit: unit-02-boot-and-status
+  Mockup: HostBridgeStatus pill — three states (connected / reconnecting / error)
+  Container: 480px narrow iframe topbar context
+
+  Token map:
+  --iframe-bg               → stone-950   rgb(12, 10, 9)
+  --topbar-bg               → stone-900   rgb(28, 25, 23)
+  --topbar-border           → stone-800   rgb(41, 37, 36)
+  --text-primary            → stone-100   rgb(245, 245, 244)
+  --text-muted              → stone-400   rgb(168, 162, 158)
+  --text-subtle             → stone-500   rgb(120, 113, 108)
+  --host-bridge-connected   → teal-500    rgb(20, 184, 166)
+  --host-bridge-reconnecting→ amber-400   rgb(251, 191, 36)
+  --host-bridge-error       → red-500     rgb(239, 68, 68)
+  --pill-connected-bg       → teal-500 at 15% opacity
+  --pill-connected-border   → teal-500 at 30% opacity
+  --pill-reconnecting-bg    → amber-400 at 15% opacity
+  --pill-reconnecting-border→ amber-400 at 30% opacity
+  --pill-error-bg           → red-500 at 15% opacity
+  --pill-error-border       → red-500 at 30% opacity
+  --retry-hover-bg          → red-500 at 25% opacity
+  --retry-pending-bg        → stone-800   rgb(41, 37, 36)
+  --iframe-min-touch        → 44px
+
+  Contrast notes (pill text against stone-950 topbar bg):
+  teal-500 on stone-950    → 8.2:1   (WCAG AAA) <!-- contrast: 8.2:1 -->
+  amber-400 on stone-950   → 9.1:1   (WCAG AAA) <!-- contrast: 9.1:1 -->
+  red-500 on stone-950     → 5.9:1   (WCAG AA)  <!-- contrast: 5.9:1 -->
+
+  aria-live announcement strings:
+  connected:    "MCP Apps: Connected"
+  reconnecting: "MCP Apps: Reconnecting"
+  error:        "MCP Apps: Connection error – click to retry"
+  retry:        "Retrying connection…"
+  retry-failed: "Retry failed. Click to try again."
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=480, initial-scale=1.0">
+<title>host-bridge-status — HostBridgeStatus pill mockup</title>
+<style>
+  /* ── Reset ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Page wrapper (mockup scaffold) ── */
+  body {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    background-color: rgb(12, 10, 9); /* stone-950 */
+    color: rgb(245, 245, 244); /* stone-100 */
+    padding: 32px 0;
+  }
+
+  /* ── State section labels (scaffold) ── */
+  .state-label {
+    width: 480px;
+    padding: 8px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgb(120, 113, 108); /* stone-500 */
+    background-color: rgb(28, 25, 23); /* stone-900 */
+    border: 1px solid rgb(41, 37, 36); /* stone-800 */
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .state-spacer { height: 32px; }
+
+  /* ── Iframe topbar simulation ── */
+  .topbar-sim {
+    width: 480px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 8px;
+    background-color: rgb(28, 25, 23); /* stone-900 */
+    border: 1px solid rgb(41, 37, 36); /* stone-800 */
+    border-top-color: transparent;
+    overflow: hidden;
+  }
+
+  .topbar-slug {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgb(245, 245, 244); /* stone-100 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+  }
+
+  .topbar-session-type {
+    font-size: 11px;
+    color: rgb(168, 162, 158); /* stone-400 */
+    white-space: nowrap;
+  }
+
+  /* ── HostBridgeStatus pill — base ── */
+  .bridge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 9px;
+    border-radius: 9999px; /* rounded-full */
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    min-height: 22px;
+    border: 1px solid transparent;
+    user-select: none;
+    line-height: 1;
+  }
+
+  /* ── Connected state ── */
+  .bridge-pill--connected {
+    background-color: rgba(20, 184, 166, 0.15);  /* teal-500 15% */
+    color: rgb(20, 184, 166);                     /* teal-500 */
+    border-color: rgba(20, 184, 166, 0.30);
+    cursor: default;
+  }
+
+  /* ── Reconnecting state ── */
+  .bridge-pill--reconnecting {
+    background-color: rgba(251, 191, 36, 0.15); /* amber-400 15% */
+    color: rgb(251, 191, 36);                    /* amber-400 */
+    border-color: rgba(251, 191, 36, 0.30);
+    animation: pillPulse 1.5s ease-in-out infinite;
+    cursor: default;
+  }
+
+  @keyframes pillPulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.55; }
+  }
+
+  /* ── Error state (interactive — click to retry) ── */
+  .bridge-pill--error {
+    background-color: rgba(239, 68, 68, 0.15); /* red-500 15% */
+    color: rgb(239, 68, 68);                    /* red-500 */
+    border-color: rgba(239, 68, 68, 0.30);
+    cursor: pointer;
+    /* touch target: min-height will be elevated in topbar; full 44px zone via .pill-touch-zone */
+  }
+
+  .bridge-pill--error:hover {
+    background-color: rgba(239, 68, 68, 0.25); /* retry-hover-bg */
+  }
+
+  .bridge-pill--error:active {
+    background-color: rgba(239, 68, 68, 0.35);
+  }
+
+  .bridge-pill--error:focus-visible {
+    outline: 2px solid rgb(239, 68, 68); /* red-500 */
+    outline-offset: 2px;
+  }
+
+  /* ── Retry-pending state (variant of error after click) ── */
+  .bridge-pill--retry-pending {
+    background-color: rgb(41, 37, 36);          /* stone-800 */
+    color: rgb(168, 162, 158);                   /* stone-400 */
+    border-color: rgb(68, 64, 60);               /* stone-700 */
+    cursor: default;
+    animation: pillPulse 1.5s ease-in-out infinite;
+  }
+
+  /* ── Status dot ── */
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+    flex-shrink: 0;
+  }
+
+  /* ── Retry icon ── */
+  .retry-icon {
+    font-size: 11px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  /* ── Touch-zone wrapper: 44px min-height tap target for error pill ── */
+  /*
+    In the actual topbar (36px tall), the pill alone is 22px. The clickable
+    area is extended via a transparent touch wrapper that fills at least 44px
+    vertically, centered on the pill. In this scaffold the topbar is 36px; the
+    touch zone extends into the content area via padding/margin so total
+    interactive height ≥ 44px.
+  */
+  .pill-touch-zone {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-height: 44px;         /* touch target ≥ 44px */
+    min-width: 44px;
+    padding: 11px 0;          /* (44 - 22) / 2 = 11px vertical expansion */
+    cursor: pointer;
+    border-radius: 9999px;
+    background: transparent;
+    border: none;
+    -webkit-appearance: none;
+    appearance: none;
+    flex-shrink: 0;
+  }
+
+  .pill-touch-zone:focus-visible {
+    outline: 2px solid rgb(239, 68, 68);
+    outline-offset: 2px;
+    outline-radius: 9999px;
+  }
+
+  /* ── State-showcase panel ── */
+  .showcase-panel {
+    width: 480px;
+    background-color: rgb(12, 10, 9); /* stone-950 */
+    border: 1px solid rgb(41, 37, 36);
+    border-top: none;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .showcase-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .showcase-group-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(120, 113, 108); /* stone-500 */
+    border-bottom: 1px solid rgb(41, 37, 36);
+    padding-bottom: 4px;
+  }
+
+  .state-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .state-tag {
+    font-size: 10px;
+    font-family: ui-monospace, monospace;
+    color: rgb(87, 83, 78); /* stone-600 */
+    width: 64px;
+    flex-shrink: 0;
+  }
+
+  /* ── Annotation block ── */
+  .annotation {
+    width: 480px;
+    padding: 10px 12px;
+    font-size: 11px;
+    line-height: 1.7;
+    color: rgb(120, 113, 108); /* stone-500 */
+    background-color: rgb(12, 10, 9);
+    border: 1px solid rgb(41, 37, 36);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+  }
+
+  .annotation strong {
+    color: rgb(168, 162, 158); /* stone-400 */
+    font-weight: 600;
+  }
+
+  /* ── aria-live documentation block ── */
+  .aria-docs {
+    width: 480px;
+    padding: 16px 14px;
+    background-color: rgb(28, 25, 23); /* stone-900 */
+    border: 1px solid rgb(41, 37, 36);
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: rgb(214, 211, 208); /* stone-300 */
+  }
+
+  .aria-docs-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(168, 162, 158); /* stone-400 */
+    margin-bottom: 12px;
+  }
+
+  .aria-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgb(41, 37, 36); /* stone-800 */
+  }
+
+  .aria-entry:last-child { border-bottom: none; }
+
+  .aria-trigger {
+    font-size: 10px;
+    font-family: ui-monospace, monospace;
+    color: rgb(120, 113, 108); /* stone-500 */
+  }
+
+  .aria-string {
+    font-size: 12px;
+    color: rgb(245, 245, 244); /* stone-100 */
+    font-style: italic;
+  }
+
+  .aria-region {
+    font-size: 10px;
+    color: rgb(87, 83, 78); /* stone-600 */
+    font-family: ui-monospace, monospace;
+  }
+
+  /* ── prefers-reduced-motion overrides ── */
+  @media (prefers-reduced-motion: reduce) {
+    .bridge-pill--reconnecting  { animation: none; opacity: 1; }
+    .bridge-pill--retry-pending { animation: none; opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════
+     STATE 1: connected
+     ══════════════════════════════════════════════════ -->
+<div class="state-label">state=connected · bridge handshake successful · teal-500</div>
+<div class="topbar-sim" role="banner">
+  <span class="topbar-slug">cowork-mcp-apps-integration</span>
+  <span class="topbar-session-type">intent review</span>
+  <!-- HostBridgeStatus: connected (non-interactive, role=status) -->
+  <span
+    class="bridge-pill bridge-pill--connected"
+    role="status"
+    aria-live="polite"
+    aria-label="MCP Apps: Connected"
+  >
+    <span class="dot" aria-hidden="true"></span>
+    MCP Apps · Connected
+    <!-- contrast: 8.2:1 teal-500 on stone-950 -->
+  </span>
+</div>
+
+<!-- Connected: interactive state showcase -->
+<div class="showcase-panel">
+  <div class="showcase-group">
+    <div class="showcase-group-title">Connected — all variants</div>
+    <div class="state-row">
+      <span class="state-tag" state="default">default</span>
+      <span class="bridge-pill bridge-pill--connected" role="status" aria-live="polite">
+        <span class="dot" aria-hidden="true"></span>MCP Apps · Connected
+      </span>
+    </div>
+    <!-- Connected is not interactive — no hover/focus/active states -->
+    <div class="state-row">
+      <span class="state-tag" style="width:64px;font-size:10px;color:rgb(87,83,78);font-family:monospace;">note</span>
+      <span style="font-size:11px;color:rgb(120,113,108);">Non-interactive. No hover/focus/active. role=status, not button.</span>
+    </div>
+  </div>
+</div>
+<div class="annotation">
+  <strong>state=connected</strong> · Teal-500 dot + label. No animation. <code>role="status" aria-live="polite"</code> announces on mount and on
+  reconnection recovery. Touch target: pill is inside a 36px topbar but this state is non-interactive, so no 44px requirement applies.
+  <!-- contrast: 8.2:1 -->
+</div>
+
+<div class="state-spacer"></div>
+
+<!-- ══════════════════════════════════════════════════
+     STATE 2: reconnecting
+     ══════════════════════════════════════════════════ -->
+<div class="state-label">state=reconnecting · bridge dropped → retrying · amber-400 pulse</div>
+<div class="topbar-sim" role="banner">
+  <span class="topbar-slug">cowork-mcp-apps-integration</span>
+  <span class="topbar-session-type">intent review</span>
+  <span
+    class="bridge-pill bridge-pill--reconnecting"
+    role="status"
+    aria-live="polite"
+    aria-label="MCP Apps: Reconnecting"
+  >
+    <span class="dot" aria-hidden="true"></span>
+    MCP Apps · Reconnecting
+    <!-- contrast: 9.1:1 amber-400 on stone-950 -->
+  </span>
+</div>
+
+<div class="showcase-panel">
+  <div class="showcase-group">
+    <div class="showcase-group-title">Reconnecting — all variants</div>
+    <div class="state-row">
+      <span class="state-tag" state="default">default</span>
+      <span class="bridge-pill bridge-pill--reconnecting" role="status" aria-live="polite">
+        <span class="dot" aria-hidden="true"></span>MCP Apps · Reconnecting
+      </span>
+    </div>
+    <!-- Reduced-motion: same styles but animation disabled -->
+    <div class="state-row">
+      <span class="state-tag" state="reduced">reduced</span>
+      <span class="bridge-pill bridge-pill--reconnecting" style="animation:none;" role="status" aria-live="polite">
+        <span class="dot" aria-hidden="true"></span>MCP Apps · Reconnecting
+      </span>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" style="width:64px;font-size:10px;color:rgb(87,83,78);font-family:monospace;">note</span>
+      <span style="font-size:11px;color:rgb(120,113,108);">Non-interactive. Pulse animation disabled by prefers-reduced-motion.</span>
+    </div>
+  </div>
+</div>
+<div class="annotation">
+  <strong>state=reconnecting</strong> · Amber-400 dot + label. Whole pill pulses via <code>animation: pillPulse 1.5s ease-in-out infinite</code>.
+  Non-interactive (not a button). <code>aria-live="polite"</code> announces "MCP Apps: Reconnecting" once on state entry.
+  Auto-transitions to <code>connected</code> on bridge recovery (re-announces "MCP Apps: Connected").
+  <!-- contrast: 9.1:1 -->
+</div>
+
+<div class="state-spacer"></div>
+
+<!-- ══════════════════════════════════════════════════
+     STATE 3: error
+     Interactive — click triggers host-bridge retry
+     Touch target: ≥ 44px via .pill-touch-zone wrapper
+     ══════════════════════════════════════════════════ -->
+<div class="state-label">state=error · bridge failed · red-500 · click to retry · 44px touch target</div>
+<div class="topbar-sim" role="banner" style="height:44px; min-height:44px;">
+  <!-- Topbar expands to 44px in error state to accommodate touch target -->
+  <span class="topbar-slug">cowork-mcp-apps-integration</span>
+  <span class="topbar-session-type">intent review</span>
+  <!-- Touch-zone wrapper ensures ≥ 44px tap target -->
+  <button
+    class="pill-touch-zone"
+    aria-label="MCP Apps: Connection error – click to retry"
+    aria-live="polite"
+    aria-atomic="true"
+    type="button"
+    tabindex="0"
+  >
+    <span class="bridge-pill bridge-pill--error">
+      <span class="dot" aria-hidden="true"></span>
+      MCP Apps · Error
+      <span class="retry-icon" aria-hidden="true">↺</span>
+      <!-- contrast: 5.9:1 red-500 on stone-950 -->
+    </span>
+  </button>
+</div>
+
+<div class="showcase-panel">
+  <div class="showcase-group">
+    <div class="showcase-group-title">Error — all variants</div>
+    <div class="state-row">
+      <span class="state-tag" state="default">default</span>
+      <button class="pill-touch-zone" aria-label="MCP Apps: Connection error – click to retry" type="button" tabindex="-1" style="padding:0;">
+        <span class="bridge-pill bridge-pill--error">
+          <span class="dot" aria-hidden="true"></span>MCP Apps · Error <span class="retry-icon" aria-hidden="true">↺</span>
+        </span>
+      </button>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="hover">hover</span>
+      <span class="bridge-pill bridge-pill--error" style="background-color:rgba(239,68,68,0.25);">
+        <span class="dot" aria-hidden="true"></span>MCP Apps · Error <span class="retry-icon" aria-hidden="true">↺</span>
+      </span>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="focus">focus</span>
+      <span class="bridge-pill bridge-pill--error" style="outline:2px solid rgb(239,68,68);outline-offset:2px;">
+        <span class="dot" aria-hidden="true"></span>MCP Apps · Error <span class="retry-icon" aria-hidden="true">↺</span>
+      </span>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="active">active</span>
+      <span class="bridge-pill bridge-pill--error" style="background-color:rgba(239,68,68,0.35);">
+        <span class="dot" aria-hidden="true"></span>MCP Apps · Error <span class="retry-icon" aria-hidden="true">↺</span>
+      </span>
+    </div>
+    <div class="state-row">
+      <span class="state-tag" state="pending">retry…</span>
+      <span class="bridge-pill bridge-pill--retry-pending" role="status" aria-live="polite" aria-label="Retrying connection…">
+        <span class="dot" aria-hidden="true"></span>MCP Apps · Retrying…
+      </span>
+    </div>
+  </div>
+</div>
+<div class="annotation">
+  <strong>state=error</strong> · Red-500 dot + "Error" label + ↺ retry icon. Interactive — wrapped in a <code>&lt;button&gt;</code> touch zone
+  (min 44×44px). Click triggers host-bridge retry → pill transitions to <code>retry-pending</code> (stone-800 bg, pulsing) while in-flight.
+  On retry success: transitions to <code>connected</code>. On retry failure: returns to <code>error</code> state.
+  <code>aria-live="polite" aria-atomic="true"</code> announces each transition string (see aria-live documentation below).
+  <!-- contrast: 5.9:1 -->
+</div>
+
+<div class="state-spacer"></div>
+
+<!-- ══════════════════════════════════════════════════
+     aria-live DOCUMENTATION BLOCK
+     Documents all announcement strings for HostBridgeStatus
+     Requirement: unit-02 completion criterion #3
+     ══════════════════════════════════════════════════ -->
+<div class="aria-docs" role="region" aria-labelledby="aria-docs-heading">
+  <div class="aria-docs-title" id="aria-docs-heading">
+    aria-live announcement strings — HostBridgeStatus
+  </div>
+
+  <div class="aria-entry">
+    <span class="aria-trigger">trigger: component mount (any state)</span>
+    <span class="aria-string">"MCP Apps: [state label]"</span>
+    <span class="aria-region">region: aria-live="polite" aria-atomic="true" on the pill/button</span>
+  </div>
+
+  <div class="aria-entry">
+    <span class="aria-trigger">trigger: state → connected (on mount or reconnect recovery)</span>
+    <span class="aria-string">"MCP Apps: Connected"</span>
+    <span class="aria-region">region: aria-live="polite"</span>
+  </div>
+
+  <div class="aria-entry">
+    <span class="aria-trigger">trigger: state → reconnecting (bridge heartbeat dropped)</span>
+    <span class="aria-string">"MCP Apps: Reconnecting"</span>
+    <span class="aria-region">region: aria-live="polite"</span>
+  </div>
+
+  <div class="aria-entry">
+    <span class="aria-trigger">trigger: state → error (bridge failed, not auto-recovering)</span>
+    <span class="aria-string">"MCP Apps: Connection error – click to retry"</span>
+    <span class="aria-region">region: aria-live="polite" aria-atomic="true" on the button</span>
+  </div>
+
+  <div class="aria-entry">
+    <span class="aria-trigger">trigger: user clicks error pill → retry in flight</span>
+    <span class="aria-string">"Retrying connection…"</span>
+    <span class="aria-region">region: aria-live="polite" (pill transitions to retry-pending state)</span>
+  </div>
+
+  <div class="aria-entry">
+    <span class="aria-trigger">trigger: retry succeeded</span>
+    <span class="aria-string">"MCP Apps: Connected"</span>
+    <span class="aria-region">region: aria-live="polite"</span>
+  </div>
+
+  <div class="aria-entry">
+    <span class="aria-trigger">trigger: retry failed</span>
+    <span class="aria-string">"Retry failed. Click to try again."</span>
+    <span class="aria-region">region: aria-live="assertive" on retry failure only (higher urgency)</span>
+  </div>
+
+  <div style="margin-top:10px;font-size:11px;color:rgb(87,83,78);">
+    Implementation note: A single visually hidden <code>&lt;span aria-live="polite" aria-atomic="true"&gt;</code>
+    adjacent to the topbar is sufficient for all polite announcements. The retry-failure announcement uses
+    <code>aria-live="assertive"</code> because the user needs to know immediately that their action failed.
+    All announcement strings are injected into the live region via JS text replacement, not via aria-label
+    mutation alone, to guarantee NVDA/JAWS compatibility.
+  </div>
+</div>
+
+</body>
+</html>

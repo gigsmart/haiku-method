@@ -17,6 +17,8 @@ bolt: 1
 hat: designer
 started_at: '2026-04-15T12:44:23Z'
 hat_started_at: '2026-04-15T12:44:23Z'
+outputs: >-
+  ["stages/design/artifacts/error-negotiation.html","stages/design/artifacts/error-sandbox.html","stages/design/artifacts/error-expired.html","stages/design/artifacts/error-stale.html"]
 ---
 
 # Error states for the iframe review experience

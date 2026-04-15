@@ -12,9 +12,12 @@ inputs:
   - stages/design/units/unit-01-iframe-shell-layout.md
 status: active
 bolt: 1
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-15T12:44:12Z'
-hat_started_at: '2026-04-15T12:44:12Z'
+hat_started_at: '2026-04-15T12:49:13Z'
+outputs:
+  - stages/design/artifacts/boot-screen.html
+  - stages/design/artifacts/host-bridge-status.html
 ---
 
 # Iframe boot screen + HostBridgeStatus pill
