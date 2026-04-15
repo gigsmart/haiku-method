@@ -7,10 +7,16 @@ sessionEvents.setMaxListeners(200)
 // ─── Presence / heartbeat tracking ───────────────────────────────────
 // Browser clients HEAD /api/session/:id/heartbeat every 10s. If no
 // heartbeat arrives within HEARTBEAT_GRACE_MS we mark the session as
-// disconnected and wake up any waiting handler so it can reopen the
-// browser or bail out. This replaces the WebSocket-based presence
-// detection that didn't work across tunnel proxies.
-const HEARTBEAT_GRACE_MS = 25_000
+// disconnected and wake up any waiting handler so it can react.
+//
+// Grace is deliberately generous (2 min) because modern browsers
+// aggressively throttle setInterval in backgrounded tabs — Chrome can
+// drop the effective heartbeat cadence to once per minute or slower
+// when a tab loses focus. A tighter grace causes spurious presence-lost
+// events on alive-but-backgrounded tabs, which previously triggered a
+// browser re-open loop that orphaned in-progress comments on the
+// original tab.
+const HEARTBEAT_GRACE_MS = 120_000
 const HEARTBEAT_SWEEP_INTERVAL = 5_000
 const lastHeartbeatAt = new Map<string, number>()
 const presenceLost = new Set<string>()
@@ -26,14 +32,6 @@ export function recordHeartbeat(sessionId: string): boolean {
 
 export function hasPresenceLost(sessionId: string): boolean {
 	return presenceLost.has(sessionId)
-}
-
-/** True if the client has sent a heartbeat within the grace window. */
-export function isClientPresent(sessionId: string): boolean {
-	const ts = lastHeartbeatAt.get(sessionId)
-	if (ts === undefined) return false
-	if (presenceLost.has(sessionId)) return false
-	return Date.now() - ts <= HEARTBEAT_GRACE_MS
 }
 
 export function clearHeartbeat(sessionId: string): void {
