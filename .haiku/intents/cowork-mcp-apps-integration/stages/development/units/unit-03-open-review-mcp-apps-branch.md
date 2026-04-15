@@ -13,12 +13,15 @@ inputs:
   - features/iframe-review-gate.feature
   - features/iframe-decision-submit.feature
   - .haiku/knowledge/ARCHITECTURE.md
-status: active
+status: completed
 bolt: 3
 hat: reviewer
 started_at: '2026-04-15T16:05:33Z'
 hat_started_at: '2026-04-15T16:55:24Z'
 model_original: sonnet
+outputs:
+  - knowledge/unit-03-dev-open-review-mcp-apps-implementation.md
+completed_at: '2026-04-15T16:59:34Z'
 ---
 
 # _openReviewAndWait MCP Apps branch + haiku_cowork_review_submit tool
