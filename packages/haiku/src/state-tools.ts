@@ -20,6 +20,7 @@ import {
 	addTempWorktree,
 	commitAndPushFromWorktree,
 	consolidateStageBranches,
+	fetchOrigin,
 	getCurrentBranch,
 	getMainlineBranch,
 	isBranchMerged,
@@ -1109,6 +1110,12 @@ function repairAllBranches(autoApply: boolean): {
 	mainline: string
 	archivedSummary?: BranchRepairSummary
 } {
+	// Fetch upfront so getMainlineBranch() sees current origin/HEAD and every
+	// worktree created below reflects the latest remote state. Without this,
+	// a stale local ref could cause the repair tool to "fix" issues that were
+	// already fixed on the remote by a previous run, then fail to push with
+	// non-fast-forward, and loop forever. (#206)
+	fetchOrigin()
 	const mainline = getMainlineBranch()
 	const summaries: BranchRepairSummary[] = []
 
@@ -1202,7 +1209,7 @@ function repairAllBranches(autoApply: boolean): {
 			merged: false,
 		}
 		try {
-			worktreePath = addTempWorktree(branch, "haiku-repair")
+			worktreePath = addTempWorktree(branch, "haiku-repair", true)
 		} catch (err) {
 			summary.error = `Failed to create worktree: ${err instanceof Error ? err.message : String(err)}`
 			summaries.push(summary)
@@ -1312,7 +1319,7 @@ function repairArchivedOnMainline(
 
 	let worktreePath = ""
 	try {
-		worktreePath = addTempWorktree(mainline, "haiku-repair-archived")
+		worktreePath = addTempWorktree(mainline, "haiku-repair-archived", true)
 	} catch (err) {
 		// Worktree setup failed — surface a dedicated failure shape so the report
 		// labels this as "Mainline worktree setup failed" rather than "0 archived
@@ -3193,8 +3200,9 @@ export function handleStateTool(
 
 		// ── Review ──
 		case "haiku_review": {
-			// Determine diff base
-			let base = "main"
+			// Determine diff base — prefer the tracked upstream, fall back to the
+			// detected mainline (origin/HEAD-aware), then to a last-resort "main".
+			let base = getMainlineBranch()
 			try {
 				const upstream = spawnSync(
 					"git",
@@ -3205,7 +3213,7 @@ export function handleStateTool(
 					base = upstream.stdout.trim()
 				}
 			} catch {
-				/* fallback to main */
+				/* fallback to detected mainline */
 			}
 
 			// Get diff, stat, and changed files
