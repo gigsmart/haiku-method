@@ -17,9 +17,9 @@ inputs:
   - features/accessibility-iframe.feature
 status: active
 bolt: 1
-hat: specification
+hat: validator
 started_at: '2026-04-15T14:14:16Z'
-hat_started_at: '2026-04-15T14:19:24Z'
+hat_started_at: '2026-04-15T14:21:44Z'
 outputs:
   - features/mcp-apps-capability-negotiation.feature
   - features/workspace-handshake.feature
