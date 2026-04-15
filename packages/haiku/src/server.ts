@@ -45,8 +45,10 @@ import {
 	createDesignDirectionSession,
 	createQuestionSession,
 	createSession,
+	getPreviousReviewSnapshot,
 	getSession,
 	hasPresenceLost,
+	isClientPresent,
 	notifySessionUpdate,
 	updateDesignDirectionSession,
 	updateQuestionSession,
@@ -1164,6 +1166,13 @@ setOpenReviewHandler(
 			parsedMermaid: mermaid,
 		})
 
+		// Attach previous-review snapshot (from a prior changes_requested) so
+		// the SPA can render a delta on the re-review.
+		const prevSnapshot = getPreviousReviewSnapshot(intentDirAbs)
+		if (prevSnapshot) {
+			session.previousReview = prevSnapshot
+		}
+
 		// Parse stage states + knowledge
 		const stageStates = await parseStageStates(intentDirAbs)
 		const knowledgeFiles = await parseKnowledgeFiles(intentDirAbs)
@@ -1273,6 +1282,14 @@ setOpenReviewHandler(
 				}
 
 				if (timedOut) {
+					// Client is still pinging — the user just hasn't decided yet.
+					// Don't burn an attempt or pop a new window; keep waiting.
+					if (isClientPresent(session.session_id)) {
+						console.error(
+							`[haiku] Review session ${session.session_id} wait window elapsed but client still present — continuing to wait`,
+						)
+						continue
+					}
 					if (attempt < 2) {
 						console.error(
 							`[haiku] Review session timeout (attempt ${attempt + 1}/3) — reopening browser`,

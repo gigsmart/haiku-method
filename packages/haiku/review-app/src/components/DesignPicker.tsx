@@ -63,7 +63,8 @@ export function DesignPicker({ session, sessionId, wsRef }: Props) {
     try {
       await submitDesignDirection(sessionId, selectedArchetype, paramValues, wsRef);
       setResult({ success: true, message: `Direction selected: ${selectedArchetype}` });
-      tryCloseTab(setShowClose, {
+      setShowClose(true);
+      tryCloseTab({
         url: `/direction/${sessionId}/select`,
         body: { archetype: selectedArchetype, parameters: paramValues },
       });
