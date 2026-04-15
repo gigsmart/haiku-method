@@ -11,6 +11,11 @@ inputs:
   - knowledge/COVERAGE-MAPPING.md
   - knowledge/ACCEPTANCE-CRITERIA.md
   - knowledge/DATA-CONTRACTS.md
+status: active
+bolt: 1
+hat: product
+started_at: '2026-04-15T14:26:02Z'
+hat_started_at: '2026-04-15T14:26:02Z'
 ---
 
 # Validate coverage mapping
