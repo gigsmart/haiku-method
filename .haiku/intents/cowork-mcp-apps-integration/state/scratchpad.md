@@ -1,33 +1,41 @@
-# unit-03-open-review-mcp-apps-branch scratchpad
+# unit-05-spa-host-bridge — Builder scratchpad
 
-## Status: complete (bolt 1, builder hat)
+## Status: COMPLETE
 
-## What was done
+## What was built
 
-### server.ts changes
-1. **New imports**: Added `logSessionEvent` from `./session-metadata.js`, `notifySessionUpdate` + `updateSession` from `./sessions.js`, `hostSupportsMcpApps` + `setFrontmatterField` from `./state-tools.js`, `buildUiResourceMeta` added to `./ui-resource.js` import.
-2. **Module-level variables**: `_currentReviewSignal: AbortSignal | undefined` and `_reviewResultMeta: { ui: { resourceUri: string } } | undefined`
-3. **CallToolRequestSchema handler**: Now receives `extra` second param, passes `extra.signal` to `handleToolCall`
-4. **handleToolCall**: Updated signature to accept optional `signal: AbortSignal`. Orchestrator tool branch now threads signal via `_currentReviewSignal` with try/finally cleanup.
-5. **haiku_cowork_review_submit tool**: Added to ListToolsRequestSchema tools array (1 of 2 occurrences)
-6. **haiku_cowork_review_submit dispatch**: Added before final Unknown tool fallthrough (2 of 2 occurrences). Uses discriminated union Zod schema. `review` variant wired end-to-end; `question`/`design_direction` return `"unimplemented — see unit-04"`.
-7. **setOpenReviewHandler branched**: `if (hostSupportsMcpApps())` MCP Apps arm + fallthrough HTTP arm (byte-identical to main).
+1. `packages/haiku/review-app/src/host-bridge.ts` — transport router with:
+   - Two-gate probe IIFE at module load time
+   - `isMcpAppsHost()` synchronous getter
+   - `getSession()`, `submitDecision()`, `submitAnswers()`, `submitDesignDirection()`
+   - `trySendViaWs()` helper (copied from useSession.ts)
 
-### Test file
-- `packages/haiku/test/open-review-mcp-apps.test.mjs`
-- 26 tests across Groups A-K covering all CCs
-- All passing
+2. `packages/haiku/review-app/src/ext-apps-shim.ts` — minimal postMessage-based
+   App shim used in Vite build (aliased in vite.config.ts) to stay within gzip
+   budget. Real ext-apps used for TypeScript types and in tests.
 
-## CC Status
-- CC-1: ✅ Non-MCP-Apps arm byte-identical (fallthrough)
-- CC-2: ✅ MCP Apps arm skips local I/O (Group A/G tests)
-- CC-3: ✅ _meta.ui.resourceUri threading via _reviewResultMeta (Group B tests)
-- CC-4: ✅ exactly 2 occurrences of haiku_cowork_review_submit in server.ts
-- CC-5: ✅ approved round-trip (Group C)
-- CC-6: ✅ changes_requested + external_review (Groups D/E)
-- CC-7: ✅ V5-10 timeout fallback (Group H)
-- CC-8: ✅ V5-11 state byte-identity (Group I)
-- CC-9: ✅ commit message contains `unit-02-outcome: blocking`
-- CC-10: ✅ no env-var coupling in diff
-- CC-11: ✅ question/design_direction stubbed (Group J)
-- CC-12: ✅ typecheck + biome + full test suite (286 tests, all pass)
+3. `packages/haiku/review-app/src/host-bridge.test.ts` — 10 Vitest tests covering
+   all feature scenarios
+
+4. `packages/haiku/review-app/src/hooks/useSession.ts` — refactored to delegate
+   through host-bridge
+
+5. `packages/haiku/review-app/vitest.config.ts` — test environment setup
+
+6. `packages/haiku/review-app/vite.config.ts` — added ext-apps alias
+
+7. `packages/haiku/review-app/package.json` — added ext-apps + test deps
+
+## Key decisions
+
+- `@modelcontextprotocol/ext-apps` v1.6.0 ships with `@modelcontextprotocol/sdk`
+  as a peer dep. The full SDK adds ~288 KB uncompressed / ~54 KB gzipped to the
+  bundle. To stay within the 50 KB budget, we created a minimal local shim that
+  provides the App constructor and callServerTool via raw postMessage. The Vite
+  build aliases ext-apps to this shim; vitest uses the real package (mocked in tests).
+
+## Sizes
+- Baseline: 949,254 bytes gzipped
+- After: 950,378 bytes gzipped
+- Budget: 1,000,403 bytes
+- Delta: +1,124 bytes (well within budget)
