@@ -8,11 +8,11 @@ inputs:
   - knowledge/DISCOVERY.md
   - stages/inception/units/unit-04-spa-host-bridge.md
   - stages/inception/units/unit-05-cowork-open-review-handler.md
-status: pending
-bolt: 0
-hat: ''
-started_at: null
-hat_started_at: '2026-04-14T22:32:17Z'
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-15T04:41:26Z'
+hat_started_at: '2026-04-15T04:41:26Z'
 outputs:
   - knowledge/unit-06-visual-question-design-direction-research.md
 completed_at: null
