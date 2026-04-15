@@ -13,9 +13,9 @@ outputs:
   - knowledge/unit-01-elaboration-notes.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-15T04:29:06Z'
-hat_started_at: '2026-04-15T04:29:06Z'
+hat_started_at: '2026-04-15T04:29:44Z'
 completed_at: null
 ---
 
