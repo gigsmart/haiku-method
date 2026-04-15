@@ -12,9 +12,9 @@ outputs:
   - knowledge/unit-03-crosslink-notes.md
 status: active
 bolt: 1
-hat: ops-engineer
+hat: sre
 started_at: '2026-04-15T19:31:58Z'
-hat_started_at: '2026-04-15T19:31:58Z'
+hat_started_at: '2026-04-15T19:33:33Z'
 ---
 
 # Cross-link VALIDATION.md and RUNBOOK.md
