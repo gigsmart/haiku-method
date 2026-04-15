@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<!--
+  error-negotiation.html
+  Error state: Capability-negotiation failure
+  Variants: default | retry-pending | retry-failed
+
+  Token map:
+  --iframe-bg            → stone-950  rgb(12,10,9)
+  --topbar-bg            → stone-900  rgb(28,25,23)
+  --topbar-border        → stone-800  rgb(41,37,36)
+  --card-bg              → stone-900  rgb(28,25,23)
+  --card-border          → stone-800  rgb(41,37,36)
+  --card-border-error    → red-700    rgb(185,28,28)
+  --error-icon-bg        → red-950    rgba(127,29,29,0.4)
+  --error-icon-fg        → red-400    rgb(248,113,113)
+  --error-heading        → stone-100  rgb(245,245,244)
+  --error-body           → stone-300  rgb(214,211,208)
+  --error-code-bg        → stone-950  rgb(12,10,9)
+  --error-code-text      → red-400    rgb(248,113,113)
+  --error-code-border    → stone-800  rgb(41,37,36)
+  --btn-retry-bg         → red-600    rgb(220,38,38)
+  --btn-retry-hover      → red-500    rgb(239,68,68)
+  --btn-retry-focus      → red-400    rgb(248,113,113)
+  --btn-retry-active     → red-700    rgb(185,28,28)
+  --btn-retry-text       → stone-50   rgb(250,250,249)
+  --btn-retry-pending-bg → stone-800  rgb(41,37,36)
+  --btn-retry-pending-tx → stone-400  rgb(168,162,158)
+  --escalate-bg          → stone-950  rgb(12,10,9)
+  --escalate-border      → stone-700  rgb(68,64,60)
+  --escalate-text        → stone-400  rgb(168,162,158)
+  --muted                → stone-500  rgb(120,113,108)
+  --pill-connected       → teal-500   rgb(20,184,166)
+  --pill-error           → red-500    rgb(239,68,68)
+  --dot                  → 6px circle currentColor
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=480, initial-scale=1.0">
+<title>Error: Capability Negotiation — all variants</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background-color: rgb(5, 5, 5);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 14px;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  /* ── Variant label ── */
+  .variant-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgb(120, 113, 108); /* stone-500 */
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+    font-family: ui-monospace, monospace;
+  }
+
+  /* ── iframe simulation container ── */
+  .iframe-sim {
+    width: 480px;
+    min-height: 480px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: rgb(12, 10, 9); /* stone-950 — --iframe-bg */
+    color: rgb(245, 245, 244); /* stone-100 */
+    border: 1px solid rgb(41, 37, 36); /* stone-800 */
+    position: relative;
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    height: 36px;
+    min-height: 36px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 8px;
+    background-color: rgb(28, 25, 23); /* stone-900 */
+    border-bottom: 1px solid rgb(41, 37, 36); /* stone-800 */
+  }
+
+  .topbar-slug {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgb(245, 245, 244); /* stone-100 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+  }
+
+  .bridge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+
+  .bridge-pill--error {
+    background-color: rgba(239, 68, 68, 0.15); /* red-500 15% */
+    color: rgb(239, 68, 68); /* red-500 — --pill-error */
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+    flex-shrink: 0;
+  }
+
+  /* ── Content area ── */
+  .content-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 12px; /* narrow: p-3 sides, p-6 top */
+  }
+
+  /* ── Error card ── */
+  .error-card {
+    width: 100%;
+    max-width: 400px;
+    background-color: rgb(28, 25, 23); /* stone-900 — --card-bg */
+    border: 1px solid rgb(185, 28, 28); /* red-700 — --card-border-error */
+    border-radius: 12px; /* rounded-xl */
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── Error icon ── */
+  .error-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background-color: rgba(127, 29, 29, 0.4); /* red-950 40% — --error-icon-bg */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .error-icon {
+    font-size: 22px;
+    line-height: 1;
+    color: rgb(248, 113, 113); /* red-400 — --error-icon-fg */
+    user-select: none;
+    aria-hidden: true;
+  }
+
+  /* ── Heading row ── */
+  .error-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .error-heading-group {
+    flex: 1;
+  }
+
+  .error-heading {
+    font-size: 15px;
+    font-weight: 700;
+    color: rgb(245, 245, 244); /* stone-100 — --error-heading */
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+
+  .error-subheading {
+    font-size: 12px;
+    color: rgb(120, 113, 108); /* stone-500 — --muted */
+  }
+
+  /* ── Error message (aria-live) ── */
+  .error-message {
+    font-size: 13px;
+    color: rgb(214, 211, 208); /* stone-300 — --error-body */
+    line-height: 1.6;
+  }
+
+  /* ── Error code badge ── */
+  .error-code-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: rgb(12, 10, 9); /* stone-950 — --error-code-bg */
+    border: 1px solid rgb(41, 37, 36); /* stone-800 — --error-code-border */
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    color: rgb(248, 113, 113); /* red-400 — --error-code-text */
+  }
+
+  .error-code-label {
+    color: rgb(120, 113, 108); /* stone-500 */
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 11px;
+  }
+
+  /* ── Primary retry button (default) ── */
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px; /* --iframe-min-touch */
+    padding: 0 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: background-color 120ms ease;
+    width: 100%;
+  }
+
+  .btn-retry {
+    background-color: rgb(220, 38, 38); /* red-600 — --btn-retry-bg */
+    color: rgb(250, 250, 249); /* stone-50 — --btn-retry-text */
+  }
+
+  .btn-retry:hover {
+    background-color: rgb(239, 68, 68); /* red-500 — --btn-retry-hover */
+  }
+
+  .btn-retry:focus-visible {
+    outline: 2px solid rgb(248, 113, 113); /* red-400 — --btn-retry-focus */
+    outline-offset: 2px;
+    background-color: rgb(239, 68, 68);
+  }
+
+  .btn-retry:active {
+    background-color: rgb(185, 28, 28); /* red-700 — --btn-retry-active */
+  }
+
+  /* ── Retry-pending state button ── */
+  .btn-retry--pending {
+    background-color: rgb(41, 37, 36); /* stone-800 — --btn-retry-pending-bg */
+    color: rgb(168, 162, 158); /* stone-400 — --btn-retry-pending-tx */
+    cursor: not-allowed;
+  }
+
+  .btn-retry--pending:hover {
+    background-color: rgb(41, 37, 36);
+  }
+
+  /* Spinner for retry-pending */
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(168, 162, 158, 0.3);
+    border-top-color: rgb(168, 162, 158); /* stone-400 */
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spinner { animation: none; border-top-color: rgb(168, 162, 158); }
+    .btn { transition: none; }
+  }
+
+  /* ── Escalate panel (retry-failed only) ── */
+  .escalate-panel {
+    background-color: rgb(12, 10, 9); /* stone-950 — --escalate-bg */
+    border: 1px solid rgb(68, 64, 60); /* stone-700 — --escalate-border */
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .escalate-heading {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgb(168, 162, 158); /* stone-400 — --escalate-text */
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .escalate-body {
+    font-size: 12px;
+    color: rgb(120, 113, 108); /* stone-500 */
+    line-height: 1.5;
+  }
+
+  .session-id-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .session-id-input {
+    flex: 1;
+    background-color: rgb(28, 25, 23); /* stone-900 */
+    border: 1px solid rgb(41, 37, 36); /* stone-800 */
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    color: rgb(214, 211, 208); /* stone-300 */
+    min-height: 44px; /* --iframe-min-touch */
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: text;
+  }
+
+  .session-id-input:focus {
+    outline: 2px solid rgb(20, 184, 166); /* teal-500 */
+    outline-offset: 0;
+  }
+
+  .btn-copy {
+    background-color: rgb(41, 37, 36); /* stone-800 */
+    color: rgb(214, 211, 208); /* stone-300 */
+    border: 1px solid rgb(68, 64, 60); /* stone-700 */
+    border-radius: 6px;
+    padding: 0 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    min-height: 44px; /* --iframe-min-touch */
+    min-width: 64px;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: background-color 120ms ease;
+  }
+
+  .btn-copy:hover { background-color: rgb(68, 64, 60); } /* stone-700 */
+  .btn-copy:focus-visible {
+    outline: 2px solid rgb(20, 184, 166); /* teal-500 */
+    outline-offset: 2px;
+  }
+  .btn-copy:active { background-color: rgb(28, 25, 23); } /* stone-900 */
+
+  .escalate-hint {
+    font-size: 11px;
+    color: rgb(120, 113, 108); /* stone-500 */
+    line-height: 1.5;
+  }
+
+  /* ── Divider ── */
+  .divider {
+    border: none;
+    border-top: 1px solid rgb(41, 37, 36); /* stone-800 */
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════
+     VARIANT: default
+     variant=default
+     ══════════════════════════════════════════════════ -->
+<div>
+  <div class="variant-label">variant=default</div>
+  <div class="iframe-sim">
+    <header class="topbar" role="banner">
+      <span class="topbar-slug">cowork-mcp-apps-integration</span>
+      <span class="bridge-pill bridge-pill--error" role="status" aria-live="polite" aria-label="MCP Apps: Error">
+        <span class="dot" aria-hidden="true"></span>
+        MCP Apps · Error
+      </span>
+    </header>
+
+    <main class="content-area" role="main">
+      <div class="error-card" role="alertdialog" aria-labelledby="neg-err-heading-default" aria-describedby="neg-err-msg-default">
+        <div class="error-header">
+          <div class="error-icon-wrap" aria-hidden="true">
+            <span class="error-icon">⚠</span>
+          </div>
+          <div class="error-heading-group">
+            <h1 id="neg-err-heading-default" class="error-heading">Bridge handshake failed</h1>
+            <p class="error-subheading">MCP Apps capability detected but unreachable</p>
+          </div>
+        </div>
+
+        <div
+          id="neg-err-msg-default"
+          class="error-message"
+          role="alert"
+          aria-live="assertive"
+        >
+          The host advertised <code style="font-family:ui-monospace,monospace;font-size:12px;color:rgb(248,113,113)">experimental.apps</code> support, but
+          <code style="font-family:ui-monospace,monospace;font-size:12px;color:rgb(248,113,113)">App.callServerTool</code> failed to respond within the
+          allowed timeout. The review session cannot start until the bridge is established.
+        </div>
+
+        <div class="error-code-badge" aria-label="Error code: NEGOTIATION_HANDSHAKE_FAILED">
+          <span class="error-code-label">Error code:</span>
+          NEGOTIATION_HANDSHAKE_FAILED
+        </div>
+
+        <button
+          class="btn btn-retry"
+          type="button"
+          aria-label="Retry bridge handshake"
+        >
+          ↺ Retry connection
+        </button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     VARIANT: retry-pending
+     variant=retry-pending
+     ══════════════════════════════════════════════════ -->
+<div>
+  <div class="variant-label">variant=retry-pending</div>
+  <div class="iframe-sim">
+    <header class="topbar" role="banner">
+      <span class="topbar-slug">cowork-mcp-apps-integration</span>
+      <span class="bridge-pill bridge-pill--error" role="status" aria-live="polite" aria-label="MCP Apps: Error">
+        <span class="dot" aria-hidden="true"></span>
+        MCP Apps · Error
+      </span>
+    </header>
+
+    <main class="content-area" role="main">
+      <div class="error-card" role="alertdialog" aria-labelledby="neg-err-heading-pending" aria-describedby="neg-err-msg-pending">
+        <div class="error-header">
+          <div class="error-icon-wrap" aria-hidden="true">
+            <span class="error-icon">⚠</span>
+          </div>
+          <div class="error-heading-group">
+            <h1 id="neg-err-heading-pending" class="error-heading">Bridge handshake failed</h1>
+            <p class="error-subheading">Retrying… attempt 1 of 3</p>
+          </div>
+        </div>
+
+        <div
+          id="neg-err-msg-pending"
+          class="error-message"
+          role="alert"
+          aria-live="assertive"
+        >
+          Attempting to re-establish the host bridge. This may take a few seconds.
+          Do not close or navigate away from this panel.
+        </div>
+
+        <div class="error-code-badge" aria-label="Error code: NEGOTIATION_HANDSHAKE_FAILED">
+          <span class="error-code-label">Error code:</span>
+          NEGOTIATION_HANDSHAKE_FAILED
+        </div>
+
+        <button
+          class="btn btn-retry btn-retry--pending"
+          type="button"
+          aria-disabled="true"
+          aria-label="Retry in progress"
+          disabled
+        >
+          <span class="spinner" aria-hidden="true"></span>
+          Retrying…
+        </button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     VARIANT: retry-failed
+     variant=retry-failed (escalate panel revealed)
+     ══════════════════════════════════════════════════ -->
+<div>
+  <div class="variant-label">variant=retry-failed</div>
+  <div class="iframe-sim">
+    <header class="topbar" role="banner">
+      <span class="topbar-slug">cowork-mcp-apps-integration</span>
+      <span class="bridge-pill bridge-pill--error" role="status" aria-live="polite" aria-label="MCP Apps: Error">
+        <span class="dot" aria-hidden="true"></span>
+        MCP Apps · Error
+      </span>
+    </header>
+
+    <main class="content-area" role="main">
+      <div class="error-card" role="alertdialog" aria-labelledby="neg-err-heading-failed" aria-describedby="neg-err-msg-failed">
+        <div class="error-header">
+          <div class="error-icon-wrap" aria-hidden="true">
+            <span class="error-icon">⊗</span>
+          </div>
+          <div class="error-heading-group">
+            <h1 id="neg-err-heading-failed" class="error-heading">Connection could not be restored</h1>
+            <p class="error-subheading">3 retry attempts exhausted</p>
+          </div>
+        </div>
+
+        <div
+          id="neg-err-msg-failed"
+          class="error-message"
+          role="alert"
+          aria-live="assertive"
+        >
+          The host bridge failed to respond after 3 attempts. The review session cannot
+          continue in this panel. Copy the session ID below and paste it into the chat
+          to ask Claude Code to reopen the review.
+        </div>
+
+        <div class="error-code-badge" aria-label="Error code: NEGOTIATION_HANDSHAKE_FAILED">
+          <span class="error-code-label">Error code:</span>
+          NEGOTIATION_HANDSHAKE_FAILED
+        </div>
+
+        <button
+          class="btn btn-retry btn-retry--pending"
+          type="button"
+          aria-disabled="true"
+          disabled
+        >
+          <span class="spinner" aria-hidden="true"></span>
+          Retrying…
+        </button>
+
+        <hr class="divider" />
+
+        <!-- Escalate panel -->
+        <div class="escalate-panel" role="region" aria-label="Escalation: session ID for bug report">
+          <p class="escalate-heading">Session ID</p>
+          <p class="escalate-body">
+            Copy this ID and paste it into the chat:
+            <em style="font-style:normal;color:rgb(214,211,208)">"The review panel failed — session <span style="font-family:ui-monospace,monospace">PASTE_ID_HERE</span>"</em>
+          </p>
+          <div class="session-id-row">
+            <input
+              type="text"
+              class="session-id-input"
+              value="rev_01HZ4KW9X3QNBM7FVGYTD6E5R"
+              readonly
+              aria-label="Review session ID — read-only, select to copy"
+            />
+            <button class="btn-copy" type="button" aria-label="Copy session ID to clipboard">
+              Copy
+            </button>
+          </div>
+          <p class="escalate-hint">
+            Triggered by: <code style="font-family:ui-monospace,monospace;font-size:11px">App.callServerTool("haiku_review")
+            </code> → no response after 3 × 5s timeout.
+          </p>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+</body>
+</html>
