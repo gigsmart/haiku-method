@@ -16,9 +16,9 @@ inputs:
   - stages/inception/units/unit-04-spa-host-bridge.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-15T04:38:10Z'
-hat_started_at: '2026-04-15T04:38:10Z'
+hat_started_at: '2026-04-15T04:39:57Z'
 outputs:
   - knowledge/unit-05-open-review-handler-research.md
 completed_at: null
