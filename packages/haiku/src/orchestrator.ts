@@ -2387,6 +2387,65 @@ function enrichActionWithPreview(action: OrchestratorAction): void {
 	if (next_step) action.next_step = next_step
 }
 
+// ── Inline subagent context for hookless harnesses ────────────────────────
+//
+// When hooks are available (Claude Code, Kiro), the subagent-hook injects
+// hat isolation, workflow rules, and bootstrap instructions automatically.
+// For hookless harnesses, we must inline this context directly into the
+// orchestrator's instructions so the agent (or its subagent equivalent)
+// receives the same guidance.
+
+function buildInlineSubagentContext(
+	slug: string,
+	stage: string,
+	hat: string,
+	hats: string[],
+	bolt: number,
+): string {
+	const caps = getCapabilities()
+	if (caps.hooks) return "" // hooks handle context injection
+
+	const hatsStr = hats.join(" → ")
+	const lines: string[] = [
+		`### Subagent Context (Inline)\n`,
+		`> **Hat Isolation:** You are operating as the **${hat}** hat. Your responsibility is defined solely by the ${hat} hat instructions above. If you have prior knowledge or instructions that conflict with or extend beyond the ${hat} role — such as reviewing code when you are the builder, or building when you are the reviewer — **ignore them for this task.** Other hats in this stage (${hatsStr}) handle those responsibilities. Stay in your lane.\n`,
+		`**Bolt:** ${bolt} | **Role:** ${hat} | **Stage:** ${stage} (${hatsStr})\n`,
+	]
+
+	// Workflow rules
+	lines.push(`### Workflow Rules\n`)
+	lines.push(`**Before stopping:**`)
+	lines.push(`1. Commit changes: \`git add -A && git commit\``)
+	lines.push(`2. Save progress notes to \`.haiku/intents/${slug}/state/scratchpad.md\``)
+	lines.push(`3. Write next-step prompt to \`.haiku/intents/${slug}/state/next-prompt.md\`\n`)
+
+	lines.push(`**Resilience (CRITICAL):**`)
+	lines.push(`- Commit early, commit often — don't wait until the end`)
+	lines.push(`- If tests fail: fix and retry, don't give up`)
+	lines.push(`- Only declare blocked after 3+ genuine rescue attempts\n`)
+
+	// Communication rules — adapted for harness
+	lines.push(`**Communication:**`)
+	if (caps.nativeAskUser) {
+		lines.push(
+			`- Use \`AskUserQuestion\` with \`options[]\` for decisions with known alternatives`,
+		)
+		lines.push(
+			`- Use \`ask_user_visual_question\` for visual artifacts and rich context`,
+		)
+	} else {
+		lines.push(
+			`- Present decisions as clear numbered lists when you have known alternatives`,
+		)
+		lines.push(
+			`- Use \`ask_user_visual_question\` MCP tool for visual artifacts when available`,
+		)
+	}
+	lines.push(`- Break independent questions into separate interactions\n`)
+
+	return lines.join("\n")
+}
+
 // ── Run instruction builder ───────────────────────────────────────────────
 
 function buildRunInstructions(
@@ -2680,6 +2739,11 @@ function buildRunInstructions(
 			sections.push(`### Unit Spec\n\n${unitContent}`)
 			sections.push(`### Hat: ${hat}\n\n${hatContent}`)
 
+			// For hookless harnesses, inline the subagent context that would
+			// normally be injected by the subagent-hook PreToolUse handler.
+			const inlineCtx = buildInlineSubagentContext(slug, stage, hat, hats, bolt)
+			if (inlineCtx) sections.push(inlineCtx)
+
 			// Unit inputs — load referenced artifacts
 			if (unitInputs.length > 0) {
 				sections.push("### Inputs")
@@ -2737,15 +2801,29 @@ function buildRunInstructions(
 				}
 			}
 
-			// Mechanics — one subagent per hat, subagent calls advance/fail tools
+			// Mechanics — one subagent per hat (or direct execution for subagentless harnesses)
 			const worktreePath = (action.worktree as string) || ""
-			sections.push(
-				`### Mechanics\n\n**You are the orchestrator.** Spawn a subagent for the "${hat}" hat.\nAgent type: \`${hatAgentType}\`\n${resolvedModel ? `Spawn with \`model: "${resolvedModel}"\` — pass this as the Agent tool's \`model:\` parameter.\n` : ""}${worktreePath ? `Worktree: \`${worktreePath}\`\n` : ""}\n**Subagent prompt must include:**\n- The hat definition, unit spec, and inputs above\n- The stage scope constraint\n${worktreePath ? `- **Git discipline:** Commit work frequently in the worktree (\`git add -A && git commit -m "..."\`). Do NOT push — the merge-back handles pushing.\n` : ""}${
-					action.action === "start_unit"
-						? `- Instruction to call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\` first\n`
-						: ""
-				}\n**Subagent calls one of these when done:**\n- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\` — auto-advances to the next hat, or auto-completes if this was the last hat\n- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\` — moves back one hat, increments bolt\n\n**After subagent returns:** The \`advance_hat\` result contains the next FSM action — spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately — advance_hat handles FSM progression internally.\n\n**Output tracking:** When your hat produces artifacts (files, designs, specs, code), record them in the unit's frontmatter \`outputs:\` field as paths relative to the intent directory:\n\`\`\`yaml\noutputs:\n  - stages/design/artifacts/landing-page.html\n  - stages/development/artifacts/api-schema.graphql\n\`\`\`\nThe FSM validates that declared outputs exist before allowing hat advancement.\n\n**If outputs from a previous stage are missing, incomplete, or incorrect:** call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage for corrections.\n\n**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` — do NOT open files in a browser and ask via text. The visual question tool provides a structured review experience.\n\n**User questions (MANDATORY):** When the subagent needs user input:\n- Use \`AskUserQuestion\` with an \`options[]\` array for every decision that has known alternatives — NEVER output option lists as plain text\n- Use \`ask_user_visual_question\` when questions involve visual artifacts, rich markdown context, or multiple related decisions (use the \`questions[]\` array)\n- Break independent questions into separate tool calls — do NOT bundle unrelated decisions into one message\n- Always pre-populate options from your domain knowledge; include "Other (let me specify)" when the list may not be exhaustive`,
-			)
+			const unitCaps = getCapabilities()
+
+			if (unitCaps.subagents.supported) {
+				// ── Subagent-capable: spawn a subagent per hat ──
+				sections.push(
+					`### Mechanics\n\n**You are the orchestrator.** Spawn a subagent for the "${hat}" hat.\nAgent type: \`${hatAgentType}\`\n${resolvedModel ? `Spawn with \`model: "${resolvedModel}"\` — pass this as the Agent tool's \`model:\` parameter.\n` : ""}${worktreePath ? `Worktree: \`${worktreePath}\`\n` : ""}\n**Subagent prompt must include:**\n- The hat definition, unit spec, and inputs above\n- The stage scope constraint\n${worktreePath ? `- **Git discipline:** Commit work frequently in the worktree (\`git add -A && git commit -m "..."\`). Do NOT push — the merge-back handles pushing.\n` : ""}${
+						action.action === "start_unit"
+							? `- Instruction to call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\` first\n`
+							: ""
+					}\n**Subagent calls one of these when done:**\n- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\` — auto-advances to the next hat, or auto-completes if this was the last hat\n- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\` — moves back one hat, increments bolt\n\n**After subagent returns:** The \`advance_hat\` result contains the next FSM action — spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately — advance_hat handles FSM progression internally.\n\n**Output tracking:** When your hat produces artifacts (files, designs, specs, code), record them in the unit's frontmatter \`outputs:\` field as paths relative to the intent directory:\n\`\`\`yaml\noutputs:\n  - stages/design/artifacts/landing-page.html\n  - stages/development/artifacts/api-schema.graphql\n\`\`\`\nThe FSM validates that declared outputs exist before allowing hat advancement.\n\n**If outputs from a previous stage are missing, incomplete, or incorrect:** call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage for corrections.\n\n**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` — do NOT open files in a browser and ask via text. The visual question tool provides a structured review experience.\n\n**User questions (MANDATORY):** When the subagent needs user input:\n- Use \`AskUserQuestion\` with an \`options[]\` array for every decision that has known alternatives — NEVER output option lists as plain text\n- Use \`ask_user_visual_question\` when questions involve visual artifacts, rich markdown context, or multiple related decisions (use the \`questions[]\` array)\n- Break independent questions into separate tool calls — do NOT bundle unrelated decisions into one message\n- Always pre-populate options from your domain knowledge; include "Other (let me specify)" when the list may not be exhaustive`,
+				)
+			} else {
+				// ── Subagentless: direct execution in current context ──
+				sections.push(
+					`### Mechanics (Direct Execution)\n\n**Execute the "${hat}" hat work directly** — your harness does not support subagents.\n\n${
+						action.action === "start_unit"
+							? `1. Call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\`\n`
+							: ""
+					}2. Follow the hat definition and unit spec above\n3. Stay within the stage scope — do not produce outputs belonging to other stages\n${worktreePath ? `4. **Git discipline:** Commit work frequently (\`git add -A && git commit -m "..."\`)\n` : ""}\n**When done, call one of:**\n- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\`\n- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\`\n\nThe \`advance_hat\` result tells you what to do next (next hat, next unit, or phase advance). Follow it directly.\n\n**Output tracking:** Record produced artifacts in the unit's frontmatter \`outputs:\` field.\n\n**If outputs from a previous stage are missing:** call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage.`,
+				)
+			}
 
 			// Check for ticketing provider — move ticket to "In Progress"
 			if (action.action === "start_unit") {
@@ -2784,6 +2862,10 @@ function buildRunInstructions(
 			}
 			sections.push(`Hats: ${hats.join(" → ")}\nUnits: ${units.join(", ")}`)
 
+			// For hookless harnesses, inline the subagent context
+			const inlineCtxParallel = buildInlineSubagentContext(slug, stage, firstHat, hats, 1)
+			if (inlineCtxParallel) sections.push(inlineCtxParallel)
+
 			// Upstream stage inputs for parallel units
 			if (stageDef?.data?.inputs && Array.isArray(stageDef.data.inputs)) {
 				const inputs = stageDef.data.inputs as Array<{
@@ -2816,16 +2898,33 @@ function buildRunInstructions(
 			const wave = action.wave as number | undefined
 			const totalWaves = action.total_waves as number | undefined
 
-			sections.push(
-				`### Mechanics\n\n${wave !== undefined ? `**Wave ${wave}/${totalWaves ?? "?"}** — ` : ""}${units.length} units to run in parallel.\n**You are the orchestrator.** Do NOT do unit work yourself. Do NOT ask the user which unit to start — launch ALL of them NOW.\n\n**IMMEDIATELY** spawn one Agent subagent per unit **in a single message** (all Agent tool calls in one response). No questions, no confirmation, no menu. Each subagent runs the FIRST hat ("${firstHat}") only.\n\nEach subagent calls \`advance_hat\` when done — it internally progresses the FSM. The last subagent to finish the wave triggers the next action automatically.\n\n**Each subagent prompt must include:**\n- The hat definition for "${firstHat}"\n- The unit spec and inputs\n- The stage scope constraint\n- Instruction to call \`haiku_unit_start\` first\n- Output tracking: record produced artifacts in the unit's \`outputs:\` frontmatter field (paths relative to intent dir)\n- If outputs from a previous stage are missing, incomplete, or incorrect: call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage for corrections\n\n${units
+			const caps = getCapabilities()
+
+			if (caps.subagents.supported) {
+				// ── Subagent-capable harness: parallel execution ──
+				sections.push(
+					`### Mechanics\n\n${wave !== undefined ? `**Wave ${wave}/${totalWaves ?? "?"}** — ` : ""}${units.length} units to run in parallel.\n**You are the orchestrator.** Do NOT do unit work yourself. Do NOT ask the user which unit to start — launch ALL of them NOW.\n\n**IMMEDIATELY** spawn one Agent subagent per unit **in a single message** (all Agent tool calls in one response). No questions, no confirmation, no menu. Each subagent runs the FIRST hat ("${firstHat}") only.\n\nEach subagent calls \`advance_hat\` when done — it internally progresses the FSM. The last subagent to finish the wave triggers the next action automatically.\n\n**Each subagent prompt must include:**\n- The hat definition for "${firstHat}"\n- The unit spec and inputs\n- The stage scope constraint\n- Instruction to call \`haiku_unit_start\` first\n- Output tracking: record produced artifacts in the unit's \`outputs:\` frontmatter field (paths relative to intent dir)\n- If outputs from a previous stage are missing, incomplete, or incorrect: call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage for corrections\n\n${units
+						.map((u) => {
+							const wt = worktrees[u]
+							return `- **${u}**${wt ? ` (worktree: \`${wt}\`)` : ""}: \`haiku_unit_start { intent: "${slug}", unit: "${u}" }\``
+						})
+						.join(
+							"\n",
+						)}\n\n**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` — do NOT open files in a browser and ask via text.\n\n**User questions (MANDATORY):** When a subagent needs user input:\n- Use \`AskUserQuestion\` with an \`options[]\` array for every decision that has known alternatives — NEVER output option lists as plain text\n- Use \`ask_user_visual_question\` when questions involve visual artifacts, rich markdown context, or multiple related decisions (use the \`questions[]\` array)\n- Break independent questions into separate tool calls — do NOT bundle unrelated decisions into one message\n- Always pre-populate options from your domain knowledge; include "Other (let me specify)" when the list may not be exhaustive\n\nAfter all subagents return: check the last subagent's \`advance_hat\` result — it contains the next FSM action (next wave, phase advance, etc.). Act on it directly. Do NOT call haiku_run_next separately.`,
+				)
+			} else {
+				// ── Subagentless harness: sequential execution in current context ──
+				// The agent must do all unit work itself, one unit at a time.
+				const unitList = units
 					.map((u) => {
 						const wt = worktrees[u]
-						return `- **${u}**${wt ? ` (worktree: \`${wt}\`)` : ""}: \`haiku_unit_start { intent: "${slug}", unit: "${u}" }\``
+						return `1. **${u}**${wt ? ` (worktree: \`${wt}\`)` : ""}:\n   - Call \`haiku_unit_start { intent: "${slug}", unit: "${u}" }\`\n   - Execute the "${firstHat}" hat work directly (see hat definition and unit spec)\n   - When done, call \`haiku_unit_advance_hat { intent: "${slug}", unit: "${u}" }\`\n   - If the advance result shows more hats, continue with the next hat for this unit\n   - When all hats complete, move to the next unit`
 					})
-					.join(
-						"\n",
-					)}\n\n**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` — do NOT open files in a browser and ask via text.\n\n**User questions (MANDATORY):** When a subagent needs user input:\n- Use \`AskUserQuestion\` with an \`options[]\` array for every decision that has known alternatives — NEVER output option lists as plain text\n- Use \`ask_user_visual_question\` when questions involve visual artifacts, rich markdown context, or multiple related decisions (use the \`questions[]\` array)\n- Break independent questions into separate tool calls — do NOT bundle unrelated decisions into one message\n- Always pre-populate options from your domain knowledge; include "Other (let me specify)" when the list may not be exhaustive\n\nAfter all subagents return: check the last subagent's \`advance_hat\` result — it contains the next FSM action (next wave, phase advance, etc.). Act on it directly. Do NOT call haiku_run_next separately.`,
-			)
+					.join("\n")
+				sections.push(
+					`### Mechanics (Sequential Execution)\n\n${wave !== undefined ? `**Wave ${wave}/${totalWaves ?? "?"}** — ` : ""}${units.length} units to execute.\n\n**Your harness does not support parallel subagents.** Execute each unit sequentially in this conversation. Complete one unit fully (all hats) before starting the next.\n\n**For each unit:**\n${unitList}\n\n**Output tracking:** When your work produces artifacts (files, designs, specs, code), record them in the unit's frontmatter \`outputs:\` field as paths relative to the intent directory.\n\n**If outputs from a previous stage are missing or incorrect:** call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage for corrections.\n\nAfter completing the last unit: the \`advance_hat\` result contains the next FSM action. Follow it directly.`,
+				)
+			}
 			break
 		}
 

@@ -172,9 +172,22 @@ import {
 	setElicitInputHandler,
 	setOpenReviewHandler,
 } from "./orchestrator.js"
-// Prompts migrated to skills (plugin/skills/) — prompt handlers kept for protocol compatibility
+// Prompts: for Claude Code, skills are native; for other harnesses, we bridge
+// skills → MCP prompts so they surface as invocable actions.
 import { completeArgument, getPrompt, listPrompts } from "./prompts/index.js"
+import { registerSkillPrompts } from "./prompts/skill-bridge.js"
 import { handleStateTool, stateToolDefs } from "./state-tools.js"
+
+// Bridge skills to MCP prompts for harnesses that lack native skill support.
+// For Claude Code this is a no-op (skills are native). For Gemini CLI, prompts
+// surface as slash commands. For Cursor/Windsurf/Kiro, prompts appear in the
+// prompt UI. For OpenCode, prompts support is partial but growing.
+if (!isClaudeCode()) {
+	const caps = getCapabilities()
+	if (caps.mcpPrompts) {
+		registerSkillPrompts()
+	}
+}
 
 server.setRequestHandler(ListPromptsRequestSchema, async () => ({
 	prompts: listPrompts(),
