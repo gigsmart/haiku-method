@@ -21,11 +21,6 @@ interface Props {
   onClearAll: () => void;
   onScrollTo: (id: string) => void;
   onAddGeneral: (comment: string) => void;
-  /** Controlled general-comment text — lifted to parent so it can be persisted as a draft. */
-  generalText: string;
-  onGeneralTextChange: (text: string) => void;
-  /** Clear the persisted draft after a successful submission. */
-  onClearDraft: () => void;
 }
 
 function truncate(text: string, max: number): string {
@@ -39,13 +34,13 @@ function typeIcon(type: string): string {
   return "\u{1F4AC}";
 }
 
-export function ReviewSidebar({ sessionId, gateType = "ask", comments, getAnnotations, wsRef, onDelete, onEdit, onClearAll, onScrollTo, onAddGeneral, generalText, onGeneralTextChange, onClearDraft }: Props) {
+export function ReviewSidebar({ sessionId, gateType = "ask", comments, getAnnotations, wsRef, onDelete, onEdit, onClearAll, onScrollTo, onAddGeneral }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [showClose, setShowClose] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
-  const setGeneralText = onGeneralTextChange;
+  const [generalText, setGeneralText] = useState("");
   const [promptForComment, setPromptForComment] = useState(false);
   const [showApproveConfirm, setShowApproveConfirm] = useState(false);
   const generalRef = useRef<HTMLTextAreaElement>(null);
@@ -79,9 +74,7 @@ export function ReviewSidebar({ sessionId, gateType = "ask", comments, getAnnota
       onClearAll();
       const annotations = getAnnotations();
       await submitDecision(sessionId, "approved", "", annotations, wsRef);
-      onClearDraft();
-      setShowClose(true);
-      tryCloseTab({ url: `/review/${sessionId}/decide`, body: { decision: "approved", feedback: "" } });
+      tryCloseTab(setShowClose, { url: `/review/${sessionId}/decide`, body: { decision: "approved", feedback: "" } });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
       setSubmitting(false);
@@ -116,9 +109,7 @@ export function ReviewSidebar({ sessionId, gateType = "ask", comments, getAnnota
         .join("\n\n");
 
       await submitDecision(sessionId, "changes_requested", feedback, annotations, wsRef);
-      onClearDraft();
-      setShowClose(true);
-      tryCloseTab({ url: `/review/${sessionId}/decide`, body: { decision: "changes_requested", feedback } });
+      tryCloseTab(setShowClose, { url: `/review/${sessionId}/decide`, body: { decision: "changes_requested", feedback } });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
       setSubmitting(false);
@@ -132,9 +123,7 @@ export function ReviewSidebar({ sessionId, gateType = "ask", comments, getAnnota
     try {
       const annotations = getAnnotations();
       await submitDecision(sessionId, "external_review", "Submitted for external review. Run /haiku:pickup after approval.", annotations, wsRef);
-      onClearDraft();
-      setShowClose(true);
-      tryCloseTab({ url: `/review/${sessionId}/decide`, body: { decision: "external_review", feedback: "Submitted for external review" } });
+      tryCloseTab(setShowClose, { url: `/review/${sessionId}/decide`, body: { decision: "external_review", feedback: "Submitted for external review" } });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
       setSubmitting(false);

@@ -25,7 +25,6 @@ import { logSessionEvent } from "./session-metadata.js"
 import {
 	clearHeartbeat,
 	createSession,
-	getPreviousReviewSnapshot,
 	getSession,
 	waitForSession,
 } from "./sessions.js"
@@ -121,13 +120,6 @@ export async function openReviewMcpApps(
 		parsedCriteria: criteria,
 		parsedMermaid: mermaid,
 	})
-
-	// Attach previous-review snapshot (from a prior changes_requested) so
-	// the SPA can render a delta on the re-review.
-	const prevSnapshot = getPreviousReviewSnapshot(intentDirAbs)
-	if (prevSnapshot) {
-		session.previousReview = prevSnapshot
-	}
 
 	// Parse stage states + knowledge
 	const stageStates = await parseStageStates(intentDirAbs)

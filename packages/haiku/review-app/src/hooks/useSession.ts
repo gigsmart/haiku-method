@@ -118,13 +118,15 @@ export async function submitDesignDirection(
   return bridgeSubmitDesignDirection(sessionId, archetype, parameters, wsRef);
 }
 
-/** Best-effort attempt to close the tab after a submission.
- *  Caller is responsible for updating its own UI state — this helper only
- *  fires a last-ditch sendBeacon and calls window.close(). window.close() is
- *  a no-op for tabs the script didn't open, so callers MUST not gate their
- *  success state on this. */
-export function tryCloseTab(beacon?: { url: string; body: unknown }) {
+/** Try to close the tab, or show fallback message.
+ *  Accepts an optional beacon payload so a last-ditch sendBeacon fires
+ *  right before window.close() in case the earlier fetch was still in-flight. */
+export function tryCloseTab(
+  setShowClose: (show: boolean) => void,
+  beacon?: { url: string; body: unknown },
+) {
   setTimeout(() => {
+    // Fire-and-forget beacon as a safety net — survives tab close
     if (beacon && navigator.sendBeacon) {
       navigator.sendBeacon(
         beacon.url,
@@ -132,5 +134,9 @@ export function tryCloseTab(beacon?: { url: string; body: unknown }) {
       );
     }
     window.close();
+    // If still open after 500ms, show fallback
+    setTimeout(() => {
+      setShowClose(true);
+    }, 500);
   }, 200);
 }

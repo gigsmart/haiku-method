@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { SessionData, ReviewAnnotations, ParsedUnit, MockupInfo, Section, OutputArtifact, PreviousReviewSnapshot } from "../types";
+import { useCallback, useRef, useState } from "react";
+import type { SessionData, ReviewAnnotations, ParsedUnit, MockupInfo, Section, OutputArtifact } from "../types";
 import { StatusBadge, MarkdownViewer, CriteriaChecklist } from "@haiku/shared";
 import { Tabs, type TabDef } from "./Tabs";
 import { Card, SectionHeading } from "./Card";
@@ -51,46 +51,8 @@ function getPreamble(sections: Section[]): string {
   return preamble?.content ?? "";
 }
 
-interface ReviewDraft {
-  generalText: string;
-  generalComments: SidebarComment[];
-}
-
-const DRAFT_STORAGE_KEY = (sessionId: string) => `haiku-review-draft:${sessionId}`;
-
-function loadDraft(sessionId: string): ReviewDraft {
-  try {
-    const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY(sessionId));
-    if (!raw) return { generalText: "", generalComments: [] };
-    const parsed = JSON.parse(raw) as Partial<ReviewDraft>;
-    return {
-      generalText: typeof parsed.generalText === "string" ? parsed.generalText : "",
-      generalComments: Array.isArray(parsed.generalComments) ? parsed.generalComments : [],
-    };
-  } catch {
-    return { generalText: "", generalComments: [] };
-  }
-}
-
-function saveDraft(sessionId: string, draft: ReviewDraft): void {
-  try {
-    // Empty draft — remove the key so we don't leave stale entries behind.
-    if (!draft.generalText && draft.generalComments.length === 0) {
-      window.localStorage.removeItem(DRAFT_STORAGE_KEY(sessionId));
-      return;
-    }
-    window.localStorage.setItem(DRAFT_STORAGE_KEY(sessionId), JSON.stringify(draft));
-  } catch {
-    /* localStorage full / disabled — drop silently */
-  }
-}
-
 export function ReviewPage({ session, sessionId, wsRef }: Props) {
   const isIframe = isMcpAppsHost();
-
-  // Hydrate persisted draft on mount so a refresh doesn't nuke in-progress
-  // comments. Inline highlights and pins are DOM-bound and not restored here.
-  const initialDraft = useState<ReviewDraft>(() => loadDraft(sessionId))[0];
   // Lifted comment state: all inline comments and pins across tabs
   const [allInlineComments, setAllInlineComments] = useState<InlineCommentEntry[]>([]);
   const [allPins, setAllPins] = useState<AnnotationPin[]>([]);
@@ -127,29 +89,8 @@ export function ReviewPage({ session, sessionId, wsRef }: Props) {
   }, []);
 
   // General comments (added via sidebar)
-  const [generalComments, setGeneralComments] = useState<SidebarComment[]>(initialDraft.generalComments);
-  const [generalText, setGeneralText] = useState<string>(initialDraft.generalText);
+  const [generalComments, setGeneralComments] = useState<SidebarComment[]>([]);
   let generalCounter = useRef(0);
-
-  // Persist draft (general text + general comments) to localStorage so a
-  // refresh doesn't lose typed-but-not-submitted feedback. Debounced to avoid
-  // thrashing on every keystroke.
-  useEffect(() => {
-    const t = setTimeout(() => {
-      saveDraft(sessionId, { generalText, generalComments });
-    }, 250);
-    return () => clearTimeout(t);
-  }, [sessionId, generalText, generalComments]);
-
-  const clearDraft = useCallback(() => {
-    setGeneralText("");
-    setGeneralComments([]);
-    try {
-      window.localStorage.removeItem(DRAFT_STORAGE_KEY(sessionId));
-    } catch {
-      /* ignore */
-    }
-  }, [sessionId]);
 
   const handleAddGeneral = useCallback((comment: string) => {
     generalCounter.current++;
@@ -245,7 +186,6 @@ export function ReviewPage({ session, sessionId, wsRef }: Props) {
     setAllInlineComments([]);
     setAllPins([]);
     setGeneralComments([]);
-    setGeneralText("");
   }, []);
 
   const handleScrollTo = useCallback((id: string) => {
@@ -305,9 +245,6 @@ export function ReviewPage({ session, sessionId, wsRef }: Props) {
     <div className="flex gap-6">
       {/* Main content — grows to fill available space */}
       <div className="flex-1 min-w-0">
-        {session.previous_review && (
-          <RereviewBanner snapshot={session.previous_review} />
-        )}
         {session.review_type === "unit" && session.target ? (
           <UnitReview {...commonProps} />
         ) : (
@@ -326,9 +263,6 @@ export function ReviewPage({ session, sessionId, wsRef }: Props) {
         onClearAll={handleClearAll}
         onScrollTo={handleScrollTo}
         onAddGeneral={handleAddGeneral}
-        generalText={generalText}
-        onGeneralTextChange={setGeneralText}
-        onClearDraft={clearDraft}
       />
     </div>
   );
@@ -1121,53 +1055,5 @@ function MockupEmbeds({ mockups }: { mockups: MockupInfo[] }) {
  *  InlineComments needs raw HTML, so we use remark instead of react-markdown. */
 function markdownToSimpleHtml(md: string): string {
   return remark().use(remarkGfm).use(remarkHtml).processSync(md).toString();
-}
-
-function formatRelativeTime(iso: string): string {
-  try {
-    const then = new Date(iso).getTime();
-    if (!Number.isFinite(then)) return "";
-    const diffMs = Date.now() - then;
-    const mins = Math.round(diffMs / 60_000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins} minute${mins === 1 ? "" : "s"} ago`;
-    const hours = Math.round(mins / 60);
-    if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
-    const days = Math.round(hours / 24);
-    return `${days} day${days === 1 ? "" : "s"} ago`;
-  } catch {
-    return "";
-  }
-}
-
-/** Banner shown at the top of a re-review session. Displays the previous
- *  reviewer's feedback and when it was submitted, so the user can see what
- *  they asked for without hunting for it. The per-unit "Changed" badges
- *  elsewhere indicate which units were actually edited in response. */
-function RereviewBanner({ snapshot }: { snapshot: PreviousReviewSnapshot }) {
-  const relative = formatRelativeTime(snapshot.reviewedAt);
-  return (
-    <div className="mb-4 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 p-4">
-      <div className="flex items-start gap-2 mb-2">
-        <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 text-xs font-semibold">
-          Re-review
-        </span>
-        <span className="text-xs text-amber-800 dark:text-amber-300">
-          You requested changes on this intent{relative ? ` \u2014 ${relative}` : ""}.
-          Edited units are flagged with a <strong>Changed</strong> badge below.
-        </span>
-      </div>
-      {snapshot.feedback.trim() && (
-        <details className="mt-2" open>
-          <summary className="cursor-pointer text-xs font-medium text-amber-900 dark:text-amber-200">
-            Your previous feedback
-          </summary>
-          <pre className="mt-2 whitespace-pre-wrap break-words text-xs text-stone-800 dark:text-stone-200 bg-white/60 dark:bg-stone-900/60 p-3 rounded border border-amber-200 dark:border-amber-800">
-            {snapshot.feedback}
-          </pre>
-        </details>
-      )}
-    </div>
-  );
 }
 
