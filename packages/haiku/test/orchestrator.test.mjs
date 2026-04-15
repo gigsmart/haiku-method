@@ -500,6 +500,176 @@ stages: []
   assert.ok(result.message.includes("no stages"))
 })
 
+// ── runNext: safe intent repair ──────────────────────────────────────────
+
+console.log("\n=== runNext: safe intent repair ===")
+
+test("synthesizes completion for empty prior stages when active stage has units", () => {
+  // Simulates a migrated intent: active_stage=build but plan has no state.json
+  const { projDir, intentDirPath, slug } = createProject("repair-synthesize", {
+    active_stage: "build",
+    intent_reviewed: true,
+  })
+  // Only create state for build (the active stage) — plan has no state.json
+  createStageState(intentDirPath, "build", { phase: "elaborate", status: "active" })
+  createUnit(intentDirPath, "build", "unit-01-impl", { inputs: ["intent.md"] })
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // Should NOT reset to plan — should synthesize plan completion and proceed
+  assert.notStrictEqual(result.action, "error")
+  // The plan stage should now have a completed state.json
+  const planState = readJson(join(intentDirPath, "stages", "plan", "state.json"))
+  assert.strictEqual(planState.status, "completed")
+  assert.strictEqual(planState.phase, "gate")
+  assert.strictEqual(planState.gate_outcome, "advanced")
+})
+
+test("synthesizes completion for multiple empty prior stages", () => {
+  const stages = ["inception", "design", "build", "review"]
+  const { projDir, intentDirPath, slug } = createProject("repair-multi", {
+    active_stage: "build",
+    stages,
+  })
+  // Only build has state and units
+  createStageState(intentDirPath, "build", { phase: "elaborate", status: "active" })
+  createUnit(intentDirPath, "build", "unit-01-code", { inputs: ["intent.md"] })
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // inception and design should both be synthesized
+  const inceptionState = readJson(join(intentDirPath, "stages", "inception", "state.json"))
+  const designState = readJson(join(intentDirPath, "stages", "design", "state.json"))
+  assert.strictEqual(inceptionState.status, "completed")
+  assert.strictEqual(designState.status, "completed")
+})
+
+test("falls through to normal processing after clean repair", () => {
+  const { projDir, intentDirPath, slug } = createProject("repair-fallthrough", {
+    active_stage: "build",
+    intent_reviewed: true,
+  })
+  createStageState(intentDirPath, "build", { phase: "elaborate", status: "active" })
+  createUnit(intentDirPath, "build", "unit-01-work", { inputs: ["intent.md"] })
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // After repair, should fall through to normal elaborate handling
+  // (gate_review since units have inputs, or elaborate if collaborative)
+  assert.ok(
+    ["elaborate", "gate_review", "elaboration_insufficient"].includes(result.action),
+    `Expected normal action after repair, got: ${result.action}`
+  )
+  assert.strictEqual(result.stage, "build")
+})
+
+test("regresses phase to elaborate when units lack inputs", () => {
+  const { projDir, intentDirPath, slug } = createProject("repair-regress", {
+    active_stage: "build",
+    intent_reviewed: true,
+  })
+  // Build stage in execute phase but units missing inputs
+  createStageState(intentDirPath, "build", { phase: "execute", status: "active" })
+  // Create unit WITHOUT inputs (empty inputs array)
+  const unitsDir = join(intentDirPath, "stages", "build", "units")
+  mkdirSync(unitsDir, { recursive: true })
+  writeFileSync(join(unitsDir, "unit-01-legacy.md"), `---
+name: unit-01-legacy
+type: task
+status: pending
+depends_on: []
+bolt: 0
+hat: ""
+---
+
+Legacy unit without inputs.
+`)
+  process.chdir(projDir)
+  const result = runNext(slug)
+  assert.strictEqual(result.action, "safe_intent_repair")
+  assert.strictEqual(result.phase_regressed, true)
+  // Phase should be regressed in state.json
+  const buildState = readJson(join(intentDirPath, "stages", "build", "state.json"))
+  assert.strictEqual(buildState.phase, "elaborate")
+})
+
+test("does not regress phase when all units have inputs", () => {
+  const { projDir, intentDirPath, slug } = createProject("repair-no-regress", {
+    active_stage: "build",
+    intent_reviewed: true,
+  })
+  createStageState(intentDirPath, "build", { phase: "execute", status: "active" })
+  createUnit(intentDirPath, "build", "unit-01-good", {
+    inputs: ["intent.md", "knowledge/DISCOVERY.md"],
+    status: "pending",
+  })
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // Should NOT return safe_intent_repair — should fall through to normal execute
+  assert.notStrictEqual(result.action, "safe_intent_repair")
+  const buildState = readJson(join(intentDirPath, "stages", "build", "state.json"))
+  assert.strictEqual(buildState.phase, "execute")
+})
+
+test("skips completed units when checking for missing inputs", () => {
+  const { projDir, intentDirPath, slug } = createProject("repair-skip-completed", {
+    active_stage: "build",
+    intent_reviewed: true,
+  })
+  createStageState(intentDirPath, "build", { phase: "execute", status: "active" })
+  // One completed unit without inputs (legacy) — should be skipped
+  const unitsDir = join(intentDirPath, "stages", "build", "units")
+  mkdirSync(unitsDir, { recursive: true })
+  writeFileSync(join(unitsDir, "unit-01-done.md"), `---
+name: unit-01-done
+type: task
+status: completed
+depends_on: []
+bolt: 0
+hat: ""
+started_at: 2026-04-04T18:00:00Z
+completed_at: 2026-04-04T19:00:00Z
+---
+
+Done unit.
+`)
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // Should NOT regress — only completed units exist
+  assert.notStrictEqual(result.action, "safe_intent_repair")
+})
+
+test("flags stages with units as needing manual review", () => {
+  const stages = ["plan", "build", "review"]
+  const { projDir, intentDirPath, slug } = createProject("repair-manual", {
+    active_stage: "review",
+    stages,
+    intent_reviewed: true,
+  })
+  // plan has units but isn't completed
+  createStageState(intentDirPath, "plan", { phase: "elaborate", status: "active" })
+  createUnit(intentDirPath, "plan", "unit-01-plan-work")
+  // build is completed
+  createStageState(intentDirPath, "build", { phase: "gate", status: "completed", gate_outcome: "advanced" })
+  // review is the active stage with units
+  createStageState(intentDirPath, "review", { phase: "elaborate", status: "active" })
+  createUnit(intentDirPath, "review", "unit-01-review-work")
+  process.chdir(projDir)
+  const result = runNext(slug)
+  assert.strictEqual(result.action, "safe_intent_repair")
+  assert.ok(result.needs_manual_review.includes("plan"))
+})
+
+test("resets active_stage backwards when active stage has no units", () => {
+  // This is the normal consistency fix — no safe repair
+  const { projDir, intentDirPath, slug } = createProject("repair-normal-reset", {
+    active_stage: "build",
+  })
+  // No units in build, no state.json for plan
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // Should reset to plan (first incomplete stage) and start it
+  assert.strictEqual(result.action, "start_stage")
+  assert.strictEqual(result.stage, "plan")
+})
+
 // ── Cleanup ───────────────────────────────────────────────────────────────
 
 console.log(`\n${passed} passed, ${failed} failed\n`)

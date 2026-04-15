@@ -959,26 +959,170 @@ export function runNext(slug: string): OrchestratorAction {
 	}
 
 	// Consistency check: verify all stages before active_stage are completed.
-	// If not, reset to the first incomplete stage. This catches stale active_stage
-	// values set by old binaries or direct file edits.
+	// If not, either synthesize completion records (safe repair) or reset to
+	// the first incomplete stage. Safe repair triggers when the active stage
+	// has real work (units) — this indicates a migrated intent where earlier
+	// stages were never elaborated. Resetting backwards would force
+	// re-elaboration of empty stages while real work sits in a later stage.
 	const activeIdx = studioStages.indexOf(currentStage)
 	if (activeIdx > 0) {
+		// Collect all incomplete prior stages in one pass
+		const incompletePrior: string[] = []
 		for (let i = 0; i < activeIdx; i++) {
 			const prevState = readJson(
 				join(iDir, "stages", studioStages[i], "state.json"),
 			)
 			const prevStatus = (prevState.status as string) || "pending"
 			if (prevStatus !== "completed") {
-				// Found an incomplete stage before active_stage — reset
-				currentStage = studioStages[i]
-				// Fix the intent's active_stage to match reality
+				incompletePrior.push(studioStages[i])
+			}
+		}
+
+		if (incompletePrior.length > 0) {
+			// Check if the active stage has real work — units on disk
+			const activeUnitsDir = join(iDir, "stages", currentStage, "units")
+			const activeUnitFiles = existsSync(activeUnitsDir)
+				? readdirSync(activeUnitsDir).filter((f) => f.endsWith(".md"))
+				: []
+
+			if (activeUnitFiles.length > 0) {
+				// ── Safe intent repair ──────────────────────────────────────
+				// The active stage has real work but earlier stages are incomplete.
+				// This is a migration artifact (e.g., AIDLC → H·AI·K·U migration
+				// that only populated the development stage). Synthesize completion
+				// records for incomplete prior stages so the FSM can proceed without
+				// forcing re-elaboration of empty stages.
+				//
+				// Safety constraints:
+				// 1. Only synthesizes for stages with NO units (truly empty)
+				//    — stages with units but incomplete status are left for manual review
+				// 2. Uses the same completion record format as haiku_repair
+				// 3. The agent cannot trigger this — it's FSM-internal
+				// 4. No hook bypass — this runs inside haiku_run_next
+
+				const synthesized: string[] = []
+				const needsManualReview: string[] = []
+				const now = timestamp()
+				const intentStarted =
+					(intent.started_at as string) || (intent.created_at as string) || now
+
+				for (const stageName of incompletePrior) {
+					const priorUnitsDir = join(iDir, "stages", stageName, "units")
+					const priorUnitFiles = existsSync(priorUnitsDir)
+						? readdirSync(priorUnitsDir).filter((f) => f.endsWith(".md"))
+						: []
+
+					if (priorUnitFiles.length > 0) {
+						// Stage has units but isn't completed — this needs manual attention
+						needsManualReview.push(stageName)
+					} else {
+						// Truly empty prior stage — safe to synthesize completion
+						const stageDir = join(iDir, "stages", stageName)
+						mkdirSync(stageDir, { recursive: true })
+						const statePath = join(stageDir, "state.json")
+						writeJson(statePath, {
+							stage: stageName,
+							status: "completed",
+							phase: "gate",
+							started_at: intentStarted,
+							completed_at: intentStarted,
+							gate_entered_at: null,
+							gate_outcome: "advanced",
+						})
+						synthesized.push(stageName)
+					}
+				}
+
+				// Check if the active stage's units need input backfill.
+				// If the stage is in execute phase but units lack inputs, regress
+				// to elaborate so the normal backpressure can enforce input declarations.
+				const activeStageState = readJson(
+					join(iDir, "stages", currentStage, "state.json"),
+				)
+				const activePhase = (activeStageState.phase as string) || ""
+				let phaseRegressed = false
+				const missingInputs: string[] = []
+				if (activePhase === "execute") {
+					for (const f of activeUnitFiles) {
+						const fm = readFrontmatter(join(activeUnitsDir, f))
+						const unitStatus = (fm.status as string) || ""
+						if (["completed", "skipped", "failed"].includes(unitStatus))
+							continue
+						const inputs =
+							(fm.inputs as string[]) || (fm.refs as string[]) || []
+						if (inputs.length === 0) missingInputs.push(f)
+					}
+					if (missingInputs.length > 0) {
+						// Regress phase to elaborate so validateUnitInputs catches this
+						activeStageState.phase = "elaborate"
+						writeJson(
+							join(iDir, "stages", currentStage, "state.json"),
+							activeStageState,
+						)
+						phaseRegressed = true
+					}
+				}
+
+				if (synthesized.length > 0 || phaseRegressed) {
+					gitCommitState(
+						`haiku: safe-repair ${slug} — synthesize ${synthesized.join(", ")}${phaseRegressed ? "; regress phase to elaborate" : ""}`,
+					)
+				}
+
+				emitTelemetry("haiku.fsm.safe_repair", {
+					intent: slug,
+					active_stage: currentStage,
+					synthesized_stages: synthesized.join(","),
+					needs_manual_review: needsManualReview.join(","),
+					phase_regressed: String(phaseRegressed),
+				})
+
+				// If all incomplete stages were synthesized, proceed normally
+				// by falling through to the rest of runNext. If any need manual
+				// review, return an action so the agent can report the situation.
+				if (needsManualReview.length > 0) {
+					return {
+						action: "safe_intent_repair",
+						intent: slug,
+						studio,
+						stage: currentStage,
+						synthesized_stages: synthesized,
+						needs_manual_review: needsManualReview,
+						phase_regressed: phaseRegressed,
+						units_missing_inputs: missingInputs,
+						message: `Intent '${slug}' was in an inconsistent state — work exists in '${currentStage}' but earlier stages were incomplete.\n\n${synthesized.length > 0 ? `Synthesized completion records for empty stages: [${synthesized.join(", ")}]\n` : ""}Stages needing manual review (have units but aren't completed): [${needsManualReview.join(", ")}]\n${phaseRegressed ? `\nAdditionally, phase was regressed from 'execute' to 'elaborate' because some units are missing \`inputs:\` declarations.\n` : ""}Resolve these stages manually, then call haiku_run_next again.`,
+					}
+				}
+
+				// All prior stages synthesized — if phase was regressed, let the
+				// agent know so it can address missing inputs before execution.
+				// Otherwise fall through to normal processing.
+				if (phaseRegressed) {
+					return {
+						action: "safe_intent_repair",
+						intent: slug,
+						studio,
+						stage: currentStage,
+						synthesized_stages: synthesized,
+						needs_manual_review: [],
+						phase_regressed: true,
+						units_missing_inputs: missingInputs,
+						message: `Intent '${slug}' repaired — synthesized completion for [${synthesized.join(", ")}]. Phase regressed from 'execute' to 'elaborate' because some units are missing \`inputs:\` declarations. Add inputs to the flagged units, then call haiku_run_next to proceed.`,
+					}
+				}
+
+				// Clean repair with no phase regression — fall through to normal
+				// runNext processing. The agent doesn't need to take special action.
+			} else {
+				// No units in the active stage — normal consistency reset.
+				// The intent may have been corrupted or active_stage set incorrectly.
+				currentStage = incompletePrior[0]
 				setFrontmatterField(intentFile, "active_stage", currentStage)
 				emitTelemetry("haiku.fsm.consistency_fix", {
 					intent: slug,
 					stale_stage: activeStage,
 					corrected_stage: currentStage,
 				})
-				break
 			}
 		}
 	}
@@ -3067,6 +3211,24 @@ function buildRunInstructions(
 			break
 		}
 
+		case "safe_intent_repair": {
+			const synthesizedStages = (action.synthesized_stages as string[]) || []
+			const phaseWasRegressed = (action.phase_regressed as boolean) || false
+			sections.push(`## Safe Intent Repair\n\n${action.message}`)
+			if (synthesizedStages.length > 0) {
+				sections.push(`**Synthesized stages:** ${synthesizedStages.join(", ")}`)
+			}
+			if (phaseWasRegressed) {
+				sections.push(
+					"**Phase regressed:** The active stage was regressed from `execute` to `elaborate` because some units are missing `inputs:` declarations. Address the missing inputs before proceeding.",
+				)
+			}
+			sections.push(
+				`### Instructions\n\nResolve any stages needing manual review, then call \`haiku_run_next { intent: "${slug}" }\` again.`,
+			)
+			break
+		}
+
 		default: {
 			sections.push(
 				`## Unknown Action: ${action.action}\n\n${JSON.stringify(action, null, 2)}`,
@@ -3679,6 +3841,82 @@ export async function handleOrchestratorTool(
 					],
 					isError: true,
 				}
+			}
+		}
+
+		// ── Repair agent intercept ─────────────────────────────────────────
+		// If runNext detected a broken migrated intent, try the embedded repair
+		// agent before returning to the outer agent. Falls through to the normal
+		// withInstructions return if the agent isn't available or repair fails.
+		if (result.action === "safe_intent_repair") {
+			try {
+				const { runRepairAgent } = await import("./repair-agent.js")
+				const root = findHaikuRoot()
+				const iDir = join(root, "intents", slug)
+
+				// Resolve studio directory via the cached studio reader
+				const studioInfo = resolveStudio(intentStudio)
+				const studioDir = studioInfo?.path
+				if (!studioDir) {
+					// Can't find studio — fall through to normal handling
+					syncSessionMetadata(slug, args.state_file as string | undefined)
+					return text(withInstructions(result))
+				}
+
+				const activeStage = (result.stage as string) || ""
+				const diagnosis = {
+					slug,
+					intentDir: iDir,
+					studio: intentStudio,
+					studioDir,
+					activeStage,
+					synthesizedStages: (result.synthesized_stages as string[]) || [],
+					needsManualReview: (result.needs_manual_review as string[]) || [],
+					phaseRegressed: (result.phase_regressed as boolean) || false,
+					unitsMissingInputs: (result.units_missing_inputs as string[]) || [],
+				}
+
+				const repairResult = await runRepairAgent(diagnosis)
+
+				if (repairResult.success && !repairResult.fallbackUsed) {
+					// Repair agent succeeded — run FSM again to get the real next action
+					const postRepairResult = runNext(slug)
+
+					// Guard: if repair didn't actually fix things, don't loop
+					if (postRepairResult.action === "safe_intent_repair") {
+						// Fall through to return the original result as-is
+					} else {
+						emitTelemetry("haiku.orchestrator.action", {
+							intent: slug,
+							action: postRepairResult.action,
+						})
+						if (stFile)
+							logSessionEvent(stFile, {
+								event: "run_next",
+								intent: slug,
+								action: postRepairResult.action,
+								stage: postRepairResult.stage,
+								unit: postRepairResult.unit,
+								hat: postRepairResult.hat,
+								wave: postRepairResult.wave,
+							})
+
+						syncSessionMetadata(slug, args.state_file as string | undefined)
+
+						const repairNote = `**Intent repaired automatically:** ${repairResult.summary}\n\n---\n\n`
+						return {
+							content: [
+								{
+									type: "text" as const,
+									text: repairNote + withInstructions(postRepairResult),
+								},
+							],
+						}
+					}
+				}
+				// Repair failed or used fallback — fall through to return safe_intent_repair as-is
+			} catch {
+				// Repair agent not available — fall through to normal handling
 			}
 		}
 
