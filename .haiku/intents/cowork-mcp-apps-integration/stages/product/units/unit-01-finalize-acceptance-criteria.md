@@ -9,7 +9,7 @@ inputs:
   - knowledge/ACCEPTANCE-CRITERIA.md
   - stages/design/DESIGN-BRIEF.md
   - knowledge/DESIGN-TOKENS.md
-status: active
+status: completed
 bolt: 1
 hat: validator
 started_at: '2026-04-15T13:53:30Z'
@@ -17,6 +17,7 @@ hat_started_at: '2026-04-15T14:10:13Z'
 outputs:
   - knowledge/ACCEPTANCE-CRITERIA.md
   - knowledge/DATA-CONTRACTS.md
+completed_at: '2026-04-15T14:12:51Z'
 ---
 
 # Finalize ACCEPTANCE-CRITERIA.md
