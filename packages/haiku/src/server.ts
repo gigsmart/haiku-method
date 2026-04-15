@@ -391,10 +391,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 	// 2. Respect maxTools limit for constrained harnesses (Cursor ~40, Windsurf 100)
 	let filteredTools = allTools
 
-	// For harnesses with tool count limits, keep the most essential tools
+	// Step 1: Remove browser-based UI tools for non-Claude harnesses.
+	// These tools open a local HTTP server + browser window which won't work
+	// in headless IDE environments. Removing them frees tool slots for harnesses
+	// with tight limits (Cursor ~40).
+	if (!isClaudeCode()) {
+		const browserTools = new Set([
+			"ask_user_visual_question",
+			"pick_design_direction",
+		])
+		filteredTools = filteredTools.filter((t) => !browserTools.has(t.name))
+	}
+
+	// Step 2: Enforce tool count limit
 	if (caps.maxTools !== null && filteredTools.length > caps.maxTools) {
-		// Priority: orchestration tools first, then state tools, then UI tools
-		// The allTools array is already in this order, so just truncate
 		console.error(
 			`[haiku] Harness tool limit (${caps.maxTools}) exceeded — exposing ${caps.maxTools} of ${filteredTools.length} tools`,
 		)

@@ -12,66 +12,65 @@ import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { join } from "node:path"
 import type { GetPromptResult } from "@modelcontextprotocol/sdk/types.js"
 import { resolvePluginRoot } from "../config.js"
+import { parseFrontmatter } from "../state-tools.js"
 import { registerPrompt } from "./index.js"
-
-interface SkillFrontmatter {
-	name: string
-	description: string
-}
-
-function parseFrontmatter(content: string): {
-	data: SkillFrontmatter
-	body: string
-} {
-	const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
-	if (!match) return { data: { name: "", description: "" }, body: content }
-
-	const fmBlock = match[1]
-	const body = match[2]
-
-	const data: Record<string, string> = {}
-	for (const line of fmBlock.split("\n")) {
-		const kv = line.match(/^(\w+):\s*(.+)$/)
-		if (kv) data[kv[1]] = kv[2].trim()
-	}
-
-	return {
-		data: {
-			name: data.name || "",
-			description: data.description || "",
-		},
-		body: body.trim(),
-	}
-}
 
 /**
  * Read all SKILL.md files from plugin/skills/ and register them as MCP prompts.
- *
- * Each skill becomes a prompt named `haiku:{skillname}` with:
- * - The skill description as the prompt description
- * - An optional `args` argument for passing parameters
- * - A handler that returns the SKILL.md body as the prompt content
+ * Also registers `haiku:status` unconditionally for session resumption.
  */
 export function registerSkillPrompts(): number {
+	let count = 0
+
+	// Always register the status prompt — valuable for session resumption
+	// regardless of whether skill files are present.
+	registerPrompt({
+		name: "haiku:status",
+		title: "H·AI·K·U: Check active work",
+		description:
+			"Check for active H·AI·K·U intents and get your current action. " +
+			"Call this at the start of every session to resume in-progress work.",
+		arguments: [],
+		handler: async (): Promise<GetPromptResult> => {
+			return {
+				description: "Check for active H·AI·K·U work",
+				messages: [
+					{
+						role: "user",
+						content: {
+							type: "text",
+							text:
+								"Check if there is active H·AI·K·U work in this project.\n\n" +
+								"1. Call `haiku_dashboard` to see all intents and their status\n" +
+								'2. If there is an active intent, call `haiku_run_next { intent: "<slug>" }` to get your current action\n' +
+								"3. If no active intents exist, let me know — I can start one with `haiku:start`\n\n" +
+								"Do this silently — just check and report what you find.",
+						},
+					},
+				],
+			}
+		},
+	})
+	count++
+
+	// Bridge skills from plugin/skills/ to MCP prompts
 	const pluginRoot = resolvePluginRoot()
 	if (!pluginRoot) {
-		console.error("[haiku] Plugin root not found — cannot bridge skills")
-		return 0
+		console.error(
+			`[haiku] Registered ${count} prompt(s) (plugin root not found — skills not bridged)`,
+		)
+		return count
 	}
 
 	const skillsDir = join(pluginRoot, "skills")
-	const hasSkillsDir = existsSync(skillsDir)
-	if (!hasSkillsDir) {
+	if (!existsSync(skillsDir)) {
 		console.error(
-			`[haiku] Skills directory not found: ${skillsDir} — ` +
-				"registering haiku:status only",
+			`[haiku] Registered ${count} prompt(s) (skills dir not found — skills not bridged)`,
 		)
+		return count
 	}
 
-	let count = 0
-	const entries = hasSkillsDir
-		? readdirSync(skillsDir, { withFileTypes: true })
-		: []
+	const entries = readdirSync(skillsDir, { withFileTypes: true })
 
 	for (const entry of entries) {
 		if (!entry.isDirectory()) continue
@@ -82,13 +81,14 @@ export function registerSkillPrompts(): number {
 		const raw = readFileSync(skillFile, "utf8")
 		const { data, body } = parseFrontmatter(raw)
 
-		const skillName = data.name || entry.name
+		const skillName = (data.name as string) || entry.name
+		const skillDesc = (data.description as string) || ""
 		const promptName = `haiku:${skillName}`
 
 		registerPrompt({
 			name: promptName,
 			title: `H·AI·K·U: ${skillName}`,
-			description: data.description || `Run the H·AI·K·U ${skillName} workflow`,
+			description: skillDesc || `Run the H·AI·K·U ${skillName} workflow`,
 			arguments: [
 				{
 					name: "args",
@@ -123,41 +123,9 @@ export function registerSkillPrompts(): number {
 		count++
 	}
 
-	// Register a startup/status prompt that replaces the inject-context SessionStart hook.
-	// For hookless harnesses, the agent has no automatic context injection on session start.
-	// This prompt gives the agent a way to discover active H·AI·K·U work.
-	registerPrompt({
-		name: "haiku:status",
-		title: "H·AI·K·U: Check active work",
-		description:
-			"Check for active H·AI·K·U intents and get your current action. " +
-			"Call this at the start of every session to resume in-progress work.",
-		arguments: [],
-		handler: async (): Promise<GetPromptResult> => {
-			return {
-				description: "Check for active H·AI·K·U work",
-				messages: [
-					{
-						role: "user",
-						content: {
-							type: "text",
-							text:
-								"Check if there is active H·AI·K·U work in this project.\n\n" +
-								"1. Call `haiku_dashboard` to see all intents and their status\n" +
-								'2. If there is an active intent, call `haiku_run_next { intent: "<slug>" }` to get your current action\n' +
-								"3. If no active intents exist, let me know — I can start one with `haiku:start`\n\n" +
-								"Do this silently — just check and report what you find.",
-						},
-					},
-				],
-			}
-		},
-	})
-	count++
-
 	if (count > 0) {
 		console.error(
-			`[haiku] Registered ${count} skill(s) as MCP prompts (harness lacks native skill support)`,
+			`[haiku] Registered ${count} prompt(s) as MCP prompts (harness lacks native skill support)`,
 		)
 	}
 

@@ -9,7 +9,7 @@
 // store a checksum of the protected fields. On the next read, we verify
 // the checksum. Mismatches indicate tampering.
 //
-// The checksum is stored in state.json as `_fsm_checksum` — a field the
+// The checksum is stored as a sidecar `.fsm_checksum` file — a field the
 // agent has no reason to know about or replicate correctly.
 
 import { createHash } from "node:crypto"
@@ -82,13 +82,11 @@ export function sealIntentState(slug: string): void {
 		const { data } = parseFrontmatter(raw)
 		const activeStage = (data.active_stage as string) || ""
 
-		// Checksum intent-level fields
 		const intentFields = extractFields(
 			data as Record<string, unknown>,
 			INTENT_FIELDS,
 		)
 
-		// Checksum stage-level fields (if active stage exists)
 		let stageFields: Record<string, unknown> = {}
 		if (activeStage) {
 			const ssPath = stageStatePath(slug, activeStage)
@@ -107,13 +105,10 @@ export function sealIntentState(slug: string): void {
 		}
 		const checksum = computeChecksum(combined)
 
-		// Store in a sidecar file to avoid modifying state.json (which would
-		// change its checksum and create a chicken-and-egg problem)
 		const checksumPath = join(root, "intents", slug, ".fsm_checksum")
 		writeFileSync(checksumPath, checksum)
 	} catch (err) {
 		// Non-fatal — never break the FSM for integrity tracking.
-		// Log so silent failures are debuggable.
 		console.error(`[haiku] sealIntentState(${slug}) failed:`, err)
 	}
 }
@@ -175,8 +170,6 @@ export function verifyIntentState(slug: string): string | null {
 
 		return null
 	} catch (err) {
-		// Non-fatal — don't block on integrity check failures, but log so
-		// silent failures are debuggable.
 		console.error(`[haiku] verifyIntentState(${slug}) failed:`, err)
 		return null
 	}

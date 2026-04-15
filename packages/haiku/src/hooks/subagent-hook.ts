@@ -24,9 +24,7 @@ export async function subagentHook(
 	// Claude Code: Agent, Task, Skill. Kiro: /spawn. Others may vary.
 	const agentToolNames = new Set(caps.subagents.toolNames)
 	const isAgentTool =
-		toolName === "Agent" ||
-		toolName === "Task" ||
-		agentToolNames.has(toolName)
+		toolName === "Agent" || toolName === "Task" || agentToolNames.has(toolName)
 	const isSkillTool = toolName === "Skill"
 	const targetField = isAgentTool ? "prompt" : isSkillTool ? "args" : "prompt"
 

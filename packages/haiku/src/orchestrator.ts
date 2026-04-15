@@ -3102,8 +3102,12 @@ function buildRunInstructions(
 				1,
 			)
 			const parallelCaps = getCapabilities()
-			if (inlineCtxParallel && parallelCaps.subagents.supported) {
-				sharedParts.push(inlineCtxParallel)
+			if (inlineCtxParallel) {
+				if (parallelCaps.subagents.supported) {
+					sharedParts.push(inlineCtxParallel)
+				} else {
+					sections.push(inlineCtxParallel)
+				}
 			}
 
 			// Upstream stage inputs — build once, embed in each subagent

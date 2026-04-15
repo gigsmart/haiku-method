@@ -31,6 +31,8 @@ if (cmd === "mcp") {
 		harnessName = process.env.HAIKU_HARNESS || ""
 	}
 
+	// Set harness BEFORE importing server — server.ts module-level code reads
+	// capabilities at init time (skill bridging, tool filtering).
 	const harnessReady = harnessName
 		? import("./harness.js").then((m) => m.setHarness(harnessName))
 		: Promise.resolve()
