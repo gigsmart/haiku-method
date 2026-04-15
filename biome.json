@@ -7,7 +7,14 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": ["node_modules", ".next", "out", "dist"]
+    "ignore": [
+      "node_modules",
+      ".next",
+      "out",
+      "dist",
+      "packages/haiku/src/review-app-html.ts",
+      "packages/haiku/src/templates/tailwind-generated.ts"
+    ]
   },
   "formatter": {
     "enabled": true,

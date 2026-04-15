@@ -4,7 +4,7 @@
  * Run before esbuild so the CSS is available as a string constant.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -13,22 +13,17 @@ const root = join(__dir, "..");
 const cssFile = join(root, "src/templates/tailwind.css");
 const tsFile = join(root, "src/templates/tailwind-generated.ts");
 
-// Resolve Tailwind CLI — may be hoisted to workspace root
-let tailwindBin = join(root, "node_modules/.bin/tailwindcss");
-if (!existsSync(tailwindBin)) {
-  tailwindBin = join(root, "../../node_modules/.bin/tailwindcss");
-}
-
-// Run Tailwind CLI
+// Run Tailwind CLI via npx — resolves correctly from any worktree depth
 execFileSync(
-  tailwindBin,
+  "npx",
   [
+    "tailwindcss",
     "-c", join(root, "tailwind.config.cjs"),
     "-i", join(root, "src/templates/input.css"),
     "-o", cssFile,
     "--minify",
   ],
-  { stdio: ["ignore", "ignore", "inherit"] },
+  { stdio: ["ignore", "ignore", "inherit"], cwd: root },
 );
 
 // Read the generated CSS
