@@ -14,9 +14,9 @@ inputs:
   - stages/design/units/unit-04-iframe-content-screens.md
 status: active
 bolt: 1
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-15T13:01:06Z'
-hat_started_at: '2026-04-15T13:01:06Z'
+hat_started_at: '2026-04-15T13:04:27Z'
 outputs:
   - stages/design/artifacts/success-approved.html
   - stages/design/artifacts/success-changes-requested.html
