@@ -116,7 +116,7 @@ export function applyAutoFixes(
 	const raw = readFileSync(intentPath, "utf8")
 	const parsed = matter(raw)
 	const data = parsed.data
-	let body = parsed.content
+	const body = parsed.content
 	let changed = false
 	const applied: AppliedFix[] = []
 	const remaining: RepairIssue[] = []
@@ -124,34 +124,27 @@ export function applyAutoFixes(
 	for (const issue of issues) {
 		let fixedHere = false
 
-		// Title: overlong, multiline, or otherwise non-conforming
+		// Title: overlong, multiline, or otherwise non-conforming.
+		// We do NOT auto-truncate — mechanical truncation produces mid-sentence
+		// fragments that aren't real titles. Instead we flag it for agent rewrite
+		// with instructions to produce a crisp 3–8 word summary. The full
+		// original is preserved as-is so the agent has it to work from.
 		if (
 			issue.field === "title" &&
 			typeof data.title === "string" &&
 			intentTitleNeedsRepair(data.title)
 		) {
-			const oldTitle = data.title as string
-			const newTitle = deriveIntentTitle(oldTitle)
-			data.title = newTitle
-			// Update H1 in body if it matches the old title; otherwise prepend
-			const h1Re = /^#\s+(.+?)\s*$/m
-			const h1Match = body.match(h1Re)
-			const oldDescription = oldTitle.replace(/\s+/g, " ").trim()
-			if (
-				h1Match &&
-				h1Match[1].replace(/\s+/g, " ").trim() === oldDescription
-			) {
-				body = body.replace(h1Re, `# ${newTitle}\n\n${oldDescription}`)
-			} else if (!h1Match) {
-				body = `${`# ${newTitle}\n\n${oldDescription}\n\n${body}`.trimEnd()}\n`
-			}
-			applied.push({
+			const oldTitle = (data.title as string).replace(/\s+/g, " ").trim()
+			const preview =
+				oldTitle.length > 120 ? `${oldTitle.slice(0, 117)}...` : oldTitle
+			remaining.push({
 				intent: slug,
 				field: "title",
-				description: `Trimmed title from ${oldTitle.length} chars to ${newTitle.length} chars; full description preserved in body`,
+				severity: "error",
+				message: `Title is ${oldTitle.length} chars — looks auto-truncated or is a full description, not a title`,
+				fix: `Rewrite as a crisp 3–8 word summary (≤80 chars, single line, no trailing period). Preserve the current text as a paragraph in the body under the H1 if it isn't there already. Original: "${preview}"`,
 			})
 			fixedHere = true
-			changed = true
 		}
 
 		// Legacy `created` field → `created_at`
@@ -301,9 +294,85 @@ export function applyAutoFixes(
 		}
 	}
 
-	// Second pass: fix stage-level state.json issues (completion synthesis)
-	const stageRemaining: RepairIssue[] = []
+	// Second pass: auto-apply unit `inputs:` from the fix instructions.
+	// The scanner has already resolved upstream artifact paths per stage; we
+	// just write them into each unit's frontmatter. For first-stage units with
+	// no upstream (the "intent doc and discovery docs" fallback), we link the
+	// intent.md and any existing knowledge/*.md as a sensible default.
+	const inputsRemaining: RepairIssue[] = []
+	const unitInputsRe = /^stages\/([^/]+)\/units\/([^/]+):inputs$/
 	for (const issue of remaining) {
+		const m = issue.field.match(unitInputsRe)
+		if (
+			!m ||
+			!issue.message.includes("Unit has no `inputs:`") ||
+			(typeof issue.fix !== "string" && true)
+		) {
+			inputsRemaining.push(issue)
+			continue
+		}
+		const stageName = m[1]
+		const unitFile = m[2]
+		const unitPath = join(
+			intentRoot,
+			slug,
+			"stages",
+			stageName,
+			"units",
+			unitFile,
+		)
+		if (!existsSync(unitPath)) {
+			inputsRemaining.push(issue)
+			continue
+		}
+
+		// Resolve the inputs to write
+		let inputsToWrite: string[] = []
+		const upstreamMatch = issue.fix.match(/upstream paths:\s*(.+?)\s*$/)
+		if (upstreamMatch) {
+			inputsToWrite = upstreamMatch[1]
+				.split(",")
+				.map((s) => s.trim())
+				.filter(Boolean)
+		} else {
+			// Fallback: link intent.md and any discoverable knowledge/*.md
+			const fallback: string[] = ["intent.md"]
+			const knowledgeDir = join(intentRoot, slug, "knowledge")
+			if (existsSync(knowledgeDir)) {
+				for (const f of readdirSync(knowledgeDir)) {
+					if (f.endsWith(".md")) fallback.push(`knowledge/${f}`)
+				}
+			}
+			inputsToWrite = fallback
+		}
+
+		if (inputsToWrite.length === 0) {
+			inputsRemaining.push(issue)
+			continue
+		}
+
+		const unitRaw = readFileSync(unitPath, "utf8")
+		const unitParsed = matter(unitRaw)
+		const existing = (unitParsed.data.inputs as string[]) || []
+		if (existing.length > 0) {
+			// Already has inputs (race or stale issue list) — drop the issue
+			continue
+		}
+		unitParsed.data.inputs = inputsToWrite
+		writeFileSync(
+			unitPath,
+			matter.stringify(unitParsed.content, unitParsed.data),
+		)
+		applied.push({
+			intent: slug,
+			field: issue.field,
+			description: `Linked ${inputsToWrite.length} input(s): ${inputsToWrite.join(", ")}`,
+		})
+	}
+
+	// Third pass: fix stage-level state.json issues (completion synthesis)
+	const stageRemaining: RepairIssue[] = []
+	for (const issue of inputsRemaining) {
 		let fixedHere = false
 
 		// Synthesize or update stage completion records for stages before active_stage
@@ -461,16 +530,15 @@ function scanOneIntent(
 		intentTitleNeedsRepair(repairData.title)
 	) {
 		const current = repairData.title as string
-		const derived = deriveIntentTitle(current)
 		const reason = /\n/.test(current)
 			? "title contains newlines"
 			: `title is ${current.length} chars (max ${INTENT_TITLE_MAX_LENGTH})`
 		issues.push({
 			intent: slug,
 			field: "title",
-			severity: "warning",
+			severity: "error",
 			message: `Title should be a short one-liner — ${reason}`,
-			fix: `Replace \`title\` with: "${derived.replace(/"/g, '\\"')}". Move the full description into the intent body as a paragraph under the H1.`,
+			fix: "Rewrite `title` as a crisp 3–8 word summary (≤80 chars, single line, no trailing period). Do NOT truncate the current value — write a deliberate human-readable summary. Preserve the original text as a paragraph in the body under the H1 if it isn't there already.",
 		})
 	}
 

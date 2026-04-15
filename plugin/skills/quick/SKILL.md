@@ -10,7 +10,7 @@ A quick task is just a regular intent with a single stage. No special mode or wo
 ## Process
 
 1. Prelaborate briefly — if the task description is vague, ask one clarifying question.
-2. Call `haiku_intent_create` with `mode: "continuous"` and the description.
+2. Call `haiku_intent_create` with `mode: "continuous"`, a crisp `title` (3–8 words, ≤80 chars, single line — NOT a truncated description), and a `description` (2–5 sentences). The title and description are distinct fields. Good title: `"Fix login button padding"`. Bad title: `"Fix login button padding on mobile. The current padding causes…"`.
 3. After studio selection via `haiku_select_studio`, the response includes `all_studio_stages`. Present these to the user via `ask_user_visual_question` and ask which stage to use.
 4. Set the intent's `stages:` frontmatter to just the selected stage.
 5. Call `haiku_run_next` — the FSM runs through the single stage and completes.
