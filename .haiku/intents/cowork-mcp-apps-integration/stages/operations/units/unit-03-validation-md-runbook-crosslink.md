@@ -10,11 +10,12 @@ inputs:
   - .haiku/knowledge/RUNBOOK.md
 outputs:
   - knowledge/unit-03-crosslink-notes.md
-status: active
+status: completed
 bolt: 1
 hat: sre
 started_at: '2026-04-15T19:31:58Z'
 hat_started_at: '2026-04-15T19:33:33Z'
+completed_at: '2026-04-15T19:34:10Z'
 ---
 
 # Cross-link VALIDATION.md and RUNBOOK.md
