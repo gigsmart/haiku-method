@@ -37,9 +37,25 @@ export function branchExists(branch: string): boolean {
 	return tryRun(["git", "rev-parse", "--verify", branch]) !== ""
 }
 
-/** Detect the mainline branch (main, master, or git config init.defaultBranch). */
+/** Detect the mainline branch.
+ *  Order of resolution:
+ *    1. `origin/HEAD` symbolic ref — the remote's actual default branch (handles `dev`, `trunk`, etc.)
+ *    2. `main`, `master` as local or remote refs
+ *    3. `git config init.defaultBranch`
+ *    4. `"main"` as a last-resort string (also used in non-git environments).
+ */
 export function getMainlineBranch(): string {
 	if (!isGitRepo()) return "main"
+	const originHead = tryRun([
+		"git",
+		"symbolic-ref",
+		"--short",
+		"refs/remotes/origin/HEAD",
+	])
+	if (originHead) {
+		const m = originHead.match(/^origin\/(.+)$/)
+		if (m) return m[1]
+	}
 	for (const candidate of ["main", "master"]) {
 		if (tryRun(["git", "rev-parse", "--verify", candidate])) return candidate
 		if (tryRun(["git", "rev-parse", "--verify", `origin/${candidate}`]))
@@ -47,6 +63,18 @@ export function getMainlineBranch(): string {
 	}
 	const configured = tryRun(["git", "config", "--get", "init.defaultBranch"])
 	return configured || "main"
+}
+
+/** Fetch from origin so subsequent ref lookups and worktree creations see the
+ *  current remote state. Non-fatal — returns false on failure (offline, no remote). */
+export function fetchOrigin(): boolean {
+	if (!isGitRepo()) return false
+	try {
+		execFileSync("git", ["fetch", "--prune", "origin"], { stdio: "pipe" })
+		return true
+	} catch {
+		return false
+	}
 }
 
 /** List all H·AI·K·U intent branches (`haiku/<slug>/main`) — local + remote, deduped.
@@ -188,19 +216,28 @@ export function isBranchMerged(branch: string, mainline: string): boolean {
 	return false
 }
 
-/** Add a temporary worktree for an existing branch. Returns the worktree path. */
+/** Add a temporary worktree for an existing branch. Returns the worktree path.
+ *  When `preferRemote` is true, resolves to `origin/<branch>` first so the
+ *  worktree reflects the current remote state rather than a stale local ref. */
 export function addTempWorktree(
 	branch: string,
 	label = "haiku-repair",
+	preferRemote = false,
 ): string {
 	if (!isGitRepo()) throw new Error("not a git repo")
 	const path = join(
 		"/tmp",
 		`${label}-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
 	)
-	// Prefer the local branch if it exists, fall back to origin
-	const localExists = tryRun(["git", "rev-parse", "--verify", branch])
-	const ref = localExists ? branch : `origin/${branch}`
+	const localRef = tryRun(["git", "rev-parse", "--verify", branch])
+	const remoteRef = tryRun(["git", "rev-parse", "--verify", `origin/${branch}`])
+	let ref: string
+	if (preferRemote) {
+		ref = remoteRef ? `origin/${branch}` : localRef ? branch : ""
+	} else {
+		ref = localRef ? branch : remoteRef ? `origin/${branch}` : ""
+	}
+	if (!ref) throw new Error(`branch '${branch}' not found locally or on origin`)
 	run(["git", "worktree", "add", "--detach", path, ref])
 	return path
 }
@@ -242,20 +279,56 @@ export function commitAndPushFromWorktree(
 			pushError: err instanceof Error ? err.message : String(err),
 		}
 	}
-	try {
-		execFileSync(
-			"git",
-			["-C", worktreePath, "push", "origin", `HEAD:refs/heads/${branch}`],
-			{ stdio: "pipe" },
-		)
-		return { committed: true, pushed: true }
-	} catch (err) {
-		return {
-			committed: true,
-			pushed: false,
-			pushError: err instanceof Error ? err.message : String(err),
+	const tryPush = (): { ok: boolean; error?: string } => {
+		try {
+			execFileSync(
+				"git",
+				["-C", worktreePath, "push", "origin", `HEAD:refs/heads/${branch}`],
+				{ stdio: "pipe" },
+			)
+			return { ok: true }
+		} catch (err) {
+			return {
+				ok: false,
+				error: err instanceof Error ? err.message : String(err),
+			}
 		}
 	}
+
+	const first = tryPush()
+	if (first.ok) return { committed: true, pushed: true }
+
+	// Non-fast-forward recovery: fetch + rebase onto origin/<branch>, retry push.
+	// Without this, a stale-ref repair run loops forever — each run re-applies
+	// fixes, push rejects as non-fast-forward, and the worktree's stale view of
+	// the repo keeps reporting issues that are already fixed on the remote. (#206)
+	const isNonFastForward = /non-fast-forward|rejected|fetch first|behind/i.test(
+		first.error ?? "",
+	)
+	if (isNonFastForward) {
+		tryRun(["git", "-C", worktreePath, "fetch", "origin", branch])
+		try {
+			execFileSync(
+				"git",
+				["-C", worktreePath, "rebase", `origin/${branch}`],
+				{ stdio: "pipe" },
+			)
+		} catch (err) {
+			tryRun(["git", "-C", worktreePath, "rebase", "--abort"])
+			return {
+				committed: true,
+				pushed: false,
+				pushError: `non-fast-forward; rebase onto origin/${branch} failed: ${
+					err instanceof Error ? err.message : String(err)
+				}`,
+			}
+		}
+		const retry = tryPush()
+		if (retry.ok) return { committed: true, pushed: true }
+		return { committed: true, pushed: false, pushError: retry.error }
+	}
+
+	return { committed: true, pushed: false, pushError: first.error }
 }
 
 /** Detect a PR/MR creation tool (`gh` or `glab`) on PATH. */
