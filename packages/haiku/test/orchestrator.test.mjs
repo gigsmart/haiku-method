@@ -297,7 +297,7 @@ test("haiku_intent_archive errors on missing intent", async () => {
   assert.ok(res.content[0].text.includes("not found"))
 })
 
-test("haiku_intent_unarchive clears archived flag", async () => {
+test("haiku_intent_unarchive removes archived flag (clean restore)", async () => {
   const { projDir, slug, intentDirPath } = createProject("unarchive-tool-happy", {
     archived: true,
   })
@@ -309,8 +309,11 @@ test("haiku_intent_unarchive clears archived flag", async () => {
   const payload = JSON.parse(res.content[0].text)
   assert.strictEqual(payload.action, "intent_unarchived")
 
+  // Unarchive should DELETE the archived key, not leave `archived: false` behind.
+  // A pristine restored intent shouldn't carry a trace of prior archival.
   const after = parseFrontmatter(readFileSync(intentFile, "utf8"))
-  assert.strictEqual(after.data.archived, false)
+  assert.strictEqual(after.data.archived, undefined, "archived key must be removed entirely, not set to false")
+  assert.ok(!("archived" in after.data), "archived key must not exist in frontmatter after unarchive")
 })
 
 test("haiku_intent_unarchive is idempotent (noop on not-archived)", async () => {
@@ -321,6 +324,16 @@ test("haiku_intent_unarchive is idempotent (noop on not-archived)", async () => 
   const payload = JSON.parse(res.content[0].text)
   assert.strictEqual(payload.action, "noop")
   assert.ok(payload.message.includes("not archived"))
+})
+
+test("haiku_intent_unarchive errors on missing intent", async () => {
+  const { projDir } = createProject("unarchive-tool-missing")
+  process.chdir(projDir)
+  const res = await handleOrchestratorTool("haiku_intent_unarchive", {
+    intent: "nope-not-here",
+  })
+  assert.strictEqual(res.isError, true)
+  assert.ok(res.content[0].text.includes("not found"))
 })
 
 // ── runNext: intent review gate ──────────────────────────────────────────

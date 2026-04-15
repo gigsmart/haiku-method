@@ -4608,7 +4608,7 @@ const TOOL_SPECS = {
       intent: "string · the intent slug (e.g. `add-billing`)",
     },
     output: {
-      action: "string · `start_stage` | `gate_review` | `start_unit(s)` | `advance_phase` | `advance_review` | `fix_quality_gates` | `advance_stage` | `stage_complete_discrete` | `intent_complete` | `intent_archived` (refusal, with `haiku_intent_unarchive` hint)",
+      action: "string · `start_stage` | `gate_review` | `start_unit(s)` | `advance_phase` | `advance_review` | `fix_quality_gates` | `advance_stage` | `stage_complete_discrete` | `intent_complete` | `error` (the archived-intent refusal returns `action: \"error\"` with a `\"call haiku_intent_unarchive to restore it\"` hint in the message)",
       context: "object · action-specific payload (next phase, hat, units, gate context, etc. — see the per-transition pills throughout this diagram)",
     },
     writes: [
@@ -4648,29 +4648,33 @@ const TOOL_SPECS = {
     ],
   },
   haiku_intent_archive: {
-    description: "Flips an intent into the archived state by setting `archived: true` in `intent.md` frontmatter. Archived intents are preserved in full — no files are deleted, no state is wiped — but `haiku_run_next` refuses to advance them until they are unarchived. Reversible via `haiku_intent_unarchive`, so there is **no `confirm` guard**.",
+    description: "Flips an intent into the archived state by setting `archived: true` in `intent.md` frontmatter. Archived intents are preserved in full — no files are deleted, no state is wiped — but `haiku_run_next` refuses to advance them until they are unarchived. Reversible via `haiku_intent_unarchive`, so there is **no `confirm` guard**. Idempotent: calling on an already-archived intent returns `action: \"noop\"` instead of an error.",
     input: {
       intent: "string · the intent slug",
     },
     output: {
-      ok: "boolean",
-      archived: "boolean · new flag value (`true` on success)",
+      action: "string · `intent_archived` on first call, `noop` if already archived",
+      slug: "string · the intent slug echoed back",
+      path: "string · absolute path of the mutated `intent.md`",
+      message: "string · human-readable result",
     },
     writes: [
-      { path: ".haiku/intents/{slug}/intent.md", change: "frontmatter: `archived: true`" },
+      { path: ".haiku/intents/{slug}/intent.md", change: "frontmatter: `archived: true` (no write on noop path)" },
     ],
   },
   haiku_intent_unarchive: {
-    description: "Reverses `haiku_intent_archive` by setting `archived: false` in `intent.md` frontmatter. Once cleared, `haiku_run_next` ticks resume normally from wherever the FSM last left off. Reversible, so there is **no `confirm` guard**.",
+    description: "Reverses `haiku_intent_archive` by removing the `archived` field from `intent.md` frontmatter (clean restore — no `archived: false` marker is left behind). Once cleared, `haiku_run_next` ticks resume normally from wherever the FSM last left off. Reversible, so there is **no `confirm` guard**. Idempotent: calling on a not-archived intent returns `action: \"noop\"` instead of an error.",
     input: {
       intent: "string · the intent slug",
     },
     output: {
-      ok: "boolean",
-      archived: "boolean · new flag value (`false` on success)",
+      action: "string · `intent_unarchived` on first call, `noop` if already not-archived",
+      slug: "string · the intent slug echoed back",
+      path: "string · absolute path of the mutated `intent.md`",
+      message: "string · human-readable result",
     },
     writes: [
-      { path: ".haiku/intents/{slug}/intent.md", change: "frontmatter: `archived: false`" },
+      { path: ".haiku/intents/{slug}/intent.md", change: "frontmatter: removes the `archived` key entirely (no write on noop path)" },
     ],
   },
   haiku_unit_start: {

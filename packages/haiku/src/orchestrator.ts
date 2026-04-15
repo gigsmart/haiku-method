@@ -868,7 +868,10 @@ export function runNext(slug: string): OrchestratorAction {
 	}
 
 	if (status === "archived") {
-		return { action: "error", message: `Intent '${slug}' is archived` }
+		return {
+			action: "error",
+			message: `Intent '${slug}' has status: archived (legacy/terminal). haiku_intent_unarchive only clears the new \`archived\` field — it does not touch \`status\`. To recover, run \`/haiku:repair\` or manually edit \`.haiku/intents/${slug}/intent.md\` and set \`status: active\`.`,
+		}
 	}
 
 	if (intent.archived === true) {
@@ -3912,7 +3915,12 @@ export async function handleOrchestratorTool(
 			)
 		}
 
-		setFrontmatterField(intentFile, "archived", false)
+		// Remove the `archived` key entirely rather than leaving `archived: false`.
+		// Cleaner: an unarchived intent looks pristine, no trace of prior archival.
+		const raw = readFileSync(intentFile, "utf8")
+		const parsed = matter(raw)
+		delete parsed.data.archived
+		writeFileSync(intentFile, matter.stringify(parsed.content, parsed.data))
 		gitCommitState(`haiku: unarchive intent ${slug}`)
 
 		return text(
