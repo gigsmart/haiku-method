@@ -15,7 +15,6 @@ hat: specification
 started_at: '2026-04-15T13:53:30Z'
 hat_started_at: '2026-04-15T14:03:18Z'
 outputs:
-  - knowledge/DATA-CONTRACTS.md
   - knowledge/ACCEPTANCE-CRITERIA.md
 ---
 
