@@ -1,420 +1,458 @@
-# PLAN: unit-05-spa-host-bridge
+# PLAN: unit-06-spa-iframe-layout
 
-**Unit:** Review SPA host-bridge module + useSession wiring
+**Unit:** SPA iframe layout — conditional decision panels + boot/error/success screens
 **Stage:** development
 **Hat sequence:** planner → builder → reviewer
-**Gzipped size baseline (recorded at unit start):** 949,203 bytes
-**Bundle size ceiling (baseline + 50 KB):** 1,000,403 bytes
+**Branch:** `haiku/cowork-mcp-apps-integration/unit-06-spa-iframe-layout`
+**Worktree:** `/Volumes/dev/src/github.com/gigsmart/haiku-method/.haiku/worktrees/cowork-mcp-apps-integration/unit-06-spa-iframe-layout`
 
 ---
 
 ## What this unit does
 
-Adds `packages/haiku/review-app/src/host-bridge.ts` — a module-load-time
-transport router that probes once whether the SPA is running inside an MCP
-Apps iframe or a plain browser tab, caches that answer for the connection
-lifetime, and routes all transport calls through the right path.
+Implements the iframe-mode layout in the bundled review SPA by refactoring the existing page
+components to conditionally swap their decision-panel children for bottom-sheet variants when
+`isMcpAppsHost() === true`. Creates 11 new iframe-only components. Browser-mode rendering stays
+byte-identical — the same JSX, the same DOM, the same snapshot.
 
-Exports: `isMcpAppsHost()`, `getSession()`, `submitDecision()`,
-`submitAnswers()`, `submitDesignDirection()`.
-
-Refactors `hooks/useSession.ts` to delegate through the bridge. Adds
-`@modelcontextprotocol/ext-apps` to review-app dependencies. No visual
-components change.
+**Key constraint:** Do NOT create a wrapping `IframeShell` component. Refactor decision panels
+conditionally inside the existing page components.
 
 ---
 
-## Files to modify or create
+## Files to create
 
-| File | Action | Rationale |
-|---|---|---|
-| `packages/haiku/review-app/src/host-bridge.ts` | CREATE | New transport router; core deliverable of this unit |
-| `packages/haiku/review-app/src/hooks/useSession.ts` | MODIFY | Delegate session fetch and all three submit functions through the bridge; browser-mode behavior must be byte-identical |
-| `packages/haiku/review-app/package.json` | MODIFY | Add `@modelcontextprotocol/ext-apps` to `dependencies`; add `vitest` + `@vitest/coverage-v8` + `jsdom` to `devDependencies`; add `"test": "vitest run"` script |
-| `packages/haiku/review-app/vitest.config.ts` | CREATE | Set `test.environment: 'jsdom'` so `window.parent` is available in tests |
-| `packages/haiku/review-app/src/host-bridge.test.ts` | CREATE | Vitest unit tests covering all 10 feature scenarios |
-
-Do NOT touch: `App.tsx`, `ReviewPage.tsx`, `QuestionPage.tsx`, `DesignPicker.tsx`,
-`AnnotationCanvas.tsx`, any file under `components/`, any server-side file, or
-`http.ts`. The bridge swaps transport only.
-
----
-
-## Step-by-step implementation (dependency order)
-
-### Step 0 — Baseline size measurement (first thing the builder does)
-
-Before writing any code, run:
-
-```bash
-npm --prefix packages/haiku run prebuild
-gzip -c packages/haiku/src/review-app-html.ts | wc -c
-```
-
-Record this number. Expected ~949,203 bytes (confirmed at plan time). If it
-differs, record the actual value — it is the baseline for criterion 10.
-Commit the baseline number in the final commit message.
-
-### Step 1 — Add `@modelcontextprotocol/ext-apps` dependency
-
-1. Check the npm registry: `npm view @modelcontextprotocol/ext-apps version 2>/dev/null || echo "not found"`
-2. If found, add to `packages/haiku/review-app/package.json` under `dependencies`.
-   Run `npm install --prefix packages/haiku/review-app`.
-3. If NOT found on npm, check if the package is available under a different scope
-   or as a local path in the monorepo. If unavailable, **do not fabricate it** —
-   create a minimal stub at
-   `packages/haiku/review-app/src/ext-apps-stub.d.ts` declaring the minimal
-   `App` class surface needed for the probe and `callServerTool`, and add a note
-   in the commit message. Then escalate via `haiku_unit_reject_hat` with the
-   specific blocker.
-
-Also add test dependencies in the same `npm install`:
-
-```
-vitest jsdom @vitest/coverage-v8
-```
-
-Add `"test": "vitest run"` to the `scripts` block in `package.json`.
-
-### Step 2 — Create `vitest.config.ts`
-
-```typescript
-import { defineConfig } from "vitest/config";
-
-export default defineConfig({
-  test: {
-    environment: "jsdom",
-    globals: false,
-  },
-});
-```
-
-### Step 3 — Create `packages/haiku/review-app/src/host-bridge.ts`
-
-The module structure (in order):
-
-1. **Import** `App` from `@modelcontextprotocol/ext-apps`.
-   Import `SessionData`, `QuestionAnswer`, `ReviewAnnotations` from `../types`
-   (or `./types` depending on path — adjust to actual location).
-
-2. **Module-level probe IIFE** (runs exactly once at import time):
-
-   ```typescript
-   const _isMcpAppsHost: boolean = (() => {
-     if (typeof window === "undefined" || window.parent === window) return false;
-     try {
-       new App({ /* minimal required args from package docs */ });
-       return true;
-     } catch {
-       return false;
-     }
-   })();
-   ```
-
-   The IIFE result is stored in `_isMcpAppsHost`. The probe never re-runs.
-
-3. **Console log** immediately after the IIFE (NOT inside `isMcpAppsHost()`):
-
-   ```typescript
-   console.log(`isMcpAppsHost() == ${_isMcpAppsHost}`);
-   ```
-
-   Exact format: `"isMcpAppsHost() == true"` or `"isMcpAppsHost() == false"`.
-   One call, at module load.
-
-4. **`export function isMcpAppsHost(): boolean`** — returns `_isMcpAppsHost`.
-   No side effects. 10 calls → 1 probe invocation.
-
-5. **`export async function getSession(id: string): Promise<SessionData>`**
-
-   MCP Apps path:
-   - Session data is hydrated from the tool result content passed by the host
-     via `App.ontoolresult` / `updateModelContext`. Read the `@modelcontextprotocol/ext-apps`
-     docs for the exact API. If the data is available synchronously (it should be,
-     as the SPA only loads after the tool result is delivered), parse and return it.
-   - No HTTP request.
-
-   Browser path:
-   ```typescript
-   const res = await fetch(`/api/session/${id}`, {
-     headers: { "bypass-tunnel-reminder": "1" },
-   });
-   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-   return res.json() as Promise<SessionData>;
-   ```
-   Byte-identical to the current `useSession.ts` `fetchSession` implementation.
-
-6. **`export async function submitDecision(...)`**
-
-   Signature (must match existing callers in `ReviewSidebar.tsx`):
-   ```typescript
-   export async function submitDecision(
-     sessionId: string,
-     decision: "approved" | "changes_requested" | "external_review",
-     feedback: string,
-     annotations?: ReviewAnnotations,
-     wsRef?: React.RefObject<WebSocket | null>,
-   ): Promise<void>
-   ```
-
-   MCP Apps path:
-   ```typescript
-   await App.callServerTool("haiku_cowork_review_submit", {
-     session_type: "review",
-     session_id: sessionId,
-     decision,
-     feedback,
-     ...(annotations ? { annotations } : {}),
-   });
-   ```
-
-   Browser path (byte-identical to current `useSession.ts`):
-   - Try `trySendViaWs(wsRef, { type: "decide", decision, feedback, annotations })`
-   - On failure, HTTP POST to `/review/${sessionId}/decide`
-   - Keep `keepalive: true`, same headers
-
-7. **`export async function submitAnswers(...)`**
-
-   Signature (must match existing callers in `QuestionPage.tsx`):
-   ```typescript
-   export async function submitAnswers(
-     sessionId: string,
-     answers: QuestionAnswer[],
-     wsRef?: React.RefObject<WebSocket | null>,
-     feedback?: string,
-     annotations?: { comments?: Array<{ selectedText: string; comment: string; paragraph: number }> },
-   ): Promise<void>
-   ```
-
-   MCP Apps path: `App.callServerTool("haiku_cowork_review_submit", { session_type: "question", ... })`.
-   Browser path: WS → HTTP POST to `/question/${sessionId}/answer` (byte-identical).
-
-8. **`export async function submitDesignDirection(...)`**
-
-   Signature (must match existing callers in `DesignPicker.tsx`):
-   ```typescript
-   export async function submitDesignDirection(
-     sessionId: string,
-     archetype: string,
-     parameters: Record<string, number>,
-     wsRef?: React.RefObject<WebSocket | null>,
-   ): Promise<void>
-   ```
-
-   MCP Apps path: `App.callServerTool("haiku_cowork_review_submit", { session_type: "design_direction", ... })`.
-   Browser path: WS → HTTP POST to `/direction/${sessionId}/select` (byte-identical).
-
-9. **`trySendViaWs` helper** — move or copy from `useSession.ts` into
-   `host-bridge.ts` (it is needed by the browser path). Update the import in
-   `useSession.ts` if moved. If copied, keep both in sync or prefer move+re-export.
-
-**Key constraints:**
-- `tryCloseTab`, `window.close`, `navigator.sendBeacon` MUST NOT appear in
-  `host-bridge.ts` (criterion 12). These stay in `useSession.ts`.
-- `useSessionWebSocket` MUST NOT move — it stays in `useSession.ts`.
-
-### Step 4 — Refactor `hooks/useSession.ts`
-
-After `host-bridge.ts` exists:
-
-1. Add import: `import { getSession, submitDecision, submitAnswers, submitDesignDirection } from "../host-bridge";`
-   (adjust relative path as needed — file is at `src/hooks/useSession.ts`,
-   bridge is at `src/host-bridge.ts`, so `../host-bridge`).
-
-2. Replace the inline `fetchSession` body inside `useSession` hook with a call to
-   `getSession(sessionId)`.
-
-3. Replace the bodies of the exported `submitDecision`, `submitAnswers`, and
-   `submitDesignDirection` functions with thin wrappers that forward all args to
-   the bridge functions. The exported function signatures do NOT change.
-
-4. The `useSession` hook's React state management (`setSession`, `setLoading`,
-   `setError`, cancellation flag) stays intact — only the data-fetch call
-   changes.
-
-5. `tryCloseTab`, `trySendViaWs` (if not moved), `useSessionWebSocket` are unchanged.
-
-Verification: after refactor, `rg "from.*host-bridge" src/hooks/useSession.ts`
-returns ≥ 1 hit.
-
-### Step 5 — Write Vitest tests in `host-bridge.test.ts`
-
-**Module isolation is required.** Because `_isMcpAppsHost` is set at import time
-by a module-level IIFE, each test scenario that needs a different probe result
-must use `vi.isolateModules()` + `vi.resetModules()` to re-import the module with
-fresh globals.
-
-Pattern for each scenario:
-
-```typescript
-import { describe, it, expect, vi, beforeEach } from "vitest";
-
-describe("isMcpAppsHost probe", () => {
-  it("returns true when both gates pass", async () => {
-    vi.resetModules();
-    vi.stubGlobal("window", { ...globalThis.window, parent: {} }); // parent !== window
-    // stub App constructor to not throw
-    vi.mock("@modelcontextprotocol/ext-apps", () => ({
-      App: class { constructor() {} },
-    }));
-    const { isMcpAppsHost } = await import("./host-bridge");
-    expect(isMcpAppsHost()).toBe(true);
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
-  });
-  // ... other scenarios
-});
-```
-
-Cover all 10 feature scenarios:
-
-| Feature scenario | Test assertion |
+| File | Purpose |
 |---|---|
-| Both gates pass → true, logged | `isMcpAppsHost() === true`; `console.log` spy asserts one call with `"isMcpAppsHost() == true"` |
-| MCP mode submitDecision via callServerTool | `App.callServerTool` called with correct args; `fetch` not called |
-| MCP mode getSession avoids HTTP fetch | `fetch` not called during `getSession()` in MCP mode |
-| window.parent === window → false, logged | `isMcpAppsHost() === false`; log contains `"== false"` |
-| App constructor throws → false, no re-throw | gate 1 passes, gate 2 throws; `isMcpAppsHost() === false`; no unhandled rejection |
-| Cached: 10 calls → 1 probe | Count `App` constructor calls across 10 `isMcpAppsHost()` invocations: expect 1 |
-| Browser mode WS open → WS sent, callServerTool not called | Mock open WS; call `submitDecision`; assert WS.send called |
-| Browser mode WS closed → HTTP POST, callServerTool not called | Mock closed WS; call `submitDecision`; assert `fetch` POST called |
-| callServerTool rejects → error propagates | `App.callServerTool` rejects; assert `submitDecision` rejects |
-| Probe before DOMContentLoaded (deferred DOM) | Stub `window` as undefined or missing `parent`; assert `isMcpAppsHost() === false`, no throw |
+| `packages/haiku/review-app/src/components/iframe/BottomSheetDecisionPanelReview.tsx` | Approve / Changes / External with drag-to-expand |
+| `packages/haiku/review-app/src/components/iframe/BottomSheetDecisionPanelQuestion.tsx` | Answers form + submit |
+| `packages/haiku/review-app/src/components/iframe/BottomSheetDecisionPanelDesign.tsx` | Archetype + parameters |
+| `packages/haiku/review-app/src/components/iframe/IframeTopBar.tsx` | 36px status strip (slug + session type + HostBridgeStatus) |
+| `packages/haiku/review-app/src/components/iframe/HostBridgeStatus.tsx` | Connected/reconnecting/error pill with `aria-live="polite"` |
+| `packages/haiku/review-app/src/components/iframe/IframeBootScreen.tsx` | Three-phase loading screen (loading/connecting/ready) |
+| `packages/haiku/review-app/src/components/iframe/NegotiationErrorScreen.tsx` | Centered error card for NEGOTIATION_FAILED |
+| `packages/haiku/review-app/src/components/iframe/SandboxErrorScreen.tsx` | Centered error card for SANDBOX_CLIPBOARD_WRITE |
+| `packages/haiku/review-app/src/components/iframe/SessionExpiredScreen.tsx` | Centered error card for SESSION_EXPIRED |
+| `packages/haiku/review-app/src/components/iframe/StaleHostWarning.tsx` | Non-blocking protocol version mismatch warning |
+| `packages/haiku/review-app/src/components/iframe/DecisionSuccess.tsx` | Three variants (approved/changes_requested/external_review), focus on heading |
+| `packages/haiku/review-app/src/components/iframe/useBreakpoint.ts` | ResizeObserver hook — returns 'narrow'/'medium'/'wide' |
+| `packages/haiku/review-app/src/components/iframe/__tests__/BottomSheetDecisionPanelReview.test.tsx` | Tests: drag, keyboard shortcuts, focus, aria |
+| `packages/haiku/review-app/src/components/iframe/__tests__/conditional-render.test.tsx` | Tests: isMcpAppsHost true/false branch in each page |
+| `packages/haiku/review-app/src/components/iframe/__tests__/IframeBootScreen.test.tsx` | Tests: boot phases, reduced-motion |
+| `packages/haiku/review-app/src/components/iframe/__tests__/error-screens.test.tsx` | Tests: error state round-trips, aria-live, dismissal |
+| `packages/haiku/review-app/src/components/iframe/__tests__/useBreakpoint.test.ts` | Tests: ResizeObserver-driven breakpoints |
 
-### Step 6 — Run tests and check coverage
+## Files to modify
 
-```bash
-cd packages/haiku/review-app && npm test
-```
-
-All tests must pass. If any fail, fix before proceeding.
-
-### Step 7 — Rebuild bundle and check gzip size
-
-```bash
-npm --prefix packages/haiku run prebuild
-gzip -c packages/haiku/src/review-app-html.ts | wc -c
-```
-
-The result must be ≤ 1,000,403 bytes (baseline + 50 KB). Record the actual
-value. If over budget, investigate whether `@modelcontextprotocol/ext-apps`
-can be dynamically imported or stubbed more aggressively.
-
-### Step 8 — Typecheck
-
-```bash
-cd packages/haiku/review-app && npx tsc --noEmit
-```
-
-Fix all errors. Common issues:
-- Missing type declarations for `@modelcontextprotocol/ext-apps` — add a stub
-  `declare module` in `vite-env.d.ts` if the package ships without types.
-- React import in `host-bridge.ts` — if `React.RefObject` is used in the
-  signature, the import is needed.
-
-### Step 9 — Commit
-
-```bash
-git -C packages/haiku/review-app add src/host-bridge.ts src/host-bridge.test.ts \
-    src/hooks/useSession.ts package.json vitest.config.ts
-git commit -m "feat(unit-05): add host-bridge transport router + refactor useSession
-
-Gzipped baseline: 949,203 bytes
-Gzipped after build: <record actual value here>
-Budget ceiling: 1,000,403 bytes"
-```
-
----
-
-## Completion criteria verification commands
-
-| # | Criterion | Command |
-|---|---|---|
-| 1 | Module exists with `isMcpAppsHost` export | `test -f packages/haiku/review-app/src/host-bridge.ts && rg -n '^export function isMcpAppsHost' packages/haiku/review-app/src/host-bridge.ts` |
-| 2 | Imported by useSession | `rg -n "from ['\"].*host-bridge['\"]" packages/haiku/review-app/src/hooks/useSession.ts` |
-| 3 | Dependency added | `grep '"@modelcontextprotocol/ext-apps"' packages/haiku/review-app/package.json` |
-| 4 | Two-gate probe test passes | `cd packages/haiku/review-app && npm test` (probe-true scenario passes) |
-| 5 | Caching: 10 calls → 1 probe | `cd packages/haiku/review-app && npm test` (caching test passes) |
-| 6 | MCP mode uses callServerTool | `cd packages/haiku/review-app && npm test` (MCP submitDecision test passes) |
-| 7 | Browser mode uses fetch | `cd packages/haiku/review-app && npm test` (browser submitDecision test passes) |
-| 8 | Console log on module load | `rg -n 'console\.log.*isMcpAppsHost' packages/haiku/review-app/src/host-bridge.ts` (≥ 1 hit); log test passes |
-| 9 | Bundle stays single inline HTML | `npm --prefix packages/haiku run prebuild && grep -c 'REVIEW_APP_HTML' packages/haiku/src/review-app-html.ts` (returns 1) |
-| 10 | Gzip budget ≤ 1,000,403 bytes | `gzip -c packages/haiku/src/review-app-html.ts \| wc -c` |
-| 11 | Existing tests pass unchanged | `cd packages/haiku/review-app && npm test` (all tests exit 0) |
-| 12 | No browser-chrome assumptions | `rg -n 'window\.close\|navigator\.sendBeacon\|tryCloseTab' packages/haiku/review-app/src/host-bridge.ts` (0 hits) |
-| 13 | Typecheck clean | `cd packages/haiku/review-app && npx tsc --noEmit` (exit 0) |
-
----
-
-## Risks and mitigations
-
-### R1 — `@modelcontextprotocol/ext-apps` not on npm (HIGH)
-
-This is the biggest unknown. The package is referenced throughout the design
-specs but not yet in any `package.json` in the repo. If `npm install` fails:
-- Check the `@modelcontextprotocol` org on npm for the correct package name.
-- Check if it ships as part of `@modelcontextprotocol/sdk` (imported differently).
-- If truly unavailable: create a minimal stub, mark criteria 3/4/6/8 as blocked,
-  and call `haiku_unit_reject_hat` with the specific error. Do not fabricate.
-
-### R2 — `App` constructor signature unknown until Step 1 (MEDIUM)
-
-The two-gate probe's `new App({ ... })` arguments depend on the actual package API.
-Wrong args → constructor throws → probe returns false → MCP Apps path never active.
-Mitigation: read the package README and TypeScript declarations immediately after
-`npm install` before writing the probe in Step 3.
-
-### R3 — Module-level IIFE requires Vitest isolation (MEDIUM)
-
-Each test scenario that needs a different probe result must call `vi.resetModules()`
-before re-importing `host-bridge.ts`. Without isolation, the first import's cached
-`_isMcpAppsHost` value poisons all subsequent tests. Use `vi.isolateModules()` or
-the `beforeEach(() => vi.resetModules())` pattern. Not doing this is the most
-likely source of flaky tests.
-
-### R4 — Bundle size from ext-apps package (MEDIUM)
-
-If `@modelcontextprotocol/ext-apps` is large and not tree-shakeable, it could push
-the bundle past the 50 KB gzip budget. Mitigation: check `npm view @modelcontextprotocol/ext-apps dist.unpackedSize` before installing. If the package is oversized,
-consider a dynamic `import()` so it is not inlined into the SPA bundle in the
-browser-mode path — but this adds complexity. Check size first.
-
-### R5 — DOM timing in sandboxed iframes (LOW)
-
-Feature scenario 9 tests that the probe handles a deferred DOM. In practice, Vite
-bundles load as ES modules after the document is parsed, so `window` is always
-defined. The risk is mainly in jsdom test environments. Mitigation: the `typeof
-window === 'undefined'` guard in the IIFE handles this cleanly and returns false
-safely in any non-browser context.
-
-### R6 — Browser-mode byte-identity (MEDIUM)
-
-Criterion 7 requires the browser path to be byte-identical to the current
-`useSession.ts` implementation. The builder must diff the browser-path code
-before and after refactor. Common drift: adding/removing headers, changing
-fallback URL paths, altering WS message field names.
-
-### R7 — No test runner configured today (LOW — known gap)
-
-`packages/haiku/review-app/package.json` has no `"test"` script. The builder
-adds Vitest + jsdom in Step 1. If forgotten, all test criteria (4–8, 11) fail.
-The `vitest.config.ts` must set `test.environment: 'jsdom'` explicitly.
-
----
-
-## Feature scenario coverage map
-
-All 10 scenarios in `features/host-bridge-detection.feature` are covered:
-
-| Scenario | Test name |
+| File | Change |
 |---|---|
-| Both gates pass → MCP mode selected and cached | `probe: both gates pass returns true and logs` |
-| MCP mode submitDecision via callServerTool | `submitDecision: MCP mode calls callServerTool` |
-| MCP mode getSession avoids HTTP fetch | `getSession: MCP mode avoids fetch` |
-| window.parent === window → browser mode | `probe: window.parent equals window returns false` |
-| App constructor throws → browser mode | `probe: App constructor throws returns false` |
-| Detection cached for connection lifetime | `probe: cached — 10 calls, 1 probe invocation` |
-| Browser mode WS first | `submitDecision: browser mode uses WebSocket` |
-| Browser mode HTTP POST fallback | `submitDecision: browser mode falls back to HTTP POST` |
-| callServerTool rejects → error propagates | `submitDecision: MCP error propagates to caller` |
-| Probe before DOMContentLoaded | `probe: deferred DOM guard returns false safely` |
+| `packages/haiku/review-app/src/components/ReviewPage.tsx` | Add `isMcpAppsHost()` branch — render `<BottomSheetDecisionPanelReview>` instead of `<ReviewSidebar>` when in iframe mode |
+| `packages/haiku/review-app/src/components/QuestionPage.tsx` | Add `isMcpAppsHost()` branch — render `<BottomSheetDecisionPanelQuestion>` instead of inline submit button |
+| `packages/haiku/review-app/src/components/DesignPicker.tsx` | Add `isMcpAppsHost()` branch — render `<BottomSheetDecisionPanelDesign>` instead of inline submit button |
+| `packages/haiku/review-app/src/components/AnnotationCanvas.tsx` | Add `isMcpAppsHost()` branch — render `<BottomSheetDecisionPanelAnnotation>` (Apply/Clear bottom sheet) |
+| `packages/haiku/review-app/src/App.tsx` | Add `isMcpAppsHost()` chrome — render `<IframeTopBar>`, `<IframeBootScreen>`, `<NegotiationErrorScreen>`, `<DecisionSuccess>` |
+
+---
+
+## Step-by-step implementation
+
+### Step 0 — Measure bundle baseline
+
+```bash
+cd /Volumes/dev/src/github.com/gigsmart/haiku-method/.haiku/worktrees/cowork-mcp-apps-integration/unit-06-spa-iframe-layout
+npm --prefix packages/haiku run prebuild 2>&1 | grep REVIEW_APP_HTML
+```
+
+Record the gzipped size of the `REVIEW_APP_HTML` constant as the baseline. The ceiling is
+baseline + 50 KB.
+
+### Step 1 — Create `useBreakpoint.ts`
+
+Create `packages/haiku/review-app/src/components/iframe/useBreakpoint.ts`:
+
+```ts
+import { useEffect, useRef, useState } from "react";
+
+export type Breakpoint = "narrow" | "medium" | "wide";
+
+/**
+ * Returns the current iframe breakpoint, driven by ResizeObserver on a
+ * given element ref. Does NOT read window.innerWidth.
+ *
+ * Thresholds (from DESIGN-TOKENS.md):
+ *   narrow:  width <= 480px
+ *   medium:  481–768px
+ *   wide:    >= 769px
+ */
+export function useBreakpoint(ref: React.RefObject<HTMLElement | null>): Breakpoint {
+  const [bp, setBp] = useState<Breakpoint>("narrow");
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const obs = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width ?? 0;
+      if (width <= 480) setBp("narrow");
+      else if (width <= 768) setBp("medium");
+      else setBp("wide");
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [ref]);
+
+  return bp;
+}
+```
+
+### Step 2 — Capture browser-mode snapshots (baseline for criterion 3)
+
+Before touching any page components, run `npm test` to establish snapshot baselines.
+The test file `conditional-render.test.tsx` will capture snapshots when `isMcpAppsHost === false`.
+These snapshots become the byte-identity baseline for post-refactor comparison.
+
+### Step 3 — Create `HostBridgeStatus.tsx`
+
+Bridge state: `'connected' | 'reconnecting' | 'error'`.
+
+- Props: `status: BridgeStatus; onRetry?: () => void`
+- Connected: teal-500 dot, text "Connected"
+- Reconnecting: amber-400 animate-pulse dot, text "Reconnecting"  
+- Error: red-500 dot, text "Error · retry" (click calls `onRetry`)
+- Wraps in `<div role="status" aria-live="polite">` (polite for non-errors) and `aria-live="assertive"` for error state
+- Min touch target 44×44 for the retry affordance
+
+### Step 4 — Create `IframeTopBar.tsx`
+
+- Height: `h-9` (36px), sticky top-0, `bg-stone-900 border-b border-stone-800`
+- Slots: `slug` (text-xs, truncated), `sessionType`, `<HostBridgeStatus>`
+- Only renders when `isMcpAppsHost() === true` (caller gates it in App.tsx)
+
+### Step 5 — Create `IframeBootScreen.tsx`
+
+- State: `'loading' | 'connecting' | 'ready'`
+- On mount: immediately `loading`, transitions to `connecting` after 100ms, then `ready` after session data arrives
+- On `ready`: fade out (`opacity-0 transition-opacity duration-200`) then unmount; respects `prefers-reduced-motion` (instant show/hide, no transition)
+- Only rendered when `isMcpAppsHost() === true` (caller gates it)
+- Spinner: `animate-spin rounded-full border-2 border-stone-800 border-t-teal-500`; hidden when `prefers-reduced-motion: reduce` — shows static "Loading…" instead
+
+### Step 6 — Create four error screen components
+
+All four share the same structure: centered card, `aria-live="assertive"` on the error message container, visible error code, recovery action.
+
+**`NegotiationErrorScreen.tsx`**
+- Props: `errorCode: string; sessionId: string; onRetry: () => Promise<void>`
+- States: default, retry-pending (spinner on button), retry-failed (escalate panel revealed)
+- Escalate panel: copy-to-clipboard `sessionId` field
+
+**`SandboxErrorScreen.tsx`**
+- Props: `feature: string; errorCode: string`
+- States: default, disclosure-open
+- Disclosure: `<details>` with "Why this happens" summary + explanation text
+
+**`SessionExpiredScreen.tsx`**
+- Props: `errorCode: string`
+- Recovery: copy-to-clipboard "Please generate a new review link"
+- Fallback: if clipboard blocked, reveal `<textarea>` for select-to-copy
+- No `window.open` anywhere in this component
+
+**`StaleHostWarning.tsx`**
+- Props: `hostVersion: string; expectedVersion: string; onDismiss: () => void`
+- Non-blocking (renders alongside content, not over it)
+- Dismiss button unmounts the warning
+- `aria-live="assertive"` on the warning container
+
+### Step 7 — Create `DecisionSuccess.tsx`
+
+- Variants: `'approved' | 'changes_requested' | 'external_review'`
+- Props: `variant: DecisionVariant`
+- Heading: `tabIndex={-1}` with `ref` that auto-focuses on mount via `useEffect(() => { headingRef.current?.focus() }, [])`
+- `aria-live="polite"` on the container (for screen readers)
+- No `window.close`, no `tryCloseTab`, no nav away — waits for host to unmount
+- Variant-specific copy and icon (teal for approved, amber for changes, indigo for external)
+
+### Step 8 — Create `BottomSheetDecisionPanelReview.tsx`
+
+This is the most complex component. Based on the `iframe-shell-narrow-collapsed.html` design mockup.
+
+**Layout:**
+- `position: sticky; bottom: 0` via `sticky bottom-0` Tailwind
+- Container: `bg-stone-900 border-t-2 border-teal-500` with `box-shadow: 0 -8px 24px rgba(0,0,0,0.4)`
+- Drag handle: `mx-auto w-8 h-1 rounded-full bg-stone-600 hover:bg-stone-400 cursor-grab` — min 44px touch target wrapper
+- Snap points: `collapsed` (buttons only visible, ~80px) and `half-pane` (~50% iframe height, feedback textarea visible)
+- `opacity-0.6` backdrop dim when expanded (via pseudo-element or sibling div)
+
+**Drag gesture logic (pointer events):**
+```
+onPointerDown: record startY + timestamp
+onPointerMove: compute deltaY
+onPointerUp:
+  - velocity = deltaY / (timestamp_end - timestamp_start)
+  - if abs(deltaY) >= 24px OR abs(velocity) >= 0.5px/ms: snap (up=expand, down=collapse)
+  - else: snap back to current state
+```
+- Reduced motion: skip CSS transition (apply snap immediately)
+- Keyboard: `onKeyDown` on drag handle — Up arrow → expand, Down arrow → collapse
+
+**Decision buttons:**
+- Approve: `bg-teal-500 text-stone-950 hover:bg-teal-400` — min h-11 (44px)
+- Changes: `bg-stone-700 text-stone-100 hover:bg-stone-600` — min h-11
+- External: outlined, `border-stone-600 text-stone-300 hover:border-stone-400` — min h-11
+- Keyboard shortcuts `1`/`2`/`3` wired via `useEffect` on document keydown (iframe-mode only)
+- Visible `<kbd>1</kbd>` hints in footer
+
+**Feedback textarea** (half-pane only):
+- `aria-labelledby` pointing to hidden heading
+- `rows={4}` expandable
+
+**Decision submission:**
+- Calls `submitDecision` from `host-bridge.ts`
+- On success: renders `<DecisionSuccess>` (replacing the bottom sheet)
+
+### Step 9 — Create `BottomSheetDecisionPanelQuestion.tsx`
+
+- Same bottom-sheet structure as Review variant (drag handle, snap points)
+- No decision buttons in collapsed mode — shows "Submit Answers" button only
+- In half-pane: shows submit button (full width, teal-500)
+- Form wrapping: `aria-labelledby` pointing to hidden "Submit Your Answers" heading
+- Wires to `submitAnswers` from `host-bridge.ts`
+- On success: renders `<DecisionSuccess variant="approved">` (question answered maps to approved visually)
+
+### Step 10 — Create `BottomSheetDecisionPanelDesign.tsx`
+
+- Same bottom-sheet structure
+- Collapsed: shows selected archetype name + "Choose This Direction" button
+- Half-pane: shows parameter sliders inline in the sheet
+- `aria-labelledby` on the form region
+- Wires to `submitDesignDirection` from `host-bridge.ts`
+
+### Step 11 — Refactor `ReviewPage.tsx`
+
+Key change: extract the `<ReviewSidebar>` render into a conditional:
+
+```tsx
+const isIframe = isMcpAppsHost(); // read once at component level
+
+// In JSX return:
+{isIframe ? (
+  <>
+    <div className="flex-1 min-w-0">
+      {/* same content area */}
+    </div>
+    <BottomSheetDecisionPanelReview
+      sessionId={sessionId}
+      gateType={session.gate_type}
+      comments={sidebarComments}
+      getAnnotations={getAnnotations}
+      wsRef={wsRef}
+      onDecisionSuccess={() => setShowSuccess(true)}
+      ...
+    />
+  </>
+) : (
+  <div className="flex gap-6">
+    <div className="flex-1 min-w-0">
+      {/* same content area */}
+    </div>
+    <ReviewSidebar ... />  {/* unchanged */}
+  </div>
+)}
+```
+
+The browser-mode branch is byte-identical to the current code — the existing JSX is preserved
+under `isMcpAppsHost() === false`. The snapshot test confirms this.
+
+### Step 12 — Refactor `QuestionPage.tsx`
+
+- Add `const isIframe = isMcpAppsHost();`
+- Remove the standalone `<button type="submit">Submit Answers</button>` when `isIframe === true`
+- Wrap form area in `<form>` with `aria-labelledby` pointing to a hidden heading (both modes)
+- When `isIframe`: render `<BottomSheetDecisionPanelQuestion>` below the form
+- When `!isIframe`: render the existing inline submit button (unchanged, byte-identical)
+
+**Note:** The existing `tryCloseTab` call in QuestionPage must NOT appear in the iframe branch. The iframe-mode bottom sheet handles success state via `<DecisionSuccess>`.
+
+### Step 13 — Refactor `DesignPicker.tsx`
+
+- Add `const isIframe = isMcpAppsHost();`
+- When `isIframe`: render `<BottomSheetDecisionPanelDesign>` below the archetype gallery, hide the existing "Choose This Direction" button
+- When `!isIframe`: existing `<button>Choose This Direction</button>` unchanged
+- The preview modal uses `position: fixed` — add a check: in iframe mode, skip the modal or render it as an in-document overlay (no `fixed` positioning to avoid scroll trap violation)
+
+### Step 14 — Refactor `AnnotationCanvas.tsx`
+
+- Add `isMcpAppsHost` import
+- The decision controls for AnnotationCanvas (Apply/Clear) are toolbar buttons
+- In iframe mode: the Apply and Clear actions stay in the toolbar (they're annotation controls, not decision submission)
+- No decision panel needed here — the annotation canvas is embedded inside ReviewPage which has the decision panel
+- Only change needed: ensure no `position: fixed` in iframe mode for any overlay
+
+### Step 15 — Modify `App.tsx`
+
+Add iframe chrome:
+1. Import `isMcpAppsHost` from `host-bridge.ts`  
+2. Add state: `bridgeStatus: BridgeStatus`, `bootPhase: BootPhase`, `iframeError: IframeError | null`
+3. When `isMcpAppsHost()`:
+   - Render `<IframeTopBar slug={...} sessionType={...} bridgeStatus={bridgeStatus} onRetry={handleRetry} />`
+   - Render `<IframeBootScreen phase={bootPhase} onReady={() => setBootPhase('done')} />` until session loads
+   - On session load error: set appropriate `iframeError` and render the matching error screen
+   - Remove `<header>` and `<ThemeToggle>` (not needed in iframe mode — topbar replaces it)
+   - Remove `<footer>` (no "Powered by H·AI·K·U" in iframe mode)
+4. Browser mode: absolutely unchanged — same header, same footer, same ThemeToggle
+
+### Step 16 — Write tests
+
+**`conditional-render.test.tsx`** (criterion 2 + 3):
+```tsx
+// Mock isMcpAppsHost at the module level with vi.mock
+// Test 1: isMcpAppsHost === true → BottomSheetDecisionPanelReview in DOM, ReviewSidebar absent
+// Test 2: isMcpAppsHost === false → ReviewSidebar in DOM, BottomSheet absent
+// Test 3: Snapshot assertion — false branch matches pre-refactor baseline
+// Same pattern for QuestionPage, DesignPicker, AnnotationCanvas
+```
+
+**`BottomSheetDecisionPanelReview.test.tsx`** (criteria 4, 5, 7, 8, 9):
+```tsx
+// Drag gesture: fireEvent.pointerDown, pointerMove 24px, pointerUp → half-pane class
+// Drag gesture: < 24px → no transition
+// Velocity: mock timestamp, 0.6px/ms upward fling → half-pane
+// Keyboard shortcuts: userEvent.keyboard('1') → approve fires
+// Touch target: every button/a/input has computed minHeight/minWidth >= 44
+// Focus on mount: document.activeElement === first interactive element
+// Focus on success: after submit, document.activeElement === DecisionSuccess heading
+```
+
+**`error-screens.test.tsx`** (criteria 6, 10):
+```tsx
+// NegotiationErrorScreen: stub callServerTool to throw NEGOTIATION_FAILED → screen renders
+// Retry: callServerTool succeeds → screen unmounts
+// aria-live: each error screen has aria-live="assertive"
+// HostBridgeStatus: aria-live="polite", states: connected/reconnecting/error
+```
+
+**`IframeBootScreen.test.tsx`** (criteria 14):
+```tsx
+// Renders when isMcpAppsHost === true, no session yet
+// Does not render when isMcpAppsHost === false
+// prefers-reduced-motion: mock matchMedia → no animate-spin class
+```
+
+**`useBreakpoint.test.ts`** (criterion 12):
+```tsx
+// Mock ResizeObserver, fire contentRect.width = 400 → 'narrow'
+// Fire contentRect.width = 600 → 'medium'
+// Fire contentRect.width = 900 → 'wide'
+```
+
+### Step 17 — Verify no `window.close` in new components (criterion 11)
+
+```bash
+rg -n 'window\.close|history\.back|tryCloseTab' \
+  packages/haiku/review-app/src/components/iframe/ \
+  packages/haiku/review-app/src/App.tsx
+```
+
+Must return 0 hits.
+
+### Step 18 — Typecheck + test suite (criteria 15, 16)
+
+```bash
+cd /Volumes/dev/src/github.com/gigsmart/haiku-method/.haiku/worktrees/cowork-mcp-apps-integration/unit-06-spa-iframe-layout
+npm --prefix packages/haiku/review-app install
+npx --prefix packages/haiku/review-app tsc --noEmit
+npm --prefix packages/haiku/review-app test
+npm --prefix packages/haiku run prebuild && npm --prefix packages/haiku run typecheck && npx --prefix packages/haiku biome check src && npm --prefix packages/haiku test
+```
+
+All must exit 0. Bundle gzipped size ≤ baseline + 50 KB.
+
+---
+
+## Risk assessment
+
+| Risk | Mitigation |
+|---|---|
+| Snapshot drift on ReviewPage after iframe branch added | Capture baseline snapshot in first commit before touching components; use `isMcpAppsHost() === false` guard in test |
+| `position: fixed` in DesignPicker preview modal causes scroll trap in iframe mode | In iframe mode, render modal as absolute/in-document overlay, not fixed |
+| `tryCloseTab` already in QuestionPage and DesignPicker | Do NOT import or call in the iframe branch at all; keep it only in the non-iframe branch |
+| ResizeObserver not available in jsdom | Provide a simple mock in vitest setup |
+| `@modelcontextprotocol/ext-apps` not available in test env | Already handled by vitest.config.ts alias setup from unit-05 |
+| Bottom sheet using `position: fixed` instead of `sticky` | Use `sticky bottom-0` inside a flex-column wrapper, matching the design mockup spec exactly |
+| Bundle size exceeding ceiling after 11 new components | Keep components lean — shared drag logic as a custom hook, no external animation libs |
+
+---
+
+## Implementation order (dependency graph)
+
+1. `useBreakpoint.ts` (no deps)
+2. `HostBridgeStatus.tsx` (no deps)
+3. `IframeTopBar.tsx` (deps: HostBridgeStatus)
+4. `IframeBootScreen.tsx` (no deps)
+5. Error screens: `NegotiationErrorScreen`, `SandboxErrorScreen`, `SessionExpiredScreen`, `StaleHostWarning` (no deps)
+6. `DecisionSuccess.tsx` (no deps)
+7. `BottomSheetDecisionPanelReview.tsx` (deps: host-bridge submitDecision, DecisionSuccess)
+8. `BottomSheetDecisionPanelQuestion.tsx` (deps: host-bridge submitAnswers, DecisionSuccess)
+9. `BottomSheetDecisionPanelDesign.tsx` (deps: host-bridge submitDesignDirection, DecisionSuccess)
+10. Refactor `ReviewPage.tsx` (deps: BottomSheetDecisionPanelReview)
+11. Refactor `QuestionPage.tsx` (deps: BottomSheetDecisionPanelQuestion)
+12. Refactor `DesignPicker.tsx` (deps: BottomSheetDecisionPanelDesign)
+13. Refactor `AnnotationCanvas.tsx` (minor)
+14. Modify `App.tsx` (deps: IframeTopBar, IframeBootScreen, error screens)
+15. Write all tests
+16. Run all verification commands
+
+---
+
+## Verification commands (in order)
+
+```bash
+# Criterion 1 — files exist
+for f in \
+  BottomSheetDecisionPanelReview.tsx \
+  BottomSheetDecisionPanelQuestion.tsx \
+  BottomSheetDecisionPanelDesign.tsx \
+  IframeTopBar.tsx \
+  HostBridgeStatus.tsx \
+  IframeBootScreen.tsx \
+  NegotiationErrorScreen.tsx \
+  SandboxErrorScreen.tsx \
+  SessionExpiredScreen.tsx \
+  StaleHostWarning.tsx \
+  DecisionSuccess.tsx; do
+  test -f "packages/haiku/review-app/src/components/iframe/$f" && echo "OK: $f" || echo "MISSING: $f"
+done
+
+# Criterion 11 — no window.close
+rg -n 'window\.close|history\.back|tryCloseTab' \
+  packages/haiku/review-app/src/components/iframe/ \
+  packages/haiku/review-app/src/App.tsx 2>/dev/null && echo "FAIL: found forbidden calls" || echo "OK: no forbidden calls"
+
+# Criteria 15 + 16 — typecheck, tests, bundle
+npm --prefix packages/haiku/review-app install
+npx --prefix packages/haiku/review-app tsc --noEmit
+npm --prefix packages/haiku/review-app test
+npm --prefix packages/haiku run prebuild
+npm --prefix packages/haiku run typecheck
+npx --prefix packages/haiku biome check src
+npm --prefix packages/haiku test
+```
+
+All commands must exit 0.
+
+---
+
+## Key design decisions
+
+1. **`isMcpAppsHost()` called once per component** — cached at module level in host-bridge.ts so it's effectively a constant. Call it once at the top of the render function and use the local variable throughout.
+
+2. **Bottom sheet uses `position: sticky; bottom: 0`**, not `position: fixed`. The page root is `display: flex; flex-direction: column; min-height: 100vh`. Content area has `flex: 1; overflow-y: auto`. Sheet sticks to the bottom of the iframe viewport without escaping it (as specified in the design mockup comments).
+
+3. **Drag gesture in React** — use `onPointerDown`/`onPointerMove`/`onPointerUp` on the drag handle. Call `el.setPointerCapture(e.pointerId)` on down to track the pointer even outside the element. Store `{ startY, startTime }` in a ref (not state, to avoid re-render during drag).
+
+4. **No external drag/animation libraries** — keep bundle lean. CSS transition on the sheet height/transform for the snap animation; `prefers-reduced-motion` check removes the transition class.
+
+5. **Browser-mode snapshot identity** — the refactor must NOT change any JSX rendered when `isMcpAppsHost() === false`. The conditional is only additive. The snapshot test catches any regression.
+
+6. **`tryCloseTab` stays in browser mode only** — the iframe mode never calls `tryCloseTab`, `window.close`, or `history.back`. `DecisionSuccess` waits for the host to unmount.
+
+7. **DesignPicker preview modal** — the current `position: fixed` modal is fine in browser mode. In iframe mode, skip rendering the full-screen preview modal (it would break the no-fixed-positioning constraint). The archetype cards already have `h-48` inline preview iframes, which is sufficient.
