@@ -3635,6 +3635,7 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
         { hook: "MCP tool result", target: "agent's `tool_use_result` content", what: "the payload below — agent now knows which stage to start and which phase" },
         { hook: "inject-context", target: "next agent prompt prepend", what: "intent.md frontmatter (slug, title, studio, mode), `active_stage`, `phase=elaborate`" },
         { hook: "inject-state-file", target: "`.haiku/_inject.md` (transient)", what: "structured snapshot of state.json the agent can read with the Read tool" },
+        { hook: "readStudio()", target: "agent prompt prepend", what: "**Studio context injection** — `readStudio(studio).body` is injected as studio-level context when a new stage starts, providing the studio's high-level goals, principles, and behavioral framing from `STUDIO.md`." },
       ],
       action: "start_stage",
       summary: `kick off the first stage (${stage.name}) — sets phase=elaborate`,
@@ -3719,7 +3720,7 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
     "hat-to-hat": {
       injection: [
         { hook: "MCP tool result", target: "subagent's `tool_use_result`", what: `next hat name (\`${opts.to}\`), \`hats/${opts.to}.md\` content, bolt counter` },
-        { hook: "subagent-context", target: "the subagent itself", what: "stays scoped to the parent unit's worktree throughout the hat rotation — same subagent transitions between hats, doesn't respawn" },
+        { hook: "subagent-context", target: "the subagent itself", what: "stays scoped to the parent unit's worktree throughout the hat rotation — same subagent transitions between hats, doesn't respawn. STAGE.md body content is injected alongside hat instructions for stage-level behavioral context." },
         { hook: "track-outputs", target: "unit frontmatter", what: `records files \`${opts.from}\` wrote into the unit's \`outputs:\` so the next hat sees them` },
       ],
       // NOTE: this transition is NOT a haiku_run_next call. It's the subagent calling
@@ -3751,6 +3752,7 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
       injection: [
         { hook: "MCP tool result", target: "agent's `tool_use_result`", what: `newly-eligible unit list (${(opts.units ?? []).join(", ")}), each with worktree path + first hat` },
         { hook: "inject-context", target: "next agent prompt prepend (per spawned unit context)", what: "the new unit's frontmatter, depends_on outputs (resolved file paths), first hat's instructions" },
+        { hook: "start_units embedding", target: "agent's `tool_use_result`", what: "**Batch unit embedding** — `start_units` embeds the hat definition once for the shared first hat, then embeds per-unit specs in `<unit-spec>` XML tags with each unit's frontmatter and resolved input content inline. Model cascade is resolved for the hat to determine subagent model." },
       ],
       action: opts.units && opts.units.length > 1 ? "start_units" : "start_unit",
       summary: `wave ${opts.from} complete → start wave ${opts.to} (${(opts.units ?? []).join(", ")})`,
@@ -3770,7 +3772,7 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
         { path: `.haiku/intents/{slug}/stages/${stageLower}/units/{new-wave-unit}.md`, change: `frontmatter: \`status: "in_progress"\`, \`hat: "${stage.hats[0]}"\`, \`bolt: 0\`` },
         { path: `.haiku/worktrees/{new-wave-unit}/`, change: "git worktree created for each newly-eligible unit" },
       ],
-      instructions: `There's no "wave" tool — \`haiku_run_next\` simply returns \`start_unit(s)\` for whichever units have just become eligible. \`computeUnitWaves\` is a pure scheduling function; the FSM has no explicit wave concept beyond which units are currently eligible.`,
+      instructions: `There's no "wave" tool — \`haiku_run_next\` simply returns \`start_unit(s)\` for whichever units have just become eligible. \`computeUnitWaves\` is a pure scheduling function; the FSM has no explicit wave concept beyond which units are currently eligible. For multi-unit waves, \`start_units\` embeds the shared hat definition once, then each unit's spec in \`<unit-spec>\` XML tags with per-unit input content loaded and embedded inline. The model cascade is resolved for the hat to select the subagent model.`,
     },
     "execute-to-review": {
       injection: [
@@ -4110,7 +4112,7 @@ const HOOKS = [
     desc: "After every agent edit/write, records the file path under the active unit's `outputs:` frontmatter. This is how downstream stages know what's available.",
     fires: ["cylinder", "hat", "artifacts.out"], file: "packages/haiku/src/hooks/track-outputs.ts" },
   { group: "context injection", name: "subagent-context",
-    desc: "When a hat spawns a Claude Code subagent, this hook scopes the subagent's context to the parent unit's worktree only — preventing context bleed.",
+    desc: "When a hat spawns a Claude Code subagent, this hook scopes the subagent's context to the parent unit's worktree only — preventing context bleed. Also injects STAGE.md body content alongside the hat instructions, giving the subagent stage-level behavioral context.",
     fires: ["hat", "phase[execute]"], file: "packages/haiku/src/hooks/subagent-context.ts" },
   { group: "context injection", name: "subagent-hook",
     desc: "Runtime hook running inside spawned subagents. Plays the same role as inject-context for the subagent's tool calls.",
@@ -4315,7 +4317,7 @@ function openSubagentModal(stageKey, hatName) {
       </div>
       <ul>
         <li>Restricts the subagent's <code>cwd</code> to the parent unit's worktree (<code>.haiku/worktrees/{unit}/</code>) — no context bleed across units</li>
-        <li>Injects a minimal context — the hat's <code>hats/{hat}.md</code> + the unit spec + relevant prior outputs</li>
+        <li>Injects a minimal context — the hat's <code>hats/{hat}.md</code> + <code>STAGE.md</code> body content + the unit spec + relevant prior outputs</li>
         <li>Enforces edit-scope via <code>workflow-guard</code> (only this unit's files writeable)</li>
         <li>Captures the subagent's <code>haiku_unit_advance_hat</code> result back into the parent agent's tool result</li>
       </ul>
