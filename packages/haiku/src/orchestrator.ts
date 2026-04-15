@@ -56,6 +56,7 @@ import {
 	listStudios,
 	readHatDefs,
 	readReviewAgentDefs,
+	readStageArtifactDefs,
 	readStageDef,
 	readStudio,
 	resolveStageInputs,
@@ -299,6 +300,18 @@ function validateStageOutputs(
 		break // Project-level outputs dir takes precedence over plugin-level (first match wins)
 	}
 
+	return null
+}
+
+// ── Phase override reader ────────────────────────────────────────────────
+
+function readPhaseOverride(studio: string, stage: string, phase: string): { data: Record<string, unknown>; body: string } | null {
+	for (const base of studioSearchPaths()) {
+		const file = join(base, studio, "stages", stage, "phases", `${phase.toUpperCase()}.md`)
+		if (existsSync(file)) {
+			return parseFrontmatter(readFileSync(file, "utf8"))
+		}
+	}
 	return null
 }
 
@@ -2154,6 +2167,10 @@ function buildRunInstructions(
 			const stage = action.stage as string
 			const hats = (action.hats as string[]) || []
 			const stageDef = readStageDef(studio, stage)
+			const studioData = readStudio(studio)
+			if (studioData?.body) {
+				sections.push(`### Studio: ${studio}\n\n${studioData.body}`)
+			}
 			sections.push(`## Stage: ${stage}`)
 			sections.push(`Hats: ${hats.join(" -> ")}`)
 			if (stageDef) {
@@ -2183,6 +2200,11 @@ function buildRunInstructions(
 			sections.push(`## Elaborate: ${stage}`)
 			if (stageDef) {
 				sections.push(`${stageDef.body}`)
+			}
+
+			const elaborationOverride = readPhaseOverride(studio, stage, "ELABORATION")
+			if (elaborationOverride) {
+				sections.push(`### Phase: Elaboration Override\n\n${elaborationOverride.body}`)
 			}
 
 			// Resolve upstream stage inputs — load actual content from prior stages
@@ -2241,29 +2263,25 @@ function buildRunInstructions(
 					discoveryFiles.set(f, readFileSync(join(discoveryDir, f), "utf8"))
 				}
 			}
-			for (const [f, content] of discoveryFiles) {
-				sections.push(`### ${f}\n\n${content}`)
-			}
-
 			// Discovery fan-out — one Task subagent per declared discovery artifact.
 			// Keeps the parent agent's context focused on synthesis instead of swallowing
 			// raw research material. Each subagent owns the research AND production of
 			// its assigned artifact; subagent-context hook scopes them automatically.
 			if (discoveryFiles.size > 0) {
-				const artifacts = Array.from(discoveryFiles.keys()).map((f) =>
-					f.replace(/\.md$/i, "").toLowerCase(),
-				)
-				const artifactList = artifacts.map((a) => `\`${a}\``).join(", ")
-				const perArtifactBullets = artifacts
-					.map(
-						(a) =>
-							`- subagent for \`${a}\`: research the relevant axis for this artifact and write the populated document to the stage's discovery path. Use the template above as the structure.`,
-					)
-					.join("\n")
+				const artifacts = Array.from(discoveryFiles.entries())
+				const artifactNames = artifacts.map(([f]) => `\`${f.replace(/\.md$/i, "").toLowerCase()}\``)
 				const plural = artifacts.length !== 1 ? "s" : ""
-				sections.push(
-					`## Discovery Fan-Out (REQUIRED)\n\nThis stage produces ${artifacts.length} discovery artifact${plural}: ${artifactList}.\n\n**Spawn one \`Task\` subagent per artifact** to do the research AND produce the populated file. Spawn ALL of them in a single response (parallel). Do NOT do per-artifact research in this parent context — synthesize the structured returns instead.\n\n${perArtifactBullets}\n\nEach subagent inherits worktree scoping via the \`subagent-context\` hook. When all subagents return, proceed to the unit-decomposition step using the produced artifacts as your inputs.`,
-				)
+
+				let fanOutText = `## Discovery Fan-Out (REQUIRED)\n\nThis stage produces ${artifacts.length} discovery artifact${plural}: ${artifactNames.join(", ")}.\n\n**Spawn one \`Task\` subagent per artifact** to do the research AND produce the populated file. Spawn ALL of them in a single response (parallel). Do NOT do per-artifact research in this parent context — synthesize the structured returns instead.\n\n`
+
+				for (const [f, content] of artifacts) {
+					const name = f.replace(/\.md$/i, "").toLowerCase()
+					fanOutText += `### Subagent: \`${name}\`\n\n<discovery-template>\n${content}\n</discovery-template>\n\nSpawn a Task subagent with the template above included verbatim in its prompt. The subagent must research the relevant axis and write the populated document to the stage's discovery path. Use the template's Content Guide as the structure and Quality Signals as the acceptance bar.\n\n`
+				}
+
+				fanOutText += `Each subagent inherits worktree scoping via the \`subagent-context\` hook. When all subagents return, proceed to the unit-decomposition step using the produced artifacts as your inputs.`
+
+				sections.push(fanOutText)
 			}
 
 			// Detect design stages and add MCP provider instructions
@@ -2387,8 +2405,25 @@ function buildRunInstructions(
 				)
 			}
 
+			const executionOverride = readPhaseOverride(studio, stage, "EXECUTION")
+			if (executionOverride) {
+				sections.push(`### Phase: Execution Override\n\n${executionOverride.body}`)
+			}
+
 			sections.push(`### Unit Spec\n\n${unitContent}`)
 			sections.push(`### Hat: ${hat}\n\n${hatContent}`)
+
+			// Output templates — inject content guides so the builder knows what good output looks like
+			{
+				const artifactDefs = readStageArtifactDefs(studio, stage)
+				const outputDefs = artifactDefs.filter(d => d.kind === "output")
+				if (outputDefs.length > 0) {
+					sections.push("### Stage Output Requirements\n\nThis stage must produce the following outputs:")
+					for (const od of outputDefs) {
+						sections.push(`#### ${od.name}${od.required ? " (REQUIRED)" : ""}\n**Location:** \`${od.location}\` | **Format:** ${od.format}\n\n${od.body}`)
+					}
+				}
+			}
 
 			// Unit inputs — load referenced artifacts
 			if (unitInputs.length > 0) {
@@ -2492,6 +2527,24 @@ function buildRunInstructions(
 					`${stageDef.body}\n\nStay within this stage's scope — do not produce outputs belonging to other stages.`,
 				)
 			}
+
+			const executionOverrideParallel = readPhaseOverride(studio, stage, "EXECUTION")
+			if (executionOverrideParallel) {
+				sections.push(`### Phase: Execution Override\n\n${executionOverrideParallel.body}`)
+			}
+
+			// Output templates — inject content guides so the builder knows what good output looks like
+			{
+				const artifactDefs = readStageArtifactDefs(studio, stage)
+				const outputDefs = artifactDefs.filter(d => d.kind === "output")
+				if (outputDefs.length > 0) {
+					sections.push("### Stage Output Requirements\n\nThis stage must produce the following outputs:")
+					for (const od of outputDefs) {
+						sections.push(`#### ${od.name}${od.required ? " (REQUIRED)" : ""}\n**Location:** \`${od.location}\` | **Format:** ${od.format}\n\n${od.body}`)
+					}
+				}
+			}
+
 			sections.push(`Hats: ${hats.join(" → ")}\nUnits: ${units.join(", ")}`)
 
 			// Upstream stage inputs for parallel units
@@ -2557,17 +2610,33 @@ function buildRunInstructions(
 		case "review": {
 			const stage = action.stage as string
 			const agents = readReviewAgentDefs(studio, stage)
+
+			// Cross-stage review agents from STAGE.md review-agents-include field
+			const stageDef_review = readStageDef(studio, stage)
+			if (stageDef_review?.data?.["review-agents-include"] && Array.isArray(stageDef_review.data["review-agents-include"])) {
+				const includes = stageDef_review.data["review-agents-include"] as Array<{ stage: string; agents: string[] }>
+				for (const inc of includes) {
+					if (!inc.stage || !Array.isArray(inc.agents)) continue
+					const crossAgents = readReviewAgentDefs(studio, inc.stage)
+					for (const agentName of inc.agents) {
+						if (crossAgents[agentName] && !agents[agentName]) {
+							agents[`${agentName} (from ${inc.stage})`] = crossAgents[agentName]
+						}
+					}
+				}
+			}
+
 			sections.push(`## Adversarial Review: ${stage}`)
 
 			if (Object.keys(agents).length > 0) {
-				sections.push("### Review Agents\n")
+				sections.push("### Review Agent Fan-Out (REQUIRED)\n\n**Spawn one subagent per review agent in parallel.** Include each agent's full instructions in its subagent prompt.\n")
 				for (const [name, content] of Object.entries(agents)) {
-					sections.push(`#### ${name}\n\n${content}`)
+					sections.push(`#### Subagent: \`${name}\`\n\n<review-agent-instructions>\n${content}\n</review-agent-instructions>\n\nInclude the instructions above verbatim in this subagent's prompt. The subagent reviews the diff and stage outputs through this agent's lens.\n`)
 				}
 			}
 
 			sections.push(
-				`### Instructions\n\n1. Spawn one subagent per review agent (in parallel), each with the diff and stage outputs\n2. Collect findings; if HIGH severity, fix and re-review (up to 3 cycles)\n3. Call \`haiku_run_next { intent: "${slug}" }\` — the orchestrator advances to the gate phase automatically`,
+				`### Instructions\n\n1. Spawn one subagent per review agent (in parallel), each with its scoped instructions, the diff, and stage outputs\n2. Collect findings; if HIGH severity, fix and re-review (up to 3 cycles)\n3. Call \`haiku_run_next { intent: "${slug}" }\` — the orchestrator advances to the gate phase automatically`,
 			)
 			break
 		}
@@ -2634,18 +2703,34 @@ function buildRunInstructions(
 		case "review_elaboration": {
 			const stage = action.stage as string
 			const agents = readReviewAgentDefs(studio, stage)
+
+			// Cross-stage review agents from STAGE.md review-agents-include field
+			const stageDef_reviewElab = readStageDef(studio, stage)
+			if (stageDef_reviewElab?.data?.["review-agents-include"] && Array.isArray(stageDef_reviewElab.data["review-agents-include"])) {
+				const includes = stageDef_reviewElab.data["review-agents-include"] as Array<{ stage: string; agents: string[] }>
+				for (const inc of includes) {
+					if (!inc.stage || !Array.isArray(inc.agents)) continue
+					const crossAgents = readReviewAgentDefs(studio, inc.stage)
+					for (const agentName of inc.agents) {
+						if (crossAgents[agentName] && !agents[agentName]) {
+							agents[`${agentName} (from ${inc.stage})`] = crossAgents[agentName]
+						}
+					}
+				}
+			}
+
 			sections.push("## Review Elaboration Artifacts\n\n")
 			sections.push(
 				"Run adversarial review agents on the elaboration specs before the pre-execution gate opens.\n\n",
 			)
 			if (Object.keys(agents).length > 0) {
-				sections.push("### Review Agents\n")
+				sections.push("### Review Agent Fan-Out (REQUIRED)\n\n**Spawn one subagent per review agent in parallel.** Include each agent's full instructions in its subagent prompt.\n")
 				for (const [name, content] of Object.entries(agents)) {
-					sections.push(`#### ${name}\n\n${content}`)
+					sections.push(`#### Subagent: \`${name}\`\n\n<review-agent-instructions>\n${content}\n</review-agent-instructions>\n\nInclude the instructions above verbatim in this subagent's prompt. The subagent reviews the diff and stage outputs through this agent's lens.\n`)
 				}
 			}
 			sections.push(
-				`### Mechanics\n\n1. Spawn one subagent per review agent (in parallel)\n2. Each reviews the elaboration specs (units, discovery, knowledge)\n3. Fix any HIGH findings\n4. Call \`haiku_run_next { intent: "${slug}" }\` to advance`,
+				`### Mechanics\n\n1. Spawn one subagent per review agent (in parallel), each with its scoped instructions\n2. Each reviews the elaboration specs (units, discovery, knowledge)\n3. Fix any HIGH findings\n4. Call \`haiku_run_next { intent: "${slug}" }\` to advance`,
 			)
 			break
 		}

@@ -32,7 +32,7 @@ import {
 } from "./git-worktree.js"
 import { escalate } from "./model-selection.js"
 import { logSessionEvent, writeHaikuMetadata } from "./session-metadata.js"
-import { listStudios, resolveStudio } from "./studio-reader.js"
+import { listStudios, readReflectionDefs, resolveStudio } from "./studio-reader.js"
 import { emitTelemetry } from "./telemetry.js"
 import { MCP_VERSION, getPluginVersion } from "./version.js"
 
@@ -3069,12 +3069,31 @@ export function handleStateTool(
 				}
 			}
 
-			out += "\n## Analysis Instructions\n"
-			out +=
-				"1. Execution patterns — which units went smoothly, which required retries\n"
-			out += "2. Criteria satisfaction\n"
-			out += "3. Process observations\n"
-			out += "4. Blocker analysis\n"
+			const studio = (intentData.studio as string) || ""
+			if (studio) {
+				const dims = readReflectionDefs(studio)
+				if (Object.keys(dims).length > 0) {
+					out += "\n## Reflection Dimensions\n\n"
+					out += "Analyze this intent along each dimension below:\n\n"
+					for (const [name, content] of Object.entries(dims)) {
+						out += `### ${name}\n\n${content}\n\n`
+					}
+				} else {
+					out += "\n## Analysis Instructions\n"
+					out +=
+						"1. Execution patterns — which units went smoothly, which required retries\n"
+					out += "2. Criteria satisfaction\n"
+					out += "3. Process observations\n"
+					out += "4. Blocker analysis\n"
+				}
+			} else {
+				out += "\n## Analysis Instructions\n"
+				out +=
+					"1. Execution patterns — which units went smoothly, which required retries\n"
+				out += "2. Criteria satisfaction\n"
+				out += "3. Process observations\n"
+				out += "4. Blocker analysis\n"
+			}
 			out += "\n## Output\n"
 			out +=
 				"Write reflection.md and settings-recommendations.md to the intent directory.\n"
