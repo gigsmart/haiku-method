@@ -12,6 +12,11 @@ inputs:
   - knowledge/DESIGN-TOKENS.md
   - stages/design/units/unit-01-iframe-shell-layout.md
   - stages/design/units/unit-04-iframe-content-screens.md
+status: active
+bolt: 1
+hat: designer
+started_at: '2026-04-15T13:01:06Z'
+hat_started_at: '2026-04-15T13:01:06Z'
 ---
 
 # Decision-submitted success state and iframe unmount
