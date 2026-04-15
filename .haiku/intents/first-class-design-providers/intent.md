@@ -1,12 +1,19 @@
 ---
-title: "First-Class Design Providers"
+title: First-Class Design Providers
 studio: software
-stages: [inception, design, product, development, operations, security]
+stages:
+  - inception
+  - design
+  - product
+  - development
+  - operations
+  - security
 mode: continuous
 active_stage: security
 status: completed
-started_at: 2026-04-01T09:55:37Z
-completed_at: 2026-04-01T14:34:57Z
+started_at: 2026-04-01T09:55:37.000Z
+completed_at: 2026-04-01T14:34:57.000Z
+created_at: '2026-04-13T19:18:37.685Z'
 ---
 
 
