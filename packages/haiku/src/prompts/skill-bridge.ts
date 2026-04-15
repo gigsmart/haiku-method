@@ -119,6 +119,38 @@ export function registerSkillPrompts(): number {
 		count++
 	}
 
+	// Register a startup/status prompt that replaces the inject-context SessionStart hook.
+	// For hookless harnesses, the agent has no automatic context injection on session start.
+	// This prompt gives the agent a way to discover active H·AI·K·U work.
+	registerPrompt({
+		name: "haiku:status",
+		title: "H·AI·K·U: Check active work",
+		description:
+			"Check for active H·AI·K·U intents and get your current action. " +
+			"Call this at the start of every session to resume in-progress work.",
+		arguments: [],
+		handler: async (): Promise<GetPromptResult> => {
+			return {
+				description: "Check for active H·AI·K·U work",
+				messages: [
+					{
+						role: "user",
+						content: {
+							type: "text",
+							text:
+								"Check if there is active H·AI·K·U work in this project.\n\n" +
+								"1. Call `haiku_dashboard` to see all intents and their status\n" +
+								"2. If there is an active intent, call `haiku_run_next { intent: \"<slug>\" }` to get your current action\n" +
+								"3. If no active intents exist, let me know — I can start one with `haiku:start`\n\n" +
+								"Do this silently — just check and report what you find.",
+						},
+					},
+				],
+			}
+		},
+	})
+	count++
+
 	if (count > 0) {
 		console.error(
 			`[haiku] Registered ${count} skill(s) as MCP prompts (harness lacks native skill support)`,

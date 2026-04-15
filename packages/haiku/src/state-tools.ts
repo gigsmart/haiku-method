@@ -3,7 +3,7 @@
 // One tool per resource per operation. Under the hood: frontmatter + JSON files.
 // The caller doesn't need to know file paths — just resource identifiers.
 
-import { execFileSync, spawnSync } from "node:child_process"
+import { execFileSync, execSync, spawnSync } from "node:child_process"
 import {
 	existsSync,
 	mkdirSync,
@@ -16,6 +16,7 @@ import { join, resolve } from "node:path"
 import matter from "gray-matter"
 import { getPendingVersion, hasPendingUpdate } from "./auto-update.js"
 import { features } from "./config.js"
+import { getCapabilities } from "./harness.js"
 import {
 	addTempWorktree,
 	commitAndPushFromWorktree,
@@ -1499,6 +1500,77 @@ export function isGitRepo(): boolean {
 	return _isGitRepo
 }
 
+// ── Inline quality gates (for hookless harnesses) ─────────────────────────
+//
+// Mirrors the quality-gate Stop hook logic but runs inside haiku_unit_advance_hat.
+// Returns an error object if any gate fails, or null if all pass.
+
+function runInlineQualityGates(
+	intentSlug: string,
+	stage: string,
+	unitPath: string,
+): { error: string; message: string; failures: Array<{ name: string; command: string; exit_code: number; output: string }> } | null {
+	// Read quality_gates from intent and unit frontmatter
+	const root = findHaikuRoot()
+	const intentFile = join(root, "intents", intentSlug, "intent.md")
+
+	function readGates(filePath: string): Array<Record<string, string>> {
+		if (!existsSync(filePath)) return []
+		const raw = readFileSync(filePath, "utf8")
+		const { data } = parseFrontmatter(raw)
+		const gates = data.quality_gates
+		if (!Array.isArray(gates)) return []
+		return gates as Array<Record<string, string>>
+	}
+
+	const intentGates = readGates(intentFile)
+	const unitGates = readGates(unitPath)
+	const allGates = [...intentGates, ...unitGates]
+	if (allGates.length === 0) return null
+
+	// Resolve repo root for cwd
+	let repoRoot = process.cwd()
+	try {
+		repoRoot = execSync("git rev-parse --show-toplevel", { encoding: "utf8" }).trim()
+	} catch { /* use cwd */ }
+
+	const failures: Array<{ name: string; command: string; exit_code: number; output: string }> = []
+
+	for (let i = 0; i < allGates.length; i++) {
+		const gate = allGates[i]
+		const gateName = gate.name ?? `gate-${i}`
+		const gateCmd = gate.command ?? ""
+		if (!gateCmd) continue
+
+		const cwd = gate.dir ? resolve(repoRoot, gate.dir) : repoRoot
+
+		try {
+			execSync(gateCmd, {
+				cwd,
+				encoding: "utf8",
+				timeout: 30000,
+				stdio: ["pipe", "pipe", "pipe"],
+			})
+		} catch (err: unknown) {
+			const execErr = err as { status?: number; stdout?: string; stderr?: string }
+			failures.push({
+				name: gateName,
+				command: gateCmd,
+				exit_code: execErr.status ?? 1,
+				output: ((execErr.stdout ?? "") + (execErr.stderr ?? "")).slice(0, 500),
+			})
+		}
+	}
+
+	if (failures.length === 0) return null
+
+	return {
+		error: "quality_gate_failed",
+		message: `Cannot advance hat: ${failures.length} quality gate(s) failed. Fix the issues and try again.\n${failures.map((f) => `- ${f.name}: '${f.command}' exited ${f.exit_code}${f.output ? `: ${f.output}` : ""}`).join("\n")}`,
+		failures,
+	}
+}
+
 // ── Path resolution ────────────────────────────────────────────────────────
 
 export function findHaikuRoot(): string {
@@ -2239,6 +2311,23 @@ export function handleStateTool(
 			)
 		}
 		case "haiku_unit_set": {
+			// Guard FSM-controlled fields for hookless harnesses.
+			// When hooks are available (Claude Code, Kiro), the guard-fsm-fields
+			// PreToolUse hook blocks direct file writes. For hookless harnesses,
+			// validate here inside the MCP tool itself.
+			const fsmProtectedFields = new Set([
+				"status", "started_at", "completed_at", "bolt", "hat", "hat_started_at",
+			])
+			const field = args.field as string
+			if (!getCapabilities().hooks && fsmProtectedFields.has(field)) {
+				return text(
+					JSON.stringify({
+						error: "fsm_field_protected",
+						field,
+						message: `Cannot set '${field}' directly — it is controlled by the FSM. Use haiku_run_next, haiku_unit_start, haiku_unit_advance_hat, or haiku_unit_reject_hat instead.`,
+					}),
+				)
+			}
 			const path = unitPath(
 				args.intent as string,
 				args.stage as string,
@@ -2395,6 +2484,24 @@ export function handleStateTool(
 
 			if (isLastHat) {
 				// ── AUTO-COMPLETE: This was the last hat ──
+
+				// ── Quality gate enforcement for hookless harnesses ──
+				// When hooks are available (Claude Code, Kiro), the Stop hook runs
+				// quality_gates commands. For hookless harnesses, run them here
+				// before allowing the unit to complete.
+				if (!getCapabilities().hooks) {
+					const buildHats = ["builder", "implementer", "refactorer"]
+					if (buildHats.includes(currentHat)) {
+						const qualityGates = runInlineQualityGates(
+							args.intent as string,
+							advStage,
+							advPath,
+						)
+						if (qualityGates) {
+							return text(JSON.stringify(qualityGates))
+						}
+					}
+				}
 
 				// Require at least one tracked output. The track-outputs PostToolUse
 				// hook auto-populates this as files are written, so an empty list

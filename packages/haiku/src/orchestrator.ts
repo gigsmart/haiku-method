@@ -2816,12 +2816,13 @@ function buildRunInstructions(
 				)
 			} else {
 				// ── Subagentless: direct execution in current context ──
+				const activeStageForUnit = (action.stage as string) || ""
 				sections.push(
 					`### Mechanics (Direct Execution)\n\n**Execute the "${hat}" hat work directly** — your harness does not support subagents.\n\n${
 						action.action === "start_unit"
 							? `1. Call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\`\n`
 							: ""
-					}2. Follow the hat definition and unit spec above\n3. Stay within the stage scope — do not produce outputs belonging to other stages\n${worktreePath ? `4. **Git discipline:** Commit work frequently (\`git add -A && git commit -m "..."\`)\n` : ""}\n**When done, call one of:**\n- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\`\n- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\`\n\nThe \`advance_hat\` result tells you what to do next (next hat, next unit, or phase advance). Follow it directly.\n\n**Output tracking:** Record produced artifacts in the unit's frontmatter \`outputs:\` field.\n\n**If outputs from a previous stage are missing:** call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage.`,
+					}2. Follow the hat definition and unit spec above\n3. Stay within the stage scope — do not produce outputs belonging to other stages\n${worktreePath ? `4. **Git discipline:** Commit work frequently (\`git add -A && git commit -m "..."\`)\n` : ""}\n**Output tracking (MANDATORY):**\nYour harness does not auto-track file writes. When you create or modify files as part of this unit's work, you MUST register them as outputs. After writing each artifact, call:\n\`\`\`\nhaiku_unit_set { intent: "${slug}", stage: "${activeStageForUnit}", unit: "${unit}", field: "outputs", value: "<comma-separated paths relative to intent dir>" }\n\`\`\`\nThe FSM validates that declared outputs exist before allowing hat advancement. If you forget to track outputs, \`haiku_unit_advance_hat\` will fail.\n\n**When done, call one of:**\n- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\`\n- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\`\n\nThe \`advance_hat\` result tells you what to do next (next hat, next unit, or phase advance). Follow it directly.\n\n**If outputs from a previous stage are missing:** call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage.`,
 				)
 			}
 
