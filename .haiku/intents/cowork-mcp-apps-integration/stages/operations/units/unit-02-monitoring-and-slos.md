@@ -9,11 +9,12 @@ inputs:
   - .haiku/knowledge/RUNBOOK.md
 outputs:
   - knowledge/unit-02-telemetry-notes.md
-status: active
+status: completed
 bolt: 1
 hat: sre
 started_at: '2026-04-15T19:25:11Z'
 hat_started_at: '2026-04-15T19:27:38Z'
+completed_at: '2026-04-15T19:31:22Z'
 ---
 
 # Operational telemetry and SLOs for MCP Apps review path
