@@ -103,3 +103,46 @@ Feature: Error recovery for the four iframe error states
       | SANDBOX_CLIPBOARD_WRITE |
       | SESSION_EXPIRED    |
       | STALE_HOST_PROTOCOL |
+
+  # ─── Connected state (V6-01) ───
+
+  Scenario: HostBridgeStatus shows teal Connected dot and announces via aria-live on reconnect
+    Given the HostBridgeStatus pill has just transitioned from "reconnecting" to "connected"
+    Then the status pill displays a teal dot labeled "Connected"
+    And the aria-live="polite" region fires an announcement with the "Connected" text
+
+  # ─── Reconnecting state (V6-02) ───
+
+  Scenario: HostBridgeStatus shows amber pulsing indicator during reconnect — no error screen
+    Given the host bridge connection drops while the review session is active
+    When the bridge enters "reconnecting" state
+    Then the HostBridgeStatus pill shows an amber pulsing indicator labeled "Reconnecting"
+    And no error card or blocking screen is rendered
+    And the review session content remains visible during the reconnection attempt
+
+  # ─── Boot sequence phases (V6-08) ───
+
+  Scenario: Boot screen progresses through loading → connecting → ready phases in order
+    Given the review SPA has just been mounted inside the Cowork host iframe
+    When the boot sequence executes
+    Then the IframeBootScreen transitions through "loading" phase first
+    And then transitions to "connecting" phase
+    And then transitions to "ready" phase
+    And the review screen renders only after the "ready" phase completes
+
+  Scenario: Boot screen reduced-motion replaces fade-out with instant transition
+    Given the operating system reports prefers-reduced-motion: reduce
+    When the IframeBootScreen transitions from "ready" to the review screen
+    Then no CSS fade or opacity transition fires
+    And the review screen appears immediately without animation
+
+# Audit log
+# Added 2026-04-15 during product/unit-02-finalize-feature-files review.
+# Gaps addressed:
+#   V6-01 — HostBridgeStatus connected state + aria-live on reconnect→connected had no scenario.
+#            Added: "HostBridgeStatus shows teal Connected dot and announces via aria-live".
+#   V6-02 — Reconnecting state: amber pulsing, no error screen had no scenario.
+#            Added: "HostBridgeStatus shows amber pulsing indicator — no error screen".
+#   V6-08 — Boot screen three-phase sequence and reduced-motion fallback had no scenario.
+#            Added: "Boot screen progresses through loading → connecting → ready" and
+#            "Boot screen reduced-motion replaces fade-out with instant transition".

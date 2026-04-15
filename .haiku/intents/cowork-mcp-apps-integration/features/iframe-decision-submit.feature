@@ -81,3 +81,67 @@ Feature: haiku_cowork_review_submit tool — decision submission
     When the SPA calls haiku_cowork_review_submit again with session_id "session-abc"
     Then the tool returns an error indicating the session has already been resolved
     And the FSM state is not modified a second time
+
+  # ─── All session types share the same resource URI (V5-05) ───
+
+  Scenario Outline: All three session types carry the same ui://haiku/review URI in _meta
+    Given hostSupportsMcpApps() returns true
+    And a session of type "<session_type>" is about to open
+    When the agent emits the tool result
+    Then the tool result _meta.ui.resourceUri matches the pattern "ui://haiku/review/<12-hex-chars>"
+    And the SPA routes to the "<expected_screen>" screen based on session.session_type
+
+    Examples:
+      | session_type      | expected_screen |
+      | review            | IntentReview    |
+      | question          | QuestionPage    |
+      | design_direction  | DesignPicker    |
+
+  # ─── FSM run covering all three session types (V5-06) ───
+
+  Scenario: Single FSM run delivering all three session types in sequence resolves without interference
+    Given hostSupportsMcpApps() returns true
+    And a FSM run is started that will exercise review, question, and design_direction sessions in sequence
+    When each session opens and haiku_cowork_review_submit is called for each
+    Then each tool result carries a valid _meta.ui.resourceUri
+    And each submission resolves exactly its own awaiting promise
+    And no submission resolves a promise belonging to a different session
+
+  # ─── Blocking timeout decision (V5-09) ───
+
+  Scenario: haiku_cowork_timeout_probe does not appear in the production list_tools response
+    Given the MCP server is running in a non-debug build
+    When a client sends a tools/list request
+    Then the response contains zero entries named "haiku_cowork_timeout_probe"
+
+  Scenario: _openReviewAndWait blocks on a single await with no resume token persisted
+    Given an active review session with a pending gate_review
+    When the human reviewer does not respond before the connection drops
+    Then the awaiting promise rejects with a timeout error
+    And no resume token or partial state is written to intent.md or state.json
+
+  # ─── QuestionPage layout (SC-01) ───
+
+  Scenario Outline: QuestionPage layout adapts correctly at each breakpoint
+    Given a session of type "question" with a question image and multiple answer options
+    And the iframe is rendered at width "<width>" pixels
+    When the QuestionPage is displayed
+    Then the layout is "<layout_mode>"
+
+    Examples:
+      | width | layout_mode  |
+      | 400   | single-column|
+      | 600   | side-by-side |
+      | 900   | side-by-side |
+
+# Audit log
+# Added 2026-04-15 during product/unit-02-finalize-feature-files review.
+# Gaps addressed:
+#   V5-05 — all three session types share the same resource URI had no scenario.
+#            Added Scenario Outline covering review, question, design_direction.
+#   V5-06 — FSM run exercising all three session types had no scenario.
+#            Added: "Single FSM run delivering all three session types in sequence".
+#   V5-09 — blocking timeout decision had no scenario.
+#            Added: haiku_cowork_timeout_probe not in list_tools + _openReviewAndWait blocks.
+#   SC-01 — QuestionPage side-by-side at medium/wide had no scenario.
+#            Added Scenario Outline for narrow (single-column) vs medium/wide (side-by-side).

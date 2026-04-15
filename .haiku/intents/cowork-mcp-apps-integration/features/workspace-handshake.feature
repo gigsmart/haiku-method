@@ -75,3 +75,18 @@ Feature: Workspace handshake via roots capability
     Then requestHostWorkspace() is not called again
     And elicitInput is not called again
     And the write proceeds under "/workspace/my-project"
+
+  # ─── Downstream gate parity (V2-04) ───
+
+  Scenario: Gate session data is identical regardless of how workspace root was resolved
+    Given two sessions — one where roots.length was 0 and one where roots.length was 1
+    And both sessions resolved to the same workspace path "/workspace/my-project"
+    When each session reaches the gate_review action
+    Then the gate session data objects are deep-equal
+    And neither session carries workspace-resolution metadata in the gate payload
+
+# Audit log
+# Added 2026-04-15 during product/unit-02-finalize-feature-files review.
+# Gaps addressed:
+#   V2-04 — "workspace handshake does not modify downstream review flow" had no scenario.
+#            Added: "Gate session data is identical regardless of how workspace root was resolved".

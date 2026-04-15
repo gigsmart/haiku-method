@@ -20,6 +20,26 @@ bolt: 1
 hat: product
 started_at: '2026-04-15T14:14:16Z'
 hat_started_at: '2026-04-15T14:14:16Z'
+outputs: >-
+  -
+  .haiku/intents/cowork-mcp-apps-integration/features/mcp-apps-capability-negotiation.feature
+
+  -
+  .haiku/intents/cowork-mcp-apps-integration/features/workspace-handshake.feature
+
+  -
+  .haiku/intents/cowork-mcp-apps-integration/features/iframe-review-gate.feature
+
+  -
+  .haiku/intents/cowork-mcp-apps-integration/features/iframe-decision-submit.feature
+
+  -
+  .haiku/intents/cowork-mcp-apps-integration/features/host-bridge-detection.feature
+
+  - .haiku/intents/cowork-mcp-apps-integration/features/error-recovery.feature
+
+  -
+  .haiku/intents/cowork-mcp-apps-integration/features/accessibility-iframe.feature
 ---
 
 # Finalize Gherkin behavioral specs

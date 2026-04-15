@@ -69,3 +69,39 @@ Feature: MCP Apps capability negotiation
       | { experimental: {} }         | false           |
       | { experimental: { apps: 1 }} | true            |
       | null                         | false           |
+
+  # ─── Resource registration (V1-06) ───
+
+  Scenario: resources/list returns exactly one ui://haiku/review/<version> entry
+    Given the MCP server has booted and completed capability negotiation
+    When a client sends a resources/list request
+    Then the response contains exactly one resource
+    And the resource URI matches the pattern "ui://haiku/review/<12-hex-chars>"
+    And the resource mimeType is "text/html"
+
+  Scenario: resources/read returns byte-identical content to REVIEW_APP_HTML
+    Given the MCP server has booted and resources/list returned the review resource URI
+    When a client sends a resources/read request for that URI
+    Then the response content is byte-identical to REVIEW_APP_HTML
+    And the content length is greater than zero
+
+  # ─── Version hash stability (V1-07) ───
+
+  Scenario: REVIEW_APP_VERSION hash is stable across two consecutive prebuild runs with no source change
+    Given the review app source files have not changed
+    When npm run prebuild is executed twice consecutively
+    Then the REVIEW_APP_VERSION hash produced by each run is identical
+
+  Scenario: REVIEW_APP_VERSION hash changes when any review-app source byte is modified
+    Given the initial REVIEW_APP_VERSION hash has been recorded
+    When a single byte is changed in any file under packages/review-app/src/
+    And npm run prebuild is executed
+    Then the new REVIEW_APP_VERSION hash differs from the recorded hash
+
+# Audit log
+# Added 2026-04-15 during product/unit-02-finalize-feature-files review.
+# Gaps addressed:
+#   V1-06 — resources/list and resources/read JSON-RPC contracts had no scenario.
+#            Added: "resources/list returns exactly one entry" and "resources/read returns byte-identical content".
+#   V1-07 — REVIEW_APP_VERSION hash stability and bump-on-change had no scenario.
+#            Added: "hash stable across consecutive prebuild runs" and "hash changes on source modification".

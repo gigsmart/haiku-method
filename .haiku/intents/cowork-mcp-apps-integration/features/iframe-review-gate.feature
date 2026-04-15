@@ -75,3 +75,35 @@ Feature: Iframe review gate via MCP Apps
     Then isMcpAppsHost() returns false inside the SPA
     And the NegotiationErrorScreen is rendered with error code "BRIDGE_HANDSHAKE_FAILED"
     And a retry button allows the human reviewer to re-attempt the handshake
+
+  # ─── Success-state appearance and accessibility (V4-05) ───
+
+  Scenario Outline: Each decision outcome renders the correct success-state colour and aria-live announcement
+    Given the review SPA is mounted inside the Cowork host iframe
+    When the human reviewer submits haiku_cowork_review_submit with decision "<decision>"
+    Then the success state container has the "<colour>" visual theme
+    And an aria-live="polite" region announces the "<announcement_text>" label
+    And focus moves to the success heading immediately after render
+
+    Examples:
+      | decision         | colour | announcement_text          |
+      | approved         | green  | Approved                   |
+      | changes_requested| amber  | Changes requested          |
+      | external_review  | indigo | External review requested  |
+
+  # ─── No navigation or buttons in success state (V4-06) ───
+
+  Scenario: Success state contains no buttons and makes no navigation calls
+    Given the human reviewer submitted any decision and the success state is rendered
+    Then the success state DOM contains no <button> elements
+    And the SPA does not call window.close
+    And the SPA does not call window.history.back
+    And the SPA does not call any navigation API
+
+# Audit log
+# Added 2026-04-15 during product/unit-02-finalize-feature-files review.
+# Gaps addressed:
+#   V4-05 — success state colour per outcome + aria-live + focus had no scenario.
+#            Added Scenario Outline covering all three decision outcomes.
+#   V4-06 — "no buttons in success states, no window.close" had no scenario.
+#            Added: "Success state contains no buttons and makes no navigation calls".
