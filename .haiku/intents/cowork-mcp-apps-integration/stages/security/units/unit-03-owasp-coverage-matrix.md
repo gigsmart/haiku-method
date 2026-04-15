@@ -16,6 +16,8 @@ outputs:
   - stages/security/artifacts/red-team-owasp-coverage.md
   - knowledge/VULN-REPORT.md
   - stages/security/artifacts/blue-team-owasp-coverage.md
+  - stages/security/artifacts/security-reviewer-signoff-unit03.md
+  - stages/security/artifacts/red-team-owasp-matrix.md
 status: active
 bolt: 1
 hat: security-reviewer
