@@ -3757,8 +3757,8 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
     "wave-to-wave": {
       injection: [
         { hook: "MCP tool result", target: "agent's `tool_use_result`", what: `newly-eligible unit list (${(opts.units ?? []).join(", ")}), each with worktree path + first hat` },
-        { hook: "inject-context", target: "next agent prompt prepend (per spawned unit context)", what: "the new unit's frontmatter, depends_on outputs (resolved file paths), first hat's instructions" },
-        { hook: "start_units embedding", target: "agent's `tool_use_result`", what: "**Batch unit embedding** — `start_units` embeds the hat definition once for the shared first hat, then embeds per-unit specs in `<unit-spec>` XML tags with each unit's frontmatter and resolved input content inline. Model cascade is resolved for the hat to determine subagent model." },
+        { hook: "inject-context", target: "next agent prompt prepend (per spawned unit context)", what: "each unit gets a self-contained `<subagent tool=\"Agent\">` block with frontmatter, depends_on outputs (resolved file paths), first hat's instructions — all embedded inside the block" },
+        { hook: "start_units embedding", target: "agent's `tool_use_result`", what: "**Batch unit embedding** — `start_units` produces one self-contained `<subagent tool=\"Agent\">` block per unit — hat instructions, unit spec, stage scope, output requirements, upstream artifacts all embedded inside each block. MCP constructs exact subagent prompts; parent relays verbatim. Model cascade is resolved for the hat to determine subagent model." },
         { hook: "readStageDef()", target: "agent prompt", what: "**Stage body** — STAGE.md body injected with scope constraint." },
         { hook: "readPhaseOverride()", target: "agent prompt", what: "**Execution override** — `phases/EXECUTION.md` injected for stage-specific execution guidance." },
         { hook: "readStageArtifactDefs()", target: "agent prompt", what: "**Output requirements** — output definitions from `outputs/*.md` injected as 'Stage Output Requirements'." },
@@ -3781,7 +3781,7 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
         { path: `.haiku/intents/{slug}/stages/${stageLower}/units/{new-wave-unit}.md`, change: `frontmatter: \`status: "in_progress"\`, \`hat: "${stage.hats[0]}"\`, \`bolt: 0\`` },
         { path: `.haiku/worktrees/{new-wave-unit}/`, change: "git worktree created for each newly-eligible unit" },
       ],
-      instructions: `There's no "wave" tool — \`haiku_run_next\` simply returns \`start_unit(s)\` for whichever units have just become eligible. \`computeUnitWaves\` is a pure scheduling function; the FSM has no explicit wave concept beyond which units are currently eligible. For multi-unit waves, \`start_units\` embeds the shared hat definition once, then each unit's spec in \`<unit-spec>\` XML tags with per-unit input content loaded and embedded inline. The model cascade is resolved for the hat to select the subagent model.`,
+      instructions: `There's no "wave" tool — \`haiku_run_next\` simply returns \`start_unit(s)\` for whichever units have just become eligible. \`computeUnitWaves\` is a pure scheduling function; the FSM has no explicit wave concept beyond which units are currently eligible. For multi-unit waves, \`start_units\` produces one self-contained \`<subagent tool="Agent">\` block per unit — all context (hat instructions, unit spec, stage scope, output requirements, upstream artifacts) embedded inside each block. MCP constructs exact subagent prompts; parent relays each block verbatim, no assembly required. The model cascade is resolved for the hat to select the subagent model.`,
     },
     "execute-to-review": {
       injection: [
@@ -4121,7 +4121,7 @@ const HOOKS = [
     desc: "After every agent edit/write, records the file path under the active unit's `outputs:` frontmatter. This is how downstream stages know what's available.",
     fires: ["cylinder", "hat", "artifacts.out"], file: "packages/haiku/src/hooks/track-outputs.ts" },
   { group: "context injection", name: "subagent-context",
-    desc: "When a hat spawns a Claude Code subagent, this hook scopes the subagent's context to the parent unit's worktree only — preventing context bleed. Also injects STAGE.md body content alongside the hat instructions, giving the subagent stage-level behavioral context.",
+    desc: "When a hat spawns a Claude Code subagent, this hook scopes the subagent's context to the parent unit's worktree only — preventing context bleed. For subagents spawned via `<subagent>` blocks from `haiku_run_next`, the hook provides ADDITIONAL context (workflow rules, bootstrap, cwd scoping) but the core behavioral context (hat instructions, unit spec, stage scope, output requirements) is already embedded in the `<subagent>` prompt block constructed by the MCP. Also injects STAGE.md body content alongside the hat instructions for stage-level behavioral context.",
     fires: ["hat", "phase[execute]"], file: "packages/haiku/src/hooks/subagent-context.ts" },
   { group: "context injection", name: "subagent-hook",
     desc: "Runtime hook running inside spawned subagents. Plays the same role as inject-context for the subagent's tool calls.",
@@ -4320,13 +4320,13 @@ function openSubagentModal(stageKey, hatName) {
       </ul>
     </div>
     <div class="modal-section">
-      <h3>scoped by <code>subagent-context</code> hook</h3>
+      <h3><code>&lt;subagent&gt;</code> block architecture + <code>subagent-context</code> hook</h3>
       <div class="prose">
-        Every spawned subagent is intercepted by the <code>subagent-context</code> hook (<code>packages/haiku/src/hooks/subagent-context.ts</code>), which:
+        The MCP constructs a self-contained <code>&lt;subagent tool="Agent" type="..." model="..."&gt;</code> prompt block for each unit/hat. The parent agent relays these blocks verbatim — no assembly required. The core behavioral context (hat instructions, unit spec, stage scope, output requirements, upstream artifacts) is already embedded in the <code>&lt;subagent&gt;</code> block. The <code>subagent-context</code> hook (<code>packages/haiku/src/hooks/subagent-context.ts</code>) then provides ADDITIONAL runtime context:
       </div>
       <ul>
         <li>Restricts the subagent's <code>cwd</code> to the parent unit's worktree (<code>.haiku/worktrees/{unit}/</code>) — no context bleed across units</li>
-        <li>Injects a minimal context — the hat's <code>hats/{hat}.md</code> + <code>STAGE.md</code> body content + the unit spec + relevant prior outputs</li>
+        <li>Provides workflow rules and bootstrap context on top of the embedded behavioral prompt</li>
         <li>Enforces edit-scope via <code>workflow-guard</code> (only this unit's files writeable)</li>
         <li>Captures the subagent's <code>haiku_unit_advance_hat</code> result back into the parent agent's tool result</li>
       </ul>
@@ -4625,7 +4625,7 @@ const TOOL_SPECS = {
     },
     output: {
       action: "string · lifecycle: `select_studio` | `start_stage` | `elaborate` | `start_unit` | `continue_unit` | `start_units` | `review` | `review_elaboration` | `gate_review` | `advance_phase` | `advance_stage` | `intent_approved` | `intent_complete` | `complete` | `composite_run_stage` | `safe_intent_repair` | `fix_quality_gates` | `changes_requested` | `external_review_requested` | `awaiting_external_review` · blocked: `design_direction_required` | `blocked` | `outputs_missing` | `discovery_missing` | `elaboration_insufficient` | `spec_validation_failed` | `unresolved_dependencies` | `dag_cycle_detected` | `unit_naming_invalid` | `unit_inputs_missing` | `inputs_missing` | `gate_blocked` | `error`",
-      context: "object · action-specific payload (next phase, hat, units, gate context, etc. — see the per-transition pills throughout this diagram)",
+      context: "object · action-specific payload (next phase, hat, units, gate context, etc. — see the per-transition pills throughout this diagram). **Subagent-spawning actions** (`start_unit`, `continue_unit`, `start_units`, `elaborate` with discovery, `advance_review`) return self-contained `<subagent tool=\"...\" type=\"...\" model=\"...\">` prompt blocks that the parent relays verbatim — MCP constructs exact subagent prompts, no assembly required.",
     },
     writes: ["Depends on the action returned. Click any of the labeled `haiku_run_next` pills above to see the exact `state.json` / `intent.md` / unit-frontmatter mutations for that specific tick."],
   },
