@@ -1,6 +1,5 @@
 ---
 name: unit-01-behavioral-spec
-type: product
 status: completed
 depends_on: []
 bolt: 1

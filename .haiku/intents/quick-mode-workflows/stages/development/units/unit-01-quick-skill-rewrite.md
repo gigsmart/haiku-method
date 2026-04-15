@@ -1,12 +1,11 @@
 ---
 name: unit-01-quick-skill-rewrite
-type: backend
 status: completed
 depends_on: []
 bolt: 0
-hat: ""
-started_at: 2026-03-31T05:22:14Z
-completed_at: 2026-03-31T05:22:14Z
+hat: ''
+started_at: 2026-03-31T05:22:14.000Z
+completed_at: 2026-03-31T05:22:14.000Z
 ---
 
 

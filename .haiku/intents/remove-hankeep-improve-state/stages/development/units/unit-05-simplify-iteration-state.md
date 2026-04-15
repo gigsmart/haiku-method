@@ -1,10 +1,9 @@
 ---
 name: unit-05-simplify-iteration-state
-type: backend
 status: pending
 depends_on: []
 bolt: 0
-hat: ""
+hat: ''
 started_at: null
 completed_at: null
 ---

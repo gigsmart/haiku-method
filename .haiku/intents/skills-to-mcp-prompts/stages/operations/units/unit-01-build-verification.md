@@ -1,6 +1,5 @@
 ---
 name: unit-01-build-verification
-type: ops
 status: completed
 depends_on: []
 bolt: 1

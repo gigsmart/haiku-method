@@ -1,12 +1,11 @@
 ---
 name: unit-01-adversarial-review-skill
-type: backend
 status: completed
 depends_on: []
 bolt: 0
-hat: ""
-started_at: 2026-03-30T21:44:43Z
-completed_at: 2026-03-30T21:44:43Z
+hat: ''
+started_at: 2026-03-30T21:44:43.000Z
+completed_at: 2026-03-30T21:44:43.000Z
 ---
 
 

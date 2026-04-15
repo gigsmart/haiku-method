@@ -1,10 +1,9 @@
 ---
 name: unit-04-static-dashboard
-type: backend
 status: completed
 depends_on: []
 bolt: 0
-hat: ""
+hat: ''
 started_at: null
 completed_at: null
 ---

@@ -1,12 +1,11 @@
 ---
 name: unit-03-wire-elaboration
-type: backend
 status: completed
 depends_on: []
 bolt: 0
-hat: ""
-started_at: 2026-03-30T15:05:00Z
-completed_at: 2026-03-30T15:05:00Z
+hat: ''
+started_at: 2026-03-30T15:05:00.000Z
+completed_at: 2026-03-30T15:05:00.000Z
 ---
 
 

@@ -1,12 +1,12 @@
 ---
 name: unit-02-phase-7-5-orchestration
-type: backend
 status: completed
-depends_on: [unit-01-adversarial-review-skill]
+depends_on:
+  - unit-01-adversarial-review-skill
 bolt: 0
-hat: ""
-started_at: 2026-03-30T21:52:36Z
-completed_at: 2026-03-30T21:52:36Z
+hat: ''
+started_at: 2026-03-30T21:52:36.000Z
+completed_at: 2026-03-30T21:52:36.000Z
 ---
 
 

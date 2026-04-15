@@ -1,12 +1,12 @@
 ---
 name: unit-06-operate-rewrite
-type: backend
 status: completed
-depends_on: [unit-01-stack-schema]
+depends_on:
+  - unit-01-stack-schema
 bolt: 0
-hat: ""
-started_at: 2026-03-28T06:28:27Z
-completed_at: 2026-03-28T06:28:27Z
+hat: ''
+started_at: 2026-03-28T06:28:27.000Z
+completed_at: 2026-03-28T06:28:27.000Z
 ---
 
 

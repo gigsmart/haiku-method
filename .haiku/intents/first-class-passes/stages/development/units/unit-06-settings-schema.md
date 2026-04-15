@@ -1,12 +1,12 @@
 ---
 name: unit-06-settings-schema
-type: backend
 status: completed
-depends_on: [unit-01-pass-definitions]
+depends_on:
+  - unit-01-pass-definitions
 bolt: 0
-hat: ""
-started_at: 2026-03-31T20:08:07Z
-completed_at: 2026-03-31T20:08:07Z
+hat: ''
+started_at: 2026-03-31T20:08:07.000Z
+completed_at: 2026-03-31T20:08:07.000Z
 ---
 
 

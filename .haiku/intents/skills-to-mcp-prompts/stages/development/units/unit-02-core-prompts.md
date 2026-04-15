@@ -1,6 +1,5 @@
 ---
 name: unit-02-core-prompts
-type: backend
 status: completed
 depends_on:
   - unit-01-prompts-infrastructure

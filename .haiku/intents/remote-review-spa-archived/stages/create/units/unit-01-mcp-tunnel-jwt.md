@@ -1,12 +1,13 @@
 ---
 title: MCP — Localtunnel + JWT token generation
-type: content
 status: pending
 depends_on: []
 quality_gates:
   - localtunnel npm package added as dependency
   - Tunnel opens programmatically when a review session is created
-  - JWT signed with ephemeral per-server-lifetime secret containing tunnel URL, session ID, and session type
+  - >-
+    JWT signed with ephemeral per-server-lifetime secret containing tunnel URL,
+    session ID, and session type
   - Browser opens haikumethod.ai/review/#jwt_token instead of localhost URL
   - Tunnel closes gracefully when session completes or MCP shuts down
 ---

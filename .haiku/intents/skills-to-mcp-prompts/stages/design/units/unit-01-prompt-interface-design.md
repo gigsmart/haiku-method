@@ -1,6 +1,5 @@
 ---
 name: unit-01-prompt-interface-design
-type: design
 status: completed
 depends_on: []
 bolt: 1
