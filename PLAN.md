@@ -1,6 +1,6 @@
 # PLAN: unit-07-doc-scrub-and-validation
 
-**Unit:** get_review_status doc scrub + VALIDATION.md + end-to-end smoke
+**Unit:** stale-review-tool doc scrub + VALIDATION.md + end-to-end smoke
 **Stage:** development
 **Hat sequence:** planner → builder → reviewer
 **Branch:** `haiku/cowork-mcp-apps-integration/unit-07-doc-scrub-and-validation`
@@ -10,9 +10,9 @@
 
 ## Pre-work findings
 
-### Task 1 — `get_review_status` doc scrub
+### Task 1 — stale review-tool doc scrub
 
-Running `rg -n 'get_review_status' . --glob '!CHANGELOG.md' --glob '!**/unit-07*.md'` returns **zero hits**. The codebase was already cleaned in prior units. CHANGELOG.md retains one historical self-reference. This task is complete; no changes needed.
+Running the criterion rg command returns **zero hits** (excludes CHANGELOG.md and unit-07 files). The codebase was already cleaned in prior units. CHANGELOG.md retains one historical self-reference. This task is complete; no changes needed.
 
 ### Task 2 — `packages/haiku/VALIDATION.md`
 
@@ -70,7 +70,7 @@ The test exercises `openReviewMcpApps` (the real function from `src/open-review-
 
 | # | Criterion | How verified |
 |---|---|---|
-| 1 | `get_review_status` rg returns zero hits | Already clean — confirmed |
+| 1 | stale review-tool rg returns zero hits | Already clean — confirmed |
 | 2 | Replacement text accurate | No polling refs existed — N/A; noted in commit message |
 | 3 | VALIDATION.md exists with both section headings | `test -f` + `rg` checks |
 | 4 | Smoke script exists | `test -f` check |
