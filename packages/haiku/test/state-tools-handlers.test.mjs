@@ -439,6 +439,38 @@ test("haiku_stage_get rejects intent with path traversal", () => {
   assert.ok(result.content[0].text.includes("Invalid intent"))
 })
 
+test("haiku_stage_get rejects stage with path traversal", () => {
+  const result = handleStateTool("haiku_stage_get", {
+    intent: intentSlug,
+    stage: "../../../etc/passwd",
+    field: "phase",
+  })
+  assert.strictEqual(result.isError, true)
+  assert.ok(result.content[0].text.includes("Invalid stage"))
+})
+
+test("haiku_unit_get rejects unit with path traversal", () => {
+  const result = handleStateTool("haiku_unit_get", {
+    intent: intentSlug,
+    stage: "inception",
+    unit: "../../../etc/passwd",
+    field: "status",
+  })
+  assert.strictEqual(result.isError, true)
+  assert.ok(result.content[0].text.includes("Invalid unit"))
+})
+
+test("haiku_unit_get rejects unit with forward slash", () => {
+  const result = handleStateTool("haiku_unit_get", {
+    intent: intentSlug,
+    stage: "inception",
+    unit: "foo/bar",
+    field: "status",
+  })
+  assert.strictEqual(result.isError, true)
+  assert.ok(result.content[0].text.includes("Invalid unit"))
+})
+
 test("haiku_intent_list still works (no slug to validate)", () => {
   const result = handleStateTool("haiku_intent_list", {})
   const intents = JSON.parse(getTextResult(result))
