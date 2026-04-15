@@ -14,9 +14,9 @@ inputs:
   - .haiku/knowledge/ARCHITECTURE.md
 status: active
 bolt: 1
-hat: planner
+hat: builder
 started_at: '2026-04-15T16:05:00Z'
-hat_started_at: '2026-04-15T16:05:00Z'
+hat_started_at: '2026-04-15T16:08:29Z'
 ---
 
 # Review SPA host-bridge module
