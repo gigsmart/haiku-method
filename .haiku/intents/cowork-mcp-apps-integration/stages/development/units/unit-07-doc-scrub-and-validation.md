@@ -13,9 +13,9 @@ inputs:
   - .haiku/knowledge/ARCHITECTURE.md
 status: active
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-15T17:32:26Z'
-hat_started_at: '2026-04-15T17:35:46Z'
+hat_started_at: '2026-04-15T17:40:27Z'
 ---
 
 # Doc scrub + VALIDATION.md + end-to-end smoke
