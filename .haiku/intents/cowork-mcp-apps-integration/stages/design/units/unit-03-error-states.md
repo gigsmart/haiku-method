@@ -1,5 +1,7 @@
 ---
-title: Error states — capability-negotiation, sandbox-restricted, session-expired, stale-host
+title: >-
+  Error states — capability-negotiation, sandbox-restricted, session-expired,
+  stale-host
 type: feature
 model: sonnet
 depends_on:
@@ -10,6 +12,11 @@ inputs:
   - stages/design/DESIGN-BRIEF.md
   - knowledge/DESIGN-TOKENS.md
   - stages/design/units/unit-01-iframe-shell-layout.md
+status: active
+bolt: 1
+hat: designer
+started_at: '2026-04-15T12:44:23Z'
+hat_started_at: '2026-04-15T12:44:23Z'
 ---
 
 # Error states for the iframe review experience
