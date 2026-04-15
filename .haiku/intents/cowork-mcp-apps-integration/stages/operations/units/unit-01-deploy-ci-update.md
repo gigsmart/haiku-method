@@ -8,7 +8,6 @@ inputs:
   - knowledge/DISCOVERY.md
   - .haiku/knowledge/RUNBOOK.md
 outputs:
-  - .github/workflows/ci.yml
   - knowledge/unit-01-ci-update-notes.md
 ---
 
