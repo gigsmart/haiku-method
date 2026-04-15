@@ -2298,9 +2298,9 @@ function buildRunInstructions(
 							"### ALWAYS provide pre-selected options\n\n" +
 							"When using `AskUserQuestion`, you MUST provide an `options` array with concrete choices the user can pick from. " +
 							"You already know the domain — translate your knowledge into selectable options instead of forcing the user to type freeform answers. " +
-							"Include an \"Other (let me specify)\" option when the list may not be exhaustive.\n\n" +
-							"**Good:** `AskUserQuestion({ question: \"Which auth strategy?\", options: [\"OAuth 2.0 + PKCE\", \"Magic link (passwordless)\", \"SSO via SAML\", \"Other (let me specify)\"] })`\n" +
-							"**Bad:** Typing \"Which auth strategy should we use? We could do OAuth, magic links, or SSO...\" as plain text.\n\n" +
+							'Include an "Other (let me specify)" option when the list may not be exhaustive.\n\n' +
+							'**Good:** `AskUserQuestion({ question: "Which auth strategy?", options: ["OAuth 2.0 + PKCE", "Magic link (passwordless)", "SSO via SAML", "Other (let me specify)"] })`\n' +
+							'**Bad:** Typing "Which auth strategy should we use? We could do OAuth, magic links, or SSO..." as plain text.\n\n' +
 							"### One question per tool call — break up compound questions\n\n" +
 							"If you have multiple independent questions (e.g., auth strategy AND database choice AND caching layer), " +
 							"do NOT combine them into a single long message. Instead:\n" +
