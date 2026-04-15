@@ -3464,6 +3464,107 @@ export async function handleOrchestratorTool(
 			}
 		}
 
+		// ── Repair agent intercept ─────────────────────────────────────────
+		// If runNext detected a broken migrated intent, try the embedded repair
+		// agent before returning to the outer agent. Falls through to the normal
+		// withInstructions return if the agent isn't available or repair fails.
+		if (result.action === "safe_intent_repair") {
+			try {
+				const { runRepairAgent } = await import("./repair-agent.js")
+				const root = findHaikuRoot()
+				const iDir = join(root, "intents", slug)
+
+				// Resolve studio directory via the cached studio reader
+				const studioInfo = resolveStudio(intentStudio)
+				const studioDir = studioInfo?.path || ""
+
+				const activeStage = (result.stage as string) || ""
+				const diagnosis = {
+					slug,
+					intentDir: iDir,
+					studio: intentStudio,
+					studioDir,
+					activeStage,
+					synthesizedStages:
+						(result.synthesized_stages as string[]) || [],
+					needsManualReview:
+						(result.needs_manual_review as string[]) || [],
+					phaseRegressed:
+						(result.phase_regressed as boolean) || false,
+					unitsMissingInputs: [] as string[],
+				}
+
+				// Find units missing inputs in the active stage
+				const activeUnitsDir = join(
+					iDir,
+					"stages",
+					activeStage,
+					"units",
+				)
+				if (existsSync(activeUnitsDir)) {
+					for (const f of readdirSync(activeUnitsDir).filter((f) =>
+						f.endsWith(".md"),
+					)) {
+						const fm = readFrontmatter(join(activeUnitsDir, f))
+						const status = (fm.status as string) || ""
+						if (
+							["completed", "skipped", "failed"].includes(
+								status,
+							)
+						)
+							continue
+						const inputs =
+							(fm.inputs as string[]) ||
+							(fm.refs as string[]) ||
+							[]
+						if (inputs.length === 0)
+							diagnosis.unitsMissingInputs.push(f)
+					}
+				}
+
+				const repairResult = await runRepairAgent(diagnosis)
+
+				if (repairResult.success && !repairResult.fallbackUsed) {
+					// Repair agent succeeded — run FSM again to get the real next action
+					const postRepairResult = runNext(slug)
+					emitTelemetry("haiku.orchestrator.action", {
+						intent: slug,
+						action: postRepairResult.action,
+					})
+					if (stFile)
+						logSessionEvent(stFile, {
+							event: "run_next",
+							intent: slug,
+							action: postRepairResult.action,
+							stage: postRepairResult.stage,
+							unit: postRepairResult.unit,
+							hat: postRepairResult.hat,
+							wave: postRepairResult.wave,
+						})
+
+					syncSessionMetadata(
+						slug,
+						args.state_file as string | undefined,
+					)
+
+					const repairNote = `**Intent repaired automatically:** ${repairResult.summary}\n\n---\n\n`
+					return {
+						content: [
+							{
+								type: "text" as const,
+								text:
+									repairNote +
+									withInstructions(postRepairResult),
+							},
+						],
+					}
+				}
+				// Repair failed or used fallback — fall through to return safe_intent_repair as-is
+			} catch {
+				// Repair agent not available — fall through to normal handling
+			}
+		}
+
 		syncSessionMetadata(slug, args.state_file as string | undefined)
 		return text(withInstructions(result))
 	}
