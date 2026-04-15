@@ -39,6 +39,23 @@ function str(name: string, defaultValue: string): string {
 
 let _pluginRoot: string | null = null
 
+/**
+ * Return the plugin root directory, using this resolution order:
+ *
+ *   1. `CLAUDE_PLUGIN_ROOT` env var (set by Claude Code, or manually).
+ *   2. Self-resolved from `process.argv[1]` — walks up from the bundled
+ *      binary path (`plugin/bin/haiku` → plugin root) and validates the
+ *      candidate by checking for `studios/` or `.claude-plugin/plugin.json`.
+ *   3. Empty string — graceful degradation so project-local studios still work.
+ *
+ * Memoized after the first call.
+ *
+ * **Side effect:** when path (2) succeeds, this function also writes
+ * `process.env.CLAUDE_PLUGIN_ROOT = <resolved>` so that child processes
+ * (hooks, spawned shells) inherit the same value without re-running
+ * discovery. This is intentional — hooks rely on the env var — but callers
+ * should be aware the function is not purely functional.
+ */
 export function resolvePluginRoot(): string {
 	if (_pluginRoot !== null) return _pluginRoot
 
