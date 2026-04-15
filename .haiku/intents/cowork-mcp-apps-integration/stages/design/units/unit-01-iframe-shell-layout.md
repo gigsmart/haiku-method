@@ -8,7 +8,7 @@ inputs:
   - knowledge/DISCOVERY.md
   - stages/design/DESIGN-BRIEF.md
   - knowledge/DESIGN-TOKENS.md
-status: active
+status: completed
 bolt: 1
 hat: design-reviewer
 started_at: '2026-04-15T12:32:00Z'
@@ -20,6 +20,7 @@ outputs:
   - stages/design/artifacts/iframe-shell-medium-expanded.html
   - stages/design/artifacts/iframe-shell-wide-collapsed.html
   - stages/design/artifacts/iframe-shell-wide-expanded.html
+completed_at: '2026-04-15T12:43:20Z'
 ---
 
 # Iframe shell layout — bottom-sheet decision panel
