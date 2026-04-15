@@ -15,9 +15,9 @@ inputs:
   - .haiku/knowledge/ARCHITECTURE.md
 status: active
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-15T16:05:33Z'
-hat_started_at: '2026-04-15T16:10:15Z'
+hat_started_at: '2026-04-15T16:19:47Z'
 ---
 
 # _openReviewAndWait MCP Apps branch + haiku_cowork_review_submit tool
