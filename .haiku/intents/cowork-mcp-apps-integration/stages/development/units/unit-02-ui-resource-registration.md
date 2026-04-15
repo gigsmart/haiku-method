@@ -11,6 +11,11 @@ inputs:
   - knowledge/DATA-CONTRACTS.md
   - features/iframe-review-gate.feature
   - .haiku/knowledge/ARCHITECTURE.md
+outputs:
+  - packages/haiku/scripts/build-review-app.mjs
+  - packages/haiku/src/ui-resource.ts
+  - packages/haiku/src/server.ts
+  - packages/haiku/test/ui-resource.test.mjs
 ---
 
 # ui:// resource registration + REVIEW_APP_VERSION + _meta.ui helper
