@@ -1,9 +1,16 @@
 ---
-title: "Universal feedback model and review recovery"
-studio: ""
+title: Universal feedback model and review recovery
+studio: software
 mode: continuous
 status: active
-created_at: 2026-04-15T19:37:03Z
+created_at: '2026-04-15'
+stages:
+  - inception
+  - design
+  - product
+  - development
+  - operations
+  - security
 ---
 
 # Universal feedback model and review recovery
