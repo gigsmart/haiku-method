@@ -1406,10 +1406,11 @@ export function runNext(slug: string): OrchestratorAction {
 			}
 		}
 
-		// All units valid — open review gate before advancing to execute.
-		// The review UI blocks until the user approves the specs.
-		// This is handled by the handleOrchestratorTool wrapper which
-		// detects gate_review and calls _openReviewAndWait.
+		// All units valid — either auto-advance or open review gate before execution.
+		//
+		// For stages with review: auto (and non-discrete mode), skip the gate
+		// entirely and advance directly to execution. This is critical for
+		// autonomous workflows where the user should not be interrupted.
 		//
 		// For the first stage of a fresh intent (not yet reviewed), this gate
 		// doubles as the intent review — CC review agents have already run
@@ -1418,6 +1419,35 @@ export function runNext(slug: string): OrchestratorAction {
 		// with intent_review context until intent_reviewed is set to true.
 		const intentReviewed = (intent.intent_reviewed as boolean) || false
 		const isIntentReview = currentStage === studioStages[0] && !intentReviewed
+		const intentMode = (intent.mode as string) || "continuous"
+		const stageReviewType = resolveStageReview(studio, currentStage)
+
+		// Auto gates: skip review UI and advance directly to execution
+		if (stageReviewType === "auto" && intentMode !== "discrete") {
+			if (isIntentReview) {
+				setFrontmatterField(intentFile, "intent_reviewed", true)
+				gitCommitState(`haiku: intent ${slug} auto-approved`)
+			}
+			fsmAdvancePhase(slug, currentStage, "execute")
+			emitTelemetry("haiku.gate.auto_advanced", {
+				intent: slug,
+				stage: currentStage,
+				gate_context: isIntentReview ? "intent_review" : "elaborate_to_execute",
+			})
+			return {
+				action: isIntentReview ? "intent_approved" : "advance_phase",
+				intent: slug,
+				studio,
+				stage: currentStage,
+				from_phase: "elaborate",
+				to_phase: "execute",
+				message: isIntentReview
+					? `Auto-gate: intent approved — advancing to execution. Call haiku_run_next { intent: "${slug}" } immediately.`
+					: `Auto-gate: specs validated — advancing to execution. Call haiku_run_next { intent: "${slug}" } immediately.`,
+			}
+		}
+
+		// Non-auto gates: open review UI
 		return {
 			action: "gate_review",
 			intent: slug,
@@ -1611,11 +1641,12 @@ export function runNext(slug: string): OrchestratorAction {
 		}
 	}
 
-	// Stage in gate phase — always open local review UI as a preliminary gate.
-	// The gate type determines what options are shown:
+	// Stage in gate phase — determine whether to auto-advance or open review UI.
+	// Gate behavior:
 	//   - Discrete intent mode: always "external" (Submit for External Review + Request Changes)
 	//   - Continuous/hybrid intent mode: based on the stage's review field
-	//     - auto/ask → "ask" (Approve + Request Changes)
+	//     - auto → auto-advance without user interaction (autonomous gate)
+	//     - ask → "ask" (Approve + Request Changes)
 	//     - external → "external" (Submit for External Review + Request Changes)
 	//     - [external, ask] → as-is (Approve + Submit for External Review + Request Changes)
 	//     - await → "external" (awaits external event after submission)
@@ -1638,7 +1669,39 @@ export function runNext(slug: string): OrchestratorAction {
 		const intentMode = (intent.mode as string) || "continuous"
 		const gitAvailable = isGitRepo()
 
-		// Determine gate type for the review UI
+		// Auto gates: advance without user interaction.
+		// "auto" review type means the studio author trusts the FSM to advance
+		// without human approval. In continuous/hybrid mode, skip the gate UI
+		// entirely. Discrete mode always uses external review (PR per stage).
+		if (reviewType === "auto" && intentMode !== "discrete") {
+			emitTelemetry("haiku.gate.auto_advanced", {
+				intent: slug,
+				stage: currentStage,
+				gate_context: "stage_gate",
+			})
+			if (nextStage) {
+				fsmAdvanceStage(slug, currentStage, nextStage)
+				return {
+					action: "advance_stage",
+					intent: slug,
+					studio,
+					stage: currentStage,
+					next_stage: nextStage,
+					gate_outcome: "advanced",
+					message: `Auto-gate passed — advancing to '${nextStage}'. Call haiku_run_next { intent: "${slug}" } immediately.`,
+				}
+			}
+			fsmCompleteStage(slug, currentStage, "advanced")
+			fsmIntentComplete(slug)
+			return {
+				action: "intent_complete",
+				intent: slug,
+				studio,
+				message: `Auto-gate passed — all stages complete for intent '${slug}'`,
+			}
+		}
+
+		// Non-auto gates: open review UI
 		let effectiveGateType: string
 		if (!gitAvailable && reviewType.includes("external")) {
 			// Non-git environment: external gates have no structural signal (no branch
@@ -1652,7 +1715,7 @@ export function runNext(slug: string): OrchestratorAction {
 		} else if (intentMode === "discrete") {
 			// Pure discrete intent: always submit for external review (PR per stage)
 			effectiveGateType = "external"
-		} else if (reviewType === "auto" || reviewType === "ask") {
+		} else if (reviewType === "ask") {
 			effectiveGateType = "ask"
 		} else if (reviewType === "await") {
 			effectiveGateType = "external"
@@ -2608,13 +2671,27 @@ function buildRunInstructions(
 							"When you have questions for the user, you MUST use the correct tool:\n\n" +
 							"| Question type | Tool | Example |\n" +
 							"|---|---|---|\n" +
-							`| Scope decisions, tradeoffs, A/B/C choices | \`AskUserQuestion\` | "Should we support X or Y?" |\n` +
+							`| Scope decisions, tradeoffs, A/B/C choices | \`AskUserQuestion\` with options[] | "Should we support X or Y?" |\n` +
 							"| Specs, comparisons, detailed options (markdown) | `ask_user_visual_question` MCP tool | Domain model review, architecture options |\n" +
+							"| Visual artifacts, wireframes, designs | `ask_user_visual_question` with image_paths | Side-by-side design comparison |\n" +
 							"| Design direction with previews | `pick_design_direction` MCP tool | Wireframe variants |\n" +
-							`| Simple open-ended clarification | Conversation text | "Tell me more about the use case" |\n\n` +
+							`| Simple open-ended clarification (no known options) | Conversation text | "Tell me more about the use case" |\n\n` +
+							"### ALWAYS provide pre-selected options\n\n" +
+							"When using `AskUserQuestion`, you MUST provide an `options` array with concrete choices the user can pick from. " +
+							"You already know the domain — translate your knowledge into selectable options instead of forcing the user to type freeform answers. " +
+							'Include an "Other (let me specify)" option when the list may not be exhaustive.\n\n' +
+							'**Good:** `AskUserQuestion({ question: "Which auth strategy?", options: ["OAuth 2.0 + PKCE", "Magic link (passwordless)", "SSO via SAML", "Other (let me specify)"] })`\n' +
+							'**Bad:** Typing "Which auth strategy should we use? We could do OAuth, magic links, or SSO..." as plain text.\n\n' +
+							"### One question per tool call — break up compound questions\n\n" +
+							"If you have multiple independent questions (e.g., auth strategy AND database choice AND caching layer), " +
+							"do NOT combine them into a single long message. Instead:\n" +
+							"- Use **separate `AskUserQuestion` calls** for each independent decision, OR\n" +
+							"- Use **one `ask_user_visual_question` call** with multiple entries in the `questions[]` array (each with its own options) when the decisions are related and benefit from being seen together\n\n" +
+							"Never dump multiple questions as numbered plain-text paragraphs.\n\n" +
 							`**Violation:** Outputting numbered questions, option lists, or "A) ... B) ... C) ..." as conversation text. ` +
-							"If you catch yourself typing options inline, STOP and use `AskUserQuestion` instead.\n\n"
-						: "Mode: **autonomous** — elaborate independently.\n\n"
+							"If you catch yourself typing options inline, STOP and use `AskUserQuestion` with an `options` array instead.\n\n"
+						: "Mode: **autonomous** — elaborate independently. When you DO need user input (blockers, ambiguity), " +
+							"use `AskUserQuestion` with pre-selected `options[]` — never plain-text option lists.\n\n"
 				}**Elaboration produces the PLAN, not the deliverables:**\n1. Research the problem space and write discovery artifacts to \`knowledge/\`\n2. Define units with scope, completion criteria, and dependencies — NOT the actual work product\n   - A unit spec says WHAT will be produced and HOW to verify it\n   - The execution phase produces the actual deliverables\n   - Do NOT write full specs, schemas, or implementations during elaboration\n3. Write unit files to \`.haiku/intents/${slug}/stages/${stage}/units/\`\n4. Call \`haiku_run_next { intent: "${slug}" }\` — the orchestrator validates and opens the review gate\n\n**Unit file naming convention (REQUIRED):**\nFiles MUST be named \`unit-NN-slug.md\` where:\n- \`NN\` is a zero-padded sequence number (01, 02, 03...)\n- \`slug\` is a kebab-case descriptor (e.g., \`user-auth\`, \`data-model\`)\n- Example: \`unit-01-data-model.md\`, \`unit-02-api-endpoints.md\`\n\nFiles that don't match this pattern will not appear in the review UI and will block advancement.`,
 			)
 
@@ -2805,6 +2882,12 @@ function buildRunInstructions(
 				"6. Track outputs in unit frontmatter `outputs:` field",
 				"7. Use `ask_user_visual_question` for visual artifacts — do NOT open files in a browser",
 				`8. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
+				"",
+				"**User questions (MANDATORY):** When you need user input:",
+				"- Use `AskUserQuestion` with an `options[]` array for every decision that has known alternatives — NEVER output option lists as plain text",
+				"- Use `ask_user_visual_question` when questions involve visual artifacts, rich markdown context, or multiple related decisions (use the `questions[]` array)",
+				"- Break independent questions into separate tool calls — do NOT bundle unrelated decisions into one message",
+				'- Always pre-populate options from your domain knowledge; include "Other (let me specify)" when the list may not be exhaustive',
 			)
 			subagentParts.push(instrLines.join("\n"))
 
@@ -3005,6 +3088,12 @@ function buildRunInstructions(
 					"6. Track outputs in unit frontmatter `outputs:` field",
 					"7. Use `ask_user_visual_question` for visual artifacts — do NOT open files in a browser",
 					`8. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
+					"",
+					"**User questions (MANDATORY):** When you need user input:",
+					"- Use `AskUserQuestion` with an `options[]` array for every decision that has known alternatives — NEVER output option lists as plain text",
+					"- Use `ask_user_visual_question` when questions involve visual artifacts, rich markdown context, or multiple related decisions (use the `questions[]` array)",
+					"- Break independent questions into separate tool calls — do NOT bundle unrelated decisions into one message",
+					'- Always pre-populate options from your domain knowledge; include "Other (let me specify)" when the list may not be exhaustive',
 				)
 
 				sections.push(

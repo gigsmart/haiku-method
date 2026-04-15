@@ -1567,13 +1567,16 @@ export function setFrontmatterField(
 ): void {
 	const raw = readFileSync(filePath, "utf8")
 	const parsed = matter(raw)
-	parsed.data[field] = value
+	// Spread to avoid mutating gray-matter's returned data object in place —
+	// in-place mutation can corrupt gray-matter's internal cache and cause
+	// subsequent parseFrontmatter calls to return stale values.
+	const updated = { ...parsed.data, [field]: value }
 	// gray-matter stringify: matter.stringify(content, data)
 	writeFileSync(
 		filePath,
 		matter.stringify(
 			parsed.content,
-			normalizeDates(parsed.data as Record<string, unknown>),
+			normalizeDates(updated as Record<string, unknown>),
 		),
 	)
 }
