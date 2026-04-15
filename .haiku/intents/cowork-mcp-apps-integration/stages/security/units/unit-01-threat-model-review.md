@@ -10,6 +10,7 @@ inputs:
   - .haiku/knowledge/THREAT-MODEL.md
 outputs:
   - knowledge/unit-01-threat-model-assessment.md
+  - stages/security/artifacts/threat-model-review.md
 status: active
 bolt: 1
 hat: red-team
