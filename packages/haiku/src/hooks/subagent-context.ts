@@ -15,6 +15,7 @@
 import { execSync } from "node:child_process"
 import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { basename, join } from "node:path"
+import { readStageDef } from "../studio-reader.js"
 import {
 	findActiveIntent,
 	findUnitFiles,
@@ -110,47 +111,6 @@ function readHatMetadata(
 		name: readFrontmatterField(hatFile, "name"),
 		description: readFrontmatterField(hatFile, "description"),
 	}
-}
-
-function readStageBody(
-	stageName: string,
-	studioName: string,
-	pluginRoot: string,
-): string {
-	const projectStageFile = join(
-		process.cwd(),
-		".haiku",
-		"studios",
-		studioName,
-		"stages",
-		stageName,
-		"STAGE.md",
-	)
-	const pluginStageFile = join(
-		pluginRoot,
-		"studios",
-		studioName,
-		"stages",
-		stageName,
-		"STAGE.md",
-	)
-
-	let stageFile = ""
-	if (existsSync(projectStageFile)) {
-		stageFile = projectStageFile
-	} else if (existsSync(pluginStageFile)) {
-		stageFile = pluginStageFile
-	}
-
-	if (!stageFile) return ""
-
-	const content = readFileSync(stageFile, "utf8")
-	// Strip frontmatter — return body only
-	const parts = content.split("---")
-	if (parts.length >= 3) {
-		return parts.slice(2).join("---").trim()
-	}
-	return content
 }
 
 function getHatSequence(
@@ -380,11 +340,11 @@ export async function generateSubagentContext(
 	}
 
 	// Stage-level instructions (criteria guidance, completion signals)
-	const stageBody = readStageBody(activeStage, studio, pluginRoot)
-	if (stageBody) {
+	const stageDef = readStageDef(studio, activeStage)
+	if (stageDef?.body) {
 		out(`### Stage: ${activeStage}`)
 		out("")
-		out(stageBody)
+		out(stageDef.body)
 		out("")
 	}
 

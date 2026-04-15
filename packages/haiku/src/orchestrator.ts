@@ -346,6 +346,57 @@ function validateStageOutputs(
 	return null
 }
 
+// ── Cross-stage review agent loader ──────────────────────────────────────
+
+/** Load cross-stage review agents from STAGE.md review-agents-include field */
+function loadCrossStageAgents(
+	studio: string,
+	stage: string,
+	agents: Record<string, string>,
+): void {
+	const stageDef = readStageDef(studio, stage)
+	if (
+		stageDef?.data?.["review-agents-include"] &&
+		Array.isArray(stageDef.data["review-agents-include"])
+	) {
+		const includes = stageDef.data["review-agents-include"] as Array<{
+			stage: string
+			agents: string[]
+		}>
+		for (const inc of includes) {
+			if (!inc.stage || !Array.isArray(inc.agents)) continue
+			const crossAgents = readReviewAgentDefs(studio, inc.stage)
+			for (const agentName of inc.agents) {
+				if (crossAgents[agentName] && !agents[agentName]) {
+					agents[`${agentName} (from ${inc.stage})`] = crossAgents[agentName]
+				}
+			}
+		}
+	}
+}
+
+// ── Output template injection ────────────────────────────────────────────
+
+/** Push output template definitions into sections */
+function pushOutputTemplates(
+	studio: string,
+	stage: string,
+	sections: string[],
+	heading = "### Stage Output Requirements\n\nThis stage must produce the following outputs:",
+	subheadingLevel = "####",
+): void {
+	const artifactDefs = readStageArtifactDefs(studio, stage)
+	const outputDefs = artifactDefs.filter((d) => d.kind === "output")
+	if (outputDefs.length > 0) {
+		sections.push(heading)
+		for (const od of outputDefs) {
+			sections.push(
+				`${subheadingLevel} ${od.name}${od.required ? " (REQUIRED)" : ""}\n**Location:** \`${od.location}\` | **Format:** ${od.format}\n\n${od.body}`,
+			)
+		}
+	}
+}
+
 // ── Phase override reader ────────────────────────────────────────────────
 
 function readPhaseOverride(
@@ -353,6 +404,8 @@ function readPhaseOverride(
 	stage: string,
 	phase: string,
 ): { data: Record<string, unknown>; body: string } | null {
+	validateIdentifier(studio, "studio")
+	validateIdentifier(stage, "stage")
 	for (const base of studioSearchPaths()) {
 		const file = join(
 			base,
@@ -2516,20 +2569,13 @@ function buildRunInstructions(
 			}
 
 			// Output template definitions — inform the elaboration agent what this stage must produce
-			{
-				const artifactDefs = readStageArtifactDefs(studio, stage)
-				const outputDefs = artifactDefs.filter((d) => d.kind === "output")
-				if (outputDefs.length > 0) {
-					sections.push(
-						"## Stage Output Expectations\n\nThis stage must ultimately produce the following outputs during execution. Plan units accordingly:\n",
-					)
-					for (const od of outputDefs) {
-						sections.push(
-							`### ${od.name}${od.required ? " (REQUIRED)" : ""}\n**Location:** \`${od.location}\` | **Format:** ${od.format}\n\n${od.body}`,
-						)
-					}
-				}
-			}
+			pushOutputTemplates(
+				studio,
+				stage,
+				sections,
+				"## Stage Output Expectations\n\nThis stage must ultimately produce the following outputs during execution. Plan units accordingly:\n",
+				"###",
+			)
 
 			// Detect design stages and add MCP provider instructions
 			const stageHats = (stageDef?.data?.hats as string[]) || []
@@ -2663,20 +2709,7 @@ function buildRunInstructions(
 			sections.push(`### Hat: ${hat}\n\n${hatContent}`)
 
 			// Output templates — inject content guides so the builder knows what good output looks like
-			{
-				const artifactDefs = readStageArtifactDefs(studio, stage)
-				const outputDefs = artifactDefs.filter((d) => d.kind === "output")
-				if (outputDefs.length > 0) {
-					sections.push(
-						"### Stage Output Requirements\n\nThis stage must produce the following outputs:",
-					)
-					for (const od of outputDefs) {
-						sections.push(
-							`#### ${od.name}${od.required ? " (REQUIRED)" : ""}\n**Location:** \`${od.location}\` | **Format:** ${od.format}\n\n${od.body}`,
-						)
-					}
-				}
-			}
+			pushOutputTemplates(studio, stage, sections)
 
 			// Unit inputs — load referenced artifacts
 			if (unitInputs.length > 0) {
@@ -2793,20 +2826,7 @@ function buildRunInstructions(
 			}
 
 			// Output templates — inject content guides so the builder knows what good output looks like
-			{
-				const artifactDefs = readStageArtifactDefs(studio, stage)
-				const outputDefs = artifactDefs.filter((d) => d.kind === "output")
-				if (outputDefs.length > 0) {
-					sections.push(
-						"### Stage Output Requirements\n\nThis stage must produce the following outputs:",
-					)
-					for (const od of outputDefs) {
-						sections.push(
-							`#### ${od.name}${od.required ? " (REQUIRED)" : ""}\n**Location:** \`${od.location}\` | **Format:** ${od.format}\n\n${od.body}`,
-						)
-					}
-				}
-			}
+			pushOutputTemplates(studio, stage, sections)
 
 			sections.push(`Hats: ${hats.join(" → ")}\nUnits: ${units.join(", ")}`)
 
@@ -2950,26 +2970,7 @@ function buildRunInstructions(
 			const stage = action.stage as string
 			const agents = readReviewAgentDefs(studio, stage)
 
-			// Cross-stage review agents from STAGE.md review-agents-include field
-			const stageDef_review = readStageDef(studio, stage)
-			if (
-				stageDef_review?.data?.["review-agents-include"] &&
-				Array.isArray(stageDef_review.data["review-agents-include"])
-			) {
-				const includes = stageDef_review.data[
-					"review-agents-include"
-				] as Array<{ stage: string; agents: string[] }>
-				for (const inc of includes) {
-					if (!inc.stage || !Array.isArray(inc.agents)) continue
-					const crossAgents = readReviewAgentDefs(studio, inc.stage)
-					for (const agentName of inc.agents) {
-						if (crossAgents[agentName] && !agents[agentName]) {
-							agents[`${agentName} (from ${inc.stage})`] =
-								crossAgents[agentName]
-						}
-					}
-				}
-			}
+			loadCrossStageAgents(studio, stage, agents)
 
 			sections.push(`## Adversarial Review: ${stage}`)
 
@@ -3070,26 +3071,7 @@ function buildRunInstructions(
 			const stage = action.stage as string
 			const agents = readReviewAgentDefs(studio, stage)
 
-			// Cross-stage review agents from STAGE.md review-agents-include field
-			const stageDef_reviewElab = readStageDef(studio, stage)
-			if (
-				stageDef_reviewElab?.data?.["review-agents-include"] &&
-				Array.isArray(stageDef_reviewElab.data["review-agents-include"])
-			) {
-				const includes = stageDef_reviewElab.data[
-					"review-agents-include"
-				] as Array<{ stage: string; agents: string[] }>
-				for (const inc of includes) {
-					if (!inc.stage || !Array.isArray(inc.agents)) continue
-					const crossAgents = readReviewAgentDefs(studio, inc.stage)
-					for (const agentName of inc.agents) {
-						if (crossAgents[agentName] && !agents[agentName]) {
-							agents[`${agentName} (from ${inc.stage})`] =
-								crossAgents[agentName]
-						}
-					}
-				}
-			}
+			loadCrossStageAgents(studio, stage, agents)
 
 			sections.push("## Review Elaboration Artifacts\n\n")
 			sections.push(
