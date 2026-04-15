@@ -11,6 +11,11 @@ inputs:
   - features/mcp-apps-capability-negotiation.feature
   - features/workspace-handshake.feature
   - .haiku/knowledge/ARCHITECTURE.md
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-15T15:21:26Z'
+hat_started_at: '2026-04-15T15:21:26Z'
 ---
 
 # Capability negotiation probe + workspace handshake
