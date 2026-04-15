@@ -1,5 +1,5 @@
 ---
-title: ui:// resource registration + REVIEW_APP_VERSION build stamp + _meta.ui helper
+title: 'ui:// resource registration + REVIEW_APP_VERSION build stamp + _meta.ui helper'
 type: feature
 model: sonnet
 depends_on:
@@ -16,6 +16,7 @@ outputs:
   - packages/haiku/src/ui-resource.ts
   - packages/haiku/src/server.ts
   - packages/haiku/test/ui-resource.test.mjs
+status: completed
 ---
 
 # ui:// resource registration + REVIEW_APP_VERSION + _meta.ui helper
