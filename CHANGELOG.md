@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.103.0] - 2026-04-15
+
+```markdown
+### Added
+- Comprehensive artifact injection across all FSM phases, allowing agents to reference prior discoveries, operations, reflections, and outputs throughout the entire workflow.
+```
+
 ## [1.102.2] - 2026-04-15
 
 ### Changed
