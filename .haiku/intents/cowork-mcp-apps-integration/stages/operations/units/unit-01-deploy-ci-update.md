@@ -7,6 +7,8 @@ inputs:
   - intent.md
   - knowledge/DISCOVERY.md
   - .haiku/knowledge/RUNBOOK.md
+outputs:
+  - .github/workflows/ci.yml
 ---
 
 # CI/CD workflow updates for MCP Apps review path
