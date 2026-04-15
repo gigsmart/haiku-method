@@ -12,6 +12,7 @@ stages:
   - operations
   - security
 active_stage: inception
+intent_reviewed: true
 ---
 
 # Universal feedback model and review recovery
