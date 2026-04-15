@@ -1168,9 +1168,7 @@ export function runNext(slug: string): OrchestratorAction {
 			emitTelemetry("haiku.gate.auto_advanced", {
 				intent: slug,
 				stage: currentStage,
-				gate_context: isIntentReview
-					? "intent_review"
-					: "elaborate_to_execute",
+				gate_context: isIntentReview ? "intent_review" : "elaborate_to_execute",
 			})
 			return {
 				action: isIntentReview ? "intent_approved" : "advance_phase",

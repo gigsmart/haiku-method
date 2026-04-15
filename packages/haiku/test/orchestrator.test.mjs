@@ -481,11 +481,68 @@ test("advances phase when all units completed (auto review)", () => {
   createUnit(intentDirPath, "plan", "unit-01-only", { status: "completed", criteria: ["- [x] Done"] })
   process.chdir(projDir)
   const result = runNext(slug)
-  // Auto review advances phase or stage automatically
+  // Auto review advances phase or stage automatically — gate_review is the old broken behavior
   assert.ok(
-    result.action === "gate_review" || result.action === "advance_stage" || result.action === "start_stage" || result.action === "advance_phase",
-    `Expected gate_review/advance_stage/start_stage/advance_phase, got: ${result.action}`
+    result.action === "advance_stage" || result.action === "start_stage" || result.action === "advance_phase",
+    `Expected advance_stage/start_stage/advance_phase, got: ${result.action}`
   )
+})
+
+test("stage gate auto-advances for review: auto (phase: gate)", () => {
+  const { projDir, slug, intentDirPath } = createProject("gate-auto", {
+    active_stage: "plan",
+    stageConfig: { plan: { review: "auto" } },
+  })
+  createStageState(intentDirPath, "plan", { phase: "gate", status: "active" })
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // review: auto in continuous mode → auto-advance, not gate_review
+  assert.strictEqual(result.action, "advance_stage")
+  assert.strictEqual(result.next_stage, "build")
+  assert.strictEqual(result.gate_outcome, "advanced")
+})
+
+test("stage gate auto-advances to intent_complete for last stage with review: auto", () => {
+  const { projDir, slug, intentDirPath } = createProject("gate-auto-last", {
+    active_stage: "review",
+    stageConfig: { review: { review: "auto" } },
+  })
+  // Prior stages must be completed for the consistency check to accept active_stage: "review"
+  createStageState(intentDirPath, "plan", { phase: "gate", status: "completed", gate_outcome: "advanced" })
+  createStageState(intentDirPath, "build", { phase: "gate", status: "completed", gate_outcome: "advanced" })
+  createStageState(intentDirPath, "review", { phase: "gate", status: "active" })
+  process.chdir(projDir)
+  const result = runNext(slug)
+  assert.strictEqual(result.action, "intent_complete")
+})
+
+test("review: auto still opens gate_review in discrete mode (elaborate-to-execute)", () => {
+  const { projDir, slug, intentDirPath } = createProject("discrete-auto-elab", {
+    mode: "discrete",
+    intent_reviewed: true,
+    active_stage: "plan",
+    stageConfig: { plan: { elaboration: "directed", review: "auto" } },
+  })
+  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
+  createUnit(intentDirPath, "plan", "unit-01-first")
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // Discrete mode overrides auto → always gate_review
+  assert.strictEqual(result.action, "gate_review")
+})
+
+test("review: auto still opens gate_review in discrete mode (stage gate)", () => {
+  const { projDir, slug, intentDirPath } = createProject("discrete-auto-gate", {
+    mode: "discrete",
+    active_stage: "plan",
+    stageConfig: { plan: { review: "auto" } },
+  })
+  createStageState(intentDirPath, "plan", { phase: "gate", status: "active" })
+  process.chdir(projDir)
+  const result = runNext(slug)
+  // Discrete mode overrides auto → always gate_review with external type
+  assert.strictEqual(result.action, "gate_review")
+  assert.strictEqual(result.gate_type, "external")
 })
 
 // ── runNext: skip_stages ──────────────────────────────────────────────────
