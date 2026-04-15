@@ -6,8 +6,7 @@ depends_on: []
 inputs:
   - intent.md
   - knowledge/DISCOVERY.md
-  - >-
-    stages/inception/units/unit-07-get-review-status-doc-scrub.knowledge/inventory.md
+  - knowledge/unit-07-scoping-decisions.md
 outputs:
   - knowledge/unit-07-scoping-decisions.md
 status: completed
