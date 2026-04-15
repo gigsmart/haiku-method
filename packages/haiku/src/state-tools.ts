@@ -144,6 +144,9 @@ export function applyAutoFixes(
 				message: `Title is ${oldTitle.length} chars — looks auto-truncated or is a full description, not a title`,
 				fix: `Rewrite as a crisp 3–8 word summary (≤80 chars, single line, no trailing period). Preserve the current text as a paragraph in the body under the H1 if it isn't there already. Original: "${preview}"`,
 			})
+			// Not "fixed" here — the rewritten issue was already pushed to `remaining` above.
+			// This flag just suppresses the end-of-loop fallthrough that would re-push the
+			// original (unmodified) issue. All other branches in this loop genuinely fix things.
 			fixedHere = true
 		}
 
