@@ -10,7 +10,7 @@ inputs:
   - stages/design/DESIGN-BRIEF.md
   - knowledge/DESIGN-TOKENS.md
   - stages/design/units/unit-01-iframe-shell-layout.md
-status: active
+status: completed
 bolt: 1
 hat: design-reviewer
 started_at: '2026-04-15T12:44:12Z'
@@ -19,6 +19,7 @@ outputs:
   - stages/design/artifacts/boot-screen.html
   - stages/design/artifacts/host-bridge-status.html
   - stages/design/artifacts/unit-02-design-review.md
+completed_at: '2026-04-15T12:59:00Z'
 ---
 
 # Iframe boot screen + HostBridgeStatus pill
