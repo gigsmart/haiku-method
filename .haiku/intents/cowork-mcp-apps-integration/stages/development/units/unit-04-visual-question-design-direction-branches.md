@@ -1,5 +1,7 @@
 ---
-title: Visual question + design direction MCP Apps branches + submit tool question/design variants
+title: >-
+  Visual question + design direction MCP Apps branches + submit tool
+  question/design variants
 type: feature
 model: sonnet
 depends_on:
@@ -11,6 +13,11 @@ inputs:
   - knowledge/DATA-CONTRACTS.md
   - features/iframe-decision-submit.feature
   - .haiku/knowledge/ARCHITECTURE.md
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-15T17:02:14Z'
+hat_started_at: '2026-04-15T17:02:14Z'
 ---
 
 # ask_user_visual_question + pick_design_direction MCP Apps branches
