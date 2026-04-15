@@ -13,6 +13,7 @@ inputs:
   - .haiku/knowledge/THREAT-MODEL.md
 outputs:
   - .haiku/intents/cowork-mcp-apps-integration/knowledge/OWASP-COVERAGE.md
+  - knowledge/OWASP-COVERAGE.md
 status: active
 bolt: 1
 hat: threat-modeler
