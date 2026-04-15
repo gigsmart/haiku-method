@@ -7,11 +7,11 @@ inputs:
   - intent.md
   - knowledge/DISCOVERY.md
   - stages/inception/units/unit-01-cowork-env-probe.md
-status: pending
-bolt: 0
-hat: ''
-started_at: null
-hat_started_at: '2026-04-14T22:10:58Z'
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-15T04:30:56Z'
+hat_started_at: '2026-04-15T04:30:56Z'
 outputs:
   - knowledge/unit-02-cowork-timeout-research.md
 completed_at: null
