@@ -13,11 +13,13 @@ outputs:
   - knowledge/unit-02-input-validation-audit.md
   - stages/security/artifacts/input-validation-threat-model.md
   - stages/security/artifacts/red-team-input-validation.md
-status: active
+  - stages/security/artifacts/blue-team-input-validation.md
+status: completed
 bolt: 1
 hat: security-reviewer
 started_at: '2026-04-15T19:48:49Z'
 hat_started_at: '2026-04-15T19:51:04Z'
+completed_at: '2026-04-15T19:51:44Z'
 ---
 
 # Unit 02 — Input Validation Audit
