@@ -1,5 +1,7 @@
 ---
-title: Iframe-mode layouts for IntentReview / UnitReview / QuestionPage / DesignPicker / AnnotationCanvas
+title: >-
+  Iframe-mode layouts for IntentReview / UnitReview / QuestionPage /
+  DesignPicker / AnnotationCanvas
 type: feature
 model: sonnet
 depends_on:
@@ -10,6 +12,11 @@ inputs:
   - stages/design/DESIGN-BRIEF.md
   - knowledge/DESIGN-TOKENS.md
   - stages/design/units/unit-01-iframe-shell-layout.md
+status: active
+bolt: 1
+hat: designer
+started_at: '2026-04-15T12:44:41Z'
+hat_started_at: '2026-04-15T12:44:41Z'
 ---
 
 # Iframe-mode layouts for the five existing review screens
