@@ -36,6 +36,7 @@ import { getCapabilities } from "./harness.js"
 import { escalate } from "./model-selection.js"
 import { validateSlugArgs } from "./prompts/helpers.js"
 import { logSessionEvent, writeHaikuMetadata } from "./session-metadata.js"
+import { sealIntentState } from "./state-integrity.js"
 import {
 	listStudios,
 	readOperationDefs,
@@ -2536,6 +2537,9 @@ export function handleStateTool(
 			setFrontmatterField(uPath, "hat", firstHat)
 			setFrontmatterField(uPath, "started_at", timestamp())
 			setFrontmatterField(uPath, "hat_started_at", timestamp())
+			// Reseal: these are UNIT_FIELDS, so the tamper detector needs the
+			// updated checksum before the next verifyIntentState() call.
+			sealIntentState(args.intent as string)
 			emitTelemetry("haiku.unit.started", {
 				intent: args.intent as string,
 				stage,
@@ -2721,6 +2725,8 @@ export function handleStateTool(
 
 				setFrontmatterField(advPath, "status", "completed")
 				setFrontmatterField(advPath, "completed_at", timestamp())
+				// Reseal: UNIT_FIELDS write before _runNext triggers verify.
+				sealIntentState(args.intent as string)
 				emitTelemetry("haiku.unit.completed", {
 					intent: args.intent as string,
 					stage: advStage,
@@ -2824,6 +2830,8 @@ export function handleStateTool(
 
 			setFrontmatterField(advPath, "hat", nextHat)
 			setFrontmatterField(advPath, "hat_started_at", timestamp())
+			// Reseal: UNIT_FIELDS write before _runNext triggers verify.
+			sealIntentState(args.intent as string)
 			{
 				const sf = args.state_file as string | undefined
 				if (sf)
@@ -2923,6 +2931,8 @@ export function handleStateTool(
 			setFrontmatterField(failPath, "hat", prevHat)
 			setFrontmatterField(failPath, "bolt", currentBolt + 1)
 			setFrontmatterField(failPath, "hat_started_at", timestamp())
+			// Reseal: UNIT_FIELDS write; next haiku_run_next triggers verify.
+			sealIntentState(args.intent as string)
 			{
 				const sf = args.state_file as string | undefined
 				if (sf)
@@ -2978,6 +2988,8 @@ export function handleStateTool(
 			}
 
 			setFrontmatterField(path, "bolt", current + 1)
+			// Reseal: bolt is in UNIT_FIELDS.
+			sealIntentState(args.intent as string)
 			emitTelemetry("haiku.bolt.iteration", {
 				intent: args.intent as string,
 				stage: args.stage as string,
