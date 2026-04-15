@@ -14,10 +14,10 @@ inputs:
   - features/iframe-decision-submit.feature
   - .haiku/knowledge/ARCHITECTURE.md
 status: active
-bolt: 2
-hat: reviewer
+bolt: 3
+hat: builder
 started_at: '2026-04-15T16:05:33Z'
-hat_started_at: '2026-04-15T16:31:58Z'
+hat_started_at: '2026-04-15T16:33:48Z'
 model_original: sonnet
 ---
 
