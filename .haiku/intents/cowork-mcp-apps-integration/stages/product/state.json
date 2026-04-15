@@ -1,10 +1,10 @@
 {
   "stage": "product",
-  "status": "active",
-  "phase": "execute",
+  "status": "completed",
+  "phase": "gate",
   "started_at": "2026-04-15T13:15:55Z",
-  "completed_at": null,
-  "gate_entered_at": null,
-  "gate_outcome": null,
+  "completed_at": "2026-04-15T14:38:09Z",
+  "gate_entered_at": "2026-04-15T14:38:04Z",
+  "gate_outcome": "advanced",
   "elaboration_turns": 3
 }
