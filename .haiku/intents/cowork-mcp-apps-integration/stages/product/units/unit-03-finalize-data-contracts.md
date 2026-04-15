@@ -12,9 +12,9 @@ inputs:
   - stages/inception/units/unit-06-visual-question-design-direction.md
 status: active
 bolt: 1
-hat: specification
+hat: validator
 started_at: '2026-04-15T13:53:42Z'
-hat_started_at: '2026-04-15T13:58:22Z'
+hat_started_at: '2026-04-15T14:08:43Z'
 outputs:
   - knowledge/DATA-CONTRACTS.md
 ---

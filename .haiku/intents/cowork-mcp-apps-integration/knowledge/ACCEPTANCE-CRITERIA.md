@@ -411,3 +411,22 @@ The following are required before the product stage can be considered complete:
 | GR-04, GR-10 | `stages/design/DESIGN-BRIEF.md`, design `unit-05-success-state-and-unmount` |
 | GR-05 | inception `unit-01-cowork-env-probe`, `unit-05`, `unit-06`, `unit-08` |
 | GR-06 | `knowledge/DESIGN-TOKENS.md` |
+
+---
+
+## Specification review
+
+Reviewed by specification hat (unit-01-finalize-acceptance-criteria, bolt 1).
+
+All 40 AC items (V1-01 through V6-07, GR-01 through GR-11) are concretely testable as
+Gherkin scenarios. Each criterion names a specific observable: a boolean return value,
+a labeled DOM state, a call count, a pixel measurement, a CSS property, a contrast
+ratio, or an ARIA attribute value. No item uses vague language such as "works correctly"
+or "looks right".
+
+Vague `Test:` lines: **(none)**
+
+One note for the feature-file author: V6-04 (`negotiation-failed`) and V6-05
+(`sandbox-restricted`) both test error-screen rendering at the narrow breakpoint.
+Consider a shared background step for "Given the iframe renders at ≤ 480px width" to
+avoid duplication across those scenarios.
