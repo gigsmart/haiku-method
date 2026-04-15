@@ -37,7 +37,7 @@ On session start, check git state:
 | Provider Concept | H·AI·K·U Concept | Translation |
 |---|---|---|
 | Intent branch | Intent | `haiku/{slug}/main` maps to the active intent |
-| Pull Request / Merge Request | Delivery gate | PR state maps to external review outcome |
+| Pull Request / Merge Request | Delivery gate / external review signal | PR review decision (APPROVED) or merge state (MERGED) maps to external gate resolution |
 | PR review comments | Review feedback | Surface as context for review agents |
 | Merge conflict | Blocker | Flag intent as needing conflict resolution |
 | Remote ahead/behind | Sync state | Behind = pull needed; ahead = push needed |
@@ -72,6 +72,23 @@ When `auto_pr` is enabled:
 - Temporary state files — only committed state goes to remote
 - In-progress unit work — only merged results via the intent branch
 
+## External Gate Signal Detection
+
+For stages with `external` review gates, the orchestrator checks approval using two tiers:
+
+### Tier 1: Branch Merge Detection (Primary)
+
+The primary signal is whether the stage branch (`haiku/{slug}/{stage}`) was merged back into the intent main branch (`haiku/{slug}/main`). The orchestrator checks this locally using `git merge-base --is-ancestor` and falls back to checking for merged PRs via `gh`/`glab` (which handles squash merges where the branch commit is not a direct ancestor). This is structural verification — the agent cannot fake a branch merge.
+
+### Tier 2: URL-Based CLI Probing (Fallback)
+
+If a `external_review_url` was recorded in the stage state, the orchestrator also checks PR/MR approval status via CLI tools:
+
+- **GitHub** — `gh pr view <url> --json state,reviewDecision` → advances on `MERGED` or `reviewDecision === "APPROVED"`
+- **GitLab** — `glab mr view <url> --output json` → advances on `merged` state or `approved === true`
+
+This complements Tier 1 by detecting approval before the branch is actually merged. Runs automatically on every `/haiku:pickup`.
+
 ## Non-Git Environments
 
 When not running in a git repository, the MCP operates in filesystem mode:
@@ -79,6 +96,7 @@ When not running in a git repository, the MCP operates in filesystem mode:
 - No commits, no pushes, no branches, no worktrees
 - Units work in-place rather than in worktree isolation
 - All lifecycle operations still function — just without version control
+- **External gates fall back to `ask`** — there is no structural signal (branch merge) to enforce external review, so the framework opens the local review UI for human approval instead of blocking indefinitely
 
 ## Provider Config
 
