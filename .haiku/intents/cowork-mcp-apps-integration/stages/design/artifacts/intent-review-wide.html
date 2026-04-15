@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<!-- Token map:
+  --iframe-bg          → stone-950  rgb(12,10,9)
+  --topbar-bg          → stone-900  rgb(28,25,23)
+  --topbar-border      → stone-800  rgb(41,37,36)
+  --content-text       → stone-100  rgb(245,245,244)
+  --content-muted      → stone-400  rgb(168,162,158)
+  --section-bg         → stone-900  rgb(28,25,23)
+  --sheet-border-top   → teal-500   rgb(20,184,166)
+  --btn-approve-bg     → teal-500   rgb(20,184,166)
+  --btn-ext-bg         → indigo-700 rgb(67,56,202)
+  --copy-bg            → stone-800  rgb(41,37,36)
+  Breakpoint: wide ≥ 769px — container 960px
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=960, initial-scale=1.0">
+<title>Intent Review — Wide</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  .iframe-sim {
+    width: 960px; min-height: 640px; display: flex; flex-direction: column;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px;
+    background-color: rgb(12,10,9); color: rgb(245,245,244);
+    border: 1px solid rgb(41,37,36);
+  }
+  .topbar {
+    height: 36px; min-height: 36px; flex-shrink: 0;
+    display: flex; align-items: center; padding: 0 24px; gap: 12px;
+    background-color: rgb(28,25,23); border-bottom: 1px solid rgb(41,37,36);
+  }
+  .topbar-slug { font-size: 13px; font-weight: 600; color: rgb(245,245,244); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar-type { font-size: 11px; color: rgb(168,162,158); white-space: nowrap; }
+  .topbar-meta { font-size: 11px; color: rgb(120,113,108); white-space: nowrap; }
+  .bridge-pill {
+    display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px;
+    border-radius: 9999px; font-size: 11px; font-weight: 500;
+    background-color: rgba(20,184,166,0.15); color: rgb(20,184,166); border: 1px solid rgba(20,184,166,0.3);
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background-color: currentColor; flex-shrink: 0; }
+  .content-area { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+  /* Wide: 3-column metadata grid */
+  .meta-grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; }
+  .section {
+    background-color: rgb(28,25,23); border: 1px solid rgb(41,37,36);
+    border-radius: 8px; padding: 16px;
+  }
+  .section-title {
+    font-size: 11px; font-weight: 700; color: rgb(168,162,158);
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;
+  }
+  .intent-title { font-size: 17px; font-weight: 700; color: rgb(245,245,244); line-height: 1.4; margin-bottom: 8px; }
+  .intent-desc { font-size: 14px; color: rgb(214,211,208); line-height: 1.6; }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .tag { display: inline-flex; align-items: center; padding: 2px 10px; background-color: rgb(41,37,36); border-radius: 9999px; font-size: 11px; color: rgb(214,211,208); }
+  .unit-list { display: flex; flex-direction: column; gap: 4px; }
+  .unit-row {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+    border-radius: 6px; background-color: rgb(41,37,36); min-height: 36px;
+  }
+  .unit-badge { font-size: 10px; font-family: ui-monospace, monospace; color: rgb(168,162,158); flex-shrink: 0; width: 24px; }
+  .unit-name { font-size: 12px; color: rgb(214,211,208); flex: 1; }
+  .unit-status { font-size: 10px; color: rgb(20,184,166); }
+  .criteria-list { display: flex; flex-direction: column; gap: 6px; }
+  .criteria-item { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: rgb(214,211,208); line-height: 1.4; }
+  .check { color: rgb(20,184,166); flex-shrink: 0; }
+  /* Wide: ext review with instruction inline */
+  .ext-review-region { display: flex; flex-direction: column; gap: 10px; }
+  .ext-review-label { font-size: 14px; color: rgb(214,211,208); }
+  .copy-row { display: flex; gap: 10px; align-items: center; }
+  .copy-input {
+    flex: 1; background-color: rgb(41,37,36); border: 1px solid rgb(68,64,60);
+    border-radius: 6px; padding: 0 12px; height: 44px; min-height: 44px;
+    font-size: 13px; font-family: ui-monospace, monospace; color: rgb(214,211,208);
+    display: flex; align-items: center;
+  }
+  .copy-btn {
+    min-height: 44px; padding: 0 20px; background-color: rgb(41,37,36);
+    border: 1px solid rgb(68,64,60); border-radius: 6px; color: rgb(245,245,244);
+    font-size: 13px; cursor: pointer; flex-shrink: 0;
+  }
+  .copy-btn:hover { background-color: rgb(68,64,60); }
+  .copy-btn:focus-visible { outline: 2px solid rgb(20,184,166); outline-offset: 2px; }
+  .copy-instruction { font-size: 12px; color: rgb(168,162,158); line-height: 1.5; }
+  .sheet-wrapper { flex-shrink: 0; position: sticky; bottom: 0; z-index: 10; }
+  .sheet {
+    background-color: rgb(28,25,23); border-top: 2px solid rgb(20,184,166);
+    border-radius: 12px 12px 0 0; box-shadow: 0 -8px 24px rgba(0,0,0,0.4); overflow: hidden;
+  }
+  .drag-handle-zone {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; min-height: 44px; padding: 10px 0 4px;
+    cursor: grab; background: transparent; border: none; appearance: none;
+  }
+  .drag-handle-zone:focus-visible { outline: 2px solid rgb(20,184,166); outline-offset: -2px; }
+  .drag-bar { width: 36px; height: 4px; border-radius: 2px; background-color: rgb(87,83,78); }
+  .drag-handle-zone:hover .drag-bar { background-color: rgb(120,113,108); }
+  .drag-hint { text-align: center; font-size: 11px; color: rgb(168,162,158); padding: 0 24px 8px; }
+  .sheet-buttons { display: flex; gap: 12px; padding: 0 24px 16px; max-width: 700px; margin: 0 auto; width: 100%; }
+  .btn {
+    flex: 1; min-height: 44px; padding: 0 20px; border: none; border-radius: 8px;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: background-color 120ms ease; appearance: none;
+  }
+  .btn-approve { background-color: rgb(20,184,166); color: rgb(12,10,9); }
+  .btn-approve:hover { background-color: rgb(45,212,191); }
+  .btn-approve:focus-visible { outline: 2px solid rgb(94,234,212); outline-offset: 2px; }
+  .btn-approve:active { background-color: rgb(13,148,136); }
+  .btn-changes { background-color: rgb(68,64,60); color: rgb(245,245,244); }
+  .btn-changes:hover { background-color: rgb(87,83,78); }
+  .btn-changes:focus-visible { outline: 2px solid rgb(120,113,108); outline-offset: 2px; }
+  .btn-ext { background-color: rgb(67,56,202); color: rgb(245,245,244); }
+  .btn-ext:hover { background-color: rgb(79,70,229); }
+  .btn-ext:focus-visible { outline: 2px solid rgb(129,140,248); outline-offset: 2px; }
+  .shortcuts-footer {
+    padding: 10px 24px; border-top: 1px solid rgb(41,37,36);
+    display: flex; gap: 20px; flex-wrap: wrap; max-width: 700px; margin: 0 auto; width: 100%;
+  }
+  kbd {
+    display: inline-flex; align-items: center; padding: 2px 6px;
+    background-color: rgb(41,37,36); border: 1px solid rgb(68,64,60);
+    border-radius: 4px; font-family: ui-monospace, monospace;
+    font-size: 11px; color: rgb(168,162,158);
+  }
+  .shortcut-desc { font-size: 11px; color: rgb(120,113,108); }
+  .shortcut-pair { display: flex; align-items: center; gap: 4px; }
+  @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+</style>
+</head>
+<body>
+<div class="iframe-sim">
+
+  <header class="topbar" role="banner">
+    <span class="topbar-slug">cowork-mcp-apps-integration</span>
+    <span class="topbar-type">intent review</span>
+    <span class="topbar-meta">inception · 8 units · all passing</span>
+    <span class="bridge-pill" role="status" aria-live="polite" aria-label="MCP Apps: Connected">
+      <span class="dot" aria-hidden="true"></span>MCP Apps · Connected
+    </span>
+  </header>
+
+  <main class="content-area" id="main-content" role="main">
+
+    <section class="section">
+      <div class="section-title">Intent</div>
+      <div class="intent-title">Add Cowork support to H·AI·K·U plugin using MCP Apps for review UI</div>
+      <div class="intent-desc">Detect Cowork via CLAUDE_CODE_IS_COWORK=1 env var, check CLAUDE_CODE_WORKSPACE_HOST_PATHS for workspace presence, and replace the HTTP server/localtunnel review flow with MCP Apps — bundling the review SPA as a ui:// resource rendered inline via sandboxed iframe, using @modelcontextprotocol/ext-apps App class for bidirectional postMessage communication.</div>
+      <div class="tag-row">
+        <span class="tag">studio: software</span>
+        <span class="tag">stage: inception</span>
+        <span class="tag">mode: continuous</span>
+        <span class="tag">status: active</span>
+      </div>
+    </section>
+
+    <div class="meta-grid-3">
+      <section class="section">
+        <div class="section-title">Units (8)</div>
+        <div class="unit-list">
+          <div class="unit-row"><span class="unit-badge">01</span><span class="unit-name">cowork-env-probe</span><span class="unit-status">✓ done</span></div>
+          <div class="unit-row"><span class="unit-badge">02</span><span class="unit-name">cowork-timeout-spike</span><span class="unit-status">✓ done</span></div>
+          <div class="unit-row"><span class="unit-badge">03</span><span class="unit-name">ui-resource-registration</span><span class="unit-status">✓ done</span></div>
+          <div class="unit-row"><span class="unit-badge">04</span><span class="unit-name">spa-host-bridge</span><span class="unit-status">✓ done</span></div>
+          <div class="unit-row"><span class="unit-badge">05</span><span class="unit-name">cowork-open-review-handler</span><span class="unit-status">✓ done</span></div>
+          <div class="unit-row"><span class="unit-badge">06</span><span class="unit-name">visual-question-design-direction</span><span class="unit-status">✓ done</span></div>
+          <div class="unit-row"><span class="unit-badge">07</span><span class="unit-name">get-review-status-doc-scrub</span><span class="unit-status">✓ done</span></div>
+          <div class="unit-row"><span class="unit-badge">08</span><span class="unit-name">cowork-end-to-end-validation</span><span class="unit-status">✓ done</span></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-title">Quality Gates</div>
+        <div class="criteria-list">
+          <div class="criteria-item"><span class="check">✓</span><span>Cowork env detection</span></div>
+          <div class="criteria-item"><span class="check">✓</span><span>MCP Apps handshake ≤ 5s</span></div>
+          <div class="criteria-item"><span class="check">✓</span><span>ui:// resource renders</span></div>
+          <div class="criteria-item"><span class="check">✓</span><span>Decision via callServerTool</span></div>
+          <div class="criteria-item"><span class="check">✓</span><span>No HTTP server in Cowork path</span></div>
+          <div class="criteria-item"><span class="check">✓</span><span>Payload ≤ 5.15 MB</span></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-title">Knowledge</div>
+        <div class="tag-row" style="flex-direction: column; gap: 4px; align-items: flex-start;">
+          <span class="tag">DISCOVERY.md</span>
+          <span class="tag">DESIGN-TOKENS.md</span>
+          <span class="tag">INDEX.md</span>
+          <span class="tag">validation-notes.md</span>
+        </div>
+      </section>
+    </div>
+
+    <section class="section">
+      <div class="section-title">External Review URL</div>
+      <div class="ext-review-region" aria-labelledby="ext-review-heading-wide">
+        <span id="ext-review-heading-wide" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden">External review link</span>
+        <div class="ext-review-label">Share this URL with your external reviewer. The iframe sandbox does not support popup links — copy and open in a separate browser window.</div>
+        <div class="copy-row">
+          <div class="copy-input" role="textbox" aria-readonly="true" aria-label="External review URL">https://review.haiku.dev/r/abc123def456</div>
+          <button class="copy-btn" type="button" aria-label="Copy external review URL to clipboard">Copy URL</button>
+        </div>
+        <div class="copy-instruction">Paste into any browser. Links are intentionally non-clickable — the sandbox blocks allow-popups by default.</div>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="sheet-wrapper" role="region" aria-label="Decision panel">
+    <div class="sheet">
+      <button
+        class="drag-handle-zone"
+        aria-label="Drag up to expand feedback panel. Up arrow to expand, Down arrow to collapse."
+        aria-expanded="false" aria-controls="sheet-expanded-region"
+      >
+        <span class="drag-bar" aria-hidden="true"></span>
+      </button>
+      <div class="drag-hint" aria-hidden="true">Drag up for comments ↑</div>
+      <form class="sheet-buttons" aria-labelledby="decision-heading-wide">
+        <span id="decision-heading-wide" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden">Review decision</span>
+        <button class="btn btn-approve" type="submit" name="decision" value="approved" aria-keyshortcuts="1">✓ Approve Intent</button>
+        <button class="btn btn-changes" type="submit" name="decision" value="changes_requested" aria-keyshortcuts="2">↩ Request Changes</button>
+        <button class="btn btn-ext" type="submit" name="decision" value="external_review" aria-keyshortcuts="3">⬡ External Review</button>
+      </form>
+      <footer class="shortcuts-footer" aria-label="Keyboard shortcuts">
+        <span class="shortcut-pair"><kbd>1</kbd><span class="shortcut-desc">Approve</span></span>
+        <span class="shortcut-pair"><kbd>2</kbd><span class="shortcut-desc">Request Changes</span></span>
+        <span class="shortcut-pair"><kbd>3</kbd><span class="shortcut-desc">External Review</span></span>
+        <span class="shortcut-pair"><kbd>↑ / ↓</kbd><span class="shortcut-desc">Expand / collapse feedback panel</span></span>
+        <span class="shortcut-pair"><kbd>Tab</kbd><span class="shortcut-desc">Next element</span></span>
+        <span class="shortcut-pair"><kbd>Shift+Tab</kbd><span class="shortcut-desc">Previous / back to host</span></span>
+      </footer>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

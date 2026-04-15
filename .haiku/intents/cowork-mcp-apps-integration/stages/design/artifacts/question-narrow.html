@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<!-- Token map:
+  --iframe-bg        → stone-950  rgb(12,10,9)
+  --topbar-bg        → stone-900  rgb(28,25,23)
+  --section-bg       → stone-900  rgb(28,25,23)
+  --sheet-border-top → teal-500   rgb(20,184,166)
+  --btn-approve-bg   → teal-500   rgb(20,184,166)
+  --question-accent  → amber-400  rgb(251,191,36)
+  --option-selected  → amber-500  rgb(245,158,11)
+  --option-hover-bg  → stone-800  rgb(41,37,36)
+  --radio-border     → stone-600  rgb(87,83,78)
+  Breakpoint: narrow ≤ 480px — container 480px
+  Layout: single column, question above image (stacked)
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=480, initial-scale=1.0">
+<title>Question — Narrow</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  .iframe-sim {
+    width: 480px; min-height: 640px; display: flex; flex-direction: column;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px;
+    background-color: rgb(12,10,9); color: rgb(245,245,244); border: 1px solid rgb(41,37,36);
+  }
+  .topbar {
+    height: 36px; min-height: 36px; flex-shrink: 0;
+    display: flex; align-items: center; padding: 0 12px; gap: 8px;
+    background-color: rgb(28,25,23); border-bottom: 1px solid rgb(41,37,36); overflow: hidden;
+  }
+  .topbar-slug { font-size: 12px; font-weight: 600; color: rgb(245,245,244); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar-type { font-size: 11px; color: rgb(168,162,158); white-space: nowrap; }
+  .bridge-pill {
+    display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
+    border-radius: 9999px; font-size: 11px; font-weight: 500;
+    background-color: rgba(20,184,166,0.15); color: rgb(20,184,166); border: 1px solid rgba(20,184,166,0.3);
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background-color: currentColor; flex-shrink: 0; }
+  .content-area { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+  .q-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+  }
+  .q-badge {
+    display: inline-flex; align-items: center; padding: 2px 8px;
+    background-color: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3);
+    border-radius: 9999px; font-size: 11px; font-weight: 600; color: rgb(251,191,36);
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .q-progress { font-size: 11px; color: rgb(168,162,158); }
+  .question-text { font-size: 15px; font-weight: 600; color: rgb(245,245,244); line-height: 1.5; }
+  .question-context { font-size: 13px; color: rgb(214,211,208); line-height: 1.5; margin-top: 6px; }
+  /* Narrow: question image stacked above options */
+  .question-image {
+    width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid rgb(41,37,36);
+    background-color: rgb(28,25,23); aspect-ratio: 16/9;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .question-image-placeholder {
+    font-size: 11px; color: rgb(120,113,108); text-align: center; padding: 12px;
+  }
+  .image-caption { font-size: 11px; color: rgb(168,162,158); padding: 6px 0 0; }
+  /* Options form */
+  .options-form { display: flex; flex-direction: column; gap: 6px; }
+  .option-label {
+    display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px;
+    background-color: rgb(28,25,23); border: 1px solid rgb(41,37,36);
+    border-radius: 8px; cursor: pointer; min-height: 44px;
+    transition: background-color 120ms ease, border-color 120ms ease;
+    user-select: none;
+  }
+  .option-label:hover { background-color: rgb(41,37,36); border-color: rgb(68,64,60); }
+  .option-label:focus-within { outline: 2px solid rgb(251,191,36); outline-offset: 2px; }
+  .option-label--selected { background-color: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.5); }
+  .option-radio {
+    width: 18px; height: 18px; min-width: 18px; min-height: 18px;
+    border-radius: 50%; border: 2px solid rgb(87,83,78);
+    background-color: transparent; cursor: pointer;
+    appearance: none; margin-top: 1px; flex-shrink: 0;
+  }
+  .option-radio:checked { background-color: rgb(245,158,11); border-color: rgb(245,158,11); }
+  .option-radio:focus-visible { outline: 2px solid rgb(251,191,36); outline-offset: 2px; }
+  .option-text { font-size: 14px; color: rgb(214,211,208); line-height: 1.4; }
+  /* Multi-select checkbox style */
+  .option-check {
+    width: 18px; height: 18px; min-width: 18px; min-height: 18px;
+    border-radius: 4px; border: 2px solid rgb(87,83,78);
+    background-color: transparent; cursor: pointer;
+    appearance: none; margin-top: 1px; flex-shrink: 0;
+  }
+  .option-check:checked { background-color: rgb(245,158,11); border-color: rgb(245,158,11); }
+  .option-check:focus-visible { outline: 2px solid rgb(251,191,36); outline-offset: 2px; }
+  /* Sheet */
+  .sheet-wrapper { flex-shrink: 0; position: sticky; bottom: 0; z-index: 10; }
+  .sheet { background-color: rgb(28,25,23); border-top: 2px solid rgb(20,184,166); border-radius: 12px 12px 0 0; box-shadow: 0 -8px 24px rgba(0,0,0,0.4); overflow: hidden; }
+  .drag-handle-zone { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; padding: 10px 0 4px; cursor: grab; background: transparent; border: none; appearance: none; }
+  .drag-handle-zone:focus-visible { outline: 2px solid rgb(20,184,166); outline-offset: -2px; }
+  .drag-bar { width: 36px; height: 4px; border-radius: 2px; background-color: rgb(87,83,78); }
+  .drag-handle-zone:hover .drag-bar { background-color: rgb(120,113,108); }
+  .drag-hint { text-align: center; font-size: 11px; color: rgb(168,162,158); padding: 0 12px 8px; }
+  .sheet-buttons { display: flex; gap: 8px; padding: 0 12px 16px; }
+  .btn {
+    flex: 1; min-height: 44px; padding: 0 12px; border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: background-color 120ms ease; appearance: none;
+  }
+  .btn-submit { background-color: rgb(20,184,166); color: rgb(12,10,9); }
+  .btn-submit:hover { background-color: rgb(45,212,191); }
+  .btn-submit:focus-visible { outline: 2px solid rgb(94,234,212); outline-offset: 2px; }
+  .btn-submit:active { background-color: rgb(13,148,136); }
+  .btn-submit:disabled { background-color: rgb(41,37,36); color: rgb(120,113,108); cursor: not-allowed; }
+  .btn-skip { background-color: rgb(68,64,60); color: rgb(245,245,244); }
+  .btn-skip:hover { background-color: rgb(87,83,78); }
+  .btn-skip:focus-visible { outline: 2px solid rgb(120,113,108); outline-offset: 2px; }
+  .shortcuts-footer { padding: 10px 12px; border-top: 1px solid rgb(41,37,36); display: flex; gap: 12px; flex-wrap: wrap; }
+  kbd { display: inline-flex; align-items: center; padding: 2px 6px; background-color: rgb(41,37,36); border: 1px solid rgb(68,64,60); border-radius: 4px; font-family: ui-monospace, monospace; font-size: 11px; color: rgb(168,162,158); }
+  .shortcut-desc { font-size: 11px; color: rgb(120,113,108); }
+  .shortcut-pair { display: flex; align-items: center; gap: 4px; }
+  @media (prefers-reduced-motion: reduce) { .btn, .option-label { transition: none; } }
+</style>
+</head>
+<body>
+<div class="iframe-sim">
+
+  <header class="topbar" role="banner">
+    <span class="topbar-slug">cowork-mcp-apps-integration</span>
+    <span class="topbar-type">question</span>
+    <span class="bridge-pill" role="status" aria-live="polite" aria-label="MCP Apps: Connected">
+      <span class="dot" aria-hidden="true"></span>Connected
+    </span>
+  </header>
+
+  <main class="content-area" id="main-content" role="main">
+
+    <div>
+      <div class="q-header">
+        <span class="q-badge">Question 2 of 4</span>
+        <span class="q-progress">visual design decision</span>
+      </div>
+      <div class="question-text">Which bottom-sheet layout pattern best fits the iframe review context?</div>
+      <div class="question-context">Consider that the iframe may be as narrow as 480px and cannot use fixed overlays that escape the iframe boundary.</div>
+    </div>
+
+    <!-- Narrow: image stacked above options (not side-by-side) -->
+    <div class="question-image" aria-label="Layout comparison wireframe">
+      <div class="question-image-placeholder">[ Layout comparison wireframe · 16:9 ]<br>Rendered by host from ui:// resource</div>
+    </div>
+    <div class="image-caption">Reference: bottom-sheet vs. inline decision panel comparison</div>
+
+    <fieldset style="border: none;">
+      <legend class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden">Layout options</legend>
+      <div class="options-form" role="group" aria-labelledby="q-label-narrow">
+        <span id="q-label-narrow" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden">Select layout option</span>
+
+        <label class="option-label option-label--selected" for="opt-1">
+          <input class="option-radio" type="radio" name="layout-choice" id="opt-1" value="bottom-sheet" checked>
+          <span class="option-text"><strong>Bottom sheet (drag-to-expand)</strong> — Decision buttons always visible, feedback fields in expanded panel. Matches mobile patterns.</span>
+        </label>
+
+        <label class="option-label" for="opt-2">
+          <input class="option-radio" type="radio" name="layout-choice" id="opt-2" value="inline-panel">
+          <span class="option-text"><strong>Inline decision panel</strong> — Feedback form inline at the bottom of scrollable content, no sheet behavior.</span>
+        </label>
+
+        <label class="option-label" for="opt-3">
+          <input class="option-radio" type="radio" name="layout-choice" id="opt-3" value="floating-bar">
+          <span class="option-text"><strong>Floating action bar</strong> — Sticky action bar with approve/reject, feedback via modal-like expansion.</span>
+        </label>
+
+        <label class="option-label" for="opt-4">
+          <input class="option-radio" type="radio" name="layout-choice" id="opt-4" value="top-anchored">
+          <span class="option-text"><strong>Top-anchored panel</strong> — Decision panel pinned below the status strip, content scrolls beneath it.</span>
+        </label>
+      </div>
+    </fieldset>
+
+  </main>
+
+  <div class="sheet-wrapper" role="region" aria-label="Question actions">
+    <div class="sheet">
+      <button class="drag-handle-zone" aria-label="Expand for notes" aria-expanded="false" aria-controls="sheet-notes-region">
+        <span class="drag-bar" aria-hidden="true"></span>
+      </button>
+      <div class="drag-hint" aria-hidden="true">Drag up to add notes ↑</div>
+      <form class="sheet-buttons" aria-labelledby="q-action-heading">
+        <span id="q-action-heading" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden">Submit answer</span>
+        <button class="btn btn-submit" type="submit" aria-keyshortcuts="Enter">Submit Answer</button>
+        <button class="btn btn-skip" type="button" aria-keyshortcuts="s">Skip</button>
+      </form>
+      <footer class="shortcuts-footer" aria-label="Keyboard shortcuts">
+        <span class="shortcut-pair"><kbd>Enter</kbd><span class="shortcut-desc">Submit</span></span>
+        <span class="shortcut-pair"><kbd>S</kbd><span class="shortcut-desc">Skip</span></span>
+        <span class="shortcut-pair"><kbd>1–4</kbd><span class="shortcut-desc">Select option</span></span>
+        <span class="shortcut-pair"><kbd>↑</kbd><span class="shortcut-desc">Notes panel</span></span>
+      </footer>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
