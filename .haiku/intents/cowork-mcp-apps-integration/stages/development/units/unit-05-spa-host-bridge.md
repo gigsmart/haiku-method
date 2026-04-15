@@ -12,6 +12,11 @@ inputs:
   - features/host-bridge-detection.feature
   - stages/design/artifacts/host-bridge-status.html
   - .haiku/knowledge/ARCHITECTURE.md
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-15T16:05:00Z'
+hat_started_at: '2026-04-15T16:05:00Z'
 ---
 
 # Review SPA host-bridge module
