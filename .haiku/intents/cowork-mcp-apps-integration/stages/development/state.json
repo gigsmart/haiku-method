@@ -1,0 +1,9 @@
+{
+  "stage": "development",
+  "status": "active",
+  "phase": "elaborate",
+  "started_at": "2026-04-15T14:38:39Z",
+  "completed_at": null,
+  "gate_entered_at": null,
+  "gate_outcome": null
+}
