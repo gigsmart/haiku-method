@@ -38,10 +38,10 @@ import { validateIdentifier } from "./prompts/helpers.js"
 import { reportError } from "./sentry.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
 import {
-	deriveIntentTitle,
 	findHaikuRoot,
 	gitCommitState,
 	intentDir,
+	intentTitleNeedsRepair,
 	isGitRepo,
 	parseFrontmatter,
 	readJson,
@@ -3390,18 +3390,24 @@ export const orchestratorToolDefs = [
 	{
 		name: "haiku_intent_create",
 		description:
-			"Create a new H·AI·K·U intent. Studio selection happens separately via haiku_select_studio.",
+			'Create a new H·AI·K·U intent. Studio selection happens separately via haiku_select_studio. You must provide BOTH a crisp `title` (3–8 words, ≤80 chars, single line, no trailing punctuation — e.g. "Add archivable intents") AND a richer `description` (2–5 sentences covering scope, motivation, and constraints). The title is NOT derived from the description — write it deliberately as a human-readable summary.',
 		inputSchema: {
 			type: "object" as const,
 			properties: {
+				title: {
+					type: "string",
+					description:
+						'Short human-readable title (3–8 words, max 80 chars, single line, no trailing period). Must be a deliberate summary — NOT the first 80 chars of the description. Good: "Add archivable intents". Bad: "Add archivable intents to H·AI·K·U. Users need a way to soft-hide…".',
+				},
 				description: {
 					type: "string",
-					description: "What the intent is about",
+					description:
+						"Full description of what the intent is about (2–5 sentences covering scope, motivation, and constraints). Stored verbatim in the intent body.",
 				},
 				slug: {
 					type: "string",
 					description:
-						"URL-friendly slug for the intent (auto-generated from description if not provided)",
+						"URL-friendly slug for the intent (auto-generated from title if not provided)",
 				},
 				context: {
 					type: "string",
@@ -3421,7 +3427,7 @@ export const orchestratorToolDefs = [
 						"Explicit stage list — overrides the studio's default stages. Use to run a subset of stages (e.g. just ['development'] for quick tasks).",
 				},
 			},
-			required: ["description"],
+			required: ["title", "description"],
 		},
 	},
 	{
@@ -4052,11 +4058,45 @@ export async function handleOrchestratorTool(
 
 	if (name === "haiku_intent_create") {
 		const description = args.description as string
+		const titleInput = args.title as string | undefined
 		let slug = args.slug as string | undefined
 
-		// Generate slug from description if not provided
+		// Title is required: must be a crisp, human-readable summary the agent
+		// writes deliberately. We do NOT derive it by truncating the description.
+		if (!titleInput || typeof titleInput !== "string") {
+			return text(
+				JSON.stringify({
+					error: "missing_title",
+					message:
+						'haiku_intent_create requires a `title` parameter — a crisp 3–8 word summary (≤80 chars, single line, no trailing period). Write it deliberately; do NOT pass a truncated description. Example: title: "Add archivable intents".',
+				}),
+			)
+		}
+		// Reject newlines explicitly before normalization — otherwise `\s+` would
+		// collapse them to spaces and hide the intent (a multi-line title input
+		// is a sign the agent pasted a paragraph, not wrote a title).
+		if (/[\r\n]/.test(titleInput)) {
+			return text(
+				JSON.stringify({
+					error: "invalid_title",
+					message:
+						"`title` must be a single line — got newlines. Rewrite as a crisp 3–8 word summary (≤80 chars) and call again.",
+				}),
+			)
+		}
+		const title = titleInput.trim().replace(/\s+/g, " ")
+		if (intentTitleNeedsRepair(title)) {
+			return text(
+				JSON.stringify({
+					error: "invalid_title",
+					message: `\`title\` must be non-empty and ≤80 chars after trimming. Got ${title.length} chars. Rewrite as a 3–8 word summary and call again.`,
+				}),
+			)
+		}
+
+		// Generate slug from title if not provided
 		if (!slug) {
-			slug = description
+			slug = title
 				.toLowerCase()
 				.replace(/[^a-z0-9\s-]/g, "")
 				.replace(/\s+/g, "-")
@@ -4102,14 +4142,13 @@ export async function handleOrchestratorTool(
 		mkdirSync(join(iDir, "knowledge"), { recursive: true })
 		mkdirSync(join(iDir, "stages"), { recursive: true })
 
-		// Build intent.md with frontmatter + body (no studio — selected separately)
-		// Title is derived as a short one-liner; the full description lives in the body.
+		// Build intent.md with frontmatter + body (no studio — selected separately).
+		// Title and description are distinct: title is a short human-readable summary
+		// the agent wrote deliberately; description is the full narrative body.
 		const context = args.context as string | undefined
 		const mode = (args.mode as string) || "continuous"
 		const stagesOverride = args.stages as string[] | undefined
-		const title = deriveIntentTitle(description)
-		const descriptionBody = description.trim()
-		const bodyHasDescription = descriptionBody && descriptionBody !== title
+		const descriptionBody = (description || "").trim()
 		const intentContent = [
 			"---",
 			`title: "${title.replace(/"/g, '\\"')}"`,
@@ -4124,7 +4163,7 @@ export async function handleOrchestratorTool(
 			"",
 			`# ${title}`,
 			"",
-			...(bodyHasDescription ? [descriptionBody, ""] : []),
+			...(descriptionBody ? [descriptionBody, ""] : []),
 			...(context ? [context, ""] : []),
 		].join("\n")
 
@@ -4460,11 +4499,12 @@ export async function handleOrchestratorTool(
 			}
 		}
 
-		// Read the description before deleting
+		// Read the title and description before deleting
 		const raw = readFileSync(intentFile, "utf8")
 		const { data, body } = parseFrontmatter(raw)
 		const title = (data.title as string) || ""
-		const description = title || body.replace(/^#\s+.*\n/, "").trim()
+		// Description = body minus the H1 heading, trimmed
+		const description = body.replace(/^#\s+.*\n+/, "").trim() || title
 
 		// Ask for confirmation via elicitation
 		if (_elicitInput) {
@@ -4526,9 +4566,10 @@ export async function handleOrchestratorTool(
 				{
 					action: "intent_reset",
 					slug,
+					title,
 					description,
 					context: conversationContext,
-					message: `Intent '${slug}' has been reset. Call haiku_intent_create { description: "${description.replace(/"/g, '\\"')}", slug: "${slug}"${conversationContext ? ', context: "<preserved context>"' : ""} } to recreate it.`,
+					message: `Intent '${slug}' has been reset. Call haiku_intent_create { title: "${title.replace(/"/g, '\\"')}", description: "${description.replace(/"/g, '\\"').replace(/\n/g, "\\n")}", slug: "${slug}"${conversationContext ? ', context: "<preserved context>"' : ""} } to recreate it.`,
 				},
 				null,
 				2,

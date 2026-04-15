@@ -4600,13 +4600,14 @@ function openArtifactModal(key) {
 // Tool spec registry — for any clickable tool-call chip
 const TOOL_SPECS = {
   haiku_intent_create: {
-    description: "Creates a new intent. Writes `intent.md` with frontmatter (slug, title, studio, mode) and an initial body. Called once per intent, at the very start, before any FSM tick.",
+    description: "Creates a new intent. Writes `intent.md` with frontmatter (title, studio, mode) and a body (description + optional context). Called once per intent, at the very start, before any FSM tick. Studio selection happens separately via `haiku_select_studio`. The agent MUST supply BOTH a crisp title (3–8 words, ≤80 chars) and a richer description (2–5 sentences) — the title is not derived from the description.",
     input: {
-      slug: "string · kebab-case identifier (becomes `.haiku/intents/{slug}/`)",
-      title: "string · human-readable intent title",
-      studio: "string · studio name (e.g. `software`, `dev-evangelism`, `marketing`)",
-      mode: "string · `discrete` (default) | `continuous` | `hybrid`",
-      continuous_from: "string? · only used when `mode: hybrid`, names the stage where discrete flips to continuous",
+      title: "string (required) · crisp 3–8 word summary, ≤80 chars, single line, no trailing period. Rejected if missing or malformed.",
+      description: "string (required) · 2–5 sentence narrative covering scope, motivation, and constraints. Stored verbatim in the intent body.",
+      slug: "string? · kebab-case identifier (auto-generated from title if omitted, max 50 chars)",
+      context: "string? · conversation context summary, written to `knowledge/CONVERSATION-CONTEXT.md`",
+      mode: "string · `continuous` (default) | `discrete`",
+      stages: "string[]? · explicit stage list override (e.g. `['development']` for a quick task)",
     },
     output: {
       intent_path: "string · resolved path to the new `intent.md`",

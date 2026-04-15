@@ -184,9 +184,11 @@ test("haiku_run_next has optional external_review_url", () => {
   assert.ok("external_review_url" in tool.inputSchema.properties)
 })
 
-test("haiku_intent_create requires description", () => {
+test("haiku_intent_create requires title and description", () => {
   const tool = orchestratorToolDefs.find((t) => t.name === "haiku_intent_create")
-  assert.deepStrictEqual(tool.inputSchema.required, ["description"])
+  assert.deepStrictEqual(tool.inputSchema.required, ["title", "description"])
+  assert.ok("title" in tool.inputSchema.properties)
+  assert.ok("description" in tool.inputSchema.properties)
 })
 
 test("haiku_intent_create has optional slug and context", () => {
