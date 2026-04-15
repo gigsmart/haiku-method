@@ -10,9 +10,9 @@ inputs:
   - knowledge/DESIGN-TOKENS.md
 status: active
 bolt: 1
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-15T12:32:00Z'
-hat_started_at: '2026-04-15T12:32:00Z'
+hat_started_at: '2026-04-15T12:40:26Z'
 outputs:
   - stages/design/artifacts/iframe-shell-narrow-collapsed.html
   - stages/design/artifacts/iframe-shell-narrow-expanded.html
