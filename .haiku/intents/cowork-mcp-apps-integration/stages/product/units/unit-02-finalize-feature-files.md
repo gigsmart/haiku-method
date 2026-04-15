@@ -15,6 +15,11 @@ inputs:
   - features/host-bridge-detection.feature
   - features/error-recovery.feature
   - features/accessibility-iframe.feature
+status: active
+bolt: 1
+hat: product
+started_at: '2026-04-15T14:14:16Z'
+hat_started_at: '2026-04-15T14:14:16Z'
 ---
 
 # Finalize Gherkin behavioral specs
