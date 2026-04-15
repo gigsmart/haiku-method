@@ -17,6 +17,22 @@ bolt: 1
 hat: designer
 started_at: '2026-04-15T12:44:41Z'
 hat_started_at: '2026-04-15T12:44:41Z'
+outputs:
+  - stages/design/artifacts/intent-review-narrow.html
+  - stages/design/artifacts/intent-review-medium.html
+  - stages/design/artifacts/intent-review-wide.html
+  - stages/design/artifacts/unit-review-narrow.html
+  - stages/design/artifacts/unit-review-medium.html
+  - stages/design/artifacts/unit-review-wide.html
+  - stages/design/artifacts/question-narrow.html
+  - stages/design/artifacts/question-medium.html
+  - stages/design/artifacts/question-wide.html
+  - stages/design/artifacts/design-picker-narrow.html
+  - stages/design/artifacts/design-picker-medium.html
+  - stages/design/artifacts/design-picker-wide.html
+  - stages/design/artifacts/annotation-canvas-narrow.html
+  - stages/design/artifacts/annotation-canvas-medium.html
+  - stages/design/artifacts/annotation-canvas-wide.html
 ---
 
 # Iframe-mode layouts for the five existing review screens
