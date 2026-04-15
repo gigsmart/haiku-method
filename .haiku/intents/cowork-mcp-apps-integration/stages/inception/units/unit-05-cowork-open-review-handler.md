@@ -14,11 +14,11 @@ inputs:
   - stages/inception/units/unit-02-cowork-timeout-spike.md
   - stages/inception/units/unit-03-ui-resource-registration.md
   - stages/inception/units/unit-04-spa-host-bridge.md
-status: pending
-bolt: 0
-hat: ''
-started_at: null
-hat_started_at: '2026-04-14T22:24:13Z'
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-15T04:38:10Z'
+hat_started_at: '2026-04-15T04:38:10Z'
 outputs:
   - knowledge/unit-05-open-review-handler-research.md
 completed_at: null
