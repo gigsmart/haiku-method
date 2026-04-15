@@ -572,3 +572,50 @@ with `isError: true` in the tool result:
 These use the existing error response pattern in `server.ts` — the
 `{ content: [{ type: "text", text }], isError: true }` literal shape used
 throughout (e.g. `server.ts:453-466`). No new error shape is introduced.
+
+---
+
+## Specification review
+
+Reviewer: specification hat · unit-03-finalize-data-contracts · 2026-04-15
+
+### Verdict: IMPLEMENTABLE — no blocking gaps
+
+All Zod schemas in this document are paste-ready into `packages/haiku/src/server.ts`
+without ambiguity. Field types, required/optional status, enum values, and validation
+rules are fully specified. Error shapes are consistent with the existing pattern.
+
+### Minor observations (non-blocking)
+
+1. **Session interface fields not listed in "Existing Schemas"** — `ReviewSession`,
+   `QuestionSession`, and `DesignDirectionSession` each carry internal-only fields
+   (`html`, `intent_dir`, `target`, `intentMockups`, `unitMockups`, `imageBaseDirs`)
+   that are omitted from the contract. This is intentional: the contract covers only
+   the SPA hydration surface. No action needed, but implementors should not assume
+   the listed fields are exhaustive when reading from `sessions.ts`.
+
+2. **`QuestionAnswer` referenced in Zod as `QuestionAnswerSchema`** — the document
+   shows `z.array(QuestionAnswerSchema)` in the `ReviewSubmitInput` discriminated
+   union but does not define `QuestionAnswerSchema` as a named Zod schema. Implementor
+   must derive it from the `QuestionAnswer` interface in the Existing Schemas section:
+   `z.object({ question: z.string(), selectedOptions: z.array(z.string()), otherText: z.string().optional() })`.
+   Same for `ReviewAnnotationsSchema` and `QuestionAnnotationsSchema`. All three are
+   straightforwardly derivable — flag is informational only.
+
+3. **`answers` non-empty constraint** — the validation rules require `answers.length >= 1`
+   but the Zod schema shows `z.array(QuestionAnswerSchema)` without `.min(1)`. Add
+   `.min(1)` to enforce the stated rule at the schema level rather than a separate
+   runtime check.
+
+4. **`archetype` non-empty constraint** — same pattern: `z.string()` should be
+   `z.string().min(1)` to enforce the stated rule declaratively.
+
+5. **`REVIEW_APP_VERSION` pattern** — specified as `/^[0-9a-f]{12}$/` (12-char hex).
+   No Zod schema is needed server-side for this (it's a build-time constant), but
+   the SPA should validate it on receipt. No blocking issue.
+
+### Summary
+
+Items 3 and 4 are the only schema/implementation divergences: the stated validation
+rules are stricter than the written Zod snippets. Add `.min(1)` to `answers` array
+and `archetype` string before implementation. Everything else is clear and complete.
