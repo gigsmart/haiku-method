@@ -13,11 +13,12 @@ inputs:
   - .haiku/knowledge/THREAT-MODEL.md
 outputs:
   - knowledge/OWASP-COVERAGE.md
+  - stages/security/artifacts/red-team-owasp-coverage.md
 status: active
 bolt: 1
-hat: red-team
+hat: blue-team
 started_at: '2026-04-15T19:52:12Z'
-hat_started_at: '2026-04-15T19:55:29Z'
+hat_started_at: '2026-04-15T19:56:13Z'
 ---
 
 # Unit 03 — OWASP Coverage Matrix
