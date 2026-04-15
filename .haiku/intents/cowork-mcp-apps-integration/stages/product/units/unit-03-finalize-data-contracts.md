@@ -10,6 +10,11 @@ inputs:
   - stages/inception/units/unit-03-ui-resource-registration.md
   - stages/inception/units/unit-05-cowork-open-review-handler.md
   - stages/inception/units/unit-06-visual-question-design-direction.md
+status: active
+bolt: 1
+hat: product
+started_at: '2026-04-15T13:53:42Z'
+hat_started_at: '2026-04-15T13:53:42Z'
 ---
 
 # Finalize DATA-CONTRACTS.md
