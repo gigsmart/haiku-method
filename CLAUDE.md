@@ -19,6 +19,7 @@ When modifying any component, check if other components need corresponding updat
 | New stage | Document in relevant profile | Primary | Update docs |
 | New hat (in stage) | Document in relevant profile | Add `hats/{hat}.md` file in stage directory | Update docs if user-facing |
 | New review agent (in stage) | Document in Quality Enforcement | Add `review-agents/{agent}.md` file in stage directory | Update docs if user-facing |
+| New phase override (in stage) | Mention in Stages section if needed | Add `phases/{PHASE}.md` file in stage directory | Update docs if user-facing |
 | New operation template | Document in Operation phase | Add `operations/{op}.md` file in studio directory | Update docs if user-facing |
 | New reflection dimension | Document in Reflection phase | Add `reflections/{dim}.md` file in studio directory | Update docs if user-facing |
 | New lifecycle phase | Document as new section | Implement | Update docs |
@@ -37,6 +38,7 @@ When modifying any component, check if other components need corresponding updat
 - Plugin stages: `plugin/studios/*/stages/*/STAGE.md`
 - Plugin hats: `plugin/studios/*/stages/*/hats/*.md`
 - Plugin review agents: `plugin/studios/*/stages/*/review-agents/*.md`
+- Plugin phase overrides: `plugin/studios/*/stages/*/phases/*.md`
 - Plugin operations: `plugin/studios/*/operations/*.md`
 - Plugin reflections: `plugin/studios/*/reflections/*.md`
 - Plugin intent templates: `plugin/studios/*/templates/*.md`
@@ -61,6 +63,7 @@ When modifying any component, check if other components need corresponding updat
 | Stage | Profiles section | `plugin/studios/{name}/stages/{stage}/STAGE.md` | stage.sh, orchestrator.ts |
 | Hat | Profiles section | `plugin/studios/{name}/stages/{stage}/hats/{hat}.md` | prompts/core.ts |
 | Review Agent | Quality Enforcement | `plugin/studios/{name}/stages/{stage}/review-agents/{agent}.md` | orchestrator.ts, prompts/core.ts |
+| Phase Override | Stages section | `plugin/studios/{name}/stages/{stage}/phases/{PHASE}.md` | orchestrator.ts |
 | Review Gate | Quality Enforcement | `review:` field in STAGE.md — `auto` (harness advances), `ask` (local human approval), `external` (blocks for external review system), `await` (blocks for external event), or compound list like `[external, ask]` (user chooses path) | orchestrator.ts |
 | Operation Template | Operation phase | `plugin/studios/{name}/operations/{op}.md` | prompts/complex.ts |
 | Reflection Dimension | Reflection phase | `plugin/studios/{name}/reflections/{dim}.md` | prompts/core.ts |

@@ -1,12 +1,12 @@
 ---
 name: unit-02-skills-metadata-rename
-type: backend
 status: completed
-depends_on: [unit-01-lib-hooks-rename]
+depends_on:
+  - unit-01-lib-hooks-rename
 bolt: 0
-hat: ""
-started_at: 2026-04-03T01:36:09Z
-completed_at: 2026-04-03T01:36:09Z
+hat: ''
+started_at: 2026-04-03T01:36:09.000Z
+completed_at: 2026-04-03T01:36:09.000Z
 ---
 
 

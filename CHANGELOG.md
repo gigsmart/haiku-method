@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Instruction adaptation layer (`harness-instructions.ts`) that rewrites Claude-specific patterns (Agent/Task subagents, /haiku:skill commands, AskUserQuestion) into harness-appropriate equivalents
 - Tool count filtering for harnesses with tool limits (Cursor ~40, Windsurf ~100)
 
+## [1.103.0] - 2026-04-15
+
+### Added
+- Comprehensive artifact injection across all FSM phases, allowing agents to reference prior discoveries, operations, reflections, and outputs throughout the entire workflow.
+
 ## [1.102.2] - 2026-04-15
 
 ### Changed

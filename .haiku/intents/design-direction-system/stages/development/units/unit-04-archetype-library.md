@@ -1,12 +1,13 @@
 ---
 name: unit-04-archetype-library
-type: backend
 status: completed
-depends_on: [unit-01-knowledge-infrastructure, unit-03-direction-picker-mcp]
+depends_on:
+  - unit-01-knowledge-infrastructure
+  - unit-03-direction-picker-mcp
 bolt: 0
-hat: ""
-started_at: 2026-04-01T13:24:36Z
-completed_at: 2026-04-01T13:24:36Z
+hat: ''
+started_at: 2026-04-01T13:24:36.000Z
+completed_at: 2026-04-01T13:24:36.000Z
 ---
 
 

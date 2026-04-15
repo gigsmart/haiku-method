@@ -1,10 +1,9 @@
 ---
 name: unit-02-migrate-hooks
-type: backend
 status: pending
 depends_on: []
 bolt: 0
-hat: ""
+hat: ''
 started_at: null
 completed_at: null
 ---

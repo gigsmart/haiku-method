@@ -1,12 +1,11 @@
 ---
 name: unit-01-schema-config-capabilities
-type: backend
 status: completed
 depends_on: []
 bolt: 0
-hat: ""
-started_at: 2026-04-01T19:15:23Z
-completed_at: 2026-04-01T19:15:23Z
+hat: ''
+started_at: 2026-04-01T19:15:23.000Z
+completed_at: 2026-04-01T19:15:23.000Z
 ---
 
 

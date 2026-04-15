@@ -1,12 +1,13 @@
 ---
 name: unit-12-claude-md-paper-sync
-type: documentation
 status: completed
-depends_on: [unit-05-stage-definitions, unit-07-dissolve-hats-workflows]
+depends_on:
+  - unit-05-stage-definitions
+  - unit-07-dissolve-hats-workflows
 bolt: 0
-hat: ""
-started_at: 2026-04-03T03:26:43Z
-completed_at: 2026-04-03T03:26:43Z
+hat: ''
+started_at: 2026-04-03T03:26:43.000Z
+completed_at: 2026-04-03T03:26:43.000Z
 ---
 
 

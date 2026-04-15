@@ -1,12 +1,11 @@
 ---
 name: unit-02-design-ref-resolution
-type: backend
 status: completed
 depends_on: []
 bolt: 0
-hat: ""
-started_at: 2026-04-01T19:50:39Z
-completed_at: 2026-04-01T19:50:39Z
+hat: ''
+started_at: 2026-04-01T19:50:39.000Z
+completed_at: 2026-04-01T19:50:39.000Z
 ---
 
 

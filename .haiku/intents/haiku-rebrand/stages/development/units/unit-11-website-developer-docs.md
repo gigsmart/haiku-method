@@ -1,12 +1,12 @@
 ---
 name: unit-11-website-developer-docs
-type: documentation
 status: completed
-depends_on: [unit-10-website-homepage-methodology]
+depends_on:
+  - unit-10-website-homepage-methodology
 bolt: 0
-hat: ""
-started_at: 2026-04-03T02:51:57Z
-completed_at: 2026-04-03T02:51:57Z
+hat: ''
+started_at: 2026-04-03T02:51:57.000Z
+completed_at: 2026-04-03T02:51:57.000Z
 ---
 
 

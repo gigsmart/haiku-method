@@ -1,12 +1,15 @@
 ---
 name: unit-13-legacy-intent-migration
-type: backend
 status: completed
-depends_on: [unit-01-lib-hooks-rename, unit-03-schemas-types-settings, unit-04-studio-infrastructure, unit-06-stage-orchestrator]
+depends_on:
+  - unit-01-lib-hooks-rename
+  - unit-03-schemas-types-settings
+  - unit-04-studio-infrastructure
+  - unit-06-stage-orchestrator
 bolt: 0
-hat: ""
-started_at: 2026-04-03T02:50:15Z
-completed_at: 2026-04-03T02:50:15Z
+hat: ''
+started_at: 2026-04-03T02:50:15.000Z
+completed_at: 2026-04-03T02:50:15.000Z
 ---
 
 

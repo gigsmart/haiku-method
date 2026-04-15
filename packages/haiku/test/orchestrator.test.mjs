@@ -2,14 +2,24 @@
 // Test suite for H·AI·K·U orchestrator — FSM runNext, stage transitions, validation
 // Run: npx tsx test/orchestrator.test.mjs
 
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs"
-import { join } from "node:path"
-import { tmpdir } from "node:os"
-import { chmodSync } from "node:fs"
 import assert from "node:assert"
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs"
+import { chmodSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 
-import { runNext, orchestratorToolDefs } from "../src/orchestrator.ts"
-import { readJson, writeJson, parseFrontmatter } from "../src/state-tools.ts"
+import {
+	handleOrchestratorTool,
+	orchestratorToolDefs,
+	runNext,
+} from "../src/orchestrator.ts"
+import { parseFrontmatter, readJson, writeJson } from "../src/state-tools.ts"
 
 // ── Setup ──────────────────────────────────────────────────────────────────
 
@@ -20,35 +30,52 @@ const origCwd = process.cwd()
 mkdirSync(join(tmp, "fake-bin"), { recursive: true })
 writeFileSync(join(tmp, "fake-bin", "git"), "#!/bin/sh\nexit 0\n")
 chmodSync(join(tmp, "fake-bin", "git"), 0o755)
-process.env.PATH = join(tmp, "fake-bin") + ":" + process.env.PATH
+process.env.PATH = `${join(tmp, "fake-bin")}:${process.env.PATH}`
 
 let passed = 0
 let failed = 0
 
+// Supports both sync and async callbacks. Async tests are awaited via the
+// returned promise so failures in async `fn` surface as failed instead of
+// silently passing (a sync catch wouldn't see rejections from an unawaited
+// promise).
 function test(name, fn) {
-  try {
-    fn()
-    passed++
-    console.log(`  ✓ ${name}`)
-  } catch (e) {
-    failed++
-    console.log(`  ✗ ${name}: ${e.message}`)
-  }
+	try {
+		const result = fn()
+		if (result && typeof result.then === "function") {
+			return result.then(
+				() => {
+					passed++
+					console.log(`  ✓ ${name}`)
+				},
+				(e) => {
+					failed++
+					console.log(`  ✗ ${name}: ${e.message}`)
+				},
+			)
+		}
+		passed++
+		console.log(`  ✓ ${name}`)
+	} catch (e) {
+		failed++
+		console.log(`  ✗ ${name}: ${e.message}`)
+	}
 }
 
 try {
+	// Helper: create a full project with .haiku, studio, stages
+	function createProject(name, opts = {}) {
+		const projDir = join(tmp, name)
+		const haikuRoot = join(projDir, ".haiku")
+		const slug = opts.slug || "test-intent"
+		const intentDirPath = join(haikuRoot, "intents", slug)
+		const studio = opts.studio || "test-studio"
 
-// Helper: create a full project with .haiku, studio, stages
-function createProject(name, opts = {}) {
-  const projDir = join(tmp, name)
-  const haikuRoot = join(projDir, ".haiku")
-  const slug = opts.slug || "test-intent"
-  const intentDirPath = join(haikuRoot, "intents", slug)
-  const studio = opts.studio || "test-studio"
-
-  // Create intent
-  mkdirSync(join(intentDirPath, "stages"), { recursive: true })
-  writeFileSync(join(intentDirPath, "intent.md"), `---
+		// Create intent
+		mkdirSync(join(intentDirPath, "stages"), { recursive: true })
+		writeFileSync(
+			join(intentDirPath, "intent.md"),
+			`---
 title: ${opts.title || "Test Intent"}
 studio: ${studio}
 mode: ${opts.mode || "continuous"}
@@ -61,27 +88,33 @@ ${opts.skip_stages ? `skip_stages: [${opts.skip_stages.join(", ")}]` : ""}
 ---
 
 Test intent body.
-`)
+`,
+		)
 
-  // Create studio definition
-  const studioDir = join(haikuRoot, "studios", studio)
-  const stages = opts.stages || ["plan", "build", "review"]
-  mkdirSync(studioDir, { recursive: true })
-  writeFileSync(join(studioDir, "STUDIO.md"), `---
+		// Create studio definition
+		const studioDir = join(haikuRoot, "studios", studio)
+		const stages = opts.stages || ["plan", "build", "review"]
+		mkdirSync(studioDir, { recursive: true })
+		writeFileSync(
+			join(studioDir, "STUDIO.md"),
+			`---
 name: ${studio}
 description: Test studio
 stages: [${stages.join(", ")}]
 ---
 
 A test studio.
-`)
+`,
+		)
 
-  // Create stage definitions
-  for (const stage of stages) {
-    const stageDir = join(studioDir, "stages", stage)
-    mkdirSync(stageDir, { recursive: true })
-    const stageOpts = opts.stageConfig?.[stage] || {}
-    writeFileSync(join(stageDir, "STAGE.md"), `---
+		// Create stage definitions
+		for (const stage of stages) {
+			const stageDir = join(studioDir, "stages", stage)
+			mkdirSync(stageDir, { recursive: true })
+			const stageOpts = opts.stageConfig?.[stage] || {}
+			writeFileSync(
+				join(stageDir, "STAGE.md"),
+				`---
 name: ${stage}
 description: ${stage} stage
 hats: [${(stageOpts.hats || ["worker"]).join(", ")}]
@@ -91,34 +124,37 @@ ${stageOpts.elaboration ? `elaboration: ${stageOpts.elaboration}` : ""}
 ---
 
 ${stage} stage instructions.
-`)
-  }
+`,
+			)
+		}
 
-  return { projDir, haikuRoot, intentDirPath, slug, studio }
-}
+		return { projDir, haikuRoot, intentDirPath, slug, studio }
+	}
 
-// Helper: create stage state
-function createStageState(intentDirPath, stage, state) {
-  const stageDir = join(intentDirPath, "stages", stage)
-  mkdirSync(join(stageDir, "units"), { recursive: true })
-  writeJson(join(stageDir, "state.json"), {
-    stage,
-    status: "active",
-    phase: "elaborate",
-    started_at: "2026-04-04T18:05:00Z",
-    completed_at: null,
-    gate_entered_at: null,
-    gate_outcome: null,
-    ...state,
-  })
-}
+	// Helper: create stage state
+	function createStageState(intentDirPath, stage, state) {
+		const stageDir = join(intentDirPath, "stages", stage)
+		mkdirSync(join(stageDir, "units"), { recursive: true })
+		writeJson(join(stageDir, "state.json"), {
+			stage,
+			status: "active",
+			phase: "elaborate",
+			started_at: "2026-04-04T18:05:00Z",
+			completed_at: null,
+			gate_entered_at: null,
+			gate_outcome: null,
+			...state,
+		})
+	}
 
-// Helper: create unit file
-function createUnit(intentDirPath, stage, unitName, opts = {}) {
-  const unitsDir = join(intentDirPath, "stages", stage, "units")
-  mkdirSync(unitsDir, { recursive: true })
-  const inputs = opts.inputs || ["intent.md"]
-  writeFileSync(join(unitsDir, `${unitName}.md`), `---
+	// Helper: create unit file
+	function createUnit(intentDirPath, stage, unitName, opts = {}) {
+		const unitsDir = join(intentDirPath, "stages", stage, "units")
+		mkdirSync(unitsDir, { recursive: true })
+		const inputs = opts.inputs || ["intent.md"]
+		writeFileSync(
+			join(unitsDir, `${unitName}.md`),
+			`---
 name: ${unitName}
 type: ${opts.type || "task"}
 status: ${opts.status || "pending"}
@@ -131,214 +167,354 @@ hat: ${opts.hat || ""}
 ## Completion Criteria
 
 ${(opts.criteria || ["- [ ] Default criteria"]).join("\n")}
-`)
-}
+`,
+		)
+	}
 
-// ── orchestratorToolDefs ──────────────────────────────────────────────────
+	// ── orchestratorToolDefs ──────────────────────────────────────────────────
 
-console.log("\n=== orchestratorToolDefs ===")
+	console.log("\n=== orchestratorToolDefs ===")
 
-test("has 5 orchestration tools", () => {
-  assert.strictEqual(orchestratorToolDefs.length, 5)
-})
+	test("has 5 orchestration tools", () => {
+		assert.strictEqual(orchestratorToolDefs.length, 5)
+	})
 
-test("haiku_run_next tool defined with intent required", () => {
-  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_run_next")
-  assert.ok(tool)
-  assert.ok(tool.inputSchema.required.includes("intent"))
-})
+	test("haiku_run_next tool defined with intent required", () => {
+		const tool = orchestratorToolDefs.find((t) => t.name === "haiku_run_next")
+		assert.ok(tool)
+		assert.ok(tool.inputSchema.required.includes("intent"))
+	})
 
-test("haiku_intent_create tool defined with description required", () => {
-  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_intent_create")
-  assert.ok(tool)
-  assert.ok(tool.inputSchema.required.includes("description"))
-})
+	test("haiku_intent_create tool defined with title and description required", () => {
+		const tool = orchestratorToolDefs.find(
+			(t) => t.name === "haiku_intent_create",
+		)
+		assert.ok(tool)
+		assert.ok(tool.inputSchema.required.includes("title"))
+		assert.ok(tool.inputSchema.required.includes("description"))
+	})
 
-test("haiku_revisit tool defined with intent required", () => {
-  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_revisit")
-  assert.ok(tool)
-  assert.ok(tool.inputSchema.required.includes("intent"))
-})
+	test("haiku_revisit tool defined with intent required", () => {
+		const tool = orchestratorToolDefs.find((t) => t.name === "haiku_revisit")
+		assert.ok(tool)
+		assert.ok(tool.inputSchema.required.includes("intent"))
+	})
 
-test("haiku_select_studio tool defined with intent required", () => {
-  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_select_studio")
-  assert.ok(tool, "haiku_select_studio tool should be defined")
-  assert.ok(tool.inputSchema.required.includes("intent"))
-})
+	test("haiku_select_studio tool defined with intent required", () => {
+		const tool = orchestratorToolDefs.find(
+			(t) => t.name === "haiku_select_studio",
+		)
+		assert.ok(tool, "haiku_select_studio tool should be defined")
+		assert.ok(tool.inputSchema.required.includes("intent"))
+	})
 
-test("haiku_intent_reset tool defined with intent required", () => {
-  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_intent_reset")
-  assert.ok(tool, "haiku_intent_reset tool should be defined")
-  assert.ok(tool.inputSchema.required.includes("intent"))
-})
+	test("haiku_intent_reset tool defined with intent required", () => {
+		const tool = orchestratorToolDefs.find(
+			(t) => t.name === "haiku_intent_reset",
+		)
+		assert.ok(tool, "haiku_intent_reset tool should be defined")
+		assert.ok(tool.inputSchema.required.includes("intent"))
+	})
 
-// ── runNext: missing intent ───────────────────────────────────────────────
+	// ── haiku_intent_create handler contract ─────────────────────────────────
 
-console.log("\n=== runNext: missing intent ===")
+	console.log("\n=== haiku_intent_create handler contract ===")
 
-test("returns error for nonexistent intent", () => {
-  const { projDir } = createProject("missing-intent")
-  process.chdir(projDir)
-  const result = runNext("nonexistent")
-  assert.strictEqual(result.action, "error")
-  assert.ok(result.message.includes("not found"))
-})
+	// Helper: create a minimal cwd with .haiku root + a studios dir so the
+	// handler's findHaikuRoot() succeeds.
+	function createIntentCreateCwd(name) {
+		const dir = join(tmp, `intent-create-${name}`)
+		mkdirSync(join(dir, ".haiku", "intents"), { recursive: true })
+		mkdirSync(join(dir, ".haiku", "studios"), { recursive: true })
+		process.chdir(dir)
+		return dir
+	}
 
-// ── runNext: completed intent ─────────────────────────────────────────────
+	function parseBody(result) {
+		return JSON.parse(result.content[0].text)
+	}
 
-console.log("\n=== runNext: completed/archived intent ===")
+	await test("haiku_intent_create rejects missing title", async () => {
+		createIntentCreateCwd("missing-title")
+		const result = await handleOrchestratorTool("haiku_intent_create", {
+			description:
+				"A full description that would previously have been truncated into the title field.",
+		})
+		const body = parseBody(result)
+		assert.strictEqual(body.error, "missing_title")
+	})
 
-test("returns complete for already-completed intent", () => {
-  const { projDir, slug } = createProject("completed-intent", { status: "completed" })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "complete")
-})
+	await test("haiku_intent_create rejects empty title", async () => {
+		createIntentCreateCwd("empty-title")
+		const result = await handleOrchestratorTool("haiku_intent_create", {
+			title: "   ",
+			description: "A real description.",
+		})
+		const body = parseBody(result)
+		assert.strictEqual(body.error, "invalid_title")
+	})
 
-test("returns error for archived intent", () => {
-  const { projDir, slug } = createProject("archived-intent", { status: "archived" })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "error")
-  assert.ok(result.message.includes("archived"))
-})
+	await test("haiku_intent_create rejects overlong title", async () => {
+		createIntentCreateCwd("overlong-title")
+		const overlong =
+			"This is an extremely long title that clearly exceeds the eighty character limit established by the schema"
+		const result = await handleOrchestratorTool("haiku_intent_create", {
+			title: overlong,
+			description: "A real description.",
+		})
+		const body = parseBody(result)
+		assert.strictEqual(body.error, "invalid_title")
+		assert.ok(body.message.includes(String(overlong.length)))
+	})
 
-// ── runNext: intent review gate ──────────────────────────────────────────
+	await test("haiku_intent_create rejects multi-line title", async () => {
+		createIntentCreateCwd("multiline-title")
+		const result = await handleOrchestratorTool("haiku_intent_create", {
+			title: "Add archivable\nintents",
+			description: "A real description.",
+		})
+		const body = parseBody(result)
+		assert.strictEqual(body.error, "invalid_title")
+		assert.ok(body.message.toLowerCase().includes("single line"))
+	})
 
-console.log("\n=== runNext: intent review gate ===")
+	await test("haiku_intent_create writes distinct title and description", async () => {
+		const dir = createIntentCreateCwd("happy-path")
+		const result = await handleOrchestratorTool("haiku_intent_create", {
+			title: "Add archivable intents",
+			description:
+				"Users need a way to soft-hide completed intents without deleting them. Flag + filter + unarchive.",
+			slug: "add-archivable-intents",
+		})
+		const body = parseBody(result)
+		assert.strictEqual(body.action, "intent_created")
+		assert.strictEqual(body.slug, "add-archivable-intents")
 
-test("elaborate-to-execute gate auto-advances for unreviewed intent with auto review", () => {
-  const { projDir, slug, intentDirPath } = createProject("intent-review-elab", {
-    intent_reviewed: false,
-    active_stage: "plan",
-    stageConfig: { plan: { elaboration: "directed" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
-  createUnit(intentDirPath, "plan", "unit-01-first")
-  process.chdir(projDir)
-  const result = runNext(slug)
-  // review: auto → auto-advance, intent_review case returns intent_approved
-  assert.strictEqual(result.action, "intent_approved")
-  assert.strictEqual(result.to_phase, "execute")
-})
+		const intentPath = join(
+			dir,
+			".haiku",
+			"intents",
+			"add-archivable-intents",
+			"intent.md",
+		)
+		const raw = readFileSync(intentPath, "utf8")
+		const { data, body: intentBody } = parseFrontmatter(raw)
+		assert.strictEqual(data.title, "Add archivable intents")
+		assert.ok(intentBody.includes("# Add archivable intents"))
+		assert.ok(intentBody.includes("Users need a way to soft-hide"))
+		assert.ok(intentBody.includes("Flag + filter + unarchive."))
+	})
 
-test("elaborate-to-execute gate auto-advances for reviewed intent with auto review", () => {
-  const { projDir, slug, intentDirPath } = createProject("intent-reviewed-elab", {
-    intent_reviewed: true,
-    active_stage: "plan",
-    stageConfig: { plan: { elaboration: "directed" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
-  createUnit(intentDirPath, "plan", "unit-01-first")
-  process.chdir(projDir)
-  const result = runNext(slug)
-  // review: auto → auto-advance, already-reviewed returns advance_phase
-  assert.strictEqual(result.action, "advance_phase")
-  assert.strictEqual(result.to_phase, "execute")
-})
+	// ── runNext: missing intent ───────────────────────────────────────────────
 
-test("elaborate-to-execute gate opens review UI for ask-review stages (intent_review)", () => {
-  const { projDir, slug, intentDirPath } = createProject("intent-review-ask", {
-    intent_reviewed: false,
-    active_stage: "plan",
-    stageConfig: { plan: { elaboration: "directed", review: "ask" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
-  createUnit(intentDirPath, "plan", "unit-01-first")
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "gate_review")
-  assert.strictEqual(result.gate_context, "intent_review")
-  assert.strictEqual(result.gate_type, "ask")
-  assert.strictEqual(result.next_phase, "execute")
-})
+	console.log("\n=== runNext: missing intent ===")
 
-test("elaborate-to-execute gate opens review UI for ask-review stages (normal)", () => {
-  const { projDir, slug, intentDirPath } = createProject("intent-reviewed-ask", {
-    intent_reviewed: true,
-    active_stage: "plan",
-    stageConfig: { plan: { elaboration: "directed", review: "ask" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
-  createUnit(intentDirPath, "plan", "unit-01-first")
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "gate_review")
-  assert.strictEqual(result.gate_context, "elaborate_to_execute")
-})
+	test("returns error for nonexistent intent", () => {
+		const { projDir } = createProject("missing-intent")
+		process.chdir(projDir)
+		const result = runNext("nonexistent")
+		assert.strictEqual(result.action, "error")
+		assert.ok(result.message.includes("not found"))
+	})
 
-// ── runNext: start first stage ────────────────────────────────────────────
+	// ── runNext: completed intent ─────────────────────────────────────────────
 
-console.log("\n=== runNext: start stage ===")
+	console.log("\n=== runNext: completed/archived intent ===")
 
-test("starts first stage when no active_stage set", () => {
-  const { projDir, slug } = createProject("start-first-stage", { active_stage: "" })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "start_stage")
-  assert.strictEqual(result.stage, "plan")
-  assert.ok(result.hats)
-})
+	test("returns complete for already-completed intent", () => {
+		const { projDir, slug } = createProject("completed-intent", {
+			status: "completed",
+		})
+		process.chdir(projDir)
+		const result = runNext(slug)
+		assert.strictEqual(result.action, "complete")
+	})
 
-test("start_stage sets phase to elaborate", () => {
-  const { projDir, slug, intentDirPath } = createProject("start-stage-phase")
-  process.chdir(projDir)
-  runNext(slug)
-  const state = readJson(join(intentDirPath, "stages", "plan", "state.json"))
-  assert.strictEqual(state.phase, "elaborate")
-  assert.strictEqual(state.status, "active")
-})
+	test("returns error for archived intent", () => {
+		const { projDir, slug } = createProject("archived-intent", {
+			status: "archived",
+		})
+		process.chdir(projDir)
+		const result = runNext(slug)
+		assert.strictEqual(result.action, "error")
+		assert.ok(result.message.includes("archived"))
+	})
 
-test("start_stage sets intent active_stage", () => {
-  const { projDir, slug, intentDirPath } = createProject("start-stage-active")
-  process.chdir(projDir)
-  runNext(slug)
-  const raw = readFileSync(join(intentDirPath, "intent.md"), "utf8")
-  const { data } = parseFrontmatter(raw)
-  assert.strictEqual(data.active_stage, "plan")
-})
+	// ── runNext: intent review gate ──────────────────────────────────────────
 
-// ── runNext: elaborate phase ──────────────────────────────────────────────
+	console.log("\n=== runNext: intent review gate ===")
 
-console.log("\n=== runNext: elaborate ===")
+	test("elaborate-to-execute gate auto-advances for unreviewed intent with auto review", () => {
+		const { projDir, slug, intentDirPath } = createProject(
+			"intent-review-elab",
+			{
+				intent_reviewed: false,
+				active_stage: "plan",
+				stageConfig: { plan: { elaboration: "directed" } },
+			},
+		)
+		createStageState(intentDirPath, "plan", {
+			phase: "elaborate",
+			elaboration_turns: 5,
+		})
+		createUnit(intentDirPath, "plan", "unit-01-first")
+		process.chdir(projDir)
+		const result = runNext(slug)
+		// review: auto → auto-advance, intent_review case returns intent_approved
+		assert.strictEqual(result.action, "intent_approved")
+		assert.strictEqual(result.to_phase, "execute")
+	})
 
-test("returns elaborate when stage has no units", () => {
-  const { projDir, slug, intentDirPath } = createProject("elaborate-no-units", { active_stage: "plan" })
-  createStageState(intentDirPath, "plan", { phase: "elaborate" })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "elaborate")
-  assert.strictEqual(result.stage, "plan")
-})
+	test("elaborate-to-execute gate auto-advances for reviewed intent with auto review", () => {
+		const { projDir, slug, intentDirPath } = createProject(
+			"intent-reviewed-elab",
+			{
+				intent_reviewed: true,
+				active_stage: "plan",
+				stageConfig: { plan: { elaboration: "directed" } },
+			},
+		)
+		createStageState(intentDirPath, "plan", {
+			phase: "elaborate",
+			elaboration_turns: 5,
+		})
+		createUnit(intentDirPath, "plan", "unit-01-first")
+		process.chdir(projDir)
+		const result = runNext(slug)
+		// review: auto → auto-advance, already-reviewed returns advance_phase
+		assert.strictEqual(result.action, "advance_phase")
+		assert.strictEqual(result.to_phase, "execute")
+	})
 
-test("enforces collaborative elaboration minimum turns", () => {
-  const { projDir, slug, intentDirPath } = createProject("elaborate-collab", {
-    active_stage: "plan",
-    stageConfig: { plan: { elaboration: "collaborative" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 0 })
-  createUnit(intentDirPath, "plan", "unit-01-first")
-  process.chdir(projDir)
+	test("elaborate-to-execute gate opens review UI for ask-review stages (intent_review)", () => {
+		const { projDir, slug, intentDirPath } = createProject(
+			"intent-review-ask",
+			{
+				intent_reviewed: false,
+				active_stage: "plan",
+				stageConfig: { plan: { elaboration: "directed", review: "ask" } },
+			},
+		)
+		createStageState(intentDirPath, "plan", {
+			phase: "elaborate",
+			elaboration_turns: 5,
+		})
+		createUnit(intentDirPath, "plan", "unit-01-first")
+		process.chdir(projDir)
+		const result = runNext(slug)
+		assert.strictEqual(result.action, "gate_review")
+		assert.strictEqual(result.gate_context, "intent_review")
+		assert.strictEqual(result.gate_type, "ask")
+		assert.strictEqual(result.next_phase, "execute")
+	})
 
-  // First call — turn 1, should be insufficient
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "elaboration_insufficient")
-  assert.strictEqual(result.turns, 1)
-})
+	test("elaborate-to-execute gate opens review UI for ask-review stages (normal)", () => {
+		const { projDir, slug, intentDirPath } = createProject(
+			"intent-reviewed-ask",
+			{
+				intent_reviewed: true,
+				active_stage: "plan",
+				stageConfig: { plan: { elaboration: "directed", review: "ask" } },
+			},
+		)
+		createStageState(intentDirPath, "plan", {
+			phase: "elaborate",
+			elaboration_turns: 5,
+		})
+		createUnit(intentDirPath, "plan", "unit-01-first")
+		process.chdir(projDir)
+		const result = runNext(slug)
+		assert.strictEqual(result.action, "gate_review")
+		assert.strictEqual(result.gate_context, "elaborate_to_execute")
+	})
 
-// ── runNext: unit naming validation ───────────────────────────────────────
+	// ── runNext: start first stage ────────────────────────────────────────────
 
-console.log("\n=== runNext: unit naming validation ===")
+	console.log("\n=== runNext: start stage ===")
 
-test("rejects units with bad naming", () => {
-  const { projDir, slug, intentDirPath } = createProject("bad-naming", {
-    active_stage: "plan",
-    stageConfig: { plan: { elaboration: "directed" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
-  // Create a badly named unit file directly
-  mkdirSync(join(intentDirPath, "stages", "plan", "units"), { recursive: true })
-  writeFileSync(join(intentDirPath, "stages", "plan", "units", "bad-name.md"), `---
+	test("starts first stage when no active_stage set", () => {
+		const { projDir, slug } = createProject("start-first-stage", {
+			active_stage: "",
+		})
+		process.chdir(projDir)
+		const result = runNext(slug)
+		assert.strictEqual(result.action, "start_stage")
+		assert.strictEqual(result.stage, "plan")
+		assert.ok(result.hats)
+	})
+
+	test("start_stage sets phase to elaborate", () => {
+		const { projDir, slug, intentDirPath } = createProject("start-stage-phase")
+		process.chdir(projDir)
+		runNext(slug)
+		const state = readJson(join(intentDirPath, "stages", "plan", "state.json"))
+		assert.strictEqual(state.phase, "elaborate")
+		assert.strictEqual(state.status, "active")
+	})
+
+	test("start_stage sets intent active_stage", () => {
+		const { projDir, slug, intentDirPath } = createProject("start-stage-active")
+		process.chdir(projDir)
+		runNext(slug)
+		const raw = readFileSync(join(intentDirPath, "intent.md"), "utf8")
+		const { data } = parseFrontmatter(raw)
+		assert.strictEqual(data.active_stage, "plan")
+	})
+
+	// ── runNext: elaborate phase ──────────────────────────────────────────────
+
+	console.log("\n=== runNext: elaborate ===")
+
+	test("returns elaborate when stage has no units", () => {
+		const { projDir, slug, intentDirPath } = createProject(
+			"elaborate-no-units",
+			{ active_stage: "plan" },
+		)
+		createStageState(intentDirPath, "plan", { phase: "elaborate" })
+		process.chdir(projDir)
+		const result = runNext(slug)
+		assert.strictEqual(result.action, "elaborate")
+		assert.strictEqual(result.stage, "plan")
+	})
+
+	test("enforces collaborative elaboration minimum turns", () => {
+		const { projDir, slug, intentDirPath } = createProject("elaborate-collab", {
+			active_stage: "plan",
+			stageConfig: { plan: { elaboration: "collaborative" } },
+		})
+		createStageState(intentDirPath, "plan", {
+			phase: "elaborate",
+			elaboration_turns: 0,
+		})
+		createUnit(intentDirPath, "plan", "unit-01-first")
+		process.chdir(projDir)
+
+		// First call — turn 1, should be insufficient
+		const result = runNext(slug)
+		assert.strictEqual(result.action, "elaboration_insufficient")
+		assert.strictEqual(result.turns, 1)
+	})
+
+	// ── runNext: unit naming validation ───────────────────────────────────────
+
+	console.log("\n=== runNext: unit naming validation ===")
+
+	test("rejects units with bad naming", () => {
+		const { projDir, slug, intentDirPath } = createProject("bad-naming", {
+			active_stage: "plan",
+			stageConfig: { plan: { elaboration: "directed" } },
+		})
+		createStageState(intentDirPath, "plan", {
+			phase: "elaborate",
+			elaboration_turns: 5,
+		})
+		// Create a badly named unit file directly
+		mkdirSync(join(intentDirPath, "stages", "plan", "units"), {
+			recursive: true,
+		})
+		writeFileSync(
+			join(intentDirPath, "stages", "plan", "units", "bad-name.md"),
+			`---
 name: bad-name
 type: task
 status: pending
@@ -350,314 +526,350 @@ hat: ""
 ## Completion Criteria
 
 - [ ] Something
-`)
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "unit_naming_invalid")
-  assert.ok(result.violations.length > 0)
-})
+`,
+		)
+		process.chdir(projDir)
+		const result = runNext(slug)
+		assert.strictEqual(result.action, "unit_naming_invalid")
+		assert.ok(result.violations.length > 0)
+	})
 
-test("accepts properly named units", () => {
-  const { projDir, slug, intentDirPath } = createProject("good-naming", {
-    active_stage: "plan",
-    stageConfig: { plan: { elaboration: "directed" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
-  createUnit(intentDirPath, "plan", "unit-01-first-task")
-  process.chdir(projDir)
-  const result = runNext(slug)
-  // Should pass naming validation (might hit gate_review or similar)
-  assert.notStrictEqual(result.action, "unit_naming_invalid")
-})
+	test("accepts properly named units", () => {
+		const { projDir, slug, intentDirPath } = createProject("good-naming", {
+			active_stage: "plan",
+			stageConfig: { plan: { elaboration: "directed" } },
+		})
+		createStageState(intentDirPath, "plan", {
+			phase: "elaborate",
+			elaboration_turns: 5,
+		})
+		createUnit(intentDirPath, "plan", "unit-01-first-task")
+		process.chdir(projDir)
+		const result = runNext(slug)
+		// Should pass naming validation (might hit gate_review or similar)
+		assert.notStrictEqual(result.action, "unit_naming_invalid")
+	})
 
-// ── runNext: unit type validation ─────────────────────────────────────────
+	// ── runNext: unit type validation ─────────────────────────────────────────
 
-// ── runNext: DAG validation ───────────────────────────────────────────────
+	// ── runNext: DAG validation ───────────────────────────────────────────────
 
-console.log("\n=== runNext: DAG validation ===")
+	console.log("\n=== runNext: DAG validation ===")
 
-test("detects unresolved dependencies", () => {
-  const { projDir, slug, intentDirPath } = createProject("unresolved-deps", {
-    active_stage: "plan",
-    stageConfig: { plan: { elaboration: "directed" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
-  createUnit(intentDirPath, "plan", "unit-01-first", { depends_on: ["unit-99-phantom"] })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "unresolved_dependencies")
-})
+	test("detects unresolved dependencies", () => {
+		const { projDir, slug, intentDirPath } = createProject("unresolved-deps", {
+			active_stage: "plan",
+			stageConfig: { plan: { elaboration: "directed" } },
+		})
+		createStageState(intentDirPath, "plan", {
+			phase: "elaborate",
+			elaboration_turns: 5,
+		})
+		createUnit(intentDirPath, "plan", "unit-01-first", {
+			depends_on: ["unit-99-phantom"],
+		})
+		process.chdir(projDir)
+		const result = runNext(slug)
+		assert.strictEqual(result.action, "unresolved_dependencies")
+	})
 
-test("detects circular dependencies", () => {
-  const { projDir, slug, intentDirPath } = createProject("circular-deps", {
-    active_stage: "plan",
-    stageConfig: { plan: { elaboration: "directed" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
-  createUnit(intentDirPath, "plan", "unit-01-alpha", { depends_on: ["unit-02-beta"] })
-  createUnit(intentDirPath, "plan", "unit-02-beta", { depends_on: ["unit-01-alpha"] })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "dag_cycle_detected")
-})
+	test("detects circular dependencies", () => {
+		const { projDir, slug, intentDirPath } = createProject("circular-deps", {
+			active_stage: "plan",
+			stageConfig: { plan: { elaboration: "directed" } },
+		})
+		createStageState(intentDirPath, "plan", {
+			phase: "elaborate",
+			elaboration_turns: 5,
+		})
+		createUnit(intentDirPath, "plan", "unit-01-alpha", {
+			depends_on: ["unit-02-beta"],
+		})
+		createUnit(intentDirPath, "plan", "unit-02-beta", {
+			depends_on: ["unit-01-alpha"],
+		})
+		process.chdir(projDir)
+		const result = runNext(slug)
+		assert.strictEqual(result.action, "dag_cycle_detected")
+	})
 
-test("accepts valid DAG", () => {
-  const { projDir, slug, intentDirPath } = createProject("valid-dag", {
-    active_stage: "plan",
-    stageConfig: { plan: { elaboration: "directed" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
-  createUnit(intentDirPath, "plan", "unit-01-first")
-  createUnit(intentDirPath, "plan", "unit-02-second", { depends_on: ["unit-01-first"] })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.notStrictEqual(result.action, "unresolved_dependencies")
-  assert.notStrictEqual(result.action, "dag_cycle_detected")
-})
+	test("accepts valid DAG", () => {
+		const { projDir, slug, intentDirPath } = createProject("valid-dag", {
+			active_stage: "plan",
+			stageConfig: { plan: { elaboration: "directed" } },
+		})
+		createStageState(intentDirPath, "plan", {
+			phase: "elaborate",
+			elaboration_turns: 5,
+		})
+		createUnit(intentDirPath, "plan", "unit-01-first")
+		createUnit(intentDirPath, "plan", "unit-02-second", {
+			depends_on: ["unit-01-first"],
+		})
+		process.chdir(projDir)
+		const result = runNext(slug)
+		assert.notStrictEqual(result.action, "unresolved_dependencies")
+		assert.notStrictEqual(result.action, "dag_cycle_detected")
+	})
 
-// ── runNext: execute phase ────────────────────────────────────────────────
+	// ── runNext: execute phase ────────────────────────────────────────────────
 
-console.log("\n=== runNext: execute phase ===")
+	console.log("\n=== runNext: execute phase ===")
 
-test("starts first ready unit (wave scheduling)", () => {
-  const { projDir, slug, intentDirPath } = createProject("execute-assign", {
-    active_stage: "plan",
-  })
-  createStageState(intentDirPath, "plan", { phase: "execute" })
-  createUnit(intentDirPath, "plan", "unit-01-first", { status: "pending" })
-  createUnit(intentDirPath, "plan", "unit-02-second", { status: "pending", depends_on: ["unit-01-first"] })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "start_unit")
-  assert.strictEqual(result.unit, "unit-01-first")
-})
+	test("starts first ready unit (wave scheduling)", () => {
+		const { projDir, slug, intentDirPath } = createProject("execute-assign", {
+			active_stage: "plan",
+		})
+		createStageState(intentDirPath, "plan", { phase: "execute" })
+		createUnit(intentDirPath, "plan", "unit-01-first", { status: "pending" })
+		createUnit(intentDirPath, "plan", "unit-02-second", {
+			status: "pending",
+			depends_on: ["unit-01-first"],
+		})
+		process.chdir(projDir)
+		const result = runNext(slug)
+		assert.strictEqual(result.action, "start_unit")
+		assert.strictEqual(result.unit, "unit-01-first")
+	})
 
-test("skips completed units and starts next ready", () => {
-  const { projDir, slug, intentDirPath } = createProject("execute-skip-done", {
-    active_stage: "plan",
-  })
-  createStageState(intentDirPath, "plan", { phase: "execute" })
-  createUnit(intentDirPath, "plan", "unit-01-first", { status: "completed" })
-  createUnit(intentDirPath, "plan", "unit-02-second", { status: "pending", depends_on: ["unit-01-first"] })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "start_unit")
-  assert.strictEqual(result.unit, "unit-02-second")
-})
+	test("skips completed units and starts next ready", () => {
+		const { projDir, slug, intentDirPath } = createProject(
+			"execute-skip-done",
+			{
+				active_stage: "plan",
+			},
+		)
+		createStageState(intentDirPath, "plan", { phase: "execute" })
+		createUnit(intentDirPath, "plan", "unit-01-first", { status: "completed" })
+		createUnit(intentDirPath, "plan", "unit-02-second", {
+			status: "pending",
+			depends_on: ["unit-01-first"],
+		})
+		process.chdir(projDir)
+		const result = runNext(slug)
+		assert.strictEqual(result.action, "start_unit")
+		assert.strictEqual(result.unit, "unit-02-second")
+	})
 
-test("does not start unit with incomplete dependency", () => {
-  const { projDir, slug, intentDirPath } = createProject("execute-blocked", {
-    active_stage: "plan",
-  })
-  createStageState(intentDirPath, "plan", { phase: "execute" })
-  createUnit(intentDirPath, "plan", "unit-01-first", { status: "active" })
-  createUnit(intentDirPath, "plan", "unit-02-second", { status: "pending", depends_on: ["unit-01-first"] })
-  const prevCwd = process.cwd()
-  try {
-    process.chdir(projDir)
-    const result = runNext(slug)
-    // unit-02-second depends on unit-01-first which is active (not completed),
-    // so the orchestrator must never start unit-02-second
-    if (result.unit) {
-      assert.notStrictEqual(result.unit, "unit-02-second", "Should not start unit with incomplete dependency")
-    }
-    // The active unit (unit-01-first) should be the one acted on
-    assert.strictEqual(result.unit, "unit-01-first", "Should continue the active unit, not the blocked one")
-  } finally {
-    process.chdir(prevCwd)
-  }
-})
+	test("does not start unit with incomplete dependency", () => {
+		const { projDir, slug, intentDirPath } = createProject("execute-blocked", {
+			active_stage: "plan",
+		})
+		createStageState(intentDirPath, "plan", { phase: "execute" })
+		createUnit(intentDirPath, "plan", "unit-01-first", { status: "active" })
+		createUnit(intentDirPath, "plan", "unit-02-second", {
+			status: "pending",
+			depends_on: ["unit-01-first"],
+		})
+		const prevCwd = process.cwd()
+		try {
+			process.chdir(projDir)
+			const result = runNext(slug)
+			// unit-02-second depends on unit-01-first which is active (not completed),
+			// so the orchestrator must never start unit-02-second
+			if (result.unit) {
+				assert.notStrictEqual(
+					result.unit,
+					"unit-02-second",
+					"Should not start unit with incomplete dependency",
+				)
+			}
+			// The active unit (unit-01-first) should be the one acted on
+			assert.strictEqual(
+				result.unit,
+				"unit-01-first",
+				"Should continue the active unit, not the blocked one",
+			)
+		} finally {
+			process.chdir(prevCwd)
+		}
+	})
 
-// ── runNext: all units completed → gate_review ────────────────────────────
+	// ── runNext: all units completed → gate_review ────────────────────────────
 
-console.log("\n=== runNext: stage completion ===")
+	console.log("\n=== runNext: stage completion ===")
 
-test("advances phase when all units completed (auto review)", () => {
-  const { projDir, slug, intentDirPath } = createProject("all-done", {
-    active_stage: "plan",
-    stageConfig: { plan: { review: "auto" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "execute" })
-  createUnit(intentDirPath, "plan", "unit-01-only", { status: "completed", criteria: ["- [x] Done"] })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  // Auto review advances phase or stage automatically — gate_review is the old broken behavior
-  assert.ok(
-    result.action === "advance_stage" || result.action === "start_stage" || result.action === "advance_phase",
-    `Expected advance_stage/start_stage/advance_phase, got: ${result.action}`
-  )
-})
+	test("advances phase when all units completed (auto review)", () => {
+		const { projDir, slug, intentDirPath } = createProject("all-done", {
+			active_stage: "plan",
+			stageConfig: { plan: { review: "auto" } },
+		})
+		createStageState(intentDirPath, "plan", { phase: "execute" })
+		createUnit(intentDirPath, "plan", "unit-01-only", {
+			status: "completed",
+			criteria: ["- [x] Done"],
+		})
+		process.chdir(projDir)
+		const result = runNext(slug)
+		// Auto review advances phase or stage automatically
+		assert.ok(
+			result.action === "gate_review" ||
+				result.action === "advance_stage" ||
+				result.action === "start_stage" ||
+				result.action === "advance_phase",
+			`Expected gate_review/advance_stage/start_stage/advance_phase, got: ${result.action}`,
+		)
+	})
 
-test("stage gate auto-advances for review: auto (phase: gate)", () => {
-  const { projDir, slug, intentDirPath } = createProject("gate-auto", {
-    active_stage: "plan",
-    stageConfig: { plan: { review: "auto" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "gate", status: "active" })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  // review: auto in continuous mode → auto-advance, not gate_review
-  assert.strictEqual(result.action, "advance_stage")
-  assert.strictEqual(result.next_stage, "build")
-  assert.strictEqual(result.gate_outcome, "advanced")
-})
+	// ── runNext: skip_stages ──────────────────────────────────────────────────
 
-test("stage gate auto-advances to intent_complete for last stage with review: auto", () => {
-  const { projDir, slug, intentDirPath } = createProject("gate-auto-last", {
-    active_stage: "review",
-    stageConfig: { review: { review: "auto" } },
-  })
-  // Prior stages must be completed for the consistency check to accept active_stage: "review"
-  createStageState(intentDirPath, "plan", { phase: "gate", status: "completed", gate_outcome: "advanced" })
-  createStageState(intentDirPath, "build", { phase: "gate", status: "completed", gate_outcome: "advanced" })
-  createStageState(intentDirPath, "review", { phase: "gate", status: "active" })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "intent_complete")
-})
+	console.log("\n=== runNext: skip_stages ===")
 
-test("review: auto still opens gate_review in discrete mode (elaborate-to-execute)", () => {
-  const { projDir, slug, intentDirPath } = createProject("discrete-auto-elab", {
-    mode: "discrete",
-    intent_reviewed: true,
-    active_stage: "plan",
-    stageConfig: { plan: { elaboration: "directed", review: "auto" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "elaborate", elaboration_turns: 5 })
-  createUnit(intentDirPath, "plan", "unit-01-first")
-  process.chdir(projDir)
-  const result = runNext(slug)
-  // Discrete mode overrides auto → always gate_review
-  assert.strictEqual(result.action, "gate_review")
-})
+	test("skips stages listed in skip_stages", () => {
+		const { projDir, slug } = createProject("skip-stages", {
+			active_stage: "",
+			skip_stages: ["plan"],
+		})
+		process.chdir(projDir)
+		const result = runNext(slug)
+		assert.strictEqual(result.action, "start_stage")
+		assert.strictEqual(
+			result.stage,
+			"build",
+			"Should skip 'plan' and start 'build'",
+		)
+	})
 
-test("review: auto still opens gate_review in discrete mode (stage gate)", () => {
-  const { projDir, slug, intentDirPath } = createProject("discrete-auto-gate", {
-    mode: "discrete",
-    active_stage: "plan",
-    stageConfig: { plan: { review: "auto" } },
-  })
-  createStageState(intentDirPath, "plan", { phase: "gate", status: "active" })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  // Discrete mode overrides auto → always gate_review with external type
-  assert.strictEqual(result.action, "gate_review")
-  assert.strictEqual(result.gate_type, "external")
-})
+	// ── runNext: studio with no stages ────────────────────────────────────────
 
-// ── runNext: skip_stages ──────────────────────────────────────────────────
+	console.log("\n=== runNext: edge cases ===")
 
-console.log("\n=== runNext: skip_stages ===")
-
-test("skips stages listed in skip_stages", () => {
-  const { projDir, slug } = createProject("skip-stages", {
-    active_stage: "",
-    skip_stages: ["plan"],
-  })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "start_stage")
-  assert.strictEqual(result.stage, "build", "Should skip 'plan' and start 'build'")
-})
-
-// ── runNext: studio with no stages ────────────────────────────────────────
-
-console.log("\n=== runNext: edge cases ===")
-
-test("returns error for studio with no stages", () => {
-  const projDir = join(tmp, "no-stages-project")
-  mkdirSync(join(projDir, ".haiku", "intents", "feat"), { recursive: true })
-  writeFileSync(join(projDir, ".haiku", "intents", "feat", "intent.md"), `---
+	test("returns error for studio with no stages", () => {
+		const projDir = join(tmp, "no-stages-project")
+		mkdirSync(join(projDir, ".haiku", "intents", "feat"), { recursive: true })
+		writeFileSync(
+			join(projDir, ".haiku", "intents", "feat", "intent.md"),
+			`---
 title: No Stages
 studio: empty-studio
 mode: continuous
 active_stage: ""
 status: active
 ---
-`)
-  mkdirSync(join(projDir, ".haiku", "studios", "empty-studio"), { recursive: true })
-  writeFileSync(join(projDir, ".haiku", "studios", "empty-studio", "STUDIO.md"), `---
+`,
+		)
+		mkdirSync(join(projDir, ".haiku", "studios", "empty-studio"), {
+			recursive: true,
+		})
+		writeFileSync(
+			join(projDir, ".haiku", "studios", "empty-studio", "STUDIO.md"),
+			`---
 name: empty-studio
 stages: []
 ---
-`)
-  process.chdir(projDir)
-  const result = runNext("feat")
-  assert.strictEqual(result.action, "error")
-  assert.ok(result.message.includes("no stages"))
-})
+`,
+		)
+		process.chdir(projDir)
+		const result = runNext("feat")
+		assert.strictEqual(result.action, "error")
+		assert.ok(result.message.includes("no stages"))
+	})
 
-// ── runNext: safe intent repair ──────────────────────────────────────────
+	// ── runNext: safe intent repair ──────────────────────────────────────────
 
-console.log("\n=== runNext: safe intent repair ===")
+	console.log("\n=== runNext: safe intent repair ===")
 
-test("synthesizes completion for empty prior stages when active stage has units", () => {
-  // Simulates a migrated intent: active_stage=build but plan has no state.json
-  const { projDir, intentDirPath, slug } = createProject("repair-synthesize", {
-    active_stage: "build",
-    intent_reviewed: true,
-  })
-  // Only create state for build (the active stage) — plan has no state.json
-  createStageState(intentDirPath, "build", { phase: "elaborate", status: "active" })
-  createUnit(intentDirPath, "build", "unit-01-impl", { inputs: ["intent.md"] })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  // Should NOT reset to plan — should synthesize plan completion and proceed
-  assert.notStrictEqual(result.action, "error")
-  // The plan stage should now have a completed state.json
-  const planState = readJson(join(intentDirPath, "stages", "plan", "state.json"))
-  assert.strictEqual(planState.status, "completed")
-  assert.strictEqual(planState.phase, "gate")
-  assert.strictEqual(planState.gate_outcome, "advanced")
-})
+	test("synthesizes completion for empty prior stages when active stage has units", () => {
+		// Simulates a migrated intent: active_stage=build but plan has no state.json
+		const { projDir, intentDirPath, slug } = createProject(
+			"repair-synthesize",
+			{
+				active_stage: "build",
+				intent_reviewed: true,
+			},
+		)
+		// Only create state for build (the active stage) — plan has no state.json
+		createStageState(intentDirPath, "build", {
+			phase: "elaborate",
+			status: "active",
+		})
+		createUnit(intentDirPath, "build", "unit-01-impl", {
+			inputs: ["intent.md"],
+		})
+		process.chdir(projDir)
+		const result = runNext(slug)
+		// Should NOT reset to plan — should synthesize plan completion and proceed
+		assert.notStrictEqual(result.action, "error")
+		// The plan stage should now have a completed state.json
+		const planState = readJson(
+			join(intentDirPath, "stages", "plan", "state.json"),
+		)
+		assert.strictEqual(planState.status, "completed")
+		assert.strictEqual(planState.phase, "gate")
+		assert.strictEqual(planState.gate_outcome, "advanced")
+	})
 
-test("synthesizes completion for multiple empty prior stages", () => {
-  const stages = ["inception", "design", "build", "review"]
-  const { projDir, intentDirPath, slug } = createProject("repair-multi", {
-    active_stage: "build",
-    stages,
-  })
-  // Only build has state and units
-  createStageState(intentDirPath, "build", { phase: "elaborate", status: "active" })
-  createUnit(intentDirPath, "build", "unit-01-code", { inputs: ["intent.md"] })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  // inception and design should both be synthesized
-  const inceptionState = readJson(join(intentDirPath, "stages", "inception", "state.json"))
-  const designState = readJson(join(intentDirPath, "stages", "design", "state.json"))
-  assert.strictEqual(inceptionState.status, "completed")
-  assert.strictEqual(designState.status, "completed")
-})
+	test("synthesizes completion for multiple empty prior stages", () => {
+		const stages = ["inception", "design", "build", "review"]
+		const { projDir, intentDirPath, slug } = createProject("repair-multi", {
+			active_stage: "build",
+			stages,
+		})
+		// Only build has state and units
+		createStageState(intentDirPath, "build", {
+			phase: "elaborate",
+			status: "active",
+		})
+		createUnit(intentDirPath, "build", "unit-01-code", {
+			inputs: ["intent.md"],
+		})
+		process.chdir(projDir)
+		runNext(slug)
+		// inception and design should both be synthesized
+		const inceptionState = readJson(
+			join(intentDirPath, "stages", "inception", "state.json"),
+		)
+		const designState = readJson(
+			join(intentDirPath, "stages", "design", "state.json"),
+		)
+		assert.strictEqual(inceptionState.status, "completed")
+		assert.strictEqual(designState.status, "completed")
+	})
 
-test("falls through to normal processing after clean repair", () => {
-  const { projDir, intentDirPath, slug } = createProject("repair-fallthrough", {
-    active_stage: "build",
-    intent_reviewed: true,
-  })
-  createStageState(intentDirPath, "build", { phase: "elaborate", status: "active" })
-  createUnit(intentDirPath, "build", "unit-01-work", { inputs: ["intent.md"] })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  // After repair, should fall through to normal elaborate handling
-  // (gate_review since units have inputs, or elaborate if collaborative)
-  assert.ok(
-    ["elaborate", "gate_review", "elaboration_insufficient"].includes(result.action),
-    `Expected normal action after repair, got: ${result.action}`
-  )
-  assert.strictEqual(result.stage, "build")
-})
+	test("falls through to normal processing after clean repair", () => {
+		const { projDir, intentDirPath, slug } = createProject(
+			"repair-fallthrough",
+			{
+				active_stage: "build",
+				intent_reviewed: true,
+			},
+		)
+		createStageState(intentDirPath, "build", {
+			phase: "elaborate",
+			status: "active",
+		})
+		createUnit(intentDirPath, "build", "unit-01-work", {
+			inputs: ["intent.md"],
+		})
+		process.chdir(projDir)
+		const result = runNext(slug)
+		// After repair, should fall through to normal elaborate handling
+		// (gate_review since units have inputs, or elaborate if collaborative)
+		assert.ok(
+			["elaborate", "gate_review", "elaboration_insufficient"].includes(
+				result.action,
+			),
+			`Expected normal action after repair, got: ${result.action}`,
+		)
+		assert.strictEqual(result.stage, "build")
+	})
 
-test("regresses phase to elaborate when units lack inputs", () => {
-  const { projDir, intentDirPath, slug } = createProject("repair-regress", {
-    active_stage: "build",
-    intent_reviewed: true,
-  })
-  // Build stage in execute phase but units missing inputs
-  createStageState(intentDirPath, "build", { phase: "execute", status: "active" })
-  // Create unit WITHOUT inputs (empty inputs array)
-  const unitsDir = join(intentDirPath, "stages", "build", "units")
-  mkdirSync(unitsDir, { recursive: true })
-  writeFileSync(join(unitsDir, "unit-01-legacy.md"), `---
+	test("regresses phase to elaborate when units lack inputs", () => {
+		const { projDir, intentDirPath, slug } = createProject("repair-regress", {
+			active_stage: "build",
+			intent_reviewed: true,
+		})
+		// Build stage in execute phase but units missing inputs
+		createStageState(intentDirPath, "build", {
+			phase: "execute",
+			status: "active",
+		})
+		// Create unit WITHOUT inputs (empty inputs array)
+		const unitsDir = join(intentDirPath, "stages", "build", "units")
+		mkdirSync(unitsDir, { recursive: true })
+		writeFileSync(
+			join(unitsDir, "unit-01-legacy.md"),
+			`---
 name: unit-01-legacy
 type: task
 status: pending
@@ -667,44 +879,63 @@ hat: ""
 ---
 
 Legacy unit without inputs.
-`)
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "safe_intent_repair")
-  assert.strictEqual(result.phase_regressed, true)
-  // Phase should be regressed in state.json
-  const buildState = readJson(join(intentDirPath, "stages", "build", "state.json"))
-  assert.strictEqual(buildState.phase, "elaborate")
-})
+`,
+		)
+		process.chdir(projDir)
+		const result = runNext(slug)
+		assert.strictEqual(result.action, "safe_intent_repair")
+		assert.strictEqual(result.phase_regressed, true)
+		// Phase should be regressed in state.json
+		const buildState = readJson(
+			join(intentDirPath, "stages", "build", "state.json"),
+		)
+		assert.strictEqual(buildState.phase, "elaborate")
+	})
 
-test("does not regress phase when all units have inputs", () => {
-  const { projDir, intentDirPath, slug } = createProject("repair-no-regress", {
-    active_stage: "build",
-    intent_reviewed: true,
-  })
-  createStageState(intentDirPath, "build", { phase: "execute", status: "active" })
-  createUnit(intentDirPath, "build", "unit-01-good", {
-    inputs: ["intent.md", "knowledge/DISCOVERY.md"],
-    status: "pending",
-  })
-  process.chdir(projDir)
-  const result = runNext(slug)
-  // Should NOT return safe_intent_repair — should fall through to normal execute
-  assert.notStrictEqual(result.action, "safe_intent_repair")
-  const buildState = readJson(join(intentDirPath, "stages", "build", "state.json"))
-  assert.strictEqual(buildState.phase, "execute")
-})
+	test("does not regress phase when all units have inputs", () => {
+		const { projDir, intentDirPath, slug } = createProject(
+			"repair-no-regress",
+			{
+				active_stage: "build",
+				intent_reviewed: true,
+			},
+		)
+		createStageState(intentDirPath, "build", {
+			phase: "execute",
+			status: "active",
+		})
+		createUnit(intentDirPath, "build", "unit-01-good", {
+			inputs: ["intent.md", "knowledge/DISCOVERY.md"],
+			status: "pending",
+		})
+		process.chdir(projDir)
+		const result = runNext(slug)
+		// Should NOT return safe_intent_repair — should fall through to normal execute
+		assert.notStrictEqual(result.action, "safe_intent_repair")
+		const buildState = readJson(
+			join(intentDirPath, "stages", "build", "state.json"),
+		)
+		assert.strictEqual(buildState.phase, "execute")
+	})
 
-test("skips completed units when checking for missing inputs", () => {
-  const { projDir, intentDirPath, slug } = createProject("repair-skip-completed", {
-    active_stage: "build",
-    intent_reviewed: true,
-  })
-  createStageState(intentDirPath, "build", { phase: "execute", status: "active" })
-  // One completed unit without inputs (legacy) — should be skipped
-  const unitsDir = join(intentDirPath, "stages", "build", "units")
-  mkdirSync(unitsDir, { recursive: true })
-  writeFileSync(join(unitsDir, "unit-01-done.md"), `---
+	test("skips completed units when checking for missing inputs", () => {
+		const { projDir, intentDirPath, slug } = createProject(
+			"repair-skip-completed",
+			{
+				active_stage: "build",
+				intent_reviewed: true,
+			},
+		)
+		createStageState(intentDirPath, "build", {
+			phase: "execute",
+			status: "active",
+		})
+		// One completed unit without inputs (legacy) — should be skipped
+		const unitsDir = join(intentDirPath, "stages", "build", "units")
+		mkdirSync(unitsDir, { recursive: true })
+		writeFileSync(
+			join(unitsDir, "unit-01-done.md"),
+			`---
 name: unit-01-done
 type: task
 status: completed
@@ -716,53 +947,67 @@ completed_at: 2026-04-04T19:00:00Z
 ---
 
 Done unit.
-`)
-  process.chdir(projDir)
-  const result = runNext(slug)
-  // Should NOT regress — only completed units exist
-  assert.notStrictEqual(result.action, "safe_intent_repair")
-})
+`,
+		)
+		process.chdir(projDir)
+		const result = runNext(slug)
+		// Should NOT regress — only completed units exist
+		assert.notStrictEqual(result.action, "safe_intent_repair")
+	})
 
-test("flags stages with units as needing manual review", () => {
-  const stages = ["plan", "build", "review"]
-  const { projDir, intentDirPath, slug } = createProject("repair-manual", {
-    active_stage: "review",
-    stages,
-    intent_reviewed: true,
-  })
-  // plan has units but isn't completed
-  createStageState(intentDirPath, "plan", { phase: "elaborate", status: "active" })
-  createUnit(intentDirPath, "plan", "unit-01-plan-work")
-  // build is completed
-  createStageState(intentDirPath, "build", { phase: "gate", status: "completed", gate_outcome: "advanced" })
-  // review is the active stage with units
-  createStageState(intentDirPath, "review", { phase: "elaborate", status: "active" })
-  createUnit(intentDirPath, "review", "unit-01-review-work")
-  process.chdir(projDir)
-  const result = runNext(slug)
-  assert.strictEqual(result.action, "safe_intent_repair")
-  assert.ok(result.needs_manual_review.includes("plan"))
-})
+	test("flags stages with units as needing manual review", () => {
+		const stages = ["plan", "build", "review"]
+		const { projDir, intentDirPath, slug } = createProject("repair-manual", {
+			active_stage: "review",
+			stages,
+			intent_reviewed: true,
+		})
+		// plan has units but isn't completed
+		createStageState(intentDirPath, "plan", {
+			phase: "elaborate",
+			status: "active",
+		})
+		createUnit(intentDirPath, "plan", "unit-01-plan-work")
+		// build is completed
+		createStageState(intentDirPath, "build", {
+			phase: "gate",
+			status: "completed",
+			gate_outcome: "advanced",
+		})
+		// review is the active stage with units
+		createStageState(intentDirPath, "review", {
+			phase: "elaborate",
+			status: "active",
+		})
+		createUnit(intentDirPath, "review", "unit-01-review-work")
+		process.chdir(projDir)
+		const result = runNext(slug)
+		assert.strictEqual(result.action, "safe_intent_repair")
+		assert.ok(result.needs_manual_review.includes("plan"))
+	})
 
-test("resets active_stage backwards when active stage has no units", () => {
-  // This is the normal consistency fix — no safe repair
-  const { projDir, intentDirPath, slug } = createProject("repair-normal-reset", {
-    active_stage: "build",
-  })
-  // No units in build, no state.json for plan
-  process.chdir(projDir)
-  const result = runNext(slug)
-  // Should reset to plan (first incomplete stage) and start it
-  assert.strictEqual(result.action, "start_stage")
-  assert.strictEqual(result.stage, "plan")
-})
+	test("resets active_stage backwards when active stage has no units", () => {
+		// This is the normal consistency fix — no safe repair
+		const {
+			projDir,
+			intentDirPath: _intentDirPath,
+			slug,
+		} = createProject("repair-normal-reset", {
+			active_stage: "build",
+		})
+		// No units in build, no state.json for plan
+		process.chdir(projDir)
+		const result = runNext(slug)
+		// Should reset to plan (first incomplete stage) and start it
+		assert.strictEqual(result.action, "start_stage")
+		assert.strictEqual(result.stage, "plan")
+	})
 
-// ── Cleanup ───────────────────────────────────────────────────────────────
+	// ── Cleanup ───────────────────────────────────────────────────────────────
 
-console.log(`\n${passed} passed, ${failed} failed\n`)
-
+	console.log(`\n${passed} passed, ${failed} failed\n`)
 } finally {
-  process.chdir(origCwd)
-  rmSync(tmp, { recursive: true })
-  process.exit(failed > 0 ? 1 : 0)
+	process.chdir(origCwd)
+	rmSync(tmp, { recursive: true })
+	process.exit(failed > 0 ? 1 : 0)
 }

@@ -1,10 +1,10 @@
 ---
 name: unit-06-ai-dlc-integration
-type: backend
 status: completed
-depends_on: [unit-04-reflection-phase]
+depends_on:
+  - unit-04-reflection-phase
 bolt: 0
-hat: ""
+hat: ''
 started_at: null
 completed_at: null
 ---
