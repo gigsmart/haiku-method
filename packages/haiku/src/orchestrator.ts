@@ -1329,10 +1329,11 @@ export function runNext(slug: string): OrchestratorAction {
 			}
 		}
 
-		// All units valid — open review gate before advancing to execute.
-		// The review UI blocks until the user approves the specs.
-		// This is handled by the handleOrchestratorTool wrapper which
-		// detects gate_review and calls _openReviewAndWait.
+		// All units valid — either auto-advance or open review gate before execution.
+		//
+		// For stages with review: auto (and non-discrete mode), skip the gate
+		// entirely and advance directly to execution. This is critical for
+		// autonomous workflows where the user should not be interrupted.
 		//
 		// For the first stage of a fresh intent (not yet reviewed), this gate
 		// doubles as the intent review — CC review agents have already run
@@ -1341,6 +1342,35 @@ export function runNext(slug: string): OrchestratorAction {
 		// with intent_review context until intent_reviewed is set to true.
 		const intentReviewed = (intent.intent_reviewed as boolean) || false
 		const isIntentReview = currentStage === studioStages[0] && !intentReviewed
+		const intentMode = (intent.mode as string) || "continuous"
+		const stageReviewType = resolveStageReview(studio, currentStage)
+
+		// Auto gates: skip review UI and advance directly to execution
+		if (stageReviewType === "auto" && intentMode !== "discrete") {
+			if (isIntentReview) {
+				setFrontmatterField(intentFile, "intent_reviewed", true)
+				gitCommitState(`haiku: intent ${slug} auto-approved`)
+			}
+			fsmAdvancePhase(slug, currentStage, "execute")
+			emitTelemetry("haiku.gate.auto_advanced", {
+				intent: slug,
+				stage: currentStage,
+				gate_context: isIntentReview ? "intent_review" : "elaborate_to_execute",
+			})
+			return {
+				action: isIntentReview ? "intent_approved" : "advance_phase",
+				intent: slug,
+				studio,
+				stage: currentStage,
+				from_phase: "elaborate",
+				to_phase: "execute",
+				message: isIntentReview
+					? `Auto-gate: intent approved — advancing to execution. Call haiku_run_next { intent: "${slug}" } immediately.`
+					: `Auto-gate: specs validated — advancing to execution. Call haiku_run_next { intent: "${slug}" } immediately.`,
+			}
+		}
+
+		// Non-auto gates: open review UI
 		return {
 			action: "gate_review",
 			intent: slug,
@@ -1534,11 +1564,12 @@ export function runNext(slug: string): OrchestratorAction {
 		}
 	}
 
-	// Stage in gate phase — always open local review UI as a preliminary gate.
-	// The gate type determines what options are shown:
+	// Stage in gate phase — determine whether to auto-advance or open review UI.
+	// Gate behavior:
 	//   - Discrete intent mode: always "external" (Submit for External Review + Request Changes)
 	//   - Continuous/hybrid intent mode: based on the stage's review field
-	//     - auto/ask → "ask" (Approve + Request Changes)
+	//     - auto → auto-advance without user interaction (autonomous gate)
+	//     - ask → "ask" (Approve + Request Changes)
 	//     - external → "external" (Submit for External Review + Request Changes)
 	//     - [external, ask] → as-is (Approve + Submit for External Review + Request Changes)
 	//     - await → "external" (awaits external event after submission)
@@ -1561,7 +1592,39 @@ export function runNext(slug: string): OrchestratorAction {
 		const intentMode = (intent.mode as string) || "continuous"
 		const gitAvailable = isGitRepo()
 
-		// Determine gate type for the review UI
+		// Auto gates: advance without user interaction.
+		// "auto" review type means the studio author trusts the FSM to advance
+		// without human approval. In continuous/hybrid mode, skip the gate UI
+		// entirely. Discrete mode always uses external review (PR per stage).
+		if (reviewType === "auto" && intentMode !== "discrete") {
+			emitTelemetry("haiku.gate.auto_advanced", {
+				intent: slug,
+				stage: currentStage,
+				gate_context: "stage_gate",
+			})
+			if (nextStage) {
+				fsmAdvanceStage(slug, currentStage, nextStage)
+				return {
+					action: "advance_stage",
+					intent: slug,
+					studio,
+					stage: currentStage,
+					next_stage: nextStage,
+					gate_outcome: "advanced",
+					message: `Auto-gate passed — advancing to '${nextStage}'. Call haiku_run_next { intent: "${slug}" } immediately.`,
+				}
+			}
+			fsmCompleteStage(slug, currentStage, "advanced")
+			fsmIntentComplete(slug)
+			return {
+				action: "intent_complete",
+				intent: slug,
+				studio,
+				message: `Auto-gate passed — all stages complete for intent '${slug}'`,
+			}
+		}
+
+		// Non-auto gates: open review UI
 		let effectiveGateType: string
 		if (!gitAvailable && reviewType.includes("external")) {
 			// Non-git environment: external gates have no structural signal (no branch
@@ -1575,7 +1638,7 @@ export function runNext(slug: string): OrchestratorAction {
 		} else if (intentMode === "discrete") {
 			// Pure discrete intent: always submit for external review (PR per stage)
 			effectiveGateType = "external"
-		} else if (reviewType === "auto" || reviewType === "ask") {
+		} else if (reviewType === "ask") {
 			effectiveGateType = "ask"
 		} else if (reviewType === "await") {
 			effectiveGateType = "external"
