@@ -9,9 +9,9 @@ inputs:
   - stages/inception/units/unit-01-cowork-env-probe.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-15T04:30:56Z'
-hat_started_at: '2026-04-15T04:30:56Z'
+hat_started_at: '2026-04-15T04:31:29Z'
 outputs:
   - knowledge/unit-02-cowork-timeout-research.md
 completed_at: null
