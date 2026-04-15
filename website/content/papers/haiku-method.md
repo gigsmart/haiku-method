@@ -486,8 +486,9 @@ A new domain requires no changes to the orchestration code:
 2. Create `STAGE.md` for each stage, defining hats, review gate type, input sources, unit type constraints, and `review-agents-include` for cross-stage verification.
 3. Create `hats/{hat}.md` for each hat within each stage, specifying focus, output expectations, input references, and anti-patterns.
 4. Create `review-agents/{agent}.md` for each adversarial review agent within each stage, specifying the agent's mandate and verification checklist.
-5. Optionally create `outputs/{output}.md` for each stage output, defining scope, format, and content guidance.
-6. Place the studio in `.haiku/studios/{name}/` for project-specific use, or contribute it to the plugin for general availability.
+5. Optionally create `phases/ELABORATION.md` and `phases/EXECUTION.md` within a stage to override default phase behavior — for example, stage-specific criteria guidance, elaboration step modifications, or execution focus instructions.
+6. Optionally create `outputs/{output}.md` for each stage output, defining scope, format, and content guidance.
+7. Place the studio in `.haiku/studios/{name}/` for project-specific use, or contribute it to the plugin for general availability.
 
 ---
 

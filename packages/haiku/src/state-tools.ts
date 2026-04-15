@@ -32,7 +32,12 @@ import {
 } from "./git-worktree.js"
 import { escalate } from "./model-selection.js"
 import { logSessionEvent, writeHaikuMetadata } from "./session-metadata.js"
-import { listStudios, resolveStudio } from "./studio-reader.js"
+import {
+	listStudios,
+	readOperationDefs,
+	readReflectionDefs,
+	resolveStudio,
+} from "./studio-reader.js"
 import { emitTelemetry } from "./telemetry.js"
 import { MCP_VERSION, getPluginVersion } from "./version.js"
 
@@ -2278,6 +2283,25 @@ export function handleStateTool(
 					}),
 				)
 			const uPath = unitPath(args.intent as string, stage, args.unit as string)
+
+			// Guard: reject if unit is already active (prevents duplicate work)
+			if (existsSync(uPath)) {
+				const { data: existingFm } = parseFrontmatter(
+					readFileSync(uPath, "utf8"),
+				)
+				if (existingFm.status === "active") {
+					const scope = resolveStageScope(args.intent as string, stage)
+					return text(
+						JSON.stringify({
+							error: "unit_already_active",
+							unit: args.unit,
+							hat: existingFm.hat || "",
+							message: `Unit '${args.unit}' is already active (hat: ${existingFm.hat || "unknown"}). Do not start it again — continue working on it or call haiku_unit_advance_hat when done.`,
+						}) + (scope ? `\n\n${scope}` : ""),
+					)
+				}
+			}
+
 			const stageHats = resolveStageHats(args.intent as string, stage)
 			const firstHat = stageHats[0] || ""
 
@@ -2326,6 +2350,18 @@ export function handleStateTool(
 
 			const unitRaw = readFileSync(advPath, "utf8")
 			const { data: unitFm } = parseFrontmatter(unitRaw)
+
+			// Guard: reject if unit is already completed
+			if (unitFm.status === "completed") {
+				return text(
+					JSON.stringify({
+						error: "unit_already_completed",
+						unit: args.unit,
+						message: `Unit '${args.unit}' is already completed. Cannot advance hat on a completed unit.`,
+					}),
+				)
+			}
+
 			const currentHat = (unitFm.hat as string) || ""
 
 			// ── Hat backpressure: prevent rapid-fire advancement ──
@@ -3072,12 +3108,44 @@ export function handleStateTool(
 				}
 			}
 
-			out += "\n## Analysis Instructions\n"
-			out +=
-				"1. Execution patterns — which units went smoothly, which required retries\n"
-			out += "2. Criteria satisfaction\n"
-			out += "3. Process observations\n"
-			out += "4. Blocker analysis\n"
+			const studio = (intentData.studio as string) || ""
+			if (studio) {
+				const dims = readReflectionDefs(studio)
+				if (Object.keys(dims).length > 0) {
+					out += "\n## Reflection Dimensions\n\n"
+					out += "Analyze this intent along each dimension below:\n\n"
+					for (const [name, content] of Object.entries(dims)) {
+						out += `### ${name}\n\n${content}\n\n`
+					}
+				} else {
+					out += "\n## Analysis Instructions\n"
+					out +=
+						"1. Execution patterns — which units went smoothly, which required retries\n"
+					out += "2. Criteria satisfaction\n"
+					out += "3. Process observations\n"
+					out += "4. Blocker analysis\n"
+				}
+			} else {
+				out += "\n## Analysis Instructions\n"
+				out +=
+					"1. Execution patterns — which units went smoothly, which required retries\n"
+				out += "2. Criteria satisfaction\n"
+				out += "3. Process observations\n"
+				out += "4. Blocker analysis\n"
+			}
+			// Studio operations — surface available post-intent operations
+			if (studio) {
+				const ops = readOperationDefs(studio)
+				if (Object.keys(ops).length > 0) {
+					out += "\n## Available Operations\n\n"
+					out +=
+						"The following post-delivery operations are defined for this studio:\n\n"
+					for (const [name, content] of Object.entries(ops)) {
+						out += `### ${name}\n\n${content}\n\n`
+					}
+				}
+			}
+
 			out += "\n## Output\n"
 			out +=
 				"Write reflection.md and settings-recommendations.md to the intent directory.\n"

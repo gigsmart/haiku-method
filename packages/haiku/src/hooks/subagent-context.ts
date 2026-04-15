@@ -15,6 +15,7 @@
 import { execSync } from "node:child_process"
 import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { basename, join } from "node:path"
+import { readStageDef } from "../studio-reader.js"
 import {
 	findActiveIntent,
 	findUnitFiles,
@@ -335,6 +336,15 @@ export async function generateSubagentContext(
 		out(
 			`**${hat}** orchestrates work by spawning discipline-specific agents based on unit requirements.`,
 		)
+		out("")
+	}
+
+	// Stage-level instructions (criteria guidance, completion signals)
+	const stageDef = readStageDef(studio, activeStage)
+	if (stageDef?.body) {
+		out(`### Stage: ${activeStage}`)
+		out("")
+		out(stageDef.body)
 		out("")
 	}
 
