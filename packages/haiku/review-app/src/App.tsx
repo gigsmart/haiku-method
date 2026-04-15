@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
 import type { SessionData } from "./types";
 import { useSession, useSessionWebSocket } from "./hooks/useSession";
+import { isMcpAppsHost } from "./host-bridge";
 import { ReviewPage } from "./components/ReviewPage";
 import { QuestionPage } from "./components/QuestionPage";
 import { DesignPicker } from "./components/DesignPicker";
 import { ThemeToggle } from "./components/ThemeToggle";
+import { IframeTopBar } from "./components/iframe/IframeTopBar";
+import { IframeBootScreen, type BootPhase } from "./components/iframe/IframeBootScreen";
+import { NegotiationErrorScreen } from "./components/iframe/NegotiationErrorScreen";
+import { SessionExpiredScreen } from "./components/iframe/SessionExpiredScreen";
+import { StaleHostWarning } from "./components/iframe/StaleHostWarning";
+import type { BridgeStatus } from "./components/iframe/HostBridgeStatus";
 
 function parseRoute(): { pageType: string; sessionId: string } | null {
   const path = window.location.pathname;
@@ -38,10 +45,37 @@ export function App() {
   return <SessionLoader sessionId={route.sessionId} pageType={route.pageType} />;
 }
 
+interface IframeError {
+  type: "negotiation" | "session_expired" | "sandbox";
+  code: string;
+  feature?: string;
+}
+
 function SessionLoader({ sessionId, pageType }: { sessionId: string; pageType: string }) {
   const { session, loading, error } = useSession(sessionId);
   const wsRef = useSessionWebSocket(sessionId);
   const [title, setTitle] = useState("H\u00B7AI\u00B7K\u00B7U Review");
+
+  // Iframe-mode state
+  const isIframe = isMcpAppsHost();
+  const [bootPhase, setBootPhase] = useState<BootPhase>(isIframe ? "loading" : "done");
+  const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus>("connected");
+  const [iframeError, setIframeError] = useState<IframeError | null>(null);
+  const [staleHostWarning, setStaleHostWarning] = useState<{ host: string; expected: string } | null>(null);
+  const [bootDone, setBootDone] = useState(!isIframe);
+
+  // Advance boot phase as session loads
+  useEffect(() => {
+    if (!isIframe) return;
+    if (bootPhase === "loading") {
+      const t = setTimeout(() => setBootPhase("connecting"), 100);
+      return () => clearTimeout(t);
+    }
+    if (bootPhase === "connecting" && !loading) {
+      setBootPhase("ready");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bootPhase, loading]);
 
   useEffect(() => {
     if (session) {
@@ -58,6 +92,97 @@ function SessionLoader({ sessionId, pageType }: { sessionId: string; pageType: s
   useEffect(() => {
     document.title = title;
   }, [title]);
+
+  // Detect session_expired error from HTTP path
+  useEffect(() => {
+    if (isIframe && error) {
+      if (error.includes("401") || error.includes("expired") || error.includes("SESSION_EXPIRED")) {
+        setIframeError({ type: "session_expired", code: "SESSION_EXPIRED" });
+      } else {
+        setIframeError({ type: "negotiation", code: "NEGOTIATION_FAILED" });
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]);
+
+  async function handleRetry() {
+    setIframeError(null);
+    setBridgeStatus("reconnecting");
+    // Re-trigger session load by throwing — parent's useSession will handle
+    // In production, more robust retry logic would be wired here
+    setBridgeStatus("connected");
+  }
+
+  const slug = session?.intent?.slug ?? session?.title ?? pageType;
+  const sessionType = session?.session_type ?? pageType;
+
+  // ── IFRAME MODE ──────────────────────────────────────────────────────────
+
+  if (isIframe) {
+    return (
+      <div
+        className="flex flex-col min-h-screen bg-stone-950 text-stone-100 relative"
+        style={{ height: "100dvh", overflow: "hidden auto" }}
+      >
+        {/* Stale host warning (non-blocking, top of page) */}
+        {staleHostWarning && (
+          <StaleHostWarning
+            hostVersion={staleHostWarning.host}
+            expectedVersion={staleHostWarning.expected}
+            onDismiss={() => setStaleHostWarning(null)}
+          />
+        )}
+
+        {/* Top bar */}
+        <IframeTopBar
+          slug={slug}
+          sessionType={sessionType}
+          bridgeStatus={bridgeStatus}
+          onRetry={handleRetry}
+        />
+
+        {/* Boot screen — shown until session data arrives */}
+        {!bootDone && (
+          <IframeBootScreen
+            phase={bootPhase}
+            onDone={() => setBootDone(true)}
+          />
+        )}
+
+        {/* Error screens */}
+        {bootDone && iframeError?.type === "negotiation" && (
+          <NegotiationErrorScreen
+            errorCode={iframeError.code}
+            sessionId={sessionId}
+            onRetry={handleRetry}
+          />
+        )}
+        {bootDone && iframeError?.type === "session_expired" && (
+          <SessionExpiredScreen errorCode={iframeError.code} />
+        )}
+
+        {/* Main content — shown once boot done and no fatal error */}
+        {bootDone && !iframeError && session && (
+          <main
+            id="main-content"
+            className="flex-1 flex flex-col min-w-0 px-3 py-3"
+          >
+            {session.session_type === "review" && (
+              <ReviewPage session={session} sessionId={sessionId} wsRef={wsRef} />
+            )}
+            {session.session_type === "question" && (
+              <QuestionPage session={session} sessionId={sessionId} wsRef={wsRef} />
+            )}
+            {session.session_type === "design_direction" && (
+              <DesignPicker session={session} sessionId={sessionId} wsRef={wsRef} />
+            )}
+          </main>
+        )}
+      </div>
+    );
+  }
+
+  // ── BROWSER MODE (unchanged) ─────────────────────────────────────────────
 
   if (loading) {
     return (

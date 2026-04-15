@@ -2,6 +2,8 @@ import { useRef, useState } from "react";
 import type { SessionData, QuestionAnswer } from "../types";
 import { MarkdownViewer } from "@haiku/shared";
 import { submitAnswers, tryCloseTab } from "../hooks/useSession";
+import { isMcpAppsHost } from "../host-bridge";
+import { BottomSheetDecisionPanelQuestion } from "./iframe/BottomSheetDecisionPanelQuestion";
 import { Card, SectionHeading } from "./Card";
 import { SubmitSuccess } from "./SubmitSuccess";
 import { InlineComments, type InlineComment } from "./InlineComments";
@@ -16,6 +18,7 @@ interface Props {
 }
 
 export function QuestionPage({ session, sessionId, wsRef }: Props) {
+  const isIframe = isMcpAppsHost();
   const questions = session.questions ?? [];
   const context = session.context ?? "";
   const imageUrls = session.image_urls ?? [];
@@ -245,15 +248,17 @@ export function QuestionPage({ session, sessionId, wsRef }: Props) {
           />
         </Card>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {submitting ? "Submitting..." : "Submit Answers"}
-        </button>
+        {!isIframe && (
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? "Submitting..." : "Submit Answers"}
+          </button>
+        )}
 
-        {result && (
+        {!isIframe && result && (
           <div
             className={`mt-4 p-4 rounded-lg ${
               result.success
@@ -266,6 +271,32 @@ export function QuestionPage({ session, sessionId, wsRef }: Props) {
           </div>
         )}
       </form>
+
+      {/* Iframe mode: bottom-sheet submit panel */}
+      {isIframe && (
+        <BottomSheetDecisionPanelQuestion
+          sessionId={sessionId}
+          answers={questions.map((q, i) => {
+            const selected = selections.get(i) ?? new Set<string>();
+            const selectedOptions = Array.from(selected).filter((o) => o !== "__other__");
+            const hasOther = selected.has("__other__");
+            return {
+              question: q.question,
+              selectedOptions,
+              otherText: hasOther ? (otherTexts.get(i) ?? "").trim() || undefined : undefined,
+            };
+          })}
+          feedback={feedback}
+          annotations={inlineCommentsRef.current.length > 0 ? {
+            comments: inlineCommentsRef.current.map((c) => ({
+              selectedText: c.selectedText,
+              comment: c.comment,
+              paragraph: c.paragraph,
+            })),
+          } : undefined}
+          wsRef={wsRef}
+        />
+      )}
     </>
   );
 }

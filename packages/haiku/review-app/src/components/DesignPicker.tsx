@@ -1,6 +1,8 @@
 import { useState, useCallback } from "react";
 import type { SessionData, DesignArchetypeData, DesignParameterData } from "../types";
 import { submitDesignDirection, tryCloseTab } from "../hooks/useSession";
+import { isMcpAppsHost } from "../host-bridge";
+import { BottomSheetDecisionPanelDesign } from "./iframe/BottomSheetDecisionPanelDesign";
 import { Card, SectionHeading } from "./Card";
 import { SubmitSuccess } from "./SubmitSuccess";
 
@@ -11,6 +13,7 @@ interface Props {
 }
 
 export function DesignPicker({ session, sessionId, wsRef }: Props) {
+  const isIframe = isMcpAppsHost();
   const archetypes = session.archetypes ?? [];
   const parameters = session.parameters ?? [];
 
@@ -143,16 +146,18 @@ export function DesignPicker({ session, sessionId, wsRef }: Props) {
                     title={`Preview: ${arch.name}`}
                     className="w-full h-48 rounded-lg border border-stone-200 dark:border-stone-700 bg-white pointer-events-none"
                   />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openPreviewModal(arch.name, arch.preview_html);
-                    }}
-                    className="mt-2 text-xs text-teal-600 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-200 underline underline-offset-2"
-                  >
-                    View Full Size
-                  </button>
+                  {!isIframe && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openPreviewModal(arch.name, arch.preview_html);
+                      }}
+                      className="mt-2 text-xs text-teal-600 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-200 underline underline-offset-2"
+                    >
+                      View Full Size
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -208,17 +213,19 @@ export function DesignPicker({ session, sessionId, wsRef }: Props) {
         </Card>
       )}
 
-      {/* Submit */}
-      <button
-        type="button"
-        onClick={handleSubmit}
-        disabled={submitting || !selectedArchetype}
-        className="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {submitting ? "Submitting..." : "Choose This Direction"}
-      </button>
+      {/* Submit — browser mode only */}
+      {!isIframe && (
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={submitting || !selectedArchetype}
+          className="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {submitting ? "Submitting..." : "Choose This Direction"}
+        </button>
+      )}
 
-      {result && (
+      {!isIframe && result && (
         <div
           className={`mt-4 p-4 rounded-lg ${
             result.success
@@ -231,8 +238,18 @@ export function DesignPicker({ session, sessionId, wsRef }: Props) {
         </div>
       )}
 
-      {/* Preview Modal */}
-      {previewModal && (
+      {/* Iframe mode: bottom-sheet design panel */}
+      {isIframe && (
+        <BottomSheetDecisionPanelDesign
+          sessionId={sessionId}
+          selectedArchetype={selectedArchetype}
+          paramValues={paramValues}
+          wsRef={wsRef}
+        />
+      )}
+
+      {/* Preview Modal — browser mode only (position:fixed not allowed in iframe mode) */}
+      {!isIframe && previewModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
           onClick={closePreviewModal}
