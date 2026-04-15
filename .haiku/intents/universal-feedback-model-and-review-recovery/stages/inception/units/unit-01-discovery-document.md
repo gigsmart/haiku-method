@@ -7,9 +7,11 @@ inputs:
   - intent.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-15T20:37:07Z'
-hat_started_at: '2026-04-15T20:37:07Z'
+hat_started_at: '2026-04-15T20:37:44Z'
+outputs:
+  - knowledge/DISCOVERY.md
 ---
 
 # Discovery Document
