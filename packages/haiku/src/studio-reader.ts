@@ -403,9 +403,7 @@ export function resolveStudio(identifier: string): StudioInfo | null {
 }
 
 /** Read operation definitions for a studio (project overrides plugin for same-named ops) */
-export function readOperationDefs(
-	studio: string,
-): Record<string, string> {
+export function readOperationDefs(studio: string): Record<string, string> {
 	validateIdentifier(studio, "studio")
 	const ops: Record<string, string> = {}
 	const paths = studioSearchPaths()
@@ -421,9 +419,7 @@ export function readOperationDefs(
 }
 
 /** Read reflection dimension definitions for a studio (project overrides plugin for same-named dims) */
-export function readReflectionDefs(
-	studio: string,
-): Record<string, string> {
+export function readReflectionDefs(studio: string): Record<string, string> {
 	validateIdentifier(studio, "studio")
 	const dims: Record<string, string> = {}
 	const paths = studioSearchPaths()
