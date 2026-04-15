@@ -8,6 +8,8 @@ file:line. Implementation must not drift from these contracts.
 
 ## MCP Server Capabilities
 
+Source: unit-01-cowork-env-probe (capability negotiation), unit-03-ui-resource-registration (resources capability)
+
 The `Server` constructor at `packages/haiku/src/server.ts:157` adds
 `experimental: { apps: {} }` to the capabilities block:
 
@@ -39,14 +41,30 @@ echoes:
 }
 ```
 
+**Spec confirmation:** `experimental.apps: {}` (an empty object, not `true`
+or a non-empty object) is the correct negotiation shape per the MCP Apps
+extension spec. An empty object signals support without version pinning — the
+host decides which features to surface. No additional fields are required or
+expected in the negotiation payload.
+
 `hostSupportsMcpApps()` (`packages/haiku/src/state-tools.ts`, added by
 unit-01) reads `server.getClientCapabilities()` after `initialize` completes
-and returns `true` iff `clientCapabilities.experimental?.apps` is defined.
-Result is cached for the life of the connection.
+and returns `true` iff `clientCapabilities.experimental?.apps` is defined
+(i.e. the key exists, regardless of the value). Result is cached for the life
+of the connection.
+
+### Errors
+
+The capabilities block is exchanged during `initialize` — not a tool call.
+No JSON-RPC error is defined for a missing `experimental.apps` key. The
+server silently falls back to the HTTP+tunnel path when
+`hostSupportsMcpApps()` returns `false`.
 
 ---
 
 ## MCP Resources (`ui://`)
+
+Source: unit-03-ui-resource-registration
 
 ### Capability prerequisite
 
@@ -144,6 +162,9 @@ byte-for-byte.
 
 ## Tool: `haiku_cowork_review_submit`
 
+Source: unit-05-cowork-open-review-handler (tool registration + review variant),
+unit-06-visual-question-design-direction (question + design_direction variants)
+
 Single polymorphic submit tool added by unit-05 (inception), extended to
 three session types by unit-06 (inception). One `ListTools` entry, one
 `CallTool` dispatch case.
@@ -227,6 +248,19 @@ section).
 - Session MUST be in `status: "pending"`. Submitting to a session that is
   already `"decided"` / `"answered"` → 409-equivalent error.
 
+### Errors
+
+All errors are returned as successful JSON-RPC responses with `isError: true`
+(see Error Response Shapes section). No JSON-RPC protocol-level errors are
+thrown by this tool.
+
+| Condition | HTTP analog | `text` value |
+|---|---|---|
+| `session_id` UUID not found in store | 404 | `"Session not found: <session_id>"` |
+| Submitted `session_type` ≠ stored `session_type` | 400 | `"session_type mismatch: expected <stored>, got <submitted>"` |
+| Zod schema validation failure | 400 | `"Invalid input: <zod error summary>"` |
+| Session `status !== "pending"` | 409 | `"Session already closed: <session_id>"` |
+
 ### Side effects
 
 On success the tool handler:
@@ -242,6 +276,9 @@ On success the tool handler:
 ---
 
 ## Tool Result `_meta.ui` Envelope
+
+Source: unit-03-ui-resource-registration (buildUiResourceMeta helper),
+unit-05-cowork-open-review-handler (first consumer)
 
 `buildUiResourceMeta(resourceUri: string)` (new in
 `packages/haiku/src/ui-resource.ts`, unit-03) returns:
@@ -284,11 +321,15 @@ It is NOT attached to unrelated tool results (e.g. `haiku_version_info`,
 The `text` content field carries the session data payload so the SPA can
 hydrate without an HTTP fetch to `/api/session/:id`. The exact JSON shape
 mirrors the `ReviewSession` / `QuestionSession` / `DesignDirectionSession`
-interfaces (see Existing Schemas section).
+interfaces (`sessions.ts:108`, `sessions.ts:157`, `sessions.ts:190` — see
+Existing Schemas section).
+
 
 ---
 
 ## Setup-Handler Return Contract
+
+Source: unit-05-cowork-open-review-handler
 
 `setOpenReviewHandler` at `packages/haiku/src/orchestrator.ts:3152` types
 the injected handler:
@@ -327,6 +368,41 @@ The `gate_review` action in `handleOrchestratorTool`
 
 No shape change is permitted here. The MCP Apps branch must produce exactly
 the same resolved value as the HTTP path.
+
+### Errors
+
+The `setOpenReviewHandler` callback itself does not return errors directly —
+it returns a `Promise` that either resolves with the 3-field decision object
+or rejects. Rejection causes are:
+
+| Condition | Rejection message |
+|---|---|
+| `waitForSession` timeout (blocking path, 30 min) | `"Session timeout"` (thrown by `sessions.ts:88`) |
+| Intent parse failure | `"Could not parse intent"` |
+
+On rejection the orchestrator's `gate_review` handler at
+`orchestrator.ts:2980` propagates the error to the FSM.
+
+### Resumable branch (DEFERRED)
+
+**DEFERRED — used only if unit-02 spike measures host timeout < 30 min.**
+Canonical path is **blocking** (above). If the spike confirms timeout
+headroom is insufficient, the alternate `pending_review` shape applies:
+
+```typescript
+// DEFERRED — alternate path only
+const PendingReviewResult = z.object({
+  action: z.literal("pending_review"),
+  session_id: z.string().uuid(),
+  resource_uri: z.string(), // "ui://haiku/review/<REVIEW_APP_VERSION>"
+})
+```
+
+Tool result carries `_meta.ui.resourceUri` as usual. The FSM persists
+`cowork_review_session_id` in stage state; a subsequent
+`haiku_cowork_review_submit` call triggers the next FSM tick and preserves
+the `{decision, feedback, annotations?}` handler contract. **Do not implement
+until unit-02 outcome is recorded.**
 
 ---
 
@@ -390,76 +466,79 @@ interface DesignParameterData {
 
 ### `ReviewSession` (`sessions.ts:108-138`)
 
-Key fields consumed by the SPA via `_meta.ui` content hydration:
-- `session_id: string` (UUID)
-- `session_type: "review"`
-- `review_type: "intent" | "unit"`
+Key fields consumed by the SPA via `_meta.ui` content hydration
+(`sessions.ts:108-138`):
+- `session_id: string` (UUID), `session_type: "review"`, `review_type: "intent" | "unit"`
 - `status: "pending" | "approved" | "changes_requested" | "decided"`
-- `decision: string`
-- `feedback: string`
-- `annotations?: ReviewAnnotations`
-- `gate_type?: string`
-- `parsedIntent?: unknown`
-- `parsedUnits?: unknown[]`
-- `parsedCriteria?: unknown[]`
-- `parsedMermaid?: string`
-- `stageStates?: Record<string, unknown>`
-- `knowledgeFiles?: Array<{ name: string; content: string }>`
-- `stageArtifacts?: Array<{ stage: string; name: string; content: string }>`
-- `outputArtifacts?: Array<{ stage: string; name: string; type: string; content?: string; relativePath?: string }>`
+- `decision: string`, `feedback: string`, `annotations?: ReviewAnnotations` — `sessions.ts:116-118`
+- `gate_type?: string`, `parsedIntent?: unknown`, `parsedUnits?: unknown[]`, `parsedCriteria?: unknown[]`, `parsedMermaid?: string`
+- `stageStates?: Record<string, unknown>` — `sessions.ts:128`
+- `knowledgeFiles?: Array<{ name: string; content: string }>` — `sessions.ts:129`
+- `stageArtifacts?: Array<{ stage: string; name: string; content: string }>` — `sessions.ts:130`
+- `outputArtifacts?: Array<{ stage: string; name: string; type: string; content?: string; relativePath?: string }>` — `sessions.ts:131-137`
 
 ### `QuestionSession` (`sessions.ts:157-170`)
 
-Key fields:
-- `session_id: string` (UUID)
-- `session_type: "question"`
-- `title: string`
-- `questions: QuestionDef[]`
-- `context: string`
-- `imagePaths: string[]`
-- `status: "pending" | "answered"`
-- `answers: QuestionAnswer[]` (empty array until answered)
-- `feedback: string`
-- `annotations?: QuestionAnnotations`
+Key fields (`sessions.ts:157-170`):
+- `session_id: string` (UUID), `session_type: "question"`, `title: string`
+- `questions: QuestionDef[]`, `context: string`, `imagePaths: string[]`
+- `status: "pending" | "answered"`, `answers: QuestionAnswer[]` (empty until answered)
+- `feedback: string`, `annotations?: QuestionAnnotations`
 
 ### `DesignDirectionSession` (`sessions.ts:190-207`)
 
-Key fields:
-- `session_id: string` (UUID)
-- `session_type: "design_direction"`
-- `intent_slug: string`
-- `archetypes: DesignArchetypeData[]`
-- `parameters: DesignParameterData[]`
+Key fields (`sessions.ts:190-207`):
+- `session_id: string` (UUID), `session_type: "design_direction"`, `intent_slug: string`
+- `archetypes: DesignArchetypeData[]`, `parameters: DesignParameterData[]`
 - `status: "pending" | "answered"`
-- `selection: { archetype: string; parameters: Record<string, number>; comments?: string; annotations?: { screenshot?: string; pins?: Array<{x: number; y: number; text: string}> } } | null`
+- `selection: { archetype: string; parameters: Record<string, number>; comments?: string; annotations?: { screenshot?: string; pins?: Array<{x: number; y: number; text: string}> } } | null` — `sessions.ts:197-205`
 
 ---
 
 ## Validation Rules Summary
 
-- **`session_id` must exist**: `getSession(session_id)` returns non-null.
-  Missing → 404 error.
-- **`session_type` discriminator must match**: submitted `session_type` must
-  equal `getSession(id).session_type`. Mismatch → 400 error.
-- **`decision` enum constraint**: for `session_type: "review"`, value must
-  be `"approved"`, `"changes_requested"`, or `"external_review"`. Any other
-  string → 400 error.
-- **`feedback` required for review**: must be a `string` (empty string is
-  valid; `null`/`undefined` → 400 error).
-- **`answers` non-empty for question**: `answers.length >= 1` → 400 if
-  empty array.
-- **`archetype` non-empty for design_direction**: `archetype.length >= 1` →
-  400 if empty string.
-- **Session must be pending**: submitting to a session with
-  `status !== "pending"` → 409 error.
-- **Touch targets ≥ 44px**: all interactive elements in the review SPA
-  (drag handle, decision buttons, retry CTA) must have a minimum hit zone of
-  44 × 44px. This is a rendering contract, not a server contract — enforced
-  in the SPA and verified by design-stage mockup inspection.
-- **`experimental.apps` required**: `haiku_cowork_review_submit` is only
-  reachable when `hostSupportsMcpApps() === true`. Calling it from a host
-  that did not negotiate the capability is not a defined error; the tool
-  simply won't appear in the review flow.
+Source: unit-05-cowork-open-review-handler, unit-06-visual-question-design-direction
+
+This section is the single authoritative checklist for all contracts in this
+document. Each rule maps to a verifiable test assertion.
+
+### Server-side tool validation
+
+- **`session_id` existence** (`sessions.ts:302-306`): `getSession(session_id)`
+  must return non-null. Missing or expired session → 404-equivalent error
+  (`"Session not found: <id>"`).
+- **`session_type` discriminator match**: submitted `session_type` must equal
+  `getSession(id).session_type`. Mismatch → 400 error
+  (`"session_type mismatch: expected <stored>, got <submitted>"`).
+- **`decision` enum** (review path only): value must be one of `"approved"`,
+  `"changes_requested"`, `"external_review"`. Any other string fails Zod
+  `.enum(...)` → 400 error.
+- **`feedback` shape parity with HTTP path**: for `session_type: "review"`,
+  `feedback` is a required `string` (empty string `""` is valid). The MCP
+  Apps branch resolves the handler with `{ decision, feedback, annotations? }`
+  — identical shape to the HTTP branch at `server.ts:889-893`. Shape drift
+  between branches is a hard contract violation.
+- **`answers` non-empty** (question path): `answers.length >= 1` required.
+  Empty array → 400 error.
+- **`archetype` non-empty** (design_direction path): `archetype.length >= 1`
+  required. Empty string → 400 error.
+- **Session must be pending**: `status !== "pending"` → 409 error
+  (`"Session already closed: <id>"`).
+
+### SPA rendering contract
+
+- **Touch target floor ≥ 44px**: all interactive elements in the review SPA
+  (drag handle, decision buttons, annotation pins, retry CTA) must have a
+  minimum hit zone of 44 × 44px. This is a rendering contract verified by
+  design-stage mockup inspection, not a server-side rule.
+
+### Capability contract
+
+- **`experimental.apps` negotiated**: `haiku_cowork_review_submit` is only
+  reachable when `hostSupportsMcpApps() === true`
+  (`packages/haiku/src/state-tools.ts`). A host that did not echo
+  `experimental.apps` during `initialize` will not see this tool in the
+  review flow — no error defined.
 
 ---
 
