@@ -3919,8 +3919,11 @@ export async function handleOrchestratorTool(
 		// Cleaner: an unarchived intent looks pristine, no trace of prior archival.
 		const raw = readFileSync(intentFile, "utf8")
 		const parsed = matter(raw)
-		delete parsed.data.archived
-		writeFileSync(intentFile, matter.stringify(parsed.content, parsed.data))
+		const { archived: _archived, ...dataWithoutArchived } = parsed.data
+		writeFileSync(
+			intentFile,
+			matter.stringify(parsed.content, dataWithoutArchived),
+		)
 		gitCommitState(`haiku: unarchive intent ${slug}`)
 
 		return text(
