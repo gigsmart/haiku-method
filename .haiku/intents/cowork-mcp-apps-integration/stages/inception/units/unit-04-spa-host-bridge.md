@@ -9,9 +9,9 @@ inputs:
   - stages/inception/units/unit-03-ui-resource-registration.md
 status: active
 bolt: 1
-hat: researcher
+hat: elaborator
 started_at: '2026-04-15T04:34:41Z'
-hat_started_at: '2026-04-15T04:34:41Z'
+hat_started_at: '2026-04-15T04:35:17Z'
 outputs:
   - knowledge/unit-04-host-bridge-research.md
 completed_at: null
