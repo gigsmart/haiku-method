@@ -126,7 +126,7 @@
     margin-bottom: 8px;
     opacity: 0;
     animation: fade-in 200ms ease-out 100ms forwards;
-    outline: none;
+    outline: none;                          /* programmatic-focus target only; not keyboard-interactive */
   }
 
   /* ── Subtext ── */
@@ -235,8 +235,8 @@
     </p>
 
     <!-- Echoed feedback -->
-    <p class="feedback-label" aria-hidden="true">Your feedback</p>
-    <blockquote class="quote-block">
+    <p class="feedback-label" id="feedback-label">Your feedback</p>
+    <blockquote class="quote-block" aria-labelledby="feedback-label">
       <p class="quote-text">
         The unit scope is too broad — please split the API integration and the UI wiring into separate units so each can be reviewed independently.
       </p>
