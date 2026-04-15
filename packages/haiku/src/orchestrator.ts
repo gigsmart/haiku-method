@@ -239,7 +239,15 @@ function checkExternalApproval(url: string): boolean {
 			// GitHub PR — check review decision AND merge state (argument array avoids shell injection)
 			const output = execFileSync(
 				"gh",
-				["pr", "view", url, "--json", "state,reviewDecision", "-q", "[.state, .reviewDecision]"],
+				[
+					"pr",
+					"view",
+					url,
+					"--json",
+					"state,reviewDecision",
+					"-q",
+					"[.state, .reviewDecision]",
+				],
 				{ encoding: "utf8", stdio: "pipe" },
 			).trim()
 			const parsed = JSON.parse(output) as [string, string]
@@ -2716,11 +2724,7 @@ function buildRunInstructions(
 					externalUrl
 						? `The stage is awaiting external review at: ${externalUrl}`
 						: "The stage is awaiting external review but no review URL has been recorded."
-				}\n\n` +
-				`The orchestrator checks for approval automatically (branch merge detection + URL-based CLI probing). ` +
-				`Neither detected approval yet.\n\n` +
-				`Inform the user that the stage is waiting on external review. ` +
-				`After the review is approved, run \`/haiku:pickup\` to continue.`,
+				}\n\nThe orchestrator checks for approval automatically (branch merge detection + URL-based CLI probing). Neither detected approval yet.\n\nInform the user that the stage is waiting on external review. After the review is approved, run \`/haiku:pickup\` to continue.`,
 			)
 			break
 		}
