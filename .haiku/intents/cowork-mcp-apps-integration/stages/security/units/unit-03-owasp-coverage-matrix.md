@@ -14,11 +14,13 @@ inputs:
 outputs:
   - knowledge/OWASP-COVERAGE.md
   - stages/security/artifacts/red-team-owasp-coverage.md
+  - knowledge/VULN-REPORT.md
+  - stages/security/artifacts/blue-team-owasp-coverage.md
 status: active
 bolt: 1
-hat: blue-team
+hat: security-reviewer
 started_at: '2026-04-15T19:52:12Z'
-hat_started_at: '2026-04-15T19:56:13Z'
+hat_started_at: '2026-04-15T19:56:57Z'
 ---
 
 # Unit 03 — OWASP Coverage Matrix
