@@ -6,9 +6,13 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
 	CallToolRequestSchema,
 	CompleteRequestSchema,
+	ErrorCode,
 	GetPromptRequestSchema,
 	ListPromptsRequestSchema,
+	ListResourcesRequestSchema,
 	ListToolsRequestSchema,
+	McpError,
+	ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
 import { z } from "zod"
 import {
@@ -175,11 +179,13 @@ import {
 } from "./orchestrator.js"
 // Prompts migrated to skills (plugin/skills/) — prompt handlers kept for protocol compatibility
 import { completeArgument, getPrompt, listPrompts } from "./prompts/index.js"
+import { REVIEW_APP_HTML } from "./review-app-html.js"
 import {
 	handleStateTool,
 	setMcpServerInstance,
 	stateToolDefs,
 } from "./state-tools.js"
+import { REVIEW_RESOURCE_URI } from "./ui-resource.js"
 
 setMcpServerInstance(server)
 
@@ -193,6 +199,33 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
 
 server.setRequestHandler(CompleteRequestSchema, async (request) => {
 	return completeArgument(request.params)
+})
+
+// MCP Apps: register the bundled review SPA as a ui:// resource
+server.setRequestHandler(ListResourcesRequestSchema, async () => ({
+	resources: [
+		{
+			uri: REVIEW_RESOURCE_URI,
+			name: "Haiku Review App",
+			mimeType: "text/html",
+		},
+	],
+}))
+
+server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+	const { uri } = request.params
+	if (uri !== REVIEW_RESOURCE_URI) {
+		throw new McpError(ErrorCode.InvalidParams, "Unknown resource URI")
+	}
+	return {
+		contents: [
+			{
+				uri: REVIEW_RESOURCE_URI,
+				mimeType: "text/html",
+				text: REVIEW_APP_HTML,
+			},
+		],
+	}
 })
 
 // List tools
