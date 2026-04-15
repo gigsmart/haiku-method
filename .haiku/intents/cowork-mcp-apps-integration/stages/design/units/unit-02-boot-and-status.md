@@ -10,6 +10,11 @@ inputs:
   - stages/design/DESIGN-BRIEF.md
   - knowledge/DESIGN-TOKENS.md
   - stages/design/units/unit-01-iframe-shell-layout.md
+status: active
+bolt: 1
+hat: designer
+started_at: '2026-04-15T12:44:12Z'
+hat_started_at: '2026-04-15T12:44:12Z'
 ---
 
 # Iframe boot screen + HostBridgeStatus pill
