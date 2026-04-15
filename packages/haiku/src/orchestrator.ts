@@ -932,6 +932,11 @@ function fsmAdvanceStage(
 	if (existsSync(intentFile)) {
 		setFrontmatterField(intentFile, "active_stage", nextStage)
 	}
+
+	// Reseal: fsmCompleteStage sealed against active_stage=currentStage;
+	// we just rewrote active_stage, so the prior checksum is now stale and
+	// the next verifyIntentState() would false-positive as tampering.
+	sealIntentState(slug)
 }
 
 function fsmGateAsk(slug: string, stage: string): void {
@@ -3102,12 +3107,11 @@ function buildRunInstructions(
 				1,
 			)
 			const parallelCaps = getCapabilities()
-			if (inlineCtxParallel) {
-				if (parallelCaps.subagents.supported) {
-					sharedParts.push(inlineCtxParallel)
-				} else {
-					sections.push(inlineCtxParallel)
-				}
+			// Subagent-capable: embed inline in sharedParts so it lands inside
+			// each <subagent> block. Subagentless: handled below in the else
+			// branch so it lands adjacent to the sequential execution mechanics.
+			if (inlineCtxParallel && parallelCaps.subagents.supported) {
+				sharedParts.push(inlineCtxParallel)
 			}
 
 			// Upstream stage inputs — build once, embed in each subagent
@@ -3230,6 +3234,11 @@ function buildRunInstructions(
 				)
 			} else {
 				// ── Subagentless harness: sequential execution in current context ──
+				// sharedContent carries the stage scope, hat definition, output
+				// requirements, and upstream inputs. In the subagent-capable
+				// branch this is embedded inside each <subagent> block; here the
+				// parent IS the executor, so it must go into sections directly.
+				if (sharedContent) sections.push(sharedContent)
 				if (inlineCtxParallel) sections.push(inlineCtxParallel)
 				const unitList = units
 					.map((u) => {

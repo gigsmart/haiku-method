@@ -165,7 +165,7 @@ const server = new Server(
 	},
 )
 
-import { getCapabilities, getHarness, isClaudeCode } from "./harness.js"
+import { getCapabilities, isClaudeCode } from "./harness.js"
 import {
 	handleOrchestratorTool,
 	orchestratorToolDefs,
