@@ -15,8 +15,10 @@ bolt: 1
 hat: design-reviewer
 started_at: '2026-04-15T12:44:12Z'
 hat_started_at: '2026-04-15T12:49:13Z'
-outputs: >-
-  ["stages/design/artifacts/boot-screen.html","stages/design/artifacts/host-bridge-status.html","stages/design/artifacts/unit-02-design-review.md"]
+outputs:
+  - stages/design/artifacts/boot-screen.html
+  - stages/design/artifacts/host-bridge-status.html
+  - stages/design/artifacts/unit-02-design-review.md
 ---
 
 # Iframe boot screen + HostBridgeStatus pill
