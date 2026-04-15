@@ -31,11 +31,17 @@ if (cmd === "mcp") {
 		harnessName = process.env.HAIKU_HARNESS || ""
 	}
 
-	if (harnessName) {
-		import("./harness.js").then((m) => m.setHarness(harnessName))
-	}
+	const harnessReady = harnessName
+		? import("./harness.js").then((m) => m.setHarness(harnessName))
+		: Promise.resolve()
 
-	import("./server.js")
+	harnessReady
+		.then(() => import("./server.js"))
+		.catch((err) => {
+			reportError(err)
+			console.error(`haiku mcp: ${err.message}`)
+			process.exit(1)
+		})
 } else if (cmd === "hook") {
 	const hookName = args[0]
 	if (!hookName) {

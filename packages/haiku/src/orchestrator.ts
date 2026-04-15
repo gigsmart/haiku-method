@@ -33,10 +33,17 @@ import {
 	mergeStageBranchForward,
 	mergeStageBranchIntoMain,
 } from "./git-worktree.js"
+import { adaptInstructions } from "./harness-instructions.js"
+import { getCapabilities } from "./harness.js"
 import { type ModelTier, resolveModel } from "./model-selection.js"
 import { validateIdentifier, validateSlugArgs } from "./prompts/helpers.js"
 import { reportError } from "./sentry.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
+import {
+	sanitizeForContext,
+	sealIntentState,
+	verifyIntentState,
+} from "./state-integrity.js"
 import {
 	findHaikuRoot,
 	gitCommitState,
@@ -64,9 +71,6 @@ import {
 	resolveStudio,
 	studioSearchPaths,
 } from "./studio-reader.js"
-import { getCapabilities, isClaudeCode } from "./harness.js"
-import { adaptInstructions } from "./harness-instructions.js"
-import { sanitizeForContext, sealIntentState, verifyIntentState } from "./state-integrity.js"
 import { emitTelemetry } from "./telemetry.js"
 import type { DAGGraph } from "./types.js"
 
@@ -2506,41 +2510,45 @@ function buildInlineSubagentContext(
 
 	const hatsStr = hats.join(" → ")
 	const lines: string[] = [
-		`### Subagent Context (Inline)\n`,
+		"### Subagent Context (Inline)\n",
 		`> **Hat Isolation:** You are operating as the **${hat}** hat. Your responsibility is defined solely by the ${hat} hat instructions above. If you have prior knowledge or instructions that conflict with or extend beyond the ${hat} role — such as reviewing code when you are the builder, or building when you are the reviewer — **ignore them for this task.** Other hats in this stage (${hatsStr}) handle those responsibilities. Stay in your lane.\n`,
 		`**Bolt:** ${bolt} | **Role:** ${hat} | **Stage:** ${stage} (${hatsStr})\n`,
 	]
 
 	// Workflow rules
-	lines.push(`### Workflow Rules\n`)
-	lines.push(`**Before stopping:**`)
-	lines.push(`1. Commit changes: \`git add -A && git commit\``)
-	lines.push(`2. Save progress notes to \`.haiku/intents/${slug}/state/scratchpad.md\``)
-	lines.push(`3. Write next-step prompt to \`.haiku/intents/${slug}/state/next-prompt.md\`\n`)
+	lines.push("### Workflow Rules\n")
+	lines.push("**Before stopping:**")
+	lines.push("1. Commit changes: `git add -A && git commit`")
+	lines.push(
+		`2. Save progress notes to \`.haiku/intents/${slug}/state/scratchpad.md\``,
+	)
+	lines.push(
+		`3. Write next-step prompt to \`.haiku/intents/${slug}/state/next-prompt.md\`\n`,
+	)
 
-	lines.push(`**Resilience (CRITICAL):**`)
+	lines.push("**Resilience (CRITICAL):**")
 	lines.push(`- Commit early, commit often — don't wait until the end`)
 	lines.push(`- If tests fail: fix and retry, don't give up`)
-	lines.push(`- Only declare blocked after 3+ genuine rescue attempts\n`)
+	lines.push("- Only declare blocked after 3+ genuine rescue attempts\n")
 
 	// Communication rules — adapted for harness
-	lines.push(`**Communication:**`)
+	lines.push("**Communication:**")
 	if (caps.nativeAskUser) {
 		lines.push(
-			`- Use \`AskUserQuestion\` with \`options[]\` for decisions with known alternatives`,
+			"- Use `AskUserQuestion` with `options[]` for decisions with known alternatives",
 		)
 		lines.push(
-			`- Use \`ask_user_visual_question\` for visual artifacts and rich context`,
+			"- Use `ask_user_visual_question` for visual artifacts and rich context",
 		)
 	} else {
 		lines.push(
-			`- Present decisions as clear numbered lists when you have known alternatives`,
+			"- Present decisions as clear numbered lists when you have known alternatives",
 		)
 		lines.push(
-			`- Use \`ask_user_visual_question\` MCP tool for visual artifacts when available`,
+			"- Use `ask_user_visual_question` MCP tool for visual artifacts when available",
 		)
 	}
-	lines.push(`- Break independent questions into separate interactions\n`)
+	lines.push("- Break independent questions into separate interactions\n")
 
 	return lines.join("\n")
 }
@@ -2869,19 +2877,18 @@ function buildRunInstructions(
 				subagentParts.push(`## Execution Focus\n\n${executionOverride.body}`)
 			}
 
-			subagentParts.push(`## Unit Spec\n\n${sanitizeForContext(unitContent, `unit spec: ${unit}`)}`)
-			subagentParts.push(`## Your Role: ${hat}\n\n${sanitizeForContext(hatContent, `hat definition: ${hat}`)}`)
+			subagentParts.push(
+				`## Unit Spec\n\n${sanitizeForContext(unitContent, `unit spec: ${unit}`)}`,
+			)
+			subagentParts.push(
+				`## Your Role: ${hat}\n\n${sanitizeForContext(hatContent, `hat definition: ${hat}`)}`,
+			)
 
 			// Output requirements
 			{
 				const outputReqs = buildOutputRequirements(studio, stage)
 				if (outputReqs) subagentParts.push(outputReqs)
 			}
-
-			// For hookless harnesses, inline the subagent context that would
-			// normally be injected by the subagent-hook PreToolUse handler.
-			const inlineCtx = buildInlineSubagentContext(slug, stage, hat, hats, bolt)
-			if (inlineCtx) sections.push(inlineCtx)
 
 			// Unit inputs — load referenced artifacts
 			if (unitInputs.length > 0) {
@@ -2946,7 +2953,14 @@ function buildRunInstructions(
 			const worktreePath = (action.worktree as string) || ""
 			const unitCaps = getCapabilities()
 
+			// For hookless harnesses, inline the subagent context that would
+			// normally be injected by the subagent-hook PreToolUse handler.
+			// Subagent-capable → goes inside the <subagent> block.
+			// Subagentless → goes in parent sections (parent IS the executor).
+			const inlineCtx = buildInlineSubagentContext(slug, stage, hat, hats, bolt)
+
 			if (unitCaps.subagents.supported) {
+				if (inlineCtx) subagentParts.push(inlineCtx)
 				// ── Subagent-capable: use <subagent> tag format ──
 				const instrLines: string[] = ["## Instructions", ""]
 				let step = 1
@@ -2987,6 +3001,7 @@ function buildRunInstructions(
 				)
 			} else {
 				// ── Subagentless: direct execution in current context ──
+				if (inlineCtx) sections.push(inlineCtx)
 				const activeStageForUnit = (action.stage as string) || ""
 				sections.push(
 					`### Mechanics (Direct Execution)\n\n**Execute the "${hat}" hat work directly** — your harness does not support subagents.\n\n${
@@ -3076,9 +3091,20 @@ function buildRunInstructions(
 				if (outputReqs) sharedParts.push(outputReqs)
 			}
 
-			// For hookless harnesses, inline the subagent context
-			const inlineCtxParallel = buildInlineSubagentContext(slug, stage, firstHat, hats, 1)
-			if (inlineCtxParallel) sections.push(inlineCtxParallel)
+			// For hookless harnesses, inline the subagent context.
+			// Subagent-capable → goes into sharedParts so it lands inside each
+			// <subagent> block. Subagentless → goes into parent sections below.
+			const inlineCtxParallel = buildInlineSubagentContext(
+				slug,
+				stage,
+				firstHat,
+				hats,
+				1,
+			)
+			const parallelCaps = getCapabilities()
+			if (inlineCtxParallel && parallelCaps.subagents.supported) {
+				sharedParts.push(inlineCtxParallel)
+			}
 
 			// Upstream stage inputs — build once, embed in each subagent
 			if (stageDef?.data?.inputs && Array.isArray(stageDef.data.inputs)) {
@@ -3113,9 +3139,7 @@ function buildRunInstructions(
 			const wave = action.wave as number | undefined
 			const totalWaves = action.total_waves as number | undefined
 
-			const caps = getCapabilities()
-
-			if (caps.subagents.supported) {
+			if (parallelCaps.subagents.supported) {
 				// ── Subagent-capable harness: per-unit <subagent> blocks ──
 				sections.push(
 					`## Parallel Execution: ${units.length} units in ${stage}${wave !== undefined ? ` — Wave ${wave}/${totalWaves ?? "?"}` : ""}`,
@@ -3202,6 +3226,7 @@ function buildRunInstructions(
 				)
 			} else {
 				// ── Subagentless harness: sequential execution in current context ──
+				if (inlineCtxParallel) sections.push(inlineCtxParallel)
 				const unitList = units
 					.map((u) => {
 						const wt = worktrees[u]

@@ -60,13 +60,18 @@ export function registerSkillPrompts(): number {
 	}
 
 	const skillsDir = join(pluginRoot, "skills")
-	if (!existsSync(skillsDir)) {
-		console.error(`[haiku] Skills directory not found: ${skillsDir}`)
-		return 0
+	const hasSkillsDir = existsSync(skillsDir)
+	if (!hasSkillsDir) {
+		console.error(
+			`[haiku] Skills directory not found: ${skillsDir} — ` +
+				"registering haiku:status only",
+		)
 	}
 
 	let count = 0
-	const entries = readdirSync(skillsDir, { withFileTypes: true })
+	const entries = hasSkillsDir
+		? readdirSync(skillsDir, { withFileTypes: true })
+		: []
 
 	for (const entry of entries) {
 		if (!entry.isDirectory()) continue

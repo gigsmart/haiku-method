@@ -16,7 +16,7 @@ import { join, resolve } from "node:path"
 import matter from "gray-matter"
 import { getPendingVersion, hasPendingUpdate } from "./auto-update.js"
 import { features, resolvePluginRoot } from "./config.js"
-import { getCapabilities } from "./harness.js"
+import { UNIT_FIELDS } from "./fsm-fields.js"
 import {
 	addTempWorktree,
 	commitAndPushFromWorktree,
@@ -32,6 +32,7 @@ import {
 	readFileFromBranch,
 	removeTempWorktree,
 } from "./git-worktree.js"
+import { getCapabilities } from "./harness.js"
 import { escalate } from "./model-selection.js"
 import { validateSlugArgs } from "./prompts/helpers.js"
 import { logSessionEvent, writeHaikuMetadata } from "./session-metadata.js"
@@ -1559,9 +1560,17 @@ export function isGitRepo(): boolean {
 
 function runInlineQualityGates(
 	intentSlug: string,
-	stage: string,
 	unitPath: string,
-): { error: string; message: string; failures: Array<{ name: string; command: string; exit_code: number; output: string }> } | null {
+): {
+	error: string
+	message: string
+	failures: Array<{
+		name: string
+		command: string
+		exit_code: number
+		output: string
+	}>
+} | null {
 	// Read quality_gates from intent and unit frontmatter
 	const root = findHaikuRoot()
 	const intentFile = join(root, "intents", intentSlug, "intent.md")
@@ -1583,10 +1592,19 @@ function runInlineQualityGates(
 	// Resolve repo root for cwd
 	let repoRoot = process.cwd()
 	try {
-		repoRoot = execSync("git rev-parse --show-toplevel", { encoding: "utf8" }).trim()
-	} catch { /* use cwd */ }
+		repoRoot = execSync("git rev-parse --show-toplevel", {
+			encoding: "utf8",
+		}).trim()
+	} catch {
+		/* use cwd */
+	}
 
-	const failures: Array<{ name: string; command: string; exit_code: number; output: string }> = []
+	const failures: Array<{
+		name: string
+		command: string
+		exit_code: number
+		output: string
+	}> = []
 
 	for (let i = 0; i < allGates.length; i++) {
 		const gate = allGates[i]
@@ -1596,15 +1614,22 @@ function runInlineQualityGates(
 
 		const cwd = gate.dir ? resolve(repoRoot, gate.dir) : repoRoot
 
+		// Per-gate timeout defaults to 30s; override via HAIKU_GATE_TIMEOUT_MS.
+		const gateTimeoutMs =
+			Number.parseInt(process.env.HAIKU_GATE_TIMEOUT_MS ?? "", 10) || 30000
 		try {
 			execSync(gateCmd, {
 				cwd,
 				encoding: "utf8",
-				timeout: 30000,
+				timeout: gateTimeoutMs,
 				stdio: ["pipe", "pipe", "pipe"],
 			})
 		} catch (err: unknown) {
-			const execErr = err as { status?: number; stdout?: string; stderr?: string }
+			const execErr = err as {
+				status?: number
+				stdout?: string
+				stderr?: string
+			}
 			failures.push({
 				name: gateName,
 				command: gateCmd,
@@ -2431,9 +2456,10 @@ export function handleStateTool(
 			// When hooks are available (Claude Code, Kiro), the guard-fsm-fields
 			// PreToolUse hook blocks direct file writes. For hookless harnesses,
 			// validate here inside the MCP tool itself.
-			const fsmProtectedFields = new Set([
-				"status", "started_at", "completed_at", "bolt", "hat", "hat_started_at",
-			])
+			//
+			// Shared with state-integrity.ts via fsm-fields.ts so the write
+			// guard and the tamper detector cannot drift out of alignment.
+			const fsmProtectedFields = new Set<string>(UNIT_FIELDS)
 			const field = args.field as string
 			if (!getCapabilities().hooks && fsmProtectedFields.has(field)) {
 				return text(
@@ -2636,17 +2662,18 @@ export function handleStateTool(
 				// When hooks are available (Claude Code, Kiro), the Stop hook runs
 				// quality_gates commands. For hookless harnesses, run them here
 				// before allowing the unit to complete.
+				//
+				// Run unconditionally on unit completion — runInlineQualityGates
+				// is a no-op when the unit has no quality_gates defined, so this
+				// works for any stage/hat combination including custom studios
+				// that use non-standard hat names.
 				if (!getCapabilities().hooks) {
-					const buildHats = ["builder", "implementer", "refactorer"]
-					if (buildHats.includes(currentHat)) {
-						const qualityGates = runInlineQualityGates(
-							args.intent as string,
-							advStage,
-							advPath,
-						)
-						if (qualityGates) {
-							return text(JSON.stringify(qualityGates))
-						}
+					const qualityGates = runInlineQualityGates(
+						args.intent as string,
+						advPath,
+					)
+					if (qualityGates) {
+						return text(JSON.stringify(qualityGates))
 					}
 				}
 
