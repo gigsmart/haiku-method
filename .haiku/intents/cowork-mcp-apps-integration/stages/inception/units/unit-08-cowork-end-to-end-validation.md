@@ -40,11 +40,12 @@ Out of scope:
 
 Unit-02 §5.1 blocking-vs-resumable measurement is still open. If that lands as **resumable**, checkpoints 7–9 in the research artifact shift (submit tool call splits from the next FSM tick resolving `pending_review`). Re-read `knowledge/unit-08-cowork-e2e-validation-research.md §4` before executing and branch the plan accordingly.
 
-## Cowork fixture (minimum)
+## Test fixture (minimum)
 
-- Env: `CLAUDE_CODE_IS_COWORK=1`, `CLAUDE_CODE_WORKSPACE_HOST_PATHS=<workspace-host-path>` (non-empty; if empty, `request_cowork_directory` fires first).
-- Binary: built from `haiku/cowork-mcp-apps-integration/main` at this commit — required for `_meta.ui` envelope.
-- Fixture intent slug: `cowork-e2e-smoke-<timestamp>` — MUST be distinct from `cowork-mcp-apps-integration` to avoid clobbering the active dev intent. Description: short one-liner that elaborates in a single pass.
+- **MCP host:** any host that advertises `experimental.apps` capability during the `initialize` handshake (Cowork is the current target; Claude Desktop / Goose / VS Code Copilot if they ship MCP Apps support). **No env-var setup** — the validator does not set `CLAUDE_CODE_IS_COWORK`.
+- **Roots capability** (workspace paths): host MUST advertise `roots` capability with at least one workspace folder. If not, `requestHostWorkspace()` fires first and prompts via `elicitInput`.
+- **Binary:** built from `haiku/cowork-mcp-apps-integration/main` at this commit — required for `experimental.apps` server capability and `_meta.ui` envelope.
+- **Fixture intent slug:** `mcp-apps-e2e-smoke-<timestamp>` — MUST be distinct from `cowork-mcp-apps-integration` to avoid clobbering the active dev intent. Description: short one-liner that elaborates in a single pass.
 
 ## FSM transitions the plan MUST observe
 
@@ -52,33 +53,36 @@ Cite the research artifact for line numbers; the plan observes these transitions
 
 - `stages/inception/state.json`: starts at `phase: "elaborate"`, ends at `phase: "execute"` after `fsmAdvancePhase` (`orchestrator.ts:3017`).
 - `intent.md` frontmatter: `intent_reviewed` absent/false → `intent_reviewed: true` written by the `gate_review` path (`orchestrator.ts:3016`).
-- Session log (`stFile`) gains `event: "gate_review_opened"` (`orchestrator.ts:2988`) and `event: "gate_decision", decision: "approved"` (`orchestrator.ts:3001`).
-- `haiku_cowork_review_submit` resolves with `{decision, feedback, annotations}` per contract at `orchestrator.ts:2827-2833`.
+- Session log (`stFile`) gains `event: "gate_review_opened"` (`orchestrator.ts:2989`) and `event: "gate_decision", decision: "approved"` (`orchestrator.ts:3002`).
+- `haiku_cowork_review_submit` resolves with `{decision, feedback, annotations}` per contract at `orchestrator.ts:2846`.
 
 ## Genuine-iframe assertion
 
-Fallback detection is the highest-risk failure mode. The plan MUST fail if either of the following is missing:
+Fallback detection is the highest-risk failure mode. The plan MUST fail if any of the following is missing:
 
+- Capability negotiation: `server.getClientCapabilities()` returns an object containing `experimental.apps` after the `initialize` handshake completes. Verified by an MCP-level capture of the `initialize` exchange.
 - Tool result envelope on the `gate_review` action carries `_meta.ui.resourceUri` (unit-03 helper).
 - Iframe console emits the `host-bridge.ts#isMcpAppsHost()` log line reporting `window.parent !== window` **and** successful `new App({...})` construction (unit-04 §Detection probe). This is NOT PR #213's `useReviewSession` heartbeat — that module is not bundled; the load-bearing logger is the new bridge module.
 
-## Regression scope (local Claude Code)
+## Regression scope (non-MCP-Apps host)
 
-Same fixture description, `CLAUDE_CODE_IS_COWORK` unset, same binary. Assert bit-identical final state on `intent.md` frontmatter and `state.json` `phase`/`gate_outcome`, and identical session-log event names. **Expected divergences** (not failures):
+Run the same fixture against a host that does NOT advertise `experimental.apps` (local Claude Code today, or a stub MCP client without the capability). Assert bit-identical final state on `intent.md` frontmatter and `state.json` `phase`/`gate_outcome`, and identical session-log event names. **Expected divergences** (not failures):
 
-- Local hits `startHttpServer()` at `server.ts:835` and `openBrowser()` at `server.ts:846-859`; Cowork skips both.
-- Local tool result lacks `_meta.ui.*`; Cowork carries it.
-- `host-bridge.ts` log line reports `isMcpAppsHost() == false` locally.
+- Non-MCP-Apps host hits `startHttpServer()` at `server.ts:835`, `openTunnel()` at `:840`, and `openBrowser()` at `:846-859`; the MCP Apps host skips all three.
+- Non-MCP-Apps tool result lacks `_meta.ui.*`; MCP Apps host carries it.
+- `host-bridge.ts` log line reports `isMcpAppsHost() == false` on the regression run.
 
 ## Completion Criteria (all runnable)
 
 - File exists: `test -f .haiku/intents/cowork-mcp-apps-integration/knowledge/COWORK-E2E-PLAN.md`.
 - Plan references the research artifact: `grep -q 'unit-08-cowork-e2e-validation-research.md' knowledge/COWORK-E2E-PLAN.md`.
-- Fixture intent created: `test -f .haiku/intents/cowork-e2e-smoke-*/intent.md`.
-- Frontmatter transition: `grep -E '^intent_reviewed:\s*true' .haiku/intents/cowork-e2e-smoke-*/intent.md`.
-- State transition: `jq -e '.phase == "execute"' .haiku/intents/cowork-e2e-smoke-*/stages/inception/state.json`.
+- Fixture intent created: `test -f .haiku/intents/mcp-apps-e2e-smoke-*/intent.md`.
+- Frontmatter transition: `grep -E '^intent_reviewed:\s*true' .haiku/intents/mcp-apps-e2e-smoke-*/intent.md`.
+- State transition: `jq -e '.phase == "execute"' .haiku/intents/mcp-apps-e2e-smoke-*/stages/inception/state.json`.
 - Session log events: `grep -c 'gate_review_opened' <stFile>` >= 1 **and** `grep -c '"decision":"approved"' <stFile>` >= 1.
+- Capability negotiation captured: `<initialize-capture>.serverCapabilities.experimental.apps` is non-null AND `<initialize-capture>.clientCapabilities.experimental.apps` is non-null.
 - MCP Apps envelope: `grep -q '_meta.ui.resourceUri' <captured-tool-result-json>`.
 - Host-bridge mode log: `grep -q 'isMcpAppsHost.*true' <iframe-console-log>`.
 - Screenshot count: `ls evidence/screenshots/*.png | wc -l` >= 3 (iframe render, decision submit, next FSM tick).
-- Regression diff: state-file diff between Cowork and local runs is empty except for the divergent transport lines above — captured in the PR description.
+- Regression diff: state-file diff between MCP-Apps host and non-MCP-Apps host runs is empty except for the divergent transport lines above — captured in the PR description.
+- **No env-var coupling.** Plan MUST NOT instruct the validator to set `CLAUDE_CODE_IS_COWORK` or any other host-specific env var. Detection is via capability negotiation only.

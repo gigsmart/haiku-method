@@ -19,46 +19,46 @@ hat_started_at: '2026-04-15T04:29:44Z'
 completed_at: '2026-04-15T04:30:23Z'
 ---
 
-# Cowork environment probe and workspace handshake
+# MCP Apps capability negotiation + workspace handshake
 
 ## Scope
 
-Single detection module + workspace handshake. Downstream code consults it before choosing a transport or writing `.haiku/`. No transport, no review-UI, no tool-list filtering changes in this unit.
+Detect whether the connected MCP host supports the **MCP Apps extension** via spec-compliant capability negotiation (modelcontextprotocol.io/extensions/overview#negotiation), and expose a single accessor that downstream code consults before choosing a transport. No environment variable detection. Plus a workspace handshake for hosts that don't expose filesystem paths to the server.
 
 ### In scope
 
-- Export `isCoworkHost(): boolean` from `packages/haiku/src/state-tools.ts` (colocated with `isGitRepo`). Reads `CLAUDE_CODE_IS_COWORK` from the forwarded `_session_context` — treat **any non-empty value** as true (per researcher note, "1" is not guaranteed).
-- Export `getCoworkWorkspacePaths(): string[]` that parses `CLAUDE_CODE_WORKSPACE_HOST_PATHS` tolerantly: must handle **both `:` and `;`** separators (POSIX and Windows PATH conventions) until the Cowork doc confirms one — documented as TODO in the helper's JSDoc.
-- Forward `CLAUDE_CODE_WORKSPACE_HOST_PATHS` through `packages/haiku/src/hooks/inject-state-file.ts` `vars` list (currently only forwards `CLAUDE_CODE_IS_COWORK` at `inject-state-file.ts:21`). Without this, the MCP server cannot read it.
-- Workspace handshake: when `isCoworkHost() && paths.length === 0`, invoke `request_cowork_directory` **before any `.haiku/` write**. Call surface is still unknown (reverse-tool vs elicitation vs JSON-RPC) — implement behind a single `requestCoworkDirectory()` indirection so the call site can be swapped when Cowork docs confirm.
-- Multi-workspace policy: `paths.length > 1` → `elicitInput` pick; `== 1` → auto-select; `== 0` → handshake. Selection cached on the session context for the rest of the process lifetime.
-- Sentry tag compatibility: `sentry.ts:24-25` must keep working; do not rename or drop `sessionCtx.CLAUDE_CODE_IS_COWORK`.
-- Unit tests covering all four branches.
+- **Server-side capability declaration.** In `packages/haiku/src/server.ts:158` capabilities block, add `experimental: { apps: {} }` (or whatever the MCP Apps spec keys it under) so the `initialize` handshake advertises support to the client.
+- **Negotiated-capability accessor.** Export `hostSupportsMcpApps(): boolean` from `packages/haiku/src/state-tools.ts` (colocated with `isGitRepo`). Reads from `server.getClientCapabilities()` (MCP SDK API) — true iff the client echoed back the same `apps` capability during initialize. Caches the result on first read; the value cannot change for the life of the connection.
+- **Workspace path accessor.** Export `getMcpHostWorkspacePaths(): string[]` from the same module. Pulls workspace folder paths from whatever the negotiated host capability surfaces — preferred path is reading from the `roots` capability (`server.listRoots()`) per MCP spec, falling back to `null` if the host did not advertise `roots`. **No env-var coupling.**
+- **Workspace handshake.** When `hostSupportsMcpApps() === true && getMcpHostWorkspacePaths().length === 0`, invoke a single `requestHostWorkspace()` indirection (using `roots/list_changed` notification or `elicitInput` depending on what the negotiated capability set supports) **before any `.haiku/` write**. The exact call surface is hidden behind the indirection so the implementation can swap once we measure host behavior in unit-08.
+- **Multi-workspace policy.** `roots.length > 1` → `elicitInput` pick; `== 1` → auto-select; `== 0` → handshake. Selection cached on the session context.
+- **Sentry tag compatibility.** Sentry `sentry.ts:24-25` may still reference `CLAUDE_CODE_IS_COWORK` for telemetry tagging — that's a separate concern and is **not** removed by this unit. Tagging keeps working.
+- **Unit tests** covering: client advertises `apps` capability → `hostSupportsMcpApps()` returns true; client does not → returns false; multi-root pick; single-root auto; zero-root handshake.
 
 ### Out of scope
 
-- MCP Apps `ui://` resource registration (unit-03).
-- Review transport swap (unit-05).
-- Tool list filtering by environment.
-- Replacing the unknown `request_cowork_directory` transport — unit-01 ships the indirection, unit-02 (timeout spike) or a later refine can pin the real shape.
+- The `_meta.ui.resourceUri` envelope helper (unit-03).
+- The Cowork branch of `_openReviewAndWait` (unit-05).
+- `ask_user_visual_question` and `pick_design_direction` Cowork branches (unit-06).
+- Tool list filtering — every tool stays advertised; runtime branching alone changes behavior.
+- Removing `CLAUDE_CODE_IS_COWORK` references in Sentry — out of scope, separate cleanup.
 
 ## Completion Criteria
 
 Each criterion must be verifiable by a specific command.
 
-1. **Probe exports exist.** `rg -n '^export function isCoworkHost' packages/haiku/src/state-tools.ts` returns 1 line; `rg -n '^export function getCoworkWorkspacePaths' packages/haiku/src/state-tools.ts` returns 1 line.
-2. **Env var is forwarded.** `rg -n 'CLAUDE_CODE_WORKSPACE_HOST_PATHS' packages/haiku/src/hooks/inject-state-file.ts` returns ≥1 line inside the `vars` array (verify by reading context).
-3. **Both separators parse.** A test feeds `"/a:/b"` and `"C:\\a;C:\\b"` to `getCoworkWorkspacePaths()` and asserts both return a 2-element array. Test file name is fixed in the spec; test runner exits 0.
-4. **Truthy-variant test.** Tests assert `isCoworkHost()` is true for each of `"1"`, `"true"`, `"yes"`, and false for `""` and unset.
-5. **Handshake fires only when needed.** Integration test mocks `requestCoworkDirectory`; asserts it is called exactly when `isCoworkHost() === true && paths.length === 0`, and **not called** in the other three branches. Test runner exits 0.
-6. **Handshake precedes `.haiku/` writes.** Test with `CLAUDE_CODE_IS_COWORK=1` and empty paths spies on the first `.haiku/` write path and on `requestCoworkDirectory`; asserts the handshake call index < first write call index.
-7. **Non-Cowork path is byte-identical.** The existing `state-tools.test.ts` suite runs without modification and passes. `git diff packages/haiku/src/state-tools.test.ts` shows additions only (no edits to existing tests).
-8. **Sentry tagging unbroken.** `rg -n 'CLAUDE_CODE_IS_COWORK' packages/haiku/src/sentry.ts` still returns the existing reference; sentry unit test (if present) or a smoke assertion passes.
-9. **Contract doc updated.** `packages/haiku/VALIDATION.md` has a new "Cowork detection" section listing the three branches and the unknown-separator caveat — verified by `rg -n '## Cowork detection' packages/haiku/VALIDATION.md`.
-10. **No transport/UI code touched.** `git diff --name-only` does **not** include `server.ts`, `orchestrator.ts`, `http.ts`, `tunnel.ts`, or anything under `packages/haiku/src/templates/`.
+1. **Capability advertised.** `rg -n 'experimental.*apps' packages/haiku/src/server.ts` returns ≥1 line inside the `Server` constructor capabilities block.
+2. **Accessor exists.** `rg -n '^export function hostSupportsMcpApps' packages/haiku/src/state-tools.ts` returns 1 line; same for `getMcpHostWorkspacePaths`.
+3. **Negotiation path works.** Integration test boots the server with a stub client that advertises `apps` in its `initialize` response → `hostSupportsMcpApps()` returns `true`. Stub client without the capability → `false`. Test runner exits 0.
+4. **Caching is idempotent.** Calling `hostSupportsMcpApps()` ten times against a single connection invokes `server.getClientCapabilities()` at most once — verified by spy.
+5. **Handshake fires only when needed.** Integration test asserts `requestHostWorkspace()` is called exactly when `hostSupportsMcpApps() === true && roots.length === 0`, and **not called** in the other three branches.
+6. **Handshake precedes `.haiku/` writes.** Test spies on the first `.haiku/` write path and on `requestHostWorkspace()`; asserts the handshake call index < first write call index.
+7. **Non-MCP-Apps path is byte-identical.** The existing `state-tools.test.ts` suite runs without modification and passes. `git diff packages/haiku/src/state-tools.test.ts` shows additions only.
+8. **No env-var detection of Cowork.** `rg -n 'CLAUDE_CODE_IS_COWORK' packages/haiku/src/state-tools.ts packages/haiku/src/hooks/` returns zero hits (Sentry's existing reference at `sentry.ts:24-25` is allowed and out of scope).
+9. **Contract doc updated.** `packages/haiku/VALIDATION.md` has a new "MCP Apps capability negotiation" section linking the spec — verified by `rg -n '## MCP Apps capability negotiation' packages/haiku/VALIDATION.md`.
+10. **No transport/UI code touched.** `git diff --name-only` does **not** include `orchestrator.ts`, `http.ts`, `tunnel.ts`, or anything under `packages/haiku/src/templates/`. `server.ts` is touched **only** for the capabilities block (criterion 1).
 
 ## Open items deferred (not blockers for this unit)
 
-- Exact `CLAUDE_CODE_WORKSPACE_HOST_PATHS` separator — handled by tolerant parsing, confirm in unit-02 or refine.
-- Real shape of `request_cowork_directory` — hidden behind `requestCoworkDirectory()` indirection.
-- Cowork capability/version flag for support detection — add when Cowork surfaces one.
+- Exact zod shape for the `experimental.apps` capability — derive from `@modelcontextprotocol/ext-apps` once the dep lands in unit-04.
+- Real shape of `requestHostWorkspace()` — hidden behind the indirection, pinned in unit-08 once we observe a real host.

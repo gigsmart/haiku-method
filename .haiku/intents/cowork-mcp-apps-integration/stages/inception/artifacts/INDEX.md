@@ -27,13 +27,22 @@ referenced file lives under `.haiku/intents/cowork-mcp-apps-integration/knowledg
 - `unit-07-scoping-decisions.md` — `get_review_status` doc-scrub inventory and exclusion list
 - `unit-08-cowork-e2e-validation-research.md` — 15 numbered E2E checkpoints with `[M]`/`[A]` markers
 
-## Note on Cowork detection
+## Detection: MCP capability negotiation, not env vars
 
-The unit specs currently describe Cowork detection via env var
-(`CLAUDE_CODE_IS_COWORK`). A followup refinement will replace this with
-**MCP capability negotiation** per the MCP spec
-(modelcontextprotocol.io/extensions/overview#negotiation). The server
-declares the MCP Apps extension in its capabilities; the client responds
-during the `initialize` handshake; the server reads the negotiated
-capability and chooses the transport accordingly. This makes the feature
-work across any MCP host that supports the extension, not just Cowork.
+Units 01, 05, 06, and 08 detect MCP Apps host support via the spec-
+compliant **capability negotiation** path
+(modelcontextprotocol.io/extensions/overview#negotiation):
+
+1. Server advertises `experimental.apps` in its `Server` constructor
+   capabilities block (`packages/haiku/src/server.ts:158`).
+2. Client echoes back support during the `initialize` handshake.
+3. The unit-01 accessor `hostSupportsMcpApps()` reads
+   `server.getClientCapabilities()` and caches the result.
+4. Units 05/06 branch on `hostSupportsMcpApps()` — **not** on any env
+   variable.
+
+This makes the feature work across **any** MCP host that ships the MCP
+Apps extension (Cowork, Claude Desktop if it adopts, Goose, VS Code
+Copilot, etc.), not just Cowork. The intent slug retains the historical
+`cowork-` prefix for traceability, but the implementation is host-
+agnostic.
