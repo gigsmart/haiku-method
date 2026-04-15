@@ -103,6 +103,25 @@ Findings from the dev-stage adversarial review (SRE hat) and security-stage STRI
 
 ---
 
+## VUL-007 — axios CVEs via localtunnel transitive dependency
+
+| Field | Value |
+|---|---|
+| **Severity** | HIGH (critical axios CVE in dep tree) |
+| **OWASP** | A06 Vulnerable and Outdated Components |
+| **Status** | Accepted risk |
+| **Affected** | `localtunnel >=1.9.0` → `axios <=1.14.0` (transitive) |
+
+**Description:** `npm audit` reports 3 vulnerabilities in the transitive dependency chain: `axios <=1.14.0` (critical CSRF, SSRF, and DoS advisories: GHSA-wf5p-g6vw-rhxx, GHSA-jr5f-v2jv-69x6, GHSA-43fc-jf86-j433, GHSA-3p68-rc4w-qgx5, GHSA-fvcv-3m26-pcqx) and `follow-redirects <=1.15.11` (moderate auth header leak: GHSA-r4q5-vmmm-2653). These packages are introduced by `localtunnel`, used only in `tunnel.ts` (the HTTP review path).
+
+**Exposure:** The MCP Apps path (`open-review-mcp-apps.ts`) makes zero outbound HTTP calls and does not import `tunnel.ts` (structural guarantee, per design comment). The vulnerable code paths in axios/follow-redirects are reachable only through the localtunnel HTTP path, which requires user action to invoke.
+
+**Recommended fix:** Pin `localtunnel` to `1.8.3` (the last pre-axios version). Blocked on breaking change (`npm audit fix --force` required). Tracked for next dependency update cycle.
+
+**Accepted risk justification:** The MCP Apps attack surface is fully isolated from the vulnerable transitive deps. The axios vulnerabilities (SSRF, CSRF) are in localtunnel's HTTP tunnel establishment code, not in any code path reachable from MCP tool dispatch.
+
+---
+
 ## Finding Summary
 
 | ID | Severity | Title | Status |
@@ -113,5 +132,6 @@ Findings from the dev-stage adversarial review (SRE hat) and security-stage STRI
 | VUL-004 | LOW | Sequential integer request IDs (guessable) | Accepted risk |
 | VUL-005 | LOW | console.log leaks bridge detection state | Accepted risk |
 | VUL-006 | INFO | REVIEW_APP_HTML served without auth via resources/read | By design |
+| VUL-007 | HIGH | axios CVEs via localtunnel transitive dependency | Accepted risk (HTTP path only, MCP Apps isolated) |
 
-No CRITICAL or HIGH findings. All MEDIUM findings resolved in `094ec3f7`.
+**CRITICAL/HIGH:** VUL-007 (HIGH) — accepted risk, isolated to HTTP tunnel path, not reachable from MCP Apps attack surface. All MEDIUM findings resolved in `094ec3f7`.
