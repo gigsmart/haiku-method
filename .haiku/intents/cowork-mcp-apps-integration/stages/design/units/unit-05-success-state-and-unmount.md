@@ -17,6 +17,10 @@ bolt: 1
 hat: designer
 started_at: '2026-04-15T13:01:06Z'
 hat_started_at: '2026-04-15T13:01:06Z'
+outputs: |-
+  - stages/design/artifacts/success-approved.html
+  - stages/design/artifacts/success-changes-requested.html
+  - stages/design/artifacts/success-external-review.html
 ---
 
 # Decision-submitted success state and iframe unmount

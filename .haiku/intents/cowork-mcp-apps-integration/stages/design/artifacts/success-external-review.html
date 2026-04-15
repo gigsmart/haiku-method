@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<!--
+  success-external-review.html
+  Success state: decision = external_review
+  Container width: 480px (iframe-narrow)
+
+  Token map:
+  --iframe-bg          → stone-950  (rgb 12 10 9)
+  --topbar-bg          → stone-900  (rgb 28 25 23)
+  --topbar-border      → stone-800  (rgb 41 37 36)
+  --content-text       → stone-100  (rgb 245 245 244)
+  --content-muted      → stone-400  (rgb 168 162 158)
+  --icon-accent        → indigo-400 (rgb 129 140 248)
+  --icon-bg            → indigo-950 (rgb 30 27 75)
+  --heading-color      → indigo-300 (rgb 165 180 252)
+  --url-bg             → stone-900  (rgb 28 25 23)
+  --url-border         → stone-700  (rgb 68 64 60)
+  --url-border-focus   → indigo-500 (rgb 99 102 241)
+  --url-text           → stone-100  (rgb 245 245 244)
+  --copy-hint-text     → stone-400  (rgb 168 162 158)
+  --copy-hint-hover    → indigo-300 (rgb 165 180 252)
+  --label-text         → stone-500  (rgb 120 113 108)
+  --instruction-bg     → stone-900  (rgb 28 25 23)
+  --instruction-border → indigo-900 (rgb 49 46 129)
+  --instruction-text   → stone-300  (rgb 214 211 209)
+  --topbar-pill        → teal-500   (rgb 20 184 166)
+
+  Note on clipboard: Some sandbox configurations block navigator.clipboard.
+  The Copy span below uses a data-copy attribute; the SPA wires up a
+  document.execCommand('copy') fallback. No JS in this static mockup.
+
+  Note on external link: No target="_blank" anywhere. The URL is
+  rendered as a readonly <input> only. The instruction below asks the
+  reviewer to paste the URL into their external tool. This follows the
+  design gap disposition in DESIGN-BRIEF.md: "external review URL renders
+  as a copy-to-clipboard input plus a short 'open in your tools'
+  instruction."
+
+  Focus management: On mount, JS (host-injected or SPA router) calls
+  document.getElementById('success-heading').focus(). The heading has
+  tabindex="-1" so it is focusable programmatically without entering
+  the tab order. After the user activates the copy hint (Tab → Enter),
+  focus returns to the URL input. The host resumes managing focus once
+  the iframe is unmounted.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=480, initial-scale=1.0">
+<title>Success — External Review Requested</title>
+<style>
+  /* ── Reset ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Iframe simulation container ── */
+  .iframe-sim {
+    width: 480px;
+    min-height: 640px;
+    display: flex;
+    flex-direction: column;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 14px;
+    background-color: rgb(12, 10, 9);       /* stone-950 */
+    color: rgb(245, 245, 244);              /* stone-100 */
+    border: 1px solid rgb(41, 37, 36);      /* stone-800 */
+    position: relative;
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    height: 36px;
+    min-height: 36px;
+    background-color: rgb(28, 25, 23);      /* stone-900 */
+    border-bottom: 1px solid rgb(41, 37, 36); /* stone-800 */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    flex-shrink: 0;
+  }
+
+  .topbar-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgb(168, 162, 158);              /* stone-400 */
+    letter-spacing: 0.02em;
+  }
+
+  .topbar-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: rgb(168, 162, 158);              /* stone-400 */
+  }
+
+  .topbar-pill .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background-color: rgb(20, 184, 166);    /* teal-500 */
+    flex-shrink: 0;
+  }
+
+  /* ── Content area ── */
+  .content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 36px 24px 48px;
+    text-align: center;
+  }
+
+  /* ── Icon container ── */
+  .icon-wrap {
+    width: 64px;
+    height: 64px;
+    border-radius: 9999px;
+    background-color: rgb(30, 27, 75);      /* indigo-950 */
+    border: 2px solid rgb(129, 140, 248);   /* indigo-400 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+    opacity: 0;
+    animation: fade-in 200ms ease-out 50ms forwards;
+  }
+
+  .icon-wrap svg {
+    width: 30px;
+    height: 30px;
+    color: rgb(129, 140, 248);              /* indigo-400 */
+    stroke: currentColor;
+  }
+
+  /* ── Heading ── */
+  .success-heading {
+    font-size: 20px;
+    font-weight: 700;
+    color: rgb(165, 180, 252);              /* indigo-300 */
+    line-height: 1.2;
+    margin-bottom: 8px;
+    opacity: 0;
+    animation: fade-in 200ms ease-out 100ms forwards;
+    outline: none;
+  }
+
+  /* ── Subtext ── */
+  .subtext {
+    font-size: 13px;
+    color: rgb(168, 162, 158);              /* stone-400 */
+    margin-bottom: 28px;
+    line-height: 1.5;
+    max-width: 340px;
+    opacity: 0;
+    animation: fade-in 200ms ease-out 140ms forwards;
+  }
+
+  /* ── URL field group ── */
+  .url-group {
+    width: 100%;
+    text-align: left;
+    opacity: 0;
+    animation: fade-in 200ms ease-out 160ms forwards;
+  }
+
+  .url-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgb(120, 113, 108);              /* stone-500 */
+    margin-bottom: 6px;
+  }
+
+  .url-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    border: 1px solid rgb(68, 64, 60);      /* stone-700 */
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: rgb(28, 25, 23);      /* stone-900 */
+  }
+
+  .url-input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Mono', monospace;
+    color: rgb(245, 245, 244);              /* stone-100 */
+    cursor: text;
+    /* Force single-line ellipsis on overflow */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .url-input:focus {
+    box-shadow: 0 0 0 2px rgb(99, 102, 241) inset; /* indigo-500 inset ring */
+  }
+
+  /* Copy hint — a styled <span> acting as an affordance indicator.
+     The SPA wires a click listener to this span that calls
+     navigator.clipboard.writeText() with execCommand fallback.
+     Keyboard access: tabindex="0" + Enter/Space via JS listener
+     (not shown in this static mockup). No interactive HTML elements used. */
+  .copy-hint {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgb(168, 162, 158);              /* stone-400 */
+    border-left: 1px solid rgb(68, 64, 60); /* stone-700 */
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    /* min touch target height is inherited from the row height */
+  }
+
+  .copy-hint:hover {
+    color: rgb(165, 180, 252);              /* indigo-300 */
+    background-color: rgba(99, 102, 241, 0.08); /* indigo tint */
+  }
+
+  .copy-hint:focus-visible {
+    outline: 2px solid rgb(99, 102, 241);   /* indigo-500 */
+    outline-offset: -2px;
+  }
+
+  .copy-hint svg {
+    width: 13px;
+    height: 13px;
+    stroke: currentColor;
+    flex-shrink: 0;
+  }
+
+  /* ── Instruction card ── */
+  .instruction-card {
+    width: 100%;
+    background-color: rgb(28, 25, 23);      /* stone-900 */
+    border: 1px solid rgb(49, 46, 129);     /* indigo-900 */
+    border-radius: 8px;
+    padding: 12px 14px;
+    text-align: left;
+    margin-top: 16px;
+    opacity: 0;
+    animation: fade-in 200ms ease-out 200ms forwards;
+  }
+
+  .instruction-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgb(165, 180, 252);              /* indigo-300 */
+    margin-bottom: 6px;
+  }
+
+  .instruction-text {
+    font-size: 13px;
+    color: rgb(214, 211, 209);              /* stone-300 */
+    line-height: 1.6;
+  }
+
+  /* ── Fade-in keyframes ── */
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Reduced-motion override ── */
+  @media (prefers-reduced-motion: reduce) {
+    .icon-wrap,
+    .success-heading,
+    .subtext,
+    .url-group,
+    .instruction-card {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="iframe-sim">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <span class="topbar-title">H·AI·K·U Review</span>
+    <span class="topbar-pill">
+      <span class="dot" role="presentation"></span>
+      MCP Apps · connected
+    </span>
+  </div>
+
+  <!-- Success content -->
+  <main class="content">
+
+    <!-- Share / external icon -->
+    <div class="icon-wrap" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Share icon -->
+        <circle cx="18" cy="5" r="3"></circle>
+        <circle cx="6" cy="12" r="3"></circle>
+        <circle cx="18" cy="19" r="3"></circle>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+      </svg>
+    </div>
+
+    <!-- Focus management: focus() is called on this element by the SPA
+         router immediately after the success state mounts. tabindex="-1"
+         allows programmatic focus without inserting the heading into the
+         natural tab order. After the user activates the Copy hint (Tab
+         then Enter/Space), focus returns to the url-input. The host
+         resumes managing focus once the iframe is unmounted. -->
+    <h1
+      id="success-heading"
+      class="success-heading"
+      aria-live="polite"
+      tabindex="-1"
+    >
+      External review requested
+    </h1>
+
+    <p class="subtext">
+      Copy the link below and share it with your reviewer. The review session will remain open until they submit their decision.
+    </p>
+
+    <!-- URL copy field — NO target="_blank" anywhere.
+         The URL is presented as a readonly input only. -->
+    <div class="url-group">
+      <label class="url-label" for="review-url">Review link</label>
+      <div class="url-row">
+        <input
+          id="review-url"
+          class="url-input"
+          type="text"
+          readonly
+          value="https://review.haiku.dev/r/cowork-mcp-apps-integration?token=eyJhbGciOiJIUzI1NiJ9.sample"
+          aria-label="External review URL — copy to share"
+        >
+        <!-- Copy hint: styled span with role="button" + tabindex for keyboard access.
+             SPA wires click + keydown(Enter/Space) → navigator.clipboard.writeText()
+             with document.execCommand('copy') fallback for restricted sandboxes. -->
+        <span
+          class="copy-hint"
+          role="button"
+          tabindex="0"
+          aria-label="Copy review link to clipboard"
+          data-copy-target="review-url"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          Copy
+        </span>
+      </div>
+    </div>
+
+    <!-- Instruction card -->
+    <div class="instruction-card" role="note">
+      <p class="instruction-label">Next step</p>
+      <p class="instruction-text">
+        Paste this link into your code review tool, ticket, or message your reviewer directly. This window will stay open until the decision is received.
+      </p>
+    </div>
+
+  </main>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<!--
+  success-changes-requested.html
+  Success state: decision = changes_requested
+  Container width: 480px (iframe-narrow)
+
+  Token map:
+  --iframe-bg          → stone-950  (rgb 12 10 9)
+  --topbar-bg          → stone-900  (rgb 28 25 23)
+  --topbar-border      → stone-800  (rgb 41 37 36)
+  --content-text       → stone-100  (rgb 245 245 244)
+  --content-muted      → stone-400  (rgb 168 162 158)
+  --icon-accent        → amber-400  (rgb 251 191 36)
+  --icon-bg            → amber-950  (rgb 69 26 3)
+  --heading-color      → amber-300  (rgb 252 211 77)
+  --quote-bg           → stone-900  (rgb 28 25 23)
+  --quote-border       → amber-500  (rgb 245 158 11)
+  --quote-text         → stone-200  (rgb 231 229 228)
+  --label-text         → stone-500  (rgb 120 113 108)
+  --topbar-pill        → teal-500   (rgb 20 184 166)
+
+  Focus management: On mount, JS (host-injected or SPA router) calls
+  document.getElementById('success-heading').focus(). The heading has
+  tabindex="-1" so it is focusable programmatically without entering
+  the tab order. aria-live="polite" announces the heading text to
+  screen readers when the node is inserted into the DOM.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=480, initial-scale=1.0">
+<title>Success — Changes Requested</title>
+<style>
+  /* ── Reset ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Iframe simulation container ── */
+  .iframe-sim {
+    width: 480px;
+    min-height: 640px;
+    display: flex;
+    flex-direction: column;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 14px;
+    background-color: rgb(12, 10, 9);       /* stone-950 */
+    color: rgb(245, 245, 244);              /* stone-100 */
+    border: 1px solid rgb(41, 37, 36);      /* stone-800 */
+    position: relative;
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    height: 36px;
+    min-height: 36px;
+    background-color: rgb(28, 25, 23);      /* stone-900 */
+    border-bottom: 1px solid rgb(41, 37, 36); /* stone-800 */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    flex-shrink: 0;
+  }
+
+  .topbar-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgb(168, 162, 158);              /* stone-400 */
+    letter-spacing: 0.02em;
+  }
+
+  .topbar-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: rgb(168, 162, 158);              /* stone-400 */
+  }
+
+  .topbar-pill .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background-color: rgb(20, 184, 166);    /* teal-500 */
+    flex-shrink: 0;
+  }
+
+  /* ── Content area ── */
+  .content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 24px 48px;
+    text-align: center;
+  }
+
+  /* ── Icon container ── */
+  .icon-wrap {
+    width: 64px;
+    height: 64px;
+    border-radius: 9999px;
+    background-color: rgb(69, 26, 3);       /* amber-950 */
+    border: 2px solid rgb(251, 191, 36);    /* amber-400 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+    opacity: 0;
+    animation: fade-in 200ms ease-out 50ms forwards;
+  }
+
+  .icon-wrap svg {
+    width: 32px;
+    height: 32px;
+    color: rgb(251, 191, 36);               /* amber-400 */
+    stroke: currentColor;
+  }
+
+  /* ── Heading ── */
+  .success-heading {
+    font-size: 20px;
+    font-weight: 700;
+    color: rgb(252, 211, 77);               /* amber-300 */
+    line-height: 1.2;
+    margin-bottom: 8px;
+    opacity: 0;
+    animation: fade-in 200ms ease-out 100ms forwards;
+    outline: none;
+  }
+
+  /* ── Subtext ── */
+  .subtext {
+    font-size: 13px;
+    color: rgb(168, 162, 158);              /* stone-400 */
+    margin-bottom: 24px;
+    line-height: 1.5;
+    opacity: 0;
+    animation: fade-in 200ms ease-out 140ms forwards;
+  }
+
+  /* ── Quote block ── */
+  .feedback-label {
+    width: 100%;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgb(120, 113, 108);              /* stone-500 */
+    margin-bottom: 6px;
+    opacity: 0;
+    animation: fade-in 200ms ease-out 160ms forwards;
+  }
+
+  .quote-block {
+    width: 100%;
+    background-color: rgb(28, 25, 23);      /* stone-900 */
+    border-left: 3px solid rgb(245, 158, 11); /* amber-500 */
+    border-radius: 0 6px 6px 0;
+    padding: 12px 14px;
+    text-align: left;
+    opacity: 0;
+    animation: fade-in 200ms ease-out 180ms forwards;
+  }
+
+  .quote-text {
+    font-size: 13px;
+    color: rgb(231, 229, 228);              /* stone-200 */
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  /* ── Fade-in keyframes ── */
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Reduced-motion override ── */
+  @media (prefers-reduced-motion: reduce) {
+    .icon-wrap,
+    .success-heading,
+    .subtext,
+    .feedback-label,
+    .quote-block {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="iframe-sim">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <span class="topbar-title">H·AI·K·U Review</span>
+    <span class="topbar-pill">
+      <span class="dot" role="presentation"></span>
+      MCP Apps · connected
+    </span>
+  </div>
+
+  <!-- Success content -->
+  <main class="content">
+
+    <!-- Warning / edits icon -->
+    <div class="icon-wrap" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Pencil / edit icon -->
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+      </svg>
+    </div>
+
+    <!-- Focus management: focus() is called on this element by the SPA
+         router immediately after the success state mounts. tabindex="-1"
+         allows programmatic focus without inserting the heading into the
+         natural tab order. The host resumes managing focus once the
+         iframe is unmounted. -->
+    <h1
+      id="success-heading"
+      class="success-heading"
+      aria-live="polite"
+      tabindex="-1"
+    >
+      Changes requested
+    </h1>
+
+    <p class="subtext">
+      Your feedback has been recorded. The agent will address it in the next bolt.
+    </p>
+
+    <!-- Echoed feedback -->
+    <p class="feedback-label" aria-hidden="true">Your feedback</p>
+    <blockquote class="quote-block">
+      <p class="quote-text">
+        The unit scope is too broad — please split the API integration and the UI wiring into separate units so each can be reviewed independently.
+      </p>
+    </blockquote>
+
+  </main>
+
+</div>
+
+</body>
+</html>
