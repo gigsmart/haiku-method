@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { SessionData, QuestionAnswer, ReviewAnnotations } from "../types";
+import {
+  getSession,
+  submitDecision as bridgeSubmitDecision,
+  submitAnswers as bridgeSubmitAnswers,
+  submitDesignDirection as bridgeSubmitDesignDirection,
+} from "../host-bridge";
 
 /**
  * Maintains a WebSocket connection to the server for the given session.
@@ -44,19 +50,6 @@ export function useSessionWebSocket(sessionId: string) {
   return wsRef;
 }
 
-/** Try to send data via WebSocket. Returns true if sent, false otherwise. */
-function trySendViaWs(
-  wsRef: React.RefObject<WebSocket | null>,
-  data: unknown,
-): boolean {
-  const ws = wsRef.current;
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(data));
-    return true;
-  }
-  return false;
-}
-
 export function useSession(sessionId: string) {
   const [session, setSession] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,13 +60,7 @@ export function useSession(sessionId: string) {
 
     async function fetchSession() {
       try {
-        const res = await fetch(`/api/session/${sessionId}`, {
-          headers: { "bypass-tunnel-reminder": "1" },
-        });
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        const data: SessionData = await res.json();
+        const data = await getSession(sessionId);
         if (!cancelled) {
           setSession(data);
           setLoading(false);
@@ -105,33 +92,7 @@ export async function submitDecision(
   annotations?: ReviewAnnotations,
   wsRef?: React.RefObject<WebSocket | null>,
 ): Promise<void> {
-  // Try WebSocket first
-  if (wsRef) {
-    const sent = trySendViaWs(wsRef, {
-      type: "decide",
-      decision,
-      feedback,
-      annotations,
-    });
-    if (sent) return;
-  }
-
-  // Fall back to HTTP POST
-  const payload: Record<string, unknown> = { decision, feedback };
-  if (annotations) {
-    payload.annotations = annotations;
-  }
-
-  const res = await fetch(`/review/${sessionId}/decide`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "bypass-tunnel-reminder": "1" },
-    body: JSON.stringify(payload),
-    keepalive: true,
-  });
-
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
+  return bridgeSubmitDecision(sessionId, decision, feedback, annotations, wsRef);
 }
 
 /** Submit question answers.
@@ -143,32 +104,7 @@ export async function submitAnswers(
   feedback?: string,
   annotations?: { comments?: Array<{ selectedText: string; comment: string; paragraph: number }> },
 ): Promise<void> {
-  // Try WebSocket first
-  if (wsRef) {
-    const sent = trySendViaWs(wsRef, {
-      type: "answer",
-      answers,
-      feedback,
-      annotations,
-    });
-    if (sent) return;
-  }
-
-  // Fall back to HTTP POST
-  const payload: Record<string, unknown> = { answers };
-  if (feedback) payload.feedback = feedback;
-  if (annotations) payload.annotations = annotations;
-
-  const res = await fetch(`/question/${sessionId}/answer`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "bypass-tunnel-reminder": "1" },
-    body: JSON.stringify(payload),
-    keepalive: true,
-  });
-
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
+  return bridgeSubmitAnswers(sessionId, answers, wsRef, feedback, annotations);
 }
 
 /** Submit a design direction selection.
@@ -179,28 +115,7 @@ export async function submitDesignDirection(
   parameters: Record<string, number>,
   wsRef?: React.RefObject<WebSocket | null>,
 ): Promise<void> {
-  // Try WebSocket first
-  if (wsRef) {
-    const sent = trySendViaWs(wsRef, {
-      type: "select",
-      archetype,
-      parameters,
-    });
-    if (sent) return;
-  }
-
-  // Fall back to HTTP POST
-  const res = await fetch(`/direction/${sessionId}/select`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "bypass-tunnel-reminder": "1" },
-    body: JSON.stringify({ archetype, parameters }),
-    keepalive: true,
-  });
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
+  return bridgeSubmitDesignDirection(sessionId, archetype, parameters, wsRef);
 }
 
 /** Try to close the tab, or show fallback message.
