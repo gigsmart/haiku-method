@@ -15,10 +15,6 @@ bolt: 1
 hat: ops-engineer
 started_at: '2026-04-15T19:31:58Z'
 hat_started_at: '2026-04-15T19:31:58Z'
-outputs:
-  - >-
-    ../../worktrees/cowork-mcp-apps-integration/unit-03-validation-md-runbook-crosslink/.haiku/intents/cowork-mcp-apps-integration/knowledge/unit-03-crosslink-notes.md
-  - knowledge/unit-03-crosslink-notes.md
 ---
 
 # Cross-link VALIDATION.md and RUNBOOK.md
