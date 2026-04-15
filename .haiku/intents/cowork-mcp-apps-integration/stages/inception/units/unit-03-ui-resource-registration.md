@@ -9,11 +9,11 @@ inputs:
   - knowledge/DISCOVERY.md
   - stages/inception/units/unit-01-cowork-env-probe.md
   - knowledge/unit-03-resource-registration-research.md
-status: pending
-bolt: 0
-hat: ''
-started_at: null
-hat_started_at: '2026-04-14T22:10:51Z'
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-04-15T04:30:59Z'
+hat_started_at: '2026-04-15T04:30:59Z'
 outputs:
   - knowledge/unit-03-elaboration-notes.md
 completed_at: null
