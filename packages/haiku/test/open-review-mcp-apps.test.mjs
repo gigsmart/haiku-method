@@ -10,9 +10,13 @@ import { join } from "node:path"
 import { setTimeout as delay } from "node:timers/promises"
 
 import {
+  createDesignDirectionSession,
+  createQuestionSession,
   createSession,
   getSession,
   listSessions,
+  updateDesignDirectionSession,
+  updateQuestionSession,
   updateSession,
   waitForSession,
 } from "../src/sessions.ts"
@@ -149,11 +153,7 @@ function dispatchReviewSubmit(args) {
   }
   const input = parsed.data
 
-  if (input.session_type === "question" || input.session_type === "design_direction") {
-    return { content: [{ type: "text", text: "unimplemented — see unit-04" }], isError: true }
-  }
-
-  // review path
+  // Common validation
   const session = getSession(input.session_id)
   if (!session) {
     return { content: [{ type: "text", text: `Session not found: ${input.session_id}` }], isError: true }
@@ -167,6 +167,33 @@ function dispatchReviewSubmit(args) {
   if (session.status !== "pending") {
     return { content: [{ type: "text", text: `Session already closed: ${input.session_id}` }], isError: true }
   }
+
+  // question path
+  if (input.session_type === "question") {
+    updateQuestionSession(input.session_id, {
+      status: "answered",
+      answers: input.answers,
+      feedback: input.feedback ?? "",
+      annotations: input.annotations,
+    })
+    return { content: [{ type: "text", text: '{"ok":true}' }] }
+  }
+
+  // design_direction path
+  if (input.session_type === "design_direction") {
+    updateDesignDirectionSession(input.session_id, {
+      status: "answered",
+      selection: {
+        archetype: input.archetype,
+        parameters: input.parameters,
+        ...(input.comments ? { comments: input.comments } : {}),
+        ...(input.annotations ? { annotations: input.annotations } : {}),
+      },
+    })
+    return { content: [{ type: "text", text: '{"ok":true}' }] }
+  }
+
+  // review path
   updateSession(input.session_id, {
     status: "decided",
     decision: input.decision,
@@ -658,37 +685,84 @@ await testAsync("real openReviewMcpApps: timeout path does NOT touch state.json 
 // with an aborted signal, and asserts byte-identity after. Nothing else is
 // needed here.
 
-// ── Group J: Stubbed question/design_direction variants (CC-11) ───────────
+// ── Group J: question + design_direction round-trips (unit-04 wired) ─────────
 
-console.log("\n=== Group J: Stubbed question/design_direction variants (CC-11) ===")
+console.log("\n=== Group J: question + design_direction round-trips ===")
 
-test("session_type question returns isError with unimplemented message", () => {
-  const someUUID = crypto.randomUUID()
+await testAsync("question round-trip: answers submitted resolve the session", async () => {
+  const session = createQuestionSession({
+    title: "Test Q",
+    questions: [{ question: "Q?", options: ["A", "B"] }],
+    context: "",
+    imagePaths: [],
+    html: "",
+  })
+
+  const waitPromise = waitForSession(session.session_id, 5000)
   const result = dispatchReviewSubmit({
     session_type: "question",
-    session_id: someUUID,
+    session_id: session.session_id,
+    answers: [{ question: "Q?", selectedOptions: ["A"] }],
+  })
+
+  await waitPromise
+  const updated = getSession(session.session_id)
+
+  assert.ok(!result.isError, `dispatch should not return isError: ${result.content[0].text}`)
+  assert.strictEqual(result.content[0].text, '{"ok":true}')
+  assert.strictEqual(updated?.status, "answered")
+  assert.deepStrictEqual(updated?.answers, [{ question: "Q?", selectedOptions: ["A"] }])
+})
+
+await testAsync("design_direction round-trip: selection submitted resolves the session", async () => {
+  const session = createDesignDirectionSession({
+    intent_slug: "test-intent",
+    archetypes: [{ name: "minimal", description: "Minimal", preview_html: "", default_parameters: { contrast: 0.5 } }],
+    parameters: [],
+    html: "",
+  })
+
+  const waitPromise = waitForSession(session.session_id, 5000)
+  const result = dispatchReviewSubmit({
+    session_type: "design_direction",
+    session_id: session.session_id,
+    archetype: "minimal",
+    parameters: { contrast: 0.8 },
+    comments: "Looks good",
+  })
+
+  await waitPromise
+  const updated = getSession(session.session_id)
+
+  assert.ok(!result.isError, `dispatch should not return isError: ${result.content[0].text}`)
+  assert.strictEqual(result.content[0].text, '{"ok":true}')
+  assert.strictEqual(updated?.status, "answered")
+  assert.strictEqual(updated?.selection?.archetype, "minimal")
+  assert.deepStrictEqual(updated?.selection?.parameters, { contrast: 0.8 })
+  assert.strictEqual(updated?.selection?.comments, "Looks good")
+})
+
+test("question unknown session_id returns Session not found", () => {
+  const unknownId = crypto.randomUUID()
+  const result = dispatchReviewSubmit({
+    session_type: "question",
+    session_id: unknownId,
     answers: [{ question: "Q?", selectedOptions: ["A"] }],
   })
   assert.strictEqual(result.isError, true)
-  assert.ok(
-    result.content[0].text.includes("unimplemented — see unit-04"),
-    `Expected 'unimplemented — see unit-04' in: ${result.content[0].text}`,
-  )
+  assert.ok(result.content[0].text.includes("Session not found:"))
 })
 
-test("session_type design_direction returns isError with unimplemented message", () => {
-  const someUUID = crypto.randomUUID()
+test("design_direction unknown session_id returns Session not found", () => {
+  const unknownId = crypto.randomUUID()
   const result = dispatchReviewSubmit({
     session_type: "design_direction",
-    session_id: someUUID,
+    session_id: unknownId,
     archetype: "minimal",
-    parameters: { contrast: 0.5 },
+    parameters: {},
   })
   assert.strictEqual(result.isError, true)
-  assert.ok(
-    result.content[0].text.includes("unimplemented — see unit-04"),
-    `Expected 'unimplemented — see unit-04' in: ${result.content[0].text}`,
-  )
+  assert.ok(result.content[0].text.includes("Session not found:"))
 })
 
 // ── Group K: Error validation cases ───────────────────────────────────────
@@ -810,6 +884,96 @@ test("design_direction empty archetype fails Zod min(1) validation", () => {
     result.content[0].text.startsWith("Invalid input:"),
     `Expected 'Invalid input:' for empty archetype: ${result.content[0].text}`,
   )
+})
+
+// ── Group L: End-to-end — all three session types on same scope (CC-9) ────
+
+console.log("\n=== Group L: End-to-end — all three session types resolve via dispatchReviewSubmit ===")
+
+await testAsync("single scope: review + question + design_direction all resolve independently", async () => {
+  // Create all three sessions
+  const reviewSession = createSession({
+    intent_dir: "/tmp/test-intent",
+    intent_slug: "test-intent",
+    review_type: "intent",
+    target: "",
+    html: "",
+  })
+
+  const questionSession = createQuestionSession({
+    title: "E2E Q",
+    questions: [{ question: "Q?", options: ["A", "B"] }],
+    context: "",
+    imagePaths: [],
+    html: "",
+  })
+
+  const designSession = createDesignDirectionSession({
+    intent_slug: "test-intent",
+    archetypes: [{ name: "bold", description: "", preview_html: "", default_parameters: { x: 1 } }],
+    parameters: [],
+    html: "",
+  })
+
+  // Submit all three in sequence — each should resolve independently
+  const r1 = dispatchReviewSubmit({
+    session_type: "review",
+    session_id: reviewSession.session_id,
+    decision: "approved",
+    feedback: "",
+  })
+  assert.ok(!r1.isError, `review submit should succeed: ${r1.content[0].text}`)
+  assert.strictEqual(r1.content[0].text, '{"ok":true}')
+
+  const r2 = dispatchReviewSubmit({
+    session_type: "question",
+    session_id: questionSession.session_id,
+    answers: [{ question: "Q?", selectedOptions: ["A"] }],
+  })
+  assert.ok(!r2.isError, `question submit should succeed: ${r2.content[0].text}`)
+  assert.strictEqual(r2.content[0].text, '{"ok":true}')
+
+  const r3 = dispatchReviewSubmit({
+    session_type: "design_direction",
+    session_id: designSession.session_id,
+    archetype: "bold",
+    parameters: { x: 0.8 },
+  })
+  assert.ok(!r3.isError, `design_direction submit should succeed: ${r3.content[0].text}`)
+  assert.strictEqual(r3.content[0].text, '{"ok":true}')
+
+  // Each session updated correctly — no cross-contamination
+  const updatedReview = getSession(reviewSession.session_id)
+  assert.strictEqual(updatedReview?.session_type, "review")
+  assert.strictEqual(updatedReview?.status, "decided")
+
+  const updatedQuestion = getSession(questionSession.session_id)
+  assert.strictEqual(updatedQuestion?.session_type, "question")
+  assert.strictEqual(updatedQuestion?.status, "answered")
+
+  const updatedDesign = getSession(designSession.session_id)
+  assert.strictEqual(updatedDesign?.session_type, "design_direction")
+  assert.strictEqual(updatedDesign?.status, "answered")
+  assert.strictEqual(updatedDesign?.selection?.archetype, "bold")
+})
+
+await testAsync("all three session types carry resource URI in _meta (via dispatchReviewSubmit shape)", async () => {
+  // Verifies CC-9 / V5-05: all three session types are handled by the same tool.
+  // Session existence check: unknown ID returns the same error format for all three.
+  const fakeId = crypto.randomUUID()
+
+  for (const [type, extra] of [
+    ["review", { decision: "approved", feedback: "" }],
+    ["question", { answers: [{ question: "Q?", selectedOptions: ["A"] }] }],
+    ["design_direction", { archetype: "bold", parameters: {} }],
+  ]) {
+    const result = dispatchReviewSubmit({ session_type: type, session_id: fakeId, ...extra })
+    assert.strictEqual(result.isError, true)
+    assert.ok(
+      result.content[0].text.includes("Session not found:"),
+      `${type}: Expected 'Session not found:' in: ${result.content[0].text}`,
+    )
+  }
 })
 
 // ── Summary ────────────────────────────────────────────────────────────────

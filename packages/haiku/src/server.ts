@@ -48,6 +48,8 @@ import {
 	getSession,
 	hasPresenceLost,
 	notifySessionUpdate,
+	updateDesignDirectionSession,
+	updateQuestionSession,
 	updateSession,
 	waitForSession,
 } from "./sessions.js"
@@ -176,6 +178,7 @@ const server = new Server(
 	},
 )
 
+import { askVisualQuestionMcpApps } from "./ask-visual-question-mcp-apps.js"
 import { openReviewMcpApps } from "./open-review-mcp-apps.js"
 import {
 	handleOrchestratorTool,
@@ -183,6 +186,7 @@ import {
 	setElicitInputHandler,
 	setOpenReviewHandler,
 } from "./orchestrator.js"
+import { pickDesignDirectionMcpApps } from "./pick-design-direction-mcp-apps.js"
 // Prompts migrated to skills (plugin/skills/) — prompt handlers kept for protocol compatibility
 import { completeArgument, getPrompt, listPrompts } from "./prompts/index.js"
 import { REVIEW_APP_HTML } from "./review-app-html.js"
@@ -597,6 +601,33 @@ async function handleToolCall(
 		// Derive per-path base directories for path validation (defense-in-depth in the HTTP handler)
 		const imageBaseDirs = imagePaths.map((p) => dirname(resolve(p)))
 
+		// ── MCP Apps arm (unit-04) ──────────────────────────────────────────
+		if (hostSupportsMcpApps()) {
+			const mcpResult = await askVisualQuestionMcpApps({
+				title,
+				questions,
+				context,
+				imagePaths,
+				imageBaseDirs,
+				signal,
+				setQuestionResultMeta: (meta) => {
+					_reviewResultMeta = meta
+				},
+			})
+			const meta = _reviewResultMeta
+			_reviewResultMeta = undefined
+			const toolResult = {
+				content: [
+					{
+						type: "text" as const,
+						text: JSON.stringify(mcpResult, null, 2),
+					},
+				],
+			}
+			if (meta) return { ...toolResult, _meta: meta }
+			return toolResult
+		}
+
 		// Create question session
 		const session = createQuestionSession({
 			title,
@@ -752,6 +783,27 @@ async function handleToolCall(
 					},
 				],
 			}
+		}
+
+		// ── MCP Apps arm (unit-04) ──────────────────────────────────────────
+		if (hostSupportsMcpApps()) {
+			const mcpResult = await pickDesignDirectionMcpApps({
+				title,
+				archetypes,
+				parameters,
+				intentSlug: input.intent_slug,
+				signal,
+				setDesignDirectionResultMeta: (meta) => {
+					_reviewResultMeta = meta
+				},
+			})
+			const meta = _reviewResultMeta
+			_reviewResultMeta = undefined
+			const toolResult = {
+				content: [{ type: "text" as const, text: mcpResult.text }],
+			}
+			if (meta) return { ...toolResult, _meta: meta }
+			return toolResult
 		}
 
 		// Create design direction session
@@ -981,20 +1033,7 @@ async function handleToolCall(
 		}
 		const input = parsed.data
 
-		// session_type: "question" and "design_direction" are stubbed for unit-04
-		if (
-			input.session_type === "question" ||
-			input.session_type === "design_direction"
-		) {
-			return {
-				content: [
-					{ type: "text" as const, text: "unimplemented — see unit-04" },
-				],
-				isError: true,
-			}
-		}
-
-		// review path
+		// Common validation — session must exist and types must match
 		const session = getSession(input.session_id)
 		if (!session) {
 			return {
@@ -1029,6 +1068,33 @@ async function handleToolCall(
 				isError: true,
 			}
 		}
+
+		// question path
+		if (input.session_type === "question") {
+			updateQuestionSession(input.session_id, {
+				status: "answered",
+				answers: input.answers,
+				feedback: input.feedback ?? "",
+				annotations: input.annotations,
+			})
+			return { content: [{ type: "text" as const, text: '{"ok":true}' }] }
+		}
+
+		// design_direction path
+		if (input.session_type === "design_direction") {
+			updateDesignDirectionSession(input.session_id, {
+				status: "answered",
+				selection: {
+					archetype: input.archetype,
+					parameters: input.parameters,
+					...(input.comments ? { comments: input.comments } : {}),
+					...(input.annotations ? { annotations: input.annotations } : {}),
+				},
+			})
+			return { content: [{ type: "text" as const, text: '{"ok":true}' }] }
+		}
+
+		// review path
 		updateSession(input.session_id, {
 			status: "decided",
 			decision: input.decision,
