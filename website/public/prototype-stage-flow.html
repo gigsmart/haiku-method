@@ -4024,7 +4024,7 @@ const ACTORS = {
   orchestrator: {
     icon: "🧠",
     name: "Orchestrator (MCP server)",
-    role: "The brain. An MCP server (`packages/haiku/src/server.ts`) that exposes 27 `haiku_*` tools. On every tick it reads FSM state from disk, validates preconditions, and returns the next action.",
+    role: "The brain. An MCP server (`packages/haiku/src/server.ts`) that exposes 33 `haiku_*` tools. On every tick it reads FSM state from disk, validates preconditions, and returns the next action.",
     talks_to: [
       "Agent (responds to tool calls)",
       "Filesystem (reads + writes FSM state)",
@@ -4038,7 +4038,7 @@ const ACTORS = {
       "Wave scheduling (`computeUnitWaves` topological sort)",
       "Gate type resolution (`auto`, `ask`, `external`, `[external, ask]`, `await`)",
     ],
-    notes: "**Core principle — the FSM enforces, not the agent.** The agent is the body executing actions; the orchestrator is the brain owning state mutations and validating preconditions. If you have to *trust* the agent to follow the rules, you'll find out it didn't the moment something goes wrong. Hooks make rules physical; the orchestrator makes them stateful. That's why you see `_openReviewAndWait()` blocking, `guard-fsm-fields` rejecting agent edits to FSM frontmatter, and `enforce-iteration` bumping the bolt counter without asking — every guarantee is enforced, not requested.\n\n**The full MCP tool surface — 27 tools across orchestrator.ts, state-tools.ts, server.ts:**\n\n**FSM drivers** (orchestrator.ts):\n- `haiku_run_next` — the tick. Reads state, validates, returns next action.\n- `haiku_intent_create` — creates a new intent.md.\n- `haiku_select_studio` — pick / change the studio for an intent.\n- `haiku_revisit` — bounce back to a prior stage's elaborate.\n- `haiku_intent_reset` — nuke an intent and start over.\n\n**State tools** (state-tools.ts) — read/write specific state without going through a full FSM tick:\n- `haiku_intent_get`, `haiku_intent_list`\n- `haiku_stage_get`\n- `haiku_unit_get`, `haiku_unit_set`, `haiku_unit_list`\n- `haiku_unit_start`, `haiku_unit_advance_hat`, `haiku_unit_reject_hat`, `haiku_unit_increment_bolt` — subagent-only progression tools\n- `haiku_knowledge_list`, `haiku_knowledge_read` — discovery/output artifact access\n- `haiku_studio_list`, `haiku_studio_get`, `haiku_studio_stage_get`\n- `haiku_settings_get`\n- `haiku_dashboard`, `haiku_capacity` — overview tools\n- `haiku_reflect`, `haiku_review`, `haiku_backlog`, `haiku_seed`, `haiku_release_notes` — workflow helpers\n\n**Review-server tool** (server.ts):\n- `haiku_feedback` — capture user feedback from the review UI.\n\nThe agent calls these. Hooks intercept the agent's tool invocations between calls.\n\n**Auto-commits:** the orchestrator calls `gitCommitState()` on every FSM mutation — `state.json` writes, intent.md frontmatter changes, unit-status transitions all become commits on the active branch. Commit messages are `haiku: {action description}`. The agent doesn't make these commits; the orchestrator does. This is what makes a H·AI·K·U intent's full history reconstructable from git alone.",
+    notes: "**Core principle — the FSM enforces, not the agent.** The agent is the body executing actions; the orchestrator is the brain owning state mutations and validating preconditions. If you have to *trust* the agent to follow the rules, you'll find out it didn't the moment something goes wrong. Hooks make rules physical; the orchestrator makes them stateful. That's why you see `_openReviewAndWait()` blocking, `guard-fsm-fields` rejecting agent edits to FSM frontmatter, and `enforce-iteration` bumping the bolt counter without asking — every guarantee is enforced, not requested.\n\n**The full MCP tool surface — 33 tools across orchestrator.ts, state-tools.ts, server.ts:**\n\n**FSM drivers** (orchestrator.ts):\n- `haiku_run_next` — the tick. Reads state, validates, returns next action.\n- `haiku_intent_create` — creates a new intent.md.\n- `haiku_select_studio` — pick / change the studio for an intent.\n- `haiku_revisit` — bounce back to a prior stage's elaborate.\n- `haiku_intent_reset` — nuke an intent and start over.\n- `haiku_intent_archive` — flip `archived: true` in intent.md frontmatter; `haiku_run_next` refuses to advance archived intents.\n- `haiku_intent_unarchive` — removes the `archived` key from intent.md frontmatter (clean restore — no `archived: false` marker left behind), so `haiku_run_next` ticks resume on a previously-archived intent.\n\n**State tools** (state-tools.ts) — read/write specific state without going through a full FSM tick:\n- `haiku_intent_get`, `haiku_intent_list`\n- `haiku_stage_get`\n- `haiku_unit_get`, `haiku_unit_set`, `haiku_unit_list`\n- `haiku_unit_start`, `haiku_unit_advance_hat`, `haiku_unit_reject_hat`, `haiku_unit_increment_bolt` — subagent-only progression tools\n- `haiku_knowledge_list`, `haiku_knowledge_read` — discovery/output artifact access\n- `haiku_studio_list`, `haiku_studio_get`, `haiku_studio_stage_get`\n- `haiku_settings_get`\n- `haiku_dashboard`, `haiku_capacity` — overview tools\n- `haiku_reflect`, `haiku_review`, `haiku_backlog`, `haiku_seed`, `haiku_release_notes` — workflow helpers\n- `haiku_repair` — scan intents for metadata issues, auto-apply safe fixes, push repair branches, open PRs for merged branches\n- `haiku_version_info` — read the running H·AI·K·U MCP binary and plugin versions\n\n**Review-server tool** (server.ts):\n- `haiku_feedback` — capture user feedback from the review UI.\n\nThe agent calls these. Hooks intercept the agent's tool invocations between calls.\n\n**Auto-commits:** the orchestrator calls `gitCommitState()` on every FSM mutation — `state.json` writes, intent.md frontmatter changes, unit-status transitions all become commits on the active branch. Commit messages are `haiku: {action description}`. The agent doesn't make these commits; the orchestrator does. This is what makes a H·AI·K·U intent's full history reconstructable from git alone.",
   },
   webui: {
     icon: "🌐",
@@ -4620,15 +4620,18 @@ const TOOL_SPECS = {
     ],
   },
   haiku_run_next: {
-    description: "The orchestrator's tick. The agent calls this whenever it doesn't know what to do next. The orchestrator reads disk state, validates preconditions, and returns a structured `action` telling the agent the single next step. **All phase-level FSM transitions go through this one tool. Subagents progress through hats via `haiku_unit_advance_hat` instead.**",
+    description: "The orchestrator's tick. The agent calls this whenever it doesn't know what to do next. The orchestrator reads disk state, validates preconditions, and returns a structured `action` telling the agent the single next step. **All phase-level FSM transitions go through this one tool. Subagents progress through hats via `haiku_unit_advance_hat` instead.**\n\n**Archived-intent refusal:** if the intent's `intent.md` frontmatter has `archived: true`, the tick refuses to advance and returns a hint telling the caller to invoke `haiku_intent_unarchive` first. No state is mutated in the refusal path.",
     input: {
       intent: "string · the intent slug (e.g. `add-billing`)",
     },
     output: {
-      action: "string · lifecycle: `select_studio` | `start_stage` | `elaborate` | `start_unit` | `continue_unit` | `start_units` | `review` | `review_elaboration` | `gate_review` | `advance_phase` | `advance_stage` | `intent_approved` | `intent_complete` | `complete` | `composite_run_stage` | `safe_intent_repair` | `fix_quality_gates` | `changes_requested` | `external_review_requested` | `awaiting_external_review` · blocked: `design_direction_required` | `blocked` | `outputs_missing` | `discovery_missing` | `elaboration_insufficient` | `spec_validation_failed` | `unresolved_dependencies` | `dag_cycle_detected` | `unit_naming_invalid` | `unit_inputs_missing` | `inputs_missing` | `gate_blocked` | `error`",
+      action: "string · lifecycle: `select_studio` | `start_stage` | `elaborate` | `start_unit` | `continue_unit` | `start_units` | `review` | `review_elaboration` | `gate_review` | `advance_phase` | `advance_review` | `advance_stage` | `stage_complete_discrete` | `intent_approved` | `intent_complete` | `complete` | `composite_run_stage` | `safe_intent_repair` | `fix_quality_gates` | `changes_requested` | `external_review_requested` | `awaiting_external_review` · blocked: `design_direction_required` | `blocked` | `outputs_missing` | `discovery_missing` | `elaboration_insufficient` | `spec_validation_failed` | `unresolved_dependencies` | `dag_cycle_detected` | `unit_naming_invalid` | `unit_inputs_missing` | `inputs_missing` | `gate_blocked` | `error` (the archived-intent refusal returns `action: \"error\"` with a `\"call haiku_intent_unarchive to restore it\"` hint in the message)",
       context: "object · action-specific payload (next phase, hat, units, gate context, etc. — see the per-transition pills throughout this diagram). **Subagent-spawning actions** (`start_unit`, `continue_unit`, `start_units`, `elaborate` with discovery, `advance_review`) return self-contained `<subagent tool=\"...\" type=\"...\" model=\"...\">` prompt blocks that the parent relays verbatim — MCP constructs exact subagent prompts, no assembly required.",
     },
-    writes: ["Depends on the action returned. Click any of the labeled `haiku_run_next` pills above to see the exact `state.json` / `intent.md` / unit-frontmatter mutations for that specific tick."],
+    writes: [
+      "Depends on the action returned. Click any of the labeled `haiku_run_next` pills above to see the exact `state.json` / `intent.md` / unit-frontmatter mutations for that specific tick.",
+      "**Archived-refusal path: no state mutation.** When the intent is archived, the tick is a pure read — no `state.json`, `intent.md`, or unit-frontmatter writes happen.",
+    ],
   },
   haiku_select_studio: {
     description: "Picks (or changes) the studio for an intent. Called during pre-intent or via `/haiku:revisit` if the user wants to swap studios. Writes the choice into `intent.md` frontmatter.",
@@ -4659,6 +4662,36 @@ const TOOL_SPECS = {
       { path: ".haiku/intents/{slug}/stages/", change: "deletes every stage's `state.json` and `units/` directory" },
       { path: ".haiku/intents/{slug}/intent.md", change: "frontmatter: `active_stage: null`, `status: \"pending\"`, `intent_reviewed: false`" },
       { path: ".haiku/worktrees/", change: "deletes worktrees that belonged to this intent's units" },
+    ],
+  },
+  haiku_intent_archive: {
+    description: "Flips an intent into the archived state by setting `archived: true` in `intent.md` frontmatter. Archived intents are preserved in full — no files are deleted, no state is wiped — but `haiku_run_next` refuses to advance them until they are unarchived. Reversible via `haiku_intent_unarchive`, so there is **no `confirm` guard**. Idempotent: calling on an already-archived intent returns `action: \"noop\"` instead of an error.",
+    input: {
+      intent: "string · the intent slug",
+    },
+    output: {
+      action: "string · `intent_archived` on first call, `noop` if already archived",
+      slug: "string · the intent slug echoed back",
+      path: "string · absolute path of the mutated `intent.md`",
+      message: "string · human-readable result",
+    },
+    writes: [
+      { path: ".haiku/intents/{slug}/intent.md", change: "frontmatter: `archived: true` (no write on noop path)" },
+    ],
+  },
+  haiku_intent_unarchive: {
+    description: "Reverses `haiku_intent_archive` by removing the `archived` field from `intent.md` frontmatter (clean restore — no `archived: false` marker is left behind). Once cleared, `haiku_run_next` ticks resume normally from wherever the FSM last left off. Reversible, so there is **no `confirm` guard**. Idempotent: calling on a not-archived intent returns `action: \"noop\"` instead of an error.",
+    input: {
+      intent: "string · the intent slug",
+    },
+    output: {
+      action: "string · `intent_unarchived` on first call, `noop` if already not-archived",
+      slug: "string · the intent slug echoed back",
+      path: "string · absolute path of the mutated `intent.md`",
+      message: "string · human-readable result",
+    },
+    writes: [
+      { path: ".haiku/intents/{slug}/intent.md", change: "frontmatter: removes the `archived` key entirely (no write on noop path)" },
     ],
   },
   haiku_unit_start: {

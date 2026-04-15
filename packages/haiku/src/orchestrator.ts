@@ -34,7 +34,7 @@ import {
 	mergeStageBranchIntoMain,
 } from "./git-worktree.js"
 import { type ModelTier, resolveModel } from "./model-selection.js"
-import { validateIdentifier } from "./prompts/helpers.js"
+import { validateIdentifier, validateSlugArgs } from "./prompts/helpers.js"
 import { reportError } from "./sentry.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
 import {
@@ -987,7 +987,17 @@ export function runNext(slug: string): OrchestratorAction {
 	}
 
 	if (status === "archived") {
-		return { action: "error", message: `Intent '${slug}' is archived` }
+		return {
+			action: "error",
+			message: `Intent '${slug}' has status: archived (legacy/terminal). haiku_intent_unarchive only clears the new \`archived\` field — it does not touch \`status\`. To recover, run \`/haiku:repair\` or manually edit \`.haiku/intents/${slug}/intent.md\` and set \`status: active\`.`,
+		}
+	}
+
+	if (intent.archived === true) {
+		return {
+			action: "error",
+			message: `Intent '${slug}' is archived. Call haiku_intent_unarchive to restore it.`,
+		}
 	}
 
 	// Composite intent handling
@@ -3480,6 +3490,30 @@ export const orchestratorToolDefs = [
 			required: ["intent"],
 		},
 	},
+	{
+		name: "haiku_intent_archive",
+		description:
+			"Archive an intent — sets the `archived: true` frontmatter flag so the intent is hidden from default list views. Reversible via haiku_intent_unarchive. Does not prompt for confirmation.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: { type: "string", description: "Intent slug to archive" },
+			},
+			required: ["intent"],
+		},
+	},
+	{
+		name: "haiku_intent_unarchive",
+		description:
+			"Unarchive an intent — clears the `archived` frontmatter flag so the intent reappears in default list views. Reversible via haiku_intent_archive. Does not prompt for confirmation.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: { type: "string", description: "Intent slug to unarchive" },
+			},
+			required: ["intent"],
+		},
+	},
 ]
 
 // ── Tool handlers ──────────────────────────────────────────────────────────
@@ -3525,6 +3559,9 @@ export async function handleOrchestratorTool(
 	const text = (s: string) => ({
 		content: [{ type: "text" as const, text: s }],
 	})
+
+	const validationError = validateSlugArgs(args)
+	if (validationError) return validationError
 
 	if (name === "haiku_run_next") {
 		const slug = args.intent as string
@@ -4570,6 +4607,117 @@ export async function handleOrchestratorTool(
 					description,
 					context: conversationContext,
 					message: `Intent '${slug}' has been reset. Call haiku_intent_create { title: "${title.replace(/"/g, '\\"')}", description: "${description.replace(/"/g, '\\"').replace(/\n/g, "\\n")}", slug: "${slug}"${conversationContext ? ', context: "<preserved context>"' : ""} } to recreate it.`,
+				},
+				null,
+				2,
+			),
+		)
+	}
+
+	if (name === "haiku_intent_archive") {
+		const slug = args.intent as string
+		const root = findHaikuRoot()
+		const intentFile = join(root, "intents", slug, "intent.md")
+
+		if (!existsSync(intentFile)) {
+			return {
+				content: [
+					{ type: "text" as const, text: `Intent '${slug}' not found.` },
+				],
+				isError: true,
+			}
+		}
+
+		// Single-read idempotency check: parse once with parseFrontmatter (which
+		// normalizes dates). If already archived, noop. Otherwise delegate the
+		// write to setFrontmatterField — it re-reads but preserves the
+		// normalizeDates() pass we depend on for stable YAML output.
+		const { data } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+
+		if (data.archived === true) {
+			return text(
+				JSON.stringify(
+					{
+						action: "noop",
+						slug,
+						path: intentFile,
+						message: `Intent '${slug}' is already archived.`,
+					},
+					null,
+					2,
+				),
+			)
+		}
+
+		setFrontmatterField(intentFile, "archived", true)
+		gitCommitState(`haiku: archive intent ${slug}`)
+
+		return text(
+			JSON.stringify(
+				{
+					action: "intent_archived",
+					slug,
+					path: intentFile,
+					message: `Intent '${slug}' has been archived. Call haiku_intent_unarchive to restore it.`,
+				},
+				null,
+				2,
+			),
+		)
+	}
+
+	if (name === "haiku_intent_unarchive") {
+		const slug = args.intent as string
+		const root = findHaikuRoot()
+		const intentFile = join(root, "intents", slug, "intent.md")
+
+		if (!existsSync(intentFile)) {
+			return {
+				content: [
+					{ type: "text" as const, text: `Intent '${slug}' not found.` },
+				],
+				isError: true,
+			}
+		}
+
+		// Single-pass read: parse once with gray-matter, use it for both the
+		// idempotency check and the write. Previously we parseFrontmatter'd
+		// the file, checked archived, then re-read and re-parsed inside matter()
+		// for the write — two full reads per call.
+		const raw = readFileSync(intentFile, "utf8")
+		const parsed = matter(raw)
+
+		if (parsed.data.archived !== true) {
+			return text(
+				JSON.stringify(
+					{
+						action: "noop",
+						slug,
+						path: intentFile,
+						message: `Intent '${slug}' is not archived.`,
+					},
+					null,
+					2,
+				),
+			)
+		}
+
+		// Remove the `archived` key entirely rather than leaving `archived: false`.
+		// Cleaner: an unarchived intent looks pristine, no trace of prior archival.
+		const { archived: _archived, ...dataWithoutArchived } = parsed.data
+		writeFileSync(
+			intentFile,
+			matter.stringify(parsed.content, dataWithoutArchived),
+		)
+		gitCommitState(`haiku: unarchive intent ${slug}`)
+
+		return text(
+			JSON.stringify(
+				{
+					action: "intent_unarchived",
+					slug,
+					path: intentFile,
+					message: `Intent '${slug}' has been unarchived.`,
 				},
 				null,
 				2,

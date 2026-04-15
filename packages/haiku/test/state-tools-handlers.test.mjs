@@ -7,7 +7,7 @@ import { join } from "node:path"
 import { tmpdir } from "node:os"
 import assert from "node:assert"
 
-import { handleStateTool, stateToolDefs, setFrontmatterField, unitPath } from "../src/state-tools.ts"
+import { handleStateTool, stateToolDefs, setFrontmatterField, unitPath, listVisibleIntentSlugs, listVisibleIntents } from "../src/state-tools.ts"
 
 // ── Setup ──────────────────────────────────────────────────────────────────
 
@@ -152,6 +152,21 @@ status: completed
 Second intent body.
 `)
 
+// Create archived intent fixture — preserves prior status for lossless unarchival
+const archivedIntentDir = join(haikuRoot, "intents", "archived-intent")
+mkdirSync(archivedIntentDir, { recursive: true })
+writeFileSync(join(archivedIntentDir, "intent.md"), `---
+title: Archived Intent
+studio: software
+mode: continuous
+active_stage: ""
+status: completed
+archived: true
+---
+
+Archived intent body.
+`)
+
 // Create settings
 writeFileSync(join(haikuRoot, "settings.yml"), `studio: software
 stack:
@@ -288,6 +303,200 @@ test("intent list includes completed intents", () => {
   const second = intents.find((i) => i.slug === "second-intent")
   assert.ok(second, "second-intent should be in the list")
   assert.strictEqual(second.status, "completed")
+})
+
+test("intent list filters archived intents by default", () => {
+  const result = handleStateTool("haiku_intent_list", {})
+  const intents = JSON.parse(getTextResult(result))
+  const archived = intents.find((i) => i.slug === "archived-intent")
+  assert.strictEqual(archived, undefined, "archived-intent must not appear in default list")
+})
+
+test("intent list omits archived field in default response", () => {
+  const result = handleStateTool("haiku_intent_list", {})
+  const intents = JSON.parse(getTextResult(result))
+  for (const i of intents) {
+    assert.strictEqual("archived" in i, false, `slug ${i.slug}: archived field should be absent by default`)
+  }
+})
+
+test("intent list with include_archived returns archived intents", () => {
+  const result = handleStateTool("haiku_intent_list", { include_archived: true })
+  const intents = JSON.parse(getTextResult(result))
+  const archived = intents.find((i) => i.slug === "archived-intent")
+  assert.ok(archived, "archived-intent should be in the list when include_archived=true")
+  assert.strictEqual(archived.archived, true)
+  // Prior status is preserved for lossless unarchival
+  assert.strictEqual(archived.status, "completed")
+})
+
+test("intent list with include_archived tags non-archived intents archived:false", () => {
+  const result = handleStateTool("haiku_intent_list", { include_archived: true })
+  const intents = JSON.parse(getTextResult(result))
+  const testIntent = intents.find((i) => i.slug === intentSlug)
+  assert.ok(testIntent)
+  assert.strictEqual(testIntent.archived, false)
+  const second = intents.find((i) => i.slug === "second-intent")
+  assert.ok(second)
+  assert.strictEqual(second.archived, false, "intent with no archived field must report archived:false")
+})
+
+// ── listVisibleIntentSlugs helper ─────────────────────────────────────────
+
+console.log("\n=== listVisibleIntentSlugs ===")
+
+test("helper filters archived intents by default", () => {
+  const intentsDir = join(haikuRoot, "intents")
+  const slugs = listVisibleIntentSlugs(intentsDir)
+  assert.ok(slugs.includes(intentSlug))
+  assert.ok(slugs.includes("second-intent"))
+  assert.ok(!slugs.includes("archived-intent"), "archived-intent must be filtered by default")
+})
+
+test("helper with includeArchived:true returns archived intents", () => {
+  const intentsDir = join(haikuRoot, "intents")
+  const slugs = listVisibleIntentSlugs(intentsDir, { includeArchived: true })
+  assert.ok(slugs.includes("archived-intent"))
+  assert.ok(slugs.includes(intentSlug))
+  assert.ok(slugs.includes("second-intent"))
+})
+
+test("helper returns [] for missing directory", () => {
+  const slugs = listVisibleIntentSlugs(join(tmp, "does-not-exist"))
+  assert.deepStrictEqual(slugs, [])
+})
+
+test("helper returns [] for empty intents directory", () => {
+  const emptyDir = join(tmp, "empty-intents")
+  mkdirSync(emptyDir, { recursive: true })
+  const slugs = listVisibleIntentSlugs(emptyDir)
+  assert.deepStrictEqual(slugs, [])
+})
+
+test("helper treats missing archived field as not-archived", () => {
+  // intentSlug fixture has no archived field — should be included by default
+  const intentsDir = join(haikuRoot, "intents")
+  const slugs = listVisibleIntentSlugs(intentsDir)
+  assert.ok(slugs.includes(intentSlug), "intent with no archived field must be visible")
+})
+
+test("listVisibleIntents returns {slug, data} tuples with frontmatter", () => {
+  const intentsDir = join(haikuRoot, "intents")
+  const entries = listVisibleIntents(intentsDir)
+  assert.ok(Array.isArray(entries))
+  const testEntry = entries.find((e) => e.slug === intentSlug)
+  assert.ok(testEntry, "test-intent should appear in entries")
+  assert.strictEqual(typeof testEntry.data, "object")
+  assert.strictEqual(testEntry.data.studio, "software")
+  assert.strictEqual(testEntry.data.status, "active")
+  // archived filtering still applies
+  assert.ok(
+    !entries.find((e) => e.slug === "archived-intent"),
+    "archived intents filtered by default",
+  )
+})
+
+test("listVisibleIntents exposes archived flag when includeArchived=true", () => {
+  const intentsDir = join(haikuRoot, "intents")
+  const entries = listVisibleIntents(intentsDir, { includeArchived: true })
+  const archived = entries.find((e) => e.slug === "archived-intent")
+  assert.ok(archived, "archived intent must appear")
+  assert.strictEqual(archived.data.archived, true)
+})
+
+// ── Slug path-traversal hardening (Finding B) ────────────────────────────
+
+console.log("\n=== handleStateTool: slug validation ===")
+
+test("haiku_intent_get rejects slug with path traversal", () => {
+  const result = handleStateTool("haiku_intent_get", {
+    slug: "../../../etc/passwd",
+    field: "title",
+  })
+  assert.strictEqual(result.isError, true)
+  assert.ok(
+    result.content[0].text.includes("path separators") ||
+      result.content[0].text.includes("traversal"),
+  )
+})
+
+test("haiku_intent_get rejects slug with forward slash", () => {
+  const result = handleStateTool("haiku_intent_get", {
+    slug: "foo/bar",
+    field: "title",
+  })
+  assert.strictEqual(result.isError, true)
+  assert.ok(result.content[0].text.includes("Invalid slug"))
+})
+
+test("haiku_stage_get rejects intent with path traversal", () => {
+  const result = handleStateTool("haiku_stage_get", {
+    intent: "../../../etc/passwd",
+    stage: "inception",
+    field: "phase",
+  })
+  assert.strictEqual(result.isError, true)
+  assert.ok(result.content[0].text.includes("Invalid intent"))
+})
+
+test("haiku_stage_get rejects stage with path traversal", () => {
+  const result = handleStateTool("haiku_stage_get", {
+    intent: intentSlug,
+    stage: "../../../etc/passwd",
+    field: "phase",
+  })
+  assert.strictEqual(result.isError, true)
+  assert.ok(result.content[0].text.includes("Invalid stage"))
+})
+
+test("haiku_unit_get rejects unit with path traversal", () => {
+  const result = handleStateTool("haiku_unit_get", {
+    intent: intentSlug,
+    stage: "inception",
+    unit: "../../../etc/passwd",
+    field: "status",
+  })
+  assert.strictEqual(result.isError, true)
+  assert.ok(result.content[0].text.includes("Invalid unit"))
+})
+
+test("haiku_unit_get rejects unit with forward slash", () => {
+  const result = handleStateTool("haiku_unit_get", {
+    intent: intentSlug,
+    stage: "inception",
+    unit: "foo/bar",
+    field: "status",
+  })
+  assert.strictEqual(result.isError, true)
+  assert.ok(result.content[0].text.includes("Invalid unit"))
+})
+
+test("haiku_intent_list still works (no slug to validate)", () => {
+  const result = handleStateTool("haiku_intent_list", {})
+  const intents = JSON.parse(getTextResult(result))
+  assert.ok(Array.isArray(intents))
+  assert.ok(intents.length >= 1)
+})
+
+test("helper treats archived:false as not-archived", () => {
+  const explicitFalseDir = join(haikuRoot, "intents", "explicit-not-archived")
+  mkdirSync(explicitFalseDir, { recursive: true })
+  writeFileSync(join(explicitFalseDir, "intent.md"), `---
+title: Explicit Not Archived
+studio: software
+mode: continuous
+active_stage: ""
+status: active
+archived: false
+---
+
+body
+`)
+  const intentsDir = join(haikuRoot, "intents")
+  const slugs = listVisibleIntentSlugs(intentsDir)
+  assert.ok(slugs.includes("explicit-not-archived"))
+  // cleanup so it does not affect subsequent tests
+  rmSync(explicitFalseDir, { recursive: true, force: true })
 })
 
 // ── haiku_stage_get ───────────────────────────────────────────────────────
