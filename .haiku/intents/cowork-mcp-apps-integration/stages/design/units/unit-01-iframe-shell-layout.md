@@ -8,6 +8,11 @@ inputs:
   - knowledge/DISCOVERY.md
   - stages/design/DESIGN-BRIEF.md
   - knowledge/DESIGN-TOKENS.md
+status: active
+bolt: 1
+hat: designer
+started_at: '2026-04-15T12:32:00Z'
+hat_started_at: '2026-04-15T12:32:00Z'
 ---
 
 # Iframe shell layout — bottom-sheet decision panel
