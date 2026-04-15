@@ -110,9 +110,13 @@ If a `external_review_url` was recorded in the stage state, the orchestrator als
 
 This complements Tier 1 by detecting approval before the branch is actually merged.
 
-#### No Signal Source Available
+#### Non-Git Environments (Filesystem Mode)
 
-If neither tier can detect approval (non-git environment, no CLI tools installed), the agent informs you the stage is still waiting. The user runs `/haiku:pickup` after the external review is complete.
+In filesystem mode (no git repository), there is no structural signal to enforce external review — no branches to merge, no PRs to check. The framework cannot reliably verify that a third party actually reviewed the work.
+
+In this case, `external` gates **fall back to `ask`** — the review UI opens for local human approval instead of blocking for an external signal. Compound gates like `[external, ask]` strip the `external` component and present only the remaining options.
+
+This is an intentional trade-off: filesystem mode cannot enforce external review, so it degrades gracefully to local approval rather than blocking indefinitely with no way to advance.
 
 ### Gate Protocol
 

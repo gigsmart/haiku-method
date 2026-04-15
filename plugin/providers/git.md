@@ -96,6 +96,7 @@ When not running in a git repository, the MCP operates in filesystem mode:
 - No commits, no pushes, no branches, no worktrees
 - Units work in-place rather than in worktree isolation
 - All lifecycle operations still function — just without version control
+- **External gates fall back to `ask`** — there is no structural signal (branch merge) to enforce external review, so the framework opens the local review UI for human approval instead of blocking indefinitely
 
 ## Provider Config
 

@@ -1392,6 +1392,11 @@ export function runNext(slug: string): OrchestratorAction {
 	//     - await → "external" (awaits external event after submission)
 	//   Note: continuous intents may have discrete branch isolation for external-review
 	//   stages (PR isolation), but the gate options still reflect the stage's review field.
+	//
+	//   Non-git environments: `external` gates fall back to `ask` because there is no
+	//   structural signal (branch merge) to enforce external review. Without git, the
+	//   only safe option is local human approval. Compound gates containing `external`
+	//   strip it and keep remaining types (e.g., [external, ask] → ask).
 	if (phase === "gate") {
 		const reviewType = resolveStageReview(studio, currentStage)
 		const stageIdx = studioStages.indexOf(currentStage)
@@ -1402,10 +1407,20 @@ export function runNext(slug: string): OrchestratorAction {
 		// A continuous intent with PR-isolated external-review stages should still show
 		// the stage's full gate options, not be forced to external-only.
 		const intentMode = (intent.mode as string) || "continuous"
+		const gitAvailable = isGitRepo()
 
 		// Determine gate type for the review UI
 		let effectiveGateType: string
-		if (intentMode === "discrete") {
+		if (!gitAvailable && reviewType.includes("external")) {
+			// Non-git environment: external gates have no structural signal (no branch
+			// merge to detect). Fall back to ask — local human approval is the only
+			// safe option. For compound gates like "external,ask", strip external.
+			const remaining = reviewType
+				.split(",")
+				.filter((t) => t !== "external")
+				.join(",")
+			effectiveGateType = remaining || "ask"
+		} else if (intentMode === "discrete") {
 			// Pure discrete intent: always submit for external review (PR per stage)
 			effectiveGateType = "external"
 		} else if (reviewType === "auto" || reviewType === "ask") {
