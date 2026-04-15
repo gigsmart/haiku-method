@@ -15,7 +15,7 @@ stages:
   - security
 active_stage: security
 intent_reviewed: true
-completed_at: '2026-04-15T20:01:37Z'
+completed_at: '2026-04-15T20:01:43Z'
 ---
 
 # Add Cowork support to the H·AI·K·U plugin using MCP Apps for review UI. Detect…
