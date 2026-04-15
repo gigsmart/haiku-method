@@ -74,28 +74,20 @@ When `auto_pr` is enabled:
 
 ## External Gate Signal Detection
 
-For stages with `external` review gates, the orchestrator checks PR/MR approval using two tiers:
+For stages with `external` review gates, the orchestrator checks approval using two tiers:
 
-### Tier 1: CLI-Based (Automatic)
+### Tier 1: Branch Merge Detection (Primary)
 
-The orchestrator synchronously probes the stored `external_review_url`:
+The primary signal is whether the stage branch (`haiku/{slug}/{stage}`) was merged back into the intent main branch (`haiku/{slug}/main`). The orchestrator checks this locally using `git merge-base --is-ancestor` and falls back to checking for merged PRs via `gh`/`glab` (which handles squash merges where the branch commit is not a direct ancestor). This is structural verification — the agent cannot fake a branch merge.
+
+### Tier 2: URL-Based CLI Probing (Fallback)
+
+If a `external_review_url` was recorded in the stage state, the orchestrator also checks PR/MR approval status via CLI tools:
 
 - **GitHub** — `gh pr view <url> --json state,reviewDecision` → advances on `MERGED` or `reviewDecision === "APPROVED"`
 - **GitLab** — `glab mr view <url> --output json` → advances on `merged` state or `approved === true`
 
-This runs automatically on every `/haiku:pickup`. If the CLI tool isn't installed or the URL format isn't recognized, Tier 1 returns false and Tier 2 activates.
-
-### Tier 2: Agent-Directed MCP (Fallback)
-
-When Tier 1 can't detect approval, the orchestrator instructs the agent to check using available MCP tools:
-
-- **GitHub MCP** (`mcp__github__pull_request_read`) — check `reviewDecision` field on the PR
-- **GitLab MCP** (`mcp__gitlab__*`) — check MR approval state
-- **Any other MCP** with access to the review platform
-
-If the agent confirms approval via MCP, it calls `haiku_run_next { intent, gate_signal: "approved" }` to advance the gate.
-
-This two-tier approach means external gates work whether the user has CLI tools installed, MCP servers configured, or both.
+This complements Tier 1 by detecting approval before the branch is actually merged. Runs automatically on every `/haiku:pickup`.
 
 ## Non-Git Environments
 

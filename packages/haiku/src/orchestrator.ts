@@ -42,6 +42,7 @@ import {
 	findHaikuRoot,
 	gitCommitState,
 	intentDir,
+	isGitRepo,
 	parseFrontmatter,
 	readJson,
 	setFrontmatterField,
@@ -201,27 +202,29 @@ function resolveStageMetadata(
 //
 // Two-tier signal detection for external/await gates:
 //
-// Tier 1 (here): Synchronous, best-effort CLI probing. The orchestrator
-//   shells out to `gh` or `glab` to check PR/MR status. Fast when CLI tools
-//   are installed, but limited to git hosting platforms and URL-based detection.
+// Tier 1: Branch merge detection (structural). In git workflows, external
+//   review gates use a stage branch (`haiku/{slug}/{stage}`) that gets merged
+//   into the intent hub (`haiku/{slug}/main`) when the review is approved.
+//   `isBranchMerged()` detects this — including squash merges. This is the
+//   primary, tamper-resistant signal: the merge is a structural fact, not
+//   something the agent can self-assert.
 //
-// Tier 2 (agent-directed): When Tier 1 returns false (no CLI, unknown URL
-//   type, or not yet approved), the orchestrator's `awaiting_external_review`
-//   action instructs the agent to check using whatever MCP servers are
-//   available in the user's environment — GitHub MCP, GitLab MCP, Slack MCP,
-//   Jira MCP, etc. The agent can call those tools directly and then record
-//   the outcome via `haiku_stage_set` or `haiku_run_next`.
+// Tier 2: URL-based CLI probing (fallback). The orchestrator shells out to
+//   `gh` or `glab` to check PR/MR status when a review URL was recorded.
+//   Used when branch detection is unavailable (non-git workflows) or as a
+//   secondary check. Supports GitHub `reviewDecision` and GitLab `approved`.
 //
-// This layered approach means signal detection works with:
-//   - gh/glab CLI (Tier 1 — automatic)
-//   - GitHub/GitLab MCP servers (Tier 2 — agent-directed)
-//   - Slack/Teams MCP (Tier 2 — agent checks thread for confirmation)
-//   - Any other MCP with authenticated access to the signal source
+// The agent never self-approves gates. If neither tier detects approval,
+// the orchestrator returns `awaiting_external_review` and the user must
+// run `/haiku:pickup` after the external review is actually approved.
 
 /**
- * Tier 1: Best-effort synchronous check if an external review URL has been
- * approved. Supports GitHub PRs (gh) and GitLab MRs (glab). Returns true if
- * approved or merged, false otherwise. Never throws.
+ * Tier 2 (fallback): URL-based synchronous check if an external review URL
+ * has been approved. Supports GitHub PRs (gh) and GitLab MRs (glab). Returns
+ * true if approved or merged, false otherwise. Never throws.
+ *
+ * This is the fallback detection path — Tier 1 is branch merge detection via
+ * `isBranchMerged()`, which is structural and tamper-resistant.
  *
  * For GitHub: checks both `reviewDecision` (APPROVED = reviews passed) and
  * `state` (MERGED = already accepted). A PR with approved reviews that hasn't
@@ -255,11 +258,10 @@ function checkExternalApproval(url: string): boolean {
 			// Gate passes if MR is merged OR if it has been approved
 			return mr.state === "merged" || mr.approved === true
 		}
-		// Unknown URL type — Tier 1 can't check. Tier 2 (agent-directed MCP
-		// checking) will be attempted via the awaiting_external_review instructions.
+		// Unknown URL type — can't check via CLI
 		return false
 	} catch {
-		// CLI not available or network error — fall through to Tier 2
+		// CLI not available or network error
 		return false
 	}
 }
@@ -1433,45 +1435,48 @@ export function runNext(slug: string): OrchestratorAction {
 
 		// Blocked on external review — check if it's been approved
 		if (gateOutcome === "blocked") {
-			const externalUrl = (stageState.external_review_url as string) || ""
-			if (externalUrl) {
-				// Best-effort: check if the external review was approved
-				const approved = checkExternalApproval(externalUrl)
-				if (approved) {
-					// External approval detected — advance
-					const path = stageStatePath(slug, currentStage)
-					const data = readJson(path)
-					data.gate_outcome = "advanced"
-					writeJson(path, data)
-					emitTelemetry("haiku.gate.resolved", {
-						intent: slug,
-						stage: currentStage,
-						gate_type: "external",
-						outcome: "approved",
-					})
-					// Fall through to advance logic below
-				} else {
-					// Tier 1 (CLI) couldn't confirm approval — instruct agent to try Tier 2 (MCP tools)
-					return {
-						action: "awaiting_external_review",
-						intent: slug,
-						stage: currentStage,
-						external_review_url: externalUrl,
-						message: `Stage '${currentStage}' is awaiting external review at: ${externalUrl}. CLI-based check did not detect approval yet.\n\n` +
-							`**Check via available MCP tools:** If you have access to MCP tools for the review platform (e.g., \`mcp__github__pull_request_read\`, \`mcp__gitlab__*\`, \`mcp__slack__*\`), ` +
-							`use them to check the current approval status. If the review is approved, call \`haiku_run_next { intent: "${slug}", gate_signal: "approved" }\` to advance the gate. ` +
-							`If not yet approved, inform the user the stage is still waiting. Run /haiku:pickup again after approval.`,
-					}
+			let approved = false
+
+			// Tier 1: Branch merge detection (structural, tamper-resistant)
+			if (isGitRepo()) {
+				const stageBranch = `haiku/${slug}/${currentStage}`
+				const mainline = `haiku/${slug}/main`
+				if (isBranchMerged(stageBranch, mainline)) {
+					approved = true
 				}
+			}
+
+			// Tier 2: URL-based CLI probing (fallback)
+			if (!approved) {
+				const externalUrl = (stageState.external_review_url as string) || ""
+				if (externalUrl) {
+					approved = checkExternalApproval(externalUrl)
+				}
+			}
+
+			if (approved) {
+				// External approval detected — advance
+				const path = stageStatePath(slug, currentStage)
+				const data = readJson(path)
+				data.gate_outcome = "advanced"
+				writeJson(path, data)
+				emitTelemetry("haiku.gate.resolved", {
+					intent: slug,
+					stage: currentStage,
+					gate_type: "external",
+					outcome: "approved",
+				})
+				// Fall through to advance logic below
 			} else {
-				// No URL recorded — ask the agent to provide it or use MCP tools to find it
+				const externalUrl = (stageState.external_review_url as string) || ""
 				return {
 					action: "awaiting_external_review",
 					intent: slug,
 					stage: currentStage,
-					message: `Stage '${currentStage}' is awaiting external review but no review URL was recorded.\n\n` +
-						`**Options:** (1) If you have MCP tools for the review platform (e.g., \`mcp__github__pull_request_read\`, \`mcp__gitlab__*\`, \`mcp__slack__*\`), ` +
-						`use them to find the review and check its status. (2) Provide the review URL via \`haiku_stage_set\`. (3) Run /haiku:revisit to re-enter the gate.`,
+					...(externalUrl ? { external_review_url: externalUrl } : {}),
+					message: externalUrl
+						? `Stage '${currentStage}' is awaiting external review at: ${externalUrl}. Neither branch merge detection nor CLI-based check detected approval yet. Run /haiku:pickup after the review is approved.`
+						: `Stage '${currentStage}' is awaiting external review but no review URL was recorded. Run /haiku:pickup after the review is approved.`,
 				}
 			}
 		}
@@ -2694,21 +2699,13 @@ function buildRunInstructions(
 			sections.push(
 				`## Awaiting External Review\n\n${
 					externalUrl
-						? `The stage is awaiting external review at: ${externalUrl}\n\nThe orchestrator's CLI-based check did not detect approval yet.`
+						? `The stage is awaiting external review at: ${externalUrl}`
 						: "The stage is awaiting external review but no review URL has been recorded."
 				}\n\n` +
-				`### Check via Available MCP Tools\n\n` +
-				`Before asking the user, try checking the review status using available MCP tools in your environment:\n\n` +
-				`- **GitHub MCP** — look for \`mcp__github__pull_request_read\` to check PR review decisions\n` +
-				`- **GitLab MCP** — look for \`mcp__gitlab__*\` tools to check MR approval state\n` +
-				`- **Slack MCP** — look for \`mcp__slack__*\` tools to check for approval messages/reactions\n` +
-				`- **Jira/Linear MCP** — look for \`mcp__jira__*\` or \`mcp__linear__*\` to check ticket transitions\n` +
-				`- **Any other configured MCP** with authenticated access to the review/approval system\n\n` +
-				`If you confirm the review is approved via MCP, call:\n` +
-				`\`haiku_run_next { intent: "${slug}", gate_signal: "approved" }\`\n\n` +
-				`This advances the gate without requiring CLI tools.\n\n` +
-				`${externalUrl ? "" : `If the user provides a review URL, pass it: \`haiku_run_next { intent: "${slug}", external_review_url: "<url>" }\`\n\n`}` +
-				`If no MCP tools are available, ask the user for the status. Run /haiku:pickup again after approval.`,
+				`The orchestrator checks for approval automatically (branch merge detection + URL-based CLI probing). ` +
+				`Neither detected approval yet.\n\n` +
+				`Inform the user that the stage is waiting on external review. ` +
+				`After the review is approved, run \`/haiku:pickup\` to continue.`,
 			)
 			break
 		}
@@ -2774,14 +2771,6 @@ export const orchestratorToolDefs = [
 					type: "string",
 					description:
 						"URL where stage was submitted for external review (PR, MR, etc.)",
-				},
-				gate_signal: {
-					type: "string",
-					enum: ["approved", "rejected"],
-					description:
-						"Signal from agent-directed MCP check confirming the external gate outcome. " +
-						"Use when the agent verified approval via an MCP tool (e.g., GitHub MCP, Slack MCP) " +
-						"but the orchestrator's CLI-based check couldn't detect it.",
 				},
 			},
 			required: ["intent"],
@@ -2942,41 +2931,6 @@ export async function handleOrchestratorTool(
 				}
 			} catch {
 				/* non-fatal */
-			}
-		}
-
-		// Tier 2 gate signal: agent confirmed approval via MCP tool (e.g., GitHub MCP,
-		// Slack MCP) when the orchestrator's CLI-based Tier 1 check couldn't detect it.
-		// Advance the blocked gate directly.
-		if (args.gate_signal === "approved") {
-			try {
-				const root = findHaikuRoot()
-				const intentFile = join(root, "intents", slug, "intent.md")
-				if (existsSync(intentFile)) {
-					const intentFm = readFrontmatter(intentFile)
-					const activeStage = (intentFm.active_stage as string) || ""
-					if (activeStage) {
-						const ssPath = stageStatePath(slug, activeStage)
-						const ssData = readJson(ssPath)
-						if (ssData.gate_outcome === "blocked") {
-							ssData.gate_outcome = "advanced"
-							ssData.gate_signal_source = "mcp_agent"
-							writeJson(ssPath, ssData)
-							emitTelemetry("haiku.gate.resolved", {
-								intent: slug,
-								stage: activeStage,
-								gate_type: "external",
-								outcome: "approved",
-								signal_source: "mcp_agent",
-							})
-							gitCommitState(
-								`haiku: gate approved via MCP signal for ${slug}/${activeStage}`,
-							)
-						}
-					}
-				}
-			} catch {
-				/* non-fatal — fall through to runNext which will re-check */
 			}
 		}
 

@@ -80,7 +80,7 @@ When modifying any component, check if other components need corresponding updat
 | Studio | (no equivalent) | A named lifecycle template (profile implementation) containing stages |
 | Stage | (no equivalent) | A lifecycle phase within a studio, containing hats and review gates |
 | Hat | Role | A behavioral role scoped to a stage, defined in `hats/{hat}.md` files within the stage directory |
-| Review Gate | Quality Gate | A checkpoint between stages controlling advancement. `auto` = harness-only (no human). `ask` = local review UI, human approves/rejects via MCP response. `external` = blocks until external system (GitHub/GitLab) approves; signal detected by probing review URL on pickup. `await` = blocks until an external event occurs (not a review — e.g., customer response, pipeline). Compound: `[external, ask]` = user chooses between external submission or local approval. |
+| Review Gate | Quality Gate | A checkpoint between stages controlling advancement. `auto` = harness-only (no human). `ask` = local review UI, human approves/rejects via MCP response. `external` = blocks until external system (GitHub/GitLab) approves; signal detected primarily by branch merge detection, with URL-based CLI probing as fallback. `await` = blocks until an external event occurs (not a review — e.g., customer response, pipeline). Compound: `[external, ask]` = user chooses between external submission or local approval. |
 
 ### Hierarchy
 

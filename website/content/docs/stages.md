@@ -97,32 +97,22 @@ The order in the list communicates primary intent (first = preferred path) but d
 
 Signal detection for `external` and `await` gates uses a two-tier approach:
 
-#### Tier 1: CLI-Based (Automatic)
+#### Tier 1: Branch Merge Detection (Structural)
 
-When a stage is blocked, the orchestrator stores the review URL in `external_review_url` within the stage state. On each `/haiku:pickup`, the orchestrator synchronously probes this URL via CLI tools:
+In git-based workflows, the primary signal is whether the stage branch (`haiku/{slug}/{stage}`) was merged back into the intent main branch (`haiku/{slug}/main`). The orchestrator checks this locally using `git merge-base --is-ancestor` and falls back to checking for merged PRs via `gh`/`glab` (which handles squash merges where the branch commit is not a direct ancestor). This is structural verification — the agent cannot fake a branch merge.
+
+#### Tier 2: URL-Based CLI Probing (Fallback)
+
+If a `external_review_url` was recorded in the stage state, the orchestrator also checks PR/MR approval status via CLI tools:
 
 - **GitHub PRs** — `gh pr view <url> --json state,reviewDecision`. Advances on `MERGED` or `reviewDecision === "APPROVED"` (reviews passed, even if not yet merged).
 - **GitLab MRs** — `glab mr view <url> --output json`. Advances on `merged` state or `approved === true`.
 
-This is fast and automatic but requires the CLI tool to be installed and only works with URL-based review platforms.
-
-#### Tier 2: Agent-Directed MCP (Fallback)
-
-When Tier 1 can't detect approval (CLI not installed, unknown URL format, non-git review platform, or `await` gate with no URL), the orchestrator instructs the agent to check using whatever MCP servers are available in your environment:
-
-- **GitHub MCP** — `mcp__github__pull_request_read` to check PR review decisions
-- **GitLab MCP** — `mcp__gitlab__*` tools to check MR approval state
-- **Slack MCP** — `mcp__slack__*` tools to check for approval messages or reactions in a channel thread
-- **Jira/Linear MCP** — `mcp__jira__*` or `mcp__linear__*` to check ticket status transitions
-- **Any other configured MCP** with authenticated access to the signal source
-
-If the agent confirms approval via MCP, it calls `haiku_run_next { intent, gate_signal: "approved" }` to advance the gate. This works regardless of whether CLI tools are installed.
+This complements Tier 1 by detecting approval before the branch is actually merged.
 
 #### No Signal Source Available
 
-If neither tier can check the signal (no CLI, no relevant MCP server, no URL), the agent asks you for the status. You can also:
-- Provide the review URL via `haiku_stage_set` so Tier 1 can check on the next pickup
-- Run `/haiku:revisit` to re-enter the gate and change your decision
+If neither tier can detect approval (non-git environment, no CLI tools installed), the agent informs you the stage is still waiting. The user runs `/haiku:pickup` after the external review is complete.
 
 ### Gate Protocol
 

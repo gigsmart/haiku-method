@@ -47,27 +47,27 @@ description: Bidirectional comms provider — notifications out, signals in
 
 ## Sync: Gate Resolution via Comms
 
-For `await` and `external` gates, the comms provider can serve as a signal source:
+The comms provider can post gate notifications and receive replies, but the agent cannot use comms MCP tools to self-approve a gate. Gate advancement is controlled by the orchestrator through structural signals (branch merge detection, URL-based CLI probing), not by agent self-confirmation.
+
+For `await` gates where a comms signal is the expected resolution (e.g., a customer reply in a Slack thread), the flow is:
 
 ```
 1. Stage completes → post "Waiting for {event}" to channel
 2. User replies "customer responded" or reacts with ✅
-3. Next session: agent checks the thread via Slack/Teams/Discord MCP tools
-4. Agent confirms approval → calls haiku_run_next { intent, gate_signal: "approved" }
-5. Gate advances
+3. User runs /haiku:pickup after the event occurs
+4. Orchestrator checks gate status and advances
 ```
 
-This turns the comms channel into a lightweight event bus for human-mediated events.
+For `await` gates where the user wants to approve locally after confirming the event occurred, the stage must have a compound gate `[await, ask]` — the `ask` component allows local approval through the review UI.
 
-### MCP-Based Signal Detection
+### Comms as Notification, Not Signal Source
 
-When the orchestrator's CLI-based check can't detect approval (no `gh`/`glab` installed, non-git review platform, or `await` gate with no URL), the agent is instructed to check via available MCP tools. For comms providers:
+Comms MCP tools (Slack, Teams, Discord) are used for:
 
-- **Slack MCP** (`mcp__slack__*`) — search the configured channel for replies or reactions to the gate notification thread
-- **Teams MCP** (`mcp__teams__*`) — check for replies or approvals in the relevant channel/chat
-- **Discord MCP** (`mcp__discord__*`) — check for reactions or replies in the notification channel
+- **Outbound notifications** — posting gate status, intent completion, blockers
+- **Inbound context** — surfacing stakeholder feedback, thread replies relevant to active intents
 
-The agent uses whatever MCP tools are available in the user's environment. If the comms MCP confirms the event occurred, the agent calls `haiku_run_next { intent, gate_signal: "approved" }` to advance the gate without requiring CLI tools or URL pattern matching.
+They are NOT used for gate advancement. The agent cannot confirm its own gate — that would be a process bypass.
 
 ## Provider Config
 
