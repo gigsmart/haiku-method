@@ -46,24 +46,77 @@ review-agents-include:
 | `name` | string | Stage identifier |
 | `description` | string | What this stage accomplishes |
 | `hats` | list | Ordered sequence of hats (roles) for this stage |
-| `review` | enum | Review mode: `auto`, `ask`, `external`, or `await` |
+| `review` | enum or list | Review gate: `auto`, `ask`, `external`, `await`, or a compound list like `[external, ask]` |
 | `unit_types` | list | Which unit types this stage processes |
 | `inputs` | list | Artifacts required from prior stages |
 | `review-agents-include` | list | Review agents from other stages to include during adversarial review |
 | `gate-protocol` | object | Timeout, escalation, and conditions for the review gate (optional) |
 
-### Review Modes
+### Review Gates
 
-| Mode | Behavior |
-|------|----------|
-| `auto` | Stage completes without human review if criteria pass |
-| `ask` | Prompts the human to approve before advancing |
-| `external` | Requires external review (e.g., PR approval) before advancing |
-| `await` | Stage work is complete but blocks until an external event occurs (e.g., customer response, CI result, stakeholder decision) |
+Each gate type differs in *who decides*, *how the signal arrives*, and *what the user sees*:
 
-A stage can specify multiple review modes as a list (e.g., `[external, ask]`), meaning it uses external review first, with ask as fallback.
+| Gate | Who decides | Signal mechanism | Review UI buttons |
+|------|-------------|------------------|-------------------|
+| `auto` | The harness (quality gates only) | Quality gate exit codes | *(no review UI — advances automatically)* |
+| `ask` | The human, locally | MCP response from local review UI | **Approve** · **Request Changes** |
+| `external` | An external reviewer (GitHub, GitLab, manager, etc.) | Orchestrator probes the review URL on `/haiku:pickup` | **Submit for External Review** · **Request Changes** |
+| `await` | An external event (customer reply, contract, pipeline) | Orchestrator probes on `/haiku:pickup` (same mechanism as `external`) | **Submit for External Review** · **Request Changes** |
 
-The `await` gate is distinct from `external` — `external` pushes work for review by another person; `await` blocks because the ball is in someone else's court entirely (a customer needs to respond, a third-party approval needs to come through, a pipeline needs to finish).
+**`auto`** — No human interaction. If quality gates (tests, lint, typecheck, build) pass, the stage advances. Use for stages where mechanical verification is sufficient.
+
+**`ask`** — The framework opens a review UI on your machine. You see the work, optionally leave inline comments, and click **Approve** or **Request Changes**. The decision is immediate — the MCP response tells the orchestrator to advance or loop back. Everything stays local.
+
+**`external`** — The framework blocks until an external review system approves. The typical flow: the agent creates a PR (or MR, or submits to another channel), records the URL in state, and the stage enters a "blocked" status. You cannot bypass this by approving locally — doing so would defeat the purpose of requiring third-party review. On your next `/haiku:pickup`, the orchestrator checks the review URL for approval (GitHub: checks merge state via `gh`; GitLab: checks state via `glab`). If approved, the stage advances automatically. If not yet approved, the orchestrator tells you the stage is still waiting.
+
+**`await`** — Same blocking mechanics as `external`, but the semantic intent is different. There is no review artifact — `await` represents situations where something must happen in the world before you can continue: a customer needs to respond, a contract needs a countersignature, a prototype needs to ship, a third-party pipeline needs to complete. The orchestrator treats it identically to `external` at the mechanical level (blocked state, probe on pickup).
+
+### Compound Gates
+
+A stage can specify multiple gate types as a list:
+
+```yaml
+review: [external, ask]
+```
+
+A compound gate presents **all listed options simultaneously** in the review UI. For `[external, ask]`, you see both:
+- **Approve** (the `ask` path — approve locally, advance immediately)
+- **Submit for External Review** (the `external` path — block until external approval)
+
+This lets you *choose* to bypass external review when you decide it's unnecessary for a particular stage completion. Without the `ask` component, only the external submission path would be available and you'd have no way to approve locally.
+
+The order in the list communicates primary intent (first = preferred path) but does not restrict which button you click. Common compound gates:
+
+| Compound | Meaning |
+|----------|---------|
+| `[external, ask]` | Prefer external review, but allow local approval as an escape hatch |
+| `[external, await]` | Submit for external review, then also wait for an external event |
+| `[ask, await]` | Get local human approval, then wait for an external event |
+
+### How External Signals Are Detected
+
+Signal detection for `external` and `await` gates uses a two-tier approach:
+
+#### Tier 1: Branch Merge Detection (Structural)
+
+In git-based workflows, the primary signal is whether the stage branch (`haiku/{slug}/{stage}`) was merged back into the intent main branch (`haiku/{slug}/main`). The orchestrator checks this locally using `git merge-base --is-ancestor` and falls back to checking for merged PRs via `gh`/`glab` (which handles squash merges where the branch commit is not a direct ancestor). This is structural verification — the agent cannot fake a branch merge.
+
+#### Tier 2: URL-Based CLI Probing (Fallback)
+
+If a `external_review_url` was recorded in the stage state, the orchestrator also checks PR/MR approval status via CLI tools:
+
+- **GitHub PRs** — `gh pr view <url> --json state,reviewDecision`. Advances on `MERGED` or `reviewDecision === "APPROVED"` (reviews passed, even if not yet merged).
+- **GitLab MRs** — `glab mr view <url> --output json`. Advances on `merged` state or `approved === true`.
+
+This complements Tier 1 by detecting approval before the branch is actually merged.
+
+#### Non-Git Environments (Filesystem Mode)
+
+In filesystem mode (no git repository), there is no structural signal to enforce external review — no branches to merge, no PRs to check. The framework cannot reliably verify that a third party actually reviewed the work.
+
+In this case, `external` gates **fall back to `ask`** — the review UI opens for local human approval instead of blocking for an external signal. Compound gates like `[external, ask]` strip the `external` component and present only the remaining options.
+
+This is an intentional trade-off: filesystem mode cannot enforce external review, so it degrades gracefully to local approval rather than blocking indefinitely with no way to advance.
 
 ### Gate Protocol
 
@@ -221,6 +274,25 @@ review-agents-include:
 
 The included agents run alongside the stage's own review agents during adversarial review. For example, the development stage includes the design stage's consistency and accessibility agents to verify the implementation respects the design intent.
 
+## Phase Overrides
+
+Stages can customize behavior for specific lifecycle phases by adding files to a `phases/` subdirectory:
+
+```
+plugin/studios/{name}/stages/{stage}/phases/
+├── ELABORATION.md    # Criteria guidance, wireframe fidelity, skip/add steps
+└── EXECUTION.md      # Builder focus, reviewer focus, completion signals
+```
+
+These override files are injected by the orchestrator at the corresponding phase:
+
+- **ELABORATION.md** — Injected during the elaborate phase. Can define criteria guidance specific to this stage (e.g., design criteria vs. product criteria), configure wireframe fidelity, or skip/add elaboration steps via frontmatter fields (`skip`, `add`, `wireframe_fidelity`, `criteria_focus`).
+- **EXECUTION.md** — Injected during execution (`start_unit`, `continue_unit`, `start_units`). Typically defines builder focus (what to prioritize), reviewer focus (what to check), and a completion signal for the stage's execution phase.
+
+Not all stages need phase overrides — only stages where the default elaboration or execution behavior needs stage-specific customization. In the software studio, the `design` and `product` stages use phase overrides to tailor criteria guidance and elaboration steps to their domains.
+
+Project-level overrides follow the same path convention: `.haiku/studios/{studio}/stages/{stage}/phases/ELABORATION.md`.
+
 ## The requires/produces Pipeline
 
 Stages can declare **inputs** (what they need from earlier stages) and produce **outputs** (artifacts in the stage's outputs directory). This creates a pipeline:
@@ -277,8 +349,9 @@ To add a custom stage to a studio:
 2. Write `STAGE.md` with frontmatter
 3. Create a `hats/` subdirectory with per-hat instruction files
 4. Create a `review-agents/` subdirectory with per-agent review mandate files
-5. Add the stage name to the studio's `stages` list in `STUDIO.md`
-6. If this stage should verify upstream work, add entries to `review-agents-include`
+5. Optionally create a `phases/` subdirectory with `ELABORATION.md` and/or `EXECUTION.md` to customize phase behavior
+6. Add the stage name to the studio's `stages` list in `STUDIO.md`
+7. If this stage should verify upstream work, add entries to `review-agents-include`
 
 Example custom stage:
 

@@ -2985,9 +2985,9 @@ function renderStudio() {
           if (slugs.length === 0) return ""
           return `
             <div class="elab-step">
-              <div class="step-label">② discovery artifacts <span style="text-transform:none; letter-spacing:0; color:#7c3aed; font-weight:600;">· FSM fans out one ↗ subagent per artifact</span></div>
+              <div class="step-label">② discovery artifacts <span style="text-transform:none; letter-spacing:0; color:#7c3aed; font-weight:600;">· FSM fans out one ↗ subagent per artifact via self-contained <code>&lt;subagent tool="Task"&gt;</code> blocks — parent relays verbatim, no assembly required</span></div>
               <div class="elab-discovery">
-                ${slugs.map(s => `<span class="disc artifact" data-artifact="${lower}.${s}" title="${escHTML(defs[s].path)} — orchestrator instructs spawning a Task subagent to research + produce this artifact">${escHTML(s)} <span style="color:#7c3aed; font-weight:700;">↗</span></span>`).join("")}
+                ${slugs.map(s => `<span class="disc artifact" data-artifact="${lower}.${s}" title="${escHTML(defs[s].path)} — MCP constructs a complete <subagent tool=&quot;Task&quot;> prompt per discovery artifact (intent context, stage scope, template, Content Guide + Quality Signals all embedded); parent relays verbatim">${escHTML(s)} <span style="color:#7c3aed; font-weight:700;">↗</span></span>`).join("")}
               </div>
             </div>
           `
@@ -3635,6 +3635,8 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
         { hook: "MCP tool result", target: "agent's `tool_use_result` content", what: "the payload below — agent now knows which stage to start and which phase" },
         { hook: "inject-context", target: "next agent prompt prepend", what: "intent.md frontmatter (slug, title, studio, mode), `active_stage`, `phase=elaborate`" },
         { hook: "inject-state-file", target: "`.haiku/_inject.md` (transient)", what: "structured snapshot of state.json the agent can read with the Read tool" },
+        { hook: "readStudio()", target: "agent prompt prepend", what: "**Studio context injection** — `readStudio(studio).body` is injected as studio-level context when a new stage starts, providing the studio's high-level goals, principles, and behavioral framing from `STUDIO.md`." },
+        { hook: "readStageDef()", target: "agent prompt", what: "**Stage definition** — STAGE.md body is injected as the stage's behavioral definition and criteria guidance." },
       ],
       action: "start_stage",
       summary: `kick off the first stage (${stage.name}) — sets phase=elaborate`,
@@ -3660,7 +3662,13 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
         { hook: "MCP tool result", target: "agent's `tool_use_result`", what: "**blocking** until user clicks; on resolve the click outcome (`approved`/`changes_requested`)" },
         { hook: "_openReviewAndWait", target: "Review web UI", what: "the elaborated unit specs + DAG + `inputs:` declarations are rendered for human inspection" },
         { hook: "inject-context", target: "next agent prompt prepend (after click)", what: "if approved: `phase=execute`, first wave's units. if rejected: revision instructions + previous attempt's content" },
-        { hook: "FSM elaborate-tick instruction", target: "agent prompt (this same `haiku_run_next` call)", what: "**Discovery Fan-Out (REQUIRED)** — orchestrator enumerates the stage's `discovery/*.md` templates and instructs the agent to spawn one `Task` subagent per artifact, in parallel, for research + production. Lives in `orchestrator.ts` elaborate-case `tool_use_result`." },
+        { hook: "readStageDef()", target: "agent prompt", what: "**Stage body** — the STAGE.md body content (criteria guidance, completion signals, overlap awareness) is injected as stage-level context for elaboration." },
+        { hook: "resolveStageInputs()", target: "agent prompt", what: "**Upstream stage inputs** — artifacts produced by prior stages (discovery docs, output artifacts) are resolved and their content loaded (up to 3000 chars) as mandatory context." },
+        { hook: "design MCP detection", target: "agent prompt (conditional)", what: "**Design provider MCPs** — if the stage includes design hats, instructions to use pencil/openpencil/figma MCP tools are injected." },
+        { hook: "FSM elaborate-tick instruction", target: "agent prompt (this same `haiku_run_next` call)", what: "**Discovery Fan-Out (REQUIRED)** — orchestrator enumerates the stage's `discovery/*.md` templates and produces one self-contained `<subagent tool=\"Task\">` block per artifact. Each block is a complete prompt (intent context, stage scope, template Content Guide + Quality Signals all embedded). The parent relays each block verbatim — no assembly required. Lives in `orchestrator.ts` elaborate-case `tool_use_result`." },
+        { hook: "FSM elaborate-tick instruction", target: "agent prompt (this same `haiku_run_next` call)", what: "**`<subagent tool=\"Task\">` self-contained prompts** — each discovery subagent block contains the full behavioral prompt (intent description, stage scope, discovery template with Content Guide and Quality Signals, output path instructions). MCP constructs exact subagent prompts; parent relays verbatim." },
+        { hook: "readPhaseOverride()", target: "agent prompt prepend", what: "**Phase override injection** — `phases/ELABORATION.md` is read via `readPhaseOverride()` and injected during elaborate, providing studio-level elaboration guidance." },
+        { hook: "readStageArtifactDefs()", target: "agent prompt prepend", what: "**Stage Output Expectations** — output definitions from `outputs/*.md` are injected as 'Stage Output Expectations' so the agent can plan units with knowledge of what artifacts each stage must produce (name, location, format, content guide)." },
       ],
       action: "gate_review",
       summary: `elaboration complete — open ${isFirst ? "intent_review" : "elaborate_to_execute"} gate`,
@@ -3687,9 +3695,13 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
     },
     "gate-to-execute": {
       injection: [
-        { hook: "MCP tool result", target: "agent's `tool_use_result`", what: "first wave's unit list, target hat, target unit's worktree path" },
-        { hook: "inject-context", target: "next agent prompt prepend", what: "current unit's frontmatter, the active hat's `hats/{hat}.md` content, allowed file paths" },
+        { hook: "MCP tool result", target: "agent's `tool_use_result`", what: "`start_unit`/`start_units` produces a single self-contained `<subagent tool=\"Agent\">` block per unit — hat instructions, unit spec, stage scope, output requirements all embedded. Parent-only instructions (advance_hat handling) are outside the tags." },
+        { hook: "inject-context", target: "next agent prompt prepend", what: "current unit's frontmatter, the active hat's `hats/{hat}.md` content, allowed file paths — all embedded inside the `<subagent>` block" },
         { hook: "inject-state-file", target: "`.haiku/_inject.md`", what: "full state.json + active unit metadata for the agent to consult" },
+        { hook: "readPhaseOverride()", target: "agent prompt prepend", what: "**Phase override injection** — `phases/EXECUTION.md` is read via `readPhaseOverride()` and injected during `start_unit`/`continue_unit`/`start_units`, embedded inside the `<subagent>` block." },
+        { hook: "readStageArtifactDefs()", target: "agent prompt prepend", what: "**Stage Output Requirements** — `readStageArtifactDefs()` loads output definitions from `outputs/*.md` and injects them as 'Stage Output Requirements' with name, location, format, and content guide per artifact — embedded inside each `<subagent>` block." },
+        { hook: "readStageDef()", target: "agent prompt", what: "**Stage body** — STAGE.md body injected with scope constraint ('stay within this stage's scope') — embedded inside the `<subagent>` block." },
+        { hook: "resolveStageInputs()", target: "agent prompt", what: "**Upstream context** — artifacts from prior stages not already in unit inputs are resolved and injected (up to 2000 chars each) — embedded inside the `<subagent>` block." },
       ],
       action: "advance_phase",
       summary: "user approved specs — start wave 1",
@@ -3709,12 +3721,12 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
         ...(isFirst ? [{ path: `.haiku/intents/{slug}/intent.md`, change: "frontmatter: `intent_reviewed: true` (first stage only)" }] : []),
         { path: `.haiku/worktrees/{unit}/` , change: `git worktree created for each unit in wave 1 (${(stage.waves[0]?.units ?? []).join(", ")})` },
       ],
-      instructions: "Spawn the first wave of units in parallel. Each unit runs in its own worktree under `.haiku/worktrees/{unit}`. The agent dons the first hat for the first unit it touches.",
+      instructions: "Spawn the first wave of units in parallel. `start_unit`/`start_units` returns one self-contained `<subagent tool=\"Agent\">` block per unit — all context (hat instructions, unit spec, stage scope, output requirements, upstream artifacts) embedded inside. Parent relays each block verbatim; parent-only instructions (advance_hat handling, wave coordination) are outside the `<subagent>` tags. Each unit runs in its own worktree under `.haiku/worktrees/{unit}`.",
     },
     "hat-to-hat": {
       injection: [
         { hook: "MCP tool result", target: "subagent's `tool_use_result`", what: `next hat name (\`${opts.to}\`), \`hats/${opts.to}.md\` content, bolt counter` },
-        { hook: "subagent-context", target: "the subagent itself", what: "stays scoped to the parent unit's worktree throughout the hat rotation — same subagent transitions between hats, doesn't respawn" },
+        { hook: "subagent-context", target: "the subagent itself", what: "stays scoped to the parent unit's worktree throughout the hat rotation — same subagent transitions between hats, doesn't respawn. STAGE.md body content is injected alongside hat instructions for stage-level behavioral context." },
         { hook: "track-outputs", target: "unit frontmatter", what: `records files \`${opts.from}\` wrote into the unit's \`outputs:\` so the next hat sees them` },
       ],
       // NOTE: this transition is NOT a haiku_run_next call. It's the subagent calling
@@ -3745,7 +3757,11 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
     "wave-to-wave": {
       injection: [
         { hook: "MCP tool result", target: "agent's `tool_use_result`", what: `newly-eligible unit list (${(opts.units ?? []).join(", ")}), each with worktree path + first hat` },
-        { hook: "inject-context", target: "next agent prompt prepend (per spawned unit context)", what: "the new unit's frontmatter, depends_on outputs (resolved file paths), first hat's instructions" },
+        { hook: "inject-context", target: "next agent prompt prepend (per spawned unit context)", what: "each unit gets a self-contained `<subagent tool=\"Agent\">` block with frontmatter, depends_on outputs (resolved file paths), first hat's instructions — all embedded inside the block" },
+        { hook: "start_units embedding", target: "agent's `tool_use_result`", what: "**Batch unit embedding** — `start_units` produces one self-contained `<subagent tool=\"Agent\">` block per unit — hat instructions, unit spec, stage scope, output requirements, upstream artifacts all embedded inside each block. MCP constructs exact subagent prompts; parent relays verbatim. Model cascade is resolved for the hat to determine subagent model." },
+        { hook: "readStageDef()", target: "agent prompt", what: "**Stage body** — STAGE.md body injected with scope constraint." },
+        { hook: "readPhaseOverride()", target: "agent prompt", what: "**Execution override** — `phases/EXECUTION.md` injected for stage-specific execution guidance." },
+        { hook: "readStageArtifactDefs()", target: "agent prompt", what: "**Output requirements** — output definitions from `outputs/*.md` injected as 'Stage Output Requirements'." },
       ],
       action: opts.units && opts.units.length > 1 ? "start_units" : "start_unit",
       summary: `wave ${opts.from} complete → start wave ${opts.to} (${(opts.units ?? []).join(", ")})`,
@@ -3765,7 +3781,7 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
         { path: `.haiku/intents/{slug}/stages/${stageLower}/units/{new-wave-unit}.md`, change: `frontmatter: \`status: "in_progress"\`, \`hat: "${stage.hats[0]}"\`, \`bolt: 0\`` },
         { path: `.haiku/worktrees/{new-wave-unit}/`, change: "git worktree created for each newly-eligible unit" },
       ],
-      instructions: `There's no "wave" tool — \`haiku_run_next\` simply returns \`start_unit(s)\` for whichever units have just become eligible. \`computeUnitWaves\` is a pure scheduling function; the FSM has no explicit wave concept beyond which units are currently eligible.`,
+      instructions: `There's no "wave" tool — \`haiku_run_next\` simply returns \`start_unit(s)\` for whichever units have just become eligible. \`computeUnitWaves\` is a pure scheduling function; the FSM has no explicit wave concept beyond which units are currently eligible. For multi-unit waves, \`start_units\` produces one self-contained \`<subagent tool="Agent">\` block per unit — all context (hat instructions, unit spec, stage scope, output requirements, upstream artifacts) embedded inside each block. MCP constructs exact subagent prompts; parent relays each block verbatim, no assembly required. The model cascade is resolved for the hat to select the subagent model.`,
     },
     "execute-to-review": {
       injection: [
@@ -3794,8 +3810,8 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
     "review-quality-to-agents": {
       injection: [
         { hook: "MCP tool result", target: "agent's `tool_use_result`", what: "**on failure:** structured findings list (file/line/message). **on success:** review-agent list to dispatch" },
-        { hook: "inject-context", target: "next agent prompt prepend", what: "**on failure:** the failing unit's worktree path + structured findings. **on success:** each review-agent's `review-agents/{name}.md` content per spawned subagent" },
-        { hook: "subagent-context", target: "each parallel review-agent subagent", what: "scoped to the stage's outputs only (read-only access to artifacts)" },
+        { hook: "inject-context", target: "next agent prompt prepend", what: "**on failure:** the failing unit's worktree path + structured findings. **on success:** one self-contained `<subagent tool=\"Task\">` block per review-agent — each contains the agent's full instructions, diff-obtaining commands, and scope constraints. Cross-stage agents loaded via `review-agents-include` field in STAGE.md. Parent relays each block verbatim." },
+        { hook: "subagent-context", target: "each parallel review-agent subagent", what: "provides ADDITIONAL context (workflow rules, bootstrap) but the core behavioral prompt (review instructions, diff commands, scope) is already in the `<subagent>` block. Scoped to the stage's outputs only (read-only access to artifacts). A `review_elaboration` action exists for pre-gate elaboration review." },
       ],
       action: "fix_quality_gates _or_ advance_review",
       summary: "branch on the gate outcome that just ran",
@@ -3823,7 +3839,7 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
       writes: [
         { path: `.haiku/intents/{slug}/stages/${stageLower}/state.json`, change: "on success: `quality_gates_passed: true`. on failure: `quality_gate_failures: [...]` (cleared on next pass)" },
       ],
-      instructions: `This is the same \`haiku_run_next\` tick from above, returning AFTER gates have run. **On failure** the agent gets back \`fix_quality_gates\` with structured findings — agent fixes in place, calls \`haiku_run_next\` again, gates rerun. **On success** the agent gets back \`advance_review\` and dispatches the parallel review-agents (${stage.reviewAgents.map(a => `\`${a}\``).join(", ")}).`,
+      instructions: `This is the same \`haiku_run_next\` tick from above, returning AFTER gates have run. **On failure** the agent gets back \`fix_quality_gates\` with structured findings — agent fixes in place, calls \`haiku_run_next\` again, gates rerun. **On success** the agent gets back \`advance_review\` with one self-contained \`<subagent tool="Task">\` block per review-agent (${stage.reviewAgents.map(a => `\`${a}\``).join(", ")}). Each block is a complete prompt with review instructions and commands to obtain the diff — parent relays verbatim, no assembly required. Cross-stage agents are loaded via the \`review-agents-include\` field in STAGE.md. A separate \`review_elaboration\` action handles pre-gate elaboration review.`,
     },
     "review-to-gate": {
       injection: [
@@ -4022,7 +4038,7 @@ const ACTORS = {
       "Wave scheduling (`computeUnitWaves` topological sort)",
       "Gate type resolution (`auto`, `ask`, `external`, `[external, ask]`, `await`)",
     ],
-    notes: "**Core principle — the FSM enforces, not the agent.** The agent is the body executing actions; the orchestrator is the brain owning state mutations and validating preconditions. If you have to *trust* the agent to follow the rules, you'll find out it didn't the moment something goes wrong. Hooks make rules physical; the orchestrator makes them stateful. That's why you see `_openReviewAndWait()` blocking, `guard-fsm-fields` rejecting agent edits to FSM frontmatter, and `enforce-iteration` bumping the bolt counter without asking — every guarantee is enforced, not requested.\n\n**The full MCP tool surface — 29 tools across orchestrator.ts, state-tools.ts, server.ts:**\n\n**FSM drivers** (orchestrator.ts):\n- `haiku_run_next` — the tick. Reads state, validates, returns next action.\n- `haiku_intent_create` — creates a new intent.md.\n- `haiku_select_studio` — pick / change the studio for an intent.\n- `haiku_revisit` — bounce back to a prior stage's elaborate.\n- `haiku_intent_reset` — nuke an intent and start over.\n- `haiku_intent_archive` — flip `archived: true` in intent.md frontmatter; `haiku_run_next` refuses to advance archived intents.\n- `haiku_intent_unarchive` — removes the `archived` key from intent.md frontmatter (clean restore — no `archived: false` marker left behind), so `haiku_run_next` ticks resume on a previously-archived intent.\n\n**State tools** (state-tools.ts) — read/write specific state without going through a full FSM tick:\n- `haiku_intent_get`, `haiku_intent_list`\n- `haiku_stage_get`\n- `haiku_unit_get`, `haiku_unit_set`, `haiku_unit_list`\n- `haiku_unit_start`, `haiku_unit_advance_hat`, `haiku_unit_reject_hat`, `haiku_unit_increment_bolt` — subagent-only progression tools\n- `haiku_knowledge_list`, `haiku_knowledge_read` — discovery/output artifact access\n- `haiku_studio_list`, `haiku_studio_get`, `haiku_studio_stage_get`\n- `haiku_settings_get`\n- `haiku_dashboard`, `haiku_capacity` — overview tools\n- `haiku_reflect`, `haiku_review`, `haiku_backlog`, `haiku_seed`, `haiku_release_notes` — workflow helpers\n\n**Review-server tool** (server.ts):\n- `haiku_feedback` — capture user feedback from the review UI.\n\nThe agent calls these. Hooks intercept the agent's tool invocations between calls.\n\n**Auto-commits:** the orchestrator calls `gitCommitState()` on every FSM mutation — `state.json` writes, intent.md frontmatter changes, unit-status transitions all become commits on the active branch. Commit messages are `haiku: {action description}`. The agent doesn't make these commits; the orchestrator does. This is what makes a H·AI·K·U intent's full history reconstructable from git alone.",
+    notes: "**Core principle — the FSM enforces, not the agent.** The agent is the body executing actions; the orchestrator is the brain owning state mutations and validating preconditions. If you have to *trust* the agent to follow the rules, you'll find out it didn't the moment something goes wrong. Hooks make rules physical; the orchestrator makes them stateful. That's why you see `_openReviewAndWait()` blocking, `guard-fsm-fields` rejecting agent edits to FSM frontmatter, and `enforce-iteration` bumping the bolt counter without asking — every guarantee is enforced, not requested.\n\n**The full MCP tool surface — 33 tools across orchestrator.ts, state-tools.ts, server.ts:**\n\n**FSM drivers** (orchestrator.ts):\n- `haiku_run_next` — the tick. Reads state, validates, returns next action.\n- `haiku_intent_create` — creates a new intent.md.\n- `haiku_select_studio` — pick / change the studio for an intent.\n- `haiku_revisit` — bounce back to a prior stage's elaborate.\n- `haiku_intent_reset` — nuke an intent and start over.\n- `haiku_intent_archive` — flip `archived: true` in intent.md frontmatter; `haiku_run_next` refuses to advance archived intents.\n- `haiku_intent_unarchive` — removes the `archived` key from intent.md frontmatter (clean restore — no `archived: false` marker left behind), so `haiku_run_next` ticks resume on a previously-archived intent.\n\n**State tools** (state-tools.ts) — read/write specific state without going through a full FSM tick:\n- `haiku_intent_get`, `haiku_intent_list`\n- `haiku_stage_get`\n- `haiku_unit_get`, `haiku_unit_set`, `haiku_unit_list`\n- `haiku_unit_start`, `haiku_unit_advance_hat`, `haiku_unit_reject_hat`, `haiku_unit_increment_bolt` — subagent-only progression tools\n- `haiku_knowledge_list`, `haiku_knowledge_read` — discovery/output artifact access\n- `haiku_studio_list`, `haiku_studio_get`, `haiku_studio_stage_get`\n- `haiku_settings_get`\n- `haiku_dashboard`, `haiku_capacity` — overview tools\n- `haiku_reflect`, `haiku_review`, `haiku_backlog`, `haiku_seed`, `haiku_release_notes` — workflow helpers\n\n**Review-server tool** (server.ts):\n- `haiku_feedback` — capture user feedback from the review UI.\n\nThe agent calls these. Hooks intercept the agent's tool invocations between calls.\n\n**Auto-commits:** the orchestrator calls `gitCommitState()` on every FSM mutation — `state.json` writes, intent.md frontmatter changes, unit-status transitions all become commits on the active branch. Commit messages are `haiku: {action description}`. The agent doesn't make these commits; the orchestrator does. This is what makes a H·AI·K·U intent's full history reconstructable from git alone.",
   },
   webui: {
     icon: "🌐",
@@ -4105,7 +4121,7 @@ const HOOKS = [
     desc: "After every agent edit/write, records the file path under the active unit's `outputs:` frontmatter. This is how downstream stages know what's available.",
     fires: ["cylinder", "hat", "artifacts.out"], file: "packages/haiku/src/hooks/track-outputs.ts" },
   { group: "context injection", name: "subagent-context",
-    desc: "When a hat spawns a Claude Code subagent, this hook scopes the subagent's context to the parent unit's worktree only — preventing context bleed.",
+    desc: "When a hat spawns a Claude Code subagent, this hook scopes the subagent's context to the parent unit's worktree only — preventing context bleed. For subagents spawned via `<subagent>` blocks from `haiku_run_next`, the hook provides ADDITIONAL context (workflow rules, bootstrap, cwd scoping) but the core behavioral context (hat instructions, unit spec, stage scope, output requirements) is already embedded in the `<subagent>` prompt block constructed by the MCP. Also injects STAGE.md body content alongside the hat instructions for stage-level behavioral context.",
     fires: ["hat", "phase[execute]"], file: "packages/haiku/src/hooks/subagent-context.ts" },
   { group: "context injection", name: "subagent-hook",
     desc: "Runtime hook running inside spawned subagents. Plays the same role as inject-context for the subagent's tool calls.",
@@ -4304,13 +4320,13 @@ function openSubagentModal(stageKey, hatName) {
       </ul>
     </div>
     <div class="modal-section">
-      <h3>scoped by <code>subagent-context</code> hook</h3>
+      <h3><code>&lt;subagent&gt;</code> block architecture + <code>subagent-context</code> hook</h3>
       <div class="prose">
-        Every spawned subagent is intercepted by the <code>subagent-context</code> hook (<code>packages/haiku/src/hooks/subagent-context.ts</code>), which:
+        The MCP constructs a self-contained <code>&lt;subagent tool="Agent" type="..." model="..."&gt;</code> prompt block for each unit/hat. The parent agent relays these blocks verbatim — no assembly required. The core behavioral context (hat instructions, unit spec, stage scope, output requirements, upstream artifacts) is already embedded in the <code>&lt;subagent&gt;</code> block. The <code>subagent-context</code> hook (<code>packages/haiku/src/hooks/subagent-context.ts</code>) then provides ADDITIONAL runtime context:
       </div>
       <ul>
         <li>Restricts the subagent's <code>cwd</code> to the parent unit's worktree (<code>.haiku/worktrees/{unit}/</code>) — no context bleed across units</li>
-        <li>Injects a minimal context — the hat's <code>hats/{hat}.md</code> + the unit spec + relevant prior outputs</li>
+        <li>Provides workflow rules and bootstrap context on top of the embedded behavioral prompt</li>
         <li>Enforces edit-scope via <code>workflow-guard</code> (only this unit's files writeable)</li>
         <li>Captures the subagent's <code>haiku_unit_advance_hat</code> result back into the parent agent's tool result</li>
       </ul>
@@ -4584,13 +4600,14 @@ function openArtifactModal(key) {
 // Tool spec registry — for any clickable tool-call chip
 const TOOL_SPECS = {
   haiku_intent_create: {
-    description: "Creates a new intent. Writes `intent.md` with frontmatter (slug, title, studio, mode) and an initial body. Called once per intent, at the very start, before any FSM tick.",
+    description: "Creates a new intent. Writes `intent.md` with frontmatter (title, studio, mode) and a body (description + optional context). Called once per intent, at the very start, before any FSM tick. Studio selection happens separately via `haiku_select_studio`. The agent MUST supply BOTH a crisp title (3–8 words, ≤80 chars) and a richer description (2–5 sentences) — the title is not derived from the description.",
     input: {
-      slug: "string · kebab-case identifier (becomes `.haiku/intents/{slug}/`)",
-      title: "string · human-readable intent title",
-      studio: "string · studio name (e.g. `software`, `dev-evangelism`, `marketing`)",
-      mode: "string · `discrete` (default) | `continuous` | `hybrid`",
-      continuous_from: "string? · only used when `mode: hybrid`, names the stage where discrete flips to continuous",
+      title: "string (required) · crisp 3–8 word summary, ≤80 chars, single line, no trailing period. Rejected if missing or malformed.",
+      description: "string (required) · 2–5 sentence narrative covering scope, motivation, and constraints. Stored verbatim in the intent body.",
+      slug: "string? · kebab-case identifier (auto-generated from title if omitted, max 50 chars)",
+      context: "string? · conversation context summary, written to `knowledge/CONVERSATION-CONTEXT.md`",
+      mode: "string · `continuous` (default) | `discrete`",
+      stages: "string[]? · explicit stage list override (e.g. `['development']` for a quick task)",
     },
     output: {
       intent_path: "string · resolved path to the new `intent.md`",
@@ -4608,8 +4625,8 @@ const TOOL_SPECS = {
       intent: "string · the intent slug (e.g. `add-billing`)",
     },
     output: {
-      action: "string · `start_stage` | `gate_review` | `start_unit(s)` | `advance_phase` | `advance_review` | `fix_quality_gates` | `advance_stage` | `stage_complete_discrete` | `intent_complete` | `error` (the archived-intent refusal returns `action: \"error\"` with a `\"call haiku_intent_unarchive to restore it\"` hint in the message)",
-      context: "object · action-specific payload (next phase, hat, units, gate context, etc. — see the per-transition pills throughout this diagram)",
+      action: "string · lifecycle: `select_studio` | `start_stage` | `elaborate` | `start_unit` | `continue_unit` | `start_units` | `review` | `review_elaboration` | `gate_review` | `advance_phase` | `advance_review` | `advance_stage` | `stage_complete_discrete` | `intent_approved` | `intent_complete` | `complete` | `composite_run_stage` | `safe_intent_repair` | `fix_quality_gates` | `changes_requested` | `external_review_requested` | `awaiting_external_review` · blocked: `design_direction_required` | `blocked` | `outputs_missing` | `discovery_missing` | `elaboration_insufficient` | `spec_validation_failed` | `unresolved_dependencies` | `dag_cycle_detected` | `unit_naming_invalid` | `unit_inputs_missing` | `inputs_missing` | `gate_blocked` | `error` (the archived-intent refusal returns `action: \"error\"` with a `\"call haiku_intent_unarchive to restore it\"` hint in the message)",
+      context: "object · action-specific payload (next phase, hat, units, gate context, etc. — see the per-transition pills throughout this diagram). **Subagent-spawning actions** (`start_unit`, `continue_unit`, `start_units`, `elaborate` with discovery, `advance_review`) return self-contained `<subagent tool=\"...\" type=\"...\" model=\"...\">` prompt blocks that the parent relays verbatim — MCP constructs exact subagent prompts, no assembly required.",
     },
     writes: [
       "Depends on the action returned. Click any of the labeled `haiku_run_next` pills above to see the exact `state.json` / `intent.md` / unit-frontmatter mutations for that specific tick.",

@@ -401,3 +401,35 @@ export function resolveStudio(identifier: string): StudioInfo | null {
 	}
 	return null
 }
+
+/** Read operation definitions for a studio (project overrides plugin for same-named ops) */
+export function readOperationDefs(studio: string): Record<string, string> {
+	validateIdentifier(studio, "studio")
+	const ops: Record<string, string> = {}
+	const paths = studioSearchPaths()
+	// Reverse so plugin loads first, then project overwrites
+	for (const base of [...paths].reverse()) {
+		const opsDir = join(base, studio, "operations")
+		if (!existsSync(opsDir)) continue
+		for (const f of readdirSync(opsDir).filter((f) => f.endsWith(".md"))) {
+			ops[f.replace(/\.md$/, "")] = readFileSync(join(opsDir, f), "utf8")
+		}
+	}
+	return ops
+}
+
+/** Read reflection dimension definitions for a studio (project overrides plugin for same-named dims) */
+export function readReflectionDefs(studio: string): Record<string, string> {
+	validateIdentifier(studio, "studio")
+	const dims: Record<string, string> = {}
+	const paths = studioSearchPaths()
+	// Reverse so plugin loads first, then project overwrites
+	for (const base of [...paths].reverse()) {
+		const reflDir = join(base, studio, "reflections")
+		if (!existsSync(reflDir)) continue
+		for (const f of readdirSync(reflDir).filter((f) => f.endsWith(".md"))) {
+			dims[f.replace(/\.md$/, "")] = readFileSync(join(reflDir, f), "utf8")
+		}
+	}
+	return dims
+}

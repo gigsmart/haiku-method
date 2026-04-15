@@ -1,6 +1,5 @@
 ---
 name: unit-03b-complex-prompts
-type: backend
 status: completed
 depends_on:
   - unit-01-prompts-server

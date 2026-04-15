@@ -15,6 +15,7 @@
 import { execSync } from "node:child_process"
 import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { basename, join } from "node:path"
+import { readStageDef } from "../studio-reader.js"
 import {
 	findActiveIntent,
 	findUnitFiles,
@@ -338,6 +339,15 @@ export async function generateSubagentContext(
 		out("")
 	}
 
+	// Stage-level instructions (criteria guidance, completion signals)
+	const stageDef = readStageDef(studio, activeStage)
+	if (stageDef?.body) {
+		out(`### Stage: ${activeStage}`)
+		out("")
+		out(stageDef.body)
+		out("")
+	}
+
 	// H·AI·K·U Workflow Rules
 	out("---")
 	out("")
@@ -450,6 +460,28 @@ export async function generateSubagentContext(
 	)
 	out("- `\ud83d\uded1 Blocked:` When genuinely stuck after rescue attempts")
 	out("- `\u2753 Decision needed:` Use `AskUserQuestion` for user input")
+	out("")
+	out("**MANDATORY question tool rules:**")
+	out("")
+	out(
+		"- **Always use tools for questions** \u2014 NEVER output option lists, numbered choices, or " +
+			'"A) ... B) ... C) ..." as plain conversation text.',
+	)
+	out(
+		"- **Always provide `options[]`** \u2014 when using `AskUserQuestion`, populate the `options` array " +
+			"with concrete choices derived from your domain knowledge. Do not force the user to type freeform " +
+			'answers when you already know the alternatives. Include "Other (let me specify)" when the ' +
+			"list may not be exhaustive.",
+	)
+	out(
+		"- **One question per tool call** \u2014 if you have multiple independent decisions, make separate " +
+			"`AskUserQuestion` calls for each. Do NOT combine unrelated questions into one message.",
+	)
+	out(
+		"- **Use `ask_user_visual_question`** for visual artifacts (wireframes, designs, mockups), " +
+			"rich markdown context, or when presenting multiple related questions together " +
+			"(use its `questions[]` array with per-question `options`).",
+	)
 	out("")
 	out("Output status messages directly - users see them in real-time.")
 	out(

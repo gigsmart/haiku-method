@@ -1,6 +1,5 @@
 ---
 name: unit-02-data-contracts
-type: product
 status: completed
 depends_on: []
 bolt: 1

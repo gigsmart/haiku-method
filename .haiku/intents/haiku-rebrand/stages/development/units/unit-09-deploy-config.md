@@ -1,12 +1,12 @@
 ---
 name: unit-09-deploy-config
-type: devops
 status: completed
-depends_on: [unit-02-skills-metadata-rename]
+depends_on:
+  - unit-02-skills-metadata-rename
 bolt: 0
-hat: ""
-started_at: 2026-04-03T01:56:53Z
-completed_at: 2026-04-03T01:56:53Z
+hat: ''
+started_at: 2026-04-03T01:56:53.000Z
+completed_at: 2026-04-03T01:56:53.000Z
 ---
 
 

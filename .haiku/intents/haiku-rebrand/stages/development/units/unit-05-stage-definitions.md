@@ -1,12 +1,12 @@
 ---
 name: unit-05-stage-definitions
-type: backend
 status: completed
-depends_on: [unit-04-studio-infrastructure]
+depends_on:
+  - unit-04-studio-infrastructure
 bolt: 0
-hat: ""
-started_at: 2026-04-03T01:57:24Z
-completed_at: 2026-04-03T01:57:24Z
+hat: ''
+started_at: 2026-04-03T01:57:24.000Z
+completed_at: 2026-04-03T01:57:24.000Z
 ---
 
 

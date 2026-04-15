@@ -1,12 +1,11 @@
 ---
 name: unit-05-visual-review-integration
-type: backend
 status: completed
 depends_on: []
 bolt: 0
-hat: ""
-started_at: 2026-04-01T20:10:38Z
-completed_at: 2026-04-01T20:10:38Z
+hat: ''
+started_at: 2026-04-01T20:10:38.000Z
+completed_at: 2026-04-01T20:10:38.000Z
 ---
 
 

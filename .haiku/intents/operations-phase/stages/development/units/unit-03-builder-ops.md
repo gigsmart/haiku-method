@@ -1,12 +1,12 @@
 ---
 name: unit-03-builder-ops
-type: backend
 status: completed
-depends_on: [unit-01-stack-schema]
+depends_on:
+  - unit-01-stack-schema
 bolt: 0
-hat: ""
-started_at: 2026-03-28T06:30:26Z
-completed_at: 2026-03-28T06:30:26Z
+hat: ''
+started_at: 2026-03-28T06:30:26.000Z
+completed_at: 2026-03-28T06:30:26.000Z
 ---
 
 

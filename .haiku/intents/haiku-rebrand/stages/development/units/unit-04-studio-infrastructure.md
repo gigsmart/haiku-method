@@ -1,12 +1,12 @@
 ---
 name: unit-04-studio-infrastructure
-type: backend
 status: completed
-depends_on: [unit-01-lib-hooks-rename]
+depends_on:
+  - unit-01-lib-hooks-rename
 bolt: 0
-hat: ""
-started_at: 2026-04-03T01:34:30Z
-completed_at: 2026-04-03T01:34:30Z
+hat: ''
+started_at: 2026-04-03T01:34:30.000Z
+completed_at: 2026-04-03T01:34:30.000Z
 ---
 
 

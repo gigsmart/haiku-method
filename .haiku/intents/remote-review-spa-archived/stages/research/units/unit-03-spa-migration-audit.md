@@ -1,6 +1,5 @@
 ---
 title: Review SPA component audit and migration scope
-type: research
 status: completed
 quality_gates:
   - Complete inventory of all SPA components with purpose and dependencies

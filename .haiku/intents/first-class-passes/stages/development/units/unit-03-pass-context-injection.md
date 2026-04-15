@@ -1,12 +1,13 @@
 ---
 name: unit-03-pass-context-injection
-type: backend
 status: completed
-depends_on: [unit-01-pass-definitions, unit-02-hat-augmentation]
+depends_on:
+  - unit-01-pass-definitions
+  - unit-02-hat-augmentation
 bolt: 0
-hat: ""
-started_at: 2026-03-31T21:05:22Z
-completed_at: 2026-03-31T21:05:22Z
+hat: ''
+started_at: 2026-03-31T21:05:22.000Z
+completed_at: 2026-03-31T21:05:22.000Z
 ---
 
 

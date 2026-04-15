@@ -1,12 +1,12 @@
 ---
 name: unit-06-hat-integration
-type: backend
 status: completed
-depends_on: [unit-01-knowledge-infrastructure]
+depends_on:
+  - unit-01-knowledge-infrastructure
 bolt: 0
-hat: ""
-started_at: 2026-04-01T13:11:14Z
-completed_at: 2026-04-01T13:11:14Z
+hat: ''
+started_at: 2026-04-01T13:11:14.000Z
+completed_at: 2026-04-01T13:11:14.000Z
 ---
 
 

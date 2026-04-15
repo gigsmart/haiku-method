@@ -38,10 +38,11 @@ import { validateIdentifier } from "./prompts/helpers.js"
 import { reportError } from "./sentry.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
 import {
-	deriveIntentTitle,
 	findHaikuRoot,
 	gitCommitState,
 	intentDir,
+	intentTitleNeedsRepair,
+	isGitRepo,
 	parseFrontmatter,
 	readJson,
 	setFrontmatterField,
@@ -56,6 +57,7 @@ import {
 	listStudios,
 	readHatDefs,
 	readReviewAgentDefs,
+	readStageArtifactDefs,
 	readStageDef,
 	readStudio,
 	resolveStageInputs,
@@ -198,22 +200,61 @@ function resolveStageMetadata(
 }
 
 // ── External review detection ─────────────────────────────────────────────
+//
+// Two-tier signal detection for external/await gates:
+//
+// Tier 1: Branch merge detection (structural). In git workflows, external
+//   review gates use a stage branch (`haiku/{slug}/{stage}`) that gets merged
+//   into the intent hub (`haiku/{slug}/main`) when the review is approved.
+//   `isBranchMerged()` detects this — including squash merges. This is the
+//   primary, tamper-resistant signal: the merge is a structural fact, not
+//   something the agent can self-assert.
+//
+// Tier 2: URL-based CLI probing (fallback). The orchestrator shells out to
+//   `gh` or `glab` to check PR/MR status when a review URL was recorded.
+//   Used when branch detection is unavailable (non-git workflows) or as a
+//   secondary check. Supports GitHub `reviewDecision` and GitLab `approved`.
+//
+// The agent never self-approves gates. If neither tier detects approval,
+// the orchestrator returns `awaiting_external_review` and the user must
+// run `/haiku:pickup` after the external review is actually approved.
 
 /**
- * Best-effort check if an external review URL has been approved.
- * Supports GitHub PRs (gh), GitLab MRs (glab), and generic URLs.
- * Returns true if approved/merged, false otherwise. Never throws.
+ * Tier 2 (fallback): URL-based synchronous check if an external review URL
+ * has been approved. Supports GitHub PRs (gh) and GitLab MRs (glab). Returns
+ * true if approved or merged, false otherwise. Never throws.
+ *
+ * This is the fallback detection path — Tier 1 is branch merge detection via
+ * `isBranchMerged()`, which is structural and tamper-resistant.
+ *
+ * For GitHub: checks both `reviewDecision` (APPROVED = reviews passed) and
+ * `state` (MERGED = already accepted). A PR with approved reviews that hasn't
+ * been merged yet still passes the gate — the review was approved, which is
+ * what the gate cares about.
+ *
+ * For GitLab: checks both approval status and merge state.
  */
 function checkExternalApproval(url: string): boolean {
 	try {
 		if (url.includes("github.com") && url.includes("/pull/")) {
-			// GitHub PR — check via gh CLI (argument array avoids shell injection)
-			const state = execFileSync(
+			// GitHub PR — check review decision AND merge state (argument array avoids shell injection)
+			const output = execFileSync(
 				"gh",
-				["pr", "view", url, "--json", "state", "-q", ".state"],
+				[
+					"pr",
+					"view",
+					url,
+					"--json",
+					"state,reviewDecision",
+					"-q",
+					"[.state, .reviewDecision]",
+				],
 				{ encoding: "utf8", stdio: "pipe" },
 			).trim()
-			return state === "MERGED" // CLOSED means rejected/abandoned, not approved
+			const parsed = JSON.parse(output) as [string, string]
+			const [state, reviewDecision] = parsed
+			// Gate passes if PR is merged OR if reviews are approved (even if not yet merged)
+			return state === "MERGED" || reviewDecision === "APPROVED"
 		}
 		if (url.includes("gitlab") && url.includes("/merge_requests/")) {
 			// GitLab MR — check via glab CLI (argument array avoids shell injection)
@@ -222,11 +263,14 @@ function checkExternalApproval(url: string): boolean {
 				["mr", "view", url, "--output", "json"],
 				{ encoding: "utf8", stdio: "pipe" },
 			).trim()
-			return (JSON.parse(output) as { state?: string }).state === "merged"
+			const mr = JSON.parse(output) as { state?: string; approved?: boolean }
+			// Gate passes if MR is merged OR if it has been approved
+			return mr.state === "merged" || mr.approved === true
 		}
-		// Unknown URL type — can't check automatically
+		// Unknown URL type — can't check via CLI
 		return false
 	} catch {
+		// CLI not available or network error
 		return false
 	}
 }
@@ -299,6 +343,81 @@ function validateStageOutputs(
 		break // Project-level outputs dir takes precedence over plugin-level (first match wins)
 	}
 
+	return null
+}
+
+// ── Cross-stage review agent loader ──────────────────────────────────────
+
+/** Load cross-stage review agents from STAGE.md review-agents-include field */
+function loadCrossStageAgents(
+	studio: string,
+	stage: string,
+	agents: Record<string, string>,
+): void {
+	const stageDef = readStageDef(studio, stage)
+	if (
+		stageDef?.data?.["review-agents-include"] &&
+		Array.isArray(stageDef.data["review-agents-include"])
+	) {
+		const includes = stageDef.data["review-agents-include"] as Array<{
+			stage: string
+			agents: string[]
+		}>
+		for (const inc of includes) {
+			if (!inc.stage || !Array.isArray(inc.agents)) continue
+			const crossAgents = readReviewAgentDefs(studio, inc.stage)
+			for (const agentName of inc.agents) {
+				if (crossAgents[agentName] && !agents[agentName]) {
+					agents[`${agentName} (from ${inc.stage})`] = crossAgents[agentName]
+				}
+			}
+		}
+	}
+}
+
+// ── Output template injection ────────────────────────────────────────────
+
+/** Build output template content as a string */
+function buildOutputRequirements(
+	studio: string,
+	stage: string,
+	heading = "## Output Requirements",
+	subheadingLevel = "###",
+): string {
+	const artifactDefs = readStageArtifactDefs(studio, stage)
+	const outputDefs = artifactDefs.filter((d) => d.kind === "output")
+	if (outputDefs.length === 0) return ""
+	const parts = [heading]
+	for (const od of outputDefs) {
+		parts.push(
+			`${subheadingLevel} ${od.name}${od.required ? " (REQUIRED)" : ""}\n**Location:** \`${od.location}\` | **Format:** ${od.format}\n\n${od.body}`,
+		)
+	}
+	return parts.join("\n\n")
+}
+
+// ── Phase override reader ────────────────────────────────────────────────
+
+function readPhaseOverride(
+	studio: string,
+	stage: string,
+	phase: string,
+): { data: Record<string, unknown>; body: string } | null {
+	validateIdentifier(studio, "studio")
+	validateIdentifier(stage, "stage")
+	for (const base of studioSearchPaths()) {
+		const file = join(
+			base,
+			studio,
+			"stages",
+			stage,
+			"phases",
+			`${phase.toUpperCase()}.md`,
+		)
+		if (existsSync(file)) {
+			return parseFrontmatter(readFileSync(file, "utf8"))
+		}
+	}
 	return null
 }
 
@@ -902,26 +1021,170 @@ export function runNext(slug: string): OrchestratorAction {
 	}
 
 	// Consistency check: verify all stages before active_stage are completed.
-	// If not, reset to the first incomplete stage. This catches stale active_stage
-	// values set by old binaries or direct file edits.
+	// If not, either synthesize completion records (safe repair) or reset to
+	// the first incomplete stage. Safe repair triggers when the active stage
+	// has real work (units) — this indicates a migrated intent where earlier
+	// stages were never elaborated. Resetting backwards would force
+	// re-elaboration of empty stages while real work sits in a later stage.
 	const activeIdx = studioStages.indexOf(currentStage)
 	if (activeIdx > 0) {
+		// Collect all incomplete prior stages in one pass
+		const incompletePrior: string[] = []
 		for (let i = 0; i < activeIdx; i++) {
 			const prevState = readJson(
 				join(iDir, "stages", studioStages[i], "state.json"),
 			)
 			const prevStatus = (prevState.status as string) || "pending"
 			if (prevStatus !== "completed") {
-				// Found an incomplete stage before active_stage — reset
-				currentStage = studioStages[i]
-				// Fix the intent's active_stage to match reality
+				incompletePrior.push(studioStages[i])
+			}
+		}
+
+		if (incompletePrior.length > 0) {
+			// Check if the active stage has real work — units on disk
+			const activeUnitsDir = join(iDir, "stages", currentStage, "units")
+			const activeUnitFiles = existsSync(activeUnitsDir)
+				? readdirSync(activeUnitsDir).filter((f) => f.endsWith(".md"))
+				: []
+
+			if (activeUnitFiles.length > 0) {
+				// ── Safe intent repair ──────────────────────────────────────
+				// The active stage has real work but earlier stages are incomplete.
+				// This is a migration artifact (e.g., AIDLC → H·AI·K·U migration
+				// that only populated the development stage). Synthesize completion
+				// records for incomplete prior stages so the FSM can proceed without
+				// forcing re-elaboration of empty stages.
+				//
+				// Safety constraints:
+				// 1. Only synthesizes for stages with NO units (truly empty)
+				//    — stages with units but incomplete status are left for manual review
+				// 2. Uses the same completion record format as haiku_repair
+				// 3. The agent cannot trigger this — it's FSM-internal
+				// 4. No hook bypass — this runs inside haiku_run_next
+
+				const synthesized: string[] = []
+				const needsManualReview: string[] = []
+				const now = timestamp()
+				const intentStarted =
+					(intent.started_at as string) || (intent.created_at as string) || now
+
+				for (const stageName of incompletePrior) {
+					const priorUnitsDir = join(iDir, "stages", stageName, "units")
+					const priorUnitFiles = existsSync(priorUnitsDir)
+						? readdirSync(priorUnitsDir).filter((f) => f.endsWith(".md"))
+						: []
+
+					if (priorUnitFiles.length > 0) {
+						// Stage has units but isn't completed — this needs manual attention
+						needsManualReview.push(stageName)
+					} else {
+						// Truly empty prior stage — safe to synthesize completion
+						const stageDir = join(iDir, "stages", stageName)
+						mkdirSync(stageDir, { recursive: true })
+						const statePath = join(stageDir, "state.json")
+						writeJson(statePath, {
+							stage: stageName,
+							status: "completed",
+							phase: "gate",
+							started_at: intentStarted,
+							completed_at: intentStarted,
+							gate_entered_at: null,
+							gate_outcome: "advanced",
+						})
+						synthesized.push(stageName)
+					}
+				}
+
+				// Check if the active stage's units need input backfill.
+				// If the stage is in execute phase but units lack inputs, regress
+				// to elaborate so the normal backpressure can enforce input declarations.
+				const activeStageState = readJson(
+					join(iDir, "stages", currentStage, "state.json"),
+				)
+				const activePhase = (activeStageState.phase as string) || ""
+				let phaseRegressed = false
+				const missingInputs: string[] = []
+				if (activePhase === "execute") {
+					for (const f of activeUnitFiles) {
+						const fm = readFrontmatter(join(activeUnitsDir, f))
+						const unitStatus = (fm.status as string) || ""
+						if (["completed", "skipped", "failed"].includes(unitStatus))
+							continue
+						const inputs =
+							(fm.inputs as string[]) || (fm.refs as string[]) || []
+						if (inputs.length === 0) missingInputs.push(f)
+					}
+					if (missingInputs.length > 0) {
+						// Regress phase to elaborate so validateUnitInputs catches this
+						activeStageState.phase = "elaborate"
+						writeJson(
+							join(iDir, "stages", currentStage, "state.json"),
+							activeStageState,
+						)
+						phaseRegressed = true
+					}
+				}
+
+				if (synthesized.length > 0 || phaseRegressed) {
+					gitCommitState(
+						`haiku: safe-repair ${slug} — synthesize ${synthesized.join(", ")}${phaseRegressed ? "; regress phase to elaborate" : ""}`,
+					)
+				}
+
+				emitTelemetry("haiku.fsm.safe_repair", {
+					intent: slug,
+					active_stage: currentStage,
+					synthesized_stages: synthesized.join(","),
+					needs_manual_review: needsManualReview.join(","),
+					phase_regressed: String(phaseRegressed),
+				})
+
+				// If all incomplete stages were synthesized, proceed normally
+				// by falling through to the rest of runNext. If any need manual
+				// review, return an action so the agent can report the situation.
+				if (needsManualReview.length > 0) {
+					return {
+						action: "safe_intent_repair",
+						intent: slug,
+						studio,
+						stage: currentStage,
+						synthesized_stages: synthesized,
+						needs_manual_review: needsManualReview,
+						phase_regressed: phaseRegressed,
+						units_missing_inputs: missingInputs,
+						message: `Intent '${slug}' was in an inconsistent state — work exists in '${currentStage}' but earlier stages were incomplete.\n\n${synthesized.length > 0 ? `Synthesized completion records for empty stages: [${synthesized.join(", ")}]\n` : ""}Stages needing manual review (have units but aren't completed): [${needsManualReview.join(", ")}]\n${phaseRegressed ? `\nAdditionally, phase was regressed from 'execute' to 'elaborate' because some units are missing \`inputs:\` declarations.\n` : ""}Resolve these stages manually, then call haiku_run_next again.`,
+					}
+				}
+
+				// All prior stages synthesized — if phase was regressed, let the
+				// agent know so it can address missing inputs before execution.
+				// Otherwise fall through to normal processing.
+				if (phaseRegressed) {
+					return {
+						action: "safe_intent_repair",
+						intent: slug,
+						studio,
+						stage: currentStage,
+						synthesized_stages: synthesized,
+						needs_manual_review: [],
+						phase_regressed: true,
+						units_missing_inputs: missingInputs,
+						message: `Intent '${slug}' repaired — synthesized completion for [${synthesized.join(", ")}]. Phase regressed from 'execute' to 'elaborate' because some units are missing \`inputs:\` declarations. Add inputs to the flagged units, then call haiku_run_next to proceed.`,
+					}
+				}
+
+				// Clean repair with no phase regression — fall through to normal
+				// runNext processing. The agent doesn't need to take special action.
+			} else {
+				// No units in the active stage — normal consistency reset.
+				// The intent may have been corrupted or active_stage set incorrectly.
+				currentStage = incompletePrior[0]
 				setFrontmatterField(intentFile, "active_stage", currentStage)
 				emitTelemetry("haiku.fsm.consistency_fix", {
 					intent: slug,
 					stale_stage: activeStage,
 					corrected_stage: currentStage,
 				})
-				break
 			}
 		}
 	}
@@ -1152,10 +1415,11 @@ export function runNext(slug: string): OrchestratorAction {
 			}
 		}
 
-		// All units valid — open review gate before advancing to execute.
-		// The review UI blocks until the user approves the specs.
-		// This is handled by the handleOrchestratorTool wrapper which
-		// detects gate_review and calls _openReviewAndWait.
+		// All units valid — either auto-advance or open review gate before execution.
+		//
+		// For stages with review: auto (and non-discrete mode), skip the gate
+		// entirely and advance directly to execution. This is critical for
+		// autonomous workflows where the user should not be interrupted.
 		//
 		// For the first stage of a fresh intent (not yet reviewed), this gate
 		// doubles as the intent review — CC review agents have already run
@@ -1164,6 +1428,35 @@ export function runNext(slug: string): OrchestratorAction {
 		// with intent_review context until intent_reviewed is set to true.
 		const intentReviewed = (intent.intent_reviewed as boolean) || false
 		const isIntentReview = currentStage === studioStages[0] && !intentReviewed
+		const intentMode = (intent.mode as string) || "continuous"
+		const stageReviewType = resolveStageReview(studio, currentStage)
+
+		// Auto gates: skip review UI and advance directly to execution
+		if (stageReviewType === "auto" && intentMode !== "discrete") {
+			if (isIntentReview) {
+				setFrontmatterField(intentFile, "intent_reviewed", true)
+				gitCommitState(`haiku: intent ${slug} auto-approved`)
+			}
+			fsmAdvancePhase(slug, currentStage, "execute")
+			emitTelemetry("haiku.gate.auto_advanced", {
+				intent: slug,
+				stage: currentStage,
+				gate_context: isIntentReview ? "intent_review" : "elaborate_to_execute",
+			})
+			return {
+				action: isIntentReview ? "intent_approved" : "advance_phase",
+				intent: slug,
+				studio,
+				stage: currentStage,
+				from_phase: "elaborate",
+				to_phase: "execute",
+				message: isIntentReview
+					? `Auto-gate: intent approved — advancing to execution. Call haiku_run_next { intent: "${slug}" } immediately.`
+					: `Auto-gate: specs validated — advancing to execution. Call haiku_run_next { intent: "${slug}" } immediately.`,
+			}
+		}
+
+		// Non-auto gates: open review UI
 		return {
 			action: "gate_review",
 			intent: slug,
@@ -1357,16 +1650,22 @@ export function runNext(slug: string): OrchestratorAction {
 		}
 	}
 
-	// Stage in gate phase — always open local review UI as a preliminary gate.
-	// The gate type determines what options are shown:
+	// Stage in gate phase — determine whether to auto-advance or open review UI.
+	// Gate behavior:
 	//   - Discrete intent mode: always "external" (Submit for External Review + Request Changes)
 	//   - Continuous/hybrid intent mode: based on the stage's review field
-	//     - auto/ask → "ask" (Approve + Request Changes)
+	//     - auto → auto-advance without user interaction (autonomous gate)
+	//     - ask → "ask" (Approve + Request Changes)
 	//     - external → "external" (Submit for External Review + Request Changes)
 	//     - [external, ask] → as-is (Approve + Submit for External Review + Request Changes)
 	//     - await → "external" (awaits external event after submission)
 	//   Note: continuous intents may have discrete branch isolation for external-review
 	//   stages (PR isolation), but the gate options still reflect the stage's review field.
+	//
+	//   Non-git environments: `external` gates fall back to `ask` because there is no
+	//   structural signal (branch merge) to enforce external review. Without git, the
+	//   only safe option is local human approval. Compound gates containing `external`
+	//   strip it and keep remaining types (e.g., [external, ask] → ask).
 	if (phase === "gate") {
 		const reviewType = resolveStageReview(studio, currentStage)
 		const stageIdx = studioStages.indexOf(currentStage)
@@ -1377,13 +1676,55 @@ export function runNext(slug: string): OrchestratorAction {
 		// A continuous intent with PR-isolated external-review stages should still show
 		// the stage's full gate options, not be forced to external-only.
 		const intentMode = (intent.mode as string) || "continuous"
+		const gitAvailable = isGitRepo()
 
-		// Determine gate type for the review UI
+		// Auto gates: advance without user interaction.
+		// "auto" review type means the studio author trusts the FSM to advance
+		// without human approval. In continuous/hybrid mode, skip the gate UI
+		// entirely. Discrete mode always uses external review (PR per stage).
+		if (reviewType === "auto" && intentMode !== "discrete") {
+			emitTelemetry("haiku.gate.auto_advanced", {
+				intent: slug,
+				stage: currentStage,
+				gate_context: "stage_gate",
+			})
+			if (nextStage) {
+				fsmAdvanceStage(slug, currentStage, nextStage)
+				return {
+					action: "advance_stage",
+					intent: slug,
+					studio,
+					stage: currentStage,
+					next_stage: nextStage,
+					gate_outcome: "advanced",
+					message: `Auto-gate passed — advancing to '${nextStage}'. Call haiku_run_next { intent: "${slug}" } immediately.`,
+				}
+			}
+			fsmCompleteStage(slug, currentStage, "advanced")
+			fsmIntentComplete(slug)
+			return {
+				action: "intent_complete",
+				intent: slug,
+				studio,
+				message: `Auto-gate passed — all stages complete for intent '${slug}'`,
+			}
+		}
+
+		// Non-auto gates: open review UI
 		let effectiveGateType: string
-		if (intentMode === "discrete") {
+		if (!gitAvailable && reviewType.includes("external")) {
+			// Non-git environment: external gates have no structural signal (no branch
+			// merge to detect). Fall back to ask — local human approval is the only
+			// safe option. For compound gates like "external,ask", strip external.
+			const remaining = reviewType
+				.split(",")
+				.filter((t) => t !== "external")
+				.join(",")
+			effectiveGateType = remaining || "ask"
+		} else if (intentMode === "discrete") {
 			// Pure discrete intent: always submit for external review (PR per stage)
 			effectiveGateType = "external"
-		} else if (reviewType === "auto" || reviewType === "ask") {
+		} else if (reviewType === "ask") {
 			effectiveGateType = "ask"
 		} else if (reviewType === "await") {
 			effectiveGateType = "external"
@@ -1410,39 +1751,48 @@ export function runNext(slug: string): OrchestratorAction {
 
 		// Blocked on external review — check if it's been approved
 		if (gateOutcome === "blocked") {
-			const externalUrl = (stageState.external_review_url as string) || ""
-			if (externalUrl) {
-				// Best-effort: check if the external review was approved
-				const approved = checkExternalApproval(externalUrl)
-				if (approved) {
-					// External approval detected — advance
-					const path = stageStatePath(slug, currentStage)
-					const data = readJson(path)
-					data.gate_outcome = "advanced"
-					writeJson(path, data)
-					emitTelemetry("haiku.gate.resolved", {
-						intent: slug,
-						stage: currentStage,
-						gate_type: "external",
-						outcome: "approved",
-					})
-					// Fall through to advance logic below
-				} else {
-					return {
-						action: "awaiting_external_review",
-						intent: slug,
-						stage: currentStage,
-						external_review_url: externalUrl,
-						message: `Stage '${currentStage}' is awaiting external review at: ${externalUrl}. Run /haiku:pickup again after approval.`,
-					}
+			let approved = false
+
+			// Tier 1: Branch merge detection (structural, tamper-resistant)
+			if (isGitRepo()) {
+				const stageBranch = `haiku/${slug}/${currentStage}`
+				const mainline = `haiku/${slug}/main`
+				if (isBranchMerged(stageBranch, mainline)) {
+					approved = true
 				}
+			}
+
+			// Tier 2: URL-based CLI probing (fallback)
+			if (!approved) {
+				const externalUrl = (stageState.external_review_url as string) || ""
+				if (externalUrl) {
+					approved = checkExternalApproval(externalUrl)
+				}
+			}
+
+			if (approved) {
+				// External approval detected — advance
+				const path = stageStatePath(slug, currentStage)
+				const data = readJson(path)
+				data.gate_outcome = "advanced"
+				writeJson(path, data)
+				emitTelemetry("haiku.gate.resolved", {
+					intent: slug,
+					stage: currentStage,
+					gate_type: "external",
+					outcome: "approved",
+				})
+				// Fall through to advance logic below
 			} else {
-				// No URL recorded — ask the agent to provide it or manually advance
+				const externalUrl = (stageState.external_review_url as string) || ""
 				return {
 					action: "awaiting_external_review",
 					intent: slug,
 					stage: currentStage,
-					message: `Stage '${currentStage}' is awaiting external review. Provide the review URL via haiku_stage_set or run /haiku:revisit to re-enter the gate.`,
+					...(externalUrl ? { external_review_url: externalUrl } : {}),
+					message: externalUrl
+						? `Stage '${currentStage}' is awaiting external review at: ${externalUrl}. Neither branch merge detection nor CLI-based check detected approval yet. Run /haiku:pickup after the review is approved.`
+						: `Stage '${currentStage}' is awaiting external review but no review URL was recorded. Run /haiku:pickup after the review is approved.`,
 				}
 			}
 		}
@@ -2164,6 +2514,10 @@ function buildRunInstructions(
 			const stage = action.stage as string
 			const hats = (action.hats as string[]) || []
 			const stageDef = readStageDef(studio, stage)
+			const studioData = readStudio(studio)
+			if (studioData?.body) {
+				sections.push(`### Studio: ${studio}\n\n${studioData.body}`)
+			}
 			sections.push(`## Stage: ${stage}`)
 			sections.push(`Hats: ${hats.join(" -> ")}`)
 			if (stageDef) {
@@ -2193,6 +2547,17 @@ function buildRunInstructions(
 			sections.push(`## Elaborate: ${stage}`)
 			if (stageDef) {
 				sections.push(`${stageDef.body}`)
+			}
+
+			const elaborationOverride = readPhaseOverride(
+				studio,
+				stage,
+				"ELABORATION",
+			)
+			if (elaborationOverride) {
+				sections.push(
+					`### Phase: Elaboration Override\n\n${elaborationOverride.body}`,
+				)
 			}
 
 			// Resolve upstream stage inputs — load actual content from prior stages
@@ -2251,30 +2616,45 @@ function buildRunInstructions(
 					discoveryFiles.set(f, readFileSync(join(discoveryDir, f), "utf8"))
 				}
 			}
-			for (const [f, content] of discoveryFiles) {
-				sections.push(`### ${f}\n\n${content}`)
-			}
-
 			// Discovery fan-out — one Task subagent per declared discovery artifact.
 			// Keeps the parent agent's context focused on synthesis instead of swallowing
 			// raw research material. Each subagent owns the research AND production of
 			// its assigned artifact; subagent-context hook scopes them automatically.
 			if (discoveryFiles.size > 0) {
-				const artifacts = Array.from(discoveryFiles.keys()).map((f) =>
-					f.replace(/\.md$/i, "").toLowerCase(),
+				const artifacts = Array.from(discoveryFiles.entries())
+				const artifactNames = artifacts.map(
+					([f]) => `\`${f.replace(/\.md$/i, "").toLowerCase()}\``,
 				)
-				const artifactList = artifacts.map((a) => `\`${a}\``).join(", ")
-				const perArtifactBullets = artifacts
-					.map(
-						(a) =>
-							`- subagent for \`${a}\`: research the relevant axis for this artifact and write the populated document to the stage's discovery path. Use the template above as the structure.`,
-					)
-					.join("\n")
 				const plural = artifacts.length !== 1 ? "s" : ""
-				sections.push(
-					`## Discovery Fan-Out (REQUIRED)\n\nThis stage produces ${artifacts.length} discovery artifact${plural}: ${artifactList}.\n\n**Spawn one \`Task\` subagent per artifact** to do the research AND produce the populated file. Spawn ALL of them in a single response (parallel). Do NOT do per-artifact research in this parent context — synthesize the structured returns instead.\n\n${perArtifactBullets}\n\nEach subagent inherits worktree scoping via the \`subagent-context\` hook. When all subagents return, proceed to the unit-decomposition step using the produced artifacts as your inputs.`,
-				)
+
+				// Read intent content for embedding in subagent prompts
+				const intentFile = join(dir, "intent.md")
+				const intentContent = existsSync(intentFile)
+					? readFileSync(intentFile, "utf8")
+					: ""
+				const stageScope = stageDef?.body || stage
+
+				let fanOutText = `## Discovery Fan-Out (REQUIRED)\n\nThis stage produces ${artifacts.length} discovery artifact${plural}: ${artifactNames.join(", ")}.\n\n**Spawn one \`Task\` subagent per artifact** using the EXACT content between \`<subagent>\` tags as the prompt. Spawn ALL of them in a single response (parallel). Do NOT do per-artifact research in this parent context — synthesize the structured returns instead.\n\n**Deduplication:** Spawn exactly ONE subagent per artifact listed below. Do NOT spawn multiple subagents for the same artifact. If a discovery artifact already exists on disk, skip spawning a subagent for it — read the existing file instead.\n\n`
+
+				for (const [f, content] of artifacts) {
+					const name = f.replace(/\.md$/i, "").toLowerCase()
+					fanOutText += `### Subagent: \`${name}\`\n\n<subagent tool="Task">\n## Discovery Research: ${name}\n\nYou are researching and producing the "${name}" discovery artifact for intent "${slug}" in stage "${stage}".\n\n## Intent\n\n${intentContent.slice(0, 2000)}\n\n## Stage Scope\n\n${stageScope}\n\n## Discovery Template\n\n${content}\n\n## Instructions\n\n1. Research the problem space along the axis defined by this template\n2. Use the Content Guide as your document structure\n3. Meet the Quality Signals as your acceptance bar\n4. Write the populated document to the stage's discovery path\n5. Be thorough — this artifact informs all downstream work\n</subagent>\n\n`
+				}
+
+				fanOutText +=
+					"### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn each subagent above using the EXACT content between `<subagent>` tags as the prompt.\nDo NOT modify, summarize, or add to these prompts — they are complete.\nWhen all subagents return, proceed to the unit-decomposition step using the produced artifacts as your inputs."
+
+				sections.push(fanOutText)
 			}
+
+			// Output template definitions — inform the elaboration agent what this stage must produce
+			const outputExpectations = buildOutputRequirements(
+				studio,
+				stage,
+				"## Stage Output Expectations\n\nThis stage must ultimately produce the following outputs during execution. Plan units accordingly:",
+				"###",
+			)
+			if (outputExpectations) sections.push(outputExpectations)
 
 			// Detect design stages and add MCP provider instructions
 			const stageHats = (stageDef?.data?.hats as string[]) || []
@@ -2300,13 +2680,27 @@ function buildRunInstructions(
 							"When you have questions for the user, you MUST use the correct tool:\n\n" +
 							"| Question type | Tool | Example |\n" +
 							"|---|---|---|\n" +
-							`| Scope decisions, tradeoffs, A/B/C choices | \`AskUserQuestion\` | "Should we support X or Y?" |\n` +
+							`| Scope decisions, tradeoffs, A/B/C choices | \`AskUserQuestion\` with options[] | "Should we support X or Y?" |\n` +
 							"| Specs, comparisons, detailed options (markdown) | `ask_user_visual_question` MCP tool | Domain model review, architecture options |\n" +
+							"| Visual artifacts, wireframes, designs | `ask_user_visual_question` with image_paths | Side-by-side design comparison |\n" +
 							"| Design direction with previews | `pick_design_direction` MCP tool | Wireframe variants |\n" +
-							`| Simple open-ended clarification | Conversation text | "Tell me more about the use case" |\n\n` +
+							`| Simple open-ended clarification (no known options) | Conversation text | "Tell me more about the use case" |\n\n` +
+							"### ALWAYS provide pre-selected options\n\n" +
+							"When using `AskUserQuestion`, you MUST provide an `options` array with concrete choices the user can pick from. " +
+							"You already know the domain — translate your knowledge into selectable options instead of forcing the user to type freeform answers. " +
+							'Include an "Other (let me specify)" option when the list may not be exhaustive.\n\n' +
+							'**Good:** `AskUserQuestion({ question: "Which auth strategy?", options: ["OAuth 2.0 + PKCE", "Magic link (passwordless)", "SSO via SAML", "Other (let me specify)"] })`\n' +
+							'**Bad:** Typing "Which auth strategy should we use? We could do OAuth, magic links, or SSO..." as plain text.\n\n' +
+							"### One question per tool call — break up compound questions\n\n" +
+							"If you have multiple independent questions (e.g., auth strategy AND database choice AND caching layer), " +
+							"do NOT combine them into a single long message. Instead:\n" +
+							"- Use **separate `AskUserQuestion` calls** for each independent decision, OR\n" +
+							"- Use **one `ask_user_visual_question` call** with multiple entries in the `questions[]` array (each with its own options) when the decisions are related and benefit from being seen together\n\n" +
+							"Never dump multiple questions as numbered plain-text paragraphs.\n\n" +
 							`**Violation:** Outputting numbered questions, option lists, or "A) ... B) ... C) ..." as conversation text. ` +
-							"If you catch yourself typing options inline, STOP and use `AskUserQuestion` instead.\n\n"
-						: "Mode: **autonomous** — elaborate independently.\n\n"
+							"If you catch yourself typing options inline, STOP and use `AskUserQuestion` with an `options` array instead.\n\n"
+						: "Mode: **autonomous** — elaborate independently. When you DO need user input (blockers, ambiguity), " +
+							"use `AskUserQuestion` with pre-selected `options[]` — never plain-text option lists.\n\n"
 				}**Elaboration produces the PLAN, not the deliverables:**\n1. Research the problem space and write discovery artifacts to \`knowledge/\`\n2. Define units with scope, completion criteria, and dependencies — NOT the actual work product\n   - A unit spec says WHAT will be produced and HOW to verify it\n   - The execution phase produces the actual deliverables\n   - Do NOT write full specs, schemas, or implementations during elaboration\n3. Write unit files to \`.haiku/intents/${slug}/stages/${stage}/units/\`\n4. Call \`haiku_run_next { intent: "${slug}" }\` — the orchestrator validates and opens the review gate\n\n**Unit file naming convention (REQUIRED):**\nFiles MUST be named \`unit-NN-slug.md\` where:\n- \`NN\` is a zero-padded sequence number (01, 02, 03...)\n- \`slug\` is a kebab-case descriptor (e.g., \`user-auth\`, \`data-model\`)\n- Example: \`unit-01-data-model.md\`, \`unit-02-api-endpoints.md\`\n\nFiles that don't match this pattern will not appear in the review UI and will block advancement.`,
 			)
 
@@ -2339,7 +2733,6 @@ function buildRunInstructions(
 			const stage = action.stage as string
 			const unit = (action.unit as string) || ""
 			const hat = (action.hat as string) || (action.first_hat as string) || ""
-			const hats = (action.hats as string[]) || []
 			const bolt = (action.bolt as number) || 1
 			const stageDef = readStageDef(studio, stage)
 
@@ -2386,23 +2779,33 @@ function buildRunInstructions(
 				}
 			}
 
-			sections.push(
-				`## ${unit} — hat: ${hat} (${hats.join(" → ")}) — bolt ${bolt}`,
-			)
+			// ── Build self-contained subagent prompt ────────────────────────
+			const subagentParts: string[] = []
+			subagentParts.push(`## ${unit} — hat: ${hat} — bolt ${bolt}`)
 
-			// Stage scope (once, concise)
 			if (stageDef) {
-				sections.push(
-					`### Stage: ${stage}\n\n${stageDef.body}\n\nStay within this stage's scope — do not produce outputs belonging to other stages.`,
+				subagentParts.push(
+					`## Stage: ${stage}\n\n${stageDef.body}\n\nStay within this stage's scope.`,
 				)
 			}
 
-			sections.push(`### Unit Spec\n\n${unitContent}`)
-			sections.push(`### Hat: ${hat}\n\n${hatContent}`)
+			const executionOverride = readPhaseOverride(studio, stage, "EXECUTION")
+			if (executionOverride) {
+				subagentParts.push(`## Execution Focus\n\n${executionOverride.body}`)
+			}
+
+			subagentParts.push(`## Unit Spec\n\n${unitContent}`)
+			subagentParts.push(`## Your Role: ${hat}\n\n${hatContent}`)
+
+			// Output requirements
+			{
+				const outputReqs = buildOutputRequirements(studio, stage)
+				if (outputReqs) subagentParts.push(outputReqs)
+			}
 
 			// Unit inputs — load referenced artifacts
 			if (unitInputs.length > 0) {
-				sections.push("### Inputs")
+				const inputParts: string[] = ["## Inputs"]
 				const dirResolved = resolve(dir)
 				for (const ref of unitInputs) {
 					const refResolved = resolve(dir, ref)
@@ -2413,11 +2816,12 @@ function buildRunInstructions(
 						continue
 					if (existsSync(join(dir, ref))) {
 						const content = readFileSync(join(dir, ref), "utf8")
-						sections.push(
-							`#### ${ref}\n\n${content.slice(0, 2000)}${content.length > 2000 ? "\n...(truncated)" : ""}`,
+						inputParts.push(
+							`### ${ref}\n\n${content.slice(0, 2000)}${content.length > 2000 ? "\n...(truncated)" : ""}`,
 						)
 					}
 				}
+				subagentParts.push(inputParts.join("\n\n"))
 			}
 
 			// Upstream stage inputs — always resolve and inject artifacts not already in unit inputs
@@ -2441,30 +2845,61 @@ function buildRunInstructions(
 				)
 
 				if (additional.length > 0) {
-					sections.push(
-						"### Upstream Context (from prior stages — not in unit inputs)",
-					)
+					const upstreamParts: string[] = [
+						"## Upstream Context (from prior stages)",
+					]
 					for (const r of additional) {
 						const relPath = r.resolvedPath.startsWith(`${dir}/`)
 							? r.resolvedPath.slice(dir.length + 1)
 							: r.resolvedPath
-						sections.push(
-							`#### ${r.stage}/${r.artifactName}\n` +
+						upstreamParts.push(
+							`### ${r.stage}/${r.artifactName}\n` +
 								`**Path:** \`${relPath}\`\n\n` +
 								`${r.content?.slice(0, 2000) ?? ""}${(r.content?.length ?? 0) > 2000 ? "\n...(truncated)" : ""}`,
 						)
 					}
+					subagentParts.push(upstreamParts.join("\n\n"))
 				}
 			}
 
-			// Mechanics — one subagent per hat, subagent calls advance/fail tools
+			// Instructions for the subagent
 			const worktreePath = (action.worktree as string) || ""
+			const instrLines: string[] = ["## Instructions", ""]
+			let step = 1
+			if (action.action === "start_unit") {
+				instrLines.push(
+					`${step++}. Call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\``,
+				)
+			}
+			if (worktreePath) {
+				instrLines.push(`${step++}. Work in worktree: \`${worktreePath}\``)
+				instrLines.push(
+					`${step++}. Commit frequently: \`git add -A && git commit -m "..."\`. Do NOT push.`,
+				)
+			}
+			instrLines.push(
+				`${step++}. When done: call \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\``,
+				`${step++}. If blocked: call \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\``,
+				`${step++}. Track outputs in unit frontmatter \`outputs:\` field`,
+				`${step++}. Use \`ask_user_visual_question\` for visual artifacts — do NOT open files in a browser`,
+				`${step++}. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
+				"",
+				"**User questions (MANDATORY):** When you need user input:",
+				"- Use `AskUserQuestion` with an `options[]` array for every decision that has known alternatives — NEVER output option lists as plain text",
+				"- Use `ask_user_visual_question` when questions involve visual artifacts, rich markdown context, or multiple related decisions (use the `questions[]` array)",
+				"- Break independent questions into separate tool calls — do NOT bundle unrelated decisions into one message",
+				'- Always pre-populate options from your domain knowledge; include "Other (let me specify)" when the list may not be exhaustive',
+			)
+			subagentParts.push(instrLines.join("\n"))
+
+			// Push the subagent block
 			sections.push(
-				`### Mechanics\n\n**You are the orchestrator.** Spawn a subagent for the "${hat}" hat.\nAgent type: \`${hatAgentType}\`\n${resolvedModel ? `Spawn with \`model: "${resolvedModel}"\` — pass this as the Agent tool's \`model:\` parameter.\n` : ""}${worktreePath ? `Worktree: \`${worktreePath}\`\n` : ""}\n**Subagent prompt must include:**\n- The hat definition, unit spec, and inputs above\n- The stage scope constraint\n${worktreePath ? `- **Git discipline:** Commit work frequently in the worktree (\`git add -A && git commit -m "..."\`). Do NOT push — the merge-back handles pushing.\n` : ""}${
-					action.action === "start_unit"
-						? `- Instruction to call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\` first\n`
-						: ""
-				}\n**Subagent calls one of these when done:**\n- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\` — auto-advances to the next hat, or auto-completes if this was the last hat\n- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\` — moves back one hat, increments bolt\n\n**After subagent returns:** The \`advance_hat\` result contains the next FSM action — spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately — advance_hat handles FSM progression internally.\n\n**Output tracking:** When your hat produces artifacts (files, designs, specs, code), record them in the unit's frontmatter \`outputs:\` field as paths relative to the intent directory:\n\`\`\`yaml\noutputs:\n  - stages/design/artifacts/landing-page.html\n  - stages/development/artifacts/api-schema.graphql\n\`\`\`\nThe FSM validates that declared outputs exist before allowing hat advancement.\n\n**If outputs from a previous stage are missing, incomplete, or incorrect:** call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage for corrections.\n\n**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` — do NOT open files in a browser and ask via text. The visual question tool provides a structured review experience.`,
+				`## Subagent Dispatch (MANDATORY — relay verbatim)\n\n<subagent tool="Agent" type="${hatAgentType}"${resolvedModel ? ` model="${resolvedModel}"` : ""}>\n${subagentParts.join("\n\n")}\n</subagent>`,
+			)
+
+			// Parent-only instructions OUTSIDE the tag
+			sections.push(
+				"### Parent Instructions (do NOT include in subagent prompt)\n\nAfter subagent returns: The `advance_hat` result contains the next FSM action — spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately.",
 			)
 
 			// Check for ticketing provider — move ticket to "In Progress"
@@ -2496,15 +2931,57 @@ function buildRunInstructions(
 			const firstHat = (action.first_hat as string) || hats[0] || ""
 			const stageDef = readStageDef(studio, stage)
 
-			sections.push(`## Parallel: ${units.length} units in ${stage}`)
+			const executionOverrideParallel = readPhaseOverride(
+				studio,
+				stage,
+				"EXECUTION",
+			)
+
+			// Hat definition for the first hat — shared across all units in this wave
+			const hatDefs = readHatDefs(studio, stage)
+			const hatDef = hatDefs[firstHat]
+			const hatContent =
+				hatDef?.content || `No hat definition found for "${firstHat}"`
+			const hatAgentType = hatDef?.agent_type || "general-purpose"
+
+			// Model cascade resolution (gated by features.modelSelection)
+			let resolvedModelParallel: ModelTier | undefined
+			if (features.modelSelection) {
+				const studioData = readStudio(studio)
+				const { model, source } = resolveModel({
+					hat: hatDef?.model,
+					stage: stageDef?.data?.default_model as string | undefined,
+					studio: studioData?.data?.default_model as string | undefined,
+				})
+				resolvedModelParallel = model
+				if (resolvedModelParallel) {
+					console.error(
+						`[haiku] parallel wave resolved model: ${resolvedModelParallel} (source: ${source})`,
+					)
+				}
+			}
+
+			// Build shared content that goes into every subagent prompt
+			const sharedParts: string[] = []
 			if (stageDef) {
-				sections.push(
-					`${stageDef.body}\n\nStay within this stage's scope — do not produce outputs belonging to other stages.`,
+				sharedParts.push(
+					`## Stage: ${stage}\n\n${stageDef.body}\n\nStay within this stage's scope.`,
 				)
 			}
-			sections.push(`Hats: ${hats.join(" → ")}\nUnits: ${units.join(", ")}`)
+			if (executionOverrideParallel) {
+				sharedParts.push(
+					`## Execution Focus\n\n${executionOverrideParallel.body}`,
+				)
+			}
+			sharedParts.push(`## Your Role: ${firstHat}\n\n${hatContent}`)
 
-			// Upstream stage inputs for parallel units
+			// Output requirements
+			{
+				const outputReqs = buildOutputRequirements(studio, stage)
+				if (outputReqs) sharedParts.push(outputReqs)
+			}
+
+			// Upstream stage inputs — build once, embed in each subagent
 			if (stageDef?.data?.inputs && Array.isArray(stageDef.data.inputs)) {
 				const inputs = stageDef.data.inputs as Array<{
 					stage: string
@@ -2514,37 +2991,111 @@ function buildRunInstructions(
 				const resolvedInputs = resolveStageInputs(studio, inputs, dir, slug)
 				const found = resolvedInputs.filter((r) => r.exists)
 				if (found.length > 0) {
-					sections.push(
-						"### Upstream Context (from prior stages)\n\nInclude these in each subagent prompt.",
-					)
+					const upstreamParts: string[] = [
+						"## Upstream Context (from prior stages)",
+					]
 					for (const r of found) {
 						const relPath = r.resolvedPath.startsWith(`${dir}/`)
 							? r.resolvedPath.slice(dir.length + 1)
 							: r.resolvedPath
-						sections.push(
-							`#### ${r.stage}/${r.artifactName}\n` +
+						upstreamParts.push(
+							`### ${r.stage}/${r.artifactName}\n` +
 								`**Path:** \`${relPath}\`\n\n` +
 								`${r.content?.slice(0, 2000) ?? ""}${(r.content?.length ?? 0) > 2000 ? "\n...(truncated)" : ""}`,
 						)
 					}
+					sharedParts.push(upstreamParts.join("\n\n"))
 				}
 			}
 
+			const sharedContent = sharedParts.join("\n\n")
 			const worktrees =
 				(action.worktrees as Record<string, string | null>) || {}
-
 			const wave = action.wave as number | undefined
 			const totalWaves = action.total_waves as number | undefined
 
 			sections.push(
-				`### Mechanics\n\n${wave !== undefined ? `**Wave ${wave}/${totalWaves ?? "?"}** — ` : ""}${units.length} units to run in parallel.\n**You are the orchestrator.** Do NOT do unit work yourself. Do NOT ask the user which unit to start — launch ALL of them NOW.\n\n**IMMEDIATELY** spawn one Agent subagent per unit **in a single message** (all Agent tool calls in one response). No questions, no confirmation, no menu. Each subagent runs the FIRST hat ("${firstHat}") only.\n\nEach subagent calls \`advance_hat\` when done — it internally progresses the FSM. The last subagent to finish the wave triggers the next action automatically.\n\n**Each subagent prompt must include:**\n- The hat definition for "${firstHat}"\n- The unit spec and inputs\n- The stage scope constraint\n- Instruction to call \`haiku_unit_start\` first\n- Output tracking: record produced artifacts in the unit's \`outputs:\` frontmatter field (paths relative to intent dir)\n- If outputs from a previous stage are missing, incomplete, or incorrect: call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage for corrections\n\n${units
-					.map((u) => {
-						const wt = worktrees[u]
-						return `- **${u}**${wt ? ` (worktree: \`${wt}\`)` : ""}: \`haiku_unit_start { intent: "${slug}", unit: "${u}" }\``
-					})
-					.join(
-						"\n",
-					)}\n\n**Visual artifacts:** When presenting wireframes, designs, or mockups for user review, use \`ask_user_visual_question\` — do NOT open files in a browser and ask via text.\n\nAfter all subagents return: check the last subagent's \`advance_hat\` result — it contains the next FSM action (next wave, phase advance, etc.). Act on it directly. Do NOT call haiku_run_next separately.`,
+				`## Parallel Execution: ${units.length} units in ${stage}${wave !== undefined ? ` — Wave ${wave}/${totalWaves ?? "?"}` : ""}`,
+			)
+
+			// Per-unit subagent blocks — each self-contained
+			for (const unitName of units) {
+				const unitFile = join(
+					dir,
+					"stages",
+					stage,
+					"units",
+					unitName.endsWith(".md") ? unitName : `${unitName}.md`,
+				)
+				let unitContent = ""
+				let unitInputs: string[] = []
+				if (existsSync(unitFile)) {
+					const { data, body } = parseFrontmatter(
+						readFileSync(unitFile, "utf8"),
+					)
+					unitContent = body
+					unitInputs =
+						(data.inputs as string[]) || (data.refs as string[]) || []
+				}
+
+				// Build unit-specific input content
+				let inputContent = ""
+				if (unitInputs.length > 0) {
+					const dirResolved = resolve(dir)
+					const inputParts: string[] = []
+					for (const ref of unitInputs) {
+						const refResolved = resolve(dir, ref)
+						if (
+							!refResolved.startsWith(`${dirResolved}/`) &&
+							refResolved !== dirResolved
+						)
+							continue
+						if (existsSync(join(dir, ref))) {
+							const content = readFileSync(join(dir, ref), "utf8")
+							inputParts.push(
+								`### ${ref}\n\n${content.slice(0, 1500)}${content.length > 1500 ? "\n...(truncated)" : ""}`,
+							)
+						}
+					}
+					if (inputParts.length > 0) {
+						inputContent = `## Inputs\n\n${inputParts.join("\n\n")}`
+					}
+				}
+
+				const wt = worktrees[unitName]
+				const unitInstrLines: string[] = ["## Instructions", ""]
+				let unitStep = 1
+				unitInstrLines.push(
+					`${unitStep++}. Call \`haiku_unit_start { intent: "${slug}", unit: "${unitName}" }\``,
+				)
+				if (wt) {
+					unitInstrLines.push(`${unitStep++}. Work in worktree: \`${wt}\``)
+					unitInstrLines.push(
+						`${unitStep++}. Commit frequently: \`git add -A && git commit -m "..."\`. Do NOT push.`,
+					)
+				}
+				unitInstrLines.push(
+					`${unitStep++}. Call \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unitName}" }\` when done`,
+					`${unitStep++}. If blocked: call \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unitName}" }\``,
+					`${unitStep++}. Track outputs in unit frontmatter \`outputs:\` field`,
+					`${unitStep++}. Use \`ask_user_visual_question\` for visual artifacts — do NOT open files in a browser`,
+					`${unitStep++}. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
+					"",
+					"**User questions (MANDATORY):** When you need user input:",
+					"- Use `AskUserQuestion` with an `options[]` array for every decision that has known alternatives — NEVER output option lists as plain text",
+					"- Use `ask_user_visual_question` when questions involve visual artifacts, rich markdown context, or multiple related decisions (use the `questions[]` array)",
+					"- Break independent questions into separate tool calls — do NOT bundle unrelated decisions into one message",
+					'- Always pre-populate options from your domain knowledge; include "Other (let me specify)" when the list may not be exhaustive',
+				)
+
+				sections.push(
+					`### Subagent: ${unitName}\n\n<subagent tool="Agent" type="${hatAgentType}"${resolvedModelParallel ? ` model="${resolvedModelParallel}"` : ""}>\n## ${unitName} — hat: ${firstHat}\n\n${sharedContent}\n\n## Unit Spec\n\n${unitContent}${inputContent ? `\n\n${inputContent}` : ""}\n\n${unitInstrLines.join("\n")}\n</subagent>`,
+				)
+			}
+
+			// Parent instructions
+			sections.push(
+				`### Parent Instructions (do NOT include in subagent prompts)\n\n**IMMEDIATELY** spawn ALL subagents above **in a single message** (all Agent tool calls in one response). No questions, no confirmation, no menu.\nEach \`<subagent>\` block is a complete prompt — relay verbatim.\nAfter all subagents return: check the last subagent's \`advance_hat\` result — it contains the next FSM action (next wave, phase advance, etc.). Act on it directly. Do NOT call haiku_run_next separately.`,
 			)
 			break
 		}
@@ -2567,17 +3118,24 @@ function buildRunInstructions(
 		case "review": {
 			const stage = action.stage as string
 			const agents = readReviewAgentDefs(studio, stage)
+
+			loadCrossStageAgents(studio, stage, agents)
+
 			sections.push(`## Adversarial Review: ${stage}`)
 
 			if (Object.keys(agents).length > 0) {
-				sections.push("### Review Agents\n")
+				sections.push(
+					"### Review Agent Fan-Out (REQUIRED)\n\n**Spawn exactly one subagent per review agent in parallel — no duplicates.** Each `<subagent>` block below is a complete prompt — relay verbatim.\n",
+				)
 				for (const [name, content] of Object.entries(agents)) {
-					sections.push(`#### ${name}\n\n${content}`)
+					sections.push(
+						`#### Subagent: \`${name}\`\n\n<subagent tool="Task">\n## Adversarial Review: ${name}\n\nYou are the "${name}" review agent for stage "${stage}" of intent "${slug}".\n\n## Your Mandate\n\n${content}\n\n## Instructions\n\n1. Run \`git diff main...HEAD\` to get the current diff\n2. Read the stage's output artifacts in \`.haiku/intents/${slug}/stages/${stage}/\`\n3. Review through your mandate's lens\n4. Report findings as: severity (HIGH/MEDIUM/LOW), file, line, description\n5. HIGH findings MUST be fixed before the stage can advance\n</subagent>\n`,
+					)
 				}
 			}
 
 			sections.push(
-				`### Instructions\n\n1. Spawn one subagent per review agent (in parallel), each with the diff and stage outputs\n2. Collect findings; if HIGH severity, fix and re-review (up to 3 cycles)\n3. Call \`haiku_run_next { intent: "${slug}" }\` — the orchestrator advances to the gate phase automatically`,
+				`### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn each subagent above using the EXACT content between \`<subagent>\` tags.\nCollect findings. If HIGH severity findings exist, fix them and re-review (up to 3 cycles).\nThen call \`haiku_run_next { intent: "${slug}" }\`.`,
 			)
 			break
 		}
@@ -2618,10 +3176,27 @@ function buildRunInstructions(
 
 		case "composite_run_stage": {
 			const stage = action.stage as string
-			const compositeStudio = action.studio as string
+			const compositeStudio = (action.studio as string) || studio
 			const hats = (action.hats as string[]) || []
+
+			// Load composite studio definition
+			const compositeStudioData = readStudio(compositeStudio)
+			if (compositeStudioData?.body) {
+				sections.push(
+					`### Studio: ${compositeStudio}\n\n${compositeStudioData.body}`,
+				)
+			}
+
+			// Load composite stage definition
+			const compositeStageDef = readStageDef(compositeStudio, stage)
+			sections.push(`## Composite: Run ${compositeStudio}:${stage}`)
+			sections.push(`Hats: ${hats.join(" -> ")}`)
+			if (compositeStageDef) {
+				sections.push(`### Stage Definition\n\n${compositeStageDef.body}`)
+			}
+
 			sections.push(
-				`## Composite: Run ${compositeStudio}:${stage}\n\nHats: ${hats.join(" -> ")}\n\nFollow the same instructions as start_stage, but for this composite studio:stage pair.\n\nCall \`haiku_run_next { intent: "${slug}" }\` to continue.`,
+				`### Instructions\n\nThe orchestrator is running a composite studio:stage. This stage belongs to the "${compositeStudio}" studio.\n\nCall \`haiku_run_next { intent: "${slug}" }\` to get the next action.`,
 			)
 			break
 		}
@@ -2644,18 +3219,25 @@ function buildRunInstructions(
 		case "review_elaboration": {
 			const stage = action.stage as string
 			const agents = readReviewAgentDefs(studio, stage)
-			sections.push("## Review Elaboration Artifacts\n\n")
+
+			loadCrossStageAgents(studio, stage, agents)
+
+			sections.push("## Review Elaboration Artifacts")
 			sections.push(
-				"Run adversarial review agents on the elaboration specs before the pre-execution gate opens.\n\n",
+				"Run adversarial review agents on the elaboration specs before the pre-execution gate opens.",
 			)
 			if (Object.keys(agents).length > 0) {
-				sections.push("### Review Agents\n")
+				sections.push(
+					"### Review Agent Fan-Out (REQUIRED)\n\n**Spawn exactly one subagent per review agent in parallel — no duplicates.** Each `<subagent>` block below is a complete prompt — relay verbatim.\n",
+				)
 				for (const [name, content] of Object.entries(agents)) {
-					sections.push(`#### ${name}\n\n${content}`)
+					sections.push(
+						`#### Subagent: \`${name}\`\n\n<subagent tool="Task">\n## Elaboration Review: ${name}\n\nYou are the "${name}" review agent reviewing elaboration artifacts for stage "${stage}" of intent "${slug}".\n\n## Your Mandate\n\n${content}\n\n## Instructions\n\n1. Read the elaboration specs: units in \`.haiku/intents/${slug}/stages/${stage}/units/\`\n2. Read discovery artifacts in \`.haiku/intents/${slug}/knowledge/\`\n3. Review through your mandate's lens\n4. Report findings as: severity (HIGH/MEDIUM/LOW), description\n5. HIGH findings MUST be fixed before execution can begin\n</subagent>\n`,
+					)
 				}
 			}
 			sections.push(
-				`### Mechanics\n\n1. Spawn one subagent per review agent (in parallel)\n2. Each reviews the elaboration specs (units, discovery, knowledge)\n3. Fix any HIGH findings\n4. Call \`haiku_run_next { intent: "${slug}" }\` to advance`,
+				`### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn each subagent above using the EXACT content between \`<subagent>\` tags.\nCollect findings. Fix any HIGH findings.\nThen call \`haiku_run_next { intent: "${slug}" }\` to advance.`,
 			)
 			break
 		}
@@ -2665,9 +3247,9 @@ function buildRunInstructions(
 			sections.push(
 				`## Awaiting External Review\n\n${
 					externalUrl
-						? `The stage is awaiting external review at: ${externalUrl}\n\n`
-						: "The stage is awaiting external review but no review URL has been recorded.\n\n"
-				}Ask the user for the status of the external review. If approved, call \`haiku_run_next { intent: "${slug}" }\` — the FSM will detect the approval and advance.\n\n${externalUrl ? "" : `If the user provides a review URL, pass it: \`haiku_run_next { intent: "${slug}", external_review_url: "<url>" }\`\n`}`,
+						? `The stage is awaiting external review at: ${externalUrl}`
+						: "The stage is awaiting external review but no review URL has been recorded."
+				}\n\nThe orchestrator checks for approval automatically (branch merge detection + URL-based CLI probing). Neither detected approval yet.\n\nInform the user that the stage is waiting on external review. After the review is approved, run \`/haiku:pickup\` to continue.`,
 			)
 			break
 		}
@@ -2701,6 +3283,82 @@ function buildRunInstructions(
 
 		case "unit_inputs_missing": {
 			sections.push(`## Missing Unit Inputs\n\n${action.message}`)
+			break
+		}
+
+		case "fix_quality_gates": {
+			sections.push(
+				`## Quality Gates Failed\n\n${action.message || "No details provided."}\n\n### Instructions\n\nFix each failing gate, then call \`haiku_run_next { intent: "${slug}" }\` to retry. The orchestrator will re-run the gates before proceeding to adversarial review.`,
+			)
+			break
+		}
+
+		case "changes_requested": {
+			const annotations = action.annotations as
+				| Array<{ path?: string; body?: string }>
+				| undefined
+			let body = `## Changes Requested\n\n${action.message || "No details provided."}`
+			if (annotations && annotations.length > 0) {
+				body += "\n\n### Annotations\n"
+				for (const a of annotations) {
+					body += `\n- ${a.path ? `**${a.path}:** ` : ""}${a.body || ""}`
+				}
+			}
+			body += `\n\n### Instructions\n\nAddress each piece of feedback, then call \`haiku_run_next { intent: "${slug}" }\` to re-submit for review.`
+			sections.push(body)
+			break
+		}
+
+		case "external_review_requested": {
+			sections.push(
+				`## External Review Requested\n\n${action.message || "No details provided."}`,
+			)
+			break
+		}
+
+		case "unresolved_dependencies": {
+			sections.push(
+				`## Unresolved Dependencies\n\n${action.message || "No details provided."}\n\n### Instructions\n\nFix the \`depends_on\` fields in the affected unit files to reference existing unit names, then call \`haiku_run_next { intent: "${slug}" }\` to retry.`,
+			)
+			break
+		}
+
+		case "unit_naming_invalid": {
+			sections.push(
+				`## Unit Naming Invalid\n\n${action.message || "No details provided."}\n\n### Instructions\n\nRename the affected files to match the \`unit-NN-slug.md\` pattern (e.g., \`unit-01-data-model.md\`), then call \`haiku_run_next { intent: "${slug}" }\` to retry.`,
+			)
+			break
+		}
+
+		case "inputs_missing": {
+			sections.push(
+				`## Missing Inputs\n\n${action.message || "Units are missing required input references."}\n\n### Instructions\n\nAdd \`inputs:\` to each unit's frontmatter referencing the artifacts it needs, then call \`haiku_run_next { intent: "${slug}" }\` to retry.`,
+			)
+			break
+		}
+
+		case "gate_blocked": {
+			sections.push(
+				`## Gate Review Blocked\n\n${action.message || "No details provided."}\n\n### Instructions\n\nCall \`haiku_run_next { intent: "${slug}" }\` to retry the gate review. If the issue persists, ask the user for guidance.`,
+			)
+			break
+		}
+
+		case "safe_intent_repair": {
+			const synthesizedStages = (action.synthesized_stages as string[]) || []
+			const phaseWasRegressed = (action.phase_regressed as boolean) || false
+			sections.push(`## Safe Intent Repair\n\n${action.message}`)
+			if (synthesizedStages.length > 0) {
+				sections.push(`**Synthesized stages:** ${synthesizedStages.join(", ")}`)
+			}
+			if (phaseWasRegressed) {
+				sections.push(
+					"**Phase regressed:** The active stage was regressed from `execute` to `elaborate` because some units are missing `inputs:` declarations. Address the missing inputs before proceeding.",
+				)
+			}
+			sections.push(
+				`### Instructions\n\nResolve any stages needing manual review, then call \`haiku_run_next { intent: "${slug}" }\` again.`,
+			)
 			break
 		}
 
@@ -2742,18 +3400,24 @@ export const orchestratorToolDefs = [
 	{
 		name: "haiku_intent_create",
 		description:
-			"Create a new H·AI·K·U intent. Studio selection happens separately via haiku_select_studio.",
+			'Create a new H·AI·K·U intent. Studio selection happens separately via haiku_select_studio. You must provide BOTH a crisp `title` (3–8 words, ≤80 chars, single line, no trailing punctuation — e.g. "Add archivable intents") AND a richer `description` (2–5 sentences covering scope, motivation, and constraints). The title is NOT derived from the description — write it deliberately as a human-readable summary.',
 		inputSchema: {
 			type: "object" as const,
 			properties: {
+				title: {
+					type: "string",
+					description:
+						'Short human-readable title (3–8 words, max 80 chars, single line, no trailing period). Must be a deliberate summary — NOT the first 80 chars of the description. Good: "Add archivable intents". Bad: "Add archivable intents to H·AI·K·U. Users need a way to soft-hide…".',
+				},
 				description: {
 					type: "string",
-					description: "What the intent is about",
+					description:
+						"Full description of what the intent is about (2–5 sentences covering scope, motivation, and constraints). Stored verbatim in the intent body.",
 				},
 				slug: {
 					type: "string",
 					description:
-						"URL-friendly slug for the intent (auto-generated from description if not provided)",
+						"URL-friendly slug for the intent (auto-generated from title if not provided)",
 				},
 				context: {
 					type: "string",
@@ -2773,7 +3437,7 @@ export const orchestratorToolDefs = [
 						"Explicit stage list — overrides the studio's default stages. Use to run a subset of stages (e.g. just ['development'] for quick tasks).",
 				},
 			},
-			required: ["description"],
+			required: ["title", "description"],
 		},
 	},
 	{
@@ -3343,6 +4007,82 @@ export async function handleOrchestratorTool(
 			}
 		}
 
+		// ── Repair agent intercept ─────────────────────────────────────────
+		// If runNext detected a broken migrated intent, try the embedded repair
+		// agent before returning to the outer agent. Falls through to the normal
+		// withInstructions return if the agent isn't available or repair fails.
+		if (result.action === "safe_intent_repair") {
+			try {
+				const { runRepairAgent } = await import("./repair-agent.js")
+				const root = findHaikuRoot()
+				const iDir = join(root, "intents", slug)
+
+				// Resolve studio directory via the cached studio reader
+				const studioInfo = resolveStudio(intentStudio)
+				const studioDir = studioInfo?.path
+				if (!studioDir) {
+					// Can't find studio — fall through to normal handling
+					syncSessionMetadata(slug, args.state_file as string | undefined)
+					return text(withInstructions(result))
+				}
+
+				const activeStage = (result.stage as string) || ""
+				const diagnosis = {
+					slug,
+					intentDir: iDir,
+					studio: intentStudio,
+					studioDir,
+					activeStage,
+					synthesizedStages: (result.synthesized_stages as string[]) || [],
+					needsManualReview: (result.needs_manual_review as string[]) || [],
+					phaseRegressed: (result.phase_regressed as boolean) || false,
+					unitsMissingInputs: (result.units_missing_inputs as string[]) || [],
+				}
+
+				const repairResult = await runRepairAgent(diagnosis)
+
+				if (repairResult.success && !repairResult.fallbackUsed) {
+					// Repair agent succeeded — run FSM again to get the real next action
+					const postRepairResult = runNext(slug)
+
+					// Guard: if repair didn't actually fix things, don't loop
+					if (postRepairResult.action === "safe_intent_repair") {
+						// Fall through to return the original result as-is
+					} else {
+						emitTelemetry("haiku.orchestrator.action", {
+							intent: slug,
+							action: postRepairResult.action,
+						})
+						if (stFile)
+							logSessionEvent(stFile, {
+								event: "run_next",
+								intent: slug,
+								action: postRepairResult.action,
+								stage: postRepairResult.stage,
+								unit: postRepairResult.unit,
+								hat: postRepairResult.hat,
+								wave: postRepairResult.wave,
+							})
+
+						syncSessionMetadata(slug, args.state_file as string | undefined)
+
+						const repairNote = `**Intent repaired automatically:** ${repairResult.summary}\n\n---\n\n`
+						return {
+							content: [
+								{
+									type: "text" as const,
+									text: repairNote + withInstructions(postRepairResult),
+								},
+							],
+						}
+					}
+				}
+				// Repair failed or used fallback — fall through to return safe_intent_repair as-is
+			} catch {
+				// Repair agent not available — fall through to normal handling
+			}
+		}
+
 		syncSessionMetadata(slug, args.state_file as string | undefined)
 		return text(withInstructions(result))
 	}
@@ -3352,11 +4092,45 @@ export async function handleOrchestratorTool(
 
 	if (name === "haiku_intent_create") {
 		const description = args.description as string
+		const titleInput = args.title as string | undefined
 		let slug = args.slug as string | undefined
 
-		// Generate slug from description if not provided
+		// Title is required: must be a crisp, human-readable summary the agent
+		// writes deliberately. We do NOT derive it by truncating the description.
+		if (!titleInput || typeof titleInput !== "string") {
+			return text(
+				JSON.stringify({
+					error: "missing_title",
+					message:
+						'haiku_intent_create requires a `title` parameter — a crisp 3–8 word summary (≤80 chars, single line, no trailing period). Write it deliberately; do NOT pass a truncated description. Example: title: "Add archivable intents".',
+				}),
+			)
+		}
+		// Reject newlines explicitly before normalization — otherwise `\s+` would
+		// collapse them to spaces and hide the intent (a multi-line title input
+		// is a sign the agent pasted a paragraph, not wrote a title).
+		if (/[\r\n]/.test(titleInput)) {
+			return text(
+				JSON.stringify({
+					error: "invalid_title",
+					message:
+						"`title` must be a single line — got newlines. Rewrite as a crisp 3–8 word summary (≤80 chars) and call again.",
+				}),
+			)
+		}
+		const title = titleInput.trim().replace(/\s+/g, " ")
+		if (intentTitleNeedsRepair(title)) {
+			return text(
+				JSON.stringify({
+					error: "invalid_title",
+					message: `\`title\` must be non-empty and ≤80 chars after trimming. Got ${title.length} chars. Rewrite as a 3–8 word summary and call again.`,
+				}),
+			)
+		}
+
+		// Generate slug from title if not provided
 		if (!slug) {
-			slug = description
+			slug = title
 				.toLowerCase()
 				.replace(/[^a-z0-9\s-]/g, "")
 				.replace(/\s+/g, "-")
@@ -3402,14 +4176,13 @@ export async function handleOrchestratorTool(
 		mkdirSync(join(iDir, "knowledge"), { recursive: true })
 		mkdirSync(join(iDir, "stages"), { recursive: true })
 
-		// Build intent.md with frontmatter + body (no studio — selected separately)
-		// Title is derived as a short one-liner; the full description lives in the body.
+		// Build intent.md with frontmatter + body (no studio — selected separately).
+		// Title and description are distinct: title is a short human-readable summary
+		// the agent wrote deliberately; description is the full narrative body.
 		const context = args.context as string | undefined
 		const mode = (args.mode as string) || "continuous"
 		const stagesOverride = args.stages as string[] | undefined
-		const title = deriveIntentTitle(description)
-		const descriptionBody = description.trim()
-		const bodyHasDescription = descriptionBody && descriptionBody !== title
+		const descriptionBody = (description || "").trim()
 		const intentContent = [
 			"---",
 			`title: "${title.replace(/"/g, '\\"')}"`,
@@ -3424,7 +4197,7 @@ export async function handleOrchestratorTool(
 			"",
 			`# ${title}`,
 			"",
-			...(bodyHasDescription ? [descriptionBody, ""] : []),
+			...(descriptionBody ? [descriptionBody, ""] : []),
 			...(context ? [context, ""] : []),
 		].join("\n")
 
@@ -3760,11 +4533,12 @@ export async function handleOrchestratorTool(
 			}
 		}
 
-		// Read the description before deleting
+		// Read the title and description before deleting
 		const raw = readFileSync(intentFile, "utf8")
 		const { data, body } = parseFrontmatter(raw)
 		const title = (data.title as string) || ""
-		const description = title || body.replace(/^#\s+.*\n/, "").trim()
+		// Description = body minus the H1 heading, trimmed
+		const description = body.replace(/^#\s+.*\n+/, "").trim() || title
 
 		// Ask for confirmation via elicitation
 		if (_elicitInput) {
@@ -3826,9 +4600,10 @@ export async function handleOrchestratorTool(
 				{
 					action: "intent_reset",
 					slug,
+					title,
 					description,
 					context: conversationContext,
-					message: `Intent '${slug}' has been reset. Call haiku_intent_create { description: "${description.replace(/"/g, '\\"')}", slug: "${slug}"${conversationContext ? ', context: "<preserved context>"' : ""} } to recreate it.`,
+					message: `Intent '${slug}' has been reset. Call haiku_intent_create { title: "${title.replace(/"/g, '\\"')}", description: "${description.replace(/"/g, '\\"').replace(/\n/g, "\\n")}", slug: "${slug}"${conversationContext ? ', context: "<preserved context>"' : ""} } to recreate it.`,
 				},
 				null,
 				2,

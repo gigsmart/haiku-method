@@ -1,10 +1,10 @@
 ---
 name: unit-02-haiku-core-plugin
-type: backend
 status: completed
-depends_on: [unit-01-haiku-foundation]
+depends_on:
+  - unit-01-haiku-foundation
 bolt: 0
-hat: ""
+hat: ''
 started_at: null
 completed_at: null
 ---
