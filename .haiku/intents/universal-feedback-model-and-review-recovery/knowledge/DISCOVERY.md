@@ -295,7 +295,7 @@ Reading feedback files on every `haiku_run_next` call adds filesystem I/O. For a
 | `packages/haiku/src/server.ts` | MCP server setup, existing `haiku_feedback` Sentry tool (349-371), tool routing (400-453) |
 | `packages/haiku/src/sessions.ts` | Session model — review sessions with feedback/annotations |
 | `packages/haiku/src/http.ts` | HTTP server routes — `handleDecidePost` (120-180), session API |
-| `packages/haiku/src/hooks/subagent-context.ts` | Subagent context generation — confirms Task subagents lack MCP access |
+| `packages/haiku/src/hooks/subagent-context.ts` | Subagent context generation — Task subagents inherit MCP tool access from parent |
 | `packages/haiku/review-app/src/components/ReviewPage.tsx` | Review UI main view — needs feedback panel |
 | `packages/haiku/review-app/src/components/ReviewSidebar.tsx` | Decision buttons and comment management — needs feedback-file integration |
 | `packages/haiku/review-app/src/components/InlineComments.tsx` | Inline comment creation — output needs to flow to feedback files |
