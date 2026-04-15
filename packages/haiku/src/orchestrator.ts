@@ -377,24 +377,23 @@ function loadCrossStageAgents(
 
 // ── Output template injection ────────────────────────────────────────────
 
-/** Push output template definitions into sections */
-function pushOutputTemplates(
+/** Build output template content as a string */
+function buildOutputRequirements(
 	studio: string,
 	stage: string,
-	sections: string[],
-	heading = "### Stage Output Requirements\n\nThis stage must produce the following outputs:",
-	subheadingLevel = "####",
-): void {
+	heading = "## Output Requirements",
+	subheadingLevel = "###",
+): string {
 	const artifactDefs = readStageArtifactDefs(studio, stage)
 	const outputDefs = artifactDefs.filter((d) => d.kind === "output")
-	if (outputDefs.length > 0) {
-		sections.push(heading)
-		for (const od of outputDefs) {
-			sections.push(
-				`${subheadingLevel} ${od.name}${od.required ? " (REQUIRED)" : ""}\n**Location:** \`${od.location}\` | **Format:** ${od.format}\n\n${od.body}`,
-			)
-		}
+	if (outputDefs.length === 0) return ""
+	const parts = [heading]
+	for (const od of outputDefs) {
+		parts.push(
+			`${subheadingLevel} ${od.name}${od.required ? " (REQUIRED)" : ""}\n**Location:** \`${od.location}\` | **Format:** ${od.format}\n\n${od.body}`,
+		)
 	}
+	return parts.join("\n\n")
 }
 
 // ── Phase override reader ────────────────────────────────────────────────
@@ -2639,13 +2638,13 @@ function buildRunInstructions(
 			}
 
 			// Output template definitions — inform the elaboration agent what this stage must produce
-			pushOutputTemplates(
+			const outputExpectations = buildOutputRequirements(
 				studio,
 				stage,
-				sections,
-				"## Stage Output Expectations\n\nThis stage must ultimately produce the following outputs during execution. Plan units accordingly:\n",
+				"## Stage Output Expectations\n\nThis stage must ultimately produce the following outputs during execution. Plan units accordingly:",
 				"###",
 			)
+			if (outputExpectations) sections.push(outputExpectations)
 
 			// Detect design stages and add MCP provider instructions
 			const stageHats = (stageDef?.data?.hats as string[]) || []
@@ -2790,17 +2789,8 @@ function buildRunInstructions(
 
 			// Output requirements
 			{
-				const artifactDefs = readStageArtifactDefs(studio, stage)
-				const outputDefs = artifactDefs.filter((d) => d.kind === "output")
-				if (outputDefs.length > 0) {
-					const outputParts: string[] = ["## Output Requirements"]
-					for (const od of outputDefs) {
-						outputParts.push(
-							`### ${od.name}${od.required ? " (REQUIRED)" : ""}\n**Location:** \`${od.location}\` | **Format:** ${od.format}\n\n${od.body}`,
-						)
-					}
-					subagentParts.push(outputParts.join("\n\n"))
-				}
+				const outputReqs = buildOutputRequirements(studio, stage)
+				if (outputReqs) subagentParts.push(outputReqs)
 			}
 
 			// Unit inputs — load referenced artifacts
@@ -2865,23 +2855,24 @@ function buildRunInstructions(
 			// Instructions for the subagent
 			const worktreePath = (action.worktree as string) || ""
 			const instrLines: string[] = ["## Instructions", ""]
+			let step = 1
 			if (action.action === "start_unit") {
 				instrLines.push(
-					`1. Call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\``,
+					`${step++}. Call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\``,
 				)
 			}
 			if (worktreePath) {
-				instrLines.push(`2. Work in worktree: \`${worktreePath}\``)
+				instrLines.push(`${step++}. Work in worktree: \`${worktreePath}\``)
 				instrLines.push(
-					'3. Commit frequently: `git add -A && git commit -m "..."`. Do NOT push.',
+					`${step++}. Commit frequently: \`git add -A && git commit -m "..."\`. Do NOT push.`,
 				)
 			}
 			instrLines.push(
-				`4. When done: call \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\``,
-				`5. If blocked: call \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\``,
-				"6. Track outputs in unit frontmatter `outputs:` field",
-				"7. Use `ask_user_visual_question` for visual artifacts — do NOT open files in a browser",
-				`8. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
+				`${step++}. When done: call \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\``,
+				`${step++}. If blocked: call \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\``,
+				`${step++}. Track outputs in unit frontmatter \`outputs:\` field`,
+				`${step++}. Use \`ask_user_visual_question\` for visual artifacts — do NOT open files in a browser`,
+				`${step++}. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
 				"",
 				"**User questions (MANDATORY):** When you need user input:",
 				"- Use `AskUserQuestion` with an `options[]` array for every decision that has known alternatives — NEVER output option lists as plain text",
@@ -2976,17 +2967,8 @@ function buildRunInstructions(
 
 			// Output requirements
 			{
-				const artifactDefs = readStageArtifactDefs(studio, stage)
-				const outputDefs = artifactDefs.filter((d) => d.kind === "output")
-				if (outputDefs.length > 0) {
-					const outputParts: string[] = ["## Output Requirements"]
-					for (const od of outputDefs) {
-						outputParts.push(
-							`### ${od.name}${od.required ? " (REQUIRED)" : ""}\n**Location:** \`${od.location}\` | **Format:** ${od.format}\n\n${od.body}`,
-						)
-					}
-					sharedParts.push(outputParts.join("\n\n"))
-				}
+				const outputReqs = buildOutputRequirements(studio, stage)
+				if (outputReqs) sharedParts.push(outputReqs)
 			}
 
 			// Upstream stage inputs — build once, embed in each subagent
@@ -3296,7 +3278,7 @@ function buildRunInstructions(
 
 		case "fix_quality_gates": {
 			sections.push(
-				`## Quality Gates Failed\n\n${action.message}\n\n### Instructions\n\nFix each failing gate, then call \`haiku_run_next { intent: "${slug}" }\` to retry. The orchestrator will re-run the gates before proceeding to adversarial review.`,
+				`## Quality Gates Failed\n\n${action.message || "No details provided."}\n\n### Instructions\n\nFix each failing gate, then call \`haiku_run_next { intent: "${slug}" }\` to retry. The orchestrator will re-run the gates before proceeding to adversarial review.`,
 			)
 			break
 		}
@@ -3305,7 +3287,7 @@ function buildRunInstructions(
 			const annotations = action.annotations as
 				| Array<{ path?: string; body?: string }>
 				| undefined
-			let body = `## Changes Requested\n\n${action.message}`
+			let body = `## Changes Requested\n\n${action.message || "No details provided."}`
 			if (annotations && annotations.length > 0) {
 				body += "\n\n### Annotations\n"
 				for (const a of annotations) {
@@ -3318,20 +3300,22 @@ function buildRunInstructions(
 		}
 
 		case "external_review_requested": {
-			sections.push(`## External Review Requested\n\n${action.message}`)
+			sections.push(
+				`## External Review Requested\n\n${action.message || "No details provided."}`,
+			)
 			break
 		}
 
 		case "unresolved_dependencies": {
 			sections.push(
-				`## Unresolved Dependencies\n\n${action.message}\n\n### Instructions\n\nFix the \`depends_on\` fields in the affected unit files to reference existing unit names, then call \`haiku_run_next { intent: "${slug}" }\` to retry.`,
+				`## Unresolved Dependencies\n\n${action.message || "No details provided."}\n\n### Instructions\n\nFix the \`depends_on\` fields in the affected unit files to reference existing unit names, then call \`haiku_run_next { intent: "${slug}" }\` to retry.`,
 			)
 			break
 		}
 
 		case "unit_naming_invalid": {
 			sections.push(
-				`## Unit Naming Invalid\n\n${action.message}\n\n### Instructions\n\nRename the affected files to match the \`unit-NN-slug.md\` pattern (e.g., \`unit-01-data-model.md\`), then call \`haiku_run_next { intent: "${slug}" }\` to retry.`,
+				`## Unit Naming Invalid\n\n${action.message || "No details provided."}\n\n### Instructions\n\nRename the affected files to match the \`unit-NN-slug.md\` pattern (e.g., \`unit-01-data-model.md\`), then call \`haiku_run_next { intent: "${slug}" }\` to retry.`,
 			)
 			break
 		}
@@ -3345,7 +3329,7 @@ function buildRunInstructions(
 
 		case "gate_blocked": {
 			sections.push(
-				`## Gate Review Blocked\n\n${action.message}\n\n### Instructions\n\nCall \`haiku_run_next { intent: "${slug}" }\` to retry the gate review. If the issue persists, ask the user for guidance.`,
+				`## Gate Review Blocked\n\n${action.message || "No details provided."}\n\n### Instructions\n\nCall \`haiku_run_next { intent: "${slug}" }\` to retry the gate review. If the issue persists, ask the user for guidance.`,
 			)
 			break
 		}
