@@ -2555,7 +2555,7 @@ function buildRunInstructions(
 				)
 				const plural = artifacts.length !== 1 ? "s" : ""
 
-				let fanOutText = `## Discovery Fan-Out (REQUIRED)\n\nThis stage produces ${artifacts.length} discovery artifact${plural}: ${artifactNames.join(", ")}.\n\n**Spawn one \`Task\` subagent per artifact** to do the research AND produce the populated file. Spawn ALL of them in a single response (parallel). Do NOT do per-artifact research in this parent context — synthesize the structured returns instead.\n\n`
+				let fanOutText = `## Discovery Fan-Out (REQUIRED)\n\nThis stage produces ${artifacts.length} discovery artifact${plural}: ${artifactNames.join(", ")}.\n\n**Spawn one \`Task\` subagent per artifact** to do the research AND produce the populated file. Spawn ALL of them in a single response (parallel). Do NOT do per-artifact research in this parent context — synthesize the structured returns instead.\n\n**Deduplication:** Spawn exactly ONE subagent per artifact listed below. Do NOT spawn multiple subagents for the same artifact. If a discovery artifact already exists on disk, skip spawning a subagent for it — read the existing file instead.\n\n`
 
 				for (const [f, content] of artifacts) {
 					const name = f.replace(/\.md$/i, "").toLowerCase()
@@ -2976,7 +2976,7 @@ function buildRunInstructions(
 
 			if (Object.keys(agents).length > 0) {
 				sections.push(
-					"### Review Agent Fan-Out (REQUIRED)\n\n**Spawn one subagent per review agent in parallel.** Include each agent's full instructions in its subagent prompt.\n",
+					"### Review Agent Fan-Out (REQUIRED)\n\n**Spawn exactly one subagent per review agent in parallel — no duplicates.** Include each agent's full instructions in its subagent prompt.\n",
 				)
 				for (const [name, content] of Object.entries(agents)) {
 					sections.push(
@@ -3079,7 +3079,7 @@ function buildRunInstructions(
 			)
 			if (Object.keys(agents).length > 0) {
 				sections.push(
-					"### Review Agent Fan-Out (REQUIRED)\n\n**Spawn one subagent per review agent in parallel.** Include each agent's full instructions in its subagent prompt.\n",
+					"### Review Agent Fan-Out (REQUIRED)\n\n**Spawn exactly one subagent per review agent in parallel — no duplicates.** Include each agent's full instructions in its subagent prompt.\n",
 				)
 				for (const [name, content] of Object.entries(agents)) {
 					sections.push(

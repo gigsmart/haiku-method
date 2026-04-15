@@ -2280,6 +2280,25 @@ export function handleStateTool(
 					}),
 				)
 			const uPath = unitPath(args.intent as string, stage, args.unit as string)
+
+			// Guard: reject if unit is already active (prevents duplicate work)
+			if (existsSync(uPath)) {
+				const { data: existingFm } = parseFrontmatter(
+					readFileSync(uPath, "utf8"),
+				)
+				if (existingFm.status === "active") {
+					const scope = resolveStageScope(args.intent as string, stage)
+					return text(
+						JSON.stringify({
+							error: "unit_already_active",
+							unit: args.unit,
+							hat: existingFm.hat || "",
+							message: `Unit '${args.unit}' is already active (hat: ${existingFm.hat || "unknown"}). Do not start it again — continue working on it or call haiku_unit_advance_hat when done.`,
+						}) + (scope ? `\n\n${scope}` : ""),
+					)
+				}
+			}
+
 			const stageHats = resolveStageHats(args.intent as string, stage)
 			const firstHat = stageHats[0] || ""
 
@@ -2328,6 +2347,18 @@ export function handleStateTool(
 
 			const unitRaw = readFileSync(advPath, "utf8")
 			const { data: unitFm } = parseFrontmatter(unitRaw)
+
+			// Guard: reject if unit is already completed
+			if (unitFm.status === "completed") {
+				return text(
+					JSON.stringify({
+						error: "unit_already_completed",
+						unit: args.unit,
+						message: `Unit '${args.unit}' is already completed. Cannot advance hat on a completed unit.`,
+					}),
+				)
+			}
+
 			const currentHat = (unitFm.hat as string) || ""
 
 			// ── Hat backpressure: prevent rapid-fire advancement ──
