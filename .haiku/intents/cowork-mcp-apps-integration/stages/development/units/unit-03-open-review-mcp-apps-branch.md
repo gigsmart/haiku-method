@@ -1,7 +1,7 @@
 ---
 title: _openReviewAndWait MCP Apps branch + haiku_cowork_review_submit tool
 type: feature
-model: sonnet
+model: opus
 depends_on:
   - unit-01-capability-negotiation-probe
   - unit-02-ui-resource-registration
@@ -14,10 +14,11 @@ inputs:
   - features/iframe-decision-submit.feature
   - .haiku/knowledge/ARCHITECTURE.md
 status: active
-bolt: 1
-hat: reviewer
+bolt: 2
+hat: builder
 started_at: '2026-04-15T16:05:33Z'
-hat_started_at: '2026-04-15T16:19:47Z'
+hat_started_at: '2026-04-15T16:25:18Z'
+model_original: sonnet
 ---
 
 # _openReviewAndWait MCP Apps branch + haiku_cowork_review_submit tool
