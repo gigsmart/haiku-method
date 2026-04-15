@@ -11,6 +11,11 @@ inputs:
   - .haiku/knowledge/THREAT-MODEL.md
 outputs:
   - audit findings inline (pass/fail per criterion)
+status: active
+bolt: 1
+hat: threat-modeler
+started_at: '2026-04-15T19:48:49Z'
+hat_started_at: '2026-04-15T19:48:49Z'
 ---
 
 # Unit 02 — Input Validation Audit
