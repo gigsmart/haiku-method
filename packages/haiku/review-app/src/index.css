@@ -5,69 +5,81 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Hide tab panels that are not active */
-[role="tabpanel"][hidden] { display: none; }
+[role="tabpanel"][hidden] {
+	display: none;
+}
 /* Smooth transitions for theme switch */
-html { transition: background-color 0.2s, color 0.2s; }
+html {
+	transition: background-color 0.2s, color 0.2s;
+}
 /* Prevent table overflow — wrap in scrollable container */
-table { display: block; overflow-x: auto; max-width: 100%; }
+table {
+	display: block;
+	overflow-x: auto;
+	max-width: 100%;
+}
 /* Prose code blocks should also scroll */
-pre { overflow-x: auto; }
+pre {
+	overflow-x: auto;
+}
 
 /* Annotation pin markers */
 .annotation-pin {
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #e11d48;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform: translate(-50%, -50%);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-  pointer-events: auto;
-  cursor: pointer;
-  z-index: 10;
-  border: 2px solid #fff;
-  transition: transform 0.1s;
+	position: absolute;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	background: #e11d48;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transform: translate(-50%, -50%);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+	pointer-events: auto;
+	cursor: pointer;
+	z-index: 10;
+	border: 2px solid #fff;
+	transition: transform 0.1s;
 }
-.annotation-pin:hover { transform: translate(-50%, -50%) scale(1.2); }
+.annotation-pin:hover {
+	transform: translate(-50%, -50%) scale(1.2);
+}
 .annotation-pin.selected {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
+	outline: 2px solid #3b82f6;
+	outline-offset: 2px;
 }
 
 /* Inline highlight for comments */
 .inline-highlight {
-  background-color: rgba(251, 191, 36, 0.3);
-  border-bottom: 2px solid rgba(251, 191, 36, 0.7);
-  cursor: pointer;
-  transition: background-color 0.15s;
-  border-radius: 2px;
+	background-color: rgba(251, 191, 36, 0.3);
+	border-bottom: 2px solid rgba(251, 191, 36, 0.7);
+	cursor: pointer;
+	transition: background-color 0.15s;
+	border-radius: 2px;
 }
 .inline-highlight:hover,
 .inline-highlight.active {
-  background-color: rgba(251, 191, 36, 0.5);
+	background-color: rgba(251, 191, 36, 0.5);
 }
 
 /* Comment sidebar entries */
 .comment-entry,
 .margin-comment {
-  padding: 6px 8px;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  transition: border-color 0.15s, background-color 0.15s;
+	padding: 6px 8px;
+	border-radius: 6px;
+	border: 1px solid transparent;
+	transition: border-color 0.15s, background-color 0.15s;
 }
 .comment-entry:hover,
 .comment-entry.active,
 .margin-comment:hover,
 .margin-comment.active {
-  border-color: #3b82f6;
-  background-color: rgba(59, 130, 246, 0.05);
+	border-color: #3b82f6;
+	background-color: rgba(59, 130, 246, 0.05);
 }
 .margin-comment {
-  border-left: 3px solid rgba(251, 191, 36, 0.7);
+	border-left: 3px solid rgba(251, 191, 36, 0.7);
 }
