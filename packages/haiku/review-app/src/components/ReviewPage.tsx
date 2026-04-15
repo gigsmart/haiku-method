@@ -7,6 +7,8 @@ import { AnnotationCanvas, type AnnotationPin } from "./AnnotationCanvas";
 import { InlineComments, type InlineCommentEntry, scrollToInlineComment } from "./InlineComments";
 import { ReviewSidebar, type SidebarComment } from "./ReviewSidebar";
 import { MermaidDiagram } from "./MermaidDiagram";
+import { isMcpAppsHost } from "../host-bridge";
+import { BottomSheetDecisionPanelReview } from "./iframe/BottomSheetDecisionPanelReview";
 import { remark } from "remark";
 import remarkGfm from "remark-gfm";
 import remarkHtml from "remark-html";
@@ -50,6 +52,7 @@ function getPreamble(sections: Section[]): string {
 }
 
 export function ReviewPage({ session, sessionId, wsRef }: Props) {
+  const isIframe = isMcpAppsHost();
   // Lifted comment state: all inline comments and pins across tabs
   const [allInlineComments, setAllInlineComments] = useState<InlineCommentEntry[]>([]);
   const [allPins, setAllPins] = useState<AnnotationPin[]>([]);
@@ -215,6 +218,28 @@ export function ReviewPage({ session, sessionId, wsRef }: Props) {
     onInlineCommentsChange: handleInlineCommentsChange,
     onPinsChange: handlePinsChange,
   };
+
+  if (isIframe) {
+    return (
+      <div className="flex flex-col min-h-full">
+        {/* Main content — full width in iframe mode */}
+        <div className="flex-1 min-w-0">
+          {session.review_type === "unit" && session.target ? (
+            <UnitReview {...commonProps} />
+          ) : (
+            <IntentReview {...commonProps} />
+          )}
+        </div>
+        {/* Bottom-sheet decision panel — iframe mode only */}
+        <BottomSheetDecisionPanelReview
+          sessionId={sessionId}
+          gateType={session.gate_type}
+          annotations={getAnnotations()}
+          wsRef={wsRef}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex gap-6">

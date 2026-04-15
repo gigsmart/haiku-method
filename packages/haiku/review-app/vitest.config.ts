@@ -1,9 +1,12 @@
 import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig({
+  plugins: [react()],
   test: {
     environment: "jsdom",
-    globals: false,
+    globals: true,
+    setupFiles: ["./src/test-setup.ts"],
     // Use a separate resolver that does NOT alias ext-apps to the shim.
     // Tests mock @modelcontextprotocol/ext-apps via vi.doMock() directly.
     alias: {
