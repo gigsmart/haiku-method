@@ -1,5 +1,5 @@
 ---
-title: ui:// resource registration + REVIEW_APP_VERSION build stamp + _meta.ui helper
+title: 'ui:// resource registration + REVIEW_APP_VERSION build stamp + _meta.ui helper'
 type: feature
 model: sonnet
 depends_on:
@@ -11,6 +11,11 @@ inputs:
   - knowledge/DATA-CONTRACTS.md
   - features/iframe-review-gate.feature
   - .haiku/knowledge/ARCHITECTURE.md
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-15T15:46:42Z'
+hat_started_at: '2026-04-15T15:46:42Z'
 ---
 
 # ui:// resource registration + REVIEW_APP_VERSION + _meta.ui helper
