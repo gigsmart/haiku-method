@@ -34,6 +34,7 @@ import {
 	toMermaidDefinition,
 } from "./index.js"
 import {
+	addReviewTransportBreadcrumb,
 	flush as flushSentry,
 	isSentryConfigured,
 	reportError,
@@ -196,6 +197,16 @@ import {
 	stateToolDefs,
 } from "./state-tools.js"
 import { REVIEW_RESOURCE_URI, buildUiResourceMeta } from "./ui-resource.js"
+
+// Bundle size runtime guard — warn if review-app HTML approaches the 1MB CI budget.
+// The CI hard-fail threshold is 1,000,403 bytes (gzipped); we warn at ~950KB raw
+// as an early signal before gzip compression is applied in CI.
+const _reviewAppBytes = Buffer.byteLength(REVIEW_APP_HTML, "utf8")
+if (_reviewAppBytes > 950_000) {
+	console.warn(
+		`[haiku] review-app HTML is ${_reviewAppBytes} bytes (raw) — approaching the 1MB gzipped CI budget. Run the Vite bundle analyzer to identify what grew.`,
+	)
+}
 
 setMcpServerInstance(server)
 
@@ -1120,6 +1131,7 @@ setOpenReviewHandler(
 			// Body extracted to ./open-review-mcp-apps.ts so it can be unit
 			// tested directly. Pass the AbortSignal captured by handleToolCall
 			// and a setter callback for the module-scoped _reviewResultMeta.
+			addReviewTransportBreadcrumb(true, "mcp_apps")
 			return openReviewMcpApps({
 				intentDirRel,
 				reviewType,
@@ -1131,6 +1143,7 @@ setOpenReviewHandler(
 			})
 		}
 		// ── HTTP + tunnel + browser arm (existing — byte-identical to main) ──
+		addReviewTransportBreadcrumb(false, "http_tunnel")
 		const intentDirAbs = resolve(process.cwd(), intentDirRel)
 		const intent = await parseIntent(intentDirAbs)
 		if (!intent) throw new Error("Could not parse intent")

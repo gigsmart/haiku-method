@@ -7,6 +7,10 @@ inputs:
   - intent.md
   - knowledge/DISCOVERY.md
   - .haiku/knowledge/RUNBOOK.md
+outputs:
+  - packages/haiku/src/sentry.ts
+  - packages/haiku/src/server.ts
+  - packages/haiku/VALIDATION.md
 ---
 
 # Operational telemetry and SLOs for MCP Apps review path
