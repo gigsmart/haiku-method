@@ -65,6 +65,7 @@ import {
 } from "./studio-reader.js"
 import { getCapabilities, isClaudeCode } from "./harness.js"
 import { adaptInstructions } from "./harness-instructions.js"
+import { sanitizeForContext, sealIntentState, verifyIntentState } from "./state-integrity.js"
 import { emitTelemetry } from "./telemetry.js"
 import type { DAGGraph } from "./types.js"
 
@@ -806,6 +807,7 @@ function fsmStartStage(slug: string, stage: string): void {
 
 	emitTelemetry("haiku.stage.started", { intent: slug, stage })
 	gitCommitState(`haiku: start stage ${stage}`)
+	sealIntentState(slug)
 }
 
 function fsmAdvancePhase(slug: string, stage: string, toPhase: string): void {
@@ -814,6 +816,7 @@ function fsmAdvancePhase(slug: string, stage: string, toPhase: string): void {
 	data.phase = toPhase
 	writeJson(path, data)
 	emitTelemetry("haiku.stage.phase", { intent: slug, stage, phase: toPhase })
+	sealIntentState(slug)
 }
 
 function fsmCompleteStage(
@@ -833,6 +836,7 @@ function fsmCompleteStage(
 		gate_outcome: gateOutcome,
 	})
 	gitCommitState(`haiku: complete stage ${stage}`)
+	sealIntentState(slug)
 }
 
 function fsmAdvanceStage(
@@ -857,6 +861,7 @@ function fsmGateAsk(slug: string, stage: string): void {
 	data.gate_entered_at = timestamp()
 	writeJson(path, data)
 	emitTelemetry("haiku.gate.entered", { intent: slug, stage })
+	sealIntentState(slug)
 }
 
 function fsmIntentComplete(slug: string): void {
@@ -867,6 +872,7 @@ function fsmIntentComplete(slug: string): void {
 	}
 	emitTelemetry("haiku.intent.completed", { intent: slug })
 	gitCommitState(`haiku: complete intent ${slug}`)
+	sealIntentState(slug)
 }
 
 // ── Main orchestration function ────────────────────────────────────────────
@@ -878,6 +884,13 @@ export function runNext(slug: string): OrchestratorAction {
 
 	if (!existsSync(intentFile)) {
 		return { action: "error", message: `Intent '${slug}' not found` }
+	}
+
+	// Tamper detection: verify FSM state wasn't modified via direct file writes.
+	// Only active for hookless harnesses (Claude Code/Kiro have guard-fsm-fields hook).
+	const tamperError = verifyIntentState(slug)
+	if (tamperError) {
+		return { action: "error", message: tamperError }
 	}
 
 	const intent = readFrontmatter(intentFile)
@@ -2544,7 +2557,7 @@ function buildRunInstructions(
 						sections.push(
 							`### ${r.stage}/${r.artifactName} (${r.kind})\n` +
 								`**Path:** \`${relPath}\`\n\n` +
-								`${r.content?.slice(0, 3000) ?? ""}${(r.content?.length ?? 0) > 3000 ? "\n...(truncated)" : ""}`,
+								`${sanitizeForContext(r.content?.slice(0, 3000) ?? "", `upstream input: ${r.stage}/${r.artifactName}`)}${(r.content?.length ?? 0) > 3000 ? "\n...(truncated)" : ""}`,
 						)
 					}
 					// Build ref paths for unit creation guidance
@@ -2577,7 +2590,7 @@ function buildRunInstructions(
 				}
 			}
 			for (const [f, content] of discoveryFiles) {
-				sections.push(`### ${f}\n\n${content}`)
+				sections.push(`### ${f}\n\n${sanitizeForContext(content, `discovery artifact: ${f}`)}`)
 			}
 
 			// Discovery fan-out — one Task subagent per declared discovery artifact.
@@ -2736,8 +2749,8 @@ function buildRunInstructions(
 				)
 			}
 
-			sections.push(`### Unit Spec\n\n${unitContent}`)
-			sections.push(`### Hat: ${hat}\n\n${hatContent}`)
+			sections.push(`### Unit Spec\n\n${sanitizeForContext(unitContent, `unit spec: ${unit}`)}`)
+			sections.push(`### Hat: ${hat}\n\n${sanitizeForContext(hatContent, `hat definition: ${hat}`)}`)
 
 			// For hookless harnesses, inline the subagent context that would
 			// normally be injected by the subagent-hook PreToolUse handler.
@@ -2795,7 +2808,7 @@ function buildRunInstructions(
 						sections.push(
 							`#### ${r.stage}/${r.artifactName}\n` +
 								`**Path:** \`${relPath}\`\n\n` +
-								`${r.content?.slice(0, 2000) ?? ""}${(r.content?.length ?? 0) > 2000 ? "\n...(truncated)" : ""}`,
+								`${sanitizeForContext(r.content?.slice(0, 2000) ?? "", `upstream input: ${r.stage}/${r.artifactName}`)}${(r.content?.length ?? 0) > 2000 ? "\n...(truncated)" : ""}`,
 						)
 					}
 				}
@@ -2887,7 +2900,7 @@ function buildRunInstructions(
 						sections.push(
 							`#### ${r.stage}/${r.artifactName}\n` +
 								`**Path:** \`${relPath}\`\n\n` +
-								`${r.content?.slice(0, 2000) ?? ""}${(r.content?.length ?? 0) > 2000 ? "\n...(truncated)" : ""}`,
+								`${sanitizeForContext(r.content?.slice(0, 2000) ?? "", `upstream input: ${r.stage}/${r.artifactName}`)}${(r.content?.length ?? 0) > 2000 ? "\n...(truncated)" : ""}`,
 						)
 					}
 				}
