@@ -11,6 +11,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { join } from "node:path"
 import type { GetPromptResult } from "@modelcontextprotocol/sdk/types.js"
+import { resolvePluginRoot } from "../config.js"
 import { registerPrompt } from "./index.js"
 
 interface SkillFrontmatter {
@@ -52,9 +53,9 @@ function parseFrontmatter(content: string): {
  * - A handler that returns the SKILL.md body as the prompt content
  */
 export function registerSkillPrompts(): number {
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 	if (!pluginRoot) {
-		console.error("[haiku] CLAUDE_PLUGIN_ROOT not set — cannot bridge skills")
+		console.error("[haiku] Plugin root not found — cannot bridge skills")
 		return 0
 	}
 

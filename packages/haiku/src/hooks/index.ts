@@ -37,7 +37,9 @@ export async function runHook(name: string, _args: string[]): Promise<void> {
 		/* stdin may not be JSON for all hooks */
 	}
 
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	// Import inline to avoid circular deps — hooks are a separate entry point
+	const { resolvePluginRoot } = await import("../config.js")
+	const pluginRoot = resolvePluginRoot()
 
 	switch (name) {
 		case "prompt-guard":

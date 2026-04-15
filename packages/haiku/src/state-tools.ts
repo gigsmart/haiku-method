@@ -15,7 +15,7 @@ import {
 import { join, resolve } from "node:path"
 import matter from "gray-matter"
 import { getPendingVersion, hasPendingUpdate } from "./auto-update.js"
-import { features } from "./config.js"
+import { features, resolvePluginRoot } from "./config.js"
 import { getCapabilities } from "./harness.js"
 import {
 	addTempWorktree,
@@ -414,7 +414,7 @@ function buildStudioMap(root: string): {
 	searchPaths: string[]
 } {
 	const studioMap = new Map<string, string[]>()
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 	const searchPaths = [join(root, "studios"), join(pluginRoot, "studios")]
 	for (const base of searchPaths) {
 		if (!existsSync(base)) continue
@@ -1810,7 +1810,7 @@ function resolveStageHats(intent: string, stage: string): string[] {
 		const studio = (data.studio as string) || ""
 		if (!studio) return []
 
-		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+		const pluginRoot = resolvePluginRoot()
 		for (const base of [
 			join(process.cwd(), ".haiku", "studios"),
 			join(pluginRoot, "studios"),
@@ -1838,7 +1838,7 @@ function resolveStageScope(intent: string, stage: string): string {
 		const studio = (data.studio as string) || ""
 		if (!studio) return ""
 
-		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+		const pluginRoot = resolvePluginRoot()
 		for (const base of [
 			join(process.cwd(), ".haiku", "studios"),
 			join(pluginRoot, "studios"),
@@ -1908,7 +1908,7 @@ export function syncSessionMetadata(
 
 		let stageDescription = activeStage
 		if (studio && activeStage) {
-			const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+			const pluginRoot = resolvePluginRoot()
 			for (const base of [
 				join(process.cwd(), ".haiku", "studios"),
 				join(pluginRoot, "studios"),
@@ -3443,7 +3443,7 @@ export function handleStateTool(
 			const version = (args.version as string) || ""
 			// Search for CHANGELOG.md — try plugin root first, then walk up from cwd
 			let changelogPath = ""
-			const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+			const pluginRoot = resolvePluginRoot()
 			if (pluginRoot) {
 				const p = join(pluginRoot, "CHANGELOG.md")
 				if (existsSync(p)) changelogPath = p

@@ -4,9 +4,12 @@
 // variables are read once at module load. Import this module instead of
 // reading process.env directly for Haiku-specific config.
 //
-// Harness-provided env vars (CLAUDE_PLUGIN_ROOT, CLAUDE_CONFIG_DIR,
-// CLAUDE_SESSION_ID, HOME) are NOT centralized — they're environment inputs,
-// not configuration, and are read inline where needed.
+// Plugin root resolution is centralized here so all consumers use the same
+// logic: CLAUDE_PLUGIN_ROOT env var first, then self-resolve from the
+// binary's own location (plugin/bin/haiku → plugin/).
+
+import { dirname, join } from "node:path"
+import { existsSync } from "node:fs"
 
 function flag(name: string, defaultValue: boolean): boolean {
 	const raw = process.env[name]
@@ -22,6 +25,53 @@ function str(name: string, defaultValue: string): string {
 	const raw = process.env[name]
 	if (raw === undefined || raw === "") return defaultValue
 	return raw
+}
+
+// ── Plugin root resolution ─────────────────────────────────────────────────
+//
+// Claude Code sets CLAUDE_PLUGIN_ROOT automatically. Other harnesses don't.
+// When unset, we derive it from the running binary's path:
+//   binary at: /path/to/plugin/bin/haiku
+//   plugin root: /path/to/plugin/
+//
+// Cached after first resolution. All consumers should import pluginRoot
+// from this module instead of reading CLAUDE_PLUGIN_ROOT directly.
+
+let _pluginRoot: string | null = null
+
+export function resolvePluginRoot(): string {
+	if (_pluginRoot !== null) return _pluginRoot
+
+	// 1. Explicit env var (Claude Code, or user-set)
+	const envRoot = process.env.CLAUDE_PLUGIN_ROOT
+	if (envRoot) {
+		_pluginRoot = envRoot
+		return _pluginRoot
+	}
+
+	// 2. Self-resolve from binary location
+	// The esbuild bundle runs as plugin/bin/haiku. In the bundled binary,
+	// process.argv[1] is the absolute path to the binary.
+	const binaryPath = process.argv[1]
+	if (binaryPath) {
+		// binary at plugin/bin/haiku → plugin root is dirname(dirname(binary))
+		const candidate = dirname(dirname(binaryPath))
+		// Validate by checking for a known marker file
+		if (
+			existsSync(join(candidate, "studios")) ||
+			existsSync(join(candidate, ".claude-plugin", "plugin.json"))
+		) {
+			_pluginRoot = candidate
+			// Also set the env var so hooks and child processes pick it up
+			process.env.CLAUDE_PLUGIN_ROOT = candidate
+			console.error(`[haiku] Self-resolved plugin root: ${candidate}`)
+			return _pluginRoot
+		}
+	}
+
+	// 3. Fallback: empty string (graceful degradation — project studios still work)
+	_pluginRoot = ""
+	return _pluginRoot
 }
 
 /** Feature flags. */

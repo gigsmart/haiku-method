@@ -19,7 +19,7 @@ import {
 } from "node:fs"
 import { join, resolve } from "node:path"
 import matter from "gray-matter"
-import { features } from "./config.js"
+import { features, resolvePluginRoot } from "./config.js"
 import { computeWaves, topologicalSort } from "./dag.js"
 import {
 	branchExists,
@@ -85,7 +85,7 @@ function resolveStudioStages(studio: string): string[] {
 	// for robustness with legacy callers that pass a dir name already.
 	const info = resolveStudio(studio)
 	if (info) return info.stages
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
@@ -104,7 +104,7 @@ function resolveStageHats(studio: string, stage: string): string[] {
 	// for robustness when the studio cache isn't warm yet.
 	const info = resolveStudio(studio)
 	const dir = info ? info.dir : studio
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
@@ -123,7 +123,7 @@ function resolveStageReview(studio: string, stage: string): string {
 	// for robustness when the studio cache isn't warm yet.
 	const info = resolveStudio(studio)
 	const dir = info ? info.dir : studio
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
@@ -158,7 +158,7 @@ function stageReviewIncludes(
 ): boolean {
 	const info = resolveStudio(studio)
 	const dir = info ? info.dir : studio
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
@@ -182,7 +182,7 @@ function resolveStageMetadata(
 	// for robustness when the studio cache isn't warm yet.
 	const info = resolveStudio(studio)
 	const dir = info ? info.dir : studio
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
@@ -288,7 +288,7 @@ function validateStageOutputs(
 	stage: string,
 	studio: string,
 ): OrchestratorAction | null {
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 
 	// Read output definitions from the stage's outputs/ directory
 	for (const base of [
@@ -361,7 +361,7 @@ function validateDiscoveryArtifacts(
 	stage: string,
 	studio: string,
 ): OrchestratorAction | null {
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 
 	// Read discovery definitions from the stage's discovery/ directory
 	for (const base of [
@@ -1189,7 +1189,7 @@ export function runNext(slug: string): OrchestratorAction {
 			readdirSync(unitsDir).filter((f) => f.endsWith(".md")).length > 0
 
 		// Read elaboration mode from STAGE.md
-		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+		const pluginRoot = resolvePluginRoot()
 		let elaborationMode = "collaborative"
 		for (const base of [
 			join(process.cwd(), ".haiku", "studios"),
