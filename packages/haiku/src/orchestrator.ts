@@ -2573,6 +2573,68 @@ function buildRunInstructions(
 				}
 			}
 
+			// Hat definition for the first hat — shared across all units in this wave
+			const hatDefs = readHatDefs(studio, stage)
+			const hatDef = hatDefs[firstHat]
+			const hatContent = hatDef?.content || `No hat definition found for "${firstHat}"`
+			const hatAgentType = hatDef?.agent_type || "general-purpose"
+			sections.push(`### Hat: ${firstHat}\n\n${hatContent}`)
+
+			// Model cascade resolution (gated by features.modelSelection)
+			let resolvedModelParallel: ModelTier | undefined
+			if (features.modelSelection) {
+				const studioData = readStudio(studio)
+				const { model, source } = resolveModel({
+					hat: hatDef?.model,
+					stage: stageDef?.data?.default_model as string | undefined,
+					studio: studioData?.data?.default_model as string | undefined,
+				})
+				resolvedModelParallel = model
+				if (resolvedModelParallel) {
+					console.error(
+						`[haiku] parallel wave resolved model: ${resolvedModelParallel} (source: ${source})`,
+					)
+				}
+			}
+
+			// Per-unit specs and inputs — embed so the parent can include in each subagent prompt
+			sections.push("### Per-Unit Specs\n\nInclude the relevant unit's spec and inputs in its subagent prompt.")
+			for (const unitName of units) {
+				const unitFile = join(
+					dir,
+					"stages",
+					stage,
+					"units",
+					unitName.endsWith(".md") ? unitName : `${unitName}.md`,
+				)
+				let unitContent = ""
+				let unitInputs: string[] = []
+				if (existsSync(unitFile)) {
+					const { data, body } = parseFrontmatter(readFileSync(unitFile, "utf8"))
+					unitContent = body
+					unitInputs = (data.inputs as string[]) || (data.refs as string[]) || []
+				}
+
+				sections.push(`#### ${unitName}\n\n<unit-spec>\n${unitContent}\n</unit-spec>`)
+
+				// Load unit inputs content
+				if (unitInputs.length > 0) {
+					const dirResolved = resolve(dir)
+					const inputSections: string[] = []
+					for (const ref of unitInputs) {
+						const refResolved = resolve(dir, ref)
+						if (!refResolved.startsWith(`${dirResolved}/`) && refResolved !== dirResolved) continue
+						if (existsSync(join(dir, ref))) {
+							const content = readFileSync(join(dir, ref), "utf8")
+							inputSections.push(`**${ref}:**\n${content.slice(0, 1500)}${content.length > 1500 ? "\n...(truncated)" : ""}`)
+						}
+					}
+					if (inputSections.length > 0) {
+						sections.push(`**Inputs:**\n${inputSections.join("\n\n")}`)
+					}
+				}
+			}
+
 			const worktrees =
 				(action.worktrees as Record<string, string | null>) || {}
 
@@ -2580,7 +2642,7 @@ function buildRunInstructions(
 			const totalWaves = action.total_waves as number | undefined
 
 			sections.push(
-				`### Mechanics\n\n${wave !== undefined ? `**Wave ${wave}/${totalWaves ?? "?"}** — ` : ""}${units.length} units to run in parallel.\n**You are the orchestrator.** Do NOT do unit work yourself. Do NOT ask the user which unit to start — launch ALL of them NOW.\n\n**IMMEDIATELY** spawn one Agent subagent per unit **in a single message** (all Agent tool calls in one response). No questions, no confirmation, no menu. Each subagent runs the FIRST hat ("${firstHat}") only.\n\nEach subagent calls \`advance_hat\` when done — it internally progresses the FSM. The last subagent to finish the wave triggers the next action automatically.\n\n**Each subagent prompt must include:**\n- The hat definition for "${firstHat}"\n- The unit spec and inputs\n- The stage scope constraint\n- Instruction to call \`haiku_unit_start\` first\n- Output tracking: record produced artifacts in the unit's \`outputs:\` frontmatter field (paths relative to intent dir)\n- If outputs from a previous stage are missing, incomplete, or incorrect: call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage for corrections\n\n${units
+				`### Mechanics\n\n${wave !== undefined ? `**Wave ${wave}/${totalWaves ?? "?"}** — ` : ""}${units.length} units to run in parallel.\n**You are the orchestrator.** Do NOT do unit work yourself. Do NOT ask the user which unit to start — launch ALL of them NOW.\n\n**IMMEDIATELY** spawn one Agent subagent per unit **in a single message** (all Agent tool calls in one response). No questions, no confirmation, no menu. Each subagent runs the FIRST hat ("${firstHat}") only.\nAgent type: \`${hatAgentType}\`\n${resolvedModelParallel ? `Spawn with \`model: "${resolvedModelParallel}"\` — pass this as the Agent tool's \`model:\` parameter.\n` : ""}\nEach subagent calls \`advance_hat\` when done — it internally progresses the FSM. The last subagent to finish the wave triggers the next action automatically.\n\n**Each subagent prompt must include:**\n- The hat definition above for "${firstHat}"\n- The unit's spec and inputs from the Per-Unit Specs section above\n- The stage scope constraint\n- Instruction to call \`haiku_unit_start\` first\n- Output tracking: record produced artifacts in the unit's \`outputs:\` frontmatter field (paths relative to intent dir)\n- If outputs from a previous stage are missing, incomplete, or incorrect: call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage for corrections\n\n${units
 					.map((u) => {
 						const wt = worktrees[u]
 						return `- **${u}**${wt ? ` (worktree: \`${wt}\`)` : ""}: \`haiku_unit_start { intent: "${slug}", unit: "${u}" }\``
@@ -2677,10 +2739,25 @@ function buildRunInstructions(
 
 		case "composite_run_stage": {
 			const stage = action.stage as string
-			const compositeStudio = action.studio as string
+			const compositeStudio = (action.studio as string) || studio
 			const hats = (action.hats as string[]) || []
+
+			// Load composite studio definition
+			const compositeStudioData = readStudio(compositeStudio)
+			if (compositeStudioData?.body) {
+				sections.push(`### Studio: ${compositeStudio}\n\n${compositeStudioData.body}`)
+			}
+
+			// Load composite stage definition
+			const compositeStageDef = readStageDef(compositeStudio, stage)
+			sections.push(`## Composite: Run ${compositeStudio}:${stage}`)
+			sections.push(`Hats: ${hats.join(" -> ")}`)
+			if (compositeStageDef) {
+				sections.push(`### Stage Definition\n\n${compositeStageDef.body}`)
+			}
+
 			sections.push(
-				`## Composite: Run ${compositeStudio}:${stage}\n\nHats: ${hats.join(" -> ")}\n\nFollow the same instructions as start_stage, but for this composite studio:stage pair.\n\nCall \`haiku_run_next { intent: "${slug}" }\` to continue.`,
+				`### Instructions\n\nThe orchestrator is running a composite studio:stage. This stage belongs to the "${compositeStudio}" studio.\n\nCall \`haiku_run_next { intent: "${slug}" }\` to get the next action.`,
 			)
 			break
 		}
@@ -2776,6 +2853,50 @@ function buildRunInstructions(
 
 		case "unit_inputs_missing": {
 			sections.push(`## Missing Unit Inputs\n\n${action.message}`)
+			break
+		}
+
+		case "fix_quality_gates": {
+			sections.push(`## Quality Gates Failed\n\n${action.message}\n\n### Instructions\n\nFix each failing gate, then call \`haiku_run_next { intent: "${slug}" }\` to retry. The orchestrator will re-run the gates before proceeding to adversarial review.`)
+			break
+		}
+
+		case "changes_requested": {
+			const annotations = action.annotations as Array<{ path?: string; body?: string }> | undefined
+			let body = `## Changes Requested\n\n${action.message}`
+			if (annotations && annotations.length > 0) {
+				body += "\n\n### Annotations\n"
+				for (const a of annotations) {
+					body += `\n- ${a.path ? `**${a.path}:** ` : ""}${a.body || ""}`
+				}
+			}
+			body += `\n\n### Instructions\n\nAddress each piece of feedback, then call \`haiku_run_next { intent: "${slug}" }\` to re-submit for review.`
+			sections.push(body)
+			break
+		}
+
+		case "external_review_requested": {
+			sections.push(`## External Review Requested\n\n${action.message}`)
+			break
+		}
+
+		case "unresolved_dependencies": {
+			sections.push(`## Unresolved Dependencies\n\n${action.message}\n\n### Instructions\n\nFix the \`depends_on\` fields in the affected unit files to reference existing unit names, then call \`haiku_run_next { intent: "${slug}" }\` to retry.`)
+			break
+		}
+
+		case "unit_naming_invalid": {
+			sections.push(`## Unit Naming Invalid\n\n${action.message}\n\n### Instructions\n\nRename the affected files to match the \`unit-NN-slug.md\` pattern (e.g., \`unit-01-data-model.md\`), then call \`haiku_run_next { intent: "${slug}" }\` to retry.`)
+			break
+		}
+
+		case "inputs_missing": {
+			sections.push(`## Missing Inputs\n\n${action.message || "Units are missing required input references."}\n\n### Instructions\n\nAdd \`inputs:\` to each unit's frontmatter referencing the artifacts it needs, then call \`haiku_run_next { intent: "${slug}" }\` to retry.`)
+			break
+		}
+
+		case "gate_blocked": {
+			sections.push(`## Gate Review Blocked\n\n${action.message}\n\n### Instructions\n\nCall \`haiku_run_next { intent: "${slug}" }\` to retry the gate review. If the issue persists, ask the user for guidance.`)
 			break
 		}
 
