@@ -302,17 +302,18 @@ export function commitAndPushFromWorktree(
 	// Without this, a stale-ref repair run loops forever — each run re-applies
 	// fixes, push rejects as non-fast-forward, and the worktree's stale view of
 	// the repo keeps reporting issues that are already fixed on the remote. (#206)
-	const isNonFastForward = /non-fast-forward|rejected|fetch first|behind/i.test(
-		first.error ?? "",
-	)
+	//
+	// Matching is intentionally narrow: we only recover from genuine NFF errors.
+	// A bare "rejected" would also match protected-branch rejections, pre-receive
+	// hook failures, and permission errors — rebasing on those would be wrong.
+	const isNonFastForward =
+		/non-fast-forward|fetch first|behind the remote/i.test(first.error ?? "")
 	if (isNonFastForward) {
 		tryRun(["git", "-C", worktreePath, "fetch", "origin", branch])
 		try {
-			execFileSync(
-				"git",
-				["-C", worktreePath, "rebase", `origin/${branch}`],
-				{ stdio: "pipe" },
-			)
+			execFileSync("git", ["-C", worktreePath, "rebase", `origin/${branch}`], {
+				stdio: "pipe",
+			})
 		} catch (err) {
 			tryRun(["git", "-C", worktreePath, "rebase", "--abort"])
 			return {
