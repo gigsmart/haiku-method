@@ -1,301 +1,624 @@
-# Tactical Plan — unit-02-ui-resource-registration
+# PLAN — unit-03-open-review-mcp-apps-branch
 
 **Hat:** planner
 **Bolt:** 1
 **Date:** 2026-04-15
+**Commit-message note:** every commit on this unit MUST include `unit-02-outcome: blocking` in the message body.
 
 ---
 
 ## Summary
 
-Three deliverables, in dependency order:
+Two deliverables, in dependency order:
 
-1. **`REVIEW_APP_VERSION` build stamp** — compute SHA-256 hash in `build-review-app.mjs`, append as a named export to the generated `review-app-html.ts`.
-2. **`packages/haiku/src/ui-resource.ts`** — new helper exporting `buildUiResourceMeta` and the stable resource URI string.
-3. **`resources/list` and `resources/read` handlers** in `server.ts`, plus tests covering all scenarios from both feature files that are in scope for this unit.
+1. **Branch `setOpenReviewHandler` on `hostSupportsMcpApps()`** — the non-MCP-Apps arm
+   stays byte-identical to main inside an `else` block; the new MCP Apps arm skips local
+   I/O, returns a tool result with `_meta.ui.resourceUri`, and blocks on a
+   `waitForSession` promise (30 min, single await, no retry loop).
+2. **`haiku_cowork_review_submit` tool** — one append to `ListToolsRequestSchema` array,
+   one `case` in `handleToolCall` dispatch. `review` variant is wired end-to-end;
+   `question` and `design_direction` variants get schema slots but return
+   `"unimplemented — see unit-04"`.
 
-`server.ts` already has both `resources: {}` and `experimental: { apps: {} }` in the capabilities block (landed by unit-01). The handlers are the only missing piece on the server side.
+Foundation from unit-01 (`hostSupportsMcpApps`) and unit-02 (`buildUiResourceMeta`,
+`REVIEW_RESOURCE_URI`, `ui-resource.ts`) is present in this worktree after merging
+`haiku/cowork-mcp-apps-integration/main` at 37456cb8.
 
 ---
 
-## Files to Modify / Create
+## Files to Modify
 
 | File | Change | Rationale |
 |---|---|---|
-| `packages/haiku/scripts/build-review-app.mjs` | Modify | Append `REVIEW_APP_VERSION` export (sha256 of HTML, first 12 hex chars) to the generated `review-app-html.ts` |
-| `packages/haiku/src/review-app-html.ts` | Generated (do not edit manually) | Rebuilt by `npm run prebuild`; now carries both `REVIEW_APP_HTML` and `REVIEW_APP_VERSION` exports |
-| `packages/haiku/src/ui-resource.ts` | Create (new) | Pure helper exporting `buildUiResourceMeta` and `REVIEW_RESOURCE_URI`; imported by `server.ts` handlers and future call sites (units 03/04) |
-| `packages/haiku/src/server.ts` | Modify | Add `ListResourcesRequestSchema` and `ReadResourceRequestSchema` handlers (~10 lines each) |
-| `packages/haiku/test/ui-resource.test.mjs` | Create (new) | Unit tests for `buildUiResourceMeta` shape + integration tests for `resources/list` and `resources/read` JSON-RPC calls |
+| `packages/haiku/src/server.ts` | Modify | (1) Thread `extra.signal` into `handleToolCall`. (2) Branch `setOpenReviewHandler` body on `hostSupportsMcpApps()`. (3) Add `haiku_cowork_review_submit` to `ListToolsRequestSchema` array. (4) Add dispatch case in `handleToolCall`. |
+| `packages/haiku/test/open-review-mcp-apps.test.mjs` | Create (new) | All in-scope Vitest scenarios. |
 
-**Must not touch:**
-
-- `packages/haiku/src/http.ts` — out of scope, must remain byte-identical to `main`
-- `packages/haiku/src/state-tools.ts` — no changes needed (unit-01 landed `hostSupportsMcpApps`)
-- Any review-app SPA source under `packages/haiku/review-app/src/` (hash stability test touches one byte, then reverts)
+**Must not touch:** `orchestrator.ts` (keep changes confined to `server.ts`),
+`sessions.ts`, `state-tools.ts`, `ui-resource.ts`, `http.ts`.
 
 ---
 
-## Implementation Steps (in dependency order)
+## Implementation Steps (dependency order)
 
-### Step 1 — Extend `build-review-app.mjs` to emit `REVIEW_APP_VERSION`
+### Step 1 — Thread `extra.signal` into `handleToolCall`
 
-After the line that writes `tsContent` to `tsFile`, add:
+`server.ts:417` currently registers `CallToolRequestSchema` with `async (request)`.
+The MCP SDK passes a `RequestHandlerExtra` with `signal: AbortSignal` as the
+second parameter (confirmed in `node_modules/@modelcontextprotocol/sdk/dist/esm/shared/protocol.d.ts:177`).
 
-```js
-import { createHash } from "node:crypto";
+Changes:
+1. Change the handler to `async (request, extra) =>`.
+2. Pass `extra.signal` into `handleToolCall`: `handleToolCall(request, extra.signal)`.
+3. Update `handleToolCall` signature to `async function handleToolCall(request, signal?: AbortSignal)`.
+4. **Do not** pass `signal` deeper into `handleOrchestratorTool` (that would
+   require touching `orchestrator.ts`). Instead, capture the signal in a
+   closure-local variable inside `setOpenReviewHandler` — see Step 3.
 
-// After html is fully assembled (after all asset inlining):
-const version = createHash("sha256").update(html).digest("hex").slice(0, 12);
+### Step 2 — Add `haiku_cowork_review_submit` tool registration
 
-// Append to the tsContent string before writeFileSync:
-const tsContent =
-  `// AUTO-GENERATED by scripts/build-review-app.mjs — do not edit manually.\n` +
-  `export const REVIEW_APP_HTML: string = ${JSON.stringify(html)};\n` +
-  `export const REVIEW_APP_VERSION: string = "${version}";\n`;
-```
+Append one entry to the `tools: [...]` array inside
+`server.setRequestHandler(ListToolsRequestSchema, ...)` at `server.ts:232`.
 
-Key properties:
-- Hash computed over `html` (the fully-inlined string), not over the raw dist file.
-- Same `html` value, same hash — deterministic across rebuilds with no source change.
-- Changes whenever any SPA source byte changes (because Vite rebuilds produce different JS bundles → different `html`).
+Tool spec (JSON Schema form — derived from DATA-CONTRACTS.md Zod source):
 
-**`import` placement:** `createHash` is from `node:crypto` — add it to the existing `import` block at the top of the script. The current script already uses `node:child_process`, `node:fs`, `node:path`, `node:url` — add `createHash` from `node:crypto`.
-
-### Step 2 — Run prebuild to regenerate `review-app-html.ts`
-
-```bash
-cd packages/haiku && npm run prebuild
-```
-
-Verify the generated file now has two exports: `REVIEW_APP_HTML` and `REVIEW_APP_VERSION`.
-
-### Step 3 — Create `packages/haiku/src/ui-resource.ts`
-
-```typescript
-// AUTO-GENERATED-ADJACENT: no auto-generation, but do not inline elsewhere.
-import { REVIEW_APP_VERSION } from "./review-app-html.js"
-
-/** Stable resource URI for the bundled review SPA. */
-export const REVIEW_RESOURCE_URI = `ui://haiku/review/${REVIEW_APP_VERSION}` as const
-
-/**
- * Builds the _meta.ui extension object for MCP tool results.
- * Spread into the `_meta` field of the tool result when the MCP Apps path is active.
- */
-export function buildUiResourceMeta(resourceUri: string): { ui: { resourceUri: string } } {
-  return { ui: { resourceUri } }
+```json
+{
+  "name": "haiku_cowork_review_submit",
+  "description": "Submit a review decision, question answer, or design-direction selection from the MCP Apps review SPA. Called by the host bridge when the user completes the review form.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "session_type": {
+        "type": "string",
+        "enum": ["review", "question", "design_direction"]
+      },
+      "session_id": { "type": "string", "format": "uuid" },
+      "decision": {
+        "type": "string",
+        "enum": ["approved", "changes_requested", "external_review"],
+        "description": "Required when session_type is 'review'"
+      },
+      "feedback": {
+        "type": "string",
+        "description": "Required (may be empty) when session_type is 'review'"
+      },
+      "answers": {
+        "type": "array",
+        "items": { "type": "object" },
+        "description": "Required (min 1) when session_type is 'question'"
+      },
+      "archetype": {
+        "type": "string",
+        "description": "Required (non-empty) when session_type is 'design_direction'"
+      },
+      "parameters": {
+        "type": "object",
+        "additionalProperties": { "type": "number" },
+        "description": "Required when session_type is 'design_direction'"
+      },
+      "annotations": { "type": "object", "description": "Optional" },
+      "comments": { "type": "string", "description": "Optional, design_direction only" }
+    },
+    "required": ["session_type", "session_id"]
+  }
 }
 ```
 
-Exporting `REVIEW_RESOURCE_URI` from `ui-resource.ts` keeps the URI construction in one place — the `ListResources` handler, the `ReadResource` handler, and future call sites in units 03/04 all import it rather than independently concatenating `"ui://haiku/review/" + REVIEW_APP_VERSION`.
+**CC-4 constraint:** after this change,
+`rg 'haiku_cowork_review_submit' packages/haiku/src/server.ts | wc -l`
+must return exactly `2` (one in the `tools` array, one in the dispatch case).
 
-### Step 4 — Register handlers in `server.ts`
+### Step 3 — Add dispatch case in `handleToolCall`
 
-Add two imports at the top of the existing SDK import block:
+Add an `if` block for `haiku_cowork_review_submit` before the final
+`Unknown tool` fallthrough (around line 806).
 
-```typescript
-import {
-  ListResourcesRequestSchema,
-  ReadResourceRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js"
-```
-
-Add the `REVIEW_APP_HTML` and `REVIEW_RESOURCE_URI` imports from the new module:
+#### Zod schema (paste into server.ts)
 
 ```typescript
-import { REVIEW_APP_HTML } from "./review-app-html.js"
-import { REVIEW_RESOURCE_URI } from "./ui-resource.js"
-```
+const ReviewAnnotationsSchema = z.object({
+  screenshot: z.string().optional(),
+  pins: z.array(z.object({
+    x: z.number(), y: z.number(), text: z.string(),
+  })).optional(),
+  comments: z.array(z.object({
+    selectedText: z.string(), comment: z.string(), paragraph: z.number(),
+  })).optional(),
+}).optional()
 
-Register the handlers after the `CompleteRequest` handler (around line 197, before `ListTools`):
-
-```typescript
-server.setRequestHandler(ListResourcesRequestSchema, async () => ({
-  resources: [
-    {
-      uri: REVIEW_RESOURCE_URI,
-      name: "Haiku Review App",
-      mimeType: "text/html",
-    },
-  ],
-}))
-
-server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-  const { uri } = request.params
-  if (uri !== REVIEW_RESOURCE_URI) {
-    throw new Error("Unknown resource URI")  // SDK wraps this in -32602
-  }
-  return {
-    contents: [
-      {
-        uri: REVIEW_RESOURCE_URI,
-        mimeType: "text/html",
-        text: REVIEW_APP_HTML,
-      },
-    ],
-  }
+const QuestionAnswerSchema = z.object({
+  question: z.string(),
+  selectedOptions: z.array(z.string()),
+  otherText: z.string().optional(),
 })
+
+const QuestionAnnotationsSchema = z.object({
+  comments: z.array(z.object({
+    selectedText: z.string(), comment: z.string(), paragraph: z.number(),
+  })).optional(),
+}).optional()
+
+const ReviewSubmitInput = z.discriminatedUnion("session_type", [
+  z.object({
+    session_type: z.literal("review"),
+    session_id: z.string().uuid(),
+    decision: z.enum(["approved", "changes_requested", "external_review"]),
+    feedback: z.string(),
+    annotations: ReviewAnnotationsSchema,
+  }),
+  z.object({
+    session_type: z.literal("question"),
+    session_id: z.string().uuid(),
+    answers: z.array(QuestionAnswerSchema).min(1),
+    feedback: z.string().optional(),
+    annotations: QuestionAnnotationsSchema,
+  }),
+  z.object({
+    session_type: z.literal("design_direction"),
+    session_id: z.string().uuid(),
+    archetype: z.string().min(1),
+    parameters: z.record(z.number()),
+    comments: z.string().optional(),
+    annotations: z.object({
+      screenshot: z.string().optional(),
+      pins: z.array(z.object({ x: z.number(), y: z.number(), text: z.string() })).optional(),
+    }).optional(),
+  }),
+])
 ```
 
-**Error shape note:** The unit spec says `resources/read` with an unknown URI must return JSON-RPC error `-32602` with message `"Unknown resource URI"`. The MCP SDK maps unhandled `throw` from a handler into a JSON-RPC error with the thrown message. Verify the SDK uses code `-32602` (Invalid Params) for handler throws, or use `McpError` directly:
+Note: `.min(1)` on `answers` and `.min(1)` on `archetype` are required per
+DATA-CONTRACTS.md spec review (observations 3 and 4).
+
+#### Dispatch logic
 
 ```typescript
-import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js"
-// ...
-throw new McpError(ErrorCode.InvalidParams, "Unknown resource URI")
+if (name === "haiku_cowork_review_submit") {
+  const parsed = ReviewSubmitInput.safeParse(args ?? {})
+  if (!parsed.success) {
+    return {
+      content: [{ type: "text", text: `Invalid input: ${parsed.error.message}` }],
+      isError: true,
+    }
+  }
+  const input = parsed.data
+
+  // session_type: "question" and "design_direction" are stubbed for unit-04
+  if (input.session_type === "question" || input.session_type === "design_direction") {
+    return {
+      content: [{ type: "text", text: "unimplemented — see unit-04" }],
+      isError: true,
+    }
+  }
+
+  // review path
+  const session = getSession(input.session_id)
+  if (!session) {
+    return {
+      content: [{ type: "text", text: `Session not found: ${input.session_id}` }],
+      isError: true,
+    }
+  }
+  if (session.session_type !== input.session_type) {
+    return {
+      content: [{
+        type: "text",
+        text: `session_type mismatch: expected ${session.session_type}, got ${input.session_type}`,
+      }],
+      isError: true,
+    }
+  }
+  if (session.status !== "pending") {
+    return {
+      content: [{ type: "text", text: `Session already closed: ${input.session_id}` }],
+      isError: true,
+    }
+  }
+  updateSession(input.session_id, {
+    status: "decided",
+    decision: input.decision,
+    feedback: input.feedback,
+    annotations: input.annotations,
+  })
+  notifySessionUpdate(input.session_id)
+  return { content: [{ type: "text", text: '{"ok":true}' }] }
+}
 ```
 
-Prefer `McpError` to guarantee the exact error code shape the DATA-CONTRACTS.md specifies.
+### Step 4 — Branch `setOpenReviewHandler` on `hostSupportsMcpApps()`
 
-### Step 5 — Write tests in `packages/haiku/test/ui-resource.test.mjs`
+Wrap the entire existing handler body in `else { ... }`. Add the new MCP Apps
+arm above it.
 
-Test file covers:
+```typescript
+setOpenReviewHandler(
+  async (intentDirRel: string, reviewType: string, gateType?: string) => {
+    if (hostSupportsMcpApps()) {
+      // ── MCP Apps arm (unit-03) ──────────────────────────────────────────
+      // Capture the AbortSignal from the current tool call.
+      // _currentReviewSignal is set by handleToolCall before calling
+      // handleOrchestratorTool and cleared in a finally block.
+      const signal = _currentReviewSignal
 
-**Unit tests (pure function):**
-- `buildUiResourceMeta("ui://x")` returns `{ ui: { resourceUri: "ui://x" } }`
-- `buildUiResourceMeta` does not throw for empty string (edge case)
-- `REVIEW_RESOURCE_URI` matches `/^ui:\/\/haiku\/review\/[0-9a-f]{12}$/`
+      const intentDirAbs = resolve(process.cwd(), intentDirRel)
+      const intent = await parseIntent(intentDirAbs)
+      if (!intent) throw new Error("Could not parse intent")
 
-**Integration tests (in-process JSON-RPC):**
-- `resources/list` → `response.resources[0].uri` matches `/^ui:\/\/haiku\/review\/[0-9a-f]{12}$/`
-- `resources/list` → `response.resources[0].mimeType === "text/html"`
-- `resources/list` → exactly one resource in array
-- `resources/read` with correct URI → `response.contents[0].text.length === REVIEW_APP_HTML.length`
-- `resources/read` with correct URI → `mimeType === "text/html"`
-- `resources/read` with `ui://haiku/bogus/xxx` → JSON-RPC error `code === -32602`, `message === "Unknown resource URI"`
+      const units = await parseAllUnits(intentDirAbs)
+      const dag = buildDAG(units)
+      const mermaid = toMermaidDefinition(dag, units)
+      const criteriaSection = intent.sections.find(
+        (s) => s.heading?.toLowerCase().includes("completion criteria") ||
+               s.heading?.toLowerCase().includes("success criteria"),
+      )
+      const criteria = criteriaSection ? parseCriteria(criteriaSection.content) : []
 
-**Snapshot test (no `_meta` leakage):**
-- In-process `haiku_version_info` tool call → result `._meta` is `undefined`
+      const session = createSession({
+        intent_dir: intentDirAbs,
+        intent_slug: intent.slug,
+        review_type: reviewType as "intent" | "unit",
+        gate_type: gateType,
+        target: "",
+        html: "",
+      })
+      Object.assign(session, { parsedIntent: intent, parsedUnits: units, parsedCriteria: criteria, parsedMermaid: mermaid })
 
-**Pattern:** Follow the existing `capability-negotiation.test.mjs` style — plain Node.js `assert`, `test()`/`testAsync()` helpers, no external test runner. Import directly from `../src/ui-resource.ts` for unit tests; use the in-process server pattern from existing integration tests for JSON-RPC tests.
+      const stageStates = await parseStageStates(intentDirAbs)
+      const knowledgeFiles = await parseKnowledgeFiles(intentDirAbs)
+      const stageArtifacts = await parseStageArtifacts(intentDirAbs)
+      const outputArtifacts = await parseOutputArtifacts(intentDirAbs)
+      for (const oa of outputArtifacts) {
+        if (oa.type === "image" && oa.relativePath) {
+          oa.relativePath = `/stage-artifacts/${session.session_id}/stages/${oa.relativePath}`
+        }
+      }
+      Object.assign(session, { stageStates, knowledgeFiles, stageArtifacts, outputArtifacts })
 
-**Note on in-process server pattern:** Review `packages/haiku/test/server-tools.test.mjs` or `capability-negotiation.test.mjs` for the existing integration test pattern before writing — do not invent a new approach.
+      const sessionDataJSON = JSON.stringify(session)
 
-### Step 6 — Verify, typecheck, lint, test
+      // Store _meta for handleToolCall to attach to the tool result.
+      // handleToolCall sets _reviewResultMeta = undefined after the call.
+      _reviewResultMeta = buildUiResourceMeta(REVIEW_RESOURCE_URI)
+
+      // Single await — blocking path (unit-02-outcome: blocking)
+      const abortPromise = new Promise<never>((_, reject) => {
+        if (signal?.aborted) { reject(new Error("host_timeout")); return }
+        signal?.addEventListener("abort", () => reject(new Error("host_timeout")), { once: true })
+      })
+
+      try {
+        await Promise.race([
+          waitForSession(session.session_id, 30 * 60 * 1000),
+          abortPromise,
+        ])
+      } catch (err) {
+        if (signal?.aborted || (err as Error).message === "host_timeout") {
+          // V5-10: log timeout event
+          try {
+            const stFile = join(process.cwd(), intentDirRel, "..", "..", "session.log")
+            logSessionEvent(stFile, {
+              event: "gate_review_host_timeout",
+              detected_at_seconds: Date.now() / 1000,
+            })
+          } catch { /* non-fatal */ }
+          // V5-11: do NOT touch state.json
+          clearHeartbeat(session.session_id)
+          // Write blocking_timeout_observed to intent.md frontmatter
+          try {
+            const intentFilePath = join(process.cwd(), intentDirRel, "intent.md")
+            setFrontmatterField(intentFilePath, "blocking_timeout_observed", true)
+          } catch { /* non-fatal */ }
+          return {
+            decision: "changes_requested",
+            feedback: "Review timed out before decision was submitted. Please retry.",
+            annotations: undefined,
+          }
+        }
+        throw err
+      }
+
+      const updated = getSession(session.session_id)
+      clearHeartbeat(session.session_id)
+      if (updated && updated.session_type === "review" && updated.status === "decided") {
+        return {
+          decision: updated.decision,
+          feedback: updated.feedback,
+          annotations: updated.annotations,
+        }
+      }
+      throw new Error("Session resolved but no decision found")
+    } else {
+      // ── HTTP + tunnel + browser arm (existing — byte-identical to main) ──
+      const intentDirAbs = resolve(process.cwd(), intentDirRel)
+      // ... [entire existing body, unchanged] ...
+    }
+  },
+)
+```
+
+**Important:** the `else` arm body must be byte-identical to the current
+handler body in `main`. The builder must not reformat or reindent the existing
+code — only wrap it in `} else {`.
+
+#### Module-level variables for signal and _meta threading
+
+Add two module-level `let` declarations near the top of `server.ts`
+(after the import block, before `setMcpServerInstance`):
+
+```typescript
+// Threading: AbortSignal from the current haiku_run_next tool call,
+// captured before handleOrchestratorTool so _openReviewAndWait can observe it.
+let _currentReviewSignal: AbortSignal | undefined = undefined
+
+// Threading: _meta.ui to attach to the tool result after _openReviewAndWait resolves.
+// Set by the MCP Apps branch of setOpenReviewHandler, cleared by handleToolCall.
+let _reviewResultMeta: { ui: { resourceUri: string } } | undefined = undefined
+```
+
+In `handleToolCall`, wrap the orchestrator tool call:
+
+```typescript
+if (name === "haiku_run_next" || ...) {
+  _currentReviewSignal = signal
+  try {
+    const result = await handleOrchestratorTool(name, args ?? {})
+    // Attach _meta if the MCP Apps review path set it
+    if (_reviewResultMeta) {
+      return { ...result, _meta: _reviewResultMeta }
+    }
+    return result
+  } finally {
+    _currentReviewSignal = undefined
+    _reviewResultMeta = undefined
+  }
+}
+```
+
+### Step 5 — Imports and exports
+
+Add to `server.ts` imports:
+- `hostSupportsMcpApps` from `./state-tools.js` (may already be imported)
+- `buildUiResourceMeta`, `REVIEW_RESOURCE_URI` from `./ui-resource.js` (already imported post-merge)
+- `logSessionEvent` from `./session-metadata.js`
+- `setFrontmatterField` from `./state-tools.js`
+- `getSession`, `updateSession`, `notifySessionUpdate`, `clearHeartbeat` from `./sessions.js`
+- `join` from `node:path` (for stFile derivation)
+
+Verify each import is not already present before adding duplicates.
+
+### Step 6 — Typecheck, lint, test
 
 ```bash
 cd packages/haiku
-npm run prebuild        # rebuild review-app-html.ts with version hash
-npm run typecheck       # must be clean (new files are fully typed)
-npx biome check src     # must be clean (no lint errors in src/)
-npm test                # all tests pass including new ui-resource.test.mjs
+npx tsc --noEmit                                    # must be clean
+npx biome check src/server.ts                       # must be clean
+npx vitest run test/open-review-mcp-apps.test.mjs   # all tests pass
+npx vitest run                                       # full suite, all pass
 ```
 
-### Step 7 — Commit
+---
+
+## Test Coverage
+
+New file: `packages/haiku/test/open-review-mcp-apps.test.mjs`
+
+Follow the pattern from `capability-negotiation.test.mjs` — plain Node.js
+`assert`, minimal in-process stubs. Use Vitest (`import { test, expect, vi } from "vitest"`).
+
+### Group A — MCP Apps arm skips local I/O (CC-2)
+
+- Stub `hostSupportsMcpApps()` → true.
+- Spy on `startHttpServer`, `openTunnel`, and `spawn` (the `openBrowser` function).
+- Invoke the `setOpenReviewHandler` callback.
+- Assert `callCount === 0` for each of the three spies.
+
+### Group B — Tool result carries `_meta.ui.resourceUri` (CC-3)
+
+- Trigger the handler on the MCP Apps path.
+- Assert the MCP tool result (as returned by `handleToolCall`) has
+  `result._meta.ui.resourceUri === REVIEW_RESOURCE_URI`.
+- Assert `REVIEW_RESOURCE_URI` matches `/^ui:\/\/haiku\/review\/[0-9a-f]{12}$/`.
+
+### Group C — Review round-trip: approved (CC-5)
+
+- Stub a pending `ReviewSession`.
+- Trigger the handler; in parallel, call the `haiku_cowork_review_submit`
+  dispatch with `{ session_type: "review", session_id, decision: "approved", feedback: "" }`.
+- Assert handler resolves with `{ decision: "approved", feedback: "", annotations: undefined }`.
+- Assert tool returns `{ content: [{ type: "text", text: '{"ok":true}' }] }`.
+
+### Group D — Review round-trip: changes_requested (CC-6a)
+
+- Same as Group C but `decision: "changes_requested"`, `feedback: "Fix X"`.
+- Assert handler resolves with `{ decision: "changes_requested", feedback: "Fix X", ... }`.
+
+### Group E — Review round-trip: external_review (CC-6b)
+
+- Same as Group C but `decision: "external_review"`.
+- Assert handler resolves with `{ decision: "external_review", feedback: "", annotations: undefined }`.
+
+### Group F — Shape parity with HTTP snapshot (CC-5 / CC-6)
+
+- Invoke HTTP path handler with stubbed session → capture resolved object.
+- Invoke MCP Apps path handler → capture resolved object.
+- Assert `JSON.stringify(mcpResult) === JSON.stringify(httpResult)`.
+
+### Group G — Non-MCP-Apps regression (CC-1)
+
+- `hostSupportsMcpApps()` → false.
+- Assert `startHttpServer` IS called.
+- Assert tool result does NOT have `_meta.ui.resourceUri`.
+
+### Group H — V5-10 host-timeout fallback (CC-7)
+
+- Inject an `AbortSignal` that fires after 100ms (`AbortSignal.timeout(100)`).
+- Assert handler resolves with:
+  - `decision === "changes_requested"`
+  - `feedback === "Review timed out before decision was submitted. Please retry."`
+  - `annotations === undefined`
+- Assert session log (`stFile`) gains a `gate_review_host_timeout` event with
+  `detected_at_seconds` field (number).
+- Assert `intent.md` frontmatter has `blocking_timeout_observed: true`.
+- Assert handler returns exactly once (no retry).
+- Assert no resume token was written.
+
+### Group I — V5-11 state byte-identity on timeout (CC-8)
+
+- Snapshot `state.json` content before the AbortSignal fires.
+- After handler resolves, snapshot `state.json` again.
+- Assert byte-identical strings.
+
+### Group J — Stubbed question/design_direction variants (CC-11)
+
+- Submit `{ session_type: "question", session_id: someUUID, answers: [...] }`.
+- Assert `isError: true`.
+- Assert `content[0].text` contains `"unimplemented — see unit-04"`.
+- Repeat for `session_type: "design_direction"`.
+
+### Group K — Error validation cases
+
+- Unknown `session_id` → `isError: true`, message contains `"Session not found:"`.
+- `session_type` mismatch → `isError: true`, message contains `"session_type mismatch:"`.
+- Session status already `"decided"` → `isError: true`, message contains `"Session already closed:"`.
+- Zod validation failure (bad `decision` enum) → `isError: true`, message starts with `"Invalid input:"`.
+
+---
+
+## Verification Commands for All 12 Completion Criteria
 
 ```bash
-git add packages/haiku/scripts/build-review-app.mjs \
-        packages/haiku/src/review-app-html.ts \
-        packages/haiku/src/ui-resource.ts \
-        packages/haiku/src/server.ts \
-        packages/haiku/test/ui-resource.test.mjs
-git commit -m "feat(unit-02): ui:// resource registration + REVIEW_APP_VERSION build stamp + _meta.ui helper"
+# CC-1: Non-MCP-Apps byte-identity (visual diff check)
+git diff main -- packages/haiku/src/server.ts \
+  | grep -A 200 '^\+.*hostSupportsMcpApps' \
+  | head -100
+# Visually confirm the else-arm body is unchanged
+
+# CC-2, CC-3: Vitest Group A + B
+cd packages/haiku && npx vitest run test/open-review-mcp-apps.test.mjs \
+  --reporter=verbose 2>&1 | grep -E 'PASS|FAIL|skip'
+
+# CC-4: Exactly 2 occurrences of haiku_cowork_review_submit
+rg 'haiku_cowork_review_submit' packages/haiku/src/server.ts | wc -l
+# expected output: 2
+
+# CC-5: Vitest Group C
+cd packages/haiku && npx vitest run test/open-review-mcp-apps.test.mjs \
+  -t "approved"
+
+# CC-6: Vitest Group D + E
+cd packages/haiku && npx vitest run test/open-review-mcp-apps.test.mjs \
+  -t "changes_requested|external_review"
+
+# CC-7: Vitest Group H
+cd packages/haiku && npx vitest run test/open-review-mcp-apps.test.mjs \
+  -t "timeout"
+
+# CC-8: Vitest Group I
+cd packages/haiku && npx vitest run test/open-review-mcp-apps.test.mjs \
+  -t "state.json"
+
+# CC-9: Commit message contains unit-02-outcome
+git log --oneline | head -20 | grep 'unit-02-outcome: blocking'
+# expected: at least one hit
+
+# CC-10: No env-var coupling in server.ts diff
+git diff main -- packages/haiku/src/server.ts \
+  | grep -E 'CLAUDE_CODE_IS_COWORK|isCoworkHost'
+# expected: zero output
+
+# CC-11: Vitest Group J
+cd packages/haiku && npx vitest run test/open-review-mcp-apps.test.mjs \
+  -t "unimplemented"
+
+# CC-12: Full typecheck + lint + test suite
+cd packages/haiku && npx tsc --noEmit && npx biome check src/ && npx vitest run
+# expected: all exit 0
 ```
 
 ---
 
-## Verification Commands (one per completion criterion)
+## Risks
 
-```bash
-# CC-1: Capability already advertised by unit-01
-rg -n 'resources:\s*\{\}' packages/haiku/src/server.ts
-# Expected: ≥ 1 hit (line ~164)
+### R1 — `_meta` threading from handler to tool result (HIGH)
 
-# CC-2: Handlers registered
-rg -n 'ListResourcesRequestSchema|ReadResourceRequestSchema' packages/haiku/src/server.ts
-# Expected: ≥ 2 hits
+The `_openReviewAndWait` callback's return type is
+`Promise<{ decision, feedback, annotations? }>`. The `_meta.ui.resourceUri` must
+appear on the MCP tool result, not on the decision object. The module-level
+`_reviewResultMeta` variable approach (Option B from the architectural analysis)
+avoids orchestrator changes. The builder MUST clear this variable in a `finally`
+block to prevent leaking state across calls.
 
-# CC-3 + CC-4 + CC-5: URI pattern, byte-exactness, unknown-URI error
-cd packages/haiku && npm test -- --grep "ui-resource"
-# All three assertions covered in ui-resource.test.mjs integration tests
+### R2 — AbortSignal threading (MEDIUM)
 
-# CC-6: Version hash stable across two runs (no source change)
-cd packages/haiku && npm run prebuild
-cp src/review-app-html.ts /tmp/review-app-html-run1.ts
-npm run prebuild
-diff /tmp/review-app-html-run1.ts src/review-app-html.ts
-# Expected: empty diff (exit 0)
+`extra.signal` is only available in the `setRequestHandler` callback. The
+module-level `_currentReviewSignal` variable (set before calling
+`handleOrchestratorTool`, cleared in `finally`) must be closure-safe — only one
+`gate_review` can be in flight at a time per MCP connection, so a single
+module-level variable is safe for sequential calls. If the server ever handles
+concurrent requests (it doesn't today due to stdio transport serialization),
+this would need a Map keyed on session ID.
 
-# CC-7: Version hash changes on source edit
-CURRENT_HASH=$(grep 'REVIEW_APP_VERSION' packages/haiku/src/review-app-html.ts | grep -o '[0-9a-f]\{12\}')
-echo "# touch" >> packages/haiku/review-app/src/App.tsx
-cd packages/haiku && npm run prebuild
-NEW_HASH=$(grep 'REVIEW_APP_VERSION' packages/haiku/src/review-app-html.ts | grep -o '[0-9a-f]\{12\}')
-[ "$CURRENT_HASH" != "$NEW_HASH" ] && echo "PASS: hash changed" || echo "FAIL: hash unchanged"
-# Then revert the touch: git checkout packages/haiku/review-app/src/App.tsx
+### R3 — `stFile` path derivation (MEDIUM)
 
-# CC-8: Helper exported + unit test shape assertion
-rg -n '^export function buildUiResourceMeta' packages/haiku/src/ui-resource.ts
-# Expected: 1 hit
-cd packages/haiku && npm test -- --grep "buildUiResourceMeta"
-# Expected: passes (tests shape equality)
+The session log path must be derived from `intentDirRel` inside the handler.
+Confirm the path convention from `orchestrator.ts:3173` — `stFile` is passed
+from `args.state_file`. The handler does not receive this. Derive it as:
+`join(process.cwd(), intentDirRel, "..", "..", "session.log")` and verify
+this resolves to `.haiku/session.log` for a typical intent dir of
+`.haiku/intents/<slug>`. If the path is wrong, the `gate_review_host_timeout`
+log event is silently skipped (wrapped in `try/catch`) — CC-7 timeout log
+assertion will fail. Fix the path derivation first.
 
-# CC-9: http.ts untouched
-git diff main -- packages/haiku/src/http.ts
-# Expected: empty
+### R4 — Byte-identity of non-MCP-Apps arm (HIGH)
 
-# CC-10: No _meta leakage on unrelated tool
-cd packages/haiku && npm test -- --grep "_meta"
-# Expected: passes (haiku_version_info result._meta === undefined)
+The entire existing handler body must be byte-identical to main inside the
+`else` branch. Do not reformat or reindent. The biome formatter MUST NOT be
+run on the `else` block's contents. Run `git diff main -- packages/haiku/src/server.ts`
+and confirm no diff lines appear within the `else { ... }` body other than
+the added `} else {` wrapper lines.
 
-# CC-11: Typecheck + lint + tests clean
-cd packages/haiku && npm run typecheck && npx biome check src && npm test
-# Expected: all exit 0
+### R5 — Pending-promise lifecycle (LOW)
+
+`waitForSession` is keyed on `session.session_id` (UUID). Concurrent review
+sessions would have distinct UUIDs and distinct promises. The AbortSignal
+race in the MCP Apps arm must reject cleanly without leaving orphaned listeners.
+Use `{ once: true }` on the `addEventListener` call to auto-remove on first fire.
+
+### R6 — Zod discriminated union `.min(1)` constraints (LOW)
+
+DATA-CONTRACTS.md spec review requires `.min(1)` on `answers` array and
+`.min(1)` on `archetype` string. The builder MUST include these. CC-11
+stubs both variants, but a future test that calls `question` with an empty
+`answers: []` must get a Zod validation error, not a 409. The constraint
+must be in the schema, not a runtime check.
+
+### R7 — `logSessionEvent` import in `server.ts` (LOW)
+
+`session-metadata.ts` exports `logSessionEvent`. Confirm it is not already
+imported into `server.ts` before adding a new import. The worktree's current
+`server.ts` does not import it — add it.
+
+---
+
+## Commit Requirements
+
+All commits on this unit MUST include `unit-02-outcome: blocking` in the body.
+
+Suggested implementation commit message:
 ```
+feat(unit-03): branch setOpenReviewHandler on hostSupportsMcpApps + haiku_cowork_review_submit tool
 
----
+- Branch setOpenReviewHandler on hostSupportsMcpApps(). Non-MCP-Apps arm
+  is byte-identical to main inside an else block.
+- MCP Apps arm skips startHttpServer/openTunnel/openBrowser; creates session,
+  sets _reviewResultMeta, awaits waitForSession (single 30-min await, no retry).
+- V5-10: AbortSignal race resolves with synthetic changes_requested payload;
+  logs gate_review_host_timeout event; writes blocking_timeout_observed to
+  intent.md frontmatter. State.json untouched (V5-11).
+- haiku_cowork_review_submit tool: discriminated union schema (review wired
+  end-to-end; question/design_direction stubbed for unit-04).
+- Thread extra.signal from CallTool handler into _openReviewAndWait via
+  module-level _currentReviewSignal variable.
 
-## Risks and Blockers
-
-### R1 — Unknown URI error code: `throw` vs `McpError` (MEDIUM)
-The DATA-CONTRACTS.md specifies `code: -32602` for unknown URIs. Whether a plain `throw new Error("...")` from an SDK handler produces exactly `-32602` or a generic `-32603` (InternalError) depends on the SDK version. **Mitigation:** Use `new McpError(ErrorCode.InvalidParams, "Unknown resource URI")` explicitly. Verify `ErrorCode.InvalidParams === -32602` in the SDK types before assuming — import and check.
-
-### R2 — `REVIEW_APP_HTML` import in `server.ts` (LOW)
-`http.ts` already imports `REVIEW_APP_HTML`. Adding the same import to `server.ts` is harmless (esbuild tree-shakes one copy into the final binary). Verify there is no module singleton state in `review-app-html.ts` that would be affected by two import sites — the file is a pure const export, so this is safe.
-
-### R3 — `review-app-html.ts` not yet rebuilt (HIGH — process risk)
-The worktree currently has the `main`-branch version of `review-app-html.ts` which does NOT have a `REVIEW_APP_VERSION` export. **Mitigation:** Step 2 (run prebuild) MUST happen before Step 3/4 (write `ui-resource.ts` and `server.ts`), otherwise TypeScript will fail to resolve the `REVIEW_APP_VERSION` import. If the SPA build is too slow for the CI environment, a stub value can be used during development and replaced on `npm run prebuild`.
-
-### R4 — Integration test: how to drive JSON-RPC against the in-process server (MEDIUM)
-The existing `capability-negotiation.test.mjs` imports directly from `state-tools.ts`. For JSON-RPC integration tests we need either: (a) the in-process transport pattern used in existing integration tests, or (b) a lightweight JSON-RPC call via stdin/stdout to a spawned process. **Mitigation:** Read `server-tools.test.mjs` or similar before writing tests to use the established in-process pattern. Do not invent a new transport layer.
-
-### R5 — Pre-existing `repair-agent.ts` typecheck failure (LOW — inherited)
-Unit-01 noted this. It predates this unit. Our additions must not introduce new typecheck failures. Run `npm run typecheck` and grep for errors on new files only.
-
-### R6 — SPA build takes time (~30 s) (LOW — CI impact)
-`npm run prebuild` invokes Vite. CC-6 and CC-7 require two prebuild runs. Fine in a developer workflow; CI should cache `review-app/node_modules`. No code change required, just awareness.
-
----
-
-## Feature File Scenario Coverage Map
-
-### `mcp-apps-capability-negotiation.feature` (unit-02 scope)
-
-| Scenario | Covered by | Test file |
-|---|---|---|
-| `resources/list` returns exactly one `ui://haiku/review/<version>` entry | Integration test | `ui-resource.test.mjs` |
-| `resources/read` returns byte-identical content to `REVIEW_APP_HTML` | Integration test | `ui-resource.test.mjs` |
-| `REVIEW_APP_VERSION` hash stable across two consecutive prebuild runs | Manual + CC-6 | verified via `diff` |
-| `REVIEW_APP_VERSION` hash changes when any source byte is modified | Manual + CC-7 | verified via shell comparison |
-
-Scenarios NOT in scope for unit-02 (handled by other units or SPA-side):
-- Client advertises `experimental.apps` → iframe path (unit-01 / unit-05)
-- HTTP+tunnel fallback (unit-05)
-- `App.callServerTool` runtime error / NegotiationErrorScreen (unit-05, SPA)
-- `hostSupportsMcpApps()` caching (unit-01)
-- `CLAUDE_CODE_IS_COWORK` ignored (unit-01)
-- Partial/malformed capabilities (unit-01)
-
-### `iframe-review-gate.feature` (unit-02 scope)
-
-| Scenario | Covered by | Test file |
-|---|---|---|
-| Tool result carries `_meta.ui.resourceUri` (Background: resource registered at `ui://haiku/review/<version>`) | Integration test (resource registered, URI correct) | `ui-resource.test.mjs` |
-| No `_meta` on unrelated tool results (Background prerequisite for CC-10) | Snapshot test on `haiku_version_info` | `ui-resource.test.mjs` |
-
-Scenarios NOT in scope for unit-02 (handled by unit-05):
-- Human reviewer approves / requests changes / external review → FSM advance
-- Non-MCP-Apps host falls through to HTTP+tunnel
-- Iframe mount failure / host-bridge handshake failure
-- Success-state colour, aria-live, focus, no-buttons scenarios (SPA, unit-06)
+unit-02-outcome: blocking
+```
