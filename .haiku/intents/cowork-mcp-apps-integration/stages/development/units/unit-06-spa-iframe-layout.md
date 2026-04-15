@@ -14,6 +14,11 @@ inputs:
   - features/accessibility-iframe.feature
   - features/error-recovery.feature
   - .haiku/knowledge/ARCHITECTURE.md
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-15T17:02:19Z'
+hat_started_at: '2026-04-15T17:02:19Z'
 ---
 
 # SPA iframe layout — conditional decision panels + boot/error/success screens
