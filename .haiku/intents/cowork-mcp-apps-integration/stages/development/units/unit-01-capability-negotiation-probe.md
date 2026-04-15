@@ -1,7 +1,7 @@
 ---
 title: Capability negotiation probe + workspace handshake
 type: feature
-model: sonnet
+model: opus
 depends_on: []
 inputs:
   - intent.md
@@ -12,10 +12,11 @@ inputs:
   - features/workspace-handshake.feature
   - .haiku/knowledge/ARCHITECTURE.md
 status: active
-bolt: 1
-hat: reviewer
+bolt: 2
+hat: builder
 started_at: '2026-04-15T15:21:26Z'
-hat_started_at: '2026-04-15T15:32:09Z'
+hat_started_at: '2026-04-15T15:38:16Z'
+model_original: sonnet
 ---
 
 # Capability negotiation probe + workspace handshake
