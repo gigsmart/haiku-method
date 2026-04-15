@@ -8,9 +8,6 @@ inputs:
   - knowledge/DISCOVERY.md
   - .haiku/knowledge/RUNBOOK.md
 outputs:
-  - packages/haiku/src/sentry.ts
-  - packages/haiku/src/server.ts
-  - packages/haiku/VALIDATION.md
   - knowledge/unit-02-telemetry-notes.md
 ---
 
