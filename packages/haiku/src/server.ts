@@ -866,79 +866,62 @@ setOpenReviewHandler(
 
 		openBrowser()
 
-		// Retry loop: wait → check → reopen if needed → wait again
-		attempts: for (let attempt = 0; attempt < 3; attempt++) {
-			// Inner loop: handle heartbeat-driven wakeups without burning an attempt
-			while (true) {
-				let timedOut = false
-				try {
-					await waitForSession(session.session_id, 10 * 60 * 1000) // 10 min per attempt
-				} catch {
-					timedOut = true
-				}
-
-				const updated = getSession(session.session_id)
-				if (
-					updated &&
-					updated.session_type === "review" &&
-					updated.status === "decided"
-				) {
-					clearHeartbeat(session.session_id)
-					if (useRemote) {
-						clearE2EKey(session.session_id)
-						closeTunnel()
-					}
-					return {
-						decision: updated.decision,
-						feedback: updated.feedback,
-						annotations: updated.annotations,
-					}
-				}
-
-				if (hasPresenceLost(session.session_id)) {
-					// Heartbeat gap detected — user closed the tab. Reopen without
-					// consuming a retry attempt; the user may have just refreshed.
-					console.error(
-						`[haiku] Review session ${session.session_id} lost presence — reopening browser`,
-					)
-					clearHeartbeat(session.session_id)
-					if (useRemote) {
-						const tunnelUrl = await openTunnel(port)
-						const newUrl = buildReviewUrl(
-							session.session_id,
-							tunnelUrl,
-							reviewType,
-						)
-						openBrowser(newUrl)
-					} else {
-						openBrowser()
-					}
-					continue
-				}
-
-				if (timedOut) {
-					if (attempt < 2) {
-						console.error(
-							`[haiku] Review session timeout (attempt ${attempt + 1}/3) — reopening browser`,
-						)
-						if (useRemote) {
-							const tunnelUrl = await openTunnel(port)
-							const newUrl = buildReviewUrl(
-								session.session_id,
-								tunnelUrl,
-								reviewType,
-							)
-							openBrowser(newUrl)
-						} else {
-							openBrowser()
-						}
-						continue attempts
-					}
-					break attempts
-				}
-
-				// Spurious wakeup — loop and wait again.
+		// Single 30-minute wait. NO retries, NO browser re-opens.
+		//
+		// Why no reopens: the previous retry loop spawned a fresh browser tab on
+		// every presence-lost wakeup AND on every attempt timeout. Modern browsers
+		// throttle setInterval in backgrounded tabs, so a user who had the review
+		// tab open but switched windows would hit spurious presence-lost events
+		// and see brand-new tabs pop up, overwriting their in-progress comments on
+		// the original (still-alive) tab.
+		//
+		// New recovery path: on timeout, fall through to the catch branch in the
+		// caller (orchestrator.ts — the gate_review handler classifies timeouts
+		// as agent-fixable and returns GATE BLOCKED). The agent's next
+		// haiku_run_next tick re-enters the review phase and creates a fresh
+		// session. No orphaned tabs.
+		while (true) {
+			let timedOut = false
+			try {
+				await waitForSession(session.session_id, 30 * 60 * 1000)
+			} catch {
+				timedOut = true
 			}
+
+			const updated = getSession(session.session_id)
+			if (
+				updated &&
+				updated.session_type === "review" &&
+				updated.status === "decided"
+			) {
+				clearHeartbeat(session.session_id)
+				if (useRemote) {
+					clearE2EKey(session.session_id)
+					closeTunnel()
+				}
+				return {
+					decision: updated.decision,
+					feedback: updated.feedback,
+					annotations: updated.annotations,
+				}
+			}
+
+			if (hasPresenceLost(session.session_id)) {
+				// Log the loss but keep waiting. The tab may just be backgrounded
+				// and heartbeat-throttled; if it is genuinely closed, the timeout
+				// below will eventually fire and the caller can recover.
+				console.error(
+					`[haiku] Review session ${session.session_id} lost presence — continuing to wait (no reopen)`,
+				)
+				// Spurious wakeup — loop and wait again without burning anything.
+				continue
+			}
+
+			if (timedOut) {
+				break
+			}
+
+			// Spurious wakeup (e.g. unrelated session event) — loop and wait again.
 		}
 
 		clearHeartbeat(session.session_id)
@@ -946,7 +929,7 @@ setOpenReviewHandler(
 			clearE2EKey(session.session_id)
 			closeTunnel()
 		}
-		throw new Error("Review timeout after 3 attempts (30 min total)")
+		throw new Error("Review timeout after 30 minutes")
 	},
 )
 
