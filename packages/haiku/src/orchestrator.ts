@@ -63,6 +63,8 @@ import {
 	resolveStudio,
 	studioSearchPaths,
 } from "./studio-reader.js"
+import { getCapabilities, isClaudeCode } from "./harness.js"
+import { adaptInstructions } from "./harness-instructions.js"
 import { emitTelemetry } from "./telemetry.js"
 import type { DAGGraph } from "./types.js"
 
@@ -3272,9 +3274,11 @@ export async function handleOrchestratorTool(
 				resultObj as OrchestratorAction,
 				intentDir(slug),
 			)
+			// Adapt instructions for the active harness (near-noop for Claude Code)
+			const adapted = adaptInstructions(instructions)
 			// Strip tell_user/next_step from outer JSON — they appear in the announcement section
 			const { tell_user: _tu, next_step: _ns, ...resultForJson } = resultObj
-			return `${JSON.stringify(resultForJson, null, 2)}\n\n---\n\n${instructions}`
+			return `${JSON.stringify(resultForJson, null, 2)}\n\n---\n\n${adapted}`
 		}
 
 		// External review: include instructions about recording the URL

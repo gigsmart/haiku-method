@@ -12,6 +12,29 @@ import { reportError } from "./sentry.js"
 const [cmd, ...args] = process.argv.slice(2)
 
 if (cmd === "mcp") {
+	// Parse --harness <name> from args before loading the server module.
+	// Remaining args are forwarded in case future flags are added.
+	let harnessName = ""
+	const filteredArgs: string[] = []
+	for (let i = 0; i < args.length; i++) {
+		if (args[i] === "--harness" && i + 1 < args.length) {
+			harnessName = args[++i]
+		} else if (args[i].startsWith("--harness=")) {
+			harnessName = args[i].split("=", 2)[1]
+		} else {
+			filteredArgs.push(args[i])
+		}
+	}
+
+	// Also check env var as fallback (useful for non-configurable harnesses)
+	if (!harnessName) {
+		harnessName = process.env.HAIKU_HARNESS || ""
+	}
+
+	if (harnessName) {
+		import("./harness.js").then((m) => m.setHarness(harnessName))
+	}
+
 	import("./server.js")
 } else if (cmd === "hook") {
 	const hookName = args[0]

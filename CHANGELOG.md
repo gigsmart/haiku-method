@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Multi-harness MCP support: the MCP server now accepts `--harness <name>` (or `HAIKU_HARNESS` env var) to adapt tool registration and instruction language for non-Claude-Code harnesses (Cursor, Windsurf, Gemini CLI, OpenCode, Kiro)
+- Harness capability registry (`harness.ts`) defining per-harness feature support: subagents, skills, hooks, elicitation, tool limits, model tiers
+- Instruction adaptation layer (`harness-instructions.ts`) that rewrites Claude-specific patterns (Agent/Task subagents, /haiku:skill commands, AskUserQuestion) into harness-appropriate equivalents
+- Tool count filtering for harnesses with tool limits (Cursor ~40, Windsurf ~100)
+
 ## [1.102.2] - 2026-04-15
 
 ### Changed

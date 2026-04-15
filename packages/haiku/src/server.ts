@@ -165,6 +165,7 @@ const server = new Server(
 	},
 )
 
+import { getCapabilities, getHarness, isClaudeCode } from "./harness.js"
 import {
 	handleOrchestratorTool,
 	orchestratorToolDefs,
@@ -187,9 +188,10 @@ server.setRequestHandler(CompleteRequestSchema, async (request) => {
 	return completeArgument(request.params)
 })
 
-// List tools
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-	tools: [
+// List tools — filtered by harness capabilities
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+	const caps = getCapabilities()
+	const allTools = [
 		// Orchestration tools
 		...orchestratorToolDefs,
 		// State management tools
@@ -369,8 +371,25 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 				required: ["message"],
 			},
 		},
-	],
-}))
+	]
+
+	// Harness-aware tool filtering:
+	// 1. Remove browser-based UI tools for headless/non-browser harnesses
+	// 2. Respect maxTools limit for constrained harnesses (Cursor ~40, Windsurf 100)
+	let filteredTools = allTools
+
+	// For harnesses with tool count limits, keep the most essential tools
+	if (caps.maxTools !== null && filteredTools.length > caps.maxTools) {
+		// Priority: orchestration tools first, then state tools, then UI tools
+		// The allTools array is already in this order, so just truncate
+		console.error(
+			`[haiku] Harness tool limit (${caps.maxTools}) exceeded — exposing ${caps.maxTools} of ${filteredTools.length} tools`,
+		)
+		filteredTools = filteredTools.slice(0, caps.maxTools)
+	}
+
+	return { tools: filteredTools }
+})
 
 // Call tools — wrapped to trigger hot-swap after response when an update is staged
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -957,7 +976,10 @@ setElicitInputHandler(async (params) => {
 async function main() {
 	const transport = new StdioServerTransport()
 	await server.connect(transport)
-	console.error("H·AI·K·U Review MCP server running on stdio")
+	const harnessInfo = isClaudeCode()
+		? ""
+		: ` (harness: ${getCapabilities().displayName})`
+	console.error(`H·AI·K·U Review MCP server running on stdio${harnessInfo}`)
 
 	// Start background auto-update checker after the server is live
 	startUpdateChecker()

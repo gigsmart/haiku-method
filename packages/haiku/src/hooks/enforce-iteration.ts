@@ -7,6 +7,7 @@
 // 3. Truly blocked: alert the user
 
 import { basename, join } from "node:path"
+import { skillReference } from "../harness.js"
 import {
 	checkIntentCriteria,
 	findActiveIntent,
@@ -154,12 +155,13 @@ export async function enforceIteration(
 		out("")
 		out("### ACTION REQUIRED")
 		out("")
+		const execRef = skillReference("execute")
 		if (activeUnitName) {
 			out(
-				`Call \`/haiku:execute ${intentSlug} ${activeUnitName}\` to continue targeted execution.`,
+				`Call \`${execRef} ${intentSlug} ${activeUnitName}\` to continue targeted execution.`,
 			)
 		} else {
-			out("Call `/haiku:execute` to continue the autonomous loop.")
+			out(`Call \`${execRef}\` to continue the autonomous loop.`)
 		}
 		out("")
 		out("**Note:** Subagents have clean context. No `/clear` needed.")
@@ -177,7 +179,7 @@ export async function enforceIteration(
 			`1. Review blockers: read \`.haiku/intents/${intentSlug}/state/blockers.md\``,
 		)
 		out("2. Unblock units or resolve dependencies")
-		out("3. Run `/haiku:execute` to resume")
+		out(`3. Run \`${skillReference("execute")}\` to resume`)
 		out("")
 	}
 
