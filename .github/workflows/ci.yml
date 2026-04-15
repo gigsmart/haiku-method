@@ -43,7 +43,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build review SPA (prebuild)
+        working-directory: packages/haiku
+        run: npm run prebuild
+
+      - name: Check review-app bundle size
+        working-directory: packages/haiku
+        run: |
+          BUNDLE_SIZE=$(gzip -c src/review-app-html.ts | wc -c | tr -d ' ')
+          echo "Gzipped review-app-html.ts size: ${BUNDLE_SIZE} bytes"
+          if [ "$BUNDLE_SIZE" -gt 950000 ]; then
+            echo "WARNING: bundle size ${BUNDLE_SIZE} bytes exceeds 950KB soft threshold"
+          fi
+          if [ "$BUNDLE_SIZE" -gt 1000403 ]; then
+            echo "ERROR: bundle size ${BUNDLE_SIZE} bytes exceeds 1,000,403 byte hard limit"
+            exit 1
+          fi
+
       - name: Run MCP test suite
         working-directory: packages/haiku
         run: node test/run-all.mjs
 
+      - name: Smoke test MCP Apps review path
+        working-directory: packages/haiku
+        run: npx tsx scripts/smoke-mcp-apps-review.ts
