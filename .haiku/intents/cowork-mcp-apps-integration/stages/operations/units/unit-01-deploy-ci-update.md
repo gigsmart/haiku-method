@@ -9,6 +9,7 @@ inputs:
   - .haiku/knowledge/RUNBOOK.md
 outputs:
   - .github/workflows/ci.yml
+  - knowledge/unit-01-ci-update-notes.md
 ---
 
 # CI/CD workflow updates for MCP Apps review path
