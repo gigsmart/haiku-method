@@ -6,6 +6,10 @@ import { Card, SectionHeading } from "./Card";
 import { AnnotationCanvas, type AnnotationPin } from "./AnnotationCanvas";
 import { InlineComments, type InlineCommentEntry, scrollToInlineComment } from "./InlineComments";
 import { ReviewSidebar, type SidebarComment } from "./ReviewSidebar";
+import { FeedbackPanel } from "./FeedbackPanel";
+import { StageProgressStrip } from "./StageProgressStrip";
+import { ReviewContextHeader } from "./ReviewContextHeader";
+import { useFeedback } from "../hooks/useFeedback";
 import { MermaidDiagram } from "./MermaidDiagram";
 import { remark } from "remark";
 import remarkGfm from "remark-gfm";
@@ -50,6 +54,49 @@ function getPreamble(sections: Section[]): string {
 }
 
 export function ReviewPage({ session, sessionId, wsRef }: Props) {
+  // Feedback integration
+  const intentSlug = session.intent_slug ?? session.intent?.slug ?? null;
+  const stageStates = session.stage_states ?? {};
+  const stageNames = Object.keys(stageStates);
+
+  // Determine active stage from session stage_states
+  const activeStage = stageNames.find((s) => stageStates[s]?.status === "active") ?? stageNames[0] ?? null;
+
+  const {
+    items: feedbackItems,
+    loading: feedbackLoading,
+    updateFeedback,
+    deleteFeedback,
+  } = useFeedback(intentSlug, activeStage);
+
+  const handleFeedbackUpdate = useCallback(
+    (feedbackId: string, fields: { status?: string }) => {
+      updateFeedback(feedbackId, fields).catch(() => {});
+    },
+    [updateFeedback],
+  );
+
+  const handleFeedbackDelete = useCallback(
+    (feedbackId: string) => {
+      deleteFeedback(feedbackId).catch(() => {});
+    },
+    [deleteFeedback],
+  );
+
+  // Determine review context
+  const reviewType = session.review_type === "unit" ? "stage" : "intent";
+  const gateType = (session.gate_type?.includes("ask") ? "ask" : session.gate_type?.includes("external") ? "external" : "auto") as "ask" | "external" | "auto";
+
+  // Build stage progress data
+  const stageProgressData = stageNames.map((name) => ({
+    name,
+    status: stageStates[name]?.status ?? "pending",
+    visits: 0,
+  }));
+
+  // Sidebar tab state
+  const [sidebarTab, setSidebarTab] = useState<"comments" | "feedback">("comments");
+
   // Lifted comment state: all inline comments and pins across tabs
   const [allInlineComments, setAllInlineComments] = useState<InlineCommentEntry[]>([]);
   const [allPins, setAllPins] = useState<AnnotationPin[]>([]);
@@ -217,28 +264,88 @@ export function ReviewPage({ session, sessionId, wsRef }: Props) {
   };
 
   return (
-    <div className="flex gap-6">
-      {/* Main content — grows to fill available space */}
-      <div className="flex-1 min-w-0">
-        {session.review_type === "unit" && session.target ? (
-          <UnitReview {...commonProps} />
-        ) : (
-          <IntentReview {...commonProps} />
-        )}
-      </div>
-      {/* Sticky review sidebar */}
-      <ReviewSidebar
-        sessionId={sessionId}
-        gateType={session.gate_type}
-        comments={sidebarComments}
-        getAnnotations={getAnnotations}
-        wsRef={wsRef}
-        onDelete={handleDeleteComment}
-        onEdit={handleEditComment}
-        onClearAll={handleClearAll}
-        onScrollTo={handleScrollTo}
-        onAddGeneral={handleAddGeneral}
+    <div>
+      {/* Stage progress strip */}
+      {stageProgressData.length > 0 && (
+        <div className="mb-4">
+          <StageProgressStrip
+            stages={stageProgressData}
+            currentStage={activeStage ?? ""}
+          />
+        </div>
+      )}
+
+      {/* Review context header */}
+      <ReviewContextHeader
+        reviewType={reviewType}
+        stageName={activeStage ?? undefined}
+        intentTitle={session.intent?.title}
+        gateType={gateType}
       />
+
+      <div className="flex gap-6">
+        {/* Main content — grows to fill available space */}
+        <div className="flex-1 min-w-0">
+          {session.review_type === "unit" && session.target ? (
+            <UnitReview {...commonProps} />
+          ) : (
+            <IntentReview {...commonProps} />
+          )}
+        </div>
+        {/* Sticky review sidebar with tabbed content */}
+        <aside className="hidden md:flex w-80 lg:w-96 shrink-0 sticky top-16 h-[calc(100vh-4rem)] flex-col bg-white dark:bg-stone-900 border-l border-stone-200 dark:border-stone-700">
+          {/* Tab for switching between Comments and Feedback */}
+          <div className="shrink-0 px-3 py-2 border-b border-stone-200 dark:border-stone-700">
+            <div className="flex gap-1 p-0.5 rounded-lg bg-stone-100 dark:bg-stone-800">
+              <button
+                type="button"
+                onClick={() => setSidebarTab("comments")}
+                className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  sidebarTab === "comments"
+                    ? "bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm"
+                    : "text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300"
+                }`}
+              >
+                Comments ({sidebarComments.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSidebarTab("feedback")}
+                className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  sidebarTab === "feedback"
+                    ? "bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm"
+                    : "text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300"
+                }`}
+              >
+                Feedback ({feedbackItems.length})
+              </button>
+            </div>
+          </div>
+
+          {sidebarTab === "comments" ? (
+            <ReviewSidebar
+              sessionId={sessionId}
+              gateType={session.gate_type}
+              comments={sidebarComments}
+              getAnnotations={getAnnotations}
+              wsRef={wsRef}
+              onDelete={handleDeleteComment}
+              onEdit={handleEditComment}
+              onClearAll={handleClearAll}
+              onScrollTo={handleScrollTo}
+              onAddGeneral={handleAddGeneral}
+              embedded
+            />
+          ) : (
+            <FeedbackPanel
+              items={feedbackItems}
+              loading={feedbackLoading}
+              onUpdate={handleFeedbackUpdate}
+              onDelete={handleFeedbackDelete}
+            />
+          )}
+        </aside>
+      </div>
     </div>
   );
 }

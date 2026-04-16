@@ -21,6 +21,8 @@ interface Props {
   onClearAll: () => void;
   onScrollTo: (id: string) => void;
   onAddGeneral: (comment: string) => void;
+  /** When true, renders as embedded content without the outer <aside> wrapper */
+  embedded?: boolean;
 }
 
 function truncate(text: string, max: number): string {
@@ -34,7 +36,7 @@ function typeIcon(type: string): string {
   return "\u{1F4AC}";
 }
 
-export function ReviewSidebar({ sessionId, gateType = "ask", comments, getAnnotations, wsRef, onDelete, onEdit, onClearAll, onScrollTo, onAddGeneral }: Props) {
+export function ReviewSidebar({ sessionId, gateType = "ask", comments, getAnnotations, wsRef, onDelete, onEdit, onClearAll, onScrollTo, onAddGeneral, embedded }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [showClose, setShowClose] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,13 +50,18 @@ export function ReviewSidebar({ sessionId, gateType = "ask", comments, getAnnota
   const [showExternalConfirm, setShowExternalConfirm] = useState(false);
   const hasComments = comments.length > 0 || generalText.trim().length > 0;
 
+  const Wrapper = embedded ? "div" : "aside";
+  const wrapperClass = embedded
+    ? "flex flex-col flex-1 min-h-0"
+    : "hidden md:flex w-80 lg:w-96 shrink-0 sticky top-16 h-[calc(100vh-4rem)] flex-col bg-white dark:bg-stone-900 border-l border-stone-200 dark:border-stone-700";
+
   if (showClose) {
     return (
-      <aside className="w-80 lg:w-96 shrink-0 sticky top-16 h-[calc(100vh-4rem)] flex flex-col bg-white dark:bg-stone-900 border-l border-stone-200 dark:border-stone-700">
+      <Wrapper className={wrapperClass}>
         <div className="flex-1 flex items-center justify-center p-6">
           <SubmitSuccess message="Decision submitted!" />
         </div>
-      </aside>
+      </Wrapper>
     );
   }
 
@@ -139,7 +146,7 @@ export function ReviewSidebar({ sessionId, gateType = "ask", comments, getAnnota
   }
 
   return (
-    <aside className="hidden md:flex w-80 lg:w-96 shrink-0 sticky top-16 h-[calc(100vh-4rem)] flex-col bg-white dark:bg-stone-900 border-l border-stone-200 dark:border-stone-700">
+    <Wrapper className={wrapperClass}>
       {/* Header */}
       <div className="shrink-0 px-4 py-3 border-b border-stone-200 dark:border-stone-700 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-stone-700 dark:text-stone-300">
@@ -370,6 +377,6 @@ export function ReviewSidebar({ sessionId, gateType = "ask", comments, getAnnota
           <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
         )}
       </div>
-    </aside>
+    </Wrapper>
   );
 }

@@ -2532,13 +2532,18 @@ export const stateToolDefs = [
 	{
 		name: "haiku_review",
 		description:
-			"Runs a git diff against main/upstream and returns formatted pre-delivery code review instructions with diff, stats, review guidelines, and review-agent config.",
+			"Runs a git diff against main/upstream and returns formatted pre-delivery code review instructions with diff, stats, review guidelines, and review-agent config. Pass open_pane: true to open the always-available review pane in the browser instead.",
 		inputSchema: {
 			type: "object" as const,
 			properties: {
 				intent: {
 					type: "string",
 					description: "Optional: intent slug for context",
+				},
+				open_pane: {
+					type: "boolean",
+					description:
+						"If true, opens the always-available review pane in the browser showing current intent state. No other arguments needed.",
 				},
 			},
 		},
@@ -3743,6 +3748,13 @@ export function handleStateTool(
 
 		// ── Review ──
 		case "haiku_review": {
+			// open_pane mode: return instructions for the agent to open the browser
+			if (args.open_pane) {
+				return text(
+					`To open the always-available review pane, the HTTP server must be running. The server starts automatically during gate reviews. Use GET /api/review/current to fetch the current intent state as JSON, and open /review/current in a browser to view the read-only overview.\n\nThis is a read-only view — no Approve/Request Changes buttons are shown outside of a gate review.`,
+				)
+			}
+
 			// Determine diff base — prefer the tracked upstream, fall back to the
 			// detected mainline (origin/HEAD-aware), then to a last-resort "main".
 			let base = getMainlineBranch()

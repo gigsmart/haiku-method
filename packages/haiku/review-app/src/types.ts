@@ -115,6 +115,38 @@ export interface OutputArtifact {
   relativePath?: string;
 }
 
+// ── Feedback types ──────────────────────────────────────────────────────
+
+export interface FeedbackItemData {
+  feedback_id: string;
+  title: string;
+  body: string;
+  status: "pending" | "addressed" | "closed" | "rejected";
+  origin: string;
+  author: string;
+  author_type: "human" | "agent";
+  created_at: string;
+  visit: number;
+  source_ref: string | null;
+  addressed_by: string | null;
+}
+
+export interface FeedbackListResponse {
+  intent: string;
+  stage: string;
+  count: number;
+  items: FeedbackItemData[];
+}
+
+export interface ReviewCurrentResponse {
+  intent: string;
+  stage: string | null;
+  phase?: string;
+  units: Array<{ slug: string; title: string; status: string }>;
+  feedback_summary: { pending: number; addressed: number; closed: number; rejected: number };
+  stages: Array<{ name: string; status: string; phase?: string; visits?: number }>;
+}
+
 /** The API response from /api/session/:sessionId */
 export interface SessionData {
   session_id: string;

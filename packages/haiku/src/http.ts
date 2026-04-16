@@ -1,4 +1,9 @@
 import { createHash } from "node:crypto"
+import {
+	existsSync,
+	readdirSync,
+	readFileSync,
+} from "node:fs"
 import { readFile, realpath } from "node:fs/promises"
 import {
 	type Server as HttpServer,
@@ -21,6 +26,21 @@ import type {
 	QuestionAnswer,
 	ReviewAnnotations,
 } from "./sessions.js"
+import {
+	FEEDBACK_ORIGINS,
+	FEEDBACK_STATUSES,
+	type FeedbackItem,
+	deleteFeedbackFile,
+	findHaikuRoot,
+	gitCommitState,
+	intentDir,
+	parseFrontmatter,
+	readFeedbackFiles,
+	readJson,
+	stageStatePath,
+	updateFeedbackFile,
+	writeFeedbackFile,
+} from "./state-tools.js"
 import { e2eEncrypt, isE2EActive, isRemoteReviewEnabled } from "./tunnel.js"
 
 let httpServer: HttpServer | null = null
@@ -862,6 +882,383 @@ function handleUpgrade(
 	})
 }
 
+// ─── Feedback CRUD endpoints ────────────────────────────────────────────
+
+/** Validate intent slug exists on disk. Returns the slug or null. */
+function validateIntent(slug: string): boolean {
+	try {
+		return existsSync(join(intentDir(slug), "intent.md"))
+	} catch {
+		return false
+	}
+}
+
+/** Validate stage exists under intent. */
+function validateStage(slug: string, stage: string): boolean {
+	try {
+		const stagesDir = join(intentDir(slug), "stages", stage)
+		return existsSync(stagesDir)
+	} catch {
+		return false
+	}
+}
+
+function handleFeedbackGet(intent: string, stage: string, url: URL): Response {
+	if (!validateIntent(intent)) {
+		return Response.json({ error: "Intent not found" }, { status: 404 })
+	}
+	if (!validateStage(intent, stage)) {
+		return Response.json({ error: "Stage not found" }, { status: 404 })
+	}
+
+	const statusFilter = url.searchParams.get("status")
+	if (
+		statusFilter &&
+		!(FEEDBACK_STATUSES as readonly string[]).includes(statusFilter)
+	) {
+		return Response.json(
+			{
+				error: `Invalid status filter. Must be one of: ${FEEDBACK_STATUSES.join(", ")}`,
+			},
+			{ status: 400 },
+		)
+	}
+
+	let items: FeedbackItem[] = readFeedbackFiles(intent, stage)
+	if (statusFilter) {
+		items = items.filter((i) => i.status === statusFilter)
+	}
+
+	return Response.json({
+		intent,
+		stage,
+		count: items.length,
+		items: items.map((i) => ({
+			feedback_id: i.id,
+			title: i.title,
+			body: i.body,
+			status: i.status,
+			origin: i.origin,
+			author: i.author,
+			author_type: i.author_type,
+			created_at: i.created_at,
+			visit: i.visit,
+			source_ref: i.source_ref,
+			addressed_by: i.addressed_by,
+		})),
+	})
+}
+
+const FeedbackCreateSchema = z.object({
+	title: z.string().min(1).max(120),
+	body: z.string().min(1),
+	origin: z
+		.enum(
+			FEEDBACK_ORIGINS as unknown as [string, ...string[]],
+		)
+		.optional()
+		.default("user-visual"),
+	source_ref: z.string().nullable().optional(),
+})
+
+async function handleFeedbackPost(
+	intent: string,
+	stage: string,
+	req: Request,
+): Promise<Response> {
+	if (!validateIntent(intent)) {
+		return Response.json({ error: "Intent not found" }, { status: 404 })
+	}
+	if (!validateStage(intent, stage)) {
+		return Response.json({ error: "Stage not found" }, { status: 404 })
+	}
+
+	let body: z.infer<typeof FeedbackCreateSchema>
+	try {
+		body = FeedbackCreateSchema.parse(await req.json())
+	} catch (err) {
+		const details =
+			err instanceof z.ZodError
+				? err.errors.map((e) => e.message).join("; ")
+				: "Invalid JSON"
+		return Response.json(
+			{ error: "Invalid request body", details },
+			{ status: 400 },
+		)
+	}
+
+	const result = writeFeedbackFile(intent, stage, {
+		title: body.title,
+		body: body.body,
+		origin: body.origin,
+		author: "user",
+		source_ref: body.source_ref ?? null,
+	})
+
+	gitCommitState(`feedback: create ${result.feedback_id} in ${stage}`)
+
+	return Response.json(
+		{
+			feedback_id: result.feedback_id,
+			file: result.file,
+			status: "pending",
+			message: `Feedback ${result.feedback_id} created.`,
+		},
+		{ status: 201 },
+	)
+}
+
+const FeedbackUpdateSchema = z
+	.object({
+		status: z
+			.enum(
+				FEEDBACK_STATUSES as unknown as [string, ...string[]],
+			)
+			.optional(),
+		addressed_by: z.string().optional(),
+	})
+	.refine(
+		(data) => data.status !== undefined || data.addressed_by !== undefined,
+		{
+			message:
+				"At least one of 'status' or 'addressed_by' must be provided",
+		},
+	)
+
+async function handleFeedbackPut(
+	intent: string,
+	stage: string,
+	feedbackId: string,
+	req: Request,
+): Promise<Response> {
+	if (!validateIntent(intent)) {
+		return Response.json({ error: "Intent not found" }, { status: 404 })
+	}
+	if (!validateStage(intent, stage)) {
+		return Response.json({ error: "Stage not found" }, { status: 404 })
+	}
+
+	let body: z.infer<typeof FeedbackUpdateSchema>
+	try {
+		body = FeedbackUpdateSchema.parse(await req.json())
+	} catch (err) {
+		if (err instanceof z.ZodError) {
+			const refineError = err.errors.find((e) => e.code === "custom")
+			if (refineError) {
+				return Response.json(
+					{ error: refineError.message },
+					{ status: 400 },
+				)
+			}
+			return Response.json(
+				{
+					error: "Invalid request body",
+					details: err.errors.map((e) => e.message).join("; "),
+				},
+				{ status: 400 },
+			)
+		}
+		return Response.json(
+			{ error: "Invalid request body", details: "Invalid JSON" },
+			{ status: 400 },
+		)
+	}
+
+	// HTTP endpoint is human context — no author-type restrictions
+	const result = updateFeedbackFile(
+		intent,
+		stage,
+		feedbackId,
+		{ status: body.status, addressed_by: body.addressed_by },
+		"human",
+	)
+
+	if (!result.ok) {
+		// Determine status code from error
+		if (result.error.includes("not found")) {
+			return Response.json(
+				{ error: `Feedback '${feedbackId}' not found in stage '${stage}'` },
+				{ status: 404 },
+			)
+		}
+		return Response.json({ error: result.error }, { status: 400 })
+	}
+
+	gitCommitState(`feedback: update ${feedbackId} in ${stage}`)
+
+	return Response.json({
+		feedback_id: feedbackId,
+		updated_fields: result.updated_fields,
+		message: `Feedback ${feedbackId} updated.`,
+	})
+}
+
+async function handleFeedbackDelete(
+	intent: string,
+	stage: string,
+	feedbackId: string,
+): Promise<Response> {
+	if (!validateIntent(intent)) {
+		return Response.json({ error: "Intent not found" }, { status: 404 })
+	}
+	if (!validateStage(intent, stage)) {
+		return Response.json({ error: "Stage not found" }, { status: 404 })
+	}
+
+	// HTTP endpoint is human context — no author-type restrictions
+	const result = deleteFeedbackFile(intent, stage, feedbackId, "human")
+
+	if (!result.ok) {
+		if (result.error.includes("not found")) {
+			return Response.json(
+				{ error: `Feedback '${feedbackId}' not found in stage '${stage}'` },
+				{ status: 404 },
+			)
+		}
+		if (result.error.includes("cannot delete pending")) {
+			return Response.json(
+				{
+					error: "Cannot delete pending feedback. Address, close, or reject it first.",
+				},
+				{ status: 409 },
+			)
+		}
+		return Response.json({ error: result.error }, { status: 400 })
+	}
+
+	gitCommitState(`feedback: delete ${feedbackId} from ${stage}`)
+
+	return Response.json({
+		feedback_id: feedbackId,
+		deleted: true,
+		message: `Feedback ${feedbackId} deleted.`,
+	})
+}
+
+// ─── Review current state endpoint ──────────────────────────────────────
+
+function handleReviewCurrent(): Response {
+	let root: string
+	try {
+		root = findHaikuRoot()
+	} catch {
+		return Response.json({ error: "No .haiku directory found" }, { status: 404 })
+	}
+
+	const intentsPath = join(root, "intents")
+	if (!existsSync(intentsPath)) {
+		return Response.json({ error: "No intents found" }, { status: 404 })
+	}
+
+	// Find the active intent
+	const dirs = readdirSync(intentsPath, { withFileTypes: true })
+		.filter((d) => d.isDirectory())
+
+	let activeIntent: string | null = null
+	let intentData: Record<string, unknown> = {}
+
+	for (const d of dirs) {
+		const intentMdPath = join(intentsPath, d.name, "intent.md")
+		if (!existsSync(intentMdPath)) continue
+		const raw = readFileSync(intentMdPath, "utf8")
+		const { data } = parseFrontmatter(raw)
+		if (data.status === "active") {
+			activeIntent = d.name
+			intentData = data
+			break
+		}
+	}
+
+	if (!activeIntent) {
+		return Response.json({ error: "No active intent found" }, { status: 404 })
+	}
+
+	const activeStage = (intentData.active_stage as string) || null
+	const stagesList = (intentData.stages as string[]) || []
+
+	// Build stage status info
+	const stages: Array<{
+		name: string
+		status: string
+		phase?: string
+		visits?: number
+	}> = []
+	for (const stageName of stagesList) {
+		try {
+			const stateFile = stageStatePath(activeIntent, stageName)
+			const stageState = readJson(stateFile)
+			stages.push({
+				name: stageName,
+				status: (stageState.status as string) || "pending",
+				phase: (stageState.phase as string) || undefined,
+				visits: (stageState.visits as number) || 0,
+			})
+		} catch {
+			stages.push({ name: stageName, status: "pending" })
+		}
+	}
+
+	// Current phase
+	let currentPhase: string | undefined
+	if (activeStage) {
+		try {
+			const stateFile = stageStatePath(activeIntent, activeStage)
+			const stageState = readJson(stateFile)
+			currentPhase = (stageState.phase as string) || undefined
+		} catch {
+			/* no state file */
+		}
+	}
+
+	// Build feedback summary
+	let feedbackSummary = { pending: 0, addressed: 0, closed: 0, rejected: 0 }
+	if (activeStage) {
+		const items = readFeedbackFiles(activeIntent, activeStage)
+		for (const item of items) {
+			const s = item.status as keyof typeof feedbackSummary
+			if (s in feedbackSummary) feedbackSummary[s]++
+		}
+	}
+
+	// List units for the active stage
+	const units: Array<{ slug: string; title: string; status: string }> = []
+	if (activeStage) {
+		try {
+			const unitsDir = join(
+				intentDir(activeIntent),
+				"stages",
+				activeStage,
+				"units",
+			)
+			if (existsSync(unitsDir)) {
+				const unitFiles = readdirSync(unitsDir)
+					.filter((f) => f.endsWith(".md"))
+					.sort()
+				for (const f of unitFiles) {
+					const raw = readFileSync(join(unitsDir, f), "utf8")
+					const { data } = parseFrontmatter(raw)
+					units.push({
+						slug: f.replace(/\.md$/, ""),
+						title: (data.title as string) || f.replace(/\.md$/, ""),
+						status: (data.status as string) || "pending",
+					})
+				}
+			}
+		} catch {
+			/* no units */
+		}
+	}
+
+	return Response.json({
+		intent: activeIntent,
+		stage: activeStage,
+		phase: currentPhase,
+		units,
+		feedback_summary: feedbackSummary,
+		stages,
+	})
+}
+
 function handleRequest(req: Request): Response | Promise<Response> {
 	const url = new URL(req.url)
 	const path = url.pathname
@@ -953,6 +1350,54 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	const questionAnswerMatch = path.match(/^\/question\/([^/]+)\/answer$/)
 	if (questionAnswerMatch && req.method === "POST") {
 		return handleQuestionAnswerPost(questionAnswerMatch[1], req)
+	}
+
+	// ─── Review pane (always-available) ────────────────────────────────
+	// GET /api/review/current — return current active intent state
+	if (path === "/api/review/current" && req.method === "GET") {
+		return handleReviewCurrent()
+	}
+
+	// GET /review/current — serve the SPA for always-available review
+	if (path === "/review/current" && req.method === "GET") {
+		return serveSpa()
+	}
+
+	// ─── Feedback CRUD ─────────────────────────────────────────────────
+
+	// GET /api/feedback/:intent/:stage
+	const feedbackGetMatch = path.match(
+		/^\/api\/feedback\/([^/]+)\/([^/]+)$/,
+	)
+	if (feedbackGetMatch && req.method === "GET") {
+		return handleFeedbackGet(feedbackGetMatch[1], feedbackGetMatch[2], url)
+	}
+
+	// POST /api/feedback/:intent/:stage
+	if (feedbackGetMatch && req.method === "POST") {
+		return handleFeedbackPost(feedbackGetMatch[1], feedbackGetMatch[2], req)
+	}
+
+	// PUT /api/feedback/:intent/:stage/:id
+	const feedbackItemMatch = path.match(
+		/^\/api\/feedback\/([^/]+)\/([^/]+)\/([^/]+)$/,
+	)
+	if (feedbackItemMatch && req.method === "PUT") {
+		return handleFeedbackPut(
+			feedbackItemMatch[1],
+			feedbackItemMatch[2],
+			feedbackItemMatch[3],
+			req,
+		)
+	}
+
+	// DELETE /api/feedback/:intent/:stage/:id
+	if (feedbackItemMatch && req.method === "DELETE") {
+		return handleFeedbackDelete(
+			feedbackItemMatch[1],
+			feedbackItemMatch[2],
+			feedbackItemMatch[3],
+		)
 	}
 
 	// GET /health — tunnel keepalive check

@@ -1,13 +1,19 @@
 import { useEffect, useState } from "react";
-import type { SessionData } from "./types";
+import type { SessionData, ReviewCurrentResponse } from "./types";
 import { useSession, useSessionWebSocket } from "./hooks/useSession";
 import { ReviewPage } from "./components/ReviewPage";
+import { ReviewCurrentPage } from "./components/ReviewCurrentPage";
 import { QuestionPage } from "./components/QuestionPage";
 import { DesignPicker } from "./components/DesignPicker";
 import { ThemeToggle } from "./components/ThemeToggle";
 
 function parseRoute(): { pageType: string; sessionId: string } | null {
   const path = window.location.pathname;
+
+  // /review/current — always-available review pane
+  if (path === "/review/current") {
+    return { pageType: "review-current", sessionId: "current" };
+  }
 
   // /review/:sessionId
   const reviewMatch = path.match(/^\/(review)\/([^/]+)/);
@@ -33,6 +39,10 @@ export function App() {
         <p className="text-stone-500">No session found in URL.</p>
       </div>
     );
+  }
+
+  if (route.pageType === "review-current") {
+    return <ReviewCurrentLoader />;
   }
 
   return <SessionLoader sessionId={route.sessionId} pageType={route.pageType} />;
@@ -111,6 +121,86 @@ function SessionLoader({ sessionId, pageType }: { sessionId: string; pageType: s
           rel="noopener noreferrer"
           className="text-teal-600 dark:text-teal-400 hover:underline"
         >
+          H·AI·K·U
+        </a>
+        {" "}— Human + AI Knowledge Unification
+      </footer>
+    </>
+  );
+}
+
+function ReviewCurrentLoader() {
+  const [data, setData] = useState<ReviewCurrentResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchCurrent() {
+      try {
+        const res = await fetch("/api/review/current", {
+          headers: { "bypass-tunnel-reminder": "1" },
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || `HTTP ${res.status}`);
+        }
+        const d: ReviewCurrentResponse = await res.json();
+        if (!cancelled) {
+          setData(d);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load review state");
+          setLoading(false);
+        }
+      }
+    }
+    fetchCurrent();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    document.title = data ? `Review: ${data.intent}` : "H\u00B7AI\u00B7K\u00B7U Review";
+  }, [data]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="mb-3 h-8 w-8 mx-auto animate-spin rounded-full border-2 border-stone-300 border-t-teal-500" />
+          <p className="text-sm text-stone-500">Loading review state...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-red-600 dark:text-red-400">Review state unavailable</p>
+          <p className="mt-1 text-sm text-stone-500">{error || "No active intent found."}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <header className="sticky top-0 z-40 bg-white/80 dark:bg-stone-900/80 backdrop-blur border-b border-stone-200 dark:border-stone-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+          <h1 className="text-lg font-semibold truncate">Review: {data.intent}</h1>
+          <ThemeToggle />
+        </div>
+      </header>
+      <main id="main-content" className="px-4 sm:px-6 lg:px-8 py-6">
+        <ReviewCurrentPage data={data} />
+      </main>
+      <footer className="mt-12 pb-8 text-center text-xs text-stone-500 dark:text-stone-500">
+        Powered by{" "}
+        <a href="https://haikumethod.ai" target="_blank" rel="noopener noreferrer" className="text-teal-600 dark:text-teal-400 hover:underline">
           H·AI·K·U
         </a>
         {" "}— Human + AI Knowledge Unification
