@@ -19,12 +19,18 @@ const _isMcpAppsHost: boolean = (() => {
 
 console.log(`isMcpAppsHost() == ${_isMcpAppsHost}`);
 
-// Singleton App instance for MCP Apps mode — lazily created on first use.
+// Singleton App instance for MCP Apps mode — created eagerly and connected.
 let _appInstance: App | null = null;
+
+if (_isMcpAppsHost) {
+  _appInstance = new App({ name: "haiku-review", version: "1.0.0" }, {});
+  _appInstance.connect();
+}
 
 function getApp(): App {
   if (!_appInstance) {
     _appInstance = new App({ name: "haiku-review", version: "1.0.0" }, {});
+    _appInstance.connect();
   }
   return _appInstance;
 }

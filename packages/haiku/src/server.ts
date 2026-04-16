@@ -61,6 +61,7 @@ import type {
 } from "./sessions.js"
 import {
 	findHaikuRoot,
+	getMcpHostWorkspacePaths,
 	hostSupportsMcpApps,
 	parseFrontmatter,
 	readJson,
@@ -175,6 +176,7 @@ const server = new Server(
 			completions: {},
 			resources: {},
 			experimental: { apps: {} },
+			extensions: { "io.modelcontextprotocol/ui": {} },
 		},
 	},
 )
@@ -267,6 +269,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 		// open_review is internal — used by the FSM for gate_ask, not exposed to the agent
 		{
 			name: "ask_user_visual_question",
+			_meta: { ui: { resourceUri: REVIEW_RESOURCE_URI } },
 			description:
 				"Ask the user one or more questions via a rich HTML page in the browser. " +
 				"Renders questions with selectable options (radio or checkbox) and an optional 'Other' field. " +
@@ -319,6 +322,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 		},
 		{
 			name: "pick_design_direction",
+			_meta: { ui: { resourceUri: REVIEW_RESOURCE_URI } },
 			description:
 				"Open a browser-based visual picker for choosing a design direction. " +
 				"Presents archetype cards with preview HTML and tunable parameter sliders. " +
@@ -437,6 +441,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 					},
 				},
 				required: ["message"],
+			},
+		},
+		{
+			name: "haiku_debug",
+			description:
+				"Dump diagnostic information about the MCP connection: server capabilities, " +
+				"client capabilities, hostSupportsMcpApps() result, environment variables, " +
+				"and workspace paths. Use this to troubleshoot MCP Apps detection issues.",
+			inputSchema: {
+				type: "object" as const,
+				properties: {},
 			},
 		},
 		{
@@ -578,6 +593,50 @@ async function handleToolCall(
 		return {
 			content: [
 				{ type: "text" as const, text: "Feedback submitted. Thank you!" },
+			],
+		}
+	}
+
+	// Debug tool — dump connection diagnostics
+	if (name === "haiku_debug") {
+		const clientCaps = (server as unknown as { getClientCapabilities?: () => unknown }).getClientCapabilities?.() ?? null
+		const serverCaps = {
+			tools: true,
+			prompts: true,
+			completions: true,
+			resources: true,
+			experimental: { apps: {} },
+			extensions: { "io.modelcontextprotocol/ui": {} },
+		}
+		let workspacePaths: string[] = []
+		try {
+			workspacePaths = await getMcpHostWorkspacePaths()
+		} catch {
+			// ignore
+		}
+		const info = {
+			hostSupportsMcpApps: hostSupportsMcpApps(),
+			serverCapabilities: serverCaps,
+			clientCapabilities_RAW: clientCaps,
+			clientCapabilities_keys: clientCaps ? Object.keys(clientCaps as object) : null,
+			clientExtensions: (clientCaps as Record<string, unknown>)?.extensions ?? null,
+			clientMcpAppsUi: ((clientCaps as Record<string, unknown>)?.extensions as Record<string, unknown>)?.["io.modelcontextprotocol/ui"] ?? null,
+			clientExperimental: (clientCaps as Record<string, unknown>)?.experimental ?? null,
+			clientApps: ((clientCaps as Record<string, unknown>)?.experimental as Record<string, unknown>)?.apps ?? null,
+			workspacePaths,
+			env: {
+				CLAUDE_CODE_IS_COWORK: process.env.CLAUDE_CODE_IS_COWORK ?? "(not set)",
+				CLAUDE_CODE_WORKSPACE_HOST_PATHS: process.env.CLAUDE_CODE_WORKSPACE_HOST_PATHS ?? "(not set)",
+				HAIKU_REMOTE_REVIEW_URL: process.env.HAIKU_REMOTE_REVIEW_URL ?? "(not set)",
+			},
+			mcpServerInjected: true,
+		}
+		return {
+			content: [
+				{
+					type: "text" as const,
+					text: JSON.stringify(info, null, 2),
+				},
 			],
 		}
 	}

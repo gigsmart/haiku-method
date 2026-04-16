@@ -1522,9 +1522,10 @@ export function setMcpServerInstance(server: McpServerRef): void {
 }
 
 /**
- * Returns true iff the connected MCP client echoed `experimental.apps`
- * during the initialize handshake. Result is cached for the connection lifetime.
- * Never reads env vars.
+ * Returns true iff the connected MCP client supports MCP Apps (ui:// resources).
+ * Checks `extensions["io.modelcontextprotocol/ui"]` per the MCP Apps spec,
+ * with fallback to legacy `experimental.apps` for older hosts.
+ * Result is cached for the connection lifetime. Never reads env vars.
  */
 export function hostSupportsMcpApps(): boolean {
 	if (_mcpAppsSupported !== null) return _mcpAppsSupported
@@ -1535,14 +1536,32 @@ export function hostSupportsMcpApps(): boolean {
 	const caps = _mcpServer.getClientCapabilities() as
 		| Record<string, unknown>
 		| undefined
-	_mcpAppsSupported =
-		caps != null &&
-		typeof caps === "object" &&
-		"experimental" in caps &&
-		caps.experimental != null &&
-		typeof caps.experimental === "object" &&
-		"apps" in (caps.experimental as Record<string, unknown>)
-	return _mcpAppsSupported
+	if (!caps || typeof caps !== "object") {
+		_mcpAppsSupported = false
+		return false
+	}
+	// Primary: extensions["io.modelcontextprotocol/ui"] (MCP Apps spec)
+	const ext = caps.extensions as Record<string, unknown> | undefined
+	if (
+		ext != null &&
+		typeof ext === "object" &&
+		"io.modelcontextprotocol/ui" in ext
+	) {
+		_mcpAppsSupported = true
+		return true
+	}
+	// Fallback: experimental.apps (legacy / pre-spec hosts)
+	const experimental = caps.experimental as Record<string, unknown> | undefined
+	if (
+		experimental != null &&
+		typeof experimental === "object" &&
+		"apps" in experimental
+	) {
+		_mcpAppsSupported = true
+		return true
+	}
+	_mcpAppsSupported = false
+	return false
 }
 
 /**
