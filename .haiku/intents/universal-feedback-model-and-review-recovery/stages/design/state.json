@@ -1,11 +1,11 @@
 {
   "stage": "design",
-  "status": "active",
-  "phase": "execute",
+  "status": "completed",
+  "phase": "gate",
   "started_at": "2026-04-15T20:53:46Z",
-  "completed_at": null,
-  "gate_entered_at": null,
-  "gate_outcome": null,
+  "completed_at": "2026-04-16T14:06:49Z",
+  "gate_entered_at": "2026-04-16T14:05:12Z",
+  "gate_outcome": "advanced",
   "elaboration_turns": 3,
   "design_direction_selected": true,
   "design_direction": {
