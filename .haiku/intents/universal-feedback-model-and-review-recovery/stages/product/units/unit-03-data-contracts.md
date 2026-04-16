@@ -1,11 +1,17 @@
 ---
 title: Data contracts and API schemas
 type: spec
-depends_on: [unit-01-acceptance-criteria]
+depends_on:
+  - unit-01-acceptance-criteria
 quality_gates: []
 inputs:
   - knowledge/DISCOVERY.md
   - knowledge/ACCEPTANCE-CRITERIA.md
+status: active
+bolt: 1
+hat: product
+started_at: '2026-04-16T14:36:22Z'
+hat_started_at: '2026-04-16T14:36:22Z'
 ---
 
 # Data Contracts and API Schemas
