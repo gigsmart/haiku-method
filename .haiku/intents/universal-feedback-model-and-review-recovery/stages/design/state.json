@@ -1,9 +1,19 @@
 {
   "stage": "design",
   "status": "active",
-  "phase": "elaborate",
+  "phase": "execute",
   "started_at": "2026-04-15T20:53:46Z",
   "completed_at": null,
   "gate_entered_at": null,
-  "gate_outcome": null
+  "gate_outcome": null,
+  "elaboration_turns": 3,
+  "design_direction_selected": true,
+  "design_direction": {
+    "archetype": "Inline Feedback Annotations",
+    "parameters": {
+      "card_density": 3,
+      "group_by_visit": 0,
+      "show_origin_badge": 1
+    }
+  }
 }
