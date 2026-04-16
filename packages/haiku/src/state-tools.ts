@@ -2754,14 +2754,16 @@ export const stateToolDefs = [
  * path traversal / separator characters. Use at the top of MCP tool
  * handlers to reject malicious identifiers before any filesystem access.
  *
- * Checked keys: `intent`, `slug`, `stage`, `unit`. All four are used to
- * construct filesystem paths (`intent/{slug}/stages/{stage}/units/{unit}.md`)
+ * Checked keys: `intent`, `slug`, `stage`, `unit`, `feedback_id`. All five
+ * are used to construct filesystem paths (e.g.
+ * `intent/{slug}/stages/{stage}/units/{unit}.md`,
+ * `intent/{slug}/stages/{stage}/feedback/{feedback_id}`)
  * in various handlers, so any of them can be a traversal vector.
  */
 export function validateSlugArgs(
 	args: Record<string, unknown>,
 ): { content: Array<{ type: "text"; text: string }>; isError: true } | null {
-	for (const key of ["intent", "slug", "stage", "unit"]) {
+	for (const key of ["intent", "slug", "stage", "unit", "feedback_id"]) {
 		const val = args[key]
 		if (typeof val === "string" && /[/\\]|\.\./.test(val)) {
 			return {

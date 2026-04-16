@@ -471,6 +471,38 @@ test("haiku_unit_get rejects unit with forward slash", () => {
   assert.ok(result.content[0].text.includes("Invalid unit"))
 })
 
+test("haiku_feedback_update rejects feedback_id with path traversal", () => {
+  const result = handleStateTool("haiku_feedback_update", {
+    intent: intentSlug,
+    stage: "inception",
+    feedback_id: "../../../etc/passwd",
+    status: "closed",
+  })
+  assert.strictEqual(result.isError, true)
+  assert.ok(result.content[0].text.includes("Invalid feedback_id"))
+})
+
+test("haiku_feedback_delete rejects feedback_id with forward slash", () => {
+  const result = handleStateTool("haiku_feedback_delete", {
+    intent: intentSlug,
+    stage: "inception",
+    feedback_id: "foo/bar",
+  })
+  assert.strictEqual(result.isError, true)
+  assert.ok(result.content[0].text.includes("Invalid feedback_id"))
+})
+
+test("haiku_feedback_reject rejects feedback_id with backslash", () => {
+  const result = handleStateTool("haiku_feedback_reject", {
+    intent: intentSlug,
+    stage: "inception",
+    feedback_id: "FB-01\\..\\secret",
+    reason: "test",
+  })
+  assert.strictEqual(result.isError, true)
+  assert.ok(result.content[0].text.includes("Invalid feedback_id"))
+})
+
 test("haiku_intent_list still works (no slug to validate)", () => {
   const result = handleStateTool("haiku_intent_list", {})
   const intents = JSON.parse(getTextResult(result))

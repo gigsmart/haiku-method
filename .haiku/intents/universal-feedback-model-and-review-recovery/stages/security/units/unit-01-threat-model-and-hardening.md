@@ -14,6 +14,8 @@ bolt: 1
 hat: threat-modeler
 started_at: '2026-04-16T16:55:22Z'
 hat_started_at: '2026-04-16T16:55:22Z'
+outputs:
+  - stages/security/THREAT-MODEL.md
 ---
 
 # Threat Model and Security Hardening
