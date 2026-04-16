@@ -2,10 +2,17 @@
 title: Rename haiku_feedback Sentry tool to haiku_report
 type: implementation
 depends_on: []
-quality_gates: [typecheck, test]
+quality_gates:
+  - typecheck
+  - test
 inputs:
   - knowledge/DISCOVERY.md
   - knowledge/IMPLEMENTATION-MAP.md
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-16T15:07:31Z'
+hat_started_at: '2026-04-16T15:07:31Z'
 ---
 
 # Rename Sentry Tool
