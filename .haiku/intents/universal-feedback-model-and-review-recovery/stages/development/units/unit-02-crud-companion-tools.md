@@ -10,11 +10,14 @@ inputs:
   - knowledge/DATA-CONTRACTS.md
   - knowledge/ACCEPTANCE-CRITERIA.md
   - features/feedback-crud.feature
-status: active
+status: completed
 bolt: 1
 hat: reviewer
 started_at: '2026-04-16T15:22:43Z'
 hat_started_at: '2026-04-16T15:28:11Z'
+outputs:
+  - stages/development/artifacts/unit-02-crud-companion-tools.md
+completed_at: '2026-04-16T15:30:09Z'
 ---
 
 # CRUD Companion Tools
