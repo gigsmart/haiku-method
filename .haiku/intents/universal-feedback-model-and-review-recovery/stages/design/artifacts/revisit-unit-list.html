@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Revisit Unit List — Wireframe</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: {} }
+    };
+  </script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+
+    .pipeline-connector {
+      height: 2px;
+      flex: 1;
+      min-width: 16px;
+    }
+
+    /* Locked card overlay */
+    .locked-card {
+      position: relative;
+    }
+    .locked-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 0.75rem;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="dark bg-stone-950 text-stone-100 min-h-screen">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 bg-white/80 dark:bg-stone-900/80 backdrop-blur border-b border-stone-200 dark:border-stone-800">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+      <h1 class="text-lg font-semibold truncate text-stone-900 dark:text-stone-100">Review: Universal Feedback Model</h1>
+      <button class="text-xs px-2 py-1 rounded border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-400">&#x263E;</button>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- Review Context Header -->
+    <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm overflow-hidden mb-6">
+      <div class="px-6 pt-5 pb-4 border-b border-stone-200 dark:border-stone-700">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Review Type</p>
+            <h1 class="text-xl font-semibold text-stone-900 dark:text-stone-100">
+              Review Elaboration: <span class="text-teal-600 dark:text-teal-400 capitalize">development</span>
+              <span class="text-sm font-normal text-stone-500 dark:text-stone-400 ml-2">(visit 2)</span>
+            </h1>
+            <p class="text-sm text-stone-500 dark:text-stone-400 mt-1">Universal Feedback Model &amp; Review Recovery</p>
+          </div>
+          <div class="flex flex-col items-end gap-2">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+              &#x1F512; ask
+            </span>
+          </div>
+        </div>
+
+        <!-- Stage progress strip -->
+        <nav aria-label="Stage progress" class="flex items-center gap-0 mt-2">
+          <div class="flex flex-col items-center">
+            <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+              <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+            </div>
+            <span class="text-[10px] text-stone-700 dark:text-stone-300 mt-1">Inception</span>
+          </div>
+          <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+          <div class="flex flex-col items-center relative">
+            <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+              <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+            </div>
+            <span class="text-[10px] text-stone-700 dark:text-stone-300 mt-1">Design</span>
+            <span class="absolute -top-1 -right-2 inline-flex items-center px-1 py-0.5 rounded-md text-[8px] font-bold bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300">2x</span>
+          </div>
+          <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+          <div class="flex flex-col items-center relative">
+            <div class="w-[18px] h-[18px] bg-teal-600 text-white flex items-center justify-center shadow-sm ring-2 ring-teal-400/50" style="transform: rotate(45deg); border-radius: 2px;">
+              <span style="transform: rotate(-45deg); font-size: 8px; font-weight: 700;">&#9670;</span>
+            </div>
+            <span class="text-[10px] font-semibold text-teal-600 dark:text-teal-400 mt-1.5">Development</span>
+            <span class="absolute -top-1 -right-2 inline-flex items-center px-1 py-0.5 rounded-md text-[8px] font-bold bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">2x</span>
+          </div>
+          <div class="pipeline-connector bg-stone-300 dark:bg-stone-600 mt-[-14px]"></div>
+          <div class="flex flex-col items-center">
+            <div class="w-4 h-4 rounded-full bg-stone-200 dark:bg-stone-700 border border-stone-300 dark:border-stone-600"></div>
+            <span class="text-[10px] text-stone-400 dark:text-stone-500 mt-1">Operations</span>
+          </div>
+          <div class="pipeline-connector bg-stone-300 dark:bg-stone-600 mt-[-14px]"></div>
+          <div class="flex flex-col items-center">
+            <div class="w-4 h-4 rounded-full bg-stone-200 dark:bg-stone-700 border border-stone-300 dark:border-stone-600"></div>
+            <span class="text-[10px] text-stone-400 dark:text-stone-500 mt-1">Security</span>
+          </div>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Scope expansion banner -->
+    <div class="bg-teal-50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800 rounded-xl px-5 py-4 mb-6">
+      <div class="flex items-start gap-3">
+        <span class="text-teal-600 dark:text-teal-400 text-lg shrink-0 mt-0.5">&#x2139;&#xFE0F;</span>
+        <div>
+          <h3 class="text-sm font-semibold text-teal-800 dark:text-teal-200 mb-1">Scope expanded -- 2 new units added</h3>
+          <p class="text-xs text-teal-700 dark:text-teal-300">This revisit adds 2 new units to address feedback from the previous review cycle. The 7 existing units are preserved as read-only for context.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending feedback summary -->
+    <div class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl px-5 py-4 mb-6">
+      <div class="flex items-start gap-3">
+        <span class="text-amber-600 dark:text-amber-400 text-lg shrink-0 mt-0.5">&#x26A0;&#xFE0F;</span>
+        <div>
+          <h3 class="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-2">3 pending feedback items</h3>
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300">
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">FB-01</span>
+              <span>Feedback items cannot be individually tracked</span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">&#x2192; unit-08</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300">
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">FB-03</span>
+              <span>Missing null check in handleSubmit</span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">&#x2192; unit-09</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs">
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">FB-06</span>
+              <span class="text-amber-700 dark:text-amber-300">Extract feedback validation into shared module</span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">&#x26A0; no owning unit</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- New Units Section — highlighted, active -->
+    <section class="mb-8">
+      <div class="flex items-center gap-3 mb-4">
+        <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">
+          New Units <span class="text-sm font-normal text-stone-500 dark:text-stone-400">(2)</span>
+        </h2>
+        <span class="text-xs text-stone-500 dark:text-stone-400">-- addressing feedback</span>
+      </div>
+
+      <div class="space-y-3">
+        <!-- New unit 1 -->
+        <div class="bg-white dark:bg-stone-900 rounded-xl border-2 border-teal-400 dark:border-teal-500 shadow-sm p-5 transition-all hover:shadow-md">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">unit-08</span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">pending</span>
+            </div>
+            <span class="text-xs text-stone-400 dark:text-stone-500">NEW</span>
+          </div>
+          <h3 class="text-sm font-semibold text-stone-900 dark:text-stone-100 mb-1">Feedback Item Status Lifecycle Implementation</h3>
+          <p class="text-xs text-stone-600 dark:text-stone-400 mb-3">Implement individual feedback item tracking with status transitions (pending, addressed, closed, rejected) and persistence as files on disk.</p>
+
+          <!-- Closes feedback items -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">Closes:</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-700">
+              FB-01 <span class="text-amber-500">&#x2192;</span> addressed
+            </span>
+          </div>
+
+          <!-- Unit metadata row -->
+          <div class="flex items-center gap-3 mt-3 text-[10px] text-stone-400 dark:text-stone-500">
+            <span>Stage: development</span>
+            <span>&middot;</span>
+            <span>Discipline: backend</span>
+            <span>&middot;</span>
+            <span>Depends: unit-04</span>
+          </div>
+        </div>
+
+        <!-- New unit 2 -->
+        <div class="bg-white dark:bg-stone-900 rounded-xl border-2 border-teal-400 dark:border-teal-500 shadow-sm p-5 transition-all hover:shadow-md">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">unit-09</span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">pending</span>
+            </div>
+            <span class="text-xs text-stone-400 dark:text-stone-500">NEW</span>
+          </div>
+          <h3 class="text-sm font-semibold text-stone-900 dark:text-stone-100 mb-1">Fix Null Check in handleSubmit Callback</h3>
+          <p class="text-xs text-stone-600 dark:text-stone-400 mb-3">Add guard for undefined annotations in the submit path and extract annotation validation into a shared utility.</p>
+
+          <!-- Closes feedback items -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">Closes:</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-700">
+              FB-03 <span class="text-amber-500">&#x2192;</span> addressed
+            </span>
+          </div>
+
+          <div class="flex items-center gap-3 mt-3 text-[10px] text-stone-400 dark:text-stone-500">
+            <span>Stage: development</span>
+            <span>&middot;</span>
+            <span>Discipline: frontend</span>
+            <span>&middot;</span>
+            <span>Depends: unit-04</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Completed Units Section — read-only, grayed/locked -->
+    <section class="mb-8">
+      <div class="flex items-center gap-3 mb-4">
+        <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">
+          Completed Units <span class="text-sm font-normal text-stone-500 dark:text-stone-400">(7)</span>
+        </h2>
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-stone-200 text-stone-500 dark:bg-stone-700 dark:text-stone-400">
+          &#x1F512; read-only
+        </span>
+      </div>
+
+      <div class="space-y-2">
+        <!-- Completed unit 1 -->
+        <div class="locked-card bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-4 opacity-60">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-01</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+            </div>
+            <span class="text-stone-400 dark:text-stone-600 text-xs">&#x1F512;</span>
+          </div>
+          <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Feedback Data Model Design</h3>
+        </div>
+
+        <!-- Completed unit 2 -->
+        <div class="locked-card bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-4 opacity-60">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-02</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+            </div>
+            <span class="text-stone-400 dark:text-stone-600 text-xs">&#x1F512;</span>
+          </div>
+          <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Review Sidebar Segmented Control</h3>
+        </div>
+
+        <!-- Completed unit 3 -->
+        <div class="locked-card bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-4 opacity-60">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-03</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+            </div>
+            <span class="text-stone-400 dark:text-stone-600 text-xs">&#x1F512;</span>
+          </div>
+          <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Feedback Status Badge Component</h3>
+        </div>
+
+        <!-- Completed unit 4 -->
+        <div class="locked-card bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-4 opacity-60">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-04</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+            </div>
+            <span class="text-stone-400 dark:text-stone-600 text-xs">&#x1F512;</span>
+          </div>
+          <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Feedback CRUD API Endpoints</h3>
+        </div>
+
+        <!-- Completed unit 5 -->
+        <div class="locked-card bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-4 opacity-60">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-05</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+            </div>
+            <span class="text-stone-400 dark:text-stone-600 text-xs">&#x1F512;</span>
+          </div>
+          <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Feedback List with Grouping and Sorting</h3>
+        </div>
+
+        <!-- Completed unit 6 -->
+        <div class="locked-card bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-4 opacity-60">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-06</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+            </div>
+            <span class="text-stone-400 dark:text-stone-600 text-xs">&#x1F512;</span>
+          </div>
+          <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Mobile FAB and Bottom Sheet</h3>
+        </div>
+
+        <!-- Completed unit 7 -->
+        <div class="locked-card bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-4 opacity-60">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-07</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+            </div>
+            <span class="text-stone-400 dark:text-stone-600 text-xs">&#x1F512;</span>
+          </div>
+          <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Comment-to-Feedback Migration Layer</h3>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="mt-12 pb-8 text-center text-xs text-stone-500 dark:text-stone-500">
+    Powered by
+    <a href="https://haikumethod.ai" target="_blank" rel="noopener noreferrer" class="text-teal-600 dark:text-teal-400 hover:underline">
+      H&middot;AI&middot;K&middot;U
+    </a>
+    -- Human + AI Knowledge Unification
+  </footer>
+</body>
+</html>

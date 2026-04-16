@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Review Context Header — Wireframe</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: {} }
+    };
+  </script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+
+    /* Pipeline connector */
+    .pipeline-connector {
+      height: 2px;
+      flex: 1;
+      min-width: 16px;
+    }
+  </style>
+</head>
+<body class="dark bg-stone-950 text-stone-100">
+
+  <div class="max-w-5xl mx-auto px-4 py-12 space-y-16">
+
+    <!-- ==================== -->
+    <!-- Variant 1: Review Intent -->
+    <!-- ==================== -->
+    <section>
+      <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-2">Review Context Header — "Review Intent"</h2>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">Full intent-level review. Gate type: ask (local approval).</p>
+
+      <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm overflow-hidden">
+        <!-- Context header -->
+        <div class="px-6 pt-5 pb-4 border-b border-stone-200 dark:border-stone-700">
+          <!-- Top row: review purpose + gate badge -->
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Review Type</p>
+              <h1 class="text-xl font-semibold text-stone-900 dark:text-stone-100">Review Intent</h1>
+              <p class="text-sm text-stone-500 dark:text-stone-400 mt-1">Universal Feedback Model &amp; Review Recovery</p>
+            </div>
+            <div class="flex flex-col items-end gap-2">
+              <!-- Gate type badge -->
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                &#x1F512; ask
+              </span>
+              <span class="text-[10px] text-stone-400 dark:text-stone-500">Local approval required</span>
+            </div>
+          </div>
+
+          <!-- Stage progress strip (inline) -->
+          <nav aria-label="Stage progress" class="flex items-center gap-0 mt-2">
+            <!-- Inception — completed -->
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+                <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+              </div>
+              <span class="text-[10px] font-medium text-stone-700 dark:text-stone-300 mt-1">Inception</span>
+            </div>
+            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <!-- Design — completed -->
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+                <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+              </div>
+              <span class="text-[10px] font-medium text-stone-700 dark:text-stone-300 mt-1">Design</span>
+            </div>
+            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <!-- Development — current -->
+            <div class="flex flex-col items-center">
+              <div class="w-4.5 h-4.5 bg-teal-600 text-white flex items-center justify-center shadow-sm ring-2 ring-teal-400/50" style="width: 18px; height: 18px; transform: rotate(45deg); border-radius: 2px;">
+                <span style="transform: rotate(-45deg); font-size: 8px; font-weight: 700;">&#9670;</span>
+              </div>
+              <span class="text-[10px] font-semibold text-teal-600 dark:text-teal-400 mt-1.5">Development</span>
+            </div>
+            <div class="pipeline-connector bg-stone-300 dark:bg-stone-600 mt-[-14px]"></div>
+            <!-- Operations — future -->
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-stone-200 dark:bg-stone-700 border border-stone-300 dark:border-stone-600"></div>
+              <span class="text-[10px] font-medium text-stone-400 dark:text-stone-500 mt-1">Operations</span>
+            </div>
+            <div class="pipeline-connector bg-stone-300 dark:bg-stone-600 mt-[-14px]"></div>
+            <!-- Security — future -->
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-stone-200 dark:bg-stone-700 border border-stone-300 dark:border-stone-600"></div>
+              <span class="text-[10px] font-medium text-stone-400 dark:text-stone-500 mt-1">Security</span>
+            </div>
+          </nav>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== -->
+    <!-- Variant 2: Review Elaboration (stage-level) -->
+    <!-- ==================== -->
+    <section>
+      <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-2">Review Context Header — "Review Elaboration: development"</h2>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">Elaboration review for a specific stage. Gate type: ask.</p>
+
+      <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm overflow-hidden">
+        <div class="px-6 pt-5 pb-4 border-b border-stone-200 dark:border-stone-700">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Review Type</p>
+              <h1 class="text-xl font-semibold text-stone-900 dark:text-stone-100">
+                Review Elaboration: <span class="text-teal-600 dark:text-teal-400 capitalize">development</span>
+              </h1>
+              <p class="text-sm text-stone-500 dark:text-stone-400 mt-1">Universal Feedback Model &amp; Review Recovery</p>
+            </div>
+            <div class="flex flex-col items-end gap-2">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                &#x1F512; ask
+              </span>
+              <span class="text-[10px] text-stone-400 dark:text-stone-500">Local approval required</span>
+            </div>
+          </div>
+
+          <!-- Stage progress strip — development highlighted -->
+          <nav aria-label="Stage progress" class="flex items-center gap-0 mt-2">
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+                <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+              </div>
+              <span class="text-[10px] text-stone-700 dark:text-stone-300 mt-1">Inception</span>
+            </div>
+            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+                <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+              </div>
+              <span class="text-[10px] text-stone-700 dark:text-stone-300 mt-1">Design</span>
+            </div>
+            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="flex flex-col items-center">
+              <div class="w-[18px] h-[18px] bg-teal-600 text-white flex items-center justify-center shadow-sm ring-2 ring-teal-400/50" style="transform: rotate(45deg); border-radius: 2px;">
+                <span style="transform: rotate(-45deg); font-size: 8px; font-weight: 700;">&#9670;</span>
+              </div>
+              <span class="text-[10px] font-semibold text-teal-600 dark:text-teal-400 mt-1.5">Development</span>
+            </div>
+            <div class="pipeline-connector bg-stone-300 dark:bg-stone-600 mt-[-14px]"></div>
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-stone-200 dark:bg-stone-700 border border-stone-300 dark:border-stone-600"></div>
+              <span class="text-[10px] text-stone-400 dark:text-stone-500 mt-1">Operations</span>
+            </div>
+            <div class="pipeline-connector bg-stone-300 dark:bg-stone-600 mt-[-14px]"></div>
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-stone-200 dark:bg-stone-700 border border-stone-300 dark:border-stone-600"></div>
+              <span class="text-[10px] text-stone-400 dark:text-stone-500 mt-1">Security</span>
+            </div>
+          </nav>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== -->
+    <!-- Variant 3: Review Stage (external gate) -->
+    <!-- ==================== -->
+    <section>
+      <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-2">Review Context Header — "Review Stage: development" (external gate)</h2>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">Stage-level review with external gate. Shows purple badge.</p>
+
+      <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm overflow-hidden">
+        <div class="px-6 pt-5 pb-4 border-b border-stone-200 dark:border-stone-700">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Review Type</p>
+              <h1 class="text-xl font-semibold text-stone-900 dark:text-stone-100">
+                Review Stage: <span class="text-teal-600 dark:text-teal-400 capitalize">development</span>
+              </h1>
+              <p class="text-sm text-stone-500 dark:text-stone-400 mt-1">Universal Feedback Model &amp; Review Recovery</p>
+            </div>
+            <div class="flex flex-col items-end gap-2">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
+                &#x1F517; external
+              </span>
+              <span class="text-[10px] text-stone-400 dark:text-stone-500">PR/MR approval required</span>
+            </div>
+          </div>
+
+          <!-- Stage strip -->
+          <nav aria-label="Stage progress" class="flex items-center gap-0 mt-2">
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+                <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+              </div>
+              <span class="text-[10px] text-stone-700 dark:text-stone-300 mt-1">Inception</span>
+            </div>
+            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+                <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+              </div>
+              <span class="text-[10px] text-stone-700 dark:text-stone-300 mt-1">Design</span>
+            </div>
+            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="flex flex-col items-center">
+              <div class="w-[18px] h-[18px] bg-teal-600 text-white flex items-center justify-center shadow-sm ring-2 ring-teal-400/50" style="transform: rotate(45deg); border-radius: 2px;">
+                <span style="transform: rotate(-45deg); font-size: 8px; font-weight: 700;">&#9670;</span>
+              </div>
+              <span class="text-[10px] font-semibold text-teal-600 dark:text-teal-400 mt-1.5">Development</span>
+            </div>
+            <div class="pipeline-connector bg-stone-300 dark:bg-stone-600 mt-[-14px]"></div>
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-stone-200 dark:bg-stone-700 border border-stone-300 dark:border-stone-600"></div>
+              <span class="text-[10px] text-stone-400 dark:text-stone-500 mt-1">Operations</span>
+            </div>
+            <div class="pipeline-connector bg-stone-300 dark:bg-stone-600 mt-[-14px]"></div>
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-stone-200 dark:bg-stone-700 border border-stone-300 dark:border-stone-600"></div>
+              <span class="text-[10px] text-stone-400 dark:text-stone-500 mt-1">Security</span>
+            </div>
+          </nav>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== -->
+    <!-- Variant 4: Final Review -->
+    <!-- ==================== -->
+    <section>
+      <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-2">Review Context Header — "Final Review"</h2>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">Final intent review before delivery. Gate type: auto (no human gate — harness-driven).</p>
+
+      <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm overflow-hidden">
+        <div class="px-6 pt-5 pb-4 border-b border-stone-200 dark:border-stone-700">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Review Type</p>
+              <h1 class="text-xl font-semibold text-stone-900 dark:text-stone-100">
+                Final Review: <span class="text-stone-700 dark:text-stone-300">Universal Feedback Model</span>
+              </h1>
+              <p class="text-sm text-stone-500 dark:text-stone-400 mt-1">All stages complete. Review before delivery.</p>
+            </div>
+            <div class="flex flex-col items-end gap-2">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                &#x2699;&#xFE0F; auto
+              </span>
+              <span class="text-[10px] text-stone-400 dark:text-stone-500">Harness-driven (no human gate)</span>
+            </div>
+          </div>
+
+          <!-- All-complete strip -->
+          <nav aria-label="Stage progress" class="flex items-center gap-0 mt-2">
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+                <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+              </div>
+              <span class="text-[10px] text-stone-700 dark:text-stone-300 mt-1">Inception</span>
+            </div>
+            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+                <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+              </div>
+              <span class="text-[10px] text-stone-700 dark:text-stone-300 mt-1">Design</span>
+            </div>
+            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+                <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+              </div>
+              <span class="text-[10px] text-stone-700 dark:text-stone-300 mt-1">Development</span>
+            </div>
+            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+                <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+              </div>
+              <span class="text-[10px] text-stone-700 dark:text-stone-300 mt-1">Operations</span>
+            </div>
+            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+                <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+              </div>
+              <span class="text-[10px] text-stone-700 dark:text-stone-300 mt-1">Security</span>
+            </div>
+          </nav>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== -->
+    <!-- Variant 5: Compound gate (external + ask) -->
+    <!-- ==================== -->
+    <section>
+      <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-2">Review Context Header — Compound Gate [external, ask]</h2>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">User chooses between external submission or local approval.</p>
+
+      <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm overflow-hidden">
+        <div class="px-6 pt-5 pb-4 border-b border-stone-200 dark:border-stone-700">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Review Type</p>
+              <h1 class="text-xl font-semibold text-stone-900 dark:text-stone-100">
+                Review Stage: <span class="text-teal-600 dark:text-teal-400 capitalize">development</span>
+              </h1>
+              <p class="text-sm text-stone-500 dark:text-stone-400 mt-1">Universal Feedback Model &amp; Review Recovery</p>
+            </div>
+            <div class="flex flex-col items-end gap-2">
+              <div class="flex items-center gap-1.5">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
+                  &#x1F517; external
+                </span>
+                <span class="text-stone-400 dark:text-stone-500 text-xs">or</span>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                  &#x1F512; ask
+                </span>
+              </div>
+              <span class="text-[10px] text-stone-400 dark:text-stone-500">Choose: external PR or local approval</span>
+            </div>
+          </div>
+
+          <!-- Stage strip -->
+          <nav aria-label="Stage progress" class="flex items-center gap-0 mt-2">
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+                <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+              </div>
+              <span class="text-[10px] text-stone-700 dark:text-stone-300 mt-1">Inception</span>
+            </div>
+            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+                <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+              </div>
+              <span class="text-[10px] text-stone-700 dark:text-stone-300 mt-1">Design</span>
+            </div>
+            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="flex flex-col items-center">
+              <div class="w-[18px] h-[18px] bg-teal-600 text-white flex items-center justify-center shadow-sm ring-2 ring-teal-400/50" style="transform: rotate(45deg); border-radius: 2px;">
+                <span style="transform: rotate(-45deg); font-size: 8px; font-weight: 700;">&#9670;</span>
+              </div>
+              <span class="text-[10px] font-semibold text-teal-600 dark:text-teal-400 mt-1.5">Development</span>
+            </div>
+            <div class="pipeline-connector bg-stone-300 dark:bg-stone-600 mt-[-14px]"></div>
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-stone-200 dark:bg-stone-700 border border-stone-300 dark:border-stone-600"></div>
+              <span class="text-[10px] text-stone-400 dark:text-stone-500 mt-1">Operations</span>
+            </div>
+            <div class="pipeline-connector bg-stone-300 dark:bg-stone-600 mt-[-14px]"></div>
+            <div class="flex flex-col items-center">
+              <div class="w-4 h-4 rounded-full bg-stone-200 dark:bg-stone-700 border border-stone-300 dark:border-stone-600"></div>
+              <span class="text-[10px] text-stone-400 dark:text-stone-500 mt-1">Security</span>
+            </div>
+          </nav>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</body>
+</html>

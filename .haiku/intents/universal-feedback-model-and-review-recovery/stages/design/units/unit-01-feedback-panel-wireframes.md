@@ -12,6 +12,12 @@ bolt: 1
 hat: designer
 started_at: '2026-04-16T12:49:03Z'
 hat_started_at: '2026-04-16T12:49:03Z'
+outputs:
+  - stages/design/artifacts/feedback-inline-desktop.html
+  - stages/design/artifacts/feedback-inline-mobile.html
+  - stages/design/artifacts/stage-progress-strip.html
+  - stages/design/artifacts/review-context-header.html
+  - stages/design/artifacts/revisit-unit-list.html
 ---
 
 # Feedback Panel + Review Chrome Wireframes
