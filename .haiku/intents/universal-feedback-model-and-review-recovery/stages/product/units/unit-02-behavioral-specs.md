@@ -10,9 +10,9 @@ inputs:
   - knowledge/DATA-CONTRACTS.md
 status: active
 bolt: 1
-hat: product
+hat: specification
 started_at: '2026-04-16T14:36:27Z'
-hat_started_at: '2026-04-16T14:36:27Z'
+hat_started_at: '2026-04-16T14:41:22Z'
 outputs:
   - knowledge/DATA-CONTRACTS.md
 ---
