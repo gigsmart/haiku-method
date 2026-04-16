@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Review Package Unification — Design</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: {} }
+    };
+  </script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+
+    /* Diagram connection lines */
+    .arrow-right::after {
+      content: '\2192';
+      position: absolute;
+      right: -18px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .arrow-down::after {
+      content: '\2193';
+      position: absolute;
+      bottom: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    /* Package box styling */
+    .pkg-box {
+      border: 2px solid;
+      border-radius: 12px;
+      padding: 16px;
+      position: relative;
+    }
+    .pkg-box-header {
+      position: absolute;
+      top: -10px;
+      left: 12px;
+      padding: 0 8px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* File tree styling */
+    .file-tree { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; }
+    .file-tree .dir { color: #60a5fa; }
+    .file-tree .file { color: #a8a29e; }
+    .file-tree .file-new { color: #4ade80; }
+    .file-tree .file-shared { color: #c084fc; }
+    .file-tree .file-move { color: #fbbf24; }
+
+    /* Code block styling */
+    .code-block {
+      background: #1c1917;
+      border: 1px solid #44403c;
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .code-block .kw { color: #c084fc; }
+    .code-block .type { color: #60a5fa; }
+    .code-block .str { color: #4ade80; }
+    .code-block .comment { color: #78716c; }
+    .code-block .prop { color: #fbbf24; }
+    .code-block .punct { color: #a8a29e; }
+
+    /* Table hover */
+    .migration-row:hover { background: rgba(13, 148, 136, 0.08); }
+
+    /* Toggle for light/dark preview */
+    .theme-toggle { cursor: pointer; user-select: none; }
+  </style>
+</head>
+<body class="dark bg-stone-950 text-stone-100">
+
+  <div class="max-w-6xl mx-auto px-4 py-8">
+
+    <!-- Header -->
+    <header class="mb-10">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">design artifact</span>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-03</span>
+      </div>
+      <h1 class="text-2xl font-bold mb-2">Review Package Unification</h1>
+      <p class="text-sm text-stone-500 dark:text-stone-400">
+        Shared <code class="px-1.5 py-0.5 bg-stone-800 rounded text-xs">@haiku/review-ui</code> package structure, component migration plan, import/export map, styling strategy, and props contracts.
+      </p>
+      <button
+        onclick="document.documentElement.classList.toggle('dark'); this.textContent = document.documentElement.classList.contains('dark') ? 'Switch to Light' : 'Switch to Dark'"
+        class="mt-3 px-3 py-1.5 text-xs font-medium rounded-md bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300 hover:bg-stone-300 dark:hover:bg-stone-700 transition-colors theme-toggle"
+      >Switch to Light</button>
+    </header>
+
+    <!-- ====================================================================
+         SECTION 1: Package Layout Diagram
+         ==================================================================== -->
+    <section class="mb-12">
+      <h2 class="text-lg font-semibold mb-2 text-stone-900 dark:text-stone-100">1. Package Layout Diagram</h2>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">
+        The new <code class="px-1 py-0.5 bg-stone-100 dark:bg-stone-800 rounded text-xs">packages/review-ui/</code> package extracts shared components from both the SPA (<code class="px-1 py-0.5 bg-stone-100 dark:bg-stone-800 rounded text-xs">review-app/</code>) and SSR templates (<code class="px-1 py-0.5 bg-stone-100 dark:bg-stone-800 rounded text-xs">src/templates/</code>) into a single source of truth.
+      </p>
+
+      <!-- Diagram: Three packages -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Package 1: @haiku/review-ui (NEW) -->
+        <div class="pkg-box border-teal-500 dark:border-teal-600 bg-teal-50/30 dark:bg-teal-950/20">
+          <span class="pkg-box-header bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300">NEW PACKAGE</span>
+          <h3 class="text-sm font-bold mt-2 mb-3 text-teal-700 dark:text-teal-300">packages/review-ui/</h3>
+          <p class="text-[10px] text-stone-500 dark:text-stone-400 mb-3">npm: <code class="px-1 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">@haiku/review-ui</code></p>
+
+          <div class="file-tree space-y-0.5">
+            <div><span class="dir">src/</span></div>
+            <div class="pl-3"><span class="dir">components/</span></div>
+            <div class="pl-6"><span class="file-shared">Card.tsx</span></div>
+            <div class="pl-6"><span class="file-shared">StatusBadge.tsx</span></div>
+            <div class="pl-6"><span class="file-shared">Tabs.tsx</span></div>
+            <div class="pl-6"><span class="file-move">CommentTray.tsx</span> <span class="text-[10px] text-amber-400">(from refactor branch)</span></div>
+            <div class="pl-6"><span class="file-move">DecisionForm.tsx</span> <span class="text-[10px] text-amber-400">(from refactor branch)</span></div>
+            <div class="pl-6"><span class="file-new">FeedbackItem.tsx</span> <span class="text-[10px] text-green-400">NEW</span></div>
+            <div class="pl-6"><span class="file-new">FeedbackList.tsx</span> <span class="text-[10px] text-green-400">NEW</span></div>
+            <div class="pl-6"><span class="file-new">FeedbackStatusBadge.tsx</span> <span class="text-[10px] text-green-400">NEW</span></div>
+            <div class="pl-6"><span class="file-new">FeedbackOriginIcon.tsx</span> <span class="text-[10px] text-green-400">NEW</span></div>
+            <div class="pl-6"><span class="file-new">FeedbackSummaryBar.tsx</span> <span class="text-[10px] text-green-400">NEW</span></div>
+            <div class="pl-6"><span class="file-new">SidebarSegmentedControl.tsx</span> <span class="text-[10px] text-green-400">NEW</span></div>
+            <div class="pl-6"><span class="file-new">StageProgressStrip.tsx</span> <span class="text-[10px] text-green-400">NEW</span></div>
+            <div class="pl-6"><span class="file-new">ReviewContextHeader.tsx</span> <span class="text-[10px] text-green-400">NEW</span></div>
+            <div class="pl-3"><span class="dir">presets/</span></div>
+            <div class="pl-6"><span class="file-new">tailwind-review.ts</span> <span class="text-[10px] text-green-400">shared preset</span></div>
+            <div class="pl-3"><span class="dir">types/</span></div>
+            <div class="pl-6"><span class="file-new">feedback.ts</span></div>
+            <div class="pl-6"><span class="file-new">stage.ts</span></div>
+            <div class="pl-3"><span class="file-new">index.ts</span> <span class="text-[10px] text-stone-400">barrel export</span></div>
+            <div><span class="file-new">package.json</span></div>
+            <div><span class="file-new">tsconfig.json</span></div>
+          </div>
+        </div>
+
+        <!-- Package 2: @haiku/review-app (SPA - existing, modified) -->
+        <div class="pkg-box border-amber-500 dark:border-amber-600 bg-amber-50/20 dark:bg-amber-950/10">
+          <span class="pkg-box-header bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">MODIFIED</span>
+          <h3 class="text-sm font-bold mt-2 mb-3 text-amber-700 dark:text-amber-300">packages/haiku/review-app/</h3>
+          <p class="text-[10px] text-stone-500 dark:text-stone-400 mb-3">npm: <code class="px-1 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">@haiku/review-app</code> (SPA)</p>
+
+          <div class="file-tree space-y-0.5">
+            <div><span class="dir">src/</span></div>
+            <div class="pl-3"><span class="file">App.tsx</span> <span class="text-[10px] text-stone-500">SPA-only: router, layout</span></div>
+            <div class="pl-3"><span class="file">main.tsx</span> <span class="text-[10px] text-stone-500">SPA-only: entry</span></div>
+            <div class="pl-3"><span class="dir">components/</span></div>
+            <div class="pl-6"><span class="file">ReviewPage.tsx</span> <span class="text-[10px] text-stone-500">SPA-only: page layout</span></div>
+            <div class="pl-6"><span class="file">ReviewSidebar.tsx</span> <span class="text-[10px] text-amber-400">imports from @haiku/review-ui</span></div>
+            <div class="pl-6"><span class="file">QuestionPage.tsx</span> <span class="text-[10px] text-stone-500">SPA-only</span></div>
+            <div class="pl-6"><span class="file">DesignPicker.tsx</span> <span class="text-[10px] text-stone-500">SPA-only</span></div>
+            <div class="pl-6"><span class="file">InlineComments.tsx</span> <span class="text-[10px] text-stone-500">SPA-only: DOM manipulation</span></div>
+            <div class="pl-6"><span class="file">AnnotationCanvas.tsx</span> <span class="text-[10px] text-stone-500">SPA-only: canvas API</span></div>
+            <div class="pl-6"><span class="file">ThemeToggle.tsx</span> <span class="text-[10px] text-stone-500">SPA-only</span></div>
+            <div class="pl-6"><span class="file">MarkdownViewer.tsx</span> <span class="text-[10px] text-stone-500">SPA-only</span></div>
+            <div class="pl-6"><span class="file">MermaidDiagram.tsx</span> <span class="text-[10px] text-stone-500">SPA-only</span></div>
+            <div class="pl-6"><span class="file">SubmitSuccess.tsx</span> <span class="text-[10px] text-stone-500">SPA-only</span></div>
+            <div class="pl-3"><span class="dir">hooks/</span></div>
+            <div class="pl-6"><span class="file">useSession.ts</span> <span class="text-[10px] text-stone-500">SPA-only: HTTP + WS</span></div>
+            <div class="pl-3"><span class="file">types.ts</span> <span class="text-[10px] text-amber-400">re-exports from @haiku/review-ui</span></div>
+          </div>
+        </div>
+
+        <!-- Package 3: SSR Templates (existing, modified) -->
+        <div class="pkg-box border-violet-500 dark:border-violet-600 bg-violet-50/20 dark:bg-violet-950/10">
+          <span class="pkg-box-header bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-300">MODIFIED</span>
+          <h3 class="text-sm font-bold mt-2 mb-3 text-violet-700 dark:text-violet-300">packages/haiku/src/templates/</h3>
+          <p class="text-[10px] text-stone-500 dark:text-stone-400 mb-3">SSR: server-rendered HTML strings</p>
+
+          <div class="file-tree space-y-0.5">
+            <div><span class="file">layout.ts</span> <span class="text-[10px] text-stone-500">unchanged</span></div>
+            <div><span class="file">intent-review.ts</span> <span class="text-[10px] text-amber-400">uses shared HTML partials</span></div>
+            <div><span class="file">unit-review.ts</span> <span class="text-[10px] text-amber-400">uses shared HTML partials</span></div>
+            <div><span class="file">components.ts</span> <span class="text-[10px] text-amber-400">delegates to @haiku/review-ui renderers</span></div>
+            <div><span class="file">inline-comments.ts</span> <span class="text-[10px] text-stone-500">unchanged (SSR-specific JS)</span></div>
+            <div><span class="file">annotation-canvas.ts</span> <span class="text-[10px] text-stone-500">unchanged (SSR-specific JS)</span></div>
+            <div><span class="file">question-form.ts</span> <span class="text-[10px] text-stone-500">unchanged</span></div>
+            <div><span class="file">design-direction.ts</span> <span class="text-[10px] text-stone-500">unchanged</span></div>
+            <div><span class="file">styles.ts</span> <span class="text-[10px] text-amber-400">imports shared token map</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dependency arrows -->
+      <div class="mt-6 flex items-center justify-center gap-4">
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+          <span class="text-xs text-stone-400">review-app</span>
+        </div>
+        <span class="text-stone-500">&rarr;</span>
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-full bg-teal-500"></div>
+          <span class="text-xs text-stone-400">@haiku/review-ui</span>
+        </div>
+        <span class="text-stone-500">&larr;</span>
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-full bg-violet-500"></div>
+          <span class="text-xs text-stone-400">SSR templates</span>
+        </div>
+      </div>
+      <p class="text-center text-[10px] text-stone-500 dark:text-stone-400 mt-2">
+        Both consumers depend on <code class="px-1 py-0.5 bg-stone-800 rounded">@haiku/review-ui</code>. The shared package has zero runtime dependencies beyond React types.
+      </p>
+    </section>
+
+    <!-- ====================================================================
+         SECTION 2: Component Migration Table
+         ==================================================================== -->
+    <section class="mb-12">
+      <h2 class="text-lg font-semibold mb-2 text-stone-900 dark:text-stone-100">2. Component Migration Table</h2>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">
+        Every component categorized by current location, target location, and sharing status.
+      </p>
+
+      <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="border-b-2 border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50">
+                <th class="py-2.5 px-4 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Component</th>
+                <th class="py-2.5 px-4 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Current Location</th>
+                <th class="py-2.5 px-4 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Target Location</th>
+                <th class="py-2.5 px-4 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Shared?</th>
+                <th class="py-2.5 px-4 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Notes</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
+
+              <!-- SHARED: Move to @haiku/review-ui -->
+              <tr class="migration-row">
+                <td class="py-2.5 px-4 text-sm font-medium">Card</td>
+                <td class="py-2.5 px-4 text-xs text-stone-500 dark:text-stone-400 font-mono">review-app/components/Card.tsx</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-teal-600 dark:text-teal-400">review-ui/components/Card.tsx</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">shared</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">SSR has string equivalent in components.ts; unify interface</td>
+              </tr>
+              <tr class="migration-row">
+                <td class="py-2.5 px-4 text-sm font-medium">StatusBadge</td>
+                <td class="py-2.5 px-4 text-xs text-stone-500 dark:text-stone-400 font-mono">review-app/components/StatusBadge.tsx</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-teal-600 dark:text-teal-400">review-ui/components/StatusBadge.tsx</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">shared</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">Already in @haiku/shared; re-export + extend with feedback statuses</td>
+              </tr>
+              <tr class="migration-row">
+                <td class="py-2.5 px-4 text-sm font-medium">Tabs</td>
+                <td class="py-2.5 px-4 text-xs text-stone-500 dark:text-stone-400 font-mono">review-app/components/Tabs.tsx</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-teal-600 dark:text-teal-400">review-ui/components/Tabs.tsx</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">shared</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">SSR has renderTabs() string version; React version becomes canonical</td>
+              </tr>
+              <tr class="migration-row">
+                <td class="py-2.5 px-4 text-sm font-medium">CommentTray</td>
+                <td class="py-2.5 px-4 text-xs text-stone-500 dark:text-stone-400 font-mono">refactor/unified-review-sidebar branch</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-teal-600 dark:text-teal-400">review-ui/components/CommentTray.tsx</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">shared</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">Collapsible bottom tray for comment list; from refactor branch</td>
+              </tr>
+              <tr class="migration-row">
+                <td class="py-2.5 px-4 text-sm font-medium">DecisionForm</td>
+                <td class="py-2.5 px-4 text-xs text-stone-500 dark:text-stone-400 font-mono">refactor/unified-review-sidebar branch</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-teal-600 dark:text-teal-400">review-ui/components/DecisionForm.tsx</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">shared</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">Approve/Request Changes UI; from refactor branch</td>
+              </tr>
+
+              <!-- NEW: Created in @haiku/review-ui -->
+              <tr class="migration-row bg-green-50/30 dark:bg-green-950/10">
+                <td class="py-2.5 px-4 text-sm font-medium">FeedbackItem</td>
+                <td class="py-2.5 px-4 text-xs text-stone-400 italic">does not exist</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-green-600 dark:text-green-400">review-ui/components/FeedbackItem.tsx</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new shared</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">Compact/expanded feedback card with status + origin</td>
+              </tr>
+              <tr class="migration-row bg-green-50/30 dark:bg-green-950/10">
+                <td class="py-2.5 px-4 text-sm font-medium">FeedbackList</td>
+                <td class="py-2.5 px-4 text-xs text-stone-400 italic">does not exist</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-green-600 dark:text-green-400">review-ui/components/FeedbackList.tsx</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new shared</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">Grouped, sorted list of FeedbackItem components</td>
+              </tr>
+              <tr class="migration-row bg-green-50/30 dark:bg-green-950/10">
+                <td class="py-2.5 px-4 text-sm font-medium">FeedbackStatusBadge</td>
+                <td class="py-2.5 px-4 text-xs text-stone-400 italic">does not exist</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-green-600 dark:text-green-400">review-ui/components/FeedbackStatusBadge.tsx</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new shared</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">pending/addressed/closed/rejected badge with feedback colors</td>
+              </tr>
+              <tr class="migration-row bg-green-50/30 dark:bg-green-950/10">
+                <td class="py-2.5 px-4 text-sm font-medium">FeedbackOriginIcon</td>
+                <td class="py-2.5 px-4 text-xs text-stone-400 italic">does not exist</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-green-600 dark:text-green-400">review-ui/components/FeedbackOriginIcon.tsx</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new shared</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">Origin emoji + label (adversarial, PR, visual, agent)</td>
+              </tr>
+              <tr class="migration-row bg-green-50/30 dark:bg-green-950/10">
+                <td class="py-2.5 px-4 text-sm font-medium">FeedbackSummaryBar</td>
+                <td class="py-2.5 px-4 text-xs text-stone-400 italic">does not exist</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-green-600 dark:text-green-400">review-ui/components/FeedbackSummaryBar.tsx</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new shared</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">Aggregate counts by status with filter toggles</td>
+              </tr>
+              <tr class="migration-row bg-green-50/30 dark:bg-green-950/10">
+                <td class="py-2.5 px-4 text-sm font-medium">SidebarSegmentedControl</td>
+                <td class="py-2.5 px-4 text-xs text-stone-400 italic">does not exist</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-green-600 dark:text-green-400">review-ui/components/SidebarSegmentedControl.tsx</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new shared</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">Feedback/Mine toggle for sidebar views</td>
+              </tr>
+              <tr class="migration-row bg-green-50/30 dark:bg-green-950/10">
+                <td class="py-2.5 px-4 text-sm font-medium">StageProgressStrip</td>
+                <td class="py-2.5 px-4 text-xs text-stone-400 italic">does not exist</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-green-600 dark:text-green-400">review-ui/components/StageProgressStrip.tsx</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new shared</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">Pipeline visualization with stage dots + connectors</td>
+              </tr>
+              <tr class="migration-row bg-green-50/30 dark:bg-green-950/10">
+                <td class="py-2.5 px-4 text-sm font-medium">ReviewContextHeader</td>
+                <td class="py-2.5 px-4 text-xs text-stone-400 italic">does not exist</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-green-600 dark:text-green-400">review-ui/components/ReviewContextHeader.tsx</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new shared</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">Intent title + stage context + visit counter</td>
+              </tr>
+
+              <!-- SPA-ONLY: Stay in review-app -->
+              <tr class="migration-row bg-stone-50/30 dark:bg-stone-800/10">
+                <td class="py-2.5 px-4 text-sm font-medium">App.tsx</td>
+                <td class="py-2.5 px-4 text-xs text-stone-500 dark:text-stone-400 font-mono">review-app/src/App.tsx</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-stone-500">stays in review-app</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">SPA-only</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">Router, session loader, header/footer chrome</td>
+              </tr>
+              <tr class="migration-row bg-stone-50/30 dark:bg-stone-800/10">
+                <td class="py-2.5 px-4 text-sm font-medium">ReviewPage</td>
+                <td class="py-2.5 px-4 text-xs text-stone-500 dark:text-stone-400 font-mono">review-app/components/ReviewPage.tsx</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-stone-500">stays in review-app</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">SPA-only</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">Page orchestration, state lifting, tab composition</td>
+              </tr>
+              <tr class="migration-row bg-stone-50/30 dark:bg-stone-800/10">
+                <td class="py-2.5 px-4 text-sm font-medium">ReviewSidebar</td>
+                <td class="py-2.5 px-4 text-xs text-stone-500 dark:text-stone-400 font-mono">review-app/components/ReviewSidebar.tsx</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-stone-500">stays in review-app</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">SPA-only</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">Sidebar shell + state management; composes shared components</td>
+              </tr>
+              <tr class="migration-row bg-stone-50/30 dark:bg-stone-800/10">
+                <td class="py-2.5 px-4 text-sm font-medium">InlineComments</td>
+                <td class="py-2.5 px-4 text-xs text-stone-500 dark:text-stone-400 font-mono">review-app/components/InlineComments.tsx</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-stone-500">stays in review-app</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">SPA-only</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">Heavy DOM manipulation, text selection, highlight spans</td>
+              </tr>
+              <tr class="migration-row bg-stone-50/30 dark:bg-stone-800/10">
+                <td class="py-2.5 px-4 text-sm font-medium">AnnotationCanvas</td>
+                <td class="py-2.5 px-4 text-xs text-stone-500 dark:text-stone-400 font-mono">review-app/components/AnnotationCanvas.tsx</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-stone-500">stays in review-app</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">SPA-only</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">Canvas 2D API, mouse event tracking, pin placement</td>
+              </tr>
+              <tr class="migration-row bg-stone-50/30 dark:bg-stone-800/10">
+                <td class="py-2.5 px-4 text-sm font-medium">useSession</td>
+                <td class="py-2.5 px-4 text-xs text-stone-500 dark:text-stone-400 font-mono">review-app/hooks/useSession.ts</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-stone-500">stays in review-app</td>
+                <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">SPA-only</span></td>
+                <td class="py-2.5 px-4 text-xs text-stone-500">HTTP fetch, WebSocket, session state management</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="flex flex-wrap gap-4 mt-4 px-2">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">shared</span>
+          <span class="text-xs text-stone-400">Moves to @haiku/review-ui</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new shared</span>
+          <span class="text-xs text-stone-400">Created in @haiku/review-ui</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">SPA-only</span>
+          <span class="text-xs text-stone-400">Stays in review-app</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SECTION 3: Import/Export Map
+         ==================================================================== -->
+    <section class="mb-12">
+      <h2 class="text-lg font-semibold mb-2 text-stone-900 dark:text-stone-100">3. Import/Export Map</h2>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">
+        How each consumer imports shared components.
+      </p>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- SPA imports -->
+        <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+          <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+            SPA Imports (React)
+          </h3>
+
+          <div class="code-block mb-4">
+            <span class="comment">// review-app/src/components/ReviewSidebar.tsx</span><br />
+            <span class="kw">import</span> {<br />
+            &nbsp;&nbsp;<span class="type">FeedbackList</span>,<br />
+            &nbsp;&nbsp;<span class="type">FeedbackSummaryBar</span>,<br />
+            &nbsp;&nbsp;<span class="type">SidebarSegmentedControl</span>,<br />
+            &nbsp;&nbsp;<span class="type">DecisionForm</span>,<br />
+            &nbsp;&nbsp;<span class="type">CommentTray</span>,<br />
+            } <span class="kw">from</span> <span class="str">'@haiku/review-ui'</span><span class="punct">;</span>
+          </div>
+
+          <div class="code-block mb-4">
+            <span class="comment">// review-app/src/components/ReviewPage.tsx</span><br />
+            <span class="kw">import</span> {<br />
+            &nbsp;&nbsp;<span class="type">StageProgressStrip</span>,<br />
+            &nbsp;&nbsp;<span class="type">ReviewContextHeader</span>,<br />
+            &nbsp;&nbsp;<span class="type">Card</span>,<br />
+            &nbsp;&nbsp;<span class="type">Tabs</span>,<br />
+            } <span class="kw">from</span> <span class="str">'@haiku/review-ui'</span><span class="punct">;</span>
+          </div>
+
+          <div class="code-block">
+            <span class="comment">// review-app/src/types.ts</span><br />
+            <span class="kw">export</span> <span class="kw">type</span> {<br />
+            &nbsp;&nbsp;<span class="type">FeedbackItemData</span>,<br />
+            &nbsp;&nbsp;<span class="type">StageState</span>,<br />
+            &nbsp;&nbsp;<span class="type">ReviewContext</span>,<br />
+            } <span class="kw">from</span> <span class="str">'@haiku/review-ui'</span><span class="punct">;</span>
+          </div>
+        </div>
+
+        <!-- SSR imports -->
+        <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+          <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-violet-500"></span>
+            SSR Imports (HTML String Renderers)
+          </h3>
+          <p class="text-xs text-stone-500 dark:text-stone-400 mb-4">
+            SSR templates cannot use React components directly. The shared package exports <strong>static HTML renderer functions</strong> alongside the React components for SSR consumption.
+          </p>
+
+          <div class="code-block mb-4">
+            <span class="comment">// packages/haiku/src/templates/components.ts</span><br />
+            <span class="kw">import</span> {<br />
+            &nbsp;&nbsp;<span class="type">renderFeedbackStatusBadge</span>,<br />
+            &nbsp;&nbsp;<span class="type">renderFeedbackOriginIcon</span>,<br />
+            &nbsp;&nbsp;<span class="type">renderStageProgressStrip</span>,<br />
+            &nbsp;&nbsp;<span class="type">renderReviewContextHeader</span>,<br />
+            &nbsp;&nbsp;<span class="type">feedbackStatusColors</span>,<br />
+            &nbsp;&nbsp;<span class="type">originColors</span>,<br />
+            } <span class="kw">from</span> <span class="str">'@haiku/review-ui/ssr'</span><span class="punct">;</span>
+          </div>
+
+          <div class="code-block">
+            <span class="comment">// Each shared component has a dual export:</span><br />
+            <span class="comment">// - React component: default import</span><br />
+            <span class="comment">// - HTML string renderer: /ssr subpath</span><br /><br />
+            <span class="comment">// packages/review-ui/src/ssr/index.ts</span><br />
+            <span class="kw">export</span> { <span class="type">renderFeedbackStatusBadge</span> } <span class="kw">from</span> <span class="str">'./feedback-status-badge'</span><span class="punct">;</span><br />
+            <span class="kw">export</span> { <span class="type">renderStageProgressStrip</span> } <span class="kw">from</span> <span class="str">'./stage-progress-strip'</span><span class="punct">;</span><br />
+            <span class="comment">// ...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barrel export -->
+      <div class="mt-6 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+        <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-teal-500"></span>
+          Barrel Export — packages/review-ui/src/index.ts
+        </h3>
+
+        <div class="code-block">
+          <span class="comment">// React components</span><br />
+          <span class="kw">export</span> { <span class="type">Card</span>, <span class="type">SectionHeading</span> } <span class="kw">from</span> <span class="str">'./components/Card'</span><span class="punct">;</span><br />
+          <span class="kw">export</span> { <span class="type">StatusBadge</span> } <span class="kw">from</span> <span class="str">'./components/StatusBadge'</span><span class="punct">;</span><br />
+          <span class="kw">export</span> { <span class="type">Tabs</span> } <span class="kw">from</span> <span class="str">'./components/Tabs'</span><span class="punct">;</span><br />
+          <span class="kw">export</span> { <span class="type">CommentTray</span> } <span class="kw">from</span> <span class="str">'./components/CommentTray'</span><span class="punct">;</span><br />
+          <span class="kw">export</span> { <span class="type">DecisionForm</span> } <span class="kw">from</span> <span class="str">'./components/DecisionForm'</span><span class="punct">;</span><br />
+          <span class="kw">export</span> { <span class="type">FeedbackItem</span> } <span class="kw">from</span> <span class="str">'./components/FeedbackItem'</span><span class="punct">;</span><br />
+          <span class="kw">export</span> { <span class="type">FeedbackList</span> } <span class="kw">from</span> <span class="str">'./components/FeedbackList'</span><span class="punct">;</span><br />
+          <span class="kw">export</span> { <span class="type">FeedbackStatusBadge</span> } <span class="kw">from</span> <span class="str">'./components/FeedbackStatusBadge'</span><span class="punct">;</span><br />
+          <span class="kw">export</span> { <span class="type">FeedbackOriginIcon</span> } <span class="kw">from</span> <span class="str">'./components/FeedbackOriginIcon'</span><span class="punct">;</span><br />
+          <span class="kw">export</span> { <span class="type">FeedbackSummaryBar</span> } <span class="kw">from</span> <span class="str">'./components/FeedbackSummaryBar'</span><span class="punct">;</span><br />
+          <span class="kw">export</span> { <span class="type">SidebarSegmentedControl</span> } <span class="kw">from</span> <span class="str">'./components/SidebarSegmentedControl'</span><span class="punct">;</span><br />
+          <span class="kw">export</span> { <span class="type">StageProgressStrip</span> } <span class="kw">from</span> <span class="str">'./components/StageProgressStrip'</span><span class="punct">;</span><br />
+          <span class="kw">export</span> { <span class="type">ReviewContextHeader</span> } <span class="kw">from</span> <span class="str">'./components/ReviewContextHeader'</span><span class="punct">;</span><br /><br />
+          <span class="comment">// Types</span><br />
+          <span class="kw">export</span> <span class="kw">type</span> { <span class="type">FeedbackItemData</span>, <span class="type">FeedbackStatus</span>, <span class="type">FeedbackOrigin</span> } <span class="kw">from</span> <span class="str">'./types/feedback'</span><span class="punct">;</span><br />
+          <span class="kw">export</span> <span class="kw">type</span> { <span class="type">StageState</span>, <span class="type">ReviewContext</span> } <span class="kw">from</span> <span class="str">'./types/stage'</span><span class="punct">;</span><br /><br />
+          <span class="comment">// Token maps (for SSR or consumer customization)</span><br />
+          <span class="kw">export</span> { <span class="type">feedbackStatusColors</span>, <span class="type">originColors</span>, <span class="type">originIcons</span> } <span class="kw">from</span> <span class="str">'./presets/tailwind-review'</span><span class="punct">;</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SECTION 4: Styling Strategy
+         ==================================================================== -->
+    <section class="mb-12">
+      <h2 class="text-lg font-semibold mb-2 text-stone-900 dark:text-stone-100">4. Styling Strategy</h2>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">
+        Source-only CSS distribution with a shared Tailwind preset for both consumers.
+      </p>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Principle 1 -->
+        <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 flex items-center justify-center text-sm font-bold">1</span>
+            <h3 class="text-base font-semibold">Source-Only</h3>
+          </div>
+          <p class="text-xs text-stone-500 dark:text-stone-400">
+            <code class="px-1 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">@haiku/review-ui</code> ships <strong>uncompiled</strong> TSX/TS source. No built CSS, no compiled JS. The consumer's build pipeline (Vite for SPA, tsc for SSR) processes everything.
+          </p>
+          <div class="mt-3 code-block text-[11px]">
+            <span class="comment">// package.json</span><br />
+            {<br />
+            &nbsp;&nbsp;<span class="str">"exports"</span>: {<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"."</span>: <span class="str">"./src/index.ts"</span>,<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"./ssr"</span>: <span class="str">"./src/ssr/index.ts"</span><br />
+            &nbsp;&nbsp;}<br />
+            }
+          </div>
+        </div>
+
+        <!-- Principle 2 -->
+        <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 flex items-center justify-center text-sm font-bold">2</span>
+            <h3 class="text-base font-semibold">Shared Tailwind Preset</h3>
+          </div>
+          <p class="text-xs text-stone-500 dark:text-stone-400 mb-3">
+            A single <code class="px-1 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">tailwind-review</code> preset defines all feedback tokens. Both consumers extend it.
+          </p>
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+              <span class="text-xs text-stone-400">SPA uses <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">stone</code> neutral + <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">teal</code> accent</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-violet-500"></span>
+              <span class="text-xs text-stone-400">SSR uses <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">gray</code> neutral + <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">blue</code> accent</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-green-500"></span>
+              <span class="text-xs text-stone-400">Feedback colors (amber, blue, green, rose) <strong>same in both</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Principle 3 -->
+        <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 flex items-center justify-center text-sm font-bold">3</span>
+            <h3 class="text-base font-semibold">Dark Mode</h3>
+          </div>
+          <p class="text-xs text-stone-500 dark:text-stone-400">
+            All shared components use <code class="px-1 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">dark:</code> variant classes. The consumer controls the <code class="px-1 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">.dark</code> class on <code class="px-1 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">&lt;html&gt;</code>.
+          </p>
+          <div class="mt-3 space-y-1">
+            <p class="text-[10px] text-stone-400">Pattern for every color token:</p>
+            <div class="flex gap-1 flex-wrap">
+              <span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-800">Light: bg-{c}-100</span>
+              <span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-900/30 text-amber-300">Dark: bg-{c}-900/30</span>
+            </div>
+            <div class="flex gap-1 flex-wrap">
+              <span class="px-1.5 py-0.5 rounded text-[10px] bg-blue-100 text-blue-800">Light: text-{c}-800</span>
+              <span class="px-1.5 py-0.5 rounded text-[10px] bg-blue-900/30 text-blue-300">Dark: text-{c}-300</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Palette comparison -->
+      <div class="mt-6 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+        <h3 class="text-base font-semibold mb-4">Palette Translation: SPA vs SSR</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wider text-stone-400 mb-2">SPA Neutral</p>
+            <div class="space-y-1">
+              <div class="flex items-center gap-2"><div class="w-6 h-4 rounded bg-stone-100 border border-stone-200"></div><span class="text-[10px]">stone-100</span></div>
+              <div class="flex items-center gap-2"><div class="w-6 h-4 rounded bg-stone-200 border border-stone-300"></div><span class="text-[10px]">stone-200</span></div>
+              <div class="flex items-center gap-2"><div class="w-6 h-4 rounded bg-stone-500"></div><span class="text-[10px]">stone-500</span></div>
+              <div class="flex items-center gap-2"><div class="w-6 h-4 rounded bg-stone-900"></div><span class="text-[10px]">stone-900</span></div>
+            </div>
+          </div>
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wider text-stone-400 mb-2">SSR Neutral</p>
+            <div class="space-y-1">
+              <div class="flex items-center gap-2"><div class="w-6 h-4 rounded bg-gray-100 border border-gray-200"></div><span class="text-[10px]">gray-100</span></div>
+              <div class="flex items-center gap-2"><div class="w-6 h-4 rounded bg-gray-200 border border-gray-300"></div><span class="text-[10px]">gray-200</span></div>
+              <div class="flex items-center gap-2"><div class="w-6 h-4 rounded bg-gray-500"></div><span class="text-[10px]">gray-500</span></div>
+              <div class="flex items-center gap-2"><div class="w-6 h-4 rounded bg-gray-900"></div><span class="text-[10px]">gray-900</span></div>
+            </div>
+          </div>
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wider text-stone-400 mb-2">SPA Accent</p>
+            <div class="space-y-1">
+              <div class="flex items-center gap-2"><div class="w-6 h-4 rounded bg-teal-100"></div><span class="text-[10px]">teal-100</span></div>
+              <div class="flex items-center gap-2"><div class="w-6 h-4 rounded bg-teal-600"></div><span class="text-[10px]">teal-600</span></div>
+              <div class="flex items-center gap-2"><div class="w-6 h-4 rounded bg-teal-700"></div><span class="text-[10px]">teal-700</span></div>
+            </div>
+          </div>
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wider text-stone-400 mb-2">SSR Accent</p>
+            <div class="space-y-1">
+              <div class="flex items-center gap-2"><div class="w-6 h-4 rounded bg-blue-100"></div><span class="text-[10px]">blue-100</span></div>
+              <div class="flex items-center gap-2"><div class="w-6 h-4 rounded bg-blue-600"></div><span class="text-[10px]">blue-600</span></div>
+              <div class="flex items-center gap-2"><div class="w-6 h-4 rounded bg-blue-700"></div><span class="text-[10px]">blue-700</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-3">
+          Feedback-specific colors (amber, blue, green, rose, violet, sky) are identical in both consumers -- they don't touch the divergent neutral/accent scales.
+        </p>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SECTION 5: Props Contracts
+         ==================================================================== -->
+    <section class="mb-12">
+      <h2 class="text-lg font-semibold mb-2 text-stone-900 dark:text-stone-100">5. Props Contracts</h2>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">
+        TypeScript interfaces for the key shared components.
+      </p>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- StageProgressStrip -->
+        <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+          <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
+            StageProgressStrip
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new</span>
+          </h3>
+          <div class="code-block text-[11px]">
+            <span class="kw">interface</span> <span class="type">StageProgressStripProps</span> {<br />
+            &nbsp;&nbsp;<span class="comment">/** Ordered list of stages in the studio */</span><br />
+            &nbsp;&nbsp;<span class="prop">stages</span>: <span class="type">StageInfo</span>[];<br /><br />
+            &nbsp;&nbsp;<span class="comment">/** Which stage is currently active */</span><br />
+            &nbsp;&nbsp;<span class="prop">activeStage</span>?: <span class="type">string</span>;<br /><br />
+            &nbsp;&nbsp;<span class="comment">/** Variant: full shows labels, compact shows dots only */</span><br />
+            &nbsp;&nbsp;<span class="prop">variant</span>?: <span class="str">"full"</span> | <span class="str">"compact"</span>;<br /><br />
+            &nbsp;&nbsp;<span class="comment">/** Click handler for stage navigation */</span><br />
+            &nbsp;&nbsp;<span class="prop">onStageClick</span>?: (<span class="prop">stageName</span>: <span class="type">string</span>) =&gt; <span class="type">void</span>;<br />
+            }<br /><br />
+
+            <span class="kw">interface</span> <span class="type">StageInfo</span> {<br />
+            &nbsp;&nbsp;<span class="prop">name</span>: <span class="type">string</span>;<br />
+            &nbsp;&nbsp;<span class="prop">status</span>: <span class="str">"completed"</span> | <span class="str">"active"</span> | <span class="str">"pending"</span> | <span class="str">"blocked"</span>;<br />
+            &nbsp;&nbsp;<span class="comment">/** Gate type shapes the dot (circle vs diamond) */</span><br />
+            &nbsp;&nbsp;<span class="prop">gateType</span>?: <span class="str">"auto"</span> | <span class="str">"ask"</span> | <span class="str">"external"</span> | <span class="str">"await"</span>;<br />
+            &nbsp;&nbsp;<span class="comment">/** Feedback count for this stage */</span><br />
+            &nbsp;&nbsp;<span class="prop">feedbackCount</span>?: <span class="type">number</span>;<br />
+            &nbsp;&nbsp;<span class="comment">/** Count of pending feedback */</span><br />
+            &nbsp;&nbsp;<span class="prop">pendingFeedbackCount</span>?: <span class="type">number</span>;<br />
+            }
+          </div>
+        </div>
+
+        <!-- ReviewContextHeader -->
+        <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+          <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
+            ReviewContextHeader
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new</span>
+          </h3>
+          <div class="code-block text-[11px]">
+            <span class="kw">interface</span> <span class="type">ReviewContextHeaderProps</span> {<br />
+            &nbsp;&nbsp;<span class="comment">/** Intent title */</span><br />
+            &nbsp;&nbsp;<span class="prop">intentTitle</span>: <span class="type">string</span>;<br /><br />
+            &nbsp;&nbsp;<span class="comment">/** Current stage name */</span><br />
+            &nbsp;&nbsp;<span class="prop">stageName</span>: <span class="type">string</span>;<br /><br />
+            &nbsp;&nbsp;<span class="comment">/** Review type: intent-level or unit-level */</span><br />
+            &nbsp;&nbsp;<span class="prop">reviewType</span>: <span class="str">"intent"</span> | <span class="str">"unit"</span>;<br /><br />
+            &nbsp;&nbsp;<span class="comment">/** Unit title (when reviewType=unit) */</span><br />
+            &nbsp;&nbsp;<span class="prop">unitTitle</span>?: <span class="type">string</span>;<br /><br />
+            &nbsp;&nbsp;<span class="comment">/** Current visit number (0-indexed) */</span><br />
+            &nbsp;&nbsp;<span class="prop">visitNumber</span>: <span class="type">number</span>;<br /><br />
+            &nbsp;&nbsp;<span class="comment">/** Gate type for decision buttons */</span><br />
+            &nbsp;&nbsp;<span class="prop">gateType</span>: <span class="type">string</span>;<br /><br />
+            &nbsp;&nbsp;<span class="comment">/** Stage progress data for the strip */</span><br />
+            &nbsp;&nbsp;<span class="prop">stages</span>?: <span class="type">StageInfo</span>[];<br /><br />
+            &nbsp;&nbsp;<span class="comment">/** Active stage (defaults to stageName) */</span><br />
+            &nbsp;&nbsp;<span class="prop">activeStage</span>?: <span class="type">string</span>;<br />
+            }
+          </div>
+        </div>
+
+        <!-- FeedbackItem -->
+        <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+          <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
+            FeedbackItem
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new</span>
+          </h3>
+          <div class="code-block text-[11px]">
+            <span class="kw">interface</span> <span class="type">FeedbackItemProps</span> {<br />
+            &nbsp;&nbsp;<span class="prop">item</span>: <span class="type">FeedbackItemData</span>;<br />
+            &nbsp;&nbsp;<span class="prop">isExpanded</span>: <span class="type">boolean</span>;<br />
+            &nbsp;&nbsp;<span class="prop">onToggle</span>: () =&gt; <span class="type">void</span>;<br />
+            &nbsp;&nbsp;<span class="prop">onStatusChange</span>?: (<span class="prop">newStatus</span>: <span class="type">FeedbackStatus</span>) =&gt; <span class="type">void</span>;<br />
+            &nbsp;&nbsp;<span class="prop">isReadOnly</span>?: <span class="type">boolean</span>;<br />
+            }<br /><br />
+
+            <span class="kw">interface</span> <span class="type">FeedbackItemData</span> {<br />
+            &nbsp;&nbsp;<span class="prop">id</span>: <span class="type">string</span>;<br />
+            &nbsp;&nbsp;<span class="prop">slug</span>: <span class="type">string</span>;<br />
+            &nbsp;&nbsp;<span class="prop">title</span>: <span class="type">string</span>;<br />
+            &nbsp;&nbsp;<span class="prop">body</span>: <span class="type">string</span>;<br />
+            &nbsp;&nbsp;<span class="prop">status</span>: <span class="type">FeedbackStatus</span>;<br />
+            &nbsp;&nbsp;<span class="prop">origin</span>: <span class="type">FeedbackOrigin</span>;<br />
+            &nbsp;&nbsp;<span class="prop">author</span>: <span class="type">string</span>;<br />
+            &nbsp;&nbsp;<span class="prop">author_type</span>: <span class="str">"human"</span> | <span class="str">"agent"</span>;<br />
+            &nbsp;&nbsp;<span class="prop">created_at</span>: <span class="type">string</span>;<br />
+            &nbsp;&nbsp;<span class="prop">visit</span>: <span class="type">number</span>;<br />
+            &nbsp;&nbsp;<span class="prop">source_ref</span>?: <span class="type">string</span>;<br />
+            &nbsp;&nbsp;<span class="prop">addressed_by</span>?: <span class="type">string</span>;<br />
+            }<br /><br />
+
+            <span class="kw">type</span> <span class="type">FeedbackStatus</span> = <span class="str">"pending"</span> | <span class="str">"addressed"</span> | <span class="str">"closed"</span> | <span class="str">"rejected"</span>;<br /><br />
+
+            <span class="kw">type</span> <span class="type">FeedbackOrigin</span> =<br />
+            &nbsp;&nbsp;| <span class="str">"adversarial-review"</span><br />
+            &nbsp;&nbsp;| <span class="str">"external-pr"</span><br />
+            &nbsp;&nbsp;| <span class="str">"external-mr"</span><br />
+            &nbsp;&nbsp;| <span class="str">"user-visual"</span><br />
+            &nbsp;&nbsp;| <span class="str">"user-chat"</span><br />
+            &nbsp;&nbsp;| <span class="str">"agent"</span>;
+          </div>
+        </div>
+
+        <!-- FeedbackList -->
+        <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+          <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
+            FeedbackList
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new</span>
+          </h3>
+          <div class="code-block text-[11px]">
+            <span class="kw">interface</span> <span class="type">FeedbackListProps</span> {<br />
+            &nbsp;&nbsp;<span class="comment">/** All feedback items for this stage */</span><br />
+            &nbsp;&nbsp;<span class="prop">items</span>: <span class="type">FeedbackItemData</span>[];<br /><br />
+            &nbsp;&nbsp;<span class="comment">/** Current visit number (groups items) */</span><br />
+            &nbsp;&nbsp;<span class="prop">currentVisit</span>: <span class="type">number</span>;<br /><br />
+            &nbsp;&nbsp;<span class="comment">/** Status change handler */</span><br />
+            &nbsp;&nbsp;<span class="prop">onStatusChange</span>: (<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="prop">feedbackId</span>: <span class="type">string</span>,<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="prop">newStatus</span>: <span class="type">FeedbackStatus</span><br />
+            &nbsp;&nbsp;) =&gt; <span class="type">void</span>;<br /><br />
+            &nbsp;&nbsp;<span class="comment">/** Optional status filter */</span><br />
+            &nbsp;&nbsp;<span class="prop">filterStatus</span>?: <span class="type">FeedbackStatus</span> | <span class="type">null</span>;<br /><br />
+            &nbsp;&nbsp;<span class="comment">/** Read-only mode (no actions) */</span><br />
+            &nbsp;&nbsp;<span class="prop">isReadOnly</span>?: <span class="type">boolean</span>;<br />
+            }
+          </div>
+
+          <div class="mt-4 p-3 bg-stone-50 dark:bg-stone-800/50 rounded-lg border border-stone-200 dark:border-stone-700">
+            <h4 class="text-xs font-semibold text-stone-600 dark:text-stone-400 mb-2">Sort Order Within Groups</h4>
+            <ol class="text-[10px] text-stone-500 dark:text-stone-400 space-y-0.5 list-decimal pl-3">
+              <li><span class="text-amber-600 dark:text-amber-400">pending</span> items first</li>
+              <li><span class="text-blue-600 dark:text-blue-400">addressed</span> items second</li>
+              <li><span class="text-stone-500">rejected</span> and <span class="text-green-600 dark:text-green-400">closed</span> items last</li>
+              <li>Within same status: newest first (by created_at desc)</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- SidebarSegmentedControl -->
+        <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+          <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
+            SidebarSegmentedControl
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new</span>
+          </h3>
+          <div class="code-block text-[11px]">
+            <span class="kw">interface</span> <span class="type">SidebarSegmentedControlProps</span> {<br />
+            &nbsp;&nbsp;<span class="prop">activeView</span>: <span class="str">"feedback"</span> | <span class="str">"mine"</span>;<br />
+            &nbsp;&nbsp;<span class="prop">onViewChange</span>: (<span class="prop">view</span>: <span class="str">"feedback"</span> | <span class="str">"mine"</span>) =&gt; <span class="type">void</span>;<br />
+            &nbsp;&nbsp;<span class="comment">/** Count of all feedback items */</span><br />
+            &nbsp;&nbsp;<span class="prop">feedbackCount</span>: <span class="type">number</span>;<br />
+            &nbsp;&nbsp;<span class="comment">/** Count of pending feedback items */</span><br />
+            &nbsp;&nbsp;<span class="prop">pendingCount</span>: <span class="type">number</span>;<br />
+            &nbsp;&nbsp;<span class="comment">/** Count of current session comments */</span><br />
+            &nbsp;&nbsp;<span class="prop">mineCount</span>: <span class="type">number</span>;<br />
+            }
+          </div>
+
+          <!-- Visual preview -->
+          <div class="mt-4 p-3 bg-stone-50 dark:bg-stone-800/50 rounded-lg border border-stone-200 dark:border-stone-700">
+            <p class="text-[10px] font-semibold text-stone-400 mb-2">Preview</p>
+            <div class="flex border-b border-stone-200 dark:border-stone-700">
+              <button class="border-b-2 border-teal-600 text-teal-600 dark:border-teal-400 dark:text-teal-400 text-xs font-medium px-3 py-2">
+                Feedback
+                <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">5</span>
+              </button>
+              <button class="border-b-2 border-transparent text-stone-500 dark:text-stone-400 text-xs font-medium px-3 py-2 hover:text-stone-700 dark:hover:text-stone-200">
+                Mine
+                <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300">2</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FeedbackSummaryBar -->
+        <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+          <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
+            FeedbackSummaryBar
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new</span>
+          </h3>
+          <div class="code-block text-[11px]">
+            <span class="kw">interface</span> <span class="type">FeedbackSummaryBarProps</span> {<br />
+            &nbsp;&nbsp;<span class="prop">items</span>: <span class="type">FeedbackItemData</span>[];<br />
+            &nbsp;&nbsp;<span class="prop">activeFilter</span>: <span class="type">FeedbackStatus</span> | <span class="type">null</span>;<br />
+            &nbsp;&nbsp;<span class="prop">onFilterChange</span>: (<span class="prop">status</span>: <span class="type">FeedbackStatus</span> | <span class="type">null</span>) =&gt; <span class="type">void</span>;<br />
+            }
+          </div>
+
+          <!-- Visual preview -->
+          <div class="mt-4 p-3 bg-stone-50 dark:bg-stone-800/50 rounded-lg border border-stone-200 dark:border-stone-700">
+            <p class="text-[10px] font-semibold text-stone-400 mb-2">Preview</p>
+            <div class="px-3 py-2 flex items-center gap-3">
+              <button class="text-xs font-medium text-amber-700 dark:text-amber-300 hover:underline">3 pending</button>
+              <span class="text-stone-300 dark:text-stone-600">&middot;</span>
+              <button class="text-xs font-medium text-blue-700 dark:text-blue-400 hover:underline">2 addressed</button>
+              <span class="text-stone-300 dark:text-stone-600">&middot;</span>
+              <button class="text-xs font-medium text-green-700 dark:text-green-400 hover:underline">1 closed</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SECTION 6: package.json for @haiku/review-ui
+         ==================================================================== -->
+    <section class="mb-12">
+      <h2 class="text-lg font-semibold mb-2 text-stone-900 dark:text-stone-100">6. Package Configuration</h2>
+
+      <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+        <h3 class="text-base font-semibold mb-3">packages/review-ui/package.json</h3>
+        <div class="code-block text-[11px]">
+          {<br />
+          &nbsp;&nbsp;<span class="str">"name"</span>: <span class="str">"@haiku/review-ui"</span>,<br />
+          &nbsp;&nbsp;<span class="str">"version"</span>: <span class="str">"0.0.0"</span>,<br />
+          &nbsp;&nbsp;<span class="str">"private"</span>: <span class="kw">true</span>,<br />
+          &nbsp;&nbsp;<span class="str">"type"</span>: <span class="str">"module"</span>,<br />
+          &nbsp;&nbsp;<span class="str">"exports"</span>: {<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"."</span>: <span class="str">"./src/index.ts"</span>,<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"./ssr"</span>: <span class="str">"./src/ssr/index.ts"</span>,<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"./presets"</span>: <span class="str">"./src/presets/tailwind-review.ts"</span><br />
+          &nbsp;&nbsp;},<br />
+          &nbsp;&nbsp;<span class="str">"peerDependencies"</span>: {<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"react"</span>: <span class="str">"^19.0.0"</span><br />
+          &nbsp;&nbsp;},<br />
+          &nbsp;&nbsp;<span class="str">"devDependencies"</span>: {<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"@types/react"</span>: <span class="str">"^19.1.2"</span>,<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"typescript"</span>: <span class="str">"^5.7.0"</span><br />
+          &nbsp;&nbsp;}<br />
+          }
+        </div>
+        <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-3">
+          Zero runtime dependencies. React is a peer dep. Tailwind is not a dependency -- consumers bring their own.
+          The <code class="px-1 py-0.5 bg-stone-800 rounded">"./ssr"</code> subpath exports HTML string renderers for the SSR template path.
+        </p>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SECTION 7: Data Flow Diagram
+         ==================================================================== -->
+    <section class="mb-12">
+      <h2 class="text-lg font-semibold mb-2 text-stone-900 dark:text-stone-100">7. Architecture Flow</h2>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">
+        How data flows through the unified package in both the SPA and SSR paths.
+      </p>
+
+      <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+        <div class="space-y-6">
+
+          <!-- SPA path -->
+          <div>
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-3">SPA Path (React)</h3>
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              <span class="px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 font-medium">Browser</span>
+              <span class="text-stone-400">&rarr;</span>
+              <span class="px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-medium">App.tsx<br /><span class="text-[10px]">router</span></span>
+              <span class="text-stone-400">&rarr;</span>
+              <span class="px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-medium">ReviewPage<br /><span class="text-[10px]">state lifting</span></span>
+              <span class="text-stone-400">&rarr;</span>
+              <span class="px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-medium">ReviewSidebar<br /><span class="text-[10px]">composition</span></span>
+              <span class="text-stone-400">&rarr;</span>
+              <span class="px-3 py-1.5 rounded-lg bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 font-medium font-bold">@haiku/review-ui<br /><span class="text-[10px]">FeedbackList, StageProgressStrip, etc.</span></span>
+            </div>
+          </div>
+
+          <!-- SSR path -->
+          <div>
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400 mb-3">SSR Path (HTML Strings)</h3>
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              <span class="px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 font-medium">HTTP Request</span>
+              <span class="text-stone-400">&rarr;</span>
+              <span class="px-3 py-1.5 rounded-lg bg-violet-100 dark:bg-violet-900/30 text-violet-800 dark:text-violet-300 border border-violet-200 dark:border-violet-800 font-medium">http.ts<br /><span class="text-[10px]">route handler</span></span>
+              <span class="text-stone-400">&rarr;</span>
+              <span class="px-3 py-1.5 rounded-lg bg-violet-100 dark:bg-violet-900/30 text-violet-800 dark:text-violet-300 border border-violet-200 dark:border-violet-800 font-medium">intent-review.ts<br /><span class="text-[10px]">template</span></span>
+              <span class="text-stone-400">&rarr;</span>
+              <span class="px-3 py-1.5 rounded-lg bg-violet-100 dark:bg-violet-900/30 text-violet-800 dark:text-violet-300 border border-violet-200 dark:border-violet-800 font-medium">components.ts<br /><span class="text-[10px]">render functions</span></span>
+              <span class="text-stone-400">&rarr;</span>
+              <span class="px-3 py-1.5 rounded-lg bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 font-medium font-bold">@haiku/review-ui/ssr<br /><span class="text-[10px]">renderFeedbackStatusBadge(), etc.</span></span>
+            </div>
+          </div>
+
+          <!-- Shared token layer -->
+          <div class="mt-4 p-4 rounded-lg border-2 border-dashed border-teal-400/30 dark:border-teal-600/30">
+            <h3 class="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-2">Shared Token Layer</h3>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400">
+              Both paths import color maps, status color lookups, and icon maps from
+              <code class="px-1 py-0.5 bg-stone-800 rounded">@haiku/review-ui</code>.
+              The SPA uses these as Tailwind class strings in JSX; the SSR path interpolates them into HTML template strings.
+              Tokens are defined once, consumed everywhere.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SECTION 8: Migration Checklist
+         ==================================================================== -->
+    <section class="mb-12">
+      <h2 class="text-lg font-semibold mb-2 text-stone-900 dark:text-stone-100">8. Migration Checklist</h2>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">
+        Ordered steps to extract, create, and wire up the shared package.
+      </p>
+
+      <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+        <ol class="space-y-4">
+          <li class="flex gap-3">
+            <span class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 text-xs font-bold">1</span>
+            <div>
+              <p class="text-sm font-medium">Create <code class="px-1 py-0.5 bg-stone-100 dark:bg-stone-800 rounded text-xs">packages/review-ui/</code> scaffold</p>
+              <p class="text-xs text-stone-500 dark:text-stone-400 mt-0.5">package.json, tsconfig.json, src/index.ts barrel, src/ssr/index.ts SSR barrel</p>
+            </div>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 text-xs font-bold">2</span>
+            <div>
+              <p class="text-sm font-medium">Move Card, StatusBadge, Tabs from review-app to review-ui</p>
+              <p class="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Copy source, update imports in review-app to point at @haiku/review-ui, delete originals</p>
+            </div>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 text-xs font-bold">3</span>
+            <div>
+              <p class="text-sm font-medium">Cherry-pick CommentTray + DecisionForm from refactor branch</p>
+              <p class="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Land them directly into review-ui/src/components/</p>
+            </div>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 text-xs font-bold">4</span>
+            <div>
+              <p class="text-sm font-medium">Create shared types (feedback.ts, stage.ts)</p>
+              <p class="text-xs text-stone-500 dark:text-stone-400 mt-0.5">FeedbackItemData, FeedbackStatus, FeedbackOrigin, StageInfo, ReviewContext</p>
+            </div>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 text-xs font-bold">5</span>
+            <div>
+              <p class="text-sm font-medium">Build new feedback components</p>
+              <p class="text-xs text-stone-500 dark:text-stone-400 mt-0.5">FeedbackItem, FeedbackList, FeedbackStatusBadge, FeedbackOriginIcon, FeedbackSummaryBar, SidebarSegmentedControl</p>
+            </div>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 text-xs font-bold">6</span>
+            <div>
+              <p class="text-sm font-medium">Build StageProgressStrip + ReviewContextHeader</p>
+              <p class="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Based on the wireframe artifacts already designed in this stage</p>
+            </div>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 text-xs font-bold">7</span>
+            <div>
+              <p class="text-sm font-medium">Create shared Tailwind preset</p>
+              <p class="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Export feedbackStatusColors, originColors, originIcons, visitCounterClasses</p>
+            </div>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 text-xs font-bold">8</span>
+            <div>
+              <p class="text-sm font-medium">Create SSR renderers</p>
+              <p class="text-xs text-stone-500 dark:text-stone-400 mt-0.5">HTML string equivalents of FeedbackStatusBadge, StageProgressStrip, ReviewContextHeader for the SSR template path</p>
+            </div>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 text-xs font-bold">9</span>
+            <div>
+              <p class="text-sm font-medium">Wire up review-app dependency</p>
+              <p class="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Add <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">"@haiku/review-ui": "file:../../review-ui"</code> to review-app/package.json, update Vite config to include review-ui in Tailwind content paths</p>
+            </div>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 text-xs font-bold">10</span>
+            <div>
+              <p class="text-sm font-medium">Wire up SSR dependency</p>
+              <p class="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Update src/templates/components.ts to import from @haiku/review-ui/ssr, update styles.ts to use shared token map</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mt-12 pb-8 text-center text-xs text-stone-500 dark:text-stone-500">
+      Design artifact for intent
+      <code class="px-1 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">universal-feedback-model-and-review-recovery</code>
+      &middot; unit-03-review-package-unification &middot; design stage
+    </footer>
+
+  </div>
+
+</body>
+</html>
