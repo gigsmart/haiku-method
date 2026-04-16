@@ -186,6 +186,21 @@ Feature: Feedback file CRUD via haiku_feedback MCP tool and companions
     When I call haiku_feedback without a stage
     Then the tool returns a validation error mentioning "stage is required"
 
+  Scenario: Create fails when required field "body" is missing
+    When I call haiku_feedback without a body
+    Then the tool returns a validation error mentioning "body is required"
+    And no feedback file is created
+
+  Scenario: Create fails when title exceeds 120 characters
+    When I call haiku_feedback with a title that is 121 characters long
+    Then the tool returns a validation error mentioning "title must be 120 characters or fewer"
+    And no feedback file is created
+
+  Scenario: Create fails when stage directory does not exist
+    When I call haiku_feedback with stage "nonexistent"
+    Then the tool returns an error "Stage directory not found: nonexistent"
+    And no files or directories are created
+
   Scenario: Create fails when origin is not a valid enum value
     When I call haiku_feedback with origin "made-up-origin"
     Then the tool returns a validation error mentioning invalid origin value
@@ -251,6 +266,17 @@ Feature: Feedback file CRUD via haiku_feedback MCP tool and companions
     Then the tool returns an error "human-authored deletions must go through the review UI"
 
   # ---------------------------------------------------------------------------
+  # Error: Git
+  # ---------------------------------------------------------------------------
+
+  Scenario: Git commit failure during feedback write does not lose the file
+    Given the git working directory has a lock file (.git/index.lock)
+    When I call haiku_feedback with title "Finding during git lock" and stage "development"
+    Then the feedback file is still written to disk
+    And the tool returns an error indicating the git commit failed
+    And the feedback file will be included in the next successful commit
+
+  # ---------------------------------------------------------------------------
   # Edge Cases
   # ---------------------------------------------------------------------------
 
@@ -294,6 +320,22 @@ Feature: Feedback file CRUD via haiku_feedback MCP tool and companions
     Then the result contains "01-critical-finding.md"
     And all frontmatter fields are intact
     # Feedback is files on disk — no in-memory state required
+
+  Scenario: Malformed feedback file is skipped during list
+    Given feedback files exist in "stages/development/feedback/":
+      | file                        | status    |
+      | 01-good-finding.md          | pending   |
+      | 02-bad-frontmatter.md       | (invalid YAML) |
+      | 03-another-good.md          | addressed |
+    When I call haiku_feedback_list with stage "development"
+    Then the result contains 2 items (01 and 03)
+    And a warning is logged about the unparseable file "02-bad-frontmatter.md"
+    And no error is thrown
+
+  Scenario: Feedback slug collision is resolved by numeric prefix
+    When I call haiku_feedback with title "Missing null check" twice for the same stage
+    Then two files exist: "01-missing-null-check.md" and "02-missing-null-check.md"
+    And both files coexist without issue
 
   Scenario: Visit field reflects current stage visits counter
     Given the stage "development" state.json has visits set to 2

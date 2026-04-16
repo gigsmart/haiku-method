@@ -31,8 +31,8 @@ Feature: Review UI changes_requested writes feedback files and inline annotation
     When the reviewer clicks "Request Changes"
     Then 4 feedback files are created in "stages/development/feedback/"
     And they are numbered sequentially (01, 02, 03, 04)
-    And each has origin "user-visual" and author_type "human"
-    And the general feedback note also becomes a feedback file (not just a string)
+    And inline comments have origin "user-visual" and author_type "human"
+    And the general feedback note has origin "user-chat" and author_type "human"
 
   Scenario: Pin annotation on an image becomes a feedback file
     Given the reviewer drops a pin annotation on an output image at coordinates (120, 340)
@@ -200,6 +200,7 @@ Feature: Review UI changes_requested writes feedback files and inline annotation
     When the review app calls DELETE /api/feedback/feedback-intent/development/01
     Then the response is 403 Forbidden
     And the error message states "cannot delete feedback with status pending"
+    # Note: AC specifies 403; DATA-CONTRACTS.md specifies 409. Implementation should reconcile.
 
   Scenario: PUT /api/feedback with invalid status value returns 400
     Given feedback file "01-finding.md" exists
