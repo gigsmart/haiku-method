@@ -64,6 +64,7 @@ Replaces the former Sentry bug-report tool (renamed to `haiku_report`).
 | `title` exceeds 120 chars | `true` | `"Error: title must be 120 characters or fewer"` |
 | Intent not found | `true` | `"Error: intent 'bad-slug' not found"` |
 | Invalid `origin` enum value | `true` | `"Error: origin must be one of: adversarial-review, external-pr, external-mr, user-visual, user-chat, agent"` |
+| Stage not found | `true` | `"Error: stage 'nonexistent' not found under intent 'my-intent'"` |
 
 **Side Effects:**
 
@@ -427,6 +428,15 @@ reasons: {
 ```
 
 The stopgap does NOT execute the revisit. The FSM phase does not change. The agent must retry with reasons.
+
+**Error Responses:**
+
+| Condition | `isError` | Text |
+|---|---|---|
+| Empty `reasons` array (`[]`) | `true` | `"Error: reasons array must contain at least one item"` |
+| Reason with empty `title` | `true` | `"Error: each reason must have a non-empty title"` |
+| Reason with empty `body` | `true` | `"Error: each reason must have a non-empty body"` |
+| No active stage found | `true` | `"Error: no active stage found for intent 'my-intent'"` |
 
 **Side Effects (with reasons):**
 
