@@ -472,6 +472,65 @@
 
 ---
 
+## US-12: `haiku_revisit` With Optional Reasons Parameter
+
+**As** an agent or parent orchestrator invoking `haiku_revisit`,
+**I want to** pass structured reasons that are persisted as feedback files before the FSM rolls back,
+**so that** the revisit motivation is captured durably and enters the standard feedback lifecycle.
+
+**Priority:** P0
+
+### AC-12a: Reasons create feedback files before phase rollback
+
+- **Given** an active intent "my-intent" with stage "development" at `phase: execute`
+- **When** `haiku_revisit({ intent: "my-intent", reasons: [{ title: "Null check missing in parser", body: "handleSubmit at line 42 dereferences a potentially null ref" }, { title: "Race condition in worker pool", body: "Workers can starve under high concurrency" }] })` is called
+- **Then** 2 feedback files are created in `.haiku/intents/my-intent/stages/development/feedback/` BEFORE the FSM rolls back to elaborate
+- **And** each file has frontmatter: `status: pending`, `origin: agent`, `author: parent-agent`, `author_type: agent`, `visit:` (current stage visits value)
+- **And** the FSM then rolls back to elaborate on the current stage
+- **And** `visits` is incremented by 1
+
+### AC-12b: No reasons triggers a stopgap — FSM does NOT roll back
+
+- **Given** an active intent "my-intent" with stage "development" at `phase: execute`
+- **When** `haiku_revisit({ intent: "my-intent" })` is called WITHOUT a `reasons` parameter (or with `reasons` omitted)
+- **Then** the FSM does NOT roll back
+- **And** the tool returns a `stopgap` action with a message instructing the agent to collect structured reasons and re-call `haiku_revisit` with `reasons: [{ title, body }, ...]`
+- **And** `state.json` is unchanged (no phase change, no visits increment)
+
+### AC-12c: Reasons-created feedback enters the structural pending-feedback gate
+
+- **Given** feedback files were created via `haiku_revisit` with reasons in visit 1
+- **And** the stage has subsequently progressed through elaborate → execute → review
+- **When** the stage reaches `phase: gate` and `haiku_run_next` fires
+- **Then** the pending-feedback check (US-03) detects any still-pending reason-originated feedback files
+- **And** if pending items exist, the gate rolls back to elaborate (standard auto-revisit behavior)
+- **And** the reason-originated feedback files are indistinguishable from any other feedback files in the gate check
+
+### AC-12d: Tool description documents the with-reasons preference
+
+- **Given** the MCP tool list is queried
+- **When** the `haiku_revisit` tool definition is inspected
+- **Then** the `description` field mentions that passing `reasons` is preferred over calling without reasons
+- **And** the `reasons` parameter description states that each reason must have a `title` (string, required) and `body` (string, required)
+
+### AC-12e: Error — empty reasons array
+
+- **Given** an active intent "my-intent" with stage "development"
+- **When** `haiku_revisit({ intent: "my-intent", reasons: [] })` is called with an empty array
+- **Then** the tool returns a validation error: "reasons array must contain at least one item"
+- **And** no feedback files are created
+- **And** `state.json` is unchanged
+
+### AC-12f: Error — reason with empty title
+
+- **Given** an active intent "my-intent" with stage "development"
+- **When** `haiku_revisit({ intent: "my-intent", reasons: [{ title: "", body: "Some detail" }] })` is called
+- **Then** the tool returns a validation error: "each reason must have a non-empty title"
+- **And** no feedback files are created
+- **And** `state.json` is unchanged
+
+---
+
 ## P1 (Follow-Up) Stories
 
 ### US-P1.1: Individual External PR Comment Parsing
@@ -718,3 +777,4 @@
 | US-09 (Tool Rename) | Group 4 | `server.ts`, `SKILL.md` |
 | US-10 (Changes-Requested) | Group 6 | `orchestrator.ts` |
 | US-11 (CRUD Endpoints) | Group 11 | `http.ts` |
+| US-12 (Revisit with Reasons) | Group 5 (gate feedback check), Group 1 (writeFeedbackFile) | `orchestrator.ts`, `state-tools.ts` |
