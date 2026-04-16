@@ -384,6 +384,13 @@
 - **When** the skill executes
 - **Then** it calls `haiku_report` (the renamed tool) and submits to Sentry successfully
 
+### AC-09.3: Old haiku_feedback tool name no longer routes to Sentry
+
+- **Given** an agent calls `haiku_feedback` with feedback-file creation arguments (intent, stage, title, body)
+- **When** the MCP server routes the tool call
+- **Then** the call is handled by the new feedback-file creation tool (Group 2), NOT the Sentry bug-report tool
+- **And** no Sentry event is created
+
 ---
 
 ## US-10: Changes-Requested Handler Writes Feedback Files
@@ -469,6 +476,56 @@
 - **Given** a pending feedback item
 - **When** `DELETE /api/feedback/{intent}/{stage}/{id}` is called
 - **Then** a 403 response is returned: "Cannot delete pending feedback items"
+
+---
+
+## US-12: `haiku_revisit` with Optional Reasons Parameter
+
+**As** a user or agent invoking `haiku_revisit`,
+**I want to** provide optional `reasons` that are automatically persisted as feedback files,
+**so that** the rollback to an earlier stage carries structured context about why the revisit is happening.
+
+**Priority:** P0
+
+### AC-12.1: Reasons parameter writes feedback files before rollback
+
+- **Given** an intent at stage "development" with the review gate completed
+- **When** `haiku_revisit({ intent: "my-intent", stage: "design", reasons: ["Typography scale inconsistent with design tokens", "Missing dark-mode variants for feedback badges"] })` is called
+- **Then** 2 feedback files are created in `.haiku/intents/my-intent/stages/design/feedback/`
+- **And** each file has `origin: user-chat`, `author_type: human`, `status: pending`
+- **And** each file body contains the corresponding reason text
+- **And** the FSM then rolls the stage back to elaborate
+
+### AC-12.2: Revisit without reasons still works (backward compatible)
+
+- **Given** an intent at stage "development"
+- **When** `haiku_revisit({ intent: "my-intent", stage: "design" })` is called without a `reasons` parameter
+- **Then** the revisit proceeds normally (rollback to elaborate on the target stage)
+- **And** no feedback files are created
+- **And** the behavior is identical to the pre-feedback-model `haiku_revisit`
+
+### AC-12.3: Reasons from agent use agent author_type
+
+- **Given** an agent (not a human user) calls `haiku_revisit` with reasons
+- **When** the feedback files are created
+- **Then** the files have `author_type: agent` and `origin: agent`
+- **And** the standard author-based guards apply (these items can be rejected by the user)
+
+### AC-12.4: Feedback files created by revisit trigger additive elaborate
+
+- **Given** `haiku_revisit` was called with 2 reasons for stage "design"
+- **And** the stage already had completed units from the prior visit
+- **When** the elaborate phase runs on the rolled-back stage
+- **Then** `visits` is > 0 and additive elaborate mode activates
+- **And** the 2 reason-based feedback files appear in the pending feedback list
+- **And** new units must declare `closes: [FB-NN]` referencing these items
+
+### AC-12.5: Empty reasons array treated as no reasons
+
+- **Given** `haiku_revisit({ intent: "my-intent", stage: "design", reasons: [] })` is called
+- **When** the revisit handler checks the reasons parameter
+- **Then** no feedback files are created (empty array is equivalent to omitting the parameter)
+- **And** the revisit proceeds normally
 
 ---
 
@@ -718,3 +775,4 @@
 | US-09 (Tool Rename) | Group 4 | `server.ts`, `SKILL.md` |
 | US-10 (Changes-Requested) | Group 6 | `orchestrator.ts` |
 | US-11 (CRUD Endpoints) | Group 11 | `http.ts` |
+| US-12 (Revisit with Reasons) | Group 5 (gate feedback check + revisit integration) | `orchestrator.ts` (revisit handler ~line 2034+), `state-tools.ts` |
