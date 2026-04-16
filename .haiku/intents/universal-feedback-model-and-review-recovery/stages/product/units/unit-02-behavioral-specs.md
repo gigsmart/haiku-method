@@ -13,6 +13,8 @@ bolt: 1
 hat: product
 started_at: '2026-04-16T14:36:27Z'
 hat_started_at: '2026-04-16T14:36:27Z'
+outputs:
+  - knowledge/DATA-CONTRACTS.md
 ---
 
 # Behavioral Specs in Gherkin

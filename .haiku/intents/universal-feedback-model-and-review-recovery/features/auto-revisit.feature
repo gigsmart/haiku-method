@@ -64,6 +64,33 @@ Feature: Auto-revisit when pending feedback exists at review-to-gate transition
     And the returned action is "feedback_revisit"
 
   # ---------------------------------------------------------------------------
+  # Happy Path: Review subagent findings trigger auto-revisit
+  # ---------------------------------------------------------------------------
+
+  Scenario: Review subagent findings trigger auto-revisit on next tick
+    Given review subagents have written 4 feedback files via haiku_feedback during the review phase:
+      | file                          | status  | origin            |
+      | 01-null-guard.md              | pending | adversarial-review|
+      | 02-race-condition.md          | pending | adversarial-review|
+      | 03-error-handling.md          | pending | adversarial-review|
+      | 04-input-validation.md        | pending | adversarial-review|
+    And the parent agent calls haiku_run_next (entering gate phase)
+    When the gate phase handler checks pending feedback
+    Then it detects 4 pending items and rolls back to elaborate
+    And the returned action is "feedback_revisit" with all 4 items listed
+    And state.json visits is incremented
+
+  Scenario: Visits counter persists across session restarts
+    Given the stage has been rolled back twice (state.json visits is 2)
+    And 1 pending feedback file exists
+    And the MCP server restarts completely
+    When the agent resumes via /haiku:pickup and calls haiku_run_next
+    Then state.json still reads visits 2
+    And the gate handler reads the pending feedback from disk
+    And the FSM rolls to elaborate (visits incremented to 3)
+    # visits is persisted in state.json on disk, not in memory
+
+  # ---------------------------------------------------------------------------
   # Structural enforcement: no agent bypass
   # ---------------------------------------------------------------------------
 

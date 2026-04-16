@@ -9,9 +9,9 @@ inputs:
   - knowledge/ACCEPTANCE-CRITERIA.md
 status: active
 bolt: 1
-hat: specification
+hat: validator
 started_at: '2026-04-16T14:36:22Z'
-hat_started_at: '2026-04-16T14:37:21Z'
+hat_started_at: '2026-04-16T14:38:17Z'
 ---
 
 # Data Contracts and API Schemas

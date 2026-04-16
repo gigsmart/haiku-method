@@ -124,6 +124,59 @@ Feature: Review UI changes_requested writes feedback files and inline annotation
     And the pending count in the panel header decreases
 
   # ---------------------------------------------------------------------------
+  # Happy Path: Approve with pending feedback shows confirmation
+  # ---------------------------------------------------------------------------
+
+  Scenario: Approve with pending feedback shows confirmation dialog
+    Given 2 pending feedback items exist for stage "development":
+      | file                   | status  |
+      | 01-agent-finding.md    | pending |
+      | 02-agent-finding-b.md  | pending |
+    When the reviewer clicks "Approve"
+    Then a confirmation dialog appears: "There are 2 pending feedback items. Approving will close all remaining items. Continue?"
+    And if confirmed, all pending items are set to status "closed"
+    And the approval decision is submitted
+
+  Scenario: Approve without pending feedback proceeds directly
+    Given all feedback files have status "closed" or "addressed"
+    When the reviewer clicks "Approve"
+    Then no confirmation dialog appears
+    And the approval decision is submitted immediately
+
+  # ---------------------------------------------------------------------------
+  # Happy Path: Feedback status changes from review UI
+  # ---------------------------------------------------------------------------
+
+  Scenario: Reviewer rejects agent-authored feedback via the review UI
+    Given an expanded feedback item "01-false-positive.md" with status "pending" and author_type "agent"
+    When the reviewer clicks "Reject" and provides reason "Not a real issue — handled upstream"
+    Then the item status changes to "rejected" via PUT /api/feedback/{intent}/{stage}/01
+    And the status badge updates immediately (optimistic UI)
+    And if the API call fails, the badge reverts and an error toast appears
+
+  Scenario: Reviewer closes human-authored feedback via the review UI
+    Given an expanded feedback item "01-user-comment.md" with status "addressed" and author_type "human"
+    When the reviewer clicks "Close" to verify the fix
+    Then the item status changes to "closed" via PUT /api/feedback/{intent}/{stage}/01
+    And the status badge updates to "closed" (green)
+
+  # ---------------------------------------------------------------------------
+  # Happy Path: Feedback sorting within groups
+  # ---------------------------------------------------------------------------
+
+  Scenario: Feedback items sorted by status then by created_at within groups
+    Given a visit group with feedback items:
+      | file                   | status    | created_at           |
+      | 01-old-pending.md      | pending   | 2026-04-15T10:00:00Z |
+      | 02-new-pending.md      | pending   | 2026-04-15T11:00:00Z |
+      | 03-addressed.md        | addressed | 2026-04-15T09:00:00Z |
+      | 04-closed.md           | closed    | 2026-04-15T08:00:00Z |
+    When the group renders in the feedback list
+    Then pending items appear first, then addressed, then closed/rejected
+    And within the same status, newest items appear first (by created_at desc)
+    And the display order is: 02-new-pending, 01-old-pending, 03-addressed, 04-closed
+
+  # ---------------------------------------------------------------------------
   # Error Scenarios
   # ---------------------------------------------------------------------------
 

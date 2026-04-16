@@ -40,6 +40,18 @@ Feature: Feedback file CRUD via haiku_feedback MCP tool and companions
     Then the created file is "03-third-finding.md"
     And its identifier is "FB-03"
 
+  Scenario: Default author values when no author or origin specified
+    When I call haiku_feedback with:
+      | intent    | universal-feedback-model       |
+      | stage     | development                    |
+      | title     | Implicit defaults              |
+      | body      | No author or origin supplied.  |
+    Then a feedback file is created in "stages/development/feedback/"
+    And its frontmatter contains:
+      | author      | agent   |
+      | author_type | agent   |
+      | origin      | agent   |
+
   Scenario: Create feedback with optional source_ref
     When I call haiku_feedback with:
       | intent     | universal-feedback-model       |
@@ -120,6 +132,42 @@ Feature: Feedback file CRUD via haiku_feedback MCP tool and companions
     When I call haiku_feedback_delete with intent "universal-feedback-model", stage "development", feedback_id "01"
     Then the file "01-stale-item.md" no longer exists on disk
     And gitCommitState is called once
+
+  # ---------------------------------------------------------------------------
+  # Happy Path: Agent can address human-authored feedback
+  # ---------------------------------------------------------------------------
+
+  Scenario: Agent marks human-authored feedback as addressed
+    Given feedback file "01-user-concern.md" exists with author_type "human" and status "pending"
+    When I call haiku_feedback_update with:
+      | intent      | universal-feedback-model |
+      | stage       | development              |
+      | feedback_id | 01                       |
+      | status      | addressed                |
+      | addressed_by| unit-04-layout-fix       |
+    Then the file's frontmatter status is "addressed"
+    And the file's frontmatter addressed_by is "unit-04-layout-fix"
+    And gitCommitState is called once
+    # Agents CAN mark human-authored feedback as addressed, just not closed
+
+  # ---------------------------------------------------------------------------
+  # Happy Path: Tool rename verification (US-09)
+  # ---------------------------------------------------------------------------
+
+  Scenario: haiku_feedback tool routes to feedback-file creation not Sentry
+    When I call haiku_feedback with:
+      | intent | universal-feedback-model                |
+      | stage  | development                             |
+      | title  | Verify routing                          |
+      | body   | This should create a feedback file.     |
+    Then the tool returns a feedback file path and identifier
+    And no Sentry event is created
+    And the file exists on disk in the feedback directory
+
+  Scenario: haiku_report tool still submits to Sentry
+    When I call haiku_report with a bug description
+    Then the call routes to Sentry (not the feedback-file tool)
+    And no feedback file is created on disk
 
   # ---------------------------------------------------------------------------
   # Error: Create
