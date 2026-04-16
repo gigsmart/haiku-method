@@ -8,6 +8,7 @@
 
 import { basename, join } from "node:path"
 import {
+	allStagesCompleted,
 	checkIntentCriteria,
 	findActiveIntent,
 	findUnitFiles,
@@ -84,52 +85,34 @@ export async function enforceIteration(
 	const intentSlug = basename(intentDir)
 	let readyCount = 0
 	let inProgressCount = 0
-	let allComplete = false
 
-	{
-		let pending = 0
-		let completed = 0
-		let blocked = 0
-
-		for (const uf of unitFiles) {
-			const unitStatus = readFrontmatterField(uf, "status") || "pending"
-			switch (unitStatus) {
-				case "completed":
-					completed++
-					break
-				case "active":
-				case "in_progress":
-					inProgressCount++
-					break
-				case "blocked":
-					blocked++
-					break
-				case "pending": {
-					// Check if dependencies are satisfied to determine if "ready"
-					pending++
-					readyCount++ // simplified: count pending as ready for now
-					break
-				}
-				default:
-					pending++
-					break
+	// Check unit-level status for the "session exhausted" / "blocked" messages
+	for (const uf of unitFiles) {
+		const unitStatus = readFrontmatterField(uf, "status") || "pending"
+		switch (unitStatus) {
+			case "completed":
+				break
+			case "active":
+			case "in_progress":
+				inProgressCount++
+				break
+			case "blocked":
+				break
+			case "pending": {
+				// Check if dependencies are satisfied to determine if "ready"
+				readyCount++ // simplified: count pending as ready for now
+				break
 			}
-		}
-
-		if (
-			readyCount === 0 &&
-			inProgressCount === 0 &&
-			pending === 0 &&
-			blocked === 0 &&
-			unitFiles.length > 0
-		) {
-			allComplete = true
-		}
-		// Also mark complete if all are completed
-		if (completed > 0 && completed === unitFiles.length) {
-			allComplete = true
+			default:
+				break
 		}
 	}
+
+	// Intent-level completion: check whether every declared stage has
+	// status "completed" in its state.json. This avoids the old bug where
+	// unit files only existing in elaborated stages caused a false positive
+	// when later stages hadn't been elaborated yet.
+	const allComplete = allStagesCompleted(intentDir)
 
 	out("")
 	out("---")
