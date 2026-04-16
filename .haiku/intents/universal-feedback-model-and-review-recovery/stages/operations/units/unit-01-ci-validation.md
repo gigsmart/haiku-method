@@ -9,9 +9,9 @@ inputs:
   - knowledge/DISCOVERY.md
 status: active
 bolt: 1
-hat: ops-engineer
+hat: sre
 started_at: '2026-04-16T16:38:35Z'
-hat_started_at: '2026-04-16T16:38:35Z'
+hat_started_at: '2026-04-16T16:40:43Z'
 ---
 
 # CI Pipeline Validation
