@@ -614,6 +614,349 @@ try {
     }
   })
 
+  // ── haiku_feedback_update MCP tool ────────────────────────────────────────
+
+  console.log("\n=== haiku_feedback_update MCP tool ===")
+
+  test("updates status via MCP tool", () => {
+    // FB-02 is pending. Set it to addressed.
+    const result = handleStateTool("haiku_feedback_update", {
+      intent: intentSlug,
+      stage: stageName,
+      feedback_id: "FB-02",
+      status: "addressed",
+    })
+    assert.ok(!result.isError, `Expected success, got: ${getTextResult(result)}`)
+    const parsed = JSON.parse(getTextResult(result))
+    assert.strictEqual(parsed.feedback_id, "FB-02")
+    assert.deepStrictEqual(parsed.updated_fields, ["status"])
+    assert.ok(parsed.message.includes("FB-02 updated"))
+
+    // Verify on disk
+    const found = findFeedbackFile(intentSlug, stageName, "FB-02")
+    assert.strictEqual(found.data.status, "addressed")
+  })
+
+  test("updates addressed_by via MCP tool", () => {
+    const result = handleStateTool("haiku_feedback_update", {
+      intent: intentSlug,
+      stage: stageName,
+      feedback_id: "FB-02",
+      addressed_by: "unit-99-mcp-fix",
+    })
+    assert.ok(!result.isError, `Expected success, got: ${getTextResult(result)}`)
+    const parsed = JSON.parse(getTextResult(result))
+    assert.ok(parsed.updated_fields.includes("addressed_by"))
+
+    const found = findFeedbackFile(intentSlug, stageName, "FB-02")
+    assert.strictEqual(found.data.addressed_by, "unit-99-mcp-fix")
+  })
+
+  test("MCP update rejects missing feedback_id", () => {
+    const result = handleStateTool("haiku_feedback_update", {
+      intent: intentSlug,
+      stage: stageName,
+      feedback_id: "",
+      status: "addressed",
+    })
+    assert.ok(result.isError)
+    assert.ok(getTextResult(result).includes("feedback_id is required"))
+  })
+
+  test("MCP update rejects no updatable fields", () => {
+    const result = handleStateTool("haiku_feedback_update", {
+      intent: intentSlug,
+      stage: stageName,
+      feedback_id: "FB-02",
+    })
+    assert.ok(result.isError)
+    assert.ok(getTextResult(result).includes("at least one"))
+  })
+
+  test("MCP update rejects invalid status", () => {
+    const result = handleStateTool("haiku_feedback_update", {
+      intent: intentSlug,
+      stage: stageName,
+      feedback_id: "FB-02",
+      status: "bogus",
+    })
+    assert.ok(result.isError)
+    assert.ok(getTextResult(result).includes("status must be one of"))
+  })
+
+  test("MCP update rejects nonexistent feedback", () => {
+    const result = handleStateTool("haiku_feedback_update", {
+      intent: intentSlug,
+      stage: stageName,
+      feedback_id: "FB-99",
+      status: "addressed",
+    })
+    assert.ok(result.isError)
+    assert.ok(getTextResult(result).includes("not found"))
+  })
+
+  test("MCP update: agent cannot close human-authored feedback", () => {
+    // Create a human-authored item for testing
+    writeFeedbackFile(intentSlug, stageName, {
+      title: "Human item for update guard test",
+      body: "Human authored.",
+      origin: "user-visual",
+    })
+    // Find the last item created (highest number)
+    const items = readFeedbackFiles(intentSlug, stageName)
+    const humanItem = items.find((i) => i.title === "Human item for update guard test")
+    assert.ok(humanItem, "Expected human item to exist")
+
+    const result = handleStateTool("haiku_feedback_update", {
+      intent: intentSlug,
+      stage: stageName,
+      feedback_id: humanItem.id,
+      status: "closed",
+    })
+    assert.ok(result.isError)
+    assert.ok(getTextResult(result).includes("agents cannot set status"))
+  })
+
+  // ── haiku_feedback_delete MCP tool ──────────────────────────────────────
+
+  console.log("\n=== haiku_feedback_delete MCP tool ===")
+
+  test("MCP delete rejects pending feedback", () => {
+    // FB-04 is pending (from the MCP create test)
+    const result = handleStateTool("haiku_feedback_delete", {
+      intent: intentSlug,
+      stage: stageName,
+      feedback_id: "FB-04",
+    })
+    assert.ok(result.isError)
+    assert.ok(getTextResult(result).includes("cannot delete pending"))
+  })
+
+  test("MCP delete rejects human-authored feedback (agent context)", () => {
+    // The human item we created above — mark it addressed first so pending guard passes
+    const items = readFeedbackFiles(intentSlug, stageName)
+    const humanItem = items.find((i) => i.title === "Human item for update guard test")
+    updateFeedbackFile(intentSlug, stageName, humanItem.id, { status: "addressed" }, "human")
+
+    const result = handleStateTool("haiku_feedback_delete", {
+      intent: intentSlug,
+      stage: stageName,
+      feedback_id: humanItem.id,
+    })
+    assert.ok(result.isError)
+    assert.ok(getTextResult(result).includes("agents cannot delete human-authored"))
+  })
+
+  test("MCP delete removes addressed agent-authored feedback", () => {
+    // FB-02 is addressed and agent-authored
+    const result = handleStateTool("haiku_feedback_delete", {
+      intent: intentSlug,
+      stage: stageName,
+      feedback_id: "FB-02",
+    })
+    assert.ok(!result.isError, `Expected success, got: ${getTextResult(result)}`)
+    const parsed = JSON.parse(getTextResult(result))
+    assert.strictEqual(parsed.feedback_id, "FB-02")
+    assert.strictEqual(parsed.deleted, true)
+    assert.ok(parsed.message.includes("FB-02 deleted"))
+
+    // Verify file is gone
+    const found = findFeedbackFile(intentSlug, stageName, "FB-02")
+    assert.strictEqual(found, null)
+  })
+
+  test("MCP delete rejects nonexistent feedback", () => {
+    const result = handleStateTool("haiku_feedback_delete", {
+      intent: intentSlug,
+      stage: stageName,
+      feedback_id: "FB-99",
+    })
+    assert.ok(result.isError)
+    assert.ok(getTextResult(result).includes("not found"))
+  })
+
+  test("MCP delete rejects missing feedback_id", () => {
+    const result = handleStateTool("haiku_feedback_delete", {
+      intent: intentSlug,
+      stage: stageName,
+      feedback_id: "",
+    })
+    assert.ok(result.isError)
+    assert.ok(getTextResult(result).includes("feedback_id is required"))
+  })
+
+  // ── haiku_feedback_reject MCP tool ──────────────────────────────────────
+
+  console.log("\n=== haiku_feedback_reject MCP tool ===")
+
+  test("rejects agent-authored feedback with reason", () => {
+    // FB-04 is pending, agent-authored
+    const result = handleStateTool("haiku_feedback_reject", {
+      intent: intentSlug,
+      stage: stageName,
+      feedback_id: "FB-04",
+      reason: "False positive -- already handled",
+    })
+    assert.ok(!result.isError, `Expected success, got: ${getTextResult(result)}`)
+    const parsed = JSON.parse(getTextResult(result))
+    assert.strictEqual(parsed.feedback_id, "FB-04")
+    assert.strictEqual(parsed.status, "rejected")
+    assert.ok(parsed.message.includes("FB-04 rejected"))
+    assert.ok(parsed.message.includes("False positive"))
+
+    // Verify on disk
+    const found = findFeedbackFile(intentSlug, stageName, "FB-04")
+    assert.strictEqual(found.data.status, "rejected")
+    assert.ok(found.body.includes("**Rejection reason:** False positive -- already handled"))
+  })
+
+  test("MCP reject fails on human-authored feedback", () => {
+    const items = readFeedbackFiles(intentSlug, stageName)
+    const humanItem = items.find((i) => i.author_type === "human")
+    assert.ok(humanItem, "Expected a human-authored item")
+
+    const result = handleStateTool("haiku_feedback_reject", {
+      intent: intentSlug,
+      stage: stageName,
+      feedback_id: humanItem.id,
+      reason: "Should not work",
+    })
+    assert.ok(result.isError)
+    assert.ok(getTextResult(result).includes("agents cannot reject human-authored"))
+  })
+
+  test("MCP reject fails on already rejected feedback", () => {
+    // FB-04 was just rejected
+    const result = handleStateTool("haiku_feedback_reject", {
+      intent: intentSlug,
+      stage: stageName,
+      feedback_id: "FB-04",
+      reason: "Double reject",
+    })
+    assert.ok(result.isError)
+    assert.ok(getTextResult(result).includes("already 'rejected'"))
+  })
+
+  test("MCP reject fails without reason", () => {
+    // Create a new agent item to test this
+    writeFeedbackFile(intentSlug, stageName, {
+      title: "Agent item for reject reason test",
+      body: "Test body.",
+    })
+    const items = readFeedbackFiles(intentSlug, stageName)
+    const newItem = items.find((i) => i.title === "Agent item for reject reason test")
+
+    const result = handleStateTool("haiku_feedback_reject", {
+      intent: intentSlug,
+      stage: stageName,
+      feedback_id: newItem.id,
+      reason: "",
+    })
+    assert.ok(result.isError)
+    assert.ok(getTextResult(result).includes("reason is required"))
+  })
+
+  test("MCP reject fails for nonexistent feedback", () => {
+    const result = handleStateTool("haiku_feedback_reject", {
+      intent: intentSlug,
+      stage: stageName,
+      feedback_id: "FB-99",
+      reason: "Does not exist",
+    })
+    assert.ok(result.isError)
+    assert.ok(getTextResult(result).includes("not found"))
+  })
+
+  // ── haiku_feedback_list MCP tool ────────────────────────────────────────
+
+  console.log("\n=== haiku_feedback_list MCP tool ===")
+
+  test("lists all feedback for a specific stage", () => {
+    const result = handleStateTool("haiku_feedback_list", {
+      intent: intentSlug,
+      stage: stageName,
+    })
+    assert.ok(!result.isError, `Expected success, got: ${getTextResult(result)}`)
+    const parsed = JSON.parse(getTextResult(result))
+    assert.strictEqual(parsed.intent, intentSlug)
+    assert.strictEqual(parsed.stage, stageName)
+    assert.ok(parsed.count > 0, "Expected at least some items")
+    assert.ok(Array.isArray(parsed.items))
+
+    // Each item should have expected fields
+    const first = parsed.items[0]
+    assert.ok(first.feedback_id)
+    assert.ok(first.title)
+    assert.ok(first.status)
+    assert.ok(first.origin)
+    assert.ok(first.author)
+    assert.ok(first.author_type)
+  })
+
+  test("lists feedback filtered by status", () => {
+    const result = handleStateTool("haiku_feedback_list", {
+      intent: intentSlug,
+      stage: stageName,
+      status: "pending",
+    })
+    assert.ok(!result.isError, `Expected success, got: ${getTextResult(result)}`)
+    const parsed = JSON.parse(getTextResult(result))
+    for (const item of parsed.items) {
+      assert.strictEqual(item.status, "pending", `Expected pending, got ${item.status}`)
+    }
+  })
+
+  test("lists feedback across all stages", () => {
+    const result = handleStateTool("haiku_feedback_list", {
+      intent: intentSlug,
+    })
+    assert.ok(!result.isError, `Expected success, got: ${getTextResult(result)}`)
+    const parsed = JSON.parse(getTextResult(result))
+    assert.strictEqual(parsed.stage, null)
+    assert.ok(parsed.count > 0)
+
+    // Cross-stage items should include a 'stage' field
+    const hasStageField = parsed.items.some((i) => i.stage !== undefined)
+    assert.ok(hasStageField, "Cross-stage listing should include stage field on items")
+  })
+
+  test("returns empty when no matching feedback", () => {
+    const result = handleStateTool("haiku_feedback_list", {
+      intent: intentSlug,
+      stage: stageName,
+      status: "closed",
+    })
+    assert.ok(!result.isError, `Expected success, got: ${getTextResult(result)}`)
+    const parsed = JSON.parse(getTextResult(result))
+    assert.strictEqual(parsed.count, 0)
+    assert.deepStrictEqual(parsed.items, [])
+  })
+
+  test("MCP list rejects nonexistent intent", () => {
+    const result = handleStateTool("haiku_feedback_list", {
+      intent: "nonexistent-intent",
+    })
+    assert.ok(result.isError)
+    assert.ok(getTextResult(result).includes("intent 'nonexistent-intent' not found"))
+  })
+
+  test("MCP list rejects invalid status filter", () => {
+    const result = handleStateTool("haiku_feedback_list", {
+      intent: intentSlug,
+      status: "bogus",
+    })
+    assert.ok(result.isError)
+    assert.ok(getTextResult(result).includes("status must be one of"))
+  })
+
+  test("MCP list rejects missing intent", () => {
+    const result = handleStateTool("haiku_feedback_list", {
+      intent: "",
+    })
+    assert.ok(result.isError)
+    assert.ok(getTextResult(result).includes("intent is required"))
+  })
+
   // ── Cleanup ───────────────────────────────────────────────────────────────
 
   console.log(`\n${passed} passed, ${failed} failed\n`)

@@ -2612,6 +2612,93 @@ export const stateToolDefs = [
 		},
 	},
 	{
+		name: "haiku_feedback_update",
+		description:
+			"Update mutable fields on an existing feedback item. Agents cannot close human-authored feedback.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: { type: "string", description: "Intent slug" },
+				stage: { type: "string", description: "Stage name" },
+				feedback_id: {
+					type: "string",
+					description: "FB-NN identifier or numeric prefix",
+				},
+				status: {
+					type: "string",
+					description:
+						"New status: pending | addressed | closed | rejected",
+				},
+				addressed_by: {
+					type: "string",
+					description: "Unit slug that addresses this feedback",
+				},
+			},
+			required: ["intent", "stage", "feedback_id"],
+		},
+	},
+	{
+		name: "haiku_feedback_delete",
+		description:
+			"Delete a feedback file. Cannot delete pending items. Agents cannot delete human-authored items.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: { type: "string", description: "Intent slug" },
+				stage: { type: "string", description: "Stage name" },
+				feedback_id: {
+					type: "string",
+					description: "FB-NN identifier or numeric prefix",
+				},
+			},
+			required: ["intent", "stage", "feedback_id"],
+		},
+	},
+	{
+		name: "haiku_feedback_reject",
+		description:
+			"Reject an agent-authored feedback item with a reason. Sets status to rejected and appends rejection reason to body.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: { type: "string", description: "Intent slug" },
+				stage: { type: "string", description: "Stage name" },
+				feedback_id: {
+					type: "string",
+					description: "FB-NN identifier or numeric prefix",
+				},
+				reason: {
+					type: "string",
+					description:
+						"Explanation for why this feedback is being rejected",
+				},
+			},
+			required: ["intent", "stage", "feedback_id", "reason"],
+		},
+	},
+	{
+		name: "haiku_feedback_list",
+		description:
+			"List feedback items with optional filtering. Omit stage to list across all stages.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: { type: "string", description: "Intent slug" },
+				stage: {
+					type: "string",
+					description:
+						"Stage name (optional — omit to list all stages)",
+				},
+				status: {
+					type: "string",
+					description:
+						"Filter by status: pending | addressed | closed | rejected",
+				},
+			},
+			required: ["intent"],
+		},
+	},
+	{
 		name: "haiku_release_notes",
 		description:
 			"Extract release notes from CHANGELOG.md — a specific version or the 5 most recent entries.",
@@ -4119,6 +4206,320 @@ export function handleStateTool(
 			return text(
 				JSON.stringify(injectPushWarning(response, gitResult), null, 2),
 			)
+		}
+
+		case "haiku_feedback_update": {
+			const intent = args.intent as string
+			const stage = args.stage as string
+			const feedbackId = args.feedback_id as string
+
+			if (!intent)
+				return {
+					content: [{ type: "text", text: "Error: intent is required" }],
+					isError: true,
+				}
+			if (!stage)
+				return {
+					content: [{ type: "text", text: "Error: stage is required" }],
+					isError: true,
+				}
+			if (!feedbackId)
+				return {
+					content: [
+						{ type: "text", text: "Error: feedback_id is required" },
+					],
+					isError: true,
+				}
+
+			const updateFields: { status?: string; addressed_by?: string } = {}
+			if (args.status !== undefined)
+				updateFields.status = args.status as string
+			if (args.addressed_by !== undefined)
+				updateFields.addressed_by = args.addressed_by as string
+
+			const updateResult = updateFeedbackFile(
+				intent,
+				stage,
+				feedbackId,
+				updateFields,
+				"agent",
+			)
+
+			if (!updateResult.ok) {
+				return {
+					content: [{ type: "text", text: updateResult.error }],
+					isError: true,
+				}
+			}
+
+			const updateGitResult = gitCommitState(
+				`feedback: update ${feedbackId} in ${stage}`,
+			)
+
+			const found = findFeedbackFile(intent, stage, feedbackId)
+			const updateResponse: Record<string, unknown> = {
+				feedback_id: feedbackId,
+				file: found
+					? `.haiku/intents/${intent}/stages/${stage}/feedback/${found.filename}`
+					: undefined,
+				updated_fields: updateResult.updated_fields,
+				message: `Feedback ${feedbackId} updated.`,
+			}
+			return text(
+				JSON.stringify(
+					injectPushWarning(updateResponse, updateGitResult),
+					null,
+					2,
+				),
+			)
+		}
+
+		case "haiku_feedback_delete": {
+			const intent = args.intent as string
+			const stage = args.stage as string
+			const feedbackId = args.feedback_id as string
+
+			if (!intent)
+				return {
+					content: [{ type: "text", text: "Error: intent is required" }],
+					isError: true,
+				}
+			if (!stage)
+				return {
+					content: [{ type: "text", text: "Error: stage is required" }],
+					isError: true,
+				}
+			if (!feedbackId)
+				return {
+					content: [
+						{ type: "text", text: "Error: feedback_id is required" },
+					],
+					isError: true,
+				}
+
+			const deleteResult = deleteFeedbackFile(
+				intent,
+				stage,
+				feedbackId,
+				"agent",
+			)
+
+			if (!deleteResult.ok) {
+				return {
+					content: [{ type: "text", text: deleteResult.error }],
+					isError: true,
+				}
+			}
+
+			const deleteGitResult = gitCommitState(
+				`feedback: delete ${feedbackId} from ${stage}`,
+			)
+
+			const deleteResponse: Record<string, unknown> = {
+				feedback_id: feedbackId,
+				deleted: true,
+				message: `Feedback ${feedbackId} deleted from stage '${stage}'.`,
+			}
+			return text(
+				JSON.stringify(
+					injectPushWarning(deleteResponse, deleteGitResult),
+					null,
+					2,
+				),
+			)
+		}
+
+		case "haiku_feedback_reject": {
+			const intent = args.intent as string
+			const stage = args.stage as string
+			const feedbackId = args.feedback_id as string
+			const reason = args.reason as string
+
+			if (!intent)
+				return {
+					content: [{ type: "text", text: "Error: intent is required" }],
+					isError: true,
+				}
+			if (!stage)
+				return {
+					content: [{ type: "text", text: "Error: stage is required" }],
+					isError: true,
+				}
+			if (!feedbackId)
+				return {
+					content: [
+						{ type: "text", text: "Error: feedback_id is required" },
+					],
+					isError: true,
+				}
+			if (!reason)
+				return {
+					content: [
+						{
+							type: "text",
+							text: "Error: reason is required when rejecting feedback",
+						},
+					],
+					isError: true,
+				}
+
+			// Find the feedback file
+			const rejectFound = findFeedbackFile(intent, stage, feedbackId)
+			if (!rejectFound) {
+				return {
+					content: [
+						{
+							type: "text",
+							text: `Error: feedback '${feedbackId}' not found in stage '${stage}'`,
+						},
+					],
+					isError: true,
+				}
+			}
+
+			// Guard: only works on agent-authored feedback
+			if (rejectFound.data.author_type === "human") {
+				return {
+					content: [
+						{
+							type: "text",
+							text: "Error: agents cannot reject human-authored feedback. Only the user can reject it via the review UI.",
+						},
+					],
+					isError: true,
+				}
+			}
+
+			// Guard: cannot reject already closed or rejected items
+			const currentStatus = rejectFound.data.status as string
+			if (currentStatus === "closed" || currentStatus === "rejected") {
+				return {
+					content: [
+						{
+							type: "text",
+							text: `Error: feedback '${feedbackId}' is already '${currentStatus}' -- cannot reject again`,
+						},
+					],
+					isError: true,
+				}
+			}
+
+			// Apply rejection: set status to rejected and append reason to body
+			const rejectData = { ...rejectFound.data, status: "rejected" }
+			const rejectBody = `${rejectFound.body}\n\n---\n\n**Rejection reason:** ${reason}`
+
+			writeFileSync(
+				rejectFound.path,
+				matter.stringify(`\n${rejectBody}\n`, rejectData),
+			)
+
+			const rejectGitResult = gitCommitState(
+				`feedback: reject ${feedbackId} in ${stage}`,
+			)
+
+			const rejectResponse: Record<string, unknown> = {
+				feedback_id: feedbackId,
+				status: "rejected",
+				message: `Feedback ${feedbackId} rejected: ${reason}`,
+			}
+			return text(
+				JSON.stringify(
+					injectPushWarning(rejectResponse, rejectGitResult),
+					null,
+					2,
+				),
+			)
+		}
+
+		case "haiku_feedback_list": {
+			const intent = args.intent as string
+			const stageFilt = (args.stage as string) || undefined
+			const statusFilt = (args.status as string) || undefined
+
+			if (!intent)
+				return {
+					content: [{ type: "text", text: "Error: intent is required" }],
+					isError: true,
+				}
+
+			// Validate intent exists
+			const listIntentFile = join(intentDir(intent), "intent.md")
+			if (!existsSync(listIntentFile))
+				return {
+					content: [
+						{
+							type: "text",
+							text: `Error: intent '${intent}' not found`,
+						},
+					],
+					isError: true,
+				}
+
+			// Validate status filter enum
+			if (
+				statusFilt &&
+				!(FEEDBACK_STATUSES as readonly string[]).includes(statusFilt)
+			) {
+				return {
+					content: [
+						{
+							type: "text",
+							text: `Error: status must be one of: ${FEEDBACK_STATUSES.join(", ")}`,
+						},
+					],
+					isError: true,
+				}
+			}
+
+			// Determine which stages to list
+			let stagesToList: string[]
+			if (stageFilt) {
+				stagesToList = [stageFilt]
+			} else {
+				const stagesPath = join(intentDir(intent), "stages")
+				if (!existsSync(stagesPath)) {
+					stagesToList = []
+				} else {
+					stagesToList = readdirSync(stagesPath).filter((s) =>
+						existsSync(join(stagesPath, s)),
+					)
+				}
+			}
+
+			// Collect feedback items across stages
+			const allItems: Array<Record<string, unknown>> = []
+			for (const stg of stagesToList) {
+				const items = readFeedbackFiles(intent, stg)
+				for (const item of items) {
+					if (statusFilt && item.status !== statusFilt) continue
+					const entry: Record<string, unknown> = {
+						feedback_id: item.id,
+						file: item.file,
+						title: item.title,
+						status: item.status,
+						origin: item.origin,
+						author: item.author,
+						author_type: item.author_type,
+						created_at: item.created_at,
+						visit: item.visit,
+						source_ref: item.source_ref,
+						addressed_by: item.addressed_by,
+					}
+					// Include stage field when listing across stages
+					if (!stageFilt) {
+						entry.stage = stg
+					}
+					allItems.push(entry)
+				}
+			}
+
+			const listResponse: Record<string, unknown> = {
+				intent,
+				stage: stageFilt || null,
+				count: allItems.length,
+				items: allItems,
+			}
+			return text(JSON.stringify(listResponse, null, 2))
 		}
 
 		case "haiku_version_info": {

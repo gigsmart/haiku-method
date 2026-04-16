@@ -38,12 +38,14 @@ import { validateIdentifier, validateSlugArgs } from "./prompts/helpers.js"
 import { reportError } from "./sentry.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
 import {
+	countPendingFeedback,
 	findHaikuRoot,
 	gitCommitState,
 	intentDir,
 	intentTitleNeedsRepair,
 	isGitRepo,
 	parseFrontmatter,
+	readFeedbackFiles,
 	readJson,
 	setFrontmatterField,
 	setRunNextHandler,
@@ -51,6 +53,7 @@ import {
 	syncSessionMetadata,
 	timestamp,
 	validateBranch,
+	writeFeedbackFile,
 	writeJson,
 } from "./state-tools.js"
 import {
@@ -234,7 +237,21 @@ function resolveStageMetadata(
  *
  * For GitLab: checks both approval status and merge state.
  */
-function checkExternalApproval(url: string): boolean {
+/**
+ * Result from checking external review state.
+ * `status` describes the review state:
+ *   - `approved`          — reviews approved or PR/MR merged
+ *   - `changes_requested` — reviewer requested changes
+ *   - `pending`           — no definitive review decision yet
+ *   - `unknown`           — CLI not available, network error, or unrecognised URL
+ */
+export interface ExternalReviewState {
+	status: "approved" | "changes_requested" | "pending" | "unknown"
+	provider?: "github" | "gitlab"
+	url?: string
+}
+
+export function checkExternalState(url: string): ExternalReviewState {
 	try {
 		if (url.includes("github.com") && url.includes("/pull/")) {
 			// GitHub PR — check review decision AND merge state (argument array avoids shell injection)
@@ -249,29 +266,44 @@ function checkExternalApproval(url: string): boolean {
 					"-q",
 					"[.state, .reviewDecision]",
 				],
-				{ encoding: "utf8", stdio: "pipe" },
+				{ encoding: "utf8", stdio: "pipe", timeout: 15000 },
 			).trim()
 			const parsed = JSON.parse(output) as [string, string]
 			const [state, reviewDecision] = parsed
-			// Gate passes if PR is merged OR if reviews are approved (even if not yet merged)
-			return state === "MERGED" || reviewDecision === "APPROVED"
+			if (state === "MERGED" || reviewDecision === "APPROVED") {
+				return { status: "approved", provider: "github", url }
+			}
+			if (reviewDecision === "CHANGES_REQUESTED") {
+				return { status: "changes_requested", provider: "github", url }
+			}
+			// REVIEW_REQUIRED, COMMENTED, or empty — no definitive decision yet
+			return { status: "pending", provider: "github", url }
 		}
 		if (url.includes("gitlab") && url.includes("/merge_requests/")) {
 			// GitLab MR — check via glab CLI (argument array avoids shell injection)
 			const output = execFileSync(
 				"glab",
 				["mr", "view", url, "--output", "json"],
-				{ encoding: "utf8", stdio: "pipe" },
+				{ encoding: "utf8", stdio: "pipe", timeout: 15000 },
 			).trim()
-			const mr = JSON.parse(output) as { state?: string; approved?: boolean }
-			// Gate passes if MR is merged OR if it has been approved
-			return mr.state === "merged" || mr.approved === true
+			const mr = JSON.parse(output) as {
+				state?: string
+				approved?: boolean
+			}
+			if (mr.state === "merged" || mr.approved === true) {
+				return { status: "approved", provider: "gitlab", url }
+			}
+			// GitLab: approved === false on an open MR means changes requested
+			if (mr.state === "opened" && mr.approved === false) {
+				return { status: "changes_requested", provider: "gitlab", url }
+			}
+			return { status: "pending", provider: "gitlab", url }
 		}
 		// Unknown URL type — can't check via CLI
-		return false
+		return { status: "unknown" }
 	} catch {
-		// CLI not available or network error
-		return false
+		// CLI not available, timeout, or network error
+		return { status: "unknown" }
 	}
 }
 
@@ -1667,6 +1699,48 @@ export function runNext(slug: string): OrchestratorAction {
 	//   only safe option is local human approval. Compound gates containing `external`
 	//   strip it and keep remaining types (e.g., [external, ask] → ask).
 	if (phase === "gate") {
+		// ── Pending feedback check ─────────────────────────────────────────
+		// Before any gate logic, check if there are unresolved feedback items.
+		// If pending feedback exists, roll back to elaborate so the agent
+		// addresses findings before the stage can advance.
+		const pendingCount = countPendingFeedback(slug, currentStage)
+		if (pendingCount > 0) {
+			const pendingItems = readFeedbackFiles(slug, currentStage).filter(
+				(item) => item.status === "pending",
+			)
+			const statePath = stageStatePath(slug, currentStage)
+			const gateState = readJson(statePath)
+			const visits = ((gateState.visits as number) || 0) + 1
+			gateState.visits = visits
+			gateState.phase = "elaborate"
+			writeJson(statePath, gateState)
+			gitCommitState(
+				`haiku: feedback_revisit in ${currentStage} (${pendingCount} pending)`,
+			)
+			emitTelemetry("haiku.gate.feedback_revisit", {
+				intent: slug,
+				stage: currentStage,
+				pending_count: String(pendingCount),
+				visits: String(visits),
+			})
+			return {
+				action: "feedback_revisit",
+				intent: slug,
+				studio,
+				stage: currentStage,
+				pending_count: pendingCount,
+				visits,
+				pending_items: pendingItems.map((item) => ({
+					feedback_id: item.id,
+					title: item.title,
+					status: item.status,
+					origin: item.origin,
+					author: item.author,
+				})),
+				message: `${pendingCount} pending feedback item(s) found — rolling back to elaborate. Address all pending feedback before the gate can advance.`,
+			}
+		}
+
 		const reviewType = resolveStageReview(studio, currentStage)
 		const stageIdx = studioStages.indexOf(currentStage)
 		const nextStage =
@@ -1749,9 +1823,12 @@ export function runNext(slug: string): OrchestratorAction {
 	if (stageStatus === "completed") {
 		const gateOutcome = (stageState.gate_outcome as string) || "advanced"
 
-		// Blocked on external review — check if it's been approved
+		// Blocked on external review — check if approved or changes requested
 		if (gateOutcome === "blocked") {
 			let approved = false
+			let externalState: ExternalReviewState = { status: "unknown" }
+			const externalUrl =
+				(stageState.external_review_url as string) || ""
 
 			// Tier 1: Branch merge detection (structural, tamper-resistant)
 			if (isGitRepo()) {
@@ -1763,19 +1840,19 @@ export function runNext(slug: string): OrchestratorAction {
 			}
 
 			// Tier 2: URL-based CLI probing (fallback)
-			if (!approved) {
-				const externalUrl = (stageState.external_review_url as string) || ""
-				if (externalUrl) {
-					approved = checkExternalApproval(externalUrl)
+			if (!approved && externalUrl) {
+				externalState = checkExternalState(externalUrl)
+				if (externalState.status === "approved") {
+					approved = true
 				}
 			}
 
 			if (approved) {
 				// External approval detected — advance
-				const path = stageStatePath(slug, currentStage)
-				const data = readJson(path)
-				data.gate_outcome = "advanced"
-				writeJson(path, data)
+				const statePath = stageStatePath(slug, currentStage)
+				const stateData = readJson(statePath)
+				stateData.gate_outcome = "advanced"
+				writeJson(statePath, stateData)
 				emitTelemetry("haiku.gate.resolved", {
 					intent: slug,
 					stage: currentStage,
@@ -1783,13 +1860,67 @@ export function runNext(slug: string): OrchestratorAction {
 					outcome: "approved",
 				})
 				// Fall through to advance logic below
+			} else if (externalState.status === "changes_requested") {
+				// External reviewer requested changes — create a summary
+				// feedback file and trigger a revisit cycle
+				const originType =
+					externalState.provider === "gitlab"
+						? "external-mr"
+						: "external-pr"
+				const fbResult = writeFeedbackFile(
+					slug,
+					currentStage,
+					{
+						title: "External review requested changes",
+						body: `The external review at ${externalUrl} requested changes. Review the PR/MR comments and address the reviewer's feedback before re-submitting for review.`,
+						origin: originType,
+						author: "user",
+						source_ref: externalUrl,
+					},
+				)
+				gitCommitState(
+					`feedback: create ${fbResult.feedback_id} from external review in ${currentStage}`,
+				)
+
+				// Roll FSM back to elaborate for a revisit cycle
+				const statePath = stageStatePath(slug, currentStage)
+				const stateData = readJson(statePath)
+				stateData.status = "active"
+				stateData.phase = "elaborate"
+				stateData.gate_outcome = null
+				stateData.visits =
+					((stateData.visits as number) || 0) + 1
+				writeJson(statePath, stateData)
+				gitCommitState(
+					`revisit ${currentStage}: external changes requested (visit ${stateData.visits})`,
+				)
+
+				emitTelemetry("haiku.gate.resolved", {
+					intent: slug,
+					stage: currentStage,
+					gate_type: "external",
+					outcome: "changes_requested",
+				})
+
+				return {
+					action: "external_changes_requested",
+					intent: slug,
+					stage: currentStage,
+					external_review_url: externalUrl,
+					provider: externalState.provider,
+					feedback_id: fbResult.feedback_id,
+					feedback_file: fbResult.file,
+					visits: stateData.visits,
+					message: `External review at ${externalUrl} requested changes. Created ${fbResult.feedback_id} and rolled back to elaborate phase (visit ${stateData.visits}). Address the reviewer's feedback, then call haiku_run_next to continue.`,
+				}
 			} else {
-				const externalUrl = (stageState.external_review_url as string) || ""
 				return {
 					action: "awaiting_external_review",
 					intent: slug,
 					stage: currentStage,
-					...(externalUrl ? { external_review_url: externalUrl } : {}),
+					...(externalUrl
+						? { external_review_url: externalUrl }
+						: {}),
 					message: externalUrl
 						? `Stage '${currentStage}' is awaiting external review at: ${externalUrl}. Neither branch merge detection nor CLI-based check detected approval yet. Run /haiku:pickup after the review is approved.`
 						: `Stage '${currentStage}' is awaiting external review but no review URL was recorded. Run /haiku:pickup after the review is approved.`,
@@ -3150,6 +3281,38 @@ function buildRunInstructions(
 			break
 		}
 
+		case "feedback_revisit": {
+			const fbStage = action.stage as string
+			const fbPendingCount = action.pending_count as number
+			const fbVisits = action.visits as number
+			const fbItems = (action.pending_items as Array<{
+				feedback_id: string
+				title: string
+				origin: string
+				author: string
+			}>) || []
+
+			const itemList = fbItems
+				.map((item) => `- **${item.feedback_id}**: ${item.title} (origin: ${item.origin}, author: ${item.author})`)
+				.join("\n")
+
+			sections.push(
+				`## Feedback Revisit: ${fbStage}\n\n` +
+				`**${fbPendingCount} pending feedback item(s) block the gate.** ` +
+				`The FSM has rolled the phase back to \`elaborate\` (visit #${fbVisits}).\n\n` +
+				`### Pending Feedback\n\n${itemList}\n\n` +
+				`### Instructions (Additive Elaboration)\n\n` +
+				`This is an **additive elaborate** cycle — do NOT re-plan existing units.\n\n` +
+				`1. Read each pending feedback file from \`.haiku/intents/${slug}/stages/${fbStage}/feedback/\`\n` +
+				`2. For each feedback item, create a new unit that addresses the finding\n` +
+				`3. Each new unit MUST have a \`closes:\` frontmatter field referencing the feedback ID(s) it addresses — e.g. \`closes: [FB-01, FB-03]\`\n` +
+				`4. When all pending items are covered by units, call \`haiku_run_next { intent: "${slug}" }\`\n` +
+				`5. The agent will execute the new units and re-enter review → gate\n\n` +
+				`**Do NOT modify or re-queue existing completed units from prior visits.**`,
+			)
+			break
+		}
+
 		case "gate_review": {
 			const stage = action.stage as string
 			const nextStage = action.next_stage as string | null
@@ -3471,7 +3634,10 @@ export const orchestratorToolDefs = [
 	{
 		name: "haiku_revisit",
 		description:
-			"Revisit an earlier stage or phase. If `stage` is provided, jumps directly to that stage. " +
+			"Revisit an earlier stage or phase. Passing `reasons` is preferred — each reason creates a " +
+			"feedback file before rolling back, ensuring findings are captured durably. Without reasons, " +
+			"returns a stopgap instead of rolling back. " +
+			"If `stage` is provided, jumps directly to that stage. " +
 			"Without `stage`, infers the target: if in execute/review/gate phase, revisits elaborate in the current stage; " +
 			"if already in elaborate, revisits the previous stage. " +
 			"Agents can call this when they detect missing information from a prior stage.",
@@ -3483,6 +3649,25 @@ export const orchestratorToolDefs = [
 					type: "string",
 					description:
 						"Target stage to revisit (optional — omit to let the FSM infer the target)",
+				},
+				reasons: {
+					type: "array",
+					description:
+						"Optional feedback reasons. Each creates a feedback file before the revisit.",
+					items: {
+						type: "object",
+						properties: {
+							title: {
+								type: "string",
+								description: "Feedback title",
+							},
+							body: {
+								type: "string",
+								description: "Feedback body (markdown)",
+							},
+						},
+						required: ["title", "body"],
+					},
 				},
 			},
 			required: ["intent"],
@@ -4515,19 +4700,168 @@ export async function handleOrchestratorTool(
 	}
 
 	if (name === "haiku_revisit") {
-		const result = revisit(
-			args.intent as string,
+		const reasons = args.reasons as
+			| Array<{ title: string; body: string }>
+			| undefined
+
+		// Validate reasons if provided
+		if (reasons !== undefined) {
+			if (Array.isArray(reasons) && reasons.length === 0) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Error: reasons array must contain at least one item",
+						},
+					],
+					isError: true,
+				}
+			}
+			if (Array.isArray(reasons)) {
+				for (const reason of reasons) {
+					if (!reason.title || reason.title.trim() === "") {
+						return {
+							content: [
+								{
+									type: "text" as const,
+									text: "Error: each reason must have a non-empty title",
+								},
+							],
+							isError: true,
+						}
+					}
+					if (!reason.body || reason.body.trim() === "") {
+						return {
+							content: [
+								{
+									type: "text" as const,
+									text: "Error: each reason must have a non-empty body",
+								},
+							],
+							isError: true,
+						}
+					}
+				}
+			}
+		}
+
+		// Stopgap: no reasons provided — do NOT roll back
+		if (!reasons) {
+			return text(
+				JSON.stringify(
+					{
+						action: "revisit_needs_reasons",
+						message:
+							"To revisit, provide reasons as feedback. Call haiku_revisit with reasons: [{title, body}] so the feedback is recorded before rolling back.",
+					},
+					null,
+					2,
+				),
+			)
+		}
+
+		// Reasons provided — write feedback files BEFORE rolling back
+		const revisitSlug = args.intent as string
+		const revisitRoot = findHaikuRoot()
+		const revisitIntentFile = join(
+			revisitRoot,
+			"intents",
+			revisitSlug,
+			"intent.md",
+		)
+		if (!existsSync(revisitIntentFile)) {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: `Error: intent '${revisitSlug}' not found`,
+					},
+				],
+				isError: true,
+			}
+		}
+		const revisitIntentData = readFrontmatter(revisitIntentFile)
+		const revisitTargetStage =
+			(args.stage as string | undefined) ||
+			(revisitIntentData.active_stage as string) ||
+			""
+		if (!revisitTargetStage) {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: `Error: no active stage found for intent '${revisitSlug}'`,
+					},
+				],
+				isError: true,
+			}
+		}
+
+		// Write feedback files
+		const createdFeedback: Array<{
+			feedback_id: string
+			title: string
+		}> = []
+		for (const reason of reasons) {
+			const fb = writeFeedbackFile(revisitSlug, revisitTargetStage, {
+				title: reason.title,
+				body: reason.body,
+				origin: "agent",
+				author: "parent-agent",
+			})
+			createdFeedback.push({
+				feedback_id: fb.feedback_id,
+				title: reason.title,
+			})
+		}
+		gitCommitState(
+			`haiku: revisit feedback in ${revisitTargetStage} (${createdFeedback.length} items)`,
+		)
+
+		// Now perform the revisit (rolls phase to elaborate)
+		const revisitResult = revisit(
+			revisitSlug,
 			args.stage as string | undefined,
 		)
+
+		// Increment visits in the target stage state
+		const revisitStatePath = stageStatePath(revisitSlug, revisitTargetStage)
+		const revisitState = readJson(revisitStatePath)
+		const revisitCurrentVisits = (revisitState.visits as number) || 0
+		revisitState.visits = revisitCurrentVisits + 1
+		writeJson(revisitStatePath, revisitState)
+		gitCommitState(`haiku: increment visits to ${revisitCurrentVisits + 1}`)
+
 		emitTelemetry("haiku.orchestrator.action", {
-			intent: args.intent as string,
-			action: result.action,
+			intent: revisitSlug,
+			action: "revisit_with_reasons",
+			feedback_count: String(createdFeedback.length),
 		})
 		syncSessionMetadata(
-			args.intent as string,
+			revisitSlug,
 			args.state_file as string | undefined,
 		)
-		return text(JSON.stringify(result, null, 2))
+
+		return text(
+			JSON.stringify(
+				{
+					action: "revisit",
+					from_stage:
+						(revisitIntentData.active_stage as string) ||
+						revisitTargetStage,
+					from_phase: revisitResult.target_phase
+						? "gate"
+						: "execute",
+					to_stage: revisitTargetStage,
+					to_phase: "elaborate",
+					visits: revisitCurrentVisits + 1,
+					feedback_created: createdFeedback,
+					message: `Revisited ${revisitTargetStage} (elaborate). Created ${createdFeedback.length} feedback item(s).`,
+				},
+				null,
+				2,
+			),
+		)
 	}
 
 	if (name === "haiku_intent_reset") {
