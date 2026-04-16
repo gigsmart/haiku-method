@@ -2,9 +2,16 @@
 title: CI pipeline validation
 type: operations
 depends_on: []
-quality_gates: [typecheck, test]
+quality_gates:
+  - typecheck
+  - test
 inputs:
   - knowledge/DISCOVERY.md
+status: active
+bolt: 1
+hat: ops-engineer
+started_at: '2026-04-16T16:38:35Z'
+hat_started_at: '2026-04-16T16:38:35Z'
 ---
 
 # CI Pipeline Validation
