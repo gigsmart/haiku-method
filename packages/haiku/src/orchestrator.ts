@@ -493,7 +493,7 @@ function writeReviewFeedbackFiles(
 		for (const pin of annotations.pins) {
 			if (!pin.text) continue
 			const title =
-				pin.text.length > 120 ? pin.text.slice(0, 117) + "..." : pin.text
+				pin.text.length > 120 ? `${pin.text.slice(0, 117)}...` : pin.text
 			const result = writeFeedbackFile(slug, stage, {
 				title,
 				body: pin.text,
@@ -511,7 +511,7 @@ function writeReviewFeedbackFiles(
 			if (!comment.comment) continue
 			const title =
 				comment.comment.length > 120
-					? comment.comment.slice(0, 117) + "..."
+					? `${comment.comment.slice(0, 117)}...`
 					: comment.comment
 			const result = writeFeedbackFile(slug, stage, {
 				title,
@@ -525,9 +525,9 @@ function writeReviewFeedbackFiles(
 	}
 
 	// Free-form feedback text — one file if non-empty
-	if (reviewResult.feedback && reviewResult.feedback.trim()) {
+	if (reviewResult.feedback?.trim()) {
 		const fb = reviewResult.feedback.trim()
-		const title = fb.length > 120 ? fb.slice(0, 117) + "..." : fb
+		const title = fb.length > 120 ? `${fb.slice(0, 117)}...` : fb
 		const result = writeFeedbackFile(slug, stage, {
 			title,
 			body: fb,
@@ -1458,7 +1458,13 @@ export function runNext(slug: string): OrchestratorAction {
 			const invalidCloseRefs: Array<{ unit: string; ref: string }> = []
 
 			for (const u of pendingUnits) {
-				const unitFile = join(iDir, "stages", currentStage, "units", `${u.name}.md`)
+				const unitFile = join(
+					iDir,
+					"stages",
+					currentStage,
+					"units",
+					`${u.name}.md`,
+				)
 				if (!existsSync(unitFile)) continue
 				const fm = readFrontmatter(unitFile)
 				const closes = (fm.closes as string[]) || []
@@ -1520,13 +1526,21 @@ export function runNext(slug: string): OrchestratorAction {
 			if (pendingUnits.length > 0 && pendingFeedback.length > 0) {
 				const closedFeedbackIds = new Set<string>()
 				for (const u of pendingUnits) {
-					const unitFile = join(iDir, "stages", currentStage, "units", `${u.name}.md`)
+					const unitFile = join(
+						iDir,
+						"stages",
+						currentStage,
+						"units",
+						`${u.name}.md`,
+					)
 					if (!existsSync(unitFile)) continue
 					const fm = readFrontmatter(unitFile)
 					const closes = (fm.closes as string[]) || []
 					for (const ref of closes) closedFeedbackIds.add(ref)
 				}
-				const orphaned = pendingFeedback.filter((f) => !closedFeedbackIds.has(f.id))
+				const orphaned = pendingFeedback.filter(
+					(f) => !closedFeedbackIds.has(f.id),
+				)
 				if (orphaned.length > 0) {
 					return {
 						action: "additive_elaborate",
@@ -1993,14 +2007,10 @@ export function runNext(slug: string): OrchestratorAction {
 		// check if the external review state changed (approved / changes_requested)
 		// before opening the gate review UI again.
 		const gateOutcomeInGate = (stageState.gate_outcome as string) || ""
-		if (
-			stageStatus === "completed" &&
-			gateOutcomeInGate === "blocked"
-		) {
+		if (stageStatus === "completed" && gateOutcomeInGate === "blocked") {
 			let extApproved = false
 			let externalState: ExternalReviewState = { status: "unknown" }
-			const externalUrl =
-				(stageState.external_review_url as string) || ""
+			const externalUrl = (stageState.external_review_url as string) || ""
 
 			// Tier 1: Branch merge detection
 			if (isGitRepo()) {
@@ -2139,8 +2149,7 @@ export function runNext(slug: string): OrchestratorAction {
 		if (gateOutcome === "blocked") {
 			let approved = false
 			let externalState: ExternalReviewState = { status: "unknown" }
-			const externalUrl =
-				(stageState.external_review_url as string) || ""
+			const externalUrl = (stageState.external_review_url as string) || ""
 
 			// Tier 1: Branch merge detection (structural, tamper-resistant)
 			if (isGitRepo()) {
@@ -2184,9 +2193,7 @@ export function runNext(slug: string): OrchestratorAction {
 					action: "awaiting_external_review",
 					intent: slug,
 					stage: currentStage,
-					...(externalUrl
-						? { external_review_url: externalUrl }
-						: {}),
+					...(externalUrl ? { external_review_url: externalUrl } : {}),
 					message: externalUrl
 						? `Stage '${currentStage}' is awaiting external review at: ${externalUrl}. Neither branch merge detection nor CLI-based check detected approval yet. Run /haiku:pickup after the review is approved.`
 						: `Stage '${currentStage}' is awaiting external review but no review URL was recorded. Run /haiku:pickup after the review is approved.`,
@@ -2776,7 +2783,8 @@ function enrichActionWithPreview(action: OrchestratorAction): void {
 		case "additive_elaborate": {
 			const fbCount = (action.pending_feedback as unknown[])?.length || 0
 			tell_user = `Additive elaborate — ${fbCount} pending feedback item(s) need to be addressed with new units.`
-			next_step = "I'll create new units with `closes:` fields referencing the feedback items, then advance to execution."
+			next_step =
+				"I'll create new units with `closes:` fields referencing the feedback items, then advance to execution."
 			break
 		}
 
@@ -3136,13 +3144,14 @@ function buildRunInstructions(
 			const stage = action.stage as string
 			const aeVisits = (action.visits as number) || 0
 			const completedUnits = (action.completed_units as string[]) || []
-			const pendingFeedback = (action.pending_feedback as Array<{
-				feedback_id: string
-				title: string
-				body: string
-				origin: string
-				author: string
-			}>) || []
+			const pendingFeedback =
+				(action.pending_feedback as Array<{
+					feedback_id: string
+					title: string
+					body: string
+					origin: string
+					author: string
+				}>) || []
 			const validationError = action.validation_error as string | undefined
 
 			sections.push(`## Additive Elaborate: ${stage} (visit #${aeVisits})`)
@@ -3164,17 +3173,7 @@ function buildRunInstructions(
 			}
 
 			sections.push(
-				`### Instructions\n\n` +
-				`This is an **additive elaborate** cycle — do NOT re-plan or modify existing completed units.\n\n` +
-				`1. Read each pending feedback item above\n` +
-				`2. For each item, create a new unit that addresses the finding\n` +
-				`3. Each new unit MUST have a \`closes:\` frontmatter field referencing the feedback ID(s) it addresses — e.g. \`closes: [FB-01, FB-03]\`\n` +
-				`4. New units also need \`inputs:\`, \`depends_on:\`, \`type:\`, and completion criteria as usual\n` +
-				`5. When all pending items are covered by units, call \`haiku_run_next { intent: "${slug}" }\`\n` +
-				`6. The orchestrator validates that every pending feedback is referenced by at least one unit's \`closes:\` field\n` +
-				`7. After validation passes, the new units enter execution\n\n` +
-				`**Unit file naming:** Continue the existing sequence (e.g., if last unit is \`unit-05-*\`, start at \`unit-06-*\`).\n\n` +
-				`**Do NOT** modify or re-queue existing completed units from prior visits.`,
+				`### Instructions\n\nThis is an **additive elaborate** cycle — do NOT re-plan or modify existing completed units.\n\n1. Read each pending feedback item above\n2. For each item, create a new unit that addresses the finding\n3. Each new unit MUST have a \`closes:\` frontmatter field referencing the feedback ID(s) it addresses — e.g. \`closes: [FB-01, FB-03]\`\n4. New units also need \`inputs:\`, \`depends_on:\`, \`type:\`, and completion criteria as usual\n5. When all pending items are covered by units, call \`haiku_run_next { intent: "${slug}" }\`\n6. The orchestrator validates that every pending feedback is referenced by at least one unit's \`closes:\` field\n7. After validation passes, the new units enter execution\n\n**Unit file naming:** Continue the existing sequence (e.g., if last unit is \`unit-05-*\`, start at \`unit-06-*\`).\n\n**Do NOT** modify or re-queue existing completed units from prior visits.`,
 			)
 			break
 		}
@@ -3605,30 +3604,23 @@ function buildRunInstructions(
 			const fbStage = action.stage as string
 			const fbPendingCount = action.pending_count as number
 			const fbVisits = action.visits as number
-			const fbItems = (action.pending_items as Array<{
-				feedback_id: string
-				title: string
-				origin: string
-				author: string
-			}>) || []
+			const fbItems =
+				(action.pending_items as Array<{
+					feedback_id: string
+					title: string
+					origin: string
+					author: string
+				}>) || []
 
 			const itemList = fbItems
-				.map((item) => `- **${item.feedback_id}**: ${item.title} (origin: ${item.origin}, author: ${item.author})`)
+				.map(
+					(item) =>
+						`- **${item.feedback_id}**: ${item.title} (origin: ${item.origin}, author: ${item.author})`,
+				)
 				.join("\n")
 
 			sections.push(
-				`## Feedback Revisit: ${fbStage}\n\n` +
-				`**${fbPendingCount} pending feedback item(s) block the gate.** ` +
-				`The FSM has rolled the phase back to \`elaborate\` (visit #${fbVisits}).\n\n` +
-				`### Pending Feedback\n\n${itemList}\n\n` +
-				`### Instructions (Additive Elaboration)\n\n` +
-				`This is an **additive elaborate** cycle — do NOT re-plan existing units.\n\n` +
-				`1. Read each pending feedback file from \`.haiku/intents/${slug}/stages/${fbStage}/feedback/\`\n` +
-				`2. For each feedback item, create a new unit that addresses the finding\n` +
-				`3. Each new unit MUST have a \`closes:\` frontmatter field referencing the feedback ID(s) it addresses — e.g. \`closes: [FB-01, FB-03]\`\n` +
-				`4. When all pending items are covered by units, call \`haiku_run_next { intent: "${slug}" }\`\n` +
-				`5. The agent will execute the new units and re-enter review → gate\n\n` +
-				`**Do NOT modify or re-queue existing completed units from prior visits.**`,
+				`## Feedback Revisit: ${fbStage}\n\n**${fbPendingCount} pending feedback item(s) block the gate.** The FSM has rolled the phase back to \`elaborate\` (visit #${fbVisits}).\n\n### Pending Feedback\n\n${itemList}\n\n### Instructions (Additive Elaboration)\n\nThis is an **additive elaborate** cycle — do NOT re-plan existing units.\n\n1. Read each pending feedback file from \`.haiku/intents/${slug}/stages/${fbStage}/feedback/\`\n2. For each feedback item, create a new unit that addresses the finding\n3. Each new unit MUST have a \`closes:\` frontmatter field referencing the feedback ID(s) it addresses — e.g. \`closes: [FB-01, FB-03]\`\n4. When all pending items are covered by units, call \`haiku_run_next { intent: "${slug}" }\`\n5. The agent will execute the new units and re-enter review → gate\n\n**Do NOT modify or re-queue existing completed units from prior visits.**`,
 			)
 			break
 		}
@@ -4296,9 +4288,10 @@ export async function handleOrchestratorTool(
 				}
 				// changes_requested — persist all annotations and feedback as durable feedback files
 				const feedbackIds = writeReviewFeedbackFiles(slug, stage, reviewResult)
-				const feedbackSummary = feedbackIds.length > 0
-					? ` Created ${feedbackIds.length} feedback file(s): ${feedbackIds.join(", ")}.`
-					: ""
+				const feedbackSummary =
+					feedbackIds.length > 0
+						? ` Created ${feedbackIds.length} feedback file(s): ${feedbackIds.join(", ")}.`
+						: ""
 
 				if (gateContext === "intent_review") {
 					// Intent rejected — stay in pending, agent must revise intent.md
@@ -5147,10 +5140,7 @@ export async function handleOrchestratorTool(
 		)
 
 		// Now perform the revisit (rolls phase to elaborate)
-		const revisitResult = revisit(
-			revisitSlug,
-			args.stage as string | undefined,
-		)
+		const revisitResult = revisit(revisitSlug, args.stage as string | undefined)
 
 		// Increment visits in the target stage state
 		const revisitStatePath = stageStatePath(revisitSlug, revisitTargetStage)
@@ -5165,21 +5155,15 @@ export async function handleOrchestratorTool(
 			action: "revisit_with_reasons",
 			feedback_count: String(createdFeedback.length),
 		})
-		syncSessionMetadata(
-			revisitSlug,
-			args.state_file as string | undefined,
-		)
+		syncSessionMetadata(revisitSlug, args.state_file as string | undefined)
 
 		return text(
 			JSON.stringify(
 				{
 					action: "revisit",
 					from_stage:
-						(revisitIntentData.active_stage as string) ||
-						revisitTargetStage,
-					from_phase: revisitResult.target_phase
-						? "gate"
-						: "execute",
+						(revisitIntentData.active_stage as string) || revisitTargetStage,
+					from_phase: revisitResult.target_phase ? "gate" : "execute",
 					to_stage: revisitTargetStage,
 					to_phase: "elaborate",
 					visits: revisitCurrentVisits + 1,

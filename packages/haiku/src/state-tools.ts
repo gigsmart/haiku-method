@@ -2630,8 +2630,7 @@ export const stateToolDefs = [
 				},
 				status: {
 					type: "string",
-					description:
-						"New status: pending | addressed | closed | rejected",
+					description: "New status: pending | addressed | closed | rejected",
 				},
 				addressed_by: {
 					type: "string",
@@ -2673,8 +2672,7 @@ export const stateToolDefs = [
 				},
 				reason: {
 					type: "string",
-					description:
-						"Explanation for why this feedback is being rejected",
+					description: "Explanation for why this feedback is being rejected",
 				},
 			},
 			required: ["intent", "stage", "feedback_id", "reason"],
@@ -2690,8 +2688,7 @@ export const stateToolDefs = [
 				intent: { type: "string", description: "Intent slug" },
 				stage: {
 					type: "string",
-					description:
-						"Stage name (optional — omit to list all stages)",
+					description: "Stage name (optional — omit to list all stages)",
 				},
 				status: {
 					type: "string",
@@ -3782,7 +3779,7 @@ export function handleStateTool(
 			// open_pane mode: return instructions for the agent to open the browser
 			if (args.open_pane) {
 				return text(
-					`To open the always-available review pane, the HTTP server must be running. The server starts automatically during gate reviews. Use GET /api/review/current to fetch the current intent state as JSON, and open /review/current in a browser to view the read-only overview.\n\nThis is a read-only view — no Approve/Request Changes buttons are shown outside of a gate review.`,
+					"To open the always-available review pane, the HTTP server must be running. The server starts automatically during gate reviews. Use GET /api/review/current to fetch the current intent state as JSON, and open /review/current in a browser to view the read-only overview.\n\nThis is a read-only view — no Approve/Request Changes buttons are shown outside of a gate review.",
 				)
 			}
 
@@ -4287,15 +4284,12 @@ export function handleStateTool(
 				}
 			if (!feedbackId)
 				return {
-					content: [
-						{ type: "text", text: "Error: feedback_id is required" },
-					],
+					content: [{ type: "text", text: "Error: feedback_id is required" }],
 					isError: true,
 				}
 
 			const updateFields: { status?: string; addressed_by?: string } = {}
-			if (args.status !== undefined)
-				updateFields.status = args.status as string
+			if (args.status !== undefined) updateFields.status = args.status as string
 			if (args.addressed_by !== undefined)
 				updateFields.addressed_by = args.addressed_by as string
 
@@ -4353,9 +4347,7 @@ export function handleStateTool(
 				}
 			if (!feedbackId)
 				return {
-					content: [
-						{ type: "text", text: "Error: feedback_id is required" },
-					],
+					content: [{ type: "text", text: "Error: feedback_id is required" }],
 					isError: true,
 				}
 
@@ -4409,9 +4401,7 @@ export function handleStateTool(
 				}
 			if (!feedbackId)
 				return {
-					content: [
-						{ type: "text", text: "Error: feedback_id is required" },
-					],
+					content: [{ type: "text", text: "Error: feedback_id is required" }],
 					isError: true,
 				}
 			if (!reason)

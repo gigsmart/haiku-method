@@ -1,9 +1,5 @@
 import { createHash } from "node:crypto"
-import {
-	existsSync,
-	readdirSync,
-	readFileSync,
-} from "node:fs"
+import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { readFile, realpath } from "node:fs/promises"
 import {
 	type Server as HttpServer,
@@ -925,7 +921,10 @@ function validateStage(slug: string, stage: string): boolean {
 function handleFeedbackGet(intent: string, stage: string, url: URL): Response {
 	if (!isValidSlug(intent) || !isValidSlug(stage)) {
 		return Response.json(
-			{ error: "Invalid slug — must not contain path separators or traversal sequences" },
+			{
+				error:
+					"Invalid slug — must not contain path separators or traversal sequences",
+			},
 			{ status: 400 },
 		)
 	}
@@ -978,9 +977,7 @@ const FeedbackCreateSchema = z.object({
 	title: z.string().min(1).max(120),
 	body: z.string().min(1),
 	origin: z
-		.enum(
-			FEEDBACK_ORIGINS as unknown as [string, ...string[]],
-		)
+		.enum(FEEDBACK_ORIGINS as unknown as [string, ...string[]])
 		.optional()
 		.default("user-visual"),
 	source_ref: z.string().nullable().optional(),
@@ -993,7 +990,10 @@ async function handleFeedbackPost(
 ): Promise<Response> {
 	if (!isValidSlug(intent) || !isValidSlug(stage)) {
 		return Response.json(
-			{ error: "Invalid slug — must not contain path separators or traversal sequences" },
+			{
+				error:
+					"Invalid slug — must not contain path separators or traversal sequences",
+			},
 			{ status: 400 },
 		)
 	}
@@ -1042,17 +1042,14 @@ async function handleFeedbackPost(
 const FeedbackUpdateSchema = z
 	.object({
 		status: z
-			.enum(
-				FEEDBACK_STATUSES as unknown as [string, ...string[]],
-			)
+			.enum(FEEDBACK_STATUSES as unknown as [string, ...string[]])
 			.optional(),
 		addressed_by: z.string().optional(),
 	})
 	.refine(
 		(data) => data.status !== undefined || data.addressed_by !== undefined,
 		{
-			message:
-				"At least one of 'status' or 'addressed_by' must be provided",
+			message: "At least one of 'status' or 'addressed_by' must be provided",
 		},
 	)
 
@@ -1064,7 +1061,10 @@ async function handleFeedbackPut(
 ): Promise<Response> {
 	if (!isValidSlug(intent) || !isValidSlug(stage) || !isValidSlug(feedbackId)) {
 		return Response.json(
-			{ error: "Invalid slug — must not contain path separators or traversal sequences" },
+			{
+				error:
+					"Invalid slug — must not contain path separators or traversal sequences",
+			},
 			{ status: 400 },
 		)
 	}
@@ -1082,10 +1082,7 @@ async function handleFeedbackPut(
 		if (err instanceof z.ZodError) {
 			const refineError = err.errors.find((e) => e.code === "custom")
 			if (refineError) {
-				return Response.json(
-					{ error: refineError.message },
-					{ status: 400 },
-				)
+				return Response.json({ error: refineError.message }, { status: 400 })
 			}
 			return Response.json(
 				{
@@ -1137,7 +1134,10 @@ async function handleFeedbackDelete(
 ): Promise<Response> {
 	if (!isValidSlug(intent) || !isValidSlug(stage) || !isValidSlug(feedbackId)) {
 		return Response.json(
-			{ error: "Invalid slug — must not contain path separators or traversal sequences" },
+			{
+				error:
+					"Invalid slug — must not contain path separators or traversal sequences",
+			},
 			{ status: 400 },
 		)
 	}
@@ -1161,7 +1161,8 @@ async function handleFeedbackDelete(
 		if (result.error.includes("cannot delete pending")) {
 			return Response.json(
 				{
-					error: "Cannot delete pending feedback. Address, close, or reject it first.",
+					error:
+						"Cannot delete pending feedback. Address, close, or reject it first.",
 				},
 				{ status: 409 },
 			)
@@ -1185,7 +1186,10 @@ function handleReviewCurrent(): Response {
 	try {
 		root = findHaikuRoot()
 	} catch {
-		return Response.json({ error: "No .haiku directory found" }, { status: 404 })
+		return Response.json(
+			{ error: "No .haiku directory found" },
+			{ status: 404 },
+		)
 	}
 
 	const intentsPath = join(root, "intents")
@@ -1194,8 +1198,9 @@ function handleReviewCurrent(): Response {
 	}
 
 	// Find the active intent
-	const dirs = readdirSync(intentsPath, { withFileTypes: true })
-		.filter((d) => d.isDirectory())
+	const dirs = readdirSync(intentsPath, { withFileTypes: true }).filter((d) =>
+		d.isDirectory(),
+	)
 
 	let activeIntent: string | null = null
 	let intentData: Record<string, unknown> = {}
@@ -1254,7 +1259,7 @@ function handleReviewCurrent(): Response {
 	}
 
 	// Build feedback summary
-	let feedbackSummary = { pending: 0, addressed: 0, closed: 0, rejected: 0 }
+	const feedbackSummary = { pending: 0, addressed: 0, closed: 0, rejected: 0 }
 	if (activeStage) {
 		const items = readFeedbackFiles(activeIntent, activeStage)
 		for (const item of items) {
@@ -1409,9 +1414,7 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	// ─── Feedback CRUD ─────────────────────────────────────────────────
 
 	// GET /api/feedback/:intent/:stage
-	const feedbackGetMatch = path.match(
-		/^\/api\/feedback\/([^/]+)\/([^/]+)$/,
-	)
+	const feedbackGetMatch = path.match(/^\/api\/feedback\/([^/]+)\/([^/]+)$/)
 	if (feedbackGetMatch && req.method === "GET") {
 		return handleFeedbackGet(feedbackGetMatch[1], feedbackGetMatch[2], url)
 	}
