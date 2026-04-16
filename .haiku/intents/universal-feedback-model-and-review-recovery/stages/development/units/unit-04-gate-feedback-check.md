@@ -1,13 +1,21 @@
 ---
 title: Gate-phase feedback check and auto-revisit
 type: implementation
-depends_on: [unit-01-feedback-helpers-and-tool]
-quality_gates: [typecheck, test]
+depends_on:
+  - unit-01-feedback-helpers-and-tool
+quality_gates:
+  - typecheck
+  - test
 inputs:
   - knowledge/DATA-CONTRACTS.md
   - knowledge/ACCEPTANCE-CRITERIA.md
   - features/auto-revisit.feature
   - features/revisit-with-reasons.feature
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-16T15:37:38Z'
+hat_started_at: '2026-04-16T15:37:38Z'
 ---
 
 # Gate-Phase Feedback Check and Auto-Revisit
