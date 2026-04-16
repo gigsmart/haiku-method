@@ -11,9 +11,9 @@ inputs:
   - features/enforce-iteration-fix.feature
 status: active
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-16T15:08:41Z'
-hat_started_at: '2026-04-16T15:11:26Z'
+hat_started_at: '2026-04-16T15:17:51Z'
 ---
 
 # Enforce-Iteration Auto-Completion Fix
