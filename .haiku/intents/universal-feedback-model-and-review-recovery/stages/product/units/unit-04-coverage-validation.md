@@ -13,9 +13,9 @@ inputs:
   - knowledge/IMPLEMENTATION-MAP.md
 status: active
 bolt: 1
-hat: product
+hat: specification
 started_at: '2026-04-16T14:45:45Z'
-hat_started_at: '2026-04-16T14:45:45Z'
+hat_started_at: '2026-04-16T14:48:10Z'
 outputs:
   - knowledge/IMPLEMENTATION-MAP.md
   - knowledge/COVERAGE-MAPPING.md
