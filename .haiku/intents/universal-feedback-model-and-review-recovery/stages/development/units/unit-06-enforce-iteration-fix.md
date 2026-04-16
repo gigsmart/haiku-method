@@ -2,11 +2,18 @@
 title: Enforce-iteration auto-completion fix
 type: implementation
 depends_on: []
-quality_gates: [typecheck, test]
+quality_gates:
+  - typecheck
+  - test
 inputs:
   - knowledge/DISCOVERY.md
   - knowledge/ACCEPTANCE-CRITERIA.md
   - features/enforce-iteration-fix.feature
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-16T15:08:41Z'
+hat_started_at: '2026-04-16T15:08:41Z'
 ---
 
 # Enforce-Iteration Auto-Completion Fix
