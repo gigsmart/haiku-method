@@ -11,9 +11,9 @@ inputs:
   - knowledge/ARCHITECTURE.md
 status: active
 bolt: 1
-hat: threat-modeler
+hat: red-team
 started_at: '2026-04-16T16:55:22Z'
-hat_started_at: '2026-04-16T16:55:22Z'
+hat_started_at: '2026-04-16T16:58:20Z'
 outputs:
   - stages/security/THREAT-MODEL.md
 ---
