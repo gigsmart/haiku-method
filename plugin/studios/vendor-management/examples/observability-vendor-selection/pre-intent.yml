@@ -1,0 +1,17 @@
+related:
+  - finance
+  - security-assessment
+  - executive-strategy
+turns:
+  - role: user
+    text: "Pick an observability vendor — we're consolidating logs, metrics, traces."
+  - role: agent
+    text: "Top contenders in mind, or open field?"
+  - role: user
+    text: "Datadog, Grafana Cloud, New Relic. Open to others if there's a reason."
+  - role: agent
+    text: "Budget ceiling and must-have features?"
+  - role: user
+    text: "$300K annual. Must support OpenTelemetry natively and have a compliant EU region."
+  - role: agent
+    text: "Got it — OTel-native + EU region + $300K ceiling against the three contenders."

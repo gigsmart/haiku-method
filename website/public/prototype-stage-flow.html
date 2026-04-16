@@ -1137,22 +1137,71 @@
   /* Bolt counter on each cylinder — tracks one full hat-rotation */
   .cyl-bolt {
     position: absolute;
-    top: -8px;
-    right: -8px;
+    top: -10px;
+    right: -10px;
     background: #1f2937;
     color: #fbbf24;
     font-family: ui-monospace, "SF Mono", monospace;
-    font-size: 8px;
+    font-size: 9px;
     font-weight: 700;
-    padding: 1px 5px;
+    padding: 2px 7px;
     border-radius: 999px;
-    border: 1.5px solid #fff;
+    border: 2px solid #fff;
     cursor: pointer;
     z-index: 3;
     text-transform: none;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+    letter-spacing: 0.04em;
+  }
+  .cyl-bolt::before {
+    content: "⚡";
+    color: #fbbf24;
+    margin-right: 2px;
   }
   .cyl-bolt:hover { background: #374151; }
+
+  /* Bolt explainer — sits at the top of the Execute phase body, makes the
+     bolt concept visible without having to hover a tooltip. */
+  .bolt-explainer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 10px;
+    padding: 6px 8px;
+    background: #1f2937;
+    border-radius: 6px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 9px;
+    line-height: 1.4;
+    color: #e5e7eb;
+  }
+  .bolt-explainer .be-chip {
+    background: #fbbf24;
+    color: #1f2937;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 8px;
+    flex-shrink: 0;
+  }
+  .bolt-explainer .be-chip::before {
+    content: "⚡ ";
+  }
+  .bolt-explainer .be-text {
+    color: #e5e7eb;
+  }
+  .bolt-explainer .be-text code {
+    background: rgba(251,191,36,0.18);
+    color: #fbbf24;
+    padding: 0 3px;
+    border-radius: 3px;
+    font-size: 8.5px;
+  }
+  .bolt-explainer .be-text strong {
+    color: #fbbf24;
+  }
 
   /* continuous_from divider — vertical separator in hybrid mode */
   .stage.continuous-marker-stage {
@@ -1354,6 +1403,253 @@
   .revisit-chip:hover {
     background: #fef2f2;
     transform: scale(1.05);
+  }
+
+  /* Gate wrap — the haiku_run_next pill sits on the top border of the nested
+     gate box, because the gate runs INSIDE that same run_next call. A curved
+     reject arrow loops out the top of the box up through the pill (back to
+     the elaborate phase above). The approve arrow exits the bottom toward
+     the next phase below. */
+  .gate-wrap {
+    position: relative;
+    margin: 22px 0 4px 0;
+    padding-left: 42px; /* room for reject arc on the left */
+  }
+  .gate-wrap .gate-pill {
+    position: absolute;
+    top: 0; /* corresponds to top edge of .nested-gate */
+    /* gate-wrap has padding-left: 42px (room for the reject arc), so center
+       on the nested-gate by offsetting half of that padding. */
+    left: calc(50% + 21px);
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    background: #fff !important;
+    color: #1f2937 !important;
+    border: 1.5px solid var(--gate-border);
+    padding: 3px 12px;
+    box-shadow: 0 0 0 3px #fff; /* punch through the dashed border */
+  }
+  .gate-wrap .gate-pill:hover {
+    background: #fff !important;
+    color: #1f2937 !important;
+  }
+  .gate-wrap .gate-reject-arc {
+    position: absolute;
+    left: 0;
+    top: -26px; /* extend up so arrowhead lands on bottom edge of elaborate above */
+    width: 40px;
+    height: 90px;
+    z-index: 2;
+    pointer-events: none;
+    overflow: visible;
+  }
+  .gate-wrap .gate-reject-arc path {
+    fill: none;
+    stroke: var(--reject);
+    stroke-width: 1.5;
+    stroke-dasharray: 3 2;
+  }
+  .gate-wrap .gate-reject-arc .head {
+    fill: var(--reject);
+    stroke: none;
+  }
+  .gate-wrap .reject-label {
+    position: absolute;
+    left: 44px;
+    top: -16px;
+    font-size: 8px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    color: var(--reject);
+    background: #fff;
+    padding: 0 4px;
+    z-index: 4;
+    white-space: nowrap;
+  }
+  .gate-wrap .reject-label code {
+    font-size: 8px;
+    background: rgba(220,38,38,0.08);
+    padding: 0 3px;
+    border-radius: 3px;
+  }
+
+  /* Self-loop variant: the reject branch iterates WITHIN the gate box instead
+     of arcing back to a prior phase (quality gates: fail→fix→rerun, phase
+     stays review, never goes back to execute). */
+  .gate-wrap.self-loop .gate-self-loop {
+    position: absolute;
+    left: 8px;
+    top: 6px;
+    width: 50px;
+    height: 50px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .gate-wrap.self-loop .gate-self-loop path {
+    fill: none;
+    stroke: var(--reject);
+    stroke-width: 1.5;
+    stroke-dasharray: 3 2;
+  }
+  .gate-wrap.self-loop .gate-self-loop .head {
+    fill: var(--reject);
+    stroke: none;
+  }
+  .gate-wrap.self-loop .reject-label.self {
+    top: -4px;
+    left: 60px;
+    line-height: 1.3;
+    text-align: left;
+  }
+  .gate-wrap .approve-exit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 2px;
+  }
+  .gate-wrap .approve-exit svg {
+    width: 18px;
+    height: 36px;
+  }
+  .gate-wrap .approve-exit svg path {
+    fill: none;
+    stroke: var(--approve);
+    stroke-width: 2;
+  }
+  .gate-wrap .approve-exit svg .head {
+    fill: var(--approve);
+    stroke: none;
+  }
+  .gate-wrap .approve-label {
+    font-size: 9px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    color: var(--approve);
+    margin-top: -4px;
+  }
+  .gate-wrap .approve-label code {
+    font-size: 8.5px;
+    background: rgba(22,163,74,0.08);
+    padding: 0 3px;
+    border-radius: 3px;
+  }
+
+  /* Auto-advance marker — shown in place of the specs gate box when the stage
+     declares review: auto. No gate review is opened, so the diagram shows a
+     compact note instead of the full dashed gate. */
+  .auto-advance-note {
+    margin-top: 6px;
+    padding: 6px 10px;
+    background: #fef3c7;
+    border: 1px dashed #d97706;
+    border-radius: 6px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 9px;
+    color: #92400e;
+    text-align: center;
+  }
+  .auto-advance-note code {
+    background: rgba(217,119,6,0.12);
+    color: #92400e;
+    padding: 0 3px;
+    border-radius: 3px;
+    font-size: 8.5px;
+  }
+
+  /* Compact auto-advance variant of the between-stage gate column */
+  .gate.gate-auto .gate-auto-body {
+    border: 1px dashed #d97706;
+    background: #fef3c7;
+    border-radius: 8px;
+    padding: 8px;
+    text-align: center;
+  }
+  .gate.gate-auto .gate-auto-label {
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 11px;
+    font-weight: 800;
+    color: #92400e;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 4px 0;
+  }
+  .gate.gate-auto .gate-auto-sub {
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 8px;
+    color: #92400e;
+    line-height: 1.35;
+  }
+  .gate.gate-auto .gate-auto-sub strong {
+    color: #78350f;
+  }
+
+  /* Nested gate box that sits inside the gate-wrap, with the run_next pill
+     punching through its top border. */
+  .nested-gate {
+    border: 1.5px dashed var(--gate-border);
+    background: var(--gate-fill);
+    border-radius: 8px;
+    padding: 14px 10px 8px;
+    position: relative;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 9px;
+  }
+  .nested-gate .ng-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 5px;
+    border-bottom: 1px dotted rgba(0,0,0,0.15);
+    margin-bottom: 5px;
+  }
+  .nested-gate .ng-caption {
+    color: var(--muted);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 8px;
+  }
+  .nested-gate .ig-type {
+    font-weight: 700;
+    color: #7c2d12;
+  }
+  .nested-gate .ig-ctx {
+    color: var(--muted);
+    font-style: italic;
+  }
+  .nested-gate .ng-branches {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .nested-gate .ng-branch {
+    font-size: 9px;
+    line-height: 1.35;
+  }
+  .nested-gate .ng-branch.reject { color: var(--reject); }
+  .nested-gate .ng-branch.approve { color: var(--approve); font-weight: 600; }
+  .nested-gate .ng-branch code {
+    font-size: 8.5px;
+    padding: 0 3px;
+    background: rgba(0,0,0,0.05);
+    border-radius: 3px;
+  }
+  .nested-gate .ng-branch-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 6px;
+    padding-top: 5px;
+    border-top: 1px dotted rgba(0,0,0,0.12);
+  }
+  .nested-gate .ng-branch.reject-branch {
+    color: var(--reject);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .nested-gate .ng-branch.approve-branch {
+    color: var(--approve);
+    font-weight: 700;
+    letter-spacing: 0.04em;
   }
 
   /* Inner specs gate between elaborate and execute */
@@ -2933,6 +3229,7 @@ function renderStudio() {
   STAGES.forEach((stage, idx) => {
     const mStage = effectiveMode(idx, mode, continuousFromIdx)
     const gate = effectiveGate(stage, mStage)
+    const isAutoGate = gate.type === "auto" || gate.type.startsWith("auto ")
     const isContinuousFromMarker = mode === "hybrid" && idx === continuousFromIdx
 
     const el = document.createElement("section")
@@ -3015,19 +3312,48 @@ function renderStudio() {
         </div>
       </div>
 
+      ${isAutoGate ? `
       ${callPill(stage, idx, mStage, "elab-to-gate")}
-
-      ${mStage === "auto" ? "" : `
-      <div class="inner-gate" title="${idx === 0 ? "intent_review" : "elaborate_to_execute"} — user approves specs before execution starts">
-        <span class="ig-label">specs gate</span>
-        <span class="ig-type">ask</span>
-        <span class="ig-ctx">${idx === 0 ? "intent_review" : "elaborate_to_execute"}</span>
+      <div class="auto-advance-note" title="stage declares review: auto — no specs gate review is opened. haiku_run_next advances directly to execute.">
+        <span>⚡ <code>review: auto</code> — no gate review, advances directly to <code>execute</code></span>
       </div>
-      ${callPill(stage, idx, mStage, "gate-to-execute")}
+      ` : `
+      <div class="gate-wrap" title="${idx === 0 ? "intent_review" : "elaborate_to_execute"} — haiku_run_next opens and awaits this review internally, then returns the decision from the same call">
+        ${(() => {
+          const p = payloadFor(stage, idx, mStage, "elab-to-gate")
+          const data = p ? encodeURIComponent(JSON.stringify({ stage: stage.name, key: "elab-to-gate", ...p })) : ""
+          return `
+            <span class="call-chip gate-pill" data-payload="${data}" title="${p ? (p.action + " — " + p.summary) : ""}">haiku_run_next</span>
+            <svg class="gate-reject-arc" viewBox="0 0 40 90" aria-hidden="true">
+              <path d="M 34 62 L 14 62 Q 4 62 4 52 L 4 10" />
+              <path class="head" d="M 4 2 l -5 10 l 10 0 z" />
+            </svg>
+            <div class="nested-gate">
+              <div class="ng-head">
+                <span class="ng-caption clickable" data-gate-detail="specs_gate_review" style="cursor:pointer; text-decoration: underline dashed rgba(0,0,0,0.35); text-underline-offset: 2px;" title="click for full details on how this gate runs inside haiku_run_next">opens <code>specs_gate_review</code> internally</span>
+                <span class="ig-type">ask</span>
+                <span class="ig-ctx">${idx === 0 ? "intent_review" : "elaborate_to_execute"}</span>
+              </div>
+              <div class="ng-branch-row">
+                <span class="ng-branch reject-branch">↑ reject</span>
+                <span class="ng-branch approve-branch">↓ approve</span>
+              </div>
+            </div>
+            <div class="approve-exit">
+              <svg viewBox="0 0 20 40" aria-hidden="true"><path d="M 10 2 L 10 32" /><path class="head" d="M 10 38 l -5 -8 l 10 0 z" /></svg>
+              <span class="approve-label">approve → advances to <code>execute</code></span>
+            </div>
+          `
+        })()}
+      </div>
       `}
 
       <div class="phase" data-phase="execute">
         <h3>Execute</h3>
+        <div class="bolt-explainer" title="Bolt = one full hat-rotation for a unit. Starts at 1. When a hat rejects (↻), the FSM rewinds to the previous hat AND increments the bolt counter — the next full rotation is bolt N+1. Hard max: 5 bolts per unit (state-tools.ts MAX_BOLTS=5); exceeding it returns max_bolts_exceeded and escalates to the user to redesign or split the unit.">
+          <span class="be-chip">bolt</span>
+          <span class="be-text">one full <strong>hat rotation</strong> for a unit · starts at <code>1</code> · hat rejection (↻) rewinds one hat AND increments bolt · hard max <strong>5</strong> per unit → <code>max_bolts_exceeded</code></span>
+        </div>
         <div class="execute-body">
           ${stage.waves.map((w, wi) => `
             ${wi > 0 ? `<div class="wave-divider">${callPillMini(stage, idx, mStage, "wave-to-wave", { from: wi, to: wi + 1, units: w.units })}</div>` : ""}
@@ -3051,12 +3377,13 @@ function renderStudio() {
                               <span class="subagent-badge" data-subagent-stage="${stage.name.toLowerCase()}" data-subagent-hat="${h}" title="${h} runs in a Claude Code subagent — click for detail">↗</span>
                             </div>
                             ${i < stage.hats.length - 1 ? `
-                              <div class="hat-arrow-wrap" title="${stage.hats[i + 1]} rejected → back to ${h}">
+                              <div class="hat-arrow-wrap" title="${stage.hats[i + 1]} rejected → back to ${h} · bolt counter +1 (new hat rotation)">
                                 <span class="call-mini-hat call-mini" data-payload="${encodeURIComponent(JSON.stringify({ stage: stage.name, key: "hat-to-hat", ...payloadFor(stage, idx, mStage, "hat-to-hat", { from: h, to: stage.hats[i+1], unit: unit.id }) }))}">↻</span>
                                 <svg class="back-arc" viewBox="0 0 18 52" aria-hidden="true">
-                                  <path d="M 2 48 Q 16 26 2 4" />
-                                  <path class="head" d="M 2 4 l -3 5 l 6 0 z" />
+                                  <path d="M 2 48 L 10 48 Q 15 48 15 43 L 15 11 Q 15 6 10 6 L 4 6" />
+                                  <path class="head" d="M 2 6 l 6 -3 l 0 6 z" />
                                 </svg>
+                                <span class="bolt-tick" title="hat rejection increments the unit's bolt counter">⚡+1</span>
                               </div>
                             ` : ""}
                           `).join("")}
@@ -3071,18 +3398,37 @@ function renderStudio() {
         </div>
       </div>
 
-      ${callPill(stage, idx, mStage, "execute-to-review")}
+      <div class="gate-wrap self-loop" title="quality gates (tests, lint, typecheck) run internally and iterate within the review phase — on fail, agent fixes in place and calls haiku_run_next again, re-running the gates. Phase stays review; never goes back to execute.">
+        ${(() => {
+          const p = payloadFor(stage, idx, mStage, "execute-to-review")
+          const data = p ? encodeURIComponent(JSON.stringify({ stage: stage.name, key: "execute-to-review", ...p })) : ""
+          return `
+            <span class="call-chip gate-pill" data-payload="${data}" title="${p ? (p.action + " — " + p.summary) : ""}">haiku_run_next</span>
+            <svg class="gate-self-loop" viewBox="0 0 60 60" aria-hidden="true">
+              <path d="M 44 50 L 14 50 Q 6 50 6 42 L 6 20 Q 6 12 14 12 L 40 12" />
+              <path class="head" d="M 44 12 l -8 -4 l 0 8 z" />
+            </svg>
+            <div class="nested-gate">
+              <div class="ng-head">
+                <span class="ng-caption" data-gate-detail="quality_gates" style="cursor:pointer; text-decoration: underline dashed rgba(0,0,0,0.35); text-underline-offset: 2px;" title="click for full details on how quality gates run inside haiku_run_next">🧪 runs <code>quality_gates</code> internally</span>
+                <span class="ig-type">hard</span>
+                <span class="ig-ctx">tests · lint · typecheck</span>
+              </div>
+              <div class="ng-branch-row">
+                <span class="ng-branch reject-branch">↑ fail</span>
+                <span class="ng-branch approve-branch">↓ pass</span>
+              </div>
+            </div>
+            <div class="approve-exit">
+              <svg viewBox="0 0 20 40" aria-hidden="true"><path d="M 10 2 L 10 32" /><path class="head" d="M 10 38 l -5 -8 l 10 0 z" /></svg>
+              <span class="approve-label">pass → dispatch review agents</span>
+            </div>
+          `
+        })()}
+      </div>
 
       <div class="phase" data-phase="review" style="position:relative">
         <h3>Review</h3>
-        <div class="review-fail" title="quality gates run inside haiku_run_next; on failure agent gets fix_quality_gates with structured findings">
-          <span class="step" data-schema="quality-gates" style="cursor:pointer; text-decoration: underline dashed rgba(0,0,0,0.25); text-underline-offset: 2px;" title="click to see how quality gates are configured">🧪 quality gates ran in the previous <code>haiku_run_next</code></span>
-          <span>↺ on <code>fix_quality_gates</code> → agent fixes in place, calls <code>run_next</code> again (phase stays <code>review</code>)</span>
-        </div>
-        <div class="agents-caption" style="margin-top:8px; text-align:left; display:flex; align-items:center; gap:6px;">
-          ${callPillMini(stage, idx, mStage, "review-quality-to-agents")}
-          on success → <code>advance_review</code> dispatches parallel agents (soft backpressure)
-        </div>
         <div class="agents">
           ${stage.reviewAgents.map(a => `<div class="agent clickable" data-agent-stage="${stage.name.toLowerCase()}" data-agent-name="${a}" title="${a} — click to open review-agents/${a}.md">${a}</div>`).join("")}
         </div>
@@ -3107,7 +3453,22 @@ function renderStudio() {
     const isLast = idx === STAGES.length - 1
     const nextStageName = !isLast ? STAGES[idx + 1].name : null
     const gateEl = document.createElement("aside")
-    gateEl.className = "gate"
+    gateEl.className = `gate${isAutoGate ? " gate-auto" : ""}`
+    if (isAutoGate) {
+      gateEl.innerHTML = `
+        <div class="gate-body gate-auto-body">
+          <div style="display:flex; justify-content:center; margin-bottom:6px;">
+            ${callPillMini(stage, idx, mStage, "gate-to-next-stage", { isLast, nextStageName })}
+          </div>
+          <div class="gate-auto-label">
+            ⚡ auto
+          </div>
+          <div class="gate-auto-sub">
+            no review — FSM advances${isLast ? " · intent_complete" : ` to <strong>${nextStageName}</strong>`}
+          </div>
+        </div>
+      `
+    } else {
     gateEl.innerHTML = `
       <div class="gate-body">
         <div style="display:flex; justify-content:center; margin-bottom:6px;">
@@ -3143,6 +3504,7 @@ function renderStudio() {
         </div>
       </div>
     `
+    }
     studio.appendChild(gateEl)
 
     // Paused checkpoint when this stage finishes in discrete mode (not on last stage)
@@ -4547,6 +4909,91 @@ function openRevisitModal(stageKey, stageIdx) {
   document.getElementById("modal-backdrop").classList.add("open")
 }
 
+const GATE_DETAILS = {
+  specs_gate_review: {
+    title: "specs_gate_review (nested inside haiku_run_next)",
+    stage: "elaborate → execute transition",
+    summary: "The post-elaboration review gate. Runs **inside the same** <code>haiku_run_next</code> call that finishes elaborating — it is **not** a separate orchestrator tick. The tool call blocks on <code>_openReviewAndWait()</code> until the user clicks Approve or Request Changes in the review UI, then the same call returns with the decision baked in.",
+    flow: [
+      "`haiku_run_next` is called while the stage is in `elaborate` phase and all validation gates (DAG, naming, types, inputs-exist, turns ≥ 3 for collaborative) have passed.",
+      "Orchestrator emits a `gate_review_opened` session event and calls `_openReviewAndWait(intentDir, 'intent', 'ask')` at `orchestrator.ts:3696`. The MCP tool call is **blocked** — the promise doesn't resolve until the review UI responds.",
+      "User sees the full elaborated spec in the review UI: intent.md, discovery artifacts, unit DAG, acceptance criteria. They approve, request changes with feedback, or (on compound gates) delegate to external review.",
+      "On **approve**: `phase` advances to `execute`. If this is the first stage, `intent.md` frontmatter also gets `intent_reviewed: true` (the gate doubles as intent_review when first-stage and not yet reviewed). The same `haiku_run_next` call returns `intent_approved` or `advance_phase` with a message telling the agent to call `haiku_run_next` again immediately to drive execute.",
+      "On **reject**: `phase` stays at `elaborate`. The same call returns `changes_requested` with the user's feedback and annotations. The agent revises the elaboration artifacts in place and calls `haiku_run_next` again — the gate re-opens.",
+      "Skipped entirely when the stage's `review:` frontmatter is `auto` and mode is not `discrete` (orchestrator.ts:1435) — the call auto-advances without opening the UI.",
+    ],
+    gate_contexts: [
+      "`intent_review` — fires on the **first** stage's elaborate→execute when `intent.md` has `intent_reviewed: false`. The user is approving the whole intent and the first stage's specs in one pass.",
+      "`elaborate_to_execute` — fires on every subsequent stage's elaborate→execute. The user is approving just this stage's specs before execution starts.",
+      "Reject semantics are identical either way: phase stays at `elaborate`, `changes_requested` returned with feedback. The gate re-fires when `haiku_run_next` is called next.",
+    ],
+    writes: [
+      "`.haiku/intents/{slug}/stages/{stage}/state.json` · `gate_context`, `gate_outcome: 'pending' | 'approved' | 'changes_requested'`",
+      "`.haiku/intents/{slug}/intent.md` · `intent_reviewed: true` (first-stage intent_review approve path only)",
+      "git commit: `haiku: intent {slug} approved by user` (approve path)",
+    ],
+    enforced_by: "packages/haiku/src/orchestrator.ts — `_openReviewAndWait` call at ~3696, approve/reject branches at 3709–3810. Review UI served by `packages/haiku/review-app/` and bridged through the MCP review server.",
+  },
+  quality_gates: {
+    title: "quality_gates (nested inside haiku_run_next)",
+    stage: "execute → review transition",
+    summary: "Hard quality gates — tests, lint, typecheck — run **inside the same** <code>haiku_run_next</code> call that transitions the stage from `execute` to `review`. They iterate internally: fail → agent fixes in place → call `haiku_run_next` again → gates re-run. Phase stays at `review` for the whole loop and **never goes back to execute**.",
+    flow: [
+      "`haiku_run_next` is called while the stage is in `review` phase (entered automatically when the final unit completed).",
+      "Orchestrator runs `validateStageOutputs()` first (hard structural check on output artifact presence), then calls `runQualityGates(slug, stage)` at `orchestrator.ts:1606`. Each configured gate runs as a child process; exit codes are captured; failure output is parsed into structured findings.",
+      "On **failure**: the same call returns `fix_quality_gates` with a `failures[]` array of `{ name, command, exit_code, output, dir }`. Phase stays `review`. Agent is instructed to fix the failures in place and call `haiku_run_next` again. The FSM never goes back to `execute` — quality gate fixes happen in the review phase.",
+      "On **success**: `phase` stays `review` but progresses past quality gates. The same call returns `advance_review` with one self-contained `<subagent tool='Task'>` block per adversarial review agent configured for the stage. The agent relays those blocks verbatim — parent doesn't assemble prompts.",
+      "The loop is bounded only by the agent's judgment — there is no max_quality_fails counter. If gates keep failing, the agent eventually escalates to the user.",
+    ],
+    gate_contexts: [
+      "Quality gates are **hard** gates — no human in the loop, no subjective review. Tests either pass or they don't.",
+      "Configured per stage via the studio's STAGE.md `quality_gates:` field or inherited from studio defaults. Each entry is a shell command + optional `dir` to cd into.",
+      "Failures are always parsed into structured findings if a gate-specific reporter is available (e.g., jest-junit for tests, biome-reporter for lint). The agent gets structured data, not raw output.",
+    ],
+    writes: [
+      "`.haiku/intents/{slug}/stages/{stage}/state.json` · `quality_gates_run_at: <ts>` (always), `quality_gates_passed: true` (on success), `quality_gate_failures: [...]` (on failure, cleared on next pass)",
+      "No git commit — quality gate runs are ephemeral. Only the agent's code fixes get committed normally.",
+    ],
+    enforced_by: "packages/haiku/src/orchestrator.ts — review-phase branch at ~1597, `runQualityGates()` call at 1606, failure return at 1609, success return at 1627. Quality gate definitions live in per-studio STAGE.md frontmatter.",
+  },
+}
+
+function openGateDetailModal(key) {
+  const g = GATE_DETAILS[key]
+  if (!g) return
+  document.getElementById("modal-title").textContent = g.title
+  document.getElementById("modal-stage").textContent = g.stage
+  document.getElementById("modal-body").innerHTML = `
+    <div class="modal-section">
+      <h3>summary</h3>
+      <div class="prose">${renderInline(g.summary)}</div>
+    </div>
+    <div class="modal-section">
+      <h3>internal flow</h3>
+      <ul>
+        ${g.flow.map(s => `<li>${renderInline(s)}</li>`).join("")}
+      </ul>
+    </div>
+    <div class="modal-section">
+      <h3>gate semantics</h3>
+      <ul>
+        ${g.gate_contexts.map(s => `<li>${renderInline(s)}</li>`).join("")}
+      </ul>
+    </div>
+    <div class="modal-section">
+      <h3>state writes</h3>
+      <ul class="writes-list">
+        ${g.writes.map(w => `<li><div class="write-change">${renderInline(w)}</div></li>`).join("")}
+      </ul>
+    </div>
+    <div class="modal-section">
+      <h3>enforced by</h3>
+      <div class="payload-block">${renderInline(g.enforced_by)}</div>
+    </div>
+  `
+  document.getElementById("modal-backdrop").classList.add("open")
+}
+
 function openValidationModal(key) {
   const v = VALIDATION_CHECKS[key]
   if (!v) return
@@ -5128,6 +5575,12 @@ document.addEventListener("click", e => {
   if (skill) {
     e.stopPropagation()
     openSkillModal(skill.dataset.skill)
+    return
+  }
+  const gateDetail = e.target.closest("[data-gate-detail]")
+  if (gateDetail) {
+    e.stopPropagation()
+    openGateDetailModal(gateDetail.dataset.gateDetail)
     return
   }
   const schema = e.target.closest("[data-schema]")

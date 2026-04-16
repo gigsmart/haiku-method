@@ -1,0 +1,17 @@
+related:
+  - executive-strategy
+  - finance
+  - training
+turns:
+  - role: user
+    text: "Hire a senior backend engineer for the platform team."
+  - role: agent
+    text: "What's the must-have technical signal — distributed systems, databases, infra?"
+  - role: user
+    text: "Distributed systems. We're rewriting the event bus."
+  - role: agent
+    text: "Comp band and location flexibility?"
+  - role: user
+    text: "Senior band, equity heavy. Remote US."
+  - role: agent
+    text: "Got it — sourcing against distributed-systems senior, remote US, senior comp band."

@@ -1,0 +1,17 @@
+related:
+  - marketing
+  - software
+  - documentation
+turns:
+  - role: user
+    text: "Deliver the website redesign by end of quarter."
+  - role: agent
+    text: "What's done already — design, content, or still upstream?"
+  - role: user
+    text: "Design is approved. Content 50% drafted. Engineering hasn't started."
+  - role: agent
+    text: "Is there a hard launch date or is EOQ a soft target?"
+  - role: user
+    text: "Hard date. We're announcing at our customer summit on the 30th."
+  - role: agent
+    text: "Got it — hard launch 30th, backward-planning from there with eng as the critical path."

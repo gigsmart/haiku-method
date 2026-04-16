@@ -1,0 +1,17 @@
+related:
+  - executive-strategy
+  - sales
+  - product-strategy
+turns:
+  - role: user
+    text: "Build the Q3 2026 forecast — revenue, opex, and cash runway."
+  - role: agent
+    text: "Base case on current pipeline only, or pipeline + pipeline coverage adjustment?"
+  - role: user
+    text: "Pipeline + coverage. Our win rate normalizes the top-of-funnel."
+  - role: agent
+    text: "Any known one-time items landing in Q3 — hires, renewals, big deals?"
+  - role: user
+    text: "5 senior eng hires starting in July, and the Acme renewal in August."
+  - role: agent
+    text: "Got it — Q3 model keyed off pipeline-coverage revenue, with the headcount and renewal events explicit."

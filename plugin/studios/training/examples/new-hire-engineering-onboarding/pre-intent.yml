@@ -1,0 +1,17 @@
+related:
+  - documentation
+  - hr
+  - project-management
+turns:
+  - role: user
+    text: "Build a new-hire onboarding program for the engineering team."
+  - role: agent
+    text: "How long is the program — week one, first month, first 90 days?"
+  - role: user
+    text: "First 30 days. Structured, with explicit milestones."
+  - role: agent
+    text: "Shipping a real change in week one, or ramp-up only?"
+  - role: user
+    text: "Shipping something real by end of week two. Week one is tooling and pairing."
+  - role: agent
+    text: "Got it — 30-day program, week one tooling + pairing, week two real ship, weeks three and four ownership ramp."

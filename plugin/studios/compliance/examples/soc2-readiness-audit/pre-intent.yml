@@ -1,0 +1,17 @@
+related:
+  - security-assessment
+  - documentation
+  - vendor-management
+turns:
+  - role: user
+    text: "Get us SOC 2 Type II ready — we're chasing enterprise deals."
+  - role: agent
+    text: "Which trust services criteria — Security only, or add Availability and Confidentiality?"
+  - role: user
+    text: "Security and Availability. No customer PHI so we can skip the rest."
+  - role: agent
+    text: "Target audit window and auditor selected?"
+  - role: user
+    text: "6-month window starting July. Going with Prescient Assurance."
+  - role: agent
+    text: "Got it — scoping the controls against the selected criteria now."

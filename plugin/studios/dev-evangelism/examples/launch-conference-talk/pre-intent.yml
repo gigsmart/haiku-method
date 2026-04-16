@@ -1,0 +1,17 @@
+related:
+  - marketing
+  - documentation
+  - product-strategy
+turns:
+  - role: user
+    text: "I'm speaking at ReactConf about our new server components work."
+  - role: agent
+    text: "What's the audience's baseline — brand new to RSC or already shipping?"
+  - role: user
+    text: "Mixed. Assume they've read the docs but haven't built anything production."
+  - role: agent
+    text: "Slot length and demo depth?"
+  - role: user
+    text: "25 minutes. One live demo, rest slides and code walkthroughs."
+  - role: agent
+    text: "Got it — narrative-first talk with one anchor demo, mixed-experience audience."
