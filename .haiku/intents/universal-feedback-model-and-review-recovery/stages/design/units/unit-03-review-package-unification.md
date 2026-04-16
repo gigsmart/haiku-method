@@ -4,6 +4,8 @@ type: design
 depends_on:
   - unit-01-feedback-panel-wireframes
 quality_gates: []
+outputs:
+  - stages/design/artifacts/review-package-structure.html
 inputs:
   - knowledge/DISCOVERY.md
   - knowledge/DESIGN-TOKENS.md
