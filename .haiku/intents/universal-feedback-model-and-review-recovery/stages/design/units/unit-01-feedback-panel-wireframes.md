@@ -7,7 +7,7 @@ inputs:
   - knowledge/DISCOVERY.md
   - knowledge/DESIGN-TOKENS.md
   - stages/design/DESIGN-BRIEF.md
-status: active
+status: completed
 bolt: 1
 hat: design-reviewer
 started_at: '2026-04-16T12:49:03Z'
@@ -18,6 +18,7 @@ outputs:
   - stages/design/artifacts/stage-progress-strip.html
   - stages/design/artifacts/review-context-header.html
   - stages/design/artifacts/revisit-unit-list.html
+completed_at: '2026-04-16T13:00:18Z'
 ---
 
 # Feedback Panel + Review Chrome Wireframes
