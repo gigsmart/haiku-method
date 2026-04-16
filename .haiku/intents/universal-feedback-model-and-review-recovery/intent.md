@@ -2,7 +2,7 @@
 title: Universal feedback model and review recovery
 studio: software
 mode: continuous
-status: active
+status: completed
 created_at: '2026-04-15'
 stages:
   - inception
@@ -13,6 +13,7 @@ stages:
   - security
 active_stage: security
 intent_reviewed: true
+completed_at: '2026-04-16T17:20:53Z'
 ---
 
 # Universal feedback model and review recovery
