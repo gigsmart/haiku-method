@@ -14,10 +14,6 @@
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; }
 
-    /* Feedback left-border status indicators
-       Colors reference Tailwind palette: amber-500, blue-400, green-400, stone-400
-       Applied via border-l-[3px] + Tailwind border color classes in markup */
-
     /* Status transition animation */
     @keyframes feedback-status-change {
       0%   { opacity: 1; }
@@ -28,9 +24,7 @@
       animation: feedback-status-change 0.4s ease-in-out;
     }
 
-    /* Connector lines from inline annotations to code
-       Uses stone-500 (light) / stone-600 (dark) — Tailwind can't express
-       dashed border on pseudo-positioned elements via utilities alone */
+    /* Connector lines from inline annotations to code */
     .annotation-connector {
       position: absolute;
       width: 24px;
@@ -38,23 +32,12 @@
       right: 100%;
     }
 
-    /* Subtle card lift on hover */
-    .fb-card-hover:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-    .dark .fb-card-hover:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-
-    /* Image pin marker — uses teal-600 for bg, matches existing
-       AnnotationCanvas pin styling from the review app */
+    /* Pin marker */
     .pin-marker {
       width: 28px;
       height: 28px;
       border-radius: 50%;
       border: 2px solid white;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -68,52 +51,57 @@
 
     /* Code line highlight for annotated lines */
     .code-line-annotated {
-      background: rgba(251, 191, 36, 0.12);
+      @apply bg-amber-400/10;
     }
     .dark .code-line-annotated {
-      background: rgba(251, 191, 36, 0.08);
+      @apply bg-amber-400/5;
     }
+
+    /* Pulse animation for scroll-to-highlight */
+    @keyframes review-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
+      50% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+    }
+    .review-pulse { animation: review-pulse 0.6s ease-in-out 2; }
   </style>
 </head>
-<body class="dark bg-stone-950 text-stone-100 min-h-screen">
+<body class="dark bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
 
   <!-- Header -->
-  <header class="sticky top-0 z-40 bg-white/80 dark:bg-stone-900/80 backdrop-blur border-b border-stone-200 dark:border-stone-800">
-    <div class="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-      <h1 class="text-lg font-semibold truncate text-stone-900 dark:text-stone-100">Review: Universal Feedback Model</h1>
-      <div class="flex items-center gap-3">
-        <button class="text-xs px-2 py-1 rounded border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors">
-          Light / Dark
-        </button>
-      </div>
+  <header class="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
+    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+      <h1 class="text-lg font-semibold truncate">Review: Universal Feedback Model</h1>
+      <button class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:ring-2 focus:ring-teal-500"
+              aria-label="Toggle color theme">
+        Light / Dark
+      </button>
     </div>
   </header>
 
-  <!-- Main layout -->
-  <main class="px-4 sm:px-6 lg:px-8 py-6">
-    <div class="flex gap-6">
+  <!-- Two-column layout -->
+  <div class="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 lg:flex lg:gap-6">
 
-      <!-- Main content area -->
-      <div class="flex-1 min-w-0">
+    <!-- Main content -->
+    <main id="main-content" class="flex-1 min-w-0">
 
-        <!-- Tabs -->
-        <div class="sticky top-[53px] z-30 bg-white dark:bg-stone-950 border-b border-stone-200 dark:border-stone-700 mb-6">
-          <nav class="flex gap-1 -mb-px">
-            <button class="px-4 py-2.5 text-sm font-medium border-b-2 border-teal-600 text-teal-600 dark:border-teal-400 dark:text-teal-400">Overview</button>
-            <button class="px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200">Units (12)</button>
-            <button class="px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200">Knowledge</button>
-            <button class="px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200">Outputs (3)</button>
-          </nav>
+      <!-- Tabs -->
+      <div class="sticky top-[53px] z-30 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-700 mb-6">
+        <div role="tablist" aria-label="Review sections" class="flex overflow-x-auto -mx-1">
+          <button role="tab" aria-selected="true" tabindex="0" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 focus:ring-2 focus:ring-teal-500">Overview</button>
+          <button role="tab" aria-selected="false" tabindex="-1" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer focus:ring-2 focus:ring-teal-500">Units (12)</button>
+          <button role="tab" aria-selected="false" tabindex="-1" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer focus:ring-2 focus:ring-teal-500">Knowledge</button>
+          <button role="tab" aria-selected="false" tabindex="-1" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer focus:ring-2 focus:ring-teal-500">Outputs (3)</button>
         </div>
+      </div>
 
-        <!-- Overview Card with Inline Annotations (Code) -->
-        <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6 mb-6">
-          <h2 class="text-lg font-semibold mb-3 text-stone-900 dark:text-stone-100">Overview -- Comment on text</h2>
-          <p class="text-xs text-stone-500 dark:text-stone-400 mb-3">Select text to add inline comments.</p>
+      <!-- Overview Card with Inline Annotations (Code) -->
+      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <h2 class="text-lg font-semibold mb-3">Overview -- Comment on text</h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Select text to add inline comments.</p>
 
           <!-- Prose content with inline annotation cards floating adjacent -->
           <div class="relative">
-            <div class="prose prose-sm prose-stone dark:prose-invert max-w-none">
+            <div class="prose prose-sm prose-gray dark:prose-invert max-w-none">
               <h2>Problem</h2>
               <p>The current review workflow treats feedback as ephemeral batch comments that vanish after submission. When a reviewer requests changes, the agent receives a single feedback string with no structured identity, status tracking, or lifecycle management.</p>
 
@@ -123,8 +111,8 @@
 
                 <!-- Floating inline annotation card — connected by dashed line -->
                 <div class="absolute -right-[340px] top-0 w-[300px] z-20">
-                  <div class="annotation-connector border-t border-dashed border-stone-500 dark:border-stone-600"></div>
-                  <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
+                  <div class="annotation-connector border-t border-dashed border-gray-400 dark:border-gray-600"></div>
+                  <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
                     <div class="flex items-center gap-2 mb-1">
                       <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
                         <span aria-hidden="true">&#x1F6E1;&#xFE0F;</span> Review Agent
@@ -132,8 +120,8 @@
                       <span class="flex-1"></span>
                       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
                     </div>
-                    <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">"This means feedback items cannot be individually tracked"</p>
-                    <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-01 &middot; Visit 1 &middot; adversarial-review</p>
+                    <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">"This means feedback items cannot be individually tracked"</p>
+                    <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-01 &middot; Visit 1 &middot; adversarial-review</p>
                   </div>
                 </div>
               </div>
@@ -147,8 +135,8 @@
 
                 <!-- Floating card — addressed state -->
                 <div class="absolute -right-[340px] top-0 w-[300px] z-20">
-                  <div class="annotation-connector border-t border-dashed border-stone-500 dark:border-stone-600"></div>
-                  <div class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
+                  <div class="annotation-connector border-t border-dashed border-gray-400 dark:border-gray-600"></div>
+                  <div class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
                     <div class="flex items-center gap-2 mb-1">
                       <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800">
                         <span aria-hidden="true">&#x1F500;</span> PR Comment
@@ -156,8 +144,8 @@
                       <span class="flex-1"></span>
                       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" aria-label="Status: addressed">addressed</span>
                     </div>
-                    <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">Lifecycle transitions need validation guards</p>
-                    <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-02 &middot; Visit 1 &middot; external-pr</p>
+                    <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Lifecycle transitions need validation guards</p>
+                    <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-02 &middot; Visit 1 &middot; external-pr</p>
                     <p class="text-[10px] text-blue-500 dark:text-blue-400 mt-1">Addressed by: unit-04-feedback-crud-api</p>
                   </div>
                 </div>
@@ -168,18 +156,18 @@
           </div>
         </div>
 
-        <!-- Mockup Card with Visual Pin Annotations -->
-        <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6 mb-6">
-          <h2 class="text-lg font-semibold mb-3 text-stone-900 dark:text-stone-100">Mockup -- Annotate</h2>
-          <div class="flex items-center justify-between mb-3">
-            <h4 class="text-sm font-medium text-stone-600 dark:text-stone-400">Review App Wireframe</h4>
+      <!-- Mockup Card with Visual Pin Annotations -->
+      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <h2 class="text-lg font-semibold mb-3">Mockup -- Annotate</h2>
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400">Review App Wireframe</h4>
             <a href="#" class="text-sm text-teal-600 dark:text-teal-400 hover:underline">Open in new tab &#8599;</a>
           </div>
 
-          <!-- Image container with pin overlays -->
-          <div class="relative bg-stone-100 dark:bg-stone-800 rounded-lg border border-stone-200 dark:border-stone-700 overflow-hidden" style="height: 320px;">
-            <!-- Placeholder image area -->
-            <div class="absolute inset-0 flex items-center justify-center text-stone-400 dark:text-stone-500">
+        <!-- Image container with pin overlays -->
+        <div class="relative bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden" style="height: 320px;">
+          <!-- Placeholder image area -->
+          <div class="absolute inset-0 flex items-center justify-center text-gray-400 dark:text-gray-500">
               <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <circle cx="8.5" cy="8.5" r="1.5" />
@@ -190,7 +178,7 @@
             <!-- Pin 1 — with floating annotation card -->
             <div class="pin-marker bg-teal-600 text-white" style="left: 25%; top: 30%;">1</div>
             <div class="absolute z-20" style="left: calc(25% + 24px); top: calc(30% - 8px);">
-              <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer w-[240px]">
+              <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer w-[240px]">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
                     <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
@@ -198,8 +186,8 @@
                   <span class="flex-1"></span>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
                 </div>
-                <p class="text-xs font-medium text-stone-700 dark:text-stone-300">Header alignment feels off</p>
-                <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-05 &middot; jwaldrip</p>
+                <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Header alignment feels off</p>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-05 &middot; jwaldrip</p>
               </div>
             </div>
 
@@ -211,16 +199,16 @@
           </div>
         </div>
 
-        <!-- EXPANDED card example — showing full body visible -->
-        <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6 mb-6">
-          <h2 class="text-lg font-semibold mb-3 text-stone-900 dark:text-stone-100">Interaction States Reference</h2>
-          <p class="text-xs text-stone-500 dark:text-stone-400 mb-4">All card states shown below for reference.</p>
+      <!-- EXPANDED card example — showing full body visible -->
+      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <h2 class="text-lg font-semibold mb-3">Interaction States Reference</h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">All card states shown below for reference.</p>
 
           <div class="space-y-3">
             <!-- Default / Collapsed -->
             <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Default (collapsed)</p>
-              <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">Default (collapsed)</p>
+              <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
                     <span aria-hidden="true">&#x1F6E1;&#xFE0F;</span> Review Agent
@@ -228,15 +216,15 @@
                   <span class="flex-1"></span>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
                 </div>
-                <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">Missing null check in handleSubmit callback</p>
-                <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-03 &middot; Visit 1 &middot; adversarial-review</p>
+                <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Missing null check in handleSubmit callback</p>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-03 &middot; Visit 1 &middot; adversarial-review</p>
               </div>
             </div>
 
             <!-- Hover state -->
             <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Hover (subtle lift + teal border)</p>
-              <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-teal-400 dark:border-teal-500 transition-all cursor-pointer" style="transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">Hover (subtle lift + teal border)</p>
+              <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-blue-400 dark:border-blue-500 transition-all cursor-pointer" style="transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
                     <span aria-hidden="true">&#x2728;</span> Agent
@@ -244,15 +232,15 @@
                   <span class="flex-1"></span>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
                 </div>
-                <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">Consider extracting feedback validation into a shared module</p>
-                <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-06 &middot; Visit 2 &middot; agent</p>
+                <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Consider extracting feedback validation into a shared module</p>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-06 &middot; Visit 2 &middot; agent</p>
               </div>
             </div>
 
             <!-- Expanded state -->
             <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Expanded (full body + action buttons)</p>
-              <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-teal-400 dark:border-teal-500 transition-all">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">Expanded (full body + action buttons)</p>
+              <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-blue-400 dark:border-blue-500 transition-all">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
                     <span aria-hidden="true">&#x1F6E1;&#xFE0F;</span> Review Agent
@@ -261,14 +249,14 @@
                   <span class="flex-1"></span>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
                 </div>
-                <p class="text-xs font-medium text-stone-700 dark:text-stone-300">Missing null check in handleSubmit callback</p>
-                <div class="prose prose-xs prose-stone dark:prose-invert max-w-none mt-2">
-                  <p class="text-xs text-stone-600 dark:text-stone-400">The <code>handleSubmit</code> function in <code>ReviewSidebar.tsx:84</code> calls <code>getAnnotations()</code> without checking if the result is undefined. When the user submits with no comments and no pins, this passes <code>undefined</code> to <code>submitDecision</code>, which then serializes it as the string <code>"undefined"</code> in the feedback payload.</p>
-                  <p class="text-xs text-stone-600 dark:text-stone-400">Add a guard: <code>const annotations = getAnnotations() ?? {}</code></p>
+                <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Missing null check in handleSubmit callback</p>
+                <div class="prose prose-xs prose-gray dark:prose-invert max-w-none mt-2">
+                  <p class="text-xs text-gray-600 dark:text-gray-400">The <code>handleSubmit</code> function in <code>ReviewSidebar.tsx:84</code> calls <code>getAnnotations()</code> without checking if the result is undefined. When the user submits with no comments and no pins, this passes <code>undefined</code> to <code>submitDecision</code>, which then serializes it as the string <code>"undefined"</code> in the feedback payload.</p>
+                  <p class="text-xs text-gray-600 dark:text-gray-400">Add a guard: <code>const annotations = getAnnotations() ?? {}</code></p>
                 </div>
-                <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-2">FB-03 &middot; Visit 1 &middot; adversarial-review</p>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-2">FB-03 &middot; Visit 1 &middot; adversarial-review</p>
                 <div class="flex gap-1 mt-2">
-                  <button class="text-xs font-medium px-2 py-1 rounded-md bg-stone-100 text-stone-500 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700 transition-colors">Reject</button>
+                  <button class="text-xs font-medium px-2 py-1 rounded-md bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors">Reject</button>
                   <button class="text-xs font-medium px-2 py-1 rounded-md bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/40 transition-colors">Close</button>
                 </div>
               </div>
@@ -276,8 +264,8 @@
 
             <!-- Addressed state -->
             <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Addressed (blue left border + link)</p>
-              <div class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">Addressed (blue left border + link)</p>
+              <div class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800">
                     <span aria-hidden="true">&#x1F500;</span> PR Comment
@@ -285,16 +273,16 @@
                   <span class="flex-1"></span>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">addressed</span>
                 </div>
-                <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">Lifecycle transitions need validation guards</p>
+                <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Lifecycle transitions need validation guards</p>
                 <p class="text-[10px] text-blue-500 dark:text-blue-400 mt-1">Addressed by: unit-04-feedback-crud-api</p>
-                <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-02 &middot; Visit 1 &middot; external-pr</p>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-02 &middot; Visit 1 &middot; external-pr</p>
               </div>
             </div>
 
             <!-- Closed state -->
             <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Closed (green border, faded)</p>
-              <div class="fb-card-hover border-l-[3px] border-l-green-400 dark:border-l-green-500 p-2.5 rounded-lg bg-green-50/30 dark:bg-green-950/15 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer opacity-70">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">Closed (green border, faded)</p>
+              <div class="fb-card-hover border-l-[3px] border-l-green-400 dark:border-l-green-500 p-2.5 rounded-lg bg-green-50/30 dark:bg-green-950/15 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer opacity-70">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
                     <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
@@ -302,66 +290,68 @@
                   <span class="flex-1"></span>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">closed</span>
                 </div>
-                <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">Button spacing inconsistent on tablet</p>
-                <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-04 &middot; Visit 1 &middot; user-visual</p>
+                <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Button spacing inconsistent on tablet</p>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-04 &middot; Visit 1 &middot; user-visual</p>
               </div>
             </div>
 
             <!-- Rejected state -->
             <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Rejected (stone border, very faded, strikethrough)</p>
-              <div class="fb-card-hover border-l-[3px] border-l-stone-300 dark:border-l-stone-600 p-2.5 rounded-lg bg-stone-50 dark:bg-stone-800/30 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer opacity-50">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">Rejected (stone border, very faded, strikethrough)</p>
+              <div class="fb-card-hover border-l-[3px] border-l-gray-300 dark:border-l-gray-600 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer opacity-50">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
                     <span aria-hidden="true">&#x2728;</span> Agent
                   </span>
                   <span class="flex-1"></span>
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">rejected</span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">rejected</span>
                 </div>
-                <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate line-through">Consider using a state machine library</p>
-                <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-07 &middot; Visit 1 &middot; agent</p>
+                <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate line-through">Consider using a state machine library</p>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-07 &middot; Visit 1 &middot; agent</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Sidebar -->
-      <aside class="w-80 lg:w-96 shrink-0 sticky top-16 h-[calc(100vh-4rem)] flex flex-col bg-white dark:bg-stone-900 border-l border-stone-200 dark:border-stone-700">
+    <!-- Review sidebar: sticky on desktop -->
+    <div class="hidden lg:block w-80 shrink-0">
+      <aside id="review-sidebar"
+        class="sticky top-20 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col"
+        style="max-height: calc(100vh - 6rem);">
 
         <!-- Sidebar header with segmented control -->
-        <div class="shrink-0 px-4 py-3 border-b border-stone-200 dark:border-stone-700">
+        <div class="shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
           <div class="flex items-center justify-between mb-2">
-            <h2 class="text-sm font-semibold text-stone-700 dark:text-stone-300">Review</h2>
-            <button class="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400">Clear all</button>
+            <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Review</h2>
+            <button class="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 focus:ring-2 focus:ring-teal-500">Clear all</button>
           </div>
 
           <!-- Segmented control: Feedback / Mine -->
-          <div class="flex border-b border-stone-200 dark:border-stone-700" role="tablist">
-            <button role="tab" aria-selected="true" class="border-b-2 border-teal-600 text-teal-600 dark:border-teal-400 dark:text-teal-400 text-xs font-medium px-3 py-2">
+          <div class="flex border-b border-gray-200 dark:border-gray-700" role="tablist">
+            <button role="tab" aria-selected="true" class="border-b-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 text-xs font-medium px-3 py-2 focus:ring-2 focus:ring-teal-500">
               Feedback
               <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">5</span>
             </button>
-            <button role="tab" aria-selected="false" class="border-b-2 border-transparent text-stone-500 dark:text-stone-400 text-xs font-medium px-3 py-2 hover:text-stone-700 dark:hover:text-stone-200">
+            <button role="tab" aria-selected="false" class="border-b-2 border-transparent text-gray-500 dark:text-gray-400 text-xs font-medium px-3 py-2 hover:text-gray-700 dark:hover:text-gray-200 focus:ring-2 focus:ring-teal-500">
               Mine
-              <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300">2</span>
+              <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">2</span>
             </button>
           </div>
         </div>
 
         <!-- Summary bar with filter pills -->
-        <div class="shrink-0 px-3 py-2 bg-stone-50 dark:bg-stone-800/50 border-b border-stone-200 dark:border-stone-700 flex items-center gap-2 flex-wrap">
-          <!-- Status filter pills -->
-          <button class="px-2 py-1 text-xs font-medium rounded-full bg-teal-100 text-teal-700 border border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-700 transition-colors">All</button>
-          <button class="px-2 py-1 text-xs font-medium rounded-full border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:border-stone-300 dark:hover:border-stone-600 cursor-pointer transition-colors">
+        <div class="shrink-0 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2 flex-wrap">
+          <button class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700 transition-colors focus:ring-2 focus:ring-teal-500">All</button>
+          <button class="px-2 py-1 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 cursor-pointer transition-colors focus:ring-2 focus:ring-teal-500">
             <span class="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1"></span>Pending
             <span class="ml-0.5 font-bold">3</span>
           </button>
-          <button class="px-2 py-1 text-xs font-medium rounded-full border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:border-stone-300 dark:hover:border-stone-600 cursor-pointer transition-colors">
+          <button class="px-2 py-1 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 cursor-pointer transition-colors focus:ring-2 focus:ring-teal-500">
             <span class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Addressed
             <span class="ml-0.5 font-bold">1</span>
           </button>
-          <button class="px-2 py-1 text-xs font-medium rounded-full border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:border-stone-300 dark:hover:border-stone-600 cursor-pointer transition-colors">
+          <button class="px-2 py-1 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 cursor-pointer transition-colors focus:ring-2 focus:ring-teal-500">
             <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Closed
             <span class="ml-0.5 font-bold">1</span>
           </button>
@@ -372,12 +362,12 @@
 
           <!-- Group: Current Visit -->
           <div class="flex items-center gap-2 px-1 py-1">
-            <span class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">Current Visit</span>
-            <div class="flex-1 border-t border-stone-200 dark:border-stone-700"></div>
+            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Current Visit</span>
+            <div class="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
           </div>
 
           <!-- Pending item 1 -->
-          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
+          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
                 <span aria-hidden="true">&#x1F6E1;&#xFE0F;</span> Review Agent
@@ -385,12 +375,12 @@
               <span class="flex-1"></span>
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
             </div>
-            <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">Missing null check in handleSubmit</p>
-            <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-03 &middot; Visit 2 &middot; adversarial-review</p>
+            <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Missing null check in handleSubmit</p>
+            <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-03 &middot; Visit 2 &middot; adversarial-review</p>
           </div>
 
           <!-- Pending item 2 -->
-          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
+          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
                 <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
@@ -398,12 +388,12 @@
               <span class="flex-1"></span>
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
             </div>
-            <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">Header alignment feels off on the pin card</p>
-            <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-05 &middot; Visit 2 &middot; jwaldrip</p>
+            <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Header alignment feels off on the pin card</p>
+            <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-05 &middot; Visit 2 &middot; jwaldrip</p>
           </div>
 
           <!-- Pending item 3 (agent) -->
-          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
+          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
                 <span aria-hidden="true">&#x2728;</span> Agent
@@ -411,18 +401,18 @@
               <span class="flex-1"></span>
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
             </div>
-            <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">Consider extracting feedback validation</p>
-            <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-06 &middot; Visit 2 &middot; agent</p>
+            <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Consider extracting feedback validation</p>
+            <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-06 &middot; Visit 2 &middot; agent</p>
           </div>
 
           <!-- Group: Visit 1 -->
           <div class="flex items-center gap-2 px-1 py-1 mt-3">
-            <span class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">Visit 1</span>
-            <div class="flex-1 border-t border-stone-200 dark:border-stone-700"></div>
+            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Visit 1</span>
+            <div class="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
           </div>
 
           <!-- Addressed item -->
-          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
+          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800">
                 <span aria-hidden="true">&#x1F500;</span> PR Comment
@@ -430,13 +420,13 @@
               <span class="flex-1"></span>
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">addressed</span>
             </div>
-            <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">Lifecycle transitions need validation guards</p>
+            <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Lifecycle transitions need validation guards</p>
             <p class="text-[10px] text-blue-500 dark:text-blue-400 mt-1">Addressed by: unit-04-feedback-crud-api</p>
-            <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-02 &middot; Visit 1 &middot; external-pr</p>
+            <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-02 &middot; Visit 1 &middot; external-pr</p>
           </div>
 
           <!-- Closed item -->
-          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-green-400 dark:border-l-green-500 p-2.5 rounded-lg bg-green-50/30 dark:bg-green-950/15 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer opacity-70">
+          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-green-400 dark:border-l-green-500 p-2.5 rounded-lg bg-green-50/30 dark:bg-green-950/15 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer opacity-70">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
                 <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
@@ -444,25 +434,31 @@
               <span class="flex-1"></span>
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">closed</span>
             </div>
-            <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">Button spacing inconsistent on tablet</p>
-            <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-04 &middot; Visit 1 &middot; user-visual</p>
+            <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Button spacing inconsistent on tablet</p>
+            <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-04 &middot; Visit 1 &middot; user-visual</p>
           </div>
         </div>
 
         <!-- Footer: general comment + decision buttons -->
-        <div class="shrink-0 border-t border-stone-200 dark:border-stone-700 p-3 space-y-3 bg-stone-50/50 dark:bg-stone-800/50">
-          <div class="flex gap-2">
-            <textarea class="flex-1 text-xs p-2 border border-stone-300 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 resize-none focus:ring-1 focus:ring-teal-500" rows="2" placeholder="Add a comment..."></textarea>
-            <button class="self-end px-3 py-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Add</button>
+        <div class="shrink-0 border-t border-gray-200 dark:border-gray-700 p-3 space-y-3 bg-gray-50/50 dark:bg-gray-800/50">
+          <div>
+            <label for="sidebar-general-comment" class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">General comment</label>
+            <textarea id="sidebar-general-comment"
+                      class="w-full text-sm p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y" rows="3" placeholder="Leave a general comment..."></textarea>
           </div>
           <div class="flex gap-2">
-            <button class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-600 dark:text-stone-300 transition-colors">Approve</button>
-            <button class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors">Request Changes</button>
+            <button class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed">
+              Approve
+            </button>
+            <button class="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed">
+              Request Changes
+            </button>
           </div>
         </div>
       </aside>
     </div>
-  </main>
+    </main>
+  </div>
 
   <!-- Live region for screen reader announcements -->
   <div role="status" aria-live="polite" class="sr-only"></div>

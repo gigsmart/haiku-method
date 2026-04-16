@@ -67,29 +67,29 @@
     }
   </style>
 </head>
-<body class="dark bg-stone-950 text-stone-100">
+<body class="dark bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
 
-  <div class="max-w-4xl mx-auto px-4 py-12 space-y-16">
+  <div class="max-w-[1400px] mx-auto px-4 py-12 space-y-16">
 
     <!-- Section: Desktop variant -->
     <section>
-      <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-2">Stage Progress Strip — Desktop</h2>
-      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">Horizontal pipeline showing stage progression. Full stage names visible.</p>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Stage Progress Strip — Desktop</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">Horizontal pipeline showing stage progression. Full stage names visible.</p>
 
-      <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
 
         <!-- Pipeline: 5 stages — inception(done), design(done), development(current), operations(future), security(future) -->
         <nav aria-label="Stage progress" class="flex items-center justify-center gap-0">
 
           <!-- Stage 1: Inception — completed -->
           <div class="stage-node flex flex-col items-center relative" tabindex="0" role="link" aria-label="Inception stage, completed">
-            <div class="stage-tooltip px-2 py-1 rounded-lg bg-stone-800 dark:bg-stone-700 text-xs text-white shadow-lg">
+            <div class="stage-tooltip px-2 py-1 rounded-lg bg-gray-800 dark:bg-gray-700 text-xs text-white shadow-lg">
               Inception &middot; Completed
             </div>
             <div class="stage-dot bg-teal-600 text-white cursor-pointer hover:bg-teal-700">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
-            <span class="text-xs font-medium text-stone-700 dark:text-stone-300 mt-2">Inception</span>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">Inception</span>
           </div>
 
           <!-- Connector — completed -->
@@ -97,13 +97,13 @@
 
           <!-- Stage 2: Design — completed -->
           <div class="stage-node flex flex-col items-center relative" tabindex="0" role="link" aria-label="Design stage, completed">
-            <div class="stage-tooltip px-2 py-1 rounded-lg bg-stone-800 dark:bg-stone-700 text-xs text-white shadow-lg">
+            <div class="stage-tooltip px-2 py-1 rounded-lg bg-gray-800 dark:bg-gray-700 text-xs text-white shadow-lg">
               Design &middot; Completed
             </div>
             <div class="stage-dot bg-teal-600 text-white cursor-pointer hover:bg-teal-700">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
-            <span class="text-xs font-medium text-stone-700 dark:text-stone-300 mt-2">Design</span>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">Design</span>
           </div>
 
           <!-- Connector — completed to current -->
@@ -121,36 +121,36 @@
           </div>
 
           <!-- Connector — current to future -->
-          <div class="pipeline-connector bg-stone-300 dark:bg-stone-600 mt-[-18px]"></div>
+          <div class="pipeline-connector bg-gray-300 dark:bg-gray-600 mt-[-18px]"></div>
 
           <!-- Stage 4: Operations — future -->
           <div class="stage-node flex flex-col items-center relative" aria-label="Operations stage, upcoming" aria-disabled="true">
-            <div class="stage-tooltip px-2 py-1 rounded-lg bg-stone-800 dark:bg-stone-700 text-xs text-white shadow-lg">
+            <div class="stage-tooltip px-2 py-1 rounded-lg bg-gray-800 dark:bg-gray-700 text-xs text-white shadow-lg">
               Operations &middot; Upcoming
             </div>
-            <div class="stage-dot bg-stone-200 dark:bg-stone-700 text-stone-400 dark:text-stone-500 border border-stone-300 dark:border-stone-600">
+            <div class="stage-dot bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600">
               <span class="text-[10px]">&#9675;</span>
             </div>
-            <span class="text-xs font-medium text-stone-400 dark:text-stone-500 mt-2">Operations</span>
+            <span class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-2">Operations</span>
           </div>
 
           <!-- Connector — future to future -->
-          <div class="pipeline-connector bg-stone-300 dark:bg-stone-600 mt-[-18px]"></div>
+          <div class="pipeline-connector bg-gray-300 dark:bg-gray-600 mt-[-18px]"></div>
 
           <!-- Stage 5: Security — future -->
           <div class="stage-node flex flex-col items-center relative" aria-label="Security stage, upcoming" aria-disabled="true">
-            <div class="stage-tooltip px-2 py-1 rounded-lg bg-stone-800 dark:bg-stone-700 text-xs text-white shadow-lg">
+            <div class="stage-tooltip px-2 py-1 rounded-lg bg-gray-800 dark:bg-gray-700 text-xs text-white shadow-lg">
               Security &middot; Upcoming
             </div>
-            <div class="stage-dot bg-stone-200 dark:bg-stone-700 text-stone-400 dark:text-stone-500 border border-stone-300 dark:border-stone-600">
+            <div class="stage-dot bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600">
               <span class="text-[10px]">&#9675;</span>
             </div>
-            <span class="text-xs font-medium text-stone-400 dark:text-stone-500 mt-2">Security</span>
+            <span class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-2">Security</span>
           </div>
         </nav>
 
         <!-- Legend -->
-        <div class="mt-8 flex items-center justify-center gap-6 text-[10px] text-stone-400 dark:text-stone-500">
+        <div class="mt-8 flex items-center justify-center gap-6 text-[10px] text-gray-400 dark:text-gray-500">
           <div class="flex items-center gap-1.5">
             <div class="w-3 h-3 rounded-full bg-teal-600"></div>
             <span>Completed</span>
@@ -160,7 +160,7 @@
             <span>Current</span>
           </div>
           <div class="flex items-center gap-1.5">
-            <div class="w-3 h-3 rounded-full bg-stone-200 dark:bg-stone-700 border border-stone-300 dark:border-stone-600"></div>
+            <div class="w-3 h-3 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600"></div>
             <span>Upcoming</span>
           </div>
         </div>
@@ -169,10 +169,10 @@
 
     <!-- Section: With revisit indicator -->
     <section>
-      <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-2">Stage Progress Strip — With Revisit</h2>
-      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">When a stage has been revisited, show visit count and clickable completed stages.</p>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Stage Progress Strip — With Revisit</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">When a stage has been revisited, show visit count and clickable completed stages.</p>
 
-      <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
 
         <nav aria-label="Stage progress with revisit" class="flex items-center justify-center gap-0">
 
@@ -181,22 +181,22 @@
             <div class="stage-dot bg-teal-600 text-white cursor-pointer hover:bg-teal-700">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
-            <span class="text-xs font-medium text-stone-700 dark:text-stone-300 mt-2">Inception</span>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">Inception</span>
           </div>
 
           <div class="pipeline-connector bg-teal-600 mt-[-18px]"></div>
 
           <!-- Design — completed, revisited (visit 2) -->
           <div class="stage-node flex flex-col items-center relative" tabindex="0" role="link" aria-label="Design, completed, visited 2 times">
-            <div class="stage-tooltip px-2 py-1 rounded-lg bg-stone-800 dark:bg-stone-700 text-xs text-white shadow-lg">
+            <div class="stage-tooltip px-2 py-1 rounded-lg bg-gray-800 dark:bg-gray-700 text-xs text-white shadow-lg">
               Design &middot; Completed &middot; 2 visits
             </div>
             <div class="stage-dot bg-teal-600 text-white cursor-pointer hover:bg-teal-700">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
-            <span class="text-xs font-medium text-stone-700 dark:text-stone-300 mt-2">Design</span>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">Design</span>
             <!-- Visit counter badge -->
-            <span class="absolute -top-1 -right-2 inline-flex items-center gap-0.5 px-1 py-0.5 rounded-md text-[9px] font-bold leading-none bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300">2x</span>
+            <span class="absolute -top-1 -right-2 inline-flex items-center gap-0.5 px-1 py-0.5 rounded-md text-[9px] font-bold leading-none bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">2x</span>
           </div>
 
           <div class="pipeline-connector bg-teal-600 mt-[-18px]"></div>
@@ -213,27 +213,27 @@
             <span class="absolute -top-1 -right-2 inline-flex items-center gap-0.5 px-1 py-0.5 rounded-md text-[9px] font-bold leading-none bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">2x</span>
           </div>
 
-          <div class="pipeline-connector bg-stone-300 dark:bg-stone-600 mt-[-18px]"></div>
+          <div class="pipeline-connector bg-gray-300 dark:bg-gray-600 mt-[-18px]"></div>
 
           <!-- Operations — future but previously visited (visit 1, now greyed back) -->
           <div class="stage-node flex flex-col items-center relative" tabindex="0" role="link" aria-label="Operations, upcoming, previously visited">
-            <div class="stage-tooltip px-2 py-1 rounded-lg bg-stone-800 dark:bg-stone-700 text-xs text-white shadow-lg">
+            <div class="stage-tooltip px-2 py-1 rounded-lg bg-gray-800 dark:bg-gray-700 text-xs text-white shadow-lg">
               Operations &middot; Previously visited &middot; Clickable
             </div>
-            <div class="stage-dot bg-stone-200 dark:bg-stone-700 text-stone-500 dark:text-stone-400 border border-stone-400 dark:border-stone-500 cursor-pointer hover:border-teal-400 dark:hover:border-teal-500 transition-colors">
+            <div class="stage-dot bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border border-gray-400 dark:border-gray-500 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors">
               <span class="text-[10px]">1</span>
             </div>
-            <span class="text-xs font-medium text-stone-500 dark:text-stone-400 mt-2">Operations</span>
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-2">Operations</span>
           </div>
 
-          <div class="pipeline-connector bg-stone-300 dark:bg-stone-600 mt-[-18px]"></div>
+          <div class="pipeline-connector bg-gray-300 dark:bg-gray-600 mt-[-18px]"></div>
 
           <!-- Security — future, never visited -->
           <div class="stage-node flex flex-col items-center relative" aria-label="Security, upcoming" aria-disabled="true">
-            <div class="stage-dot bg-stone-200 dark:bg-stone-700 text-stone-400 dark:text-stone-500 border border-stone-300 dark:border-stone-600">
+            <div class="stage-dot bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600">
               <span class="text-[10px]">&#9675;</span>
             </div>
-            <span class="text-xs font-medium text-stone-400 dark:text-stone-500 mt-2">Security</span>
+            <span class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-2">Security</span>
           </div>
         </nav>
       </div>
@@ -241,10 +241,10 @@
 
     <!-- Section: Mobile variant (abbreviated names) -->
     <section>
-      <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-2">Stage Progress Strip — Mobile (375px)</h2>
-      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">Abbreviated stage names, tighter spacing.</p>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Stage Progress Strip — Mobile (375px)</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">Abbreviated stage names, tighter spacing.</p>
 
-      <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-4" style="max-width: 375px;">
+      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4" style="max-width: 375px;">
 
         <nav aria-label="Stage progress mobile" class="flex items-center justify-between">
 
@@ -253,7 +253,7 @@
             <div class="w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center">
               <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
-            <span class="text-[10px] font-medium text-stone-700 dark:text-stone-300 mt-1">Inc</span>
+            <span class="text-[10px] font-medium text-gray-700 dark:text-gray-300 mt-1">Inc</span>
           </div>
 
           <div class="flex-1 h-0.5 bg-teal-600 mx-1 mt-[-14px]"></div>
@@ -263,7 +263,7 @@
             <div class="w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center">
               <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
-            <span class="text-[10px] font-medium text-stone-700 dark:text-stone-300 mt-1">Des</span>
+            <span class="text-[10px] font-medium text-gray-700 dark:text-gray-300 mt-1">Des</span>
           </div>
 
           <div class="flex-1 h-0.5 bg-teal-600 mx-1 mt-[-14px]"></div>
@@ -276,24 +276,24 @@
             <span class="text-[10px] font-semibold text-teal-600 dark:text-teal-400 mt-1.5">Dev</span>
           </div>
 
-          <div class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-600 mx-1 mt-[-14px]"></div>
+          <div class="flex-1 h-0.5 bg-gray-300 dark:bg-gray-600 mx-1 mt-[-14px]"></div>
 
           <!-- Operations — future -->
           <div class="flex flex-col items-center">
-            <div class="w-5 h-5 rounded-full bg-stone-200 dark:bg-stone-700 border border-stone-300 dark:border-stone-600 flex items-center justify-center text-stone-400 dark:text-stone-500">
+            <div class="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-400 dark:text-gray-500">
               <span class="text-[9px]">&#9675;</span>
             </div>
-            <span class="text-[10px] font-medium text-stone-400 dark:text-stone-500 mt-1">Ops</span>
+            <span class="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-1">Ops</span>
           </div>
 
-          <div class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-600 mx-1 mt-[-14px]"></div>
+          <div class="flex-1 h-0.5 bg-gray-300 dark:bg-gray-600 mx-1 mt-[-14px]"></div>
 
           <!-- Security — future -->
           <div class="flex flex-col items-center">
-            <div class="w-5 h-5 rounded-full bg-stone-200 dark:bg-stone-700 border border-stone-300 dark:border-stone-600 flex items-center justify-center text-stone-400 dark:text-stone-500">
+            <div class="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-400 dark:text-gray-500">
               <span class="text-[9px]">&#9675;</span>
             </div>
-            <span class="text-[10px] font-medium text-stone-400 dark:text-stone-500 mt-1">Sec</span>
+            <span class="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-1">Sec</span>
           </div>
         </nav>
       </div>
@@ -301,44 +301,44 @@
 
     <!-- Section: All completed state -->
     <section>
-      <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-2">Stage Progress Strip — All Completed</h2>
-      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">When all stages are done, the strip is fully green-teal.</p>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Stage Progress Strip — All Completed</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">When all stages are done, the strip is fully green-teal.</p>
 
-      <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
         <nav aria-label="Stage progress all complete" class="flex items-center justify-center gap-0">
           <div class="flex flex-col items-center">
             <div class="w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
-            <span class="text-xs font-medium text-stone-700 dark:text-stone-300 mt-2">Inception</span>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">Inception</span>
           </div>
           <div class="pipeline-connector bg-teal-600 mt-[-18px]"></div>
           <div class="flex flex-col items-center">
             <div class="w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
-            <span class="text-xs font-medium text-stone-700 dark:text-stone-300 mt-2">Design</span>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">Design</span>
           </div>
           <div class="pipeline-connector bg-teal-600 mt-[-18px]"></div>
           <div class="flex flex-col items-center">
             <div class="w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
-            <span class="text-xs font-medium text-stone-700 dark:text-stone-300 mt-2">Development</span>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">Development</span>
           </div>
           <div class="pipeline-connector bg-teal-600 mt-[-18px]"></div>
           <div class="flex flex-col items-center">
             <div class="w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
-            <span class="text-xs font-medium text-stone-700 dark:text-stone-300 mt-2">Operations</span>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">Operations</span>
           </div>
           <div class="pipeline-connector bg-teal-600 mt-[-18px]"></div>
           <div class="flex flex-col items-center">
             <div class="w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
-            <span class="text-xs font-medium text-stone-700 dark:text-stone-300 mt-2">Security</span>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">Security</span>
           </div>
         </nav>
       </div>
