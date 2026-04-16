@@ -144,6 +144,46 @@ export function isValidJson(s: string): boolean {
 }
 
 /**
+ * Read a frontmatter field that contains a YAML inline string list.
+ * Handles `field: [a, b, c]` format. Returns empty array for missing/empty fields.
+ */
+export function readFrontmatterStringList(
+	filePath: string,
+	field: string,
+): string[] {
+	const raw = readFrontmatterField(filePath, field)
+	if (!raw) return []
+	// Match inline array: [a, b, c]
+	const m = raw.match(/^\[(.*)?\]$/)
+	if (!m) return []
+	const inner = m[1]?.trim()
+	if (!inner) return []
+	return inner.split(",").map((s) => s.trim()).filter(Boolean)
+}
+
+/**
+ * Check whether ALL declared stages in an intent have completed.
+ * Reads the `stages:` list from intent.md frontmatter, then checks each
+ * stage's `state.json` for `status: "completed"`.
+ *
+ * Returns true ONLY when every declared stage has a state.json with
+ * status === "completed". Missing state.json → not completed.
+ * Empty/missing stages list → false (cannot determine completion).
+ */
+export function allStagesCompleted(intentDir: string): boolean {
+	const intentFile = join(intentDir, "intent.md")
+	const stages = readFrontmatterStringList(intentFile, "stages")
+	if (stages.length === 0) return false
+
+	for (const stage of stages) {
+		const stateFile = join(intentDir, "stages", stage, "state.json")
+		const state = readJson(stateFile)
+		if (state.status !== "completed") return false
+	}
+	return true
+}
+
+/**
  * Glob for unit files within an intent directory.
  * Returns paths matching stages/{stage}/units/unit-NN-slug.md
  */
