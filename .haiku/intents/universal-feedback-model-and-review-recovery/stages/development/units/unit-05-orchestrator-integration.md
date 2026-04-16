@@ -1,14 +1,23 @@
 ---
-title: Orchestrator integration — review-UI, subagent prompts, additive elaborate
+title: 'Orchestrator integration — review-UI, subagent prompts, additive elaborate'
 type: implementation
-depends_on: [unit-01-feedback-helpers-and-tool, unit-04-gate-feedback-check]
-quality_gates: [typecheck, test]
+depends_on:
+  - unit-01-feedback-helpers-and-tool
+  - unit-04-gate-feedback-check
+quality_gates:
+  - typecheck
+  - test
 inputs:
   - knowledge/DATA-CONTRACTS.md
   - knowledge/ACCEPTANCE-CRITERIA.md
   - features/review-ui-feedback.feature
   - features/additive-elaborate.feature
   - stages/design/DESIGN-BRIEF.md
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-16T15:47:57Z'
+hat_started_at: '2026-04-16T15:47:57Z'
 ---
 
 # Orchestrator Integration
