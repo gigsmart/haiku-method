@@ -14,6 +14,11 @@ inputs:
   - features/accessibility-iframe.feature
   - features/error-recovery.feature
   - .haiku/knowledge/ARCHITECTURE.md
+status: pending
+bolt: 0
+hat: ''
+started_at: null
+completed_at: null
 ---
 
 # SPA iframe layout — conditional decision panels + boot/error/success screens

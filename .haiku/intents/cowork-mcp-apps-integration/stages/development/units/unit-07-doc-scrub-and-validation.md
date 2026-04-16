@@ -11,6 +11,11 @@ inputs:
   - knowledge/ACCEPTANCE-CRITERIA.md
   - knowledge/DATA-CONTRACTS.md
   - .haiku/knowledge/ARCHITECTURE.md
+status: pending
+bolt: 0
+hat: ''
+started_at: null
+completed_at: null
 ---
 
 # Doc scrub + VALIDATION.md + end-to-end smoke

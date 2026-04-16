@@ -11,15 +11,15 @@ inputs:
   - knowledge/DATA-CONTRACTS.md
   - features/iframe-review-gate.feature
   - .haiku/knowledge/ARCHITECTURE.md
-status: completed
-bolt: 1
-hat: reviewer
-started_at: '2026-04-15T15:46:42Z'
+status: pending
+bolt: 0
+hat: ''
+started_at: null
 hat_started_at: '2026-04-15T15:55:54Z'
 outputs:
   - knowledge/unit-02-dev-ui-resource-registration-implementation.md
   - knowledge/unit-02-dev-ui-resource-registration-implementation.md
-completed_at: '2026-04-15T16:00:56Z'
+completed_at: null
 ---
 
 # ui:// resource registration + REVIEW_APP_VERSION + _meta.ui helper

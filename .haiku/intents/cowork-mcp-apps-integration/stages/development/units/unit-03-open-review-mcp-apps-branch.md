@@ -13,6 +13,11 @@ inputs:
   - features/iframe-review-gate.feature
   - features/iframe-decision-submit.feature
   - .haiku/knowledge/ARCHITECTURE.md
+status: pending
+bolt: 0
+hat: ''
+started_at: null
+completed_at: null
 ---
 
 # _openReviewAndWait MCP Apps branch + haiku_cowork_review_submit tool

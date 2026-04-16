@@ -12,6 +12,11 @@ inputs:
   - features/host-bridge-detection.feature
   - stages/design/artifacts/host-bridge-status.html
   - .haiku/knowledge/ARCHITECTURE.md
+status: pending
+bolt: 0
+hat: ''
+started_at: null
+completed_at: null
 ---
 
 # Review SPA host-bridge module

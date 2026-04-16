@@ -11,15 +11,15 @@ inputs:
   - features/mcp-apps-capability-negotiation.feature
   - features/workspace-handshake.feature
   - .haiku/knowledge/ARCHITECTURE.md
-status: completed
-bolt: 2
-hat: reviewer
-started_at: '2026-04-15T15:21:26Z'
+status: pending
+bolt: 0
+hat: ''
+started_at: null
 hat_started_at: '2026-04-15T15:41:33Z'
 model_original: sonnet
 outputs:
   - knowledge/unit-01-dev-capability-negotiation-implementation.md
-completed_at: '2026-04-15T15:45:27Z'
+completed_at: null
 ---
 
 # Capability negotiation probe + workspace handshake
