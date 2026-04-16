@@ -475,7 +475,7 @@
 
 - **Given** a pending feedback item
 - **When** `DELETE /api/feedback/{intent}/{stage}/{id}` is called
-- **Then** a 403 response is returned: "Cannot delete pending feedback items"
+- **Then** a 409 Conflict response is returned: "Cannot delete pending feedback items" (conflicts with pending status)
 
 ---
 

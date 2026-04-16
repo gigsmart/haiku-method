@@ -165,8 +165,10 @@ Remove a feedback file from disk.
 
 **Guards:**
 
+MCP tools are called by agents only. Humans interact via the HTTP endpoints (section 2), not MCP tools. The guards below therefore define what agents are prevented from doing:
+
 - **Cannot delete `status: pending` items.** This prevents agents from bypassing the structural gate by deleting feedback instead of addressing it. The item must first be moved to `addressed`, `closed`, or `rejected`.
-- **Author-type enforcement:** Agent-authored items (`author_type: agent`) can only be deleted by agents. Human-authored items (`author_type: human`) can only be deleted via the review UI (HTTP endpoint). The MCP tool context determines the caller type.
+- **Cannot delete human-authored items.** Items with `author_type: human` can only be deleted via the review UI HTTP endpoint (section 2.4). Since only agents call MCP tools, this guard means agents cannot delete human-authored feedback.
 
 **Success Response:**
 

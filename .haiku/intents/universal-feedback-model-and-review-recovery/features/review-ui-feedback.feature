@@ -195,12 +195,11 @@ Feature: Review UI changes_requested writes feedback files and inline annotation
       """
     Then the response is 404 Not Found
 
-  Scenario: DELETE /api/feedback on a pending item returns 403
+  Scenario: DELETE /api/feedback on a pending item returns 409
     Given feedback file "01-open.md" exists with status "pending"
     When the review app calls DELETE /api/feedback/feedback-intent/development/01
-    Then the response is 403 Forbidden
+    Then the response is 409 Conflict
     And the error message states "cannot delete feedback with status pending"
-    # Note: AC specifies 403; DATA-CONTRACTS.md specifies 409. Implementation should reconcile.
 
   Scenario: PUT /api/feedback with invalid status value returns 400
     Given feedback file "01-finding.md" exists

@@ -260,10 +260,12 @@ Feature: Feedback file CRUD via haiku_feedback MCP tool and companions
     Then the tool returns an error "agents cannot delete human-authored feedback"
     And the file still exists on disk
 
-  Scenario: Human cannot delete agent-authored feedback via MCP tool
-    Given feedback file "01-agent-finding.md" exists with author_type "agent" and status "addressed"
-    When I call haiku_feedback_delete with feedback_id "01" as author_type "human"
-    Then the tool returns an error "human-authored deletions must go through the review UI"
+  Scenario: MCP tool is agent-only — agents cannot delete human-authored feedback
+    Given feedback file "01-user-comment.md" exists with author_type "human" and status "closed"
+    When I call haiku_feedback_delete with feedback_id "01"
+    Then the tool returns an error "agents cannot delete human-authored feedback. Use the review UI."
+    And the file still exists on disk
+    # MCP tools are agent-only. Humans use the HTTP endpoints (section 2.4) which have no author-type restriction.
 
   # ---------------------------------------------------------------------------
   # Error: Git
