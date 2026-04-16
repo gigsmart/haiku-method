@@ -14,11 +14,9 @@
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; }
 
-    /* Status left-border indicators */
-    .fb-border-pending   { border-left: 3px solid #f59e0b; }
-    .fb-border-addressed { border-left: 3px solid #60a5fa; }
-    .fb-border-closed    { border-left: 3px solid #4ade80; }
-    .fb-border-rejected  { border-left: 3px solid #a8a29e; }
+    /* Status left-border indicators
+       Colors reference Tailwind palette: amber-500, blue-400, green-400, stone-400
+       Applied via border-l-[3px] + Tailwind border color classes in markup */
 
     /* Bottom sheet animation */
     @keyframes sheet-up {
@@ -143,7 +141,7 @@
 
     <!-- Summary bar -->
     <div class="shrink-0 px-3 py-2 bg-stone-50 dark:bg-stone-800/50 border-b border-stone-200 dark:border-stone-700 flex items-center gap-2 overflow-x-auto">
-      <button class="shrink-0 px-2.5 py-1.5 text-xs font-medium rounded-full bg-teal-100 text-teal-700 border border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-700 transition-colors touch-target">All</button>
+      <button class="shrink-0 px-2.5 py-1.5 text-xs font-medium rounded-full bg-teal-100 text-teal-700 border border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-700 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">All</button>
       <button class="shrink-0 px-2.5 py-1.5 text-xs font-medium rounded-full border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 touch-target">
         <span class="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1"></span>Pending
         <span class="ml-0.5 font-bold">3</span>
@@ -168,7 +166,7 @@
       </div>
 
       <!-- Pending item 1 -->
-      <div role="listitem" tabindex="0" class="fb-border-pending p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 active:border-teal-400 dark:active:border-teal-500 transition-colors touch-target">
+      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 active:border-teal-400 dark:active:border-teal-500 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
         <div class="flex items-center gap-2 mb-1">
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
             <span aria-hidden="true">&#x1F6E1;&#xFE0F;</span> Review Agent
@@ -181,7 +179,7 @@
       </div>
 
       <!-- Pending item 2 -->
-      <div role="listitem" tabindex="0" class="fb-border-pending p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 active:border-teal-400 dark:active:border-teal-500 transition-colors touch-target">
+      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 active:border-teal-400 dark:active:border-teal-500 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
         <div class="flex items-center gap-2 mb-1">
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
             <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
@@ -194,7 +192,7 @@
       </div>
 
       <!-- Pending item 3 (agent — shows Reject button) -->
-      <div role="listitem" tabindex="0" class="fb-border-pending p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-teal-400 dark:border-teal-500 transition-colors touch-target">
+      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-teal-400 dark:border-teal-500 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
         <div class="flex items-center gap-2 mb-1">
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
             <span aria-hidden="true">&#x2728;</span> Agent
@@ -208,8 +206,8 @@
         </div>
         <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-2">FB-06 &middot; Visit 2 &middot; agent</p>
         <div class="flex gap-2 mt-2">
-          <button class="text-xs font-medium px-3 py-1.5 rounded-md bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400 transition-colors touch-target">Reject</button>
-          <button class="text-xs font-medium px-3 py-1.5 rounded-md bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 transition-colors touch-target">Close</button>
+          <button class="text-xs font-medium px-3 py-1.5 rounded-md bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">Reject</button>
+          <button class="text-xs font-medium px-3 py-1.5 rounded-md bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">Close</button>
         </div>
       </div>
 
@@ -220,7 +218,7 @@
       </div>
 
       <!-- Addressed -->
-      <div role="listitem" tabindex="0" class="fb-border-addressed p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-stone-200 dark:border-stone-700 transition-colors touch-target">
+      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-stone-200 dark:border-stone-700 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
         <div class="flex items-center gap-2 mb-1">
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800">
             <span aria-hidden="true">&#x1F500;</span> PR Comment
@@ -234,7 +232,7 @@
       </div>
 
       <!-- Closed -->
-      <div role="listitem" tabindex="0" class="fb-border-closed p-3 rounded-lg bg-green-50/30 dark:bg-green-950/15 border border-stone-200 dark:border-stone-700 transition-colors touch-target opacity-70">
+      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-green-400 dark:border-l-green-500 p-3 rounded-lg bg-green-50/30 dark:bg-green-950/15 border border-stone-200 dark:border-stone-700 transition-colors touch-target opacity-70">
         <div class="flex items-center gap-2 mb-1">
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
             <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
@@ -251,11 +249,11 @@
     <div class="shrink-0 border-t border-stone-200 dark:border-stone-700 p-3 space-y-3 bg-stone-50/50 dark:bg-stone-800/50">
       <div class="flex gap-2">
         <textarea class="flex-1 text-xs p-2 border border-stone-300 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 resize-none focus:ring-1 focus:ring-teal-500" rows="2" placeholder="Add a comment..."></textarea>
-        <button class="self-end px-3 py-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors touch-target">Add</button>
+        <button class="self-end px-3 py-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">Add</button>
       </div>
       <div class="flex gap-2">
-        <button class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 transition-colors touch-target">Approve</button>
-        <button class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-amber-600 text-white transition-colors touch-target">Request Changes</button>
+        <button class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">Approve</button>
+        <button class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-amber-600 text-white transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">Request Changes</button>
       </div>
     </div>
   </div>

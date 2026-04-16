@@ -14,11 +14,9 @@
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; }
 
-    /* Feedback left-border status indicators */
-    .fb-border-pending   { border-left: 3px solid #f59e0b; }
-    .fb-border-addressed { border-left: 3px solid #60a5fa; }
-    .fb-border-closed    { border-left: 3px solid #4ade80; }
-    .fb-border-rejected  { border-left: 3px solid #a8a29e; }
+    /* Feedback left-border status indicators
+       Colors reference Tailwind palette: amber-500, blue-400, green-400, stone-400
+       Applied via border-l-[3px] + Tailwind border color classes in markup */
 
     /* Status transition animation */
     @keyframes feedback-status-change {
@@ -30,16 +28,14 @@
       animation: feedback-status-change 0.4s ease-in-out;
     }
 
-    /* Connector lines from inline annotations to code */
+    /* Connector lines from inline annotations to code
+       Uses stone-500 (light) / stone-600 (dark) — Tailwind can't express
+       dashed border on pseudo-positioned elements via utilities alone */
     .annotation-connector {
       position: absolute;
       width: 24px;
-      border-top: 1px dashed #78716c;
       top: 50%;
       right: 100%;
-    }
-    .dark .annotation-connector {
-      border-top-color: #57534e;
     }
 
     /* Subtle card lift on hover */
@@ -51,18 +47,17 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
 
-    /* Image pin marker */
+    /* Image pin marker — uses teal-600 for bg, matches existing
+       AnnotationCanvas pin styling from the review app */
     .pin-marker {
       width: 28px;
       height: 28px;
       border-radius: 50%;
-      background: #0d9488;
       border: 2px solid white;
       box-shadow: 0 2px 6px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
@@ -128,8 +123,8 @@
 
                 <!-- Floating inline annotation card — connected by dashed line -->
                 <div class="absolute -right-[340px] top-0 w-[300px] z-20">
-                  <div class="annotation-connector"></div>
-                  <div class="fb-card-hover fb-border-pending p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer">
+                  <div class="annotation-connector border-t border-dashed border-stone-500 dark:border-stone-600"></div>
+                  <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
                     <div class="flex items-center gap-2 mb-1">
                       <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
                         <span aria-hidden="true">&#x1F6E1;&#xFE0F;</span> Review Agent
@@ -152,8 +147,8 @@
 
                 <!-- Floating card — addressed state -->
                 <div class="absolute -right-[340px] top-0 w-[300px] z-20">
-                  <div class="annotation-connector"></div>
-                  <div class="fb-card-hover fb-border-addressed p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer">
+                  <div class="annotation-connector border-t border-dashed border-stone-500 dark:border-stone-600"></div>
+                  <div class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
                     <div class="flex items-center gap-2 mb-1">
                       <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800">
                         <span aria-hidden="true">&#x1F500;</span> PR Comment
@@ -193,9 +188,9 @@
             </div>
 
             <!-- Pin 1 — with floating annotation card -->
-            <div class="pin-marker" style="left: 25%; top: 30%;">1</div>
+            <div class="pin-marker bg-teal-600 text-white" style="left: 25%; top: 30%;">1</div>
             <div class="absolute z-20" style="left: calc(25% + 24px); top: calc(30% - 8px);">
-              <div class="fb-card-hover fb-border-pending p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer w-[240px]">
+              <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer w-[240px]">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
                     <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
@@ -209,10 +204,10 @@
             </div>
 
             <!-- Pin 2 -->
-            <div class="pin-marker" style="left: 65%; top: 55%;">2</div>
+            <div class="pin-marker bg-teal-600 text-white" style="left: 65%; top: 55%;">2</div>
 
             <!-- Pin 3 -->
-            <div class="pin-marker" style="left: 40%; top: 75%;">3</div>
+            <div class="pin-marker bg-teal-600 text-white" style="left: 40%; top: 75%;">3</div>
           </div>
         </div>
 
@@ -225,7 +220,7 @@
             <!-- Default / Collapsed -->
             <div>
               <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Default (collapsed)</p>
-              <div class="fb-card-hover fb-border-pending p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer">
+              <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
                     <span aria-hidden="true">&#x1F6E1;&#xFE0F;</span> Review Agent
@@ -241,7 +236,7 @@
             <!-- Hover state -->
             <div>
               <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Hover (subtle lift + teal border)</p>
-              <div class="fb-border-pending p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-teal-400 dark:border-teal-500 transition-all cursor-pointer" style="transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+              <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-teal-400 dark:border-teal-500 transition-all cursor-pointer" style="transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
                     <span aria-hidden="true">&#x2728;</span> Agent
@@ -257,7 +252,7 @@
             <!-- Expanded state -->
             <div>
               <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Expanded (full body + action buttons)</p>
-              <div class="fb-border-pending p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-teal-400 dark:border-teal-500 transition-all">
+              <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-teal-400 dark:border-teal-500 transition-all">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
                     <span aria-hidden="true">&#x1F6E1;&#xFE0F;</span> Review Agent
@@ -282,7 +277,7 @@
             <!-- Addressed state -->
             <div>
               <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Addressed (blue left border + link)</p>
-              <div class="fb-card-hover fb-border-addressed p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer">
+              <div class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800">
                     <span aria-hidden="true">&#x1F500;</span> PR Comment
@@ -299,7 +294,7 @@
             <!-- Closed state -->
             <div>
               <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Closed (green border, faded)</p>
-              <div class="fb-card-hover fb-border-closed p-2.5 rounded-lg bg-green-50/30 dark:bg-green-950/15 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer opacity-70">
+              <div class="fb-card-hover border-l-[3px] border-l-green-400 dark:border-l-green-500 p-2.5 rounded-lg bg-green-50/30 dark:bg-green-950/15 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer opacity-70">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
                     <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
@@ -315,7 +310,7 @@
             <!-- Rejected state -->
             <div>
               <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Rejected (stone border, very faded, strikethrough)</p>
-              <div class="fb-card-hover fb-border-rejected p-2.5 rounded-lg bg-stone-50 dark:bg-stone-800/30 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer opacity-50">
+              <div class="fb-card-hover border-l-[3px] border-l-stone-300 dark:border-l-stone-600 p-2.5 rounded-lg bg-stone-50 dark:bg-stone-800/30 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer opacity-50">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
                     <span aria-hidden="true">&#x2728;</span> Agent
@@ -382,7 +377,7 @@
           </div>
 
           <!-- Pending item 1 -->
-          <div role="listitem" tabindex="0" class="fb-card-hover fb-border-pending p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer">
+          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
                 <span aria-hidden="true">&#x1F6E1;&#xFE0F;</span> Review Agent
@@ -395,7 +390,7 @@
           </div>
 
           <!-- Pending item 2 -->
-          <div role="listitem" tabindex="0" class="fb-card-hover fb-border-pending p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer">
+          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
                 <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
@@ -408,7 +403,7 @@
           </div>
 
           <!-- Pending item 3 (agent) -->
-          <div role="listitem" tabindex="0" class="fb-card-hover fb-border-pending p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer">
+          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
                 <span aria-hidden="true">&#x2728;</span> Agent
@@ -427,7 +422,7 @@
           </div>
 
           <!-- Addressed item -->
-          <div role="listitem" tabindex="0" class="fb-card-hover fb-border-addressed p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer">
+          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800">
                 <span aria-hidden="true">&#x1F500;</span> PR Comment
@@ -441,7 +436,7 @@
           </div>
 
           <!-- Closed item -->
-          <div role="listitem" tabindex="0" class="fb-card-hover fb-border-closed p-2.5 rounded-lg bg-green-50/30 dark:bg-green-950/15 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer opacity-70">
+          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-green-400 dark:border-l-green-500 p-2.5 rounded-lg bg-green-50/30 dark:bg-green-950/15 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer opacity-70">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
                 <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
