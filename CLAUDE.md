@@ -27,7 +27,6 @@ When modifying any component, check if other components need corresponding updat
 | New principle | Document in Principles section | Implement if applicable | Update if referenced |
 | Concept refinement | Update definition | Update implementation | Update docs |
 | Persistence change | N/A (environment-detected) | Update state-tools.ts isGitRepo | Update docs if user-facing |
-| New harness support | N/A | Add entry to HARNESS_REGISTRY in `harness.ts`, update rewriting rules in `harness-instructions.ts` | Update docs if user-facing |
 
 ## Key File Locations
 
@@ -46,7 +45,6 @@ When modifying any component, check if other components need corresponding updat
 - Plugin libraries: `plugin/lib/*.sh`
 - Plugin orchestration: `plugin/lib/orchestrator.sh`, `plugin/lib/stage.sh`, `plugin/lib/studio.sh`
 - Plugin environment detection: `packages/haiku/src/state-tools.ts` (isGitRepo)
-- Plugin harness support: `packages/haiku/src/harness.ts` (capability registry), `packages/haiku/src/harness-instructions.ts` (instruction adaptation)
 - Plugin providers: `plugin/providers/*.md` (bidirectional translation instructions) + `plugin/schemas/providers/*.json`
 - Website docs: `website/content/docs/`
 - Infrastructure: `deploy/terraform/`
@@ -73,7 +71,6 @@ When modifying any component, check if other components need corresponding updat
 | Hard Gates | Execution phase | exit code enforcement in quality-gate.sh | orchestrator.ts |
 | Persistence | Context Preservation | Environment-detected via `isGitRepo()` (git or filesystem) | state-tools.ts, git-worktree.ts |
 | Providers | Memory Providers section | `plugin/schemas/providers/*.json`, `plugin/providers/*.md` | config.sh |
-| Harness | N/A (implementation detail) | `--harness <name>` MCP arg or `HAIKU_HARNESS` env var; capability registry in `harness.ts`, instruction adaptation in `harness-instructions.ts` | harness.ts, harness-instructions.ts, orchestrator.ts, server.ts |
 | Operations | Operation phase | /haiku:operate prompt | prompts/complex.ts |
 
 ## H·AI·K·U Terminology (CRITICAL)
