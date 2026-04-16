@@ -12,6 +12,8 @@ bolt: 1
 hat: validator
 started_at: '2026-04-16T14:36:22Z'
 hat_started_at: '2026-04-16T14:38:17Z'
+outputs:
+  - knowledge/DATA-CONTRACTS.md
 ---
 
 # Data Contracts and API Schemas
