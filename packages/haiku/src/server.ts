@@ -346,9 +346,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 			},
 		},
 		{
-			name: "haiku_feedback",
+			name: "haiku_report",
 			description:
-				"Submit user feedback or a bug report to the H·AI·K·U team via Sentry. " +
+				"Submit a bug report or feedback to the H·AI·K·U team via Sentry. " +
 				"Use this when a user wants to report an issue, suggest an improvement, or share feedback.",
 			inputSchema: {
 				type: "object" as const,
@@ -412,8 +412,8 @@ async function handleToolCall(request: {
 		return handleOrchestratorTool(name, (args ?? {}) as Record<string, unknown>)
 	}
 
-	// Feedback tool — submit user feedback to Sentry
-	if (name === "haiku_feedback") {
+	// Report tool — submit user feedback/bug reports to Sentry
+	if (name === "haiku_report") {
 		if (!isSentryConfigured()) {
 			return {
 				content: [
