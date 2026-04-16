@@ -7,6 +7,8 @@ inputs:
   - knowledge/DISCOVERY.md
   - knowledge/IMPLEMENTATION-MAP.md
   - stages/design/DESIGN-BRIEF.md
+outputs:
+  - knowledge/ACCEPTANCE-CRITERIA.md
 status: active
 bolt: 1
 hat: product
