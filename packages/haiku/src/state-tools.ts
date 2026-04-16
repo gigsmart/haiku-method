@@ -2284,7 +2284,7 @@ export const stateToolDefs = [
 	{
 		name: "haiku_review",
 		description:
-			"Runs a git diff against main/upstream and returns formatted pre-delivery code review instructions with diff, stats, review guidelines, and review-agent config.",
+			"Returns formatted pre-delivery code review instructions with diff, stats, review guidelines, and review-agent config.",
 		inputSchema: {
 			type: "object" as const,
 			properties: {
@@ -2344,7 +2344,7 @@ export const stateToolDefs = [
 	{
 		name: "haiku_repair",
 		description:
-			"Scan intents for metadata issues and auto-apply safe fixes. In a git repo, the default behavior is to scan ALL `haiku/<slug>/main` intent branches sequentially via temporary worktrees, auto-apply safe fixes (overlong title trim, legacy field renames, missing defaults, studio alias migration), commit and push the fixes to each branch, and open a PR/MR back to mainline if the branch was already merged. Pass `intent` to repair a single intent in the current working directory only. Pass `skip_branches: true` to force cwd-only mode in a git repo. Pass `apply: false` to scan without applying fixes.",
+			"Scan intents for metadata issues and auto-apply safe fixes. In a git repo, scans all intent branches sequentially, auto-applies safe fixes, syncs changes, and opens PRs/MRs for already-merged branches. In filesystem mode, scans intents in the current working directory. Pass `intent` to repair a single intent only. Pass `skip_branches: true` to force cwd-only mode in a git repo. Pass `apply: false` to scan without applying fixes.",
 		inputSchema: {
 			type: "object" as const,
 			properties: {

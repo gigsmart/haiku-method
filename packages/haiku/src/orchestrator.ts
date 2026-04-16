@@ -27,6 +27,7 @@ import {
 	createIntentBranch,
 	createStageBranch,
 	createUnitWorktree,
+	getMainlineBranch,
 	isBranchMerged,
 	isOnIntentBranch,
 	isOnStageBranch,
@@ -1441,7 +1442,7 @@ export function runNext(slug: string): OrchestratorAction {
 
 		// All units valid — either auto-advance or open review gate before execution.
 		//
-		// For stages with review: auto (and non-discrete mode), skip the gate
+		// For stages with review: auto, skip the gate
 		// entirely and advance directly to execution. This is critical for
 		// autonomous workflows where the user should not be interrupted.
 		//
@@ -1452,11 +1453,11 @@ export function runNext(slug: string): OrchestratorAction {
 		// with intent_review context until intent_reviewed is set to true.
 		const intentReviewed = (intent.intent_reviewed as boolean) || false
 		const isIntentReview = currentStage === studioStages[0] && !intentReviewed
-		const intentMode = (intent.mode as string) || "continuous"
 		const stageReviewType = resolveStageReview(studio, currentStage)
 
-		// Auto gates: skip review UI and advance directly to execution
-		if (stageReviewType === "auto" && intentMode !== "discrete") {
+		// Auto gates: skip review UI and advance directly to execution.
+		// Discrete mode affects branching strategy, not review type semantics.
+		if (stageReviewType === "auto") {
 			if (isIntentReview) {
 				setFrontmatterField(intentFile, "intent_reviewed", true)
 				gitCommitState(`haiku: intent ${slug} auto-approved`)
@@ -1696,17 +1697,13 @@ export function runNext(slug: string): OrchestratorAction {
 		const nextStage =
 			stageIdx < studioStages.length - 1 ? studioStages[stageIdx + 1] : null
 
-		// Use the intent's declared mode (not effective branch mode) to determine gate UI.
-		// A continuous intent with PR-isolated external-review stages should still show
-		// the stage's full gate options, not be forced to external-only.
-		const intentMode = (intent.mode as string) || "continuous"
 		const gitAvailable = isGitRepo()
 
 		// Auto gates: advance without user interaction.
 		// "auto" review type means the studio author trusts the FSM to advance
-		// without human approval. In continuous/hybrid mode, skip the gate UI
-		// entirely. Discrete mode always uses external review (PR per stage).
-		if (reviewType === "auto" && intentMode !== "discrete") {
+		// without human approval. Skip the gate UI entirely regardless of mode —
+		// discrete mode affects branching strategy, not review type semantics.
+		if (reviewType === "auto") {
 			emitTelemetry("haiku.gate.auto_advanced", {
 				intent: slug,
 				stage: currentStage,
@@ -1745,9 +1742,6 @@ export function runNext(slug: string): OrchestratorAction {
 				.filter((t) => t !== "external")
 				.join(",")
 			effectiveGateType = remaining || "ask"
-		} else if (intentMode === "discrete") {
-			// Pure discrete intent: always submit for external review (PR per stage)
-			effectiveGateType = "external"
 		} else if (reviewType === "ask") {
 			effectiveGateType = "ask"
 		} else if (reviewType === "await") {
@@ -2366,8 +2360,9 @@ function enrichActionWithPreview(action: OrchestratorAction): void {
 		case "start_units": {
 			const units = (action.units as string[]) || []
 			tell_user = `Starting ${units.length} units in parallel: ${units.join(", ")}.`
-			next_step =
-				"Each unit runs in its own worktree. After all complete, the next wave starts or we advance to review."
+			next_step = isGitRepo()
+				? "Each unit runs in its own worktree. After all complete, the next wave starts or we advance to review."
+				: "After all units complete, the next wave starts or we advance to review."
 			break
 		}
 
@@ -3210,9 +3205,11 @@ function buildRunInstructions(
 					)
 					if (wt) {
 						unitInstrLines.push(`${unitStep++}. Work in worktree: \`${wt}\``)
-						unitInstrLines.push(
-							`${unitStep++}. Commit frequently: \`git add -A && git commit -m "..."\`. Do NOT push.`,
-						)
+						if (isGitRepo()) {
+							unitInstrLines.push(
+								`${unitStep++}. Commit frequently: \`git add -A && git commit -m "..."\`. Do NOT push.`,
+							)
+						}
 					}
 					unitInstrLines.push(
 						`${unitStep++}. Call \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unitName}" }\` when done`,
@@ -3293,7 +3290,7 @@ function buildRunInstructions(
 				)
 				for (const [name, content] of Object.entries(agents)) {
 					sections.push(
-						`#### Subagent: \`${name}\`\n\n<subagent tool="Task">\n## Adversarial Review: ${name}\n\nYou are the "${name}" review agent for stage "${stage}" of intent "${slug}".\n\n## Your Mandate\n\n${content}\n\n## Instructions\n\n1. Run \`git diff main...HEAD\` to get the current diff\n2. Read the stage's output artifacts in \`.haiku/intents/${slug}/stages/${stage}/\`\n3. Review through your mandate's lens\n4. Report findings as: severity (HIGH/MEDIUM/LOW), file, line, description\n5. HIGH findings MUST be fixed before the stage can advance\n</subagent>\n`,
+						`#### Subagent: \`${name}\`\n\n<subagent tool="Task">\n## Adversarial Review: ${name}\n\nYou are the "${name}" review agent for stage "${stage}" of intent "${slug}".\n\n## Your Mandate\n\n${content}\n\n## Instructions\n\n${isGitRepo() ? `1. Run \`git diff ${getMainlineBranch()}...HEAD\` to get the current diff\n2. Read the stage's output artifacts in \`.haiku/intents/${slug}/stages/${stage}/\`\n3. Review through your mandate's lens\n4. Report findings as: severity (HIGH/MEDIUM/LOW), file, line, description\n5. HIGH findings MUST be fixed before the stage can advance` : `1. Read the stage's output artifacts in \`.haiku/intents/${slug}/stages/${stage}/\`\n2. Review through your mandate's lens\n3. Report findings as: severity (HIGH/MEDIUM/LOW), file, line, description\n4. HIGH findings MUST be fixed before the stage can advance`}\n</subagent>\n`,
 					)
 				}
 			}
@@ -3324,9 +3321,16 @@ function buildRunInstructions(
 		}
 
 		case "intent_complete": {
-			sections.push(
-				`## Intent Complete\n\nAll stages are done for intent "${slug}". The orchestrator has marked it as completed.\n\n### Instructions\n\nReport completion summary. Suggest /haiku:gate-review then PR creation.`,
-			)
+			if (isGitRepo()) {
+				const mainline = getMainlineBranch()
+				sections.push(
+					`## Intent Complete\n\nAll stages are done for intent "${slug}". The orchestrator has marked it as completed.\n\n### Instructions\n\n1. Report completion summary to the user\n2. Open ONE merge request from branch \`haiku/${slug}/main\` to \`${mainline}\` for final delivery\n3. Include the H·AI·K·U browse link in the description so reviewers can see the intent, units, and knowledge artifacts\n4. Record the review URL via \`haiku_run_next { intent: "${slug}", external_review_url: "<url>" }\``,
+				)
+			} else {
+				sections.push(
+					`## Intent Complete\n\nAll stages are done for intent "${slug}". The orchestrator has marked it as completed.\n\n### Instructions\n\nReport completion summary to the user.`,
+				)
+			}
 			break
 		}
 
@@ -3413,7 +3417,7 @@ function buildRunInstructions(
 					externalUrl
 						? `The stage is awaiting external review at: ${externalUrl}`
 						: "The stage is awaiting external review but no review URL has been recorded."
-				}\n\nThe orchestrator checks for approval automatically (branch merge detection + URL-based CLI probing). Neither detected approval yet.\n\nInform the user that the stage is waiting on external review. After the review is approved, run \`/haiku:pickup\` to continue.`,
+				}\n\nThe orchestrator checks for approval automatically. Neither detected approval yet.\n\nInform the user that the stage is waiting on external review. After the review is approved, run \`/haiku:pickup\` to continue.`,
 			)
 			break
 		}
@@ -3553,8 +3557,7 @@ export const orchestratorToolDefs = [
 				intent: { type: "string", description: "Intent slug" },
 				external_review_url: {
 					type: "string",
-					description:
-						"URL where stage was submitted for external review (PR, MR, etc.)",
+					description: "URL where stage was submitted for external review",
 				},
 			},
 			required: ["intent"],
@@ -3940,8 +3943,9 @@ export async function handleOrchestratorTool(
 						intent: slug,
 						stage,
 						feedback: reviewResult.feedback,
-						message:
-							"External review requested. Submit the work for review through your project's review process (PR, MR, review board, etc.). Include the H·AI·K·U browse link in the description so reviewers can see the intent, units, and knowledge artifacts. Record the review URL via haiku_run_next { intent, external_review_url }. Run /haiku:pickup again after approval.",
+						message: isGitRepo()
+							? `External review requested. Open ONE merge request from branch 'haiku/${slug}/${stage}' to 'haiku/${slug}/main'. Do NOT open separate MRs for individual units — all unit work is already merged into the stage branch. Include the H·AI·K·U browse link in the description so reviewers can see the intent, units, and knowledge artifacts. Record the review URL via haiku_run_next { intent, external_review_url }. Run /haiku:pickup again after approval.`
+							: `External review requested. Submit the work for review through your project's review process. Record the review URL via haiku_run_next { intent, external_review_url }. Run /haiku:pickup again after approval.`,
 					}
 					return text(withInstructions(gateResult))
 				}
