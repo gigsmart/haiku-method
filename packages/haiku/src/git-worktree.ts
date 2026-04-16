@@ -724,6 +724,7 @@ export function mergeUnitWorktree(
 
 		tryRun(["git", "worktree", "remove", worktreePath, "--force"])
 		tryRun(["git", "branch", "-d", unitBranch])
+		tryRun(["git", "push", "origin", "--delete", unitBranch])
 
 		if (pushFailed) {
 			return {

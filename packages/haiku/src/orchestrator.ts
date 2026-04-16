@@ -1672,17 +1672,13 @@ export function runNext(slug: string): OrchestratorAction {
 		const nextStage =
 			stageIdx < studioStages.length - 1 ? studioStages[stageIdx + 1] : null
 
-		// Use the intent's declared mode (not effective branch mode) to determine gate UI.
-		// A continuous intent with PR-isolated external-review stages should still show
-		// the stage's full gate options, not be forced to external-only.
-		const intentMode = (intent.mode as string) || "continuous"
 		const gitAvailable = isGitRepo()
 
 		// Auto gates: advance without user interaction.
 		// "auto" review type means the studio author trusts the FSM to advance
-		// without human approval. In continuous/hybrid mode, skip the gate UI
-		// entirely. Discrete mode always uses external review (PR per stage).
-		if (reviewType === "auto" && intentMode !== "discrete") {
+		// without human approval. Skip the gate UI entirely regardless of mode —
+		// discrete mode affects branching strategy, not review type semantics.
+		if (reviewType === "auto") {
 			emitTelemetry("haiku.gate.auto_advanced", {
 				intent: slug,
 				stage: currentStage,
@@ -1721,9 +1717,6 @@ export function runNext(slug: string): OrchestratorAction {
 				.filter((t) => t !== "external")
 				.join(",")
 			effectiveGateType = remaining || "ask"
-		} else if (intentMode === "discrete") {
-			// Pure discrete intent: always submit for external review (PR per stage)
-			effectiveGateType = "external"
 		} else if (reviewType === "ask") {
 			effectiveGateType = "ask"
 		} else if (reviewType === "await") {
@@ -3785,7 +3778,7 @@ export async function handleOrchestratorTool(
 						stage,
 						feedback: reviewResult.feedback,
 						message:
-							"External review requested. Submit the work for review through your project's review process (PR, MR, review board, etc.). Include the H·AI·K·U browse link in the description so reviewers can see the intent, units, and knowledge artifacts. Record the review URL via haiku_run_next { intent, external_review_url }. Run /haiku:pickup again after approval.",
+							`External review requested. Open ONE merge request from branch 'haiku/${slug}/${stage}' to 'haiku/${slug}/main'. Do NOT open separate MRs for individual units — all unit work is already merged into the stage branch. Include the H·AI·K·U browse link in the description so reviewers can see the intent, units, and knowledge artifacts. Record the review URL via haiku_run_next { intent, external_review_url }. Run /haiku:pickup again after approval.`,
 					}
 					return text(withInstructions(gateResult))
 				}
