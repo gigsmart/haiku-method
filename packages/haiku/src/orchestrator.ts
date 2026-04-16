@@ -1442,7 +1442,7 @@ export function runNext(slug: string): OrchestratorAction {
 
 		// All units valid — either auto-advance or open review gate before execution.
 		//
-		// For stages with review: auto (and non-discrete mode), skip the gate
+		// For stages with review: auto, skip the gate
 		// entirely and advance directly to execution. This is critical for
 		// autonomous workflows where the user should not be interrupted.
 		//
