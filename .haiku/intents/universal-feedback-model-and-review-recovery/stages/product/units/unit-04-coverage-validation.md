@@ -1,13 +1,21 @@
 ---
 title: Coverage validation and gap closure
 type: spec
-depends_on: [unit-01-acceptance-criteria, unit-02-behavioral-specs, unit-03-data-contracts]
+depends_on:
+  - unit-01-acceptance-criteria
+  - unit-02-behavioral-specs
+  - unit-03-data-contracts
 quality_gates: []
 inputs:
   - knowledge/ACCEPTANCE-CRITERIA.md
   - knowledge/DATA-CONTRACTS.md
   - knowledge/COVERAGE-MAPPING.md
   - knowledge/IMPLEMENTATION-MAP.md
+status: active
+bolt: 1
+hat: product
+started_at: '2026-04-16T14:45:45Z'
+hat_started_at: '2026-04-16T14:45:45Z'
 ---
 
 # Coverage Validation and Gap Closure
