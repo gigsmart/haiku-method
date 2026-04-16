@@ -12,9 +12,9 @@ inputs:
   - features/feedback-crud.feature
 status: active
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-16T15:22:43Z'
-hat_started_at: '2026-04-16T15:27:38Z'
+hat_started_at: '2026-04-16T15:28:11Z'
 ---
 
 # CRUD Companion Tools
