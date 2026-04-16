@@ -10,9 +10,9 @@ inputs:
   - knowledge/IMPLEMENTATION-MAP.md
 status: active
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-16T15:07:31Z'
-hat_started_at: '2026-04-16T15:11:21Z'
+hat_started_at: '2026-04-16T15:11:52Z'
 ---
 
 # Rename Sentry Tool
