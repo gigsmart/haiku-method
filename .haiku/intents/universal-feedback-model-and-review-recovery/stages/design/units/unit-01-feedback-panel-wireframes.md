@@ -9,9 +9,9 @@ inputs:
   - stages/design/DESIGN-BRIEF.md
 status: active
 bolt: 1
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-16T12:49:03Z'
-hat_started_at: '2026-04-16T12:49:03Z'
+hat_started_at: '2026-04-16T12:56:51Z'
 outputs:
   - stages/design/artifacts/feedback-inline-desktop.html
   - stages/design/artifacts/feedback-inline-mobile.html
