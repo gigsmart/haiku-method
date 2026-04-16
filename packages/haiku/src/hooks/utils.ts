@@ -158,7 +158,10 @@ export function readFrontmatterStringList(
 	if (!m) return []
 	const inner = m[1]?.trim()
 	if (!inner) return []
-	return inner.split(",").map((s) => s.trim()).filter(Boolean)
+	return inner
+		.split(",")
+		.map((s) => s.trim())
+		.filter(Boolean)
 }
 
 /**

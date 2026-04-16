@@ -87,26 +87,24 @@ export async function enforceIteration(
 	let inProgressCount = 0
 
 	// Check unit-level status for the "session exhausted" / "blocked" messages
-	{
-		for (const uf of unitFiles) {
-			const unitStatus = readFrontmatterField(uf, "status") || "pending"
-			switch (unitStatus) {
-				case "completed":
-					break
-				case "active":
-				case "in_progress":
-					inProgressCount++
-					break
-				case "blocked":
-					break
-				case "pending": {
-					// Check if dependencies are satisfied to determine if "ready"
-					readyCount++ // simplified: count pending as ready for now
-					break
-				}
-				default:
-					break
+	for (const uf of unitFiles) {
+		const unitStatus = readFrontmatterField(uf, "status") || "pending"
+		switch (unitStatus) {
+			case "completed":
+				break
+			case "active":
+			case "in_progress":
+				inProgressCount++
+				break
+			case "blocked":
+				break
+			case "pending": {
+				// Check if dependencies are satisfied to determine if "ready"
+				readyCount++ // simplified: count pending as ready for now
+				break
 			}
+			default:
+				break
 		}
 	}
 
