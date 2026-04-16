@@ -18,6 +18,8 @@ bolt: 1
 hat: reviewer
 started_at: '2026-04-16T15:47:57Z'
 hat_started_at: '2026-04-16T16:03:10Z'
+outputs:
+  - stages/development/artifacts/unit-05-orchestrator-integration.md
 ---
 
 # Orchestrator Integration
