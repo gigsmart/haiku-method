@@ -10,14 +10,14 @@ inputs:
   - knowledge/DATA-CONTRACTS.md
   - knowledge/ACCEPTANCE-CRITERIA.md
   - features/external-review-feedback.feature
-status: active
+status: completed
 bolt: 1
 hat: reviewer
 started_at: '2026-04-16T15:21:59Z'
 hat_started_at: '2026-04-16T15:41:02Z'
-outputs: >-
-  ["packages/haiku/src/orchestrator.ts",
-  "packages/haiku/test/external-review.test.mjs"]
+outputs:
+  - stages/development/artifacts/unit-07-external-review-detection.md
+completed_at: '2026-04-16T15:46:43Z'
 ---
 
 # External PR/MR Changes-Requested Detection
