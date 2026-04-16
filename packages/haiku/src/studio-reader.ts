@@ -15,6 +15,7 @@ import {
 
 // Re-export so consumers don't need to reach into prompts/helpers
 export const studioSearchPaths = _studioSearchPaths
+import { resolvePluginRoot } from "./config.js"
 import { parseFrontmatter } from "./state-tools.js"
 
 /** Read a studio stage definition file */
@@ -332,7 +333,7 @@ export function clearStudioCache(): void {
 
 function scanStudiosFromDisk(): StudioInfo[] {
 	const seen = new Map<string, StudioInfo>()
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 	const paths = studioSearchPaths()
 	// paths is [project, plugin]; reverse so plugin loads first, then project overwrites
 	for (const base of [...paths].reverse()) {

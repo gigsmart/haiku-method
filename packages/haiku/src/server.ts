@@ -166,15 +166,29 @@ const server = new Server(
 	},
 )
 
+import { getCapabilities, isClaudeCode } from "./harness.js"
 import {
 	handleOrchestratorTool,
 	orchestratorToolDefs,
 	setElicitInputHandler,
 	setOpenReviewHandler,
 } from "./orchestrator.js"
-// Prompts migrated to skills (plugin/skills/) — prompt handlers kept for protocol compatibility
+// Prompts: for Claude Code, skills are native; for other harnesses, we bridge
+// skills → MCP prompts so they surface as invocable actions.
 import { completeArgument, getPrompt, listPrompts } from "./prompts/index.js"
+import { registerSkillPrompts } from "./prompts/skill-bridge.js"
 import { handleStateTool, stateToolDefs } from "./state-tools.js"
+
+// Bridge skills to MCP prompts for harnesses that lack native skill support.
+// For Claude Code this is a no-op (skills are native). For Gemini CLI, prompts
+// surface as slash commands. For Cursor/Windsurf/Kiro, prompts appear in the
+// prompt UI. For OpenCode, prompts support is partial but growing.
+if (!isClaudeCode()) {
+	const caps = getCapabilities()
+	if (caps.mcpPrompts) {
+		registerSkillPrompts()
+	}
+}
 
 server.setRequestHandler(ListPromptsRequestSchema, async () => ({
 	prompts: listPrompts(),
@@ -188,9 +202,10 @@ server.setRequestHandler(CompleteRequestSchema, async (request) => {
 	return completeArgument(request.params)
 })
 
-// List tools
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-	tools: [
+// List tools — filtered by harness capabilities
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+	const caps = getCapabilities()
+	const allTools = [
 		// Orchestration tools
 		...orchestratorToolDefs,
 		// State management tools
@@ -370,8 +385,35 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 				required: ["message"],
 			},
 		},
-	],
-}))
+	]
+
+	// Harness-aware tool filtering:
+	// 1. Remove browser-based UI tools for headless/non-browser harnesses
+	// 2. Respect maxTools limit for constrained harnesses (Cursor ~40, Windsurf 100)
+	let filteredTools = allTools
+
+	// Step 1: Remove browser-based UI tools for non-Claude harnesses.
+	// These tools open a local HTTP server + browser window which won't work
+	// in headless IDE environments. Removing them frees tool slots for harnesses
+	// with tight limits (Cursor ~40).
+	if (!isClaudeCode()) {
+		const browserTools = new Set([
+			"ask_user_visual_question",
+			"pick_design_direction",
+		])
+		filteredTools = filteredTools.filter((t) => !browserTools.has(t.name))
+	}
+
+	// Step 2: Enforce tool count limit
+	if (caps.maxTools !== null && filteredTools.length > caps.maxTools) {
+		console.error(
+			`[haiku] Harness tool limit (${caps.maxTools}) exceeded — exposing ${caps.maxTools} of ${filteredTools.length} tools`,
+		)
+		filteredTools = filteredTools.slice(0, caps.maxTools)
+	}
+
+	return { tools: filteredTools }
+})
 
 // Call tools — wrapped to trigger hot-swap after response when an update is staged
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -951,7 +993,10 @@ setElicitInputHandler(async (params) => {
 async function main() {
 	const transport = new StdioServerTransport()
 	await server.connect(transport)
-	console.error("H·AI·K·U Review MCP server running on stdio")
+	const harnessInfo = isClaudeCode()
+		? ""
+		: ` (harness: ${getCapabilities().displayName})`
+	console.error(`H·AI·K·U Review MCP server running on stdio${harnessInfo}`)
 
 	// Start background auto-update checker after the server is live
 	startUpdateChecker()

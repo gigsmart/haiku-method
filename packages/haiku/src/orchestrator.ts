@@ -19,7 +19,7 @@ import {
 } from "node:fs"
 import { join, resolve } from "node:path"
 import matter from "gray-matter"
-import { features } from "./config.js"
+import { features, resolvePluginRoot } from "./config.js"
 import { computeWaves, topologicalSort } from "./dag.js"
 import {
 	branchExists,
@@ -33,10 +33,17 @@ import {
 	mergeStageBranchForward,
 	mergeStageBranchIntoMain,
 } from "./git-worktree.js"
+import { adaptInstructions } from "./harness-instructions.js"
+import { getCapabilities } from "./harness.js"
 import { type ModelTier, resolveModel } from "./model-selection.js"
 import { validateIdentifier, validateSlugArgs } from "./prompts/helpers.js"
 import { reportError } from "./sentry.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
+import {
+	sanitizeForContext,
+	sealIntentState,
+	verifyIntentState,
+} from "./state-integrity.js"
 import {
 	findHaikuRoot,
 	gitCommitState,
@@ -83,7 +90,7 @@ function resolveStudioStages(studio: string): string[] {
 	// for robustness with legacy callers that pass a dir name already.
 	const info = resolveStudio(studio)
 	if (info) return info.stages
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
@@ -102,7 +109,7 @@ function resolveStageHats(studio: string, stage: string): string[] {
 	// for robustness when the studio cache isn't warm yet.
 	const info = resolveStudio(studio)
 	const dir = info ? info.dir : studio
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
@@ -121,7 +128,7 @@ function resolveStageReview(studio: string, stage: string): string {
 	// for robustness when the studio cache isn't warm yet.
 	const info = resolveStudio(studio)
 	const dir = info ? info.dir : studio
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
@@ -156,7 +163,7 @@ function stageReviewIncludes(
 ): boolean {
 	const info = resolveStudio(studio)
 	const dir = info ? info.dir : studio
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
@@ -180,7 +187,7 @@ function resolveStageMetadata(
 	// for robustness when the studio cache isn't warm yet.
 	const info = resolveStudio(studio)
 	const dir = info ? info.dir : studio
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 	for (const base of [
 		join(process.cwd(), ".haiku", "studios"),
 		join(pluginRoot, "studios"),
@@ -286,7 +293,7 @@ function validateStageOutputs(
 	stage: string,
 	studio: string,
 ): OrchestratorAction | null {
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 
 	// Read output definitions from the stage's outputs/ directory
 	for (const base of [
@@ -434,7 +441,7 @@ function validateDiscoveryArtifacts(
 	stage: string,
 	studio: string,
 ): OrchestratorAction | null {
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 
 	// Read discovery definitions from the stage's discovery/ directory
 	for (const base of [
@@ -880,6 +887,7 @@ function fsmStartStage(slug: string, stage: string): void {
 
 	emitTelemetry("haiku.stage.started", { intent: slug, stage })
 	gitCommitState(`haiku: start stage ${stage}`)
+	sealIntentState(slug)
 }
 
 function fsmAdvancePhase(slug: string, stage: string, toPhase: string): void {
@@ -888,6 +896,7 @@ function fsmAdvancePhase(slug: string, stage: string, toPhase: string): void {
 	data.phase = toPhase
 	writeJson(path, data)
 	emitTelemetry("haiku.stage.phase", { intent: slug, stage, phase: toPhase })
+	sealIntentState(slug)
 }
 
 function fsmCompleteStage(
@@ -907,6 +916,7 @@ function fsmCompleteStage(
 		gate_outcome: gateOutcome,
 	})
 	gitCommitState(`haiku: complete stage ${stage}`)
+	sealIntentState(slug)
 }
 
 function fsmAdvanceStage(
@@ -922,6 +932,11 @@ function fsmAdvanceStage(
 	if (existsSync(intentFile)) {
 		setFrontmatterField(intentFile, "active_stage", nextStage)
 	}
+
+	// Reseal: fsmCompleteStage sealed against active_stage=currentStage;
+	// we just rewrote active_stage, so the prior checksum is now stale and
+	// the next verifyIntentState() would false-positive as tampering.
+	sealIntentState(slug)
 }
 
 function fsmGateAsk(slug: string, stage: string): void {
@@ -931,6 +946,7 @@ function fsmGateAsk(slug: string, stage: string): void {
 	data.gate_entered_at = timestamp()
 	writeJson(path, data)
 	emitTelemetry("haiku.gate.entered", { intent: slug, stage })
+	sealIntentState(slug)
 }
 
 function fsmIntentComplete(slug: string): void {
@@ -941,6 +957,7 @@ function fsmIntentComplete(slug: string): void {
 	}
 	emitTelemetry("haiku.intent.completed", { intent: slug })
 	gitCommitState(`haiku: complete intent ${slug}`)
+	sealIntentState(slug)
 }
 
 // ── Main orchestration function ────────────────────────────────────────────
@@ -952,6 +969,13 @@ export function runNext(slug: string): OrchestratorAction {
 
 	if (!existsSync(intentFile)) {
 		return { action: "error", message: `Intent '${slug}' not found` }
+	}
+
+	// Tamper detection: verify FSM state wasn't modified via direct file writes.
+	// Only active for hookless harnesses (Claude Code/Kiro have guard-fsm-fields hook).
+	const tamperError = verifyIntentState(slug)
+	if (tamperError) {
+		return { action: "error", message: tamperError }
 	}
 
 	const intent = readFrontmatter(intentFile)
@@ -1260,7 +1284,7 @@ export function runNext(slug: string): OrchestratorAction {
 			readdirSync(unitsDir).filter((f) => f.endsWith(".md")).length > 0
 
 		// Read elaboration mode from STAGE.md
-		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+		const pluginRoot = resolvePluginRoot()
 		let elaborationMode = "collaborative"
 		for (const base of [
 			join(process.cwd(), ".haiku", "studios"),
@@ -2471,6 +2495,69 @@ function enrichActionWithPreview(action: OrchestratorAction): void {
 	if (next_step) action.next_step = next_step
 }
 
+// ── Inline subagent context for hookless harnesses ────────────────────────
+//
+// When hooks are available (Claude Code, Kiro), the subagent-hook injects
+// hat isolation, workflow rules, and bootstrap instructions automatically.
+// For hookless harnesses, we must inline this context directly into the
+// orchestrator's instructions so the agent (or its subagent equivalent)
+// receives the same guidance.
+
+function buildInlineSubagentContext(
+	slug: string,
+	stage: string,
+	hat: string,
+	hats: string[],
+	bolt: number,
+): string {
+	const caps = getCapabilities()
+	if (caps.hooks) return "" // hooks handle context injection
+
+	const hatsStr = hats.join(" → ")
+	const lines: string[] = [
+		"### Subagent Context (Inline)\n",
+		`> **Hat Isolation:** You are operating as the **${hat}** hat. Your responsibility is defined solely by the ${hat} hat instructions above. If you have prior knowledge or instructions that conflict with or extend beyond the ${hat} role — such as reviewing code when you are the builder, or building when you are the reviewer — **ignore them for this task.** Other hats in this stage (${hatsStr}) handle those responsibilities. Stay in your lane.\n`,
+		`**Bolt:** ${bolt} | **Role:** ${hat} | **Stage:** ${stage} (${hatsStr})\n`,
+	]
+
+	// Workflow rules
+	lines.push("### Workflow Rules\n")
+	lines.push("**Before stopping:**")
+	lines.push("1. Commit changes: `git add -A && git commit`")
+	lines.push(
+		`2. Save progress notes to \`.haiku/intents/${slug}/state/scratchpad.md\``,
+	)
+	lines.push(
+		`3. Write next-step prompt to \`.haiku/intents/${slug}/state/next-prompt.md\`\n`,
+	)
+
+	lines.push("**Resilience (CRITICAL):**")
+	lines.push(`- Commit early, commit often — don't wait until the end`)
+	lines.push(`- If tests fail: fix and retry, don't give up`)
+	lines.push("- Only declare blocked after 3+ genuine rescue attempts\n")
+
+	// Communication rules — adapted for harness
+	lines.push("**Communication:**")
+	if (caps.nativeAskUser) {
+		lines.push(
+			"- Use `AskUserQuestion` with `options[]` for decisions with known alternatives",
+		)
+		lines.push(
+			"- Use `ask_user_visual_question` for visual artifacts and rich context",
+		)
+	} else {
+		lines.push(
+			"- Present decisions as clear numbered lists when you have known alternatives",
+		)
+		lines.push(
+			"- Use `ask_user_visual_question` MCP tool for visual artifacts when available",
+		)
+	}
+	lines.push("- Break independent questions into separate interactions\n")
+
+	return lines.join("\n")
+}
+
 // ── Run instruction builder ───────────────────────────────────────────────
 
 function buildRunInstructions(
@@ -2584,7 +2671,7 @@ function buildRunInstructions(
 						sections.push(
 							`### ${r.stage}/${r.artifactName} (${r.kind})\n` +
 								`**Path:** \`${relPath}\`\n\n` +
-								`${r.content?.slice(0, 3000) ?? ""}${(r.content?.length ?? 0) > 3000 ? "\n...(truncated)" : ""}`,
+								`${sanitizeForContext(r.content?.slice(0, 3000) ?? "", `upstream input: ${r.stage}/${r.artifactName}`)}${(r.content?.length ?? 0) > 3000 ? "\n...(truncated)" : ""}`,
 						)
 					}
 					// Build ref paths for unit creation guidance
@@ -2733,6 +2820,7 @@ function buildRunInstructions(
 			const stage = action.stage as string
 			const unit = (action.unit as string) || ""
 			const hat = (action.hat as string) || (action.first_hat as string) || ""
+			const hats = (action.hats as string[]) || []
 			const bolt = (action.bolt as number) || 1
 			const stageDef = readStageDef(studio, stage)
 
@@ -2794,8 +2882,12 @@ function buildRunInstructions(
 				subagentParts.push(`## Execution Focus\n\n${executionOverride.body}`)
 			}
 
-			subagentParts.push(`## Unit Spec\n\n${unitContent}`)
-			subagentParts.push(`## Your Role: ${hat}\n\n${hatContent}`)
+			subagentParts.push(
+				`## Unit Spec\n\n${sanitizeForContext(unitContent, `unit spec: ${unit}`)}`,
+			)
+			subagentParts.push(
+				`## Your Role: ${hat}\n\n${sanitizeForContext(hatContent, `hat definition: ${hat}`)}`,
+			)
 
 			// Output requirements
 			{
@@ -2855,57 +2947,80 @@ function buildRunInstructions(
 						upstreamParts.push(
 							`### ${r.stage}/${r.artifactName}\n` +
 								`**Path:** \`${relPath}\`\n\n` +
-								`${r.content?.slice(0, 2000) ?? ""}${(r.content?.length ?? 0) > 2000 ? "\n...(truncated)" : ""}`,
+								`${sanitizeForContext(r.content?.slice(0, 2000) ?? "", `upstream input: ${r.stage}/${r.artifactName}`)}${(r.content?.length ?? 0) > 2000 ? "\n...(truncated)" : ""}`,
 						)
 					}
 					subagentParts.push(upstreamParts.join("\n\n"))
 				}
 			}
 
-			// Instructions for the subagent
+			// Mechanics — one subagent per hat (or direct execution for subagentless harnesses)
 			const worktreePath = (action.worktree as string) || ""
-			const instrLines: string[] = ["## Instructions", ""]
-			let step = 1
-			if (action.action === "start_unit") {
+			const unitCaps = getCapabilities()
+
+			// For hookless harnesses, inline the subagent context that would
+			// normally be injected by the subagent-hook PreToolUse handler.
+			// Subagent-capable → goes inside the <subagent> block.
+			// Subagentless → goes in parent sections (parent IS the executor).
+			const inlineCtx = buildInlineSubagentContext(slug, stage, hat, hats, bolt)
+
+			if (unitCaps.subagents.supported) {
+				if (inlineCtx) subagentParts.push(inlineCtx)
+				// ── Subagent-capable: use <subagent> tag format ──
+				const instrLines: string[] = ["## Instructions", ""]
+				let step = 1
+				if (action.action === "start_unit") {
+					instrLines.push(
+						`${step++}. Call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\``,
+					)
+				}
+				if (worktreePath) {
+					instrLines.push(`${step++}. Work in worktree: \`${worktreePath}\``)
+					instrLines.push(
+						`${step++}. Commit frequently: \`git add -A && git commit -m "..."\`. Do NOT push.`,
+					)
+				}
 				instrLines.push(
-					`${step++}. Call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\``,
+					`${step++}. When done: call \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\``,
+					`${step++}. If blocked: call \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\``,
+					`${step++}. Track outputs in unit frontmatter \`outputs:\` field`,
+					`${step++}. Use \`ask_user_visual_question\` for visual artifacts — do NOT open files in a browser`,
+					`${step++}. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
+					"",
+					"**Autonomy (CRITICAL):** You are a subagent executing one unit — do your work without asking the user to confirm each step. In particular, do **NOT** ask:",
+					"- Whether to continue past a gate, advance a hat, or call the next tool — just call it.",
+					"- Whether to commit, which branch to use, or whether to push — follow the worktree instructions above.",
+					"- For confirmation after showing a summary — the gate (or lack thereof) is the confirmation mechanism.",
+					"",
+					"**When you genuinely must ask** (unblock-only — truly ambiguous requirements, missing external context that stops work):",
+					"- Use `AskUserQuestion` with an `options[]` array when alternatives are known — never plain-text option lists.",
+					"- Use `ask_user_visual_question` for visual artifacts, wireframes, or multi-question decisions that need rich markdown/images.",
+					"- Break independent questions into separate calls.",
+					'- Always pre-populate options; include "Other (let me specify)" when the list may not be exhaustive.',
+				)
+				subagentParts.push(instrLines.join("\n"))
+
+				// Push the subagent block
+				sections.push(
+					`## Subagent Dispatch (MANDATORY — relay verbatim)\n\n<subagent tool="Agent" type="${hatAgentType}"${resolvedModel ? ` model="${resolvedModel}"` : ""}>\n${subagentParts.join("\n\n")}\n</subagent>`,
+				)
+
+				// Parent-only instructions OUTSIDE the tag
+				sections.push(
+					"### Parent Instructions (do NOT include in subagent prompt)\n\nAfter subagent returns: The `advance_hat` result contains the next FSM action — spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately.",
+				)
+			} else {
+				// ── Subagentless: direct execution in current context ──
+				if (inlineCtx) sections.push(inlineCtx)
+				const activeStageForUnit = (action.stage as string) || ""
+				sections.push(
+					`### Mechanics (Direct Execution)\n\n**Execute the "${hat}" hat work directly** — your harness does not support subagents.\n\n${
+						action.action === "start_unit"
+							? `1. Call \`haiku_unit_start { intent: "${slug}", unit: "${unit}" }\`\n`
+							: ""
+					}2. Follow the hat definition and unit spec above\n3. Stay within the stage scope — do not produce outputs belonging to other stages\n${worktreePath ? `4. **Git discipline:** Commit work frequently (\`git add -A && git commit -m "..."\`)\n` : ""}\n**Output tracking (MANDATORY):**\nYour harness does not auto-track file writes. When you create or modify files as part of this unit's work, you MUST register them as outputs. After writing each artifact, call:\n\`\`\`\nhaiku_unit_set { intent: "${slug}", stage: "${activeStageForUnit}", unit: "${unit}", field: "outputs", value: "<comma-separated paths relative to intent dir>" }\n\`\`\`\nThe FSM validates that declared outputs exist before allowing hat advancement. If you forget to track outputs, \`haiku_unit_advance_hat\` will fail.\n\n**When done, call one of:**\n- **Success:** \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\`\n- **Failure:** \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\`\n\nThe \`advance_hat\` result tells you what to do next (next hat, next unit, or phase advance). Follow it directly.\n\n**If outputs from a previous stage are missing:** call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage.`,
 				)
 			}
-			if (worktreePath) {
-				instrLines.push(`${step++}. Work in worktree: \`${worktreePath}\``)
-				instrLines.push(
-					`${step++}. Commit frequently: \`git add -A && git commit -m "..."\`. Do NOT push.`,
-				)
-			}
-			instrLines.push(
-				`${step++}. When done: call \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\``,
-				`${step++}. If blocked: call \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\``,
-				`${step++}. Track outputs in unit frontmatter \`outputs:\` field`,
-				`${step++}. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
-				"",
-				"**Autonomy (CRITICAL):** You are in the execution phase. Elaboration is over — the plan is set. Execute the work without asking the user to confirm or approve each step. In particular, do **NOT** ask:",
-				"- Which unit to run next, or in what order — the FSM decides.",
-				"- Whether to continue past a gate, advance a hat, or start the next unit — just call the tool.",
-				"- Whether to commit, which branch to use, or whether to push — follow the worktree instructions above.",
-				"- For confirmation after showing a summary — the gate (or lack thereof) is the confirmation mechanism.",
-				"",
-				"**When you genuinely must ask** (unblock-only — truly ambiguous requirements, missing external context that stops work):",
-				"- Use `AskUserQuestion` with an `options[]` array when alternatives are known — never plain-text option lists.",
-				"- Use `ask_user_visual_question` for visual artifacts, wireframes, or multi-question decisions that need rich markdown/images.",
-				"- Break independent questions into separate calls.",
-				'- Always pre-populate options; include "Other (let me specify)" when the list may not be exhaustive.',
-			)
-			subagentParts.push(instrLines.join("\n"))
-
-			// Push the subagent block
-			sections.push(
-				`## Subagent Dispatch (MANDATORY — relay verbatim)\n\n<subagent tool="Agent" type="${hatAgentType}"${resolvedModel ? ` model="${resolvedModel}"` : ""}>\n${subagentParts.join("\n\n")}\n</subagent>`,
-			)
-
-			// Parent-only instructions OUTSIDE the tag
-			sections.push(
-				"### Parent Instructions (do NOT include in subagent prompt)\n\nAfter subagent returns: The `advance_hat` result contains the next FSM action — spawn a new subagent for the next hat, or proceed with the returned action. Do NOT call haiku_run_next separately.",
-			)
 
 			// Check for ticketing provider — move ticket to "In Progress"
 			if (action.action === "start_unit") {
@@ -2986,6 +3101,24 @@ function buildRunInstructions(
 				if (outputReqs) sharedParts.push(outputReqs)
 			}
 
+			// For hookless harnesses, inline the subagent context.
+			// Subagent-capable → goes into sharedParts so it lands inside each
+			// <subagent> block. Subagentless → goes into parent sections below.
+			const inlineCtxParallel = buildInlineSubagentContext(
+				slug,
+				stage,
+				firstHat,
+				hats,
+				1,
+			)
+			const parallelCaps = getCapabilities()
+			// Subagent-capable: embed inline in sharedParts so it lands inside
+			// each <subagent> block. Subagentless: handled below in the else
+			// branch so it lands adjacent to the sequential execution mechanics.
+			if (inlineCtxParallel && parallelCaps.subagents.supported) {
+				sharedParts.push(inlineCtxParallel)
+			}
+
 			// Upstream stage inputs — build once, embed in each subagent
 			if (stageDef?.data?.inputs && Array.isArray(stageDef.data.inputs)) {
 				const inputs = stageDef.data.inputs as Array<{
@@ -3006,7 +3139,7 @@ function buildRunInstructions(
 						upstreamParts.push(
 							`### ${r.stage}/${r.artifactName}\n` +
 								`**Path:** \`${relPath}\`\n\n` +
-								`${r.content?.slice(0, 2000) ?? ""}${(r.content?.length ?? 0) > 2000 ? "\n...(truncated)" : ""}`,
+								`${sanitizeForContext(r.content?.slice(0, 2000) ?? "", `upstream input: ${r.stage}/${r.artifactName}`)}${(r.content?.length ?? 0) > 2000 ? "\n...(truncated)" : ""}`,
 						)
 					}
 					sharedParts.push(upstreamParts.join("\n\n"))
@@ -3019,94 +3152,115 @@ function buildRunInstructions(
 			const wave = action.wave as number | undefined
 			const totalWaves = action.total_waves as number | undefined
 
-			sections.push(
-				`## Parallel Execution: ${units.length} units in ${stage}${wave !== undefined ? ` — Wave ${wave}/${totalWaves ?? "?"}` : ""}`,
-			)
-
-			// Per-unit subagent blocks — each self-contained
-			for (const unitName of units) {
-				const unitFile = join(
-					dir,
-					"stages",
-					stage,
-					"units",
-					unitName.endsWith(".md") ? unitName : `${unitName}.md`,
+			if (parallelCaps.subagents.supported) {
+				// ── Subagent-capable harness: per-unit <subagent> blocks ──
+				sections.push(
+					`## Parallel Execution: ${units.length} units in ${stage}${wave !== undefined ? ` — Wave ${wave}/${totalWaves ?? "?"}` : ""}`,
 				)
-				let unitContent = ""
-				let unitInputs: string[] = []
-				if (existsSync(unitFile)) {
-					const { data, body } = parseFrontmatter(
-						readFileSync(unitFile, "utf8"),
-					)
-					unitContent = body
-					unitInputs =
-						(data.inputs as string[]) || (data.refs as string[]) || []
-				}
 
-				// Build unit-specific input content
-				let inputContent = ""
-				if (unitInputs.length > 0) {
-					const dirResolved = resolve(dir)
-					const inputParts: string[] = []
-					for (const ref of unitInputs) {
-						const refResolved = resolve(dir, ref)
-						if (
-							!refResolved.startsWith(`${dirResolved}/`) &&
-							refResolved !== dirResolved
+				// Per-unit subagent blocks — each self-contained
+				for (const unitName of units) {
+					const unitFile = join(
+						dir,
+						"stages",
+						stage,
+						"units",
+						unitName.endsWith(".md") ? unitName : `${unitName}.md`,
+					)
+					let unitContent = ""
+					let unitInputs: string[] = []
+					if (existsSync(unitFile)) {
+						const { data, body } = parseFrontmatter(
+							readFileSync(unitFile, "utf8"),
 						)
-							continue
-						if (existsSync(join(dir, ref))) {
-							const content = readFileSync(join(dir, ref), "utf8")
-							inputParts.push(
-								`### ${ref}\n\n${content.slice(0, 1500)}${content.length > 1500 ? "\n...(truncated)" : ""}`,
+						unitContent = body
+						unitInputs =
+							(data.inputs as string[]) || (data.refs as string[]) || []
+					}
+
+					// Build unit-specific input content
+					let inputContent = ""
+					if (unitInputs.length > 0) {
+						const dirResolved = resolve(dir)
+						const inputParts: string[] = []
+						for (const ref of unitInputs) {
+							const refResolved = resolve(dir, ref)
+							if (
+								!refResolved.startsWith(`${dirResolved}/`) &&
+								refResolved !== dirResolved
 							)
+								continue
+							if (existsSync(join(dir, ref))) {
+								const content = readFileSync(join(dir, ref), "utf8")
+								inputParts.push(
+									`### ${ref}\n\n${sanitizeForContext(content.slice(0, 1500), `unit input: ${ref}`)}${content.length > 1500 ? "\n...(truncated)" : ""}`,
+								)
+							}
+						}
+						if (inputParts.length > 0) {
+							inputContent = `## Inputs\n\n${inputParts.join("\n\n")}`
 						}
 					}
-					if (inputParts.length > 0) {
-						inputContent = `## Inputs\n\n${inputParts.join("\n\n")}`
-					}
-				}
 
-				const wt = worktrees[unitName]
-				const unitInstrLines: string[] = ["## Instructions", ""]
-				let unitStep = 1
-				unitInstrLines.push(
-					`${unitStep++}. Call \`haiku_unit_start { intent: "${slug}", unit: "${unitName}" }\``,
-				)
-				if (wt) {
-					unitInstrLines.push(`${unitStep++}. Work in worktree: \`${wt}\``)
+					const wt = worktrees[unitName]
+					const unitInstrLines: string[] = ["## Instructions", ""]
+					let unitStep = 1
 					unitInstrLines.push(
-						`${unitStep++}. Commit frequently: \`git add -A && git commit -m "..."\`. Do NOT push.`,
+						`${unitStep++}. Call \`haiku_unit_start { intent: "${slug}", unit: "${unitName}" }\``,
+					)
+					if (wt) {
+						unitInstrLines.push(`${unitStep++}. Work in worktree: \`${wt}\``)
+						unitInstrLines.push(
+							`${unitStep++}. Commit frequently: \`git add -A && git commit -m "..."\`. Do NOT push.`,
+						)
+					}
+					unitInstrLines.push(
+						`${unitStep++}. Call \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unitName}" }\` when done`,
+						`${unitStep++}. If blocked: call \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unitName}" }\``,
+						`${unitStep++}. Track outputs in unit frontmatter \`outputs:\` field`,
+						`${unitStep++}. Use \`ask_user_visual_question\` for visual artifacts — do NOT open files in a browser`,
+						`${unitStep++}. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
+						"",
+						"**Autonomy (CRITICAL):** You are one of a parallel wave — execute your unit without asking the user to confirm or approve each step. The FSM coordinates the wave; you coordinate the work. In particular, do **NOT** ask:",
+						"- Which unit runs first, or in what order — the FSM decides.",
+						"- Whether to continue past a gate, advance a hat, or start the next unit — just call the tool.",
+						"- Whether to commit, which branch to use, or whether to push — follow the worktree instructions above.",
+						"- For confirmation after showing a summary — the gate (or lack thereof) is the confirmation mechanism.",
+						"",
+						"**When you genuinely must ask** (unblock-only — truly ambiguous requirements, missing external context that stops work):",
+						"- Use `AskUserQuestion` with an `options[]` array when alternatives are known — never plain-text option lists.",
+						"- Use `ask_user_visual_question` for visual artifacts, wireframes, or multi-question decisions that need rich markdown/images.",
+						"- Break independent questions into separate calls.",
+						'- Always pre-populate options; include "Other (let me specify)" when the list may not be exhaustive.',
+					)
+
+					sections.push(
+						`### Subagent: ${unitName}\n\n<subagent tool="Agent" type="${hatAgentType}"${resolvedModelParallel ? ` model="${resolvedModelParallel}"` : ""}>\n## ${unitName} — hat: ${firstHat}\n\n${sharedContent}\n\n## Unit Spec\n\n${sanitizeForContext(unitContent, `unit spec: ${unitName}`)}${inputContent ? `\n\n${inputContent}` : ""}\n\n${unitInstrLines.join("\n")}\n</subagent>`,
 					)
 				}
-				unitInstrLines.push(
-					`${unitStep++}. Call \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unitName}" }\` when done`,
-					`${unitStep++}. If blocked: call \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unitName}" }\``,
-					`${unitStep++}. Track outputs in unit frontmatter \`outputs:\` field`,
-					`${unitStep++}. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
-					"",
-					"**Autonomy (CRITICAL):** You are one of a parallel wave — execute your unit without asking the user to confirm or approve each step. The FSM coordinates the wave; you coordinate the work. In particular, do **NOT** ask:",
-					"- Which unit runs first, or in what order — the FSM decides.",
-					"- Whether to continue past a gate, advance a hat, or start the next unit — just call the tool.",
-					"- Whether to commit, which branch to use, or whether to push — follow the worktree instructions above.",
-					"- For confirmation after showing a summary — the gate (or lack thereof) is the confirmation mechanism.",
-					"",
-					"**When you genuinely must ask** (unblock-only — truly ambiguous requirements, missing external context that stops work):",
-					"- Use `AskUserQuestion` with an `options[]` array when alternatives are known — never plain-text option lists.",
-					"- Use `ask_user_visual_question` for visual artifacts, wireframes, or multi-question decisions that need rich markdown/images.",
-					"- Break independent questions into separate calls.",
-					'- Always pre-populate options; include "Other (let me specify)" when the list may not be exhaustive.',
-				)
 
+				// Parent instructions
 				sections.push(
-					`### Subagent: ${unitName}\n\n<subagent tool="Agent" type="${hatAgentType}"${resolvedModelParallel ? ` model="${resolvedModelParallel}"` : ""}>\n## ${unitName} — hat: ${firstHat}\n\n${sharedContent}\n\n## Unit Spec\n\n${unitContent}${inputContent ? `\n\n${inputContent}` : ""}\n\n${unitInstrLines.join("\n")}\n</subagent>`,
+					`### Parent Instructions (do NOT include in subagent prompts)\n\n**IMMEDIATELY** spawn ALL subagents above **in a single message** (all Agent tool calls in one response). No questions, no confirmation, no menu.\nEach \`<subagent>\` block is a complete prompt — relay verbatim.\nAfter all subagents return: check the last subagent's \`advance_hat\` result — it contains the next FSM action (next wave, phase advance, etc.). Act on it directly. Do NOT call haiku_run_next separately.`,
+				)
+			} else {
+				// ── Subagentless harness: sequential execution in current context ──
+				// sharedContent carries the stage scope, hat definition, output
+				// requirements, and upstream inputs. In the subagent-capable
+				// branch this is embedded inside each <subagent> block; here the
+				// parent IS the executor, so it must go into sections directly.
+				if (sharedContent) sections.push(sharedContent)
+				if (inlineCtxParallel) sections.push(inlineCtxParallel)
+				const unitList = units
+					.map((u) => {
+						const wt = worktrees[u]
+						return `1. **${u}**${wt ? ` (worktree: \`${wt}\`)` : ""}:\n   - Call \`haiku_unit_start { intent: "${slug}", unit: "${u}" }\`\n   - Execute the "${firstHat}" hat work directly (see hat definition and unit spec)\n   - When done, call \`haiku_unit_advance_hat { intent: "${slug}", unit: "${u}" }\`\n   - If the advance result shows more hats, continue with the next hat for this unit\n   - When all hats complete, move to the next unit`
+					})
+					.join("\n")
+				sections.push(
+					`### Mechanics (Sequential Execution)\n\n${wave !== undefined ? `**Wave ${wave}/${totalWaves ?? "?"}** — ` : ""}${units.length} units to execute.\n\n**Your harness does not support parallel subagents.** Execute each unit sequentially in this conversation. Complete one unit fully (all hats) before starting the next.\n\n**For each unit:**\n${unitList}\n\n**Output tracking:** When your work produces artifacts (files, designs, specs, code), record them in the unit's frontmatter \`outputs:\` field as paths relative to the intent directory.\n\n**If outputs from a previous stage are missing or incorrect:** call \`haiku_revisit { intent: "${slug}" }\` to return to the prior stage for corrections.\n\nAfter completing the last unit: the \`advance_hat\` result contains the next FSM action. Follow it directly.`,
 				)
 			}
-
-			// Parent instructions
-			sections.push(
-				`### Parent Instructions (do NOT include in subagent prompts)\n\n**IMMEDIATELY** spawn ALL subagents above **in a single message** (all Agent tool calls in one response). No questions, no confirmation, no menu.\nEach \`<subagent>\` block is a complete prompt — relay verbatim.\nAfter all subagents return: check the last subagent's \`advance_hat\` result — it contains the next FSM action (next wave, phase advance, etc.). Act on it directly. Do NOT call haiku_run_next separately.`,
-			)
 			break
 		}
 
@@ -3677,9 +3831,11 @@ export async function handleOrchestratorTool(
 				resultObj as OrchestratorAction,
 				intentDir(slug),
 			)
+			// Adapt instructions for the active harness (near-noop for Claude Code)
+			const adapted = adaptInstructions(instructions)
 			// Strip tell_user/next_step from outer JSON — they appear in the announcement section
 			const { tell_user: _tu, next_step: _ns, ...resultForJson } = resultObj
-			return `${JSON.stringify(resultForJson, null, 2)}\n\n---\n\n${instructions}`
+			return `${JSON.stringify(resultForJson, null, 2)}\n\n---\n\n${adapted}`
 		}
 
 		// External review: include instructions about recording the URL
