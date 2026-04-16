@@ -10,13 +10,14 @@ inputs:
   - knowledge/DATA-CONTRACTS.md
   - knowledge/ACCEPTANCE-CRITERIA.md
   - features/feedback-crud.feature
-status: active
+status: completed
 bolt: 1
 hat: reviewer
 started_at: '2026-04-16T15:08:25Z'
 hat_started_at: '2026-04-16T15:14:12Z'
 outputs:
   - stages/development/artifacts/unit-03-rename-notes.md
+completed_at: '2026-04-16T15:15:28Z'
 ---
 
 # Feedback File Helpers and haiku_feedback Tool
