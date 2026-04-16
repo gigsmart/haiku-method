@@ -1,12 +1,18 @@
 ---
 title: Comment to feedback flow design
 type: design
-depends_on: [unit-01-feedback-panel-wireframes]
+depends_on:
+  - unit-01-feedback-panel-wireframes
 quality_gates: []
 inputs:
   - knowledge/DISCOVERY.md
   - knowledge/DESIGN-TOKENS.md
   - stages/design/DESIGN-BRIEF.md
+status: active
+bolt: 1
+hat: designer
+started_at: '2026-04-16T13:01:51Z'
+hat_started_at: '2026-04-16T13:01:51Z'
 ---
 
 # Comment to Feedback Flow Design
