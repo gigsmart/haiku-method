@@ -223,19 +223,15 @@ function resolveStageMetadata(
 // run `/haiku:pickup` after the external review is actually approved.
 
 /**
- * Tier 2 (fallback): URL-based synchronous check if an external review URL
- * has been approved. Supports GitHub PRs (gh) and GitLab MRs (glab). Returns
- * true if approved or merged, false otherwise. Never throws.
+ * Tier 2 (fallback): URL-based synchronous check of external review state.
+ * Supports GitHub PRs (gh) and GitLab MRs (glab). Returns a structured
+ * `ExternalReviewState` so the orchestrator can distinguish approved,
+ * changes-requested, pending, and unknown states.
  *
- * This is the fallback detection path — Tier 1 is branch merge detection via
- * `isBranchMerged()`, which is structural and tamper-resistant.
+ * For GitHub: checks `reviewDecision` (APPROVED / CHANGES_REQUESTED /
+ * REVIEW_REQUIRED) and `state` (MERGED = already accepted).
  *
- * For GitHub: checks both `reviewDecision` (APPROVED = reviews passed) and
- * `state` (MERGED = already accepted). A PR with approved reviews that hasn't
- * been merged yet still passes the gate — the review was approved, which is
- * what the gate cares about.
- *
- * For GitLab: checks both approval status and merge state.
+ * For GitLab: checks approval status, merge state, and non-approved open MRs.
  */
 /**
  * Result from checking external review state.
@@ -1739,6 +1735,115 @@ export function runNext(slug: string): OrchestratorAction {
 				})),
 				message: `${pendingCount} pending feedback item(s) found — rolling back to elaborate. Address all pending feedback before the gate can advance.`,
 			}
+		}
+
+		// ── External review state detection ────────────────────────────────
+		// If this stage was already completed+blocked (external review submitted),
+		// check if the external review state changed (approved / changes_requested)
+		// before opening the gate review UI again.
+		const gateOutcomeInGate = (stageState.gate_outcome as string) || ""
+		if (
+			stageStatus === "completed" &&
+			gateOutcomeInGate === "blocked"
+		) {
+			let extApproved = false
+			let externalState: ExternalReviewState = { status: "unknown" }
+			const externalUrl =
+				(stageState.external_review_url as string) || ""
+
+			// Tier 1: Branch merge detection
+			if (isGitRepo()) {
+				const stageBranch = `haiku/${slug}/${currentStage}`
+				const mainline = `haiku/${slug}/main`
+				if (isBranchMerged(stageBranch, mainline)) {
+					extApproved = true
+				}
+			}
+
+			// Tier 2: URL-based CLI probing
+			if (!extApproved && externalUrl) {
+				externalState = checkExternalState(externalUrl)
+				if (externalState.status === "approved") {
+					extApproved = true
+				}
+			}
+
+			if (extApproved) {
+				const statePath = stageStatePath(slug, currentStage)
+				const stateData = readJson(statePath)
+				stateData.gate_outcome = "advanced"
+				writeJson(statePath, stateData)
+				emitTelemetry("haiku.gate.resolved", {
+					intent: slug,
+					stage: currentStage,
+					gate_type: "external",
+					outcome: "approved",
+				})
+				// Fall through to advance logic (auto-gate or non-auto gate
+				// will see gate_outcome "advanced" and advance the stage)
+			} else if (externalState.status === "changes_requested") {
+				const originType =
+					externalState.provider === "gitlab"
+						? "external-mr"
+						: "external-pr"
+				const fbResult = writeFeedbackFile(
+					slug,
+					currentStage,
+					{
+						title: "External review requested changes",
+						body: `The external review at ${externalUrl} requested changes. Review the PR/MR comments and address the reviewer's feedback before re-submitting for review.`,
+						origin: originType,
+						author: "user",
+						source_ref: externalUrl,
+					},
+				)
+				gitCommitState(
+					`feedback: create ${fbResult.feedback_id} from external review in ${currentStage}`,
+				)
+
+				// Roll FSM back to elaborate for a revisit cycle
+				const statePath = stageStatePath(slug, currentStage)
+				const stateData = readJson(statePath)
+				stateData.status = "active"
+				stateData.phase = "elaborate"
+				stateData.gate_outcome = null
+				stateData.visits =
+					((stateData.visits as number) || 0) + 1
+				writeJson(statePath, stateData)
+				gitCommitState(
+					`revisit ${currentStage}: external changes requested (visit ${stateData.visits})`,
+				)
+
+				emitTelemetry("haiku.gate.resolved", {
+					intent: slug,
+					stage: currentStage,
+					gate_type: "external",
+					outcome: "changes_requested",
+				})
+
+				return {
+					action: "external_changes_requested",
+					intent: slug,
+					stage: currentStage,
+					external_review_url: externalUrl,
+					provider: externalState.provider,
+					feedback_id: fbResult.feedback_id,
+					feedback_file: fbResult.file,
+					visits: stateData.visits,
+					message: `External review at ${externalUrl} requested changes. Created ${fbResult.feedback_id} and rolled back to elaborate phase (visit ${stateData.visits}). Address the reviewer's feedback, then call haiku_run_next to continue.`,
+				}
+			} else if (externalUrl) {
+				return {
+					action: "awaiting_external_review",
+					intent: slug,
+					stage: currentStage,
+					external_review_url: externalUrl,
+					message: `Stage '${currentStage}' is awaiting external review at: ${externalUrl}. Neither branch merge detection nor CLI-based check detected approval yet. Run /haiku:pickup after the review is approved.`,
+				}
+			}
+			// No URL or approval detected via branch merge — fall through to
+			// re-show the gate review UI so the user can provide the URL or
+			// confirm approval.
 		}
 
 		const reviewType = resolveStageReview(studio, currentStage)
