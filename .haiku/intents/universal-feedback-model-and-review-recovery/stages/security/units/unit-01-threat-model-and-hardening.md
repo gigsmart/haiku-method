@@ -11,9 +11,9 @@ inputs:
   - knowledge/ARCHITECTURE.md
 status: active
 bolt: 1
-hat: blue-team
+hat: security-reviewer
 started_at: '2026-04-16T16:55:22Z'
-hat_started_at: '2026-04-16T16:58:59Z'
+hat_started_at: '2026-04-16T16:59:37Z'
 outputs:
   - stages/security/THREAT-MODEL.md
 ---
