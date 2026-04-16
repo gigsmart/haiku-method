@@ -16,6 +16,9 @@ bolt: 1
 hat: product
 started_at: '2026-04-16T14:45:45Z'
 hat_started_at: '2026-04-16T14:45:45Z'
+outputs:
+  - knowledge/IMPLEMENTATION-MAP.md
+  - knowledge/COVERAGE-MAPPING.md
 ---
 
 # Coverage Validation and Gap Closure

@@ -100,7 +100,7 @@ Source: DISCOVERY.md "Success Criteria" (lines 19-23) + intent.md description (d
 | Group 2: `haiku_feedback` MCP tool | SC-1, SC-6 | US-01, US-02 | YES |
 | Group 3: CRUD companion tools | SC-5, SC-6 | US-02 | YES |
 | Group 4: Rename to `haiku_report` | SC-10 | US-09 | YES |
-| Group 5: Gate-phase feedback check | SC-2 | US-03 | YES |
+| Group 5: Gate-phase feedback check + `haiku_revisit` reasons | SC-2, SC-8 | US-03, US-12 | YES |
 | Group 6: changes_requested writes | SC-11 | US-10 | YES |
 | Group 7: Subagent prompt update | SC-9 | US-08 | YES |
 | Group 8: Additive elaborate mode | SC-7 | US-07 | YES |
@@ -109,7 +109,7 @@ Source: DISCOVERY.md "Success Criteria" (lines 19-23) + intent.md description (d
 | Group 11: Review server CRUD endpoints | SC-11 (prerequisite) | US-11 | YES |
 | Group 12: Review app UI | SC-11 (presentation) | US-05 | YES |
 | Group 13: Prototype updates | Mandatory per sync rule | N/A (non-functional) | YES |
-| Group 5 + Group 1: Revisit with reasons | SC-8 | US-12 | YES (GAP-1 resolved) |
+| *(GAP-1 resolved: SC-8 covered by Group 5 + Group 1 above)* | SC-8 | US-12 | YES |
 
 ---
 

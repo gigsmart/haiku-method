@@ -86,10 +86,10 @@
 
 ---
 
-## Group 5: Gate-Phase Pending-Feedback Check + Auto-Revisit
+## Group 5: Gate-Phase Pending-Feedback Check + Auto-Revisit + `haiku_revisit` Reasons Extension
 
 **Complexity:** L
-**Dependencies:** Group 1 (needs `countPendingFeedback`)
+**Dependencies:** Group 1 (needs `countPendingFeedback`, `writeFeedbackFile`)
 
 ### Files
 
@@ -97,11 +97,13 @@
 |---|---|
 | `packages/haiku/src/orchestrator.ts` | Gate phase handler (~line 1669, at the top of the `if (phase === "gate")` block): insert a pending-feedback check before any gate logic. Call `countPendingFeedback(slug, currentStage)`. If count > 0, increment `state.visits`, set `phase: "elaborate"`, call `writeJson` to persist, and return a new action `"feedback_revisit"` with the pending count and list of pending items. |
 | `packages/haiku/src/orchestrator.ts` | Add `"feedback_revisit"` case to the `withInstructions` instruction builder (~after the `"review"` case at line 3151). The instruction should tell the agent: "N pending feedback items require attention. Elaborate new units with `closes: [FB-NN]` for each. Then call `haiku_run_next`." Include the feedback item summaries in the instruction. |
-| `packages/haiku/src/state-tools.ts` | Ensure `readFeedbackFiles` is exported (from Group 1) so the orchestrator can import it. |
+| `packages/haiku/src/orchestrator.ts` | Extend the `haiku_revisit` tool handler to accept an optional `reasons` parameter (array of `{ title, body }`). When reasons are provided: validate non-empty array, validate each reason has non-empty title and body, call `writeFeedbackFile` for each reason (origin: `agent`, author: `parent-agent`, author_type: `agent`), THEN roll back the FSM to elaborate and increment visits. When reasons are omitted: return a `stopgap` action (no rollback, no state change) instructing the agent to re-call with structured reasons. See DATA-CONTRACTS.md §1.6 for full contract. |
+| `packages/haiku/src/state-tools.ts` | Ensure `readFeedbackFiles` and `writeFeedbackFile` are exported (from Group 1) so the orchestrator can import them for the `haiku_revisit` reasons path. |
 
 ### Test Approach
 
 - Unit test in `test/orchestrator.test.mjs`: set up a stage at `gate` phase with pending feedback files in the feedback directory. Call `runNext`. Verify the FSM rolls to `elaborate`, `visits` is incremented, and the returned action is `feedback_revisit`. Test the zero-feedback path: no pending items → normal gate logic proceeds.
+- Unit test for `haiku_revisit` with reasons: call with valid reasons array, verify feedback files are created before rollback, verify visits increment. Call without reasons, verify stopgap action returned and no state change. Call with empty array, verify validation error. Call with empty title, verify validation error.
 
 ---
 
