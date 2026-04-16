@@ -8,13 +8,15 @@ inputs:
   - knowledge/DISCOVERY.md
   - knowledge/ACCEPTANCE-CRITERIA.md
   - knowledge/DATA-CONTRACTS.md
-status: active
+status: completed
 bolt: 1
 hat: validator
 started_at: '2026-04-16T14:36:27Z'
 hat_started_at: '2026-04-16T14:42:54Z'
 outputs:
   - knowledge/DATA-CONTRACTS.md
+  - knowledge/COVERAGE-MAPPING.md
+completed_at: '2026-04-16T14:44:42Z'
 ---
 
 # Behavioral Specs in Gherkin
