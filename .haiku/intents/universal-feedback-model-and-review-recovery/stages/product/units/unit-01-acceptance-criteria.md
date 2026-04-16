@@ -9,9 +9,11 @@ inputs:
   - stages/design/DESIGN-BRIEF.md
 status: active
 bolt: 1
-hat: product
+hat: specification
 started_at: '2026-04-16T14:18:07Z'
-hat_started_at: '2026-04-16T14:18:07Z'
+hat_started_at: '2026-04-16T14:22:19Z'
+outputs:
+  - knowledge/ACCEPTANCE-CRITERIA.md
 ---
 
 # Acceptance Criteria and User Stories
