@@ -8,10 +8,10 @@ inputs:
   - knowledge/IMPLEMENTATION-MAP.md
   - stages/design/DESIGN-BRIEF.md
 status: active
-bolt: 1
-hat: validator
+bolt: 2
+hat: specification
 started_at: '2026-04-16T14:18:07Z'
-hat_started_at: '2026-04-16T14:22:58Z'
+hat_started_at: '2026-04-16T14:27:31Z'
 outputs:
   - knowledge/ACCEPTANCE-CRITERIA.md
   - knowledge/COVERAGE-MAPPING.md
