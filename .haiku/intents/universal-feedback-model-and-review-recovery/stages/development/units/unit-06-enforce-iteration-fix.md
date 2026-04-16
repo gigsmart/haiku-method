@@ -7,6 +7,8 @@ inputs:
   - knowledge/DISCOVERY.md
   - knowledge/ACCEPTANCE-CRITERIA.md
   - features/enforce-iteration-fix.feature
+outputs:
+  - stages/development/artifacts/unit-06-enforce-iteration-fix.md
 ---
 
 # Enforce-Iteration Auto-Completion Fix
