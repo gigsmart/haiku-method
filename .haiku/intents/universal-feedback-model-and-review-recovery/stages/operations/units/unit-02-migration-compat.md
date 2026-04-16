@@ -1,11 +1,18 @@
 ---
 title: Migration and backward compatibility
 type: operations
-depends_on: [unit-01-ci-validation]
-quality_gates: [test]
+depends_on:
+  - unit-01-ci-validation
+quality_gates:
+  - test
 inputs:
   - knowledge/DISCOVERY.md
   - knowledge/DATA-CONTRACTS.md
+status: active
+bolt: 1
+hat: ops-engineer
+started_at: '2026-04-16T16:43:18Z'
+hat_started_at: '2026-04-16T16:43:18Z'
 ---
 
 # Migration and Backward Compatibility
