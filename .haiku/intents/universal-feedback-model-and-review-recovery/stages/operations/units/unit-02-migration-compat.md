@@ -10,9 +10,9 @@ inputs:
   - knowledge/DATA-CONTRACTS.md
 status: active
 bolt: 1
-hat: ops-engineer
+hat: sre
 started_at: '2026-04-16T16:43:18Z'
-hat_started_at: '2026-04-16T16:43:18Z'
+hat_started_at: '2026-04-16T16:48:58Z'
 outputs:
   - stages/operations/migration-compat-report.md
 ---
