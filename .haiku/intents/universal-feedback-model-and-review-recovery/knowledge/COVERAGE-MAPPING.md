@@ -2,9 +2,9 @@
 
 **Validator hat artifact** -- maps every success criterion to acceptance criteria and behavioral spec coverage.
 
-**Status:** FINAL -- validated against ACCEPTANCE-CRITERIA.md (11 P0 user stories, P1 stories, edge cases, error paths) and 6 features/*.feature files.
+**Status:** FINAL -- validated against ACCEPTANCE-CRITERIA.md (12 P0 user stories, P1 stories, edge cases, error paths) and 7 features/*.feature files.
 
-**Validation decision:** GAPS FOUND -- see section 6.
+**Validation decision:** APPROVED (FINAL) -- all 12 success criteria have complete coverage.
 
 ---
 
@@ -48,7 +48,7 @@ Source: DISCOVERY.md "Success Criteria" (lines 19-23) + intent.md description (d
 | **SC-5** Author-based guards | AC-02.5 (agent cannot close human-authored), AC-02.6 (agent CAN mark human as addressed), AC-02.8 (delete author_type enforcement), AC-02.9 (reject agent-authored only), AC-02.10 (cannot reject human-authored) | feedback-crud: "Agent cannot set status to closed on human-authored", "Reject fails on human-authored", "Agent cannot delete human-authored", "Delete fails on a pending feedback item" | Groups 1, 3 | **COVERED** |
 | **SC-6** haiku_feedback tool + CRUD | AC-01.1 (create), AC-02.1 (list), AC-02.2 (list filter), AC-02.3 (list all stages), AC-02.4 (update), AC-02.7 (delete guards), AC-02.9 (reject) | feedback-crud: full lifecycle scenarios (create, list, list-with-filter, list-across-stages, update, reject, delete) | Groups 2, 3 | **COVERED** |
 | **SC-7** Additive elaborate mode | AC-07.1 (triggered when visits > 0), AC-07.2 (completed units read-only), AC-07.3 (closes field accepted), AC-07.4 (missing closes fails), AC-07.5 (invalid FB reference fails), AC-07.6 (visits=0 normal elaborate) | additive-elaborate: "First-time elaborate operates in standard mode", "Additive elaborate includes pending feedback", "New unit correctly declares closes", "New unit without closes fails", "New unit references non-existent feedback ID", "Agent attempts to edit completed unit" | Group 8 | **COVERED** |
-| **SC-8** haiku_revisit with reasons | **NONE** | **NONE** | No dedicated implementation group (GAP-1 from provisional mapping -- STILL OPEN) | **GAP -- NOT COVERED** |
+| **SC-8** haiku_revisit with reasons | AC-12a (reasons create feedback before rollback), AC-12b (no reasons = stopgap), AC-12c (reasons-created feedback enters gate), AC-12d (tool description), AC-12e (empty array error), AC-12f (empty title error) | revisit-with-reasons: "Single reason creates one feedback file and rolls back", "Multiple reasons create multiple feedback files", "Revisit without reasons returns a stopgap action", "Reasons-created feedback blocks gate advancement", "Empty reasons array is rejected", "Reason with empty title is rejected" + 11 more scenarios (17 total) | Group 5 (gate feedback check), Group 1 (writeFeedbackFile) | **COVERED** |
 | **SC-9** Direct subagent persistence | AC-08.1 (subagent prompt instructs direct calls), AC-08.2 (parent instructions simplified), AC-08.3 (findings survive parent crash) | auto-revisit: "Session restart between review-agent completion and haiku_run_next" (indirect -- validates durability of subagent-written feedback) | Group 7 | **COVERED** |
 | **SC-10** Rename to haiku_report | AC-09.1 (tool renamed in MCP list), AC-09.2 (/haiku:report skill works) | feedback-crud background: "And the existing Sentry tool has been renamed from haiku_feedback to haiku_report" | Group 4 | **COVERED** |
 | **SC-11** Review-UI feedback writes | AC-05.1 (feedback panel display), AC-05.2 (Request Changes creates files), AC-05.3 (approve with pending confirmation), AC-05.4 (status changes from UI), AC-05.5 (sort order), AC-10.1 (annotations become files), AC-10.2 (general feedback becomes file), AC-10.3 (empty submission), AC-11.1-11.7 (CRUD endpoints) | review-ui-feedback: "Single inline comment becomes a feedback file", "Multiple comments become individual feedback files", "Pin annotation on an image", "Feedback files are written server-side", CRUD endpoint scenarios, "Review UI displays existing feedback" | Groups 6, 11, 12 | **COVERED** |
@@ -62,17 +62,7 @@ Source: DISCOVERY.md "Success Criteria" (lines 19-23) + intent.md description (d
 
 | Gap | Criterion | Responsible Hat | Severity | Status |
 |---|---|---|---|---|
-| **GAP-1:** SC-8 (`haiku_revisit` with reasons) has no AC items, no feature scenarios, and no implementation group | SC-8 | Product hat (must add AC items) → Architect (must assign implementation group) | **HIGH** -- this is an explicit success criterion from intent.md with zero coverage in ACCEPTANCE-CRITERIA.md or features/*.feature | **OPEN -- BLOCKING** |
-
-### Required AC Items for GAP-1
-
-The following AC items must be added to ACCEPTANCE-CRITERIA.md to cover SC-8:
-
-1. **AC-XX.1: haiku_revisit with reasons param creates feedback files before rolling back** -- Given a stage at any phase, When `haiku_revisit({ intent, stage, reasons: ["Null check missing in parser", "Race condition in worker pool"] })` is called, Then feedback files are created for each reason (origin: "user-chat", author: "user", author_type: "human"), And the FSM rolls back to elaborate on the target stage, And visits is incremented.
-
-2. **AC-XX.2: haiku_revisit without reasons param behaves as before** -- Given a stage at any phase, When `haiku_revisit({ intent, stage })` is called with no reasons, Then the stage rolls back to elaborate with no new feedback files created (existing behavior preserved).
-
-3. **AC-XX.3: Reasons-created feedback enters the structural gate** -- Given feedback files were created via haiku_revisit reasons, When the stage reaches the gate phase, Then the pending-feedback check detects them and triggers auto-revisit if still pending.
+| **GAP-1:** SC-8 (`haiku_revisit` with reasons) had no AC items, no feature scenarios, and no implementation group | SC-8 | Product hat (added US-12 with AC-12a-12f) | **HIGH** (was) | **RESOLVED** -- US-12 added to ACCEPTANCE-CRITERIA.md with 6 AC items, `revisit-with-reasons.feature` added with 17 scenarios, implementation mapped to Group 5 + Group 1 |
 
 ### Resolved Potential Gaps (from provisional mapping)
 
@@ -119,7 +109,7 @@ The following AC items must be added to ACCEPTANCE-CRITERIA.md to cover SC-8:
 | Group 11: Review server CRUD endpoints | SC-11 (prerequisite) | US-11 | YES |
 | Group 12: Review app UI | SC-11 (presentation) | US-05 | YES |
 | Group 13: Prototype updates | Mandatory per sync rule | N/A (non-functional) | YES |
-| **No group assigned** | **SC-8** | **NONE** | **NO -- GAP-1** |
+| Group 5 + Group 1: Revisit with reasons | SC-8 | US-12 | YES (GAP-1 resolved) |
 
 ---
 
@@ -140,32 +130,35 @@ Every AC item in the ACCEPTANCE-CRITERIA.md was evaluated for testability (can a
 | US-09 (Sentry Rename) | 2 | YES | Tool list inspection. Skill invocation end-to-end. |
 | US-10 (Changes-Requested Handler) | 3 | YES | File creation count and frontmatter fields are verifiable. Empty-submission no-op is verifiable. |
 | US-11 (CRUD Endpoints) | 7 | YES | HTTP status codes, JSON response shapes, file system assertions. |
+| US-12 (Revisit with Reasons) | 6 | YES | Feedback file creation before rollback, stopgap action, gate integration, tool description, validation errors. All Given/When/Then with observable state changes. |
 | Edge Cases (EC-01 to EC-10) | 10 | YES | Each specifies a concrete setup, trigger, and expected outcome. |
 | Error Paths (EP-01 to EP-10) | 10 | YES | Each specifies a failure condition and expected behavior (error messages, partial state, recovery). |
 
-All 72 acceptance criteria items are testable.
+All 78 acceptance criteria items are testable (72 from US-01 through US-11 + 6 from US-12).
 
 ---
 
 ## 7. Validation Decision
 
-**GAPS FOUND**
+**APPROVED (FINAL)**
 
-### Blocking Gap
+All 12 success criteria (SC-1 through SC-12) have complete coverage across ACCEPTANCE-CRITERIA.md, features/*.feature, and implementation groups.
 
-**GAP-1: SC-8 (`haiku_revisit` with optional reasons param) has zero coverage.**
+### GAP-1 Resolution (bolt 2)
 
-The intent.md explicitly states (item 6 in the design conversation summary): "`haiku_revisit` gaining optional reasons param as a convenience that internally calls the feedback writer." This is success criterion SC-8. The ACCEPTANCE-CRITERIA.md contains no user story, no AC items, and no edge cases covering this behavior. No feature file covers it either. No implementation group is assigned to it.
+GAP-1 (SC-8: `haiku_revisit` with optional reasons param) was identified in bolt 1 as the sole blocking gap. Bolt 2 resolved it:
 
-This gap was identified in the provisional COVERAGE-MAPPING.md as GAP-1 and the unit-01-acceptance-criteria completion criteria explicitly require: "Coverage mapping gap GAP-1 (haiku_revisit with reasons) is addressed by adding AC items for it." This condition is not met.
+1. **US-12** added to ACCEPTANCE-CRITERIA.md with 6 AC items (AC-12a through AC-12f) covering: reasons create feedback files before rollback, no-reasons stopgap behavior, gate integration, tool description, empty array error, empty title error.
+2. **`revisit-with-reasons.feature`** added with 17 scenarios covering happy paths, stopgap behavior, gate integration, error scenarios, and edge cases.
+3. **Implementation mapped** to Group 5 (gate feedback check / revisit handler in orchestrator.ts) + Group 1 (writeFeedbackFile in state-tools.ts).
 
-### What Must Happen
+### Summary
 
-1. Add a new user story (e.g., US-12) to ACCEPTANCE-CRITERIA.md with at least 3 AC items covering: (a) reasons param creates feedback files, (b) no reasons param preserves existing behavior, (c) reasons-created feedback enters the structural gate cycle.
-2. Add a corresponding feature file or scenarios to an existing feature file covering the haiku_revisit-with-reasons behavior.
-3. Assign the implementation work to an implementation group (most likely Group 5 or a new Group 14).
-4. Re-validate this coverage mapping after the additions.
-
-### Items That Pass Validation
-
-11 of 12 success criteria (SC-1 through SC-7, SC-9 through SC-12) have complete coverage across ACCEPTANCE-CRITERIA.md, features/*.feature, and implementation groups. All 72 existing AC items are testable. P1 items are correctly scoped. Out-of-scope items do not appear as P0 requirements. No scope creep detected.
+- 12/12 success criteria covered
+- 78 AC items, all testable
+- 7 feature files with comprehensive behavioral scenarios
+- 13 implementation groups, all traced to success criteria
+- P1 items correctly scoped as follow-up
+- Out-of-scope items do not appear as P0 requirements
+- No scope creep detected
+- No new gaps introduced
