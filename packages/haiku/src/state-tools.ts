@@ -2119,10 +2119,7 @@ export function writeFeedbackFile(
  * Read and parse all feedback files in a stage's feedback directory.
  * Returns an array of FeedbackItem sorted by numeric prefix.
  */
-export function readFeedbackFiles(
-	slug: string,
-	stage: string,
-): FeedbackItem[] {
+export function readFeedbackFiles(slug: string, stage: string): FeedbackItem[] {
 	const dir = feedbackDir(slug, stage)
 	if (!existsSync(dir)) return []
 
@@ -2177,7 +2174,12 @@ export function findFeedbackFile(
 	slug: string,
 	stage: string,
 	feedbackId: string,
-): { path: string; filename: string; data: Record<string, unknown>; body: string } | null {
+): {
+	path: string
+	filename: string
+	data: Record<string, unknown>
+	body: string
+} | null {
 	const dir = feedbackDir(slug, stage)
 	if (!existsSync(dir)) return null
 
@@ -2191,7 +2193,12 @@ export function findFeedbackFile(
 
 	const raw = readFileSync(join(dir, match), "utf8")
 	const parsed = parseFrontmatter(raw)
-	return { path: join(dir, match), filename: match, data: parsed.data, body: parsed.body }
+	return {
+		path: join(dir, match),
+		filename: match,
+		data: parsed.data,
+		body: parsed.body,
+	}
 }
 
 /**
@@ -2208,17 +2215,30 @@ export function updateFeedbackFile(
 ): { ok: true; updated_fields: string[] } | { ok: false; error: string } {
 	const found = findFeedbackFile(slug, stage, feedbackId)
 	if (!found) {
-		return { ok: false, error: `Error: feedback '${feedbackId}' not found in stage '${stage}'` }
+		return {
+			ok: false,
+			error: `Error: feedback '${feedbackId}' not found in stage '${stage}'`,
+		}
 	}
 
 	// At least one updatable field must be provided
 	if (fields.status === undefined && fields.addressed_by === undefined) {
-		return { ok: false, error: "Error: at least one of 'status' or 'addressed_by' must be provided" }
+		return {
+			ok: false,
+			error:
+				"Error: at least one of 'status' or 'addressed_by' must be provided",
+		}
 	}
 
 	// Validate status enum
-	if (fields.status !== undefined && !(FEEDBACK_STATUSES as readonly string[]).includes(fields.status)) {
-		return { ok: false, error: `Error: status must be one of: ${FEEDBACK_STATUSES.join(", ")}` }
+	if (
+		fields.status !== undefined &&
+		!(FEEDBACK_STATUSES as readonly string[]).includes(fields.status)
+	) {
+		return {
+			ok: false,
+			error: `Error: status must be one of: ${FEEDBACK_STATUSES.join(", ")}`,
+		}
 	}
 
 	// Guard: agents cannot set status 'closed' on human-authored feedback
@@ -2229,7 +2249,8 @@ export function updateFeedbackFile(
 	) {
 		return {
 			ok: false,
-			error: "Error: agents cannot set status 'closed' on human-authored feedback. Only the original author can close it.",
+			error:
+				"Error: agents cannot set status 'closed' on human-authored feedback. Only the original author can close it.",
 		}
 	}
 
@@ -2263,17 +2284,28 @@ export function deleteFeedbackFile(
 ): { ok: true } | { ok: false; error: string } {
 	const found = findFeedbackFile(slug, stage, feedbackId)
 	if (!found) {
-		return { ok: false, error: `Error: feedback '${feedbackId}' not found in stage '${stage}'` }
+		return {
+			ok: false,
+			error: `Error: feedback '${feedbackId}' not found in stage '${stage}'`,
+		}
 	}
 
 	// Guard: cannot delete pending items
 	if (found.data.status === "pending") {
-		return { ok: false, error: "Error: cannot delete pending feedback. Address, close, or reject it first." }
+		return {
+			ok: false,
+			error:
+				"Error: cannot delete pending feedback. Address, close, or reject it first.",
+		}
 	}
 
 	// Guard: agents cannot delete human-authored items
 	if (callerContext === "agent" && found.data.author_type === "human") {
-		return { ok: false, error: "Error: agents cannot delete human-authored feedback. Use the review UI." }
+		return {
+			ok: false,
+			error:
+				"Error: agents cannot delete human-authored feedback. Use the review UI.",
+		}
 	}
 
 	unlinkSync(found.path)
@@ -2555,8 +2587,7 @@ export const stateToolDefs = [
 				stage: { type: "string", description: "Stage name" },
 				title: {
 					type: "string",
-					description:
-						"Short title for the feedback item (max 120 chars)",
+					description: "Short title for the feedback item (max 120 chars)",
 				},
 				body: {
 					type: "string",
@@ -3992,29 +4023,78 @@ export function handleStateTool(
 			const author = (args.author as string) || undefined
 
 			// Validation
-			if (!intent) return { content: [{ type: "text", text: "Error: intent is required" }], isError: true }
-			if (!stage) return { content: [{ type: "text", text: "Error: stage is required" }], isError: true }
-			if (!title) return { content: [{ type: "text", text: "Error: title is required" }], isError: true }
-			if (!body) return { content: [{ type: "text", text: "Error: body is required" }], isError: true }
-			if (title.length > 120) return { content: [{ type: "text", text: "Error: title must be 120 characters or fewer" }], isError: true }
+			if (!intent)
+				return {
+					content: [{ type: "text", text: "Error: intent is required" }],
+					isError: true,
+				}
+			if (!stage)
+				return {
+					content: [{ type: "text", text: "Error: stage is required" }],
+					isError: true,
+				}
+			if (!title)
+				return {
+					content: [{ type: "text", text: "Error: title is required" }],
+					isError: true,
+				}
+			if (!body)
+				return {
+					content: [{ type: "text", text: "Error: body is required" }],
+					isError: true,
+				}
+			if (title.length > 120)
+				return {
+					content: [
+						{
+							type: "text",
+							text: "Error: title must be 120 characters or fewer",
+						},
+					],
+					isError: true,
+				}
 
 			// Validate intent exists
 			const intentFile = join(intentDir(intent), "intent.md")
-			if (!existsSync(intentFile)) return { content: [{ type: "text", text: `Error: intent '${intent}' not found` }], isError: true }
+			if (!existsSync(intentFile))
+				return {
+					content: [
+						{ type: "text", text: `Error: intent '${intent}' not found` },
+					],
+					isError: true,
+				}
 
 			// Validate origin enum
 			if (origin && !(FEEDBACK_ORIGINS as readonly string[]).includes(origin)) {
-				return { content: [{ type: "text", text: `Error: origin must be one of: ${FEEDBACK_ORIGINS.join(", ")}` }], isError: true }
+				return {
+					content: [
+						{
+							type: "text",
+							text: `Error: origin must be one of: ${FEEDBACK_ORIGINS.join(", ")}`,
+						},
+					],
+					isError: true,
+				}
 			}
 
 			// Validate stage exists
 			const stgDir = stageDir(intent, stage)
 			if (!existsSync(stgDir)) {
 				// Auto-create stage dir if the intent has it declared but dir doesn't exist yet
-				const { data: intentData } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+				const { data: intentData } = parseFrontmatter(
+					readFileSync(intentFile, "utf8"),
+				)
 				const stages = (intentData.stages as string[]) || []
 				if (!stages.includes(stage)) {
-					return { content: [{ type: "text", text: `Error: stage '${stage}' not found under intent '${intent}'` }], isError: true }
+					return {
+						content: [
+							{
+								type: "text",
+								text: `Error: stage '${stage}' not found under intent '${intent}'`,
+							},
+						],
+						isError: true,
+					}
 				}
 				mkdirSync(stgDir, { recursive: true })
 			}
@@ -4027,14 +4107,18 @@ export function handleStateTool(
 				source_ref: sourceRef ?? null,
 			})
 
-			const gitResult = gitCommitState(`feedback: create ${result.feedback_id} in ${stage}`)
+			const gitResult = gitCommitState(
+				`feedback: create ${result.feedback_id} in ${stage}`,
+			)
 			const response: Record<string, unknown> = {
 				feedback_id: result.feedback_id,
 				file: result.file,
 				status: "pending",
 				message: `Feedback ${result.feedback_id} created.`,
 			}
-			return text(JSON.stringify(injectPushWarning(response, gitResult), null, 2))
+			return text(
+				JSON.stringify(injectPushWarning(response, gitResult), null, 2),
+			)
 		}
 
 		case "haiku_version_info": {
