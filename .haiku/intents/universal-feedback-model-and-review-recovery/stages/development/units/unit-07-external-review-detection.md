@@ -12,9 +12,9 @@ inputs:
   - features/external-review-feedback.feature
 status: active
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-16T15:21:59Z'
-hat_started_at: '2026-04-16T15:39:27Z'
+hat_started_at: '2026-04-16T15:41:02Z'
 ---
 
 # External PR/MR Changes-Requested Detection
