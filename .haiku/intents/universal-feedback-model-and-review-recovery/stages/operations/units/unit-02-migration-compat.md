@@ -13,6 +13,8 @@ bolt: 1
 hat: ops-engineer
 started_at: '2026-04-16T16:43:18Z'
 hat_started_at: '2026-04-16T16:43:18Z'
+outputs:
+  - stages/operations/migration-compat-report.md
 ---
 
 # Migration and Backward Compatibility
