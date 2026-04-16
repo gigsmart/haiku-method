@@ -54,7 +54,7 @@
 
   <!-- Header -->
   <header class="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
-    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+    <div class="max-w-[1400px] mx-auto px-4 sm:px-5 py-3 flex items-center justify-between">
       <h1 class="text-lg font-semibold truncate">Review: Universal Feedback Model</h1>
       <button class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:ring-2 focus:ring-teal-500"
               aria-label="Toggle color theme">
@@ -64,13 +64,13 @@
   </header>
 
   <!-- Two-column layout -->
-  <div class="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 lg:flex lg:gap-6">
+  <div class="max-w-[1400px] mx-auto px-4 sm:px-5 py-6 lg:flex lg:gap-4">
 
     <!-- Main content -->
     <main id="main-content" class="flex-1 min-w-0">
 
       <!-- Tabs -->
-      <div class="sticky top-[53px] z-30 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-700 mb-6">
+      <div class="sticky top-[53px] z-30 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-700 mb-4">
         <div role="tablist" aria-label="Review sections" class="flex overflow-x-auto -mx-1">
           <button role="tab" aria-selected="true" tabindex="0" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 focus:ring-2 focus:ring-teal-500">Overview</button>
           <button role="tab" aria-selected="false" tabindex="-1" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer focus:ring-2 focus:ring-teal-500">Units (12)</button>
@@ -80,7 +80,7 @@
       </div>
 
       <!-- Overview Card with Inline Annotations (Code) -->
-      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+      <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-4">
         <h2 class="text-lg font-semibold mb-3">Overview -- Comment on text</h2>
         <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Select text to add inline comments.</p>
 
@@ -142,7 +142,7 @@
         </div>
 
       <!-- Mockup Card with Visual Pin Annotations -->
-      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+      <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-4">
         <h2 class="text-lg font-semibold mb-3">Mockup -- Annotate</h2>
         <div class="flex items-center justify-between mb-3">
           <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400">Review App Wireframe</h4>
@@ -185,7 +185,7 @@
         </div>
 
       <!-- EXPANDED card example — showing full body visible -->
-      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+      <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-4">
         <h2 class="text-lg font-semibold mb-3">Interaction States Reference</h2>
         <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">All card states shown below for reference.</p>
 
@@ -298,12 +298,13 @@
           </div>
         </div>
       </div>
+    </main>
 
     <!-- Review sidebar: sticky on desktop -->
     <div class="hidden lg:block w-80 shrink-0">
       <aside id="review-sidebar"
-        class="sticky top-20 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col"
-        style="max-height: calc(100vh - 6rem);">
+        class="sticky top-20 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 flex flex-col"
+        style="max-height: calc(100vh - 6rem); overflow-y: auto;">
 
         <!-- Sidebar header with segmented control -->
         <div class="shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
@@ -442,7 +443,6 @@
         </div>
       </aside>
     </div>
-    </main>
   </div>
 
   <!-- Live region for screen reader announcements -->

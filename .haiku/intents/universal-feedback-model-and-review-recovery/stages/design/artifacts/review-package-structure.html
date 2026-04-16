@@ -37,7 +37,7 @@
     /* Package box styling */
     .pkg-box {
       border: 2px solid;
-      border-radius: 12px;
+      border-radius: 8px;
       padding: 16px;
       position: relative;
     }
@@ -89,7 +89,7 @@
   <div class="max-w-[1400px] mx-auto px-4 py-8">
 
     <!-- Header -->
-    <header class="mb-10">
+    <header class="mb-8">
       <div class="flex items-center gap-3 mb-2">
         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">design artifact</span>
         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-03</span>
@@ -107,14 +107,14 @@
     <!-- ====================================================================
          SECTION 1: Package Layout Diagram
          ==================================================================== -->
-    <section class="mb-12">
+    <section class="mb-8">
       <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">1. Package Layout Diagram</h2>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
         The new <code class="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-xs">packages/review-ui/</code> package extracts shared components from both the SPA (<code class="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-xs">review-app/</code>) and SSR templates (<code class="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-xs">src/templates/</code>) into a single source of truth.
       </p>
 
       <!-- Diagram: Three packages -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         <!-- Package 1: @haiku/review-ui (NEW) -->
         <div class="pkg-box border-teal-500 dark:border-teal-600 bg-teal-50/30 dark:bg-teal-950/20">
@@ -221,13 +221,13 @@
     <!-- ====================================================================
          SECTION 2: Component Migration Table
          ==================================================================== -->
-    <section class="mb-12">
+    <section class="mb-8">
       <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">2. Component Migration Table</h2>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
         Every component categorized by current location, target location, and sharing status.
       </p>
 
-      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+      <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left">
             <thead>
@@ -404,16 +404,16 @@
     <!-- ====================================================================
          SECTION 3: Import/Export Map
          ==================================================================== -->
-    <section class="mb-12">
+    <section class="mb-8">
       <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">3. Import/Export Map</h2>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
         How each consumer imports shared components.
       </p>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         <!-- SPA imports -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
           <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
             SPA Imports (React)
@@ -451,7 +451,7 @@
         </div>
 
         <!-- SSR imports -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
           <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-violet-500"></span>
             SSR Imports (HTML String Renderers)
@@ -485,7 +485,7 @@
       </div>
 
       <!-- Barrel export -->
-      <div class="mt-6 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+      <div class="mt-6 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
         <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
           <span class="w-2.5 h-2.5 rounded-full bg-teal-500"></span>
           Barrel Export — packages/review-ui/src/index.ts
@@ -518,16 +518,16 @@
     <!-- ====================================================================
          SECTION 4: Styling Strategy
          ==================================================================== -->
-    <section class="mb-12">
+    <section class="mb-8">
       <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">4. Styling Strategy</h2>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
         Source-only CSS distribution with a shared Tailwind preset for both consumers.
       </p>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         <!-- Principle 1 -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
           <div class="flex items-center gap-2 mb-3">
             <span class="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 flex items-center justify-center text-sm font-bold">1</span>
             <h3 class="text-base font-semibold">Source-Only</h3>
@@ -547,7 +547,7 @@
         </div>
 
         <!-- Principle 2 -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
           <div class="flex items-center gap-2 mb-3">
             <span class="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 flex items-center justify-center text-sm font-bold">2</span>
             <h3 class="text-base font-semibold">Shared Tailwind Preset</h3>
@@ -572,7 +572,7 @@
         </div>
 
         <!-- Principle 3 -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
           <div class="flex items-center gap-2 mb-3">
             <span class="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 flex items-center justify-center text-sm font-bold">3</span>
             <h3 class="text-base font-semibold">Dark Mode</h3>
@@ -595,7 +595,7 @@
       </div>
 
       <!-- Palette comparison -->
-      <div class="mt-6 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+      <div class="mt-6 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
         <h3 class="text-base font-semibold mb-4">Palette Translation: SPA vs SSR</h3>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
@@ -642,16 +642,16 @@
     <!-- ====================================================================
          SECTION 5: Props Contracts
          ==================================================================== -->
-    <section class="mb-12">
+    <section class="mb-8">
       <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">5. Props Contracts</h2>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
         TypeScript interfaces for the key shared components.
       </p>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         <!-- StageProgressStrip -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
           <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
             StageProgressStrip
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new</span>
@@ -682,7 +682,7 @@
         </div>
 
         <!-- ReviewContextHeader -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
           <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
             ReviewContextHeader
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new</span>
@@ -710,7 +710,7 @@
         </div>
 
         <!-- FeedbackItem -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
           <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
             FeedbackItem
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new</span>
@@ -752,7 +752,7 @@
         </div>
 
         <!-- FeedbackList -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
           <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
             FeedbackList
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new</span>
@@ -787,7 +787,7 @@
         </div>
 
         <!-- SidebarSegmentedControl -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
           <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
             SidebarSegmentedControl
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new</span>
@@ -822,7 +822,7 @@
         </div>
 
         <!-- FeedbackSummaryBar -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
           <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
             FeedbackSummaryBar
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new</span>
@@ -853,10 +853,10 @@
     <!-- ====================================================================
          SECTION 6: package.json for @haiku/review-ui
          ==================================================================== -->
-    <section class="mb-12">
+    <section class="mb-8">
       <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">6. Package Configuration</h2>
 
-      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+      <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
         <h3 class="text-base font-semibold mb-3">packages/review-ui/package.json</h3>
         <div class="code-block text-[11px]">
           {<br />
@@ -888,13 +888,13 @@
     <!-- ====================================================================
          SECTION 7: Data Flow Diagram
          ==================================================================== -->
-    <section class="mb-12">
+    <section class="mb-8">
       <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">7. Architecture Flow</h2>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
         How data flows through the unified package in both the SPA and SSR paths.
       </p>
 
-      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+      <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
         <div class="space-y-6">
 
           <!-- SPA path -->
@@ -946,13 +946,13 @@
     <!-- ====================================================================
          SECTION 8: Migration Checklist
          ==================================================================== -->
-    <section class="mb-12">
+    <section class="mb-8">
       <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">8. Migration Checklist</h2>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
         Ordered steps to extract, create, and wire up the shared package.
       </p>
 
-      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+      <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
         <ol class="space-y-4">
           <li class="flex gap-3">
             <span class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 text-xs font-bold">1</span>
