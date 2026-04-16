@@ -12,6 +12,7 @@ bolt: 1
 hat: sre
 started_at: '2026-04-16T16:38:35Z'
 hat_started_at: '2026-04-16T16:40:43Z'
+outputs: '["stages/operations/ci-validation-report.md"]'
 ---
 
 # CI Pipeline Validation
