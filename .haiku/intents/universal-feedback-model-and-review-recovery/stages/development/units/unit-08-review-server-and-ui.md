@@ -19,13 +19,14 @@ inputs:
   - stages/design/artifacts/review-context-header.html
   - stages/design/artifacts/revisit-unit-list.html
   - features/review-ui-feedback.feature
-status: active
+status: completed
 bolt: 1
 hat: reviewer
 started_at: '2026-04-16T16:07:06Z'
 hat_started_at: '2026-04-16T16:18:56Z'
 outputs:
   - stages/development/artifacts/unit-08-implementation.md
+completed_at: '2026-04-16T16:20:22Z'
 ---
 
 # Review Server CRUD Endpoints and Review App UI
