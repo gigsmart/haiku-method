@@ -9,13 +9,14 @@ inputs:
   - knowledge/DISCOVERY.md
   - knowledge/DATA-CONTRACTS.md
   - knowledge/ARCHITECTURE.md
-status: active
+status: completed
 bolt: 1
 hat: security-reviewer
 started_at: '2026-04-16T16:55:22Z'
 hat_started_at: '2026-04-16T16:59:37Z'
 outputs:
   - stages/security/THREAT-MODEL.md
+completed_at: '2026-04-16T17:00:15Z'
 ---
 
 # Threat Model and Security Hardening
