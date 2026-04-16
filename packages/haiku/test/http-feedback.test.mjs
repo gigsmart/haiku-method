@@ -408,6 +408,55 @@ async function run() {
     assert.strictEqual(unit.status, "active")
   })
 
+  // ── Path traversal rejection (security) ──────────────────────────────────
+
+  console.log("\n=== Path traversal rejection ===")
+
+  await test("GET /api/feedback with ..%2Fetc as intent returns 400", async () => {
+    const res = await fetch(`${baseUrl}/api/feedback/..%2Fetc/${stageName}`)
+    assert.strictEqual(res.status, 400)
+    const data = await res.json()
+    assert.ok(data.error.includes("Invalid slug"))
+  })
+
+  await test("POST /api/feedback with dot-dot traversal intent returns 400", async () => {
+    const res = await fetch(`${baseUrl}/api/feedback/foo..bar/${stageName}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Test", body: "Test" }),
+    })
+    assert.strictEqual(res.status, 400)
+    const data = await res.json()
+    assert.ok(data.error.includes("Invalid slug"))
+  })
+
+  await test("PUT /api/feedback with traversal in stage returns 400", async () => {
+    const res = await fetch(`${baseUrl}/api/feedback/${intentSlug}/..%2Fetc/FB-01`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "addressed" }),
+    })
+    assert.strictEqual(res.status, 400)
+    const data = await res.json()
+    assert.ok(data.error.includes("Invalid slug"))
+  })
+
+  await test("DELETE /api/feedback with traversal in id returns 400", async () => {
+    const res = await fetch(`${baseUrl}/api/feedback/${intentSlug}/${stageName}/..%2Fetc`, {
+      method: "DELETE",
+    })
+    assert.strictEqual(res.status, 400)
+    const data = await res.json()
+    assert.ok(data.error.includes("Invalid slug"))
+  })
+
+  await test("GET /api/feedback with backslash in intent returns 400", async () => {
+    const res = await fetch(`${baseUrl}/api/feedback/foo%5Cbar/${stageName}`)
+    assert.strictEqual(res.status, 400)
+    const data = await res.json()
+    assert.ok(data.error.includes("Invalid slug"))
+  })
+
   // ── Cleanup ───────────────────────────────────────────────────────────────
 
   console.log(`\n${passed} passed, ${failed} failed\n`)

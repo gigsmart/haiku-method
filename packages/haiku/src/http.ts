@@ -882,6 +882,25 @@ function handleUpgrade(
 	})
 }
 
+// ─── Slug sanitisation ──────────────────────────────────────────────────
+
+/**
+ * Reject URL path parameters that contain path traversal (`..`) or path
+ * separators (`/`, `\`). Decodes percent-encoding first so that `%2F`, `%5C`,
+ * and `%2E%2E` are caught. Returns `true` when the value is safe to use as a
+ * filesystem slug, `false` otherwise.
+ */
+function isValidSlug(value: string): boolean {
+	let decoded: string
+	try {
+		decoded = decodeURIComponent(value)
+	} catch {
+		// Malformed percent-encoding — reject
+		return false
+	}
+	return !/[/\\]|\.\./.test(decoded)
+}
+
 // ─── Feedback CRUD endpoints ────────────────────────────────────────────
 
 /** Validate intent slug exists on disk. Returns the slug or null. */
@@ -904,6 +923,12 @@ function validateStage(slug: string, stage: string): boolean {
 }
 
 function handleFeedbackGet(intent: string, stage: string, url: URL): Response {
+	if (!isValidSlug(intent) || !isValidSlug(stage)) {
+		return Response.json(
+			{ error: "Invalid slug — must not contain path separators or traversal sequences" },
+			{ status: 400 },
+		)
+	}
 	if (!validateIntent(intent)) {
 		return Response.json({ error: "Intent not found" }, { status: 404 })
 	}
@@ -966,6 +991,12 @@ async function handleFeedbackPost(
 	stage: string,
 	req: Request,
 ): Promise<Response> {
+	if (!isValidSlug(intent) || !isValidSlug(stage)) {
+		return Response.json(
+			{ error: "Invalid slug — must not contain path separators or traversal sequences" },
+			{ status: 400 },
+		)
+	}
 	if (!validateIntent(intent)) {
 		return Response.json({ error: "Intent not found" }, { status: 404 })
 	}
@@ -1031,6 +1062,12 @@ async function handleFeedbackPut(
 	feedbackId: string,
 	req: Request,
 ): Promise<Response> {
+	if (!isValidSlug(intent) || !isValidSlug(stage) || !isValidSlug(feedbackId)) {
+		return Response.json(
+			{ error: "Invalid slug — must not contain path separators or traversal sequences" },
+			{ status: 400 },
+		)
+	}
 	if (!validateIntent(intent)) {
 		return Response.json({ error: "Intent not found" }, { status: 404 })
 	}
@@ -1098,6 +1135,12 @@ async function handleFeedbackDelete(
 	stage: string,
 	feedbackId: string,
 ): Promise<Response> {
+	if (!isValidSlug(intent) || !isValidSlug(stage) || !isValidSlug(feedbackId)) {
+		return Response.json(
+			{ error: "Invalid slug — must not contain path separators or traversal sequences" },
+			{ status: 400 },
+		)
+	}
 	if (!validateIntent(intent)) {
 		return Response.json({ error: "Intent not found" }, { status: 404 })
 	}

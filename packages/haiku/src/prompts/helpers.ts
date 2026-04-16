@@ -36,35 +36,8 @@ export function validateIdentifier(value: string, label: string): string {
 	return value
 }
 
-/**
- * Validate every path-identifier arg in a tool args object. Returns null if
- * everything is fine, or a pre-built MCP error response if any arg contains
- * path traversal / separator characters. Use at the top of MCP tool
- * handlers to reject malicious identifiers before any filesystem access.
- *
- * Checked keys: `intent`, `slug`, `stage`, `unit`. All four are used to
- * construct filesystem paths (`intent/{slug}/stages/{stage}/units/{unit}.md`)
- * in various handlers, so any of them can be a traversal vector.
- */
-export function validateSlugArgs(
-	args: Record<string, unknown>,
-): { content: Array<{ type: "text"; text: string }>; isError: true } | null {
-	for (const key of ["intent", "slug", "stage", "unit"]) {
-		const val = args[key]
-		if (typeof val === "string" && /[/\\]|\.\./.test(val)) {
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: `Invalid ${key}: "${val}" — path identifiers must not contain path separators or traversal sequences.`,
-					},
-				],
-				isError: true,
-			}
-		}
-	}
-	return null
-}
+// Re-export validateSlugArgs from state-tools (canonical location) for backward compat
+export { validateSlugArgs } from "../state-tools.js"
 
 // ── Studio resolution ────────────────────────────────────────────────────────
 

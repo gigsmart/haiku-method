@@ -34,7 +34,7 @@ import {
 	mergeStageBranchIntoMain,
 } from "./git-worktree.js"
 import { type ModelTier, resolveModel } from "./model-selection.js"
-import { validateIdentifier, validateSlugArgs } from "./prompts/helpers.js"
+import { validateIdentifier } from "./prompts/helpers.js"
 import { reportError } from "./sentry.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
 import {
@@ -53,12 +53,14 @@ import {
 	syncSessionMetadata,
 	timestamp,
 	validateBranch,
+	validateSlugArgs,
 	writeFeedbackFile,
 	writeJson,
 } from "./state-tools.js"
 import {
 	listStudios,
 	readHatDefs,
+	readPhaseOverride,
 	readReviewAgentDefs,
 	readStageArtifactDefs,
 	readStageDef,
@@ -303,6 +305,63 @@ export function checkExternalState(url: string): ExternalReviewState {
 	}
 }
 
+// ── External changes-requested helper ─────────────────────────────────────
+
+/**
+ * Handle the "changes_requested" outcome from an external review.
+ * Creates a feedback file, rolls the FSM back to elaborate, emits telemetry,
+ * and returns the orchestrator action.
+ */
+function handleExternalChangesRequested(
+	slug: string,
+	currentStage: string,
+	externalUrl: string,
+	provider: "github" | "gitlab" | undefined,
+): OrchestratorAction {
+	const originType = provider === "gitlab" ? "external-mr" : "external-pr"
+	const fbResult = writeFeedbackFile(slug, currentStage, {
+		title: "External review requested changes",
+		body: `The external review at ${externalUrl} requested changes. Review the PR/MR comments and address the reviewer's feedback before re-submitting for review.`,
+		origin: originType,
+		author: "user",
+		source_ref: externalUrl,
+	})
+	gitCommitState(
+		`feedback: create ${fbResult.feedback_id} from external review in ${currentStage}`,
+	)
+
+	// Roll FSM back to elaborate for a revisit cycle
+	const statePath = stageStatePath(slug, currentStage)
+	const stateData = readJson(statePath)
+	stateData.status = "active"
+	stateData.phase = "elaborate"
+	stateData.gate_outcome = null
+	stateData.visits = ((stateData.visits as number) || 0) + 1
+	writeJson(statePath, stateData)
+	gitCommitState(
+		`revisit ${currentStage}: external changes requested (visit ${stateData.visits})`,
+	)
+
+	emitTelemetry("haiku.gate.resolved", {
+		intent: slug,
+		stage: currentStage,
+		gate_type: "external",
+		outcome: "changes_requested",
+	})
+
+	return {
+		action: "external_changes_requested",
+		intent: slug,
+		stage: currentStage,
+		external_review_url: externalUrl,
+		provider,
+		feedback_id: fbResult.feedback_id,
+		feedback_file: fbResult.file,
+		visits: stateData.visits,
+		message: `External review at ${externalUrl} requested changes. Created ${fbResult.feedback_id} and rolled back to elaborate phase (visit ${stateData.visits}). Address the reviewer's feedback, then call haiku_run_next to continue.`,
+	}
+}
+
 // ── Output validation ─────────────────────────────────────────────────────
 
 /**
@@ -506,31 +565,6 @@ function buildOutputRequirements(
 		)
 	}
 	return parts.join("\n\n")
-}
-
-// ── Phase override reader ────────────────────────────────────────────────
-
-function readPhaseOverride(
-	studio: string,
-	stage: string,
-	phase: string,
-): { data: Record<string, unknown>; body: string } | null {
-	validateIdentifier(studio, "studio")
-	validateIdentifier(stage, "stage")
-	for (const base of studioSearchPaths()) {
-		const file = join(
-			base,
-			studio,
-			"stages",
-			stage,
-			"phases",
-			`${phase.toUpperCase()}.md`,
-		)
-		if (existsSync(file)) {
-			return parseFrontmatter(readFileSync(file, "utf8"))
-		}
-	}
-	return null
 }
 
 // ── Discovery artifact validation ────────────────────────────────────────
@@ -1999,56 +2033,12 @@ export function runNext(slug: string): OrchestratorAction {
 				// Fall through to advance logic (auto-gate or non-auto gate
 				// will see gate_outcome "advanced" and advance the stage)
 			} else if (externalState.status === "changes_requested") {
-				const originType =
-					externalState.provider === "gitlab"
-						? "external-mr"
-						: "external-pr"
-				const fbResult = writeFeedbackFile(
+				return handleExternalChangesRequested(
 					slug,
 					currentStage,
-					{
-						title: "External review requested changes",
-						body: `The external review at ${externalUrl} requested changes. Review the PR/MR comments and address the reviewer's feedback before re-submitting for review.`,
-						origin: originType,
-						author: "user",
-						source_ref: externalUrl,
-					},
+					externalUrl,
+					externalState.provider,
 				)
-				gitCommitState(
-					`feedback: create ${fbResult.feedback_id} from external review in ${currentStage}`,
-				)
-
-				// Roll FSM back to elaborate for a revisit cycle
-				const statePath = stageStatePath(slug, currentStage)
-				const stateData = readJson(statePath)
-				stateData.status = "active"
-				stateData.phase = "elaborate"
-				stateData.gate_outcome = null
-				stateData.visits =
-					((stateData.visits as number) || 0) + 1
-				writeJson(statePath, stateData)
-				gitCommitState(
-					`revisit ${currentStage}: external changes requested (visit ${stateData.visits})`,
-				)
-
-				emitTelemetry("haiku.gate.resolved", {
-					intent: slug,
-					stage: currentStage,
-					gate_type: "external",
-					outcome: "changes_requested",
-				})
-
-				return {
-					action: "external_changes_requested",
-					intent: slug,
-					stage: currentStage,
-					external_review_url: externalUrl,
-					provider: externalState.provider,
-					feedback_id: fbResult.feedback_id,
-					feedback_file: fbResult.file,
-					visits: stateData.visits,
-					message: `External review at ${externalUrl} requested changes. Created ${fbResult.feedback_id} and rolled back to elaborate phase (visit ${stateData.visits}). Address the reviewer's feedback, then call haiku_run_next to continue.`,
-				}
 			} else if (externalUrl) {
 				return {
 					action: "awaiting_external_review",
@@ -2183,58 +2173,12 @@ export function runNext(slug: string): OrchestratorAction {
 				})
 				// Fall through to advance logic below
 			} else if (externalState.status === "changes_requested") {
-				// External reviewer requested changes — create a summary
-				// feedback file and trigger a revisit cycle
-				const originType =
-					externalState.provider === "gitlab"
-						? "external-mr"
-						: "external-pr"
-				const fbResult = writeFeedbackFile(
+				return handleExternalChangesRequested(
 					slug,
 					currentStage,
-					{
-						title: "External review requested changes",
-						body: `The external review at ${externalUrl} requested changes. Review the PR/MR comments and address the reviewer's feedback before re-submitting for review.`,
-						origin: originType,
-						author: "user",
-						source_ref: externalUrl,
-					},
+					externalUrl,
+					externalState.provider,
 				)
-				gitCommitState(
-					`feedback: create ${fbResult.feedback_id} from external review in ${currentStage}`,
-				)
-
-				// Roll FSM back to elaborate for a revisit cycle
-				const statePath = stageStatePath(slug, currentStage)
-				const stateData = readJson(statePath)
-				stateData.status = "active"
-				stateData.phase = "elaborate"
-				stateData.gate_outcome = null
-				stateData.visits =
-					((stateData.visits as number) || 0) + 1
-				writeJson(statePath, stateData)
-				gitCommitState(
-					`revisit ${currentStage}: external changes requested (visit ${stateData.visits})`,
-				)
-
-				emitTelemetry("haiku.gate.resolved", {
-					intent: slug,
-					stage: currentStage,
-					gate_type: "external",
-					outcome: "changes_requested",
-				})
-
-				return {
-					action: "external_changes_requested",
-					intent: slug,
-					stage: currentStage,
-					external_review_url: externalUrl,
-					provider: externalState.provider,
-					feedback_id: fbResult.feedback_id,
-					feedback_file: fbResult.file,
-					visits: stateData.visits,
-					message: `External review at ${externalUrl} requested changes. Created ${fbResult.feedback_id} and rolled back to elaborate phase (visit ${stateData.visits}). Address the reviewer's feedback, then call haiku_run_next to continue.`,
-				}
 			} else {
 				return {
 					action: "awaiting_external_review",

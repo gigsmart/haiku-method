@@ -402,6 +402,31 @@ export function resolveStudio(identifier: string): StudioInfo | null {
 	return null
 }
 
+/** Read a phase override file for a stage (e.g. ELABORATION.md, EXECUTION.md).
+ *  Returns frontmatter + body, or null if no override exists. */
+export function readPhaseOverride(
+	studio: string,
+	stage: string,
+	phase: string,
+): { data: Record<string, unknown>; body: string } | null {
+	validateIdentifier(studio, "studio")
+	validateIdentifier(stage, "stage")
+	for (const base of studioSearchPaths()) {
+		const file = join(
+			base,
+			studio,
+			"stages",
+			stage,
+			"phases",
+			`${phase.toUpperCase()}.md`,
+		)
+		if (existsSync(file)) {
+			return parseFrontmatter(readFileSync(file, "utf8"))
+		}
+	}
+	return null
+}
+
 /** Read operation definitions for a studio (project overrides plugin for same-named ops) */
 export function readOperationDefs(studio: string): Record<string, string> {
 	validateIdentifier(studio, "studio")
