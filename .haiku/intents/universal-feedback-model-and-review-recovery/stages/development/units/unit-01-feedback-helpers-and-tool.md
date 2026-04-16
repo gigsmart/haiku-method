@@ -2,12 +2,19 @@
 title: Feedback file helpers and haiku_feedback tool
 type: implementation
 depends_on: []
-quality_gates: [typecheck, test]
+quality_gates:
+  - typecheck
+  - test
 inputs:
   - knowledge/DISCOVERY.md
   - knowledge/DATA-CONTRACTS.md
   - knowledge/ACCEPTANCE-CRITERIA.md
   - features/feedback-crud.feature
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-16T15:08:25Z'
+hat_started_at: '2026-04-16T15:08:25Z'
 ---
 
 # Feedback File Helpers and haiku_feedback Tool
