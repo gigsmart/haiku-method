@@ -1,8 +1,12 @@
 ---
 title: Review server CRUD endpoints and review app UI
 type: implementation
-depends_on: [unit-01-feedback-helpers-and-tool, unit-05-orchestrator-integration]
-quality_gates: [typecheck, test]
+depends_on:
+  - unit-01-feedback-helpers-and-tool
+  - unit-05-orchestrator-integration
+quality_gates:
+  - typecheck
+  - test
 inputs:
   - knowledge/DATA-CONTRACTS.md
   - knowledge/ACCEPTANCE-CRITERIA.md
@@ -15,6 +19,11 @@ inputs:
   - stages/design/artifacts/review-context-header.html
   - stages/design/artifacts/revisit-unit-list.html
   - features/review-ui-feedback.feature
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-16T16:07:06Z'
+hat_started_at: '2026-04-16T16:07:06Z'
 ---
 
 # Review Server CRUD Endpoints and Review App UI
