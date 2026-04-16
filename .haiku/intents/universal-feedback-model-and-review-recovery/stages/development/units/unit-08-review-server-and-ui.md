@@ -24,6 +24,8 @@ bolt: 1
 hat: reviewer
 started_at: '2026-04-16T16:07:06Z'
 hat_started_at: '2026-04-16T16:18:56Z'
+outputs:
+  - stages/development/artifacts/unit-08-implementation.md
 ---
 
 # Review Server CRUD Endpoints and Review App UI
