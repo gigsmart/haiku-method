@@ -12,9 +12,11 @@ inputs:
   - features/feedback-crud.feature
 status: active
 bolt: 1
-hat: planner
+hat: builder
 started_at: '2026-04-16T15:08:25Z'
-hat_started_at: '2026-04-16T15:08:25Z'
+hat_started_at: '2026-04-16T15:13:31Z'
+outputs:
+  - stages/development/artifacts/unit-03-rename-notes.md
 ---
 
 # Feedback File Helpers and haiku_feedback Tool

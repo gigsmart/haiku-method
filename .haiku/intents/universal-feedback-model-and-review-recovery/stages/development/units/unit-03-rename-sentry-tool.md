@@ -13,6 +13,7 @@ bolt: 1
 hat: reviewer
 started_at: '2026-04-16T15:07:31Z'
 hat_started_at: '2026-04-16T15:11:52Z'
+outputs: '["stages/development/artifacts/unit-03-rename-notes.md"]'
 ---
 
 # Rename Sentry Tool
