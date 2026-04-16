@@ -11,11 +11,14 @@ inputs:
   - knowledge/ACCEPTANCE-CRITERIA.md
   - features/auto-revisit.feature
   - features/revisit-with-reasons.feature
-status: active
+status: completed
 bolt: 1
 hat: reviewer
 started_at: '2026-04-16T15:37:38Z'
 hat_started_at: '2026-04-16T15:39:06Z'
+outputs:
+  - stages/development/artifacts/unit-04-gate-feedback-check.md
+completed_at: '2026-04-16T15:46:01Z'
 ---
 
 # Gate-Phase Feedback Check and Auto-Revisit
