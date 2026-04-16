@@ -9,9 +9,9 @@ inputs:
   - stages/design/DESIGN-BRIEF.md
 status: active
 bolt: 1
-hat: specification
+hat: validator
 started_at: '2026-04-16T14:18:07Z'
-hat_started_at: '2026-04-16T14:22:19Z'
+hat_started_at: '2026-04-16T14:22:58Z'
 outputs:
   - knowledge/ACCEPTANCE-CRITERIA.md
 ---
