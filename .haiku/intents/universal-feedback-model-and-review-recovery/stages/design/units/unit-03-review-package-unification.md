@@ -10,9 +10,9 @@ inputs:
   - stages/design/DESIGN-BRIEF.md
 status: active
 bolt: 1
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-16T13:02:03Z'
-hat_started_at: '2026-04-16T13:02:03Z'
+hat_started_at: '2026-04-16T13:09:03Z'
 ---
 
 # Review UI Package Unification Design

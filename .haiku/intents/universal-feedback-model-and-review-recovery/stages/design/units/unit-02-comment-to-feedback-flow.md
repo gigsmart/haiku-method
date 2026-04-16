@@ -13,6 +13,8 @@ bolt: 1
 hat: design-reviewer
 started_at: '2026-04-16T13:01:51Z'
 hat_started_at: '2026-04-16T13:08:13Z'
+outputs:
+  - stages/design/artifacts/review-package-structure.html
 ---
 
 # Comment to Feedback Flow Design
