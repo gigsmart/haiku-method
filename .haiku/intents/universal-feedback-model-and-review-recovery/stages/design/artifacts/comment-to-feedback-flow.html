@@ -2,8 +2,8 @@
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Comment to Feedback Flow — Design Artifact</title>
+  <meta name="viewport" content="width=1440" />
+  <title>Comment-to-Feedback Flow Diagram</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -13,38 +13,6 @@
   </script>
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; }
-
-    /* Flow arrow connectors */
-    .flow-arrow-down::after {
-      content: '\2193';
-      display: block;
-      text-align: center;
-      color: #78716c;
-      font-size: 18px;
-      line-height: 28px;
-    }
-    .flow-arrow-right::after {
-      content: '\2192';
-      position: absolute;
-      right: -20px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #78716c;
-      font-size: 16px;
-    }
-
-    /* Flow step node */
-    .flow-step {
-      border: 1px solid;
-      border-radius: 8px;
-      padding: 12px 16px;
-      position: relative;
-      transition: all 0.15s ease;
-    }
-    .flow-step:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
 
     /* Status transition animation */
     @keyframes feedback-status-change {
@@ -56,53 +24,13 @@
       animation: feedback-status-change 0.4s ease-in-out;
     }
 
-    /* Optimistic flash overlay */
-    @keyframes optimistic-flash {
-      0%   { background: rgba(13, 148, 136, 0.15); }
-      100% { background: transparent; }
+    /* Subtle card lift on hover */
+    .fb-card-hover:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
-    .optimistic-flash {
-      animation: optimistic-flash 0.6s ease-out;
-    }
-
-    /* Error shake */
-    @keyframes error-shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-4px); }
-      75% { transform: translateX(4px); }
-    }
-    .error-shake {
-      animation: error-shake 0.3s ease-in-out;
-    }
-
-    /* Code block */
-    .code-block {
-      background: #1c1917;
-      border: 1px solid #44403c;
-      border-radius: 8px;
-      padding: 12px 16px;
-      overflow-x: auto;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 11px;
-      line-height: 1.6;
-    }
-    .code-block .kw { color: #c084fc; }
-    .code-block .type { color: #60a5fa; }
-    .code-block .str { color: #4ade80; }
-    .code-block .comment { color: #78716c; }
-    .code-block .prop { color: #fbbf24; }
-
-    /* Annotation connector */
-    .annotation-connector {
-      position: absolute;
-      width: 24px;
-      top: 50%;
-      right: 100%;
-    }
-
-    /* Code line highlight for annotated lines */
-    .code-line-annotated {
-      background: rgba(251, 191, 36, 0.08);
+    .dark .fb-card-hover:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
 
     /* Pin marker */
@@ -123,1109 +51,1179 @@
       z-index: 10;
     }
 
-    /* Touch target for mobile */
-    .touch-target {
-      min-height: 44px;
-      min-width: 44px;
+    /* Flow arrow connector */
+    .flow-arrow {
+      position: relative;
     }
-
-    /* Bottom sheet animation */
-    @keyframes sheet-up {
-      from { transform: translateY(100%); }
-      to   { transform: translateY(0); }
-    }
-    .sheet-enter {
-      animation: sheet-up 0.3s ease-out;
-    }
-
-    /* FAB pulse */
-    @keyframes feedback-pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4); }
-      50%      { box-shadow: 0 0 0 8px rgba(13, 148, 136, 0); }
-    }
-    .feedback-fab-pulse {
-      animation: feedback-pulse 2s ease-in-out 3;
-    }
-
-    /* Popover triangle */
-    .popover-triangle::before {
+    .flow-arrow::after {
       content: '';
       position: absolute;
-      top: -6px;
-      left: 20px;
-      width: 12px;
-      height: 12px;
-      background: inherit;
-      border: inherit;
-      border-right: none;
-      border-bottom: none;
-      transform: rotate(45deg);
+      top: 50%;
+      right: -20px;
+      transform: translateY(-50%);
+      border: 6px solid transparent;
+      border-left: 8px solid;
+    }
+    .dark .flow-arrow::after {
+      border-left-color: #57534e;
+    }
+
+    /* Dashed connector line */
+    .connector-dashed {
+      border-top: 2px dashed;
+    }
+    .dark .connector-dashed {
+      border-color: #57534e;
+    }
+
+    /* Pulsing save indicator */
+    @keyframes save-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .save-pulsing {
+      animation: save-pulse 1.2s ease-in-out infinite;
+    }
+
+    /* Fade-out for delete */
+    @keyframes fade-out {
+      0% { opacity: 1; transform: translateX(0); }
+      100% { opacity: 0; transform: translateX(12px); }
+    }
+    .fade-out-card {
+      animation: fade-out 0.3s ease-out forwards;
+    }
+
+    /* Bottom sheet slide-up */
+    @keyframes slide-up {
+      0% { transform: translateY(100%); }
+      100% { transform: translateY(0); }
+    }
+    .slide-up {
+      animation: slide-up 0.3s ease-out;
+    }
+
+    /* Retry spinner */
+    @keyframes retry-spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .retry-spin {
+      animation: retry-spin 1s linear infinite;
+    }
+
+    /* Code line highlight for annotated lines */
+    .code-line-annotated {
+      background: rgba(251, 191, 36, 0.08);
+    }
+
+    /* Step number badge */
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* Section divider */
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+    }
+    .dark .section-divider::after {
+      background: #44403c;
+    }
+
+    /* Annotation connector line */
+    .annotation-connector {
+      position: absolute;
+      width: 24px;
+      top: 50%;
+      right: 100%;
     }
   </style>
 </head>
-<body class="dark bg-stone-950 text-stone-100">
+<body class="dark bg-stone-950 text-stone-100 min-h-screen">
 
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-    <!-- Header -->
-    <header class="mb-10">
-      <div class="flex items-center gap-3 mb-2">
-        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">design artifact</span>
-        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-02</span>
+  <!-- Header -->
+  <header class="sticky top-0 z-40 bg-white/80 dark:bg-stone-900/80 backdrop-blur border-b border-stone-200 dark:border-stone-800">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+      <div>
+        <h1 class="text-lg font-semibold text-stone-900 dark:text-stone-100">Comment-to-Feedback Flow Diagram</h1>
+        <p class="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Unit 02 &middot; Design Artifact &middot; All interaction flows for feedback creation, editing, and lifecycle</p>
       </div>
-      <h1 class="text-2xl font-bold mb-2">Comment to Feedback Flow</h1>
-      <p class="text-sm text-stone-500 dark:text-stone-400">
-        Interaction flow from comment creation through feedback file persistence. Covers text selection, visual annotation, edit, delete, pre-existing feedback, error states, and responsive behavior.
-      </p>
-    </header>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">v1.0</span>
+      </div>
+    </div>
+  </header>
 
-    <!-- Table of Contents -->
-    <nav class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6 mb-6" aria-label="Table of contents">
-      <h2 class="text-lg font-semibold mb-3 text-stone-900 dark:text-stone-100">Contents</h2>
-      <ol class="list-decimal list-inside space-y-1 text-sm text-teal-600 dark:text-teal-400">
-        <li><a href="#flow-text-selection" class="hover:underline">Text Selection &rarr; Inline Annotation</a></li>
-        <li><a href="#flow-visual-annotation" class="hover:underline">Visual Annotation (Pin Drop)</a></li>
-        <li><a href="#flow-edit" class="hover:underline">Edit Flow</a></li>
-        <li><a href="#flow-delete" class="hover:underline">Delete Flow</a></li>
-        <li><a href="#flow-preexisting" class="hover:underline">Pre-existing Feedback</a></li>
-        <li><a href="#flow-error-states" class="hover:underline">Error States</a></li>
-        <li><a href="#flow-mobile" class="hover:underline">Mobile / Responsive Behavior</a></li>
-      </ol>
-    </nav>
+  <main class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
 
-    <!-- ============================================================ -->
-    <!-- FLOW 1: Text Selection -> Inline Annotation -->
-    <!-- ============================================================ -->
-    <section id="flow-text-selection" class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6 mb-6">
-      <h2 class="text-lg font-semibold mb-3 text-stone-900 dark:text-stone-100">1. Text Selection &rarr; Inline Annotation</h2>
-      <p class="text-xs text-stone-500 dark:text-stone-400 mb-4">User selects text in a prose content area, writes a comment, and it persists as a feedback file.</p>
+    <!-- ================================================================ -->
+    <!-- FLOW 1: TEXT SELECTION -> INLINE ANNOTATION -->
+    <!-- ================================================================ -->
+    <section class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="step-num bg-teal-600 text-white">1</span>
+        <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100">Text Selection &rarr; Inline Annotation</h2>
+      </div>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">User selects text in review content &rarr; comment popover appears &rarr; user types &rarr; debounced POST (500ms) &rarr; feedback file created with <code class="bg-stone-100 dark:bg-stone-800 px-1 py-0.5 rounded text-xs">status: pending</code>, <code class="bg-stone-100 dark:bg-stone-800 px-1 py-0.5 rounded text-xs">origin: user-visual</code> &rarr; inline annotation card appears adjacent.</p>
 
-      <!-- Step-by-step flow -->
-      <div class="space-y-1">
+      <!-- Step-by-step flow with live mockups -->
+      <div class="grid grid-cols-5 gap-4 items-start">
+
         <!-- Step 1: Text Selection -->
-        <div class="flow-step border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-teal-600 text-white text-xs font-bold">1</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">User selects text</span>
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="step-num bg-stone-700 text-stone-300 text-[10px]">1a</span>
+            <span class="text-xs font-medium text-stone-400">Select text</span>
           </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8">Mouse drag or touch-hold on prose content. Selected region highlights with <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">bg-amber-200 dark:bg-amber-700/50</code> (existing inline highlight token).</p>
+          <div class="bg-stone-800/50 rounded-lg p-3 border border-stone-700 text-xs">
+            <p class="text-stone-300 leading-relaxed">The current review workflow treats feedback as <span class="bg-amber-700/50 text-amber-200 px-0.5 rounded">ephemeral batch comments that vanish after submission</span>. When a reviewer requests changes...</p>
+          </div>
+          <p class="text-[10px] text-stone-500 italic">User drags to select text range</p>
         </div>
-        <div class="flow-arrow-down"></div>
 
-        <!-- Step 2: Comment Popover -->
-        <div class="flow-step border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-teal-600 text-white text-xs font-bold">2</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">Comment popover appears</span>
+        <!-- Step 2: Popover appears -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="step-num bg-stone-700 text-stone-300 text-[10px]">1b</span>
+            <span class="text-xs font-medium text-stone-400">Popover</span>
           </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8">Positioned below the selection. Contains a textarea + "Add" button. Popover uses <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">z-50</code> (popover layer from z-index map).</p>
-          <!-- Mini wireframe of popover -->
-          <div class="ml-8 mt-3 max-w-sm">
-            <div class="relative bg-white dark:bg-stone-800 rounded-lg border border-stone-200 dark:border-stone-700 shadow-lg p-3 popover-triangle">
-              <div class="mb-2">
-                <span class="text-[10px] font-medium text-stone-400 dark:text-stone-500">Selected: "feedback items cannot be individually tracked"</span>
-              </div>
-              <textarea class="w-full text-xs p-2 border border-stone-300 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 resize-none focus:ring-1 focus:ring-teal-500" rows="2" placeholder="Add a comment..."></textarea>
-              <div class="flex justify-end mt-2">
-                <button class="px-3 py-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors">Add</button>
+          <div class="bg-stone-800/50 rounded-lg p-3 border border-stone-700 text-xs relative">
+            <p class="text-stone-300 leading-relaxed">...treats feedback as <span class="bg-amber-700/50 text-amber-200 px-0.5 rounded">ephemeral batch comments that vanish after submission</span>...</p>
+            <!-- Popover -->
+            <div class="absolute -top-1 left-1/2 -translate-x-1/2 -translate-y-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-600 rounded-lg shadow-lg z-10">
+              <div class="px-3 py-1.5 cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors rounded-lg">
+                <span class="text-sm font-medium text-teal-600 dark:text-teal-400">+ Comment</span>
               </div>
             </div>
           </div>
+          <p class="text-[10px] text-stone-500 italic">Popover at selection midpoint</p>
         </div>
-        <div class="flow-arrow-down"></div>
 
-        <!-- Step 3: Comment added to local state -->
-        <div class="flow-step border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-teal-600 text-white text-xs font-bold">3</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">Comment stored in React state</span>
+        <!-- Step 3: Comment input -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="step-num bg-stone-700 text-stone-300 text-[10px]">1c</span>
+            <span class="text-xs font-medium text-stone-400">Type comment</span>
           </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8">Popover closes. Comment joins the existing <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">InlineCommentEntry[]</code> in <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">onCommentsChange</code>. Annotation card appears inline adjacent to the selected text, connected by a dashed line.</p>
-          <!-- Inline annotation card preview -->
-          <div class="ml-8 mt-3 max-w-md">
-            <div class="relative">
-              <p class="code-line-annotated rounded px-1 text-xs text-stone-300">"feedback items cannot be individually tracked, addressed, or closed."</p>
-              <div class="mt-2">
-                <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
-                  <div class="flex items-center gap-2 mb-1">
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
-                      <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
-                    </span>
-                    <span class="flex-1"></span>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400" aria-label="Status: draft">draft</span>
-                  </div>
-                  <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">This should be structured with unique IDs</p>
-                  <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">jwaldrip &middot; just now</p>
+          <div class="bg-stone-800/50 rounded-lg p-3 border border-stone-700 text-xs relative">
+            <p class="text-stone-300 leading-relaxed opacity-40">...ephemeral batch comments...</p>
+            <!-- Expanded input -->
+            <div class="mt-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-600 rounded-lg shadow-lg p-3">
+              <textarea class="w-full min-h-[40px] p-2 border border-stone-300 dark:border-stone-600 rounded-md bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 text-xs focus:ring-1 focus:ring-teal-500 resize-none" readonly>This should persist across review cycles|</textarea>
+              <div class="flex justify-between items-center mt-2">
+                <span class="text-[10px] text-stone-500 save-pulsing">Saving...</span>
+                <div class="flex gap-1">
+                  <button class="px-2 py-1 text-[10px] font-medium text-stone-400 hover:bg-stone-700 rounded-md">Cancel</button>
+                  <button class="px-2 py-1 text-[10px] font-medium text-white bg-teal-600 rounded-md">Save</button>
                 </div>
               </div>
             </div>
           </div>
+          <p class="text-[10px] text-stone-500 italic">Debounced POST after 500ms idle</p>
         </div>
-        <div class="flow-arrow-down"></div>
 
-        <!-- Step 4: On "Request Changes" — CRUD POST -->
-        <div class="flow-step border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-600 text-white text-xs font-bold">4</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">User clicks "Request Changes"</span>
+        <!-- Step 4: CRUD request -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="step-num bg-stone-700 text-stone-300 text-[10px]">1d</span>
+            <span class="text-xs font-medium text-stone-400">CRUD create</span>
           </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8">For each comment, sequentially: <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">POST /api/feedback/{intent}/{stage}</code>. Button shows "Saving feedback..." in disabled state (<code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">disabled:opacity-50 disabled:cursor-not-allowed</code>).</p>
-          <div class="ml-8 mt-2">
-            <div class="code-block text-stone-300">
-              <span class="comment">// Request body for text selection comment</span><br>
-              <span class="punct">{</span><br>
-              &nbsp;&nbsp;<span class="prop">title</span><span class="punct">:</span> <span class="str">"This should be structured with unique IDs"</span><span class="punct">,</span><br>
-              &nbsp;&nbsp;<span class="prop">body</span><span class="punct">:</span> <span class="str">"&gt; feedback items cannot be individually tracked\n\nThis should be..."</span><span class="punct">,</span><br>
-              &nbsp;&nbsp;<span class="prop">origin</span><span class="punct">:</span> <span class="str">"user-visual"</span><span class="punct">,</span><br>
-              &nbsp;&nbsp;<span class="prop">source_ref</span><span class="punct">:</span> <span class="str">"DISCOVERY.md#paragraph-3"</span><br>
-              <span class="punct">}</span>
+          <div class="bg-stone-800 rounded-lg p-3 border border-stone-700 font-mono text-[10px] space-y-2">
+            <p class="text-teal-400">POST /api/feedback/{intent}/{stage}</p>
+            <div class="bg-stone-900 rounded p-2 text-stone-400">
+              <p>{</p>
+              <p class="pl-3">"title": "ephemeral batch comments...",</p>
+              <p class="pl-3">"body": "> ephemeral batch comments\n\nThis should persist...",</p>
+              <p class="pl-3">"origin": "<span class="text-sky-400">user-visual</span>",</p>
+              <p class="pl-3">"source_ref": "<span class="text-amber-400">overview.md#2</span>"</p>
+              <p>}</p>
+            </div>
+            <div class="bg-stone-900 rounded p-2 text-green-400">
+              <p>201 Created</p>
+              <p class="text-stone-500">{ id: "08", slug: "ephemeral-batch", status: "pending" }</p>
             </div>
           </div>
+          <p class="text-[10px] text-stone-500 italic">Feedback file written to disk</p>
         </div>
-        <div class="flow-arrow-down"></div>
 
-        <!-- Step 5: Feedback file created -->
-        <div class="flow-step border-green-300 dark:border-green-700 bg-green-50/30 dark:bg-green-950/15">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold">5</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">Feedback file created on disk</span>
+        <!-- Step 5: Annotation card appears -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="step-num bg-stone-700 text-stone-300 text-[10px]">1e</span>
+            <span class="text-xs font-medium text-stone-400">Card renders</span>
           </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8">Server creates <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">feedback/01-this-should-be-structured.md</code> with <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">status: pending</code>, <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">origin: user-visual</code>, <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">source_ref: DISCOVERY.md#paragraph-3</code>. Card badge updates from "draft" to "pending".</p>
-          <!-- Updated card showing pending status -->
-          <div class="ml-8 mt-3 max-w-md">
-            <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
-                  <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
+          <div class="bg-stone-800/50 rounded-lg p-3 border border-stone-700 text-xs relative">
+            <p class="text-stone-300 leading-relaxed">...<span class="bg-amber-700/50 text-amber-200 px-0.5 rounded">ephemeral batch comments</span>...</p>
+            <!-- Inline annotation card -->
+            <div class="mt-2 fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all feedback-status-changed">
+              <div class="flex items-center gap-1 mb-1">
+                <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
+                  &#x1F441;&#xFE0F; Annotation
                 </span>
                 <span class="flex-1"></span>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 feedback-status-changed" aria-label="Status: pending">pending</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
               </div>
-              <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">This should be structured with unique IDs</p>
-              <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-01 &middot; Visit 1 &middot; user-visual</p>
+              <p class="text-[10px] font-medium text-stone-300 truncate">This should persist across review cycles</p>
+              <p class="text-[9px] text-stone-500 mt-0.5">FB-08 &middot; jwaldrip</p>
             </div>
           </div>
+          <p class="text-[10px] text-stone-500 italic">Card appears adjacent to highlight</p>
         </div>
-        <div class="flow-arrow-down"></div>
+      </div>
 
-        <!-- Step 6: Submit decision -->
-        <div class="flow-step border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-teal-600 text-white text-xs font-bold">6</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">Decision submitted</span>
-          </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">submitDecision(sessionId, "changes_requested", feedbackSummary, annotations)</code>. The "Mine" list clears, "Feedback" list refreshes to show newly created items.</p>
+      <!-- Data flow summary -->
+      <div class="mt-6 p-3 bg-stone-800/50 rounded-lg border border-stone-700">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Data Flow</p>
+        <div class="flex items-center gap-2 text-[10px] text-stone-400 flex-wrap">
+          <span class="px-2 py-1 rounded bg-stone-800 border border-stone-600 text-stone-300">window.getSelection()</span>
+          <span class="text-stone-600">&rarr;</span>
+          <span class="px-2 py-1 rounded bg-stone-800 border border-stone-600 text-stone-300">pendingSelectionRef</span>
+          <span class="text-stone-600">&rarr;</span>
+          <span class="px-2 py-1 rounded bg-stone-800 border border-stone-600 text-stone-300">popover "+" button</span>
+          <span class="text-stone-600">&rarr;</span>
+          <span class="px-2 py-1 rounded bg-stone-800 border border-stone-600 text-stone-300">textarea (500ms debounce)</span>
+          <span class="text-stone-600">&rarr;</span>
+          <span class="px-2 py-1 rounded bg-teal-900/40 border border-teal-700 text-teal-400">POST /api/feedback</span>
+          <span class="text-stone-600">&rarr;</span>
+          <span class="px-2 py-1 rounded bg-amber-900/40 border border-amber-700 text-amber-300">feedback file on disk</span>
+          <span class="text-stone-600">&rarr;</span>
+          <span class="px-2 py-1 rounded bg-stone-800 border border-stone-600 text-stone-300">FeedbackItem card</span>
         </div>
       </div>
     </section>
 
-    <!-- ============================================================ -->
-    <!-- FLOW 2: Visual Annotation (Pin Drop) -->
-    <!-- ============================================================ -->
-    <section id="flow-visual-annotation" class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6 mb-6">
-      <h2 class="text-lg font-semibold mb-3 text-stone-900 dark:text-stone-100">2. Visual Annotation (Pin Drop)</h2>
-      <p class="text-xs text-stone-500 dark:text-stone-400 mb-4">User drops a pin on an AnnotationCanvas image, writes a comment, and it persists as a feedback file with x,y coordinates.</p>
+    <!-- ================================================================ -->
+    <!-- FLOW 2: VISUAL / DESIGN ANNOTATION (AnnotationCanvas) -->
+    <!-- ================================================================ -->
+    <section class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="step-num bg-teal-600 text-white">2</span>
+        <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100">Visual/Design Annotation (AnnotationCanvas)</h2>
+      </div>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">User clicks on image/mockup &rarr; pin drops at x,y &rarr; comment text popover &rarr; same CRUD flow &rarr; feedback file with <code class="bg-stone-100 dark:bg-stone-800 px-1 py-0.5 rounded text-xs">source_ref</code> carrying image path + coordinates &rarr; annotation card overlays pin position.</p>
 
-      <div class="space-y-1">
-        <!-- Step 1: Pin Drop -->
-        <div class="flow-step border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-teal-600 text-white text-xs font-bold">1</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">User clicks on image (AnnotationCanvas)</span>
+      <div class="grid grid-cols-4 gap-4 items-start">
+
+        <!-- Step 1: Click to pin -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="step-num bg-stone-700 text-stone-300 text-[10px]">2a</span>
+            <span class="text-xs font-medium text-stone-400">Click image</span>
           </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8">Click or tap on the image area. A pin marker appears at the click coordinates. Pin uses <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">bg-teal-600 text-white rounded-full</code> with <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">box-shadow: 0 2px 6px rgba(0,0,0,0.3)</code>.</p>
-          <!-- Pin preview on image -->
-          <div class="ml-8 mt-3">
-            <div class="relative bg-stone-100 dark:bg-stone-800 rounded-lg border border-stone-200 dark:border-stone-700 overflow-hidden" style="height: 160px; max-width: 400px;">
-              <div class="absolute inset-0 flex items-center justify-center text-stone-400 dark:text-stone-500">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <path d="m21 15-5-5L5 21" />
-                </svg>
-              </div>
-              <div class="pin-marker bg-teal-600 text-white" style="left: 35%; top: 45%;">1</div>
+          <div class="relative bg-stone-800 rounded-lg border border-stone-700 overflow-hidden" style="height: 160px;">
+            <!-- Placeholder image -->
+            <div class="absolute inset-0 flex items-center justify-center text-stone-600">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
+            </div>
+            <!-- Crosshair cursor indicator -->
+            <div class="absolute" style="left: 40%; top: 35%;">
+              <div class="w-6 h-6 border-2 border-teal-400 rounded-full opacity-60"></div>
+              <div class="absolute top-1/2 left-1/2 w-1 h-1 bg-teal-400 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
             </div>
           </div>
+          <p class="text-[10px] text-stone-500 italic">Pin tool active, cursor: crosshair</p>
         </div>
-        <div class="flow-arrow-down"></div>
 
-        <!-- Step 2: Popover at pin position -->
-        <div class="flow-step border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-teal-600 text-white text-xs font-bold">2</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">Comment popover at pin position</span>
+        <!-- Step 2: Pin drops + popover -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="step-num bg-stone-700 text-stone-300 text-[10px]">2b</span>
+            <span class="text-xs font-medium text-stone-400">Pin + popover</span>
           </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8">Same popover pattern as text selection but anchored to pin. Textarea + "Add" button. <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">z-50</code> layer.</p>
-        </div>
-        <div class="flow-arrow-down"></div>
-
-        <!-- Step 3: Local state -->
-        <div class="flow-step border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-teal-600 text-white text-xs font-bold">3</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">Pin + comment stored in <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">AnnotationPin[]</code></span>
-          </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8">Popover closes. Annotation card overlays the image next to the pin, connected visually. Card shows "draft" status badge in "Mine" view.</p>
-          <!-- Pin with adjacent card preview -->
-          <div class="ml-8 mt-3">
-            <div class="relative bg-stone-100 dark:bg-stone-800 rounded-lg border border-stone-200 dark:border-stone-700 overflow-hidden" style="height: 160px; max-width: 500px;">
-              <div class="absolute inset-0 flex items-center justify-center text-stone-400 dark:text-stone-500">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <path d="m21 15-5-5L5 21" />
-                </svg>
+          <div class="relative bg-stone-800 rounded-lg border border-stone-700 overflow-hidden" style="height: 160px;">
+            <div class="absolute inset-0 flex items-center justify-center text-stone-600">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
+            </div>
+            <!-- Pin marker -->
+            <div class="pin-marker bg-teal-600 text-white" style="left: 40%; top: 35%;">1</div>
+            <!-- Comment popover -->
+            <div class="absolute z-20 bg-white dark:bg-stone-800 border border-stone-600 rounded-lg shadow-lg p-2 w-[140px]" style="left: calc(40% + 18px); top: calc(35% + 4px);">
+              <textarea class="w-full min-h-[32px] p-1.5 border border-stone-600 rounded-md bg-stone-900 text-stone-100 text-[10px] resize-none" readonly>Header alignment off|</textarea>
+              <div class="flex justify-end gap-1 mt-1">
+                <button class="px-1.5 py-0.5 text-[9px] font-medium text-stone-400 rounded">Cancel</button>
+                <button class="px-1.5 py-0.5 text-[9px] font-medium text-white bg-teal-600 rounded">Save</button>
               </div>
-              <div class="pin-marker bg-teal-600 text-white" style="left: 25%; top: 40%;">1</div>
-              <div class="absolute z-20" style="left: calc(25% + 24px); top: calc(40% - 8px);">
-                <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 w-[200px]">
-                  <div class="flex items-center gap-1 mb-1">
-                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
-                      <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Pin
-                    </span>
-                    <span class="flex-1"></span>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">draft</span>
-                  </div>
-                  <p class="text-[10px] font-medium text-stone-700 dark:text-stone-300 truncate">Header alignment feels off</p>
+            </div>
+          </div>
+          <p class="text-[10px] text-stone-500 italic">Pin at (40%, 35%), popover adjacent</p>
+        </div>
+
+        <!-- Step 3: CRUD -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="step-num bg-stone-700 text-stone-300 text-[10px]">2c</span>
+            <span class="text-xs font-medium text-stone-400">CRUD create</span>
+          </div>
+          <div class="bg-stone-800 rounded-lg p-3 border border-stone-700 font-mono text-[10px] space-y-2">
+            <p class="text-teal-400">POST /api/feedback/{intent}/{stage}</p>
+            <div class="bg-stone-900 rounded p-2 text-stone-400">
+              <p>{</p>
+              <p class="pl-3">"title": "Pin at (40%, 35%): Header...",</p>
+              <p class="pl-3">"body": "Pin annotation at (40%, 35%)...",</p>
+              <p class="pl-3">"origin": "<span class="text-sky-400">user-visual</span>",</p>
+              <p class="pl-3">"source_ref": "<span class="text-amber-400">mockup.png#40,35</span>"</p>
+              <p>}</p>
+            </div>
+            <div class="bg-stone-900 rounded p-2 text-green-400">
+              <p>201 Created</p>
+            </div>
+          </div>
+          <p class="text-[10px] text-stone-500 italic">source_ref encodes image + coords</p>
+        </div>
+
+        <!-- Step 4: Card at pin -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="step-num bg-stone-700 text-stone-300 text-[10px]">2d</span>
+            <span class="text-xs font-medium text-stone-400">Card at pin</span>
+          </div>
+          <div class="relative bg-stone-800 rounded-lg border border-stone-700 overflow-hidden" style="height: 160px;">
+            <div class="absolute inset-0 flex items-center justify-center text-stone-600">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
+            </div>
+            <div class="pin-marker bg-teal-600 text-white" style="left: 40%; top: 35%;">1</div>
+            <!-- Feedback card overlay -->
+            <div class="absolute z-20 w-[160px]" style="left: calc(40% + 20px); top: calc(35% - 12px);">
+              <div class="border-l-[3px] border-l-amber-400 p-2 rounded-lg bg-amber-950/20 border border-stone-700 feedback-status-changed">
+                <div class="flex items-center gap-1 mb-0.5">
+                  <span class="text-[9px] text-sky-400">&#x1F441;&#xFE0F;</span>
+                  <span class="flex-1"></span>
+                  <span class="inline-flex items-center px-1 py-0.5 rounded-full text-[9px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
                 </div>
+                <p class="text-[10px] font-medium text-stone-300 truncate">Header alignment off</p>
               </div>
             </div>
           </div>
-        </div>
-        <div class="flow-arrow-down"></div>
-
-        <!-- Step 4: On submit — CRUD POST with coordinates -->
-        <div class="flow-step border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-600 text-white text-xs font-bold">4</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">"Request Changes" &rarr; POST with coordinates</span>
-          </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8">Feedback file includes <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">source_ref</code> with image path + x,y coordinates.</p>
-          <div class="ml-8 mt-2">
-            <div class="code-block text-stone-300">
-              <span class="comment">// Pin annotation request body</span><br>
-              <span class="punct">{</span><br>
-              &nbsp;&nbsp;<span class="prop">title</span><span class="punct">:</span> <span class="str">"Pin at (25%, 40%): Header alignment feels off"</span><span class="punct">,</span><br>
-              &nbsp;&nbsp;<span class="prop">body</span><span class="punct">:</span> <span class="str">"Pin annotation at (25%, 40%) on wireframe.png\n\nHeader alignment..."</span><span class="punct">,</span><br>
-              &nbsp;&nbsp;<span class="prop">origin</span><span class="punct">:</span> <span class="str">"user-visual"</span><span class="punct">,</span><br>
-              &nbsp;&nbsp;<span class="prop">source_ref</span><span class="punct">:</span> <span class="str">"wireframe.png#pin(25,40)"</span><br>
-              <span class="punct">}</span>
-            </div>
-          </div>
-        </div>
-        <div class="flow-arrow-down"></div>
-
-        <!-- Step 5: File created -->
-        <div class="flow-step border-green-300 dark:border-green-700 bg-green-50/30 dark:bg-green-950/15">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold">5</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">Feedback file created</span>
-          </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8">Server creates <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">feedback/05-header-alignment.md</code>. Card updates: draft &rarr; pending. Pin remains at coordinates and re-renders on revisit using <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">source_ref</code> data.</p>
+          <p class="text-[10px] text-stone-500 italic">Annotation card overlays at pin position</p>
         </div>
       </div>
     </section>
 
-    <!-- ============================================================ -->
-    <!-- FLOW 3: Edit Flow -->
-    <!-- ============================================================ -->
-    <section id="flow-edit" class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6 mb-6">
-      <h2 class="text-lg font-semibold mb-3 text-stone-900 dark:text-stone-100">3. Edit Flow</h2>
-      <p class="text-xs text-stone-500 dark:text-stone-400 mb-4">User clicks an existing annotation card, edits inline, and the feedback file updates via PATCH.</p>
+    <!-- ================================================================ -->
+    <!-- FLOW 3: EDIT FLOW -->
+    <!-- ================================================================ -->
+    <section class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="step-num bg-teal-600 text-white">3</span>
+        <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100">Edit Flow</h2>
+      </div>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">Click existing annotation card &rarr; inline edit mode &rarr; PATCH on debounce (500ms) &rarr; card re-renders with updated text.</p>
 
-      <div class="space-y-1">
+      <div class="grid grid-cols-4 gap-4 items-start">
+
         <!-- Step 1: Click card -->
-        <div class="flow-step border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-teal-600 text-white text-xs font-bold">1</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">Click annotation card to expand</span>
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="step-num bg-stone-700 text-stone-300 text-[10px]">3a</span>
+            <span class="text-xs font-medium text-stone-400">Click card</span>
           </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8">Card expands in-place. Full body visible, action buttons appear. Border transitions to <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">border-teal-400 dark:border-teal-500</code>.</p>
+          <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-teal-400 dark:border-teal-500 transition-all cursor-pointer">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800">
+                &#x1F441;&#xFE0F; Annotation
+              </span>
+              <span class="flex-1"></span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
+            </div>
+            <p class="text-xs font-medium text-stone-300">Header alignment feels off</p>
+            <p class="text-[10px] text-stone-500 mt-0.5">FB-05 &middot; jwaldrip</p>
+          </div>
+          <p class="text-[10px] text-stone-500 italic">User clicks expanded card</p>
         </div>
-        <div class="flow-arrow-down"></div>
 
-        <!-- Step 2: Edit mode -->
-        <div class="flow-step border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-teal-600 text-white text-xs font-bold">2</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">Click "Edit" or double-click body text</span>
+        <!-- Step 2: Inline edit mode -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="step-num bg-stone-700 text-stone-300 text-[10px]">3b</span>
+            <span class="text-xs font-medium text-stone-400">Edit mode</span>
           </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8">Body text replaces with a textarea pre-filled with current content. "Save" and "Cancel" buttons appear below.</p>
-          <!-- Edit mode wireframe -->
-          <div class="ml-8 mt-3 max-w-md">
-            <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-teal-400 dark:border-teal-500 transition-all">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
-                  <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
-                </span>
-                <span class="flex-1"></span>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
-              </div>
-              <p class="text-xs font-medium text-stone-700 dark:text-stone-300 mb-2">This should be structured with unique IDs</p>
-              <textarea class="w-full text-xs p-2 border border-stone-300 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 resize-none focus:ring-1 focus:ring-teal-500" rows="3">Each feedback item needs a unique identifier so it can be tracked across review cycles. The current batch model loses this.</textarea>
-              <div class="flex gap-1 mt-2 justify-end">
-                <button class="text-xs font-medium px-2 py-1 rounded-md bg-stone-100 text-stone-500 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700 transition-colors">Cancel</button>
-                <button class="text-xs font-medium px-2 py-1 rounded-md bg-teal-600 hover:bg-teal-700 text-white transition-colors">Save</button>
+          <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-teal-400 dark:border-teal-500">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800">
+                &#x1F441;&#xFE0F; Annotation
+              </span>
+              <span class="flex-1"></span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
+            </div>
+            <textarea class="w-full min-h-[48px] p-2 border border-teal-500 rounded-md bg-stone-900 text-stone-100 text-xs focus:ring-1 focus:ring-teal-500 resize-y" readonly>Header alignment feels off on mobile too|</textarea>
+            <div class="flex items-center justify-between mt-1.5">
+              <span class="text-[10px] text-stone-500 save-pulsing">Saving...</span>
+              <div class="flex gap-1">
+                <button class="px-2 py-1 text-[10px] font-medium text-stone-400 rounded-md hover:bg-stone-700">Cancel</button>
+                <button class="px-2 py-1 text-[10px] font-medium text-white bg-teal-600 rounded-md">Done</button>
               </div>
             </div>
           </div>
+          <p class="text-[10px] text-stone-500 italic">Title becomes editable textarea</p>
         </div>
-        <div class="flow-arrow-down"></div>
 
         <!-- Step 3: PATCH request -->
-        <div class="flow-step border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-600 text-white text-xs font-bold">3</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">Save triggers PATCH</span>
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="step-num bg-stone-700 text-stone-300 text-[10px]">3c</span>
+            <span class="text-xs font-medium text-stone-400">CRUD update</span>
           </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">PATCH /api/feedback/{intent}/{stage}/{feedbackId}</code> with updated body. Optimistic UI: card text updates immediately, reverts on error.</p>
-          <div class="ml-8 mt-2">
-            <div class="code-block text-stone-300">
-              <span class="comment">// PATCH request body</span><br>
-              <span class="punct">{</span><br>
-              &nbsp;&nbsp;<span class="prop">body</span><span class="punct">:</span> <span class="str">"Each feedback item needs a unique identifier..."</span><br>
-              <span class="punct">}</span>
+          <div class="bg-stone-800 rounded-lg p-3 border border-stone-700 font-mono text-[10px] space-y-2">
+            <p class="text-amber-400">PATCH /api/feedback/{intent}/{stage}/{id}</p>
+            <div class="bg-stone-900 rounded p-2 text-stone-400">
+              <p>{</p>
+              <p class="pl-3">"title": "Header alignment feels off on mobile too",</p>
+              <p class="pl-3">"body": "> header section\n\nAlignment off on mobile too"</p>
+              <p>}</p>
+            </div>
+            <div class="bg-stone-900 rounded p-2 text-green-400">
+              <p>200 OK</p>
             </div>
           </div>
+          <p class="text-[10px] text-stone-500 italic">Debounced 500ms after last keystroke</p>
         </div>
-        <div class="flow-arrow-down"></div>
 
-        <!-- Step 4: Card re-renders -->
-        <div class="flow-step border-green-300 dark:border-green-700 bg-green-50/30 dark:bg-green-950/15">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold">4</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">Card re-renders with updated text</span>
+        <!-- Step 4: Re-rendered card -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="step-num bg-stone-700 text-stone-300 text-[10px]">3d</span>
+            <span class="text-xs font-medium text-stone-400">Updated card</span>
           </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8">Edit mode exits. Card returns to expanded state showing updated body text. Brief <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">optimistic-flash</code> animation confirms save.</p>
+          <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer feedback-status-changed">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800">
+                &#x1F441;&#xFE0F; Annotation
+              </span>
+              <span class="flex-1"></span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
+            </div>
+            <p class="text-xs font-medium text-stone-300">Header alignment feels off on mobile too</p>
+            <p class="text-[10px] text-stone-500 mt-0.5">FB-05 &middot; jwaldrip &middot; <span class="text-stone-600">edited</span></p>
+          </div>
+          <p class="text-[10px] text-stone-500 italic">Card re-renders, brief flash animation</p>
         </div>
       </div>
     </section>
 
-    <!-- ============================================================ -->
-    <!-- FLOW 4: Delete Flow -->
-    <!-- ============================================================ -->
-    <section id="flow-delete" class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6 mb-6">
-      <h2 class="text-lg font-semibold mb-3 text-stone-900 dark:text-stone-100">4. Delete Flow</h2>
-      <p class="text-xs text-stone-500 dark:text-stone-400 mb-4">User deletes their own annotation before or after submission. Confirm dialog prevents accidental deletion.</p>
+    <!-- ================================================================ -->
+    <!-- FLOW 4: DELETE FLOW -->
+    <!-- ================================================================ -->
+    <section class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="step-num bg-teal-600 text-white">4</span>
+        <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100">Delete Flow</h2>
+      </div>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">Click delete on own annotation &rarr; confirm dialog &rarr; DELETE &rarr; card fades out. Only available on user-authored feedback items.</p>
 
-      <div class="space-y-1">
-        <!-- Step 1: Click delete on card -->
-        <div class="flow-step border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-teal-600 text-white text-xs font-bold">1</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">Click delete button on expanded card</span>
+      <div class="grid grid-cols-4 gap-4 items-start">
+
+        <!-- Step 1: Delete button visible on own card -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="step-num bg-stone-700 text-stone-300 text-[10px]">4a</span>
+            <span class="text-xs font-medium text-stone-400">Delete button</span>
           </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8">Delete button visible only on user's own annotations (not read-only feedback). Uses <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">hover:text-red-500 dark:hover:text-red-400</code> (delete hover token).</p>
-          <!-- Card with delete button -->
-          <div class="ml-8 mt-3 max-w-md">
-            <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-teal-400 dark:border-teal-500 transition-all">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
-                  <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
-                </span>
-                <span class="flex-1"></span>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
-              </div>
-              <p class="text-xs font-medium text-stone-700 dark:text-stone-300">This should be structured with unique IDs</p>
-              <div class="flex gap-1 mt-2">
-                <button class="text-xs font-medium px-2 py-1 rounded-md bg-stone-100 text-stone-500 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700 transition-colors">Edit</button>
-                <button class="text-xs font-medium px-2 py-1 rounded-md bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 transition-colors">Delete</button>
-              </div>
+          <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-teal-400 dark:border-teal-500">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800">
+                &#x1F441;&#xFE0F; Annotation
+              </span>
+              <span class="flex-1"></span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
+            </div>
+            <p class="text-xs font-medium text-stone-300">Header alignment feels off on mobile too</p>
+            <div class="flex gap-1 mt-2">
+              <button class="text-[10px] font-medium px-2 py-1 rounded-md bg-stone-800 text-stone-400 hover:bg-stone-700">Edit</button>
+              <button class="text-[10px] font-medium px-2 py-1 rounded-md bg-red-900/20 text-red-400 hover:bg-red-900/40 ring-1 ring-red-500/30">&#x1F5D1; Delete</button>
             </div>
           </div>
+          <p class="text-[10px] text-stone-500 italic">Delete only on own annotations</p>
         </div>
-        <div class="flow-arrow-down"></div>
 
         <!-- Step 2: Confirm dialog -->
-        <div class="flow-step border-red-300 dark:border-red-700 bg-red-50/30 dark:bg-red-950/15">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-600 text-white text-xs font-bold">2</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">Confirm dialog appears</span>
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="step-num bg-stone-700 text-stone-300 text-[10px]">4b</span>
+            <span class="text-xs font-medium text-stone-400">Confirm</span>
           </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8">Uses the existing confirm pattern: <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm</code> wrapping <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">bg-white dark:bg-stone-900 rounded-xl border shadow-2xl p-6 max-w-sm</code>.</p>
-          <!-- Confirm dialog wireframe -->
-          <div class="ml-8 mt-3 max-w-sm">
-            <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-2xl p-6">
-              <h3 class="text-base font-semibold text-stone-900 dark:text-stone-100 mb-2">Delete feedback?</h3>
-              <p class="text-xs text-stone-500 dark:text-stone-400 mb-4">This will permanently remove the feedback item "This should be structured with unique IDs". This cannot be undone.</p>
-              <div class="flex gap-2 justify-end">
-                <button class="px-4 py-2.5 text-sm font-semibold rounded-lg bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-600 dark:text-stone-300 transition-colors">Cancel</button>
-                <button class="px-4 py-2.5 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors">Delete</button>
+          <div class="relative">
+            <!-- Backdrop -->
+            <div class="absolute inset-0 bg-black/50 rounded-lg backdrop-blur-sm z-10"></div>
+            <!-- Dialog -->
+            <div class="relative z-20 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-2xl p-4 mx-2 mt-4">
+              <h3 class="text-sm font-semibold text-stone-100 mb-2">Delete annotation?</h3>
+              <p class="text-xs text-stone-400 mb-3">This will permanently remove your feedback item. This action cannot be undone.</p>
+              <div class="flex justify-end gap-2">
+                <button class="px-3 py-1.5 text-xs font-medium rounded-md bg-stone-700 text-stone-200 hover:bg-stone-600">Cancel</button>
+                <button class="px-3 py-1.5 text-xs font-medium rounded-md bg-red-600 text-white hover:bg-red-700">Delete</button>
               </div>
             </div>
           </div>
+          <p class="text-[10px] text-stone-500 italic">Confirmation required before delete</p>
         </div>
-        <div class="flow-arrow-down"></div>
 
         <!-- Step 3: DELETE request -->
-        <div class="flow-step border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-600 text-white text-xs font-bold">3</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">DELETE request sent</span>
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="step-num bg-stone-700 text-stone-300 text-[10px]">4c</span>
+            <span class="text-xs font-medium text-stone-400">CRUD delete</span>
           </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">DELETE /api/feedback/{intent}/{stage}/{feedbackId}</code>. Card fades out optimistically (<code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">opacity-0 transition-opacity duration-300</code>).</p>
+          <div class="bg-stone-800 rounded-lg p-3 border border-stone-700 font-mono text-[10px] space-y-2">
+            <p class="text-red-400">DELETE /api/feedback/{intent}/{stage}/{id}</p>
+            <div class="bg-stone-900 rounded p-2 text-green-400">
+              <p>204 No Content</p>
+            </div>
+          </div>
+          <p class="text-[10px] text-stone-500 italic">File removed from disk</p>
         </div>
-        <div class="flow-arrow-down"></div>
 
-        <!-- Step 4: File removed -->
-        <div class="flow-step border-green-300 dark:border-green-700 bg-green-50/30 dark:bg-green-950/15">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold">4</span>
-            <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">File removed, card disappears</span>
+        <!-- Step 4: Fade out -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="step-num bg-stone-700 text-stone-300 text-[10px]">4d</span>
+            <span class="text-xs font-medium text-stone-400">Fade out</span>
           </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 ml-8">Feedback file deleted from disk. Card removed from DOM after animation. If a pin annotation, the pin marker also disappears from the image. Sidebar feedback count decrements. Live region announces: "Feedback FB-01 deleted."</p>
+          <div class="fade-out-card border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800">
+                &#x1F441;&#xFE0F; Annotation
+              </span>
+              <span class="flex-1"></span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
+            </div>
+            <p class="text-xs font-medium text-stone-300 truncate">Header alignment feels off on mobile too</p>
+          </div>
+          <p class="text-[10px] text-stone-500 italic mt-2">Card fades + slides right (300ms)</p>
+          <p class="text-[10px] text-stone-500">Highlight also removed from text/image</p>
         </div>
       </div>
     </section>
 
-    <!-- ============================================================ -->
-    <!-- FLOW 5: Pre-existing Feedback -->
-    <!-- ============================================================ -->
-    <section id="flow-preexisting" class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6 mb-6">
-      <h2 class="text-lg font-semibold mb-3 text-stone-900 dark:text-stone-100">5. Pre-existing Feedback</h2>
-      <p class="text-xs text-stone-500 dark:text-stone-400 mb-4">Feedback from adversarial review agents, external PR/MR comments, or prior review visits renders as read-only annotation cards alongside user-created ones.</p>
+    <!-- ================================================================ -->
+    <!-- FLOW 5: PRE-EXISTING FEEDBACK -->
+    <!-- ================================================================ -->
+    <section class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="step-num bg-teal-600 text-white">5</span>
+        <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100">Pre-existing Feedback</h2>
+      </div>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">Feedback from adversarial review, external PR, or prior visits renders as read-only cards alongside user-created ones. Read-only cards have no edit/delete buttons and show origin badge prominently.</p>
 
-      <!-- Side-by-side comparison: read-only vs user-created -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- Read-only (pre-existing) -->
+      <div class="grid grid-cols-2 gap-6">
+
+        <!-- Left: User-authored (editable) -->
         <div>
-          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Read-Only (pre-existing)</p>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-3">User-Authored (Editable)</p>
           <div class="space-y-2">
-            <!-- Adversarial review item -->
-            <div role="listitem" tabindex="0" class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer hover:border-teal-400 dark:hover:border-teal-500 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
+            <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer">
               <div class="flex items-center gap-2 mb-1">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
-                  <span aria-hidden="true">&#x1F6E1;&#xFE0F;</span> Review Agent
-                </span>
-                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold leading-none bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">3x</span>
-                <span class="flex-1"></span>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
-              </div>
-              <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">Missing null check in handleSubmit callback</p>
-              <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-03 &middot; Visit 3 &middot; adversarial-review</p>
-            </div>
-
-            <!-- External PR item (addressed) -->
-            <div role="listitem" tabindex="0" class="border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer hover:border-teal-400 dark:hover:border-teal-500 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800">
-                  <span aria-hidden="true">&#x1F500;</span> PR Comment
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800">
+                  &#x1F441;&#xFE0F; Annotation
                 </span>
                 <span class="flex-1"></span>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" aria-label="Status: addressed">addressed</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
               </div>
-              <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">Lifecycle transitions need validation guards</p>
-              <p class="text-[10px] text-blue-500 dark:text-blue-400 mt-1">Addressed by: unit-04-feedback-crud-api</p>
-              <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-02 &middot; Visit 1 &middot; external-pr</p>
-            </div>
-
-            <!-- Agent item (closed) -->
-            <div role="listitem" tabindex="0" class="border-l-[3px] border-l-green-400 dark:border-l-green-500 p-2.5 rounded-lg bg-green-50/30 dark:bg-green-950/15 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer opacity-70">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
-                  <span aria-hidden="true">&#x2728;</span> Agent
-                </span>
+              <p class="text-xs font-medium text-stone-300">Header alignment feels off on mobile too</p>
+              <p class="text-[10px] text-stone-500 mt-0.5">FB-05 &middot; Visit 2 &middot; jwaldrip</p>
+              <div class="flex gap-1 mt-2 border-t border-stone-700 pt-2">
+                <button class="text-[10px] font-medium px-2 py-1 rounded-md bg-stone-800 text-stone-400">Edit</button>
+                <button class="text-[10px] font-medium px-2 py-1 rounded-md bg-red-900/20 text-red-400">Delete</button>
                 <span class="flex-1"></span>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" aria-label="Status: closed">closed</span>
+                <button class="text-[10px] font-medium px-2 py-1 rounded-md bg-green-900/20 text-green-400">Close</button>
               </div>
-              <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">Extract validation into shared module</p>
-              <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-06 &middot; Visit 1 &middot; agent</p>
             </div>
           </div>
-          <p class="text-[10px] text-stone-500 dark:text-stone-400 mt-2 italic">Read-only cards can be expanded to view full body but cannot be edited or deleted. Action buttons limited to status changes (Close, Reject, Reopen).</p>
+          <div class="mt-3 p-2 bg-stone-800/50 rounded border border-stone-700">
+            <p class="text-[10px] text-stone-400"><span class="text-green-400 font-medium">Has:</span> Edit, Delete, Close buttons</p>
+            <p class="text-[10px] text-stone-400"><span class="text-green-400 font-medium">Has:</span> Hover + focus interactions</p>
+          </div>
         </div>
 
-        <!-- User-created (current session) -->
+        <!-- Right: External/Agent-authored (read-only) -->
         <div>
-          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">User-Created (current session)</p>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-3">External / Agent (Read-Only)</p>
           <div class="space-y-2">
-            <!-- User inline comment -->
-            <div role="listitem" tabindex="0" class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer hover:border-teal-400 dark:hover:border-teal-500 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
+            <!-- Adversarial review item — read-only -->
+            <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer">
               <div class="flex items-center gap-2 mb-1">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
-                  <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-rose-900/30 text-rose-400 border-rose-800">
+                  &#x1F6E1;&#xFE0F; Review Agent
                 </span>
                 <span class="flex-1"></span>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
               </div>
-              <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">Status tracking needs individual IDs per item</p>
-              <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-08 &middot; Visit 3 &middot; jwaldrip</p>
+              <p class="text-xs font-medium text-stone-300">Missing null check in handleSubmit</p>
+              <p class="text-[10px] text-stone-500 mt-0.5">FB-03 &middot; Visit 1 &middot; adversarial-review</p>
+              <div class="flex gap-1 mt-2 border-t border-stone-700 pt-2">
+                <button class="text-[10px] font-medium px-2 py-1 rounded-md bg-stone-800 text-stone-400">Reject</button>
+                <span class="flex-1"></span>
+                <button class="text-[10px] font-medium px-2 py-1 rounded-md bg-green-900/20 text-green-400">Close</button>
+              </div>
             </div>
 
-            <!-- User pin annotation -->
-            <div role="listitem" tabindex="0" class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer hover:border-teal-400 dark:hover:border-teal-500 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none">
+            <!-- External PR item — read-only -->
+            <div class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-stone-200 dark:border-stone-700 hover:border-teal-400 dark:hover:border-teal-500 transition-all cursor-pointer">
               <div class="flex items-center gap-2 mb-1">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
-                  <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-violet-900/30 text-violet-400 border-violet-800">
+                  &#x1F500; PR Comment
                 </span>
                 <span class="flex-1"></span>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-900/30 text-blue-300">addressed</span>
               </div>
-              <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">Header alignment feels off here</p>
-              <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">FB-09 &middot; Visit 3 &middot; jwaldrip</p>
+              <p class="text-xs font-medium text-stone-300">Lifecycle transitions need validation guards</p>
+              <p class="text-[10px] text-blue-400 mt-1">Addressed by: unit-04-feedback-crud-api</p>
+              <p class="text-[10px] text-stone-500 mt-0.5">FB-02 &middot; Visit 1 &middot; external-pr</p>
             </div>
           </div>
-          <p class="text-[10px] text-stone-500 dark:text-stone-400 mt-2 italic">User-created cards can be expanded, edited, and deleted. Full CRUD actions available until submission.</p>
-        </div>
-      </div>
-
-      <!-- How pre-existing feedback renders inline -->
-      <div class="mt-6 pt-4 border-t border-stone-200 dark:border-stone-700">
-        <h3 class="text-base font-semibold mb-3 text-stone-900 dark:text-stone-100">Inline Rendering of Pre-existing Feedback</h3>
-        <p class="text-xs text-stone-500 dark:text-stone-400 mb-3">When pre-existing feedback has a <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">source_ref</code> targeting a text paragraph, the annotation card renders inline adjacent to that paragraph, just like user-created annotations. The highlight uses the same <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">code-line-annotated</code> background.</p>
-
-        <!-- Example: mixed annotations inline -->
-        <div class="prose prose-sm prose-stone dark:prose-invert max-w-none">
-          <div class="relative">
-            <p class="code-line-annotated rounded px-1 -mx-1 text-sm">This means feedback items cannot be individually tracked, addressed, or closed.</p>
-            <div class="mt-1 space-y-1">
-              <!-- Pre-existing: adversarial review (read-only) -->
-              <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer">
-                <div class="flex items-center gap-2 mb-0.5">
-                  <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
-                    <span aria-hidden="true">&#x1F6E1;&#xFE0F;</span> Review Agent
-                  </span>
-                  <span class="flex-1"></span>
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
-                </div>
-                <p class="text-[10px] text-stone-700 dark:text-stone-300 truncate">Missing null check in handleSubmit</p>
-              </div>
-              <!-- User-created: same paragraph -->
-              <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer">
-                <div class="flex items-center gap-2 mb-0.5">
-                  <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
-                    <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
-                  </span>
-                  <span class="flex-1"></span>
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
-                </div>
-                <p class="text-[10px] text-stone-700 dark:text-stone-300 truncate">Status tracking needs individual IDs</p>
-              </div>
-            </div>
+          <div class="mt-3 p-2 bg-stone-800/50 rounded border border-stone-700">
+            <p class="text-[10px] text-stone-400"><span class="text-red-400 font-medium">No:</span> Edit or Delete buttons</p>
+            <p class="text-[10px] text-stone-400"><span class="text-green-400 font-medium">Has:</span> Reject (agent items) and Close</p>
+            <p class="text-[10px] text-stone-400"><span class="text-green-400 font-medium">Has:</span> Prominent origin badge</p>
           </div>
         </div>
       </div>
 
-      <!-- Behavior notes -->
-      <div class="mt-4 p-3 rounded-lg bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
-        <h4 class="text-xs font-semibold text-stone-700 dark:text-stone-300 mb-2">Behavioral Notes</h4>
-        <ul class="text-[10px] text-stone-500 dark:text-stone-400 space-y-1 list-disc list-inside">
-          <li>Pre-existing items load on mount via <code class="px-1 py-0.5 bg-stone-800 rounded">GET /api/feedback/{intent}/{stage}</code></li>
-          <li>Items from prior visits render in the "Visit N" groups in the sidebar; current visit items appear under "Current Visit"</li>
-          <li>The visit counter badge (e.g., "3x") uses escalation tiers: 2-3 = stone, 4-5 = amber, 6+ = red</li>
-          <li>Read-only items show status change buttons (Close, Reject, Reopen) but NOT Edit or Delete</li>
-          <li>Multiple annotations on the same paragraph stack vertically below the highlighted text</li>
-        </ul>
+      <!-- Origin badge reference -->
+      <div class="mt-6 p-3 bg-stone-800/50 rounded-lg border border-stone-700">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Origin Badge Reference</p>
+        <div class="flex items-center gap-3 flex-wrap">
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-rose-900/30 text-rose-400 border-rose-800">&#x1F6E1;&#xFE0F; Review Agent</span>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-violet-900/30 text-violet-400 border-violet-800">&#x1F500; PR Comment</span>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-violet-900/30 text-violet-400 border-violet-800">&#x1F500; MR Comment</span>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800">&#x1F441;&#xFE0F; Annotation</span>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-stone-800 text-stone-400 border-stone-600">&#x1F4AC; Comment</span>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-teal-900/30 text-teal-400 border-teal-800">&#x2728; Agent</span>
+        </div>
       </div>
     </section>
 
-    <!-- ============================================================ -->
-    <!-- FLOW 6: Error States -->
-    <!-- ============================================================ -->
-    <section id="flow-error-states" class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6 mb-6">
-      <h2 class="text-lg font-semibold mb-3 text-stone-900 dark:text-stone-100">6. Error States</h2>
-      <p class="text-xs text-stone-500 dark:text-stone-400 mb-4">Three error categories: network failure on CRUD, concurrent edit conflict, and session expiry.</p>
+    <!-- ================================================================ -->
+    <!-- FLOW 6: ERROR STATES -->
+    <!-- ================================================================ -->
+    <section class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="step-num bg-teal-600 text-white">6</span>
+        <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100">Error States</h2>
+      </div>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">Network failure, API errors, and session expiry handling.</p>
 
-      <div class="space-y-6">
+      <div class="grid grid-cols-3 gap-6">
 
-        <!-- Error State 1: Network Failure on CRUD -->
-        <div>
-          <h3 class="text-base font-semibold mb-2 text-stone-900 dark:text-stone-100">6a. Network Failure on CRUD</h3>
-          <p class="text-xs text-stone-500 dark:text-stone-400 mb-3">POST, PATCH, or DELETE fails due to network timeout or server error.</p>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Optimistic rollback behavior -->
-            <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Optimistic Rollback</p>
-              <div class="space-y-1">
-                <div class="flow-step border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50">
-                  <p class="text-xs text-stone-500 dark:text-stone-400"><strong class="text-stone-700 dark:text-stone-300">1.</strong> User triggers action (e.g., click "Close")</p>
-                </div>
-                <div class="flow-arrow-down"></div>
-                <div class="flow-step border-teal-300 dark:border-teal-700 bg-teal-50/30 dark:bg-teal-950/15">
-                  <p class="text-xs text-stone-500 dark:text-stone-400"><strong class="text-stone-700 dark:text-stone-300">2.</strong> Badge updates optimistically (pending &rarr; closed)</p>
-                </div>
-                <div class="flow-arrow-down"></div>
-                <div class="flow-step border-red-300 dark:border-red-700 bg-red-50/30 dark:bg-red-950/15">
-                  <p class="text-xs text-stone-500 dark:text-stone-400"><strong class="text-stone-700 dark:text-stone-300">3.</strong> API returns error &rarr; badge reverts (closed &rarr; pending)</p>
-                </div>
-                <div class="flow-arrow-down"></div>
-                <div class="flow-step border-red-300 dark:border-red-700 bg-red-50/30 dark:bg-red-950/15">
-                  <p class="text-xs text-stone-500 dark:text-stone-400"><strong class="text-stone-700 dark:text-stone-300">4.</strong> Error toast appears at bottom of sidebar</p>
-                </div>
-              </div>
+        <!-- Network failure: saving indicator -->
+        <div class="space-y-3">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Network Failure &mdash; Retry</p>
+          <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800">
+                &#x1F441;&#xFE0F; Annotation
+              </span>
+              <span class="flex-1"></span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
             </div>
-
-            <!-- Error toast wireframe -->
-            <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Error Toast</p>
-              <div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                <div class="flex items-start gap-2">
-                  <span class="text-red-600 dark:text-red-400 text-sm mt-0.5">&#x26A0;</span>
-                  <div class="flex-1">
-                    <p class="text-xs font-medium text-red-800 dark:text-red-200">Failed to update feedback</p>
-                    <p class="text-[10px] text-red-600 dark:text-red-400 mt-0.5">Network error. Your change was reverted.</p>
-                  </div>
-                  <button class="text-xs font-medium px-2 py-1 rounded-md bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60 transition-colors">Retry</button>
-                </div>
-              </div>
-              <p class="text-[10px] text-stone-500 dark:text-stone-400 mt-2">Toast auto-dismisses after 5 seconds. Uses <code class="px-1 py-0.5 bg-stone-800 rounded">bg-red-50 border-red-200 text-red-800</code> (semantic error tokens).</p>
-
-              <!-- Submission failure variant -->
-              <div class="mt-4">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Submission Partial Failure</p>
-                <div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                  <div class="flex items-start gap-2">
-                    <span class="text-red-600 dark:text-red-400 text-sm mt-0.5">&#x26A0;</span>
-                    <div class="flex-1">
-                      <p class="text-xs font-medium text-red-800 dark:text-red-200">2 of 4 feedback items failed to save</p>
-                      <p class="text-[10px] text-red-600 dark:text-red-400 mt-0.5">FB-03, FB-05 could not be created. Saved items are preserved.</p>
-                    </div>
-                    <button class="text-xs font-medium px-2 py-1 rounded-md bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60 transition-colors">Retry Failed</button>
-                  </div>
-                </div>
-              </div>
+            <p class="text-xs font-medium text-stone-300">Header alignment feels off</p>
+            <!-- Error state bar -->
+            <div class="mt-2 flex items-center gap-2 p-1.5 rounded-md bg-red-900/20 border border-red-800/50">
+              <svg class="w-3 h-3 text-red-400 shrink-0" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm-.75 3.5a.75.75 0 011.5 0v4a.75.75 0 01-1.5 0v-4zm.75 7.5a.75.75 0 100-1.5.75.75 0 000 1.5z"/></svg>
+              <span class="text-[10px] text-red-400 font-medium">Failed to save</span>
+              <span class="flex-1"></span>
+              <button class="text-[10px] font-medium px-2 py-0.5 rounded bg-red-600 text-white hover:bg-red-700">Retry</button>
             </div>
+          </div>
+          <div class="p-2 bg-stone-800/50 rounded border border-stone-700 space-y-1">
+            <p class="text-[10px] text-stone-400"><span class="text-amber-400 font-medium">Phase 1:</span> "Saving..." with pulse animation (during request)</p>
+            <p class="text-[10px] text-stone-400"><span class="text-red-400 font-medium">Phase 2:</span> "Failed to save" + Retry button (on error)</p>
+            <p class="text-[10px] text-stone-400"><span class="text-stone-500 font-medium">Behavior:</span> Retry re-sends the same POST/PATCH</p>
           </div>
         </div>
 
-        <!-- Error State 2: Concurrent Edit Conflict -->
-        <div class="pt-4 border-t border-stone-200 dark:border-stone-700">
-          <h3 class="text-base font-semibold mb-2 text-stone-900 dark:text-stone-100">6b. Concurrent Edit Conflict</h3>
-          <p class="text-xs text-stone-500 dark:text-stone-400 mb-3">Another session modified the same feedback item. PATCH returns 409 Conflict.</p>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="space-y-1">
-              <div class="flow-step border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50">
-                <p class="text-xs text-stone-500 dark:text-stone-400"><strong class="text-stone-700 dark:text-stone-300">1.</strong> User edits feedback body and clicks Save</p>
-              </div>
-              <div class="flow-arrow-down"></div>
-              <div class="flow-step border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50">
-                <p class="text-xs text-stone-500 dark:text-stone-400"><strong class="text-stone-700 dark:text-stone-300">2.</strong> PATCH returns <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">409 Conflict</code></p>
-              </div>
-              <div class="flow-arrow-down"></div>
-              <div class="flow-step border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20">
-                <p class="text-xs text-stone-500 dark:text-stone-400"><strong class="text-stone-700 dark:text-stone-300">3.</strong> Conflict dialog shows both versions</p>
-              </div>
-              <div class="flow-arrow-down"></div>
-              <div class="flow-step border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50">
-                <p class="text-xs text-stone-500 dark:text-stone-400"><strong class="text-stone-700 dark:text-stone-300">4.</strong> User chooses "Keep Mine" or "Use Theirs"</p>
+        <!-- Session expiry overlay -->
+        <div class="space-y-3">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Session Expired</p>
+          <div class="relative rounded-lg overflow-hidden" style="height: 200px;">
+            <!-- Dimmed background content -->
+            <div class="absolute inset-0 bg-stone-800 opacity-30">
+              <div class="p-3 space-y-2">
+                <div class="h-3 bg-stone-700 rounded w-3/4"></div>
+                <div class="h-3 bg-stone-700 rounded w-1/2"></div>
+                <div class="h-3 bg-stone-700 rounded w-2/3"></div>
               </div>
             </div>
-
-            <!-- Conflict dialog wireframe -->
-            <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Conflict Dialog</p>
-              <div class="bg-white dark:bg-stone-900 rounded-xl border border-amber-300 dark:border-amber-700 shadow-2xl p-4">
-                <h3 class="text-sm font-semibold text-stone-900 dark:text-stone-100 mb-2">Edit Conflict</h3>
-                <p class="text-[10px] text-stone-500 dark:text-stone-400 mb-3">This feedback was modified by another session.</p>
-                <div class="grid grid-cols-2 gap-2 mb-3">
-                  <div class="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-700">
-                    <p class="text-[10px] font-bold text-blue-700 dark:text-blue-400 mb-1">Your version</p>
-                    <p class="text-[10px] text-stone-600 dark:text-stone-400">Each feedback item needs a unique identifier so it can be tracked.</p>
-                  </div>
-                  <div class="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-700">
-                    <p class="text-[10px] font-bold text-amber-700 dark:text-amber-400 mb-1">Server version</p>
-                    <p class="text-[10px] text-stone-600 dark:text-stone-400">Feedback items require individual tracking with UUIDs.</p>
-                  </div>
-                </div>
-                <div class="flex gap-2 justify-end">
-                  <button class="text-xs font-medium px-3 py-1.5 rounded-md bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 transition-colors">Use Theirs</button>
-                  <button class="text-xs font-medium px-3 py-1.5 rounded-md bg-teal-600 hover:bg-teal-700 text-white transition-colors">Keep Mine</button>
-                </div>
+            <!-- Overlay -->
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-10">
+              <div class="bg-stone-900 rounded-xl border border-stone-700 shadow-2xl p-5 text-center max-w-[220px]">
+                <div class="text-2xl mb-2">&#x23F3;</div>
+                <h3 class="text-sm font-semibold text-stone-100 mb-1">Session Expired</h3>
+                <p class="text-[10px] text-stone-400 mb-3">Your review session has timed out. Refresh to continue.</p>
+                <button class="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-teal-600 hover:bg-teal-700 text-white transition-colors">Refresh Page</button>
               </div>
             </div>
           </div>
+          <div class="p-2 bg-stone-800/50 rounded border border-stone-700 space-y-1">
+            <p class="text-[10px] text-stone-400"><span class="text-stone-300 font-medium">Trigger:</span> 401/403 from any API call</p>
+            <p class="text-[10px] text-stone-400"><span class="text-stone-300 font-medium">Behavior:</span> Full overlay, blocks all interaction</p>
+            <p class="text-[10px] text-stone-400"><span class="text-stone-300 font-medium">Action:</span> Refresh button calls <code class="text-stone-500">location.reload()</code></p>
+          </div>
         </div>
 
-        <!-- Error State 3: Session Expiry -->
-        <div class="pt-4 border-t border-stone-200 dark:border-stone-700">
-          <h3 class="text-base font-semibold mb-2 text-stone-900 dark:text-stone-100">6c. Session Expiry</h3>
-          <p class="text-xs text-stone-500 dark:text-stone-400 mb-3">The review session expires or the review gate closes while the user is still annotating.</p>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="space-y-1">
-              <div class="flow-step border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50">
-                <p class="text-xs text-stone-500 dark:text-stone-400"><strong class="text-stone-700 dark:text-stone-300">1.</strong> User attempts any CRUD operation</p>
-              </div>
-              <div class="flow-arrow-down"></div>
-              <div class="flow-step border-red-300 dark:border-red-700 bg-red-50/30 dark:bg-red-950/15">
-                <p class="text-xs text-stone-500 dark:text-stone-400"><strong class="text-stone-700 dark:text-stone-300">2.</strong> Server returns <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">410 Gone</code> or <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">403 Forbidden</code></p>
-              </div>
-              <div class="flow-arrow-down"></div>
-              <div class="flow-step border-red-300 dark:border-red-700 bg-red-50/30 dark:bg-red-950/15">
-                <p class="text-xs text-stone-500 dark:text-stone-400"><strong class="text-stone-700 dark:text-stone-300">3.</strong> Full-page overlay with session expired message</p>
+        <!-- Toast notification for API errors -->
+        <div class="space-y-3">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">API Error Toast</p>
+          <div class="relative rounded-lg border border-stone-700 bg-stone-800/50 p-3" style="height: 200px;">
+            <!-- Simulated sidebar content -->
+            <div class="space-y-2 opacity-60">
+              <div class="h-8 bg-stone-700/50 rounded"></div>
+              <div class="h-8 bg-stone-700/50 rounded"></div>
+              <div class="h-8 bg-stone-700/50 rounded"></div>
+            </div>
+            <!-- Toast at bottom -->
+            <div class="absolute bottom-3 left-3 right-3 z-10">
+              <div class="flex items-center gap-2 p-2.5 rounded-lg bg-red-900/80 border border-red-700 shadow-lg backdrop-blur-sm">
+                <svg class="w-4 h-4 text-red-400 shrink-0" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm-.75 3.5a.75.75 0 011.5 0v4a.75.75 0 01-1.5 0v-4zm.75 7.5a.75.75 0 100-1.5.75.75 0 000 1.5z"/></svg>
+                <span class="text-xs text-red-200 font-medium flex-1">Failed to update FB-03 status</span>
+                <button class="text-[10px] font-medium px-2 py-0.5 rounded bg-red-700 text-red-100 hover:bg-red-600">Retry</button>
+                <button class="text-red-400 hover:text-red-300">
+                  <svg class="w-3 h-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+                </button>
               </div>
             </div>
-
-            <!-- Session expired overlay wireframe -->
-            <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Session Expired Overlay</p>
-              <div class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-2xl p-6 text-center">
-                <div class="text-3xl mb-3">&#x23F3;</div>
-                <h3 class="text-base font-semibold text-stone-900 dark:text-stone-100 mb-2">Session Expired</h3>
-                <p class="text-xs text-stone-500 dark:text-stone-400 mb-4">This review session has ended. Your unsaved annotations have been preserved locally.</p>
-                <div class="space-y-2">
-                  <button class="w-full px-4 py-2.5 text-sm font-semibold rounded-lg bg-teal-600 hover:bg-teal-700 text-white transition-colors">Reload Review</button>
-                  <button class="w-full px-4 py-2.5 text-sm font-semibold rounded-lg bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-600 dark:text-stone-300 transition-colors">Copy My Comments</button>
-                </div>
-              </div>
-            </div>
+          </div>
+          <div class="p-2 bg-stone-800/50 rounded border border-stone-700 space-y-1">
+            <p class="text-[10px] text-stone-400"><span class="text-stone-300 font-medium">Position:</span> Bottom of sidebar, z-50</p>
+            <p class="text-[10px] text-stone-400"><span class="text-stone-300 font-medium">Duration:</span> 3s auto-dismiss (with manual close)</p>
+            <p class="text-[10px] text-stone-400"><span class="text-stone-300 font-medium">Optimistic:</span> Status reverts on API failure</p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ============================================================ -->
-    <!-- FLOW 7: Mobile / Responsive Behavior -->
-    <!-- ============================================================ -->
-    <section id="flow-mobile" class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6 mb-6">
-      <h2 class="text-lg font-semibold mb-3 text-stone-900 dark:text-stone-100">7. Mobile / Responsive Behavior</h2>
-      <p class="text-xs text-stone-500 dark:text-stone-400 mb-4">Three breakpoints: desktop (&ge;1024px), tablet (768-1023px), mobile (&lt;768px). Each adjusts annotation layout.</p>
+    <!-- ================================================================ -->
+    <!-- FLOW 7: MOBILE VARIANT -->
+    <!-- ================================================================ -->
+    <section class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="step-num bg-teal-600 text-white">7</span>
+        <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100">Mobile Variant</h2>
+      </div>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">Bottom-sheet list instead of inline cards. Same CRUD flow via touch interactions. Floating action button (FAB) opens full-screen feedback sheet.</p>
 
-      <!-- Breakpoint comparison -->
-      <div class="space-y-6">
+      <div class="grid grid-cols-4 gap-4 items-start">
 
-        <!-- Desktop -->
-        <div>
-          <h3 class="text-base font-semibold mb-2 text-stone-900 dark:text-stone-100">Desktop (&ge;1024px)</h3>
-          <div class="flex gap-4">
-            <!-- Layout diagram -->
-            <div class="flex-1 border border-stone-200 dark:border-stone-700 rounded-lg p-4 bg-stone-50 dark:bg-stone-800/50">
-              <div class="flex gap-3" style="min-height: 200px;">
-                <!-- Main content -->
-                <div class="flex-1 border border-dashed border-stone-300 dark:border-stone-600 rounded-lg p-3">
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Main Content (flex-1)</p>
-                  <div class="space-y-2">
-                    <div class="h-3 bg-stone-200 dark:bg-stone-700 rounded"></div>
-                    <div class="h-3 bg-stone-200 dark:bg-stone-700 rounded w-3/4"></div>
-                    <div class="relative">
-                      <div class="h-3 bg-amber-200/50 dark:bg-amber-900/30 rounded"></div>
-                      <div class="absolute -right-2 top-0 w-1 h-3 bg-amber-400 dark:bg-amber-500 rounded-full" title="Inline annotation card floats adjacent"></div>
-                    </div>
-                    <div class="h-3 bg-stone-200 dark:bg-stone-700 rounded w-5/6"></div>
-                  </div>
-                </div>
-                <!-- Sidebar -->
-                <div class="w-24 border border-dashed border-stone-300 dark:border-stone-600 rounded-lg p-2">
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Sidebar (w-96)</p>
-                  <div class="space-y-1">
-                    <div class="h-2 bg-teal-200 dark:bg-teal-900/30 rounded"></div>
-                    <div class="h-6 bg-amber-100 dark:bg-amber-950/20 border-l-2 border-l-amber-400 rounded"></div>
-                    <div class="h-6 bg-amber-100 dark:bg-amber-950/20 border-l-2 border-l-amber-400 rounded"></div>
-                    <div class="h-6 bg-blue-100 dark:bg-blue-950/20 border-l-2 border-l-blue-400 rounded"></div>
-                  </div>
-                </div>
-              </div>
+        <!-- Mobile: FAB visible -->
+        <div class="space-y-2">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">FAB (Resting)</p>
+          <div class="relative bg-stone-800 rounded-2xl border border-stone-700 overflow-hidden mx-auto" style="width: 200px; height: 360px;">
+            <!-- Mobile header -->
+            <div class="bg-stone-900 border-b border-stone-700 px-3 py-2">
+              <p class="text-xs font-semibold text-stone-200 truncate">Review: Feedback Model</p>
             </div>
-            <div class="w-48 text-[10px] text-stone-500 dark:text-stone-400 space-y-1">
-              <p>&#x2022; Sidebar width: <code class="px-1 py-0.5 bg-stone-800 rounded">w-96</code> (384px)</p>
-              <p>&#x2022; Inline annotation cards float adjacent to content via <code class="px-1 py-0.5 bg-stone-800 rounded">absolute -right-[340px]</code></p>
-              <p>&#x2022; Full metadata lines visible</p>
-              <p>&#x2022; Side-by-side layout: <code class="px-1 py-0.5 bg-stone-800 rounded">flex gap-6</code></p>
+            <!-- Content placeholder -->
+            <div class="p-3 space-y-2">
+              <div class="h-3 bg-stone-700/50 rounded w-3/4"></div>
+              <div class="h-3 bg-stone-700/50 rounded w-full"></div>
+              <div class="h-3 bg-stone-700/50 rounded w-1/2"></div>
+              <div class="h-6 bg-stone-700/30 rounded mt-3"></div>
+              <div class="h-3 bg-stone-700/50 rounded w-2/3"></div>
+              <div class="h-3 bg-stone-700/50 rounded w-3/4"></div>
+            </div>
+            <!-- FAB -->
+            <div class="absolute bottom-3 right-3 w-12 h-12 rounded-full bg-teal-600 text-white shadow-lg flex items-center justify-center text-lg z-50" style="box-shadow: 0 4px 14px rgba(13,148,136,0.4);">
+              &#x1F4AC;
+              <!-- Badge count -->
+              <span class="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">3</span>
             </div>
           </div>
+          <p class="text-[10px] text-stone-500 italic text-center">FAB shows pending count badge</p>
         </div>
 
-        <!-- Tablet -->
-        <div class="pt-4 border-t border-stone-200 dark:border-stone-700">
-          <h3 class="text-base font-semibold mb-2 text-stone-900 dark:text-stone-100">Tablet (768-1023px)</h3>
-          <div class="flex gap-4">
-            <div class="flex-1 border border-stone-200 dark:border-stone-700 rounded-lg p-4 bg-stone-50 dark:bg-stone-800/50">
-              <div class="flex gap-2" style="min-height: 180px;">
-                <div class="flex-1 border border-dashed border-stone-300 dark:border-stone-600 rounded-lg p-3">
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Main Content</p>
-                  <div class="space-y-2">
-                    <div class="h-3 bg-stone-200 dark:bg-stone-700 rounded"></div>
-                    <div class="h-3 bg-stone-200 dark:bg-stone-700 rounded w-4/5"></div>
-                  </div>
-                </div>
-                <div class="w-20 border border-dashed border-stone-300 dark:border-stone-600 rounded-lg p-2">
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">w-80</p>
-                  <div class="space-y-1">
-                    <div class="h-5 bg-amber-100 dark:bg-amber-950/20 border-l-2 border-l-amber-400 rounded"></div>
-                    <div class="h-5 bg-amber-100 dark:bg-amber-950/20 border-l-2 border-l-amber-400 rounded"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="w-48 text-[10px] text-stone-500 dark:text-stone-400 space-y-1">
-              <p>&#x2022; Sidebar width: <code class="px-1 py-0.5 bg-stone-800 rounded">w-80</code> (320px)</p>
-              <p>&#x2022; Metadata lines truncate</p>
-              <p>&#x2022; Body preview limited to <code class="px-1 py-0.5 bg-stone-800 rounded">line-clamp-2</code></p>
-              <p>&#x2022; Card padding compresses: <code class="px-1 py-0.5 bg-stone-800 rounded">p-2</code></p>
-              <p>&#x2022; Inline annotation cards stack below text instead of floating right</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Mobile -->
-        <div class="pt-4 border-t border-stone-200 dark:border-stone-700">
-          <h3 class="text-base font-semibold mb-2 text-stone-900 dark:text-stone-100">Mobile (&lt;768px)</h3>
-          <div class="flex gap-4">
-            <div class="flex-1 border border-stone-200 dark:border-stone-700 rounded-lg p-4 bg-stone-50 dark:bg-stone-800/50">
-              <div style="max-width: 200px; min-height: 220px;" class="relative">
-                <!-- Content only -->
-                <div class="border border-dashed border-stone-300 dark:border-stone-600 rounded-lg p-3 h-full">
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Content Only</p>
-                  <div class="space-y-2">
-                    <div class="h-3 bg-stone-200 dark:bg-stone-700 rounded"></div>
-                    <div class="h-3 bg-stone-200 dark:bg-stone-700 rounded w-4/5"></div>
-                    <div class="h-3 bg-stone-200 dark:bg-stone-700 rounded w-3/5"></div>
-                    <div class="h-3 bg-stone-200 dark:bg-stone-700 rounded"></div>
-                  </div>
-                </div>
-                <!-- FAB indicator -->
-                <div class="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center shadow-lg">
-                  <span class="text-white text-[10px]">&#x1F4AC;</span>
-                  <span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-100 dark:bg-amber-900/40 text-[8px] font-bold text-amber-700 dark:text-amber-300 flex items-center justify-center border border-white dark:border-stone-900">3</span>
-                </div>
-              </div>
-            </div>
-            <div class="w-48 text-[10px] text-stone-500 dark:text-stone-400 space-y-1">
-              <p>&#x2022; Sidebar hidden: <code class="px-1 py-0.5 bg-stone-800 rounded">hidden md:flex</code></p>
-              <p>&#x2022; FAB in bottom-right: <code class="px-1 py-0.5 bg-stone-800 rounded">fixed bottom-4 right-4 z-50</code></p>
-              <p>&#x2022; FAB shows pending count badge</p>
-              <p>&#x2022; Tap FAB opens full-screen bottom sheet</p>
-              <p>&#x2022; Sheet contains same sidebar content (segmented control, feedback list, input, decision buttons)</p>
-              <p>&#x2022; All touch targets: <code class="px-1 py-0.5 bg-stone-800 rounded">min-h-[44px] min-w-[44px]</code></p>
-              <p>&#x2022; <code class="px-1 py-0.5 bg-stone-800 rounded">active:</code> replaces <code class="px-1 py-0.5 bg-stone-800 rounded">hover:</code> for touch feedback</p>
-              <p>&#x2022; Sheet animation: <code class="px-1 py-0.5 bg-stone-800 rounded">translateY(100%) &rarr; 0</code></p>
-              <p>&#x2022; Escape or close button dismisses sheet</p>
-            </div>
-          </div>
-
-          <!-- Mobile bottom sheet wireframe (compact) -->
-          <div class="mt-4 max-w-[240px]">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Bottom Sheet (open)</p>
-            <div class="bg-white dark:bg-stone-900 rounded-t-xl border border-stone-200 dark:border-stone-700 overflow-hidden">
+        <!-- Mobile: Sheet open -->
+        <div class="space-y-2">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Bottom Sheet (Open)</p>
+          <div class="relative bg-stone-800 rounded-2xl border border-stone-700 overflow-hidden mx-auto" style="width: 200px; height: 360px;">
+            <!-- Dimmed background -->
+            <div class="absolute inset-0 bg-black/40 z-10"></div>
+            <!-- Bottom sheet -->
+            <div class="absolute bottom-0 left-0 right-0 z-20 bg-stone-900 rounded-t-2xl border-t border-stone-700 slide-up" style="height: 280px;">
               <!-- Sheet header -->
-              <div class="px-3 py-2 border-b border-stone-200 dark:border-stone-700 flex items-center justify-between">
-                <span class="text-xs font-semibold text-stone-700 dark:text-stone-300">Feedback</span>
-                <span class="text-stone-400 text-sm">&times;</span>
+              <div class="flex items-center justify-between px-3 py-2 border-b border-stone-700">
+                <span class="text-xs font-semibold text-stone-200">Feedback</span>
+                <button class="text-stone-400 hover:text-stone-200">
+                  <svg class="w-4 h-4" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+                </button>
               </div>
-              <!-- Segmented control -->
-              <div class="flex border-b border-stone-200 dark:border-stone-700">
-                <span class="flex-1 text-center text-[10px] font-medium text-teal-600 dark:text-teal-400 py-1.5 border-b-2 border-teal-600 dark:border-teal-400">Feedback <span class="inline-flex items-center justify-center w-4 h-4 rounded-full text-[8px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">5</span></span>
-                <span class="flex-1 text-center text-[10px] font-medium text-stone-500 dark:text-stone-400 py-1.5">Mine <span class="inline-flex items-center justify-center w-4 h-4 rounded-full text-[8px] font-bold bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300">2</span></span>
+              <!-- Segmented control (compact) -->
+              <div class="flex border-b border-stone-700 px-3">
+                <button class="border-b-2 border-teal-400 text-teal-400 text-[10px] font-medium px-2 py-1.5">Feedback <span class="text-[9px] bg-amber-900/40 text-amber-300 px-1 rounded-full">3</span></button>
+                <button class="border-b-2 border-transparent text-stone-500 text-[10px] font-medium px-2 py-1.5">Mine <span class="text-[9px] bg-stone-700 text-stone-400 px-1 rounded-full">1</span></button>
               </div>
-              <!-- Compact card list -->
-              <div class="p-2 space-y-1.5">
-                <div class="border-l-[3px] border-l-amber-400 p-1.5 rounded bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700">
-                  <p class="text-[9px] text-stone-700 dark:text-stone-300 truncate">Missing null check</p>
+              <!-- Feedback list -->
+              <div class="overflow-y-auto p-2 space-y-1.5" style="max-height: 180px;">
+                <div class="border-l-[3px] border-l-amber-400 p-2 rounded-lg bg-amber-950/20 border border-stone-700">
+                  <div class="flex items-center gap-1">
+                    <span class="text-[9px] text-rose-400">&#x1F6E1;&#xFE0F;</span>
+                    <span class="text-[9px] text-stone-400">Review Agent</span>
+                    <span class="flex-1"></span>
+                    <span class="text-[9px] bg-amber-900/30 text-amber-300 px-1 rounded-full">pending</span>
+                  </div>
+                  <p class="text-[10px] text-stone-300 truncate mt-0.5">Missing null check in handleSubmit</p>
                 </div>
-                <div class="border-l-[3px] border-l-amber-400 p-1.5 rounded bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700">
-                  <p class="text-[9px] text-stone-700 dark:text-stone-300 truncate">Header alignment</p>
+                <div class="border-l-[3px] border-l-amber-400 p-2 rounded-lg bg-amber-950/20 border border-stone-700">
+                  <div class="flex items-center gap-1">
+                    <span class="text-[9px] text-sky-400">&#x1F441;&#xFE0F;</span>
+                    <span class="text-[9px] text-stone-400">Annotation</span>
+                    <span class="flex-1"></span>
+                    <span class="text-[9px] bg-amber-900/30 text-amber-300 px-1 rounded-full">pending</span>
+                  </div>
+                  <p class="text-[10px] text-stone-300 truncate mt-0.5">Header alignment off</p>
                 </div>
-                <div class="border-l-[3px] border-l-blue-400 p-1.5 rounded bg-blue-50/50 dark:bg-blue-950/20 border border-stone-200 dark:border-stone-700">
-                  <p class="text-[9px] text-stone-700 dark:text-stone-300 truncate">Validation guards</p>
+                <div class="border-l-[3px] border-l-blue-400 p-2 rounded-lg bg-blue-950/20 border border-stone-700">
+                  <div class="flex items-center gap-1">
+                    <span class="text-[9px] text-violet-400">&#x1F500;</span>
+                    <span class="text-[9px] text-stone-400">PR Comment</span>
+                    <span class="flex-1"></span>
+                    <span class="text-[9px] bg-blue-900/30 text-blue-300 px-1 rounded-full">addressed</span>
+                  </div>
+                  <p class="text-[10px] text-stone-300 truncate mt-0.5">Lifecycle transitions need guards</p>
                 </div>
               </div>
               <!-- Decision buttons -->
-              <div class="p-2 border-t border-stone-200 dark:border-stone-700 flex gap-1.5">
-                <button class="flex-1 py-1.5 text-[10px] font-semibold rounded bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300">Approve</button>
-                <button class="flex-1 py-1.5 text-[10px] font-semibold rounded bg-amber-600 text-white">Request Changes</button>
+              <div class="absolute bottom-0 left-0 right-0 p-2 border-t border-stone-700 bg-stone-900 flex gap-1.5">
+                <button class="flex-1 px-2 py-2 text-[10px] font-semibold rounded-lg bg-stone-700 text-stone-300">Approve</button>
+                <button class="flex-1 px-2 py-2 text-[10px] font-semibold rounded-lg bg-amber-600 text-white">Request Changes</button>
               </div>
             </div>
+          </div>
+          <p class="text-[10px] text-stone-500 italic text-center">Full-screen sheet with same CRUD flow</p>
+        </div>
+
+        <!-- Mobile: Touch interactions -->
+        <div class="space-y-2">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Touch Interactions</p>
+          <div class="relative bg-stone-800 rounded-2xl border border-stone-700 overflow-hidden mx-auto" style="width: 200px; height: 360px;">
+            <!-- Mobile header -->
+            <div class="bg-stone-900 border-b border-stone-700 px-3 py-2">
+              <p class="text-xs font-semibold text-stone-200 truncate">Review: Feedback Model</p>
+            </div>
+            <!-- Content with touch selection highlight -->
+            <div class="p-3">
+              <p class="text-[10px] text-stone-300 leading-relaxed">The current review workflow treats feedback as <span class="bg-amber-700/50 text-amber-200 px-0.5 rounded">ephemeral batch comments that vanish</span> after submission.</p>
+              <!-- Touch selection popover -->
+              <div class="mt-2 bg-stone-900 border border-stone-600 rounded-lg shadow-lg p-2">
+                <div class="flex gap-2 mb-2">
+                  <button class="px-2 py-1 text-[9px] font-medium text-teal-400 bg-teal-900/30 rounded">+ Comment</button>
+                  <button class="px-2 py-1 text-[9px] font-medium text-stone-400 bg-stone-800 rounded">Copy</button>
+                </div>
+                <textarea class="w-full min-h-[32px] p-1.5 border border-stone-600 rounded bg-stone-800 text-stone-100 text-[10px] resize-none" readonly>This should persist|</textarea>
+                <div class="flex justify-end gap-1 mt-1">
+                  <button class="px-1.5 py-0.5 text-[9px] text-stone-400">Cancel</button>
+                  <button class="px-1.5 py-0.5 text-[9px] text-white bg-teal-600 rounded">Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="text-[10px] text-stone-500 italic text-center">Long-press to select, same comment flow</p>
+        </div>
+
+        <!-- Mobile: Expanded card in sheet -->
+        <div class="space-y-2">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Expanded in Sheet</p>
+          <div class="relative bg-stone-800 rounded-2xl border border-stone-700 overflow-hidden mx-auto" style="width: 200px; height: 360px;">
+            <div class="bg-stone-900 rounded-t-2xl" style="height: 100%;">
+              <!-- Sheet header -->
+              <div class="flex items-center justify-between px-3 py-2 border-b border-stone-700">
+                <span class="text-xs font-semibold text-stone-200">Feedback</span>
+                <button class="text-stone-400">
+                  <svg class="w-4 h-4" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+                </button>
+              </div>
+              <!-- Expanded card -->
+              <div class="p-2">
+                <div class="border-l-[3px] border-l-amber-400 p-2.5 rounded-lg bg-amber-950/20 border border-teal-500">
+                  <div class="flex items-center gap-1 mb-1">
+                    <span class="text-[9px] text-rose-400">&#x1F6E1;&#xFE0F; Review Agent</span>
+                    <span class="flex-1"></span>
+                    <span class="text-[9px] bg-amber-900/30 text-amber-300 px-1 rounded-full">pending</span>
+                  </div>
+                  <p class="text-[10px] font-medium text-stone-300">Missing null check in handleSubmit</p>
+                  <p class="text-[9px] text-stone-400 mt-1 leading-relaxed">The handleSubmit function calls getAnnotations() without checking if the result is undefined...</p>
+                  <p class="text-[9px] text-stone-500 mt-1">FB-03 &middot; Visit 1</p>
+                  <div class="flex gap-1 mt-2 pt-1.5 border-t border-stone-700">
+                    <button class="text-[9px] font-medium px-2 py-1 rounded bg-stone-800 text-stone-400">Reject</button>
+                    <button class="text-[9px] font-medium px-2 py-1 rounded bg-green-900/20 text-green-400">Close</button>
+                  </div>
+                </div>
+              </div>
+              <!-- Collapsed card beneath -->
+              <div class="px-2 mt-1">
+                <div class="border-l-[3px] border-l-amber-400 p-2 rounded-lg bg-amber-950/20 border border-stone-700 opacity-60">
+                  <p class="text-[9px] text-stone-400 truncate">Header alignment off...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="text-[10px] text-stone-500 italic text-center">Tap card to expand, same actions</p>
+        </div>
+      </div>
+
+      <!-- Mobile-specific notes -->
+      <div class="mt-6 grid grid-cols-2 gap-4">
+        <div class="p-3 bg-stone-800/50 rounded-lg border border-stone-700">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">FAB Specifications</p>
+          <div class="space-y-1 text-[10px] text-stone-400">
+            <p><code class="text-stone-500">position:</code> fixed bottom-4 right-4 z-50</p>
+            <p><code class="text-stone-500">size:</code> w-12 h-12 rounded-full</p>
+            <p><code class="text-stone-500">color:</code> bg-teal-600 text-white shadow-lg</p>
+            <p><code class="text-stone-500">badge:</code> amber count pill, hidden when 0</p>
+            <p><code class="text-stone-500">aria:</code> "Open feedback panel, N comments"</p>
+            <p><code class="text-stone-500">pulse:</code> 3-cycle teal glow on new items</p>
+          </div>
+        </div>
+        <div class="p-3 bg-stone-800/50 rounded-lg border border-stone-700">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Sheet Behavior</p>
+          <div class="space-y-1 text-[10px] text-stone-400">
+            <p><code class="text-stone-500">open:</code> slide-up 300ms ease-out</p>
+            <p><code class="text-stone-500">close:</code> slide-down 200ms, Escape key, swipe-down</p>
+            <p><code class="text-stone-500">focus:</code> trapped within sheet when open</p>
+            <p><code class="text-stone-500">return:</code> focus returns to FAB on close</p>
+            <p><code class="text-stone-500">content:</code> identical to sidebar (segmented control + list + footer)</p>
+            <p><code class="text-stone-500">breakpoint:</code> visible only below md (768px)</p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ============================================================ -->
-    <!-- Interactive States Summary -->
-    <!-- ============================================================ -->
-    <section class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6 mb-6">
-      <h2 class="text-lg font-semibold mb-3 text-stone-900 dark:text-stone-100">Interactive States Summary</h2>
-      <p class="text-xs text-stone-500 dark:text-stone-400 mb-4">All card states and their token mappings for reference.</p>
+    <!-- ================================================================ -->
+    <!-- COMPLETE LIFECYCLE STATE MACHINE -->
+    <!-- ================================================================ -->
+    <section class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="step-num bg-stone-600 text-white">&#x2699;</span>
+        <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100">Feedback Status Lifecycle</h2>
+      </div>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-6">Complete state machine showing all valid transitions and their guards.</p>
 
-      <div class="overflow-x-auto">
+      <!-- State machine diagram -->
+      <div class="flex items-center justify-center gap-6 flex-wrap py-4">
+        <!-- Pending state -->
+        <div class="text-center">
+          <div class="inline-flex items-center px-4 py-2 rounded-xl border-2 border-amber-500 bg-amber-950/20">
+            <span class="inline-block w-3 h-3 rounded-full bg-amber-500 mr-2"></span>
+            <span class="text-sm font-semibold text-amber-300">pending</span>
+          </div>
+          <p class="text-[10px] text-stone-500 mt-1">Initial state for all feedback</p>
+        </div>
+
+        <!-- Arrows from pending -->
+        <div class="flex flex-col items-center gap-1 text-stone-500">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-stone-400">Close</span>
+            <span>&rarr;</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-stone-400">Agent addresses</span>
+            <span>&rarr;</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-stone-400">Reject</span>
+            <span>&rarr;</span>
+          </div>
+        </div>
+
+        <!-- End states -->
+        <div class="flex flex-col gap-3">
+          <!-- Closed -->
+          <div class="flex items-center gap-3">
+            <div class="inline-flex items-center px-4 py-2 rounded-xl border-2 border-green-500 bg-green-950/20">
+              <span class="inline-block w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+              <span class="text-sm font-semibold text-green-300">closed</span>
+            </div>
+            <span class="text-stone-600">&larr;</span>
+            <span class="text-[10px] text-stone-500">Reopen</span>
+          </div>
+
+          <!-- Addressed -->
+          <div class="flex items-center gap-3">
+            <div class="inline-flex items-center px-4 py-2 rounded-xl border-2 border-blue-500 bg-blue-950/20">
+              <span class="inline-block w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
+              <span class="text-sm font-semibold text-blue-300">addressed</span>
+            </div>
+            <span class="text-stone-600">&larr;</span>
+            <span class="text-[10px] text-stone-500">Reopen</span>
+          </div>
+
+          <!-- Rejected -->
+          <div class="flex items-center gap-3">
+            <div class="inline-flex items-center px-4 py-2 rounded-xl border-2 border-stone-500 bg-stone-800/30">
+              <span class="inline-block w-3 h-3 rounded-full bg-stone-400 mr-2"></span>
+              <span class="text-sm font-semibold text-stone-400">rejected</span>
+            </div>
+            <span class="text-stone-600">&larr;</span>
+            <span class="text-[10px] text-stone-500">Reopen</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transition table -->
+      <div class="mt-6 overflow-x-auto">
         <table class="w-full text-xs">
           <thead>
-            <tr class="border-b border-stone-200 dark:border-stone-700">
-              <th class="text-left py-2 px-3 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">State</th>
-              <th class="text-left py-2 px-3 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Left Border</th>
-              <th class="text-left py-2 px-3 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Background</th>
-              <th class="text-left py-2 px-3 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Badge</th>
-              <th class="text-left py-2 px-3 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Opacity</th>
-              <th class="text-left py-2 px-3 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Extra</th>
+            <tr class="border-b border-stone-700">
+              <th class="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-stone-500">Current</th>
+              <th class="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-stone-500">Action</th>
+              <th class="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-stone-500">New Status</th>
+              <th class="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-stone-500">Guard</th>
+              <th class="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-stone-500">API Call</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-stone-200 dark:divide-stone-700">
-            <tr>
-              <td class="py-2 px-3 font-medium text-stone-700 dark:text-stone-300">Default (pending)</td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">border-l-amber-400</code></td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">bg-amber-50/50 dark:bg-amber-950/20</code></td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">bg-amber-100 text-amber-800</code></td>
-              <td class="py-2 px-3">1.0</td>
-              <td class="py-2 px-3">---</td>
+          <tbody class="text-stone-300">
+            <tr class="border-b border-stone-800">
+              <td class="py-2 px-3"><span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span></td>
+              <td class="py-2 px-3">Close</td>
+              <td class="py-2 px-3"><span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-900/30 text-green-300">closed</span></td>
+              <td class="py-2 px-3 text-stone-400">Human-authored OR explicit close</td>
+              <td class="py-2 px-3 font-mono text-[10px] text-teal-400">PATCH .../status {status: "closed"}</td>
+            </tr>
+            <tr class="border-b border-stone-800">
+              <td class="py-2 px-3"><span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span></td>
+              <td class="py-2 px-3">Reject</td>
+              <td class="py-2 px-3"><span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-stone-800 text-stone-400">rejected</span></td>
+              <td class="py-2 px-3 text-stone-400">Agent-authored items only</td>
+              <td class="py-2 px-3 font-mono text-[10px] text-teal-400">PATCH .../status {status: "rejected"}</td>
+            </tr>
+            <tr class="border-b border-stone-800">
+              <td class="py-2 px-3"><span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span></td>
+              <td class="py-2 px-3">Agent addresses</td>
+              <td class="py-2 px-3"><span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-900/30 text-blue-300">addressed</span></td>
+              <td class="py-2 px-3 text-stone-400">Set by agent via CRUD API</td>
+              <td class="py-2 px-3 font-mono text-[10px] text-teal-400">PATCH .../status {status: "addressed"}</td>
+            </tr>
+            <tr class="border-b border-stone-800">
+              <td class="py-2 px-3"><span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-900/30 text-blue-300">addressed</span></td>
+              <td class="py-2 px-3">Reopen</td>
+              <td class="py-2 px-3"><span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span></td>
+              <td class="py-2 px-3 text-stone-400">Any user can see the item</td>
+              <td class="py-2 px-3 font-mono text-[10px] text-teal-400">PATCH .../status {status: "pending"}</td>
+            </tr>
+            <tr class="border-b border-stone-800">
+              <td class="py-2 px-3"><span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-900/30 text-green-300">closed</span></td>
+              <td class="py-2 px-3">Reopen</td>
+              <td class="py-2 px-3"><span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span></td>
+              <td class="py-2 px-3 text-stone-400">Any user can see the item</td>
+              <td class="py-2 px-3 font-mono text-[10px] text-teal-400">PATCH .../status {status: "pending"}</td>
             </tr>
             <tr>
-              <td class="py-2 px-3 font-medium text-stone-700 dark:text-stone-300">Hover</td>
-              <td class="py-2 px-3">(inherits status)</td>
-              <td class="py-2 px-3">(inherits status)</td>
-              <td class="py-2 px-3">(inherits status)</td>
-              <td class="py-2 px-3">1.0</td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">border-teal-400</code> + lift</td>
-            </tr>
-            <tr>
-              <td class="py-2 px-3 font-medium text-stone-700 dark:text-stone-300">Expanded</td>
-              <td class="py-2 px-3">(inherits status)</td>
-              <td class="py-2 px-3">(inherits status)</td>
-              <td class="py-2 px-3">(inherits status)</td>
-              <td class="py-2 px-3">1.0</td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">border-teal-400</code> + body + actions</td>
-            </tr>
-            <tr>
-              <td class="py-2 px-3 font-medium text-stone-700 dark:text-stone-300">Loading</td>
-              <td class="py-2 px-3">(inherits status)</td>
-              <td class="py-2 px-3">(inherits status)</td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">animate-pulse</code></td>
-              <td class="py-2 px-3">0.7</td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">pointer-events-none</code></td>
-            </tr>
-            <tr>
-              <td class="py-2 px-3 font-medium text-stone-700 dark:text-stone-300">Addressed</td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">border-l-blue-400</code></td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">bg-blue-50/50 dark:bg-blue-950/20</code></td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">bg-blue-100 text-blue-800</code></td>
-              <td class="py-2 px-3">1.0</td>
-              <td class="py-2 px-3">"Addressed by" link</td>
-            </tr>
-            <tr>
-              <td class="py-2 px-3 font-medium text-stone-700 dark:text-stone-300">Error</td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">border-l-red-400</code></td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">bg-red-50/30 dark:bg-red-950/15</code></td>
-              <td class="py-2 px-3">(reverts to previous)</td>
-              <td class="py-2 px-3">1.0</td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">error-shake</code> animation</td>
-            </tr>
-            <tr>
-              <td class="py-2 px-3 font-medium text-stone-700 dark:text-stone-300">Closed</td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">border-l-green-400</code></td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">bg-green-50/30 dark:bg-green-950/15</code></td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">bg-green-100 text-green-800</code></td>
-              <td class="py-2 px-3">0.7</td>
-              <td class="py-2 px-3">---</td>
-            </tr>
-            <tr>
-              <td class="py-2 px-3 font-medium text-stone-700 dark:text-stone-300">Rejected</td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">border-l-stone-300</code></td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">bg-stone-50 dark:bg-stone-800/30</code></td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">bg-stone-100 text-stone-500</code></td>
-              <td class="py-2 px-3">0.5</td>
-              <td class="py-2 px-3"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">line-through</code> on title</td>
-            </tr>
-            <tr>
-              <td class="py-2 px-3 font-medium text-stone-700 dark:text-stone-300">Empty</td>
-              <td class="py-2 px-3" colspan="5"><code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">text-xs text-stone-400 dark:text-stone-500 italic p-4 text-center</code> &mdash; "No feedback yet. Select text or drop pins to add annotations."</td>
+              <td class="py-2 px-3"><span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-stone-800 text-stone-400">rejected</span></td>
+              <td class="py-2 px-3">Reopen</td>
+              <td class="py-2 px-3"><span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span></td>
+              <td class="py-2 px-3 text-stone-400">Any user can see the item</td>
+              <td class="py-2 px-3 font-mono text-[10px] text-teal-400">PATCH .../status {status: "pending"}</td>
             </tr>
           </tbody>
         </table>
       </div>
     </section>
 
-    <!-- ============================================================ -->
-    <!-- Accessibility Notes -->
-    <!-- ============================================================ -->
-    <section class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6 mb-6">
-      <h2 class="text-lg font-semibold mb-3 text-stone-900 dark:text-stone-100">Accessibility</h2>
+    <!-- ================================================================ -->
+    <!-- COMPLETE DATA FLOW SUMMARY -->
+    <!-- ================================================================ -->
+    <section class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="step-num bg-stone-600 text-white">&#x21C4;</span>
+        <h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100">Complete Data Flow: Comment-to-Feedback Migration</h2>
+      </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Contrast Ratios -->
+      <div class="grid grid-cols-2 gap-6">
+        <!-- Current (before) -->
         <div>
-          <h3 class="text-base font-semibold mb-2 text-stone-900 dark:text-stone-100">Contrast Ratios (WCAG 2.1 AA)</h3>
-          <div class="overflow-x-auto">
-            <table class="w-full text-[10px]">
-              <thead>
-                <tr class="border-b border-stone-200 dark:border-stone-700">
-                  <th class="text-left py-1.5 px-2 font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Badge</th>
-                  <th class="text-left py-1.5 px-2 font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">FG/BG</th>
-                  <th class="text-left py-1.5 px-2 font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Ratio</th>
-                  <th class="text-left py-1.5 px-2 font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Pass</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-stone-200 dark:divide-stone-700">
-                <tr><td class="py-1.5 px-2">Pending (light)</td><td class="py-1.5 px-2">amber-800 / amber-100</td><td class="py-1.5 px-2">4.9:1</td><td class="py-1.5 px-2 text-green-500">AA</td></tr>
-                <tr><td class="py-1.5 px-2">Pending (dark)</td><td class="py-1.5 px-2">amber-300 / amber-900/30</td><td class="py-1.5 px-2">5.2:1</td><td class="py-1.5 px-2 text-green-500">AA</td></tr>
-                <tr><td class="py-1.5 px-2">Addressed (light)</td><td class="py-1.5 px-2">blue-800 / blue-100</td><td class="py-1.5 px-2">5.1:1</td><td class="py-1.5 px-2 text-green-500">AA</td></tr>
-                <tr><td class="py-1.5 px-2">Addressed (dark)</td><td class="py-1.5 px-2">blue-300 / blue-900/30</td><td class="py-1.5 px-2">5.6:1</td><td class="py-1.5 px-2 text-green-500">AA</td></tr>
-                <tr><td class="py-1.5 px-2">Closed (light)</td><td class="py-1.5 px-2">green-800 / green-100</td><td class="py-1.5 px-2">4.5:1</td><td class="py-1.5 px-2 text-green-500">AA</td></tr>
-                <tr><td class="py-1.5 px-2">Closed (dark)</td><td class="py-1.5 px-2">green-300 / green-900/30</td><td class="py-1.5 px-2">5.3:1</td><td class="py-1.5 px-2 text-green-500">AA</td></tr>
-                <tr><td class="py-1.5 px-2">Rejected (light)</td><td class="py-1.5 px-2">stone-500 / stone-100</td><td class="py-1.5 px-2">4.6:1</td><td class="py-1.5 px-2 text-green-500">AA</td></tr>
-                <tr><td class="py-1.5 px-2">Rejected (dark)</td><td class="py-1.5 px-2">stone-400 / stone-800</td><td class="py-1.5 px-2">5.0:1</td><td class="py-1.5 px-2 text-green-500">AA</td></tr>
-              </tbody>
-            </table>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-red-400 mb-3">Current Model (Batch)</p>
+          <div class="bg-stone-800 rounded-lg p-4 border border-stone-700 font-mono text-[10px] space-y-2">
+            <p class="text-stone-300">User action <span class="text-stone-500">(select/pin/type)</span></p>
+            <p class="text-stone-600 pl-2">&darr;</p>
+            <p class="text-stone-300 pl-2">React state <span class="text-stone-500">(InlineCommentEntry[])</span></p>
+            <p class="text-stone-600 pl-4">&darr;</p>
+            <p class="text-stone-300 pl-4">Batch serialize on <span class="text-amber-400">"Request Changes"</span></p>
+            <p class="text-stone-600 pl-6">&darr;</p>
+            <p class="text-red-400 pl-6">POST /review/{id}/decide</p>
+            <p class="text-stone-500 pl-6">{ decision, feedback: <span class="text-red-300">"long string..."</span>, annotations }</p>
+            <p class="text-stone-600 pl-8">&darr;</p>
+            <p class="text-stone-500 pl-8">Orchestrator receives ephemeral blob</p>
+            <p class="text-red-400 pl-8">&#x26A0; No individual tracking, status, or lifecycle</p>
           </div>
         </div>
 
-        <!-- Focus & Keyboard -->
+        <!-- New (after) -->
         <div>
-          <h3 class="text-base font-semibold mb-2 text-stone-900 dark:text-stone-100">Focus Indicators & Keyboard Nav</h3>
-          <ul class="text-xs text-stone-500 dark:text-stone-400 space-y-2 list-disc list-inside">
-            <li>All interactive cards: <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900 outline-none</code></li>
-            <li><strong class="text-stone-700 dark:text-stone-300">Tab</strong>: moves through sidebar focus order (segmented control &rarr; filter pills &rarr; feedback items &rarr; action buttons &rarr; input &rarr; decision buttons)</li>
-            <li><strong class="text-stone-700 dark:text-stone-300">Enter / Space</strong>: expand/collapse card, trigger action buttons</li>
-            <li><strong class="text-stone-700 dark:text-stone-300">Escape</strong>: collapse expanded card, close bottom sheet, dismiss confirm dialog</li>
-            <li><strong class="text-stone-700 dark:text-stone-300">Cmd+Enter</strong>: submit comment from textarea</li>
-            <li>Feedback items use <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">role="listitem"</code> in <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">role="list"</code></li>
-            <li>Sidebar tabs use <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">role="tablist"</code> with <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">aria-selected</code></li>
-            <li>Status badges include <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">aria-label="Status: pending"</code></li>
-            <li>Status changes trigger <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">role="status" aria-live="polite"</code> announcements</li>
-            <li>Mobile bottom sheet traps focus when open; Escape closes it</li>
-            <li>Mobile FAB: <code class="px-1 py-0.5 bg-stone-800 rounded text-[10px]">aria-label="Open feedback panel, N pending"</code></li>
-          </ul>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-green-400 mb-3">New Model (Per-Item CRUD)</p>
+          <div class="bg-stone-800 rounded-lg p-4 border border-stone-700 font-mono text-[10px] space-y-2">
+            <p class="text-stone-300">User action <span class="text-stone-500">(select/pin/type)</span></p>
+            <p class="text-stone-600 pl-2">&darr;</p>
+            <p class="text-stone-300 pl-2">React state <span class="text-stone-500">(unchanged)</span></p>
+            <p class="text-stone-600 pl-4">&darr;</p>
+            <p class="text-stone-300 pl-4">On <span class="text-amber-400">"Request Changes"</span>, for each comment:</p>
+            <p class="text-stone-600 pl-6">&darr;</p>
+            <p class="text-teal-400 pl-6">POST /api/feedback/{intent}/{stage}</p>
+            <p class="text-stone-500 pl-6">{ title, body, origin, source_ref }</p>
+            <p class="text-green-400 pl-6">&rarr; feedback file on disk (status: <span class="text-amber-300">pending</span>)</p>
+            <p class="text-stone-600 pl-4">&darr;</p>
+            <p class="text-stone-300 pl-4">After all files created:</p>
+            <p class="text-teal-400 pl-6">POST /review/{id}/decide</p>
+            <p class="text-stone-500 pl-6">{ decision, feedback: <span class="text-green-300">"Created 4 items: FB-01..04"</span> }</p>
+            <p class="text-green-400 pl-6">&#x2713; Each item individually trackable</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mapping rules table -->
+      <div class="mt-6">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-3">Comment Type &rarr; Feedback File Mapping</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="border-b border-stone-700">
+                <th class="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-stone-500">Source</th>
+                <th class="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-stone-500">title</th>
+                <th class="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-stone-500">origin</th>
+                <th class="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-stone-500">source_ref</th>
+              </tr>
+            </thead>
+            <tbody class="text-stone-300 font-mono text-[10px]">
+              <tr class="border-b border-stone-800">
+                <td class="py-2 px-3 text-stone-400 font-sans">Inline (text selection)</td>
+                <td class="py-2 px-3">truncate(selectedText, 60)</td>
+                <td class="py-2 px-3 text-sky-400">user-visual</td>
+                <td class="py-2 px-3 text-amber-400">{file}#{paragraph}</td>
+              </tr>
+              <tr class="border-b border-stone-800">
+                <td class="py-2 px-3 text-stone-400 font-sans">Pin (image annotation)</td>
+                <td class="py-2 px-3">"Pin at ({x}%, {y}%): {text}"</td>
+                <td class="py-2 px-3 text-sky-400">user-visual</td>
+                <td class="py-2 px-3 text-amber-400">{image}#{x},{y}</td>
+              </tr>
+              <tr>
+                <td class="py-2 px-3 text-stone-400 font-sans">General (sidebar textarea)</td>
+                <td class="py-2 px-3">truncate(comment, 60)</td>
+                <td class="py-2 px-3 text-stone-400">user-chat</td>
+                <td class="py-2 px-3 text-stone-500">null</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
 
-    <!-- ============================================================ -->
-    <!-- Status Lifecycle Diagram -->
-    <!-- ============================================================ -->
-    <section class="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm p-6 mb-6">
-      <h2 class="text-lg font-semibold mb-3 text-stone-900 dark:text-stone-100">Status Lifecycle (Optimistic UI)</h2>
-      <p class="text-xs text-stone-500 dark:text-stone-400 mb-4">All status transitions use optimistic updates. The badge changes instantly, then rolls back if the API call fails.</p>
-
-      <!-- ASCII-style state machine -->
-      <div class="code-block text-stone-300">
-        <pre>
-  draft ──────────────────── [Submit] ──────────────────── pending
-                                                              │
-                                                              ├── [Close] ──── closed
-                                                              │                  │
-                                                              │                  └── [Reopen] ── pending
-                                                              │
-                                                              ├── [Reject] ─── rejected
-                                                              │                  │
-                                                              │                  └── [Reopen] ── pending
-                                                              │
-                                                              └── [Agent addresses] ── addressed
-                                                                                        │
-                                                                                        ├── [Close] ── closed
-                                                                                        └── [Reopen] ── pending
-        </pre>
-      </div>
-      <div class="mt-3 p-3 rounded-lg bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
-        <h4 class="text-xs font-semibold text-stone-700 dark:text-stone-300 mb-2">Optimistic Update Pattern</h4>
-        <ol class="text-[10px] text-stone-500 dark:text-stone-400 space-y-1 list-decimal list-inside">
-          <li>User clicks action button (e.g., "Close")</li>
-          <li>UI immediately updates badge to new status + triggers <code class="px-1 py-0.5 bg-stone-800 rounded">feedback-status-change</code> animation</li>
-          <li><code class="px-1 py-0.5 bg-stone-800 rounded">PATCH /api/feedback/{intent}/{stage}/{id}</code> with <code class="px-1 py-0.5 bg-stone-800 rounded">{ status: "closed" }</code></li>
-          <li>On success: no further UI change needed</li>
-          <li>On error: revert badge to previous status + show error toast + trigger <code class="px-1 py-0.5 bg-stone-800 rounded">error-shake</code> animation</li>
-          <li>Live region announces: "Feedback FB-03 marked as closed" (or "Failed to update feedback FB-03")</li>
-        </ol>
-      </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="text-center py-6 text-[10px] text-stone-500 dark:text-stone-500">
-      Comment to Feedback Flow &mdash; Unit 02 &mdash; Design Stage &mdash; Universal Feedback Model &amp; Review Recovery
-    </footer>
-  </div>
+  </main>
 
   <!-- Live region for screen reader announcements -->
   <div role="status" aria-live="polite" class="sr-only"></div>
+
 </body>
 </html>
