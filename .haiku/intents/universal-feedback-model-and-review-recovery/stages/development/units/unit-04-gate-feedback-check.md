@@ -13,9 +13,9 @@ inputs:
   - features/revisit-with-reasons.feature
 status: active
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-16T15:37:38Z'
-hat_started_at: '2026-04-16T15:38:13Z'
+hat_started_at: '2026-04-16T15:39:06Z'
 ---
 
 # Gate-Phase Feedback Check and Auto-Revisit
