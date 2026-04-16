@@ -85,7 +85,8 @@ export function QuestionPage({ session, sessionId, wsRef }: Props) {
     try {
       await submitAnswers(sessionId, answers, wsRef, feedback, annotations);
       setResult({ success: true, message: "Answers submitted successfully." });
-      tryCloseTab(setShowClose, {
+      setShowClose(true);
+      tryCloseTab({
         url: `/question/${sessionId}/answer`,
         body: { answers, feedback, annotations },
       });

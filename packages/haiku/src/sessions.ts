@@ -7,10 +7,16 @@ sessionEvents.setMaxListeners(200)
 // ─── Presence / heartbeat tracking ───────────────────────────────────
 // Browser clients HEAD /api/session/:id/heartbeat every 10s. If no
 // heartbeat arrives within HEARTBEAT_GRACE_MS we mark the session as
-// disconnected and wake up any waiting handler so it can reopen the
-// browser or bail out. This replaces the WebSocket-based presence
-// detection that didn't work across tunnel proxies.
-const HEARTBEAT_GRACE_MS = 25_000
+// disconnected and wake up any waiting handler so it can react.
+//
+// Grace is deliberately generous (2 min) because modern browsers
+// aggressively throttle setInterval in backgrounded tabs — Chrome can
+// drop the effective heartbeat cadence to once per minute or slower
+// when a tab loses focus. A tighter grace causes spurious presence-lost
+// events on alive-but-backgrounded tabs, which previously triggered a
+// browser re-open loop that orphaned in-progress comments on the
+// original tab.
+const HEARTBEAT_GRACE_MS = 120_000
 const HEARTBEAT_SWEEP_INTERVAL = 5_000
 const lastHeartbeatAt = new Map<string, number>()
 const presenceLost = new Set<string>()
@@ -105,6 +111,14 @@ export interface ReviewAnnotations {
 	comments?: Array<{ selectedText: string; comment: string; paragraph: number }>
 }
 
+/** Snapshot of a decided review for delta comparison on the next re-review. */
+export interface PreviousReviewSnapshot {
+	feedback: string
+	reviewedAt: string
+	intentRawContent: string
+	unitRawContents: Record<string, string>
+}
+
 export interface ReviewSession {
 	session_type: "review"
 	session_id: string
@@ -118,6 +132,10 @@ export interface ReviewSession {
 	annotations?: ReviewAnnotations
 	gate_type?: string
 	html: string
+	/** If this review follows a prior changes_requested decision for the same
+	 *  intent, a snapshot of the prior review's content is attached here so
+	 *  the SPA can render a delta and show the previous feedback. */
+	previousReview?: PreviousReviewSnapshot
 	/** Parsed data for the SPA — stored at session creation so /api/session can return it */
 	parsedIntent?: unknown
 	parsedUnits?: unknown[]
@@ -211,28 +229,71 @@ const sessions = new Map<
 	ReviewSession | QuestionSession | DesignDirectionSession
 >()
 
+// ─── Previous-review snapshots (for re-review delta) ────────────────
+// Keyed by intent_dir absolute path. When a review ends in
+// changes_requested, we stash the intent/unit content the user just saw so
+// that the next review session for the same intent can attach it and render
+// a delta. Cleared on approved/external decisions.
+const previousReviewByIntentDir = new Map<string, PreviousReviewSnapshot>()
+
+export function getPreviousReviewSnapshot(
+	intentDir: string,
+): PreviousReviewSnapshot | undefined {
+	return previousReviewByIntentDir.get(intentDir)
+}
+
+export function setPreviousReviewSnapshot(
+	intentDir: string,
+	snapshot: PreviousReviewSnapshot,
+): void {
+	previousReviewByIntentDir.set(intentDir, snapshot)
+}
+
+export function clearPreviousReviewSnapshot(intentDir: string): void {
+	previousReviewByIntentDir.delete(intentDir)
+}
+
 // Cap total in-memory sessions and apply a 30-minute TTL to prevent unbounded growth
 const MAX_SESSIONS = 100
 const SESSION_TTL_MS = 30 * 60 * 1000
 const sessionCreatedAt = new Map<string, number>()
+
+/** Drop the previous-review snapshot for an intent_dir if no remaining
+ *  review session still references that intent. Called when a review
+ *  session is evicted so abandoned snapshots don't pile up. */
+function maybeClearOrphanedSnapshot(intentDir: string): void {
+	if (!previousReviewByIntentDir.has(intentDir)) return
+	for (const s of sessions.values()) {
+		if (s.session_type === "review" && s.intent_dir === intentDir) return
+	}
+	previousReviewByIntentDir.delete(intentDir)
+}
 
 function evictSessions(): void {
 	const now = Date.now()
 	// Evict expired sessions
 	for (const [id, ts] of sessionCreatedAt) {
 		if (now - ts > SESSION_TTL_MS) {
+			const evicted = sessions.get(id)
 			sessions.delete(id)
 			sessionCreatedAt.delete(id)
 			clearHeartbeat(id)
+			if (evicted?.session_type === "review") {
+				maybeClearOrphanedSnapshot(evicted.intent_dir)
+			}
 		}
 	}
 	// If still over cap, evict oldest
 	while (sessions.size >= MAX_SESSIONS) {
 		const oldest = sessionCreatedAt.entries().next().value
 		if (!oldest) break
+		const evicted = sessions.get(oldest[0])
 		sessions.delete(oldest[0])
 		sessionCreatedAt.delete(oldest[0])
 		clearHeartbeat(oldest[0])
+		if (evicted?.session_type === "review") {
+			maybeClearOrphanedSnapshot(evicted.intent_dir)
+		}
 	}
 }
 
@@ -314,6 +375,36 @@ export function updateSession(
 	const session = sessions.get(sessionId)
 	if (!session || session.session_type !== "review") return undefined
 	Object.assign(session, updates)
+
+	// When the user requests changes, stash a snapshot of the content they
+	// just reviewed, keyed by intent_dir, so the NEXT review session for the
+	// same intent can attach it as `previousReview` and render a delta. On
+	// any other terminal decision, drop any prior snapshot so we don't show
+	// a stale "previous review" banner.
+	if (updates.status === "decided") {
+		if (session.decision === "changes_requested") {
+			const intent = session.parsedIntent as { rawContent?: string } | undefined
+			const units =
+				(session.parsedUnits as
+					| Array<{ slug?: string; rawContent?: string }>
+					| undefined) ?? []
+			const unitRawContents: Record<string, string> = {}
+			for (const u of units) {
+				if (u?.slug && typeof u.rawContent === "string") {
+					unitRawContents[u.slug] = u.rawContent
+				}
+			}
+			setPreviousReviewSnapshot(session.intent_dir, {
+				feedback: session.feedback ?? "",
+				reviewedAt: new Date().toISOString(),
+				intentRawContent: intent?.rawContent ?? "",
+				unitRawContents,
+			})
+		} else {
+			clearPreviousReviewSnapshot(session.intent_dir)
+		}
+	}
+
 	notifySessionUpdate(sessionId)
 	return session
 }

@@ -40,6 +40,7 @@ import {
 	createDesignDirectionSession,
 	createQuestionSession,
 	createSession,
+	getPreviousReviewSnapshot,
 	getSession,
 	hasPresenceLost,
 	waitForSession,
@@ -165,15 +166,29 @@ const server = new Server(
 	},
 )
 
+import { getCapabilities, isClaudeCode } from "./harness.js"
 import {
 	handleOrchestratorTool,
 	orchestratorToolDefs,
 	setElicitInputHandler,
 	setOpenReviewHandler,
 } from "./orchestrator.js"
-// Prompts migrated to skills (plugin/skills/) — prompt handlers kept for protocol compatibility
+// Prompts: for Claude Code, skills are native; for other harnesses, we bridge
+// skills → MCP prompts so they surface as invocable actions.
 import { completeArgument, getPrompt, listPrompts } from "./prompts/index.js"
+import { registerSkillPrompts } from "./prompts/skill-bridge.js"
 import { handleStateTool, stateToolDefs } from "./state-tools.js"
+
+// Bridge skills to MCP prompts for harnesses that lack native skill support.
+// For Claude Code this is a no-op (skills are native). For Gemini CLI, prompts
+// surface as slash commands. For Cursor/Windsurf/Kiro, prompts appear in the
+// prompt UI. For OpenCode, prompts support is partial but growing.
+if (!isClaudeCode()) {
+	const caps = getCapabilities()
+	if (caps.mcpPrompts) {
+		registerSkillPrompts()
+	}
+}
 
 server.setRequestHandler(ListPromptsRequestSchema, async () => ({
 	prompts: listPrompts(),
@@ -187,9 +202,10 @@ server.setRequestHandler(CompleteRequestSchema, async (request) => {
 	return completeArgument(request.params)
 })
 
-// List tools
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-	tools: [
+// List tools — filtered by harness capabilities
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+	const caps = getCapabilities()
+	const allTools = [
 		// Orchestration tools
 		...orchestratorToolDefs,
 		// State management tools
@@ -369,8 +385,35 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 				required: ["message"],
 			},
 		},
-	],
-}))
+	]
+
+	// Harness-aware tool filtering:
+	// 1. Remove browser-based UI tools for headless/non-browser harnesses
+	// 2. Respect maxTools limit for constrained harnesses (Cursor ~40, Windsurf 100)
+	let filteredTools = allTools
+
+	// Step 1: Remove browser-based UI tools for non-Claude harnesses.
+	// These tools open a local HTTP server + browser window which won't work
+	// in headless IDE environments. Removing them frees tool slots for harnesses
+	// with tight limits (Cursor ~40).
+	if (!isClaudeCode()) {
+		const browserTools = new Set([
+			"ask_user_visual_question",
+			"pick_design_direction",
+		])
+		filteredTools = filteredTools.filter((t) => !browserTools.has(t.name))
+	}
+
+	// Step 2: Enforce tool count limit
+	if (caps.maxTools !== null && filteredTools.length > caps.maxTools) {
+		console.error(
+			`[haiku] Harness tool limit (${caps.maxTools}) exceeded — exposing ${caps.maxTools} of ${filteredTools.length} tools`,
+		)
+		filteredTools = filteredTools.slice(0, caps.maxTools)
+	}
+
+	return { tools: filteredTools }
+})
 
 // Call tools — wrapped to trigger hot-swap after response when an update is staged
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -808,6 +851,13 @@ setOpenReviewHandler(
 			parsedMermaid: mermaid,
 		})
 
+		// Attach previous-review snapshot (from a prior changes_requested) so
+		// the SPA can render a delta on the re-review.
+		const prevSnapshot = getPreviousReviewSnapshot(intentDirAbs)
+		if (prevSnapshot) {
+			session.previousReview = prevSnapshot
+		}
+
 		// Parse stage states + knowledge
 		const stageStates = await parseStageStates(intentDirAbs)
 		const knowledgeFiles = await parseKnowledgeFiles(intentDirAbs)
@@ -866,79 +916,63 @@ setOpenReviewHandler(
 
 		openBrowser()
 
-		// Retry loop: wait → check → reopen if needed → wait again
-		attempts: for (let attempt = 0; attempt < 3; attempt++) {
-			// Inner loop: handle heartbeat-driven wakeups without burning an attempt
-			while (true) {
-				let timedOut = false
-				try {
-					await waitForSession(session.session_id, 10 * 60 * 1000) // 10 min per attempt
-				} catch {
-					timedOut = true
-				}
-
-				const updated = getSession(session.session_id)
-				if (
-					updated &&
-					updated.session_type === "review" &&
-					updated.status === "decided"
-				) {
-					clearHeartbeat(session.session_id)
-					if (useRemote) {
-						clearE2EKey(session.session_id)
-						closeTunnel()
-					}
-					return {
-						decision: updated.decision,
-						feedback: updated.feedback,
-						annotations: updated.annotations,
-					}
-				}
-
-				if (hasPresenceLost(session.session_id)) {
-					// Heartbeat gap detected — user closed the tab. Reopen without
-					// consuming a retry attempt; the user may have just refreshed.
-					console.error(
-						`[haiku] Review session ${session.session_id} lost presence — reopening browser`,
-					)
-					clearHeartbeat(session.session_id)
-					if (useRemote) {
-						const tunnelUrl = await openTunnel(port)
-						const newUrl = buildReviewUrl(
-							session.session_id,
-							tunnelUrl,
-							reviewType,
-						)
-						openBrowser(newUrl)
-					} else {
-						openBrowser()
-					}
-					continue
-				}
-
-				if (timedOut) {
-					if (attempt < 2) {
-						console.error(
-							`[haiku] Review session timeout (attempt ${attempt + 1}/3) — reopening browser`,
-						)
-						if (useRemote) {
-							const tunnelUrl = await openTunnel(port)
-							const newUrl = buildReviewUrl(
-								session.session_id,
-								tunnelUrl,
-								reviewType,
-							)
-							openBrowser(newUrl)
-						} else {
-							openBrowser()
-						}
-						continue attempts
-					}
-					break attempts
-				}
-
-				// Spurious wakeup — loop and wait again.
+		// Single 30-minute wait. NO browser re-opens.
+		//
+		// The previous retry loop spawned a fresh browser tab on every
+		// presence-lost wakeup AND on every attempt timeout. Modern browsers
+		// throttle setInterval in backgrounded tabs, so a user who had the
+		// review tab open but switched windows would hit spurious
+		// presence-lost events and see brand-new tabs pop up, overwriting
+		// their in-progress comments on the original (still-alive) tab.
+		//
+		// Recovery path: on timeout, throw — the caller in orchestrator.ts
+		// classifies review timeouts as agent-fixable and returns
+		// GATE BLOCKED. The agent's next haiku_run_next tick re-enters the
+		// review phase and creates a fresh session. No orphaned tabs.
+		while (true) {
+			let timedOut = false
+			try {
+				await waitForSession(session.session_id, 30 * 60 * 1000)
+			} catch {
+				timedOut = true
 			}
+
+			const updated = getSession(session.session_id)
+			if (
+				updated &&
+				updated.session_type === "review" &&
+				updated.status === "decided"
+			) {
+				clearHeartbeat(session.session_id)
+				if (useRemote) {
+					clearE2EKey(session.session_id)
+					closeTunnel()
+				}
+				return {
+					decision: updated.decision,
+					feedback: updated.feedback,
+					annotations: updated.annotations,
+				}
+			}
+
+			// Timeout check MUST come before presence-lost: once presenceLost
+			// contains the session ID it stays there across iterations (only
+			// recordHeartbeat or clearHeartbeat removes it), so checking
+			// presence-lost first would swallow every subsequent timeout.
+			if (timedOut) {
+				break
+			}
+
+			if (hasPresenceLost(session.session_id)) {
+				// Log but keep waiting. The tab may just be backgrounded and
+				// heartbeat-throttled; if genuinely closed, the timeout above
+				// will eventually fire and the caller can recover.
+				console.error(
+					`[haiku] Review session ${session.session_id} lost presence — continuing to wait (no reopen)`,
+				)
+			}
+
+			// Presence-lost or spurious wakeup — loop again.
 		}
 
 		clearHeartbeat(session.session_id)
@@ -946,7 +980,7 @@ setOpenReviewHandler(
 			clearE2EKey(session.session_id)
 			closeTunnel()
 		}
-		throw new Error("Review timeout after 3 attempts (30 min total)")
+		throw new Error("Review timeout after 30 minutes")
 	},
 )
 
@@ -959,7 +993,10 @@ setElicitInputHandler(async (params) => {
 async function main() {
 	const transport = new StdioServerTransport()
 	await server.connect(transport)
-	console.error("H·AI·K·U Review MCP server running on stdio")
+	const harnessInfo = isClaudeCode()
+		? ""
+		: ` (harness: ${getCapabilities().displayName})`
+	console.error(`H·AI·K·U Review MCP server running on stdio${harnessInfo}`)
 
 	// Start background auto-update checker after the server is live
 	startUpdateChecker()
