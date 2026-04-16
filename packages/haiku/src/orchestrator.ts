@@ -403,6 +403,90 @@ function loadCrossStageAgents(
 	}
 }
 
+// ── Review feedback writer helper ────────────────────────────────────────
+
+/**
+ * Write feedback files from a review-UI changes_requested result.
+ * Extracts annotation pins, inline comments, and free-form feedback text
+ * into individual feedback files with appropriate origins.
+ * Returns the list of created feedback IDs.
+ */
+function writeReviewFeedbackFiles(
+	slug: string,
+	stage: string,
+	reviewResult: { feedback?: string; annotations?: unknown },
+): string[] {
+	const createdIds: string[] = []
+	const annotations = reviewResult.annotations as
+		| {
+				pins?: Array<{ x: number; y: number; text: string }>
+				comments?: Array<{
+					selectedText: string
+					comment: string
+					paragraph: number
+				}>
+				screenshot?: string
+		  }
+		| undefined
+
+	// Walk pins — each becomes a feedback file
+	if (annotations?.pins) {
+		for (const pin of annotations.pins) {
+			if (!pin.text) continue
+			const title =
+				pin.text.length > 120 ? pin.text.slice(0, 117) + "..." : pin.text
+			const result = writeFeedbackFile(slug, stage, {
+				title,
+				body: pin.text,
+				origin: "user-visual",
+				author: "user",
+				source_ref: `pin:${pin.x},${pin.y}`,
+			})
+			createdIds.push(result.feedback_id)
+		}
+	}
+
+	// Walk inline comments — each becomes a feedback file
+	if (annotations?.comments) {
+		for (const comment of annotations.comments) {
+			if (!comment.comment) continue
+			const title =
+				comment.comment.length > 120
+					? comment.comment.slice(0, 117) + "..."
+					: comment.comment
+			const result = writeFeedbackFile(slug, stage, {
+				title,
+				body: comment.comment,
+				origin: "user-visual",
+				author: "user",
+				source_ref: `paragraph:${comment.paragraph}`,
+			})
+			createdIds.push(result.feedback_id)
+		}
+	}
+
+	// Free-form feedback text — one file if non-empty
+	if (reviewResult.feedback && reviewResult.feedback.trim()) {
+		const fb = reviewResult.feedback.trim()
+		const title = fb.length > 120 ? fb.slice(0, 117) + "..." : fb
+		const result = writeFeedbackFile(slug, stage, {
+			title,
+			body: fb,
+			origin: "user-chat",
+			author: "user",
+		})
+		createdIds.push(result.feedback_id)
+	}
+
+	if (createdIds.length > 0) {
+		gitCommitState(
+			`feedback: create ${createdIds.join(", ")} from review UI in ${stage}`,
+		)
+	}
+
+	return createdIds
+}
+
 // ── Output template injection ────────────────────────────────────────────
 
 /** Build output template content as a string */
@@ -1320,6 +1404,139 @@ export function runNext(slug: string): OrchestratorAction {
 				stage_metadata: resolveStageMetadata(studio, currentStage),
 				message: `Elaborate stage '${currentStage}' into units with completion criteria`,
 			}
+		}
+
+		// ── Additive elaborate mode (visits > 0) ──────────────────────────
+		// When we're revisiting a stage after feedback, return a special action
+		// that lists completed units as read-only and pending feedback to address.
+		const visits = (stageState.visits as number) || 0
+		if (visits > 0) {
+			const allUnits = listUnits(iDir, currentStage)
+			const completedUnits = allUnits.filter((u) => u.status === "completed")
+			const pendingUnits = allUnits.filter((u) => u.status !== "completed")
+			const pendingFeedback = readFeedbackFiles(slug, currentStage).filter(
+				(item) => item.status === "pending",
+			)
+
+			// Validate new (non-completed) units have closes: fields that reference valid feedback IDs
+			const validFeedbackIds = new Set(pendingFeedback.map((f) => f.id))
+			const unitsWithoutCloses: string[] = []
+			const invalidCloseRefs: Array<{ unit: string; ref: string }> = []
+
+			for (const u of pendingUnits) {
+				const unitFile = join(iDir, "stages", currentStage, "units", `${u.name}.md`)
+				if (!existsSync(unitFile)) continue
+				const fm = readFrontmatter(unitFile)
+				const closes = (fm.closes as string[]) || []
+				if (closes.length === 0) {
+					unitsWithoutCloses.push(u.name)
+				} else {
+					for (const ref of closes) {
+						if (!validFeedbackIds.has(ref)) {
+							invalidCloseRefs.push({ unit: u.name, ref })
+						}
+					}
+				}
+			}
+
+			// If new units exist but lack closes: fields, block with validation error
+			if (pendingUnits.length > 0 && unitsWithoutCloses.length > 0) {
+				return {
+					action: "additive_elaborate",
+					intent: slug,
+					studio,
+					stage: currentStage,
+					visits,
+					completed_units: completedUnits.map((u) => u.name),
+					pending_feedback: pendingFeedback.map((f) => ({
+						feedback_id: f.id,
+						title: f.title,
+						body: f.body,
+						origin: f.origin,
+						author: f.author,
+					})),
+					validation_error: `New units missing \`closes:\` field: ${unitsWithoutCloses.join(", ")}. Every new unit in an additive elaborate cycle MUST declare \`closes: [FB-NN]\` referencing the feedback items it addresses.`,
+					stage_metadata: resolveStageMetadata(studio, currentStage),
+					message: `Additive elaborate (visit ${visits}) — ${pendingFeedback.length} pending feedback item(s) to address`,
+				}
+			}
+
+			if (invalidCloseRefs.length > 0) {
+				return {
+					action: "additive_elaborate",
+					intent: slug,
+					studio,
+					stage: currentStage,
+					visits,
+					completed_units: completedUnits.map((u) => u.name),
+					pending_feedback: pendingFeedback.map((f) => ({
+						feedback_id: f.id,
+						title: f.title,
+						body: f.body,
+						origin: f.origin,
+						author: f.author,
+					})),
+					validation_error: `Invalid \`closes:\` references: ${invalidCloseRefs.map((r) => `${r.unit} → ${r.ref}`).join(", ")}. References must match existing pending feedback IDs.`,
+					stage_metadata: resolveStageMetadata(studio, currentStage),
+					message: `Additive elaborate (visit ${visits}) — invalid feedback references`,
+				}
+			}
+
+			// Check for orphaned feedback — all pending feedback must be referenced by at least one unit's closes:
+			if (pendingUnits.length > 0 && pendingFeedback.length > 0) {
+				const closedFeedbackIds = new Set<string>()
+				for (const u of pendingUnits) {
+					const unitFile = join(iDir, "stages", currentStage, "units", `${u.name}.md`)
+					if (!existsSync(unitFile)) continue
+					const fm = readFrontmatter(unitFile)
+					const closes = (fm.closes as string[]) || []
+					for (const ref of closes) closedFeedbackIds.add(ref)
+				}
+				const orphaned = pendingFeedback.filter((f) => !closedFeedbackIds.has(f.id))
+				if (orphaned.length > 0) {
+					return {
+						action: "additive_elaborate",
+						intent: slug,
+						studio,
+						stage: currentStage,
+						visits,
+						completed_units: completedUnits.map((u) => u.name),
+						pending_feedback: pendingFeedback.map((f) => ({
+							feedback_id: f.id,
+							title: f.title,
+							body: f.body,
+							origin: f.origin,
+							author: f.author,
+						})),
+						validation_error: `Orphaned feedback — not referenced by any unit's \`closes:\` field: ${orphaned.map((f) => `${f.id}: ${f.title}`).join("; ")}. Create units for these or reject the feedback items.`,
+						stage_metadata: resolveStageMetadata(studio, currentStage),
+						message: `Additive elaborate (visit ${visits}) — ${orphaned.length} orphaned feedback item(s)`,
+					}
+				}
+			}
+
+			// If no pending units exist yet (just completed + feedback), return the additive elaborate action
+			if (pendingUnits.length === 0 && pendingFeedback.length > 0) {
+				return {
+					action: "additive_elaborate",
+					intent: slug,
+					studio,
+					stage: currentStage,
+					visits,
+					completed_units: completedUnits.map((u) => u.name),
+					pending_feedback: pendingFeedback.map((f) => ({
+						feedback_id: f.id,
+						title: f.title,
+						body: f.body,
+						origin: f.origin,
+						author: f.author,
+					})),
+					stage_metadata: resolveStageMetadata(studio, currentStage),
+					message: `Additive elaborate (visit ${visits}) — ${pendingFeedback.length} pending feedback item(s) to address. Create new units with \`closes:\` fields.`,
+				}
+			}
+
+			// All feedback addressed + new units validated — fall through to normal elaborate validation/advancement
 		}
 
 		// Enforce collaborative elaboration — minimum turn count
@@ -2612,6 +2829,13 @@ function enrichActionWithPreview(action: OrchestratorAction): void {
 			next_step = ""
 			break
 
+		case "additive_elaborate": {
+			const fbCount = (action.pending_feedback as unknown[])?.length || 0
+			tell_user = `Additive elaborate — ${fbCount} pending feedback item(s) need to be addressed with new units.`
+			next_step = "I'll create new units with `closes:` fields referencing the feedback items, then advance to execution."
+			break
+		}
+
 		case "changes_requested":
 			tell_user =
 				"Changes were requested on the review — I'll address the feedback."
@@ -2961,6 +3185,53 @@ function buildRunInstructions(
 			} catch {
 				/* non-fatal */
 			}
+			break
+		}
+
+		case "additive_elaborate": {
+			const stage = action.stage as string
+			const aeVisits = (action.visits as number) || 0
+			const completedUnits = (action.completed_units as string[]) || []
+			const pendingFeedback = (action.pending_feedback as Array<{
+				feedback_id: string
+				title: string
+				body: string
+				origin: string
+				author: string
+			}>) || []
+			const validationError = action.validation_error as string | undefined
+
+			sections.push(`## Additive Elaborate: ${stage} (visit #${aeVisits})`)
+
+			if (validationError) {
+				sections.push(`### Validation Error\n\n${validationError}`)
+			}
+
+			if (completedUnits.length > 0) {
+				sections.push(
+					`### Frozen Completed Units (read-only)\n\nThe following units from prior visits are **completed and immutable** — do NOT modify or re-queue them:\n\n${completedUnits.map((u) => `- \`${u}\``).join("\n")}`,
+				)
+			}
+
+			if (pendingFeedback.length > 0) {
+				sections.push(
+					`### Pending Feedback (MUST address)\n\n${pendingFeedback.map((f) => `#### ${f.feedback_id}: ${f.title}\n- **Origin:** ${f.origin} | **Author:** ${f.author}\n\n${f.body}`).join("\n\n")}`,
+				)
+			}
+
+			sections.push(
+				`### Instructions\n\n` +
+				`This is an **additive elaborate** cycle — do NOT re-plan or modify existing completed units.\n\n` +
+				`1. Read each pending feedback item above\n` +
+				`2. For each item, create a new unit that addresses the finding\n` +
+				`3. Each new unit MUST have a \`closes:\` frontmatter field referencing the feedback ID(s) it addresses — e.g. \`closes: [FB-01, FB-03]\`\n` +
+				`4. New units also need \`inputs:\`, \`depends_on:\`, \`type:\`, and completion criteria as usual\n` +
+				`5. When all pending items are covered by units, call \`haiku_run_next { intent: "${slug}" }\`\n` +
+				`6. The orchestrator validates that every pending feedback is referenced by at least one unit's \`closes:\` field\n` +
+				`7. After validation passes, the new units enter execution\n\n` +
+				`**Unit file naming:** Continue the existing sequence (e.g., if last unit is \`unit-05-*\`, start at \`unit-06-*\`).\n\n` +
+				`**Do NOT** modify or re-queue existing completed units from prior visits.`,
+			)
 			break
 		}
 
@@ -3375,13 +3646,13 @@ function buildRunInstructions(
 				)
 				for (const [name, content] of Object.entries(agents)) {
 					sections.push(
-						`#### Subagent: \`${name}\`\n\n<subagent tool="Task">\n## Adversarial Review: ${name}\n\nYou are the "${name}" review agent for stage "${stage}" of intent "${slug}".\n\n## Your Mandate\n\n${content}\n\n## Instructions\n\n1. Run \`git diff main...HEAD\` to get the current diff\n2. Read the stage's output artifacts in \`.haiku/intents/${slug}/stages/${stage}/\`\n3. Review through your mandate's lens\n4. Report findings as: severity (HIGH/MEDIUM/LOW), file, line, description\n5. HIGH findings MUST be fixed before the stage can advance\n</subagent>\n`,
+						`#### Subagent: \`${name}\`\n\n<subagent tool="Task">\n## Adversarial Review: ${name}\n\nYou are the "${name}" review agent for stage "${stage}" of intent "${slug}".\n\n## Your Mandate\n\n${content}\n\n## Instructions\n\n1. Run \`git diff main...HEAD\` to get the current diff\n2. Read the stage's output artifacts in \`.haiku/intents/${slug}/stages/${stage}/\`\n3. Review through your mandate's lens\n4. For each issue you find, call \`haiku_feedback({ intent: "${slug}", stage: "${stage}", title: "<short title>", body: "<full description with file:line refs>", origin: "adversarial-review", author: "${name}" })\`\n5. Return only a summary count of how many findings you logged\n</subagent>\n`,
 					)
 				}
 			}
 
 			sections.push(
-				`### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn each subagent above using the EXACT content between \`<subagent>\` tags.\nCollect findings. If HIGH severity findings exist, fix them and re-review (up to 3 cycles).\nThen call \`haiku_run_next { intent: "${slug}" }\`.`,
+				`### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn review subagents. They persist findings directly via haiku_feedback. After all complete, call \`haiku_run_next { intent: "${slug}" }\`.`,
 			)
 			break
 		}
@@ -3510,12 +3781,12 @@ function buildRunInstructions(
 				)
 				for (const [name, content] of Object.entries(agents)) {
 					sections.push(
-						`#### Subagent: \`${name}\`\n\n<subagent tool="Task">\n## Elaboration Review: ${name}\n\nYou are the "${name}" review agent reviewing elaboration artifacts for stage "${stage}" of intent "${slug}".\n\n## Your Mandate\n\n${content}\n\n## Instructions\n\n1. Read the elaboration specs: units in \`.haiku/intents/${slug}/stages/${stage}/units/\`\n2. Read discovery artifacts in \`.haiku/intents/${slug}/knowledge/\`\n3. Review through your mandate's lens\n4. Report findings as: severity (HIGH/MEDIUM/LOW), description\n5. HIGH findings MUST be fixed before execution can begin\n</subagent>\n`,
+						`#### Subagent: \`${name}\`\n\n<subagent tool="Task">\n## Elaboration Review: ${name}\n\nYou are the "${name}" review agent reviewing elaboration artifacts for stage "${stage}" of intent "${slug}".\n\n## Your Mandate\n\n${content}\n\n## Instructions\n\n1. Read the elaboration specs: units in \`.haiku/intents/${slug}/stages/${stage}/units/\`\n2. Read discovery artifacts in \`.haiku/intents/${slug}/knowledge/\`\n3. Review through your mandate's lens\n4. For each issue you find, call \`haiku_feedback({ intent: "${slug}", stage: "${stage}", title: "<short title>", body: "<full description>", origin: "adversarial-review", author: "${name}" })\`\n5. Return only a summary count of how many findings you logged\n</subagent>\n`,
 					)
 				}
 			}
 			sections.push(
-				`### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn each subagent above using the EXACT content between \`<subagent>\` tags.\nCollect findings. Fix any HIGH findings.\nThen call \`haiku_run_next { intent: "${slug}" }\` to advance.`,
+				`### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn review subagents. They persist findings directly via haiku_feedback. After all complete, call \`haiku_run_next { intent: "${slug}" }\` to advance.`,
 			)
 			break
 		}
@@ -4079,7 +4350,12 @@ export async function handleOrchestratorTool(
 					}
 					return text(withInstructions(gateResult))
 				}
-				// changes_requested
+				// changes_requested — persist all annotations and feedback as durable feedback files
+				const feedbackIds = writeReviewFeedbackFiles(slug, stage, reviewResult)
+				const feedbackSummary = feedbackIds.length > 0
+					? ` Created ${feedbackIds.length} feedback file(s): ${feedbackIds.join(", ")}.`
+					: ""
+
 				if (gateContext === "intent_review") {
 					// Intent rejected — stay in pending, agent must revise intent.md
 					syncSessionMetadata(slug, args.state_file as string | undefined)
@@ -4089,7 +4365,8 @@ export async function handleOrchestratorTool(
 						stage,
 						feedback: reviewResult.feedback,
 						annotations: reviewResult.annotations,
-						message: `Changes requested on intent: ${reviewResult.feedback || "(see annotations)"}. Revise the intent description, then call haiku_run_next { intent: "${slug}" } again.`,
+						feedback_ids: feedbackIds,
+						message: `Changes requested on intent: ${reviewResult.feedback || "(see annotations)"}.${feedbackSummary} Revise the intent description, then call haiku_run_next { intent: "${slug}" } again.`,
 					}
 					return text(withInstructions(gateResult))
 				}
@@ -4102,7 +4379,8 @@ export async function handleOrchestratorTool(
 						stage,
 						feedback: reviewResult.feedback,
 						annotations: reviewResult.annotations,
-						message: `Changes requested on specs: ${reviewResult.feedback || "(see annotations)"}. Fix the specs, then call haiku_run_next { intent: "${slug}" } again.`,
+						feedback_ids: feedbackIds,
+						message: `Changes requested on specs: ${reviewResult.feedback || "(see annotations)"}.${feedbackSummary} Fix the specs, then call haiku_run_next { intent: "${slug}" } again.`,
 					}
 					return text(withInstructions(gateResult))
 				}
@@ -4113,7 +4391,8 @@ export async function handleOrchestratorTool(
 					stage,
 					feedback: reviewResult.feedback,
 					annotations: reviewResult.annotations,
-					message: `Changes requested: ${reviewResult.feedback || "(see annotations)"}. Address the feedback, then call haiku_run_next { intent: "${slug}" } again.`,
+					feedback_ids: feedbackIds,
+					message: `Changes requested: ${reviewResult.feedback || "(see annotations)"}.${feedbackSummary} Address the feedback, then call haiku_run_next { intent: "${slug}" } again.`,
 				}
 				return text(withInstructions(gateResult))
 			} catch (err) {

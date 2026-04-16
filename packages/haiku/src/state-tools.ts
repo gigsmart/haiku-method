@@ -3056,6 +3056,25 @@ export function handleStateTool(
 
 				setFrontmatterField(advPath, "status", "completed")
 				setFrontmatterField(advPath, "completed_at", timestamp())
+
+				// Close feedback items referenced by this unit's `closes:` field
+				{
+					const unitRaw = readFileSync(advPath, "utf8")
+					const unitParsed = parseFrontmatter(unitRaw)
+					const closes = (unitParsed.data.closes as string[]) || []
+					if (closes.length > 0) {
+						for (const fbId of closes) {
+							updateFeedbackFile(
+								args.intent as string,
+								advStage,
+								fbId,
+								{ status: "addressed", addressed_by: args.unit as string },
+								"agent",
+							)
+						}
+					}
+				}
+
 				emitTelemetry("haiku.unit.completed", {
 					intent: args.intent as string,
 					stage: advStage,
