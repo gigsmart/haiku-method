@@ -14,42 +14,6 @@
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; }
 
-    /* Pipeline connector line */
-    .pipeline-connector {
-      height: 2px;
-      flex: 1;
-      min-width: 20px;
-    }
-
-    /* Stage dot sizes */
-    .stage-dot {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      font-weight: 700;
-      transition: all 0.2s;
-      position: relative;
-    }
-    .stage-diamond {
-      width: 22px;
-      height: 22px;
-      transform: rotate(45deg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      font-weight: 700;
-      transition: all 0.2s;
-      position: relative;
-    }
-    .stage-diamond-inner {
-      transform: rotate(-45deg);
-    }
-
     /* Tooltip on hover */
     .stage-tooltip {
       position: absolute;
@@ -86,63 +50,63 @@
             <div class="stage-tooltip px-2 py-1 rounded-lg bg-gray-800 dark:bg-gray-700 text-xs text-white shadow-lg">
               Inception &middot; Completed
             </div>
-            <div class="stage-dot bg-teal-600 text-white cursor-pointer hover:bg-teal-700">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all relative bg-teal-600 text-white cursor-pointer hover:bg-teal-700">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
             <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">Inception</span>
           </div>
 
           <!-- Connector — completed -->
-          <div class="pipeline-connector bg-teal-600 mt-[-18px]"></div>
+          <div class="h-0.5 flex-1 min-w-5 bg-teal-600 mt-[-18px]"></div>
 
           <!-- Stage 2: Design — completed -->
           <div class="stage-node flex flex-col items-center relative" tabindex="0" role="link" aria-label="Design stage, completed">
             <div class="stage-tooltip px-2 py-1 rounded-lg bg-gray-800 dark:bg-gray-700 text-xs text-white shadow-lg">
               Design &middot; Completed
             </div>
-            <div class="stage-dot bg-teal-600 text-white cursor-pointer hover:bg-teal-700">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all relative bg-teal-600 text-white cursor-pointer hover:bg-teal-700">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
             <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">Design</span>
           </div>
 
           <!-- Connector — completed to current -->
-          <div class="pipeline-connector bg-teal-600 mt-[-18px]"></div>
+          <div class="h-0.5 flex-1 min-w-5 bg-teal-600 mt-[-18px]"></div>
 
           <!-- Stage 3: Development — current (diamond) -->
           <div class="stage-node flex flex-col items-center relative" tabindex="0" role="link" aria-current="step" aria-label="Development stage, in progress">
             <div class="stage-tooltip px-2 py-1 rounded-lg bg-teal-700 text-xs text-white shadow-lg font-semibold">
               Development &middot; In Progress
             </div>
-            <div class="stage-diamond bg-teal-600 text-white shadow-md ring-2 ring-teal-400/50">
-              <span class="stage-diamond-inner text-[10px] font-bold">&#9670;</span>
+            <div class="w-[22px] h-[22px] flex items-center justify-center text-[10px] font-bold transition-all relative bg-teal-600 text-white shadow-md ring-2 ring-teal-400/50" style="transform: rotate(45deg);">
+              <span class="text-[10px] font-bold" style="transform: rotate(-45deg);">&#9670;</span>
             </div>
             <span class="text-xs font-semibold text-teal-600 dark:text-teal-400 mt-2.5">Development</span>
           </div>
 
           <!-- Connector — current to future -->
-          <div class="pipeline-connector bg-gray-300 dark:bg-gray-600 mt-[-18px]"></div>
+          <div class="h-0.5 flex-1 min-w-5 bg-gray-300 dark:bg-gray-600 mt-[-18px]"></div>
 
           <!-- Stage 4: Operations — future -->
           <div class="stage-node flex flex-col items-center relative" aria-label="Operations stage, upcoming" aria-disabled="true">
             <div class="stage-tooltip px-2 py-1 rounded-lg bg-gray-800 dark:bg-gray-700 text-xs text-white shadow-lg">
               Operations &middot; Upcoming
             </div>
-            <div class="stage-dot bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all relative bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600">
               <span class="text-[10px]">&#9675;</span>
             </div>
             <span class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-2">Operations</span>
           </div>
 
           <!-- Connector — future to future -->
-          <div class="pipeline-connector bg-gray-300 dark:bg-gray-600 mt-[-18px]"></div>
+          <div class="h-0.5 flex-1 min-w-5 bg-gray-300 dark:bg-gray-600 mt-[-18px]"></div>
 
           <!-- Stage 5: Security — future -->
           <div class="stage-node flex flex-col items-center relative" aria-label="Security stage, upcoming" aria-disabled="true">
             <div class="stage-tooltip px-2 py-1 rounded-lg bg-gray-800 dark:bg-gray-700 text-xs text-white shadow-lg">
               Security &middot; Upcoming
             </div>
-            <div class="stage-dot bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all relative bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600">
               <span class="text-[10px]">&#9675;</span>
             </div>
             <span class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-2">Security</span>
@@ -178,20 +142,20 @@
 
           <!-- Inception — completed, 1 visit -->
           <div class="stage-node flex flex-col items-center relative" tabindex="0" role="link" aria-label="Inception, completed">
-            <div class="stage-dot bg-teal-600 text-white cursor-pointer hover:bg-teal-700">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all relative bg-teal-600 text-white cursor-pointer hover:bg-teal-700">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
             <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">Inception</span>
           </div>
 
-          <div class="pipeline-connector bg-teal-600 mt-[-18px]"></div>
+          <div class="h-0.5 flex-1 min-w-5 bg-teal-600 mt-[-18px]"></div>
 
           <!-- Design — completed, revisited (visit 2) -->
           <div class="stage-node flex flex-col items-center relative" tabindex="0" role="link" aria-label="Design, completed, visited 2 times">
             <div class="stage-tooltip px-2 py-1 rounded-lg bg-gray-800 dark:bg-gray-700 text-xs text-white shadow-lg">
               Design &middot; Completed &middot; 2 visits
             </div>
-            <div class="stage-dot bg-teal-600 text-white cursor-pointer hover:bg-teal-700">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all relative bg-teal-600 text-white cursor-pointer hover:bg-teal-700">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
             <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">Design</span>
@@ -199,38 +163,38 @@
             <span class="absolute -top-1 -right-2 inline-flex items-center gap-0.5 px-1 py-0.5 rounded-md text-[9px] font-bold leading-none bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">2x</span>
           </div>
 
-          <div class="pipeline-connector bg-teal-600 mt-[-18px]"></div>
+          <div class="h-0.5 flex-1 min-w-5 bg-teal-600 mt-[-18px]"></div>
 
           <!-- Development — current, revisited (visit 2) -->
           <div class="stage-node flex flex-col items-center relative" tabindex="0" role="link" aria-current="step" aria-label="Development, in progress, visit 2">
             <div class="stage-tooltip px-2 py-1 rounded-lg bg-teal-700 text-xs text-white shadow-lg font-semibold">
               Development &middot; In Progress &middot; Visit 2
             </div>
-            <div class="stage-diamond bg-teal-600 text-white shadow-md ring-2 ring-teal-400/50">
-              <span class="stage-diamond-inner text-[10px] font-bold">&#9670;</span>
+            <div class="w-[22px] h-[22px] flex items-center justify-center text-[10px] font-bold transition-all relative bg-teal-600 text-white shadow-md ring-2 ring-teal-400/50" style="transform: rotate(45deg);">
+              <span class="text-[10px] font-bold" style="transform: rotate(-45deg);">&#9670;</span>
             </div>
             <span class="text-xs font-semibold text-teal-600 dark:text-teal-400 mt-2.5">Development</span>
             <span class="absolute -top-1 -right-2 inline-flex items-center gap-0.5 px-1 py-0.5 rounded-md text-[9px] font-bold leading-none bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">2x</span>
           </div>
 
-          <div class="pipeline-connector bg-gray-300 dark:bg-gray-600 mt-[-18px]"></div>
+          <div class="h-0.5 flex-1 min-w-5 bg-gray-300 dark:bg-gray-600 mt-[-18px]"></div>
 
           <!-- Operations — future but previously visited (visit 1, now greyed back) -->
           <div class="stage-node flex flex-col items-center relative" tabindex="0" role="link" aria-label="Operations, upcoming, previously visited">
             <div class="stage-tooltip px-2 py-1 rounded-lg bg-gray-800 dark:bg-gray-700 text-xs text-white shadow-lg">
               Operations &middot; Previously visited &middot; Clickable
             </div>
-            <div class="stage-dot bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border border-gray-400 dark:border-gray-500 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all relative bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border border-gray-400 dark:border-gray-500 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors">
               <span class="text-[10px]">1</span>
             </div>
             <span class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-2">Operations</span>
           </div>
 
-          <div class="pipeline-connector bg-gray-300 dark:bg-gray-600 mt-[-18px]"></div>
+          <div class="h-0.5 flex-1 min-w-5 bg-gray-300 dark:bg-gray-600 mt-[-18px]"></div>
 
           <!-- Security — future, never visited -->
           <div class="stage-node flex flex-col items-center relative" aria-label="Security, upcoming" aria-disabled="true">
-            <div class="stage-dot bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all relative bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600">
               <span class="text-[10px]">&#9675;</span>
             </div>
             <span class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-2">Security</span>
@@ -270,8 +234,8 @@
 
           <!-- Development — current (diamond) -->
           <div class="flex flex-col items-center">
-            <div class="w-5.5 h-5.5 bg-teal-600 text-white flex items-center justify-center shadow-sm ring-2 ring-teal-400/50" style="width: 20px; height: 20px; transform: rotate(45deg); border-radius: 2px;">
-              <span style="transform: rotate(-45deg); font-size: 9px; font-weight: 700;">&#9670;</span>
+            <div class="w-5 h-5 rounded-sm bg-teal-600 text-white flex items-center justify-center shadow-sm ring-2 ring-teal-400/50" style="transform: rotate(45deg);">
+              <span class="text-[9px] font-bold" style="transform: rotate(-45deg);">&#9670;</span>
             </div>
             <span class="text-[10px] font-semibold text-teal-600 dark:text-teal-400 mt-1.5">Dev</span>
           </div>
@@ -312,28 +276,28 @@
             </div>
             <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">Inception</span>
           </div>
-          <div class="pipeline-connector bg-teal-600 mt-[-18px]"></div>
+          <div class="h-0.5 flex-1 min-w-5 bg-teal-600 mt-[-18px]"></div>
           <div class="flex flex-col items-center">
             <div class="w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
             <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">Design</span>
           </div>
-          <div class="pipeline-connector bg-teal-600 mt-[-18px]"></div>
+          <div class="h-0.5 flex-1 min-w-5 bg-teal-600 mt-[-18px]"></div>
           <div class="flex flex-col items-center">
             <div class="w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
             <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">Development</span>
           </div>
-          <div class="pipeline-connector bg-teal-600 mt-[-18px]"></div>
+          <div class="h-0.5 flex-1 min-w-5 bg-teal-600 mt-[-18px]"></div>
           <div class="flex flex-col items-center">
             <div class="w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
             </div>
             <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">Operations</span>
           </div>
-          <div class="pipeline-connector bg-teal-600 mt-[-18px]"></div>
+          <div class="h-0.5 flex-1 min-w-5 bg-teal-600 mt-[-18px]"></div>
           <div class="flex flex-col items-center">
             <div class="w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>

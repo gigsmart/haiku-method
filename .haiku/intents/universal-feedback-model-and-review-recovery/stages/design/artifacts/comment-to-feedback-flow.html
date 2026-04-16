@@ -27,29 +27,13 @@
     /* Subtle card lift on hover */
     .fb-card-hover:hover {
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
     }
     .dark .fb-card-hover:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
     }
 
-    /* Pin marker */
-    .pin-marker {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      border: 2px solid white;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      position: absolute;
-      transform: translate(-50%, -50%);
-      z-index: 10;
-    }
+    /* Pin marker — sizing/layout migrated to Tailwind classes on elements */
 
     /* Flow arrow connector */
     .flow-arrow {
@@ -112,23 +96,12 @@
       animation: retry-spin 1s linear infinite;
     }
 
-    /* Code line highlight for annotated lines */
+    /* Code line highlight for annotated lines — Tailwind amber-400 at 8% opacity */
     .code-line-annotated {
-      background: rgba(251, 191, 36, 0.08);
+      @apply bg-amber-400/[0.08];
     }
 
-    /* Step number badge */
-    .step-num {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
+    /* Step number badge — sizing migrated to Tailwind classes on elements */
 
     /* Section divider */
     .section-divider {
@@ -176,7 +149,7 @@
     <!-- ================================================================ -->
     <section class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
       <div class="flex items-center gap-3 mb-4">
-        <span class="step-num bg-teal-600 text-white">1</span>
+        <span class="w-6 h-6 rounded-full inline-flex items-center justify-center text-[11px] font-bold shrink-0 bg-teal-600 text-white">1</span>
         <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Text Selection &rarr; Inline Annotation</h2>
       </div>
       <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">User selects text in review content &rarr; comment popover appears &rarr; user types &rarr; debounced POST (500ms) &rarr; feedback file created with <code class="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-xs">status: pending</code>, <code class="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-xs">origin: user-visual</code> &rarr; inline annotation card appears adjacent.</p>
@@ -187,7 +160,7 @@
         <!-- Step 1: Text Selection -->
         <div class="space-y-2">
           <div class="flex items-center gap-2 mb-2">
-            <span class="step-num bg-gray-700 text-gray-300 text-[10px]">1a</span>
+            <span class="w-6 h-6 rounded-full inline-flex items-center justify-center font-bold shrink-0 bg-gray-700 text-gray-300 text-[10px]">1a</span>
             <span class="text-xs font-medium text-gray-400">Select text</span>
           </div>
           <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700 text-xs">
@@ -199,7 +172,7 @@
         <!-- Step 2: Popover appears -->
         <div class="space-y-2">
           <div class="flex items-center gap-2 mb-2">
-            <span class="step-num bg-gray-700 text-gray-300 text-[10px]">1b</span>
+            <span class="w-6 h-6 rounded-full inline-flex items-center justify-center font-bold shrink-0 bg-gray-700 text-gray-300 text-[10px]">1b</span>
             <span class="text-xs font-medium text-gray-400">Popover</span>
           </div>
           <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700 text-xs relative">
@@ -217,7 +190,7 @@
         <!-- Step 3: Comment input -->
         <div class="space-y-2">
           <div class="flex items-center gap-2 mb-2">
-            <span class="step-num bg-gray-700 text-gray-300 text-[10px]">1c</span>
+            <span class="w-6 h-6 rounded-full inline-flex items-center justify-center font-bold shrink-0 bg-gray-700 text-gray-300 text-[10px]">1c</span>
             <span class="text-xs font-medium text-gray-400">Type comment</span>
           </div>
           <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700 text-xs relative">
@@ -240,7 +213,7 @@
         <!-- Step 4: CRUD request -->
         <div class="space-y-2">
           <div class="flex items-center gap-2 mb-2">
-            <span class="step-num bg-gray-700 text-gray-300 text-[10px]">1d</span>
+            <span class="w-6 h-6 rounded-full inline-flex items-center justify-center font-bold shrink-0 bg-gray-700 text-gray-300 text-[10px]">1d</span>
             <span class="text-xs font-medium text-gray-400">CRUD create</span>
           </div>
           <div class="bg-gray-800 rounded-lg p-3 border border-gray-700 font-mono text-[10px] space-y-2">
@@ -264,7 +237,7 @@
         <!-- Step 5: Annotation card appears -->
         <div class="space-y-2">
           <div class="flex items-center gap-2 mb-2">
-            <span class="step-num bg-gray-700 text-gray-300 text-[10px]">1e</span>
+            <span class="w-6 h-6 rounded-full inline-flex items-center justify-center font-bold shrink-0 bg-gray-700 text-gray-300 text-[10px]">1e</span>
             <span class="text-xs font-medium text-gray-400">Card renders</span>
           </div>
           <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700 text-xs relative">
@@ -312,7 +285,7 @@
     <!-- ================================================================ -->
     <section class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
       <div class="flex items-center gap-3 mb-4">
-        <span class="step-num bg-teal-600 text-white">2</span>
+        <span class="w-6 h-6 rounded-full inline-flex items-center justify-center text-[11px] font-bold shrink-0 bg-teal-600 text-white">2</span>
         <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Visual/Design Annotation (AnnotationCanvas)</h2>
       </div>
       <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">User clicks on image/mockup &rarr; pin drops at x,y &rarr; comment text popover &rarr; same CRUD flow &rarr; feedback file with <code class="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-xs">source_ref</code> carrying image path + coordinates &rarr; annotation card overlays pin position.</p>
@@ -322,7 +295,7 @@
         <!-- Step 1: Click to pin -->
         <div class="space-y-2">
           <div class="flex items-center gap-2 mb-2">
-            <span class="step-num bg-gray-700 text-gray-300 text-[10px]">2a</span>
+            <span class="w-6 h-6 rounded-full inline-flex items-center justify-center font-bold shrink-0 bg-gray-700 text-gray-300 text-[10px]">2a</span>
             <span class="text-xs font-medium text-gray-400">Click image</span>
           </div>
           <div class="relative bg-gray-800 rounded-lg border border-gray-700 overflow-hidden" style="height: 160px;">
@@ -342,7 +315,7 @@
         <!-- Step 2: Pin drops + popover -->
         <div class="space-y-2">
           <div class="flex items-center gap-2 mb-2">
-            <span class="step-num bg-gray-700 text-gray-300 text-[10px]">2b</span>
+            <span class="w-6 h-6 rounded-full inline-flex items-center justify-center font-bold shrink-0 bg-gray-700 text-gray-300 text-[10px]">2b</span>
             <span class="text-xs font-medium text-gray-400">Pin + popover</span>
           </div>
           <div class="relative bg-gray-800 rounded-lg border border-gray-700 overflow-hidden" style="height: 160px;">
@@ -350,7 +323,7 @@
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
             </div>
             <!-- Pin marker -->
-            <div class="pin-marker bg-teal-600 text-white" style="left: 40%; top: 35%;">1</div>
+            <div class="w-7 h-7 rounded-full border-2 border-white shadow-[0_2px_6px_rgb(0_0_0/0.3)] flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white" style="transform: translate(-50%, -50%); left: 40%; top: 35%;">1</div>
             <!-- Comment popover -->
             <div class="absolute z-20 bg-white dark:bg-gray-800 border border-gray-600 rounded-lg shadow-lg p-2 w-[140px]" style="left: calc(40% + 18px); top: calc(35% + 4px);">
               <textarea class="w-full min-h-[32px] p-1.5 border border-gray-600 rounded-md bg-gray-900 text-gray-100 text-[10px] resize-none" readonly>Header alignment off|</textarea>
@@ -366,7 +339,7 @@
         <!-- Step 3: CRUD -->
         <div class="space-y-2">
           <div class="flex items-center gap-2 mb-2">
-            <span class="step-num bg-gray-700 text-gray-300 text-[10px]">2c</span>
+            <span class="w-6 h-6 rounded-full inline-flex items-center justify-center font-bold shrink-0 bg-gray-700 text-gray-300 text-[10px]">2c</span>
             <span class="text-xs font-medium text-gray-400">CRUD create</span>
           </div>
           <div class="bg-gray-800 rounded-lg p-3 border border-gray-700 font-mono text-[10px] space-y-2">
@@ -389,14 +362,14 @@
         <!-- Step 4: Card at pin -->
         <div class="space-y-2">
           <div class="flex items-center gap-2 mb-2">
-            <span class="step-num bg-gray-700 text-gray-300 text-[10px]">2d</span>
+            <span class="w-6 h-6 rounded-full inline-flex items-center justify-center font-bold shrink-0 bg-gray-700 text-gray-300 text-[10px]">2d</span>
             <span class="text-xs font-medium text-gray-400">Card at pin</span>
           </div>
           <div class="relative bg-gray-800 rounded-lg border border-gray-700 overflow-hidden" style="height: 160px;">
             <div class="absolute inset-0 flex items-center justify-center text-gray-600">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
             </div>
-            <div class="pin-marker bg-teal-600 text-white" style="left: 40%; top: 35%;">1</div>
+            <div class="w-7 h-7 rounded-full border-2 border-white shadow-[0_2px_6px_rgb(0_0_0/0.3)] flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white" style="transform: translate(-50%, -50%); left: 40%; top: 35%;">1</div>
             <!-- Feedback card overlay -->
             <div class="absolute z-20 w-[160px]" style="left: calc(40% + 20px); top: calc(35% - 12px);">
               <div class="border-l-[3px] border-l-amber-400 p-2 rounded-lg bg-amber-950/20 border border-gray-700 feedback-status-changed">
@@ -419,7 +392,7 @@
     <!-- ================================================================ -->
     <section class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
       <div class="flex items-center gap-3 mb-4">
-        <span class="step-num bg-teal-600 text-white">3</span>
+        <span class="w-6 h-6 rounded-full inline-flex items-center justify-center text-[11px] font-bold shrink-0 bg-teal-600 text-white">3</span>
         <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Edit Flow</h2>
       </div>
       <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">Click existing annotation card &rarr; inline edit mode &rarr; PATCH on debounce (500ms) &rarr; card re-renders with updated text.</p>
@@ -429,7 +402,7 @@
         <!-- Step 1: Click card -->
         <div class="space-y-2">
           <div class="flex items-center gap-2 mb-2">
-            <span class="step-num bg-gray-700 text-gray-300 text-[10px]">3a</span>
+            <span class="w-6 h-6 rounded-full inline-flex items-center justify-center font-bold shrink-0 bg-gray-700 text-gray-300 text-[10px]">3a</span>
             <span class="text-xs font-medium text-gray-400">Click card</span>
           </div>
           <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-blue-400 dark:border-blue-500 transition-all cursor-pointer">
@@ -449,7 +422,7 @@
         <!-- Step 2: Inline edit mode -->
         <div class="space-y-2">
           <div class="flex items-center gap-2 mb-2">
-            <span class="step-num bg-gray-700 text-gray-300 text-[10px]">3b</span>
+            <span class="w-6 h-6 rounded-full inline-flex items-center justify-center font-bold shrink-0 bg-gray-700 text-gray-300 text-[10px]">3b</span>
             <span class="text-xs font-medium text-gray-400">Edit mode</span>
           </div>
           <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-blue-400 dark:border-blue-500">
@@ -475,7 +448,7 @@
         <!-- Step 3: PATCH request -->
         <div class="space-y-2">
           <div class="flex items-center gap-2 mb-2">
-            <span class="step-num bg-gray-700 text-gray-300 text-[10px]">3c</span>
+            <span class="w-6 h-6 rounded-full inline-flex items-center justify-center font-bold shrink-0 bg-gray-700 text-gray-300 text-[10px]">3c</span>
             <span class="text-xs font-medium text-gray-400">CRUD update</span>
           </div>
           <div class="bg-gray-800 rounded-lg p-3 border border-gray-700 font-mono text-[10px] space-y-2">
@@ -496,7 +469,7 @@
         <!-- Step 4: Re-rendered card -->
         <div class="space-y-2">
           <div class="flex items-center gap-2 mb-2">
-            <span class="step-num bg-gray-700 text-gray-300 text-[10px]">3d</span>
+            <span class="w-6 h-6 rounded-full inline-flex items-center justify-center font-bold shrink-0 bg-gray-700 text-gray-300 text-[10px]">3d</span>
             <span class="text-xs font-medium text-gray-400">Updated card</span>
           </div>
           <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer feedback-status-changed">
@@ -520,7 +493,7 @@
     <!-- ================================================================ -->
     <section class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
       <div class="flex items-center gap-3 mb-4">
-        <span class="step-num bg-teal-600 text-white">4</span>
+        <span class="w-6 h-6 rounded-full inline-flex items-center justify-center text-[11px] font-bold shrink-0 bg-teal-600 text-white">4</span>
         <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Delete Flow</h2>
       </div>
       <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">Click delete on own annotation &rarr; confirm dialog &rarr; DELETE &rarr; card fades out. Only available on user-authored feedback items.</p>
@@ -530,7 +503,7 @@
         <!-- Step 1: Delete button visible on own card -->
         <div class="space-y-2">
           <div class="flex items-center gap-2 mb-2">
-            <span class="step-num bg-gray-700 text-gray-300 text-[10px]">4a</span>
+            <span class="w-6 h-6 rounded-full inline-flex items-center justify-center font-bold shrink-0 bg-gray-700 text-gray-300 text-[10px]">4a</span>
             <span class="text-xs font-medium text-gray-400">Delete button</span>
           </div>
           <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-blue-400 dark:border-blue-500">
@@ -553,7 +526,7 @@
         <!-- Step 2: Confirm dialog -->
         <div class="space-y-2">
           <div class="flex items-center gap-2 mb-2">
-            <span class="step-num bg-gray-700 text-gray-300 text-[10px]">4b</span>
+            <span class="w-6 h-6 rounded-full inline-flex items-center justify-center font-bold shrink-0 bg-gray-700 text-gray-300 text-[10px]">4b</span>
             <span class="text-xs font-medium text-gray-400">Confirm</span>
           </div>
           <div class="relative">
@@ -575,7 +548,7 @@
         <!-- Step 3: DELETE request -->
         <div class="space-y-2">
           <div class="flex items-center gap-2 mb-2">
-            <span class="step-num bg-gray-700 text-gray-300 text-[10px]">4c</span>
+            <span class="w-6 h-6 rounded-full inline-flex items-center justify-center font-bold shrink-0 bg-gray-700 text-gray-300 text-[10px]">4c</span>
             <span class="text-xs font-medium text-gray-400">CRUD delete</span>
           </div>
           <div class="bg-gray-800 rounded-lg p-3 border border-gray-700 font-mono text-[10px] space-y-2">
@@ -590,7 +563,7 @@
         <!-- Step 4: Fade out -->
         <div class="space-y-2">
           <div class="flex items-center gap-2 mb-2">
-            <span class="step-num bg-gray-700 text-gray-300 text-[10px]">4d</span>
+            <span class="w-6 h-6 rounded-full inline-flex items-center justify-center font-bold shrink-0 bg-gray-700 text-gray-300 text-[10px]">4d</span>
             <span class="text-xs font-medium text-gray-400">Fade out</span>
           </div>
           <div class="fade-out-card border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700">
@@ -614,7 +587,7 @@
     <!-- ================================================================ -->
     <section class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
       <div class="flex items-center gap-3 mb-4">
-        <span class="step-num bg-teal-600 text-white">5</span>
+        <span class="w-6 h-6 rounded-full inline-flex items-center justify-center text-[11px] font-bold shrink-0 bg-teal-600 text-white">5</span>
         <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Pre-existing Feedback</h2>
       </div>
       <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">Feedback from adversarial review, external PR, or prior visits renders as read-only cards alongside user-created ones. Read-only cards have no edit/delete buttons and show origin badge prominently.</p>
@@ -712,7 +685,7 @@
     <!-- ================================================================ -->
     <section class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
       <div class="flex items-center gap-3 mb-4">
-        <span class="step-num bg-teal-600 text-white">6</span>
+        <span class="w-6 h-6 rounded-full inline-flex items-center justify-center text-[11px] font-bold shrink-0 bg-teal-600 text-white">6</span>
         <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Error States</h2>
       </div>
       <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">Network failure, API errors, and session expiry handling.</p>
@@ -811,7 +784,7 @@
     <!-- ================================================================ -->
     <section class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
       <div class="flex items-center gap-3 mb-4">
-        <span class="step-num bg-teal-600 text-white">7</span>
+        <span class="w-6 h-6 rounded-full inline-flex items-center justify-center text-[11px] font-bold shrink-0 bg-teal-600 text-white">7</span>
         <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Mobile Variant</h2>
       </div>
       <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">Bottom-sheet list instead of inline cards. Same CRUD flow via touch interactions. Floating action button (FAB) opens full-screen feedback sheet.</p>
@@ -836,7 +809,7 @@
               <div class="h-3 bg-gray-700/50 rounded w-3/4"></div>
             </div>
             <!-- FAB -->
-            <div class="absolute bottom-3 right-3 w-12 h-12 rounded-full bg-teal-600 text-white shadow-lg flex items-center justify-center text-lg z-50" style="box-shadow: 0 4px 14px rgba(13,148,136,0.4);">
+            <div class="absolute bottom-3 right-3 w-12 h-12 rounded-full bg-teal-600 text-white shadow-[0_4px_14px_rgb(13_148_136/0.4)] flex items-center justify-center text-lg z-50">
               &#x1F4AC;
               <!-- Badge count -->
               <span class="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">3</span>
@@ -1006,7 +979,7 @@
     <!-- ================================================================ -->
     <section class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
       <div class="flex items-center gap-3 mb-4">
-        <span class="step-num bg-gray-600 text-white">&#x2699;</span>
+        <span class="w-6 h-6 rounded-full inline-flex items-center justify-center text-[11px] font-bold shrink-0 bg-gray-600 text-white">&#x2699;</span>
         <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Feedback Status Lifecycle</h2>
       </div>
       <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">Complete state machine showing all valid transitions and their guards.</p>
@@ -1137,7 +1110,7 @@
     <!-- ================================================================ -->
     <section class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
       <div class="flex items-center gap-3 mb-4">
-        <span class="step-num bg-gray-600 text-white">&#x21C4;</span>
+        <span class="w-6 h-6 rounded-full inline-flex items-center justify-center text-[11px] font-bold shrink-0 bg-gray-600 text-white">&#x21C4;</span>
         <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Complete Data Flow: Comment-to-Feedback Migration</h2>
       </div>
 

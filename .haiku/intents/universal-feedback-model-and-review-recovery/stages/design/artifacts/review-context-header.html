@@ -13,13 +13,6 @@
   </script>
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; }
-
-    /* Pipeline connector */
-    .pipeline-connector {
-      height: 2px;
-      flex: 1;
-      min-width: 16px;
-    }
   </style>
 </head>
 <body class="dark bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
@@ -61,7 +54,7 @@
               </div>
               <span class="text-[10px] font-medium text-gray-700 dark:text-gray-300 mt-1">Inception</span>
             </div>
-            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-teal-600 mt-[-14px]"></div>
             <!-- Design — completed -->
             <div class="flex flex-col items-center">
               <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
@@ -69,21 +62,21 @@
               </div>
               <span class="text-[10px] font-medium text-gray-700 dark:text-gray-300 mt-1">Design</span>
             </div>
-            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-teal-600 mt-[-14px]"></div>
             <!-- Development — current -->
             <div class="flex flex-col items-center">
-              <div class="w-4.5 h-4.5 bg-teal-600 text-white flex items-center justify-center shadow-sm ring-2 ring-teal-400/50" style="width: 18px; height: 18px; transform: rotate(45deg); border-radius: 2px;">
-                <span style="transform: rotate(-45deg); font-size: 8px; font-weight: 700;">&#9670;</span>
+              <div class="w-[18px] h-[18px] rounded-sm bg-teal-600 text-white flex items-center justify-center shadow-sm ring-2 ring-teal-400/50" style="transform: rotate(45deg);">
+                <span class="text-[8px] font-bold" style="transform: rotate(-45deg);">&#9670;</span>
               </div>
               <span class="text-[10px] font-semibold text-teal-600 dark:text-teal-400 mt-1.5">Development</span>
             </div>
-            <div class="pipeline-connector bg-gray-300 dark:bg-gray-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-gray-300 dark:bg-gray-600 mt-[-14px]"></div>
             <!-- Operations — future -->
             <div class="flex flex-col items-center">
               <div class="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600"></div>
               <span class="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-1">Operations</span>
             </div>
-            <div class="pipeline-connector bg-gray-300 dark:bg-gray-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-gray-300 dark:bg-gray-600 mt-[-14px]"></div>
             <!-- Security — future -->
             <div class="flex flex-col items-center">
               <div class="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600"></div>
@@ -127,26 +120,26 @@
               </div>
               <span class="text-[10px] text-gray-700 dark:text-gray-300 mt-1">Inception</span>
             </div>
-            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-teal-600 mt-[-14px]"></div>
             <div class="flex flex-col items-center">
               <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
                 <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
               </div>
               <span class="text-[10px] text-gray-700 dark:text-gray-300 mt-1">Design</span>
             </div>
-            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-teal-600 mt-[-14px]"></div>
             <div class="flex flex-col items-center">
-              <div class="w-[18px] h-[18px] bg-teal-600 text-white flex items-center justify-center shadow-sm ring-2 ring-teal-400/50" style="transform: rotate(45deg); border-radius: 2px;">
-                <span style="transform: rotate(-45deg); font-size: 8px; font-weight: 700;">&#9670;</span>
+              <div class="w-[18px] h-[18px] rounded-sm bg-teal-600 text-white flex items-center justify-center shadow-sm ring-2 ring-teal-400/50" style="transform: rotate(45deg);">
+                <span class="text-[8px] font-bold" style="transform: rotate(-45deg);">&#9670;</span>
               </div>
               <span class="text-[10px] font-semibold text-teal-600 dark:text-teal-400 mt-1.5">Development</span>
             </div>
-            <div class="pipeline-connector bg-gray-300 dark:bg-gray-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-gray-300 dark:bg-gray-600 mt-[-14px]"></div>
             <div class="flex flex-col items-center">
               <div class="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600"></div>
               <span class="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Operations</span>
             </div>
-            <div class="pipeline-connector bg-gray-300 dark:bg-gray-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-gray-300 dark:bg-gray-600 mt-[-14px]"></div>
             <div class="flex flex-col items-center">
               <div class="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600"></div>
               <span class="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Security</span>
@@ -189,26 +182,26 @@
               </div>
               <span class="text-[10px] text-gray-700 dark:text-gray-300 mt-1">Inception</span>
             </div>
-            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-teal-600 mt-[-14px]"></div>
             <div class="flex flex-col items-center">
               <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
                 <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
               </div>
               <span class="text-[10px] text-gray-700 dark:text-gray-300 mt-1">Design</span>
             </div>
-            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-teal-600 mt-[-14px]"></div>
             <div class="flex flex-col items-center">
-              <div class="w-[18px] h-[18px] bg-teal-600 text-white flex items-center justify-center shadow-sm ring-2 ring-teal-400/50" style="transform: rotate(45deg); border-radius: 2px;">
-                <span style="transform: rotate(-45deg); font-size: 8px; font-weight: 700;">&#9670;</span>
+              <div class="w-[18px] h-[18px] rounded-sm bg-teal-600 text-white flex items-center justify-center shadow-sm ring-2 ring-teal-400/50" style="transform: rotate(45deg);">
+                <span class="text-[8px] font-bold" style="transform: rotate(-45deg);">&#9670;</span>
               </div>
               <span class="text-[10px] font-semibold text-teal-600 dark:text-teal-400 mt-1.5">Development</span>
             </div>
-            <div class="pipeline-connector bg-gray-300 dark:bg-gray-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-gray-300 dark:bg-gray-600 mt-[-14px]"></div>
             <div class="flex flex-col items-center">
               <div class="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600"></div>
               <span class="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Operations</span>
             </div>
-            <div class="pipeline-connector bg-gray-300 dark:bg-gray-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-gray-300 dark:bg-gray-600 mt-[-14px]"></div>
             <div class="flex flex-col items-center">
               <div class="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600"></div>
               <span class="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Security</span>
@@ -251,28 +244,28 @@
               </div>
               <span class="text-[10px] text-gray-700 dark:text-gray-300 mt-1">Inception</span>
             </div>
-            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-teal-600 mt-[-14px]"></div>
             <div class="flex flex-col items-center">
               <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
                 <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
               </div>
               <span class="text-[10px] text-gray-700 dark:text-gray-300 mt-1">Design</span>
             </div>
-            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-teal-600 mt-[-14px]"></div>
             <div class="flex flex-col items-center">
               <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
                 <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
               </div>
               <span class="text-[10px] text-gray-700 dark:text-gray-300 mt-1">Development</span>
             </div>
-            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-teal-600 mt-[-14px]"></div>
             <div class="flex flex-col items-center">
               <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
                 <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
               </div>
               <span class="text-[10px] text-gray-700 dark:text-gray-300 mt-1">Operations</span>
             </div>
-            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-teal-600 mt-[-14px]"></div>
             <div class="flex flex-col items-center">
               <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
                 <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
@@ -323,26 +316,26 @@
               </div>
               <span class="text-[10px] text-gray-700 dark:text-gray-300 mt-1">Inception</span>
             </div>
-            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-teal-600 mt-[-14px]"></div>
             <div class="flex flex-col items-center">
               <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
                 <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
               </div>
               <span class="text-[10px] text-gray-700 dark:text-gray-300 mt-1">Design</span>
             </div>
-            <div class="pipeline-connector bg-teal-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-teal-600 mt-[-14px]"></div>
             <div class="flex flex-col items-center">
-              <div class="w-[18px] h-[18px] bg-teal-600 text-white flex items-center justify-center shadow-sm ring-2 ring-teal-400/50" style="transform: rotate(45deg); border-radius: 2px;">
-                <span style="transform: rotate(-45deg); font-size: 8px; font-weight: 700;">&#9670;</span>
+              <div class="w-[18px] h-[18px] rounded-sm bg-teal-600 text-white flex items-center justify-center shadow-sm ring-2 ring-teal-400/50" style="transform: rotate(45deg);">
+                <span class="text-[8px] font-bold" style="transform: rotate(-45deg);">&#9670;</span>
               </div>
               <span class="text-[10px] font-semibold text-teal-600 dark:text-teal-400 mt-1.5">Development</span>
             </div>
-            <div class="pipeline-connector bg-gray-300 dark:bg-gray-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-gray-300 dark:bg-gray-600 mt-[-14px]"></div>
             <div class="flex flex-col items-center">
               <div class="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600"></div>
               <span class="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Operations</span>
             </div>
-            <div class="pipeline-connector bg-gray-300 dark:bg-gray-600 mt-[-14px]"></div>
+            <div class="h-0.5 flex-1 min-w-4 bg-gray-300 dark:bg-gray-600 mt-[-14px]"></div>
             <div class="flex flex-col items-center">
               <div class="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600"></div>
               <span class="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Security</span>
