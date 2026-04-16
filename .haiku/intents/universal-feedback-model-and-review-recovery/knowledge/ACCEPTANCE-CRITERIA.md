@@ -384,6 +384,13 @@
 - **When** the skill executes
 - **Then** it calls `haiku_report` (the renamed tool) and submits to Sentry successfully
 
+### AC-09.3: Old haiku_feedback tool name no longer routes to Sentry
+
+- **Given** an agent calls `haiku_feedback` with feedback-file creation arguments (intent, stage, title, body)
+- **When** the MCP server routes the tool call
+- **Then** the call is handled by the new feedback-file creation tool (Group 2), NOT the Sentry bug-report tool
+- **And** no Sentry event is created
+
 ---
 
 ## US-10: Changes-Requested Handler Writes Feedback Files
