@@ -10,9 +10,9 @@ inputs:
   - stages/design/DESIGN-BRIEF.md
 status: active
 bolt: 1
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-16T13:01:51Z'
-hat_started_at: '2026-04-16T13:01:51Z'
+hat_started_at: '2026-04-16T13:08:13Z'
 ---
 
 # Comment to Feedback Flow Design
