@@ -9,11 +9,14 @@ inputs:
   - knowledge/DISCOVERY.md
   - knowledge/ACCEPTANCE-CRITERIA.md
   - features/enforce-iteration-fix.feature
-status: active
+status: completed
 bolt: 1
 hat: reviewer
 started_at: '2026-04-16T15:08:41Z'
 hat_started_at: '2026-04-16T15:17:51Z'
+outputs:
+  - stages/development/artifacts/unit-06-enforce-iteration-fix.md
+completed_at: '2026-04-16T15:19:50Z'
 ---
 
 # Enforce-Iteration Auto-Completion Fix
