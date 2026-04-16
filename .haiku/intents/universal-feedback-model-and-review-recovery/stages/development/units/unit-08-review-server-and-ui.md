@@ -21,9 +21,9 @@ inputs:
   - features/review-ui-feedback.feature
 status: active
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-16T16:07:06Z'
-hat_started_at: '2026-04-16T16:18:14Z'
+hat_started_at: '2026-04-16T16:18:56Z'
 ---
 
 # Review Server CRUD Endpoints and Review App UI
