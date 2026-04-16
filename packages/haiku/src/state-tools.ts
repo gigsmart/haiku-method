@@ -10,6 +10,7 @@ import {
 	readFileSync,
 	readdirSync,
 	statSync,
+	unlinkSync,
 	writeFileSync,
 } from "node:fs"
 import { join, resolve } from "node:path"
@@ -1966,6 +1967,319 @@ export function syncSessionMetadata(
 	}
 }
 
+// ── Feedback helpers ──────────────────────────────────────────────────────
+
+/** Valid origin values for feedback items. */
+export const FEEDBACK_ORIGINS = [
+	"adversarial-review",
+	"external-pr",
+	"external-mr",
+	"user-visual",
+	"user-chat",
+	"agent",
+] as const
+
+export type FeedbackOrigin = (typeof FEEDBACK_ORIGINS)[number]
+
+/** Valid status values for feedback items. */
+export const FEEDBACK_STATUSES = [
+	"pending",
+	"addressed",
+	"closed",
+	"rejected",
+] as const
+
+export type FeedbackStatus = (typeof FEEDBACK_STATUSES)[number]
+
+/** Origins that imply a human author. */
+const HUMAN_ORIGINS: ReadonlySet<string> = new Set([
+	"user-visual",
+	"user-chat",
+	"external-pr",
+	"external-mr",
+])
+
+/** Derive author_type from origin. */
+export function deriveAuthorType(origin: string): "human" | "agent" {
+	return HUMAN_ORIGINS.has(origin) ? "human" : "agent"
+}
+
+/** Derive default author from origin. */
+function deriveDefaultAuthor(origin: string): string {
+	return deriveAuthorType(origin) === "human" ? "user" : "agent"
+}
+
+/** Slugify a title for use as a filename component. */
+export function slugifyTitle(title: string, maxLen = 60): string {
+	return title
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/-{2,}/g, "-")
+		.slice(0, maxLen)
+		.replace(/-+$/, "")
+}
+
+/** Path to the feedback directory for an intent stage. */
+export function feedbackDir(slug: string, stage: string): string {
+	return join(stageDir(slug, stage), "feedback")
+}
+
+/** Resolve the next sequential NN prefix in a feedback directory. */
+function nextFeedbackNumber(dir: string): number {
+	if (!existsSync(dir)) return 1
+	const files = readdirSync(dir).filter((f) => f.endsWith(".md"))
+	let max = 0
+	for (const f of files) {
+		const match = f.match(/^(\d+)-/)
+		if (match) {
+			const n = Number.parseInt(match[1], 10)
+			if (n > max) max = n
+		}
+	}
+	return max + 1
+}
+
+/** Zero-pad a number to two digits. */
+function zeroPad(n: number): string {
+	return n.toString().padStart(2, "0")
+}
+
+/** Parsed feedback item returned by readFeedbackFiles. */
+export interface FeedbackItem {
+	id: string // "FB-NN"
+	num: number // NN as integer
+	slug: string // descriptive slug from filename
+	file: string // relative path from .haiku root
+	title: string
+	body: string
+	status: string
+	origin: string
+	author: string
+	author_type: string
+	created_at: string
+	visit: number
+	source_ref: string | null
+	addressed_by: string | null
+}
+
+/**
+ * Create a feedback file under the given intent/stage.
+ * Auto-increments the NN prefix and derives the filename slug from the title.
+ * Returns the created feedback item metadata.
+ */
+export function writeFeedbackFile(
+	slug: string,
+	stage: string,
+	opts: {
+		title: string
+		body: string
+		origin?: string
+		author?: string
+		source_ref?: string | null
+	},
+): { feedback_id: string; file: string; num: number } {
+	const dir = feedbackDir(slug, stage)
+	mkdirSync(dir, { recursive: true })
+
+	const num = nextFeedbackNumber(dir)
+	const nn = zeroPad(num)
+	const fileSlug = slugifyTitle(opts.title)
+	const filename = `${nn}-${fileSlug}.md`
+	const filePath = join(dir, filename)
+
+	const origin = opts.origin || "agent"
+	const authorType = deriveAuthorType(origin)
+	const author = opts.author || deriveDefaultAuthor(origin)
+
+	// Read current visit count from stage state
+	const stateFile = stageStatePath(slug, stage)
+	const stageState = readJson(stateFile)
+	const visit = (stageState.visits as number) || 0
+
+	const frontmatter: Record<string, unknown> = {
+		title: opts.title,
+		status: "pending",
+		origin,
+		author,
+		author_type: authorType,
+		created_at: timestamp(),
+		visit,
+		source_ref: opts.source_ref ?? null,
+		addressed_by: null,
+	}
+
+	const content = matter.stringify(`\n${opts.body}\n`, frontmatter)
+	writeFileSync(filePath, content)
+
+	const relPath = `.haiku/intents/${slug}/stages/${stage}/feedback/${filename}`
+	return { feedback_id: `FB-${nn}`, file: relPath, num }
+}
+
+/**
+ * Read and parse all feedback files in a stage's feedback directory.
+ * Returns an array of FeedbackItem sorted by numeric prefix.
+ */
+export function readFeedbackFiles(
+	slug: string,
+	stage: string,
+): FeedbackItem[] {
+	const dir = feedbackDir(slug, stage)
+	if (!existsSync(dir)) return []
+
+	const files = readdirSync(dir)
+		.filter((f) => f.endsWith(".md"))
+		.sort()
+	const items: FeedbackItem[] = []
+
+	for (const f of files) {
+		const match = f.match(/^(\d+)-(.+)\.md$/)
+		if (!match) continue
+		const num = Number.parseInt(match[1], 10)
+		const fileSlug = match[2]
+		const raw = readFileSync(join(dir, f), "utf8")
+		const { data, body } = parseFrontmatter(raw)
+
+		items.push({
+			id: `FB-${zeroPad(num)}`,
+			num,
+			slug: fileSlug,
+			file: `.haiku/intents/${slug}/stages/${stage}/feedback/${f}`,
+			title: (data.title as string) || "",
+			body,
+			status: (data.status as string) || "pending",
+			origin: (data.origin as string) || "agent",
+			author: (data.author as string) || "agent",
+			author_type: (data.author_type as string) || "agent",
+			created_at: (data.created_at as string) || "",
+			visit: (data.visit as number) || 0,
+			source_ref: (data.source_ref as string) || null,
+			addressed_by: (data.addressed_by as string) || null,
+		})
+	}
+
+	return items
+}
+
+/**
+ * Count feedback items with status === "pending" in a stage.
+ */
+export function countPendingFeedback(slug: string, stage: string): number {
+	return readFeedbackFiles(slug, stage).filter(
+		(item) => item.status === "pending",
+	).length
+}
+
+/**
+ * Find a feedback file by its FB-NN identifier (or bare numeric prefix).
+ * Returns the absolute path and parsed data, or null if not found.
+ */
+export function findFeedbackFile(
+	slug: string,
+	stage: string,
+	feedbackId: string,
+): { path: string; filename: string; data: Record<string, unknown>; body: string } | null {
+	const dir = feedbackDir(slug, stage)
+	if (!existsSync(dir)) return null
+
+	// Normalize: "FB-03" → "03", "03" → "03"
+	const nn = feedbackId.replace(/^FB-/i, "")
+	const prefix = `${nn}-`
+
+	const files = readdirSync(dir).filter((f) => f.endsWith(".md"))
+	const match = files.find((f) => f.startsWith(prefix))
+	if (!match) return null
+
+	const raw = readFileSync(join(dir, match), "utf8")
+	const parsed = parseFrontmatter(raw)
+	return { path: join(dir, match), filename: match, data: parsed.data, body: parsed.body }
+}
+
+/**
+ * Update mutable fields on an existing feedback file.
+ * Validates author-type guards for MCP (agent) context.
+ * Returns the updated fields list or an error string.
+ */
+export function updateFeedbackFile(
+	slug: string,
+	stage: string,
+	feedbackId: string,
+	fields: { status?: string; addressed_by?: string },
+	callerContext: "agent" | "human" = "agent",
+): { ok: true; updated_fields: string[] } | { ok: false; error: string } {
+	const found = findFeedbackFile(slug, stage, feedbackId)
+	if (!found) {
+		return { ok: false, error: `Error: feedback '${feedbackId}' not found in stage '${stage}'` }
+	}
+
+	// At least one updatable field must be provided
+	if (fields.status === undefined && fields.addressed_by === undefined) {
+		return { ok: false, error: "Error: at least one of 'status' or 'addressed_by' must be provided" }
+	}
+
+	// Validate status enum
+	if (fields.status !== undefined && !(FEEDBACK_STATUSES as readonly string[]).includes(fields.status)) {
+		return { ok: false, error: `Error: status must be one of: ${FEEDBACK_STATUSES.join(", ")}` }
+	}
+
+	// Guard: agents cannot set status 'closed' on human-authored feedback
+	if (
+		callerContext === "agent" &&
+		fields.status === "closed" &&
+		found.data.author_type === "human"
+	) {
+		return {
+			ok: false,
+			error: "Error: agents cannot set status 'closed' on human-authored feedback. Only the original author can close it.",
+		}
+	}
+
+	// Apply updates
+	const updated: string[] = []
+	const newData = { ...found.data }
+
+	if (fields.status !== undefined) {
+		newData.status = fields.status
+		updated.push("status")
+	}
+	if (fields.addressed_by !== undefined) {
+		newData.addressed_by = fields.addressed_by
+		updated.push("addressed_by")
+	}
+
+	writeFileSync(found.path, matter.stringify(`\n${found.body}\n`, newData))
+	return { ok: true, updated_fields: updated }
+}
+
+/**
+ * Delete a feedback file with guards:
+ * - Cannot delete pending items (must be addressed/closed/rejected first)
+ * - Agent callers cannot delete human-authored items
+ */
+export function deleteFeedbackFile(
+	slug: string,
+	stage: string,
+	feedbackId: string,
+	callerContext: "agent" | "human" = "agent",
+): { ok: true } | { ok: false; error: string } {
+	const found = findFeedbackFile(slug, stage, feedbackId)
+	if (!found) {
+		return { ok: false, error: `Error: feedback '${feedbackId}' not found in stage '${stage}'` }
+	}
+
+	// Guard: cannot delete pending items
+	if (found.data.status === "pending") {
+		return { ok: false, error: "Error: cannot delete pending feedback. Address, close, or reject it first." }
+	}
+
+	// Guard: agents cannot delete human-authored items
+	if (callerContext === "agent" && found.data.author_type === "human") {
+		return { ok: false, error: "Error: agents cannot delete human-authored feedback. Use the review UI." }
+	}
+
+	unlinkSync(found.path)
+	return { ok: true }
+}
+
 // ── Tool definitions ───────────────────────────────────────────────────────
 
 export const stateToolDefs = [
@@ -2227,6 +2541,43 @@ export const stateToolDefs = [
 					description: "list | plant | check (default: list)",
 				},
 			},
+		},
+	},
+	// Feedback tools
+	{
+		name: "haiku_feedback",
+		description:
+			"Create a feedback item for an intent stage. Writes a markdown file with frontmatter tracking status, origin, and author.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: { type: "string", description: "Intent slug" },
+				stage: { type: "string", description: "Stage name" },
+				title: {
+					type: "string",
+					description:
+						"Short title for the feedback item (max 120 chars)",
+				},
+				body: {
+					type: "string",
+					description: "Markdown body describing the finding",
+				},
+				origin: {
+					type: "string",
+					description:
+						"Source: adversarial-review | external-pr | external-mr | user-visual | user-chat | agent (default: agent)",
+				},
+				source_ref: {
+					type: "string",
+					description:
+						"Optional reference — PR URL, review agent name, annotation ID",
+				},
+				author: {
+					type: "string",
+					description: "Who created it (default: agent)",
+				},
+			},
+			required: ["intent", "stage", "title", "body"],
 		},
 	},
 	{
@@ -3628,6 +3979,62 @@ export function handleStateTool(
 			if (cwdResult.scanned === 0) return text("No intents found.")
 
 			return text(buildRepairReport(cwdResult))
+		}
+
+		// ── Feedback ──
+		case "haiku_feedback": {
+			const intent = args.intent as string
+			const stage = args.stage as string
+			const title = args.title as string
+			const body = args.body as string
+			const origin = (args.origin as string) || undefined
+			const sourceRef = (args.source_ref as string) || undefined
+			const author = (args.author as string) || undefined
+
+			// Validation
+			if (!intent) return { content: [{ type: "text", text: "Error: intent is required" }], isError: true }
+			if (!stage) return { content: [{ type: "text", text: "Error: stage is required" }], isError: true }
+			if (!title) return { content: [{ type: "text", text: "Error: title is required" }], isError: true }
+			if (!body) return { content: [{ type: "text", text: "Error: body is required" }], isError: true }
+			if (title.length > 120) return { content: [{ type: "text", text: "Error: title must be 120 characters or fewer" }], isError: true }
+
+			// Validate intent exists
+			const intentFile = join(intentDir(intent), "intent.md")
+			if (!existsSync(intentFile)) return { content: [{ type: "text", text: `Error: intent '${intent}' not found` }], isError: true }
+
+			// Validate origin enum
+			if (origin && !(FEEDBACK_ORIGINS as readonly string[]).includes(origin)) {
+				return { content: [{ type: "text", text: `Error: origin must be one of: ${FEEDBACK_ORIGINS.join(", ")}` }], isError: true }
+			}
+
+			// Validate stage exists
+			const stgDir = stageDir(intent, stage)
+			if (!existsSync(stgDir)) {
+				// Auto-create stage dir if the intent has it declared but dir doesn't exist yet
+				const { data: intentData } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+				const stages = (intentData.stages as string[]) || []
+				if (!stages.includes(stage)) {
+					return { content: [{ type: "text", text: `Error: stage '${stage}' not found under intent '${intent}'` }], isError: true }
+				}
+				mkdirSync(stgDir, { recursive: true })
+			}
+
+			const result = writeFeedbackFile(intent, stage, {
+				title,
+				body,
+				origin,
+				author,
+				source_ref: sourceRef ?? null,
+			})
+
+			const gitResult = gitCommitState(`feedback: create ${result.feedback_id} in ${stage}`)
+			const response: Record<string, unknown> = {
+				feedback_id: result.feedback_id,
+				file: result.file,
+				status: "pending",
+				message: `Feedback ${result.feedback_id} created.`,
+			}
+			return text(JSON.stringify(injectPushWarning(response, gitResult), null, 2))
 		}
 
 		case "haiku_version_info": {
