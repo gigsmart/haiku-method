@@ -1,13 +1,13 @@
 ---
 title: Revisit preview with confirmation modal
-status: pending
+status: addressed
 origin: agent
 author: parent-agent
 author_type: agent
 created_at: '2026-04-17T03:04:19Z'
 visit: 0
 source_ref: null
-addressed_by: null
+addressed_by: unit-06-revisit-confirmation-modal
 ---
 
 `haiku_revisit` is destructive (writes state, pushes branch, invalidates downstream work). UI must double-confirm before firing.

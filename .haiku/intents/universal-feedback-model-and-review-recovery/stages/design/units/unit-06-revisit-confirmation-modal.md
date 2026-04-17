@@ -12,11 +12,12 @@ inputs:
 outputs:
   - stages/design/artifacts/revisit-modal-spec.html
   - stages/design/artifacts/revisit-modal-states.html
-status: active
+status: completed
 bolt: 1
 hat: design-reviewer
 started_at: '2026-04-17T16:50:24Z'
 hat_started_at: '2026-04-17T16:59:26Z'
+completed_at: '2026-04-17T22:11:30Z'
 ---
 
 # Revisit confirmation modal
