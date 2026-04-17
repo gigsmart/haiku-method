@@ -24,12 +24,16 @@ outputs:
   - stages/design/artifacts/iteration-timeline-ui.html
 status: active
 bolt: 1
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-17T22:16:17Z'
-hat_started_at: '2026-04-17T22:16:17Z'
+hat_started_at: '2026-04-17T22:22:34Z'
 iterations:
   - hat: designer
     started_at: '2026-04-17T22:16:17Z'
+    completed_at: '2026-04-17T22:22:34Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-17T22:22:34Z'
     completed_at: null
     result: null
 ---
