@@ -1,13 +1,13 @@
 ---
 title: Annotation creation UX for docs and visual artifacts
-status: pending
+status: addressed
 origin: agent
 author: parent-agent
 author_type: agent
 created_at: '2026-04-17T03:04:19Z'
 visit: 0
 source_ref: null
-addressed_by: null
+addressed_by: unit-04-annotation-creation-ux
 ---
 
 Design must specify HOW reviewers create annotations, not just how they render.
