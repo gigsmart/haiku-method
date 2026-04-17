@@ -1,13 +1,13 @@
 ---
 title: End-to-end revisit → additive-elaborate flow is broken
-status: pending
+status: addressed
 origin: user-chat
 author: user
 author_type: user
 created_at: '2026-04-17T03:18:00Z'
 visit: 1
 source_ref: Attempted live pickup of this intent after revisit — multiple failures
-addressed_by: null
+addressed_by: unit-09-architecture-diagram-updates
 ---
 
 ## Problem

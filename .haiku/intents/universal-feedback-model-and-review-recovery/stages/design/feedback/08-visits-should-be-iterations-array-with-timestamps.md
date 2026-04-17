@@ -1,13 +1,15 @@
 ---
-title: "Replace stage visits scalar with iterations[] array carrying start/end timestamps"
-status: pending
+title: >-
+  Replace stage visits scalar with iterations[] array carrying start/end
+  timestamps
+status: addressed
 origin: user-chat
 author: user
 author_type: user
 created_at: '2026-04-17T05:56:00Z'
 visit: 1
 source_ref: Jason — dates observation during broken-revisit dogfood session
-addressed_by: null
+addressed_by: unit-09-architecture-diagram-updates
 ---
 
 ## Problem

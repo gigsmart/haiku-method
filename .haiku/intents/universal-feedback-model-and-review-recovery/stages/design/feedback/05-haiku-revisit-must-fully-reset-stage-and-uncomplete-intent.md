@@ -1,13 +1,13 @@
 ---
 title: haiku_revisit must fully reset target stage and uncomplete intent
-status: pending
+status: addressed
 origin: user-chat
 author: user
 author_type: user
 created_at: '2026-04-17T03:15:00Z'
 visit: 1
 source_ref: haiku_revisit broken during 2026-04-16 design revisit
-addressed_by: null
+addressed_by: unit-09-architecture-diagram-updates
 ---
 
 ## Bug observed
