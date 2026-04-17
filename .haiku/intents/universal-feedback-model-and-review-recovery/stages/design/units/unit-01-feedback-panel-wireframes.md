@@ -8,17 +8,17 @@ inputs:
   - knowledge/DESIGN-TOKENS.md
   - stages/design/DESIGN-BRIEF.md
 status: completed
-bolt: 1
-hat: design-reviewer
-started_at: '2026-04-16T12:49:03Z'
-hat_started_at: '2026-04-16T12:56:51Z'
+bolt: 0
+hat: ''
+started_at: null
+hat_started_at: null
 outputs:
   - stages/design/artifacts/feedback-inline-desktop.html
   - stages/design/artifacts/feedback-inline-mobile.html
   - stages/design/artifacts/stage-progress-strip.html
   - stages/design/artifacts/review-context-header.html
   - stages/design/artifacts/revisit-unit-list.html
-completed_at: '2026-04-16T13:00:18Z'
+completed_at: null
 ---
 
 # Feedback Panel + Review Chrome Wireframes

@@ -20,10 +20,3 @@ hard gates, not suggestions.
 Regulatory frameworks cannot be retrofitted. A product that wasn't designed
 for FCC compliance will fail cert, and fixing it means redesigning the PCB.
 Get the framework right here.
-
-## Completion Signal (RFC 2119)
-
-Functional requirements **MUST** be specified and traceable. Safety analysis
-**MUST** be documented with identified hazards and mitigations. Applicable
-regulatory frameworks **MUST** be identified with certification paths and
-estimated cost.

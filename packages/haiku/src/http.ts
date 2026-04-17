@@ -1337,6 +1337,11 @@ function handleRequest(req: Request): Response | Promise<Response> {
 		return new Response(null, { status: ok ? 200 : 404 })
 	}
 
+	// GET /review/current — always-available review pane (must be before /:sessionId)
+	if (path === "/review/current" && req.method === "GET") {
+		return serveSpa()
+	}
+
 	// GET /review/:sessionId
 	const reviewMatch = path.match(/^\/review\/([^/]+)$/)
 	if (reviewMatch && req.method === "GET") {
@@ -1404,11 +1409,6 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	// GET /api/review/current — return current active intent state
 	if (path === "/api/review/current" && req.method === "GET") {
 		return handleReviewCurrent()
-	}
-
-	// GET /review/current — serve the SPA for always-available review
-	if (path === "/review/current" && req.method === "GET") {
-		return serveSpa()
 	}
 
 	// ─── Feedback CRUD ─────────────────────────────────────────────────

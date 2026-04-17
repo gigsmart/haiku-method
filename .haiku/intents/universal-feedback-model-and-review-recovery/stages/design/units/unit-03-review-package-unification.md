@@ -11,11 +11,11 @@ inputs:
   - knowledge/DESIGN-TOKENS.md
   - stages/design/DESIGN-BRIEF.md
 status: completed
-bolt: 1
-hat: design-reviewer
-started_at: '2026-04-16T13:02:03Z'
-hat_started_at: '2026-04-16T13:09:03Z'
-completed_at: '2026-04-16T13:11:20Z'
+bolt: 0
+hat: ''
+started_at: null
+hat_started_at: null
+completed_at: null
 ---
 
 # Review UI Package Unification Design

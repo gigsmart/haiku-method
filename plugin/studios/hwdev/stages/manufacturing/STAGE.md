@@ -22,10 +22,3 @@ sampling plan, and production ramp. Manufacturing decisions lock in — once
 tooling is cut and the assembly line is running, changes are expensive and
 slow. First article inspection is the last chance to catch a problem before
 it ships at volume.
-
-## Completion Signal (RFC 2119)
-
-DFM review **MUST** be complete with all findings addressed. Assembly process
-**MUST** be documented and reproducible. QA sampling plan **MUST** be in
-place with defect thresholds. First article inspection **MUST** pass before
-volume ramp.

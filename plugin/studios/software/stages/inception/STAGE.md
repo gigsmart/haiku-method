@@ -9,19 +9,7 @@ inputs: []
 
 # Inception
 
-## Criteria Guidance
-
-Good criteria examples:
-- "Discovery document identifies all user-facing capabilities and their business value"
-- "Problem statement is clear enough for a non-technical stakeholder to understand"
-- "Each unit has 3-5 completion criteria, each verifiable by a specific command or test"
-- "Unit DAG has no circular dependencies — verified by topological sort"
-
-Bad criteria examples:
-- "Domain is understood"
-- "Units have criteria"
-- "Elaboration is complete"
-- "Database schema is defined" (too technical for inception — belongs in design/development)
+Understand the problem, define success, and elaborate into units.
 
 ## Overlap Awareness
 
@@ -36,7 +24,3 @@ done
 ```
 
 If overlap is detected with files this intent plans to modify, note it in the discovery document. Not a blocker — just awareness for the researcher hat to factor in.
-
-## Completion Signal (RFC 2119)
-
-Discovery document **MUST** exist with domain model and technical landscape. All units **MUST** have specs with dependencies and verifiable completion criteria. Unit DAG **MUST** be acyclic. Each unit **MUST** be scoped to complete within a single bolt.

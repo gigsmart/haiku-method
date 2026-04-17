@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Review flow with feedback assessor — design spec</title>
+<style>
+  :root {
+    --bg: #0b1020; --panel: #111827; --panel-2: #1f2937; --border: #334155;
+    --fg: #e2e8f0; --muted: #94a3b8;
+    --teal: #14b8a6; --amber: #f59e0b; --rose: #f43f5e; --sky: #38bdf8;
+    --green: #22c55e; --violet: #a78bfa;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--fg); padding: 24px; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+  .legend { display: flex; gap: 14px; font-size: 11px; color: var(--muted); margin-bottom: 20px; flex-wrap: wrap; }
+  .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; }
+
+  svg { width: 100%; max-width: 1280px; height: auto; display: block; margin: 0 auto; }
+
+  .panel { font: 12px/1.35 system-ui; }
+  .node-label { font: 600 13px system-ui; fill: #fff; }
+  .node-sub { font: 11px system-ui; fill: rgba(255,255,255,.85); }
+  .phase-label { font: 600 11px system-ui; fill: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
+  .edge-label { font: 10px system-ui; fill: var(--muted); }
+  .edge-label-bold { font: 600 10px system-ui; fill: var(--amber); }
+
+  .footer { max-width: 1280px; margin: 24px auto 0; font-size: 12px; color: var(--muted); line-height: 1.55; }
+  .footer code { background: var(--panel-2); padding: 1px 5px; border-radius: 3px; font-size: 11px; color: #fbbf24; }
+  .footer strong { color: var(--fg); }
+</style>
+</head>
+<body>
+
+<h1>Review flow — with mandatory feedback-assessor + frontmatter gate</h1>
+<p class="subtitle">Design-stage spec for FB-07. Reference for porting into <code>website/public/prototype-stage-flow.html</code> at implementation time.</p>
+
+<div class="legend">
+  <span class="legend-item"><span class="legend-swatch" style="background:#14b8a6"></span> Phase</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:#a78bfa"></span> Review agent (declared)</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:#f43f5e"></span> Review agent (auto-injected)</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:#f59e0b"></span> Structural gate</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:#22c55e"></span> User gate</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:#64748b"></span> Terminal</span>
+</div>
+
+<svg viewBox="0 0 1280 700" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+    <marker id="arrow-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#f59e0b"/>
+    </marker>
+    <marker id="arrow-rose" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#f43f5e"/>
+    </marker>
+  </defs>
+
+  <!-- Row 1: linear happy-path phases -->
+  <g transform="translate(0, 40)">
+    <!-- execute -->
+    <g transform="translate(40, 40)">
+      <rect width="170" height="70" rx="10" fill="#14b8a6"/>
+      <text x="85" y="28" text-anchor="middle" class="node-label">execute</text>
+      <text x="85" y="48" text-anchor="middle" class="node-sub">all units complete</text>
+    </g>
+
+    <!-- quality gates -->
+    <g transform="translate(260, 40)">
+      <rect width="170" height="70" rx="10" fill="#0d9488"/>
+      <text x="85" y="28" text-anchor="middle" class="node-label">quality gates</text>
+      <text x="85" y="48" text-anchor="middle" class="node-sub">typecheck · tests · build</text>
+    </g>
+
+    <!-- review -->
+    <g transform="translate(480, 40)">
+      <rect width="170" height="70" rx="10" fill="#14b8a6"/>
+      <text x="85" y="28" text-anchor="middle" class="node-label">review</text>
+      <text x="85" y="48" text-anchor="middle" class="node-sub">adversarial agent fan-out</text>
+    </g>
+
+    <!-- feedback frontmatter check -->
+    <g transform="translate(700, 40)">
+      <rect width="210" height="70" rx="10" fill="#f59e0b"/>
+      <text x="105" y="26" text-anchor="middle" class="node-label">feedback frontmatter check</text>
+      <text x="105" y="46" text-anchor="middle" class="node-sub">re-read all feedback/*.md</text>
+      <text x="105" y="60" text-anchor="middle" class="node-sub">refuse if any status: pending</text>
+    </g>
+
+    <!-- user gate -->
+    <g transform="translate(950, 40)">
+      <rect width="160" height="70" rx="10" fill="#22c55e"/>
+      <text x="80" y="28" text-anchor="middle" class="node-label">user gate</text>
+      <text x="80" y="48" text-anchor="middle" class="node-sub">human approve / request changes</text>
+    </g>
+
+    <!-- advance stage (terminal on approve) -->
+    <g transform="translate(1140, 40)">
+      <rect width="120" height="70" rx="10" fill="#64748b"/>
+      <text x="60" y="28" text-anchor="middle" class="node-label">advance</text>
+      <text x="60" y="48" text-anchor="middle" class="node-sub">next stage</text>
+    </g>
+
+    <!-- forward edges -->
+    <line x1="210" y1="75" x2="260" y2="75" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="430" y1="75" x2="480" y2="75" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="650" y1="75" x2="700" y2="75" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="910" y1="75" x2="950" y2="75" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#arrow-amber)"/>
+    <text x="930" y="68" class="edge-label-bold">all terminal</text>
+    <line x1="1110" y1="75" x2="1140" y2="75" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow)"/>
+  </g>
+
+  <!-- Row 2: review-agent fan-out detail -->
+  <g transform="translate(0, 220)">
+    <text x="565" y="0" class="phase-label">review-phase fan-out (spawned from review node above)</text>
+
+    <!-- declared agents box (example: accessibility, consistency) -->
+    <g transform="translate(380, 20)">
+      <rect width="180" height="70" rx="10" fill="#7c3aed"/>
+      <text x="90" y="22" text-anchor="middle" class="node-label">accessibility</text>
+      <text x="90" y="40" text-anchor="middle" class="node-sub">(declared subagent)</text>
+      <text x="90" y="58" text-anchor="middle" class="node-sub">stages/{stage}/review-agents/</text>
+    </g>
+
+    <g transform="translate(580, 20)">
+      <rect width="180" height="70" rx="10" fill="#7c3aed"/>
+      <text x="90" y="22" text-anchor="middle" class="node-label">consistency</text>
+      <text x="90" y="40" text-anchor="middle" class="node-sub">(declared subagent)</text>
+      <text x="90" y="58" text-anchor="middle" class="node-sub">stages/{stage}/review-agents/</text>
+    </g>
+
+    <!-- AUTO-INJECTED feedback assessor -->
+    <g transform="translate(780, 20)">
+      <rect width="220" height="70" rx="10" fill="#f43f5e"/>
+      <text x="110" y="22" text-anchor="middle" class="node-label">feedback-assessor</text>
+      <text x="110" y="40" text-anchor="middle" class="node-sub">AUTO-INJECTED · always runs</text>
+      <text x="110" y="58" text-anchor="middle" class="node-sub">reads &amp; writes feedback frontmatter</text>
+    </g>
+
+    <!-- edges from review node into fan-out -->
+    <path d="M 565,-90 C 470,-30 470,0 470,20" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+    <path d="M 565,-90 C 670,-30 670,0 670,20" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+    <path d="M 565,-90 C 850,-50 890,0 890,20" fill="none" stroke="#f43f5e" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow-rose)"/>
+    <text x="900" y="-50" class="edge-label-bold" fill="#f43f5e">orchestrator always appends</text>
+  </g>
+
+  <!-- Row 3: assessor contract (details) -->
+  <g transform="translate(0, 360)">
+    <text x="640" y="0" class="phase-label">feedback-assessor contract</text>
+    <g transform="translate(380, 20)">
+      <rect width="520" height="110" rx="10" fill="#1f2937" stroke="#f43f5e" stroke-width="1.5"/>
+      <text x="20" y="26" class="node-label" fill="#fbbf24">for each feedback/*.md with status: pending</text>
+      <text x="20" y="48" class="node-sub" fill="#cbd5e1">1. assess: does current stage work resolve this concern?</text>
+      <text x="20" y="66" class="node-sub" fill="#cbd5e1">2. on yes → status: addressed + addressed_by + addressed_at</text>
+      <text x="20" y="84" class="node-sub" fill="#cbd5e1">3. on no  → leave status: pending + annotate reason in body</text>
+      <text x="20" y="102" class="node-sub" fill="#cbd5e1">4. emit summary: total / still-pending / updated — parsed by orchestrator</text>
+    </g>
+  </g>
+
+  <!-- Row 4: rollback path -->
+  <g transform="translate(0, 520)">
+    <!-- rollback target: elaborate -->
+    <g transform="translate(40, 20)">
+      <rect width="170" height="70" rx="10" fill="#14b8a6" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4 3"/>
+      <text x="85" y="22" text-anchor="middle" class="node-label">elaborate</text>
+      <text x="85" y="40" text-anchor="middle" class="node-sub">additive mode</text>
+      <text x="85" y="58" text-anchor="middle" class="node-sub">visits++ · closes: [FB-NN]</text>
+    </g>
+
+    <!-- trigger node -->
+    <g transform="translate(380, 20)">
+      <rect width="520" height="70" rx="10" fill="#1f2937" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="260" y="26" text-anchor="middle" class="node-label" fill="#fbbf24">rollback conditions (any one fires elaborate rollback)</text>
+      <text x="260" y="46" text-anchor="middle" class="node-sub">• assessor errors / times out</text>
+      <text x="260" y="62" text-anchor="middle" class="node-sub">• any feedback still status: pending after assessor • frontmatter write fails</text>
+    </g>
+
+    <!-- arrow from rollback-conditions back to elaborate -->
+    <line x1="380" y1="55" x2="210" y2="55" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow-amber)"/>
+
+    <!-- arrow down from frontmatter check (top row, 805,110) into rollback conditions -->
+    <path d="M 805,-400 C 805,-200 640,40 640,20" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 3" marker-end="url(#arrow-amber)"/>
+    <text x="820" y="-200" class="edge-label-bold">if any check fails</text>
+  </g>
+
+</svg>
+
+<div class="footer">
+  <p><strong>Ground truth.</strong> This diagram is the source spec for FB-07. It is NOT yet reflected in <code>website/public/prototype-stage-flow.html</code>. The development stage of this intent is responsible for porting the new nodes / edges / auto-inject behavior into the canonical prototype, per <code>.claude/rules/architecture-prototype-sync.md</code>.</p>
+
+  <p><strong>Key changes vs today's flow.</strong> (1) A structural <em>feedback frontmatter check</em> phase sits between review and user gate — it's not a soft prompt, it's FSM code. (2) A <em>feedback-assessor</em> subagent is auto-injected in every review phase regardless of studio or stage; users cannot declare or remove it. (3) Any failure — assessor error, still-pending items, frontmatter write failure — rolls the stage back to elaborate (additive mode), never forward to the user gate.</p>
+
+  <p><strong>Paper + prototype sync.</strong> When development lands this: update <code>website/content/papers/haiku-method.md</code> Quality Enforcement + Review Agents sections, update <code>prototype-stage-flow.html</code> per the checklist in FB-07, and rerun <code>node website/_build-prototype-content.mjs</code>.</p>
+</div>
+
+</body>
+</html>

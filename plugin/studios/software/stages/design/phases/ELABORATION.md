@@ -7,6 +7,19 @@ criteria_focus: design
 
 # Design Stage — Elaboration
 
+## Phase Instructions (RFC 2119)
+
+The key words "MUST", "MUST NOT", "SHALL", "SHALL NOT", "REQUIRED" in this section are to be interpreted as described in RFC 2119.
+
+During elaboration, the agent **MUST** create **multiple low-fidelity wireframe variants** and present them for the user to choose a direction:
+
+1. The agent **MUST** generate 2-3 distinct design approaches as HTML wireframe snippets (different layouts, interaction patterns, or visual hierarchies)
+2. The agent **MUST** call `pick_design_direction` with the variants as `archetypes` — each with a `name`, `description`, `preview_html` (the rendered wireframe), and `default_parameters` (tunable values like spacing, column count, etc.)
+3. The user selects their preferred direction and adjusts parameters
+4. The agent **MUST** use the selected direction to create the final wireframes saved to `stages/design/artifacts/`
+5. The agent **MUST NOT** produce ASCII art wireframes — all wireframes **MUST** be HTML or design provider files
+6. If a design provider MCP is available (Pencil, OpenPencil, Figma), the agent **SHOULD** use it instead of raw HTML
+
 ## Criteria Guidance
 
 When generating criteria for this stage, focus on verifiable design deliverables:

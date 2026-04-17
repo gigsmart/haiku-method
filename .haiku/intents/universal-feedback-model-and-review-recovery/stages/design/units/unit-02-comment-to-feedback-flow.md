@@ -9,14 +9,14 @@ inputs:
   - knowledge/DESIGN-TOKENS.md
   - stages/design/DESIGN-BRIEF.md
 status: completed
-bolt: 1
-hat: design-reviewer
-started_at: '2026-04-16T13:01:51Z'
-hat_started_at: '2026-04-16T13:08:13Z'
+bolt: 0
+hat: ''
+started_at: null
+hat_started_at: null
 outputs:
   - stages/design/artifacts/review-package-structure.html
   - stages/design/artifacts/comment-to-feedback-flow.html
-completed_at: '2026-04-16T13:16:51Z'
+completed_at: null
 ---
 
 # Comment to Feedback Flow Design

@@ -18,9 +18,3 @@ memory and flash are finite, real-time deadlines are often hard, power budgets
 matter, and field updates may require physical access. Safety-critical code
 paths must be traceable to requirements and provably correct — "it works on
 the bench" is not validation for firmware that's going into a product.
-
-## Completion Signal (RFC 2119)
-
-Firmware **MUST** implement all functional requirements. Safety-critical
-paths **MUST** have traceable test coverage. Binary **MUST** fit within
-memory and flash budgets with headroom for future updates.

@@ -17,10 +17,3 @@ to the player), core loop (what the player does minute-to-minute), fantasy
 Concept absorbs traditional discovery. Unlike application development, there
 is no separate inception — game concepts are inseparable from market fit and
 creative vision. The design doc *is* the discovery document.
-
-## Completion Signal (RFC 2119)
-
-Design pillars **MUST** be defined. Core loop **MUST** be specified at
-minute-to-minute granularity. Target audience **MUST** be identified with
-competitive references. Scope (content volume, platforms, budget) **MUST**
-be bounded.

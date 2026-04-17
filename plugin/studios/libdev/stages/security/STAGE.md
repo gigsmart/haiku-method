@@ -24,9 +24,3 @@ prototype pollution for JS utilities, SSRF for HTTP clients).
 Unlike application security, library security has to consider the library as
 a potential *source* of vulnerabilities in downstream applications — the
 threat model is "what if my consumer misuses this."
-
-## Completion Signal (RFC 2119)
-
-Dependency tree **MUST** be audited for known CVEs. Public API **MUST** be
-threat-modeled for misuse by consumers. Security findings **MUST** be
-resolved or documented with justification and consumer guidance.

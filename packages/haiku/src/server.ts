@@ -447,6 +447,29 @@ async function handleToolCall(request: {
 		}
 	}
 
+	// Always-available review pane — boot HTTP server and open browser
+	if (name === "haiku_review" && (args as Record<string, unknown>)?.open_pane) {
+		const port = await startHttpServer()
+		const reviewUrl = `http://127.0.0.1:${port}/review/current`
+		try {
+			const cmd =
+				process.platform === "darwin"
+					? ["open", reviewUrl]
+					: ["xdg-open", reviewUrl]
+			spawn(cmd[0], cmd.slice(1), { stdio: "ignore", detached: true }).unref()
+		} catch {
+			/* */
+		}
+		return {
+			content: [
+				{
+					type: "text" as const,
+					text: `Review pane opened at ${reviewUrl}. This is a read-only overview — no Approve/Request Changes buttons are shown outside of a gate review.`,
+				},
+			],
+		}
+	}
+
 	// State management tools
 	if (name.startsWith("haiku_")) {
 		return handleStateTool(name, (args ?? {}) as Record<string, unknown>)
