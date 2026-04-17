@@ -14,10 +14,10 @@ outputs:
   - stages/design/artifacts/annotation-popover-states.html
   - stages/design/artifacts/unit-04-design-review.md
 status: active
-bolt: 2
-hat: design-reviewer
+bolt: 3
+hat: designer
 started_at: '2026-04-17T16:51:12Z'
-hat_started_at: '2026-04-17T20:30:48Z'
+hat_started_at: '2026-04-17T21:07:52Z'
 ---
 
 # Annotation creation UX across artifact types
