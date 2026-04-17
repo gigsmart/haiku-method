@@ -1,13 +1,15 @@
 ---
-title: Feedback gate enforcement — assessor agent + frontmatter check before user gate
-status: pending
+title: >-
+  Feedback gate enforcement — assessor agent + frontmatter check before user
+  gate
+status: addressed
 origin: user-chat
 author: user
 author_type: user
 created_at: '2026-04-17T05:49:00Z'
 visit: 1
 source_ref: Jason explicit requirement — hard invariant
-addressed_by: null
+addressed_by: unit-08-feedback-assessor-ux-and-flow-diagram
 ---
 
 ## Hard invariant
