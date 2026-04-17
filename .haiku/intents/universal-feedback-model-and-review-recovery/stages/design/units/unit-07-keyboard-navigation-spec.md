@@ -1,14 +1,22 @@
 ---
 title: Keyboard navigation specification
 type: design
-closes: [FB-04]
+closes:
+  - FB-04
 depends_on: []
 inputs:
-  - .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/04-keyboard-navigation-for-power-users.md
-  - .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/artifacts/review-ui-mockup.html
+  - >-
+    .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/04-keyboard-navigation-for-power-users.md
+  - >-
+    .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/artifacts/review-ui-mockup.html
 outputs:
   - stages/design/artifacts/keyboard-shortcut-map.html
   - stages/design/artifacts/focus-ring-spec.html
+status: active
+bolt: 1
+hat: designer
+started_at: '2026-04-17T16:50:28Z'
+hat_started_at: '2026-04-17T16:50:28Z'
 ---
 
 # Keyboard navigation specification
