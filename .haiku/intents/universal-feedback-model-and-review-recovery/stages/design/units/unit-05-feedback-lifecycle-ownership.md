@@ -13,11 +13,12 @@ outputs:
   - stages/design/artifacts/feedback-lifecycle-transitions.html
   - stages/design/artifacts/feedback-card-states.html
   - stages/design/artifacts/comments-list-with-agent-toggle.html
-status: active
+status: completed
 bolt: 1
 hat: design-reviewer
 started_at: '2026-04-17T16:50:43Z'
 hat_started_at: '2026-04-17T17:01:15Z'
+completed_at: '2026-04-17T21:41:38Z'
 ---
 
 # Feedback lifecycle ownership and unified comments surface

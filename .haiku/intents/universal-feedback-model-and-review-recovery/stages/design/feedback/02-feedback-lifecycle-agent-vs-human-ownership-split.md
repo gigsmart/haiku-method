@@ -1,13 +1,13 @@
 ---
 title: 'Feedback lifecycle: agent vs human ownership split'
-status: pending
+status: addressed
 origin: agent
 author: parent-agent
 author_type: agent
 created_at: '2026-04-17T03:04:19Z'
 visit: 0
 source_ref: null
-addressed_by: null
+addressed_by: unit-05-feedback-lifecycle-ownership
 ---
 
 The status transitions for feedback items need an ownership model that the design stage should codify.
