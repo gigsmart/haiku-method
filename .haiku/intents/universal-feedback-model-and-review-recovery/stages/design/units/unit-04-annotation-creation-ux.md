@@ -1,14 +1,22 @@
 ---
 title: Annotation creation UX across artifact types
 type: design
-closes: [FB-01]
+closes:
+  - FB-01
 depends_on: []
 inputs:
-  - .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/01-annotation-creation-ux-for-docs-and-visual-artifacts.md
-  - .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/artifacts/review-ui-mockup.html
+  - >-
+    .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/01-annotation-creation-ux-for-docs-and-visual-artifacts.md
+  - >-
+    .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/artifacts/review-ui-mockup.html
 outputs:
   - stages/design/artifacts/annotation-gesture-spec.html
   - stages/design/artifacts/annotation-popover-states.html
+status: active
+bolt: 1
+hat: designer
+started_at: '2026-04-17T16:51:12Z'
+hat_started_at: '2026-04-17T16:51:12Z'
 ---
 
 # Annotation creation UX across artifact types
