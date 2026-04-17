@@ -12,11 +12,12 @@ inputs:
 outputs:
   - stages/design/artifacts/keyboard-shortcut-map.html
   - stages/design/artifacts/focus-ring-spec.html
-status: active
+status: completed
 bolt: 1
 hat: design-reviewer
 started_at: '2026-04-17T16:50:28Z'
 hat_started_at: '2026-04-17T16:57:57Z'
+completed_at: '2026-04-17T22:11:19Z'
 ---
 
 # Keyboard navigation specification

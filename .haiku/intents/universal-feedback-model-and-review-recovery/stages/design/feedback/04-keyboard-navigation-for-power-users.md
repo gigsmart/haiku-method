@@ -1,13 +1,13 @@
 ---
 title: Keyboard navigation for power users
-status: pending
+status: addressed
 origin: agent
 author: parent-agent
 author_type: agent
 created_at: '2026-04-17T03:04:19Z'
 visit: 0
 source_ref: null
-addressed_by: null
+addressed_by: unit-07-keyboard-navigation-spec
 ---
 
 Review is a dense surface; keyboard nav materially speeds up an experienced reviewer.
