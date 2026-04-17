@@ -15,9 +15,9 @@ outputs:
   - stages/design/artifacts/unit-04-design-review.md
 status: active
 bolt: 2
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-17T16:51:12Z'
-hat_started_at: '2026-04-17T19:36:57Z'
+hat_started_at: '2026-04-17T20:30:48Z'
 ---
 
 # Annotation creation UX across artifact types
