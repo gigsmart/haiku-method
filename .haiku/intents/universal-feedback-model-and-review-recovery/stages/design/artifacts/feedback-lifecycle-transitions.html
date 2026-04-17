@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280" />
+  <title>Feedback Lifecycle: Ownership Matrix and Transitions</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    .arrow-human { stroke: #2563eb; } /* blue-600 */
+    .arrow-human-dark { stroke: #60a5fa; } /* blue-400 */
+    .arrow-agent { stroke: #0d9488; } /* teal-600 */
+    .arrow-agent-dark { stroke: #2dd4bf; } /* teal-400 */
+    .dashed { stroke-dasharray: 6 4; }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
+
+<header class="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
+  <div class="max-w-[1400px] mx-auto px-5 py-3 flex items-center justify-between">
+    <div>
+      <h1 class="text-lg font-semibold">Feedback Lifecycle — Ownership Matrix &amp; Transition Spec</h1>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Unit 05 · FB-02 · Design artifact · Visual state machine + who-owns-what rules</p>
+    </div>
+    <div class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider">
+      <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"><span class="w-2 h-2 rounded-full bg-teal-600 dark:bg-teal-400"></span>Agent-owned</span>
+      <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"><span class="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400"></span>Human-owned</span>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-[1400px] mx-auto px-5 py-6 space-y-8">
+
+  <!-- Section 1: State diagram -->
+  <section aria-labelledby="sec-diagram">
+    <h2 id="sec-diagram" class="text-base font-semibold mb-3">1. State Machine</h2>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Four statuses, seven transitions. Teal edges are agent-driven (FSM / quality gate). Blue edges are user-initiated from the review UI. Dashed edges re-open a terminal state.</p>
+
+    <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+      <svg viewBox="0 0 980 420" role="img" aria-label="Feedback status transition diagram" class="w-full h-auto">
+        <!-- Arrow marker defs -->
+        <defs>
+          <marker id="arrow-agent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#0d9488" />
+          </marker>
+          <marker id="arrow-human" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#2563eb" />
+          </marker>
+        </defs>
+
+        <!-- pending node (top-left) -->
+        <g>
+          <rect x="60"  y="60"  width="180" height="70" rx="14"
+                fill="#fef3c7" stroke="#f59e0b" stroke-width="2" class="dark:[fill:rgb(120_53_15_/_0.35)] dark:[stroke:rgb(251_191_36)]"/>
+          <text x="150" y="92" text-anchor="middle" font-size="16" font-weight="700" fill="#78350f" class="dark:[fill:rgb(253_230_138)]">pending</text>
+          <text x="150" y="112" text-anchor="middle" font-size="11" fill="#92400e" class="dark:[fill:rgb(251_191_36)]">attention needed</text>
+        </g>
+
+        <!-- addressed node (top-right) -->
+        <g>
+          <rect x="720" y="60" width="200" height="70" rx="14"
+                fill="#dbeafe" stroke="#3b82f6" stroke-width="2" class="dark:[fill:rgb(30_58_138_/_0.35)] dark:[stroke:rgb(96_165_250)]"/>
+          <text x="820" y="92" text-anchor="middle" font-size="16" font-weight="700" fill="#1e3a8a" class="dark:[fill:rgb(191_219_254)]">addressed</text>
+          <text x="820" y="112" text-anchor="middle" font-size="11" fill="#1d4ed8" class="dark:[fill:rgb(96_165_250)]">fix landed · awaits verify</text>
+        </g>
+
+        <!-- rejected node (bottom-left) -->
+        <g>
+          <rect x="60"  y="300" width="180" height="70" rx="14"
+                fill="#e5e7eb" stroke="#9ca3af" stroke-width="2" class="dark:[fill:rgb(31_41_55_/_0.6)] dark:[stroke:rgb(107_114_128)]"/>
+          <text x="150" y="332" text-anchor="middle" font-size="16" font-weight="700" fill="#374151" class="dark:[fill:rgb(229_231_235)]">rejected</text>
+          <text x="150" y="352" text-anchor="middle" font-size="11" fill="#4b5563" class="dark:[fill:rgb(156_163_175)]">dismissed · not actionable</text>
+        </g>
+
+        <!-- closed node (bottom-right) -->
+        <g>
+          <rect x="720" y="300" width="200" height="70" rx="14"
+                fill="#dcfce7" stroke="#22c55e" stroke-width="2" class="dark:[fill:rgb(20_83_45_/_0.35)] dark:[stroke:rgb(74_222_128)]"/>
+          <text x="820" y="332" text-anchor="middle" font-size="16" font-weight="700" fill="#14532d" class="dark:[fill:rgb(187_247_208)]">closed</text>
+          <text x="820" y="352" text-anchor="middle" font-size="11" fill="#166534" class="dark:[fill:rgb(74_222_128)]">resolved · verified</text>
+        </g>
+
+        <!-- T1: pending -> addressed (agent) -->
+        <g>
+          <path d="M240 80 Q480 40 720 80" fill="none" class="arrow-agent dark:arrow-agent-dark" stroke-width="2.5" marker-end="url(#arrow-agent)"/>
+          <rect x="420" y="12" width="140" height="28" rx="6" fill="#f0fdfa" stroke="#14b8a6" class="dark:[fill:rgb(19_78_74_/_0.45)] dark:[stroke:rgb(45_212_191)]"/>
+          <text x="490" y="30" text-anchor="middle" font-size="11" font-weight="600" fill="#0f766e" class="dark:[fill:rgb(153_246_228)]">T1 · agent · fix lands</text>
+        </g>
+
+        <!-- T2: addressed -> closed (human) -->
+        <g>
+          <path d="M820 130 L820 300" fill="none" class="arrow-human dark:arrow-human-dark" stroke-width="2.5" marker-end="url(#arrow-human)"/>
+          <rect x="830" y="200" width="130" height="28" rx="6" fill="#eff6ff" stroke="#3b82f6" class="dark:[fill:rgb(30_58_138_/_0.45)] dark:[stroke:rgb(96_165_250)]"/>
+          <text x="895" y="218" text-anchor="middle" font-size="11" font-weight="600" fill="#1d4ed8" class="dark:[fill:rgb(191_219_254)]">T2 · user · Verify &amp; Close</text>
+        </g>
+
+        <!-- T3: pending -> closed (agent, quality gate) -->
+        <g>
+          <path d="M240 110 Q460 220 720 320" fill="none" class="arrow-agent dark:arrow-agent-dark" stroke-width="2.5" marker-end="url(#arrow-agent)"/>
+          <rect x="360" y="200" width="190" height="28" rx="6" fill="#f0fdfa" stroke="#14b8a6" class="dark:[fill:rgb(19_78_74_/_0.45)] dark:[stroke:rgb(45_212_191)]"/>
+          <text x="455" y="218" text-anchor="middle" font-size="11" font-weight="600" fill="#0f766e" class="dark:[fill:rgb(153_246_228)]">T3 · agent · quality gate passes</text>
+        </g>
+
+        <!-- T4: pending -> rejected (human) -->
+        <g>
+          <path d="M150 130 L150 300" fill="none" class="arrow-human dark:arrow-human-dark" stroke-width="2.5" marker-end="url(#arrow-human)"/>
+          <rect x="22" y="200" width="110" height="28" rx="6" fill="#eff6ff" stroke="#3b82f6" class="dark:[fill:rgb(30_58_138_/_0.45)] dark:[stroke:rgb(96_165_250)]"/>
+          <text x="77" y="218" text-anchor="middle" font-size="11" font-weight="600" fill="#1d4ed8" class="dark:[fill:rgb(191_219_254)]">T4 · user · Dismiss</text>
+        </g>
+
+        <!-- T5: rejected -> pending (human, re-open, dashed) -->
+        <g>
+          <path d="M180 300 Q290 240 200 135" fill="none" class="arrow-human dark:arrow-human-dark dashed" stroke-width="2" marker-end="url(#arrow-human)"/>
+          <rect x="245" y="214" width="110" height="24" rx="6" fill="#eff6ff" stroke="#3b82f6" class="dark:[fill:rgb(30_58_138_/_0.45)] dark:[stroke:rgb(96_165_250)]"/>
+          <text x="300" y="230" text-anchor="middle" font-size="10" font-weight="600" fill="#1d4ed8" class="dark:[fill:rgb(191_219_254)]">T5 · user · Re-open</text>
+        </g>
+
+        <!-- T6: closed -> pending (human, re-open, dashed) -->
+        <g>
+          <path d="M780 300 Q680 190 770 135" fill="none" class="arrow-human dark:arrow-human-dark dashed" stroke-width="2" marker-end="url(#arrow-human)"/>
+          <rect x="640" y="154" width="110" height="24" rx="6" fill="#eff6ff" stroke="#3b82f6" class="dark:[fill:rgb(30_58_138_/_0.45)] dark:[stroke:rgb(96_165_250)]"/>
+          <text x="695" y="170" text-anchor="middle" font-size="10" font-weight="600" fill="#1d4ed8" class="dark:[fill:rgb(191_219_254)]">T6 · user · Re-open</text>
+        </g>
+
+        <!-- T7: addressed -> pending (human re-open, dashed) -->
+        <g>
+          <path d="M720 95 Q490 140 240 95" fill="none" class="arrow-human dark:arrow-human-dark dashed" stroke-width="2" marker-end="url(#arrow-human)"/>
+          <rect x="420" y="132" width="140" height="24" rx="6" fill="#eff6ff" stroke="#3b82f6" class="dark:[fill:rgb(30_58_138_/_0.45)] dark:[stroke:rgb(96_165_250)]"/>
+          <text x="490" y="148" text-anchor="middle" font-size="10" font-weight="600" fill="#1d4ed8" class="dark:[fill:rgb(191_219_254)]">T7 · user · Re-open</text>
+        </g>
+      </svg>
+
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+        <div class="p-3 rounded-md border border-teal-200 dark:border-teal-800 bg-teal-50/60 dark:bg-teal-900/20">
+          <p class="font-semibold text-teal-800 dark:text-teal-300 mb-1">Teal = agent-owned</p>
+          <p class="text-teal-900/80 dark:text-teal-200/80">These transitions are driven by the orchestrator or the quality gate. The UI never exposes them as buttons.</p>
+        </div>
+        <div class="p-3 rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-900/20">
+          <p class="font-semibold text-blue-800 dark:text-blue-300 mb-1">Blue = human-owned</p>
+          <p class="text-blue-900/80 dark:text-blue-200/80">These transitions fire from review-UI footer buttons. Dashed edges are re-opens (a terminal state going back to <code>pending</code>).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: Ownership matrix -->
+  <section aria-labelledby="sec-matrix">
+    <h2 id="sec-matrix" class="text-base font-semibold mb-3">2. Ownership Matrix (rows = from · columns = to)</h2>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Every cell is either <strong>AGENT</strong>, <strong>USER</strong>, or <strong>—</strong> (not a valid transition). User-initiable cells are the only ones that render as buttons in the review UI.</p>
+    <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+      <table class="w-full text-xs">
+        <thead class="bg-gray-50 dark:bg-gray-800/50 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+          <tr>
+            <th class="text-left px-3 py-2 w-32">from \ to</th>
+            <th class="text-left px-3 py-2">pending</th>
+            <th class="text-left px-3 py-2">addressed</th>
+            <th class="text-left px-3 py-2">rejected</th>
+            <th class="text-left px-3 py-2">closed</th>
+            <th class="text-left px-3 py-2 w-72">notes</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          <tr>
+            <td class="px-3 py-2 font-semibold bg-amber-50 dark:bg-amber-900/20">pending</td>
+            <td class="px-3 py-2 text-gray-400">— (self)</td>
+            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 font-semibold">AGENT</span> <span class="ml-1 text-[10px] text-gray-500 dark:text-gray-400">T1 · fix lands</span></td>
+            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-semibold">USER</span> <span class="ml-1 text-[10px] text-gray-500 dark:text-gray-400">T4 · Dismiss</span></td>
+            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 font-semibold">AGENT</span> <span class="ml-1 text-[10px] text-gray-500 dark:text-gray-400">T3 · quality gate</span></td>
+            <td class="px-3 py-2 text-gray-500 dark:text-gray-400">User can dismiss a pending item. Only the agent can mark it addressed or close it via gate verification. <em>Not</em> user-initiable: <code>pending → addressed</code>, <code>pending → closed</code>.</td>
+          </tr>
+          <tr>
+            <td class="px-3 py-2 font-semibold bg-blue-50 dark:bg-blue-900/20">addressed</td>
+            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-semibold">USER</span> <span class="ml-1 text-[10px] text-gray-500 dark:text-gray-400">T7 · Re-open</span></td>
+            <td class="px-3 py-2 text-gray-400">— (self)</td>
+            <td class="px-3 py-2 text-gray-400">—</td>
+            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-semibold">USER</span> <span class="ml-1 text-[10px] text-gray-500 dark:text-gray-400">T2 · Verify &amp; Close</span></td>
+            <td class="px-3 py-2 text-gray-500 dark:text-gray-400">Reviewer verifies the fix or re-opens if the fix is wrong. <em>Not</em> possible: <code>addressed → rejected</code> (dismiss only applies to pending).</td>
+          </tr>
+          <tr>
+            <td class="px-3 py-2 font-semibold bg-gray-100 dark:bg-gray-800/60">rejected</td>
+            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-semibold">USER</span> <span class="ml-1 text-[10px] text-gray-500 dark:text-gray-400">T5 · Re-open</span></td>
+            <td class="px-3 py-2 text-gray-400">—</td>
+            <td class="px-3 py-2 text-gray-400">— (self)</td>
+            <td class="px-3 py-2 text-gray-400">—</td>
+            <td class="px-3 py-2 text-gray-500 dark:text-gray-400">Terminal until re-opened. Agent cannot un-reject — only a human reconsiders a dismissal.</td>
+          </tr>
+          <tr>
+            <td class="px-3 py-2 font-semibold bg-green-50 dark:bg-green-900/20">closed</td>
+            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-semibold">USER</span> <span class="ml-1 text-[10px] text-gray-500 dark:text-gray-400">T6 · Re-open</span></td>
+            <td class="px-3 py-2 text-gray-400">—</td>
+            <td class="px-3 py-2 text-gray-400">—</td>
+            <td class="px-3 py-2 text-gray-400">— (self)</td>
+            <td class="px-3 py-2 text-gray-500 dark:text-gray-400">Terminal until re-opened. Both agent-closed (gate verify) and human-closed (Verify &amp; Close) collapse into the same <code>closed</code> row.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Section 3: User-initiable vs not -->
+  <section aria-labelledby="sec-ui-contract">
+    <h2 id="sec-ui-contract" class="text-base font-semibold mb-3">3. UI Contract — which transitions surface as buttons</h2>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">This is the definitive list the review-app must render. If a transition is not on this list, the UI <strong>MUST NOT</strong> expose a button for it — even if the backing tool call would technically accept it.</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-blue-800 p-4">
+        <h3 class="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-2 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400"></span>User-initiable (MUST render as footer buttons)</h3>
+        <ul class="space-y-1.5 text-xs text-gray-700 dark:text-gray-300">
+          <li><code class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800">pending → rejected</code> · <strong>Dismiss</strong> · secondary button</li>
+          <li><code class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800">addressed → closed</code> · <strong>Verify &amp; Close</strong> · primary-green button</li>
+          <li><code class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800">addressed → pending</code> · <strong>Re-open</strong> · secondary button</li>
+          <li><code class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800">rejected → pending</code> · <strong>Re-open</strong> · secondary button</li>
+          <li><code class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800">closed → pending</code> · <strong>Re-open</strong> · secondary button</li>
+        </ul>
+      </div>
+      <div class="bg-white dark:bg-gray-900 rounded-lg border border-teal-200 dark:border-teal-800 p-4">
+        <h3 class="text-sm font-semibold text-teal-700 dark:text-teal-300 mb-2 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-teal-600 dark:bg-teal-400"></span>NEVER user-initiable (MUST NOT render)</h3>
+        <ul class="space-y-1.5 text-xs text-gray-700 dark:text-gray-300">
+          <li><code class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800">pending → addressed</code> · agent marks when the fix lands during execute</li>
+          <li><code class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800">pending → closed</code> · quality gate closes structurally (e.g. the feedback references a file that no longer exists)</li>
+        </ul>
+        <p class="mt-3 text-[11px] text-gray-500 dark:text-gray-400 italic">These transitions are informational only. The card <strong>MAY</strong> show status advancement as it happens, but <strong>MUST NOT</strong> offer a button for the user to trigger them.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: Guard handoff -->
+  <section aria-labelledby="sec-guards">
+    <h2 id="sec-guards" class="text-base font-semibold mb-3">4. Tool-layer enforcement (handoff note)</h2>
+    <div class="bg-amber-50/60 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-xs text-gray-800 dark:text-gray-200 space-y-2">
+      <p><strong>Scope of this unit:</strong> the UX contract above — which transitions surface as buttons, what their labels are, and their footer layout. See <code>feedback-card-states.html</code> for the per-state button inventory.</p>
+      <p><strong>Out of scope (delegated to product / development):</strong> the author-type guard on the <code>haiku_feedback_update</code> tool (and equivalents) that enforces this split server-side. The UX contract above is the <em>client</em> contract. The tool layer <strong>MUST</strong> also reject any agent-forbidden transition regardless of origin — a malicious client cannot bypass ownership by skipping the UI.</p>
+      <p><strong>Guard outcomes that produce toasts:</strong> see the optimistic-UI toast copy in <code>feedback-card-states.html §6</code>.</p>
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>

@@ -15,9 +15,9 @@ outputs:
   - stages/design/artifacts/comments-list-with-agent-toggle.html
 status: active
 bolt: 1
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-17T16:50:43Z'
-hat_started_at: '2026-04-17T16:50:43Z'
+hat_started_at: '2026-04-17T17:01:15Z'
 ---
 
 # Feedback lifecycle ownership and unified comments surface
