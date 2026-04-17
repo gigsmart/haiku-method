@@ -12,11 +12,12 @@ inputs:
 outputs:
   - stages/design/artifacts/annotation-gesture-spec.html
   - stages/design/artifacts/annotation-popover-states.html
+  - stages/design/artifacts/unit-04-design-review.md
 status: active
-bolt: 1
-hat: design-reviewer
+bolt: 2
+hat: designer
 started_at: '2026-04-17T16:51:12Z'
-hat_started_at: '2026-04-17T16:58:42Z'
+hat_started_at: '2026-04-17T19:36:57Z'
 ---
 
 # Annotation creation UX across artifact types
