@@ -1,21 +1,38 @@
 ---
 title: Architecture diagram updates for new FSM concepts
 type: design
-closes: [FB-05, FB-06, FB-08, FB-09]
+closes:
+  - FB-05
+  - FB-06
+  - FB-08
+  - FB-09
 depends_on:
   - unit-08-feedback-assessor-ux-and-flow-diagram
 inputs:
-  - .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/05-haiku-revisit-must-fully-reset-stage-and-uncomplete-intent.md
-  - .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/06-revisit-plus-additive-elaborate-end-to-end-broken.md
-  - .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/08-visits-should-be-iterations-array-with-timestamps.md
-  - .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/09-post-elab-gate-predicate-no-separate-additive-state.md
+  - >-
+    .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/05-haiku-revisit-must-fully-reset-stage-and-uncomplete-intent.md
+  - >-
+    .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/06-revisit-plus-additive-elaborate-end-to-end-broken.md
+  - >-
+    .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/08-visits-should-be-iterations-array-with-timestamps.md
+  - >-
+    .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/09-post-elab-gate-predicate-no-separate-additive-state.md
   - .claude/rules/architecture-prototype-sync.md
   - website/public/prototype-stage-flow.html
 outputs:
   - stages/design/artifacts/architecture-diagram-diff-spec.md
   - stages/design/artifacts/iteration-timeline-ui.html
+status: active
+bolt: 1
+hat: designer
+started_at: '2026-04-17T22:16:17Z'
+hat_started_at: '2026-04-17T22:16:17Z'
+iterations:
+  - hat: designer
+    started_at: '2026-04-17T22:16:17Z'
+    completed_at: null
+    result: null
 ---
-
 # Architecture diagram updates for new FSM concepts
 
 ## Goal
