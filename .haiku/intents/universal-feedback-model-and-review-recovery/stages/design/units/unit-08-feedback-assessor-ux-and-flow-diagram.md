@@ -1,16 +1,25 @@
 ---
 title: Feedback-assessor UX and review-phase flow diagram
 type: design
-closes: [FB-07]
+closes:
+  - FB-07
 depends_on: []
 inputs:
-  - .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/07-feedback-gate-enforcement-and-assessor-agent.md
-  - .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/artifacts/review-flow-with-feedback-assessor.html
-  - .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/artifacts/review-ui-mockup.html
+  - >-
+    .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/07-feedback-gate-enforcement-and-assessor-agent.md
+  - >-
+    .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/artifacts/review-flow-with-feedback-assessor.html
+  - >-
+    .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/artifacts/review-ui-mockup.html
 outputs:
   - stages/design/artifacts/review-flow-with-feedback-assessor.html
   - stages/design/artifacts/assessor-summary-card.html
   - stages/design/artifacts/rollback-reason-banner.html
+status: active
+bolt: 1
+hat: designer
+started_at: '2026-04-17T16:51:25Z'
+hat_started_at: '2026-04-17T16:51:25Z'
 ---
 
 # Feedback-assessor UX and review-phase flow diagram
