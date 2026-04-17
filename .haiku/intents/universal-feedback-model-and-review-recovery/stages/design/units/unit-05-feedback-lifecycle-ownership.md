@@ -33,7 +33,3 @@ Codify the agent-owned vs human-owned status transitions for feedback items, spe
 - Optimistic UI pattern specified: status change updates card immediately; if the tool call fails (author-type guard rejects the transition), the card reverts and a toast shows the reason. Toast copy templated for every guard outcome.
 - Origin-badge visual inventory: colors / labels for `adversarial-review`, `external-pr`, `external-mr`, `user-visual`, `user-chat`, `agent`. WCAG AA contrast verified on each badge in light + dark.
 - Clear spec note delegating the actual tool-layer author-type guard enforcement to product/development — this unit specifies the *UX contract*, not the enforcement mechanism.
-
-## Completion Signal
-
-Every feedback card's footer renders deterministically from `(status, origin)`. The reviewer never sees a button they cannot successfully press. Agent feedback is never hidden — it's toggled.

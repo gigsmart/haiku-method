@@ -48,7 +48,3 @@ This unit produces a **diagram-diff specification** that the development stage u
 - **Paper + CLAUDE.md update spec** listed in the diff-spec file: which sections of `website/content/papers/haiku-method.md` and which rows of `CLAUDE.md`'s terminology table get updated (add `Iteration` at the stage level; remove legacy mentions of `additive_elaborate` as a distinct state).
 - **Non-goal section** in the diff-spec is explicit and complete. Anyone reading this unit's output cannot confuse "design owns the diagram and docs update" with "design owns the FSM rewrite."
 - **Product hand-off list** enumerates every non-design concern this intent still needs: revisit atomicity (code), uncomplete-intent (code), `haiku_feedback` `message is required` bug, binary-build CI enforcement, `iterations[]` schema + hydration shim, post-elab gate predicate (code), collapse of `additive_elaborate` from the orchestrator (code — already partially done in-flight).
-
-## Completion Signal
-
-The development stage can open the diff-spec and make every listed change to `prototype-stage-flow.html`, `paper`, and `CLAUDE.md` without further design input. The iteration-timeline mock is hand-off-ready for the review-UI work stream.

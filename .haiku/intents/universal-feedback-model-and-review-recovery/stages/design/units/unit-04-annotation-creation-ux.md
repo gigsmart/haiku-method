@@ -27,7 +27,3 @@ The deliverables must be concrete enough for the development stage to wire up wi
 - Keyboard equivalent for annotation creation specified (ties to unit-07 shortcut map — e.g. focused-line + key opens popover at line; focused-artifact-wrapper + key opens popover centered).
 - Accessibility: focused popover traps focus, returns focus on close, exposes `aria-label`, ESC cancels creation. Touch targets on the popover footer are ≥ 44px.
 - Storage contract written: annotation location lives on `feedback.target.annotation` alongside `target.kind` and `target.{unit,knowledge,output,file}Name`. Document the exact shape the CRUD tool must accept and persist.
-
-## Completion Signal
-
-A designer can hand the development stage this unit's outputs and the dev engineer can implement every creation path with no ambiguity. No "the mockup shows this" references without a matching spec sentence.

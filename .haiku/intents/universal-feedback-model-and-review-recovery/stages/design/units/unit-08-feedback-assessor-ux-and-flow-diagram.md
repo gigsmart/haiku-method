@@ -36,7 +36,3 @@ The existing artifact at `artifacts/review-flow-with-feedback-assessor.html` is 
 - Blocked-pending-feedback messaging specified: if the reviewer opens the review UI before the gate is reachable (feedback still pending), the user-gate area shows a clear non-interactive state with the list of blockers and the instruction to address them first.
 - Architecture-prototype-sync obligations explicitly listed for the development stage: which nodes to add to `website/public/prototype-stage-flow.html`, which `payloadFor(...)` entries to add, and the `node website/_build-prototype-content.mjs` rerun. This unit is the source of truth; unit-09 coordinates the broader diagram update.
 - Explicit non-goal: this unit does NOT spec the orchestrator code that spawns the assessor subagent, does NOT spec the structural frontmatter check in TypeScript, and does NOT define the FSM's rollback transition. Those belong to product + development stages.
-
-## Completion Signal
-
-The flow diagram can be opened and hands the development stage a picture they can rebuild the orchestrator transitions from. The three UI surfaces (summary card, rollback banner, blocked-pending message) are wireframed well enough for the development stage to build components without guessing.

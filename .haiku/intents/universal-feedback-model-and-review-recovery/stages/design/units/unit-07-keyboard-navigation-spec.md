@@ -35,7 +35,3 @@ Lock the shortcut map, help overlay (`?`), and focus-ring visual contract the re
 - Cross-flash animation for `Enter`-highlight specified: duration (1400ms), easing, color (teal-500 with 0.7 alpha fade), applied to both the feedback card and the target artifact row.
 - Conflict analysis with browser / OS defaults documented. `/` conflicts with Chrome/Firefox find-in-page but is industry-standard for "focus search" and acceptable. `?` must not be captured when user is typing in an input.
 - Input-capture rule explicit: all shortcuts except `Esc` are suppressed when focus is in `<input>`, `<textarea>`, or `contenteditable`. `Esc` blurs the input instead of closing modal/popover when an input is focused.
-
-## Completion Signal
-
-Every shortcut has an unambiguous definition, an activation context, and a conflict analysis. The development stage can implement a single global keydown handler straight from this spec.

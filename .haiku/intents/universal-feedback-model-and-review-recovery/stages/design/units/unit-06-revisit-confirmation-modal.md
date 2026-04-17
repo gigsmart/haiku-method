@@ -1,14 +1,22 @@
 ---
 title: Revisit confirmation modal
 type: design
-closes: [FB-03]
+closes:
+  - FB-03
 depends_on: []
 inputs:
-  - .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/03-revisit-preview-with-confirmation-modal.md
-  - .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/artifacts/review-ui-mockup.html
+  - >-
+    .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/03-revisit-preview-with-confirmation-modal.md
+  - >-
+    .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/artifacts/review-ui-mockup.html
 outputs:
   - stages/design/artifacts/revisit-modal-spec.html
   - stages/design/artifacts/revisit-modal-states.html
+status: active
+bolt: 1
+hat: designer
+started_at: '2026-04-17T16:50:24Z'
+hat_started_at: '2026-04-17T16:50:24Z'
 ---
 
 # Revisit confirmation modal
@@ -34,7 +42,3 @@ outputs:
 - Focus trap + return-focus behavior specified.
 - Confirm-button copy names the side effects concretely — e.g. *"Confirm & Revisit to **Product** · resets 3 downstream stages"* — so the reviewer never clicks confirm blind.
 - Approve action remains single-click (no modal). Document this contrast explicitly: approve is reversible by next review; revisit is not.
-
-## Completion Signal
-
-The reviewer can predict exactly what the Confirm & Revisit button will do before pressing it, and understands which stages will be reset.
