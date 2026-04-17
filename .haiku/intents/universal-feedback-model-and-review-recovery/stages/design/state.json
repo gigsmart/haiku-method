@@ -1,7 +1,7 @@
 {
   "stage": "design",
   "status": "active",
-  "phase": "execute",
+  "phase": "gate",
   "started_at": "2026-04-17T03:10:00Z",
   "completed_at": null,
   "gate_entered_at": null,
