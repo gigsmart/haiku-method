@@ -1,15 +1,23 @@
 ---
 title: Feedback lifecycle ownership and unified comments surface
 type: design
-closes: [FB-02]
+closes:
+  - FB-02
 depends_on: []
 inputs:
-  - .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/02-feedback-lifecycle-agent-vs-human-ownership-split.md
-  - .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/artifacts/review-ui-mockup.html
+  - >-
+    .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/feedback/02-feedback-lifecycle-agent-vs-human-ownership-split.md
+  - >-
+    .haiku/intents/universal-feedback-model-and-review-recovery/stages/design/artifacts/review-ui-mockup.html
 outputs:
   - stages/design/artifacts/feedback-lifecycle-transitions.html
   - stages/design/artifacts/feedback-card-states.html
   - stages/design/artifacts/comments-list-with-agent-toggle.html
+status: active
+bolt: 1
+hat: designer
+started_at: '2026-04-17T16:50:43Z'
+hat_started_at: '2026-04-17T16:50:43Z'
 ---
 
 # Feedback lifecycle ownership and unified comments surface
