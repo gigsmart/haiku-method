@@ -14,9 +14,9 @@ outputs:
   - stages/design/artifacts/focus-ring-spec.html
 status: active
 bolt: 1
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-17T16:50:28Z'
-hat_started_at: '2026-04-17T16:50:28Z'
+hat_started_at: '2026-04-17T16:57:57Z'
 ---
 
 # Keyboard navigation specification
