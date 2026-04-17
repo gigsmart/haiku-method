@@ -1,0 +1,1954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>H·AI·K·U Review</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+  </style>
+  <script>
+    // Follow system preference on first load; persist manual override in localStorage
+    (function initTheme() {
+      const stored = localStorage.getItem('haiku-review-theme');
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDark = stored ? stored === 'dark' : prefersDark;
+      if (isDark) document.documentElement.classList.add('dark');
+      // Listen for system changes when user hasn't overridden
+      if (!stored && window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+          if (!localStorage.getItem('haiku-review-theme')) {
+            document.documentElement.classList.toggle('dark', e.matches);
+            const btn = document.getElementById('theme-toggle');
+            if (btn) btn.innerHTML = e.matches ? '&#x263E;' : '&#x2600;';
+          }
+        });
+      }
+    })();
+  </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 h-screen overflow-hidden flex flex-col">
+
+  <!-- Header — always fixed at top -->
+  <header class="shrink-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
+    <!-- Top row: branding + session + mode toggle + actions -->
+    <div class="px-4 sm:px-6 py-3 flex items-center justify-between border-b border-gray-100 dark:border-gray-800/60">
+      <div class="flex items-center gap-3">
+        <span class="text-base font-bold tracking-tight text-gray-900 dark:text-gray-100">H·AI·K·U</span>
+        <span class="text-gray-300 dark:text-gray-600">|</span>
+        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Review</span>
+        <span class="text-gray-300 dark:text-gray-600">·</span>
+        <span class="text-[11px] font-mono text-gray-400 dark:text-gray-500">session <span id="session-id">r_8f2c91a</span></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <!-- Mode toggle -->
+        <div class="flex items-center gap-1 text-[10px] font-semibold">
+          <span class="text-gray-400 dark:text-gray-500 uppercase tracking-wider">Mode</span>
+          <div class="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden">
+            <button id="mode-gate" onclick="setMode('gate')" class="px-2 py-1 text-[10px] font-semibold">Gate</button>
+            <button id="mode-user" onclick="setMode('user')" class="px-2 py-1 text-[10px] font-semibold">User-opened</button>
+          </div>
+        </div>
+        <button onclick="resetSeen()" class="px-2 py-1 text-[10px] rounded border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800" title="Demo: clear seen state">Reset seen</button>
+        <button onclick="toggleKbdHelp()" class="px-2 py-1 text-[10px] rounded border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800" title="Keyboard shortcuts (?)">?</button>
+        <button id="theme-toggle" onclick="toggleTheme()" class="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800" title="Toggle theme">&#x263E;</button>
+      </div>
+    </div>
+
+    <!-- Centered stage stepper with labels — all stages clickable -->
+    <div class="px-4 sm:px-6 py-4">
+      <nav class="flex justify-center" aria-label="Stage progress">
+        <ol class="flex items-start gap-0">
+          <!-- Inception — complete, no pending -->
+          <li class="w-24">
+            <button type="button" data-stage="inception" class="stage-btn group w-full flex flex-col items-center focus:outline-none" aria-label="View Inception feedback">
+              <div class="flex items-center w-full h-10">
+                <div class="flex-1 h-0.5 bg-transparent"></div>
+                <div class="stage-icon relative w-10 h-10 flex items-center justify-center shrink-0">
+                  <div class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm ring-2 ring-green-200 dark:ring-green-900/40 group-hover:ring-4 group-hover:ring-green-300 dark:group-hover:ring-green-800 transition-all">
+                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  </div>
+                </div>
+                <div class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"></div>
+              </div>
+              <span class="mt-2 text-[11px] font-semibold text-green-600 dark:text-green-400 leading-none">Inception</span>
+              <span class="mt-1 text-[9px] font-medium uppercase tracking-wider text-transparent leading-none select-none" aria-hidden="true">&nbsp;</span>
+            </button>
+          </li>
+
+          <!-- Design — complete, no pending -->
+          <li class="w-24">
+            <button type="button" data-stage="design" class="stage-btn group w-full flex flex-col items-center focus:outline-none" aria-label="View Design feedback">
+              <div class="flex items-center w-full h-10">
+                <div class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"></div>
+                <div class="stage-icon relative w-10 h-10 flex items-center justify-center shrink-0">
+                  <div class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm ring-2 ring-green-200 dark:ring-green-900/40 group-hover:ring-4 group-hover:ring-green-300 dark:group-hover:ring-green-800 transition-all">
+                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  </div>
+                </div>
+                <div class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"></div>
+              </div>
+              <span class="mt-2 text-[11px] font-semibold text-green-600 dark:text-green-400 leading-none">Design</span>
+              <span class="mt-1 text-[9px] font-medium uppercase tracking-wider text-transparent leading-none select-none" aria-hidden="true">&nbsp;</span>
+            </button>
+          </li>
+
+          <!-- Product — complete, 1 pending feedback (EARLIEST unaddressed) -->
+          <li class="w-24">
+            <button type="button" data-stage="product" class="stage-btn group w-full flex flex-col items-center focus:outline-none" aria-label="View Product feedback (1 pending)">
+              <div class="flex items-center w-full h-10">
+                <div class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"></div>
+                <div class="stage-icon relative w-10 h-10 flex items-center justify-center shrink-0">
+                  <div class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm ring-2 ring-amber-300 dark:ring-amber-700/60 group-hover:ring-4 group-hover:ring-amber-400 dark:group-hover:ring-amber-600 transition-all">
+                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  </div>
+                  <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-gray-900">1</span>
+                </div>
+                <div class="flex-1 h-0.5 bg-gradient-to-r from-green-400 to-teal-400 dark:from-green-700 dark:to-teal-600"></div>
+              </div>
+              <span class="mt-2 text-[11px] font-semibold text-green-600 dark:text-green-400 leading-none">Product</span>
+              <span class="mt-1 text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-500 leading-none">1 pending</span>
+            </button>
+          </li>
+
+          <!-- Development — current, 2 pending feedback -->
+          <li class="w-24">
+            <button type="button" data-stage="development" class="stage-btn group w-full flex flex-col items-center focus:outline-none" aria-current="step" aria-label="View Development feedback (current, 2 pending)">
+              <div class="flex items-center w-full h-10">
+                <div class="flex-1 h-0.5 bg-gradient-to-r from-green-400 to-teal-400 dark:from-green-700 dark:to-teal-600"></div>
+                <div class="stage-icon relative w-10 h-10 flex items-center justify-center shrink-0">
+                  <div class="w-7 h-7 rounded-md bg-teal-500 rotate-45 flex items-center justify-center shadow-md ring-4 ring-teal-200 dark:ring-teal-900/50 group-hover:ring-teal-300 dark:group-hover:ring-teal-800 transition-all">
+                    <span class="text-xs font-bold text-white -rotate-45">4</span>
+                  </div>
+                  <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-gray-900">2</span>
+                </div>
+                <div class="flex-1 h-0.5 bg-gray-300 dark:bg-gray-700"></div>
+              </div>
+              <span class="mt-2 text-[11px] font-bold text-teal-600 dark:text-teal-400 leading-none">Development</span>
+              <span data-dev-sublabel class="mt-1 text-[9px] font-medium uppercase tracking-wider text-teal-500 dark:text-teal-500 leading-none">final-review gate</span>
+            </button>
+          </li>
+
+          <!-- Operations — upcoming -->
+          <li class="w-24">
+            <button type="button" data-stage="operations" data-disabled="true" class="stage-btn group w-full flex flex-col items-center focus:outline-none opacity-60 cursor-not-allowed" disabled aria-label="Operations — not yet started">
+              <div class="flex items-center w-full h-10">
+                <div class="flex-1 h-0.5 bg-gray-300 dark:bg-gray-700"></div>
+                <div class="stage-icon relative w-10 h-10 flex items-center justify-center shrink-0">
+                  <div class="w-6 h-6 rounded-full bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center">
+                    <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-500">5</span>
+                  </div>
+                </div>
+                <div class="flex-1 h-0.5 bg-gray-300 dark:bg-gray-700"></div>
+              </div>
+              <span class="mt-2 text-[11px] font-medium text-gray-500 dark:text-gray-400 leading-none">Operations</span>
+              <span class="mt-1 text-[9px] font-medium uppercase tracking-wider text-transparent leading-none select-none" aria-hidden="true">&nbsp;</span>
+            </button>
+          </li>
+
+          <!-- Security — upcoming -->
+          <li class="w-24">
+            <button type="button" data-stage="security" data-disabled="true" class="stage-btn group w-full flex flex-col items-center focus:outline-none opacity-60 cursor-not-allowed" disabled aria-label="Security — not yet started">
+              <div class="flex items-center w-full h-10">
+                <div class="flex-1 h-0.5 bg-gray-300 dark:bg-gray-700"></div>
+                <div class="stage-icon relative w-10 h-10 flex items-center justify-center shrink-0">
+                  <div class="w-6 h-6 rounded-full bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center">
+                    <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-500">6</span>
+                  </div>
+                </div>
+                <div class="flex-1 h-0.5 bg-transparent"></div>
+              </div>
+              <span class="mt-2 text-[11px] font-medium text-gray-500 dark:text-gray-400 leading-none">Security</span>
+              <span class="mt-1 text-[9px] font-medium uppercase tracking-wider text-transparent leading-none select-none" aria-hidden="true">&nbsp;</span>
+            </button>
+          </li>
+        </ol>
+      </nav>
+    </div>
+  </header>
+
+  <!-- App shell: sidebar LEFT + main RIGHT, each with own scroll -->
+  <div class="flex-1 flex overflow-hidden">
+
+    <!-- LEFT SIDEBAR — flush to screen edge, own scroll, fixed bottom actions -->
+    <aside class="hidden lg:flex lg:flex-col w-72 shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+
+      <!-- Review context -->
+      <div class="shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">Reviewing</p>
+        <h2 id="sb-stage-title" class="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-tight">Development</h2>
+        <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+          <span id="sb-stage-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">current</span>
+          <span id="sb-gate-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold"></span>
+          <span class="text-[10px] text-gray-400">Universal Feedback Model</span>
+        </div>
+        <!-- Gate selector for current stage — mockup demo only -->
+        <div id="sb-gate-selector" class="hidden mt-2 flex items-center gap-1 text-[10px]">
+          <span class="text-gray-400 uppercase tracking-wider font-semibold">Gate</span>
+          <div class="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden">
+            <button id="gate-postElab" onclick="setGate('postElab')" class="px-2 py-0.5 text-[10px] font-semibold">Post-Elab</button>
+            <button id="gate-finalReview" onclick="setGate('finalReview')" class="px-2 py-0.5 text-[10px] font-semibold">Final Review</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar header: Feedback count (no comments — everything is feedback) -->
+      <div class="shrink-0 flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Feedback</span>
+          <span id="sb-feedback-count" class="px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-[10px] font-bold">2</span>
+        </div>
+        <span class="text-[10px] text-gray-400 italic">everything is specification</span>
+      </div>
+
+      <!-- Feedback list — scrollable, JS-rendered -->
+      <div id="sb-feedback-list" class="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+        <!-- content injected by JS -->
+      </div>
+
+      <!-- Fixed bottom: comment input + decision buttons -->
+      <div class="shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3 space-y-2">
+        <div>
+          <textarea id="sb-comment" placeholder="Add feedback on this stage..." rows="2" class="w-full text-xs p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500 focus:outline-none resize-none"></textarea>
+        </div>
+        <div id="sb-actions" class="flex gap-2">
+          <!-- injected by JS -->
+        </div>
+        <p id="sb-revisit-hint" class="text-[10px] text-gray-500 dark:text-gray-400 leading-snug pt-1 border-t border-gray-100 dark:border-gray-800">
+          <!-- injected by JS -->
+        </p>
+      </div>
+    </aside>
+
+    <!-- RIGHT: Main content area — independent scroll -->
+    <main class="flex-1 min-w-0 overflow-y-auto px-6 lg:px-10 py-6 max-w-none">
+
+      <!-- Stage banner -->
+      <div id="main-stage-banner" class="mb-4 flex items-center gap-3 px-4 py-3 rounded-lg border border-teal-200 dark:border-teal-900/60 bg-teal-50 dark:bg-teal-900/20">
+        <span id="main-stage-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-600 text-white">current</span>
+        <div class="flex-1 min-w-0">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400 leading-none">Stage</p>
+          <div class="flex items-center gap-2 mt-1">
+            <h1 id="main-stage-title" class="text-base font-bold text-gray-900 dark:text-gray-100 leading-tight">Development</h1>
+            <span id="main-gate-pill" class="hidden items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"></span>
+          </div>
+        </div>
+        <p id="main-stage-subtitle" class="hidden sm:block text-xs text-gray-500 dark:text-gray-400 max-w-sm leading-snug">Build &amp; ship the code that satisfies acceptance criteria.</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="sticky top-0 z-30 bg-gray-50 dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 -mx-6 lg:-mx-10 px-6 lg:px-10 mb-6" role="tablist">
+        <div class="flex gap-1" id="main-tabs">
+          <button role="tab" data-tab="overview" class="tab-btn px-3 py-2 text-xs font-semibold border-b-2 border-transparent hover:text-gray-700 dark:hover:text-gray-300">Overview</button>
+          <button role="tab" data-tab="units" class="tab-btn px-3 py-2 text-xs font-medium border-b-2 border-transparent hover:text-gray-700 dark:hover:text-gray-300">Units</button>
+          <button role="tab" data-tab="knowledge" class="tab-btn px-3 py-2 text-xs font-medium border-b-2 border-transparent hover:text-gray-700 dark:hover:text-gray-300">Knowledge</button>
+          <button role="tab" data-tab="outputs" class="tab-btn px-3 py-2 text-xs font-medium border-b-2 border-transparent hover:text-gray-700 dark:hover:text-gray-300">Outputs</button>
+        </div>
+      </div>
+
+      <!-- Content cards — rendered by JS -->
+      <div id="main-stage-content" class="space-y-4"></div>
+    </main>
+  </div>
+
+  <!-- Revisit confirmation modal -->
+  <div id="revisit-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onclick="if(event.target===this) closeRevisitModal()">
+    <div class="w-full max-w-md bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+        <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500 text-white text-sm font-bold">↩</span>
+        <h2 class="text-base font-bold text-gray-900 dark:text-gray-100">Confirm revisit</h2>
+      </div>
+      <div id="revisit-modal-body" class="px-5 py-4 space-y-3 max-h-[60vh] overflow-y-auto"></div>
+      <div class="px-5 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/60 flex items-center justify-end gap-2">
+        <button onclick="closeRevisitModal()" class="px-3 py-1.5 text-xs font-semibold rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">Cancel</button>
+        <button id="revisit-confirm-btn" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-amber-600 hover:bg-amber-700 text-white focus:ring-2 focus:ring-amber-500 focus:outline-none">Confirm & Revisit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Annotation creation popover -->
+  <div id="ann-popover" class="hidden fixed z-40 w-72 bg-white dark:bg-gray-900 rounded-lg shadow-2xl border border-teal-300 dark:border-teal-700 p-3">
+    <div class="flex items-center justify-between mb-2">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">New feedback @ <span id="ann-loc"></span></p>
+      <button onclick="closeAnnPopover()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm leading-none">&times;</button>
+    </div>
+    <input id="ann-title" type="text" placeholder="Title..." class="w-full text-xs p-1.5 mb-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500 focus:outline-none"/>
+    <textarea id="ann-body" rows="3" placeholder="Detail..." class="w-full text-xs p-1.5 mb-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500 focus:outline-none resize-none"></textarea>
+    <div class="flex items-center justify-end gap-1.5">
+      <button onclick="closeAnnPopover()" class="px-2 py-1 text-[10px] font-semibold rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">Cancel</button>
+      <button onclick="saveAnnotation()" class="px-2 py-1 text-[10px] font-semibold rounded bg-teal-600 hover:bg-teal-700 text-white">Create</button>
+    </div>
+  </div>
+
+  <!-- Keyboard shortcuts help overlay -->
+  <div id="kbd-help" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onclick="if(event.target===this) toggleKbdHelp()">
+    <div class="w-full max-w-md bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <h2 class="text-base font-bold text-gray-900 dark:text-gray-100">Keyboard shortcuts</h2>
+        <button onclick="toggleKbdHelp()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">&times;</button>
+      </div>
+      <div class="px-5 py-4 space-y-1.5 text-xs">
+        <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
+          <kbd class="font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-[10px] justify-self-end">j / k</kbd><span class="text-gray-700 dark:text-gray-300">Next / previous feedback in sidebar</span>
+          <kbd class="font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-[10px] justify-self-end">[ / ]</kbd><span class="text-gray-700 dark:text-gray-300">Previous / next stage</span>
+          <kbd class="font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-[10px] justify-self-end">g o / u / k / p</kbd><span class="text-gray-700 dark:text-gray-300">Jump to Overview / Units / Knowledge / outPuts</span>
+          <kbd class="font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-[10px] justify-self-end">Enter</kbd><span class="text-gray-700 dark:text-gray-300">Open / expand focused feedback</span>
+          <kbd class="font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-[10px] justify-self-end">n</kbd><span class="text-gray-700 dark:text-gray-300">Jump to next unseen artifact</span>
+          <kbd class="font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-[10px] justify-self-end">a</kbd><span class="text-gray-700 dark:text-gray-300">Approve (if available)</span>
+          <kbd class="font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-[10px] justify-self-end">r</kbd><span class="text-gray-700 dark:text-gray-300">Request changes</span>
+          <kbd class="font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-[10px] justify-self-end">/</kbd><span class="text-gray-700 dark:text-gray-300">Focus feedback textarea</span>
+          <kbd class="font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-[10px] justify-self-end">Esc</kbd><span class="text-gray-700 dark:text-gray-300">Close modal / popover / blur input</span>
+          <kbd class="font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-[10px] justify-self-end">?</kbd><span class="text-gray-700 dark:text-gray-300">Show this help</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-4 right-4 z-50 hidden max-w-sm rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/40 shadow-lg p-4">
+    <div class="flex items-start gap-3">
+      <div class="shrink-0 w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold">↩</div>
+      <div class="flex-1 text-xs">
+        <p class="font-bold text-amber-900 dark:text-amber-100" id="toast-title">Revisit requested</p>
+        <p class="text-amber-800 dark:text-amber-200 mt-1 leading-snug" id="toast-body"></p>
+      </div>
+      <button onclick="document.getElementById('toast').classList.add('hidden')" class="text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 text-lg leading-none">&times;</button>
+    </div>
+  </div>
+
+  <script>
+    // ==== Data model ====
+    const STAGES = [
+      {
+        id: 'inception', label: 'Inception', index: 0, status: 'complete',
+        subtitle: 'Define the shape of the work: problem, goals, scope.',
+        gates: { postElab: 'closed', finalReview: 'closed' }, activeGate: null,
+        units: [{ name: 'unit-01-problem-framing', status: 'completed' }],
+        knowledge: [{ name: 'problem-statement.md', kind: 'discovery' }],
+        outputs: [{ name: 'intent.md', kind: 'artifact' }],
+        feedback: []
+      },
+      {
+        id: 'design', label: 'Design', index: 1, status: 'complete',
+        subtitle: 'Architecture, data model, and interaction design.',
+        gates: { postElab: 'closed', finalReview: 'closed' }, activeGate: null,
+        units: [
+          { name: 'unit-01-feedback-schema', status: 'completed' },
+          { name: 'unit-02-tool-surface', status: 'completed' }
+        ],
+        knowledge: [
+          { name: 'feedback-model-tradeoffs.md', kind: 'discovery' },
+          { name: 'mcp-tool-survey.md', kind: 'discovery' }
+        ],
+        outputs: [
+          { name: 'architecture.md', kind: 'artifact' },
+          { name: 'state-shape.md', kind: 'artifact' }
+        ],
+        feedback: []
+      },
+      {
+        id: 'product', label: 'Product', index: 2, status: 'complete',
+        subtitle: 'Acceptance criteria, user flows, deliverables.',
+        gates: { postElab: 'closed', finalReview: 'closed' }, activeGate: null,
+        units: [
+          { name: 'unit-01-acceptance-criteria', status: 'completed' },
+          { name: 'unit-02-user-flows', status: 'completed' }
+        ],
+        knowledge: [
+          { name: 'user-persona-research.md', kind: 'discovery' }
+        ],
+        outputs: [
+          { name: 'acceptance-criteria.md', kind: 'artifact' },
+          { name: 'flow-diagrams.md', kind: 'artifact' }
+        ],
+        feedback: [
+          { id: 'fb-prod-1', title: 'Acceptance criteria vague on revisit semantics', body: 'Unit 04 gate criteria are underspecified — should revisit push or create a new branch?', status: 'pending', origin: 'user-visual', author: 'user', visit: 1,
+            target: { kind: 'unit', label: 'unit-02-user-flows', unitName: 'unit-02-user-flows' } },
+          { id: 'fb-prod-2', title: 'Flow diagram missing revisit path', body: 'flow-diagrams.md shows happy-path only — add revisit edge from review gate back to elaborate.', status: 'pending', origin: 'user-visual', author: 'user', visit: 2,
+            target: { kind: 'output', label: 'flow-diagrams.md', outputName: 'flow-diagrams.md' } }
+        ]
+      },
+      {
+        id: 'development', label: 'Development', index: 3, status: 'current',
+        subtitle: 'Build &amp; ship the code that satisfies acceptance criteria.',
+        gates: { postElab: 'closed', finalReview: 'open' }, activeGate: 'finalReview',
+        units: [
+          { name: 'unit-01-feedback-helpers-and-tool',
+            title: 'Feedback file helpers and haiku_feedback tool',
+            type: 'implementation', status: 'completed',
+            depends_on: [],
+            quality_gates: [
+              'typecheck',
+              'test',
+              'writeFeedbackFile creates .haiku/intents/{slug}/stages/{stage}/feedback/NN-{slug}.md with correct frontmatter',
+              'haiku_feedback MCP tool registered in stateToolDefs with full input schema',
+              'all file writes call gitCommitState'
+            ],
+            inputs: ['knowledge/DISCOVERY.md', 'knowledge/DATA-CONTRACTS.md', 'knowledge/ACCEPTANCE-CRITERIA.md', 'features/feedback-crud.feature'],
+            outputs: ['stages/development/artifacts/unit-01-implementation-notes.md'],
+            bolt: 1, hat: 'reviewer',
+            started_at: '2026-04-16T15:08:25Z', hat_started_at: '2026-04-16T15:14:12Z', completed_at: '2026-04-16T15:15:28Z',
+            description: 'Implement the feedback file foundation: helpers in state-tools.ts plus the haiku_feedback MCP tool and handler.' },
+
+          { name: 'unit-02-crud-companion-tools',
+            title: 'CRUD companion tools with author-based guards',
+            type: 'implementation', status: 'completed',
+            depends_on: ['unit-01-feedback-helpers-and-tool'],
+            quality_gates: [
+              'typecheck', 'test',
+              'haiku_feedback_list / _update / _delete / _reject all registered',
+              'author-type guards prevent cross-author mutation',
+              'reject emits status=rejected with reason'
+            ],
+            inputs: ['knowledge/DATA-CONTRACTS.md', 'features/feedback-authority.feature'],
+            outputs: [],
+            bolt: 1, hat: 'reviewer',
+            started_at: '2026-04-16T15:16:00Z', completed_at: '2026-04-16T15:22:14Z',
+            description: 'Add list, update, delete, reject companion tools with author-based authority guards.' },
+
+          { name: 'unit-03-rename-sentry-tool',
+            title: 'Rename the internal sentry tool for consistency',
+            type: 'refactor', status: 'completed',
+            depends_on: ['unit-01-feedback-helpers-and-tool'],
+            quality_gates: ['typecheck', 'test', 'all call sites updated'],
+            inputs: [], outputs: [],
+            bolt: 1, hat: 'engineer',
+            started_at: '2026-04-16T15:23:00Z', completed_at: '2026-04-16T15:25:40Z',
+            description: 'Rename the sentry tool so the public haiku_feedback_* namespace is internally consistent.' },
+
+          { name: 'unit-04-gate-feedback-check',
+            title: 'Structural FSM gate blocking advancement on pending feedback',
+            type: 'implementation', status: 'completed',
+            depends_on: ['unit-01-feedback-helpers-and-tool'],
+            quality_gates: [
+              'typecheck', 'test',
+              'orchestrator reads countPendingFeedback before gate transition',
+              'gate refuses advancement when count > 0',
+              'integration test covers both outcomes'
+            ],
+            inputs: ['knowledge/DISCOVERY.md'],
+            outputs: ['stages/development/artifacts/unit-04-gate-wiring.md'],
+            bolt: 2, hat: 'engineer',
+            started_at: '2026-04-16T15:26:00Z', completed_at: '2026-04-16T15:38:11Z',
+            description: 'Replace soft prompt enforcement with a real structural check in the orchestrator before gate transitions.' },
+
+          { name: 'unit-05-orchestrator-integration',
+            title: 'Wire feedback helpers into existing orchestrator transitions',
+            type: 'implementation', status: 'completed',
+            depends_on: ['unit-02-crud-companion-tools', 'unit-04-gate-feedback-check'],
+            quality_gates: [
+              'typecheck', 'test',
+              'elaborate phase additive-mode writes on visit > 0',
+              'review phase creates feedback from findings'
+            ],
+            inputs: [], outputs: [],
+            bolt: 1, hat: 'engineer',
+            started_at: '2026-04-16T15:40:00Z', completed_at: '2026-04-16T15:48:10Z',
+            description: 'Every state change that should create, close, or clear feedback calls the helpers.' },
+
+          { name: 'unit-06-enforce-iteration-fix',
+            title: 'Scope enforce-iteration glob to current stage only',
+            type: 'bugfix', status: 'completed',
+            depends_on: [],
+            quality_gates: ['typecheck', 'test', 'regression test reproduces the bad case'],
+            inputs: [], outputs: [],
+            bolt: 1, hat: 'engineer',
+            started_at: '2026-04-16T15:49:00Z', completed_at: '2026-04-16T15:53:44Z',
+            description: 'Stop auto-completion when only one stage has units by scoping the glob to the current stage directory.' },
+
+          { name: 'unit-07-external-review-detection',
+            title: 'Branch-merge signal + CLI probe for external providers',
+            type: 'implementation', status: 'completed',
+            depends_on: ['unit-05-orchestrator-integration'],
+            quality_gates: [
+              'typecheck', 'test',
+              'GitHub + GitLab providers implemented',
+              'branch-merge primary, URL-based CLI probe fallback'
+            ],
+            inputs: ['knowledge/external-review-semantics.md'],
+            outputs: ['plugin/providers/github.md', 'plugin/providers/gitlab.md'],
+            bolt: 2, hat: 'integrator',
+            started_at: '2026-04-16T15:55:00Z', completed_at: '2026-04-16T16:12:30Z',
+            description: 'Detect approval via VCS merge; fall back to URL-based CLI probing when merge not available.' },
+
+          { name: 'unit-08-review-server-and-ui',
+            title: 'Local HTTP server + browser-based review UI',
+            type: 'implementation', status: 'completed',
+            depends_on: ['unit-05-orchestrator-integration'],
+            quality_gates: [
+              'typecheck', 'test',
+              'haiku_review boots the HTTP server and opens browser',
+              'route precedence: /review/current before /review/:sessionId',
+              'feedback CRUD operable from the UI'
+            ],
+            inputs: ['knowledge/DATA-CONTRACTS.md'],
+            outputs: ['packages/haiku/src/ui/review-page.tsx'],
+            bolt: 3, hat: 'designer',
+            started_at: '2026-04-16T16:14:00Z', completed_at: '2026-04-16T16:41:58Z',
+            description: 'Give users a first-class visual review surface instead of a terminal-only flow.' }
+        ],
+        knowledge: [
+          { name: 'test-strategy.md', kind: 'discovery', mime: 'markdown',
+            summary: 'Unit + integration coverage strategy for the feedback surface.',
+            body: `# Test Strategy\n\nThree layers:\n\n1. **Unit** — each helper (writeFeedbackFile, readFeedbackFiles, countPendingFeedback, updateFeedbackFile, deleteFeedbackFile) is covered directly.\n2. **Tool** — the haiku_feedback MCP tool is hit via in-process client, verifying author-guards and error shapes.\n3. **Integration** — orchestrator transitions that should open/close/reject feedback are verified end-to-end.\n\nAll three layers run under \`npm test\` with no network or git side-effects. gitCommitState is stubbed in unit layer, real in integration.`,
+            producedBy: ['unit-01-feedback-helpers-and-tool', 'unit-02-crud-companion-tools'] },
+          { name: 'rollback-plan.md', kind: 'discovery', mime: 'markdown',
+            summary: 'Schema rollback + smoke test plan for the feedback file migration.',
+            body: `# Rollback Plan\n\n1. Revert helpers commit.\n2. Delete \`.haiku/intents/*/stages/*/feedback/\` if no longer referenced.\n3. Restore FSM gate logic to pre-structural-check path.\n\nNot yet specified: post-rollback smoke validation (see feedback fb-dev-5).`,
+            producedBy: ['unit-04-gate-feedback-check'] },
+          { name: 'api-shape-notes.md', kind: 'discovery', mime: 'markdown',
+            summary: 'Shape of the haiku_feedback tool input/output JSON.',
+            body: `# API Shape\n\n**Input**: \`{ slug, stage, title, body, origin, author, source_ref? }\`\n**Output**: \`{ feedback_id, file, status }\`\n\nOrigins: adversarial-review, external-pr, user-visual, agent.\nStatuses: pending, addressed, closed, rejected.`,
+            producedBy: ['unit-01-feedback-helpers-and-tool'] },
+          { name: 'feedback-flow.svg', kind: 'diagram', mime: 'svg',
+            summary: 'State diagram of feedback transitions across the FSM.',
+            body: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 220" class="w-full h-auto">
+  <style>
+    .node { fill: #fff; stroke: #0ea5e9; stroke-width: 2; }
+    .node-text { font: bold 12px system-ui; fill: #0f172a; text-anchor: middle; }
+    .arrow { stroke: #94a3b8; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+    .arrow-text { font: 10px system-ui; fill: #64748b; text-anchor: middle; }
+    .pending { fill: #fef3c7; stroke: #f59e0b; }
+    .addressed { fill: #dbeafe; stroke: #3b82f6; }
+    .closed { fill: #dcfce7; stroke: #22c55e; }
+    .rejected { fill: #f1f5f9; stroke: #94a3b8; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+  <rect x="20"  y="80"  width="110" height="60" rx="8" class="node pending"/>
+  <text x="75"  y="115" class="node-text">pending</text>
+  <rect x="180" y="20"  width="110" height="60" rx="8" class="node addressed"/>
+  <text x="235" y="55"  class="node-text">addressed</text>
+  <rect x="180" y="140" width="110" height="60" rx="8" class="node rejected"/>
+  <text x="235" y="175" class="node-text">rejected</text>
+  <rect x="360" y="80"  width="110" height="60" rx="8" class="node closed"/>
+  <text x="415" y="115" class="node-text">closed</text>
+  <path class="arrow" d="M 130 105 Q 155 70 180 55"/>
+  <text x="160" y="75" class="arrow-text">fix landed</text>
+  <path class="arrow" d="M 130 120 Q 155 155 180 175"/>
+  <text x="160" y="155" class="arrow-text">dismissed</text>
+  <path class="arrow" d="M 290 55 Q 325 80 360 105"/>
+  <text x="325" y="70" class="arrow-text">verified</text>
+  <path class="arrow" d="M 290 175 Q 325 145 360 115"/>
+  <text x="325" y="145" class="arrow-text">overridden</text>
+</svg>`,
+            producedBy: ['unit-01-feedback-helpers-and-tool', 'unit-04-gate-feedback-check'] }
+        ],
+        outputs: [
+          { name: 'CHANGELOG.md excerpt', kind: 'artifact', mime: 'markdown',
+            summary: 'Release notes entry for the universal feedback model.',
+            body: `## [unreleased]\n\n### Added\n- **Universal feedback model** — every review-phase finding is persisted to \`.haiku/intents/{slug}/stages/{stage}/feedback/NN-{slug}.md\`.\n- \`haiku_feedback\` MCP tool plus CRUD companions (\`_list\`, \`_update\`, \`_delete\`, \`_reject\`).\n- Browser-based review UI served by \`haiku_review\`.\n\n### Changed\n- FSM gate now blocks advancement structurally when pending feedback exists.`,
+            producedBy: ['unit-08-review-server-and-ui'] },
+          { name: 'test-summary.md', kind: 'artifact', mime: 'markdown',
+            summary: '442 tests passing across 8 units; breakdown by layer.',
+            body: `# Test Summary\n\n- **Unit tests:** 312 passing\n- **Integration tests:** 98 passing\n- **UI tests:** 32 passing\n\nTotal: **442 / 442** passing on last run.\n\nNo known flakes. Coverage held at ~87% for packages/haiku.`,
+            producedBy: ['unit-01-feedback-helpers-and-tool', 'unit-02-crud-companion-tools', 'unit-04-gate-feedback-check'] },
+          { name: 'dev-handoff.md', kind: 'artifact', mime: 'markdown',
+            summary: 'Ops-ready summary with deployment, monitoring, and rollback pointers.',
+            body: `# Development Handoff\n\n**Status:** ready for ops.\n\n- Feature flag: none — the feedback model is on by default once shipped.\n- Deployment: bundled with next plugin release; no separate artifact.\n- Monitoring: log \`feedback_id\` on every tool invocation.\n- Rollback: see \`knowledge/rollback-plan.md\`.`,
+            producedBy: ['unit-08-review-server-and-ui'] },
+          { name: 'review-ui-wireframe.html', kind: 'wireframe', mime: 'html',
+            summary: 'Interactive wireframe of the review pane — stepper + feedback sidebar.',
+            body: `<!DOCTYPE html><html><head><style>body{font-family:system-ui;margin:0;padding:16px;background:#f8fafc;color:#0f172a}.bar{display:flex;gap:6px;justify-content:center;padding:12px;border-bottom:2px solid #e2e8f0}.dot{width:22px;height:22px;border-radius:50%;background:#22c55e;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}.dot.cur{background:#14b8a6;transform:rotate(45deg)}.dot.cur span{transform:rotate(-45deg)}.dot.soon{background:#fff;color:#94a3b8;border:2px solid #cbd5e1}.line{width:28px;height:2px;background:#94a3b8;align-self:center}.main{display:grid;grid-template-columns:220px 1fr;gap:14px;margin-top:16px}.side{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px;font-size:12px}.fb{padding:8px;border-left:3px solid #f59e0b;background:#fffbeb;border-radius:4px;margin-bottom:6px}.content{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px;font-size:13px}h3{margin:0 0 8px 0;font-size:13px}</style></head><body><div class="bar"><div class="dot">✓</div><div class="line"></div><div class="dot">✓</div><div class="line"></div><div class="dot">✓</div><div class="line"></div><div class="dot cur"><span>4</span></div><div class="line"></div><div class="dot soon">5</div></div><div class="main"><div class="side"><h3>Feedback (2)</h3><div class="fb"><b>XSS in renderer</b><br/><small>security-reviewer</small></div><div class="fb"><b>postMessage wildcard</b><br/><small>security-reviewer</small></div></div><div class="content"><h3>Development</h3><p>Final-review gate open. 8 units completed, 2 pending findings.</p></div></div></body></html>`,
+            producedBy: ['unit-08-review-server-and-ui'] },
+          { name: 'stepper-preview.png', kind: 'artifact', mime: 'image',
+            summary: 'Pixel-preview of the gate stepper at the final-review stage.',
+            src: 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120"><rect width="100%" height="100%" fill="#f1f5f9"/><g font-family="system-ui" font-size="11"><circle cx="50" cy="50" r="14" fill="#22c55e"/><text x="50" y="54" text-anchor="middle" fill="#fff" font-weight="700">✓</text><line x1="64" y1="50" x2="96" y2="50" stroke="#4ade80" stroke-width="2"/><circle cx="110" cy="50" r="14" fill="#22c55e"/><text x="110" y="54" text-anchor="middle" fill="#fff" font-weight="700">✓</text><line x1="124" y1="50" x2="156" y2="50" stroke="#4ade80" stroke-width="2"/><circle cx="170" cy="50" r="14" fill="#22c55e"/><text x="170" y="54" text-anchor="middle" fill="#fff" font-weight="700">✓</text><line x1="184" y1="50" x2="216" y2="50" stroke="#4ade80" stroke-width="2"/><rect x="216" y="36" width="28" height="28" rx="4" fill="#14b8a6" transform="rotate(45 230 50)"/><text x="230" y="54" text-anchor="middle" fill="#fff" font-weight="700">4</text><line x1="244" y1="50" x2="276" y2="50" stroke="#cbd5e1" stroke-width="2"/><circle cx="290" cy="50" r="14" fill="#fff" stroke="#cbd5e1" stroke-width="2"/><text x="290" y="54" text-anchor="middle" fill="#94a3b8" font-weight="700">5</text><text x="50"  y="92" text-anchor="middle" fill="#16a34a">Inception</text><text x="110" y="92" text-anchor="middle" fill="#16a34a">Design</text><text x="170" y="92" text-anchor="middle" fill="#16a34a">Product</text><text x="230" y="92" text-anchor="middle" fill="#0d9488" font-weight="700">Development</text><text x="230" y="106" text-anchor="middle" fill="#14b8a6" font-size="9">FINAL-REVIEW GATE</text><text x="290" y="92" text-anchor="middle" fill="#94a3b8">Operations</text></g></svg>`),
+            producedBy: ['unit-08-review-server-and-ui'] },
+          { name: 'threat-model.pdf', kind: 'artifact', mime: 'pdf',
+            summary: 'Signed threat-model export from the adversarial review.',
+            src: 'https://www.africau.edu/images/default/sample.pdf',
+            producedBy: ['unit-07-external-review-detection'] }
+        ],
+        feedback: [
+          { id: 'fb-dev-1', title: 'XSS in archetype renderer', body: 'Unescaped user input reaches HTML sink.', status: 'pending', origin: 'adversarial-review', author: 'security-reviewer', visit: 2,
+            target: { kind: 'file', label: 'templates/design-direction.ts:275', unitName: 'unit-08-review-server-and-ui', line: 275 } },
+          { id: 'fb-dev-2', title: 'postMessage wildcard origin', body: "Uses '*' as targetOrigin — any origin can read postMessage payload.", status: 'pending', origin: 'adversarial-review', author: 'security-reviewer', visit: 2,
+            target: { kind: 'file', label: 'ext-apps-shim.ts:79', unitName: 'unit-08-review-server-and-ui', line: 79 } },
+          { id: 'fb-dev-3', title: 'Missing rollback script', body: 'DB migration needs rollback for production safety.', status: 'addressed', origin: 'external-pr', author: 'user', visit: 1,
+            target: { kind: 'unit', label: 'unit-05-orchestrator-integration', unitName: 'unit-05-orchestrator-integration' } },
+          { id: 'fb-dev-4', title: 'Type error in handler', body: 'emitTelemetry passes number where string expected.', status: 'closed', origin: 'agent', author: 'parent-agent', visit: 1,
+            target: { kind: 'file', label: 'telemetry.ts:42', unitName: 'unit-01-feedback-helpers-and-tool', line: 42 } },
+          { id: 'fb-dev-5', title: 'Rollback plan missing smoke tests', body: 'rollback-plan.md lists steps but doesn\'t specify post-rollback validation.', status: 'pending', origin: 'adversarial-review', author: 'ops-reviewer', visit: 2,
+            target: { kind: 'knowledge', label: 'rollback-plan.md:L3', knowledgeName: 'rollback-plan.md', annotation: { line: 3 } } },
+          { id: 'fb-dev-7', title: '"addressed" → "closed" edge needs audit log', body: 'Verified-transition should emit an audit entry so we can trace who closed what.', status: 'pending', origin: 'adversarial-review', author: 'security-reviewer', visit: 2,
+            target: { kind: 'knowledge', label: 'feedback-flow.svg @ addressed→closed', knowledgeName: 'feedback-flow.svg', annotation: { x: 0.52, y: 0.38 } } },
+          { id: 'fb-dev-8', title: 'Wireframe missing revisit button', body: 'Wireframe shows Approve + Request Changes, but missing explicit "revisit →" action.', status: 'pending', origin: 'user-visual', author: 'user', visit: 2,
+            target: { kind: 'output', label: 'review-ui-wireframe.html @ sidebar', outputName: 'review-ui-wireframe.html', annotation: { region: 'sidebar' } } },
+          { id: 'fb-dev-9', title: 'Threat model signature unreadable', body: 'Signature block on page 2 is blurry in the export.', status: 'addressed', origin: 'external-pr', author: 'user', visit: 1,
+            target: { kind: 'output', label: 'threat-model.pdf p.2', outputName: 'threat-model.pdf', annotation: { page: 2 } } },
+          { id: 'fb-dev-6', title: 'CHANGELOG entry too terse', body: 'Users need more context on the feedback schema migration.', status: 'addressed', origin: 'user-visual', author: 'user', visit: 1,
+            target: { kind: 'output', label: 'CHANGELOG.md excerpt', outputName: 'CHANGELOG.md excerpt' } }
+        ]
+      },
+      {
+        id: 'operations', label: 'Operations', index: 4, status: 'upcoming',
+        subtitle: 'Deploy, monitor, and operate the shipped system.',
+        gates: { postElab: 'pending', finalReview: 'pending' }, activeGate: null,
+        units: [], knowledge: [], outputs: [], feedback: []
+      },
+      {
+        id: 'security', label: 'Security', index: 5, status: 'upcoming',
+        subtitle: 'Adversarial review, hardening, and compliance.',
+        gates: { postElab: 'pending', finalReview: 'pending' }, activeGate: null,
+        units: [], knowledge: [], outputs: [], feedback: []
+      }
+    ];
+
+    let activeTab = 'overview';
+    const expandedUnits = new Set();
+    const expandedKnowledge = new Set();
+    const expandedOutputs = new Set();
+    let focusedFbId = null;
+    let annContext = null;
+    const SESSION_ID = (document.getElementById('session-id') && document.getElementById('session-id').textContent) || 'default';
+
+    // ==== Seen tracking (localStorage by session + artifact) ====
+    function hashString(str) {
+      let h = 0;
+      for (let i = 0; i < str.length; i++) { h = ((h << 5) - h) + str.charCodeAt(i); h |= 0; }
+      return Math.abs(h).toString(16).padStart(6, '0');
+    }
+    function shaOf(artifact) { return 'sha-' + hashString(JSON.stringify(artifact)); }
+    function artifactKey(kind, stageId, name) { return `${kind}::${stageId}::${name}`; }
+
+    function loadSeen() {
+      try { return JSON.parse(localStorage.getItem('haiku-seen-' + SESSION_ID) || '{}'); }
+      catch (e) { return {}; }
+    }
+    function saveSeen(map) { localStorage.setItem('haiku-seen-' + SESSION_ID, JSON.stringify(map)); }
+
+    function seenState(key, currentSha) {
+      const map = loadSeen();
+      const prev = map[key];
+      if (!prev) return 'unseen';
+      if (prev !== currentSha) return 'changed';
+      return 'seen';
+    }
+    function markSeen(key, currentSha) {
+      const map = loadSeen();
+      map[key] = currentSha;
+      saveSeen(map);
+    }
+
+    function renderStateBadge(state) {
+      if (state === 'unseen') return `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-sky-500 text-white"><span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>NEW</span>`;
+      if (state === 'changed') return `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-500 text-white"><span class="w-1.5 h-1.5 rounded-full bg-white"></span>CHANGED</span>`;
+      return '';
+    }
+
+    function toggleUnit(stageId, unitName) {
+      const key = stageId + '::' + unitName;
+      if (expandedUnits.has(key)) expandedUnits.delete(key);
+      else expandedUnits.add(key);
+      // Mark seen on expand
+      const s = stage(stageId);
+      const u = s.units.find(x => x.name === unitName);
+      if (u) markSeen(artifactKey('unit', stageId, unitName), shaOf(u));
+      selectStage(selectedStageId);
+    }
+
+    function markArtifactSeen(kind, stageId, name) {
+      const s = stage(stageId);
+      const items = kind === 'knowledge' ? s.knowledge : kind === 'output' ? s.outputs : s.units;
+      const item = items.find(x => x.name === name);
+      if (item) markSeen(artifactKey(kind, stageId, name), shaOf(item));
+      selectStage(selectedStageId);
+    }
+
+    function resetSeen() {
+      if (!confirm('Clear seen state? Everything will show as NEW again.')) return;
+      localStorage.removeItem('haiku-seen-' + SESSION_ID);
+      selectStage(selectedStageId);
+    }
+
+    function jumpToNextUnseen(kind, stageId) {
+      const s = stage(stageId);
+      const items = kind === 'unit' ? s.units : kind === 'knowledge' ? s.knowledge : s.outputs;
+      const next = items.find(x => seenState(artifactKey(kind, stageId, x.name), shaOf(x)) !== 'seen');
+      if (!next) return;
+      if (kind === 'unit') expandedUnits.add(stageId + '::' + next.name);
+      selectStage(selectedStageId);
+      setTimeout(() => {
+        const sel = kind === 'unit' ? `[data-unit-card="${CSS.escape(next.name)}"]`
+                  : kind === 'knowledge' ? `[data-knowledge="${CSS.escape(next.name)}"]`
+                  : `[data-output="${CSS.escape(next.name)}"]`;
+        const el = document.querySelector(sel);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('unit-flash');
+          setTimeout(() => el.classList.remove('unit-flash'), 1400);
+        }
+      }, 60);
+    }
+
+    const CURRENT_STAGE_ID = 'development';
+    let selectedStageId = CURRENT_STAGE_ID;
+    let reviewMode = 'gate'; // 'gate' (FSM paused, approve advances) | 'user' (ad-hoc, approve is no-op)
+
+    // ==== Helpers ====
+    const stage = id => STAGES.find(s => s.id === id);
+    const pendingCount = s => s.feedback.filter(f => f.status === 'pending').length;
+
+    function earliestUnaddressedStage() {
+      return STAGES.find(s => pendingCount(s) > 0) || null;
+    }
+
+    const STATUS_STYLES = {
+      pending:   { border: 'border-l-amber-400', badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', label: 'pending' },
+      addressed: { border: 'border-l-blue-400',  badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',     label: 'addressed' },
+      closed:    { border: 'border-l-green-400', badge: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', label: 'closed' },
+      rejected:  { border: 'border-l-gray-400',  badge: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400',         label: 'rejected' }
+    };
+    const ORIGIN_STYLES = {
+      'adversarial-review': 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400 border-rose-200 dark:border-rose-800',
+      'external-pr':        'bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400 border-violet-200 dark:border-violet-800',
+      'user-visual':        'bg-sky-50 text-sky-600 dark:bg-sky-900/20 dark:text-sky-400 border-sky-200 dark:border-sky-800',
+      'agent':              'bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400 border-teal-200 dark:border-teal-800'
+    };
+
+    // ==== Renderers ====
+    const GATE_LABEL = { postElab: 'Post-Elab Gate', finalReview: 'Final Review Gate' };
+
+    function renderSidebar(s) {
+      const isCurrent = s.id === CURRENT_STAGE_ID;
+      const pending = pendingCount(s);
+
+      document.getElementById('sb-stage-title').textContent = s.label;
+      const badge = document.getElementById('sb-stage-badge');
+      badge.textContent = isCurrent ? 'current' : (s.status === 'complete' ? 'complete' : 'upcoming');
+      badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ' + (
+        isCurrent ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400'
+        : s.status === 'complete' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+        : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+      );
+
+      // Gate badge
+      const gateBadge = document.getElementById('sb-gate-badge');
+      if (s.activeGate) {
+        gateBadge.textContent = GATE_LABEL[s.activeGate] + ' · OPEN';
+        gateBadge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
+        gateBadge.style.display = 'inline-flex';
+      } else if (s.status === 'complete') {
+        gateBadge.textContent = 'gates closed';
+        gateBadge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400';
+        gateBadge.style.display = 'inline-flex';
+      } else {
+        gateBadge.style.display = 'none';
+      }
+
+      // Gate selector — only on current stage
+      const sel = document.getElementById('sb-gate-selector');
+      if (isCurrent) {
+        sel.classList.remove('hidden');
+        sel.classList.add('flex');
+        const activeCls = 'bg-teal-600 text-white';
+        const inactiveCls = 'bg-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800';
+        document.getElementById('gate-postElab').className = 'px-2 py-0.5 text-[10px] font-semibold ' + (s.activeGate === 'postElab' ? activeCls : inactiveCls);
+        document.getElementById('gate-finalReview').className = 'px-2 py-0.5 text-[10px] font-semibold ' + (s.activeGate === 'finalReview' ? activeCls : inactiveCls);
+      } else {
+        sel.classList.add('hidden');
+        sel.classList.remove('flex');
+      }
+
+      const fbCount = document.getElementById('sb-feedback-count');
+      fbCount.textContent = pending;
+      fbCount.className = 'ml-1 px-1.5 py-0.5 rounded-full text-[10px] ' + (pending > 0
+        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+        : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400');
+
+      // Feedback list
+      const list = document.getElementById('sb-feedback-list');
+      if (s.feedback.length === 0) {
+        list.innerHTML = `
+          <div class="flex flex-col items-center justify-center py-10 text-center">
+            <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-2">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            </div>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">No feedback yet</p>
+            <p class="text-[10px] text-gray-400 mt-0.5">Leave a comment below to add some.</p>
+          </div>`;
+      } else {
+        const byVisit = {};
+        s.feedback.forEach(f => { (byVisit[f.visit] = byVisit[f.visit] || []).push(f); });
+        const visitKeys = Object.keys(byVisit).sort((a, b) => b - a);
+        list.innerHTML = `
+          <div class="flex gap-1.5 mb-2">
+            <button class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Pending (${pending})</button>
+            <button class="px-2 py-0.5 rounded-full text-[10px] font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">All (${s.feedback.length})</button>
+          </div>
+          ${visitKeys.map(v => `
+            <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mt-2">Visit ${v}</p>
+            ${byVisit[v].map((f, idx) => {
+              const st = STATUS_STYLES[f.status];
+              const origin = ORIGIN_STYLES[f.origin] || '';
+              const dim = (f.status === 'closed' || f.status === 'rejected') ? 'opacity-60' : '';
+              const markerNum = s.feedback.indexOf(f) + 1;
+              const targetLabel = f.target ? f.target.label : '';
+              const targetIconMap = { file: '&#x1F4C4;', unit: '&#x1F4E6;', knowledge: '&#x1F9E0;', output: '&#x1F4E4;' };
+              const targetIcon = f.target ? (targetIconMap[f.target.kind] || '&#x1F4CC;') : '';
+              return `
+                <div data-fb-id="${f.id}" onclick="highlightFeedback('${f.id}')" class="fb-card rounded-lg border border-gray-200 dark:border-gray-700 border-l-[3px] ${st.border} bg-white dark:bg-gray-900 p-2.5 cursor-pointer hover:border-teal-400 dark:hover:border-teal-500 transition-colors overflow-hidden ${dim} ${f.id === focusedFbId ? 'fb-focused' : ''}">
+                  <div class="flex items-start gap-2 mb-1 min-w-0">
+                    <span class="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full bg-teal-500 text-white text-[10px] font-bold">${markerNum}</span>
+                    <span class="flex-1 min-w-0 text-xs font-semibold text-gray-900 dark:text-gray-100 leading-tight break-words">${f.title}</span>
+                    <span class="shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-semibold ${st.badge}">${st.label}</span>
+                  </div>
+                  <p class="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-snug ml-7 break-words">${f.body}</p>
+                  ${targetLabel ? `
+                    <div class="ml-7 mt-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 text-[10px] font-mono text-gray-600 dark:text-gray-300 max-w-full min-w-0">
+                      <span class="shrink-0">${targetIcon}</span>
+                      <span class="truncate min-w-0">${targetLabel}</span>
+                    </div>` : ''}
+                  <div class="flex items-center gap-1.5 mt-1.5 ml-7 min-w-0">
+                    <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-medium border ${origin}">${f.origin}</span>
+                    <span class="text-[9px] text-gray-400 truncate min-w-0 flex-1">${f.author}</span>
+                  </div>
+                  <!-- Lifecycle actions -->
+                  <div class="flex items-center gap-1 mt-1.5 ml-7 pt-1.5 border-t border-gray-100 dark:border-gray-800">
+                    ${f.status === 'pending' ? `
+                      <button onclick="event.stopPropagation(); setFeedbackStatus('${f.id}', 'rejected')" title="Dismiss — not a real issue" class="text-[10px] font-semibold px-2 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">Dismiss</button>
+                    ` : ''}
+                    ${f.status === 'addressed' ? `
+                      <button onclick="event.stopPropagation(); setFeedbackStatus('${f.id}', 'closed')" title="Verify fix and close" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-green-600 hover:bg-green-700 text-white">Verify &amp; Close</button>
+                      <button onclick="event.stopPropagation(); setFeedbackStatus('${f.id}', 'pending')" title="Re-open" class="text-[10px] font-semibold px-2 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">Re-open</button>
+                    ` : ''}
+                    ${(f.status === 'rejected' || f.status === 'closed') ? `
+                      <button onclick="event.stopPropagation(); setFeedbackStatus('${f.id}', 'pending')" title="Re-open" class="text-[10px] font-semibold px-2 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">Re-open</button>
+                    ` : ''}
+                    <span class="text-[9px] text-gray-400 ml-auto italic">${f.status === 'pending' ? 'agent marks addressed when fix lands' : ''}</span>
+                  </div>
+                </div>`;
+            }).join('')}
+          `).join('')}
+        `;
+      }
+
+      // Single-button logic: Approve XOR Request Changes (never both)
+      // - Any pending feedback (globally) OR typed-but-unsubmitted text → Request Changes
+      // - Nothing pending AND textarea empty → Approve (current stage only; disabled elsewhere)
+      const actions = document.getElementById('sb-actions');
+      const hasPending = STAGES.some(x => pendingCount(x) > 0);
+      const typed = (document.getElementById('sb-comment').value || '').trim();
+      const hasTyped = typed.length > 0;
+      const requestMode = hasPending || hasTyped;
+
+      if (requestMode) {
+        const label = isCurrent ? 'Request Changes' : `Request Changes on ${s.label}`;
+        actions.innerHTML = `
+          <button onclick="onRequestChanges()" class="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors focus:ring-2 focus:ring-amber-500 focus:outline-none">${label}</button>`;
+      } else if (isCurrent) {
+        const gateActive = reviewMode === 'gate';
+        const approveClasses = gateActive
+          ? 'bg-green-600 hover:bg-green-700 text-white focus:ring-green-500'
+          : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed focus:ring-gray-400';
+        const approveLabel = gateActive ? 'Approve' : 'Approve (no-op outside gate)';
+        actions.innerHTML = `
+          <button onclick="onApprove()" class="w-full px-3 py-2 text-xs font-semibold rounded-lg ${approveClasses} transition-colors focus:ring-2 focus:outline-none" title="${gateActive ? 'Advance FSM to next stage' : 'No gate active'}">${approveLabel}</button>`;
+      } else {
+        // Non-current stage, nothing pending, nothing typed — disabled Request Changes with hint
+        actions.innerHTML = `
+          <button disabled class="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed">Add feedback above to enable</button>`;
+      }
+
+      // Hint line reflects current action
+      const earliest = earliestUnaddressedStage();
+      const hint = document.getElementById('sb-revisit-hint');
+      if (requestMode) {
+        const target = earliest ? earliest.label : s.label;
+        hint.innerHTML = `Will trigger <strong class="text-amber-600 dark:text-amber-400">haiku_revisit → ${target}</strong> <span class="text-gray-400">(earliest unaddressed)</span>.`;
+      } else if (isCurrent && reviewMode === 'gate') {
+        hint.innerHTML = `No feedback pending — approving advances the FSM to the next stage.`;
+      } else if (isCurrent) {
+        hint.innerHTML = `Review opened outside a gate. Type feedback above or leave — Approve here is a no-op.`;
+      } else {
+        hint.innerHTML = `Type feedback above to revisit <strong>${s.label}</strong>, or click into another stage.`;
+      }
+    }
+
+    function renderMain(s) {
+      const isCurrent = s.id === CURRENT_STAGE_ID;
+      document.getElementById('main-stage-title').textContent = s.label;
+      document.getElementById('main-stage-subtitle').innerHTML = s.subtitle;
+
+      const banner = document.getElementById('main-stage-banner');
+      const mb = document.getElementById('main-stage-badge');
+      if (isCurrent) {
+        banner.className = 'mb-4 flex items-center gap-3 px-4 py-3 rounded-lg border border-teal-200 dark:border-teal-900/60 bg-teal-50 dark:bg-teal-900/20';
+        mb.textContent = 'current';
+        mb.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-600 text-white';
+      } else if (s.status === 'complete') {
+        banner.className = 'mb-4 flex items-center gap-3 px-4 py-3 rounded-lg border border-green-200 dark:border-green-900/60 bg-green-50 dark:bg-green-900/20';
+        mb.textContent = 'complete';
+        mb.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-600 text-white';
+      } else {
+        banner.className = 'mb-4 flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40';
+        mb.textContent = 'upcoming';
+        mb.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-500 text-white';
+      }
+
+      // Gate pill in banner
+      const gatePill = document.getElementById('main-gate-pill');
+      if (s.activeGate) {
+        gatePill.textContent = GATE_LABEL[s.activeGate];
+        gatePill.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-300 dark:border-amber-700';
+        gatePill.style.display = 'inline-flex';
+      } else if (s.status === 'complete') {
+        gatePill.textContent = 'All gates closed';
+        gatePill.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
+        gatePill.style.display = 'inline-flex';
+      } else {
+        gatePill.style.display = 'none';
+      }
+
+      // Active tab styling
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        const active = btn.dataset.tab === activeTab;
+        btn.className = 'tab-btn px-3 py-2 text-xs ' + (active
+          ? 'font-semibold border-b-2 border-teal-500 text-teal-600 dark:text-teal-400'
+          : 'font-medium text-gray-500 dark:text-gray-400 border-b-2 border-transparent hover:text-gray-700 dark:hover:text-gray-300');
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+
+      const content = document.getElementById('main-stage-content');
+      if (s.status === 'upcoming') {
+        content.innerHTML = `
+          <div class="bg-white dark:bg-gray-900 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-8 text-center">
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">${s.label} hasn't started yet</p>
+            <p class="text-xs text-gray-400 mt-1">You can still leave feedback — it'll queue for when this stage runs.</p>
+          </div>`;
+        return;
+      }
+
+      switch (activeTab) {
+        case 'overview':   content.innerHTML = renderOverview(s); break;
+        case 'units':      content.innerHTML = renderUnits(s); break;
+        case 'knowledge':  content.innerHTML = renderKnowledge(s); break;
+        case 'outputs':    content.innerHTML = renderOutputs(s); break;
+      }
+    }
+
+    // ---- Per-tab renderers ----
+
+    function renderOverview(s) {
+      const unitFeedbackMap = buildUnitFeedbackMap(s);
+      return `
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1.5">Stage Summary <span class="ml-1 font-normal normal-case text-gray-400">(from studio definition)</span></p>
+          <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">${s.subtitle}</p>
+        </div>
+
+        ${renderUnitsCard(s, unitFeedbackMap, { compact: true, showTabLink: true })}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          ${renderKnowledgeCard(s, { compact: true, showTabLink: true })}
+          ${renderOutputsCard(s, { compact: true, showTabLink: true })}
+        </div>
+      `;
+    }
+
+    function renderUnits(s) {
+      const unitFeedbackMap = buildUnitFeedbackMap(s);
+      if (s.units.length === 0) {
+        return `<div class="bg-white dark:bg-gray-900 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-8 text-center">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">No units in ${s.label}.</p>
+        </div>`;
+      }
+      const totalSeen = s.units.filter(u => seenState(artifactKey('unit', s.id, u.name), shaOf(u)) === 'seen').length;
+      const unseen = s.units.length - totalSeen;
+      return `
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2 text-xs">
+            <span class="font-semibold text-gray-700 dark:text-gray-200">Units</span>
+            <span class="text-gray-400">·</span>
+            <span class="font-mono text-gray-500 dark:text-gray-400">${totalSeen}/${s.units.length} seen</span>
+          </div>
+          ${unseen > 0 ? `<button onclick="jumpToNextUnseen('unit', '${s.id}')" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-teal-600 hover:bg-teal-700 text-white focus:ring-2 focus:ring-teal-500 focus:outline-none transition-colors">Next unseen (${unseen}) →</button>` : `<span class="text-[10px] text-green-600 dark:text-green-400 font-semibold">✓ All seen</span>`}
+        </div>
+        <div class="space-y-3">
+          ${s.units.map((u, idx) => renderUnitCard(s, u, idx, unitFeedbackMap)).join('')}
+        </div>`;
+    }
+
+    const TYPE_BADGE = {
+      implementation: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800',
+      refactor:       'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 border-purple-200 dark:border-purple-800',
+      bugfix:         'bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400 border-rose-200 dark:border-rose-800',
+      backend:        'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+      research:       'bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400 border-sky-200 dark:border-sky-800',
+      docs:           'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+    };
+
+    function formatDuration(startedISO, completedISO) {
+      if (!startedISO || !completedISO) return null;
+      const ms = new Date(completedISO) - new Date(startedISO);
+      if (isNaN(ms) || ms < 0) return null;
+      const mins = Math.round(ms / 60000);
+      if (mins < 60) return `${mins}m`;
+      const hrs = Math.floor(mins / 60);
+      const r = mins % 60;
+      return r === 0 ? `${hrs}h` : `${hrs}h ${r}m`;
+    }
+
+    function renderUnitCard(s, u, idx, unitFeedbackMap) {
+      const annotations = unitFeedbackMap[u.name] || [];
+      const state = seenState(artifactKey('unit', s.id, u.name), shaOf(u));
+      const stateBadge = renderStateBadge(state);
+      const expanded = expandedUnits.has(s.id + '::' + u.name);
+      const typeBadgeCls = (u.type && TYPE_BADGE[u.type]) || 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border-gray-200 dark:border-gray-700';
+      const duration = formatDuration(u.started_at, u.completed_at);
+      // In final-review mode, OR when unit is completed, quality gates are PASSED (unreachable state otherwise)
+      const gatesPassed = u.status === 'completed' || s.activeGate === 'finalReview';
+
+      return `
+        <div data-unit-card="${u.name}" class="unit-card bg-white dark:bg-gray-900 rounded-lg border-2 ${state === 'unseen' ? 'border-sky-300 dark:border-sky-800' : state === 'changed' ? 'border-amber-300 dark:border-amber-700' : 'border-gray-200 dark:border-gray-700'} overflow-hidden">
+          <!-- Header row -->
+          <button type="button" onclick="toggleUnit('${s.id}', '${u.name}')" class="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+            <span class="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] font-bold font-mono mt-0.5">${String(idx + 1).padStart(2, '0')}</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-tight break-words">${u.title || u.name}</span>
+                ${stateBadge}
+                ${u.type ? `<span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border ${typeBadgeCls}">${u.type}</span>` : ''}
+              </div>
+              <p class="text-[11px] font-mono text-gray-400 dark:text-gray-500 truncate mt-0.5">${u.name}</p>
+              ${u.description ? `<p class="text-xs text-gray-600 dark:text-gray-400 leading-snug mt-1 ${expanded ? '' : 'line-clamp-1'}">${u.description}</p>` : ''}
+            </div>
+            <div class="shrink-0 flex items-center gap-2 mt-0.5">
+              ${annotations.length > 0 ? `<span class="inline-flex items-center gap-0.5">${annotations.map(a => {
+                const c = a.f.status === 'pending' ? 'bg-amber-500 text-white' : a.f.status === 'addressed' ? 'bg-blue-500 text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-600';
+                return `<span title="${a.f.title}" class="inline-flex items-center justify-center w-5 h-5 rounded-full ${c} text-[10px] font-bold">${a.idx}</span>`;
+              }).join('')}</span>` : ''}
+              <span class="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">${u.status}</span>
+              <svg class="w-4 h-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+          </button>
+
+          ${expanded ? `
+            <!-- Details -->
+            <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-3 space-y-3 bg-gray-50/50 dark:bg-gray-900/50">
+              ${u.description ? `
+                <section>
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">Description</p>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">${u.description}</p>
+                </section>` : ''}
+
+              ${u.quality_gates && u.quality_gates.length > 0 ? `
+                <section>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Quality Gates</p>
+                    ${gatesPassed
+                      ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">all passed</span>`
+                      : `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">pending verification</span>`}
+                  </div>
+                  <ul class="space-y-1">
+                    ${u.quality_gates.map(g => `
+                      <li class="flex items-start gap-2 text-xs ${gatesPassed ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400'}">
+                        <span class="shrink-0 mt-0.5">${gatesPassed
+                          ? '<svg class="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>'
+                          : '<span class="w-3.5 h-3.5 rounded-full border border-gray-300 dark:border-gray-600 inline-block"></span>'}</span>
+                        <span class="leading-snug font-mono text-[11px]">${g}</span>
+                      </li>`).join('')}
+                  </ul>
+                </section>` : ''}
+
+              <section class="grid grid-cols-2 gap-3">
+                ${u.hat ? `
+                  <div>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">Hat</p>
+                    <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400 border border-teal-200 dark:border-teal-800">${u.hat}</span>
+                  </div>` : ''}
+                ${u.bolt !== undefined ? `
+                  <div>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">Bolt${duration ? ' · ' + duration : ''}</p>
+                    <p class="text-xs font-mono text-gray-700 dark:text-gray-300">iteration ${u.bolt}</p>
+                  </div>` : ''}
+              </section>
+
+              ${u.depends_on && u.depends_on.length > 0 ? `
+                <section>
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1.5">Depends on</p>
+                  <div class="flex flex-wrap gap-1">
+                    ${u.depends_on.map(d => `<button onclick="event.stopPropagation(); scrollToUnit('${s.id}','${d}')" class="px-1.5 py-0.5 rounded font-mono text-[10px] bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-teal-400 dark:hover:border-teal-500 transition-colors truncate max-w-full">${d}</button>`).join('')}
+                  </div>
+                </section>` : ''}
+
+              ${(u.inputs && u.inputs.length > 0) || (u.outputs && u.outputs.length > 0) ? `
+                <section class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  ${u.inputs && u.inputs.length > 0 ? `
+                    <div>
+                      <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1.5">Inputs <span class="text-gray-400 font-normal">(${u.inputs.length})</span></p>
+                      <ul class="space-y-1">
+                        ${u.inputs.map(f => `<li class="flex items-center gap-1.5 text-[11px] font-mono text-gray-600 dark:text-gray-400 truncate" title="${f}"><span class="shrink-0 text-sky-500">&#x1F9E0;</span><span class="truncate">${f}</span></li>`).join('')}
+                      </ul>
+                    </div>` : ''}
+                  ${u.outputs && u.outputs.length > 0 ? `
+                    <div>
+                      <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1.5">Outputs <span class="text-gray-400 font-normal">(${u.outputs.length})</span></p>
+                      <ul class="space-y-1">
+                        ${u.outputs.map(f => `<li class="flex items-center gap-1.5 text-[11px] font-mono text-gray-600 dark:text-gray-400 truncate" title="${f}"><span class="shrink-0 text-violet-500">&#x1F4E6;</span><span class="truncate">${f}</span></li>`).join('')}
+                      </ul>
+                    </div>` : ''}
+                </section>` : ''}
+
+              ${(u.started_at || u.completed_at) ? `
+                <section>
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">Timeline</p>
+                  <div class="text-[11px] font-mono text-gray-500 dark:text-gray-400 space-y-0.5">
+                    ${u.started_at ? `<div>started  <span class="text-gray-700 dark:text-gray-300">${u.started_at}</span></div>` : ''}
+                    ${u.hat_started_at ? `<div>hat      <span class="text-gray-700 dark:text-gray-300">${u.hat_started_at}</span></div>` : ''}
+                    ${u.completed_at ? `<div>done     <span class="text-gray-700 dark:text-gray-300">${u.completed_at}</span></div>` : ''}
+                  </div>
+                </section>` : ''}
+
+              ${annotations.length > 0 ? `
+                <section>
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1.5">Feedback on this unit (${annotations.length})</p>
+                  <div class="space-y-1.5">
+                    ${annotations.map(a => `
+                      <button onclick="event.stopPropagation(); highlightFeedback('${a.f.id}')" class="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded border ${a.f.status === 'pending' ? 'border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-900/10' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900'} hover:border-teal-400 dark:hover:border-teal-500 transition-colors">
+                        <span class="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full ${a.f.status === 'pending' ? 'bg-amber-500' : a.f.status === 'addressed' ? 'bg-blue-500' : 'bg-gray-400'} text-white text-[10px] font-bold">${a.idx}</span>
+                        <span class="flex-1 min-w-0 text-xs font-medium text-gray-900 dark:text-gray-100 truncate">${a.f.title}</span>
+                        <span class="shrink-0 text-[9px] font-semibold text-gray-500 dark:text-gray-400 uppercase">${a.f.status}</span>
+                      </button>`).join('')}
+                  </div>
+                </section>` : ''}
+            </div>
+          ` : ''}
+        </div>`;
+    }
+
+    function scrollToUnit(stageId, unitName) {
+      if (selectedStageId !== stageId) {
+        selectedStageId = stageId;
+        selectStage(stageId);
+      }
+      expandedUnits.add(stageId + '::' + unitName);
+      selectStage(selectedStageId);
+      setTimeout(() => {
+        const el = document.querySelector(`[data-unit-card="${CSS.escape(unitName)}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('unit-flash');
+          setTimeout(() => el.classList.remove('unit-flash'), 1400);
+        }
+      }, 60);
+    }
+
+    function renderKnowledge(s) {
+      const fbMap = buildKnowledgeFeedbackMap(s);
+      if (s.knowledge.length === 0) {
+        return `<div class="bg-white dark:bg-gray-900 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-8 text-center">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">No knowledge artifacts in ${s.label}.</p>
+        </div>`;
+      }
+      const totalSeen = s.knowledge.filter(k => seenState(artifactKey('knowledge', s.id, k.name), shaOf(k)) === 'seen').length;
+      const unseen = s.knowledge.length - totalSeen;
+      return `
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2 text-xs">
+            <span class="font-semibold text-gray-700 dark:text-gray-200">Knowledge</span>
+            <span class="text-gray-400">·</span>
+            <span class="font-mono text-gray-500 dark:text-gray-400">${totalSeen}/${s.knowledge.length} seen</span>
+          </div>
+          ${unseen > 0 ? `<button onclick="jumpToNextUnseen('knowledge', '${s.id}')" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-teal-600 hover:bg-teal-700 text-white transition-colors">Next unseen (${unseen}) →</button>` : `<span class="text-[10px] text-green-600 dark:text-green-400 font-semibold">✓ All seen</span>`}
+        </div>
+        <div class="space-y-3">
+          ${s.knowledge.map(k => renderArtifactCard(s, k, 'knowledge', fbMap)).join('')}
+        </div>`;
+    }
+
+    function renderOutputs(s) {
+      const fbMap = buildOutputFeedbackMap(s);
+      if (s.outputs.length === 0) {
+        return `<div class="bg-white dark:bg-gray-900 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-8 text-center">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">No outputs for ${s.label} yet.</p>
+        </div>`;
+      }
+      const totalSeen = s.outputs.filter(o => seenState(artifactKey('output', s.id, o.name), shaOf(o)) === 'seen').length;
+      const unseen = s.outputs.length - totalSeen;
+      return `
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2 text-xs">
+            <span class="font-semibold text-gray-700 dark:text-gray-200">Outputs</span>
+            <span class="text-gray-400">·</span>
+            <span class="font-mono text-gray-500 dark:text-gray-400">${totalSeen}/${s.outputs.length} seen</span>
+          </div>
+          ${unseen > 0 ? `<button onclick="jumpToNextUnseen('output', '${s.id}')" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-teal-600 hover:bg-teal-700 text-white transition-colors">Next unseen (${unseen}) →</button>` : `<span class="text-[10px] text-green-600 dark:text-green-400 font-semibold">✓ All seen</span>`}
+        </div>
+        <div class="space-y-3">
+          ${s.outputs.map(o => renderArtifactCard(s, o, 'output', fbMap)).join('')}
+        </div>`;
+    }
+
+    function renderArtifactCard(s, a, kind, fbMap) {
+      const annotations = fbMap[a.name] || [];
+      const state = seenState(artifactKey(kind, s.id, a.name), shaOf(a));
+      const expanded = (kind === 'knowledge' ? expandedKnowledge : expandedOutputs).has(s.id + '::' + a.name);
+      const icon = kind === 'knowledge' ? '&#x1F9E0;' : '&#x1F4E6;';
+      const iconColor = kind === 'knowledge' ? 'text-sky-500' : 'text-violet-500';
+      const kindCls = kind === 'knowledge'
+        ? 'bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400 border-sky-200 dark:border-sky-800'
+        : 'bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400 border-violet-200 dark:border-violet-800';
+      const rowBorder = state === 'unseen' ? 'border-sky-300 dark:border-sky-800'
+        : state === 'changed' ? 'border-amber-300 dark:border-amber-700'
+        : 'border-gray-200 dark:border-gray-700';
+      const dataAttr = kind === 'knowledge' ? `data-knowledge-card="${a.name}"` : `data-output-card="${a.name}"`;
+      const escName = a.name.replace(/'/g, "\\'");
+      return `
+        <div ${dataAttr} class="artifact-card bg-white dark:bg-gray-900 rounded-lg border-2 ${rowBorder} overflow-hidden">
+          <button type="button" onclick="toggleArtifact('${kind}','${s.id}','${escName}')" class="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+            <span class="shrink-0 ${iconColor} text-lg leading-none mt-0.5">${icon}</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 font-mono truncate">${a.name}</span>
+                ${renderStateBadge(state)}
+                <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border ${kindCls}">${a.kind}</span>
+              </div>
+              ${a.summary ? `<p class="text-xs text-gray-600 dark:text-gray-400 leading-snug mt-1 ${expanded ? '' : 'line-clamp-1'} break-words">${a.summary}</p>` : ''}
+            </div>
+            <div class="shrink-0 flex items-center gap-2 mt-0.5">
+              ${annotations.length > 0 ? `<span class="inline-flex items-center gap-0.5">${annotations.map(x => {
+                const c = x.f.status === 'pending' ? 'bg-amber-500 text-white' : x.f.status === 'addressed' ? 'bg-blue-500 text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-600';
+                return `<span title="${x.f.title}" class="inline-flex items-center justify-center w-5 h-5 rounded-full ${c} text-[10px] font-bold">${x.idx}</span>`;
+              }).join('')}</span>` : ''}
+              <svg class="w-4 h-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+          </button>
+
+          ${expanded ? `
+            <div class="border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+              ${(a.body || a.src) ? `
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div class="flex items-center justify-between mb-2">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">${a.mime || 'text'} preview</p>
+                    <p class="text-[10px] text-gray-400">Click to annotate ${a.mime === 'markdown' || a.mime === 'text' ? '(line)' : a.mime === 'image' || a.mime === 'svg' ? '(point)' : '(iframe — use location fields)'}</p>
+                  </div>
+                  ${renderArtifactPreview(a, annotations, { kind, stageId: s.id })}
+                </div>` : ''}
+              ${a.producedBy && a.producedBy.length > 0 ? `
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1.5">${kind === 'knowledge' ? 'Produced / consumed by' : 'Produced by'}</p>
+                  <div class="flex flex-wrap gap-1">
+                    ${a.producedBy.map(u => `<button onclick="event.stopPropagation(); scrollToUnit('${s.id}','${u}')" class="px-1.5 py-0.5 rounded font-mono text-[10px] bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-teal-400 dark:hover:border-teal-500 transition-colors truncate max-w-full">${u}</button>`).join('')}
+                  </div>
+                </div>` : ''}
+              ${annotations.length > 0 ? `
+                <div class="px-4 py-3">
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1.5">Feedback on this artifact (${annotations.length})</p>
+                  <div class="space-y-1.5">
+                    ${annotations.map(x => `
+                      <button onclick="event.stopPropagation(); highlightFeedback('${x.f.id}')" class="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded border ${x.f.status === 'pending' ? 'border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-900/10' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900'} hover:border-teal-400 dark:hover:border-teal-500 transition-colors">
+                        <span class="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full ${x.f.status === 'pending' ? 'bg-amber-500' : x.f.status === 'addressed' ? 'bg-blue-500' : 'bg-gray-400'} text-white text-[10px] font-bold">${x.idx}</span>
+                        <span class="flex-1 min-w-0 text-xs font-medium text-gray-900 dark:text-gray-100 truncate">${x.f.title}</span>
+                        <span class="shrink-0 text-[9px] font-semibold text-gray-500 dark:text-gray-400 uppercase">${x.f.status}</span>
+                      </button>`).join('')}
+                  </div>
+                </div>` : ''}
+            </div>
+          ` : ''}
+        </div>`;
+    }
+
+    function escHtml(s) {
+      return (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function renderArtifactPreview(a, annotations, ctx) {
+      const mime = a.mime || 'text';
+      const kind = ctx?.kind || 'knowledge';
+      const stageId = ctx?.stageId || selectedStageId;
+      const escName = a.name.replace(/'/g, "\\'");
+      const spatial = annotations.filter(x => x.f.target?.annotation && typeof x.f.target.annotation.x === 'number');
+      const lineAnn = annotations.filter(x => x.f.target?.annotation && typeof x.f.target.annotation.line === 'number');
+      const locAnn = annotations.filter(x => x.f.target?.annotation && (x.f.target.annotation.page || x.f.target.annotation.region));
+
+      const overlay = spatial.map(x => {
+        const ann = x.f.target.annotation;
+        const cls = x.f.status === 'pending' ? 'bg-amber-500' : x.f.status === 'addressed' ? 'bg-blue-500' : 'bg-gray-400';
+        return `<button onclick="event.stopPropagation(); highlightFeedback('${x.f.id}')" title="${escHtml(x.f.title)}" style="left: ${(ann.x*100).toFixed(1)}%; top: ${(ann.y*100).toFixed(1)}%" class="absolute -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full ${cls} text-white text-[11px] font-bold flex items-center justify-center shadow-lg ring-2 ring-white dark:ring-gray-900 hover:ring-4 hover:ring-teal-400 transition-all z-10">${x.idx}</button>`;
+      }).join('');
+
+      const locList = locAnn.length > 0 ? `
+        <div class="mt-2 space-y-1">
+          ${locAnn.map(x => {
+            const ann = x.f.target.annotation;
+            const where = ann.page ? `page ${ann.page}` : `region "${ann.region}"`;
+            const cls = x.f.status === 'pending' ? 'bg-amber-500' : x.f.status === 'addressed' ? 'bg-blue-500' : 'bg-gray-400';
+            return `<button onclick="event.stopPropagation(); highlightFeedback('${x.f.id}')" class="w-full flex items-center gap-2 px-2 py-1.5 rounded border border-amber-200 dark:border-amber-700/50 bg-amber-50/50 dark:bg-amber-900/10 hover:border-teal-400 dark:hover:border-teal-500 transition-colors text-left">
+              <span class="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full ${cls} text-white text-[10px] font-bold">${x.idx}</span>
+              <span class="flex-1 min-w-0 text-[11px] text-gray-700 dark:text-gray-300 truncate">${escHtml(x.f.title)}</span>
+              <span class="shrink-0 text-[10px] font-mono text-gray-500 dark:text-gray-400">@ ${where}</span>
+            </button>`;
+          }).join('')}
+        </div>` : '';
+
+      if (mime === 'image') {
+        return `<div class="relative inline-block max-w-full cursor-crosshair" onclick="startAnnotationSpatial('${kind}','${stageId}','${escName}', event)"><img src="${escHtml(a.src)}" alt="${escHtml(a.name)}" class="block max-w-full max-h-96 rounded border border-gray-200 dark:border-gray-800 bg-white pointer-events-none"/>${overlay}</div>${locList}`;
+      }
+
+      if (mime === 'svg') {
+        return `<div class="relative bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-md p-4 overflow-auto max-h-96 cursor-crosshair" onclick="startAnnotationSpatial('${kind}','${stageId}','${escName}', event)">${a.body}${overlay}</div>${locList}`;
+      }
+
+      if (mime === 'html') {
+        const srcdoc = (a.body || '').replace(/"/g, '&quot;');
+        return `<iframe srcdoc="${srcdoc}" sandbox="allow-same-origin" class="w-full h-96 border border-gray-200 dark:border-gray-800 rounded-md bg-white" title="${escHtml(a.name)}"></iframe>${locList}`;
+      }
+
+      if (mime === 'pdf') {
+        return `<div class="relative">
+          <iframe src="${escHtml(a.src)}" class="w-full h-96 border border-gray-200 dark:border-gray-800 rounded-md bg-white" title="${escHtml(a.name)}"></iframe>
+          <div class="mt-1 flex items-center justify-between">
+            <a href="${escHtml(a.src)}" target="_blank" rel="noopener" class="text-[10px] text-teal-600 dark:text-teal-400 hover:underline">Open in new tab ↗</a>
+            <span class="text-[10px] text-gray-400">PDF overlay annotations require pdf.js; listed below.</span>
+          </div>
+        </div>${locList}`;
+      }
+
+      // markdown / text — line-based annotations with click-to-annotate
+      const lineMap = {};
+      lineAnn.forEach(x => {
+        const ln = x.f.target.annotation.line;
+        (lineMap[ln] = lineMap[ln] || []).push(x);
+      });
+      const lines = (a.body || '').split('\n').map((raw, i) => {
+        const n = i + 1;
+        const anns = lineMap[n] || [];
+        const lineTxt = escHtml(raw);
+        const rowClick = `onclick="startAnnotationLine('${kind}','${stageId}','${escName}', ${n}, event)"`;
+        if (anns.length === 0) return `<div class="grid grid-cols-[2.25rem_1fr] hover:bg-teal-50/40 dark:hover:bg-teal-900/10 cursor-pointer" ${rowClick}><span class="text-gray-400 text-right pr-2 select-none">${n}</span><span class="whitespace-pre-wrap">${lineTxt || ' '}</span></div>`;
+        const pills = anns.map(x => {
+          const cls = x.f.status === 'pending' ? 'bg-amber-500' : x.f.status === 'addressed' ? 'bg-blue-500' : 'bg-gray-400';
+          return `<button onclick="event.stopPropagation(); highlightFeedback('${x.f.id}')" title="${escHtml(x.f.title)}" class="inline-flex items-center justify-center w-4 h-4 rounded-full ${cls} text-white text-[9px] font-bold align-middle mr-1">${x.idx}</button>`;
+        }).join('');
+        return `<div class="grid grid-cols-[2.25rem_1fr] bg-amber-100/60 dark:bg-amber-900/20 border-l-2 border-amber-500 -ml-3 pl-2 cursor-pointer" ${rowClick}><span class="text-amber-600 dark:text-amber-400 text-right pr-2 select-none font-bold">${n}</span><span class="whitespace-pre-wrap">${pills}${lineTxt || ' '}</span></div>`;
+      }).join('');
+      return `<div class="text-[11px] font-mono text-gray-700 dark:text-gray-300 leading-relaxed bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-md p-3 max-h-80 overflow-auto">${lines}</div>${locList}`;
+    }
+
+    // ==== Annotation creation ====
+    function startAnnotationSpatial(kind, stageId, artifactName, evt) {
+      const wrapper = evt.currentTarget;
+      const rect = wrapper.getBoundingClientRect();
+      const x = (evt.clientX - rect.left) / rect.width;
+      const y = (evt.clientY - rect.top) / rect.height;
+      if (x < 0 || x > 1 || y < 0 || y > 1) return;
+      annContext = { kind, stageId, artifactName, annotation: { x, y } };
+      showAnnPopover(evt.clientX, evt.clientY, `${(x*100).toFixed(0)}%, ${(y*100).toFixed(0)}%`);
+      evt.stopPropagation();
+    }
+
+    function startAnnotationLine(kind, stageId, artifactName, line, evt) {
+      annContext = { kind, stageId, artifactName, annotation: { line } };
+      showAnnPopover(evt.clientX, evt.clientY, `L${line}`);
+      evt.stopPropagation();
+    }
+
+    function showAnnPopover(cx, cy, locLabel) {
+      const pop = document.getElementById('ann-popover');
+      document.getElementById('ann-loc').textContent = locLabel;
+      document.getElementById('ann-title').value = '';
+      document.getElementById('ann-body').value = '';
+      pop.classList.remove('hidden');
+      const w = 288, h = 180;
+      pop.style.left = Math.max(8, Math.min(cx + 10, window.innerWidth - w - 8)) + 'px';
+      pop.style.top  = Math.max(8, Math.min(cy + 10, window.innerHeight - h - 8)) + 'px';
+      setTimeout(() => document.getElementById('ann-title').focus(), 40);
+    }
+
+    function closeAnnPopover() {
+      document.getElementById('ann-popover').classList.add('hidden');
+      annContext = null;
+    }
+
+    function saveAnnotation() {
+      if (!annContext) { closeAnnPopover(); return; }
+      const title = document.getElementById('ann-title').value.trim();
+      const body = document.getElementById('ann-body').value.trim();
+      if (!title && !body) { closeAnnPopover(); return; }
+      const s = stage(annContext.stageId);
+      const a = annContext.annotation;
+      const loc = a.line !== undefined ? `:L${a.line}` : ` @ (${(a.x*100).toFixed(0)}%, ${(a.y*100).toFixed(0)}%)`;
+      const targetKey = annContext.kind + 'Name';
+      s.feedback.unshift({
+        id: 'fb-new-' + Date.now(),
+        title: title || body.slice(0, 60),
+        body: body || title,
+        status: 'pending',
+        origin: 'user-visual',
+        author: 'user',
+        visit: 2,
+        target: {
+          kind: annContext.kind,
+          label: annContext.artifactName + loc,
+          [targetKey]: annContext.artifactName,
+          annotation: a
+        }
+      });
+      closeAnnPopover();
+      renderStepperPips();
+      selectStage(selectedStageId);
+    }
+
+    function toggleArtifact(kind, stageId, name) {
+      const set = kind === 'knowledge' ? expandedKnowledge : expandedOutputs;
+      const key = stageId + '::' + name;
+      if (set.has(key)) set.delete(key);
+      else set.add(key);
+      const s = stage(stageId);
+      const items = kind === 'knowledge' ? s.knowledge : s.outputs;
+      const item = items.find(x => x.name === name);
+      if (item) markSeen(artifactKey(kind, stageId, name), shaOf(item));
+      selectStage(selectedStageId);
+    }
+
+    // ---- Shared card renderers ----
+
+    function buildUnitFeedbackMap(s) {
+      const map = {};
+      s.feedback.forEach((f, i) => {
+        if (f.target && f.target.unitName) {
+          (map[f.target.unitName] = map[f.target.unitName] || []).push({ f, idx: i + 1 });
+        }
+      });
+      return map;
+    }
+
+    function buildKnowledgeFeedbackMap(s) {
+      const map = {};
+      s.feedback.forEach((f, i) => {
+        if (f.target && f.target.kind === 'knowledge' && f.target.knowledgeName) {
+          (map[f.target.knowledgeName] = map[f.target.knowledgeName] || []).push({ f, idx: i + 1 });
+        }
+      });
+      return map;
+    }
+
+    function buildOutputFeedbackMap(s) {
+      const map = {};
+      s.feedback.forEach((f, i) => {
+        if (f.target && f.target.kind === 'output' && f.target.outputName) {
+          (map[f.target.outputName] = map[f.target.outputName] || []).push({ f, idx: i + 1 });
+        }
+      });
+      return map;
+    }
+
+    function annotationPills(annotations) {
+      if (!annotations || annotations.length === 0) return '';
+      return `<span class="flex items-center gap-1 ml-1">
+        ${annotations.map(a => {
+          const isOpen = a.f.status === 'pending';
+          const cls = isOpen ? 'bg-amber-500 text-white'
+            : a.f.status === 'addressed' ? 'bg-blue-500 text-white'
+            : 'bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400';
+          return `<button onclick="event.stopPropagation(); highlightFeedback('${a.f.id}')" title="${a.f.title}" class="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full ${cls} text-[10px] font-bold hover:ring-2 hover:ring-teal-400 transition-all">${a.idx}</button>`;
+        }).join('')}
+      </span>`;
+    }
+
+    function renderUnitsCard(s, unitFeedbackMap, opts) {
+      const { compact, showTabLink } = opts;
+      const list = compact ? s.units.slice(0, 5) : s.units;
+      const more = s.units.length - list.length;
+      return `
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Units <span class="text-gray-400 font-normal">(${s.units.length})</span></h3>
+            ${showTabLink ? `<button onclick="switchTab('units')" class="text-[10px] font-semibold text-teal-600 dark:text-teal-400 hover:underline">View all →</button>` : ''}
+          </div>
+          ${s.units.length === 0 ? `<p class="text-xs text-gray-400">No units in this stage.</p>` : `
+          <div class="space-y-2">
+            ${list.map(u => {
+              const annotations = unitFeedbackMap[u.name] || [];
+              const hasOpen = annotations.some(a => a.f.status === 'pending');
+              const state = seenState(artifactKey('unit', s.id, u.name), shaOf(u));
+              const borderClass = hasOpen
+                ? 'border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10'
+                : state === 'unseen' ? 'border-sky-300 dark:border-sky-800 bg-sky-50/40 dark:bg-sky-900/10'
+                : state === 'changed' ? 'border-amber-300 dark:border-amber-700 bg-amber-50/40 dark:bg-amber-900/10'
+                : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50';
+              return `
+                <div data-unit="${u.name}" onclick="switchTab('units')" class="unit-row flex items-center gap-2 px-3 py-2 rounded-lg border ${borderClass} cursor-pointer hover:border-teal-400 dark:hover:border-teal-500 transition-colors min-w-0 overflow-hidden">
+                  <span class="shrink-0 w-2 h-2 rounded-full ${u.status === 'completed' ? 'bg-green-500' : 'bg-amber-400'}"></span>
+                  <span class="flex-1 min-w-0 text-xs font-medium text-gray-900 dark:text-gray-100 truncate">${u.name}</span>
+                  ${renderStateBadge(state)}
+                  ${annotations.length > 0 ? `
+                    <span class="flex items-center gap-1 shrink-0">
+                      ${annotations.map(a => {
+                        const isOpen = a.f.status === 'pending';
+                        const cls = isOpen ? 'bg-amber-500 text-white'
+                          : a.f.status === 'addressed' ? 'bg-blue-500 text-white'
+                          : 'bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400';
+                        return `<button onclick="event.stopPropagation(); highlightFeedback('${a.f.id}')" title="${a.f.title}" class="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full ${cls} text-[10px] font-bold hover:ring-2 hover:ring-teal-400 transition-all">${a.idx}</button>`;
+                      }).join('')}
+                    </span>
+                  ` : ''}
+                  <span class="shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">${u.status}</span>
+                </div>`;
+            }).join('')}
+            ${more > 0 ? `<button onclick="switchTab('units')" class="w-full px-3 py-1.5 text-[11px] font-medium text-teal-600 dark:text-teal-400 hover:underline">+ ${more} more — view all in Units tab</button>` : ''}
+          </div>`}
+        </div>`;
+    }
+
+    function renderKnowledgeCard(s, opts) {
+      const { compact, showTabLink } = opts;
+      const list = compact ? s.knowledge.slice(0, 3) : s.knowledge;
+      const more = s.knowledge.length - list.length;
+      const fbMap = buildKnowledgeFeedbackMap(s);
+      return `
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Knowledge <span class="text-gray-400 font-normal">(${s.knowledge.length})</span></h3>
+            ${showTabLink ? `<button onclick="switchTab('knowledge')" class="text-[10px] font-semibold text-teal-600 dark:text-teal-400 hover:underline">View all →</button>` : ''}
+          </div>
+          ${s.knowledge.length === 0 ? `<p class="text-xs text-gray-400">No knowledge artifacts for this stage.</p>` : `
+          <div class="space-y-1.5">
+            ${list.map(k => {
+              const annotations = fbMap[k.name] || [];
+              const hasOpen = annotations.some(a => a.f.status === 'pending');
+              const state = seenState(artifactKey('knowledge', s.id, k.name), shaOf(k));
+              const rowClass = hasOpen
+                ? 'border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10'
+                : state === 'unseen' ? 'border-sky-300 dark:border-sky-800 bg-sky-50/40 dark:bg-sky-900/10'
+                : state === 'changed' ? 'border-amber-300 dark:border-amber-700 bg-amber-50/40 dark:bg-amber-900/10'
+                : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50';
+              return `
+              <div data-knowledge="${k.name}" onclick="markArtifactSeen('knowledge','${s.id}','${k.name.replace(/'/g,"\\'")}')" class="knowledge-row flex items-center gap-2 px-2.5 py-1.5 rounded-md border ${rowClass} transition-colors min-w-0 overflow-hidden cursor-pointer hover:border-teal-400 dark:hover:border-teal-500">
+                <span class="shrink-0 text-sky-500 text-xs">&#x1F9E0;</span>
+                <span class="flex-1 min-w-0 text-xs font-mono text-gray-800 dark:text-gray-200 truncate">${k.name}</span>
+                ${renderStateBadge(state)}
+                ${annotationPills(annotations)}
+                <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-medium bg-sky-50 text-sky-600 dark:bg-sky-900/20 dark:text-sky-400 border border-sky-200 dark:border-sky-800">${k.kind}</span>
+              </div>`;
+            }).join('')}
+            ${more > 0 ? `<button onclick="switchTab('knowledge')" class="w-full px-3 py-1.5 text-[11px] font-medium text-teal-600 dark:text-teal-400 hover:underline">+ ${more} more</button>` : ''}
+          </div>`}
+        </div>`;
+    }
+
+    function renderOutputsCard(s, opts) {
+      const { compact, showTabLink } = opts;
+      const list = compact ? s.outputs.slice(0, 3) : s.outputs;
+      const more = s.outputs.length - list.length;
+      const fbMap = buildOutputFeedbackMap(s);
+      return `
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Outputs <span class="text-gray-400 font-normal">(${s.outputs.length})</span></h3>
+            ${showTabLink ? `<button onclick="switchTab('outputs')" class="text-[10px] font-semibold text-teal-600 dark:text-teal-400 hover:underline">View all →</button>` : ''}
+          </div>
+          ${s.outputs.length === 0 ? `<p class="text-xs text-gray-400">No outputs for this stage yet.</p>` : `
+          <div class="space-y-1.5">
+            ${list.map(o => {
+              const annotations = fbMap[o.name] || [];
+              const hasOpen = annotations.some(a => a.f.status === 'pending');
+              const state = seenState(artifactKey('output', s.id, o.name), shaOf(o));
+              const rowClass = hasOpen
+                ? 'border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10'
+                : state === 'unseen' ? 'border-sky-300 dark:border-sky-800 bg-sky-50/40 dark:bg-sky-900/10'
+                : state === 'changed' ? 'border-amber-300 dark:border-amber-700 bg-amber-50/40 dark:bg-amber-900/10'
+                : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50';
+              return `
+              <div data-output="${o.name}" onclick="markArtifactSeen('output','${s.id}','${o.name.replace(/'/g,"\\'")}')" class="output-row flex items-center gap-2 px-2.5 py-1.5 rounded-md border ${rowClass} transition-colors min-w-0 overflow-hidden cursor-pointer hover:border-teal-400 dark:hover:border-teal-500">
+                <span class="shrink-0 text-violet-500 text-xs">&#x1F4E6;</span>
+                <span class="flex-1 min-w-0 text-xs font-mono text-gray-800 dark:text-gray-200 truncate">${o.name}</span>
+                ${renderStateBadge(state)}
+                ${annotationPills(annotations)}
+                <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-medium bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400 border border-violet-200 dark:border-violet-800">${o.kind}</span>
+              </div>`;
+            }).join('')}
+            ${more > 0 ? `<button onclick="switchTab('outputs')" class="w-full px-3 py-1.5 text-[11px] font-medium text-teal-600 dark:text-teal-400 hover:underline">+ ${more} more</button>` : ''}
+          </div>`}
+        </div>`;
+    }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      selectStage(selectedStageId);
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('haiku-review-theme', isDark ? 'dark' : 'light');
+      const btn = document.getElementById('theme-toggle');
+      btn.innerHTML = isDark ? '&#x263E;' : '&#x2600;';
+    }
+
+    function setGate(gateId) {
+      const cur = stage(CURRENT_STAGE_ID);
+      cur.activeGate = gateId;
+      // Also update the stepper sub-label for the current stage
+      const devSub = document.querySelector('[data-dev-sublabel]');
+      if (devSub) devSub.textContent = gateId === 'postElab' ? 'post-elab gate' : 'final-review gate';
+      selectStage(selectedStageId);
+    }
+
+    function highlightFeedback(fbId) {
+      // Find stage and feedback
+      let targetStage = null, targetFb = null;
+      for (const st of STAGES) {
+        const f = st.feedback.find(x => x.id === fbId);
+        if (f) { targetStage = st; targetFb = f; break; }
+      }
+      if (!targetFb) return;
+
+      // Route to correct tab based on target kind
+      const t = targetFb.target;
+      if (t) {
+        if (t.kind === 'knowledge') activeTab = 'knowledge';
+        else if (t.kind === 'output') activeTab = 'outputs';
+        else if (t.kind === 'unit' || t.kind === 'file') activeTab = 'units';
+      }
+
+      // Switch to the stage (re-renders tab content)
+      selectStage(targetStage.id);
+
+      // Flash both sides
+      setTimeout(() => {
+        const card = document.querySelector(`.fb-card[data-fb-id="${fbId}"]`);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          card.classList.add('fb-flash');
+          setTimeout(() => card.classList.remove('fb-flash'), 1400);
+        }
+        // Flash the target artifact in main
+        let row = null;
+        if (t) {
+          if ((t.kind === 'unit' || t.kind === 'file') && t.unitName) {
+            row = document.querySelector(`.unit-row[data-unit="${t.unitName}"]`);
+          } else if (t.kind === 'knowledge' && t.knowledgeName) {
+            row = document.querySelector(`.knowledge-row[data-knowledge="${CSS.escape(t.knowledgeName)}"]`);
+          } else if (t.kind === 'output' && t.outputName) {
+            row = document.querySelector(`.output-row[data-output="${CSS.escape(t.outputName)}"]`);
+          }
+        }
+        if (row) {
+          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          row.classList.add('unit-flash');
+          setTimeout(() => row.classList.remove('unit-flash'), 1400);
+        }
+      }, 50);
+    }
+
+    function renderStepperActive() {
+      document.querySelectorAll('.stage-btn').forEach(btn => {
+        btn.classList.remove('stage-active');
+        if (btn.dataset.stage === selectedStageId) btn.classList.add('stage-active');
+      });
+    }
+
+    function selectStage(id) {
+      const s = stage(id);
+      if (!s || s.status === 'upcoming') return;
+      selectedStageId = id;
+      renderSidebar(s);
+      renderMain(s);
+      renderStepperActive();
+    }
+
+    // ==== Actions ====
+    function onApprove() {
+      if (reviewMode === 'gate') {
+        showToast('Stage approved', `${stage(CURRENT_STAGE_ID).label} marked approved. FSM advances to next stage.`, 'approve');
+      } else {
+        showToast('No-op', `Approve is a no-op when the review is opened outside of a gate. Nothing to advance.`, 'noop');
+      }
+    }
+
+    function setMode(mode) {
+      reviewMode = mode;
+      const g = document.getElementById('mode-gate');
+      const u = document.getElementById('mode-user');
+      const active = 'bg-teal-600 text-white';
+      const inactive = 'bg-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800';
+      g.className = 'px-2 py-1 text-[10px] font-semibold ' + (mode === 'gate' ? active : inactive);
+      u.className = 'px-2 py-1 text-[10px] font-semibold ' + (mode === 'user' ? active : inactive);
+      selectStage(selectedStageId);
+    }
+
+    function onRequestChanges() {
+      // Open confirmation modal before firing haiku_revisit
+      openRevisitModal();
+    }
+
+    function openRevisitModal() {
+      const typed = (document.getElementById('sb-comment').value || '').trim();
+      const earliest = earliestUnaddressedStage();
+
+      // Simulate target: if user has typed feedback and no pending, target is current viewed stage
+      const targetStage = earliest ? earliest : stage(selectedStageId);
+      const downstream = STAGES.filter(s => s.index > targetStage.index && s.status !== 'upcoming');
+
+      // Feedback that will be "in scope" for the revisit (all pending across stages)
+      const allPending = STAGES.flatMap(s => s.feedback.filter(f => f.status === 'pending').map(f => ({ s, f })));
+
+      const body = document.getElementById('revisit-modal-body');
+      body.innerHTML = `
+        <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+          This will invoke <code class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono text-[11px]">haiku_revisit</code>, rewriting state and pushing to the main intent branch.
+        </p>
+
+        <section>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">Target stage</p>
+          <div class="px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 flex items-center gap-2">
+            <span class="font-bold text-amber-700 dark:text-amber-400">${targetStage.label}</span>
+            <span class="text-[10px] text-amber-600 dark:text-amber-400">${earliest ? 'earliest unaddressed' : 'currently viewed (no earlier unaddressed)'}</span>
+          </div>
+        </section>
+
+        ${downstream.length > 0 ? `
+          <section>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">Downstream stages (re-run)</p>
+            <div class="flex flex-wrap gap-1">
+              ${downstream.map(d => `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">${d.label}</span>`).join('')}
+            </div>
+            <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">These will be re-elaborated from the corrected upstream artifact.</p>
+          </section>` : ''}
+
+        ${typed ? `
+          <section>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">New feedback (from textarea)</p>
+            <div class="px-3 py-2 rounded-md border border-teal-300 dark:border-teal-700 bg-teal-50 dark:bg-teal-900/20 text-xs text-gray-800 dark:text-gray-200 leading-snug">${escHtml(typed)}</div>
+            <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Will be saved to <span class="font-mono">${stage(selectedStageId).label}</span> and marked pending.</p>
+          </section>` : ''}
+
+        ${allPending.length > 0 ? `
+          <section>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">Open feedback in scope (${allPending.length + (typed ? 1 : 0)})</p>
+            <ul class="space-y-1">
+              ${allPending.map(({ s, f }) => `<li class="flex items-center gap-2 text-xs"><span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">${s.label}</span><span class="flex-1 min-w-0 truncate text-gray-700 dark:text-gray-300">${escHtml(f.title)}</span></li>`).join('')}
+            </ul>
+          </section>` : ''}
+      `;
+
+      // Bind confirm action freshly each open
+      document.getElementById('revisit-confirm-btn').onclick = () => {
+        doRevisit();
+        closeRevisitModal();
+      };
+
+      document.getElementById('revisit-modal').classList.remove('hidden');
+    }
+
+    function closeRevisitModal() {
+      document.getElementById('revisit-modal').classList.add('hidden');
+    }
+
+    function doRevisit() {
+      const comment = document.getElementById('sb-comment').value.trim();
+      if (comment) {
+        stage(selectedStageId).feedback.unshift({
+          id: 'fb-new-' + Date.now(),
+          title: comment.slice(0, 60) + (comment.length > 60 ? '…' : ''),
+          body: comment,
+          status: 'pending',
+          origin: 'user-visual',
+          author: 'user',
+          visit: 2
+        });
+        document.getElementById('sb-comment').value = '';
+      }
+      const newEarliest = earliestUnaddressedStage();
+      showToast('haiku_revisit invoked', `Target: <strong>${newEarliest.label}</strong>. Rewriting state, pushing to main intent branch.`, 'revisit');
+      renderStepperPips();
+      selectStage(selectedStageId);
+    }
+
+    // ==== Feedback lifecycle actions ====
+    function setFeedbackStatus(fbId, newStatus) {
+      for (const s of STAGES) {
+        const f = s.feedback.find(x => x.id === fbId);
+        if (f) {
+          f.status = newStatus;
+          break;
+        }
+      }
+      renderStepperPips();
+      selectStage(selectedStageId);
+    }
+
+    function renderStepperPips() {
+      STAGES.forEach(s => {
+        const btn = document.querySelector(`.stage-btn[data-stage="${s.id}"]`);
+        if (!btn) return;
+        const existingPip = btn.querySelector('.fb-pip');
+        if (existingPip) existingPip.remove();
+        const pending = pendingCount(s);
+        if (pending > 0) {
+          const wrap = btn.querySelector('.w-10.h-10');
+          if (wrap) {
+            const pip = document.createElement('span');
+            pip.className = 'fb-pip absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-gray-900';
+            pip.textContent = pending;
+            wrap.appendChild(pip);
+          }
+        }
+      });
+    }
+
+    function showToast(title, body, variant) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-title').textContent = title;
+      document.getElementById('toast-body').innerHTML = body;
+      toast.className = 'fixed bottom-4 right-4 z-50 max-w-sm rounded-lg shadow-lg p-4 border';
+      if (variant === 'approve') {
+        toast.classList.add('border-green-300', 'dark:border-green-700', 'bg-green-50', 'dark:bg-green-900/40');
+      } else if (variant === 'noop') {
+        toast.classList.add('border-gray-300', 'dark:border-gray-700', 'bg-gray-50', 'dark:bg-gray-900/40');
+      } else {
+        toast.classList.add('border-amber-300', 'dark:border-amber-700', 'bg-amber-50', 'dark:bg-amber-900/40');
+      }
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.classList.add('hidden'), 5000);
+    }
+
+    // ==== Wire up ====
+    document.querySelectorAll('.stage-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.disabled === 'true') return;
+        selectStage(btn.dataset.stage);
+      });
+    });
+
+    // Re-render buttons as user types — empty textarea flips back to Approve (when no pending)
+    document.getElementById('sb-comment').addEventListener('input', () => {
+      selectStage(selectedStageId);
+    });
+
+    // ==== Keyboard navigation ====
+    let gPending = false;
+
+    function toggleKbdHelp() {
+      const el = document.getElementById('kbd-help');
+      el.classList.toggle('hidden');
+    }
+
+    function navigateStage(dir) {
+      const reachable = STAGES.filter(s => s.status !== 'upcoming');
+      const idx = reachable.findIndex(s => s.id === selectedStageId);
+      const next = reachable[Math.max(0, Math.min(reachable.length - 1, idx + dir))];
+      if (next && next.id !== selectedStageId) selectStage(next.id);
+    }
+
+    function focusNextFeedback(dir) {
+      const s = stage(selectedStageId);
+      if (!s || s.feedback.length === 0) return;
+      const ids = s.feedback.map(f => f.id);
+      let idx = ids.indexOf(focusedFbId);
+      if (idx === -1) idx = dir > 0 ? -1 : ids.length;
+      const nextIdx = Math.max(0, Math.min(ids.length - 1, idx + dir));
+      focusedFbId = ids[nextIdx];
+      // Re-render to apply fb-focused class
+      selectStage(selectedStageId);
+      setTimeout(() => {
+        const el = document.querySelector(`.fb-card[data-fb-id="${focusedFbId}"]`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 30);
+    }
+
+    function jumpToNextUnseenInActiveTab() {
+      const kind = activeTab === 'units' ? 'unit' : activeTab === 'knowledge' ? 'knowledge' : activeTab === 'outputs' ? 'output' : null;
+      if (!kind) return;
+      jumpToNextUnseen(kind, selectedStageId);
+    }
+
+    function clickApprove() {
+      const btn = document.querySelector('#sb-actions button');
+      if (btn && /Approve/.test(btn.textContent) && !/no-op/.test(btn.textContent)) btn.click();
+    }
+    function clickRequestChanges() {
+      const btns = Array.from(document.querySelectorAll('#sb-actions button'));
+      const r = btns.find(b => /Request Changes/.test(b.textContent));
+      if (r) r.click();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const tag = (e.target.tagName || '').toUpperCase();
+      const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable;
+
+      if (e.key === 'Escape') {
+        const modalOpen = !document.getElementById('revisit-modal').classList.contains('hidden');
+        const popOpen = !document.getElementById('ann-popover').classList.contains('hidden');
+        const helpOpen = !document.getElementById('kbd-help').classList.contains('hidden');
+        if (modalOpen) closeRevisitModal();
+        else if (popOpen) closeAnnPopover();
+        else if (helpOpen) toggleKbdHelp();
+        else if (inInput) e.target.blur();
+        return;
+      }
+
+      if (inInput) return;
+
+      if (gPending) {
+        gPending = false;
+        const tabMap = { o: 'overview', u: 'units', k: 'knowledge', p: 'outputs' };
+        if (tabMap[e.key]) { switchTab(tabMap[e.key]); e.preventDefault(); }
+        return;
+      }
+
+      switch (e.key) {
+        case 'j': focusNextFeedback(1); e.preventDefault(); break;
+        case 'k': focusNextFeedback(-1); e.preventDefault(); break;
+        case '[': navigateStage(-1); e.preventDefault(); break;
+        case ']': navigateStage(1); e.preventDefault(); break;
+        case 'g': gPending = true; setTimeout(() => { gPending = false; }, 1000); break;
+        case 'Enter': if (focusedFbId) { highlightFeedback(focusedFbId); e.preventDefault(); } break;
+        case 'n': jumpToNextUnseenInActiveTab(); e.preventDefault(); break;
+        case 'a': clickApprove(); e.preventDefault(); break;
+        case 'r': clickRequestChanges(); e.preventDefault(); break;
+        case '/': document.getElementById('sb-comment').focus(); e.preventDefault(); break;
+        case '?': toggleKbdHelp(); e.preventDefault(); break;
+      }
+    });
+
+    // Sync toggle icon with current theme
+    (() => {
+      const btn = document.getElementById('theme-toggle');
+      if (btn) btn.innerHTML = document.documentElement.classList.contains('dark') ? '&#x263E;' : '&#x2600;';
+    })();
+
+    setMode('gate');
+    selectStage(CURRENT_STAGE_ID);
+  </script>
+
+  <style>
+    .stage-btn { position: relative; }
+    /* Selection indicator: a sky-blue ring around the icon wrapper — mirrors the hover state in a distinct color */
+    .stage-btn .stage-icon {
+      outline: 0 solid transparent;
+      outline-offset: 2px;
+      border-radius: 9999px;
+      transition: outline-color 120ms ease, outline-width 120ms ease;
+    }
+    .stage-btn.stage-active .stage-icon {
+      outline: 3px solid rgb(56 189 248); /* sky-400 */
+    }
+    html.dark .stage-btn.stage-active .stage-icon {
+      outline-color: rgb(125 211 252); /* sky-300 */
+    }
+
+    /* Flash effects for cross-highlight between feedback and target */
+    @keyframes fbFlash {
+      0%   { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.7); }
+      50%  { box-shadow: 0 0 0 6px rgba(20, 184, 166, 0.0); }
+      100% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.0); }
+    }
+    .fb-flash { animation: fbFlash 1.4s ease-out; border-color: rgb(20 184 166) !important; }
+    .unit-flash {
+      background-color: rgba(20, 184, 166, 0.15) !important;
+      border-color: rgb(20 184 166) !important;
+      transition: none;
+    }
+    .fb-focused { outline: 2px solid rgb(20 184 166); outline-offset: 1px; }
+  </style>
+
+</body>
+</html>
