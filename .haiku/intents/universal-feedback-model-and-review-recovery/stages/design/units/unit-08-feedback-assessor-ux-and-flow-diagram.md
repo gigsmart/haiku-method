@@ -17,9 +17,9 @@ outputs:
   - stages/design/artifacts/rollback-reason-banner.html
 status: active
 bolt: 1
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-17T16:51:25Z'
-hat_started_at: '2026-04-17T16:51:25Z'
+hat_started_at: '2026-04-17T16:59:41Z'
 ---
 
 # Feedback-assessor UX and review-phase flow diagram

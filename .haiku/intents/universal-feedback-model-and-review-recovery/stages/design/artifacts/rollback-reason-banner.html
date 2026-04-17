@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rollback reason banner + blocked-gate state — design spec</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <style>body { font-family: system-ui, -apple-system, sans-serif; }</style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
+
+<!-- Header -->
+<header class="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
+  <div class="max-w-[1400px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+    <div>
+      <h1 class="text-lg font-semibold">Rollback reason banner · blocked user-gate state</h1>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Two coupled surfaces. The banner fires when the FSM rolls a stage back to elaborate. The blocked state renders when the reviewer opens the UI before the gate is reachable.</p>
+    </div>
+    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">unit-08 · FB-07</span>
+  </div>
+</header>
+
+<main class="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-10">
+
+  <!-- Surface decision -->
+  <section class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 text-xs text-gray-600 dark:text-gray-400">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Surface decisions</h2>
+    <ul class="list-disc ml-5 space-y-1">
+      <li><strong>Rollback banner</strong> is a full-width <strong>top-of-content banner</strong> (below header, above the main review surface). It fires once per rollback event and persists until the reviewer dismisses it or the stage re-enters review. Not a modal — modals steal focus and the reviewer may need to inspect artifacts before acting.</li>
+      <li><strong>Blocked user-gate state</strong> replaces the user-gate action bar (the bottom-of-sidebar Approve / Request Changes bar) with a non-interactive explanatory panel. It's contextual — only shows while feedback is pending.</li>
+      <li>The two surfaces never render at the same time: rollback banner = "stage just rolled back, here's why"; blocked gate = "stage hasn't hit the gate yet, here's the blockers".</li>
+    </ul>
+  </section>
+
+  <!-- ─── Rollback reason banner ─────────────────────────────────────────── -->
+  <section>
+    <h2 class="text-sm font-semibold mb-3">A · rollback reason banner (fires on FSM rollback → elaborate)</h2>
+
+    <!-- Copy templates -->
+    <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 mb-4 text-xs">
+      <h3 class="text-sm font-semibold mb-2">Copy templates per trigger</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left">
+          <thead class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
+            <tr><th class="py-2 pr-4">Trigger</th><th class="py-2 pr-4">Headline</th><th class="py-2">Body</th></tr>
+          </thead>
+          <tbody class="text-gray-700 dark:text-gray-300 divide-y divide-gray-200 dark:divide-gray-800">
+            <tr>
+              <td class="py-2 pr-4 font-mono text-[11px]">still-pending</td>
+              <td class="py-2 pr-4">Stage rolled back — {N} feedback items still pending.</td>
+              <td class="py-2">The assessor reviewed {TOTAL} items and found {N} still unresolved: <span class="font-mono text-[10px]">{FB-IDS}</span>. A new additive-elaborate cycle is required. Add units that cite <code class="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">closes: [FB-NN]</code> for each item.</td>
+            </tr>
+            <tr>
+              <td class="py-2 pr-4 font-mono text-[11px]">assessor-error</td>
+              <td class="py-2 pr-4">Stage rolled back — assessor could not complete.</td>
+              <td class="py-2">The feedback-assessor subagent errored: <span class="font-mono text-[10px]">{ERROR}</span>. No feedback state was mutated. The FSM fails closed — stage returns to elaborate so the issue can be diagnosed.</td>
+            </tr>
+            <tr>
+              <td class="py-2 pr-4 font-mono text-[11px]">write-failure</td>
+              <td class="py-2 pr-4">Stage rolled back — feedback frontmatter write failed.</td>
+              <td class="py-2">The assessor attempted to update <span class="font-mono text-[10px]">{FB-ID}</span> but the write failed: <span class="font-mono text-[10px]">{REASON}</span>. No state was committed. Fix the feedback file (parse errors, file locks, missing required fields) and re-run.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Dark banner -->
+    <div class="rounded-xl border border-gray-800 bg-gray-950 p-4 mb-4">
+      <div class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-3">dark · trigger: still-pending</div>
+      <div class="rounded-lg border-l-4 border-l-amber-500 border border-amber-800/70 bg-amber-900/15 p-4">
+        <div class="flex items-start gap-3">
+          <svg class="w-5 h-5 text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          <div class="flex-1">
+            <div class="flex items-center justify-between gap-3 mb-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-sm font-semibold text-amber-200">Stage rolled back — 3 feedback items still pending</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/40 text-amber-300">design → elaborate</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-gray-800 text-gray-300">visits 2 → 3</span>
+              </div>
+              <button class="text-amber-400 hover:text-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500 rounded p-1" aria-label="Dismiss banner">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <p class="text-xs text-amber-100/80 mb-3">The feedback-assessor reviewed 7 items and found 3 still unresolved. A new additive-elaborate cycle is required — add units that cite <code class="px-1 py-0.5 bg-amber-900/40 rounded font-mono text-[10px] text-amber-200">closes: [FB-NN]</code> for each item below.</p>
+            <!-- Assessor citation -->
+            <div class="rounded-md bg-gray-900/60 border border-amber-900/50 p-2.5 mb-3">
+              <div class="text-[10px] font-semibold uppercase tracking-wider text-amber-400 mb-1">assessor note</div>
+              <p class="text-[11px] font-mono text-gray-300 leading-relaxed">3 items still status: pending after this pass. FB-05 has no unit that cites closes:[FB-05]. FB-07 artifact missing. FB-08 spec not committed.</p>
+            </div>
+            <!-- Unresolved FB list -->
+            <ul class="space-y-1.5 mb-3">
+              <li class="flex items-start gap-2 text-xs">
+                <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+                <span class="font-mono text-[11px] text-amber-300 shrink-0 w-14">FB-05</span>
+                <span class="text-gray-300">Additive-elaborate rollback is broken end-to-end</span>
+              </li>
+              <li class="flex items-start gap-2 text-xs">
+                <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+                <span class="font-mono text-[11px] text-amber-300 shrink-0 w-14">FB-07</span>
+                <span class="text-gray-300">Feedback gate enforcement and assessor agent spec</span>
+              </li>
+              <li class="flex items-start gap-2 text-xs">
+                <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+                <span class="font-mono text-[11px] text-amber-300 shrink-0 w-14">FB-08</span>
+                <span class="text-gray-300">visits should be an iterations array with timestamps</span>
+              </li>
+            </ul>
+            <!-- Next step -->
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-[11px] text-gray-400">Next:</span>
+              <span class="text-[11px] text-gray-300">new elaborate pass will scaffold units with <code class="px-1 py-0.5 bg-gray-800 rounded font-mono text-[10px]">closes: [FB-05, FB-07, FB-08]</code>.</span>
+              <button class="ml-auto text-[11px] font-medium px-2.5 py-1 rounded-md bg-amber-900/20 text-amber-300 hover:bg-amber-900/40 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-colors">view assessor log</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Light banner -->
+    <div class="rounded-xl border border-gray-200 bg-white p-4 mb-4">
+      <div class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-3">light · trigger: still-pending</div>
+      <div class="rounded-lg border-l-4 border-l-amber-500 border border-amber-200 bg-amber-50 p-4">
+        <div class="flex items-start gap-3">
+          <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          <div class="flex-1">
+            <div class="flex items-center justify-between gap-3 mb-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-sm font-semibold text-amber-900">Stage rolled back — 3 feedback items still pending</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800">design → elaborate</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-white border border-amber-200 text-gray-700">visits 2 → 3</span>
+              </div>
+              <button class="text-amber-700 hover:text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500 rounded p-1" aria-label="Dismiss banner">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <p class="text-xs text-amber-900/90 mb-3">The feedback-assessor reviewed 7 items and found 3 still unresolved. A new additive-elaborate cycle is required — add units that cite <code class="px-1 py-0.5 bg-amber-100 rounded font-mono text-[10px] text-amber-900">closes: [FB-NN]</code> for each item below.</p>
+            <div class="rounded-md bg-white border border-amber-200 p-2.5 mb-3">
+              <div class="text-[10px] font-semibold uppercase tracking-wider text-amber-700 mb-1">assessor note</div>
+              <p class="text-[11px] font-mono text-gray-700 leading-relaxed">3 items still status: pending after this pass. FB-05 has no unit that cites closes:[FB-05]. FB-07 artifact missing. FB-08 spec not committed.</p>
+            </div>
+            <ul class="space-y-1.5 mb-3">
+              <li class="flex items-start gap-2 text-xs">
+                <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                <span class="font-mono text-[11px] text-amber-800 shrink-0 w-14">FB-05</span>
+                <span class="text-gray-700">Additive-elaborate rollback is broken end-to-end</span>
+              </li>
+              <li class="flex items-start gap-2 text-xs">
+                <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                <span class="font-mono text-[11px] text-amber-800 shrink-0 w-14">FB-07</span>
+                <span class="text-gray-700">Feedback gate enforcement and assessor agent spec</span>
+              </li>
+              <li class="flex items-start gap-2 text-xs">
+                <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                <span class="font-mono text-[11px] text-amber-800 shrink-0 w-14">FB-08</span>
+                <span class="text-gray-700">visits should be an iterations array with timestamps</span>
+              </li>
+            </ul>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-[11px] text-gray-600">Next:</span>
+              <span class="text-[11px] text-gray-700">new elaborate pass will scaffold units with <code class="px-1 py-0.5 bg-white border border-gray-200 rounded font-mono text-[10px]">closes: [FB-05, FB-07, FB-08]</code>.</span>
+              <button class="ml-auto text-[11px] font-medium px-2.5 py-1 rounded-md bg-amber-100 text-amber-800 hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-colors">view assessor log</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Assessor-error variant (dark) -->
+    <div class="rounded-xl border border-gray-800 bg-gray-950 p-4 mb-4">
+      <div class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-3">dark · trigger: assessor-error</div>
+      <div class="rounded-lg border-l-4 border-l-rose-500 border border-rose-800/70 bg-rose-900/15 p-4">
+        <div class="flex items-start gap-3">
+          <svg class="w-5 h-5 text-rose-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <div class="flex-1">
+            <div class="flex items-center justify-between gap-3 mb-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-sm font-semibold text-rose-200">Stage rolled back — assessor could not complete</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-900/40 text-rose-300">fail-closed</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-gray-800 text-gray-300">visits 1 → 2</span>
+              </div>
+              <button class="text-rose-400 hover:text-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-500 rounded p-1" aria-label="Dismiss banner">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <p class="text-xs text-rose-100/80 mb-3">The feedback-assessor subagent errored: <code class="px-1 py-0.5 bg-rose-900/40 rounded font-mono text-[10px] text-rose-200">assessor_timeout</code>. No feedback state was mutated. The FSM fails closed — stage returns to elaborate so the issue can be diagnosed.</p>
+            <div class="rounded-md bg-gray-900/60 border border-rose-900/50 p-2.5 mb-3">
+              <div class="text-[10px] font-semibold uppercase tracking-wider text-rose-400 mb-1">error</div>
+              <p class="text-[11px] font-mono text-gray-300 leading-relaxed">assessor subagent exceeded 120s timeout on feedback/07-feedback-gate-enforcement-and-assessor-agent.md. transcript truncated — see log.</p>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-[11px] text-gray-400">Next:</span>
+              <span class="text-[11px] text-gray-300">investigate log, then re-run review phase. No unit scaffolding needed — no feedback state changed.</span>
+              <button class="ml-auto text-[11px] font-medium px-2.5 py-1 rounded-md bg-rose-900/20 text-rose-300 hover:bg-rose-900/40 focus:outline-none focus:ring-2 focus:ring-rose-500 transition-colors">view assessor log</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ─── Blocked user-gate state ────────────────────────────────────────── -->
+  <section>
+    <h2 class="text-sm font-semibold mb-3">B · blocked user-gate state (reviewer opens UI before gate is reachable)</h2>
+
+    <p class="text-xs text-gray-600 dark:text-gray-400 mb-4">Renders in the sidebar action bar slot that normally holds the Approve / Request Changes buttons. Non-interactive. Lists the exact blockers with feedback ids + titles. No CTA — the reviewer's job here is to understand, not act; the FSM drives the state forward automatically.</p>
+
+    <!-- Dark -->
+    <div class="rounded-xl border border-gray-800 bg-gray-950 p-4 mb-4">
+      <div class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-3">dark · sidebar action bar</div>
+      <!-- Sidebar-footer simulation (w-80) -->
+      <div class="w-full max-w-[384px] rounded-lg border border-gray-800 bg-gray-900">
+        <div class="p-4 space-y-3">
+          <!-- Header row -->
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-900/40">
+              <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m0 0v.01M12 5l9 14H3L12 5z"/></svg>
+            </span>
+            <div class="flex-1">
+              <div class="text-xs font-semibold text-gray-100">Approve gate not yet reachable</div>
+              <div class="text-[10px] text-gray-500">3 feedback items must be addressed first</div>
+            </div>
+          </div>
+          <!-- Blockers list -->
+          <ul class="space-y-1.5">
+            <li class="flex items-start gap-2 p-1.5 rounded-md bg-amber-900/10">
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-amber-900/40 text-amber-300 shrink-0 mt-0.5">pending</span>
+              <span class="font-mono text-[10px] text-amber-300 shrink-0 mt-1">FB-05</span>
+              <span class="text-[11px] text-gray-300">Additive-elaborate rollback broken E2E</span>
+            </li>
+            <li class="flex items-start gap-2 p-1.5 rounded-md bg-amber-900/10">
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-amber-900/40 text-amber-300 shrink-0 mt-0.5">pending</span>
+              <span class="font-mono text-[10px] text-amber-300 shrink-0 mt-1">FB-07</span>
+              <span class="text-[11px] text-gray-300">Feedback gate enforcement + assessor</span>
+            </li>
+            <li class="flex items-start gap-2 p-1.5 rounded-md bg-amber-900/10">
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-amber-900/40 text-amber-300 shrink-0 mt-0.5">pending</span>
+              <span class="font-mono text-[10px] text-amber-300 shrink-0 mt-1">FB-08</span>
+              <span class="text-[11px] text-gray-300">visits → iterations[] with timestamps</span>
+            </li>
+          </ul>
+          <!-- Instruction -->
+          <div class="pt-2 border-t border-gray-800">
+            <p class="text-[11px] text-gray-400 leading-relaxed">Address each item first — add a unit that cites <code class="px-1 py-0.5 bg-gray-800 rounded font-mono text-[10px] text-amber-300">closes: [FB-NN]</code>, or mark the item <span class="text-gray-300">closed</span> / <span class="text-gray-300">rejected</span> if no longer relevant.</p>
+          </div>
+          <!-- Disabled button pair -->
+          <div class="grid grid-cols-2 gap-2">
+            <button disabled class="px-3 py-2 text-xs font-semibold rounded-md bg-gray-800/50 text-gray-500 cursor-not-allowed border border-gray-800" aria-disabled="true">Approve</button>
+            <button disabled class="px-3 py-2 text-xs font-semibold rounded-md bg-gray-800/50 text-gray-500 cursor-not-allowed border border-gray-800" aria-disabled="true">Request changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Light -->
+    <div class="rounded-xl border border-gray-200 bg-white p-4 mb-4">
+      <div class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-3">light · sidebar action bar</div>
+      <div class="w-full max-w-[384px] rounded-lg border border-gray-200 bg-white">
+        <div class="p-4 space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100">
+              <svg class="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m0 0v.01M12 5l9 14H3L12 5z"/></svg>
+            </span>
+            <div class="flex-1">
+              <div class="text-xs font-semibold text-gray-900">Approve gate not yet reachable</div>
+              <div class="text-[10px] text-gray-500">3 feedback items must be addressed first</div>
+            </div>
+          </div>
+          <ul class="space-y-1.5">
+            <li class="flex items-start gap-2 p-1.5 rounded-md bg-amber-50">
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100 text-amber-800 shrink-0 mt-0.5">pending</span>
+              <span class="font-mono text-[10px] text-amber-800 shrink-0 mt-1">FB-05</span>
+              <span class="text-[11px] text-gray-700">Additive-elaborate rollback broken E2E</span>
+            </li>
+            <li class="flex items-start gap-2 p-1.5 rounded-md bg-amber-50">
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100 text-amber-800 shrink-0 mt-0.5">pending</span>
+              <span class="font-mono text-[10px] text-amber-800 shrink-0 mt-1">FB-07</span>
+              <span class="text-[11px] text-gray-700">Feedback gate enforcement + assessor</span>
+            </li>
+            <li class="flex items-start gap-2 p-1.5 rounded-md bg-amber-50">
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100 text-amber-800 shrink-0 mt-0.5">pending</span>
+              <span class="font-mono text-[10px] text-amber-800 shrink-0 mt-1">FB-08</span>
+              <span class="text-[11px] text-gray-700">visits → iterations[] with timestamps</span>
+            </li>
+          </ul>
+          <div class="pt-2 border-t border-gray-200">
+            <p class="text-[11px] text-gray-600 leading-relaxed">Address each item first — add a unit that cites <code class="px-1 py-0.5 bg-gray-100 rounded font-mono text-[10px] text-amber-800">closes: [FB-NN]</code>, or mark the item <span class="text-gray-900">closed</span> / <span class="text-gray-900">rejected</span> if no longer relevant.</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button disabled class="px-3 py-2 text-xs font-semibold rounded-md bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200" aria-disabled="true">Approve</button>
+            <button disabled class="px-3 py-2 text-xs font-semibold rounded-md bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200" aria-disabled="true">Request changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive states, a11y, responsive -->
+  <section>
+    <h2 class="text-sm font-semibold mb-3">Interactive states · accessibility · responsive</h2>
+    <div class="grid md:grid-cols-3 gap-4 text-xs">
+      <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+        <h3 class="text-sm font-semibold mb-2">States (banner)</h3>
+        <ul class="text-gray-600 dark:text-gray-400 space-y-1 list-disc ml-5">
+          <li><strong class="text-gray-900 dark:text-gray-100">default</strong> — amber (still-pending / write-failure) or rose (assessor-error); persistent, non-modal.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">hover</strong> — dismiss button <code>hover:text-amber-300</code> / <code>hover:text-rose-300</code>.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">focus</strong> — focus-visible ring on dismiss, "view log" — <code>focus:ring-2 focus:ring-amber-500</code>.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">dismissed</strong> — collapses to a single-line strip pinned above content, click expands.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">persistence</strong> — banner session-scoped; stored in <code>sessionStorage</code> keyed by <code>{stage}:{visits}</code>, re-shows on new rollback.</li>
+        </ul>
+      </div>
+      <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+        <h3 class="text-sm font-semibold mb-2">States (blocked gate)</h3>
+        <ul class="text-gray-600 dark:text-gray-400 space-y-1 list-disc ml-5">
+          <li><strong class="text-gray-900 dark:text-gray-100">default</strong> — non-interactive; list of blockers with badge + id + title.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">hover</strong> — blocker row <code>hover:bg-amber-900/20</code> / <code>hover:bg-amber-100</code>; cursor pointer — clicking scrolls to item in feedback list.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">focus</strong> — each blocker row is a <code>button</code> for keyboard nav, focus ring visible.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">disabled</strong> — Approve and Request Changes buttons are <code>disabled</code> with <code>aria-disabled="true"</code>, <code>cursor-not-allowed</code>, muted styling. Must use <code>aria-describedby</code> pointing to the blocker copy so screen readers read the reason.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">transition</strong> — when assessor succeeds, this whole panel dissolves (0.3s opacity) and the normal action bar fades in.</li>
+        </ul>
+      </div>
+      <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+        <h3 class="text-sm font-semibold mb-2">Accessibility + responsive</h3>
+        <ul class="text-gray-600 dark:text-gray-400 space-y-1 list-disc ml-5">
+          <li>Banner = <code>role="status" aria-live="assertive"</code> (rollback is a state change the reviewer needs to hear).</li>
+          <li>Blocked gate = <code>role="region" aria-label="Approve gate blocked"</code>.</li>
+          <li>Contrast: amber-200/amber-900/15 &gt; 7:1 (dark), amber-900/amber-50 &gt; 7:1 (light).</li>
+          <li>Icons are <code>aria-hidden="true"</code>; meaning comes from pill text and heading.</li>
+          <li>Touch targets: dismiss + "view log" buttons are 28×28 visible, 44×44 hit area via <code>::before</code> extension.</li>
+          <li><strong>mobile 375px</strong> — banner stacks badge + visit counter below headline; action buttons remain 2-col.</li>
+          <li><strong>tablet 768px</strong> — banner at full width of main content; sidebar bottom sheet hosts blocked-gate panel.</li>
+          <li><strong>desktop 1280px</strong> — banner centered within <code>max-w-[1400px]</code>; blocked-gate panel fits within <code>w-96</code> sidebar.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tokens used -->
+  <section>
+    <h2 class="text-sm font-semibold mb-3">Tokens used (knowledge/DESIGN-TOKENS.md)</h2>
+    <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 text-xs text-gray-600 dark:text-gray-400">
+      <ul class="space-y-0.5 list-disc ml-5 font-mono">
+        <li>warning surface — bg-amber-50 / bg-amber-900/15 · border-amber-200 / border-amber-800 · border-l-4 border-l-amber-500</li>
+        <li>error surface — bg-rose-50 / bg-rose-900/15 · border-rose-200 / border-rose-800 · border-l-4 border-l-rose-500</li>
+        <li>assessor-note callout — bg-white / bg-gray-900/60 · border-amber-200 / border-amber-900/50 · monospace body</li>
+        <li>feedback pills — feedback-status-pending (amber), font-mono id tag, text-xs title</li>
+        <li>dismiss button — focus:ring-2 focus:ring-amber-500 · hover:text-amber-300</li>
+        <li>disabled action buttons — bg-gray-100 / bg-gray-800/50 · text-gray-400 / text-gray-500 · cursor-not-allowed</li>
+        <li>visit counter — font-mono, bg-gray-800 / bg-white + border-amber-200 · text-gray-300 / text-gray-700 (matches DESIGN-TOKENS 2.4 tier-1 informational)</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>
