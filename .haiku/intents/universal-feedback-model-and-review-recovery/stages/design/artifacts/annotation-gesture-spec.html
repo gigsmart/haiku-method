@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Annotation Gesture Spec — Universal Feedback Model</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { sans: ['system-ui','sans-serif'], mono: ['ui-monospace','SFMono-Regular','monospace'] } } }
+    };
+  </script>
+  <style>
+    /* Crosshair cursor for spatial annotation targets */
+    .cursor-crosshair { cursor: crosshair; }
+
+    /* Line-hover highlight for text/markdown artifacts */
+    .line-row:hover { background: rgba(13, 148, 136, 0.08); }
+    .dark .line-row:hover { background: rgba(13, 148, 136, 0.16); }
+
+    /* Dashed annotation marker guide (ghost pin at hover position) */
+    .ghost-pin {
+      position: absolute;
+      width: 28px; height: 28px;
+      border-radius: 9999px;
+      border: 2px dashed rgba(13, 148, 136, 0.6);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      transition: opacity 120ms ease-out;
+    }
+
+    /* Popover entrance animation */
+    @keyframes pop-in {
+      0% { opacity: 0; transform: translateY(-4px) scale(0.96); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .animate-pop-in { animation: pop-in 140ms ease-out; }
+
+    /* Section card — consistent with DESIGN-BRIEF */
+    .card {
+      background: white;
+      border: 1px solid #e7e5e4;
+      border-radius: 12px;
+      box-shadow: 0 1px 2px 0 rgba(0,0,0,0.04);
+    }
+    .dark .card { background: #1c1917; border-color: #44403c; }
+  </style>
+</head>
+<body class="bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 font-sans">
+
+<!-- ============================================================
+     HEADER
+============================================================ -->
+<header class="sticky top-0 z-40 bg-white/90 dark:bg-stone-900/90 backdrop-blur border-b border-stone-200 dark:border-stone-800">
+  <div class="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+    <div>
+      <p class="text-[10px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">Design Stage · unit-04</p>
+      <h1 class="text-base font-semibold">Annotation gesture spec</h1>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">closes FB-01</span>
+      <button onclick="document.documentElement.classList.toggle('dark')" class="px-3 py-1.5 text-xs font-medium rounded-md bg-stone-200 dark:bg-stone-800 hover:bg-stone-300 dark:hover:bg-stone-700">Toggle theme</button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-6 py-8 space-y-10">
+
+  <!-- ============================================================
+       OVERVIEW
+  ============================================================ -->
+  <section class="card p-6">
+    <h2 class="text-lg font-semibold mb-3">1. What this spec covers</h2>
+    <p class="text-sm text-stone-700 dark:text-stone-300 mb-4">
+      Today the review UI renders existing annotations but does not specify
+      how a reviewer <strong>creates</strong> one. This unit closes that
+      gap. Every artifact kind in the feedback surface — raster image,
+      inline SVG, markdown / text, HTML iframe, PDF embed — gets a
+      first-class creation gesture, a cursor affordance, and a popover
+      contract.
+    </p>
+    <p class="text-sm text-stone-700 dark:text-stone-300">
+      The deliverable is concrete enough for development to wire up without
+      inventing UX. See
+      <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-[11px] font-mono">annotation-popover-states.html</code>
+      for the visual states of the popover itself.
+    </p>
+  </section>
+
+  <!-- ============================================================
+       GESTURE MATRIX
+  ============================================================ -->
+  <section class="card p-6">
+    <h2 class="text-lg font-semibold mb-4">2. Gesture matrix — one row per artifact kind</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm border-collapse">
+        <thead>
+          <tr class="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 border-b border-stone-200 dark:border-stone-700">
+            <th class="text-left py-2 pr-4">Artifact kind</th>
+            <th class="text-left py-2 pr-4">MIME / detector</th>
+            <th class="text-left py-2 pr-4">Cursor affordance</th>
+            <th class="text-left py-2 pr-4">Creation gesture</th>
+            <th class="text-left py-2">Captured location</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
+          <tr>
+            <td class="py-3 pr-4 font-medium">Raster image</td>
+            <td class="py-3 pr-4 font-mono text-xs text-stone-500">image/*</td>
+            <td class="py-3 pr-4"><code class="text-xs">cursor-crosshair</code></td>
+            <td class="py-3 pr-4">Click anywhere on the image wrapper</td>
+            <td class="py-3 font-mono text-xs text-stone-600 dark:text-stone-400">{ x, y } ∈ [0,1]</td>
+          </tr>
+          <tr>
+            <td class="py-3 pr-4 font-medium">Inline SVG</td>
+            <td class="py-3 pr-4 font-mono text-xs text-stone-500">image/svg+xml (inlined)</td>
+            <td class="py-3 pr-4"><code class="text-xs">cursor-crosshair</code></td>
+            <td class="py-3 pr-4">Click anywhere on the SVG canvas wrapper</td>
+            <td class="py-3 font-mono text-xs text-stone-600 dark:text-stone-400">{ x, y } ∈ [0,1]</td>
+          </tr>
+          <tr>
+            <td class="py-3 pr-4 font-medium">Markdown / text</td>
+            <td class="py-3 pr-4 font-mono text-xs text-stone-500">text/markdown · text/plain</td>
+            <td class="py-3 pr-4"><code class="text-xs">cursor-pointer</code> on hover row</td>
+            <td class="py-3 pr-4">Click a line (or focus + <kbd class="text-[10px] font-mono px-1 bg-stone-100 dark:bg-stone-800 rounded">A</kbd>)</td>
+            <td class="py-3 font-mono text-xs text-stone-600 dark:text-stone-400">{ line } (1-indexed)</td>
+          </tr>
+          <tr>
+            <td class="py-3 pr-4 font-medium">HTML iframe</td>
+            <td class="py-3 pr-4 font-mono text-xs text-stone-500">text/html (sandboxed)</td>
+            <td class="py-3 pr-4">iframe is non-interactive for annotation; adjacent form is keyboard reachable</td>
+            <td class="py-3 pr-4">Use "Add feedback on this preview" button beside the iframe → fills location form</td>
+            <td class="py-3 font-mono text-xs text-stone-600 dark:text-stone-400">{ region } (user string)</td>
+          </tr>
+          <tr>
+            <td class="py-3 pr-4 font-medium">PDF embed</td>
+            <td class="py-3 pr-4 font-mono text-xs text-stone-500">application/pdf</td>
+            <td class="py-3 pr-4">iframe is non-interactive; adjacent form is keyboard reachable</td>
+            <td class="py-3 pr-4">Use "Add feedback on this preview" button → fills location form</td>
+            <td class="py-3 font-mono text-xs text-stone-600 dark:text-stone-400">{ page, region }</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mt-4 text-xs text-stone-500 dark:text-stone-400">
+      Any future artifact kind inherits the matching pattern: if it's spatial,
+      it gets <code>cursor-crosshair</code> + <code>{x, y}</code>; if it's
+      line-indexable text, it gets <code>{line}</code>; if it's embedded in a
+      sandboxed iframe, it gets the location-form fallback.
+    </p>
+  </section>
+
+  <!-- ============================================================
+       SPATIAL — IMAGE
+  ============================================================ -->
+  <section class="card p-6" id="spatial-image">
+    <h2 class="text-lg font-semibold mb-2">3. Spatial annotation — raster image</h2>
+    <p class="text-sm text-stone-700 dark:text-stone-300 mb-4">
+      Click-to-place. Move the mouse to see a ghost pin follow the cursor.
+      Click to open the popover anchored at that location. Normalized
+      <code>{x, y}</code> ∈ [0,1] so coordinates survive resize/rescale.
+    </p>
+
+    <div class="relative inline-block max-w-full cursor-crosshair select-none" id="img-demo"
+         onclick="demoClickSpatial(event, 'image-mock')"
+         onmousemove="ghostFollow(event, 'ghost-img')"
+         onmouseleave="ghostHide('ghost-img')">
+      <!-- Stand-in artifact: architecture diagram rendered as inline SVG so we don't need external assets -->
+      <svg viewBox="0 0 600 300" class="block max-w-full max-h-96 rounded-lg border border-stone-200 dark:border-stone-700 bg-white pointer-events-none">
+        <rect width="600" height="300" fill="#ffffff" />
+        <g font-family="system-ui" font-size="12">
+          <rect x="40" y="40" width="140" height="60" rx="8" fill="#ccfbf1" stroke="#14b8a6" stroke-width="1.5"/>
+          <text x="110" y="74" text-anchor="middle" fill="#0f766e" font-weight="700">Review UI</text>
+          <rect x="230" y="40" width="140" height="60" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="300" y="74" text-anchor="middle" fill="#92400e" font-weight="700">haiku_feedback</text>
+          <rect x="420" y="40" width="140" height="60" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+          <text x="490" y="74" text-anchor="middle" fill="#1e3a8a" font-weight="700">feedback/*.md</text>
+          <line x1="180" y1="70" x2="230" y2="70" stroke="#78716c" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <line x1="370" y1="70" x2="420" y2="70" stroke="#78716c" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <rect x="230" y="180" width="140" height="60" rx="8" fill="#e9d5ff" stroke="#a855f7" stroke-width="1.5"/>
+          <text x="300" y="214" text-anchor="middle" fill="#581c87" font-weight="700">orchestrator</text>
+          <line x1="300" y1="100" x2="300" y2="180" stroke="#78716c" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#78716c"/>
+            </marker>
+          </defs>
+        </g>
+      </svg>
+
+      <!-- Example existing pin at (42%, 60%) to illustrate the overlay layer -->
+      <button tabindex="-1" title="FB-12: review gate timing" aria-label="Feedback FB-12"
+              style="left: 42%; top: 60%"
+              class="absolute -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-amber-500 text-white text-[11px] font-bold flex items-center justify-center shadow-lg ring-2 ring-white dark:ring-stone-900">
+        12
+      </button>
+
+      <!-- Ghost pin that follows cursor -->
+      <div id="ghost-img" class="ghost-pin" style="opacity:0"></div>
+    </div>
+
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+      <div class="p-3 rounded-lg bg-stone-100 dark:bg-stone-800/60">
+        <p class="font-bold uppercase tracking-widest text-[10px] text-stone-500 dark:text-stone-400 mb-2">Touch behavior</p>
+        <p class="text-stone-700 dark:text-stone-300">Long-press (≥400ms) replaces click-to-place on touch devices — avoids the scroll-collision. Tapping an existing pin opens that feedback.</p>
+      </div>
+      <div class="p-3 rounded-lg bg-stone-100 dark:bg-stone-800/60">
+        <p class="font-bold uppercase tracking-widest text-[10px] text-stone-500 dark:text-stone-400 mb-2">Rejection bounds</p>
+        <p class="text-stone-700 dark:text-stone-300">If <code>x</code> or <code>y</code> falls outside [0,1] (edge click miss), the gesture is silently discarded — no popover, no error toast.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SPATIAL — SVG
+  ============================================================ -->
+  <section class="card p-6" id="spatial-svg">
+    <h2 class="text-lg font-semibold mb-2">4. Spatial annotation — inline SVG</h2>
+    <p class="text-sm text-stone-700 dark:text-stone-300 mb-4">
+      Identical gesture to raster images — wrapper div receives the click,
+      image contents are <code>pointer-events: none</code> so the whole
+      surface is a uniform click target. No special SVG-element click
+      handling in v1.
+    </p>
+    <div class="p-4 rounded-lg bg-stone-100 dark:bg-stone-800/60 text-xs">
+      <p class="font-mono text-stone-700 dark:text-stone-300">
+        &lt;div class="relative cursor-crosshair" onclick="startAnnotationSpatial(...)"&gt;<br/>
+        &nbsp;&nbsp;&lt;svg ... class="pointer-events-none" /&gt;<br/>
+        &nbsp;&nbsp;{/* overlay pins positioned absolutely */}<br/>
+        &lt;/div&gt;
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       LINE-BASED — TEXT / MARKDOWN
+  ============================================================ -->
+  <section class="card p-6" id="line-text">
+    <h2 class="text-lg font-semibold mb-2">5. Line-based annotation — markdown / text</h2>
+    <p class="text-sm text-stone-700 dark:text-stone-300 mb-4">
+      Each line is a row in a 2-column grid (gutter + content). Hover
+      highlights the entire row in teal; click anywhere on the row opens
+      the popover anchored near the click. Keyboard path: arrow-keys
+      focus a line, <kbd class="text-[10px] font-mono px-1 bg-stone-100 dark:bg-stone-800 rounded">A</kbd> opens popover at that line.
+    </p>
+
+    <div class="text-[12px] font-mono text-stone-700 dark:text-stone-300 leading-relaxed bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-700 rounded-md overflow-hidden"
+         role="list" aria-label="Artifact lines">
+      <div class="grid grid-cols-[2.5rem_1fr] line-row cursor-pointer" onclick="demoClickLine(event, 1)" tabindex="0">
+        <span class="text-stone-400 text-right pr-2 select-none bg-stone-50 dark:bg-stone-900">1</span>
+        <span class="px-3 py-0.5">## Feedback model</span>
+      </div>
+      <div class="grid grid-cols-[2.5rem_1fr] line-row cursor-pointer" onclick="demoClickLine(event, 2)" tabindex="0">
+        <span class="text-stone-400 text-right pr-2 select-none bg-stone-50 dark:bg-stone-900">2</span>
+        <span class="px-3 py-0.5"> </span>
+      </div>
+      <!-- Line 3 has an existing annotation -->
+      <div class="grid grid-cols-[2.5rem_1fr] cursor-pointer bg-amber-50 dark:bg-amber-900/20 border-l-[3px] border-l-amber-500" onclick="demoClickLine(event, 3)" tabindex="0" aria-label="Line 3 with 1 annotation">
+        <span class="text-amber-600 dark:text-amber-400 text-right pr-2 select-none font-bold bg-amber-100/60 dark:bg-amber-950/40">3</span>
+        <span class="px-3 py-0.5">
+          <button tabindex="-1" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold align-middle mr-1">7</button>
+          Every finding persists as a feedback file.
+        </span>
+      </div>
+      <div class="grid grid-cols-[2.5rem_1fr] line-row cursor-pointer" onclick="demoClickLine(event, 4)" tabindex="0">
+        <span class="text-stone-400 text-right pr-2 select-none bg-stone-50 dark:bg-stone-900">4</span>
+        <span class="px-3 py-0.5">Pending feedback count gates the FSM from review → gate.</span>
+      </div>
+      <div class="grid grid-cols-[2.5rem_1fr] line-row cursor-pointer" onclick="demoClickLine(event, 5)" tabindex="0">
+        <span class="text-stone-400 text-right pr-2 select-none bg-stone-50 dark:bg-stone-900">5</span>
+        <span class="px-3 py-0.5">Authorship is a flat 'user' literal in v1.</span>
+      </div>
+    </div>
+
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+      <div class="p-3 rounded-lg bg-stone-100 dark:bg-stone-800/60">
+        <p class="font-bold uppercase tracking-widest text-[10px] text-stone-500 dark:text-stone-400 mb-2">Gutter numbering</p>
+        <p class="text-stone-700 dark:text-stone-300">1-indexed. Matches the <code>feedback.target.annotation.line</code> shape used by existing line overlays in <code>review-ui-mockup.html</code>.</p>
+      </div>
+      <div class="p-3 rounded-lg bg-stone-100 dark:bg-stone-800/60">
+        <p class="font-bold uppercase tracking-widest text-[10px] text-stone-500 dark:text-stone-400 mb-2">Multiple annotations per line</p>
+        <p class="text-stone-700 dark:text-stone-300">Allowed. Existing pins render as small numbered pills inline; clicking the row creates a new annotation at the same line.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       IFRAME FALLBACK — HTML / PDF
+  ============================================================ -->
+  <section class="card p-6" id="iframe-fallback">
+    <h2 class="text-lg font-semibold mb-2">6. Iframe fallback — HTML / PDF</h2>
+    <p class="text-sm text-stone-700 dark:text-stone-300 mb-4">
+      Same-origin iframes can in principle receive click handlers, but
+      sandboxed <code>srcdoc</code> and cross-origin PDF viewers cannot. We
+      treat all iframe-embedded artifacts uniformly: direct click-in is
+      <strong>out</strong>. Reviewers submit a location through an adjacent
+      form attached below the preview.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-4 items-start">
+      <!-- Mock iframe preview -->
+      <div>
+        <div class="w-full h-72 border border-stone-200 dark:border-stone-700 rounded-md bg-white dark:bg-stone-950 flex items-center justify-center">
+          <div class="text-center">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-2">HTML iframe preview</p>
+            <p class="text-sm text-stone-500">sandboxed · not annotatable in-surface</p>
+          </div>
+        </div>
+        <div class="mt-2 flex items-center justify-between">
+          <a href="#" class="text-[10px] text-teal-600 dark:text-teal-400 hover:underline">Open in new tab ↗</a>
+          <span class="text-[10px] text-stone-400">Add feedback via the form →</span>
+        </div>
+      </div>
+
+      <!-- Location form -->
+      <div class="p-3 rounded-lg border border-teal-300 dark:border-teal-700 bg-teal-50/40 dark:bg-teal-900/10">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-teal-700 dark:text-teal-300 mb-3">Add feedback on this preview</p>
+        <label class="block text-[10px] font-medium text-stone-500 dark:text-stone-400 mb-1">Page (optional — PDF only)</label>
+        <input type="number" min="1" placeholder="3"
+               class="w-full text-xs p-2 mb-2 border border-stone-300 dark:border-stone-600 rounded-md bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-teal-500 focus:outline-none"/>
+        <label class="block text-[10px] font-medium text-stone-500 dark:text-stone-400 mb-1">Region / where to look</label>
+        <input type="text" placeholder='e.g. "top-right CTA" or "§ 3.2"'
+               class="w-full text-xs p-2 mb-3 border border-stone-300 dark:border-stone-600 rounded-md bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-teal-500 focus:outline-none"/>
+        <button class="w-full px-3 py-2 text-xs font-semibold rounded-md bg-teal-600 hover:bg-teal-700 text-white transition-colors">
+          Continue to popover →
+        </button>
+        <p class="mt-2 text-[10px] text-stone-500 dark:text-stone-400">
+          The popover opens with the captured <code>{page, region}</code> preselected so the reviewer only types title + body.
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-5 p-4 rounded-lg bg-stone-100 dark:bg-stone-800/60 text-xs">
+      <p class="font-bold uppercase tracking-widest text-[10px] text-stone-500 dark:text-stone-400 mb-2">Why not click-through?</p>
+      <ul class="list-disc pl-5 space-y-1 text-stone-700 dark:text-stone-300">
+        <li><strong>Sandboxed srcdoc</strong>: <code>sandbox="allow-same-origin"</code> blocks parent script access; we can't attach a click listener inside.</li>
+        <li><strong>Cross-origin PDFs</strong>: the PDF viewer consumes all mouse events; the parent never sees them.</li>
+        <li><strong>Consistency</strong>: one fallback pattern across both kinds beats two custom integrations. When pdf.js lands in v2 we can add <code>{page}</code>-coordinate click-through without breaking the form.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       KEYBOARD EQUIVALENT
+  ============================================================ -->
+  <section class="card p-6" id="keyboard">
+    <h2 class="text-lg font-semibold mb-2">7. Keyboard equivalent</h2>
+    <p class="text-sm text-stone-700 dark:text-stone-300 mb-4">
+      Full parity with unit-07's shortcut map. Creation is always
+      reachable without a pointer.
+    </p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm border-collapse">
+        <thead>
+          <tr class="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 border-b border-stone-200 dark:border-stone-700">
+            <th class="text-left py-2 pr-4">Focus</th>
+            <th class="text-left py-2 pr-4">Key</th>
+            <th class="text-left py-2 pr-4">Action</th>
+            <th class="text-left py-2">Popover anchor</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
+          <tr>
+            <td class="py-2 pr-4">Line row (text / md)</td>
+            <td class="py-2 pr-4"><kbd class="text-[10px] font-mono px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">A</kbd></td>
+            <td class="py-2 pr-4">Open popover at focused line</td>
+            <td class="py-2 text-xs text-stone-500">left edge of row + gutter offset</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4">Artifact wrapper (image / svg)</td>
+            <td class="py-2 pr-4"><kbd class="text-[10px] font-mono px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">A</kbd></td>
+            <td class="py-2 pr-4">Open popover centered on artifact, <code>{x:0.5, y:0.5}</code></td>
+            <td class="py-2 text-xs text-stone-500">center of artifact bounds</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4">Iframe wrapper (html / pdf)</td>
+            <td class="py-2 pr-4"><kbd class="text-[10px] font-mono px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">A</kbd></td>
+            <td class="py-2 pr-4">Focus the location form's <em>region</em> input</td>
+            <td class="py-2 text-xs text-stone-500">n/a (form first, popover after)</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4">Anywhere inside popover</td>
+            <td class="py-2 pr-4"><kbd class="text-[10px] font-mono px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">Esc</kbd></td>
+            <td class="py-2 pr-4">Cancel & restore focus to origin element</td>
+            <td class="py-2 text-xs text-stone-500">—</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4">Popover title / body input</td>
+            <td class="py-2 pr-4"><kbd class="text-[10px] font-mono px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">⌘/Ctrl</kbd>+<kbd class="text-[10px] font-mono px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">Enter</kbd></td>
+            <td class="py-2 pr-4">Save (same as clicking Create)</td>
+            <td class="py-2 text-xs text-stone-500">—</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4">Existing feedback item in sidebar</td>
+            <td class="py-2 pr-4"><kbd class="text-[10px] font-mono px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">Enter</kbd></td>
+            <td class="py-2 pr-4">Scroll artifact into view + flash the corresponding pin</td>
+            <td class="py-2 text-xs text-stone-500">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       ACCESSIBILITY
+  ============================================================ -->
+  <section class="card p-6" id="a11y">
+    <h2 class="text-lg font-semibold mb-3">8. Accessibility contract</h2>
+    <ul class="space-y-2 text-sm text-stone-700 dark:text-stone-300 list-disc pl-5">
+      <li><strong>Focus trap</strong>: once the popover opens, focus is trapped between title → body → Cancel → Create → (loop).</li>
+      <li><strong>Focus return</strong>: closing the popover (save, cancel, ESC, click-outside) returns focus to the element that triggered creation — the artifact wrapper, the line row, or the iframe form's submit button.</li>
+      <li><strong>ARIA</strong>: popover is <code>role="dialog"</code> <code>aria-modal="true"</code> <code>aria-labelledby="ann-popover-label"</code>; title input has <code>aria-required="true"</code>.</li>
+      <li><strong>Live-region announcement</strong>: on save, a <code>role="status" aria-live="polite"</code> region announces <em>"Feedback FB-NN created at &lt;location label&gt;"</em>.</li>
+      <li><strong>Touch targets</strong>: every button in the popover footer is ≥ 44×44px on mobile (see <code>annotation-popover-states.html</code> → small-viewport state).</li>
+      <li><strong>Cursor affordance</strong>: <code>cursor-crosshair</code> on spatial wrappers and <code>cursor-pointer</code> on line rows is a visual hint — screen readers get <code>role="button"</code> or equivalent regardless.</li>
+      <li><strong>No color-only signals</strong>: the ghost pin uses a dashed teal border + always-on fill; pin status (pending / addressed / closed) is encoded as both color + number label.</li>
+    </ul>
+  </section>
+
+  <!-- ============================================================
+       STORAGE CONTRACT
+  ============================================================ -->
+  <section class="card p-6" id="storage">
+    <h2 class="text-lg font-semibold mb-3">9. Storage contract</h2>
+    <p class="text-sm text-stone-700 dark:text-stone-300 mb-4">
+      All created annotations persist through <code>haiku_feedback</code>
+      with the exact shape below. The CRUD tool MUST accept this payload;
+      the reviewer MUST produce it from the gesture data.
+    </p>
+
+<pre class="text-[12px] font-mono bg-stone-100 dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg p-4 overflow-x-auto"><span class="text-teal-600 dark:text-teal-400">// Feedback payload — annotation creation</span>
+{
+  title: <span class="text-amber-600 dark:text-amber-400">"Review gate timing unclear"</span>,
+  body:  <span class="text-amber-600 dark:text-amber-400">"Gate rolls back to elaborate but…"</span>,
+  origin: <span class="text-amber-600 dark:text-amber-400">"user-visual"</span>,     <span class="text-stone-500">// always user-visual for UI-created</span>
+  target: {
+    kind: <span class="text-amber-600 dark:text-amber-400">"output"</span>,           <span class="text-stone-500">// "unit" | "knowledge" | "output" | "file"</span>
+    outputName: <span class="text-amber-600 dark:text-amber-400">"review-ui-mockup.html"</span>,
+    annotation: {
+      <span class="text-stone-500">// EXACTLY ONE of the three shapes below</span>
+
+      <span class="text-stone-500">// (a) spatial — image, svg</span>
+      x: <span class="text-sky-600 dark:text-sky-400">0.42</span>, y: <span class="text-sky-600 dark:text-sky-400">0.60</span>     <span class="text-stone-500">// both ∈ [0, 1]</span>
+
+      <span class="text-stone-500">// (b) line — markdown, text</span>
+      <span class="text-stone-500">// line: 3                 // 1-indexed</span>
+
+      <span class="text-stone-500">// (c) region — html, pdf</span>
+      <span class="text-stone-500">// page: 3,                // optional, PDF only</span>
+      <span class="text-stone-500">// region: "top-right CTA" // required when no page/line/x</span>
+    }
+  }
+}</pre>
+
+    <div class="mt-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-xs">
+      <p class="font-bold uppercase tracking-widest text-[10px] text-amber-700 dark:text-amber-300 mb-2">Invariants the server MUST enforce</p>
+      <ul class="list-disc pl-5 space-y-1 text-amber-900 dark:text-amber-100">
+        <li><code>target.annotation</code> is <strong>required</strong> for <code>origin: "user-visual"</code>. Reject the request without it.</li>
+        <li>Exactly one of <code>{x,y}</code>, <code>{line}</code>, <code>{page,region}</code>, or <code>{region}</code> must be present. Mixing shapes is rejected.</li>
+        <li><code>x</code> and <code>y</code> MUST be clamped to [0,1] on the server side too — never trust the client.</li>
+        <li><code>line</code> MUST be a positive integer ≥ 1.</li>
+        <li><code>region</code> MUST be a non-empty string when present (trim-then-check).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       DATA-FLOW DIAGRAM
+  ============================================================ -->
+  <section class="card p-6" id="flow">
+    <h2 class="text-lg font-semibold mb-4">10. Creation flow — end-to-end</h2>
+    <div class="flex flex-col md:flex-row items-stretch gap-3 text-xs">
+      <div class="flex-1 p-3 rounded-lg bg-stone-100 dark:bg-stone-800/60">
+        <p class="font-bold uppercase tracking-widest text-[10px] text-stone-500 dark:text-stone-400 mb-1">① Gesture</p>
+        <p>User clicks image/svg/line or submits iframe form.</p>
+      </div>
+      <div class="flex items-center justify-center md:w-8 text-stone-400">→</div>
+      <div class="flex-1 p-3 rounded-lg bg-stone-100 dark:bg-stone-800/60">
+        <p class="font-bold uppercase tracking-widest text-[10px] text-stone-500 dark:text-stone-400 mb-1">② Capture</p>
+        <p>Compute <code>{x,y}</code> | <code>{line}</code> | <code>{page,region}</code>. Stash in <code>annContext</code>.</p>
+      </div>
+      <div class="flex items-center justify-center md:w-8 text-stone-400">→</div>
+      <div class="flex-1 p-3 rounded-lg bg-stone-100 dark:bg-stone-800/60">
+        <p class="font-bold uppercase tracking-widest text-[10px] text-stone-500 dark:text-stone-400 mb-1">③ Popover</p>
+        <p>Anchor popover near cursor (or form); focus title field.</p>
+      </div>
+      <div class="flex items-center justify-center md:w-8 text-stone-400">→</div>
+      <div class="flex-1 p-3 rounded-lg bg-stone-100 dark:bg-stone-800/60">
+        <p class="font-bold uppercase tracking-widest text-[10px] text-stone-500 dark:text-stone-400 mb-1">④ Save</p>
+        <p>POST to <code>haiku_feedback</code> with target + annotation; append to sidebar.</p>
+      </div>
+    </div>
+
+    <div class="mt-4 text-xs text-stone-500 dark:text-stone-400">
+      No intermediate "draft" state in v1 — save is a single transactional
+      write. If the request fails, the popover stays open with a red toast
+      inline ("Couldn't save — retry?") and the captured location is
+      preserved so the reviewer doesn't lose their placement.
+    </div>
+  </section>
+
+</main>
+
+<footer class="max-w-6xl mx-auto px-6 pb-12 text-xs text-stone-500 dark:text-stone-400">
+  <p>Unit 04 — Annotation creation UX across artifact types. Outputs:
+    <code>annotation-gesture-spec.html</code> (this file),
+    <code>annotation-popover-states.html</code> (visual states).
+    Closes FB-01.</p>
+</footer>
+
+<script>
+  // ========================================================
+  // Minimal demo interactions — purely for visual review of
+  // the spec. Production code will live in the React app.
+  // ========================================================
+  function demoClickSpatial(evt, label) {
+    const wrapper = evt.currentTarget;
+    const rect = wrapper.getBoundingClientRect();
+    const x = (evt.clientX - rect.left) / rect.width;
+    const y = (evt.clientY - rect.top) / rect.height;
+    if (x < 0 || x > 1 || y < 0 || y > 1) return;
+    alert(`Spatial annotation captured on "${label}"\n\n{ x: ${x.toFixed(3)}, y: ${y.toFixed(3)} }\n\n(In production this opens the popover anchored at the click.)`);
+    evt.stopPropagation();
+  }
+  function demoClickLine(evt, line) {
+    alert(`Line annotation captured\n\n{ line: ${line} }\n\n(In production this opens the popover anchored at the row's left edge.)`);
+    evt.stopPropagation();
+  }
+  function ghostFollow(evt, id) {
+    const wrapper = evt.currentTarget;
+    const ghost = document.getElementById(id);
+    if (!ghost) return;
+    const rect = wrapper.getBoundingClientRect();
+    ghost.style.left = (evt.clientX - rect.left) + 'px';
+    ghost.style.top  = (evt.clientY - rect.top) + 'px';
+    ghost.style.opacity = 1;
+  }
+  function ghostHide(id) {
+    const g = document.getElementById(id);
+    if (g) g.style.opacity = 0;
+  }
+</script>
+
+</body>
+</html>
