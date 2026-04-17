@@ -14,9 +14,9 @@ outputs:
   - stages/design/artifacts/revisit-modal-states.html
 status: active
 bolt: 1
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-17T16:50:24Z'
-hat_started_at: '2026-04-17T16:50:24Z'
+hat_started_at: '2026-04-17T16:59:26Z'
 ---
 
 # Revisit confirmation modal

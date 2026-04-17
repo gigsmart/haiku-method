@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Revisit Confirmation Modal — States (unit-06)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    .state-ring-confirm {
+      box-shadow: 0 0 0 2px var(--tw-ring-offset-color, transparent), 0 0 0 4px rgb(245 158 11);
+    }
+    .state-ring-cancel {
+      box-shadow: 0 0 0 2px var(--tw-ring-offset-color, transparent), 0 0 0 4px rgb(168 162 158);
+    }
+    @keyframes spin-slow { to { transform: rotate(360deg); } }
+    .spin { animation: spin-slow 0.9s linear infinite; }
+  </style>
+</head>
+<body class="bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 min-h-screen">
+
+  <header class="sticky top-0 z-20 bg-white/90 dark:bg-stone-900/90 backdrop-blur border-b border-stone-200 dark:border-stone-700">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex items-start justify-between gap-4">
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">Design States · unit-06</p>
+        <h1 class="text-xl font-semibold text-stone-900 dark:text-stone-100">Revisit confirmation modal — interactive states</h1>
+        <p class="text-xs text-stone-500 dark:text-stone-400 mt-1 max-w-2xl">
+          Every interactive element in every state. Default → hover → focus → active → disabled → error → loading → empty. Companion to <code class="font-mono">revisit-modal-spec.html</code>.
+        </p>
+      </div>
+      <button id="theme-toggle" class="px-3 py-1.5 text-xs rounded-md border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">Toggle theme</button>
+    </div>
+    <nav class="max-w-6xl mx-auto px-6 pb-3 flex flex-wrap gap-1 text-[11px] font-medium">
+      <a href="#buttons" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Buttons</a>
+      <a href="#chips" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Chips</a>
+      <a href="#preview-card" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Preview card</a>
+      <a href="#modal-lifecycle" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Modal lifecycle</a>
+      <a href="#error" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Error</a>
+      <a href="#loading" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Loading</a>
+      <a href="#empty" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Empty</a>
+      <a href="#edge-long" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Long-content</a>
+      <a href="#motion" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Motion</a>
+    </nav>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6 py-8 space-y-14">
+
+    <!-- ============================================================ -->
+    <!-- Buttons -->
+    <!-- ============================================================ -->
+    <section id="buttons" class="space-y-4">
+      <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">Buttons — all states</h2>
+      <p class="text-sm text-stone-500 dark:text-stone-400 max-w-3xl">Two buttons live in the footer. Both sit at <code class="font-mono">px-3 py-1.5</code> on desktop with a 44px min on mobile. Focus rings always meet 3:1 contrast against the footer surface.</p>
+
+      <!-- Confirm -->
+      <div class="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 overflow-hidden">
+        <div class="px-4 py-2 bg-stone-50 dark:bg-stone-800/60 border-b border-stone-200 dark:border-stone-700">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">Primary · Confirm &amp; Revisit</p>
+        </div>
+        <div class="p-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5 items-start">
+          <div class="space-y-2">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-stone-400">default</p>
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md bg-amber-600 text-white">Confirm &amp; Revisit</button>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">bg-amber-600</p>
+          </div>
+          <div class="space-y-2">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-stone-400">hover</p>
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md bg-amber-700 text-white">Confirm &amp; Revisit</button>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">hover:bg-amber-700</p>
+          </div>
+          <div class="space-y-2">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-stone-400">focus</p>
+            <button class="state-ring-confirm px-3 py-1.5 text-xs font-semibold rounded-md bg-amber-600 text-white">Confirm &amp; Revisit</button>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">focus:ring-2 ring-amber-500</p>
+          </div>
+          <div class="space-y-2">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-stone-400">active (pressed)</p>
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md bg-amber-800 text-white translate-y-px">Confirm &amp; Revisit</button>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">active:bg-amber-800 translate-y-px</p>
+          </div>
+          <div class="space-y-2">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-stone-400">disabled</p>
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md bg-amber-600 text-white opacity-50 cursor-not-allowed" disabled>Confirm &amp; Revisit</button>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">disabled:opacity-50</p>
+          </div>
+          <div class="space-y-2">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-stone-400">loading</p>
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md bg-amber-600 text-white flex items-center gap-1.5" aria-busy="true">
+              <svg class="w-3.5 h-3.5 spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="9" class="opacity-30"/><path stroke-linecap="round" d="M21 12a9 9 0 0 1-9 9"/></svg>
+              Revisiting…
+            </button>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">aria-busy + spinner</p>
+          </div>
+          <div class="space-y-2">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-stone-400">with-side-effects label</p>
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md bg-amber-600 hover:bg-amber-700 text-white">Confirm &amp; Revisit to <strong>Product</strong> · resets 3 downstream stages</button>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">dynamic label, desktop</p>
+          </div>
+          <div class="space-y-2">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-stone-400">mobile two-line</p>
+            <button class="min-h-[44px] w-44 px-3 py-2 text-xs font-semibold rounded-md bg-amber-600 text-white leading-snug text-left">
+              Confirm &amp; Revisit to Product
+              <span class="block text-[10px] font-medium opacity-90">resets 3 downstream stages</span>
+            </button>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">min-h-[44px]</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cancel -->
+      <div class="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 overflow-hidden">
+        <div class="px-4 py-2 bg-stone-50 dark:bg-stone-800/60 border-b border-stone-200 dark:border-stone-700">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">Secondary · Cancel</p>
+        </div>
+        <div class="p-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5 items-start">
+          <div class="space-y-2">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-stone-400">default</p>
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300">Cancel</button>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">border-stone-300</p>
+          </div>
+          <div class="space-y-2">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-stone-400">hover</p>
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 bg-stone-100 dark:bg-stone-800">Cancel</button>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">hover:bg-stone-100</p>
+          </div>
+          <div class="space-y-2">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-stone-400">focus (initial)</p>
+            <button class="state-ring-cancel px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300">Cancel</button>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">focus:ring-stone-400 · default focus on open</p>
+          </div>
+          <div class="space-y-2">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-stone-400">active (pressed)</p>
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-400 dark:border-stone-500 text-stone-800 dark:text-stone-200 bg-stone-200 dark:bg-stone-700 translate-y-px">Cancel</button>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">active:bg-stone-200</p>
+          </div>
+          <div class="space-y-2">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-stone-400">disabled</p>
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 opacity-50 cursor-not-allowed" disabled>Cancel</button>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">never disabled in normal flow — shown only for completeness</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile close ✕ -->
+      <div class="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 overflow-hidden">
+        <div class="px-4 py-2 bg-stone-50 dark:bg-stone-800/60 border-b border-stone-200 dark:border-stone-700">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">Mobile-only · ✕ close</p>
+        </div>
+        <div class="p-6 grid grid-cols-2 sm:grid-cols-4 gap-5 items-center">
+          <div class="space-y-2">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-stone-400">default</p>
+            <button class="w-11 h-11 flex items-center justify-center rounded-md text-stone-500 dark:text-stone-400">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">44×44 touch target</p>
+          </div>
+          <div class="space-y-2">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-stone-400">hover</p>
+            <button class="w-11 h-11 flex items-center justify-center rounded-md text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-800">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">hover:bg-stone-100</p>
+          </div>
+          <div class="space-y-2">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-stone-400">focus</p>
+            <button class="state-ring-cancel w-11 h-11 flex items-center justify-center rounded-md text-stone-600 dark:text-stone-300">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">focus:ring-2</p>
+          </div>
+          <div class="space-y-2">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-stone-400">active</p>
+            <button class="w-11 h-11 flex items-center justify-center rounded-md text-stone-700 dark:text-stone-200 bg-stone-200 dark:bg-stone-700 translate-y-px">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">active:bg-stone-200</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Chips -->
+    <!-- ============================================================ -->
+    <section id="chips" class="space-y-4">
+      <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">Chips — target, downstream, status</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Target -->
+        <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Target stage (destructive emphasis)</p>
+          <div class="space-y-2">
+            <div class="px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 flex items-center gap-2">
+              <span class="font-bold text-amber-700 dark:text-amber-400">Product</span>
+              <span class="text-[10px] text-amber-600 dark:text-amber-400">earliest unaddressed</span>
+            </div>
+            <div class="px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 flex items-center gap-2">
+              <span class="font-bold text-amber-700 dark:text-amber-400">Design</span>
+              <span class="text-[10px] text-amber-600 dark:text-amber-400">currently viewed — no earlier unaddressed</span>
+            </div>
+          </div>
+          <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono mt-2">amber-50 / amber-300 / amber-700</p>
+        </div>
+
+        <!-- Downstream chip -->
+        <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Downstream stage chip</p>
+          <div class="flex flex-wrap gap-1 items-center mb-2">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Development</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Security</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Delivery</span>
+          </div>
+          <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">stone-100 / stone-300 — neutral, these aren't actionable</p>
+        </div>
+
+        <!-- Status / stage labels inside lists -->
+        <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Stage label in open-feedback list</p>
+          <div class="flex flex-wrap gap-1 items-center mb-2">
+            <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Product</span>
+            <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Design</span>
+            <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Dev</span>
+          </div>
+          <p class="text-[10px] text-stone-500 dark:text-stone-400 font-mono">amber-100 / amber-700 — all open feedback is pending by definition</p>
+        </div>
+
+        <!-- Gate-state badges (header) -->
+        <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 md:col-span-3">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Header context badge</p>
+          <div class="flex flex-wrap gap-3 items-center">
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">gate paused</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400">no active gate</span>
+          </div>
+          <p class="text-[10px] text-stone-500 dark:text-stone-400 mt-2">Variant-specific. Amber when a gate paused this; stone when user opened the app manually.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Preview card (user-visual origin) -->
+    <!-- ============================================================ -->
+    <section id="preview-card" class="space-y-4">
+      <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">Typed-feedback preview card</h2>
+      <p class="text-sm text-stone-500 dark:text-stone-400 max-w-3xl">
+        Only rendered when the textarea is non-empty. Uses the <code class="font-mono">user-visual</code> origin palette from <code class="font-mono">DESIGN-TOKENS.md §2.2</code>.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Short -->
+        <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Short body (one line)</p>
+          <div class="px-3 py-2 rounded-md border border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-900/20">
+            <div class="flex items-center gap-1.5 mb-1">
+              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">Product</span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
+            </div>
+            <p class="text-xs text-stone-800 dark:text-stone-200 leading-snug">Add mobile breakpoint to annotation pin.</p>
+          </div>
+        </div>
+
+        <!-- Long -->
+        <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Long body (full render, no truncation)</p>
+          <div class="px-3 py-2 rounded-md border border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-900/20">
+            <div class="flex items-center gap-1.5 mb-1">
+              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">Product</span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
+            </div>
+            <p class="text-xs text-stone-800 dark:text-stone-200 leading-snug">Acceptance criteria needs an explicit mobile annotation-pin target size (min 44×44), a "focus visible" note on the a11y checklist, and an empty-state screenshot for the feedback panel. Also: decide what happens if a reviewer marks a feedback item as addressed but the underlying stage never re-runs — do we auto-close or stay addressed forever?</p>
+          </div>
+        </div>
+
+        <!-- Edge: only spaces / trimmed -->
+        <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 md:col-span-2">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Edge — whitespace-only textarea</p>
+          <p class="text-xs text-stone-600 dark:text-stone-300 leading-snug">
+            <code class="font-mono">.trim()</code> filter in <code class="font-mono">openRevisitModal</code> already handles this. The preview section does <strong>not</strong> render. The confirm button copy also drops the " · adds 1 new" suffix.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Modal lifecycle (open/close) -->
+    <!-- ============================================================ -->
+    <section id="modal-lifecycle" class="space-y-4">
+      <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">Modal lifecycle</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">① Opening (first paint)</p>
+          <ul class="text-xs text-stone-700 dark:text-stone-300 space-y-1">
+            <li>Backdrop fades in: <code class="font-mono">opacity 0 → 1</code> over 150ms.</li>
+            <li>Dialog scales in: <code class="font-mono">scale-95 → scale-100</code>, <code class="font-mono">opacity 0 → 1</code>, 120ms.</li>
+            <li>Body scroll locked.</li>
+            <li>Focus lands on <code class="font-mono">Cancel</code>.</li>
+            <li>Reduced-motion users skip the transform; fade only.</li>
+          </ul>
+        </div>
+        <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">② Confirm clicked</p>
+          <ul class="text-xs text-stone-700 dark:text-stone-300 space-y-1">
+            <li>Confirm enters loading state (spinner + <code class="font-mono">aria-busy=true</code>).</li>
+            <li>Cancel disables during in-flight call.</li>
+            <li>Backdrop click + ESC are ignored while loading.</li>
+            <li>On success: modal closes, <code class="font-mono">showToast('haiku_revisit invoked', …, 'revisit')</code> fires.</li>
+            <li>On failure: see § Error state.</li>
+          </ul>
+        </div>
+        <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">③ Closing</p>
+          <ul class="text-xs text-stone-700 dark:text-stone-300 space-y-1">
+            <li>Backdrop fades out 120ms.</li>
+            <li>Dialog scales out: <code class="font-mono">scale-100 → scale-95</code>, 100ms.</li>
+            <li>Body scroll restored.</li>
+            <li>Focus returns to the element that triggered the modal.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Error state -->
+    <!-- ============================================================ -->
+    <section id="error" class="space-y-3">
+      <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">Error state — revisit failed</h2>
+      <p class="text-sm text-stone-500 dark:text-stone-400 max-w-3xl">
+        If <code class="font-mono">haiku_revisit</code> errors (push rejected, worktree locked, network), the modal stays open with an inline error banner below the body. Confirm returns to the default label and can be retried.
+      </p>
+
+      <div class="rounded-xl bg-stone-900/80 dark:bg-black/60 p-8 flex items-start justify-center">
+        <div class="w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden">
+          <div class="px-5 py-4 border-b border-stone-200 dark:border-stone-700 flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500 text-white text-sm font-bold">↩</span>
+            <h3 class="text-base font-bold text-stone-900 dark:text-stone-100">Confirm revisit</h3>
+          </div>
+          <div class="px-5 py-4 space-y-3">
+            <p class="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-[11px]">haiku_revisit</code>, rewriting state and pushing to the main intent branch.</p>
+            <section>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Target stage</p>
+              <div class="px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 flex items-center gap-2">
+                <span class="font-bold text-amber-700 dark:text-amber-400">Product</span>
+                <span class="text-[10px] text-amber-600 dark:text-amber-400">earliest unaddressed</span>
+              </div>
+            </section>
+            <!-- Error banner -->
+            <div role="alert" class="px-3 py-2 rounded-md border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/30 text-xs text-red-800 dark:text-red-200">
+              <p class="font-semibold mb-0.5">Revisit failed</p>
+              <p class="leading-snug">Remote rejected the push — the intent branch has diverged. Pull, then retry, or run <code class="font-mono">haiku_repair</code> to reconcile.</p>
+            </div>
+          </div>
+          <div class="px-5 py-3 border-t border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/60 flex items-center justify-end gap-2">
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">Cancel</button>
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md bg-amber-600 hover:bg-amber-700 text-white focus:ring-2 focus:ring-amber-500 focus:outline-none">Retry</button>
+          </div>
+        </div>
+      </div>
+
+      <ul class="text-xs text-stone-600 dark:text-stone-300 list-disc pl-5 space-y-1">
+        <li>Error banner uses tokens from <code class="font-mono">DESIGN-TOKENS.md §1.8 Semantic / Error</code>: <code class="font-mono">bg-red-50 / border-red-200 / text-red-800</code>.</li>
+        <li><code class="font-mono">role="alert"</code> so screen readers announce it without needing focus.</li>
+        <li>Confirm label switches to "Retry" when an error is present, then returns to the default Confirm copy once the user edits the state or re-opens.</li>
+        <li>Cancel remains functional — user can back out without retrying.</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Loading state -->
+    <!-- ============================================================ -->
+    <section id="loading" class="space-y-3">
+      <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">Loading state — in-flight revisit</h2>
+
+      <div class="rounded-xl bg-stone-900/80 dark:bg-black/60 p-8 flex items-start justify-center">
+        <div class="w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden">
+          <div class="px-5 py-4 border-b border-stone-200 dark:border-stone-700 flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500 text-white text-sm font-bold">↩</span>
+            <h3 class="text-base font-bold text-stone-900 dark:text-stone-100">Confirm revisit</h3>
+          </div>
+          <div class="px-5 py-4 space-y-3 opacity-75 pointer-events-none select-none">
+            <p class="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-[11px]">haiku_revisit</code>, rewriting state and pushing to the main intent branch.</p>
+            <section>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Target stage</p>
+              <div class="px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 flex items-center gap-2">
+                <span class="font-bold text-amber-700 dark:text-amber-400">Product</span>
+                <span class="text-[10px] text-amber-600 dark:text-amber-400">earliest unaddressed</span>
+              </div>
+            </section>
+          </div>
+          <div class="px-5 py-3 border-t border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/60 flex items-center justify-between gap-2">
+            <p class="text-[11px] text-stone-500 dark:text-stone-400 flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 spin text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="9" class="opacity-30"/><path stroke-linecap="round" d="M21 12a9 9 0 0 1-9 9"/></svg>
+              Rewriting state · pushing branch…
+            </p>
+            <div class="flex items-center gap-2">
+              <button disabled class="px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 opacity-50 cursor-not-allowed">Cancel</button>
+              <button aria-busy="true" disabled class="px-3 py-1.5 text-xs font-semibold rounded-md bg-amber-600 text-white flex items-center gap-1.5 cursor-progress">
+                <svg class="w-3.5 h-3.5 spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="9" class="opacity-30"/><path stroke-linecap="round" d="M21 12a9 9 0 0 1-9 9"/></svg>
+                Revisiting…
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ul class="text-xs text-stone-600 dark:text-stone-300 list-disc pl-5 space-y-1">
+        <li>Body dims to 75% opacity + <code class="font-mono">pointer-events-none</code>. Visible but not interactive.</li>
+        <li>Footer gains a left-side status line with spinner + progress text. Caption text is <code class="font-mono">text-[11px] text-stone-500</code>.</li>
+        <li>Confirm shows spinner + "Revisiting…" copy, Cancel disables. ESC / backdrop-click are suppressed in this state.</li>
+        <li>If the call exceeds 4 seconds, the status line adds "still working — pushing may take a minute on large intents." Keeps the reviewer calm.</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Empty state -->
+    <!-- ============================================================ -->
+    <section id="empty" class="space-y-3">
+      <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">Empty state — no pending, no typed feedback</h2>
+      <p class="text-sm text-stone-500 dark:text-stone-400 max-w-3xl">
+        Reviewer opened the app manually, typed nothing, and no feedback is pending anywhere. Target falls back to the currently viewed stage. The "open feedback in scope" section is <strong>suppressed</strong>, not rendered empty.
+      </p>
+
+      <div class="rounded-xl bg-stone-900/80 dark:bg-black/60 p-8 flex items-start justify-center">
+        <div class="w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden">
+          <div class="px-5 py-4 border-b border-stone-200 dark:border-stone-700 flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500 text-white text-sm font-bold">↩</span>
+            <h3 class="text-base font-bold text-stone-900 dark:text-stone-100">Confirm revisit</h3>
+            <span class="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400">no active gate</span>
+          </div>
+          <div class="px-5 py-4 space-y-3">
+            <p class="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-[11px]">haiku_revisit</code>, rewriting state and pushing to the main intent branch.</p>
+            <div class="px-3 py-2 rounded-md bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700 text-[11px] text-stone-600 dark:text-stone-300 leading-snug">
+              Nothing is structurally open. The <strong>earliest unaddressed</strong> stage still determines the target — even though you opened the app manually.
+            </div>
+            <section>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Target stage</p>
+              <div class="px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 flex items-center gap-2">
+                <span class="font-bold text-amber-700 dark:text-amber-400">Design</span>
+                <span class="text-[10px] text-amber-600 dark:text-amber-400">currently viewed — no earlier unaddressed</span>
+              </div>
+            </section>
+            <section>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Downstream stages (re-run)</p>
+              <div class="flex flex-wrap gap-1">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Product</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Development</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Security</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Delivery</span>
+              </div>
+              <p class="text-[10px] text-stone-500 dark:text-stone-400 mt-1">These will be re-elaborated from the corrected upstream artifact.</p>
+            </section>
+            <!-- no "open feedback in scope" section — suppressed when empty -->
+          </div>
+          <div class="px-5 py-3 border-t border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/60 flex items-center justify-end gap-2">
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">Cancel</button>
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md bg-amber-600 hover:bg-amber-700 text-white focus:ring-2 focus:ring-amber-500 focus:outline-none">Confirm &amp; Revisit to Design · resets 4 downstream stages</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Long content edge -->
+    <!-- ============================================================ -->
+    <section id="edge-long" class="space-y-3">
+      <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">Long-content — 20+ pending items</h2>
+      <p class="text-sm text-stone-500 dark:text-stone-400 max-w-3xl">
+        Body region scrolls at <code class="font-mono">max-h-[60vh]</code>. Title, lede, target, and footer stay fixed; only sections (3) and (4) scroll.
+      </p>
+
+      <div class="rounded-xl bg-stone-900/80 dark:bg-black/60 p-8 flex items-start justify-center">
+        <div class="w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden flex flex-col" style="height: 560px;">
+          <div class="px-5 py-4 border-b border-stone-200 dark:border-stone-700 flex items-center gap-2 shrink-0">
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500 text-white text-sm font-bold">↩</span>
+            <h3 class="text-base font-bold text-stone-900 dark:text-stone-100">Confirm revisit</h3>
+          </div>
+          <div class="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+            <p class="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-[11px]">haiku_revisit</code>, rewriting state and pushing to the main intent branch.</p>
+            <section>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Target stage</p>
+              <div class="px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 flex items-center gap-2">
+                <span class="font-bold text-amber-700 dark:text-amber-400">Inception</span>
+                <span class="text-[10px] text-amber-600 dark:text-amber-400">earliest unaddressed</span>
+              </div>
+            </section>
+            <section>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Downstream stages (re-run)</p>
+              <div class="flex flex-wrap gap-1">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Design</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Product</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Dev</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Security</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Delivery</span>
+              </div>
+            </section>
+            <section>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Open feedback in scope (23)</p>
+              <ul class="space-y-1">
+                <li class="flex items-center gap-2 text-xs"><span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Inception</span><span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Problem framing doesn't mention external reviewers</span></li>
+                <li class="flex items-center gap-2 text-xs"><span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Inception</span><span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Success criteria miss a latency target</span></li>
+                <li class="flex items-center gap-2 text-xs"><span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Design</span><span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Focus ring color misses WCAG AA on dark</span></li>
+                <li class="flex items-center gap-2 text-xs"><span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Design</span><span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Mobile annotation-pin tap target under 44px</span></li>
+                <li class="flex items-center gap-2 text-xs"><span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Design</span><span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Revisit modal needs explicit error state</span></li>
+                <li class="flex items-center gap-2 text-xs"><span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Product</span><span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Acceptance criteria miss mobile breakpoint</span></li>
+                <li class="flex items-center gap-2 text-xs"><span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Product</span><span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Flow diagram missing for feedback-assessor</span></li>
+                <li class="flex items-center gap-2 text-xs"><span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Dev</span><span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Annotation pin click target under 44px</span></li>
+                <li class="flex items-center gap-2 text-xs"><span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Dev</span><span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">haiku_feedback MCP tool missing rate-limit wrapper</span></li>
+                <li class="flex items-center gap-2 text-xs"><span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Dev</span><span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">No integration test for revisit-push conflict</span></li>
+                <li class="flex items-center gap-2 text-xs"><span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Security</span><span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Threat model missing token-exfil scenario</span></li>
+                <li class="flex items-center gap-2 text-xs"><span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Security</span><span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">HTTP endpoint CORS allowlist too broad</span></li>
+                <li class="flex items-center gap-2 text-xs text-stone-400 italic">… 11 more</li>
+              </ul>
+              <p class="text-[10px] text-stone-500 dark:text-stone-400 mt-1">List scrolls within the body region — footer stays pinned.</p>
+            </section>
+          </div>
+          <div class="px-5 py-3 border-t border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/60 flex items-center justify-end gap-2 shrink-0">
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">Cancel</button>
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md bg-amber-600 hover:bg-amber-700 text-white focus:ring-2 focus:ring-amber-500 focus:outline-none">Confirm &amp; Revisit to Inception · resets 5 downstream stages</button>
+          </div>
+        </div>
+      </div>
+
+      <ul class="text-xs text-stone-600 dark:text-stone-300 list-disc pl-5 space-y-1">
+        <li>When <code class="font-mono">allPending.length &gt; 12</code>, collapse the tail as "… N more" and link to the full review sidebar for full context. Prevents the modal from dominating the screen.</li>
+        <li>Titles only — bodies are one line, truncated with <code class="font-mono">truncate</code>. The reviewer goes back to the sidebar for deep reads.</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Motion -->
+    <!-- ============================================================ -->
+    <section id="motion" class="space-y-3">
+      <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">Motion &amp; reduced-motion</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Standard motion</p>
+          <ul class="text-xs text-stone-700 dark:text-stone-300 space-y-1">
+            <li>Backdrop fade: 150ms ease-out on open, 120ms on close.</li>
+            <li>Dialog: <code class="font-mono">scale-95 → scale-100</code> with <code class="font-mono">opacity 0 → 1</code>, 120ms ease-out.</li>
+            <li>Button hover transitions: <code class="font-mono">transition-colors</code> (150ms).</li>
+            <li>Loading spinner: 0.9s linear, infinite.</li>
+            <li>Focus ring appears instantly (no transition) — respects system behavior.</li>
+          </ul>
+        </div>
+        <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Reduced-motion</p>
+          <ul class="text-xs text-stone-700 dark:text-stone-300 space-y-1">
+            <li><code class="font-mono">@media (prefers-reduced-motion: reduce)</code></li>
+            <li>Dialog skips the scale transform — fade only.</li>
+            <li>Loading spinner replaced with a static "busy" dot pulse at 1.5s (cadence stays announced but doesn't spin).</li>
+            <li>Confirm button loses <code class="font-mono">translate-y-px</code> active displacement.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- State matrix summary -->
+    <!-- ============================================================ -->
+    <section class="space-y-3">
+      <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">State matrix — coverage summary</h2>
+      <div class="overflow-x-auto rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
+        <table class="min-w-full text-xs">
+          <thead class="bg-stone-50 dark:bg-stone-800/60">
+            <tr class="text-left">
+              <th class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">Element</th>
+              <th class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">default</th>
+              <th class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">hover</th>
+              <th class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">focus</th>
+              <th class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">active</th>
+              <th class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">disabled</th>
+              <th class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">loading</th>
+              <th class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">error</th>
+              <th class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">empty</th>
+            </tr>
+          </thead>
+          <tbody class="text-stone-700 dark:text-stone-300">
+            <tr class="border-t border-stone-100 dark:border-stone-800">
+              <td class="px-3 py-2 font-semibold">Confirm button</td>
+              <td class="px-3 py-2">✓</td><td class="px-3 py-2">✓</td><td class="px-3 py-2">✓</td><td class="px-3 py-2">✓</td><td class="px-3 py-2">✓</td><td class="px-3 py-2">✓</td><td class="px-3 py-2">Retry label</td><td class="px-3 py-2">n/a</td>
+            </tr>
+            <tr class="border-t border-stone-100 dark:border-stone-800">
+              <td class="px-3 py-2 font-semibold">Cancel button</td>
+              <td class="px-3 py-2">✓</td><td class="px-3 py-2">✓</td><td class="px-3 py-2">initial focus</td><td class="px-3 py-2">✓</td><td class="px-3 py-2">during loading</td><td class="px-3 py-2">disabled</td><td class="px-3 py-2">✓</td><td class="px-3 py-2">n/a</td>
+            </tr>
+            <tr class="border-t border-stone-100 dark:border-stone-800">
+              <td class="px-3 py-2 font-semibold">Mobile ✕ close</td>
+              <td class="px-3 py-2">✓</td><td class="px-3 py-2">✓</td><td class="px-3 py-2">✓</td><td class="px-3 py-2">✓</td><td class="px-3 py-2">during loading</td><td class="px-3 py-2">disabled</td><td class="px-3 py-2">✓</td><td class="px-3 py-2">n/a</td>
+            </tr>
+            <tr class="border-t border-stone-100 dark:border-stone-800">
+              <td class="px-3 py-2 font-semibold">Target chip</td>
+              <td class="px-3 py-2">✓</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">dim 75%</td><td class="px-3 py-2">✓</td><td class="px-3 py-2">"currently viewed — no earlier unaddressed"</td>
+            </tr>
+            <tr class="border-t border-stone-100 dark:border-stone-800">
+              <td class="px-3 py-2 font-semibold">Downstream chip</td>
+              <td class="px-3 py-2">✓</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">dim 75%</td><td class="px-3 py-2">✓</td><td class="px-3 py-2">shows all non-upcoming stages</td>
+            </tr>
+            <tr class="border-t border-stone-100 dark:border-stone-800">
+              <td class="px-3 py-2 font-semibold">Typed-feedback preview</td>
+              <td class="px-3 py-2">✓ (when typed)</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">dim 75%</td><td class="px-3 py-2">preserved</td><td class="px-3 py-2">suppressed when textarea empty</td>
+            </tr>
+            <tr class="border-t border-stone-100 dark:border-stone-800">
+              <td class="px-3 py-2 font-semibold">Open-feedback list</td>
+              <td class="px-3 py-2">✓</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">dim 75%</td><td class="px-3 py-2">preserved</td><td class="px-3 py-2">suppressed when count=0</td>
+            </tr>
+            <tr class="border-t border-stone-100 dark:border-stone-800">
+              <td class="px-3 py-2 font-semibold">Backdrop</td>
+              <td class="px-3 py-2">✓</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">aria-hidden</td><td class="px-3 py-2">click = cancel</td><td class="px-3 py-2">n/a</td><td class="px-3 py-2">click suppressed</td><td class="px-3 py-2">✓</td><td class="px-3 py-2">✓</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-xs text-stone-500 dark:text-stone-400">Every element has explicit behavior for every applicable state. "n/a" means the state is not reachable for that element by design (e.g., chips aren't focusable).</p>
+    </section>
+
+  </main>
+
+  <script>
+    const btn = document.getElementById('theme-toggle');
+    function apply(isDark) { document.documentElement.classList.toggle('dark', isDark); }
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const stored = localStorage.getItem('haiku-revisit-modal-states-theme');
+    apply(stored ? stored === 'dark' : prefersDark);
+    btn?.addEventListener('click', () => {
+      const next = !document.documentElement.classList.contains('dark');
+      apply(next);
+      localStorage.setItem('haiku-revisit-modal-states-theme', next ? 'dark' : 'light');
+    });
+  </script>
+</body>
+</html>
