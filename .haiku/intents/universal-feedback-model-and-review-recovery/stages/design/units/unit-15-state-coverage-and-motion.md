@@ -64,10 +64,10 @@ quality_gates:
     tablet/mobile touch-activated control, ≥ 24px WCAG 2.2 1.4.11 minimum on
     desktop, with explicit exceptions); every affected artifact complies
 status: active
-bolt: 3
-hat: feedback-assessor
+bolt: 4
+hat: design-reviewer
 started_at: '2026-04-18T03:11:01Z'
-hat_started_at: '2026-04-18T03:49:39Z'
+hat_started_at: '2026-04-18T03:53:23Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:11:01Z'
@@ -117,6 +117,34 @@ iterations:
     result: advance
   - hat: feedback-assessor
     started_at: '2026-04-18T03:49:39Z'
+    completed_at: '2026-04-18T03:53:23Z'
+    result: reject
+    reason: >-
+      FB-12 / FB-20 / FB-25 are all substantively closed — verified by the
+      assessor: pins use `.pin-hit::before` / `.pin::before` 44×44 hit areas
+      across feedback-inline-desktop.html, annotation-gesture-spec.html,
+      annotation-popover-states.html; DESIGN-BRIEF.md §7 lines 647-651 now carry
+      the `@media (prefers-reduced-motion: reduce) { .feedback-fab-pulse {
+      animation: none; } }` sibling guard that was missing in bolt 1; every
+      artifact `@keyframes` block has a reduced-motion fallback
+      (comment-to-feedback-flow.html uses a single collective block covering all
+      6 animations explicitly); state-coverage-grid.md enumerates all surfaces
+      with the six-state matrix; revisit-modal-states.html renders the §error +
+      §error-mid-commit rollback toast; stage-progress-strip.html distinguishes
+      tabindex="-1" future-never-visited from tabindex="0" previously-visited;
+      feedback-inline-mobile.html §FAB state coverage renders all six FAB
+      states; annotation-popover-states.html §State 4b renders disabled-body
+      Create; revisit-unit-list.html .locked-card:focus-visible renders focus
+      ring on locked units; feedback-card-states.html §5b renders the explicit
+      error card; DESIGN-BRIEF.md §2 carries the state-coverage-requirement
+      amendment; DESIGN-TOKENS.md §1.10 documents the 44px rule + WCAG
+      1.4.11/2.5.8 exceptions. ONLY issue: none of the 12 completion-criteria
+      checkboxes in unit-15-state-coverage-and-motion.md lines 123-134 were
+      ticked — harness rejected with `criteria_not_met, unchecked: 12`. Designer
+      on the next bolt: do nothing except flip every `- [ ]` to `- [x]` in the
+      Completion criteria section of the unit spec. No artifact edits needed.
+  - hat: design-reviewer
+    started_at: '2026-04-18T03:53:23Z'
     completed_at: null
     result: null
 ---
