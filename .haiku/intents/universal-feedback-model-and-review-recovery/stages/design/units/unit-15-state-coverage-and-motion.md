@@ -28,6 +28,18 @@ outputs:
   - stages/design/artifacts/state-coverage-grid.md
   - stages/design/artifacts/touch-target-audit.md
   - stages/design/artifacts/motion-and-reduced-motion-spec.md
+  - stages/design/artifacts/feedback-inline-desktop.html
+  - stages/design/artifacts/feedback-inline-mobile.html
+  - stages/design/artifacts/annotation-gesture-spec.html
+  - stages/design/artifacts/annotation-popover-states.html
+  - stages/design/artifacts/feedback-card-states.html
+  - stages/design/artifacts/revisit-modal-states.html
+  - stages/design/artifacts/revisit-unit-list.html
+  - stages/design/artifacts/stage-progress-strip.html
+  - stages/design/artifacts/comment-to-feedback-flow.html
+  - stages/design/artifacts/review-ui-mockup.html
+  - stages/design/DESIGN-BRIEF.md
+  - knowledge/DESIGN-TOKENS.md
 quality_gates:
   - >-
     All pin markers present a 44×44px touch hit area (either `w-11 h-11` on the

@@ -147,6 +147,36 @@ From `packages/haiku/src/templates/styles.ts` (server-rendered):
 | Disabled state | `disabled:opacity-50 disabled:cursor-not-allowed` |
 | Transition | `transition-colors` (most), `transition-all` (sized elements) |
 
+### 1.7.1 Touch Targets (added by unit-15 / FB-12)
+
+**Rule.** Every touch-activated control MUST expose a ≥ 44×44 CSS-px hit area on any tablet or mobile breakpoint. On desktop (pointer-only), the minimum is ≥ 24×24 CSS-px per WCAG 2.2 SC 2.5.8.
+
+**Implementation options (use one):**
+
+1. **Visible sizing.** Set the element itself to ≥ 44×44 via Tailwind (`w-11 h-11` or larger, or `min-h-11 min-w-11`). Preferred for buttons and FABs.
+2. **Invisible hit-area expansion.** When the visible marker must stay small (dense overlays — pins, ghost pins, inline markers), add a transparent `::before` pseudo-element that matches `width: 44px; height: 44px` and absorbs pointer events. Pattern:
+
+    ```css
+    .pin-hit { position: relative; }
+    .pin-hit::before {
+      content: "";
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 44px; height: 44px;
+      transform: translate(-50%, -50%);
+      border-radius: 9999px;
+    }
+    ```
+
+3. **Utility class.** Prefer `min-height: 44px; min-width: 44px` via a `.touch-target` class on each interactive surface that ships on mobile-first screens.
+
+**Exceptions (documented per-control in `stages/design/artifacts/touch-target-audit.md`):**
+
+- **Inline text targets.** Targets embedded in a sentence or block of text may be smaller (WCAG 2.2 SC 2.5.8 Exception a). Stage-progress nodes in the compact mobile strip use this exception.
+- **Desktop-only surfaces.** Components that never render below 1024px may use the 24×24 desktop minimum (Segmented controls in the sticky sidebar, filter pills, feedback-card footer buttons). When these components are reused on mobile they MUST re-hit 44×44.
+
+**Verification.** `touch-target-audit.md` lists every touch-activated control with measured dimensions and the method used. A pre-delivery check greps for `w-7 h-7` (or similar < 44px sizing) and asserts the element either (a) carries `.pin-hit` / `.pin::before` / `.ghost::before` or (b) has `.touch-target` / `min-h-11`.
+
 ### 1.8 Semantic Colors (Named Roles)
 
 | Role | Light | Dark |
@@ -446,6 +476,8 @@ No exceptions. The feedback model introduces no new dark mode strategy -- it reu
 ---
 
 ## 5. Animation Tokens
+
+> **Reduced-motion requirement (added in unit-15 / FB-20).** Every `@keyframes` block in the review app MUST have a sibling `@media (prefers-reduced-motion: reduce)` rule. The fallback either sets `animation: none` (cosmetic animation — drop it) or sets a static end-state equivalent (animation carries state information — preserve the final-frame cue). See `stages/design/artifacts/motion-and-reduced-motion-spec.md` for the per-animation policy.
 
 Existing animations in use:
 

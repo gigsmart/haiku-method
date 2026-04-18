@@ -111,6 +111,8 @@ The segmented control uses the existing tab styling but compact: `text-xs font-m
 
 ## 2. Component Inventory
 
+> **State-coverage requirement (added in unit-15 / FB-25).** Every new component in this intent — and every new component introduced in downstream stages — **MUST** ship with a six-state grid (default / hover / focus / active / disabled / error) rendered alongside its component spec. Use `stages/design/artifacts/state-coverage-grid.md` as the template. Components whose element cannot reach a given state (e.g. a non-focusable label) **MUST** mark the state `N/A` with a one-line rationale; silently omitting a state is not acceptable. The design-reviewer hat walks this grid row-by-row before approval.
+
 ### New Components
 
 #### `FeedbackStatusBadge`
