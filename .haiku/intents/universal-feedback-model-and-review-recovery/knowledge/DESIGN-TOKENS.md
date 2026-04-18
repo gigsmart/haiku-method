@@ -53,6 +53,8 @@ Any combination in this table MUST NOT appear in `stages/design/artifacts/*.html
 | Foreground token | Forbidden background tokens | Measured ratio | Required remediation |
 |---|---|---|---|
 | `text-stone-400` / `text-gray-400` | `bg-white`, `bg-stone-50`, `bg-stone-100`, `bg-amber-50/50`, `bg-blue-50/50`, `bg-green-50/30`, `bg-green-50/60`, `bg-sky-50` | 2.79 – 3.0:1 | Lift to `text-stone-600` (≥ 6.85:1) for metadata, `text-stone-500` (4.61:1) minimum for body |
+| `text-stone-500` | `bg-stone-100` | 4.40:1 | **FAIL** on body text (< 4.5:1). Lift to `text-stone-600` on `bg-stone-100` (6.99:1) or `text-stone-600` on `bg-stone-50` (7.02:1). `text-stone-500` passes on `bg-white` only (4.61:1). |
+| `text-gray-500` | `bg-gray-100` | 4.39:1 | **FAIL** on body text (< 4.5:1). Lift to `text-gray-700` on `bg-gray-100` (8.59:1) or similar AA-passing pair. |
 | `text-stone-500 dark:text-stone-500` on dark mode | `dark:bg-stone-800`, `dark:bg-stone-900`, `dark:bg-stone-950`, `dark:bg-green-950/15`, `dark:bg-amber-950/20`, `dark:bg-blue-950/20`, `dark:bg-stone-800/30` | ≈ 3.1 – 4.4:1 | Use `dark:text-stone-300` (≥ 10:1) for metadata |
 | `opacity-50` / `opacity-70` applied to an entire feedback card root | any | α-composite drops metadata text below 2:1 | Remove the opacity entirely. Convey muted-finality state via muted background tokens (`bg-green-50/60`, `bg-stone-100`) + a non-color second signal (glyph + text prefix) |
 | `bg-green-600/50 text-white/80` (disabled button composite) | — | α-composited effective contrast ≈ 2.6:1 | Use opaque token pair `bg-green-300 text-green-800 dark:bg-green-900/40 dark:text-green-200` |

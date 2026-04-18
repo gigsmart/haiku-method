@@ -72,17 +72,26 @@ Metadata text is load-bearing (feedback ID, visit number, origin, "addressed by 
 The pre-unit state used `text-gray-400 dark:text-gray-500` / `text-stone-400 dark:text-stone-500`,
 which falls below 4.5:1 on all card-surface backgrounds.
 
+All light-mode ratios below are measured against the ACTUAL card background
+token listed (not against `#ffffff`). For `bg-*/opacity` values, the background
+is α-composited against the page background (`#ffffff`) before the ratio is
+computed.
+
 | (fg, bg) — light | Pair | Ratio | Pass? | Remediation |
 |---|---|---|---|---|
 | stone-400 on white | `#a8a29e` on `#ffffff` | 2.86:1 | **FAIL** (body) | Lifted to `text-stone-600` (7.14:1) |
 | stone-400 on stone-50 | `#a8a29e` on `#fafaf9` | 2.79:1 | **FAIL** (body) | Lifted to `text-stone-600` (6.96:1) |
+| stone-400 on stone-100 | `#a8a29e` on `#f5f5f4` | 2.74:1 | **FAIL** (body) | Lifted to `text-stone-600` (6.99:1) |
 | stone-400 on amber-50/50 | `#a8a29e` on ≈ `#fff9e5` | 2.81:1 | **FAIL** (body) | Lifted to `text-stone-600` (7.02:1) |
-| stone-500 on white | `#78716c` on `#ffffff` | 4.61:1 | PASS (body) | Acceptable floor — permitted |
-| **NEW** stone-600 on white | `#57534e` on `#ffffff` | **7.14:1** | PASS AAA (body) | New default metadata color |
-| **NEW** stone-600 on stone-50 | `#57534e` on `#fafaf9` | 6.96:1 | PASS AAA | Acceptable |
+| stone-500 on white | `#78716c` on `#ffffff` | 4.61:1 | PASS (body) | Acceptable floor — permitted on white only |
+| stone-500 on stone-100 | `#78716c` on `#f5f5f4` | **4.40:1** | **FAIL** (body) | Lifted to `text-stone-600` on `bg-stone-100` (6.99:1) — see bolt-2 correction below |
+| gray-500 on gray-100 | `#6b7280` on `#f3f4f6` | **4.39:1** | **FAIL** (body) | Lifted to `text-gray-700` on `bg-gray-100` (8.59:1) |
+| **NEW** stone-600 on white | `#57534e` on `#ffffff` | 7.02:1 | PASS AAA (body) | New default metadata color |
+| **NEW** stone-600 on stone-50 | `#57534e` on `#fafaf9` | 7.02:1 | PASS AAA | Acceptable |
+| **NEW** stone-600 on stone-100 | `#57534e` on `#f5f5f4` | 6.99:1 | PASS AAA | Rejected-state metadata now legible |
 | **NEW** stone-600 on amber-50/50 | `#57534e` on ≈ `#fff9e5` | 7.02:1 | PASS AAA | Acceptable |
 | **NEW** stone-600 on green-50/60 | `#57534e` on ≈ `#f3fbf4` | 7.05:1 | PASS AAA | Closed-state metadata now legible |
-| **NEW** stone-600 on stone-100 | `#57534e` on `#f5f5f4` | 6.85:1 | PASS AAA | Rejected-state metadata now legible |
+| **NEW** gray-700 on gray-100 | `#374151` on `#f3f4f6` | 8.59:1 | PASS AAA | Reject button (FB-19 remediation) |
 
 | (fg, bg) — dark | Pair | Ratio | Pass? | Remediation |
 |---|---|---|---|---|
@@ -92,11 +101,13 @@ which falls below 4.5:1 on all card-surface backgrounds.
 | **NEW** stone-300 on amber-950/20 | `#d6d3d1` on ≈ `#1c1916` | 12.5:1 | PASS AAA | Pending-card dark mode |
 | **NEW** stone-300 on green-950/25 | `#d6d3d1` on ≈ `#15231b` | 11.6:1 | PASS AAA | Closed-card dark mode |
 
-**Ban list (added to DESIGN-TOKENS.md §1):**
+**Ban list (added to DESIGN-TOKENS.md §1.1a):**
 
 | Foreground | Forbidden backgrounds | Reason |
 |---|---|---|
 | `text-stone-400` / `text-gray-400` | white, stone-50, stone-100, amber-50/50, blue-50/50, green-50/30, sky-50 | < 4.5:1 on any light card surface |
+| `text-stone-500` | `bg-stone-100` | 4.40:1 — fails AA body-text on the rejected-card surface |
+| `text-gray-500` | `bg-gray-100` | 4.39:1 — fails AA body-text (affected feedback-inline-desktop "Reject" button) |
 | `text-stone-500` in dark mode | stone-800 and below | < 4.5:1 on any dark card surface |
 
 ---
@@ -119,12 +130,26 @@ already-low contrast metadata text degrades further.
 
 ### Post-unit state (no opacity; explicit tokens + second signals)
 
-| State | Card bg | Meta text | Ratio | Pass? | Second signal |
+All ratios below are measured against the ACTUAL rendered card background, not
+against white. `bg-*/opacity` values are α-composited against the parent page
+background (`bg-white` in light mode, `bg-stone-950` in dark mode) before the
+ratio is computed.
+
+| State | Card bg (actual composite) | Meta text | Ratio | Pass? | Second signal |
 |---|---|---|---|---|---|
-| closed · light | `bg-green-50/60` ≈ `#edfaef` | `text-stone-600` | 6.94:1 | PASS | ✔ glyph + "Closed ·" prefix |
-| closed · dark | `bg-green-950/25` ≈ `#152f1f` | `text-stone-300` | 9.8:1 | PASS | ✔ glyph + "Closed ·" prefix |
-| rejected · light | `bg-stone-100` `#f5f5f4` | title `text-stone-500 line-through decoration-stone-500` | 4.61:1 | PASS | × glyph + "Rejected ·" prefix + strikethrough (full opacity) |
-| rejected · dark | `bg-stone-800/50` ≈ `#221f1e` | title `text-stone-400 line-through decoration-stone-400` | 5.0:1 | PASS | × glyph + "Rejected ·" prefix + strikethrough (full opacity) |
+| closed · light | `bg-green-50/60` ≈ `#f3fbf4` on white | `text-stone-600` `#57534e` | 7.05:1 | PASS AAA | ✔ glyph + "Closed ·" prefix |
+| closed · dark | `bg-green-950/25` ≈ `#15231b` on stone-950 | `text-stone-300` `#d6d3d1` | 11.6:1 | PASS AAA | ✔ glyph + "Closed ·" prefix |
+| rejected · light | `bg-stone-100` `#f5f5f4` | title `text-stone-600 line-through decoration-stone-600` | 6.99:1 | PASS AAA | × glyph + "Rejected ·" prefix + strikethrough (full opacity) |
+| rejected · dark | `bg-stone-800/50` ≈ `#161310` on stone-950 | title `text-stone-300 line-through decoration-stone-300` | 11.8:1 | PASS AAA | × glyph + "Rejected ·" prefix + strikethrough (full opacity) |
+
+> **Correction (bolt 2, 2026-04-17):** an earlier draft of this table listed the
+> rejected·light row as "4.61:1 PASS" with `text-stone-500` foreground. That
+> arithmetic was against `bg-white`, not `bg-stone-100`. On the actual rendered
+> `bg-stone-100` card surface, `text-stone-500` only yields **4.40:1** — a
+> WCAG 1.4.3 body-text failure. The artifacts have been corrected to
+> `text-stone-600` on `bg-stone-100` (**6.99:1**, PASS AAA). The
+> `bg-stone-100 / text-stone-500` and `bg-gray-100 / text-gray-500` pairs are
+> now explicitly listed in `DESIGN-TOKENS.md §1.1a`.
 
 `grep -rEn 'opacity-(50|70)' stages/design/artifacts/feedback-inline-desktop.html` for
 closed/rejected card roots returns **0 matches** after this unit. Same for
