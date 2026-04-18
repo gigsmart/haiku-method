@@ -63,9 +63,9 @@ quality_gates:
     `Mine` segmented identity split
 status: active
 bolt: 2
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-18T03:59:44Z'
-hat_started_at: '2026-04-18T04:15:20Z'
+hat_started_at: '2026-04-18T04:21:35Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:59:44Z'
@@ -105,6 +105,10 @@ iterations:
       the hyphen. Re-run the grep gate before next approval.
   - hat: designer
     started_at: '2026-04-18T04:15:20Z'
+    completed_at: '2026-04-18T04:21:35Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-18T04:21:36Z'
     completed_at: null
     result: null
 ---
