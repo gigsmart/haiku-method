@@ -111,6 +111,40 @@ The segmented control uses the existing tab styling but compact: `text-xs font-m
 
 ## 2. Component Inventory
 
+### Typography Floor (unit-11)
+
+Hard rules, enforced by grep across `stages/design/artifacts/`:
+
+- `text-xs` (12px) is the absolute floor for any user-facing information (titles, metadata, labels, button text).
+- `text-[11px]` is permitted ONLY when paired with `font-semibold` or `font-bold` (the weight compensates for the size reduction). This is reserved for compact badges, filter pills, and small stat labels where 12px would overflow the container.
+- `text-[10px]` and `text-[9px]` are BANNED for user-facing content. They fail WCAG 1.4.4 Resize Text in practice and are unreadable for users over 40 or with low vision. Decorative aria-hidden glyphs inside 16px status-signal circles use `text-xs font-bold` at the same floor.
+- Zoom test: at 200% browser zoom (required by WCAG 1.4.4), every text span must remain on one line or wrap cleanly — no clipping.
+
+### Banned Text-on-Surface Pairs (unit-11)
+
+These foreground-on-background pairs MUST NOT appear anywhere in the feedback UI:
+
+| Foreground | Forbidden backgrounds | Reason | Remediation |
+|---|---|---|---|
+| `text-stone-400` / `text-gray-400` | white, stone-50, stone-100, amber-50/50, blue-50/50, green-50/30, sky-50 | < 4.5:1 on any light card surface | Use `text-stone-600` (≥ 6.85:1) |
+| `text-stone-500` (dark mode) | stone-800, stone-900, stone-950 | < 4.5:1 on dark card surfaces | Use `dark:text-stone-300` (≥ 10:1) |
+| `bg-green-600/50 text-white/80` (disabled) | any | α-composite opacity collapses text contrast | Use `bg-green-300 text-green-800 dark:bg-green-900/40 dark:text-green-200` |
+| `opacity-70` on closed card root | any | α-composite over already-muted metadata text drops to ~2:1 | Replace with `bg-green-50/60` + checkmark glyph + "Closed ·" prefix |
+| `opacity-50` on rejected card root | any | α-composite makes strikethrough + metadata text unreadable | Replace with `bg-stone-100` + × glyph + "Rejected ·" prefix + full-opacity strikethrough |
+
+### Disabled Control Tokens (unit-11)
+
+WCAG 2.2 1.4.11 Non-Text Contrast requires ≥ 3:1 for disabled-state indicators to be perceivable, and text inside disabled buttons MUST still meet 4.5:1 where text is visible.
+
+| Component | Disabled tokens | Text contrast | UI contrast (border) |
+|---|---|---|---|
+| Button (secondary, disabled) | `bg-stone-100 text-stone-600 border border-stone-400 cursor-not-allowed` | 6.85:1 | 3.4:1 |
+| Button (secondary, disabled, dark) | `dark:bg-stone-800 dark:text-stone-300 dark:border-stone-500` | 10.2:1 | 3.2:1 |
+| Button (primary green, disabled) | `bg-green-300 text-green-800 dark:bg-green-900/40 dark:text-green-200` | 5.1:1 light / 7.8:1 dark | — |
+| Every disabled control MUST carry `aria-disabled="true"` alongside the native `disabled` attribute so screen readers announce the state explicitly. | | | |
+
+
+
 ### New Components
 
 #### `FeedbackStatusBadge`
@@ -223,9 +257,12 @@ The item expands in-place to show:
 - **Default**: compact, clickable.
 - **Hover**: border highlight (teal).
 - **Expanded**: body visible, action buttons visible.
-- **Status: addressed**: entire row gets a subtle left border in blue (`border-l-2 border-l-blue-400`).
-- **Status: closed**: entire row is slightly faded (`opacity-70`) with green left border.
-- **Status: rejected**: faded (`opacity-50`) with strikethrough on title.
+- **Status: pending**: amber left border + amber badge + `⏱` clock glyph in a 16px amber-500 solid circle before the origin badge.
+- **Status: addressed**: blue left border + blue badge + `↗` arrow glyph + "Addressed by ..." meta line (3-signal).
+- **Status: closed**: green left border + `bg-green-50/60` muted background + green badge + `✓` checkmark glyph in a 16px green-600 solid circle + **"Closed ·" text prefix** on the title. **Do NOT apply `opacity-70`** — the opacity composite collapses metadata-text contrast below AA.
+- **Status: rejected**: stone-400 left border + `bg-stone-100` muted background + stone badge + `×` cross glyph in a 16px stone-500 solid circle + **"Rejected ·" text prefix** + `line-through decoration-stone-500` on the title span at full opacity. **Do NOT apply `opacity-50`** — the strikethrough itself becomes invisible under 50% opacity.
+
+**Status-signaling rule (WCAG 1.4.1 "Use of Color"):** every feedback card MUST convey status via at least TWO signals — the colored left border + a non-color second signal (shape glyph OR text prefix). The status badge text label is a third signal but alone is not sufficient at list-scan scale (the badge is 11px and sits at the card's top-right, where scanning users rarely land). See `state-signaling-inventory.html` for the full rendered matrix across compact + expanded + light + dark.
 
 ---
 
@@ -565,8 +602,24 @@ All feedback status badge colors meet WCAG 2.1 AA (4.5:1 minimum for text):
 | Addressed (dark) | `blue-400` (#60a5fa) | `blue-900/30` | 5.6:1 | AA |
 | Closed (light) | `green-700` (#15803d) | `green-100` (#dcfce7) | 4.5:1 | AA |
 | Closed (dark) | `green-400` (#4ade80) | `green-900/30` | 5.3:1 | AA |
-| Rejected (light) | `stone-500` (#78716c) | `stone-100` (#f5f5f4) | 4.6:1 | AA |
-| Rejected (dark) | `stone-400` (#a8a29e) | `stone-800` (#292524) | 5.0:1 | AA |
+| Rejected (light) | `stone-700` (#44403c) | `stone-200` (#e7e5e4) | 8.3:1 | AAA |
+| Rejected (dark) | `stone-200` (#e7e5e4) | `stone-700` (#44403c) | 8.3:1 | AAA |
+
+### Metadata, Title, and Disabled-Control Contrast (unit-11)
+
+Additional pairs audited and locked:
+
+| Role | Pair (light) | Ratio | Pair (dark) | Ratio |
+|---|---|---|---|---|
+| Card metadata (FB-id, Visit, origin) | `text-stone-600` on white | 7.14:1 | `dark:text-stone-300` on `dark:bg-stone-900` | 12.6:1 |
+| Card title (pending / addressed / closed) | `text-stone-700` on card bg | ≥ 9:1 | `dark:text-stone-200` on card bg | ≥ 10:1 |
+| Card title (rejected, struck-through) | `text-stone-500 line-through decoration-stone-500` on `bg-stone-100` | 4.61:1 (full opacity) | `text-stone-400 line-through decoration-stone-400` on `bg-stone-800/50` | 5.0:1 |
+| Disabled button — secondary | `bg-stone-100 text-stone-600 border-stone-400` | 6.85:1 text / 3.4:1 border | `dark:bg-stone-800 dark:text-stone-300 dark:border-stone-500` | 10.2:1 text / 3.2:1 border |
+| Disabled button — primary green | `bg-green-300 text-green-800` | 5.1:1 | `dark:bg-green-900/40 dark:text-green-200` | 7.8:1 |
+| Status glyph circle — closed | white on `bg-green-600` | 4.5:1 | white on `bg-green-500` | 3.9:1 |
+| Status glyph circle — rejected | white on `bg-stone-500` | 4.86:1 | `text-stone-900` on `bg-stone-400` | 8.2:1 |
+
+See `stages/design/artifacts/contrast-and-type-audit.md` for the full measured audit including sample swatches for every (fg, bg) pair used across all feedback-UI artifacts.
 
 ### Focus Order
 
