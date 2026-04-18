@@ -1,7 +1,12 @@
 ---
-title: "Contrast, type scale, and non-color state signaling"
+title: 'Contrast, type scale, and non-color state signaling'
 type: design
-closes: [FB-10, FB-13, FB-15, FB-19, FB-24]
+closes:
+  - FB-10
+  - FB-13
+  - FB-15
+  - FB-19
+  - FB-24
 depends_on:
   - unit-10-stage-wide-token-audit
 inputs:
@@ -14,23 +19,63 @@ inputs:
   - stages/design/artifacts/assessor-summary-card.html
   - stages/design/artifacts/revisit-modal-spec.html
   - stages/design/artifacts/annotation-popover-states.html
-  - stages/design/feedback/10-low-contrast-metadata-text-fails-wcag-aa-across-all-artifact.md
-  - stages/design/feedback/13-closed-rejected-opacity-reduction-drops-text-contrast-below.md
-  - stages/design/feedback/15-10px-and-9px-text-sizes-used-extensively-fail-readability-an.md
-  - stages/design/feedback/19-disabled-button-contrast-fails-aa-for-non-text-ui.md
-  - stages/design/feedback/24-status-distinguished-only-by-colored-left-border-fails-infor.md
+  - >-
+    stages/design/feedback/10-low-contrast-metadata-text-fails-wcag-aa-across-all-artifact.md
+  - >-
+    stages/design/feedback/13-closed-rejected-opacity-reduction-drops-text-contrast-below.md
+  - >-
+    stages/design/feedback/15-10px-and-9px-text-sizes-used-extensively-fail-readability-an.md
+  - >-
+    stages/design/feedback/19-disabled-button-contrast-fails-aa-for-non-text-ui.md
+  - >-
+    stages/design/feedback/24-status-distinguished-only-by-colored-left-border-fails-infor.md
 outputs:
   - stages/design/artifacts/contrast-and-type-audit.md
   - stages/design/artifacts/state-signaling-inventory.html
 quality_gates:
-  - "Metadata text (FB-XX · Visit N · origin lines) uses `text-stone-500 dark:text-stone-400` minimum on white/stone-50 and stone-950 surfaces; DESIGN-TOKENS.md §1 explicitly bans `stone-400`/`gray-400` on white/stone-50 for text and documents measured contrast ≥ 4.5:1"
-  - "grep -rEn 'text-\\[(9|10)px\\]' stages/design/artifacts/ returns 0 matches — 9px and 10px user-facing text eliminated; `text-xs` (12px) adopted as the hard minimum; `text-[11px]` permitted only when paired with `font-semibold` and documented in DESIGN-BRIEF §2 typography"
-  - "Closed/rejected cards DO NOT apply `opacity-70` or `opacity-50` to the entire card; state is conveyed by border color + badge + muted background only; `grep -rEn 'opacity-(50|70)' stages/design/artifacts/` on closed/rejected card selectors returns 0 matches; rejected title uses `text-stone-500 line-through decoration-stone-500` at full opacity"
-  - "Disabled button contrast ≥ 3:1 for non-text indicator (WCAG 2.2 1.4.11) AND ≥ 4.5:1 for button text where text is present; `bg-green-600/50 text-white/80` pattern replaced everywhere with opaque token pairs (e.g. `bg-green-300 text-green-800`); `aria-disabled=\"true\"` present on every disabled control alongside `disabled` attribute"
-  - "Status is conveyed by AT LEAST TWO signals (color + shape OR color + text prefix) on every feedback card — not by color alone; state-signaling-inventory.html enumerates the chosen second signal per status (pending/addressed/closed/rejected) and shows it rendered in both compact and expanded card states"
-  - "contrast-and-type-audit.md written with measured contrast ratios for every (foreground, background) pair used in artifacts; any pair below 4.5:1 for body text or 3:1 for UI is listed with the remediation applied"
+  - >-
+    Metadata text (FB-XX · Visit N · origin lines) uses `text-stone-500
+    dark:text-stone-400` minimum on white/stone-50 and stone-950 surfaces;
+    DESIGN-TOKENS.md §1 explicitly bans `stone-400`/`gray-400` on white/stone-50
+    for text and documents measured contrast ≥ 4.5:1
+  - >-
+    grep -rEn 'text-\[(9|10)px\]' stages/design/artifacts/ returns 0 matches —
+    9px and 10px user-facing text eliminated; `text-xs` (12px) adopted as the
+    hard minimum; `text-[11px]` permitted only when paired with `font-semibold`
+    and documented in DESIGN-BRIEF §2 typography
+  - >-
+    Closed/rejected cards DO NOT apply `opacity-70` or `opacity-50` to the
+    entire card; state is conveyed by border color + badge + muted background
+    only; `grep -rEn 'opacity-(50|70)' stages/design/artifacts/` on
+    closed/rejected card selectors returns 0 matches; rejected title uses
+    `text-stone-500 line-through decoration-stone-500` at full opacity
+  - >-
+    Disabled button contrast ≥ 3:1 for non-text indicator (WCAG 2.2 1.4.11) AND
+    ≥ 4.5:1 for button text where text is present; `bg-green-600/50
+    text-white/80` pattern replaced everywhere with opaque token pairs (e.g.
+    `bg-green-300 text-green-800`); `aria-disabled="true"` present on every
+    disabled control alongside `disabled` attribute
+  - >-
+    Status is conveyed by AT LEAST TWO signals (color + shape OR color + text
+    prefix) on every feedback card — not by color alone;
+    state-signaling-inventory.html enumerates the chosen second signal per
+    status (pending/addressed/closed/rejected) and shows it rendered in both
+    compact and expanded card states
+  - >-
+    contrast-and-type-audit.md written with measured contrast ratios for every
+    (foreground, background) pair used in artifacts; any pair below 4.5:1 for
+    body text or 3:1 for UI is listed with the remediation applied
+status: active
+bolt: 1
+hat: designer
+started_at: '2026-04-18T03:59:18Z'
+hat_started_at: '2026-04-18T03:59:18Z'
+iterations:
+  - hat: designer
+    started_at: '2026-04-18T03:59:18Z'
+    completed_at: null
+    result: null
 ---
-
 # Contrast, type scale, and non-color state signaling
 
 ## Scope
