@@ -194,20 +194,15 @@
               </svg>
             </div>
 
-<<<<<<< HEAD
             <!-- Pin 1 — with floating annotation card. Visual 28px (w-7 h-7),
-                 hit area expanded to 44×44 via .pin-hit::before pseudo. -->
-            <button class="pin-hit w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white" style="left: 25%; top: 30%; transform: translate(-50%, -50%);" aria-label="Feedback pin FB-05">1</button>
-=======
-            <!-- Pin 1 — with floating annotation card -->
-            <!-- FB-17: <button> with tabindex=0 + aria-label naming FB id and normalized coords + aria-keyshortcuts="Enter" makes the pin keyboard-reachable. -->
+                 hit area expanded to 44×44 via .pin-hit::before pseudo (FB-12).
+                 FB-17: tabindex=0 + aria-label naming FB id and normalized coords + aria-keyshortcuts="Enter" makes the pin keyboard-reachable. -->
             <button type="button" tabindex="0"
                     aria-label="Feedback FB-01 at 25% 30% — press Enter to view details"
                     aria-keyshortcuts="Enter"
                     data-fb-id="FB-01"
-                    class="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                    class="pin-hit w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
                     style="transform: translate(-50%, -50%); left: 25%; top: 30%;">1</button>
->>>>>>> haiku/universal-feedback-model-and-review-recovery/unit-12-keyboard-reach-and-shortcuts
             <div class="absolute z-20" style="left: calc(25% + 24px); top: calc(30% - 8px);">
               <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer w-[240px]">
                 <div class="flex items-center gap-2 mb-1">
@@ -222,29 +217,21 @@
               </div>
             </div>
 
-<<<<<<< HEAD
-            <!-- Pin 2 — 44×44 hit area via .pin-hit::before -->
-            <button class="pin-hit w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white" style="left: 65%; top: 55%; transform: translate(-50%, -50%);" aria-label="Feedback pin 2">2</button>
-
-            <!-- Pin 3 — 44×44 hit area via .pin-hit::before -->
-            <button class="pin-hit w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white" style="left: 40%; top: 75%; transform: translate(-50%, -50%);" aria-label="Feedback pin 3">3</button>
-=======
-            <!-- Pin 2 -->
+            <!-- Pin 2 — 44×44 hit area via .pin-hit::before (FB-12); FB-17 keyboard reachable -->
             <button type="button" tabindex="0"
                     aria-label="Feedback FB-02 at 65% 55% — press Enter to view details"
                     aria-keyshortcuts="Enter"
                     data-fb-id="FB-02"
-                    class="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                    class="pin-hit w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
                     style="transform: translate(-50%, -50%); left: 65%; top: 55%;">2</button>
 
-            <!-- Pin 3 -->
+            <!-- Pin 3 — 44×44 hit area via .pin-hit::before (FB-12); FB-17 keyboard reachable -->
             <button type="button" tabindex="0"
                     aria-label="Feedback FB-03 at 40% 75% — press Enter to view details"
                     aria-keyshortcuts="Enter"
                     data-fb-id="FB-03"
-                    class="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                    class="pin-hit w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
                     style="transform: translate(-50%, -50%); left: 40%; top: 75%;">3</button>
->>>>>>> haiku/universal-feedback-model-and-review-recovery/unit-12-keyboard-reach-and-shortcuts
           </div>
         </div>
 
