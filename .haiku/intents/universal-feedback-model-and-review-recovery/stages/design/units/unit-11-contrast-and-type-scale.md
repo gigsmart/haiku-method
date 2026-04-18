@@ -76,9 +76,9 @@ quality_gates:
     body text or 3:1 for UI is listed with the remediation applied
 status: active
 bolt: 2
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-18T03:59:18Z'
-hat_started_at: '2026-04-18T04:17:42Z'
+hat_started_at: '2026-04-18T04:26:45Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:59:18Z'
@@ -107,6 +107,10 @@ iterations:
       pass; only Gate 1 + audit accuracy fail.
   - hat: designer
     started_at: '2026-04-18T04:17:42Z'
+    completed_at: '2026-04-18T04:26:45Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-18T04:26:45Z'
     completed_at: null
     result: null
 ---
