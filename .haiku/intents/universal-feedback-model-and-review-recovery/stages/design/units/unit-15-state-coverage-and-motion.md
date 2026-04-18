@@ -64,10 +64,10 @@ quality_gates:
     tablet/mobile touch-activated control, ≥ 24px WCAG 2.2 1.4.11 minimum on
     desktop, with explicit exceptions); every affected artifact complies
 status: active
-bolt: 1
-hat: feedback-assessor
+bolt: 2
+hat: design-reviewer
 started_at: '2026-04-18T03:11:01Z'
-hat_started_at: '2026-04-18T03:33:53Z'
+hat_started_at: '2026-04-18T03:39:24Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:11:01Z'
@@ -79,6 +79,26 @@ iterations:
     result: advance
   - hat: feedback-assessor
     started_at: '2026-04-18T03:33:53Z'
+    completed_at: '2026-04-18T03:39:24Z'
+    result: reject
+    reason: >-
+      FB-20 not closed: DESIGN-BRIEF.md §7 CSS block (lines 638-645) contains
+      `@keyframes feedback-pulse` and `.feedback-fab-pulse` but has no sibling
+      `@media (prefers-reduced-motion: reduce) { .feedback-fab-pulse {
+      animation: none; } }` guard. The FB-20 feedback body explicitly requires
+      this be added to DESIGN-BRIEF §7, and the unit's own completion
+      criteria/quality gate states every `@keyframes` in DESIGN-BRIEF §7 must
+      have a sibling reduced-motion block. §7 is the canonical CSS that ships to
+      `packages/haiku/review-app/src/index.css` — the
+      `motion-and-reduced-motion-spec.md` documents the fallback but does not
+      patch §7 itself, so production CSS still lacks the guard. FB-12 (pins have
+      44×44 `::before` hit areas in all three affected files + DESIGN-TOKENS
+      rule) and FB-25 (six-state grid + explicit renders for FAB, popover 4b,
+      progress-strip tabindex, revisit-modal rollback toast, locked unit focus,
+      feedback-card error visual) are closed. Fix: add the reduced-motion block
+      inside the §7 code fence next to `.feedback-fab-pulse`.
+  - hat: design-reviewer
+    started_at: '2026-04-18T03:39:24Z'
     completed_at: null
     result: null
 ---
