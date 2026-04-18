@@ -1,7 +1,13 @@
 ---
-title: "Stage-wide token audit and palette reconciliation"
+title: Stage-wide token audit and palette reconciliation
 type: design
-closes: [FB-11, FB-16, FB-18, FB-21, FB-23, FB-29]
+closes:
+  - FB-11
+  - FB-16
+  - FB-18
+  - FB-21
+  - FB-23
+  - FB-29
 depends_on: []
 inputs:
   - stages/design/DESIGN-BRIEF.md
@@ -22,25 +28,64 @@ inputs:
   - stages/design/artifacts/review-flow-with-feedback-assessor.html
   - stages/design/artifacts/annotation-gesture-spec.html
   - stages/design/artifacts/focus-ring-spec.html
-  - stages/design/feedback/11-design-artifacts-use-wrong-tailwind-palette-gray-instead-of.md
-  - stages/design/feedback/16-raw-hex-values-leak-into-artifact-css-despite-token-mandate.md
-  - stages/design/feedback/18-feedback-status-badge-shades-drift-between-design-brief-and.md
-  - stages/design/feedback/21-origin-badge-naming-and-colors-diverge-between-design-brief.md
-  - stages/design/feedback/23-sidebar-width-tokens-inconsistent-across-artifacts.md
-  - stages/design/feedback/29-breakpoint-thresholds-inconsistent-between-design-brief-and.md
+  - >-
+    stages/design/feedback/11-design-artifacts-use-wrong-tailwind-palette-gray-instead-of.md
+  - >-
+    stages/design/feedback/16-raw-hex-values-leak-into-artifact-css-despite-token-mandate.md
+  - >-
+    stages/design/feedback/18-feedback-status-badge-shades-drift-between-design-brief-and.md
+  - >-
+    stages/design/feedback/21-origin-badge-naming-and-colors-diverge-between-design-brief.md
+  - >-
+    stages/design/feedback/23-sidebar-width-tokens-inconsistent-across-artifacts.md
+  - >-
+    stages/design/feedback/29-breakpoint-thresholds-inconsistent-between-design-brief-and.md
 outputs:
   - stages/design/artifacts/token-audit-report.md
   - stages/design/artifacts/audit-sweep-log.md
 quality_gates:
-  - "grep -rn 'gray-' stages/design/artifacts/ returns 0 matches (palette sweep from gray-* to stone-* complete across all 14 affected files)"
-  - "grep -rEn '#[0-9a-fA-F]{3,8}\\b' stages/design/artifacts/ returns 0 matches for color values (all 125 raw hex occurrences replaced with Tailwind classes or DESIGN-TOKENS CSS variables)"
-  - "Status-badge shade pairs reconciled: DESIGN-BRIEF §2 color mapping and §6 WCAG table both specify the SAME shade pair for pending/addressed/closed/rejected, and every artifact uses the same shade pair"
-  - "Origin-badge single-source-of-truth established: DESIGN-BRIEF §2 and feedback-card-states.html §4 list IDENTICAL {emoji, label, Tailwind color classes} for all 6 origins (adversarial-review, external-pr, external-mr, user-visual, user-chat, agent); any new palette colors (rose/violet/sky) added to DESIGN-TOKENS.md with measured contrast ratios"
-  - "Sidebar width canonicalized: DESIGN-BRIEF §4 declares ONE responsive pattern (e.g. `w-80 lg:w-96`) and every sidebar container across all artifacts matches; `max-w-[1400px]` literal removed or adopted as a named layout token in DESIGN-TOKENS.md"
-  - "Breakpoint set reconciled: DESIGN-BRIEF §4 and feedback-card-states.html §7 both use the SAME breakpoints (Tailwind-aligned: md=768, lg=1024); every artifact that describes breakpoints uses matching thresholds"
-  - "DESIGN-TOKENS.md updated with an 'audited tokens' section enumerating every palette, width, breakpoint, and shade fix applied, with a machine-verifiable grep pattern per row"
+  - >-
+    grep -rn 'gray-' stages/design/artifacts/ returns 0 matches (palette sweep
+    from gray-* to stone-* complete across all 14 affected files)
+  - >-
+    grep -rEn '#[0-9a-fA-F]{3,8}\b' stages/design/artifacts/ returns 0 matches
+    for color values (all 125 raw hex occurrences replaced with Tailwind classes
+    or DESIGN-TOKENS CSS variables)
+  - >-
+    Status-badge shade pairs reconciled: DESIGN-BRIEF §2 color mapping and §6
+    WCAG table both specify the SAME shade pair for
+    pending/addressed/closed/rejected, and every artifact uses the same shade
+    pair
+  - >-
+    Origin-badge single-source-of-truth established: DESIGN-BRIEF §2 and
+    feedback-card-states.html §4 list IDENTICAL {emoji, label, Tailwind color
+    classes} for all 6 origins (adversarial-review, external-pr, external-mr,
+    user-visual, user-chat, agent); any new palette colors (rose/violet/sky)
+    added to DESIGN-TOKENS.md with measured contrast ratios
+  - >-
+    Sidebar width canonicalized: DESIGN-BRIEF §4 declares ONE responsive pattern
+    (e.g. `w-80 lg:w-96`) and every sidebar container across all artifacts
+    matches; `max-w-[1400px]` literal removed or adopted as a named layout token
+    in DESIGN-TOKENS.md
+  - >-
+    Breakpoint set reconciled: DESIGN-BRIEF §4 and feedback-card-states.html §7
+    both use the SAME breakpoints (Tailwind-aligned: md=768, lg=1024); every
+    artifact that describes breakpoints uses matching thresholds
+  - >-
+    DESIGN-TOKENS.md updated with an 'audited tokens' section enumerating every
+    palette, width, breakpoint, and shade fix applied, with a machine-verifiable
+    grep pattern per row
+status: active
+bolt: 1
+hat: designer
+started_at: '2026-04-18T03:10:54Z'
+hat_started_at: '2026-04-18T03:10:54Z'
+iterations:
+  - hat: designer
+    started_at: '2026-04-18T03:10:54Z'
+    completed_at: null
+    result: null
 ---
-
 # Stage-wide token audit and palette reconciliation
 
 ## Scope
