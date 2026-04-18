@@ -32,7 +32,28 @@
       right: 100%;
     }
 
-    /* Pin marker — sizing/layout migrated to Tailwind classes on elements */
+    /* Pin marker — visual 28px (w-7 h-7), invisible 44×44 hit area via ::before.
+       Satisfies FB-12 / WCAG 2.5.5 touch-target minimum without inflating the
+       visual scale of the marker on dense artifacts. */
+    .pin-hit { position: relative; }
+    .pin-hit::before {
+      content: "";
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 44px; height: 44px;
+      transform: translate(-50%, -50%);
+      border-radius: 9999px;
+      /* transparent hit-area — captures pointer + touch without visual weight */
+    }
+
+    /* Pin interaction states. Visual transform (translate -50%,-50%) is
+       applied inline for positioning, so we avoid re-declaring transform here.
+       Hover/active use filter; focus uses outline. */
+    .pin-hit:hover { filter: brightness(1.08); }
+    .pin-hit:focus-visible { outline: 2px solid rgb(20 184 166); outline-offset: 3px; }
+    .pin-hit:active { filter: brightness(0.92); }
+    .pin-hit[aria-disabled="true"],
+    .pin-hit:disabled { opacity: 0.45; cursor: not-allowed; }
 
     /* Code line highlight for annotated lines */
     .code-line-annotated {
@@ -48,6 +69,15 @@
       50% { box-shadow: 0 0 0 6px rgb(59 130 246 / 0); }
     }
     .review-pulse { animation: review-pulse 0.6s ease-in-out 2; }
+
+    /* Reduced-motion — drop all animations to a static end-state so the visual
+       feedback still lands but without the motion. Focus rings and box-shadow
+       ends remain so users without motion still see the "you're here" cue. */
+    @media (prefers-reduced-motion: reduce) {
+      .feedback-status-changed { animation: none; }
+      .review-pulse { animation: none; }
+      .pin-hit:hover, .pin-hit:active { filter: none; }
+    }
   </style>
 </head>
 <body class="dark bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
@@ -160,8 +190,9 @@
               </svg>
             </div>
 
-            <!-- Pin 1 — with floating annotation card -->
-            <div class="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white" style="transform: translate(-50%, -50%);" style="left: 25%; top: 30%;">1</div>
+            <!-- Pin 1 — with floating annotation card. Visual 28px (w-7 h-7),
+                 hit area expanded to 44×44 via .pin-hit::before pseudo. -->
+            <button class="pin-hit w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white" style="left: 25%; top: 30%; transform: translate(-50%, -50%);" aria-label="Feedback pin FB-05">1</button>
             <div class="absolute z-20" style="left: calc(25% + 24px); top: calc(30% - 8px);">
               <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer w-[240px]">
                 <div class="flex items-center gap-2 mb-1">
@@ -176,11 +207,11 @@
               </div>
             </div>
 
-            <!-- Pin 2 -->
-            <div class="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white" style="transform: translate(-50%, -50%);" style="left: 65%; top: 55%;">2</div>
+            <!-- Pin 2 — 44×44 hit area via .pin-hit::before -->
+            <button class="pin-hit w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white" style="left: 65%; top: 55%; transform: translate(-50%, -50%);" aria-label="Feedback pin 2">2</button>
 
-            <!-- Pin 3 -->
-            <div class="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white" style="transform: translate(-50%, -50%);" style="left: 40%; top: 75%;">3</div>
+            <!-- Pin 3 — 44×44 hit area via .pin-hit::before -->
+            <button class="pin-hit w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white" style="left: 40%; top: 75%; transform: translate(-50%, -50%);" aria-label="Feedback pin 3">3</button>
           </div>
         </div>
 

@@ -41,6 +41,38 @@
       min-height: 44px;
       min-width: 44px;
     }
+
+    /* Reduced-motion — every keyframe here drops to a static equivalent when
+       the user has requested reduced motion (WCAG 2.3.3, FB-20).
+       - feedback-pulse: no pulsing shadow; the amber count badge still
+         signals new items so information is preserved.
+       - sheet-up: the sheet appears in place instead of sliding — focus trap
+         and state change are announced via role="status" (below). */
+    @media (prefers-reduced-motion: reduce) {
+      .sheet-enter { animation: none; }
+      .feedback-fab-pulse { animation: none; }
+    }
+
+    /* FAB interaction states — explicit default / hover / focus / active /
+       disabled specs exposed so QA/FE have a single source of truth. */
+    .fab {
+      transition: background-color 150ms ease-out, box-shadow 150ms ease-out;
+    }
+    .fab:hover { background-color: rgb(15 118 110); /* teal-700 */ }
+    .fab:focus-visible {
+      outline: none;
+      box-shadow:
+        0 0 0 2px rgb(17 24 39),     /* ring offset vs dark surface */
+        0 0 0 5px rgb(20 184 166),   /* teal-500 focus ring */
+        0 10px 15px -3px rgb(0 0 0 / 0.3);
+    }
+    .fab:active { background-color: rgb(17 94 89); /* teal-800 */ transform: scale(0.97); }
+    .fab[aria-disabled="true"],
+    .fab:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.4); }
+    @media (prefers-reduced-motion: reduce) {
+      .fab { transition: none; }
+      .fab:active { transform: none; }
+    }
   </style>
 </head>
 <body class="dark bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen" style="max-width: 375px; margin: 0 auto;">
@@ -101,10 +133,13 @@
     <div class="h-20"></div>
   </main>
 
-  <!-- FAB (Floating Action Button) — bottom right -->
+  <!-- FAB (Floating Action Button) — bottom right.
+       Sizing 56×56 already exceeds the 44×44 touch-target minimum.
+       `.fab` class wires up the explicit default/hover/focus/active/disabled
+       interaction states spec'd in <style>. -->
   <button
     aria-label="Open feedback panel, 3 pending"
-    class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-600 text-white shadow-lg flex items-center justify-center text-lg feedback-fab-pulse touch-target"
+    class="fab fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-600 text-white shadow-lg flex items-center justify-center text-lg feedback-fab-pulse touch-target"
     onclick="document.getElementById('feedback-sheet').classList.remove('hidden')"
   >
     &#x1F4AC;
@@ -260,5 +295,67 @@
 
   <!-- Live region for screen reader announcements -->
   <div role="status" aria-live="polite" class="sr-only"></div>
+
+  <!-- ============================================================
+       FAB state coverage — explicit renders of default / hover /
+       focus / active / disabled / pulse states. Rendered outside the
+       demo viewport at max-width: 375px so a reviewer can walk the
+       state matrix without simulating pointer events. FB-25.
+  ============================================================ -->
+  <section aria-labelledby="fab-states-h" style="max-width: none; margin: 2rem auto; padding: 1.5rem 1rem;" class="border-t border-gray-200 dark:border-gray-800">
+    <h2 id="fab-states-h" class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">FAB state coverage reference</h2>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Each card below force-renders one state of the feedback FAB. Not rendered inside the 375px mobile frame — this is a designer reference grid.</p>
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4" style="max-width: 640px;">
+
+      <!-- Default -->
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-2">Default</p>
+        <div class="relative h-20 bg-gray-50 dark:bg-gray-900 rounded-lg border border-dashed border-gray-200 dark:border-gray-800 flex items-center justify-center">
+          <button class="fab w-14 h-14 rounded-full bg-teal-600 text-white shadow-lg flex items-center justify-center text-lg touch-target" aria-label="FAB default">&#x1F4AC;</button>
+        </div>
+      </div>
+
+      <!-- Hover (simulated via inline background) -->
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-2">Hover</p>
+        <div class="relative h-20 bg-gray-50 dark:bg-gray-900 rounded-lg border border-dashed border-gray-200 dark:border-gray-800 flex items-center justify-center">
+          <button class="fab w-14 h-14 rounded-full text-white shadow-lg flex items-center justify-center text-lg touch-target" style="background-color: rgb(15 118 110);" aria-label="FAB hover">&#x1F4AC;</button>
+        </div>
+      </div>
+
+      <!-- Focus (simulated via inline box-shadow ring) -->
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-2">Focus</p>
+        <div class="relative h-20 bg-gray-50 dark:bg-gray-900 rounded-lg border border-dashed border-gray-200 dark:border-gray-800 flex items-center justify-center">
+          <button class="fab w-14 h-14 rounded-full bg-teal-600 text-white flex items-center justify-center text-lg touch-target" style="box-shadow: 0 0 0 2px rgb(17 24 39), 0 0 0 5px rgb(20 184 166), 0 10px 15px -3px rgb(0 0 0 / 0.3);" aria-label="FAB focus">&#x1F4AC;</button>
+        </div>
+      </div>
+
+      <!-- Active (simulated via darker teal + scale) -->
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-2">Active (pressed)</p>
+        <div class="relative h-20 bg-gray-50 dark:bg-gray-900 rounded-lg border border-dashed border-gray-200 dark:border-gray-800 flex items-center justify-center">
+          <button class="fab w-14 h-14 rounded-full text-white shadow-lg flex items-center justify-center text-lg touch-target" style="background-color: rgb(17 94 89); transform: scale(0.97);" aria-label="FAB active">&#x1F4AC;</button>
+        </div>
+      </div>
+
+      <!-- Disabled -->
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-2">Disabled</p>
+        <div class="relative h-20 bg-gray-50 dark:bg-gray-900 rounded-lg border border-dashed border-gray-200 dark:border-gray-800 flex items-center justify-center">
+          <button class="fab w-14 h-14 rounded-full bg-teal-600 text-white shadow-lg flex items-center justify-center text-lg touch-target" style="opacity: 0.5; cursor: not-allowed; filter: grayscale(0.4);" disabled aria-label="FAB disabled (no pending feedback)">&#x1F4AC;</button>
+        </div>
+      </div>
+
+      <!-- Pulse (new item arrived) -->
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-2">Pulse (new item)</p>
+        <div class="relative h-20 bg-gray-50 dark:bg-gray-900 rounded-lg border border-dashed border-gray-200 dark:border-gray-800 flex items-center justify-center">
+          <button class="fab w-14 h-14 rounded-full bg-teal-600 text-white shadow-lg feedback-fab-pulse flex items-center justify-center text-lg touch-target" aria-label="FAB with pulse animation (3 pulses, respects reduced-motion)">&#x1F4AC;</button>
+        </div>
+      </div>
+    </div>
+    <p class="text-[10px] text-gray-500 dark:text-gray-500 mt-4 italic">Under <code>prefers-reduced-motion: reduce</code> the pulse becomes a static amber badge; the count indicator still communicates "new items" without animation.</p>
+  </section>
 </body>
 </html>

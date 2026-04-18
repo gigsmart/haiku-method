@@ -37,6 +37,29 @@
     }
     .animate-pop-in { animation: pop-in 140ms ease-out; }
 
+    /* Reduced-motion guards — every animation in this file drops to a static
+       equivalent when the user has requested reduced motion (WCAG 2.3.3). */
+    @media (prefers-reduced-motion: reduce) {
+      .animate-pop-in { animation: none; }
+      .ghost-pin { transition: none; }
+      .line-row { transition: none; }
+    }
+
+    /* Pin hit-area expansion — visual marker stays 28px (brand-compatible),
+       invisible hit area extends to 44×44 via ::before pseudo so touch targets
+       satisfy FB-12 / WCAG 2.5.5. The ::before absorbs pointer events; the
+       visible element is the focus anchor. */
+    .pin-hit { position: absolute; }
+    .pin-hit::before {
+      content: "";
+      position: absolute;
+      inset: 50%;
+      width: 44px; height: 44px;
+      transform: translate(-50%, -50%);
+      border-radius: 9999px;
+      /* transparent hit area — not visible, but captures pointer + touch */
+    }
+
     /* Section card — consistent with DESIGN-BRIEF */
     .card {
       background: white;
@@ -189,10 +212,13 @@
         </g>
       </svg>
 
-      <!-- Example existing pin at (42%, 60%) to illustrate the overlay layer -->
+      <!-- Example existing pin at (42%, 60%) to illustrate the overlay layer.
+           Visual marker is 28px but the hit area is expanded to 44×44 via
+           ::before pseudo-element so FB-12 touch-target is met without
+           changing the visual scale. -->
       <button tabindex="-1" title="FB-12: review gate timing" aria-label="Feedback FB-12"
               style="left: 42%; top: 60%"
-              class="absolute -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-amber-500 text-white text-[11px] font-bold flex items-center justify-center shadow-lg ring-2 ring-white dark:ring-stone-900">
+              class="pin-hit absolute -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-amber-500 text-white text-[11px] font-bold flex items-center justify-center shadow-lg ring-2 ring-white dark:ring-stone-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-500/70">
         12
       </button>
 

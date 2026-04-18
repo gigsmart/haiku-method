@@ -48,8 +48,13 @@
       border-radius: 16px 16px 0 0;
     }
 
-    /* Pin marker for "in-context" state renderings */
+    /* Pin marker for "in-context" state renderings.
+       Visual 28px preserved for brand / overlay density, but the hit area is
+       expanded to 44×44 via ::before pseudo-element so touch activation meets
+       FB-12 / WCAG 2.5.5 (44×44 minimum target). Focus ring is teal and sits
+       outside the hit area so it remains visible on light + dark surfaces. */
     .pin {
+      position: relative;
       width: 28px; height: 28px;
       border-radius: 9999px;
       border: 2px solid white;
@@ -62,12 +67,36 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
     .dark .pin { border-color: rgb(28, 25, 23); }
+    .pin::before {
+      content: "";
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 44px; height: 44px;
+      transform: translate(-50%, -50%);
+      border-radius: 9999px;
+      /* transparent hit-area; pointer events captured here */
+    }
+    /* Interactive states for pins */
+    .pin:hover { filter: brightness(1.08); transform: scale(1.05); }
+    .pin:active { transform: scale(0.95); }
+    .pin:focus-visible { outline: 2px solid rgb(20 184 166); outline-offset: 3px; }
+    .pin[aria-disabled="true"],
+    .pin:disabled { opacity: 0.45; cursor: not-allowed; filter: grayscale(0.6); }
 
     .ghost {
+      position: relative;
       width: 28px; height: 28px;
       border-radius: 9999px;
       border: 2px dashed rgba(13, 148, 136, 0.75);
       background: rgba(13, 148, 136, 0.1);
+    }
+    .ghost::before {
+      content: "";
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 44px; height: 44px;
+      transform: translate(-50%, -50%);
+      border-radius: 9999px;
     }
 
     /* Connector line from popover to its anchor pin */
@@ -89,6 +118,11 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
+    }
+
+    /* Reduced-motion guard — static equivalents for every transform / transition */
+    @media (prefers-reduced-motion: reduce) {
+      .pin:hover, .pin:active { transform: none; filter: none; }
     }
   </style>
 </head>
