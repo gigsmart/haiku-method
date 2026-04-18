@@ -66,10 +66,10 @@ quality_gates:
     (foreground, background) pair used in artifacts; any pair below 4.5:1 for
     body text or 3:1 for UI is listed with the remediation applied
 status: active
-bolt: 2
-hat: design-reviewer
+bolt: 3
+hat: designer
 started_at: '2026-04-18T03:59:18Z'
-hat_started_at: '2026-04-18T21:02:43Z'
+hat_started_at: '2026-04-18T21:05:42Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:59:18Z'
@@ -148,6 +148,29 @@ iterations:
     result: advance
   - hat: design-reviewer
     started_at: '2026-04-18T21:02:43Z'
+    completed_at: '2026-04-18T21:05:42Z'
+    result: reject
+    reason: >-
+      Bolt 2 audit missed dark-mode metadata contrast failures.
+      `dark:text-stone-600` is used on 5 lines across 2 input artifacts
+      (metadata body text on dark card surfaces), which yields ~2.2:1 (#57534e
+      on #111827) — a WCAG 1.4.3 body-text failure. The audit's own ban list at
+      §1 forbids `text-stone-500` in dark mode on stone-800 and below for
+      exactly this reason; stone-600 is darker still. Worse, the pattern
+      `text-gray-500 dark:text-stone-600` is inverted — dark mode should be
+      LIGHTER (the audit sets `text-stone-300` as the new dark default, 12.6:1),
+      not darker. Fix the 5 occurrences below to `dark:text-stone-300` (or
+      `dark:text-gray-400` on pure gray surfaces) and re-run the audit. Specific
+      lines: feedback-card-states.html:50, 455, 524;
+      assessor-summary-card.html:18, 32. Also update the audit §1 dark-mode
+      ratio table to explicitly list `text-stone-600 on stone-900/gray-900` as a
+      banned pair so this doesn't reappear. Everything else in the gate list
+      (text-[9px]/[10px]=0, opacity-50/70=0, disabled:opacity=0, aria-disabled
+      coverage on static-disabled buttons, standalone text-*-400 in dark-only
+      sections = correctly scoped) passes — the audit work is mostly solid, this
+      is the last failing pair.
+  - hat: designer
+    started_at: '2026-04-18T21:05:42Z'
     completed_at: null
     result: null
 ---
