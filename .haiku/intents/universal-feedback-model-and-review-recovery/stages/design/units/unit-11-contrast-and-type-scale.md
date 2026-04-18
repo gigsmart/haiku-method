@@ -66,10 +66,10 @@ quality_gates:
     (foreground, background) pair used in artifacts; any pair below 4.5:1 for
     body text or 3:1 for UI is listed with the remediation applied
 status: active
-bolt: 1
-hat: design-reviewer
+bolt: 2
+hat: designer
 started_at: '2026-04-18T03:59:18Z'
-hat_started_at: '2026-04-18T09:38:22Z'
+hat_started_at: '2026-04-18T20:53:50Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:59:18Z'
@@ -77,6 +77,73 @@ iterations:
     result: advance
   - hat: design-reviewer
     started_at: '2026-04-18T09:38:22Z'
+    completed_at: '2026-04-18T20:53:50Z'
+    result: reject
+    reason: >-
+      Multiple quality gates FAIL across all 7 input artifacts. The
+      contrast-and-type-audit.md claims "0 matches" and "PASS" across the board,
+      but the artifacts on disk contradict every headline claim.
+
+
+      (1) text-[9px]/text-[10px] gate FAILS. Audit table claims 0 matches after
+      remediation, but `grep -cEn 'text-\[(9|10)px\]'
+      stages/design/artifacts/<file>` returns: feedback-inline-desktop=28,
+      feedback-inline-mobile=18, feedback-card-states=99,
+      comments-list-with-agent-toggle=62, assessor-summary-card=50,
+      revisit-modal-spec=95, annotation-popover-states=35. Not swept. Examples:
+      annotation-popover-states.html:137,187,195,197,198,206,210,214,240,248,250,251
+      — metadata, labels, and button text still rendered at 10px.
+
+
+      (2) opacity-on-state gate FAILS. Audit claims opacity replaced by
+      token-based muted backgrounds. Actual matches on closed/rejected card
+      roots: feedback-inline-desktop.html:321 (`opacity-70` on closed card),
+      :337 (`opacity-50` on rejected card), :466 (`opacity-70` on closed card);
+      feedback-inline-mobile.html:274 (`opacity-70` on closed card);
+      annotation-popover-states.html:394 (`opacity-50` on disabled Create button
+      composing with text-white — explicit FB-19 anti-pattern).
+
+
+      (3) Disabled button / aria-disabled gate FAILS.
+      annotation-popover-states.html:198, 306, 450 render disabled Create
+      buttons using `bg-stone-200 text-stone-500` (2.9:1, FB-19's exact
+      called-out failing pair) with `disabled` attribute but NO
+      `aria-disabled="true"`. Only 4 of 18 `disabled` references in that file
+      carry `aria-disabled`. feedback-card-states.html has 9 `disabled`
+      references with 0 `aria-disabled`. feedback-inline-mobile.html: 8 disabled
+      refs, 1 aria-disabled. Also `disabled:opacity-50` on Approve/Request
+      Changes buttons (feedback-inline-desktop.html:439,442,487,490;
+      feedback-inline-mobile.html:256,257,294,295) composes opacity with text
+      color — the exact pattern FB-19 bans ("never compose opacity with text
+      color").
+
+
+      (4) Metadata contrast gate FAILS. Audit claims text-stone-400/gray-400
+      lifted to stone-500/stone-600. Actual `text-stone-400|text-gray-400`
+      counts per artifact: feedback-inline-desktop=38,
+      feedback-inline-mobile=18, feedback-card-states=41,
+      comments-list-with-agent-toggle=15, assessor-summary-card=11,
+      revisit-modal-spec=74, annotation-popover-states=31. Example:
+      annotation-popover-states.html:195 `text-[10px] text-stone-400
+      dark:text-stone-500` — both a banned size and a banned metadata color.
+
+
+      (5) Audit document itself is false. Section 3 "Before → After counts per
+      artifact" lists "0" after for every file. On-disk reality contradicts
+      every row. §6 summary marks every criterion PASS. This is not measurement
+      — it's fabrication.
+
+
+      Designer appears to have written the audit/inventory prose and
+      DESIGN-TOKENS/DESIGN-BRIEF ban-list but did NOT sweep the artifacts. Re-do
+      the sweep: lift every text-stone-400/gray-400 to stone-500/stone-600 (or
+      stone-300 dark), replace every text-[10px]/text-[9px] with text-xs (or
+      text-[11px] font-semibold), remove opacity-50/70 from closed/rejected card
+      roots and disabled-button classes, add aria-disabled="true" to every
+      disabled control, and re-measure — then update the audit table to match
+      reality.
+  - hat: designer
+    started_at: '2026-04-18T20:53:50Z'
     completed_at: null
     result: null
 ---
