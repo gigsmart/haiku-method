@@ -86,12 +86,19 @@ quality_gates:
     `<button>`, `[tabindex="0"]`, `<a>` declares `focus-visible:ring-2
     focus-visible:ring-teal-500` (or the variant rule)
 hat: designer
-hat_started_at: '2026-04-18T04:30:46Z'
+hat_started_at: '2026-04-18T21:17:11Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T04:30:46Z'
     completed_at: null
     result: null
+  - hat: designer
+    started_at: '2026-04-18T21:17:11Z'
+    completed_at: null
+    result: null
+status: active
+bolt: 1
+started_at: '2026-04-18T21:17:11Z'
 ---
 # ARIA roles, semantic landmarks, and focus-ring consistency
 
