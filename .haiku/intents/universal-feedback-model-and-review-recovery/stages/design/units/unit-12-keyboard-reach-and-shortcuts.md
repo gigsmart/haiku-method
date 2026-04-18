@@ -72,12 +72,16 @@ quality_gates:
     both light and dark modes
 status: active
 bolt: 1
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-18T03:59:28Z'
-hat_started_at: '2026-04-18T03:59:28Z'
+hat_started_at: '2026-04-18T04:12:35Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:59:28Z'
+    completed_at: '2026-04-18T04:12:34Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-18T04:12:35Z'
     completed_at: null
     result: null
 ---
