@@ -70,7 +70,7 @@ quality_gates:
   - >-
     skip-link-spec.html renders the skip link in default + focused states in
     both light and dark modes
-status: active
+status: completed
 bolt: 1
 hat: designer
 started_at: '2026-04-18T03:59:28Z'
@@ -80,6 +80,7 @@ iterations:
     started_at: '2026-04-18T03:59:28Z'
     completed_at: null
     result: null
+completed_at: '2026-04-18T20:55:43Z'
 ---
 # Keyboard reach, shortcut collisions, and screen-reader conflicts
 
