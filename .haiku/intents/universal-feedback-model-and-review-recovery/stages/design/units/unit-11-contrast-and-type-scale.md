@@ -67,9 +67,9 @@ quality_gates:
     body text or 3:1 for UI is listed with the remediation applied
 status: active
 bolt: 2
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-18T03:59:18Z'
-hat_started_at: '2026-04-18T20:53:50Z'
+hat_started_at: '2026-04-18T21:02:43Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:59:18Z'
@@ -144,6 +144,10 @@ iterations:
       reality.
   - hat: designer
     started_at: '2026-04-18T20:53:50Z'
+    completed_at: '2026-04-18T21:02:43Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-18T21:02:43Z'
     completed_at: null
     result: null
 ---
