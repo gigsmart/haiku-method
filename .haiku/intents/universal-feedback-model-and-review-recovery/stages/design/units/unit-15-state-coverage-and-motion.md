@@ -65,12 +65,16 @@ quality_gates:
     desktop, with explicit exceptions); every affected artifact complies
 status: active
 bolt: 1
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-18T03:11:01Z'
-hat_started_at: '2026-04-18T03:11:01Z'
+hat_started_at: '2026-04-18T03:26:12Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:11:01Z'
+    completed_at: '2026-04-18T03:26:12Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-18T03:26:12Z'
     completed_at: null
     result: null
 ---
