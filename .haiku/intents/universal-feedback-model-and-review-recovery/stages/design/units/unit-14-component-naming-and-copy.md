@@ -63,9 +63,9 @@ quality_gates:
     `Mine` segmented identity split
 status: active
 bolt: 3
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-18T03:59:44Z'
-hat_started_at: '2026-04-18T04:26:22Z'
+hat_started_at: '2026-04-18T04:28:17Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:59:44Z'
@@ -127,6 +127,10 @@ iterations:
       vocabulary in footer-button-copy-spec.md).
   - hat: designer
     started_at: '2026-04-18T04:26:22Z'
+    completed_at: '2026-04-18T04:28:17Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-18T04:28:17Z'
     completed_at: null
     result: null
 ---
