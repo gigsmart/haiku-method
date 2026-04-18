@@ -79,9 +79,9 @@ quality_gates:
     grep pattern per row
 status: active
 bolt: 2
-hat: design-reviewer
+hat: feedback-assessor
 started_at: '2026-04-18T03:10:54Z'
-hat_started_at: '2026-04-18T03:38:35Z'
+hat_started_at: '2026-04-18T03:42:01Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:10:54Z'
@@ -111,6 +111,10 @@ iterations:
     result: advance
   - hat: design-reviewer
     started_at: '2026-04-18T03:38:35Z'
+    completed_at: '2026-04-18T03:42:01Z'
+    result: advance
+  - hat: feedback-assessor
+    started_at: '2026-04-18T03:42:01Z'
     completed_at: null
     result: null
 ---
