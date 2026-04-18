@@ -643,6 +643,12 @@ New styles to add to `packages/haiku/review-app/src/index.css`:
 .feedback-fab-pulse {
   animation: feedback-pulse 2s ease-in-out 3;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .feedback-fab-pulse {
+    animation: none;
+  }
+}
 ```
 
 Most styling uses Tailwind utility classes directly on components. The CSS additions are only for states that require descendant selectors or animations that are cumbersome in inline Tailwind.
