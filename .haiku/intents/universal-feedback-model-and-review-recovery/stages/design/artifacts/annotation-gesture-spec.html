@@ -48,6 +48,8 @@
   </style>
 </head>
 <body class="bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 font-sans">
+<!-- FB-30: Skip-to-main-content link. First focusable element; visually hidden until focused. -->
+<a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:px-3 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white">Skip to main content</a>
 
 <!-- ============================================================
      HEADER
@@ -65,7 +67,7 @@
   </div>
 </header>
 
-<main class="max-w-6xl mx-auto px-6 py-8 space-y-10">
+<main id="main-content" class="max-w-6xl mx-auto px-6 py-8 space-y-10">
 
   <!-- ============================================================
        OVERVIEW
@@ -123,7 +125,7 @@
             <td class="py-3 pr-4 font-medium">Markdown / text</td>
             <td class="py-3 pr-4 font-mono text-xs text-stone-500">text/markdown · text/plain</td>
             <td class="py-3 pr-4"><code class="text-xs">cursor-pointer</code> on hover row</td>
-            <td class="py-3 pr-4">Click a line (or focus + <kbd class="text-[10px] font-mono px-1 bg-stone-100 dark:bg-stone-800 rounded">A</kbd>)</td>
+            <td class="py-3 pr-4">Click a line (or focus + <kbd class="text-[10px] font-mono px-1 bg-stone-100 dark:bg-stone-800 rounded">C</kbd>)</td>
             <td class="py-3 font-mono text-xs text-stone-600 dark:text-stone-400">{ line } (1-indexed)</td>
           </tr>
           <tr>
@@ -190,9 +192,13 @@
       </svg>
 
       <!-- Example existing pin at (42%, 60%) to illustrate the overlay layer -->
-      <button tabindex="-1" title="FB-12: review gate timing" aria-label="Feedback FB-12"
+      <!-- FB-17 fix: tabindex="0" restores keyboard reachability; aria-label names FB id + normalized coords. -->
+      <button type="button" tabindex="0"
+              title="FB-12: review gate timing"
+              aria-label="Feedback FB-12 at 42% 60% — press Enter to view details"
+              aria-keyshortcuts="Enter"
               style="left: 42%; top: 60%"
-              class="absolute -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-amber-500 text-white text-[11px] font-bold flex items-center justify-center shadow-lg ring-2 ring-white dark:ring-stone-900">
+              class="absolute -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-amber-500 text-white text-[11px] font-bold flex items-center justify-center shadow-lg ring-2 ring-white dark:ring-stone-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-stone-900">
         12
       </button>
 
@@ -242,7 +248,7 @@
       Each line is a row in a 2-column grid (gutter + content). Hover
       highlights the entire row in teal; click anywhere on the row opens
       the popover anchored near the click. Keyboard path: arrow-keys
-      focus a line, <kbd class="text-[10px] font-mono px-1 bg-stone-100 dark:bg-stone-800 rounded">A</kbd> opens popover at that line.
+      focus a line, <kbd class="text-[10px] font-mono px-1 bg-stone-100 dark:bg-stone-800 rounded">C</kbd> (create) opens popover at that line. <span class="italic">Note: <kbd class="text-[10px] font-mono px-1 bg-stone-100 dark:bg-stone-800 rounded">A</kbd> is reserved for Approve (unit-07) — see keyboard-shortcut-map.html §1.</span>
     </p>
 
     <div class="text-[12px] font-mono text-stone-700 dark:text-stone-300 leading-relaxed bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-700 rounded-md overflow-hidden"
@@ -259,7 +265,7 @@
       <div class="grid grid-cols-[2.5rem_1fr] cursor-pointer bg-amber-50 dark:bg-amber-900/20 border-l-[3px] border-l-amber-500" onclick="demoClickLine(event, 3)" tabindex="0" aria-label="Line 3 with 1 annotation">
         <span class="text-amber-600 dark:text-amber-400 text-right pr-2 select-none font-bold bg-amber-100/60 dark:bg-amber-950/40">3</span>
         <span class="px-3 py-0.5">
-          <button tabindex="-1" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold align-middle mr-1">7</button>
+          <span aria-hidden="true" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold align-middle mr-1">7</span>
           Every finding persists as a feedback file.
         </span>
       </div>
@@ -363,19 +369,19 @@
         <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
           <tr>
             <td class="py-2 pr-4">Line row (text / md)</td>
-            <td class="py-2 pr-4"><kbd class="text-[10px] font-mono px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">A</kbd></td>
-            <td class="py-2 pr-4">Open popover at focused line</td>
+            <td class="py-2 pr-4"><kbd class="text-[10px] font-mono px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 rounded" aria-keyshortcuts="c">C</kbd></td>
+            <td class="py-2 pr-4">Open popover at focused line (create annotation)</td>
             <td class="py-2 text-xs text-stone-500">left edge of row + gutter offset</td>
           </tr>
           <tr>
             <td class="py-2 pr-4">Artifact wrapper (image / svg)</td>
-            <td class="py-2 pr-4"><kbd class="text-[10px] font-mono px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">A</kbd></td>
+            <td class="py-2 pr-4"><kbd class="text-[10px] font-mono px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 rounded" aria-keyshortcuts="c">C</kbd></td>
             <td class="py-2 pr-4">Open popover centered on artifact, <code>{x:0.5, y:0.5}</code></td>
             <td class="py-2 text-xs text-stone-500">center of artifact bounds</td>
           </tr>
           <tr>
             <td class="py-2 pr-4">Iframe wrapper (html / pdf)</td>
-            <td class="py-2 pr-4"><kbd class="text-[10px] font-mono px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">A</kbd></td>
+            <td class="py-2 pr-4"><kbd class="text-[10px] font-mono px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 rounded" aria-keyshortcuts="c">C</kbd></td>
             <td class="py-2 pr-4">Focus the location form's <em>region</em> input</td>
             <td class="py-2 text-xs text-stone-500">n/a (form first, popover after)</td>
           </tr>
