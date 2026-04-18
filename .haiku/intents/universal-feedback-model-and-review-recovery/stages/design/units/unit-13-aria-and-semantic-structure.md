@@ -87,12 +87,16 @@ quality_gates:
     focus-visible:ring-teal-500` (or the variant rule)
 status: active
 bolt: 1
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-18T03:59:39Z'
-hat_started_at: '2026-04-18T03:59:39Z'
+hat_started_at: '2026-04-18T04:16:41Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:59:39Z'
+    completed_at: '2026-04-18T04:16:41Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-18T04:16:41Z'
     completed_at: null
     result: null
 ---
