@@ -12,7 +12,9 @@
     .state-hover    { --sim: hover; }
     .state-focus button, .state-focus a, .state-focus [role=button] { outline: 2px solid rgb(20 184 166); outline-offset: 2px; }
     .state-active button { transform: translateY(1px); filter: brightness(0.95); }
-    .state-disabled button { opacity: 0.5; cursor: not-allowed; }
+    /* Disabled state shown by token pair on each button (bg-stone-100 text-stone-600 border-stone-400
+       for neutral; bg-green-300 text-green-800 for primary) — opacity:0.5 was banned by FB-19. */
+    .state-disabled button { cursor: not-allowed; }
   </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
@@ -50,17 +52,17 @@
           <tr>
             <td class="px-3 py-2 font-semibold"><span class="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">addressed</span></td>
             <td class="px-3 py-2"><span class="inline-flex items-center px-2 py-0.5 rounded bg-green-600 text-white">Verify &amp; Close</span> <span class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 ml-1">Re-open</span></td>
-            <td class="px-3 py-2 text-gray-400">—</td>
+            <td class="px-3 py-2 text-gray-500 dark:text-gray-400" aria-label="not applicable">—</td>
           </tr>
           <tr>
             <td class="px-3 py-2 font-semibold"><span class="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">rejected</span></td>
             <td class="px-3 py-2"><span class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">Re-open</span></td>
-            <td class="px-3 py-2 text-gray-400">—</td>
+            <td class="px-3 py-2 text-gray-500 dark:text-gray-400" aria-label="not applicable">—</td>
           </tr>
           <tr>
             <td class="px-3 py-2 font-semibold"><span class="inline-flex items-center px-2 py-0.5 rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">closed</span></td>
             <td class="px-3 py-2"><span class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">Re-open</span></td>
-            <td class="px-3 py-2 text-gray-400">—</td>
+            <td class="px-3 py-2 text-gray-500 dark:text-gray-400" aria-label="not applicable">—</td>
           </tr>
         </tbody>
       </table>
@@ -311,7 +313,7 @@
 
       <!-- REJECTED — default (dark mode) -->
       <div>
-        <p class="text-xs font-bold uppercase tracking-widest text-stone-400 mb-1">rejected · default (full-opacity strikethrough + X glyph + "Rejected" prefix)</p>
+        <p class="text-xs font-bold uppercase tracking-widest text-stone-300 mb-1">rejected · default (full-opacity strikethrough + X glyph + "Rejected" prefix)</p>
         <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-stone-500 bg-stone-800/50 border-stone-700 cursor-pointer">
           <div class="flex items-center gap-2 mb-1">
             <span aria-hidden="true" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-stone-400 text-stone-900 text-xs font-bold leading-none">&times;</span>
@@ -319,7 +321,7 @@
             <span class="flex-1"></span>
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-stone-700 text-stone-200" aria-label="Status: rejected">rejected</span>
           </div>
-          <p class="text-xs font-medium text-stone-400 truncate"><span class="text-stone-200 font-semibold no-underline">Rejected &middot;</span> <span class="line-through decoration-stone-400">FB-05 &middot; "Duplicate of FB-02"</span></p>
+          <p class="text-xs font-medium text-stone-300 truncate"><span class="text-stone-100 font-semibold no-underline">Rejected &middot;</span> <span class="line-through decoration-stone-300">FB-05 &middot; "Duplicate of FB-02"</span></p>
           <p class="text-xs text-stone-300 mt-0.5">Visit 1 &middot; adversarial-review &middot; dismissed</p>
           <div class="flex items-center gap-1 mt-2 pt-2 border-t border-stone-700">
             <span class="flex-1"></span>
@@ -330,7 +332,7 @@
 
       <!-- CLOSED — default (dark) -->
       <div>
-        <p class="text-xs font-bold uppercase tracking-widest text-stone-400 mb-1">closed · default (green border + checkmark glyph + "Closed" prefix — no opacity)</p>
+        <p class="text-xs font-bold uppercase tracking-widest text-stone-300 mb-1">closed · default (green border + checkmark glyph + "Closed" prefix — no opacity)</p>
         <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-green-400 bg-green-950/25 border-stone-700 cursor-pointer">
           <div class="flex items-center gap-2 mb-1">
             <span aria-hidden="true" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-500 text-white text-xs font-bold leading-none">&check;</span>
