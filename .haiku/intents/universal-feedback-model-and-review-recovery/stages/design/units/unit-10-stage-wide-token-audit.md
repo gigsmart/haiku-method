@@ -79,9 +79,9 @@ quality_gates:
     grep pattern per row
 status: active
 bolt: 2
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-18T03:10:54Z'
-hat_started_at: '2026-04-18T03:36:06Z'
+hat_started_at: '2026-04-18T03:38:35Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:10:54Z'
@@ -107,6 +107,10 @@ iterations:
       stages/design/artifacts/unit-10-review.md for exact fix strings.
   - hat: designer
     started_at: '2026-04-18T03:36:06Z'
+    completed_at: '2026-04-18T03:38:35Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-18T03:38:35Z'
     completed_at: null
     result: null
 ---
