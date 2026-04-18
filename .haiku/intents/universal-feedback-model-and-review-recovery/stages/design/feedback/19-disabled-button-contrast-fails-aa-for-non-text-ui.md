@@ -1,6 +1,6 @@
 ---
 title: Disabled button contrast fails AA for non-text UI
-status: pending
+status: closed
 origin: adversarial-review
 author: accessibility
 author_type: agent
@@ -9,6 +9,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-11-contrast-and-type-scale
 ---
 
 The disabled "Create" button in the annotation popover states uses `bg-stone-200 text-stone-500` (light) and `bg-stone-700 text-stone-400` (dark).

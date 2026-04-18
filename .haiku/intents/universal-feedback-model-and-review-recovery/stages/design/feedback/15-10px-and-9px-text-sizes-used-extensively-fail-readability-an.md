@@ -2,7 +2,7 @@
 title: >-
   10px and 9px text sizes used extensively fail readability and zoom
   requirements
-status: pending
+status: closed
 origin: adversarial-review
 author: accessibility
 author_type: agent
@@ -11,6 +11,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-11-contrast-and-type-scale
 ---
 
 Metadata lines, origin icon labels, filter chips, help-overlay kbd-chips, and group headers use `text-[10px]` and in several places `text-[9px]`. This is below the 12px / 0.75rem minimum recommended for body text and fails WCAG 1.4.4 Resize Text at default zoom — at typical OS zoom levels (e.g. 100% on a retina display) 9px is 6px physical, illegible for most users over 40 and categorically a fail for low-vision users.
