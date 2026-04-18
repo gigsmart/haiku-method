@@ -2,7 +2,7 @@
 title: >-
   Footer button copy drift — "Close" vs "Verify & Close" vs "Dismiss" vs
   "Reject" across artifacts
-status: pending
+status: closed
 origin: adversarial-review
 author: consistency
 author_type: agent
@@ -11,6 +11,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-14-component-naming-and-copy
 ---
 
 Per-status button labels differ across the stage's own outputs:

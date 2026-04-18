@@ -1,6 +1,6 @@
 ---
 title: Component naming diverges from existing review-app pattern language
-status: pending
+status: closed
 origin: adversarial-review
 author: consistency
 author_type: agent
@@ -9,6 +9,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-14-component-naming-and-copy
 ---
 
 The mandate requires "component naming follows the existing pattern language." The existing review app (`packages/haiku/review-app/src/`) uses `PascalCase` component names with a consistent shape: `ReviewSidebar`, `ReviewPage`, `StatusBadge`, `SidebarComment`, `InlineComments`, `AnnotationCanvas`.
