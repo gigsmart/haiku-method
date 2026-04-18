@@ -1,7 +1,10 @@
 ---
-title: "Interactive state coverage, touch targets, and reduced-motion guards"
+title: 'Interactive state coverage, touch targets, and reduced-motion guards'
 type: design
-closes: [FB-12, FB-20, FB-25]
+closes:
+  - FB-12
+  - FB-20
+  - FB-25
 depends_on: []
 inputs:
   - stages/design/DESIGN-BRIEF.md
@@ -15,21 +18,62 @@ inputs:
   - stages/design/artifacts/revisit-unit-list.html
   - stages/design/artifacts/stage-progress-strip.html
   - stages/design/artifacts/focus-ring-spec.html
-  - stages/design/feedback/12-pin-annotation-buttons-are-28px-below-44px-touch-target-on-m.md
-  - stages/design/feedback/20-fab-pulse-animation-has-no-prefers-reduced-motion-guard.md
-  - stages/design/feedback/25-interactive-state-coverage-incomplete-focus-state-missing-fr.md
+  - >-
+    stages/design/feedback/12-pin-annotation-buttons-are-28px-below-44px-touch-target-on-m.md
+  - >-
+    stages/design/feedback/20-fab-pulse-animation-has-no-prefers-reduced-motion-guard.md
+  - >-
+    stages/design/feedback/25-interactive-state-coverage-incomplete-focus-state-missing-fr.md
 outputs:
   - stages/design/artifacts/state-coverage-grid.md
   - stages/design/artifacts/touch-target-audit.md
   - stages/design/artifacts/motion-and-reduced-motion-spec.md
 quality_gates:
-  - "All pin markers present a 44×44px touch hit area (either `w-11 h-11` on the button itself, OR a 44px invisible hit area wrapping a 28px visual marker); affected files at minimum: feedback-inline-desktop.html:164/180/183, annotation-gesture-spec.html:195, annotation-popover-states.html .pin CSS lines 55-63; touch-target-audit.md lists every touch-activated control with measured dimensions"
-  - "Every animation in DESIGN-BRIEF §7 and every artifact (`feedback-fab-pulse`, `sheet-up`, `pop-in`, `review-pulse`, `feedback-status-change`, cross-flash, and any others) has a `@media (prefers-reduced-motion: reduce)` fallback that sets `animation: none` (or a static equivalent); motion-and-reduced-motion-spec.md enumerates every animation with its reduced-motion fallback; `grep -rEn '@keyframes' stages/design/artifacts/` every hit has a sibling `prefers-reduced-motion` block"
-  - "state-coverage-grid.md enumerates every interactive surface across all artifacts with six columns (default, hover, focus, active, disabled, error); the following artifacts have complete coverage rendered: revisit-modal (adds error/failure-on-confirm state — mirrors feedback-card toast+revert pattern), stage-progress-strip (distinguishes `tabindex=\"-1\"` future stages from focusable-but-no-action visited stages), feedback-inline-* FAB (default/hover/focus/active/disabled broken out), annotation-popover (adds explicit disabled popover state for empty-body Create), revisit-unit-list (focus ring on locked/completed units for read-only inspection)"
-  - "Every interactive surface with existing state coverage gaps in the FB-25 audit now renders all six states explicitly (default, hover, focus, active, disabled, error); DESIGN-BRIEF §2 amended to require state-coverage grids for new components"
-  - "Touch target rule documented once in DESIGN-TOKENS.md (≥ 44px on any tablet/mobile touch-activated control, ≥ 24px WCAG 2.2 1.4.11 minimum on desktop, with explicit exceptions); every affected artifact complies"
+  - >-
+    All pin markers present a 44×44px touch hit area (either `w-11 h-11` on the
+    button itself, OR a 44px invisible hit area wrapping a 28px visual marker);
+    affected files at minimum: feedback-inline-desktop.html:164/180/183,
+    annotation-gesture-spec.html:195, annotation-popover-states.html .pin CSS
+    lines 55-63; touch-target-audit.md lists every touch-activated control with
+    measured dimensions
+  - >-
+    Every animation in DESIGN-BRIEF §7 and every artifact (`feedback-fab-pulse`,
+    `sheet-up`, `pop-in`, `review-pulse`, `feedback-status-change`, cross-flash,
+    and any others) has a `@media (prefers-reduced-motion: reduce)` fallback
+    that sets `animation: none` (or a static equivalent);
+    motion-and-reduced-motion-spec.md enumerates every animation with its
+    reduced-motion fallback; `grep -rEn '@keyframes' stages/design/artifacts/`
+    every hit has a sibling `prefers-reduced-motion` block
+  - >-
+    state-coverage-grid.md enumerates every interactive surface across all
+    artifacts with six columns (default, hover, focus, active, disabled, error);
+    the following artifacts have complete coverage rendered: revisit-modal (adds
+    error/failure-on-confirm state — mirrors feedback-card toast+revert
+    pattern), stage-progress-strip (distinguishes `tabindex="-1"` future stages
+    from focusable-but-no-action visited stages), feedback-inline-* FAB
+    (default/hover/focus/active/disabled broken out), annotation-popover (adds
+    explicit disabled popover state for empty-body Create), revisit-unit-list
+    (focus ring on locked/completed units for read-only inspection)
+  - >-
+    Every interactive surface with existing state coverage gaps in the FB-25
+    audit now renders all six states explicitly (default, hover, focus, active,
+    disabled, error); DESIGN-BRIEF §2 amended to require state-coverage grids
+    for new components
+  - >-
+    Touch target rule documented once in DESIGN-TOKENS.md (≥ 44px on any
+    tablet/mobile touch-activated control, ≥ 24px WCAG 2.2 1.4.11 minimum on
+    desktop, with explicit exceptions); every affected artifact complies
+status: active
+bolt: 1
+hat: designer
+started_at: '2026-04-18T03:11:01Z'
+hat_started_at: '2026-04-18T03:11:01Z'
+iterations:
+  - hat: designer
+    started_at: '2026-04-18T03:11:01Z'
+    completed_at: null
+    result: null
 ---
-
 # Interactive state coverage, touch targets, and reduced-motion guards
 
 ## Scope
