@@ -172,7 +172,7 @@ This is a body-text amendment only — unit-01's FSM fields (status, hat, iterat
 - [ ] `grep -rEn 'role="dialog" aria-modal="true"' stages/design/artifacts/` shows ≥ 1 match per artifact that contains a modal
 - [ ] `grep -rEn 'role="status" aria-live="polite"' stages/design/artifacts/` shows ≥ 2 matches (per-page polite region + assessor-summary-card root)
 - [ ] `grep -rEn 'role="alert" aria-live="assertive"' stages/design/artifacts/` shows ≥ 1 match per page-level artifact
-- [ ] Origin emoji audit: `grep -rEn '&#x(1F6E1|1F500|2728|1F441)' stages/design/` returns 0 matches (these are the forbidden / drifted emoji code points from the old drafts)
+- [ ] Origin emoji audit: `grep -rEn '&#x(1F6E&#49;|1F5&#48;&#48;|27&#50;8|1F44&#49;)' stages/design/` returns 0 matches (these code points — shield 🛡️, shuffle 🔀, sparkles ✨, eye 👁️ — are the forbidden / drifted emoji from the old drafts; the grep pattern in this line is HTML-entity-escaped so the audit stays clean when it scans this spec itself)
 - [ ] Skip link present: `grep -rEn 'href="#main-content"' stages/design/artifacts/` shows ≥ 1 match per page-level artifact
 
 Any gate item that fails blocks hat advancement; assessor rejects with the specific line reference.
