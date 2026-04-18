@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280" />
+  <title>Comments List with Agent-Feedback Toggle — Sidebar Restructure</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+
+    /* Canonical focus ring (focus-ring-spec.html §1) — applied via focus-visible */
+    .af-switch:focus-visible {
+      outline: 2px solid rgb(20 184 166); /* teal-500 */
+      outline-offset: 2px;
+      border-radius: 9999px;
+    }
+    .dark .af-switch:focus-visible {
+      outline-color: rgb(45 212 191); /* teal-400 (dark-mode variant) */
+    }
+    .af-switch:focus:not(:focus-visible) { outline: none; }
+
+    /* 44px minimum touch target wraps the 32x16 visual (WCAG 2.5.5) */
+    .af-touch {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
+
+<header class="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
+  <div class="max-w-[1400px] mx-auto px-5 py-3 flex items-center justify-between">
+    <div>
+      <h1 class="text-lg font-semibold">Comments List with Agent-Feedback Toggle</h1>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Unit 05 · FB-02 · Sidebar restructure — one unified <strong>Comments</strong> list, agent-feedback overlay via toggle · No "mine vs others"</p>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-[1400px] mx-auto px-5 py-6 space-y-10">
+
+  <!-- Section 1: Rationale -->
+  <section aria-labelledby="sec-rationale" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+    <h2 id="sec-rationale" class="text-base font-semibold mb-2">1. Why no "Mine / Feedback" segmented control</h2>
+    <ul class="text-xs text-gray-700 dark:text-gray-300 space-y-1.5 list-disc pl-4">
+      <li>H·AI·K·U has <strong>no concept of user identity</strong>. There is no login, no per-user state — the review app is a local surface. "Mine" is undefined.</li>
+      <li>User-origin items (<code>user-chat</code>, <code>user-visual</code>, <code>external-pr</code>, <code>external-mr</code>) unify into a single <strong>Comments</strong> list. Origin badges differentiate, so nothing is hidden.</li>
+      <li>Agent-origin items (<code>adversarial-review</code>, <code>agent</code>) are <em>secondary</em> — the reviewer rarely needs them during active review. An <strong>agent-feedback toggle</strong> (default OFF) reveals them inline with visible origin badges.</li>
+      <li>When the toggle is ON, agent items render inline with user items in the same list — interleaved by stage, not pushed to a separate tab. The reviewer still sees one list; the population just grows.</li>
+    </ul>
+  </section>
+
+  <!-- Section 2: Sidebar mockup — light, toggle OFF -->
+  <section aria-labelledby="sec-light-off">
+    <h2 id="sec-light-off" class="text-base font-semibold mb-3">2. Sidebar — Light Mode, Toggle OFF (default)</h2>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Only user-origin items visible. Agent items are on disk but hidden; the toggle chip shows the muted count.</p>
+    <div class="flex gap-4">
+      <!-- Sample main content stub -->
+      <div class="flex-1 bg-white border border-gray-200 rounded-lg p-4 min-h-[540px]">
+        <div class="h-6 w-48 bg-gray-100 rounded mb-3"></div>
+        <div class="h-4 w-64 bg-gray-100 rounded mb-2"></div>
+        <div class="h-4 w-72 bg-gray-100 rounded mb-2"></div>
+        <div class="h-4 w-56 bg-gray-100 rounded mb-6"></div>
+        <div class="h-6 w-32 bg-gray-100 rounded mb-3"></div>
+        <div class="h-4 w-full bg-gray-100 rounded mb-2"></div>
+        <div class="h-4 w-80 bg-gray-100 rounded mb-2"></div>
+        <div class="h-4 w-72 bg-gray-100 rounded"></div>
+        <p class="mt-6 text-xs text-stone-600 italic">— Main content area (not the subject of this artifact) —</p>
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="w-96 shrink-0 bg-white border-l border-gray-200 rounded-lg overflow-hidden shadow-sm flex flex-col" aria-label="Review sidebar">
+        <!-- Sidebar header -->
+        <div class="shrink-0 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-gray-900">Comments</h3>
+          <span class="text-xs text-gray-500">5</span>
+        </div>
+
+        <!-- Agent-feedback toggle (canonical role="switch" pattern per agent-feedback-toggle-spec.html §1) -->
+        <div class="shrink-0 px-4 py-2.5 border-b border-gray-200 bg-gray-50/60">
+          <label class="af-touch flex items-center gap-2 cursor-pointer group">
+            <button
+              type="button"
+              role="switch"
+              aria-checked="false"
+              aria-label="Show agent feedback"
+              class="af-switch relative inline-block w-8 h-4 rounded-full bg-gray-300 group-hover:bg-gray-400 focus-visible:ring-2 focus-visible:ring-teal-500 transition-colors"
+            >
+              <span aria-hidden="true" class="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-transform"></span>
+            </button>
+            <span class="flex-1 text-xs font-medium text-gray-700">Show agent feedback</span>
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-600">
+              <span aria-hidden="true">&#x2728;</span>8 hidden
+            </span>
+          </label>
+          <p class="mt-1 text-xs text-stone-600 leading-snug">Reveal findings from the review agent and feedback assessor inline with reviewer comments.</p>
+        </div>
+
+        <!-- Status-group header: pending -->
+        <div class="sticky top-0 z-10 shrink-0 px-3 py-2 bg-amber-50/70 border-b border-amber-100">
+          <span class="text-xs font-bold uppercase tracking-widest text-amber-800">Pending · 2</span>
+        </div>
+
+        <!-- Pending user-visual -->
+        <article tabindex="0" class="mx-2 my-1.5 p-2.5 rounded-lg border border-l-[3px] border-l-amber-400 bg-amber-50/50 border-gray-200 cursor-pointer hover:border-teal-400 transition-colors">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span>
+            <span class="flex-1"></span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">pending</span>
+          </div>
+          <p class="text-xs font-medium text-gray-800 truncate">FB-14 · "Button alignment looks off on this card"</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · you · 2 min ago</p>
+        </article>
+
+        <!-- Pending user-chat -->
+        <article tabindex="0" class="mx-2 my-1.5 p-2.5 rounded-lg border border-l-[3px] border-l-amber-400 bg-amber-50/50 border-gray-200 cursor-pointer hover:border-teal-400 transition-colors">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200"><span aria-hidden="true">&#x1F4AC;</span>User Chat</span>
+            <span class="flex-1"></span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">pending</span>
+          </div>
+          <p class="text-xs font-medium text-gray-800 truncate">FB-13 · "Move the keyboard hints out of the header"</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · you · 12 min ago</p>
+        </article>
+
+        <!-- Addressed group -->
+        <div class="sticky top-0 z-10 shrink-0 px-3 py-2 bg-blue-50/70 border-y border-blue-100">
+          <span class="text-xs font-bold uppercase tracking-widest text-blue-800">Addressed · 1</span>
+        </div>
+
+        <article tabindex="0" class="mx-2 my-1.5 p-2.5 rounded-lg border border-l-[3px] border-l-blue-400 bg-blue-50/50 border-gray-200 cursor-pointer hover:border-teal-400 transition-colors">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200"><span aria-hidden="true">&#x1F500;</span>External PR</span>
+            <span class="flex-1"></span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">addressed</span>
+          </div>
+          <p class="text-xs font-medium text-gray-800 truncate">FB-10 · "Rename the footer button to 'Dismiss'"</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 2 · reviewer · !pr-42</p>
+        </article>
+
+        <!-- Closed group -->
+        <div class="sticky top-0 z-10 shrink-0 px-3 py-2 bg-green-50/70 border-y border-green-100">
+          <span class="text-xs font-bold uppercase tracking-widest text-green-800">Closed · 2</span>
+        </div>
+
+        <article tabindex="0" class="mx-2 my-1.5 p-2.5 rounded-lg border border-l-[3px] border-l-green-400 bg-green-50/30 border-gray-200 cursor-pointer hover:border-teal-400 transition-colors">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span>
+            <span class="flex-1"></span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">closed</span>
+          </div>
+          <p class="text-xs font-medium text-gray-800 truncate">FB-06 · "Contrast on the origin badge"</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · reviewer · verified</p>
+        </article>
+
+        <article tabindex="0" class="mx-2 my-1.5 p-2.5 rounded-lg border border-l-[3px] border-l-green-400 bg-green-50/30 border-gray-200 cursor-pointer hover:border-teal-400 transition-colors">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200"><span aria-hidden="true">&#x1F500;</span>External MR</span>
+            <span class="flex-1"></span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">closed</span>
+          </div>
+          <p class="text-xs font-medium text-gray-800 truncate">FB-02 · "Ownership split documented"</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · reviewer · !mr-17</p>
+        </article>
+
+        <div class="flex-1"></div>
+
+        <!-- Footer actions -->
+        <div class="shrink-0 border-t border-gray-200 px-4 py-3 bg-white">
+          <button class="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors focus:ring-2 focus:ring-amber-500">Request Changes (2 pending)</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Section 3: Sidebar — light, toggle ON -->
+  <section aria-labelledby="sec-light-on">
+    <h2 id="sec-light-on" class="text-base font-semibold mb-3">3. Sidebar — Light Mode, Toggle ON</h2>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Agent items appear inline with user items, sorted into the same status groups. Origin badges still tell them apart. No separate tab, no separate list.</p>
+    <div class="flex gap-4">
+      <div class="flex-1 bg-white border border-gray-200 rounded-lg p-4 min-h-[640px] flex items-center justify-center">
+        <p class="text-xs text-stone-600 italic">— Main content area —</p>
+      </div>
+
+      <aside class="w-96 shrink-0 bg-white border-l border-gray-200 rounded-lg overflow-hidden shadow-sm flex flex-col" aria-label="Review sidebar">
+        <div class="shrink-0 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-gray-900">Comments</h3>
+          <span class="text-xs text-gray-500">13</span>
+        </div>
+
+        <!-- Agent-feedback toggle (canonical role="switch" pattern per agent-feedback-toggle-spec.html §1) -->
+        <div class="shrink-0 px-4 py-2.5 border-b border-gray-200 bg-teal-50/60">
+          <label class="af-touch flex items-center gap-2 cursor-pointer group">
+            <button
+              type="button"
+              role="switch"
+              aria-checked="true"
+              aria-label="Show agent feedback"
+              class="af-switch relative inline-block w-8 h-4 rounded-full bg-teal-500 focus-visible:ring-2 focus-visible:ring-teal-500 transition-colors"
+            >
+              <span aria-hidden="true" class="absolute top-0.5 right-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-transform"></span>
+            </button>
+            <span class="flex-1 text-xs font-medium text-teal-800">Show agent feedback</span>
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold bg-teal-100 text-teal-700">
+              <span aria-hidden="true">&#x2728;</span>8 inline
+            </span>
+          </label>
+          <p class="mt-1 text-xs text-teal-900/70 leading-snug">Agent-origin items shown inline. Look for rose and teal badges.</p>
+        </div>
+
+        <div class="sticky top-0 z-10 shrink-0 px-3 py-2 bg-amber-50/70 border-b border-amber-100">
+          <span class="text-xs font-bold uppercase tracking-widest text-amber-800">Pending · 6</span>
+        </div>
+
+        <!-- User pending -->
+        <article tabindex="0" class="mx-2 my-1.5 p-2.5 rounded-lg border border-l-[3px] border-l-amber-400 bg-amber-50/50 border-gray-200 cursor-pointer hover:border-teal-400 transition-colors">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span>
+            <span class="flex-1"></span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">pending</span>
+          </div>
+          <p class="text-xs font-medium text-gray-800 truncate">FB-14 · "Button alignment looks off on this card"</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · you · 2 min ago</p>
+        </article>
+
+        <!-- Agent pending -->
+        <article tabindex="0" class="mx-2 my-1.5 p-2.5 rounded-lg border border-l-[3px] border-l-amber-400 bg-amber-50/50 border-gray-200 cursor-pointer hover:border-teal-400 transition-colors">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
+            <span class="flex-1"></span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">pending</span>
+          </div>
+          <p class="text-xs font-medium text-gray-800 truncate">FB-12 · "Missing error state on empty comments list"</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · adversarial-review · parent-agent</p>
+        </article>
+
+        <!-- Another agent pending — agent origin -->
+        <article tabindex="0" class="mx-2 my-1.5 p-2.5 rounded-lg border border-l-[3px] border-l-amber-400 bg-amber-50/50 border-gray-200 cursor-pointer hover:border-teal-400 transition-colors">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200"><span aria-hidden="true">&#x2728;</span>Agent</span>
+            <span class="flex-1"></span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">pending</span>
+          </div>
+          <p class="text-xs font-medium text-gray-800 truncate">FB-11 · "Keyboard trap risk in modal"</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · feedback-assessor</p>
+        </article>
+
+        <!-- User chat pending -->
+        <article tabindex="0" class="mx-2 my-1.5 p-2.5 rounded-lg border border-l-[3px] border-l-amber-400 bg-amber-50/50 border-gray-200 cursor-pointer hover:border-teal-400 transition-colors">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200"><span aria-hidden="true">&#x1F4AC;</span>User Chat</span>
+            <span class="flex-1"></span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">pending</span>
+          </div>
+          <p class="text-xs font-medium text-gray-800 truncate">FB-13 · "Move the keyboard hints out of the header"</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · you · 12 min ago</p>
+        </article>
+
+        <!-- Addressed group -->
+        <div class="sticky top-0 z-10 shrink-0 px-3 py-2 bg-blue-50/70 border-y border-blue-100">
+          <span class="text-xs font-bold uppercase tracking-widest text-blue-800">Addressed · 3</span>
+        </div>
+
+        <article tabindex="0" class="mx-2 my-1.5 p-2.5 rounded-lg border border-l-[3px] border-l-blue-400 bg-blue-50/50 border-gray-200 cursor-pointer hover:border-teal-400 transition-colors">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
+            <span class="flex-1"></span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">addressed</span>
+          </div>
+          <p class="text-xs font-medium text-gray-800 truncate">FB-08 · "Focus ring missing on tab buttons"</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 2 · adversarial-review · <code>ab12c3</code></p>
+        </article>
+
+        <article tabindex="0" class="mx-2 my-1.5 p-2.5 rounded-lg border border-l-[3px] border-l-blue-400 bg-blue-50/50 border-gray-200 cursor-pointer hover:border-teal-400 transition-colors">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200"><span aria-hidden="true">&#x1F500;</span>External PR</span>
+            <span class="flex-1"></span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">addressed</span>
+          </div>
+          <p class="text-xs font-medium text-gray-800 truncate">FB-10 · "Rename the footer button to 'Dismiss'"</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 2 · reviewer · !pr-42</p>
+        </article>
+
+        <div class="flex-1"></div>
+
+        <div class="shrink-0 border-t border-gray-200 px-4 py-3 bg-white">
+          <button class="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors focus:ring-2 focus:ring-amber-500">Request Changes (6 pending)</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Section 4: Dark mode example, toggle OFF -->
+  <section aria-labelledby="sec-dark-off" class="dark">
+    <h2 id="sec-dark-off" class="text-base font-semibold mb-3 text-gray-900">4. Sidebar — Dark Mode, Toggle OFF</h2>
+    <div class="flex gap-4 bg-gray-950 p-4 rounded-lg">
+      <div class="flex-1 bg-gray-900 border border-gray-700 rounded-lg min-h-[540px] flex items-center justify-center">
+        <p class="text-xs text-gray-500 italic">— Main content area —</p>
+      </div>
+
+      <aside class="w-96 shrink-0 bg-gray-900 border-l border-gray-700 rounded-lg overflow-hidden shadow-sm flex flex-col" aria-label="Review sidebar">
+        <div class="shrink-0 px-4 py-3 border-b border-gray-700 flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-gray-100">Comments</h3>
+          <span class="text-xs text-gray-400">5</span>
+        </div>
+
+        <!-- Agent-feedback toggle (canonical role="switch" pattern per agent-feedback-toggle-spec.html §1) -->
+        <div class="shrink-0 px-4 py-2.5 border-b border-gray-700 bg-gray-800/40">
+          <label class="af-touch flex items-center gap-2 cursor-pointer group">
+            <button
+              type="button"
+              role="switch"
+              aria-checked="false"
+              aria-label="Show agent feedback"
+              class="af-switch relative inline-block w-8 h-4 rounded-full bg-gray-700 group-hover:bg-gray-600 focus-visible:ring-2 focus-visible:ring-teal-500 transition-colors"
+            >
+              <span aria-hidden="true" class="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-gray-300 shadow-sm transition-transform"></span>
+            </button>
+            <span class="flex-1 text-xs font-medium text-gray-300">Show agent feedback</span>
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold bg-gray-800 text-gray-400">
+              <span aria-hidden="true">&#x2728;</span>8 hidden
+            </span>
+          </label>
+          <p class="mt-1 text-xs text-gray-500 leading-snug">Reveal findings from the review agent and feedback assessor inline with reviewer comments.</p>
+        </div>
+
+        <div class="sticky top-0 z-10 shrink-0 px-3 py-2 bg-amber-900/25 border-b border-amber-900/50">
+          <span class="text-xs font-bold uppercase tracking-widest text-amber-300">Pending · 2</span>
+        </div>
+
+        <article tabindex="0" class="mx-2 my-1.5 p-2.5 rounded-lg border border-l-[3px] border-l-amber-500 bg-amber-950/20 border-gray-700 cursor-pointer hover:border-teal-500 transition-colors">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border bg-sky-900/30 text-sky-400 border-sky-800"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span>
+            <span class="flex-1"></span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-amber-900/30 text-amber-300">pending</span>
+          </div>
+          <p class="text-xs font-medium text-gray-200 truncate">FB-14 · "Button alignment looks off on this card"</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · you · 2 min ago</p>
+        </article>
+
+        <article tabindex="0" class="mx-2 my-1.5 p-2.5 rounded-lg border border-l-[3px] border-l-amber-500 bg-amber-950/20 border-gray-700 cursor-pointer hover:border-teal-500 transition-colors">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border bg-sky-900/30 text-sky-400 border-sky-800"><span aria-hidden="true">&#x1F4AC;</span>User Chat</span>
+            <span class="flex-1"></span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-amber-900/30 text-amber-300">pending</span>
+          </div>
+          <p class="text-xs font-medium text-gray-200 truncate">FB-13 · "Move the keyboard hints out of the header"</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · you · 12 min ago</p>
+        </article>
+
+        <div class="sticky top-0 z-10 shrink-0 px-3 py-2 bg-green-900/25 border-y border-green-900/50">
+          <span class="text-xs font-bold uppercase tracking-widest text-green-300">Closed · 2</span>
+        </div>
+
+        <article tabindex="0" class="mx-2 my-1.5 p-2.5 rounded-lg border border-l-[3px] border-l-green-500 bg-green-950/15 border-gray-700 cursor-pointer hover:border-teal-500 transition-colors">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border bg-sky-900/30 text-sky-400 border-sky-800"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span>
+            <span class="flex-1"></span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-green-900/30 text-green-300">closed</span>
+          </div>
+          <p class="text-xs font-medium text-gray-200 truncate">FB-06 · "Contrast on the origin badge"</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · reviewer · verified</p>
+        </article>
+
+        <article tabindex="0" class="mx-2 my-1.5 p-2.5 rounded-lg border border-l-[3px] border-l-green-500 bg-green-950/15 border-gray-700 cursor-pointer hover:border-teal-500 transition-colors">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border bg-violet-900/30 text-violet-400 border-violet-800"><span aria-hidden="true">&#x1F500;</span>External MR</span>
+            <span class="flex-1"></span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-green-900/30 text-green-300">closed</span>
+          </div>
+          <p class="text-xs font-medium text-gray-200 truncate">FB-02 · "Ownership split documented"</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · reviewer · !mr-17</p>
+        </article>
+
+        <div class="flex-1"></div>
+
+        <div class="shrink-0 border-t border-gray-700 px-4 py-3 bg-gray-900">
+          <button class="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors focus:ring-2 focus:ring-amber-500">Request Changes (2 pending)</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Section 5: Toggle interaction spec -->
+  <section aria-labelledby="sec-toggle-spec">
+    <h2 id="sec-toggle-spec" class="text-base font-semibold mb-3">5. Toggle Interaction Spec</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <h3 class="text-sm font-semibold mb-2">Behavior</h3>
+        <ul class="text-xs text-gray-700 dark:text-gray-300 space-y-1.5 list-disc pl-4">
+          <li><strong>Default OFF.</strong> First-time reviewers see only user-origin items so the list isn't overwhelmed with agent findings that haven't been triaged.</li>
+          <li><strong>Persists per-intent</strong> in <code>localStorage</code> under <code>haiku-review.toggle.agent-feedback.{intentSlug}</code>. Not a global user setting — per-intent, because every review session has different noise characteristics.</li>
+          <li><strong>Counts update live</strong>: the chip on the toggle always shows the opposite set (<code>{n} hidden</code> when off, <code>{n} inline</code> when on).</li>
+          <li><strong>Keyboard shortcut</strong>: <kbd>A</kbd> inside the sidebar toggles it. <kbd>?</kbd> lists shortcuts.</li>
+          <li><strong>When switched on with active filter</strong>, newly-revealed items respect the current filter (status grouping, search query, etc.).</li>
+        </ul>
+      </div>
+      <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <h3 class="text-sm font-semibold mb-2">Accessibility</h3>
+        <ul class="text-xs text-gray-700 dark:text-gray-300 space-y-1.5 list-disc pl-4">
+          <li>Implemented as a <code>&lt;button role="switch"&gt;</code> with <code>aria-checked</code> reflecting state.</li>
+          <li>Label and description both live in the DOM — description read via <code>aria-describedby</code>.</li>
+          <li>Focus ring on the toggle itself, 2px teal-500.</li>
+          <li>When toggled on/off, an <code>aria-live="polite"</code> region announces: "Agent feedback shown — 8 items added" or "Agent feedback hidden — 8 items removed".</li>
+          <li>Toggle retains focus after activation — no focus jump to the list below.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 6: Comparison with rejected "Mine / Feedback" design -->
+  <section aria-labelledby="sec-comparison">
+    <h2 id="sec-comparison" class="text-base font-semibold mb-3">6. Rejected alternative — "Mine / Feedback" segmented control</h2>
+    <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <p class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">What was in the earlier mockup</p>
+          <div class="p-3 rounded border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/80 dark:bg-gray-800/30">
+            <div class="flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden mb-2">
+              <button class="flex-1 px-3 py-1.5 text-[11px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">Mine (2)</button>
+              <button class="flex-1 px-3 py-1.5 text-[11px] font-semibold bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">Feedback (11)</button>
+            </div>
+            <p class="text-xs text-stone-600 italic">Two independent lists. User toggles between "my comments" and "everyone else's findings".</p>
+          </div>
+        </div>
+        <div>
+          <p class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Why it's rejected</p>
+          <ul class="text-xs text-gray-700 dark:text-gray-300 space-y-1.5 list-disc pl-4">
+            <li><strong>"Mine" is undefined.</strong> No user identity in H·AI·K·U. Every user-origin item is equally "mine" from any local session.</li>
+            <li><strong>Hides useful context.</strong> When I'm deciding whether to dismiss my own pending comment, I may want to see a related review-agent finding on the same paragraph. Splitting them buries that.</li>
+            <li><strong>Two lists = two focus targets.</strong> Every key action (Tab, arrow-down) now has to account for the current tab. A single list with an origin filter is simpler for keyboard users.</li>
+            <li><strong>Doesn't match the task.</strong> The reviewer's task is "decide what to do with each comment", not "compare my output vs the agent's". Origin is metadata, not a primary axis.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 7: Responsive notes -->
+  <section aria-labelledby="sec-responsive">
+    <h2 id="sec-responsive" class="text-base font-semibold mb-3">7. Responsive Behavior</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div class="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Mobile (375px)</div>
+        <ul class="text-xs text-gray-700 dark:text-gray-300 space-y-1.5 list-disc pl-4">
+          <li>Sidebar becomes a slide-in panel from the right, covering 85vw.</li>
+          <li>Toggle sticks to top; Comments list scrolls below.</li>
+          <li>Origin and status badges stack when the card width drops under 280px.</li>
+          <li>Toggle min-height 44px (touch target).</li>
+        </ul>
+      </div>
+      <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div class="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Tablet (768px)</div>
+        <ul class="text-xs text-gray-700 dark:text-gray-300 space-y-1.5 list-disc pl-4">
+          <li>Sidebar is 320px wide, always visible.</li>
+          <li>Cards show full badge row on one line at this width.</li>
+        </ul>
+      </div>
+      <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div class="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Desktop (1280px+)</div>
+        <ul class="text-xs text-gray-700 dark:text-gray-300 space-y-1.5 list-disc pl-4">
+          <li>Sidebar is 384px wide (<code>lg:w-96</code>).</li>
+          <li>Toggle shows long-form helper text under the switch.</li>
+          <li>Keyboard-nav annotations visible (<kbd>A</kbd> to toggle agent feedback).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>
