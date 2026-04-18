@@ -62,10 +62,10 @@ quality_gates:
     exclude references to FeedbackX components — returns no references to the
     `Mine` segmented identity split
 status: active
-bolt: 1
-hat: design-reviewer
+bolt: 2
+hat: designer
 started_at: '2026-04-18T03:59:44Z'
-hat_started_at: '2026-04-18T04:12:03Z'
+hat_started_at: '2026-04-18T04:15:20Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:59:44Z'
@@ -73,6 +73,38 @@ iterations:
     result: advance
   - hat: design-reviewer
     started_at: '2026-04-18T04:12:03Z'
+    completed_at: '2026-04-18T04:15:20Z'
+    result: reject
+    reason: >-
+      Quality gates fail on three fronts. (1) Reopen hyphenation drift not
+      swept: `feedback-lifecycle-transitions.html` contains 8 matches for
+      "re-open/re-opens/re-opened" (lines 38, 112, 119, 126, 141, 178, 186,
+      194); `keyboard-shortcut-map.html:187` ("re-open it");
+      `revisit-modal-states.html:363` ("re-opens");
+      `unit-13-aria-and-semantic-structure.md` lines 52, 108, 134 still use
+      "re-open" in unit body text. Quality gate explicitly required 0 matches in
+      artifact files and in unit files other than this spec. (2)
+      `SidebarSegmentedControl` not retired in `review-package-structure.html` —
+      still listed as a NEW component at lines 138, 318, 320, 427, 506, 789-796,
+      989 with full props interface, file-tree entry, import/export statements,
+      and is even in the summary component list. The component-inventory.md
+      claims it's retired but the review-package structure artifact ships it.
+      (3) `Mine` segmented-identity references still present in active
+      (non-retirement-context) artifacts: `review-package-structure.html` lines
+      322 ("Feedback/Mine toggle for sidebar views") and 817 ("Mine" segment
+      button markup); `comment-to-feedback-flow.html:839` still renders a "Mine"
+      tab button in the UI. `comments-list-with-agent-toggle.html` references
+      are fine (explicit rejected-alternative context). Designer must: (a) sweep
+      all three artifact files plus `revisit-modal-states.html` and
+      `keyboard-shortcut-map.html` to replace "re-open*" → "reopen*"; (b)
+      rewrite `review-package-structure.html` to retire
+      `SidebarSegmentedControl` and add `AgentFeedbackToggle` in its place
+      (file-tree, component table, interface block, imports/exports, summary);
+      (c) strip `Mine` identity-segment UI from `review-package-structure.html`
+      and `comment-to-feedback-flow.html`; (d) sweep unit-13 body text to drop
+      the hyphen. Re-run the grep gate before next approval.
+  - hat: designer
+    started_at: '2026-04-18T04:15:20Z'
     completed_at: null
     result: null
 ---
