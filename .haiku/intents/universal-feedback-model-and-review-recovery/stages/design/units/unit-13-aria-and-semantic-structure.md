@@ -85,8 +85,8 @@ quality_gates:
     color-matched focus rings per variant; every `<input>`, `<textarea>`,
     `<button>`, `[tabindex="0"]`, `<a>` declares `focus-visible:ring-2
     focus-visible:ring-teal-500` (or the variant rule)
-hat: feedback-assessor
-hat_started_at: '2026-04-18T21:22:06Z'
+hat: designer
+hat_started_at: '2026-04-18T21:25:56Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T04:30:46Z'
@@ -102,10 +102,47 @@ iterations:
     result: advance
   - hat: feedback-assessor
     started_at: '2026-04-18T21:22:06Z'
+    completed_at: '2026-04-18T21:25:56Z'
+    result: reject
+    reason: >-
+      Four new spec artifacts (aria-landmark-spec.md,
+      aria-live-sequencing-spec.md, agent-feedback-toggle-spec.html,
+      focus-ring-spec.html) are high-quality, and unit-01 body-text landmark
+      amendment is in. But the cross-artifact sweep the unit explicitly scopes
+      (and that FB-32/FB-35/FB-37/FB-26 quality gates require) is not done in
+      the unit worktree: (1) FB-32 — comments-list-with-agent-toggle.html is
+      absent; the spec's own §4 says 'dev stage MUST replace both toggle
+      instances (lines 65-76 OFF, lines 170-185 ON)' but no such artifact exists
+      in the unit worktree for the replacement to land on. FB-32 gate requires
+      the actual role=switch + aria-checked + 44px hit area in
+      comments-list-with-agent-toggle.html, not just a new spec file. (2) FB-35
+      — assessor-summary-card.html is absent; gate requires role='status'
+      aria-live='polite' on the card root, and the landmark spec's own §9
+      checklist and per-surface table mandate it. (3) FB-35 + FB-37 —
+      revisit-modal-spec.html is absent; FB-37 gate requires revisit-modal
+      Cancel button focus-visible:ring-2 focus-visible:ring-teal-500 and FB-35
+      requires role='dialog' aria-modal='true' on it. (4) FB-26 —
+      feedback-card-states.html is absent; gate requires spinner + sr-only
+      'Processing...' inside in-flight cards. (5) FB-37 —
+      annotation-popover-states.html is absent; gate requires focus:ring-1
+      removal at lines 247/249. (6) FB-26 — unit-05 body-text amendment was not
+      made (gate text: 'unit-05's quality gates amended (body text) to reference
+      this spec'); unit-05 file contains zero references to
+      aria-live-sequencing-spec. Pull the five missing artifacts
+      (comments-list-with-agent-toggle.html, assessor-summary-card.html,
+      revisit-modal-spec.html, feedback-card-states.html,
+      annotation-popover-states.html) into the unit worktree, apply the required
+      ARIA/focus edits, and append the unit-05 body-text amendment referencing
+      aria-live-sequencing-spec.md. Minor: name focus-trap-react explicitly in
+      feedback-inline-mobile.html sheet comments or DESIGN-BRIEF §6 (landmark
+      spec §3.1 names it, but gate text requires the naming in the sheet
+      artifact comments OR DESIGN-BRIEF §6, not in a peer spec).
+  - hat: designer
+    started_at: '2026-04-18T21:25:56Z'
     completed_at: null
     result: null
 status: active
-bolt: 1
+bolt: 2
 started_at: '2026-04-18T21:17:11Z'
 ---
 # ARIA roles, semantic landmarks, and focus-ring consistency
