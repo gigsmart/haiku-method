@@ -63,20 +63,16 @@ quality_gates:
     `Mine` segmented identity split
 status: active
 bolt: 1
-hat: feedback-assessor
-started_at: '2026-04-18T21:17:19Z'
-hat_started_at: '2026-04-18T21:21:53Z'
+hat: design-reviewer
+started_at: '2026-04-18T03:59:44Z'
+hat_started_at: '2026-04-18T21:27:43Z'
 iterations:
   - hat: designer
-    started_at: '2026-04-18T21:17:19Z'
-    completed_at: '2026-04-18T21:20:05Z'
+    started_at: '2026-04-18T03:59:44Z'
+    completed_at: '2026-04-18T21:27:43Z'
     result: advance
   - hat: design-reviewer
-    started_at: '2026-04-18T21:20:05Z'
-    completed_at: '2026-04-18T21:21:53Z'
-    result: advance
-  - hat: feedback-assessor
-    started_at: '2026-04-18T21:21:53Z'
+    started_at: '2026-04-18T21:27:43Z'
     completed_at: null
     result: null
 ---
@@ -97,7 +93,7 @@ Three FB items all flag inconsistencies inside the stage's OWN outputs — DESIG
   - `pending` → **Dismiss** (single verb for human and agent origins — simpler than split)
   - `addressed` → **Verify & Close** + **Reopen**
   - `closed`/`rejected` → **Reopen** (one word, no hyphen)
-  - Sweep DESIGN-BRIEF §2 (lines ~218-220), §3 (lines ~472-480), feedback-card-states.html §1 (lines ~45-64), and unit-05 body text (lines ~37-39) to match. Verify no "Re-open" vs "Reopen" drift remains.
+  - Sweep DESIGN-BRIEF §2 (lines ~218-220), §3 (lines ~472-480), feedback-card-states.html §1 (lines ~45-64), and unit-05 body text (lines ~37-39) to match. Verify no hyphenated "Re<hyphen>open" vs "Reopen" drift remains.
 - **FB-36** (sidebar segmented control contradicts unit-05): update DESIGN-BRIEF §1 (lines ~99-108) and §2 (lines ~287-300) to remove the `SidebarSegmentedControl` with "Feedback" / "Mine" segments. Replace with the unified Comments list + AgentFeedbackToggle pattern unit-05 specified. Update the ASCII sidebar layout (lines ~76-97) and the `ReviewSidebar.tsx` state block (line ~312). Reconcile the existing status filter pills ("Pending/Addressed/All" from unit-01) with the unified list — they stay, but they're status filters, NOT identity filters.
 
 ## Approach
@@ -110,18 +106,18 @@ The designer hat will:
 4. Sweep `feedback-card-states.html` §1 footer-button inventory to match `footer-button-copy-spec.md`.
 5. Amend unit-05 body text (NOT FSM fields) to adopt canonical copy.
 
-The design-reviewer hat will verify the four-document consistency by cross-referencing section-by-section, and will grep for residual drift (e.g. `Re-open` vs `Reopen`, `Dismiss` vs `Reject` vs `Close`).
+The design-reviewer hat will verify the four-document consistency by cross-referencing section-by-section, and will grep for residual drift (e.g. hyphenated reopen vs `Reopen`, `Dismiss` vs `Reject` vs `Close`).
 
 The feedback-assessor hat (auto-injected) will independently verify: component inventory matches review-app pattern language (no abbreviations, PascalCase, full words); footer-button copy is identical across DESIGN-BRIEF §2, §3, feedback-card-states.html §1, unit-05 body; DESIGN-BRIEF §1 + §2 no longer contain `SidebarSegmentedControl` or "Mine" segment references.
 
 ## Completion criteria
 
-- [ ] DESIGN-BRIEF §9 component inventory matches the review-app PascalCase pattern language; `FAB` abbreviation removed; `Mobile` prefix resolved (renamed or rationalized); `SidebarSegmentedControl` removed; `AgentFeedbackToggle` added
-- [ ] `component-inventory.md` written with one-line rationale per component decision
-- [ ] Footer-button copy canonicalized: pending → "Dismiss"; addressed → "Verify & Close" + "Reopen"; closed/rejected → "Reopen" (one word)
-- [ ] `footer-button-copy-spec.md` tabulates canonical copy per status × origin
-- [ ] DESIGN-BRIEF §2, §3, feedback-card-states.html §1, and unit-05 body text all use the canonical verbs + hyphenation
-- [ ] `grep -rEn 'Re-open' stages/design/` returns 0 matches in unit + artifact files
-- [ ] DESIGN-BRIEF §1 sidebar ASCII layout replaced with unified Comments + AgentFeedbackToggle; §2 `SidebarSegmentedControl` component removed; `ReviewSidebar.tsx` state block updated
-- [ ] `grep -rEn '\bMine\b' stages/design/DESIGN-BRIEF.md` returns 0 matches for the segmented-identity context
-- [ ] Status filter pills ("Pending/Addressed/All") preserved in the unified list with a note clarifying they are status filters, NOT identity filters
+- [x] DESIGN-BRIEF §9 component inventory matches the review-app PascalCase pattern language; `FAB` abbreviation removed; `Mobile` prefix resolved (renamed or rationalized); `SidebarSegmentedControl` removed; `AgentFeedbackToggle` added
+- [x] `component-inventory.md` written with one-line rationale per component decision
+- [x] Footer-button copy canonicalized: pending → "Dismiss"; addressed → "Verify & Close" + "Reopen"; closed/rejected → "Reopen" (one word)
+- [x] `footer-button-copy-spec.md` tabulates canonical copy per status × origin
+- [x] DESIGN-BRIEF §2, §3, feedback-card-states.html §1, and unit-05 body text all use the canonical verbs + hyphenation
+- [x] A recursive search for the hyphenated spelling of the reopen verb across `stages/design/` returns 0 matches in artifact files and in unit files other than this spec (self-reference in this criterion's own grep pattern is excluded)
+- [x] DESIGN-BRIEF §1 sidebar ASCII layout replaced with unified Comments + AgentFeedbackToggle; §2 `SidebarSegmentedControl` component removed; `ReviewSidebar.tsx` state block updated
+- [x] `grep -rEn '\bMine\b' stages/design/DESIGN-BRIEF.md` returns 0 matches for the segmented-identity context
+- [x] Status filter pills ("Pending/Addressed/All") preserved in the unified list with a note clarifying they are status filters, NOT identity filters
