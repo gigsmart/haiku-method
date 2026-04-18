@@ -59,6 +59,7 @@ Any combination in this table MUST NOT appear in `stages/design/artifacts/*.html
 | `opacity-50` / `opacity-70` applied to an entire feedback card root | any | α-composite drops metadata text below 2:1 | Remove the opacity entirely. Convey muted-finality state via muted background tokens (`bg-green-50/60`, `bg-stone-100`) + a non-color second signal (glyph + text prefix) |
 | `bg-green-600/50 text-white/80` (disabled button composite) | — | α-composited effective contrast ≈ 2.6:1 | Use opaque token pair `bg-green-300 text-green-800 dark:bg-green-900/40 dark:text-green-200` |
 | `text-[9px]`, `text-[10px]` on user-facing information | — | fails 1.4.4 Resize Text at 200% | Use `text-xs` (12px) minimum. `text-[11px]` allowed only with `font-semibold`/`font-bold` |
+| `dark:text-stone-600` (stone-500-equivalent in dark) | `dark:bg-gray-900`, `dark:bg-stone-900` | ≈ 2.2:1 | **FAIL** AA. Use `dark:text-stone-300` (12.6:1, passes AAA) for metadata on dark `gray-900`/`stone-900` surfaces |
 
 ### 1.2 Status Badge Colors (Shared StatusBadge)
 
