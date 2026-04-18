@@ -62,10 +62,10 @@ quality_gates:
     exclude references to FeedbackX components — returns no references to the
     `Mine` segmented identity split
 status: active
-bolt: 2
-hat: design-reviewer
+bolt: 3
+hat: designer
 started_at: '2026-04-18T03:59:44Z'
-hat_started_at: '2026-04-18T04:21:35Z'
+hat_started_at: '2026-04-18T04:26:22Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:59:44Z'
@@ -109,6 +109,24 @@ iterations:
     result: advance
   - hat: design-reviewer
     started_at: '2026-04-18T04:21:36Z'
+    completed_at: '2026-04-18T04:26:22Z'
+    result: reject
+    reason: >-
+      Bolt 2 sweep is incomplete. The unit-14 completion criterion "A recursive
+      search for the hyphenated spelling of the reopen verb across
+      `stages/design/` returns 0 matches in artifact files and in unit files
+      other than this spec" is still violated:
+      `units/unit-07-keyboard-navigation-spec.md:38` contains `re-open` (prose:
+      "if a closed/rejected feedback card is focused, re-open it to `pending`").
+      The four targeted files (feedback-lifecycle-transitions,
+      keyboard-shortcut-map, revisit-modal-states, unit-13 spec body) are clean,
+      and DESIGN-BRIEF.md is clean on both `Re-open` and `\bMine\b`.
+      `SidebarSegmentedControl` and `Mine` residuals in artifact files are all
+      acceptable retirement notes / rejected-alternative rationale. Fix: change
+      unit-07:38 to use "reopen" (unhyphenated, matching the canonical
+      vocabulary in footer-button-copy-spec.md).
+  - hat: designer
+    started_at: '2026-04-18T04:26:22Z'
     completed_at: null
     result: null
 ---
