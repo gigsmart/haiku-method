@@ -63,9 +63,9 @@ quality_gates:
     `Mine` segmented identity split
 status: active
 bolt: 1
-hat: design-reviewer
+hat: feedback-assessor
 started_at: '2026-04-18T21:17:19Z'
-hat_started_at: '2026-04-18T21:20:05Z'
+hat_started_at: '2026-04-18T21:21:53Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T21:17:19Z'
@@ -73,6 +73,10 @@ iterations:
     result: advance
   - hat: design-reviewer
     started_at: '2026-04-18T21:20:05Z'
+    completed_at: '2026-04-18T21:21:53Z'
+    result: advance
+  - hat: feedback-assessor
+    started_at: '2026-04-18T21:21:53Z'
     completed_at: null
     result: null
 ---
