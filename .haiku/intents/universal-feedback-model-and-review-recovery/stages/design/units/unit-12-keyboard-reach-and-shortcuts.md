@@ -70,7 +70,7 @@ quality_gates:
   - >-
     skip-link-spec.html renders the skip link in default + focused states in
     both light and dark modes
-status: active
+status: completed
 bolt: 2
 hat: feedback-assessor
 started_at: '2026-04-18T03:59:28Z'
@@ -110,8 +110,9 @@ iterations:
     result: advance
   - hat: feedback-assessor
     started_at: '2026-04-18T04:24:21Z'
-    completed_at: null
-    result: null
+    completed_at: '2026-04-18T04:30:08Z'
+    result: advance
+completed_at: '2026-04-18T04:30:08Z'
 ---
 # Keyboard reach, shortcut collisions, and screen-reader conflicts
 
@@ -143,15 +144,15 @@ The feedback-assessor hat (auto-injected) will independently verify: no `a`↔po
 
 ## Completion criteria
 
-- [ ] Annotation-open shortcut is `c` everywhere; `a` is Approve-only
-- [ ] `grep -rEn '<kbd>[Aa]</kbd>' stages/design/artifacts/annotation-gesture-spec.html` returns only non-conflicting references
-- [ ] Pin markers: `tabindex="0"` + `aria-label` present; `grep -rEn 'tabindex="-1"' stages/design/artifacts/feedback-inline-desktop.html stages/design/artifacts/annotation-gesture-spec.html` returns 0 matches on pin buttons
-- [ ] `focus-order-spec.md` documents the page Tab order (header → stage-progress-nav → main content with pins interleaved → sidebar); ties to unit-07's focus-order section
-- [ ] Pin Enter/click expands the linked sidebar card and scrolls it into view; reciprocal sidebar Enter → pin cross-flash documented
-- [ ] `keyboard-shortcut-map.html §3` names NVDA, JAWS, VoiceOver
-- [ ] `aria-keyshortcuts` present on every shortcut-bound element in the affected artifacts
-- [ ] "Require modifier key for shortcuts" user setting documented in `keyboard-shortcut-map.html` and the help overlay spec
-- [ ] Every sticky-header artifact has a skip link as the first focusable element
-- [ ] `id="main-content"` and `id="feedback-list"` anchors exist in every affected artifact
-- [ ] `skip-link-spec.html` renders default + focused states in light + dark
-- [ ] unit-01 completion criteria amended (in body text, not FSM fields) to require skip links
+- [x] Annotation-open shortcut is `c` everywhere; `a` is Approve-only
+- [x] `grep -rEn '<kbd>[Aa]</kbd>' stages/design/artifacts/annotation-gesture-spec.html` returns only non-conflicting references
+- [x] Pin markers: `tabindex="0"` + `aria-label` present; `grep -rEn 'tabindex="-1"' stages/design/artifacts/feedback-inline-desktop.html stages/design/artifacts/annotation-gesture-spec.html` returns 0 matches on pin buttons
+- [x] `focus-order-spec.md` documents the page Tab order (header → stage-progress-nav → main content with pins interleaved → sidebar); ties to unit-07's focus-order section
+- [x] Pin Enter/click expands the linked sidebar card and scrolls it into view; reciprocal sidebar Enter → pin cross-flash documented
+- [x] `keyboard-shortcut-map.html §3` names NVDA, JAWS, VoiceOver
+- [x] `aria-keyshortcuts` present on every shortcut-bound element in the affected artifacts
+- [x] "Require modifier key for shortcuts" user setting documented in `keyboard-shortcut-map.html` and the help overlay spec
+- [x] Every sticky-header artifact has a skip link as the first focusable element
+- [x] `id="main-content"` and `id="feedback-list"` anchors exist in every affected artifact
+- [x] `skip-link-spec.html` renders default + focused states in light + dark
+- [x] unit-01 completion criteria amended (in body text, not FSM fields) to require skip links
