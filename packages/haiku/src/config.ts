@@ -117,17 +117,18 @@ export const autoUpdate = {
 		Number(str("HAIKU_UPDATE_INITIAL_DELAY_MS", "60000")) || 60_000,
 }
 
-/** Observability configuration. */
+/**
+ * Observability configuration.
+ *
+ * OTEL/OTLP environment variables (`OTEL_EXPORTER_OTLP_*`, `OTEL_SERVICE_NAME`,
+ * `OTEL_RESOURCE_ATTRIBUTES`, `OTEL_LOGS_EXPORTER`) are read directly inside
+ * `telemetry.ts` so tests can manipulate the env without re-importing this
+ * module. This file only owns configuration that other modules consume.
+ */
 export const observability = {
 	// Read via literal dot-notation so esbuild's --define can inline the baked-in
 	// DSN at build time. Using str("HAIKU_SENTRY_DSN_MCP", "") here would route
 	// through process.env[name] (dynamic access), which --define cannot rewrite,
 	// leaving shipped binaries with an empty DSN.
 	sentryDsn: process.env.HAIKU_SENTRY_DSN_MCP ?? "",
-	otlpEndpoint: str(
-		"OTEL_EXPORTER_OTLP_ENDPOINT",
-		"http://localhost:4317",
-	).replace(/\/$/, ""),
-	otlpHeadersRaw: str("OTEL_EXPORTER_OTLP_HEADERS", ""),
-	resourceAttrsRaw: str("OTEL_RESOURCE_ATTRIBUTES", ""),
 }

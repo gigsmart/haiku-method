@@ -9,7 +9,7 @@ import type {
 	HaikuStageState,
 	HaikuUnit,
 } from "./types"
-import { normalizeIntentStatus, parseFrontmatter, parseUnit } from "./types"
+import { normalizeIntentStatus, parseFrontmatter, parseUnit, safeParseFrontmatter } from "./types"
 import { parseSettingsYaml } from "./resolve-links"
 
 import type { operationsGetIntentQuery$data } from "./graphql/github/__generated__/operationsGetIntentQuery.graphql"
@@ -158,13 +158,22 @@ export class GitHubProvider implements BrowseProvider {
 		return data?.repository?.object?.text ?? null
 	}
 
-	/** Parse raw intent.md text into a HaikuIntent with optional branch/PR metadata. */
+	/** Parse raw intent.md text into a HaikuIntent with optional branch/PR metadata.
+	 *  Returns null if the frontmatter is malformed — the parse error is reported to Sentry
+	 *  so broken intent files surface in monitoring without breaking the whole portfolio view. */
 	private parseIntentFromRaw(
 		slug: string,
 		rawText: string,
 		meta?: { branch?: string; prUrl?: string | null; prStatus?: string | null; prNumber?: number | null },
-	): HaikuIntent {
-		const { data: frontmatter, content } = parseFrontmatter(rawText)
+	): HaikuIntent | null {
+		const parsed = safeParseFrontmatter(rawText, {
+			provider: "github",
+			path: `.haiku/intents/${slug}/intent.md`,
+			slug,
+			branch: meta?.branch,
+		})
+		if (!parsed) return null
+		const { data: frontmatter, content } = parsed
 		const studio = (frontmatter.studio as string) || "ideation"
 		const stages = (frontmatter.stages as string[]) || []
 
@@ -279,6 +288,7 @@ export class GitHubProvider implements BrowseProvider {
 			if (!rawText) continue
 
 			const intent = this.parseIntentFromRaw(entry.name, rawText)
+			if (!intent) continue
 			intentsBySlug.set(entry.name, intent)
 		}
 
@@ -306,6 +316,7 @@ export class GitHubProvider implements BrowseProvider {
 				branch: branchName,
 				...prMeta,
 			})
+			if (!intent) return
 			intentsBySlug.set(slug, intent)
 			this.intentBranchMap.set(slug, branchName)
 			this.intentMetaMap.set(slug, { branch: branchName, ...prMeta })
@@ -362,6 +373,7 @@ export class GitHubProvider implements BrowseProvider {
 			const intent = this.parseIntentFromRaw(entry.name, rawText, {
 				branch: this.branch,
 			})
+			if (!intent) continue
 			intents.push(intent)
 			onProgress?.(intent)
 		}
