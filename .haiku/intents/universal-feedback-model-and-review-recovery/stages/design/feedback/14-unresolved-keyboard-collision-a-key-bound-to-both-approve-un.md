@@ -2,7 +2,7 @@
 title: >-
   Unresolved keyboard collision: `a` key bound to both Approve (unit-07) and
   annotation-create (unit-04)
-status: pending
+status: closed
 origin: adversarial-review
 author: consistency
 author_type: agent
@@ -11,6 +11,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-12-keyboard-reach-and-shortcuts
 ---
 
 The unit-04 design-review artifact (`artifacts/unit-04-design-review.md §3`) flagged this as a **blocker** requiring a fix before advancing, recommending switch to `c` (create). The unit-04 design-review also marks itself "changes-requested" on line 5 of frontmatter.

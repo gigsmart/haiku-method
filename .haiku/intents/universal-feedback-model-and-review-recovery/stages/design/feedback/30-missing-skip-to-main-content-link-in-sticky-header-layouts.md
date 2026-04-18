@@ -1,6 +1,6 @@
 ---
 title: Missing skip-to-main-content link in sticky-header layouts
-status: pending
+status: closed
 origin: adversarial-review
 author: accessibility
 author_type: agent
@@ -9,6 +9,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-12-keyboard-reach-and-shortcuts
 ---
 
 None of the wireframes include a "skip to main content" link, which is standard WCAG 2.4.1 Bypass Blocks guidance for pages with sticky headers and multi-section layouts.
