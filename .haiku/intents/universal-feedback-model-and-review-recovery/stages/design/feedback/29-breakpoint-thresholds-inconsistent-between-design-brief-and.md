@@ -2,7 +2,7 @@
 title: >-
   Breakpoint thresholds inconsistent between DESIGN-BRIEF and
   feedback-card-states
-status: pending
+status: closed
 origin: adversarial-review
 author: consistency
 author_type: agent
@@ -11,6 +11,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-10-stage-wide-token-audit
 ---
 
 `DESIGN-BRIEF.md §4` defines breakpoints as:

@@ -1,6 +1,6 @@
 ---
 title: Design artifacts use wrong Tailwind palette (gray-* instead of stone-*)
-status: pending
+status: closed
 origin: adversarial-review
 author: consistency
 author_type: agent
@@ -9,6 +9,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-10-stage-wide-token-audit
 ---
 
 The `DESIGN-BRIEF.md` (lines 15-28) and `knowledge/DESIGN-TOKENS.md §1.1` both mandate the `stone-*` scale for the React review-app SPA. `gray-*` is reserved for server-rendered templates only. However, 14 of the 20 HTML artifacts in `stages/design/artifacts/` use `gray-*` classes exhaustively — 1595 hits across those 14 files vs 868 correct `stone-*` hits in the 6 newer artifacts.

@@ -2,7 +2,7 @@
 title: >-
   Origin-badge naming and colors diverge between DESIGN-BRIEF and unit-05
   artifacts
-status: pending
+status: closed
 origin: adversarial-review
 author: consistency
 author_type: agent
@@ -11,6 +11,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-10-stage-wide-token-audit
 ---
 
 `DESIGN-BRIEF.md §2` lines 170-177 define the `FeedbackOriginIcon` with a simple rendering: `text-xs text-stone-500 dark:text-stone-400` with emoji + label. Origins listed: `adversarial-review`, `external-pr`, `external-mr`, `user-visual`, `user-chat`, `agent` — each with a specific icon (🔍 for adversarial-review, 🔗 for external-pr, etc.).

@@ -1,6 +1,6 @@
 ---
 title: Raw hex values leak into artifact CSS despite token mandate
-status: pending
+status: closed
 origin: adversarial-review
 author: consistency
 author_type: agent
@@ -9,6 +9,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-10-stage-wide-token-audit
 ---
 
 The mandate requires "all spacing, typography, and color values reference named tokens — no raw hex, px, or magic numbers." DESIGN-TOKENS.md is the token source. But 125 raw hex-style occurrences remain across 10 artifact files.
