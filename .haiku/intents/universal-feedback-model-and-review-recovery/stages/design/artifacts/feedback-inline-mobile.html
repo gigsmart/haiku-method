@@ -127,15 +127,20 @@
       </button>
     </div>
 
-    <!-- Segmented control -->
-    <div class="shrink-0 flex border-b border-gray-200 dark:border-gray-700" role="tablist">
-      <button role="tab" aria-selected="true" class="flex-1 border-b-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 text-xs font-medium px-3 py-2.5 touch-target text-center">
-        Feedback
-        <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">5</span>
-      </button>
-      <button role="tab" aria-selected="false" class="flex-1 border-b-2 border-transparent text-gray-500 dark:text-gray-400 text-xs font-medium px-3 py-2.5 touch-target text-center hover:text-gray-700 dark:hover:text-gray-200">
-        Mine
-        <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">2</span>
+    <!-- Unified Comments header + AgentFeedbackToggle (replaces retired identity-based segmented control) -->
+    <div class="shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center gap-2">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Comments</h3>
+        <span class="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800">agent · 2</span>
+      </div>
+      <button
+        role="switch"
+        aria-checked="false"
+        aria-label="Show agent feedback inline"
+        class="relative inline-flex items-center touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 rounded-full"
+      >
+        <span class="w-10 h-5 rounded-full bg-gray-300 dark:bg-gray-600 transition-colors"></span>
+        <span class="absolute left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform"></span>
       </button>
     </div>
 

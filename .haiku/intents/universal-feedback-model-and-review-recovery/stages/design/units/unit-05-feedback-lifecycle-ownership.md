@@ -33,10 +33,10 @@ Codify the agent-owned vs human-owned status transitions for feedback items, spe
   - Agent-owned: `pending → addressed` when a fix lands, `pending → closed` when quality-gate verification passes structurally (not UI).
   - Human-owned: `pending → rejected` (dismiss), `addressed → closed` (verify), any terminal → `pending` (reopen).
   - Matrix makes explicit which transitions are NEVER user-initiable from the UI.
-- Per-status footer button inventory documented with wireframes for each state combination:
-  - `pending` → [Reject]
-  - `addressed` → [Verify & Close], [Re-open]
-  - `rejected` / `closed` → [Re-open]
+- Per-status footer button inventory documented with wireframes for each state combination. Canonical copy per unit-14's `footer-button-copy-spec.md` — verbs do NOT split by `author_type`, and "Reopen" is one word (not hyphenated):
+  - `pending` → [Dismiss]
+  - `addressed` → [Verify & Close], [Reopen]
+  - `rejected` / `closed` → [Reopen]
   - Each button has light + dark mocks, hover / focus / active / disabled states.
 - Sidebar layout restructured: one unified **Comments** list (user-origin items: `user-chat`, `user-visual`, `external-pr`, `external-mr`). An **agent-feedback toggle** (default off) reveals agent-origin items (`adversarial-review`, `agent`) inline with a visible origin badge so the reviewer can tell them apart without hiding. No "Mine / Feedback" segmented control.
 - Optimistic UI pattern specified: status change updates card immediately; if the tool call fails (author-type guard rejects the transition), the card reverts and a toast shows the reason. Toast copy templated for every guard outcome.
