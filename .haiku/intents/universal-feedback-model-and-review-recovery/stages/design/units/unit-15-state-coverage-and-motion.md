@@ -75,16 +75,96 @@ quality_gates:
     Touch target rule documented once in DESIGN-TOKENS.md (≥ 44px on any
     tablet/mobile touch-activated control, ≥ 24px WCAG 2.2 1.4.11 minimum on
     desktop, with explicit exceptions); every affected artifact complies
-status: active
-bolt: 1
-hat: designer
+status: completed
+bolt: 4
+hat: feedback-assessor
 started_at: '2026-04-18T03:11:01Z'
-hat_started_at: '2026-04-18T03:11:01Z'
+hat_started_at: '2026-04-18T03:54:56Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:11:01Z'
-    completed_at: null
-    result: null
+    completed_at: '2026-04-18T03:26:12Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-18T03:26:12Z'
+    completed_at: '2026-04-18T03:33:53Z'
+    result: advance
+  - hat: feedback-assessor
+    started_at: '2026-04-18T03:33:53Z'
+    completed_at: '2026-04-18T03:39:24Z'
+    result: reject
+    reason: >-
+      FB-20 not closed: DESIGN-BRIEF.md §7 CSS block (lines 638-645) contains
+      `@keyframes feedback-pulse` and `.feedback-fab-pulse` but has no sibling
+      `@media (prefers-reduced-motion: reduce) { .feedback-fab-pulse {
+      animation: none; } }` guard. The FB-20 feedback body explicitly requires
+      this be added to DESIGN-BRIEF §7, and the unit's own completion
+      criteria/quality gate states every `@keyframes` in DESIGN-BRIEF §7 must
+      have a sibling reduced-motion block. §7 is the canonical CSS that ships to
+      `packages/haiku/review-app/src/index.css` — the
+      `motion-and-reduced-motion-spec.md` documents the fallback but does not
+      patch §7 itself, so production CSS still lacks the guard. FB-12 (pins have
+      44×44 `::before` hit areas in all three affected files + DESIGN-TOKENS
+      rule) and FB-25 (six-state grid + explicit renders for FAB, popover 4b,
+      progress-strip tabindex, revisit-modal rollback toast, locked unit focus,
+      feedback-card error visual) are closed. Fix: add the reduced-motion block
+      inside the §7 code fence next to `.feedback-fab-pulse`.
+  - hat: design-reviewer
+    started_at: '2026-04-18T03:39:24Z'
+    completed_at: '2026-04-18T03:41:45Z'
+    result: reject
+    reason: >-
+      FB-20 residual — DESIGN-BRIEF §7 canonical FAB pulse CSS (lines 639-645)
+      still has no sibling @media (prefers-reduced-motion: reduce) block.
+      Artifacts have guards; the source-of-truth spec does not. Add `@media
+      (prefers-reduced-motion: reduce) { .feedback-fab-pulse { animation: none;
+      } }` (or equivalent) to §7 right after the @keyframes block.
+  - hat: designer
+    started_at: '2026-04-18T03:41:45Z'
+    completed_at: '2026-04-18T03:43:31Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-18T03:43:31Z'
+    completed_at: '2026-04-18T03:49:39Z'
+    result: advance
+  - hat: feedback-assessor
+    started_at: '2026-04-18T03:49:39Z'
+    completed_at: '2026-04-18T03:53:23Z'
+    result: reject
+    reason: >-
+      FB-12 / FB-20 / FB-25 are all substantively closed — verified by the
+      assessor: pins use `.pin-hit::before` / `.pin::before` 44×44 hit areas
+      across feedback-inline-desktop.html, annotation-gesture-spec.html,
+      annotation-popover-states.html; DESIGN-BRIEF.md §7 lines 647-651 now carry
+      the `@media (prefers-reduced-motion: reduce) { .feedback-fab-pulse {
+      animation: none; } }` sibling guard that was missing in bolt 1; every
+      artifact `@keyframes` block has a reduced-motion fallback
+      (comment-to-feedback-flow.html uses a single collective block covering all
+      6 animations explicitly); state-coverage-grid.md enumerates all surfaces
+      with the six-state matrix; revisit-modal-states.html renders the §error +
+      §error-mid-commit rollback toast; stage-progress-strip.html distinguishes
+      tabindex="-1" future-never-visited from tabindex="0" previously-visited;
+      feedback-inline-mobile.html §FAB state coverage renders all six FAB
+      states; annotation-popover-states.html §State 4b renders disabled-body
+      Create; revisit-unit-list.html .locked-card:focus-visible renders focus
+      ring on locked units; feedback-card-states.html §5b renders the explicit
+      error card; DESIGN-BRIEF.md §2 carries the state-coverage-requirement
+      amendment; DESIGN-TOKENS.md §1.10 documents the 44px rule + WCAG
+      1.4.11/2.5.8 exceptions. ONLY issue: none of the 12 completion-criteria
+      checkboxes in unit-15-state-coverage-and-motion.md lines 123-134 were
+      ticked — harness rejected with `criteria_not_met, unchecked: 12`. Designer
+      on the next bolt: do nothing except tick every unchecked completion
+      criterion to checked in the Completion criteria section of the unit spec.
+      No artifact edits needed.
+  - hat: design-reviewer
+    started_at: '2026-04-18T03:53:23Z'
+    completed_at: '2026-04-18T03:54:56Z'
+    result: advance
+  - hat: feedback-assessor
+    started_at: '2026-04-18T03:54:56Z'
+    completed_at: '2026-04-18T03:57:30Z'
+    result: advance
+completed_at: '2026-04-18T03:57:30Z'
 ---
 # Interactive state coverage, touch targets, and reduced-motion guards
 

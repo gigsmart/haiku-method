@@ -77,6 +77,10 @@
 </head>
 <body class="dark bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen" style="max-width: 375px; margin: 0 auto;">
 
+  <!-- FB-30: Skip links. First focusable elements; visually hidden until focused. -->
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:px-3 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white">Skip to main content</a>
+  <a href="#feedback-list" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-40 focus:z-[200] focus:px-3 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white">Skip to feedback list</a>
+
   <!-- Header -->
   <header class="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
     <div class="px-4 py-3 flex items-center justify-between">
@@ -88,7 +92,7 @@
   </header>
 
   <!-- Main content (mobile — no sidebar, just content) -->
-  <main class="px-4 py-4">
+  <main id="main-content" class="px-4 py-4">
 
     <!-- Tabs (horizontal scroll on mobile) -->
     <div class="sticky top-[49px] z-30 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-700 mb-4 -mx-4 px-4 overflow-x-auto">
@@ -192,7 +196,7 @@
     </div>
 
     <!-- Feedback list (scrollable) -->
-    <div class="flex-1 overflow-y-auto p-3 space-y-2" role="list">
+    <div id="feedback-list" class="flex-1 overflow-y-auto p-3 space-y-2" role="list" aria-label="Feedback list">
 
       <!-- Group: Current Visit -->
       <div class="flex items-center gap-2 px-1 py-1">

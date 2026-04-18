@@ -1,6 +1,6 @@
 ---
 title: FAB pulse animation has no prefers-reduced-motion guard
-status: pending
+status: closed
 origin: adversarial-review
 author: accessibility
 author_type: agent
@@ -9,6 +9,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-15-state-coverage-and-motion
 ---
 
 The mobile feedback FAB pulse animation runs for 6 seconds (2s × 3 iterations) on new feedback arrival, with no `@media (prefers-reduced-motion: reduce)` fallback.

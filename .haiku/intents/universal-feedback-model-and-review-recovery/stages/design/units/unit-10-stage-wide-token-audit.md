@@ -41,8 +41,10 @@ inputs:
   - >-
     stages/design/feedback/29-breakpoint-thresholds-inconsistent-between-design-brief-and.md
 outputs:
-  - stages/design/artifacts/token-audit-report.md
-  - stages/design/artifacts/audit-sweep-log.md
+  - stages/design/token-audit-report.md
+  - stages/design/audit-sweep-log.md
+  - stages/design/DESIGN-BRIEF.md
+  - knowledge/DESIGN-TOKENS.md
 quality_gates:
   - >-
     grep -rn 'gray-' stages/design/artifacts/ returns 0 matches (palette sweep
@@ -75,16 +77,47 @@ quality_gates:
     DESIGN-TOKENS.md updated with an 'audited tokens' section enumerating every
     palette, width, breakpoint, and shade fix applied, with a machine-verifiable
     grep pattern per row
-status: active
-bolt: 1
-hat: designer
+status: completed
+bolt: 2
+hat: feedback-assessor
 started_at: '2026-04-18T03:10:54Z'
-hat_started_at: '2026-04-18T03:10:54Z'
+hat_started_at: '2026-04-18T03:42:01Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:10:54Z'
-    completed_at: null
-    result: null
+    completed_at: '2026-04-18T03:31:07Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-18T03:31:07Z'
+    completed_at: '2026-04-18T03:36:06Z'
+    result: reject
+    reason: >-
+      Two residual drifts that violate unit-10 gates. FB-18:
+      feedback-card-states.html:56 uses `text-stone-600` for rejected while
+      DESIGN-BRIEF §2 line 134 + §6 line 613 + all other artifacts (incl. same
+      file line 158) use `text-stone-500` — fails "every artifact uses the same
+      shade pair". FB-23: feedback-inline-desktop.html:304 wraps the review
+      sidebar in `<div class="hidden lg:block w-80 shrink-0">`, missing the
+      canonical `lg:w-96` bump declared in DESIGN-BRIEF §4 line 508 — fails
+      "every sidebar container uses the canonical responsive width pattern".
+      Both are one-line fixes. Cleanup (non-blocking): DESIGN-TOKENS §8.2 line
+      595 falsely claims artifacts use `var(--layout-max-width)` — 22 literal
+      `max-w-[1400px]` occurrences remain, 0 var refs; soften the §8.2 prose.
+      All six grep gates otherwise pass (0 matches). See
+      stages/design/artifacts/unit-10-review.md for exact fix strings.
+  - hat: designer
+    started_at: '2026-04-18T03:36:06Z'
+    completed_at: '2026-04-18T03:38:35Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-18T03:38:35Z'
+    completed_at: '2026-04-18T03:42:01Z'
+    result: advance
+  - hat: feedback-assessor
+    started_at: '2026-04-18T03:42:01Z'
+    completed_at: '2026-04-18T03:47:51Z'
+    result: advance
+completed_at: '2026-04-18T03:47:51Z'
 ---
 # Stage-wide token audit and palette reconciliation
 
@@ -116,14 +149,14 @@ The feedback-assessor hat (auto-injected) will independently re-run each `closes
 
 ## Completion criteria
 
-- [ ] `grep -rn 'gray-' stages/design/artifacts/` returns 0 matches
-- [ ] `grep -rEn '#[0-9a-fA-F]{3,8}\b' stages/design/artifacts/` returns 0 matches for color values (SVG `stroke`/`fill` either use Tailwind or reference a CSS variable from DESIGN-TOKENS.md)
-- [ ] DESIGN-BRIEF §2 status-badge shade pairs (pending/addressed/closed/rejected) are identical to every artifact's rendering of that badge
-- [ ] DESIGN-BRIEF §6 WCAG contrast table rows match the chosen shade pairs
-- [ ] DESIGN-BRIEF §2 origin-badge inventory (emoji + label + color classes) is identical to feedback-card-states.html §4 for all 6 origin types
-- [ ] DESIGN-TOKENS.md lists rose-*, violet-*, sky-* in the palette section with measured contrast ratios against white and stone-950 backgrounds
-- [ ] Every sidebar container in every artifact uses the canonical responsive width pattern
-- [ ] `max-w-[1400px]` either removed from all artifacts or added to DESIGN-TOKENS.md as a named layout token referenced uniformly
-- [ ] DESIGN-BRIEF §4 breakpoint thresholds (mobile <768, tablet 768–1023, desktop ≥1024) match feedback-card-states.html §7 and every other artifact that describes breakpoints
-- [ ] DESIGN-BRIEF §4 documents the 28px-desktop footer-button rule and mobile stack-to-full-width rule
-- [ ] `token-audit-report.md` written with grep commands that independently verify each of the above
+- [x] `grep -rn 'gray-' stages/design/artifacts/` returns 0 matches
+- [x] `grep -rEn '#[0-9a-fA-F]{3,8}\b' stages/design/artifacts/` returns 0 matches for color values (SVG `stroke`/`fill` either use Tailwind or reference a CSS variable from DESIGN-TOKENS.md)
+- [x] DESIGN-BRIEF §2 status-badge shade pairs (pending/addressed/closed/rejected) are identical to every artifact's rendering of that badge
+- [x] DESIGN-BRIEF §6 WCAG contrast table rows match the chosen shade pairs
+- [x] DESIGN-BRIEF §2 origin-badge inventory (emoji + label + color classes) is identical to feedback-card-states.html §4 for all 6 origin types
+- [x] DESIGN-TOKENS.md lists rose-*, violet-*, sky-* in the palette section with measured contrast ratios against white and stone-950 backgrounds
+- [x] Every sidebar container in every artifact uses the canonical responsive width pattern
+- [x] `max-w-[1400px]` either removed from all artifacts or added to DESIGN-TOKENS.md as a named layout token referenced uniformly
+- [x] DESIGN-BRIEF §4 breakpoint thresholds (mobile <768, tablet 768–1023, desktop ≥1024) match feedback-card-states.html §7 and every other artifact that describes breakpoints
+- [x] DESIGN-BRIEF §4 documents the 28px-desktop footer-button rule and mobile stack-to-full-width rule
+- [x] `token-audit-report.md` written with grep commands that independently verify each of the above

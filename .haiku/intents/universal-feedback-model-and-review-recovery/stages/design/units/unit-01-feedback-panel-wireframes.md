@@ -39,6 +39,8 @@ Produce wireframes for the inline feedback annotations direction, the stage prog
 - Design tokens from DESIGN-TOKENS.md throughout (no raw hex)
 - Touch targets ≥ 44px on mobile
 - Focus order for keyboard navigation documented
+- **Skip links** (amended by unit-12 for FB-30): Every sticky-header layout MUST include two visually-hidden-until-focused skip links as the first focusable elements — `<a href="#main-content">Skip to main content</a>` and `<a href="#feedback-list">Skip to feedback list</a>`. Anchors `id="main-content"` and `id="feedback-list"` MUST exist. See `stages/design/artifacts/skip-link-spec.html` for the canonical pattern and the coverage table.
+- **Pin markers reachable** (amended by unit-12 for FB-17): Pin markers overlaid on artifacts MUST be `<button tabindex="0">` (not `<div>` and not `tabindex="-1"`) with `aria-label="Feedback FB-XX at X% Y% — press Enter to view details"` and `aria-keyshortcuts="Enter"`. Pin Enter expands the linked sidebar feedback card and scrolls it into view (reciprocal to sidebar-Enter → pin cross-flash).
 
 ### Stage Progress Indicator
 - HTML wireframe at `stages/design/artifacts/stage-progress-strip.html`

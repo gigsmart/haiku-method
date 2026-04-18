@@ -24,6 +24,10 @@
 </head>
 <body class="bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 min-h-screen">
 
+  <!-- FB-30: Skip links. First focusable elements; visually hidden until focused. -->
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:px-3 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white">Skip to main content</a>
+  <a href="#feedback-list" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-44 focus:z-[200] focus:px-3 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white">Skip to feedback list</a>
+
   <!-- ============================================================ -->
   <!-- Spec header -->
   <!-- ============================================================ -->
@@ -55,7 +59,7 @@
     </nav>
   </header>
 
-  <main class="max-w-6xl mx-auto px-6 py-8 space-y-14">
+  <main id="main-content" class="max-w-6xl mx-auto px-6 py-8 space-y-14">
 
     <!-- ============================================================ -->
     <!-- Overview -->
@@ -270,7 +274,9 @@
     <!-- ============================================================ -->
     <!-- Variant B: user-opened -->
     <!-- ============================================================ -->
-    <section id="variant-user" class="space-y-3">
+    <section id="variant-user" class="space-y-3" aria-label="Variant B — user-opened feedback list context">
+    <!-- Alias anchor for global skip-to-feedback-list convention (FB-30) -->
+    <a id="feedback-list" class="sr-only" tabindex="-1" aria-hidden="true"></a>
       <div class="flex items-center gap-2">
         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">Variant B</span>
         <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">User-opened (no active gate)</h2>
