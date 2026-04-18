@@ -65,9 +65,9 @@ quality_gates:
     desktop, with explicit exceptions); every affected artifact complies
 status: active
 bolt: 4
-hat: design-reviewer
+hat: feedback-assessor
 started_at: '2026-04-18T03:11:01Z'
-hat_started_at: '2026-04-18T03:53:23Z'
+hat_started_at: '2026-04-18T03:54:56Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:11:01Z'
@@ -145,6 +145,10 @@ iterations:
       Completion criteria section of the unit spec. No artifact edits needed.
   - hat: design-reviewer
     started_at: '2026-04-18T03:53:23Z'
+    completed_at: '2026-04-18T03:54:56Z'
+    result: advance
+  - hat: feedback-assessor
+    started_at: '2026-04-18T03:54:56Z'
     completed_at: null
     result: null
 ---
