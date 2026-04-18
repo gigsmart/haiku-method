@@ -85,8 +85,8 @@ quality_gates:
     color-matched focus rings per variant; every `<input>`, `<textarea>`,
     `<button>`, `[tabindex="0"]`, `<a>` declares `focus-visible:ring-2
     focus-visible:ring-teal-500` (or the variant rule)
-hat: designer
-hat_started_at: '2026-04-18T21:17:11Z'
+hat: design-reviewer
+hat_started_at: '2026-04-18T21:17:42Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T04:30:46Z'
@@ -94,6 +94,10 @@ iterations:
     result: null
   - hat: designer
     started_at: '2026-04-18T21:17:11Z'
+    completed_at: '2026-04-18T21:17:41Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-18T21:17:42Z'
     completed_at: null
     result: null
 status: active
