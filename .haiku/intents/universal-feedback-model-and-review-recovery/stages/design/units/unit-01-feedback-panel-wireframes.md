@@ -39,6 +39,9 @@ Produce wireframes for the inline feedback annotations direction, the stage prog
 - Design tokens from DESIGN-TOKENS.md throughout (no raw hex)
 - Touch targets ≥ 44px on mobile
 - Focus order for keyboard navigation documented
+- **Landmark structure mandated (amendment from unit-13, 2026-04-17):** every page-level artifact renders `<header role="banner">`, `<nav aria-label="Stage progress">` around the stage-progress-strip, `<main id="main-content" role="main">`, `<aside role="complementary" aria-label="Review sidebar">` (desktop), `role="dialog" aria-modal="true" aria-labelledby="{titleId}"` on every modal, `role="status" aria-live="polite"` on assessor-summary-card root, plus a skip link as the first focusable element. See `artifacts/aria-landmark-spec.md` for the complete landmark map and per-surface table.
+- **Focus ring canonical rule:** every `<button>`, `<a>`, `<input>`, `<textarea>`, `[tabindex="0"]` declares `focus-visible:ring-2 focus-visible:ring-teal-500` with 2px offset (1px offset for dense feedback cards). See `artifacts/focus-ring-spec.html`.
+- **Emoji ↔ origin mapping:** canonical single-source — `🔍 adversarial-review`, `🔗 external-pr/mr`, `✎ user-visual`, `💬 user-chat`, `🤖 agent`. Every artifact and DESIGN-BRIEF §2 render the same code points. See `artifacts/aria-landmark-spec.md §6`.
 
 ### Stage Progress Indicator
 - HTML wireframe at `stages/design/artifacts/stage-progress-strip.html`

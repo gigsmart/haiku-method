@@ -165,18 +165,24 @@ interface FeedbackOriginIconProps {
 }
 ```
 
-**Icon mapping:**
+**Icon mapping (canonical — single source of truth; see `artifacts/aria-landmark-spec.md §6`):**
 
-| Origin | Icon | Label |
-|---|---|---|
-| `adversarial-review` | `🔍` | "Review Agent" |
-| `external-pr` | `🔗` | "PR Comment" |
-| `external-mr` | `🔗` | "MR Comment" |
-| `user-visual` | `✎` | "Annotation" |
-| `user-chat` | `💬` | "Comment" |
-| `agent` | `🤖` | "Agent" |
+| Origin | Icon | Code point | Label |
+|---|---|---|---|
+| `adversarial-review` | `🔍` | `U+1F50D` | "Review Agent" |
+| `external-pr` | `🔗` | `U+1F517` | "PR Comment" |
+| `external-mr` | `🔗` | `U+1F517` | "MR Comment" |
+| `user-visual` | `✎` | `U+270E` | "Annotation" |
+| `user-chat` | `💬` | `U+1F4AC` | "Comment" |
+| `agent` | `🤖` | `U+1F916` | "Agent" |
 
-Rendered as: `<span className="text-xs text-stone-500 dark:text-stone-400">{icon} {label}</span>`
+Every artifact and every React/SSR render **MUST** use the code points above. Cross-platform emoji rendering (Apple Color Emoji / Segoe UI Emoji / Noto Color Emoji) must be verified in QA; see `artifacts/aria-landmark-spec.md §6`.
+
+**Origin legend:** A small "?"-icon button in the sidebar header opens a popover legend listing all six origins with their emoji + label, so users who don't immediately recognize a pictograph can reference the mapping.
+
+**ARIA policy for emoji:** When paired with a visible text label, the emoji span uses `aria-hidden="true"`. When rendered alone (no visible label), it uses `role="img" aria-label="{Label}"`.
+
+Rendered as: `<span className="text-xs text-stone-500 dark:text-stone-400" aria-hidden="true">{icon}</span> {label}` when the label is visible.`
 
 ---
 
@@ -595,21 +601,27 @@ The sidebar focus order follows the DOM order, which matches the visual top-to-b
 
 ### Screen Reader Announcements
 
-- Feedback items use `role="listitem"` within a `role="list"` container.
+- Feedback items use `role="listitem"` within a `role="list" aria-label="Feedback items"` container.
 - Status badges have `aria-label` including the status text (e.g., `aria-label="Status: pending"`).
-- Status changes trigger a live region announcement: `<div role="status" aria-live="polite">` at the sidebar level that announces "Feedback FB-03 marked as closed" or similar.
-- The segmented control uses `role="tablist"` with `role="tab"` on each segment and `aria-selected` on the active segment.
-- The summary bar counts have `aria-label` (e.g., `aria-label="3 pending feedback items"`).
+- Status changes trigger a three-phase aria-live sequence (in-flight → success OR failure). Two live-region nodes per page: `#feedback-live-polite` (`role="status" aria-live="polite"`) for in-flight + success, `#feedback-live-assertive` (`role="alert" aria-live="assertive"`) for failure + rollback. See `artifacts/aria-live-sequencing-spec.md` for the exact template per transition.
+- The segmented control uses `role="tablist" aria-label="Sidebar view"` with `role="tab"` on each segment and `aria-selected` on the active segment. Each tab links via `aria-controls` to its `role="tabpanel"` container.
+- The summary bar counts use `role="group" aria-label="Filter feedback by status"` with `aria-pressed` on each filter chip. Colored status dots are `aria-hidden="true"` (label conveys status).
 - Expanded feedback item body is announced when the item gains focus and is expanded.
+- Skip link (`<a href="#main-content">Skip to main content</a>`) is the first focusable element on every page — bypasses header/nav for keyboard users (see `artifacts/aria-landmark-spec.md §7`).
+- Every page declares the full landmark set: `<header role="banner">`, `<nav aria-label="Stage progress">`, `<main id="main-content" role="main">`, `<aside role="complementary" aria-label="Review sidebar">` (desktop). See `artifacts/aria-landmark-spec.md §1-2`.
+- Every modal declares `role="dialog" aria-modal="true" aria-labelledby="{titleId}"` with a focus-trap; see §3.
+- The assessor-summary-card root is `role="status" aria-live="polite"` so AT announces "assessor run complete" when the gate unlocks.
 
 ### Mobile Sheet Overlay
 
 - The FAB has `aria-label="Open feedback panel"` with the count (e.g., `aria-label="Open feedback panel, 3 comments"`).
-- The sheet overlay traps focus within itself when open (focus trap pattern).
+- The sheet overlay is a proper dialog: `role="dialog" aria-modal="true" aria-labelledby="sheet-title"` on the container, `id="sheet-title"` on the h2 "Feedback" heading.
+- **Focus-trap strategy:** use `focus-trap-react` (https://github.com/focus-trap/focus-trap-react) — the same library already used by the annotation-popover. Wrap the sheet in `<FocusTrap active returnFocusOnDeactivate>`. The library moves focus to the first tabbable (segmented control) on mount and restores focus to the FAB on unmount. No manual `focus()` calls from component code.
+- While the sheet is open, main content and header receive `aria-hidden="true"` + the `inert` attribute so assistive tech does not traverse background content.
 - `Escape` closes the sheet.
 - The close button has `aria-label="Close feedback panel"`.
-- When the sheet opens, focus moves to the first interactive element (segmented control).
-- When the sheet closes, focus returns to the FAB.
+- When the sheet closes (close button, Escape, backdrop tap, or Approve/Request-Changes submit), `returnFocusOnDeactivate` automatically restores focus to the FAB.
+- See `artifacts/aria-landmark-spec.md §3` for the full dialog contract and `artifacts/aria-live-sequencing-spec.md` for the live-region sequencing on status-change announcements.
 
 ---
 

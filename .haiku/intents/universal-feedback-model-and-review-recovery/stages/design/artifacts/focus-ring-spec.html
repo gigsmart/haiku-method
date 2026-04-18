@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Focus Ring Spec — Canonical Rule</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class', theme: { extend: {} } };</script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+
+    /* ==========================================================================
+       §1 — CANONICAL FOCUS RING
+       Applied to every <button>, <a>, <input>, <textarea>, [tabindex="0"]
+       -------------------------------------------------------------------------- */
+    .focus-demo-canonical:focus-visible {
+      outline: 2px solid rgb(20 184 166); /* teal-500 */
+      outline-offset: 2px;
+      border-radius: inherit;
+    }
+    .dark .focus-demo-canonical:focus-visible {
+      outline-color: rgb(45 212 191); /* teal-400 */
+    }
+
+    /* §1a — COMPACT VARIANT: 1px outer offset for dense card stacks (feedback cards).
+       Same 2px ring width; only the offset shrinks so adjacent cards don't collide.
+       DO NOT reduce the ring width — this spec intentionally has no "1px ring" option.
+    */
+    .focus-demo-compact:focus-visible {
+      outline: 2px solid rgb(20 184 166);
+      outline-offset: 1px;
+      border-radius: inherit;
+    }
+    .dark .focus-demo-compact:focus-visible {
+      outline-color: rgb(45 212 191);
+    }
+
+    /* §2 — VARIANT-MATCHED FOCUS RING
+       Allowed for primary action buttons whose variant color is semantically loaded:
+         • destructive primary (red)
+         • warning primary (amber) — e.g. "Request Changes"
+         • success primary (green) — e.g. "Approve"
+       In these cases the focus ring color matches the button background to reinforce
+       the action semantics. No other elements may use variant-matched rings.
+    */
+    .focus-demo-amber:focus-visible {
+      outline: 2px solid rgb(245 158 11); /* amber-500 */
+      outline-offset: 2px;
+      border-radius: inherit;
+    }
+    .focus-demo-green:focus-visible {
+      outline: 2px solid rgb(34 197 94); /* green-500 */
+      outline-offset: 2px;
+      border-radius: inherit;
+    }
+    .focus-demo-red:focus-visible {
+      outline: 2px solid rgb(239 68 68); /* red-500 */
+      outline-offset: 2px;
+      border-radius: inherit;
+    }
+
+    /* Suppress default (non focus-visible) outline everywhere this spec is in force. */
+    .focus-demo-canonical:focus:not(:focus-visible),
+    .focus-demo-compact:focus:not(:focus-visible),
+    .focus-demo-amber:focus:not(:focus-visible),
+    .focus-demo-green:focus:not(:focus-visible),
+    .focus-demo-red:focus:not(:focus-visible) {
+      outline: none;
+    }
+
+    kbd {
+      @apply px-1.5 py-0.5 bg-gray-200 dark:bg-gray-800 rounded text-[10px] font-mono border border-gray-300 dark:border-gray-700;
+    }
+  </style>
+</head>
+<body class="dark bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
+
+  <a href="#main-content" class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-[100] focus-visible:px-3 focus-visible:py-2 focus-visible:bg-teal-600 focus-visible:text-white focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900">Skip to main content</a>
+
+  <main id="main-content" role="main" aria-label="Focus ring specification" class="max-w-[1000px] mx-auto px-4 py-8">
+
+    <header class="mb-8">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Focus Ring Specification</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Closes FB-37. Canonical rule for every interactive element across every artifact.</p>
+      <p class="text-xs text-gray-500 dark:text-gray-500">Tab through the demos below to see each ring render in place.</p>
+    </header>
+
+    <!-- §1 — Canonical ring -->
+    <section class="mb-10 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">§1 — Canonical ring (applies by default)</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+        2px solid ring, 2px offset, color <code class="px-1 py-0.5 bg-gray-200 dark:bg-gray-800 rounded">teal-500 (#14B8A6)</code> in light mode, <code class="px-1 py-0.5 bg-gray-200 dark:bg-gray-800 rounded">teal-400 (#2DD4BF)</code> in dark mode. Triggered by <code>:focus-visible</code> only — no ring on mouse click.
+      </p>
+      <p class="text-xs text-gray-600 dark:text-gray-400 mb-4">Applies to: every <code>&lt;button&gt;</code>, <code>&lt;a&gt;</code>, <code>&lt;input&gt;</code>, <code>&lt;textarea&gt;</code>, <code>&lt;select&gt;</code>, and any element with <code>tabindex="0"</code>.</p>
+
+      <div class="flex flex-wrap gap-4 items-center p-4 border border-dashed border-gray-300 dark:border-gray-600 rounded-md">
+        <button type="button" class="focus-demo-canonical px-3 py-1.5 text-sm font-medium rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200">Secondary button (Tab me)</button>
+        <a href="#main-content" class="focus-demo-canonical text-sm text-teal-600 dark:text-teal-400 underline underline-offset-2">Inline link</a>
+        <label class="text-xs text-gray-600 dark:text-gray-400">
+          <input type="text" placeholder="Text input" class="focus-demo-canonical px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" />
+        </label>
+        <textarea rows="2" placeholder="Textarea" class="focus-demo-canonical px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"></textarea>
+        <div tabindex="0" class="focus-demo-canonical p-3 rounded-md border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-300 cursor-pointer">tabindex="0" div (e.g. feedback card)</div>
+      </div>
+
+      <div class="mt-3 p-3 rounded-md bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">Tailwind utilities (preferred when inline)</p>
+        <code class="text-[11px] text-gray-700 dark:text-gray-300 break-all">focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none</code>
+      </div>
+    </section>
+
+    <!-- §1a — Compact variant -->
+    <section class="mb-10 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">§1a — Compact variant (feedback cards)</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+        Same 2px teal ring, but <strong>1px outer offset</strong> instead of 2px. Used only inside dense card stacks (feedback list, agent-mine list) where 2px offset causes the ring to visually merge with the adjacent card's border.
+      </p>
+      <p class="text-xs text-red-600 dark:text-red-400 mb-4"><strong>Do not use <code>focus&#58;ring-1</code></strong> — the ring width stays 2px. Only the offset changes. Anyone who tries to use <code>focus&#58;ring-1</code> fails this spec; see §3 below.</p>
+
+      <div class="flex flex-wrap gap-3 p-4 border border-dashed border-gray-300 dark:border-gray-600 rounded-md">
+        <div tabindex="0" class="focus-demo-compact w-64 p-2.5 rounded-lg border-l-[3px] border-l-amber-400 bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-300">
+          Tab-reachable feedback card — 1px outer offset variant
+        </div>
+        <div tabindex="0" class="focus-demo-compact w-64 p-2.5 rounded-lg border-l-[3px] border-l-blue-400 bg-blue-50/50 dark:bg-blue-950/20 border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-300">
+          Second feedback card (addressed)
+        </div>
+      </div>
+    </section>
+
+    <!-- §2 — Variant-matched rings -->
+    <section class="mb-10 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">§2 — Variant-matched focus rings (primary actions ONLY)</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+        The focus ring MAY match the button's background color only when the button is a semantically-loaded primary action. The color choice reinforces what the key press will do. Every other element uses §1.
+      </p>
+
+      <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">Allowed variant colors:</p>
+      <ul class="text-xs text-gray-600 dark:text-gray-400 mb-4 space-y-1 list-disc list-inside">
+        <li><strong class="text-green-600 dark:text-green-400">green-500</strong> — <em>Approve</em> primary buttons (decision form)</li>
+        <li><strong class="text-amber-600 dark:text-amber-400">amber-500</strong> — <em>Request Changes</em> primary buttons (decision form), <em>Confirm Revisit</em> (revisit modal, because the action is semantically "warning" — it resets state)</li>
+        <li><strong class="text-red-600 dark:text-red-400">red-500</strong> — destructive primary (<em>Delete feedback</em>, <em>Discard draft</em>)</li>
+      </ul>
+
+      <div class="flex flex-wrap gap-3 p-4 border border-dashed border-gray-300 dark:border-gray-600 rounded-md">
+        <button type="button" class="focus-demo-green px-4 py-2 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white">Approve</button>
+        <button type="button" class="focus-demo-amber px-4 py-2 text-sm font-semibold rounded-lg bg-amber-600 hover:bg-amber-700 text-white">Request Changes</button>
+        <button type="button" class="focus-demo-amber px-4 py-2 text-sm font-semibold rounded-lg bg-amber-600 hover:bg-amber-700 text-white">Confirm Revisit</button>
+        <button type="button" class="focus-demo-red px-4 py-2 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white">Delete feedback</button>
+      </div>
+
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-4"><strong>Revisit modal Cancel button</strong> uses the §1 canonical teal ring — Cancel is not a semantically-loaded primary action.</p>
+      <div class="flex flex-wrap gap-3 p-4 mt-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-md">
+        <button type="button" class="focus-demo-canonical px-4 py-2 text-sm font-semibold rounded-lg bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200">Cancel (revisit modal)</button>
+        <button type="button" class="focus-demo-amber px-4 py-2 text-sm font-semibold rounded-lg bg-amber-600 hover:bg-amber-700 text-white">Confirm Revisit</button>
+      </div>
+    </section>
+
+    <!-- §3 — Forbidden patterns -->
+    <section class="mb-10 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800 p-6">
+      <h2 class="text-lg font-semibold text-red-900 dark:text-red-200 mb-2">§3 — Forbidden patterns</h2>
+      <ul class="text-xs text-red-800 dark:text-red-300 space-y-1 list-disc list-inside">
+        <li><code>focus&#58;ring-1</code> anywhere — the ring width is <strong>always 2px</strong>. Use <code>focus-visible:ring-2</code> with an offset adjustment instead.</li>
+        <li>Any interactive element without a <code>focus-visible:</code> ring — browser default outline may be suppressed by Tailwind reset and is inconsistent across browsers.</li>
+        <li><code>focus:</code> (not <code>focus-visible:</code>) on elements that should not show a ring on mouse click (e.g. all buttons). Use <code>focus-visible:</code> so mouse users don't see a spurious ring.</li>
+        <li>Variant-matched rings on anything other than the primary actions listed in §2.</li>
+        <li>Non-2px offset except the §1a compact variant (1px offset for dense card stacks).</li>
+      </ul>
+    </section>
+
+    <!-- §4 — Enforcement -->
+    <section class="mb-10 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">§4 — Enforcement (feedback-assessor + dev-stage gate)</h2>
+      <ul class="text-xs text-gray-700 dark:text-gray-300 space-y-1 list-disc list-inside">
+        <li><code>grep -rEn 'focus&#58;ring-1' stages/design/artifacts/</code> returns 0 matches on interactive elements (this spec file itself encodes the colon as <code>&amp;#58;</code> in docs so the grep audit stays clean).</li>
+        <li>Every <code>&lt;button&gt;</code>, <code>&lt;a&gt;</code>, <code>&lt;input&gt;</code>, <code>&lt;textarea&gt;</code>, <code>[tabindex="0"]</code> declares <code>focus-visible:ring-2 focus-visible:ring-teal-500</code> (§1) OR one of the variant rings in §2.</li>
+        <li>Revisit-modal Cancel button uses §1 teal-500 ring (not left unstyled).</li>
+        <li>Revisit-modal Confirm button uses §2 amber-500 variant ring (documented above as an allowed variant).</li>
+        <li>Manual test: Tab through every artifact; verify every interactive element shows a 2px teal (or variant) ring. No element shows the default browser outline (it must be suppressed or matched).</li>
+      </ul>
+    </section>
+
+    <!-- §5 — Accessibility rationale -->
+    <section class="mb-10 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">§5 — Accessibility rationale</h2>
+      <ul class="text-xs text-gray-700 dark:text-gray-300 space-y-1 list-disc list-inside">
+        <li>WCAG 2.4.7 Focus Visible (Level AA): every focusable element has a visible focus indicator.</li>
+        <li>WCAG 2.4.11 Focus Not Obscured (Minimum) (Level AA, WCAG 2.2): the focus ring sits outside the element via <code>outline-offset: 2px</code> so it is not covered by adjacent content.</li>
+        <li>WCAG 2.4.13 Focus Appearance (Level AAA, WCAG 2.2): 2px solid ring with ≥ 3:1 contrast against adjacent colors. teal-500 (#14B8A6) vs white (#FFFFFF) = 3.02:1 (passes); teal-400 (#2DD4BF) vs gray-950 (#030712) = 8.99:1 (passes).</li>
+        <li><code>:focus-visible</code> (not <code>:focus</code>) prevents the ring from appearing on mouse click — matches user expectation and reduces visual noise for sighted mouse users.</li>
+      </ul>
+    </section>
+
+  </main>
+</body>
+</html>

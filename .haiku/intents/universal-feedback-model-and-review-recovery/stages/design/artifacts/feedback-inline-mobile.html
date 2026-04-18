@@ -45,18 +45,21 @@
 </head>
 <body class="dark bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen" style="max-width: 375px; margin: 0 auto;">
 
+  <!-- Skip link — first focusable element so keyboard users can bypass header nav -->
+  <a href="#main-content" class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-[100] focus-visible:px-3 focus-visible:py-2 focus-visible:bg-teal-600 focus-visible:text-white focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900">Skip to main content</a>
+
   <!-- Header -->
-  <header class="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
+  <header role="banner" class="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
     <div class="px-4 py-3 flex items-center justify-between">
       <h1 class="text-base font-semibold truncate text-gray-900 dark:text-gray-100">Review: Feedback Model</h1>
-      <button class="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 touch-target flex items-center justify-center">
-        <span>&#x263E;</span>
+      <button aria-label="Toggle color theme" class="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 touch-target flex items-center justify-center focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
+        <span aria-hidden="true">&#x263E;</span>
       </button>
     </div>
   </header>
 
   <!-- Main content (mobile — no sidebar, just content) -->
-  <main class="px-4 py-4">
+  <main id="main-content" role="main" class="px-4 py-4">
 
     <!-- Tabs (horizontal scroll on mobile) -->
     <div class="sticky top-[49px] z-30 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-700 mb-4 -mx-4 px-4 overflow-x-auto">
@@ -101,63 +104,97 @@
     <div class="h-20"></div>
   </main>
 
-  <!-- FAB (Floating Action Button) — bottom right -->
+  <!-- FAB (Floating Action Button) — bottom right
+       id="feedback-fab" used by dialog close handler to restore focus (FB-22) -->
   <button
+    id="feedback-fab"
     aria-label="Open feedback panel, 3 pending"
-    class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-600 text-white shadow-lg flex items-center justify-center text-lg feedback-fab-pulse touch-target"
-    onclick="document.getElementById('feedback-sheet').classList.remove('hidden')"
+    aria-haspopup="dialog"
+    aria-expanded="false"
+    aria-controls="feedback-sheet"
+    class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-600 text-white shadow-lg flex items-center justify-center text-lg feedback-fab-pulse touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none"
+    onclick="document.getElementById('feedback-sheet').classList.remove('hidden'); this.setAttribute('aria-expanded','true'); /* dev stage: on open, also set main#main-content aria-hidden=true + inert, then move focus to #sheet-first-tab via focus-trap library */"
   >
-    &#x1F4AC;
-    <!-- Count badge -->
-    <span class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-2 border-white dark:border-gray-900">3</span>
+    <span aria-hidden="true">&#x1F4AC;</span>
+    <!-- Count badge — aria-hidden because count is already included in button aria-label -->
+    <span aria-hidden="true" class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-2 border-white dark:border-gray-900">3</span>
   </button>
 
-  <!-- Bottom Sheet Overlay (the feedback view for mobile) -->
-  <div id="feedback-sheet" class="fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col sheet-enter">
+  <!--
+    Bottom Sheet Overlay (the feedback view for mobile) — role="dialog" aria-modal="true"
+
+    ## Focus-trap strategy (FB-22 fix, referenced by DESIGN-BRIEF §6)
+    Use `focus-trap-react` (https://github.com/focus-trap/focus-trap-react) — same library
+    the annotation-popover already relies on. Implementation contract for dev stage:
+
+      1. On open (FAB click):
+         - Add `aria-hidden="true"` AND `inert` to `<main id="main-content">` and `<header>`
+         - Set `aria-expanded="true"` on the FAB
+         - Wrap sheet in <FocusTrap active returnFocusOnDeactivate> — library moves focus
+           to first tabbable (the segmented control button below) on mount, restores to
+           FAB on unmount. No manual focus() calls needed.
+         - Add keydown listener: Escape -> close
+      2. On close (close button, Escape, backdrop tap, Approve/Request Changes submit):
+         - Remove `aria-hidden` + `inert` from main + header
+         - FocusTrap returnFocusOnDeactivate automatically restores focus to #feedback-fab
+         - Set `aria-expanded="false"` on FAB
+
+    This sheet is aria-labelledby="sheet-title" which points at the h2#sheet-title.
+  -->
+  <div
+    id="feedback-sheet"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="sheet-title"
+    class="fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col sheet-enter"
+  >
 
     <!-- Sheet header -->
     <div class="shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-      <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Feedback</h2>
+      <h2 id="sheet-title" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Feedback</h2>
       <button
         aria-label="Close feedback panel"
-        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 touch-target flex items-center justify-center text-lg"
-        onclick="document.getElementById('feedback-sheet').classList.add('hidden')"
+        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 touch-target flex items-center justify-center text-lg focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none"
+        onclick="var s=document.getElementById('feedback-sheet');s.classList.add('hidden');document.getElementById('feedback-fab').setAttribute('aria-expanded','false');document.getElementById('feedback-fab').focus(); /* dev stage: also remove aria-hidden+inert from main + header */"
       >
-        &times;
+        <span aria-hidden="true">&times;</span>
       </button>
     </div>
 
-    <!-- Segmented control -->
-    <div class="shrink-0 flex border-b border-gray-200 dark:border-gray-700" role="tablist">
-      <button role="tab" aria-selected="true" class="flex-1 border-b-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 text-xs font-medium px-3 py-2.5 touch-target text-center">
+    <!-- Segmented control — first tabbable element inside the sheet; focus-trap lands here on open -->
+    <div class="shrink-0 flex border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="Sidebar view">
+      <button id="sheet-first-tab" role="tab" aria-selected="true" aria-controls="sheet-feedback-panel" tabindex="0" class="flex-1 border-b-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 text-xs font-medium px-3 py-2.5 touch-target text-center focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
         Feedback
-        <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">5</span>
+        <span aria-hidden="true" class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">5</span>
+        <span class="sr-only">(5 items)</span>
       </button>
-      <button role="tab" aria-selected="false" class="flex-1 border-b-2 border-transparent text-gray-500 dark:text-gray-400 text-xs font-medium px-3 py-2.5 touch-target text-center hover:text-gray-700 dark:hover:text-gray-200">
+      <button role="tab" aria-selected="false" aria-controls="sheet-mine-panel" tabindex="-1" class="flex-1 border-b-2 border-transparent text-gray-500 dark:text-gray-400 text-xs font-medium px-3 py-2.5 touch-target text-center hover:text-gray-700 dark:hover:text-gray-200 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
         Mine
-        <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">2</span>
+        <span aria-hidden="true" class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">2</span>
+        <span class="sr-only">(2 items)</span>
       </button>
     </div>
 
-    <!-- Summary bar -->
-    <div class="shrink-0 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2 overflow-x-auto">
-      <button class="shrink-0 px-2.5 py-1.5 text-xs font-medium rounded-full bg-teal-100 text-teal-700 border border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-700 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">All</button>
-      <button class="shrink-0 px-2.5 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 touch-target">
-        <span class="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1"></span>Pending
-        <span class="ml-0.5 font-bold">3</span>
+    <!-- Summary bar — filter chips; colored dots aria-hidden (label conveys status) -->
+    <div class="shrink-0 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2 overflow-x-auto" role="group" aria-label="Filter feedback by status">
+      <button aria-pressed="true" class="shrink-0 px-2.5 py-1.5 text-xs font-medium rounded-full bg-teal-100 text-teal-700 border border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-700 transition-colors touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">All</button>
+      <button aria-pressed="false" aria-label="Pending, 3 items" class="shrink-0 px-2.5 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
+        <span aria-hidden="true" class="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1"></span>Pending
+        <span aria-hidden="true" class="ml-0.5 font-bold">3</span>
       </button>
-      <button class="shrink-0 px-2.5 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 touch-target">
-        <span class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Addressed
-        <span class="ml-0.5 font-bold">1</span>
+      <button aria-pressed="false" aria-label="Addressed, 1 item" class="shrink-0 px-2.5 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
+        <span aria-hidden="true" class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Addressed
+        <span aria-hidden="true" class="ml-0.5 font-bold">1</span>
       </button>
-      <button class="shrink-0 px-2.5 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 touch-target">
-        <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Closed
-        <span class="ml-0.5 font-bold">1</span>
+      <button aria-pressed="false" aria-label="Closed, 1 item" class="shrink-0 px-2.5 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
+        <span aria-hidden="true" class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Closed
+        <span aria-hidden="true" class="ml-0.5 font-bold">1</span>
       </button>
     </div>
 
-    <!-- Feedback list (scrollable) -->
-    <div class="flex-1 overflow-y-auto p-3 space-y-2" role="list">
+    <!-- Feedback list (scrollable) — sheet's tabpanel + role="list" for feedback items -->
+    <div id="sheet-feedback-panel" role="tabpanel" aria-labelledby="sheet-first-tab" class="flex-1 overflow-y-auto p-3 space-y-2">
+    <div role="list" aria-label="Feedback items">
 
       <!-- Group: Current Visit -->
       <div class="flex items-center gap-2 px-1 py-1">
@@ -165,11 +202,11 @@
         <div class="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
       </div>
 
-      <!-- Pending item 1 -->
-      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 active:border-blue-400 dark:active:border-blue-500 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
+      <!-- Pending item 1 — emoji 🔍 magnifier matches DESIGN-BRIEF §2 for adversarial-review origin -->
+      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 active:border-blue-400 dark:active:border-blue-500 transition-colors touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
         <div class="flex items-center gap-2 mb-1">
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
-            <span aria-hidden="true">&#x1F6E1;&#xFE0F;</span> Review Agent
+            <span aria-hidden="true">&#x1F50D;</span> Review Agent
           </span>
           <span class="flex-1"></span>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
@@ -178,36 +215,38 @@
         <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-03 &middot; Visit 2 &middot; adversarial-review</p>
       </div>
 
-      <!-- Pending item 2 -->
-      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 active:border-blue-400 dark:active:border-blue-500 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
+      <!-- Pending item 2 — emoji ✎ pencil matches DESIGN-BRIEF §2 for user-visual origin -->
+      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 active:border-blue-400 dark:active:border-blue-500 transition-colors touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
         <div class="flex items-center gap-2 mb-1">
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
-            <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
+            <span aria-hidden="true">&#x270E;</span> Annotation
           </span>
           <span class="flex-1"></span>
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
         </div>
         <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Header alignment feels off</p>
         <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-05 &middot; Visit 2 &middot; jwaldrip</p>
       </div>
 
-      <!-- Pending item 3 (agent — shows Reject button) -->
-      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-blue-400 dark:border-blue-500 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
+      <!-- Pending item 3 (agent — shows Reject button). In-flight example: role="status" announces "FB-06 marking as closed..." (FB-26 aria-live sequencing spec). Emoji 🤖 matches DESIGN-BRIEF §2 for agent origin -->
+      <div role="listitem" tabindex="0" aria-busy="true" class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-blue-400 dark:border-blue-500 transition-colors touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
         <div class="flex items-center gap-2 mb-1">
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
-            <span aria-hidden="true">&#x2728;</span> Agent
+            <span aria-hidden="true">&#x1F916;</span> Agent
           </span>
           <span class="flex-1"></span>
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
         </div>
         <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Consider extracting validation into shared module</p>
         <div class="prose prose-xs prose-gray dark:prose-invert max-w-none mt-2">
           <p class="text-xs text-gray-600 dark:text-gray-400">The feedback validation logic in <code>ReviewSidebar</code> and the CRUD API handler both independently check field lengths and status transitions. This should be a shared utility to prevent drift.</p>
         </div>
+        <!-- sr-only Processing fallback per FB-26 for in-flight (aria-busy=true) cards -->
+        <p class="sr-only">Processing, please wait.</p>
         <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-2">FB-06 &middot; Visit 2 &middot; agent</p>
         <div class="flex gap-2 mt-2">
-          <button class="text-xs font-medium px-3 py-1.5 rounded-md bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">Reject</button>
-          <button class="text-xs font-medium px-3 py-1.5 rounded-md bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">Close</button>
+          <button class="text-xs font-medium px-3 py-1.5 rounded-md bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 transition-colors touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">Reject</button>
+          <button class="text-xs font-medium px-3 py-1.5 rounded-md bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 transition-colors touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">Close</button>
         </div>
       </div>
 
@@ -217,48 +256,64 @@
         <div class="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
       </div>
 
-      <!-- Addressed -->
-      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-gray-200 dark:border-gray-700 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
+      <!-- Addressed — emoji 🔗 link matches DESIGN-BRIEF §2 for external-pr origin -->
+      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-gray-200 dark:border-gray-700 transition-colors touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
         <div class="flex items-center gap-2 mb-1">
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800">
-            <span aria-hidden="true">&#x1F500;</span> PR Comment
+            <span aria-hidden="true">&#x1F517;</span> PR Comment
           </span>
           <span class="flex-1"></span>
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">addressed</span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" aria-label="Status: addressed">addressed</span>
         </div>
         <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Lifecycle transitions need validation guards</p>
         <p class="text-[10px] text-blue-500 dark:text-blue-400 mt-1">Addressed by: unit-04-feedback-crud-api</p>
         <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-02 &middot; Visit 1 &middot; external-pr</p>
       </div>
 
-      <!-- Closed -->
-      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-green-400 dark:border-l-green-500 p-3 rounded-lg bg-green-50/30 dark:bg-green-950/15 border border-gray-200 dark:border-gray-700 transition-colors touch-target opacity-70">
+      <!-- Closed — emoji ✎ pencil matches DESIGN-BRIEF §2 for user-visual origin -->
+      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-green-400 dark:border-l-green-500 p-3 rounded-lg bg-green-50/30 dark:bg-green-950/15 border border-gray-200 dark:border-gray-700 transition-colors touch-target opacity-70 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
         <div class="flex items-center gap-2 mb-1">
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
-            <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
+            <span aria-hidden="true">&#x270E;</span> Annotation
           </span>
           <span class="flex-1"></span>
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">closed</span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" aria-label="Status: closed">closed</span>
         </div>
         <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Button spacing inconsistent on tablet</p>
         <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-04 &middot; Visit 1 &middot; user-visual</p>
       </div>
-    </div>
+    </div><!-- /role=list -->
+    </div><!-- /tabpanel -->
+
+    <!-- hidden: mine panel placeholder so aria-controls has a valid target -->
+    <div id="sheet-mine-panel" role="tabpanel" aria-labelledby="sheet-mine-tab" hidden></div>
 
     <!-- Sheet footer: comment input + decision buttons -->
     <div class="shrink-0 border-t border-gray-200 dark:border-gray-700 p-3 space-y-3 bg-gray-50/50 dark:bg-gray-800/50">
       <div class="flex gap-2">
-        <textarea class="flex-1 text-xs p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none focus:ring-1 focus:ring-teal-500" rows="2" placeholder="Add a comment..."></textarea>
-        <button class="self-end px-3 py-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">Add</button>
+        <label for="sheet-general-comment" class="sr-only">Add a general comment</label>
+        <!-- Canonical focus ring: 2px teal-500 with offset (focus-ring-spec.html §1) -->
+        <textarea id="sheet-general-comment" class="flex-1 text-xs p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none" rows="2" placeholder="Add a comment..."></textarea>
+        <button class="self-end px-3 py-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">Add</button>
       </div>
       <div class="flex gap-2">
-        <button class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors touch-target focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed">Approve</button>
-        <button class="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-colors touch-target focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed">Request Changes</button>
+        <!-- Decision buttons use variant-matched focus rings per focus-ring-spec.html §2 (green-500 for Approve, amber-500 for Request Changes) -->
+        <button class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors touch-target focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none disabled:opacity-50 disabled:cursor-not-allowed">Approve</button>
+        <button class="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-colors touch-target focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none disabled:opacity-50 disabled:cursor-not-allowed">Request Changes</button>
       </div>
     </div>
-  </div>
+  </div><!-- /feedback-sheet dialog -->
 
-  <!-- Live region for screen reader announcements -->
-  <div role="status" aria-live="polite" class="sr-only"></div>
+  <!--
+    Live region for screen reader announcements (FB-26 aria-live sequencing).
+    Optimistic UI three-phase template — see aria-live-sequencing-spec.md:
+      on click:   role="status" aria-live="polite" -> "FB-XX marking as closed…"
+      on success: role="status" aria-live="polite" -> "FB-XX closed."
+      on failure: role="alert"  aria-live="assertive" -> "FB-XX close failed; reverted to addressed."
+    Failure announcements use role="alert" (assertive) in a SEPARATE live-region node so
+    the in-flight "marking…" text does not get overwritten before it's read out.
+  -->
+  <div id="feedback-live-polite" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+  <div id="feedback-live-assertive" role="alert" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
 </body>
 </html>
