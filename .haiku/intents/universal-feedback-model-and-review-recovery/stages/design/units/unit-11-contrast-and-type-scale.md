@@ -74,7 +74,7 @@ quality_gates:
     contrast-and-type-audit.md written with measured contrast ratios for every
     (foreground, background) pair used in artifacts; any pair below 4.5:1 for
     body text or 3:1 for UI is listed with the remediation applied
-status: active
+status: completed
 bolt: 1
 hat: designer
 started_at: '2026-04-18T03:59:18Z'
@@ -84,6 +84,7 @@ iterations:
     started_at: '2026-04-18T03:59:18Z'
     completed_at: null
     result: null
+completed_at: '2026-04-18T21:15:12Z'
 ---
 # Contrast, type scale, and non-color state signaling
 
