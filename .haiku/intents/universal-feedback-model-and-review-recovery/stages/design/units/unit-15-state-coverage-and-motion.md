@@ -64,10 +64,10 @@ quality_gates:
     tablet/mobile touch-activated control, ≥ 24px WCAG 2.2 1.4.11 minimum on
     desktop, with explicit exceptions); every affected artifact complies
 status: active
-bolt: 2
-hat: design-reviewer
+bolt: 3
+hat: designer
 started_at: '2026-04-18T03:11:01Z'
-hat_started_at: '2026-04-18T03:39:24Z'
+hat_started_at: '2026-04-18T03:41:45Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:11:01Z'
@@ -99,6 +99,16 @@ iterations:
       inside the §7 code fence next to `.feedback-fab-pulse`.
   - hat: design-reviewer
     started_at: '2026-04-18T03:39:24Z'
+    completed_at: '2026-04-18T03:41:45Z'
+    result: reject
+    reason: >-
+      FB-20 residual — DESIGN-BRIEF §7 canonical FAB pulse CSS (lines 639-645)
+      still has no sibling @media (prefers-reduced-motion: reduce) block.
+      Artifacts have guards; the source-of-truth spec does not. Add `@media
+      (prefers-reduced-motion: reduce) { .feedback-fab-pulse { animation: none;
+      } }` (or equivalent) to §7 right after the @keyframes block.
+  - hat: designer
+    started_at: '2026-04-18T03:41:45Z'
     completed_at: null
     result: null
 ---
