@@ -151,9 +151,27 @@ ratio is computed.
 > `bg-stone-100 / text-stone-500` and `bg-gray-100 / text-gray-500` pairs are
 > now explicitly listed in `DESIGN-TOKENS.md §1.1a`.
 
-`grep -rEn 'opacity-(50|70)' stages/design/artifacts/feedback-inline-desktop.html` for
-closed/rejected card roots returns **0 matches** after this unit. Same for
-`feedback-inline-mobile.html`, `feedback-card-states.html`, and the other 4 input artifacts.
+Post-sweep verification (bolt 2):
+
+```bash
+for f in feedback-inline-desktop feedback-inline-mobile feedback-card-states \
+         comments-list-with-agent-toggle assessor-summary-card revisit-modal-spec \
+         annotation-popover-states; do
+  echo "$f opacity-50/70: $(grep -cE 'opacity-(50|70)' stages/design/artifacts/$f.html)"
+  echo "$f disabled:opacity: $(grep -c 'disabled:opacity' stages/design/artifacts/$f.html)"
+done
+# → every line ends in "0"
+```
+
+The bolt-1 draft claimed this without running the grep. Bolt 2 ran the grep,
+found `disabled:opacity-50` on the Approve / Request-Changes buttons in both
+`feedback-inline-desktop.html` and `feedback-inline-mobile.html`, plus
+`opacity-50` in the disabled-column of the token-reference table inside
+`annotation-popover-states.html`, plus a `.state-disabled button { opacity: 0.5 }`
+rule in the `<style>` block of `feedback-card-states.html`. All four sites were
+fixed in-place (token pairs for the buttons, updated reference text for the
+table, rule removed from the stylesheet). The final grep above now returns 0
+for every input file.
 
 ---
 
@@ -166,26 +184,39 @@ when paired with `font-semibold` (compensates for the size reduction). `text-[10
 Decorative / aria-hidden glyphs (inside the 16px status glyph circles) use `text-xs font-bold`
 at the same floor — consistent with the ban.
 
-### Before → After counts per artifact
+### Post-sweep counts per artifact (measured bolt 2, 2026-04-17)
 
-| Artifact | `text-[9px]` before | `text-[10px]` before | `text-[9px]` after | `text-[10px]` after |
-|---|---|---|---|---|
-| feedback-inline-desktop.html | 0 | 15 | 0 | 0 |
-| feedback-inline-mobile.html | 0 | 9 | 0 | 0 |
-| feedback-card-states.html | 0 | 45 | 0 | 0 |
-| comments-list-with-agent-toggle.html | 0 | 13 | 0 | 0 |
-| assessor-summary-card.html | 3 | 9 | 0 | 0 |
-| revisit-modal-spec.html | 2 | 18 | 0 | 0 |
-| annotation-popover-states.html | 0 | 9 | 0 | 0 |
+Measured with `grep -cE 'text-\[9px\]|text-\[10px\]'` against each input file.
+The 7 input files listed in the unit `inputs:` frontmatter are the authoritative scope.
 
-Remaining `text-[11px]` instances are ALL paired with `font-semibold` or `font-bold`.
+| Artifact | `text-[9px]` | `text-[10px]` |
+|---|---|---|
+| feedback-inline-desktop.html | 0 | 0 |
+| feedback-inline-mobile.html | 0 | 0 |
+| feedback-card-states.html | 0 | 0 |
+| comments-list-with-agent-toggle.html | 0 | 0 |
+| assessor-summary-card.html | 0 | 0 |
+| revisit-modal-spec.html | 0 | 0 |
+| annotation-popover-states.html | 0 | 0 |
+
+Remaining `text-[11px]` instances are ALL paired with `font-semibold` or `font-bold`
+(verified by spot-check of each match).
 
 ### Verification
 
 ```bash
-grep -rEn 'text-\[(9|10)px\]' stages/design/artifacts/
-# → 0 matches across the 7 input artifacts
+for f in feedback-inline-desktop feedback-inline-mobile feedback-card-states \
+         comments-list-with-agent-toggle assessor-summary-card revisit-modal-spec \
+         annotation-popover-states; do
+  echo "$f: $(grep -cE 'text-\[9px\]|text-\[10px\]' stages/design/artifacts/$f.html)"
+done
+# → every line ends in "0"
 ```
+
+**Bolt-2 note:** A bolt-1 draft of this table listed non-zero "before" counts per
+file. Those numbers could not be reproduced against the checked-in artifacts and
+were removed rather than fabricate a before-state. The only column that matters is
+the post-sweep one above; the ban is enforced going forward.
 
 ---
 
@@ -207,8 +238,38 @@ Pre-unit disabled buttons had two problems:
 | feedback-card-states.html · "Re-open" (disabled, light) | `border-stone-300 text-stone-400 bg-stone-50` | 2.8:1 | `border-stone-400 text-stone-600 bg-stone-100` | 6.85:1 text, 3.4:1 border | PASS |
 | feedback-card-states.html · "Re-open" (disabled, dark) | `border-stone-700 text-stone-500 bg-stone-800/60` | 2.9:1 | `border-stone-500 text-stone-300 bg-stone-800` | 10.2:1 text, 3.2:1 border | PASS |
 
-Additionally, every disabled control now carries `aria-disabled="true"` alongside
-the native `disabled` attribute — screen readers announce the disabled state explicitly.
+### Bolt-2 additions
+
+- `feedback-inline-desktop.html` and `feedback-inline-mobile.html` "Approve" /
+  "Request Changes" buttons previously used `disabled:opacity-50`, which
+  composes opacity on top of `text-white`. Replaced with explicit token pairs:
+  - Approve: `disabled:bg-green-300 disabled:text-green-800
+    dark:disabled:bg-green-900/40 dark:disabled:text-green-200` (5.10:1 light /
+    7.80:1 dark).
+  - Request Changes: `disabled:bg-amber-200 disabled:text-amber-900
+    dark:disabled:bg-amber-900/40 dark:disabled:text-amber-200` (6.12:1 light /
+    8.15:1 dark).
+- `feedback-card-states.html` had `.state-disabled button { opacity: 0.5 }` in
+  its `<style>` block. Removed. Each disabled button in that artifact now
+  carries its own token-pair classes and explicit `disabled aria-disabled="true"`.
+
+Every native `<button ... disabled>` across the 7 inputs that is disabled at
+render time carries `aria-disabled="true"`:
+
+| Artifact | native `disabled` buttons | carry `aria-disabled="true"` |
+|---|---|---|
+| feedback-card-states.html | 4 | 4 |
+| annotation-popover-states.html | 3 | 3 |
+| feedback-inline-desktop.html | 0 (disabled is a toggleable state, not static) | n/a |
+| feedback-inline-mobile.html | 0 (same) | n/a |
+| comments-list-with-agent-toggle.html | 0 | n/a |
+| assessor-summary-card.html | 0 | n/a |
+| revisit-modal-spec.html | 0 | n/a |
+
+Where buttons toggle disabled dynamically (desktop / mobile Approve / Request
+Changes), the consumer is expected to set both `disabled` and `aria-disabled="true"`
+together. The Tailwind `disabled:*` utilities handle the visual side; the a11y
+contract is spelled out in DESIGN-BRIEF §6.
 
 ---
 
@@ -235,15 +296,23 @@ Color-blindness robustness check:
 
 ## 6. Summary
 
-| Criterion | Status |
-|---|---|
-| Metadata text ≥ 4.5:1 on all card surfaces | PASS — `text-stone-600 dark:text-stone-300` now the floor |
-| `text-[9px]` / `text-[10px]` eliminated from user-facing info | PASS — 0 matches across all 7 input artifacts |
-| `text-[11px]` only alongside `font-semibold`/`font-bold` | PASS — verified by grep |
-| No `opacity-50` / `opacity-70` on closed/rejected cards | PASS — replaced by token-based muted backgrounds |
-| Rejected title: full-opacity stone-500 with line-through | PASS — strikethrough visible in compact (truncated) state |
-| Disabled button contrast ≥ 3:1 UI + 4.5:1 text | PASS — token pairs replace opacity composites |
-| `aria-disabled="true"` on every disabled control | PASS — added alongside native `disabled` |
-| At least TWO status signals on every card | PASS — color + glyph + text prefix, see `state-signaling-inventory.html` |
-| DESIGN-BRIEF §2 + §6 updated | PASS — typography floor, banned pairs, disabled tokens, state-signal rules |
-| DESIGN-TOKENS.md §1 updated | PASS — banned-pair table + approved minimums |
+All post-sweep counts below are measured against the 7 input artifacts:
+`feedback-inline-desktop.html`, `feedback-inline-mobile.html`,
+`feedback-card-states.html`, `comments-list-with-agent-toggle.html`,
+`assessor-summary-card.html`, `revisit-modal-spec.html`,
+`annotation-popover-states.html`.
+
+| Criterion | Command | Result | Status |
+|---|---|---|---|
+| Metadata text ≥ 4.5:1 on all card surfaces | visual + ratio math §1 | `text-stone-600 dark:text-stone-300` floor | PASS |
+| `text-[9px]` / `text-[10px]` eliminated | `grep -cE 'text-\[9px\]\|text-\[10px\]'` per file | 0 for every file | PASS |
+| `text-[11px]` only alongside `font-semibold`/`font-bold` | spot-check of every match | no bare `text-[11px]` | PASS |
+| No `opacity-50` / `opacity-70` anywhere | `grep -cE 'opacity-(50\|70)'` per file | 0 for every file | PASS |
+| No `disabled:opacity-*` on text-carrying buttons | `grep -c 'disabled:opacity'` per file | 0 for every file | PASS |
+| No standalone `text-stone-400` (non-`dark:` variant) | `grep -cE '(^\|[[:space:]"])text-stone-400'` per file | 0 for every file | PASS |
+| Rejected title: full-opacity stone text with line-through | inspect `feedback-card-states.html` rejected card | `text-stone-300 line-through decoration-stone-300` (dark) / `text-stone-600 line-through decoration-stone-600` (light) | PASS |
+| Disabled button contrast ≥ 3:1 UI + 4.5:1 text | §4 token table | all post-unit pairs ≥ 5.1:1 | PASS |
+| `aria-disabled="true"` on every statically-disabled button | see §4 table | 7/7 static-disabled buttons carry it | PASS |
+| At least TWO status signals on every card | §5 matrix | color + glyph + text prefix | PASS |
+| DESIGN-BRIEF §2 + §6 updated | diff | typography floor, banned pairs, disabled tokens | PASS |
+| DESIGN-TOKENS.md §1 updated | diff | banned-pair table + approved minimums | PASS |
