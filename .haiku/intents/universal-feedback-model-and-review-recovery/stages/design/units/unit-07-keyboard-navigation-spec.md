@@ -35,7 +35,7 @@ Lock the shortcut map, help overlay (`?`), and focus-ring visual contract the re
   - `Enter` — cross-flash the focused feedback's target artifact + scroll.
   - `n` — next unseen artifact in the active tab.
   - `a` — approve (only when approve button is visible / active).
-  - `r` — **context-dependent:** if a closed/rejected feedback card is focused, re-open it to `pending`; otherwise open the Request Changes flow (revisit modal per unit-06).
+  - `r` — **context-dependent:** if a closed/rejected feedback card is focused, reopen it to `pending`; otherwise open the Request Changes flow (revisit modal per unit-06).
   - `/` — focus the feedback textarea in the sidebar.
   - `Esc` — close modal → popover → help overlay → blur active input, in that precedence order.
   - `?` — toggle help overlay.
