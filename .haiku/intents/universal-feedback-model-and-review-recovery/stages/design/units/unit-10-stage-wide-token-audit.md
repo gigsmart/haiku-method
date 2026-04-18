@@ -78,10 +78,10 @@ quality_gates:
     palette, width, breakpoint, and shade fix applied, with a machine-verifiable
     grep pattern per row
 status: active
-bolt: 1
-hat: design-reviewer
+bolt: 2
+hat: designer
 started_at: '2026-04-18T03:10:54Z'
-hat_started_at: '2026-04-18T03:31:07Z'
+hat_started_at: '2026-04-18T03:36:06Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:10:54Z'
@@ -89,6 +89,24 @@ iterations:
     result: advance
   - hat: design-reviewer
     started_at: '2026-04-18T03:31:07Z'
+    completed_at: '2026-04-18T03:36:06Z'
+    result: reject
+    reason: >-
+      Two residual drifts that violate unit-10 gates. FB-18:
+      feedback-card-states.html:56 uses `text-stone-600` for rejected while
+      DESIGN-BRIEF §2 line 134 + §6 line 613 + all other artifacts (incl. same
+      file line 158) use `text-stone-500` — fails "every artifact uses the same
+      shade pair". FB-23: feedback-inline-desktop.html:304 wraps the review
+      sidebar in `<div class="hidden lg:block w-80 shrink-0">`, missing the
+      canonical `lg:w-96` bump declared in DESIGN-BRIEF §4 line 508 — fails
+      "every sidebar container uses the canonical responsive width pattern".
+      Both are one-line fixes. Cleanup (non-blocking): DESIGN-TOKENS §8.2 line
+      595 falsely claims artifacts use `var(--layout-max-width)` — 22 literal
+      `max-w-[1400px]` occurrences remain, 0 var refs; soften the §8.2 prose.
+      All six grep gates otherwise pass (0 matches). See
+      stages/design/artifacts/unit-10-review.md for exact fix strings.
+  - hat: designer
+    started_at: '2026-04-18T03:36:06Z'
     completed_at: null
     result: null
 ---
