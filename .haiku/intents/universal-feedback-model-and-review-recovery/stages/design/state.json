@@ -6,7 +6,7 @@
   "completed_at": null,
   "gate_entered_at": null,
   "gate_outcome": null,
-  "elaboration_turns": 10,
+  "elaboration_turns": 11,
   "design_direction_selected": true,
   "design_direction": {
     "archetype": "Inline Feedback Annotations",
