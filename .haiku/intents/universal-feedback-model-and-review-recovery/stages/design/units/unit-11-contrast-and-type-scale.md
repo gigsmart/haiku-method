@@ -75,10 +75,10 @@ quality_gates:
     (foreground, background) pair used in artifacts; any pair below 4.5:1 for
     body text or 3:1 for UI is listed with the remediation applied
 status: active
-bolt: 1
-hat: design-reviewer
+bolt: 2
+hat: designer
 started_at: '2026-04-18T03:59:18Z'
-hat_started_at: '2026-04-18T04:11:00Z'
+hat_started_at: '2026-04-18T04:17:42Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:59:18Z'
@@ -86,6 +86,27 @@ iterations:
     result: advance
   - hat: design-reviewer
     started_at: '2026-04-18T04:11:00Z'
+    completed_at: '2026-04-18T04:17:42Z'
+    result: reject
+    reason: >-
+      Gate 1 (metadata contrast ≥ 4.5:1) fails on the rejected-light card title
+      — the core FB-13 remediation target. `text-stone-500` (#78716c) on
+      `bg-stone-100` (#f5f5f4) measures **4.40:1**, below WCAG 2.1 AA 4.5:1
+      body-text. This pattern appears in: feedback-inline-desktop.html:296 and
+      state-signaling-inventory.html:177,188. The audit (§2 row "rejected ·
+      light") claims 4.61:1 PASS, but 4.61:1 is stone-500 on pure white — the
+      audit confused the two backgrounds. Fix: lift rejected-light title to
+      `text-stone-600` on `bg-stone-100` (6.99:1), or swap card bg to stone-50
+      (where stone-500 = 4.59:1 — still right at floor, prefer stone-600). Also:
+      feedback-inline-desktop.html:244 "Reject" button uses `text-gray-500
+      bg-gray-100` = 4.39:1, also failing AA. Update DESIGN-TOKENS.md §1.1a
+      banned-pair table to include `bg-stone-100` / `bg-gray-100` for
+      stone-500/gray-500, and re-measure all (fg, bg) pairs in
+      contrast-and-type-audit.md §§1-2 against the actual background token —
+      several rows list contrast vs. the wrong background. Gates 2, 3, 4, 5
+      pass; only Gate 1 + audit accuracy fail.
+  - hat: designer
+    started_at: '2026-04-18T04:17:42Z'
     completed_at: null
     result: null
 ---
