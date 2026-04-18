@@ -65,9 +65,9 @@ quality_gates:
     desktop, with explicit exceptions); every affected artifact complies
 status: active
 bolt: 3
-hat: designer
+hat: design-reviewer
 started_at: '2026-04-18T03:11:01Z'
-hat_started_at: '2026-04-18T03:41:45Z'
+hat_started_at: '2026-04-18T03:43:31Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:11:01Z'
@@ -109,6 +109,10 @@ iterations:
       } }` (or equivalent) to §7 right after the @keyframes block.
   - hat: designer
     started_at: '2026-04-18T03:41:45Z'
+    completed_at: '2026-04-18T03:43:31Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-18T03:43:31Z'
     completed_at: null
     result: null
 ---
