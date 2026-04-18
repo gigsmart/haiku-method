@@ -816,10 +816,10 @@
                     ` : ''}
                     ${f.status === 'addressed' ? `
                       <button onclick="event.stopPropagation(); setFeedbackStatus('${f.id}', 'closed')" title="Verify fix and close" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-green-600 hover:bg-green-700 text-white">Verify &amp; Close</button>
-                      <button onclick="event.stopPropagation(); setFeedbackStatus('${f.id}', 'pending')" title="Re-open" class="text-[10px] font-semibold px-2 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">Re-open</button>
+                      <button onclick="event.stopPropagation(); setFeedbackStatus('${f.id}', 'pending')" title="Reopen" class="text-[10px] font-semibold px-2 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">Reopen</button>
                     ` : ''}
                     ${(f.status === 'rejected' || f.status === 'closed') ? `
-                      <button onclick="event.stopPropagation(); setFeedbackStatus('${f.id}', 'pending')" title="Re-open" class="text-[10px] font-semibold px-2 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">Re-open</button>
+                      <button onclick="event.stopPropagation(); setFeedbackStatus('${f.id}', 'pending')" title="Reopen" class="text-[10px] font-semibold px-2 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">Reopen</button>
                     ` : ''}
                     <span class="text-[9px] text-gray-400 ml-auto italic">${f.status === 'pending' ? 'agent marks addressed when fix lands' : ''}</span>
                   </div>

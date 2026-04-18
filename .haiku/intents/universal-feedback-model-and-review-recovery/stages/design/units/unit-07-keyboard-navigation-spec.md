@@ -36,7 +36,7 @@ Lock the shortcut map, help overlay (`?`), and focus-ring visual contract the re
   - `n` — next unseen artifact in the active tab.
   - `a` — approve (only when approve button is visible / active). **(unit-12 amendment — FB-14):** `a` is Approve-only; annotation-create uses `c` (see unit-04 and `annotation-gesture-spec.html`). Both are documented in `keyboard-shortcut-map.html §1`.
   - `c` — **(unit-12 amendment — FB-14):** create annotation at focused artifact / line / iframe wrapper. Renamed from `a` to resolve the Approve collision.
-  - `r` — **context-dependent:** if a closed/rejected feedback card is focused, re-open it to `pending`; otherwise open the Request Changes flow (revisit modal per unit-06). **(unit-12 amendment — FB-28):** conflicts with NVDA/JAWS browse-mode "next region" landmark navigation. Documented in `keyboard-shortcut-map.html §3b`. A user-toggleable "Require Alt for single-key shortcuts" setting (default off) remaps to `Alt+r` to bypass the conflict.
+  - `r` — **context-dependent:** if a closed/rejected feedback card is focused, reopen it to `pending`; otherwise open the Request Changes flow (revisit modal per unit-06). **(unit-12 amendment — FB-28):** conflicts with NVDA/JAWS browse-mode "next region" landmark navigation. Documented in `keyboard-shortcut-map.html §3b`. A user-toggleable "Require Alt for single-key shortcuts" setting (default off) remaps to `Alt+r` to bypass the conflict.
   - `/` — focus the feedback textarea in the sidebar.
   - `Esc` — close modal → popover → help overlay → blur active input, in that precedence order.
   - `?` — toggle help overlay.

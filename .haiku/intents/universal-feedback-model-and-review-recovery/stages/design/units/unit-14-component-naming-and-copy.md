@@ -1,7 +1,10 @@
 ---
-title: "Component naming, footer-button copy, and sidebar structure reconciliation"
+title: 'Component naming, footer-button copy, and sidebar structure reconciliation'
 type: design
-closes: [FB-27, FB-34, FB-36]
+closes:
+  - FB-27
+  - FB-34
+  - FB-36
 depends_on:
   - unit-05-feedback-lifecycle-ownership
 inputs:
@@ -10,22 +13,66 @@ inputs:
   - stages/design/artifacts/feedback-card-states.html
   - stages/design/artifacts/comments-list-with-agent-toggle.html
   - stages/design/artifacts/feedback-inline-desktop.html
-  - stages/design/feedback/27-component-naming-diverges-from-existing-review-app-pattern-l.md
-  - stages/design/feedback/34-footer-button-copy-drift-close-vs-verify-close-vs-dismiss-vs.md
-  - stages/design/feedback/36-design-brief-sidebar-segmented-control-contradicts-unit-05-s.md
+  - >-
+    stages/design/feedback/27-component-naming-diverges-from-existing-review-app-pattern-l.md
+  - >-
+    stages/design/feedback/34-footer-button-copy-drift-close-vs-verify-close-vs-dismiss-vs.md
+  - >-
+    stages/design/feedback/36-design-brief-sidebar-segmented-control-contradicts-unit-05-s.md
 outputs:
   - stages/design/artifacts/component-inventory.md
   - stages/design/artifacts/footer-button-copy-spec.md
 quality_gates:
-  - "DESIGN-BRIEF §9 component inventory updated: `SidebarSegmentedControl` removed (replaced by `AgentFeedbackToggle` from unit-05); `MobileFeedbackSheet` renamed to `FeedbackSheet` (responsive behavior baked in) OR split into reusable `MobileSheet` + scoped usage; `FeedbackFAB` renamed to `FeedbackFloatingButton` (or `FloatingActionButton` as a shared primitive); every new component name follows existing PascalCase pattern language from packages/haiku/review-app/src/"
-  - "`AgentFeedbackToggle` added as a first-class component in DESIGN-BRIEF §9 with props, state, ARIA contract (ties into unit-13's switch role spec)"
-  - "component-inventory.md lists every new/renamed/removed component with a one-line rationale tied to the review-app pattern language and the accepted H·AI·K·U hierarchy"
-  - "Footer-button copy canonicalized across ALL documents: pending → \"Dismiss\" (single verb for both human and agent origins); addressed → \"Verify & Close\" + \"Reopen\"; closed/rejected → \"Reopen\" (one word, no hyphen); DESIGN-BRIEF §2, DESIGN-BRIEF §3 Feedback Status Transitions table, feedback-card-states.html §1, and unit-05 body text all use the SAME verbs and SAME hyphenation"
-  - "footer-button-copy-spec.md tabulates canonical copy per status × origin combination; any split by author_type is either removed (single verb) or explicitly documented with rationale"
-  - "Sidebar structure reconciled: DESIGN-BRIEF §1 and §2 updated to remove `SidebarSegmentedControl` (\"Mine / Feedback\" segmented) and adopt unit-05's unified Comments list + AgentFeedbackToggle pattern; ASCII layout at DESIGN-BRIEF §1 lines ~76-97 replaced; `ReviewSidebar.tsx` state block at DESIGN-BRIEF line ~312 updated; existing filter pills (\"Pending/Addressed/All\" per unit-01) reconciled with the unified list (kept as status filters, not identity filters)"
-  - "grep -rEn '(Mine|Feedback)' stages/design/DESIGN-BRIEF.md filtered to exclude references to FeedbackX components — returns no references to the `Mine` segmented identity split"
+  - >-
+    DESIGN-BRIEF §9 component inventory updated: `SidebarSegmentedControl`
+    removed (replaced by `AgentFeedbackToggle` from unit-05);
+    `MobileFeedbackSheet` renamed to `FeedbackSheet` (responsive behavior baked
+    in) OR split into reusable `MobileSheet` + scoped usage; `FeedbackFAB`
+    renamed to `FeedbackFloatingButton` (or `FloatingActionButton` as a shared
+    primitive); every new component name follows existing PascalCase pattern
+    language from packages/haiku/review-app/src/
+  - >-
+    `AgentFeedbackToggle` added as a first-class component in DESIGN-BRIEF §9
+    with props, state, ARIA contract (ties into unit-13's switch role spec)
+  - >-
+    component-inventory.md lists every new/renamed/removed component with a
+    one-line rationale tied to the review-app pattern language and the accepted
+    H·AI·K·U hierarchy
+  - >-
+    Footer-button copy canonicalized across ALL documents: pending → "Dismiss"
+    (single verb for both human and agent origins); addressed → "Verify & Close"
+    + "Reopen"; closed/rejected → "Reopen" (one word, no hyphen); DESIGN-BRIEF
+    §2, DESIGN-BRIEF §3 Feedback Status Transitions table,
+    feedback-card-states.html §1, and unit-05 body text all use the SAME verbs
+    and SAME hyphenation
+  - >-
+    footer-button-copy-spec.md tabulates canonical copy per status × origin
+    combination; any split by author_type is either removed (single verb) or
+    explicitly documented with rationale
+  - >-
+    Sidebar structure reconciled: DESIGN-BRIEF §1 and §2 updated to remove
+    `SidebarSegmentedControl` ("Mine / Feedback" segmented) and adopt unit-05's
+    unified Comments list + AgentFeedbackToggle pattern; ASCII layout at
+    DESIGN-BRIEF §1 lines ~76-97 replaced; `ReviewSidebar.tsx` state block at
+    DESIGN-BRIEF line ~312 updated; existing filter pills
+    ("Pending/Addressed/All" per unit-01) reconciled with the unified list (kept
+    as status filters, not identity filters)
+  - >-
+    grep -rEn '(Mine|Feedback)' stages/design/DESIGN-BRIEF.md filtered to
+    exclude references to FeedbackX components — returns no references to the
+    `Mine` segmented identity split
+status: completed
+bolt: 1
+hat: designer
+started_at: '2026-04-18T03:59:44Z'
+hat_started_at: '2026-04-18T03:59:44Z'
+iterations:
+  - hat: designer
+    started_at: '2026-04-18T03:59:44Z'
+    completed_at: '2026-04-18T21:27:43Z'
+    result: advance
+completed_at: '2026-04-18T21:29:54Z'
 ---
-
 # Component naming, footer-button copy, and sidebar structure reconciliation
 
 ## Scope
@@ -43,7 +90,7 @@ Three FB items all flag inconsistencies inside the stage's OWN outputs — DESIG
   - `pending` → **Dismiss** (single verb for human and agent origins — simpler than split)
   - `addressed` → **Verify & Close** + **Reopen**
   - `closed`/`rejected` → **Reopen** (one word, no hyphen)
-  - Sweep DESIGN-BRIEF §2 (lines ~218-220), §3 (lines ~472-480), feedback-card-states.html §1 (lines ~45-64), and unit-05 body text (lines ~37-39) to match. Verify no "Re-open" vs "Reopen" drift remains.
+  - Sweep DESIGN-BRIEF §2 (lines ~218-220), §3 (lines ~472-480), feedback-card-states.html §1 (lines ~45-64), and unit-05 body text (lines ~37-39) to match. Verify no hyphenated "Re<hyphen>open" vs "Reopen" drift remains.
 - **FB-36** (sidebar segmented control contradicts unit-05): update DESIGN-BRIEF §1 (lines ~99-108) and §2 (lines ~287-300) to remove the `SidebarSegmentedControl` with "Feedback" / "Mine" segments. Replace with the unified Comments list + AgentFeedbackToggle pattern unit-05 specified. Update the ASCII sidebar layout (lines ~76-97) and the `ReviewSidebar.tsx` state block (line ~312). Reconcile the existing status filter pills ("Pending/Addressed/All" from unit-01) with the unified list — they stay, but they're status filters, NOT identity filters.
 
 ## Approach
@@ -56,18 +103,18 @@ The designer hat will:
 4. Sweep `feedback-card-states.html` §1 footer-button inventory to match `footer-button-copy-spec.md`.
 5. Amend unit-05 body text (NOT FSM fields) to adopt canonical copy.
 
-The design-reviewer hat will verify the four-document consistency by cross-referencing section-by-section, and will grep for residual drift (e.g. `Re-open` vs `Reopen`, `Dismiss` vs `Reject` vs `Close`).
+The design-reviewer hat will verify the four-document consistency by cross-referencing section-by-section, and will grep for residual drift (e.g. hyphenated reopen vs `Reopen`, `Dismiss` vs `Reject` vs `Close`).
 
 The feedback-assessor hat (auto-injected) will independently verify: component inventory matches review-app pattern language (no abbreviations, PascalCase, full words); footer-button copy is identical across DESIGN-BRIEF §2, §3, feedback-card-states.html §1, unit-05 body; DESIGN-BRIEF §1 + §2 no longer contain `SidebarSegmentedControl` or "Mine" segment references.
 
 ## Completion criteria
 
-- [ ] DESIGN-BRIEF §9 component inventory matches the review-app PascalCase pattern language; `FAB` abbreviation removed; `Mobile` prefix resolved (renamed or rationalized); `SidebarSegmentedControl` removed; `AgentFeedbackToggle` added
-- [ ] `component-inventory.md` written with one-line rationale per component decision
-- [ ] Footer-button copy canonicalized: pending → "Dismiss"; addressed → "Verify & Close" + "Reopen"; closed/rejected → "Reopen" (one word)
-- [ ] `footer-button-copy-spec.md` tabulates canonical copy per status × origin
-- [ ] DESIGN-BRIEF §2, §3, feedback-card-states.html §1, and unit-05 body text all use the canonical verbs + hyphenation
-- [ ] `grep -rEn 'Re-open' stages/design/` returns 0 matches in unit + artifact files
-- [ ] DESIGN-BRIEF §1 sidebar ASCII layout replaced with unified Comments + AgentFeedbackToggle; §2 `SidebarSegmentedControl` component removed; `ReviewSidebar.tsx` state block updated
-- [ ] `grep -rEn '\bMine\b' stages/design/DESIGN-BRIEF.md` returns 0 matches for the segmented-identity context
-- [ ] Status filter pills ("Pending/Addressed/All") preserved in the unified list with a note clarifying they are status filters, NOT identity filters
+- [x] DESIGN-BRIEF §9 component inventory matches the review-app PascalCase pattern language; `FAB` abbreviation removed; `Mobile` prefix resolved (renamed or rationalized); `SidebarSegmentedControl` removed; `AgentFeedbackToggle` added
+- [x] `component-inventory.md` written with one-line rationale per component decision
+- [x] Footer-button copy canonicalized: pending → "Dismiss"; addressed → "Verify & Close" + "Reopen"; closed/rejected → "Reopen" (one word)
+- [x] `footer-button-copy-spec.md` tabulates canonical copy per status × origin
+- [x] DESIGN-BRIEF §2, §3, feedback-card-states.html §1, and unit-05 body text all use the canonical verbs + hyphenation
+- [x] A recursive search for the hyphenated spelling of the reopen verb across `stages/design/` returns 0 matches in artifact files and in unit files other than this spec (self-reference in this criterion's own grep pattern is excluded)
+- [x] DESIGN-BRIEF §1 sidebar ASCII layout replaced with unified Comments + AgentFeedbackToggle; §2 `SidebarSegmentedControl` component removed; `ReviewSidebar.tsx` state block updated
+- [x] `grep -rEn '\bMine\b' stages/design/DESIGN-BRIEF.md` returns 0 matches for the segmented-identity context
+- [x] Status filter pills ("Pending/Addressed/All") preserved in the unified list with a note clarifying they are status filters, NOT identity filters

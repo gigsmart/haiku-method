@@ -135,7 +135,7 @@
             <div class="pl-6"><span class="file-new">FeedbackStatusBadge.tsx</span> <span class="text-[10px] text-green-400">NEW</span></div>
             <div class="pl-6"><span class="file-new">FeedbackOriginIcon.tsx</span> <span class="text-[10px] text-green-400">NEW</span></div>
             <div class="pl-6"><span class="file-new">FeedbackSummaryBar.tsx</span> <span class="text-[10px] text-green-400">NEW</span></div>
-            <div class="pl-6"><span class="file-new">SidebarSegmentedControl.tsx</span> <span class="text-[10px] text-green-400">NEW</span></div>
+            <div class="pl-6"><span class="file-new">AgentFeedbackToggle.tsx</span> <span class="text-[10px] text-green-400">NEW</span></div>
             <div class="pl-6"><span class="file-new">StageProgressStrip.tsx</span> <span class="text-[10px] text-green-400">NEW</span></div>
             <div class="pl-6"><span class="file-new">ReviewContextHeader.tsx</span> <span class="text-[10px] text-green-400">NEW</span></div>
             <div class="pl-3"><span class="dir">presets/</span></div>
@@ -315,11 +315,11 @@
                 <td class="py-2.5 px-4 text-xs text-gray-500">Aggregate counts by status with filter toggles</td>
               </tr>
               <tr class="migration-row bg-green-50/30 dark:bg-green-950/10">
-                <td class="py-2.5 px-4 text-sm font-medium">SidebarSegmentedControl</td>
+                <td class="py-2.5 px-4 text-sm font-medium">AgentFeedbackToggle</td>
                 <td class="py-2.5 px-4 text-xs text-gray-400 italic">does not exist</td>
-                <td class="py-2.5 px-4 text-xs font-mono text-green-600 dark:text-green-400">review-ui/components/SidebarSegmentedControl.tsx</td>
+                <td class="py-2.5 px-4 text-xs font-mono text-green-600 dark:text-green-400">review-ui/components/AgentFeedbackToggle.tsx</td>
                 <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new shared</span></td>
-                <td class="py-2.5 px-4 text-xs text-gray-500">Feedback/Mine toggle for sidebar views</td>
+                <td class="py-2.5 px-4 text-xs text-gray-500"><code>role="switch"</code> that reveals agent-origin items inline in the unified Comments list. Canonical replacement for the retired <code>SidebarSegmentedControl</code> (see component-inventory.md).</td>
               </tr>
               <tr class="migration-row bg-green-50/30 dark:bg-green-950/10">
                 <td class="py-2.5 px-4 text-sm font-medium">StageProgressStrip</td>
@@ -424,7 +424,7 @@
             <span class="kw">import</span> {<br />
             &nbsp;&nbsp;<span class="type">FeedbackList</span>,<br />
             &nbsp;&nbsp;<span class="type">FeedbackSummaryBar</span>,<br />
-            &nbsp;&nbsp;<span class="type">SidebarSegmentedControl</span>,<br />
+            &nbsp;&nbsp;<span class="type">AgentFeedbackToggle</span>,<br />
             &nbsp;&nbsp;<span class="type">DecisionForm</span>,<br />
             &nbsp;&nbsp;<span class="type">CommentTray</span>,<br />
             } <span class="kw">from</span> <span class="str">'@haiku/review-ui'</span><span class="punct">;</span>
@@ -503,7 +503,7 @@
           <span class="kw">export</span> { <span class="type">FeedbackStatusBadge</span> } <span class="kw">from</span> <span class="str">'./components/FeedbackStatusBadge'</span><span class="punct">;</span><br />
           <span class="kw">export</span> { <span class="type">FeedbackOriginIcon</span> } <span class="kw">from</span> <span class="str">'./components/FeedbackOriginIcon'</span><span class="punct">;</span><br />
           <span class="kw">export</span> { <span class="type">FeedbackSummaryBar</span> } <span class="kw">from</span> <span class="str">'./components/FeedbackSummaryBar'</span><span class="punct">;</span><br />
-          <span class="kw">export</span> { <span class="type">SidebarSegmentedControl</span> } <span class="kw">from</span> <span class="str">'./components/SidebarSegmentedControl'</span><span class="punct">;</span><br />
+          <span class="kw">export</span> { <span class="type">AgentFeedbackToggle</span> } <span class="kw">from</span> <span class="str">'./components/AgentFeedbackToggle'</span><span class="punct">;</span><br />
           <span class="kw">export</span> { <span class="type">StageProgressStrip</span> } <span class="kw">from</span> <span class="str">'./components/StageProgressStrip'</span><span class="punct">;</span><br />
           <span class="kw">export</span> { <span class="type">ReviewContextHeader</span> } <span class="kw">from</span> <span class="str">'./components/ReviewContextHeader'</span><span class="punct">;</span><br /><br />
           <span class="comment">// Types</span><br />
@@ -786,38 +786,40 @@
           </div>
         </div>
 
-        <!-- SidebarSegmentedControl -->
+        <!-- AgentFeedbackToggle (replaces retired SidebarSegmentedControl) -->
         <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
           <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
-            SidebarSegmentedControl
+            AgentFeedbackToggle
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">new</span>
           </h3>
+          <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-3">
+            <code>role="switch"</code> that reveals agent-origin items inline in the unified Comments list. Canonical replacement for the retired <code>SidebarSegmentedControl</code> — H·AI·K·U has no user identity, so a two-segment "Feedback / Mine" control was undefined. Population is determined by this toggle + <code>FeedbackSummaryBar</code> status-pill state, not by identity. See <code>component-inventory.md</code> §Retired Components and <code>comments-list-with-agent-toggle.html</code>.
+          </p>
           <div class="code-block text-[11px]">
-            <span class="kw">interface</span> <span class="type">SidebarSegmentedControlProps</span> {<br />
-            &nbsp;&nbsp;<span class="prop">activeView</span>: <span class="str">"feedback"</span> | <span class="str">"mine"</span>;<br />
-            &nbsp;&nbsp;<span class="prop">onViewChange</span>: (<span class="prop">view</span>: <span class="str">"feedback"</span> | <span class="str">"mine"</span>) =&gt; <span class="type">void</span>;<br />
-            &nbsp;&nbsp;<span class="comment">/** Count of all feedback items */</span><br />
-            &nbsp;&nbsp;<span class="prop">feedbackCount</span>: <span class="type">number</span>;<br />
-            &nbsp;&nbsp;<span class="comment">/** Count of pending feedback items */</span><br />
-            &nbsp;&nbsp;<span class="prop">pendingCount</span>: <span class="type">number</span>;<br />
-            &nbsp;&nbsp;<span class="comment">/** Count of current session comments */</span><br />
-            &nbsp;&nbsp;<span class="prop">mineCount</span>: <span class="type">number</span>;<br />
+            <span class="kw">interface</span> <span class="type">AgentFeedbackToggleProps</span> {<br />
+            &nbsp;&nbsp;<span class="comment">/** Whether agent-origin items are currently revealed in the Comments list */</span><br />
+            &nbsp;&nbsp;<span class="prop">showAgent</span>: <span class="type">boolean</span>;<br />
+            &nbsp;&nbsp;<span class="prop">onShowAgentChange</span>: (<span class="prop">showAgent</span>: <span class="type">boolean</span>) =&gt; <span class="type">void</span>;<br />
+            &nbsp;&nbsp;<span class="comment">/** Count of agent-origin items currently in the Comments list (for label affordance) */</span><br />
+            &nbsp;&nbsp;<span class="prop">agentCount</span>?: <span class="type">number</span>;<br />
+            &nbsp;&nbsp;<span class="comment">/** Disabled when there are no agent items to show */</span><br />
+            &nbsp;&nbsp;<span class="prop">disabled</span>?: <span class="type">boolean</span>;<br />
             }
           </div>
 
           <!-- Visual preview -->
           <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
             <p class="text-[10px] font-semibold text-gray-400 mb-2">Preview</p>
-            <div class="flex border-b border-gray-200 dark:border-gray-700">
-              <button class="border-b-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 text-xs font-medium px-3 py-2">
-                Feedback
-                <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">5</span>
-              </button>
-              <button class="border-b-2 border-transparent text-gray-500 dark:text-gray-400 text-xs font-medium px-3 py-2 hover:text-gray-700 dark:hover:text-gray-200">
-                Mine
-                <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">2</span>
+            <div class="flex items-center justify-between px-3 py-2">
+              <label class="text-xs font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2" for="agent-fb-toggle-preview">
+                <span>Show agent feedback</span>
+                <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">3</span>
+              </label>
+              <button id="agent-fb-toggle-preview" role="switch" aria-checked="true" aria-label="Show agent feedback" class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full bg-teal-600 dark:bg-teal-500 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 transition-colors">
+                <span class="inline-block h-4 w-4 translate-x-4 rounded-full bg-white shadow transition-transform"></span>
               </button>
             </div>
+            <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-1 px-3">Agent-origin items appear inline in the Comments list (no segmented split by identity).</p>
           </div>
         </div>
 
@@ -986,7 +988,7 @@
             <span class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 text-xs font-bold">5</span>
             <div>
               <p class="text-sm font-medium">Build new feedback components</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">FeedbackItem, FeedbackList, FeedbackStatusBadge, FeedbackOriginIcon, FeedbackSummaryBar, SidebarSegmentedControl</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">FeedbackItem, FeedbackList, FeedbackStatusBadge, FeedbackOriginIcon, FeedbackSummaryBar, AgentFeedbackToggle</p>
             </div>
           </li>
           <li class="flex gap-3">

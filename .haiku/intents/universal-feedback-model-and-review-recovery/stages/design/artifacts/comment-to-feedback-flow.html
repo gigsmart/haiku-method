@@ -833,10 +833,15 @@
                   <svg class="w-4 h-4" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 2l8 8M10 2l-8 8"/></svg>
                 </button>
               </div>
-              <!-- Segmented control (compact) -->
-              <div class="flex border-b border-gray-700 px-3">
-                <button class="border-b-2 border-teal-400 text-teal-400 text-[10px] font-medium px-2 py-1.5">Feedback <span class="text-[9px] bg-amber-900/40 text-amber-300 px-1 rounded-full">3</span></button>
-                <button class="border-b-2 border-transparent text-gray-500 text-[10px] font-medium px-2 py-1.5">Mine <span class="text-[9px] bg-gray-700 text-gray-400 px-1 rounded-full">1</span></button>
+              <!-- AgentFeedbackToggle (replaces retired SidebarSegmentedControl) -->
+              <div class="flex items-center justify-between border-b border-gray-700 px-3 py-1.5">
+                <label class="text-[10px] text-gray-300 flex items-center gap-1" for="mobile-agent-toggle">
+                  <span>Show agent feedback</span>
+                  <span class="text-[9px] bg-teal-900/40 text-teal-300 px-1 rounded-full">3</span>
+                </label>
+                <button id="mobile-agent-toggle" role="switch" aria-checked="true" aria-label="Show agent feedback" class="relative inline-flex h-4 w-7 shrink-0 items-center rounded-full bg-teal-500">
+                  <span class="inline-block h-3 w-3 translate-x-3.5 rounded-full bg-white"></span>
+                </button>
               </div>
               <!-- Feedback list -->
               <div class="overflow-y-auto p-2 space-y-1.5" style="max-height: 180px;">

@@ -73,22 +73,26 @@ The sidebar splits into two vertical regions: a **feedback panel** (top, scrolla
 +------------------------------------------------------+
 |  Main Content (flex-1)       |  Sidebar (w-80/w-96)   |
 |  - Tabs (sticky top-[53px]) |  +--------------------+ |
-|  - Tab panels               |  | Sidebar Header     | |
-|  - Cards with InlineComments|  | [Feedback | Mine]   | |
-|  - AnnotationCanvas         |  +--------------------+ |
-|                              |  | Feedback List      | |
-|                              |  | (scrollable)       | |
+|  - Tab panels               |  | Comments  [·Agent] | |
+|  - Cards with InlineComments|  +--------------------+ |
+|  - AnnotationCanvas         |  | Filter pills:       | |
+|                              |  | [Pending·Addressed· | |
+|                              |  |  All] (status only) | |
+|                              |  +--------------------+ |
+|                              |  | Unified Comments   | |
+|                              |  | list (scrollable)  | |
 |                              |  |                    | |
-|                              |  | - Existing items   | |
-|                              |  |   (from prior      | |
-|                              |  |    visits,          | |
-|                              |  |    adversarial,     | |
-|                              |  |    external)        | |
+|                              |  | - User-origin:     | |
+|                              |  |   user-chat,       | |
+|                              |  |   user-visual,     | |
+|                              |  |   external-pr/mr   | |
 |                              |  |                    | |
-|                              |  | - Current session  | |
-|                              |  |   comments         | |
-|                              |  |   (inline, pin,    | |
-|                              |  |    general)        | |
+|                              |  | - Agent-origin:    | |
+|                              |  |   shown only when  | |
+|                              |  |   AgentFeedback-   | |
+|                              |  |   Toggle is ON;    | |
+|                              |  |   interleaved with | |
+|                              |  |   origin badges    | |
 |                              |  +--------------------+ |
 |                              |  | General Input      | |
 |                              |  | Decision Buttons   | |
@@ -96,16 +100,15 @@ The sidebar splits into two vertical regions: a **feedback panel** (top, scrolla
 +------------------------------------------------------+
 ```
 
-### Sidebar Internal Tabs
+### Sidebar — Unified Comments + AgentFeedbackToggle
 
-The sidebar header gains a segmented control with two views:
+The sidebar header is a single **"Comments"** heading with an adjacent **AgentFeedbackToggle** (default OFF). There is **no identity-based segmented control** — H·AI·K·U has no concept of user identity (no login, no per-user state), so any per-user partition is undefined.
 
-- **"Feedback" (default)**: Shows all feedback items for this stage, grouped by visit cycle. Includes items from adversarial review agents, external PR comments, prior review cycles, and the current session's comments. Each item shows a status badge.
-- **"Mine"**: Shows only the current session's comments (inline, pin, general) -- the same view the existing sidebar provides today. This is the "working" view where the user manages their in-progress annotations before submitting.
+- **Comments list (always)**: unified stream of every user-origin item (`user-chat`, `user-visual`, `external-pr`, `external-mr`) plus the current session's in-progress annotations (inline, pin, general). Origin badges differentiate, so nothing is hidden.
+- **AgentFeedbackToggle (default OFF)**: when ON, agent-origin items (`adversarial-review`, `agent`) are revealed **inline**, interleaved with user items in the same list. Each agent item carries a visible origin badge so the reviewer can tell them apart without hiding. When OFF, a muted count chip (`agent · N`) next to the toggle indicates how many agent items are suppressed.
+- **Status filter pills** (`Pending` / `Addressed` / `All`, per unit-01) sit below the header and filter the unified list by **status only** — they are *not* identity filters. "All" is the default. Pills apply regardless of the AgentFeedbackToggle state.
 
-The segmented control uses the existing tab styling but compact: `text-xs font-medium` buttons with `border-b-2` indicator, matching the main content tabs but smaller.
-
-**Rationale**: Keeping "Mine" as a separate filter prevents the feedback list from overwhelming the user with historical context while they're actively annotating. They can switch to "Feedback" to see the full picture, then back to "Mine" to manage their own work.
+**Rationale**: a single list mirrors the file-system truth (there is no per-user partition on disk); the toggle lets the reviewer focus on user-origin work during active annotation without pretending agent items don't exist. This supersedes the earlier identity-based segmented design — see unit-05 (`comments-list-with-agent-toggle.html`).
 
 ---
 
@@ -250,8 +253,9 @@ The item expands in-place to show:
 - Full title (no truncation).
 - Full markdown body rendered as prose (`prose prose-xs prose-stone dark:prose-invert`).
 - If `addressed_by` is set: link/label showing which unit claims to address it.
-- If `status === "pending"` and `author_type === "agent"`: a "Reject" button (small, secondary style).
-- If `status === "pending"` and `author_type === "human"`: a "Close" button (only visible in the review UI where the user has authority).
+- If `status === "pending"`: a single **"Dismiss"** button (small, secondary style). Copy does NOT split by `author_type` — the verb covers both human and agent origins. See `footer-button-copy-spec.md` for the canonical status × origin matrix.
+- If `status === "addressed"`: a **"Verify & Close"** primary button plus a **"Reopen"** secondary button.
+- If `status === "closed"` or `status === "rejected"`: a single **"Reopen"** button (one word, no hyphen).
 
 **Interaction states:**
 - **Default**: compact, clickable.
@@ -321,20 +325,59 @@ A compact summary strip at the top of the feedback list showing aggregate counts
 
 ---
 
-#### `SidebarSegmentedControl`
+#### `AgentFeedbackToggle`
 
-A two-segment toggle for switching between "Feedback" and "Mine" views within the sidebar.
+A single switch (default **OFF**) that reveals agent-origin feedback (`adversarial-review`, `agent`) inline within the unified **Comments** list. Replaces the earlier `SidebarSegmentedControl` design — H·AI·K·U has no user identity, so an identity-based split is undefined. See unit-05 rationale and `comments-list-with-agent-toggle.html`.
 
 ```
 +---------------------------------------------+
-| [ Feedback (5) ]  [ Mine (2) ]              |
+| Comments                [agent ·2] [  ○  ]  |
 +---------------------------------------------+
 ```
 
-- Container: `flex border-b border-stone-200 dark:border-stone-700`
-- Active segment: `border-b-2 border-teal-600 text-teal-600 dark:border-teal-400 dark:text-teal-400 text-xs font-medium px-3 py-2`
-- Inactive segment: `border-b-2 border-transparent text-stone-500 dark:text-stone-400 text-xs font-medium px-3 py-2 hover:text-stone-700 dark:hover:text-stone-200`
-- Count badges: `ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold` with amber background for pending items, stone for others.
+**Props:**
+```typescript
+interface AgentFeedbackToggleProps {
+  /** Current toggle state — when true, agent-origin items render inline. */
+  showAgent: boolean;
+  /** Handler invoked when the toggle flips. */
+  onToggle: (next: boolean) => void;
+  /** Count of agent-origin items currently suppressed (shown as muted chip when OFF). */
+  agentCount: number;
+}
+```
+
+**Visual spec:**
+
+- Container: `flex items-center gap-2 px-4 py-3 border-b border-stone-200 dark:border-stone-700`
+- Label ("Comments"): `text-sm font-semibold text-stone-900 dark:text-stone-100`
+- Muted count chip (when toggle is OFF and `agentCount > 0`): `text-[10px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400 px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800` — e.g. `agent · 2`
+- Switch track (OFF): `w-8 h-4 rounded-full bg-stone-300 dark:bg-stone-600 transition-colors`
+- Switch track (ON): `w-8 h-4 rounded-full bg-teal-600 dark:bg-teal-500 transition-colors`
+- Switch thumb: `w-3.5 h-3.5 rounded-full bg-white shadow-sm transform transition-transform` — translates right when ON
+
+**State:**
+
+| `showAgent` | Comments list contents | Muted chip |
+|---|---|---|
+| `false` (default) | user-origin items only (`user-chat`, `user-visual`, `external-pr`, `external-mr`) | Visible when `agentCount > 0` — e.g. `agent · 3` |
+| `true` | all items interleaved by `created_at` with origin badges | Hidden |
+
+**Behavior:**
+
+- Clicking the switch flips `showAgent` and triggers `onToggle(!showAgent)`.
+- When `showAgent` becomes `true`, agent-origin items animate into the list (opacity 0→1 over 150ms).
+- The unified Comments list always renders one list; the toggle only changes the population, not the container.
+- Status filter pills (`Pending` / `Addressed` / `All` per unit-01) sit below this row and filter the list by **status**, independent of the toggle.
+
+**ARIA contract (ties into unit-13's switch role spec):**
+
+- The switch root element uses `role="switch"` with `aria-checked={showAgent}`.
+- `aria-label="Show agent feedback inline"` (the visible "Comments" label sits outside the switch, so the switch needs its own label).
+- When the toggle flips, a `role="status" aria-live="polite"` region announces `"Agent feedback shown (N items)"` or `"Agent feedback hidden"`.
+- Keyboard: `Space` or `Enter` toggles; focus ring uses the shared focus-ring spec (`ring-2 ring-teal-500 ring-offset-2 ring-offset-white dark:ring-offset-stone-900`).
+
+**Rationale:** agent-origin feedback is usually secondary during active review; surfacing it by default would overwhelm the list with assessor / consistency-agent output. The toggle is an opt-in overlay, and the muted count keeps the reviewer aware that agent items exist without making them visible.
 
 ---
 
@@ -342,13 +385,21 @@ A two-segment toggle for switching between "Feedback" and "Mine" views within th
 
 #### `ReviewSidebar.tsx` -- Changes
 
-The sidebar's internal structure changes from a flat comments list to the segmented Feedback/Mine view. The footer (general comment input + decision buttons) remains unchanged.
+The sidebar's internal structure changes from a flat comments list to a **unified Comments list** with an `AgentFeedbackToggle` overlay. The footer (general comment input + decision buttons) remains unchanged.
 
 **State additions:**
 ```typescript
-const [sidebarView, setSidebarView] = useState<"feedback" | "mine">("feedback");
+// Unified Comments list backing — merges user-origin feedback with the current
+// session's in-progress annotations. Agent-origin items are filtered in or out
+// based on `showAgent`.
 const [feedbackItems, setFeedbackItems] = useState<FeedbackItemData[]>([]);
 const [feedbackLoading, setFeedbackLoading] = useState(true);
+// AgentFeedbackToggle state — default OFF. When true, agent-origin items
+// (`adversarial-review`, `agent`) are interleaved into the list.
+const [showAgent, setShowAgent] = useState(false);
+// Status filter pill state — "All" by default. Pills are status filters,
+// NOT identity filters.
+const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "addressed">("all");
 ```
 
 **New props:**
@@ -364,9 +415,9 @@ interface Props {
 **Data flow:**
 1. On mount, fetch feedback items via `GET /api/feedback/{intent}/{stage}`.
 2. Store in `feedbackItems` state.
-3. The "Feedback" view renders `FeedbackList` with these items.
-4. The "Mine" view renders the existing `SidebarComment[]` list (unchanged behavior).
-5. The footer stays visible in both views.
+3. The unified Comments list renders `FeedbackList` with: all user-origin items, plus agent-origin items only when `showAgent` is true, filtered by the active status pill.
+4. The current session's in-progress annotations (from `InlineComments`, `AnnotationCanvas`, general textarea) appear in the same list, styled with a "draft" variant until the user clicks "Request Changes" and they're persisted as feedback files.
+5. The footer (general input + decision buttons) stays visible below the list.
 
 **Submission flow change ("Request Changes"):**
 
@@ -379,8 +430,8 @@ New flow:
 1. For each comment (inline, pin, general), call `POST /api/feedback/{intent}/{stage}` to create a feedback file.
 2. Collect the returned feedback IDs.
 3. Call `submitDecision(sessionId, "changes_requested", feedbackSummary, annotations)` where `feedbackSummary` references the created feedback files.
-4. Clear the "Mine" comment list.
-5. Refresh the "Feedback" list to show the newly-created items.
+4. Clear the in-progress annotation buffers (`InlineComments`, `AnnotationCanvas`, general textarea).
+5. Refresh the unified Comments list to show the newly-created items.
 
 The individual CRUD calls happen sequentially (not in parallel) to avoid numbering collisions on the server. A loading spinner replaces the "Request Changes" button text during submission.
 
@@ -475,48 +526,56 @@ export interface FeedbackItemData {
 
 ## 3. Interaction States
 
-### Sidebar -- Feedback View
+### Sidebar -- Unified Comments List
 
 | State | Visual | Behavior |
 |---|---|---|
 | Loading | Spinner (same as session loading: `animate-spin rounded-full border-2 border-stone-300 border-t-teal-500`) | Fetch in progress |
-| Empty (visit 0) | Italic muted text: "No feedback items. This is the first review." | No items exist |
-| Empty (visit > 0) | Italic muted text: "All feedback addressed!" with a green checkmark | All items resolved |
-| Populated | `FeedbackList` with items grouped by visit | Scrollable list |
+| Empty (visit 0, no drafts) | Italic muted text: "No comments yet. Select text or drop pins to add feedback." | No items exist |
+| Empty (visit > 0, all resolved) | Italic muted text: "All feedback addressed!" with a green checkmark | All items resolved |
+| Populated | `FeedbackList` with user-origin items (plus agent-origin when AgentFeedbackToggle is ON), grouped by visit | Scrollable list |
+| Agent toggle OFF with agent items | Muted chip in header: `agent · N` | Indicates N agent items are suppressed |
+| Agent toggle ON | Agent items animate into the list (opacity 150ms) with origin badges | Interleaved with user items by `created_at` |
+| Status filter pill active | Pill has `bg-teal-600 text-white`; list filtered by that status | Click again to toggle back to "All" |
 | Item hover | Border highlight (teal) | Click to expand |
 | Item expanded | Body visible, action buttons visible | In-place expansion |
 | Status change | Badge animates (opacity transition 150ms) | Optimistic update, revert on API error |
 | API error | Red toast at bottom of sidebar: `text-xs text-red-600` | 3-second auto-dismiss |
 
-### Sidebar -- Mine View
+### Sidebar -- In-Progress Annotations (Drafts)
+
+Current-session annotations live in the **same** unified Comments list as persisted feedback. They render with a "draft" variant until the user submits.
 
 | State | Visual | Behavior |
 |---|---|---|
 | Empty | Italic muted text: "No comments yet. Select text or drop pins to add feedback." | Same as current |
-| Populated | Existing `SidebarComment` list (unchanged) | Same interactions as today |
+| Draft populated | Items rendered with `border-dashed border-stone-300 dark:border-stone-700` | Styled to signal "not yet persisted" |
 | Editing | Inline textarea with Save/Cancel (unchanged) | Same as current |
+| On "Request Changes" | Drafts persist as feedback files and shed the draft styling | See Submission Flow |
 
 ### Submission Flow
 
 | State | Visual | Behavior |
 |---|---|---|
-| Pre-submit | "Request Changes" button in amber (when comments exist) or secondary style (when empty) | Same as current conditional styling |
+| Pre-submit | "Request Changes" button in amber (when drafts exist) or secondary style (when empty) | Same as current conditional styling |
 | Submitting | Button text: "Saving feedback..." with disabled state | Sequential CRUD calls |
-| Per-item progress | Optional: small progress indicator in "Mine" view showing N/M items saved | Nice-to-have, not required for v1 |
+| Per-item progress | Optional: small progress indicator next to each draft showing "Saving... N/M" | Nice-to-have, not required for v1 |
 | Success | SubmitSuccess component (existing): "Decision submitted!" | Same as current |
 | Partial failure | Error toast identifying which feedback items failed to save | Retry button for failed items |
 
 ### Feedback Status Transitions (User Actions in Review UI)
 
+Canonical copy per `footer-button-copy-spec.md`. Verbs do NOT split by `author_type`.
+
 | Current Status | User Action | New Status | Guard |
 |---|---|---|---|
-| `pending` | Click "Close" | `closed` | Only on human-authored OR any item when user explicitly closes |
-| `pending` | Click "Reject" | `rejected` | Only on agent-authored items |
-| `addressed` | Click "Reopen" | `pending` | Any item the user can see |
-| `closed` | Click "Reopen" | `pending` | Any item the user can see |
-| `rejected` | Click "Reopen" | `pending` | Any item the user can see |
+| `pending` | Click "Dismiss" | `rejected` | Any pending item the user can see; single verb for both human and agent origins |
+| `addressed` | Click "Verify & Close" | `closed` | Any addressed item the user can see |
+| `addressed` | Click "Reopen" | `pending` | Any addressed item the user can see |
+| `closed` | Click "Reopen" | `pending` | Any closed item the user can see |
+| `rejected` | Click "Reopen" | `pending` | Any rejected item the user can see |
 
-The UI shows only the actions valid for the item's current status and author_type. Invalid actions are not rendered (not disabled -- absent entirely).
+The UI shows only the actions valid for the item's current status. Invalid actions are not rendered (not disabled -- absent entirely). Copy hyphenation is canonical: **"Reopen"** is always written as one word (no hyphen). See `footer-button-copy-spec.md` for the full canonical matrix.
 
 ---
 
@@ -538,12 +597,12 @@ The UI shows only the actions valid for the item's current status and author_typ
 ### Mobile (< 768px)
 
 - Sidebar is hidden entirely (`hidden md:flex` -- existing behavior on `ReviewSidebar`).
-- **Mobile feedback access:** The sidebar content becomes accessible via a floating action button (FAB) in the bottom-right corner that opens a full-screen sheet overlay.
-- FAB: `fixed bottom-4 right-4 z-50 w-12 h-12 rounded-full bg-teal-600 text-white shadow-lg flex items-center justify-center text-lg` -- shows the comment count badge when > 0.
-- Sheet overlay: `fixed inset-0 z-50 bg-white dark:bg-stone-900` with a close button at top-right. Contains the same sidebar content (segmented control, feedback list, general input, decision buttons).
-- The FAB and sheet overlay are new components: `MobileFeedbackSheet` and `FeedbackFAB`.
+- **Mobile feedback access:** The sidebar content becomes accessible via a `FeedbackFloatingButton` in the bottom-right corner that opens a full-screen `FeedbackSheet` overlay.
+- `FeedbackFloatingButton`: `fixed bottom-4 right-4 z-50 w-12 h-12 rounded-full bg-teal-600 text-white shadow-lg flex items-center justify-center text-lg` -- shows the comment count badge when > 0. (Full-word name replaces the earlier `FeedbackFAB` abbreviation; matches the review-app PascalCase full-word convention, e.g. `AnnotationCanvas`, not `AnnotCanv`.)
+- `FeedbackSheet`: `fixed inset-0 z-50 bg-white dark:bg-stone-900` with a close button at top-right. Contains the same sidebar content (AgentFeedbackToggle, unified Comments list, status filter pills, general input, decision buttons). Responsive behavior is baked into the single `FeedbackSheet` component — no `Mobile` prefix is needed since the sheet only renders on mobile breakpoints anyway.
+- Both components are canonicalized in `component-inventory.md` and §9.
 
-**Note:** The current sidebar is already `hidden md:flex`, so mobile users currently have NO access to review actions. The FAB/sheet pattern is a new addition that unblocks mobile review entirely.
+**Note:** The current sidebar is already `hidden md:flex`, so mobile users currently have NO access to review actions. The `FeedbackFloatingButton` + `FeedbackSheet` pattern is a new addition that unblocks mobile review entirely.
 
 ---
 
@@ -625,23 +684,25 @@ See `stages/design/artifacts/contrast-and-type-audit.md` for the full measured a
 
 The sidebar focus order follows the DOM order, which matches the visual top-to-bottom flow:
 
-1. Sidebar segmented control ("Feedback" / "Mine" buttons)
-2. Feedback summary bar filter buttons (if present)
-3. Feedback items in list order (each item is focusable via `tabIndex={0}`)
-4. Expanded item action buttons (Close / Reject / Reopen)
-5. General comment textarea
-6. "Add" button
-7. Decision buttons (Approve, External Review, Request Changes)
+1. `AgentFeedbackToggle` switch (role=switch, aria-checked=showAgent)
+2. Status filter pills (`Pending` / `Addressed` / `All`)
+3. `FeedbackSummaryBar` filter buttons (if present)
+4. Feedback items in list order (each item is focusable via `tabIndex={0}`)
+5. Expanded item action buttons (`Dismiss` / `Verify & Close` / `Reopen`)
+6. General comment textarea
+7. "Add" button
+8. Decision buttons (Approve, External Review, Request Changes)
 
 ### Keyboard Navigation
 
 | Key | Context | Action |
 |---|---|---|
 | `Tab` | Sidebar | Move focus through the focus order above |
-| `Enter` / `Space` | Segmented control button | Switch view |
+| `Space` / `Enter` | `AgentFeedbackToggle` switch | Flip switch (show/hide agent feedback inline) |
+| `Enter` / `Space` | Status filter pill | Activate or clear status filter |
 | `Enter` / `Space` | Feedback item (compact) | Expand item |
 | `Escape` | Feedback item (expanded) | Collapse item |
-| `Enter` / `Space` | Action button (Close/Reject/Reopen) | Trigger status change |
+| `Enter` / `Space` | Action button (`Dismiss` / `Verify & Close` / `Reopen`) | Trigger status change |
 | `Cmd+Enter` / `Ctrl+Enter` | General comment textarea | Add comment |
 | `Escape` | General comment textarea | Blur textarea |
 | `Tab` | Within expanded item | Move through action buttons |
@@ -650,19 +711,19 @@ The sidebar focus order follows the DOM order, which matches the visual top-to-b
 
 - Feedback items use `role="listitem"` within a `role="list"` container.
 - Status badges have `aria-label` including the status text (e.g., `aria-label="Status: pending"`).
-- Status changes trigger a live region announcement: `<div role="status" aria-live="polite">` at the sidebar level that announces "Feedback FB-03 marked as closed" or similar.
-- The segmented control uses `role="tablist"` with `role="tab"` on each segment and `aria-selected` on the active segment.
+- Status changes trigger a live region announcement: `<div role="status" aria-live="polite">` at the sidebar level that announces "Feedback FB-03 marked as closed" or similar. Canonical copy: "marked as rejected" (Dismiss), "marked as closed" (Verify & Close), "marked as pending" (Reopen).
+- The `AgentFeedbackToggle` uses `role="switch"` with `aria-checked={showAgent}` and `aria-label="Show agent feedback inline"`. Flipping announces `"Agent feedback shown (N items)"` or `"Agent feedback hidden"` via the same polite live region.
 - The summary bar counts have `aria-label` (e.g., `aria-label="3 pending feedback items"`).
 - Expanded feedback item body is announced when the item gains focus and is expanded.
 
 ### Mobile Sheet Overlay
 
-- The FAB has `aria-label="Open feedback panel"` with the count (e.g., `aria-label="Open feedback panel, 3 comments"`).
-- The sheet overlay traps focus within itself when open (focus trap pattern).
+- The `FeedbackFloatingButton` has `aria-label="Open feedback panel"` with the count (e.g., `aria-label="Open feedback panel, 3 comments"`).
+- The `FeedbackSheet` overlay traps focus within itself when open (focus trap pattern).
 - `Escape` closes the sheet.
 - The close button has `aria-label="Close feedback panel"`.
-- When the sheet opens, focus moves to the first interactive element (segmented control).
-- When the sheet closes, focus returns to the FAB.
+- When the sheet opens, focus moves to the first interactive element (`AgentFeedbackToggle`).
+- When the sheet closes, focus returns to the `FeedbackFloatingButton`.
 
 ---
 
@@ -686,13 +747,16 @@ New styles to add to `packages/haiku/review-app/src/index.css`:
   text-decoration: line-through;
 }
 
-/* Mobile feedback FAB pulse animation for new items */
+/* FeedbackFloatingButton pulse animation for new items (mobile only) */
 @keyframes feedback-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4); }
   50% { box-shadow: 0 0 0 8px rgba(13, 148, 136, 0); }
 }
-.feedback-fab-pulse {
+.feedback-floating-button-pulse {
   animation: feedback-pulse 2s ease-in-out 3;
+}
+@media (prefers-reduced-motion: reduce) {
+  .feedback-floating-button-pulse { animation: none; }
 }
 ```
 
@@ -725,8 +789,11 @@ Most styling uses Tailwind utility classes directly on components. The CSS addit
 │            │  │  │   → FeedbackItemData[]            │ │
 │            │  │  └──────────────────────────────────┘ │
 │            │  │                                        │
-│            │  │  [Feedback view] → FeedbackList        │
-│            │  │  [Mine view]     → SidebarComment list │
+│            │  │  AgentFeedbackToggle (showAgent state) │
+│            │  │    → filters FeedbackList population    │
+│            │  │  Unified Comments list → FeedbackList   │
+│            │  │    (user-origin + agent-origin when ON) │
+│            │  │    + in-progress drafts (same list)     │
 │            │  │                                        │
 │            │  │  On "Request Changes":                 │
 │            │  │    for each comment:                   │
@@ -741,21 +808,31 @@ Most styling uses Tailwind utility classes directly on components. The CSS addit
 
 ## 9. File Inventory (New + Modified)
 
+Canonical component names — PascalCase, full words (no abbreviations), following the existing review-app pattern language (`ReviewSidebar`, `StatusBadge`, `AnnotationCanvas`, `InlineComments`). Cross-reference: `component-inventory.md` in `stages/design/artifacts/` for per-component rationale.
+
 | File | Action | Description |
 |---|---|---|
 | `review-app/src/components/FeedbackStatusBadge.tsx` | **New** | Status badge with feedback-specific colors |
 | `review-app/src/components/FeedbackOriginIcon.tsx` | **New** | Origin icon/label component |
 | `review-app/src/components/FeedbackItem.tsx` | **New** | Single feedback item (compact + expanded) |
-| `review-app/src/components/FeedbackList.tsx` | **New** | Grouped, sorted feedback list |
+| `review-app/src/components/FeedbackList.tsx` | **New** | Unified Comments list — user-origin items always, agent-origin items when `showAgent` is true, grouped by visit, filtered by status pill |
 | `review-app/src/components/FeedbackSummaryBar.tsx` | **New** | Aggregate status count strip |
-| `review-app/src/components/SidebarSegmentedControl.tsx` | **New** | Two-segment toggle for sidebar views |
-| `review-app/src/components/MobileFeedbackSheet.tsx` | **New** | Full-screen sheet overlay for mobile |
-| `review-app/src/components/FeedbackFAB.tsx` | **New** | Floating action button for mobile |
-| `review-app/src/components/ReviewSidebar.tsx` | **Modify** | Add segmented view, feedback fetching, per-item submission |
+| `review-app/src/components/AgentFeedbackToggle.tsx` | **New** | `role="switch"` toggle that reveals agent-origin items inline in the unified Comments list (replaces `SidebarSegmentedControl`) |
+| `review-app/src/components/FeedbackSheet.tsx` | **New** | Full-screen sheet overlay (mobile-only render; responsive behavior baked in — no `Mobile` prefix needed) |
+| `review-app/src/components/FeedbackFloatingButton.tsx` | **New** | Floating action button that opens `FeedbackSheet` on mobile (full word replaces earlier `FAB` abbreviation) |
+| `review-app/src/components/ReviewSidebar.tsx` | **Modify** | Render unified Comments list + AgentFeedbackToggle + status filter pills, handle feedback fetching, per-item submission |
 | `review-app/src/components/ReviewPage.tsx` | **Modify** | Pass intentSlug + stageName to sidebar |
 | `review-app/src/hooks/useSession.ts` | **Modify** | Add `useFeedback` hook and CRUD helpers |
 | `review-app/src/types.ts` | **Modify** | Add `FeedbackItemData` type |
-| `review-app/src/index.css` | **Modify** | Add feedback status and FAB animation styles |
+| `review-app/src/index.css` | **Modify** | Add feedback status styles and `FeedbackFloatingButton` pulse animation (with `prefers-reduced-motion` guard) |
+
+**Dropped from inventory** (component retired — see `component-inventory.md`):
+
+| Former name | Replaced by | Reason |
+|---|---|---|
+| `SidebarSegmentedControl` | `AgentFeedbackToggle` + unified Comments list | H·AI·K·U has no user identity; an identity-based split is undefined. Unit-05 rationale. |
+| `MobileFeedbackSheet` | `FeedbackSheet` | `Mobile` prefix redundant — the sheet only ever renders on mobile breakpoints. Matches review-app convention (e.g. `ReviewSidebar`, not `DesktopReviewSidebar`). |
+| `FeedbackFAB` | `FeedbackFloatingButton` | `FAB` is an abbreviation; existing review-app uses full words (`AnnotationCanvas`, `InlineComments`). |
 
 ---
 
@@ -767,4 +844,4 @@ Most styling uses Tailwind utility classes directly on components. The CSS addit
 
 3. **Optimistic vs. confirmed status updates.** When the user clicks "Close" on a feedback item, should the UI optimistically update the badge and revert on API error, or wait for the API response? Recommendation: optimistic with revert, matching modern SPA patterns.
 
-4. **Mobile breakpoint priority.** The mobile FAB/sheet is a net-new capability (mobile users currently cannot review at all). Confirm whether this is in-scope for v1 or a fast-follow.
+4. **Mobile breakpoint priority.** The `FeedbackFloatingButton` + `FeedbackSheet` is a net-new capability (mobile users currently cannot review at all). Confirm whether this is in-scope for v1 or a fast-follow.
