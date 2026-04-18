@@ -15,6 +15,90 @@ import type {
 const EXCLUDED_ENTRIES = new Set(["worktrees", "settings.yml"])
 
 /**
+ * Dedupe top-level keys inside a `---`-fenced YAML frontmatter block, keeping the
+ * last occurrence. Returns the rewritten document and the list of keys that had
+ * duplicates. If there's no frontmatter or no duplicates, returns the input unchanged.
+ */
+function dedupeFrontmatterKeys(raw: string): { text: string; removed: string[] } {
+	const m = raw.match(/^---\r?\n([\s\S]*?)\r?\n---(\r?\n[\s\S]*)?$/)
+	if (!m) return { text: raw, removed: [] }
+	const { cleaned, removed } = dedupeTopLevelYamlKeys(m[1])
+	if (removed.length === 0) return { text: raw, removed: [] }
+	return { text: `---\n${cleaned}\n---${m[2] ?? ""}`, removed }
+}
+
+function dedupeTopLevelYamlKeys(yamlBlock: string): {
+	cleaned: string
+	removed: string[]
+} {
+	const lines = yamlBlock.split(/\r?\n/)
+	type Section = { key: string | null; text: string[] }
+	const sections: Section[] = []
+	let current: Section | null = null
+	for (const line of lines) {
+		const m = line.match(/^([A-Za-z_][A-Za-z0-9_-]*)\s*:/)
+		const isTopLevelKey =
+			m != null && !line.startsWith(" ") && !line.startsWith("\t")
+		if (isTopLevelKey && m) {
+			if (current) sections.push(current)
+			current = { key: m[1], text: [line] }
+		} else if (current) {
+			current.text.push(line)
+		} else {
+			sections.push({ key: null, text: [line] })
+		}
+	}
+	if (current) sections.push(current)
+
+	const lastIdx = new Map<string, number>()
+	const counts = new Map<string, number>()
+	for (let i = 0; i < sections.length; i++) {
+		const k = sections[i].key
+		if (!k) continue
+		lastIdx.set(k, i)
+		counts.set(k, (counts.get(k) ?? 0) + 1)
+	}
+	const removed: string[] = []
+	for (const [k, n] of counts) if (n > 1) removed.push(k)
+
+	const out: string[] = []
+	for (let i = 0; i < sections.length; i++) {
+		const s = sections[i]
+		if (s.key == null) out.push(...s.text)
+		else if (lastIdx.get(s.key) === i) out.push(...s.text)
+	}
+	return { cleaned: out.join("\n"), removed }
+}
+
+function isDuplicateKeyError(err: unknown): boolean {
+	const msg = err instanceof Error ? err.message : String(err)
+	return /duplicated mapping key/i.test(msg)
+}
+
+/**
+ * Run gray-matter, auto-recovering from duplicate-key YAML errors by keeping
+ * the last occurrence of each top-level key and re-parsing. Logs a warning
+ * when recovery happens so the broken file still gets noticed.
+ */
+function matterWithDedupe(
+	raw: string,
+	filePath: string,
+): ReturnType<typeof matter> {
+	try {
+		return matter(raw)
+	} catch (err) {
+		if (!isDuplicateKeyError(err)) throw err
+		const { text, removed } = dedupeFrontmatterKeys(raw)
+		if (removed.length === 0) throw err
+		const parsed = matter(text)
+		console.warn(
+			`[haiku] Recovered duplicate YAML keys in ${filePath}: kept last occurrence of ${removed.join(", ")}`,
+		)
+		return parsed
+	}
+}
+
+/**
  * Normalize frontmatter values: coerce Date objects to ISO date strings.
  * gray-matter auto-parses YAML dates (e.g. 2026-03-27) into Date objects.
  */
@@ -56,7 +140,7 @@ export async function parseIntent(
 	try {
 		const filePath = join(intentDir, "intent.md")
 		const raw = await readFile(filePath, "utf-8")
-		const { data, content } = matter(raw)
+		const { data, content } = matterWithDedupe(raw, filePath)
 		const frontmatter = normalizeFrontmatter(data) as IntentFrontmatter
 		const title = extractTitle(content)
 		const bodyWithoutTitle = stripTitle(content)
@@ -87,7 +171,7 @@ export async function parseIntent(
 export async function parseUnit(filePath: string): Promise<ParsedUnit | null> {
 	try {
 		const raw = await readFile(filePath, "utf-8")
-		const { data, content } = matter(raw)
+		const { data, content } = matterWithDedupe(raw, filePath)
 		const frontmatter = normalizeFrontmatter(data) as UnitFrontmatter
 		const title = extractTitle(content)
 		const bodyWithoutTitle = stripTitle(content)
@@ -163,7 +247,7 @@ export async function parseDiscovery(
 	try {
 		const filePath = join(intentDir, "discovery.md")
 		const raw = await readFile(filePath, "utf-8")
-		const { data, content } = matter(raw)
+		const { data, content } = matterWithDedupe(raw, filePath)
 		const frontmatter = normalizeFrontmatter(data) as DiscoveryFrontmatter
 		const title = extractTitle(content)
 		const body = stripTitle(content)

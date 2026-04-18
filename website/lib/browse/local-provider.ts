@@ -1,5 +1,5 @@
 import type { BrowseProvider, HaikuArtifact, HaikuIntent, HaikuIntentDetail, HaikuKnowledgeFile, HaikuStageState, HaikuUnit } from "./types"
-import { normalizeIntentStatus, parseCriteria, parseFrontmatter, parseUnit } from "./types"
+import { normalizeIntentStatus, parseCriteria, parseFrontmatter, parseUnit, safeParseFrontmatter } from "./types"
 import { parseSettingsYaml } from "./resolve-links"
 
 // File System Access API types (not in all TS DOM libs)
@@ -89,7 +89,13 @@ export class LocalProvider implements BrowseProvider {
 		for (const slug of intentDirs) {
 			const raw = await this.readFile(`.haiku/intents/${slug}/intent.md`)
 			if (!raw) continue
-			const { data, content } = parseFrontmatter(raw)
+			const parsed = safeParseFrontmatter(raw, {
+				provider: "local",
+				path: `.haiku/intents/${slug}/intent.md`,
+				slug,
+			})
+			if (!parsed) continue
+			const { data, content } = parsed
 			const studio = (data.studio as string) || "ideation"
 			const stages = (data.stages as string[]) || []
 
