@@ -468,6 +468,70 @@
     </div>
   </section>
 
+  <!-- Section 5b: Error card visual (FB-25) — the error state rendered as a
+       card, not only as a toast. The toast is the confirmation of rollback,
+       but the card itself carries inline-error styling so the user can see
+       which item failed without reading the toast. -->
+  <section aria-labelledby="sec-error-card">
+    <h2 id="sec-error-card" class="text-base font-semibold mb-3">5b. Error Card Visual (card-level error state)</h2>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">When a transition rolls back, the specific card that rejected also carries inline error styling for ~4 seconds: red left border, subtle red-tinted background, and an inline error row above the footer. This lets the user see which card failed at a glance even if they missed the toast or dismissed it.</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <!-- Light mode error card -->
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Light · card error (post-rollback)</p>
+        <article tabindex="0" aria-invalid="true" aria-describedby="err-body-light"
+                 class="p-2.5 rounded-lg border border-l-[3px] border-l-red-500 bg-red-50 border-red-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-rose-100 text-rose-700 border-rose-200"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800">pending</span>
+            <span class="flex-1"></span>
+            <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-red-700">
+              <span aria-hidden="true">⚠</span> rejected
+            </span>
+          </div>
+          <p class="text-xs font-medium text-gray-700 truncate">Missing null check in handleSubmit callback</p>
+          <p id="err-body-light" class="text-[10px] text-red-700 mt-1">Close rejected — <code class="font-mono">not_user_initiable</code>. Only agents can mark <code>pending → closed</code>.</p>
+          <div class="flex items-center justify-end gap-1 mt-2">
+            <button class="text-[10px] font-semibold px-2 py-0.5 rounded bg-white border border-red-300 text-red-700 hover:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500">Dismiss</button>
+            <button class="text-[10px] font-semibold px-2 py-0.5 rounded bg-red-600 text-white hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500">Learn why</button>
+          </div>
+        </article>
+      </div>
+
+      <!-- Dark mode error card -->
+      <div class="dark">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Dark · card error (post-rollback)</p>
+        <article tabindex="0" aria-invalid="true" aria-describedby="err-body-dark"
+                 class="p-2.5 rounded-lg border border-l-[3px] border-l-red-500 bg-red-900/30 border-red-800 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-rose-900/30 text-rose-400 border-rose-800"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
+            <span class="flex-1"></span>
+            <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-red-300">
+              <span aria-hidden="true">⚠</span> rejected
+            </span>
+          </div>
+          <p class="text-xs font-medium text-gray-200 truncate">Missing null check in handleSubmit callback</p>
+          <p id="err-body-dark" class="text-[10px] text-red-300 mt-1">Close rejected — <code class="font-mono">not_user_initiable</code>. Only agents can mark <code>pending → closed</code>.</p>
+          <div class="flex items-center justify-end gap-1 mt-2">
+            <button class="text-[10px] font-semibold px-2 py-0.5 rounded bg-gray-900 border border-red-700 text-red-200 hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400">Dismiss</button>
+            <button class="text-[10px] font-semibold px-2 py-0.5 rounded bg-red-600 text-white hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400">Learn why</button>
+          </div>
+        </article>
+      </div>
+
+    </div>
+
+    <ul class="mt-3 text-xs text-gray-500 dark:text-gray-400 list-disc pl-5 space-y-1">
+      <li><code class="font-mono">aria-invalid="true"</code> + <code class="font-mono">aria-describedby</code> so SR users are told <em>which</em> card failed and <em>why</em>.</li>
+      <li>Card retains its prior status badge (the transition was reverted) and adds a small "rejected" chip on the right — both signals coexist.</li>
+      <li>Red ring uses <code class="font-mono">bg-red-50 / border-red-200 / text-red-800</code> (DESIGN-TOKENS §1.8) with dark-mode equivalents.</li>
+      <li>Error styling fades out after 4s (or when user dismisses); the card reverts to its normal rendering. Fade is guarded by <code class="font-mono">prefers-reduced-motion</code> — in reduced-motion mode the card flips to default state instantly.</li>
+    </ul>
+  </section>
+
   <!-- Section 6: Toast copy -->
   <section aria-labelledby="sec-toasts">
     <h2 id="sec-toasts" class="text-base font-semibold mb-3">6. Toast Copy — One Per Guard Outcome</h2>
