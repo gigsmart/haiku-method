@@ -10,6 +10,10 @@
 </head>
 <body class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
 
+<!-- FB-30: Skip links. First focusable elements; visually hidden until focused. -->
+<a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:px-3 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white">Skip to main content</a>
+<a href="#feedback-list" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-44 focus:z-[200] focus:px-3 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white">Skip to feedback list</a>
+
 <!-- Header -->
 <header class="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
   <div class="max-w-[1400px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
@@ -21,7 +25,7 @@
   </div>
 </header>
 
-<main class="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-8">
+<main id="main-content" class="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-8">
 
   <!-- Context note -->
   <section class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
@@ -37,7 +41,7 @@
   </section>
 
   <!-- Variant 1 — happy path (all addressed), dark -->
-  <section>
+  <section id="feedback-list" aria-label="Assessor card states — sidebar footer context">
     <h2 class="text-sm font-semibold mb-3">State 1 · assessor pass clean · user gate reachable</h2>
     <div class="grid md:grid-cols-2 gap-4">
       <!-- Dark -->

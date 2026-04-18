@@ -12,6 +12,10 @@
 </head>
 <body class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
 
+<!-- FB-30: Skip links. First focusable elements; visually hidden until focused. -->
+<a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:px-3 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white">Skip to main content</a>
+<a href="#feedback-list" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-44 focus:z-[200] focus:px-3 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white">Skip to feedback list</a>
+
 <header class="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
   <div class="max-w-[1400px] mx-auto px-5 py-3 flex items-center justify-between">
     <div>
@@ -21,7 +25,7 @@
   </div>
 </header>
 
-<main class="max-w-[1400px] mx-auto px-5 py-6 space-y-10">
+<main id="main-content" class="max-w-[1400px] mx-auto px-5 py-6 space-y-10">
 
   <!-- Section 1: Rationale -->
   <section aria-labelledby="sec-rationale" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
@@ -35,7 +39,7 @@
   </section>
 
   <!-- Section 2: Sidebar mockup — light, toggle OFF -->
-  <section aria-labelledby="sec-light-off">
+  <section id="feedback-list" aria-labelledby="sec-light-off">
     <h2 id="sec-light-off" class="text-base font-semibold mb-3">2. Sidebar — Light Mode, Toggle OFF (default)</h2>
     <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Only user-origin items visible. Agent items are on disk but hidden; the toggle chip shows the muted count.</p>
     <div class="flex gap-4">
@@ -358,7 +362,7 @@
           <li><strong>Default OFF.</strong> First-time reviewers see only user-origin items so the list isn't overwhelmed with agent findings that haven't been triaged.</li>
           <li><strong>Persists per-intent</strong> in <code>localStorage</code> under <code>haiku-review.toggle.agent-feedback.{intentSlug}</code>. Not a global user setting — per-intent, because every review session has different noise characteristics.</li>
           <li><strong>Counts update live</strong>: the chip on the toggle always shows the opposite set (<code>{n} hidden</code> when off, <code>{n} inline</code> when on).</li>
-          <li><strong>Keyboard shortcut</strong>: <kbd>A</kbd> inside the sidebar toggles it. <kbd>?</kbd> lists shortcuts.</li>
+          <li><strong>Keyboard shortcut</strong>: <kbd aria-keyshortcuts="Alt+a">Alt</kbd>+<kbd aria-keyshortcuts="Alt+a">A</kbd> inside the sidebar toggles the agent-feedback reveal (the bare <kbd>A</kbd> is reserved for Approve per the global shortcut map; <kbd>Alt+A</kbd> avoids the collision and the screen-reader browse-mode intercept for bare letters). <kbd>?</kbd> lists shortcuts.</li>
           <li><strong>When switched on with active filter</strong>, newly-revealed items respect the current filter (status grouping, search query, etc.).</li>
         </ul>
       </div>

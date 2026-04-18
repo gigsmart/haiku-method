@@ -52,6 +52,10 @@
 </head>
 <body class="dark bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
 
+  <!-- FB-30: Skip links. First focusable elements; visually hidden until focused. -->
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:px-3 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white">Skip to main content</a>
+  <a href="#feedback-list" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-44 focus:z-[200] focus:px-3 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white">Skip to feedback list</a>
+
   <!-- Header -->
   <header class="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
     <div class="max-w-[1400px] mx-auto px-4 sm:px-5 py-3 flex items-center justify-between">
@@ -161,7 +165,13 @@
             </div>
 
             <!-- Pin 1 — with floating annotation card -->
-            <div class="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white" style="transform: translate(-50%, -50%);" style="left: 25%; top: 30%;">1</div>
+            <!-- FB-17: <button> with tabindex=0 + aria-label naming FB id and normalized coords + aria-keyshortcuts="Enter" makes the pin keyboard-reachable. -->
+            <button type="button" tabindex="0"
+                    aria-label="Feedback FB-01 at 25% 30% — press Enter to view details"
+                    aria-keyshortcuts="Enter"
+                    data-fb-id="FB-01"
+                    class="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                    style="transform: translate(-50%, -50%); left: 25%; top: 30%;">1</button>
             <div class="absolute z-20" style="left: calc(25% + 24px); top: calc(30% - 8px);">
               <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer w-[240px]">
                 <div class="flex items-center gap-2 mb-1">
@@ -177,10 +187,20 @@
             </div>
 
             <!-- Pin 2 -->
-            <div class="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white" style="transform: translate(-50%, -50%);" style="left: 65%; top: 55%;">2</div>
+            <button type="button" tabindex="0"
+                    aria-label="Feedback FB-02 at 65% 55% — press Enter to view details"
+                    aria-keyshortcuts="Enter"
+                    data-fb-id="FB-02"
+                    class="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                    style="transform: translate(-50%, -50%); left: 65%; top: 55%;">2</button>
 
             <!-- Pin 3 -->
-            <div class="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white" style="transform: translate(-50%, -50%);" style="left: 40%; top: 75%;">3</div>
+            <button type="button" tabindex="0"
+                    aria-label="Feedback FB-03 at 40% 75% — press Enter to view details"
+                    aria-keyshortcuts="Enter"
+                    data-fb-id="FB-03"
+                    class="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                    style="transform: translate(-50%, -50%); left: 40%; top: 75%;">3</button>
           </div>
         </div>
 
@@ -302,7 +322,7 @@
 
     <!-- Review sidebar: sticky on desktop -->
     <div class="hidden lg:block w-80 shrink-0">
-      <aside id="review-sidebar"
+      <aside id="feedback-list" aria-label="Feedback list" role="complementary"
         class="sticky top-20 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 flex flex-col"
         style="max-height: calc(100vh - 6rem); overflow-y: auto;">
 
