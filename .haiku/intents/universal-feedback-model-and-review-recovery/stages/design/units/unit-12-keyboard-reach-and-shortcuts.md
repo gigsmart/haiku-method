@@ -71,10 +71,10 @@ quality_gates:
     skip-link-spec.html renders the skip link in default + focused states in
     both light and dark modes
 status: active
-bolt: 1
-hat: design-reviewer
+bolt: 2
+hat: designer
 started_at: '2026-04-18T03:59:28Z'
-hat_started_at: '2026-04-18T04:12:35Z'
+hat_started_at: '2026-04-18T04:16:11Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T03:59:28Z'
@@ -82,6 +82,26 @@ iterations:
     result: advance
   - hat: design-reviewer
     started_at: '2026-04-18T04:12:35Z'
+    completed_at: '2026-04-18T04:16:11Z'
+    result: reject
+    reason: >-
+      Gate 1 (`a` remains bound to Approve only) fails.
+      comments-list-with-agent-toggle.html:435 still shows bare `<kbd>A</kbd> to
+      toggle agent feedback` under the Desktop breakpoint — collides with
+      Approve and directly contradicts line 365 of the same file which correctly
+      specifies `Alt+A`. Change line 435 to `<kbd>Alt</kbd>+<kbd>A</kbd>` (or
+      re-word as `Alt+A`) so the desktop-breakpoint crib-note matches the
+      shortcut spec in §keyboard shortcut above. Everything else verified clean:
+      pins in feedback-inline-desktop.html + annotation-gesture-spec.html are
+      `<button tabindex="0">` with aria-label + aria-keyshortcuts (no
+      `tabindex="-1"` on pin buttons); focus-order-spec.md is complete with pins
+      interleaved; `#main-content` + `#feedback-list` anchors + skip links
+      present on all sticky-header artifacts; keyboard-shortcut-map §3b names
+      NVDA/JAWS/VoiceOver; §3c documents the "Require modifier key for
+      shortcuts" user setting; skip-link-spec.html renders default + focused
+      states in light + dark. One-line fix; resubmit after.
+  - hat: designer
+    started_at: '2026-04-18T04:16:11Z'
     completed_at: null
     result: null
 ---
