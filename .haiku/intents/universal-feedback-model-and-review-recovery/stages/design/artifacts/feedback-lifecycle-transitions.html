@@ -35,7 +35,7 @@
   <!-- Section 1: State diagram -->
   <section aria-labelledby="sec-diagram">
     <h2 id="sec-diagram" class="text-base font-semibold mb-3">1. State Machine</h2>
-    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Four statuses, seven transitions. Teal edges are agent-driven (FSM / quality gate). Blue edges are user-initiated from the review UI. Dashed edges re-open a terminal state.</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Four statuses, seven transitions. Teal edges are agent-driven (FSM / quality gate). Blue edges are user-initiated from the review UI. Dashed edges reopen a terminal state.</p>
 
     <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
       <svg viewBox="0 0 980 420" role="img" aria-label="Feedback status transition diagram" class="w-full h-auto">
@@ -109,21 +109,21 @@
           <text x="77" y="218" text-anchor="middle" font-size="11" font-weight="600" fill="#1d4ed8" class="dark:[fill:rgb(191_219_254)]">T4 · user · Dismiss</text>
         </g>
 
-        <!-- T5: rejected -> pending (human, re-open, dashed) -->
+        <!-- T5: rejected -> pending (human, reopen, dashed) -->
         <g>
           <path d="M180 300 Q290 240 200 135" fill="none" class="arrow-human dark:arrow-human-dark dashed" stroke-width="2" marker-end="url(#arrow-human)"/>
           <rect x="245" y="214" width="110" height="24" rx="6" fill="#eff6ff" stroke="#3b82f6" class="dark:[fill:rgb(30_58_138_/_0.45)] dark:[stroke:rgb(96_165_250)]"/>
           <text x="300" y="230" text-anchor="middle" font-size="10" font-weight="600" fill="#1d4ed8" class="dark:[fill:rgb(191_219_254)]">T5 · user · Reopen</text>
         </g>
 
-        <!-- T6: closed -> pending (human, re-open, dashed) -->
+        <!-- T6: closed -> pending (human, reopen, dashed) -->
         <g>
           <path d="M780 300 Q680 190 770 135" fill="none" class="arrow-human dark:arrow-human-dark dashed" stroke-width="2" marker-end="url(#arrow-human)"/>
           <rect x="640" y="154" width="110" height="24" rx="6" fill="#eff6ff" stroke="#3b82f6" class="dark:[fill:rgb(30_58_138_/_0.45)] dark:[stroke:rgb(96_165_250)]"/>
           <text x="695" y="170" text-anchor="middle" font-size="10" font-weight="600" fill="#1d4ed8" class="dark:[fill:rgb(191_219_254)]">T6 · user · Reopen</text>
         </g>
 
-        <!-- T7: addressed -> pending (human re-open, dashed) -->
+        <!-- T7: addressed -> pending (human reopen, dashed) -->
         <g>
           <path d="M720 95 Q490 140 240 95" fill="none" class="arrow-human dark:arrow-human-dark dashed" stroke-width="2" marker-end="url(#arrow-human)"/>
           <rect x="420" y="132" width="140" height="24" rx="6" fill="#eff6ff" stroke="#3b82f6" class="dark:[fill:rgb(30_58_138_/_0.45)] dark:[stroke:rgb(96_165_250)]"/>
@@ -138,7 +138,7 @@
         </div>
         <div class="p-3 rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-900/20">
           <p class="font-semibold text-blue-800 dark:text-blue-300 mb-1">Blue = human-owned</p>
-          <p class="text-blue-900/80 dark:text-blue-200/80">These transitions fire from review-UI footer buttons. Dashed edges are re-opens (a terminal state going back to <code>pending</code>).</p>
+          <p class="text-blue-900/80 dark:text-blue-200/80">These transitions fire from review-UI footer buttons. Dashed edges are reopens (a terminal state going back to <code>pending</code>).</p>
         </div>
       </div>
     </div>
@@ -175,7 +175,7 @@
             <td class="px-3 py-2 text-gray-400">— (self)</td>
             <td class="px-3 py-2 text-gray-400">—</td>
             <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-semibold">USER</span> <span class="ml-1 text-[10px] text-gray-500 dark:text-gray-400">T2 · Verify &amp; Close</span></td>
-            <td class="px-3 py-2 text-gray-500 dark:text-gray-400">Reviewer verifies the fix or re-opens if the fix is wrong. <em>Not</em> possible: <code>addressed → rejected</code> (dismiss only applies to pending).</td>
+            <td class="px-3 py-2 text-gray-500 dark:text-gray-400">Reviewer verifies the fix or reopens if the fix is wrong. <em>Not</em> possible: <code>addressed → rejected</code> (dismiss only applies to pending).</td>
           </tr>
           <tr>
             <td class="px-3 py-2 font-semibold bg-gray-100 dark:bg-gray-800/60">rejected</td>
@@ -183,7 +183,7 @@
             <td class="px-3 py-2 text-gray-400">—</td>
             <td class="px-3 py-2 text-gray-400">— (self)</td>
             <td class="px-3 py-2 text-gray-400">—</td>
-            <td class="px-3 py-2 text-gray-500 dark:text-gray-400">Terminal until re-opened. Agent cannot un-reject — only a human reconsiders a dismissal.</td>
+            <td class="px-3 py-2 text-gray-500 dark:text-gray-400">Terminal until reopened. Agent cannot un-reject — only a human reconsiders a dismissal.</td>
           </tr>
           <tr>
             <td class="px-3 py-2 font-semibold bg-green-50 dark:bg-green-900/20">closed</td>
@@ -191,7 +191,7 @@
             <td class="px-3 py-2 text-gray-400">—</td>
             <td class="px-3 py-2 text-gray-400">—</td>
             <td class="px-3 py-2 text-gray-400">— (self)</td>
-            <td class="px-3 py-2 text-gray-500 dark:text-gray-400">Terminal until re-opened. Both agent-closed (gate verify) and human-closed (Verify &amp; Close) collapse into the same <code>closed</code> row.</td>
+            <td class="px-3 py-2 text-gray-500 dark:text-gray-400">Terminal until reopened. Both agent-closed (gate verify) and human-closed (Verify &amp; Close) collapse into the same <code>closed</code> row.</td>
           </tr>
         </tbody>
       </table>
