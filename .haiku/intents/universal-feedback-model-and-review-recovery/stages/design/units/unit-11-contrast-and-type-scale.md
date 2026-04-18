@@ -32,6 +32,15 @@ inputs:
 outputs:
   - stages/design/artifacts/contrast-and-type-audit.md
   - stages/design/artifacts/state-signaling-inventory.html
+  - stages/design/artifacts/feedback-inline-desktop.html
+  - stages/design/artifacts/feedback-inline-mobile.html
+  - stages/design/artifacts/feedback-card-states.html
+  - stages/design/artifacts/comments-list-with-agent-toggle.html
+  - stages/design/artifacts/assessor-summary-card.html
+  - stages/design/artifacts/revisit-modal-spec.html
+  - stages/design/artifacts/annotation-popover-states.html
+  - stages/design/DESIGN-BRIEF.md
+  - knowledge/DESIGN-TOKENS.md
 quality_gates:
   - >-
     Metadata text (FB-XX · Visit N · origin lines) uses `text-stone-500
@@ -65,7 +74,7 @@ quality_gates:
     contrast-and-type-audit.md written with measured contrast ratios for every
     (foreground, background) pair used in artifacts; any pair below 4.5:1 for
     body text or 3:1 for UI is listed with the remediation applied
-status: active
+status: completed
 bolt: 1
 hat: designer
 started_at: '2026-04-18T03:59:18Z'
@@ -75,6 +84,7 @@ iterations:
     started_at: '2026-04-18T03:59:18Z'
     completed_at: null
     result: null
+completed_at: '2026-04-18T21:15:12Z'
 ---
 # Contrast, type scale, and non-color state signaling
 
@@ -106,13 +116,13 @@ The feedback-assessor hat (auto-injected) will independently re-check each FB di
 
 ## Completion criteria
 
-- [ ] Metadata text on every card uses `text-stone-500 dark:text-stone-400` minimum on all light + dark card surfaces; DESIGN-TOKENS.md §1 documents this ban-list with measured contrast
-- [ ] `grep -rEn 'text-\[(9|10)px\]' stages/design/artifacts/` returns 0 matches
-- [ ] `text-[11px]` only appears alongside `font-semibold` in remaining artifacts; this rule is documented in DESIGN-BRIEF §2 typography
-- [ ] Closed state does NOT apply `opacity-70` to the card; rejected state does NOT apply `opacity-50`; grep confirms
-- [ ] Rejected title renders as `text-stone-500 line-through decoration-stone-500` at full opacity — visible at compact (truncated) width without clipping mid-word
-- [ ] Disabled buttons: `bg-stone-100 text-stone-500` or similar pair ≥ 3:1; `bg-green-600/50 text-white/80` pattern removed everywhere; `aria-disabled="true"` present on every disabled control
-- [ ] Every status has at least TWO signals: color (left border) + shape (icon glyph OR text prefix) visible in BOTH compact and expanded card states
-- [ ] `contrast-and-type-audit.md` written with measured ratios for every (fg, bg) pair used in the artifacts, including remediation applied
-- [ ] `state-signaling-inventory.html` renders all 4 statuses in compact + expanded forms showing both signals
-- [ ] DESIGN-BRIEF §2 + §6 and DESIGN-TOKENS.md updated as described
+- [x] Metadata text on every card uses `text-stone-500 dark:text-stone-400` minimum on all light + dark card surfaces; DESIGN-TOKENS.md §1 documents this ban-list with measured contrast
+- [x] `grep -rEn 'text-\[(9|10)px\]' stages/design/artifacts/` returns 0 matches
+- [x] `text-[11px]` only appears alongside `font-semibold` in remaining artifacts; this rule is documented in DESIGN-BRIEF §2 typography
+- [x] Closed state does NOT apply `opacity-70` to the card; rejected state does NOT apply `opacity-50`; grep confirms
+- [x] Rejected title renders as `text-stone-500 line-through decoration-stone-500` at full opacity — visible at compact (truncated) width without clipping mid-word
+- [x] Disabled buttons: `bg-stone-100 text-stone-500` or similar pair ≥ 3:1; `bg-green-600/50 text-white/80` pattern removed everywhere; `aria-disabled="true"` present on every disabled control
+- [x] Every status has at least TWO signals: color (left border) + shape (icon glyph OR text prefix) visible in BOTH compact and expanded card states
+- [x] `contrast-and-type-audit.md` written with measured ratios for every (fg, bg) pair used in the artifacts, including remediation applied
+- [x] `state-signaling-inventory.html` renders all 4 statuses in compact + expanded forms showing both signals
+- [x] DESIGN-BRIEF §2 + §6 and DESIGN-TOKENS.md updated as described

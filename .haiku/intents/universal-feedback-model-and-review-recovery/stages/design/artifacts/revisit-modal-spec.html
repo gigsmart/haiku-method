@@ -24,20 +24,16 @@
 </head>
 <body class="bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 min-h-screen">
 
-  <!-- FB-30: Skip links. First focusable elements; visually hidden until focused. -->
-  <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:px-3 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white">Skip to main content</a>
-  <a href="#feedback-list" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-44 focus:z-[200] focus:px-3 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white">Skip to feedback list</a>
-
   <!-- ============================================================ -->
   <!-- Spec header -->
   <!-- ============================================================ -->
   <header class="sticky top-0 z-20 bg-white/90 dark:bg-stone-900/90 backdrop-blur border-b border-stone-200 dark:border-stone-700">
     <div class="max-w-6xl mx-auto px-6 py-4 flex items-start justify-between gap-4">
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">Design Spec · unit-06</p>
+        <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300">Design Spec · unit-06</p>
         <h1 class="text-xl font-semibold text-stone-900 dark:text-stone-100">Revisit confirmation modal</h1>
         <p class="text-xs text-stone-500 dark:text-stone-400 mt-1 max-w-2xl">
-          Destructive-action confirmation before <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-[11px]">haiku_revisit</code> fires. Approve stays single-click (reversible by next gate); Request Changes always routes through this modal.
+          Destructive-action confirmation before <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-xs">haiku_revisit</code> fires. Approve stays single-click (reversible by next gate); Request Changes always routes through this modal.
         </p>
       </div>
       <div class="flex items-center gap-2 shrink-0">
@@ -45,7 +41,7 @@
       </div>
     </div>
 
-    <nav class="max-w-6xl mx-auto px-6 pb-3 flex flex-wrap gap-1 text-[11px] font-medium">
+    <nav class="max-w-6xl mx-auto px-6 pb-3 flex flex-wrap gap-1 text-xs font-medium">
       <a href="#overview" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Overview</a>
       <a href="#anatomy" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Anatomy</a>
       <a href="#variant-gate" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Variant A · Gate-invoked</a>
@@ -59,7 +55,7 @@
     </nav>
   </header>
 
-  <main id="main-content" class="max-w-6xl mx-auto px-6 py-8 space-y-14">
+  <main class="max-w-6xl mx-auto px-6 py-8 space-y-14">
 
     <!-- ============================================================ -->
     <!-- Overview -->
@@ -68,15 +64,15 @@
       <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">Overview</h2>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Trigger</p>
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">Trigger</p>
           <p class="text-sm text-stone-700 dark:text-stone-300 leading-snug">Reviewer clicks <strong>Request Changes</strong>, types free-form feedback, or opens the review app mid-session.</p>
         </div>
         <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Why a modal</p>
-          <p class="text-sm text-stone-700 dark:text-stone-300 leading-snug"><code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-[11px]">haiku_revisit</code> rewrites stage state, re-queues downstream units, and pushes to the main intent branch. Not reversible from the UI.</p>
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">Why a modal</p>
+          <p class="text-sm text-stone-700 dark:text-stone-300 leading-snug"><code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-xs">haiku_revisit</code> rewrites stage state, re-queues downstream units, and pushes to the main intent branch. Not reversible from the UI.</p>
         </div>
         <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Approve contrast</p>
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">Approve contrast</p>
           <p class="text-sm text-stone-700 dark:text-stone-300 leading-snug">Approve is <strong>single-click</strong>. It is reversible by the next review gate. Revisit is not — hence the modal.</p>
         </div>
       </div>
@@ -110,56 +106,56 @@
             <div class="px-5 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
               <!-- (B) Lede -->
               <p data-anno="B" class="relative text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
-                This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-[11px]">haiku_revisit</code>, rewriting state and pushing to the main intent branch.
+                This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-xs">haiku_revisit</code>, rewriting state and pushing to the main intent branch.
               </p>
 
               <!-- (1) Target stage -->
               <section data-anno="1" class="relative">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Target stage</p>
+                <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">Target stage</p>
                 <div class="px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 flex items-center gap-2">
                   <span class="font-bold text-amber-700 dark:text-amber-400">Product</span>
-                  <span class="text-[10px] text-amber-600 dark:text-amber-400">earliest unaddressed</span>
+                  <span class="text-xs text-amber-600 dark:text-amber-400">earliest unaddressed</span>
                 </div>
               </section>
 
               <!-- (2) Downstream chips -->
               <section data-anno="2" class="relative">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Downstream stages (re-run)</p>
+                <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">Downstream stages (re-run)</p>
                 <div class="flex flex-wrap gap-1">
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Development</span>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Security</span>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Delivery</span>
+                  <span class="px-2 py-0.5 rounded-full text-xs font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Development</span>
+                  <span class="px-2 py-0.5 rounded-full text-xs font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Security</span>
+                  <span class="px-2 py-0.5 rounded-full text-xs font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Delivery</span>
                 </div>
-                <p class="text-[10px] text-stone-500 dark:text-stone-400 mt-1">These will be re-elaborated from the corrected upstream artifact.</p>
+                <p class="text-xs text-stone-500 dark:text-stone-400 mt-1">These will be re-elaborated from the corrected upstream artifact.</p>
               </section>
 
               <!-- (3) New feedback preview -->
               <section data-anno="3" class="relative">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">New feedback (from textarea)</p>
+                <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">New feedback (from textarea)</p>
                 <div class="px-3 py-2 rounded-md border border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-900/20">
                   <div class="flex items-center gap-1.5 mb-1">
-                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">Product</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
+                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">Product</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
                   </div>
                   <p class="text-xs text-stone-800 dark:text-stone-200 leading-snug">Acceptance criteria miss the mobile breakpoint for annotation pins.</p>
                 </div>
-                <p class="text-[10px] text-stone-500 dark:text-stone-400 mt-1">Will be saved to <span class="font-mono">Product</span> and marked pending.</p>
+                <p class="text-xs text-stone-500 dark:text-stone-400 mt-1">Will be saved to <span class="font-mono">Product</span> and marked pending.</p>
               </section>
 
               <!-- (4) Open feedback in scope -->
               <section data-anno="4" class="relative">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Open feedback in scope (3)</p>
+                <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">Open feedback in scope (3)</p>
                 <ul class="space-y-1">
                   <li class="flex items-center gap-2 text-xs">
-                    <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Product</span>
+                    <span class="shrink-0 px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Product</span>
                     <span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Acceptance criteria miss mobile breakpoint</span>
                   </li>
                   <li class="flex items-center gap-2 text-xs">
-                    <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Design</span>
+                    <span class="shrink-0 px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Design</span>
                     <span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Focus ring color doesn't meet WCAG AA on dark</span>
                   </li>
                   <li class="flex items-center gap-2 text-xs">
-                    <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Dev</span>
+                    <span class="shrink-0 px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Dev</span>
                     <span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Annotation pin click target under 44px</span>
                   </li>
                 </ul>
@@ -179,18 +175,18 @@
           <div class="p-3 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
             <p class="font-semibold text-stone-800 dark:text-stone-200 mb-2">Annotation key</p>
             <dl class="space-y-1.5">
-              <div class="flex gap-2"><dt class="font-mono text-stone-400">A</dt><dd class="text-stone-600 dark:text-stone-300">Amber circular glyph + title "Confirm revisit". Amber = destructive-but-recoverable-by-reviewer.</dd></div>
-              <div class="flex gap-2"><dt class="font-mono text-stone-400">B</dt><dd class="text-stone-600 dark:text-stone-300">Lede names the tool and its side effects in plain English.</dd></div>
-              <div class="flex gap-2"><dt class="font-mono text-stone-400">1</dt><dd class="text-stone-600 dark:text-stone-300">Target stage with justification label: <em>earliest unaddressed</em> or <em>currently viewed — no earlier unaddressed</em>.</dd></div>
-              <div class="flex gap-2"><dt class="font-mono text-stone-400">2</dt><dd class="text-stone-600 dark:text-stone-300">Downstream stage chips. Labels only — no per-unit breakdown; that's the review UI's job.</dd></div>
-              <div class="flex gap-2"><dt class="font-mono text-stone-400">3</dt><dd class="text-stone-600 dark:text-stone-300">Preview card for textarea-typed feedback, tagged with target stage + <em>pending</em>.</dd></div>
-              <div class="flex gap-2"><dt class="font-mono text-stone-400">4</dt><dd class="text-stone-600 dark:text-stone-300">Open feedback grouped by stage, titles only. Same summary shape as the additive-elaborate action.</dd></div>
-              <div class="flex gap-2"><dt class="font-mono text-stone-400">5</dt><dd class="text-stone-600 dark:text-stone-300">Footer: secondary Cancel + primary amber Confirm. Confirm copy names side effects concretely.</dd></div>
+              <div class="flex gap-2"><dt class="font-mono text-stone-600 dark:text-stone-300">A</dt><dd class="text-stone-600 dark:text-stone-300">Amber circular glyph + title "Confirm revisit". Amber = destructive-but-recoverable-by-reviewer.</dd></div>
+              <div class="flex gap-2"><dt class="font-mono text-stone-600 dark:text-stone-300">B</dt><dd class="text-stone-600 dark:text-stone-300">Lede names the tool and its side effects in plain English.</dd></div>
+              <div class="flex gap-2"><dt class="font-mono text-stone-600 dark:text-stone-300">1</dt><dd class="text-stone-600 dark:text-stone-300">Target stage with justification label: <em>earliest unaddressed</em> or <em>currently viewed — no earlier unaddressed</em>.</dd></div>
+              <div class="flex gap-2"><dt class="font-mono text-stone-600 dark:text-stone-300">2</dt><dd class="text-stone-600 dark:text-stone-300">Downstream stage chips. Labels only — no per-unit breakdown; that's the review UI's job.</dd></div>
+              <div class="flex gap-2"><dt class="font-mono text-stone-600 dark:text-stone-300">3</dt><dd class="text-stone-600 dark:text-stone-300">Preview card for textarea-typed feedback, tagged with target stage + <em>pending</em>.</dd></div>
+              <div class="flex gap-2"><dt class="font-mono text-stone-600 dark:text-stone-300">4</dt><dd class="text-stone-600 dark:text-stone-300">Open feedback grouped by stage, titles only. Same summary shape as the additive-elaborate action.</dd></div>
+              <div class="flex gap-2"><dt class="font-mono text-stone-600 dark:text-stone-300">5</dt><dd class="text-stone-600 dark:text-stone-300">Footer: secondary Cancel + primary amber Confirm. Confirm copy names side effects concretely.</dd></div>
             </dl>
           </div>
           <div class="p-3 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
             <p class="font-semibold text-stone-800 dark:text-stone-200 mb-1">Container specs</p>
-            <ul class="space-y-0.5 text-[11px] text-stone-600 dark:text-stone-300">
+            <ul class="space-y-0.5 text-xs text-stone-600 dark:text-stone-300">
               <li>Width: <code class="font-mono">max-w-md</code> (~448px)</li>
               <li>Corner: <code class="font-mono">rounded-xl</code></li>
               <li>Shadow: <code class="font-mono">shadow-2xl</code></li>
@@ -208,47 +204,47 @@
     <!-- ============================================================ -->
     <section id="variant-gate" class="space-y-3">
       <div class="flex items-center gap-2">
-        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">Variant A</span>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-widest bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">Variant A</span>
         <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">Gate-invoked (primary path)</h2>
       </div>
-      <p class="text-sm text-stone-500 dark:text-stone-400 max-w-3xl">FSM is paused at a review gate. Reviewer clicked Request Changes. <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-[11px]">earliestUnaddressedStage()</code> returns a real stage — it becomes the target.</p>
+      <p class="text-sm text-stone-500 dark:text-stone-400 max-w-3xl">FSM is paused at a review gate. Reviewer clicked Request Changes. <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-xs">earliestUnaddressedStage()</code> returns a real stage — it becomes the target.</p>
 
       <div class="rounded-xl bg-stone-900/80 dark:bg-black/60 p-8 flex items-start justify-center">
         <div class="w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden">
           <div class="px-5 py-4 border-b border-stone-200 dark:border-stone-700 flex items-center gap-2">
             <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500 text-white text-sm font-bold">↩</span>
             <h3 class="text-base font-bold text-stone-900 dark:text-stone-100">Confirm revisit</h3>
-            <span class="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">gate paused</span>
+            <span class="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">gate paused</span>
           </div>
           <div class="px-5 py-4 space-y-3">
             <p class="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
-              This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-[11px]">haiku_revisit</code>, rewriting state and pushing to the main intent branch.
+              This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-xs">haiku_revisit</code>, rewriting state and pushing to the main intent branch.
             </p>
             <section>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Target stage</p>
+              <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">Target stage</p>
               <div class="px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 flex items-center gap-2">
                 <span class="font-bold text-amber-700 dark:text-amber-400">Product</span>
-                <span class="text-[10px] text-amber-600 dark:text-amber-400">earliest unaddressed</span>
+                <span class="text-xs text-amber-600 dark:text-amber-400">earliest unaddressed</span>
               </div>
             </section>
             <section>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Downstream stages (re-run)</p>
+              <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">Downstream stages (re-run)</p>
               <div class="flex flex-wrap gap-1">
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Development</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Security</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Delivery</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Development</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Security</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Delivery</span>
               </div>
-              <p class="text-[10px] text-stone-500 dark:text-stone-400 mt-1">These will be re-elaborated from the corrected upstream artifact.</p>
+              <p class="text-xs text-stone-500 dark:text-stone-400 mt-1">These will be re-elaborated from the corrected upstream artifact.</p>
             </section>
             <section>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Open feedback in scope (2)</p>
+              <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">Open feedback in scope (2)</p>
               <ul class="space-y-1">
                 <li class="flex items-center gap-2 text-xs">
-                  <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Product</span>
+                  <span class="shrink-0 px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Product</span>
                   <span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Acceptance criteria miss mobile breakpoint</span>
                 </li>
                 <li class="flex items-center gap-2 text-xs">
-                  <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Design</span>
+                  <span class="shrink-0 px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Design</span>
                   <span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Focus ring color misses WCAG AA on dark</span>
                 </li>
               </ul>
@@ -274,11 +270,9 @@
     <!-- ============================================================ -->
     <!-- Variant B: user-opened -->
     <!-- ============================================================ -->
-    <section id="variant-user" class="space-y-3" aria-label="Variant B — user-opened feedback list context">
-    <!-- Alias anchor for global skip-to-feedback-list convention (FB-30) -->
-    <a id="feedback-list" class="sr-only" tabindex="-1" aria-hidden="true"></a>
+    <section id="variant-user" class="space-y-3">
       <div class="flex items-center gap-2">
-        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">Variant B</span>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-widest bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">Variant B</span>
         <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">User-opened (no active gate)</h2>
       </div>
       <p class="text-sm text-stone-500 dark:text-stone-400 max-w-3xl">
@@ -290,32 +284,32 @@
           <div class="px-5 py-4 border-b border-stone-200 dark:border-stone-700 flex items-center gap-2">
             <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500 text-white text-sm font-bold">↩</span>
             <h3 class="text-base font-bold text-stone-900 dark:text-stone-100">Confirm revisit</h3>
-            <span class="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400">no active gate</span>
+            <span class="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400">no active gate</span>
           </div>
           <div class="px-5 py-4 space-y-3">
             <p class="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
-              This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-[11px]">haiku_revisit</code>, rewriting state and pushing to the main intent branch.
+              This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-xs">haiku_revisit</code>, rewriting state and pushing to the main intent branch.
             </p>
             <!-- Advisory note because nothing structurally paused -->
-            <div class="px-3 py-2 rounded-md bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700 text-[11px] text-stone-600 dark:text-stone-300 leading-snug">
+            <div class="px-3 py-2 rounded-md bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700 text-xs text-stone-600 dark:text-stone-300 leading-snug">
               Nothing is structurally open. The <strong>earliest unaddressed</strong> stage still determines the target — even though you opened the app manually.
             </div>
             <section>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Target stage</p>
+              <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">Target stage</p>
               <div class="px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 flex items-center gap-2">
                 <span class="font-bold text-amber-700 dark:text-amber-400">Design</span>
-                <span class="text-[10px] text-amber-600 dark:text-amber-400">currently viewed — no earlier unaddressed</span>
+                <span class="text-xs text-amber-600 dark:text-amber-400">currently viewed — no earlier unaddressed</span>
               </div>
             </section>
             <section>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Downstream stages (re-run)</p>
+              <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">Downstream stages (re-run)</p>
               <div class="flex flex-wrap gap-1">
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Product</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Development</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Security</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Delivery</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Product</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Development</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Security</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Delivery</span>
               </div>
-              <p class="text-[10px] text-stone-500 dark:text-stone-400 mt-1">These will be re-elaborated from the corrected upstream artifact.</p>
+              <p class="text-xs text-stone-500 dark:text-stone-400 mt-1">These will be re-elaborated from the corrected upstream artifact.</p>
             </section>
             <!-- No "open feedback in scope" section when list is empty — suppressed, not shown as empty. -->
           </div>
@@ -342,7 +336,7 @@
     <!-- ============================================================ -->
     <section id="variant-typed" class="space-y-3">
       <div class="flex items-center gap-2">
-        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300">Variant C</span>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-widest bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300">Variant C</span>
         <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">With typed feedback in the textarea</h2>
       </div>
       <p class="text-sm text-stone-500 dark:text-stone-400 max-w-3xl">Reviewer typed free-form feedback into the sidebar textarea before clicking Request Changes. The preview card surfaces exactly how it will be stored.</p>
@@ -355,48 +349,48 @@
           </div>
           <div class="px-5 py-4 space-y-3">
             <p class="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
-              This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-[11px]">haiku_revisit</code>, rewriting state and pushing to the main intent branch.
+              This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-xs">haiku_revisit</code>, rewriting state and pushing to the main intent branch.
             </p>
             <section>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Target stage</p>
+              <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">Target stage</p>
               <div class="px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 flex items-center gap-2">
                 <span class="font-bold text-amber-700 dark:text-amber-400">Product</span>
-                <span class="text-[10px] text-amber-600 dark:text-amber-400">earliest unaddressed</span>
+                <span class="text-xs text-amber-600 dark:text-amber-400">earliest unaddressed</span>
               </div>
             </section>
             <section>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Downstream stages (re-run)</p>
+              <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">Downstream stages (re-run)</p>
               <div class="flex flex-wrap gap-1">
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Development</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Security</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Delivery</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Development</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Security</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Delivery</span>
               </div>
-              <p class="text-[10px] text-stone-500 dark:text-stone-400 mt-1">These will be re-elaborated from the corrected upstream artifact.</p>
+              <p class="text-xs text-stone-500 dark:text-stone-400 mt-1">These will be re-elaborated from the corrected upstream artifact.</p>
             </section>
             <section>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">New feedback (from textarea)</p>
+              <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">New feedback (from textarea)</p>
               <div class="px-3 py-2 rounded-md border border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-900/20">
                 <div class="flex items-center gap-1.5 mb-1">
-                  <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">Product</span>
-                  <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
+                  <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">Product</span>
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
                 </div>
                 <p class="text-xs text-stone-800 dark:text-stone-200 leading-snug">Acceptance criteria needs an explicit mobile annotation-pin target size; also add a "focus visible" note to the a11y criteria.</p>
               </div>
-              <p class="text-[10px] text-stone-500 dark:text-stone-400 mt-1">Will be saved to <span class="font-mono">Product</span> and marked pending.</p>
+              <p class="text-xs text-stone-500 dark:text-stone-400 mt-1">Will be saved to <span class="font-mono">Product</span> and marked pending.</p>
             </section>
             <section>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Open feedback in scope (3)</p>
+              <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">Open feedback in scope (3)</p>
               <ul class="space-y-1">
                 <li class="flex items-center gap-2 text-xs">
-                  <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Product</span>
+                  <span class="shrink-0 px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Product</span>
                   <span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Acceptance criteria miss mobile breakpoint</span>
                 </li>
                 <li class="flex items-center gap-2 text-xs">
-                  <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Design</span>
+                  <span class="shrink-0 px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Design</span>
                   <span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Focus ring color misses WCAG AA on dark</span>
                 </li>
                 <li class="flex items-center gap-2 text-xs">
-                  <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Dev</span>
+                  <span class="shrink-0 px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Dev</span>
                   <span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Annotation pin click target under 44px</span>
                 </li>
               </ul>
@@ -428,7 +422,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Light -->
         <div>
-          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-2">Light</p>
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Light</p>
           <div class="rounded-xl bg-stone-200 p-6 flex items-start justify-center">
             <div class="w-full max-w-sm bg-white rounded-xl shadow-2xl border border-stone-200 overflow-hidden">
               <div class="px-4 py-3 border-b border-stone-200 flex items-center gap-2">
@@ -436,10 +430,10 @@
                 <h3 class="text-sm font-bold text-stone-900">Confirm revisit</h3>
               </div>
               <div class="px-4 py-3 space-y-2">
-                <p class="text-xs text-stone-700 leading-snug">This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 font-mono text-[10px]">haiku_revisit</code>.</p>
+                <p class="text-xs text-stone-700 leading-snug">This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 font-mono text-xs">haiku_revisit</code>.</p>
                 <div class="px-2 py-1.5 rounded-md border border-amber-300 bg-amber-50 text-xs flex items-center gap-2">
                   <span class="font-bold text-amber-700">Product</span>
-                  <span class="text-[10px] text-amber-600">earliest unaddressed</span>
+                  <span class="text-xs text-amber-600">earliest unaddressed</span>
                 </div>
               </div>
               <div class="px-4 py-2.5 border-t border-stone-200 bg-stone-50 flex items-center justify-end gap-2">
@@ -452,7 +446,7 @@
 
         <!-- Dark -->
         <div class="dark">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-2">Dark</p>
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Dark</p>
           <div class="rounded-xl bg-black/60 p-6 flex items-start justify-center">
             <div class="w-full max-w-sm bg-stone-900 rounded-xl shadow-2xl border border-stone-700 overflow-hidden">
               <div class="px-4 py-3 border-b border-stone-700 flex items-center gap-2">
@@ -460,10 +454,10 @@
                 <h3 class="text-sm font-bold text-stone-100">Confirm revisit</h3>
               </div>
               <div class="px-4 py-3 space-y-2">
-                <p class="text-xs text-stone-300 leading-snug">This will invoke <code class="px-1 py-0.5 rounded bg-stone-800 font-mono text-[10px] text-stone-200">haiku_revisit</code>.</p>
+                <p class="text-xs text-stone-300 leading-snug">This will invoke <code class="px-1 py-0.5 rounded bg-stone-800 font-mono text-xs text-stone-200">haiku_revisit</code>.</p>
                 <div class="px-2 py-1.5 rounded-md border border-amber-700 bg-amber-900/20 text-xs flex items-center gap-2">
                   <span class="font-bold text-amber-400">Product</span>
-                  <span class="text-[10px] text-amber-400">earliest unaddressed</span>
+                  <span class="text-xs text-amber-400">earliest unaddressed</span>
                 </div>
               </div>
               <div class="px-4 py-2.5 border-t border-stone-700 bg-stone-900/60 flex items-center justify-end gap-2">
@@ -505,42 +499,42 @@
                   </button>
                 </div>
                 <div class="flex-1 overflow-y-auto px-4 py-3 space-y-3 text-left">
-                  <p class="text-xs text-stone-700 dark:text-stone-300 leading-snug">This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-[10px]">haiku_revisit</code>, rewriting state and pushing to the main intent branch.</p>
+                  <p class="text-xs text-stone-700 dark:text-stone-300 leading-snug">This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-xs">haiku_revisit</code>, rewriting state and pushing to the main intent branch.</p>
                   <section>
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Target stage</p>
+                    <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">Target stage</p>
                     <div class="px-2 py-1.5 rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 flex items-center gap-2">
                       <span class="font-bold text-amber-700 dark:text-amber-400 text-xs">Product</span>
-                      <span class="text-[10px] text-amber-600 dark:text-amber-400">earliest unaddressed</span>
+                      <span class="text-xs text-amber-600 dark:text-amber-400">earliest unaddressed</span>
                     </div>
                   </section>
                   <section>
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Downstream stages (re-run)</p>
+                    <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">Downstream stages (re-run)</p>
                     <div class="flex flex-wrap gap-1">
-                      <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Development</span>
-                      <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Security</span>
-                      <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Delivery</span>
+                      <span class="px-2 py-0.5 rounded-full text-xs font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Development</span>
+                      <span class="px-2 py-0.5 rounded-full text-xs font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Security</span>
+                      <span class="px-2 py-0.5 rounded-full text-xs font-semibold border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">Delivery</span>
                     </div>
                   </section>
                   <section>
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">Open feedback in scope (3)</p>
+                    <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-1">Open feedback in scope (3)</p>
                     <ul class="space-y-1">
-                      <li class="flex items-center gap-2 text-[11px]">
-                        <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Product</span>
+                      <li class="flex items-center gap-2 text-xs">
+                        <span class="shrink-0 px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Product</span>
                         <span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Acceptance criteria miss mobile breakpoint</span>
                       </li>
-                      <li class="flex items-center gap-2 text-[11px]">
-                        <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Design</span>
+                      <li class="flex items-center gap-2 text-xs">
+                        <span class="shrink-0 px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Design</span>
                         <span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Focus ring color misses WCAG AA</span>
                       </li>
-                      <li class="flex items-center gap-2 text-[11px]">
-                        <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Dev</span>
+                      <li class="flex items-center gap-2 text-xs">
+                        <span class="shrink-0 px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Dev</span>
                         <span class="flex-1 min-w-0 truncate text-stone-700 dark:text-stone-300">Annotation pin tap target under 44px</span>
                       </li>
                     </ul>
                   </section>
                 </div>
                 <div class="px-3 py-3 border-t border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/60 flex flex-col gap-2">
-                  <button class="w-full min-h-[44px] px-3 py-2 text-xs font-semibold rounded-md bg-amber-600 hover:bg-amber-700 text-white focus:ring-2 focus:ring-amber-500 focus:outline-none leading-snug">Confirm &amp; Revisit to Product<br><span class="text-[10px] font-medium opacity-90">resets 3 downstream stages</span></button>
+                  <button class="w-full min-h-[44px] px-3 py-2 text-xs font-semibold rounded-md bg-amber-600 hover:bg-amber-700 text-white focus:ring-2 focus:ring-amber-500 focus:outline-none leading-snug">Confirm &amp; Revisit to Product<br><span class="text-xs font-medium opacity-90">resets 3 downstream stages</span></button>
                   <button class="w-full min-h-[44px] px-3 py-2 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">Cancel</button>
                 </div>
               </div>
@@ -556,7 +550,7 @@
               <li>Viewport &lt; 640px: modal fills screen with 8px insets. <code class="font-mono">inset-x-2 top-2 bottom-2</code>.</li>
               <li>Footer stacks vertically; Confirm is primary and first (top), Cancel secondary below. On iPhone SE the primary stays within the bottom 1/3 reachable zone.</li>
               <li>Every tappable element ≥ 44×44px. The header ✕ close button is explicit on mobile (on desktop it's implicit via backdrop-click + ESC).</li>
-              <li>Confirm label wraps into two lines at narrow widths: stage name on line 1, side-effect summary on line 2, <code class="font-mono">text-[10px] font-medium opacity-90</code>.</li>
+              <li>Confirm label wraps into two lines at narrow widths: stage name on line 1, side-effect summary on line 2, <code class="font-mono">text-xs font-medium opacity-90</code>.</li>
               <li>Body region scrolls independently; footer is sticky at the bottom of the modal — reviewer always sees the action.</li>
             </ul>
           </div>
@@ -564,7 +558,7 @@
             <p class="font-semibold text-stone-800 dark:text-stone-200 mb-1">Breakpoint matrix</p>
             <table class="w-full text-left">
               <thead>
-                <tr class="text-[10px] uppercase tracking-widest text-stone-400">
+                <tr class="text-xs uppercase tracking-widest text-stone-600 dark:text-stone-300">
                   <th class="py-1">Breakpoint</th>
                   <th class="py-1">Width</th>
                   <th class="py-1">Footer</th>
@@ -591,7 +585,7 @@
 
         <!-- Focus order -->
         <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Focus order (tab-cycle)</p>
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Focus order (tab-cycle)</p>
           <ol class="list-decimal pl-5 text-xs text-stone-700 dark:text-stone-300 space-y-1">
             <li><strong>On open:</strong> focus moves to <code class="font-mono">Cancel</code> (safe default — no accidental Enter-to-confirm for destructive action).</li>
             <li>Tab → <code class="font-mono">Confirm &amp; Revisit</code> button.</li>
@@ -603,22 +597,22 @@
 
         <!-- Dismiss paths -->
         <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Dismiss paths (all non-destructive)</p>
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Dismiss paths (all non-destructive)</p>
           <ul class="space-y-1.5 text-xs text-stone-700 dark:text-stone-300">
             <li class="flex items-start gap-2">
-              <kbd class="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600">Esc</kbd>
+              <kbd class="shrink-0 px-1.5 py-0.5 rounded text-xs font-mono bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600">Esc</kbd>
               <span>Closes modal. <em>No</em> state change. Returns focus to trigger.</span>
             </li>
             <li class="flex items-start gap-2">
-              <span class="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600">click backdrop</span>
+              <span class="shrink-0 px-1.5 py-0.5 rounded text-xs font-mono bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600">click backdrop</span>
               <span>Closes modal. <em>No</em> state change. Returns focus to trigger.</span>
             </li>
             <li class="flex items-start gap-2">
-              <span class="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600">[Cancel]</span>
+              <span class="shrink-0 px-1.5 py-0.5 rounded text-xs font-mono bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600">[Cancel]</span>
               <span>Closes modal. <em>No</em> state change. Returns focus to trigger.</span>
             </li>
             <li class="flex items-start gap-2">
-              <span class="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600">[✕] (mobile)</span>
+              <span class="shrink-0 px-1.5 py-0.5 rounded text-xs font-mono bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600">[✕] (mobile)</span>
               <span>Explicit header close on viewports &lt; 640px. Same effect as Cancel.</span>
             </li>
           </ul>
@@ -626,8 +620,8 @@
 
         <!-- ARIA -->
         <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 md:col-span-2">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">ARIA semantics</p>
-          <pre class="text-[11px] text-stone-700 dark:text-stone-300 bg-stone-50 dark:bg-stone-950 rounded-md p-3 overflow-x-auto border border-stone-200 dark:border-stone-800"><code>&lt;div
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">ARIA semantics</p>
+          <pre class="text-xs text-stone-700 dark:text-stone-300 bg-stone-50 dark:bg-stone-950 rounded-md p-3 overflow-x-auto border border-stone-200 dark:border-stone-800"><code>&lt;div
   role="dialog"
   aria-modal="true"
   aria-labelledby="revisit-modal-title"
@@ -658,9 +652,9 @@
         <table class="min-w-full text-xs">
           <thead class="bg-stone-50 dark:bg-stone-800/60">
             <tr class="text-left">
-              <th class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">Region</th>
-              <th class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">Copy</th>
-              <th class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">Notes</th>
+              <th class="px-3 py-2 text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">Region</th>
+              <th class="px-3 py-2 text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">Copy</th>
+              <th class="px-3 py-2 text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">Notes</th>
             </tr>
           </thead>
           <tbody class="text-stone-700 dark:text-stone-300">
@@ -691,7 +685,7 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Structure</p>
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Structure</p>
           <ul class="text-xs space-y-1 text-stone-700 dark:text-stone-300">
             <li>Surface: <code class="font-mono">bg-white dark:bg-stone-900</code></li>
             <li>Border: <code class="font-mono">border-stone-200 dark:border-stone-700</code></li>
@@ -703,7 +697,7 @@
         </div>
 
         <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Destructive accent (target + confirm)</p>
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Destructive accent (target + confirm)</p>
           <ul class="text-xs space-y-1 text-stone-700 dark:text-stone-300">
             <li>Target chip fill: <code class="font-mono">bg-amber-50 dark:bg-amber-900/20</code></li>
             <li>Target chip border: <code class="font-mono">border-amber-300 dark:border-amber-700</code></li>
@@ -715,18 +709,18 @@
         </div>
 
         <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Typography</p>
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Typography</p>
           <ul class="text-xs space-y-1 text-stone-700 dark:text-stone-300">
             <li>Title: <code class="font-mono">text-base font-bold</code></li>
             <li>Body: <code class="font-mono">text-sm leading-relaxed</code></li>
-            <li>Section label: <code class="font-mono">text-[10px] font-bold uppercase tracking-widest</code></li>
-            <li>Chip: <code class="font-mono">text-[10px] font-semibold</code></li>
+            <li>Section label: <code class="font-mono">text-xs font-bold uppercase tracking-widest</code></li>
+            <li>Chip: <code class="font-mono">text-xs font-semibold</code></li>
             <li>List item: <code class="font-mono">text-xs</code></li>
           </ul>
         </div>
 
         <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Spacing</p>
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Spacing</p>
           <ul class="text-xs space-y-1 text-stone-700 dark:text-stone-300">
             <li>Header/Footer padding: <code class="font-mono">px-5 py-3–4</code></li>
             <li>Body padding: <code class="font-mono">px-5 py-4 space-y-3</code></li>
@@ -737,7 +731,7 @@
         </div>
 
         <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Typed-feedback preview (user-visual origin)</p>
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Typed-feedback preview (user-visual origin)</p>
           <ul class="text-xs space-y-1 text-stone-700 dark:text-stone-300">
             <li>Fill: <code class="font-mono">bg-sky-50 dark:bg-sky-900/20</code></li>
             <li>Border: <code class="font-mono">border-sky-300 dark:border-sky-700</code></li>
@@ -747,7 +741,7 @@
         </div>
 
         <div class="p-4 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Z-index</p>
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Z-index</p>
           <ul class="text-xs space-y-1 text-stone-700 dark:text-stone-300">
             <li>Backdrop + dialog: <code class="font-mono">z-[100]</code> (above popovers at <code class="font-mono">z-50</code>, header at <code class="font-mono">z-40</code>)</li>
             <li>Matches the modal layer defined in <code class="font-mono">DESIGN-TOKENS.md §6</code>.</li>

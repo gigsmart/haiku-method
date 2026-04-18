@@ -113,7 +113,7 @@
   >
     &#x1F4AC;
     <!-- Count badge -->
-    <span class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-2 border-white dark:border-gray-900">3</span>
+    <span class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-2 border-white dark:border-gray-900">3</span>
   </button>
 
   <!-- Bottom Sheet Overlay (the feedback view for mobile) -->
@@ -124,7 +124,7 @@
       <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Feedback</h2>
       <button
         aria-label="Close feedback panel"
-        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 touch-target flex items-center justify-center text-lg"
+        class="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 touch-target flex items-center justify-center text-lg"
         onclick="document.getElementById('feedback-sheet').classList.add('hidden')"
       >
         &times;
@@ -135,11 +135,11 @@
     <div class="shrink-0 flex border-b border-gray-200 dark:border-gray-700" role="tablist">
       <button role="tab" aria-selected="true" class="flex-1 border-b-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 text-xs font-medium px-3 py-2.5 touch-target text-center">
         Feedback
-        <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">5</span>
+        <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">5</span>
       </button>
       <button role="tab" aria-selected="false" class="flex-1 border-b-2 border-transparent text-gray-500 dark:text-gray-400 text-xs font-medium px-3 py-2.5 touch-target text-center hover:text-gray-700 dark:hover:text-gray-200">
         Mine
-        <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">2</span>
+        <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-xs font-bold bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">2</span>
       </button>
     </div>
 
@@ -165,7 +165,7 @@
 
       <!-- Group: Current Visit -->
       <div class="flex items-center gap-2 px-1 py-1">
-        <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Current Visit</span>
+        <span class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300">Current Visit</span>
         <div class="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
       </div>
 
@@ -179,7 +179,7 @@
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
         </div>
         <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Missing null check in handleSubmit</p>
-        <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-03 &middot; Visit 2 &middot; adversarial-review</p>
+        <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-03 &middot; Visit 2 &middot; adversarial-review</p>
       </div>
 
       <!-- Pending item 2 -->
@@ -192,7 +192,7 @@
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
         </div>
         <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Header alignment feels off</p>
-        <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-05 &middot; Visit 2 &middot; jwaldrip</p>
+        <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-05 &middot; Visit 2 &middot; jwaldrip</p>
       </div>
 
       <!-- Pending item 3 (agent — shows Reject button) -->
@@ -208,7 +208,7 @@
         <div class="prose prose-xs prose-gray dark:prose-invert max-w-none mt-2">
           <p class="text-xs text-gray-600 dark:text-gray-400">The feedback validation logic in <code>ReviewSidebar</code> and the CRUD API handler both independently check field lengths and status transitions. This should be a shared utility to prevent drift.</p>
         </div>
-        <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-2">FB-06 &middot; Visit 2 &middot; agent</p>
+        <p class="text-xs text-stone-600 dark:text-stone-300 mt-2">FB-06 &middot; Visit 2 &middot; agent</p>
         <div class="flex gap-2 mt-2">
           <button class="text-xs font-medium px-3 py-1.5 rounded-md bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">Reject</button>
           <button class="text-xs font-medium px-3 py-1.5 rounded-md bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">Close</button>
@@ -217,7 +217,7 @@
 
       <!-- Group: Visit 1 -->
       <div class="flex items-center gap-2 px-1 py-1 mt-3">
-        <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Visit 1</span>
+        <span class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300">Visit 1</span>
         <div class="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
       </div>
 
@@ -231,21 +231,22 @@
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">addressed</span>
         </div>
         <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Lifecycle transitions need validation guards</p>
-        <p class="text-[10px] text-blue-500 dark:text-blue-400 mt-1">Addressed by: unit-04-feedback-crud-api</p>
-        <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-02 &middot; Visit 1 &middot; external-pr</p>
+        <p class="text-xs text-blue-500 dark:text-blue-400 mt-1">Addressed by: unit-04-feedback-crud-api</p>
+        <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-02 &middot; Visit 1 &middot; external-pr</p>
       </div>
 
       <!-- Closed -->
-      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-green-400 dark:border-l-green-500 p-3 rounded-lg bg-green-50/30 dark:bg-green-950/15 border border-gray-200 dark:border-gray-700 transition-colors touch-target opacity-70">
+      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-green-500 dark:border-l-green-400 p-3 rounded-lg bg-green-50/60 dark:bg-green-950/25 border border-stone-200 dark:border-stone-700 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
         <div class="flex items-center gap-2 mb-1">
+          <span aria-hidden="true" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-600 dark:bg-green-500 text-white text-xs font-bold leading-none">&check;</span>
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
             <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
           </span>
           <span class="flex-1"></span>
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">closed</span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" aria-label="Status: closed">closed</span>
         </div>
-        <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Button spacing inconsistent on tablet</p>
-        <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">FB-04 &middot; Visit 1 &middot; user-visual</p>
+        <p class="text-xs font-medium text-stone-700 dark:text-stone-300"><span class="text-green-700 dark:text-green-400 font-semibold">Closed &middot;</span> Button spacing inconsistent on tablet</p>
+        <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-04 &middot; Visit 1 &middot; user-visual</p>
       </div>
     </div>
 
@@ -256,8 +257,8 @@
         <button class="self-end px-3 py-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">Add</button>
       </div>
       <div class="flex gap-2">
-        <button class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors touch-target focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed">Approve</button>
-        <button class="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-colors touch-target focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed">Request Changes</button>
+        <button class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors touch-target focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:bg-green-300 disabled:text-green-800 dark:disabled:bg-green-900/40 dark:disabled:text-green-200 disabled:cursor-not-allowed">Approve</button>
+        <button class="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-colors touch-target focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:bg-amber-200 disabled:text-amber-900 dark:disabled:bg-amber-900/40 dark:disabled:text-amber-200 disabled:cursor-not-allowed">Request Changes</button>
       </div>
     </div>
   </div>
