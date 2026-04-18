@@ -100,7 +100,7 @@
 <header class="sticky top-0 z-40 bg-white/90 dark:bg-stone-900/90 backdrop-blur border-b border-stone-200 dark:border-stone-800">
   <div class="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
     <div>
-      <p class="text-[10px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">Design Stage · unit-04</p>
+      <p class="text-xs font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">Design Stage · unit-04</p>
       <h1 class="text-base font-semibold">Annotation popover states</h1>
     </div>
     <div class="flex items-center gap-2">
@@ -117,7 +117,7 @@
     <h2 class="text-lg font-semibold mb-3">Every visual state for the creation popover</h2>
     <p class="text-sm text-stone-700 dark:text-stone-300 mb-2">
       Companion to
-      <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-[11px] font-mono">annotation-gesture-spec.html</code>.
+      <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-xs font-mono">annotation-gesture-spec.html</code>.
       This file renders the popover in each distinct state so development
       can match pixel-for-pixel without guessing.
     </p>
@@ -150,7 +150,7 @@
       <!-- popover -->
       <div class="popover absolute" style="left: 180px; top: 150px;" role="dialog" aria-modal="true" aria-labelledby="p1-label">
         <div class="flex items-center justify-between mb-2">
-          <p id="p1-label" class="text-[10px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">New feedback @ <span>34%, 58%</span></p>
+          <p id="p1-label" class="text-xs font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">New feedback @ <span>34%, 58%</span></p>
           <button class="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 text-sm leading-none" aria-label="Close">&times;</button>
         </div>
         <input type="text" placeholder="Title…" aria-required="true"
@@ -158,10 +158,10 @@
         <textarea rows="3" placeholder="Detail…"
                   class="w-full text-xs p-2 mb-2 border border-stone-300 dark:border-stone-600 rounded-md bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-teal-500 focus:outline-none resize-none"></textarea>
         <div class="flex items-center justify-between">
-          <span class="text-[10px] text-stone-400 dark:text-stone-500">Esc to cancel</span>
+          <span class="text-xs text-stone-600 dark:text-stone-300">Esc to cancel</span>
           <div class="flex gap-1.5">
-            <button class="px-2.5 py-1 text-[10px] font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">Cancel</button>
-            <button class="px-2.5 py-1 text-[10px] font-semibold rounded-md bg-stone-200 dark:bg-stone-700 text-stone-500 dark:text-stone-400 cursor-not-allowed" disabled>Create</button>
+            <button class="px-2.5 py-1 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">Cancel</button>
+            <button class="px-2.5 py-1 text-xs font-semibold rounded-md bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 cursor-not-allowed border border-stone-400 dark:border-stone-500" disabled aria-disabled="true">Create</button>
           </div>
         </div>
       </div>
@@ -169,15 +169,15 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
       <div class="p-3 rounded-lg bg-stone-100 dark:bg-stone-800/60">
-        <p class="font-bold uppercase tracking-widest text-[10px] text-stone-500 dark:text-stone-400 mb-1">Create button</p>
+        <p class="font-bold uppercase tracking-widest text-xs text-stone-500 dark:text-stone-400 mb-1">Create button</p>
         <p>Disabled while both title and body are empty. Becomes primary teal as soon as either field has trimmed content.</p>
       </div>
       <div class="p-3 rounded-lg bg-stone-100 dark:bg-stone-800/60">
-        <p class="font-bold uppercase tracking-widest text-[10px] text-stone-500 dark:text-stone-400 mb-1">Location label</p>
+        <p class="font-bold uppercase tracking-widest text-xs text-stone-500 dark:text-stone-400 mb-1">Location label</p>
         <p>Spatial: <code>&lt;x%&gt;, &lt;y%&gt;</code>. Line: <code>L&lt;n&gt;</code>. Iframe: <code>Page &lt;n&gt; · &lt;region&gt;</code> or just <code>&lt;region&gt;</code>.</p>
       </div>
       <div class="p-3 rounded-lg bg-stone-100 dark:bg-stone-800/60">
-        <p class="font-bold uppercase tracking-widest text-[10px] text-stone-500 dark:text-stone-400 mb-1">Edge clipping</p>
+        <p class="font-bold uppercase tracking-widest text-xs text-stone-500 dark:text-stone-400 mb-1">Edge clipping</p>
         <p>Compute <code>{left, top}</code> with an 8px safety margin. If overflowing horizontally, flip to the left of the click.</p>
       </div>
     </div>
@@ -203,7 +203,7 @@
       <!-- popover anchored right of line 3 -->
       <div class="popover absolute" style="left: 420px; top: 38px;" role="dialog" aria-modal="true">
         <div class="flex items-center justify-between mb-2">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">New feedback @ <span>L3</span></p>
+          <p class="text-xs font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">New feedback @ <span>L3</span></p>
           <button class="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 text-sm leading-none" aria-label="Close">&times;</button>
         </div>
         <input type="text" value="Reviewer dispatcher unclear" aria-required="true"
@@ -211,10 +211,10 @@
         <textarea rows="3"
                   class="w-full text-xs p-2 mb-2 border border-stone-300 dark:border-stone-600 rounded-md bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-teal-500 focus:outline-none resize-none">What happens if one review agent errors mid-dispatch? Does the whole wave fail or does it continue with partial results?</textarea>
         <div class="flex items-center justify-between">
-          <span class="text-[10px] text-stone-400 dark:text-stone-500">⌘/Ctrl + Enter to save</span>
+          <span class="text-xs text-stone-600 dark:text-stone-300">⌘/Ctrl + Enter to save</span>
           <div class="flex gap-1.5">
-            <button class="px-2.5 py-1 text-[10px] font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">Cancel</button>
-            <button class="px-2.5 py-1 text-[10px] font-semibold rounded-md bg-teal-600 hover:bg-teal-700 text-white">Create</button>
+            <button class="px-2.5 py-1 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">Cancel</button>
+            <button class="px-2.5 py-1 text-xs font-semibold rounded-md bg-teal-600 hover:bg-teal-700 text-white">Create</button>
           </div>
         </div>
       </div>
@@ -238,10 +238,10 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- Step A — location form -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-2">Step A — location form (inline)</p>
+        <p class="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-2">Step A — location form (inline)</p>
         <div class="h-48 border border-stone-200 dark:border-stone-700 rounded-md bg-white dark:bg-stone-950 mb-2 flex items-center justify-center text-xs text-stone-400">PDF preview (iframe)</div>
         <div class="p-3 rounded-lg border border-teal-300 dark:border-teal-700 bg-teal-50/40 dark:bg-teal-900/10">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-teal-700 dark:text-teal-300 mb-2">Add feedback on this preview</p>
+          <p class="text-xs font-bold uppercase tracking-widest text-teal-700 dark:text-teal-300 mb-2">Add feedback on this preview</p>
           <div class="grid grid-cols-[80px_1fr] gap-2">
             <input type="number" min="1" placeholder="Page" value="3"
                    class="text-xs p-2 border border-stone-300 dark:border-stone-600 rounded-md bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-teal-500 focus:outline-none"/>
@@ -254,11 +254,11 @@
 
       <!-- Step B — popover with preselected location -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-2">Step B — popover opens</p>
+        <p class="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-2">Step B — popover opens</p>
         <div class="relative h-64 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 stage-backdrop overflow-hidden">
           <div class="popover absolute" style="left: 20px; top: 20px;" role="dialog" aria-modal="true">
             <div class="flex items-center justify-between mb-2">
-              <p class="text-[10px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">New feedback @ <span>Page 3 · Opening paragraph</span></p>
+              <p class="text-xs font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">New feedback @ <span>Page 3 · Opening paragraph</span></p>
               <button class="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 text-sm leading-none">&times;</button>
             </div>
             <input type="text" placeholder="Title…" aria-required="true"
@@ -266,10 +266,10 @@
             <textarea rows="3" placeholder="Detail…"
                       class="w-full text-xs p-2 mb-2 border border-stone-300 dark:border-stone-600 rounded-md bg-white dark:bg-stone-800 focus:ring-2 focus:ring-teal-500 focus:outline-none resize-none"></textarea>
             <div class="flex items-center justify-between">
-              <button class="text-[10px] text-stone-500 dark:text-stone-400 hover:underline">← Change location</button>
+              <button class="text-xs text-stone-500 dark:text-stone-400 hover:underline">← Change location</button>
               <div class="flex gap-1.5">
-                <button class="px-2.5 py-1 text-[10px] font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">Cancel</button>
-                <button class="px-2.5 py-1 text-[10px] font-semibold rounded-md bg-stone-200 dark:bg-stone-700 text-stone-500 dark:text-stone-400 cursor-not-allowed" disabled>Create</button>
+                <button class="px-2.5 py-1 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">Cancel</button>
+                <button class="px-2.5 py-1 text-xs font-semibold rounded-md bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 cursor-not-allowed border border-stone-400 dark:border-stone-500" disabled aria-disabled="true">Create</button>
               </div>
             </div>
           </div>
@@ -278,7 +278,7 @@
     </div>
 
     <div class="p-3 rounded-lg bg-stone-100 dark:bg-stone-800/60 text-xs">
-      <p class="font-bold uppercase tracking-widest text-[10px] text-stone-500 dark:text-stone-400 mb-2">"Change location" affordance</p>
+      <p class="font-bold uppercase tracking-widest text-xs text-stone-500 dark:text-stone-400 mb-2">"Change location" affordance</p>
       <p class="text-stone-700 dark:text-stone-300">Once in Step B, the popover footer's left side shows <em>← Change location</em>. Clicking it closes the popover and re-focuses the location form's <code>region</code> input — no need to cancel + restart.</p>
     </div>
   </section>
@@ -301,11 +301,11 @@
     <div class="relative h-80 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 stage-backdrop overflow-hidden">
       <div class="ghost absolute" style="left: 200px; top: 140px; transform: translate(-50%, -50%);"></div>
       <div class="popover absolute" style="left: 220px; top: 150px;" role="dialog" aria-modal="true">
-        <div class="mb-2 p-2 rounded-md bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-[11px] text-red-700 dark:text-red-300">
+        <div class="mb-2 p-2 rounded-md bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-300">
           <strong>Couldn't save.</strong> Server returned 500. Your draft is preserved.
         </div>
         <div class="flex items-center justify-between mb-2">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">New feedback @ <span>42%, 60%</span></p>
+          <p class="text-xs font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">New feedback @ <span>42%, 60%</span></p>
           <button class="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 text-sm leading-none">&times;</button>
         </div>
         <input type="text" value="Review gate timing unclear"
@@ -313,8 +313,8 @@
         <textarea rows="3"
                   class="w-full text-xs p-2 mb-2 border border-stone-300 dark:border-stone-600 rounded-md bg-white dark:bg-stone-800 resize-none">Gate rolls back to elaborate but enforce-iteration flags it completed anyway.</textarea>
         <div class="flex items-center justify-end gap-1.5">
-          <button class="px-2.5 py-1 text-[10px] font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">Discard</button>
-          <button class="px-2.5 py-1 text-[10px] font-semibold rounded-md bg-red-600 hover:bg-red-700 text-white">Retry save</button>
+          <button class="px-2.5 py-1 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">Discard</button>
+          <button class="px-2.5 py-1 text-xs font-semibold rounded-md bg-red-600 hover:bg-red-700 text-white">Retry save</button>
         </div>
       </div>
     </div>
@@ -340,7 +340,7 @@
         <!-- mock content behind the sheet -->
         <div class="absolute top-0 left-0 right-0 h-16 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-700 flex items-center justify-between px-4">
           <span class="text-xs font-semibold">Review · Stage 3</span>
-          <span class="text-[10px] text-stone-500">FB: 4 pending</span>
+          <span class="text-xs text-stone-500">FB: 4 pending</span>
         </div>
         <div class="absolute inset-x-0 top-16 bottom-0 p-3 stage-backdrop overflow-hidden">
           <div class="w-full h-32 rounded border border-stone-200 dark:border-stone-700 bg-white/70 dark:bg-stone-800/50 mb-2"></div>
@@ -362,7 +362,7 @@
                     class="w-full text-sm p-3 mb-3 border border-stone-300 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-800 resize-none"></textarea>
           <div class="flex items-center gap-2">
             <button class="flex-1 h-11 text-sm font-semibold rounded-lg border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300">Cancel</button>
-            <button class="flex-1 h-11 text-sm font-semibold rounded-lg bg-stone-200 dark:bg-stone-700 text-stone-500 dark:text-stone-400" disabled>Create</button>
+            <button class="flex-1 h-11 text-sm font-semibold rounded-lg bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-400 dark:border-stone-500 cursor-not-allowed" disabled aria-disabled="true">Create</button>
           </div>
         </div>
       </div>
@@ -370,15 +370,15 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
       <div class="p-3 rounded-lg bg-stone-100 dark:bg-stone-800/60">
-        <p class="font-bold uppercase tracking-widest text-[10px] text-stone-500 dark:text-stone-400 mb-1">Touch targets</p>
+        <p class="font-bold uppercase tracking-widest text-xs text-stone-500 dark:text-stone-400 mb-1">Touch targets</p>
         <p>44×44px minimum per iOS/Material. Bottom sheet buttons are <code>h-11</code> (44px) with <code>text-sm</code>.</p>
       </div>
       <div class="p-3 rounded-lg bg-stone-100 dark:bg-stone-800/60">
-        <p class="font-bold uppercase tracking-widest text-[10px] text-stone-500 dark:text-stone-400 mb-1">Drag-to-dismiss</p>
+        <p class="font-bold uppercase tracking-widest text-xs text-stone-500 dark:text-stone-400 mb-1">Drag-to-dismiss</p>
         <p>Swipe down on the drag handle to cancel. Prevents accidental keyboard-dismiss from closing the sheet on mobile.</p>
       </div>
       <div class="p-3 rounded-lg bg-stone-100 dark:bg-stone-800/60">
-        <p class="font-bold uppercase tracking-widest text-[10px] text-stone-500 dark:text-stone-400 mb-1">Breakpoint</p>
+        <p class="font-bold uppercase tracking-widest text-xs text-stone-500 dark:text-stone-400 mb-1">Breakpoint</p>
         <p>Sheet activates below <code>480px</code> (just under the <code>sm:</code> Tailwind breakpoint). Above that, the popover stays anchored.</p>
       </div>
     </div>
@@ -403,7 +403,7 @@
         <div class="ghost absolute" style="left: 180px; top: 140px; transform: translate(-50%, -50%);"></div>
         <div class="popover absolute" style="left: 200px; top: 150px;" role="dialog" aria-modal="true">
           <div class="flex items-center justify-between mb-2">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-teal-400">New feedback @ <span>52%, 48%</span></p>
+            <p class="text-xs font-bold uppercase tracking-widest text-teal-400">New feedback @ <span>52%, 48%</span></p>
             <button class="text-stone-400 hover:text-stone-200 text-sm leading-none">&times;</button>
           </div>
           <input type="text" value="Dark mode contrast check"
@@ -411,8 +411,8 @@
           <textarea rows="3"
                     class="w-full text-xs p-2 mb-2 border border-stone-600 rounded-md bg-stone-800 text-stone-100 focus:ring-2 focus:ring-teal-500 focus:outline-none resize-none">Check that teal-500 focus ring reads correctly against stone-800 fill.</textarea>
           <div class="flex items-center justify-end gap-1.5">
-            <button class="px-2.5 py-1 text-[10px] font-semibold rounded-md border border-stone-600 text-stone-300 hover:bg-stone-800">Cancel</button>
-            <button class="px-2.5 py-1 text-[10px] font-semibold rounded-md bg-teal-600 hover:bg-teal-700 text-white">Create</button>
+            <button class="px-2.5 py-1 text-xs font-semibold rounded-md border border-stone-600 text-stone-300 hover:bg-stone-800">Cancel</button>
+            <button class="px-2.5 py-1 text-xs font-semibold rounded-md bg-teal-600 hover:bg-teal-700 text-white">Create</button>
           </div>
         </div>
       </div>
@@ -427,7 +427,7 @@
     <div class="overflow-x-auto">
       <table class="w-full text-sm border-collapse">
         <thead>
-          <tr class="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 border-b border-stone-200 dark:border-stone-700">
+          <tr class="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 border-b border-stone-200 dark:border-stone-700">
             <th class="text-left py-2 pr-4">Element</th>
             <th class="text-left py-2 pr-4">Default</th>
             <th class="text-left py-2 pr-4">Hover</th>

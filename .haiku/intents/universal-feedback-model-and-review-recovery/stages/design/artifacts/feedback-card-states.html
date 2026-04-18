@@ -34,7 +34,7 @@
     <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Per-status list of footer buttons. Buttons are right-aligned inside the card footer. Touch target min-height is <strong>44px</strong> on mobile; on desktop the card footer buttons drop to <strong>28px</strong> because the entire card is reachable via keyboard and pointer.</p>
     <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
       <table class="w-full text-xs">
-        <thead class="bg-gray-50 dark:bg-gray-800/50 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+        <thead class="bg-gray-50 dark:bg-gray-800/50 text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
           <tr>
             <th class="text-left px-3 py-2 w-28">Status</th>
             <th class="text-left px-3 py-2">Buttons</th>
@@ -45,7 +45,7 @@
           <tr>
             <td class="px-3 py-2 font-semibold"><span class="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span></td>
             <td class="px-3 py-2"><span class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">Dismiss</span> <span class="ml-1 text-gray-500 dark:text-gray-400">(maps to <code>pending → rejected</code>)</span></td>
-            <td class="px-3 py-2 text-gray-500 dark:text-gray-400 italic">"agent marks addressed when fix lands"</td>
+            <td class="px-3 py-2 text-gray-500 dark:text-stone-600 italic">"agent marks addressed when fix lands"</td>
           </tr>
           <tr>
             <td class="px-3 py-2 font-semibold"><span class="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">addressed</span></td>
@@ -74,17 +74,17 @@
 
       <!-- PENDING — default -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">pending · default</p>
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">pending · default</p>
         <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-amber-400 bg-amber-50/50 border-gray-200 cursor-pointer">
           <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-rose-100 text-rose-700 border-rose-200"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
             <span class="flex-1"></span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800">pending</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">pending</span>
           </div>
           <p class="text-xs font-medium text-gray-800 truncate">FB-12 · "Missing error state on empty comments list"</p>
-          <p class="text-[10px] text-gray-500 mt-0.5">Visit 1 · adversarial-review · parent-agent</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · adversarial-review · parent-agent</p>
           <div class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200">
-            <span class="text-[10px] text-gray-400 italic">agent marks addressed when fix lands</span>
+            <span class="text-xs text-stone-600 italic">agent marks addressed when fix lands</span>
             <span class="flex-1"></span>
             <button class="text-[11px] font-semibold px-2 py-1 rounded border border-gray-300 text-gray-700 bg-white">Dismiss</button>
           </div>
@@ -93,17 +93,17 @@
 
       <!-- PENDING — hover -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">pending · hover (card + button)</p>
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">pending · hover (card + button)</p>
         <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-amber-400 bg-amber-50/50 border-teal-400 cursor-pointer shadow-sm">
           <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-rose-100 text-rose-700 border-rose-200"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
             <span class="flex-1"></span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800">pending</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">pending</span>
           </div>
           <p class="text-xs font-medium text-gray-800 truncate">FB-12 · "Missing error state on empty comments list"</p>
-          <p class="text-[10px] text-gray-500 mt-0.5">Visit 1 · adversarial-review · parent-agent</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · adversarial-review · parent-agent</p>
           <div class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200">
-            <span class="text-[10px] text-gray-400 italic">agent marks addressed when fix lands</span>
+            <span class="text-xs text-stone-600 italic">agent marks addressed when fix lands</span>
             <span class="flex-1"></span>
             <button class="text-[11px] font-semibold px-2 py-1 rounded border border-gray-400 text-gray-900 bg-gray-100">Dismiss</button>
           </div>
@@ -112,15 +112,15 @@
 
       <!-- ADDRESSED — default -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">addressed · default</p>
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">addressed · default</p>
         <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-blue-400 bg-blue-50/50 border-gray-200 cursor-pointer">
           <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-100 text-sky-700 border-sky-200"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span>
             <span class="flex-1"></span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-800">addressed</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">addressed</span>
           </div>
           <p class="text-xs font-medium text-gray-800 truncate">FB-08 · "Align CTA with right edge of card"</p>
-          <p class="text-[10px] text-gray-500 mt-0.5">Visit 2 · user-visual · annotation · addressed_by commit <code>ab12c3</code></p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 2 · user-visual · annotation · addressed_by commit <code>ab12c3</code></p>
           <div class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200">
             <span class="flex-1"></span>
             <button class="text-[11px] font-semibold px-2 py-1 rounded border border-gray-300 text-gray-700 bg-white">Re-open</button>
@@ -131,15 +131,15 @@
 
       <!-- ADDRESSED — focus on Verify -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">addressed · focus on "Verify &amp; Close"</p>
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">addressed · focus on "Verify &amp; Close"</p>
         <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-blue-400 bg-blue-50/50 border-gray-200 cursor-pointer">
           <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-100 text-sky-700 border-sky-200"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span>
             <span class="flex-1"></span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-800">addressed</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">addressed</span>
           </div>
           <p class="text-xs font-medium text-gray-800 truncate">FB-08 · "Align CTA with right edge of card"</p>
-          <p class="text-[10px] text-gray-500 mt-0.5">Visit 2 · user-visual · annotation · addressed_by commit <code>ab12c3</code></p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 2 · user-visual · annotation · addressed_by commit <code>ab12c3</code></p>
           <div class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200">
             <span class="flex-1"></span>
             <button class="text-[11px] font-semibold px-2 py-1 rounded border border-gray-300 text-gray-700 bg-white">Re-open</button>
@@ -150,73 +150,75 @@
 
       <!-- REJECTED — default -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">rejected · default</p>
-        <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-gray-300 bg-gray-50 border-gray-200 cursor-pointer opacity-90">
+        <p class="text-xs font-bold uppercase tracking-widest text-stone-600 mb-1">rejected · default (full-opacity strikethrough + X glyph + "Rejected" prefix)</p>
+        <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-stone-400 bg-stone-100 border-stone-200 cursor-pointer">
           <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-rose-100 text-rose-700 border-rose-200"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
+            <span aria-hidden="true" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-stone-500 text-white text-xs font-bold leading-none">&times;</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
             <span class="flex-1"></span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500">rejected</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-stone-200 text-stone-700" aria-label="Status: rejected">rejected</span>
           </div>
-          <p class="text-xs font-medium text-gray-600 truncate line-through decoration-gray-400">FB-05 · "Duplicate of FB-02"</p>
-          <p class="text-[10px] text-gray-500 mt-0.5">Visit 1 · adversarial-review · dismissed by reviewer</p>
-          <div class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200">
+          <p class="text-xs font-medium text-stone-500 truncate"><span class="text-stone-700 font-semibold no-underline">Rejected &middot;</span> <span class="line-through decoration-stone-500">FB-05 &middot; "Duplicate of FB-02"</span></p>
+          <p class="text-xs text-stone-600 mt-0.5">Visit 1 &middot; adversarial-review &middot; dismissed by reviewer</p>
+          <div class="flex items-center gap-1 mt-2 pt-2 border-t border-stone-200">
             <span class="flex-1"></span>
-            <button class="text-[11px] font-semibold px-2 py-1 rounded border border-gray-300 text-gray-700 bg-white">Re-open</button>
+            <button class="text-[11px] font-semibold px-2 py-1 rounded border border-stone-300 text-stone-700 bg-white">Re-open</button>
           </div>
         </article>
       </div>
 
       <!-- CLOSED — default -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">closed · default</p>
-        <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-green-400 bg-green-50/40 border-gray-200 cursor-pointer">
+        <p class="text-xs font-bold uppercase tracking-widest text-stone-600 mb-1">closed · default (green border + checkmark glyph + "Closed" prefix — no opacity)</p>
+        <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-green-500 bg-green-50/60 border-stone-200 cursor-pointer">
           <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-violet-100 text-violet-700 border-violet-200"><span aria-hidden="true">&#x1F500;</span>External PR</span>
+            <span aria-hidden="true" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-600 text-white text-xs font-bold leading-none">&check;</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200"><span aria-hidden="true">&#x1F500;</span>External PR</span>
             <span class="flex-1"></span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-800">closed</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800" aria-label="Status: closed">closed</span>
           </div>
-          <p class="text-xs font-medium text-gray-800 truncate">FB-03 · "Tests should cover dismissed-then-reopened path"</p>
-          <p class="text-[10px] text-gray-500 mt-0.5">Visit 1 · external-pr · verified 2026-04-17 · <code>!pr-42</code></p>
-          <div class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200">
+          <p class="text-xs font-medium text-stone-700 truncate"><span class="text-green-700 font-semibold">Closed &middot;</span> FB-03 &middot; "Tests should cover dismissed-then-reopened path"</p>
+          <p class="text-xs text-stone-600 mt-0.5">Visit 1 &middot; external-pr &middot; verified 2026-04-17 &middot; <code>!pr-42</code></p>
+          <div class="flex items-center gap-1 mt-2 pt-2 border-t border-stone-200">
             <span class="flex-1"></span>
-            <button class="text-[11px] font-semibold px-2 py-1 rounded border border-gray-300 text-gray-700 bg-white">Re-open</button>
+            <button class="text-[11px] font-semibold px-2 py-1 rounded border border-stone-300 text-stone-700 bg-white">Re-open</button>
           </div>
         </article>
       </div>
 
       <!-- DISABLED state example -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">disabled · in-flight (optimistic)</p>
-        <article aria-busy="true" class="p-2.5 rounded-lg border border-l-[3px] border-l-blue-400 bg-blue-50/50 border-gray-200 opacity-70">
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">disabled · in-flight (optimistic)</p>
+        <article aria-busy="true" class="p-2.5 rounded-lg border border-l-[3px] border-l-blue-400 bg-blue-50/50 border-gray-200">
           <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-100 text-sky-700 border-sky-200"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span>
             <span class="flex-1"></span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-800">addressed</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">addressed</span>
             <span class="inline-block w-3 h-3 rounded-full border-2 border-teal-500 border-t-transparent animate-spin" aria-hidden="true"></span>
           </div>
           <p class="text-xs font-medium text-gray-800 truncate">FB-08 · "Align CTA with right edge of card"</p>
-          <p class="text-[10px] text-gray-500 mt-0.5">Closing... (will revert on failure)</p>
+          <p class="text-xs text-gray-500 mt-0.5">Closing... (will revert on failure)</p>
           <div class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200">
             <span class="flex-1"></span>
-            <button disabled class="text-[11px] font-semibold px-2 py-1 rounded border border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed">Re-open</button>
-            <button disabled class="text-[11px] font-semibold px-2 py-1 rounded bg-green-600/50 text-white/80 cursor-not-allowed">Verify &amp; Close</button>
+            <button disabled aria-disabled="true" class="text-[11px] font-semibold px-2 py-1 rounded border border-stone-400 text-stone-600 bg-stone-100 cursor-not-allowed">Re-open</button>
+            <button disabled aria-disabled="true" class="text-[11px] font-semibold px-2 py-1 rounded bg-green-300 text-green-800 dark:bg-green-900/40 dark:text-green-200 cursor-not-allowed">Verify &amp; Close</button>
           </div>
         </article>
       </div>
 
       <!-- ACTIVE (pressed) -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">pending · active (button pressed)</p>
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">pending · active (button pressed)</p>
         <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-amber-400 bg-amber-50/50 border-gray-200 cursor-pointer">
           <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-rose-100 text-rose-700 border-rose-200"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
             <span class="flex-1"></span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800">pending</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">pending</span>
           </div>
           <p class="text-xs font-medium text-gray-800 truncate">FB-12 · "Missing error state on empty comments list"</p>
-          <p class="text-[10px] text-gray-500 mt-0.5">Visit 1 · adversarial-review · parent-agent</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · adversarial-review · parent-agent</p>
           <div class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200">
-            <span class="text-[10px] text-gray-400 italic">agent marks addressed when fix lands</span>
+            <span class="text-xs text-stone-600 italic">agent marks addressed when fix lands</span>
             <span class="flex-1"></span>
             <button style="transform: translateY(1px); filter: brightness(0.95);" class="text-[11px] font-semibold px-2 py-1 rounded border border-gray-500 text-gray-900 bg-gray-200">Dismiss</button>
           </div>
@@ -233,17 +235,17 @@
 
       <!-- PENDING — default -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">pending · default</p>
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">pending · default</p>
         <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-amber-500 bg-amber-950/20 border-gray-700 cursor-pointer">
           <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-rose-900/30 text-rose-400 border-rose-800"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-900/30 text-rose-400 border-rose-800"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
             <span class="flex-1"></span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-900/30 text-amber-300">pending</span>
           </div>
           <p class="text-xs font-medium text-gray-200 truncate">FB-12 · "Missing error state on empty comments list"</p>
-          <p class="text-[10px] text-gray-500 mt-0.5">Visit 1 · adversarial-review · parent-agent</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · adversarial-review · parent-agent</p>
           <div class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-800">
-            <span class="text-[10px] text-gray-500 italic">agent marks addressed when fix lands</span>
+            <span class="text-xs text-gray-500 italic">agent marks addressed when fix lands</span>
             <span class="flex-1"></span>
             <button class="text-[11px] font-semibold px-2 py-1 rounded border border-gray-600 text-gray-300 bg-gray-800">Dismiss</button>
           </div>
@@ -252,17 +254,17 @@
 
       <!-- PENDING — hover -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">pending · hover</p>
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">pending · hover</p>
         <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-amber-500 bg-amber-950/20 border-teal-500 cursor-pointer shadow-sm">
           <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-rose-900/30 text-rose-400 border-rose-800"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-900/30 text-rose-400 border-rose-800"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
             <span class="flex-1"></span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-900/30 text-amber-300">pending</span>
           </div>
           <p class="text-xs font-medium text-gray-200 truncate">FB-12 · "Missing error state on empty comments list"</p>
-          <p class="text-[10px] text-gray-500 mt-0.5">Visit 1 · adversarial-review · parent-agent</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · adversarial-review · parent-agent</p>
           <div class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-800">
-            <span class="text-[10px] text-gray-500 italic">agent marks addressed when fix lands</span>
+            <span class="text-xs text-gray-500 italic">agent marks addressed when fix lands</span>
             <span class="flex-1"></span>
             <button class="text-[11px] font-semibold px-2 py-1 rounded border border-gray-500 text-gray-100 bg-gray-700">Dismiss</button>
           </div>
@@ -271,15 +273,15 @@
 
       <!-- ADDRESSED — default -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">addressed · default</p>
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">addressed · default</p>
         <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-blue-500 bg-blue-950/20 border-gray-700 cursor-pointer">
           <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-900/30 text-sky-400 border-sky-800"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span>
             <span class="flex-1"></span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-900/30 text-blue-300">addressed</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-900/30 text-blue-300">addressed</span>
           </div>
           <p class="text-xs font-medium text-gray-200 truncate">FB-08 · "Align CTA with right edge of card"</p>
-          <p class="text-[10px] text-gray-500 mt-0.5">Visit 2 · user-visual · annotation · addressed_by <code>ab12c3</code></p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 2 · user-visual · annotation · addressed_by <code>ab12c3</code></p>
           <div class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-800">
             <span class="flex-1"></span>
             <button class="text-[11px] font-semibold px-2 py-1 rounded border border-gray-600 text-gray-300 bg-gray-800">Re-open</button>
@@ -290,15 +292,15 @@
 
       <!-- ADDRESSED — focus -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">addressed · focus on "Verify &amp; Close"</p>
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">addressed · focus on "Verify &amp; Close"</p>
         <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-blue-500 bg-blue-950/20 border-gray-700 cursor-pointer">
           <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-900/30 text-sky-400 border-sky-800"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span>
             <span class="flex-1"></span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-900/30 text-blue-300">addressed</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-900/30 text-blue-300">addressed</span>
           </div>
           <p class="text-xs font-medium text-gray-200 truncate">FB-08 · "Align CTA with right edge of card"</p>
-          <p class="text-[10px] text-gray-500 mt-0.5">Visit 2 · user-visual · annotation · addressed_by <code>ab12c3</code></p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 2 · user-visual · annotation · addressed_by <code>ab12c3</code></p>
           <div class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-800">
             <span class="flex-1"></span>
             <button class="text-[11px] font-semibold px-2 py-1 rounded border border-gray-600 text-gray-300 bg-gray-800">Re-open</button>
@@ -307,75 +309,77 @@
         </article>
       </div>
 
-      <!-- REJECTED — default -->
+      <!-- REJECTED — default (dark mode) -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">rejected · default</p>
-        <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-gray-600 bg-gray-800/30 border-gray-700 cursor-pointer opacity-80">
+        <p class="text-xs font-bold uppercase tracking-widest text-stone-400 mb-1">rejected · default (full-opacity strikethrough + X glyph + "Rejected" prefix)</p>
+        <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-stone-500 bg-stone-800/50 border-stone-700 cursor-pointer">
           <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-rose-900/30 text-rose-400 border-rose-800"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
+            <span aria-hidden="true" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-stone-400 text-stone-900 text-xs font-bold leading-none">&times;</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-900/30 text-rose-400 border-rose-800"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
             <span class="flex-1"></span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-800 text-gray-400">rejected</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-stone-700 text-stone-200" aria-label="Status: rejected">rejected</span>
           </div>
-          <p class="text-xs font-medium text-gray-400 truncate line-through decoration-gray-600">FB-05 · "Duplicate of FB-02"</p>
-          <p class="text-[10px] text-gray-500 mt-0.5">Visit 1 · adversarial-review · dismissed</p>
-          <div class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-800">
+          <p class="text-xs font-medium text-stone-400 truncate"><span class="text-stone-200 font-semibold no-underline">Rejected &middot;</span> <span class="line-through decoration-stone-400">FB-05 &middot; "Duplicate of FB-02"</span></p>
+          <p class="text-xs text-stone-300 mt-0.5">Visit 1 &middot; adversarial-review &middot; dismissed</p>
+          <div class="flex items-center gap-1 mt-2 pt-2 border-t border-stone-700">
             <span class="flex-1"></span>
-            <button class="text-[11px] font-semibold px-2 py-1 rounded border border-gray-600 text-gray-300 bg-gray-800">Re-open</button>
+            <button class="text-[11px] font-semibold px-2 py-1 rounded border border-stone-600 text-stone-200 bg-stone-800">Re-open</button>
           </div>
         </article>
       </div>
 
-      <!-- CLOSED — default -->
+      <!-- CLOSED — default (dark) -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">closed · default</p>
-        <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-green-500 bg-green-950/15 border-gray-700 cursor-pointer">
+        <p class="text-xs font-bold uppercase tracking-widest text-stone-400 mb-1">closed · default (green border + checkmark glyph + "Closed" prefix — no opacity)</p>
+        <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-green-400 bg-green-950/25 border-stone-700 cursor-pointer">
           <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-violet-900/30 text-violet-400 border-violet-800"><span aria-hidden="true">&#x1F500;</span>External PR</span>
+            <span aria-hidden="true" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-500 text-white text-xs font-bold leading-none">&check;</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-900/30 text-violet-400 border-violet-800"><span aria-hidden="true">&#x1F500;</span>External PR</span>
             <span class="flex-1"></span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-900/30 text-green-300">closed</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-900/30 text-green-300" aria-label="Status: closed">closed</span>
           </div>
-          <p class="text-xs font-medium text-gray-200 truncate">FB-03 · "Tests should cover dismissed-then-reopened path"</p>
-          <p class="text-[10px] text-gray-500 mt-0.5">Visit 1 · external-pr · verified 2026-04-17 · <code>!pr-42</code></p>
-          <div class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-800">
+          <p class="text-xs font-medium text-stone-200 truncate"><span class="text-green-400 font-semibold">Closed &middot;</span> FB-03 &middot; "Tests should cover dismissed-then-reopened path"</p>
+          <p class="text-xs text-stone-300 mt-0.5">Visit 1 &middot; external-pr &middot; verified 2026-04-17 &middot; <code>!pr-42</code></p>
+          <div class="flex items-center gap-1 mt-2 pt-2 border-t border-stone-700">
             <span class="flex-1"></span>
-            <button class="text-[11px] font-semibold px-2 py-1 rounded border border-gray-600 text-gray-300 bg-gray-800">Re-open</button>
+            <button class="text-[11px] font-semibold px-2 py-1 rounded border border-stone-600 text-stone-200 bg-stone-800">Re-open</button>
           </div>
         </article>
       </div>
 
       <!-- DISABLED -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">disabled · in-flight</p>
-        <article aria-busy="true" class="p-2.5 rounded-lg border border-l-[3px] border-l-blue-500 bg-blue-950/20 border-gray-700 opacity-60">
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">disabled · in-flight</p>
+        <article aria-busy="true" class="p-2.5 rounded-lg border border-l-[3px] border-l-blue-500 bg-blue-950/20 border-gray-700">
           <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-900/30 text-sky-400 border-sky-800"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span>
             <span class="flex-1"></span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-900/30 text-blue-300">addressed</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-900/30 text-blue-300">addressed</span>
             <span class="inline-block w-3 h-3 rounded-full border-2 border-teal-400 border-t-transparent animate-spin" aria-hidden="true"></span>
           </div>
           <p class="text-xs font-medium text-gray-200 truncate">FB-08 · "Align CTA with right edge of card"</p>
-          <p class="text-[10px] text-gray-500 mt-0.5">Closing... (will revert on failure)</p>
+          <p class="text-xs text-gray-500 mt-0.5">Closing... (will revert on failure)</p>
           <div class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-800">
             <span class="flex-1"></span>
-            <button disabled class="text-[11px] font-semibold px-2 py-1 rounded border border-gray-700 text-gray-500 bg-gray-800/60 cursor-not-allowed">Re-open</button>
-            <button disabled class="text-[11px] font-semibold px-2 py-1 rounded bg-green-700/50 text-white/60 cursor-not-allowed">Verify &amp; Close</button>
+            <button disabled aria-disabled="true" class="text-[11px] font-semibold px-2 py-1 rounded border border-stone-500 text-stone-300 bg-stone-800 cursor-not-allowed">Re-open</button>
+            <button disabled aria-disabled="true" class="text-[11px] font-semibold px-2 py-1 rounded bg-green-300 text-green-800 dark:bg-green-900/40 dark:text-green-200 cursor-not-allowed">Verify &amp; Close</button>
           </div>
         </article>
       </div>
 
       <!-- ACTIVE -->
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">pending · active (button pressed)</p>
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">pending · active (button pressed)</p>
         <article tabindex="0" class="p-2.5 rounded-lg border border-l-[3px] border-l-amber-500 bg-amber-950/20 border-gray-700 cursor-pointer">
           <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-rose-900/30 text-rose-400 border-rose-800"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-900/30 text-rose-400 border-rose-800"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span>
             <span class="flex-1"></span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-900/30 text-amber-300">pending</span>
           </div>
           <p class="text-xs font-medium text-gray-200 truncate">FB-12 · "Missing error state on empty comments list"</p>
-          <p class="text-[10px] text-gray-500 mt-0.5">Visit 1 · adversarial-review · parent-agent</p>
+          <p class="text-xs text-gray-500 mt-0.5">Visit 1 · adversarial-review · parent-agent</p>
           <div class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-800">
-            <span class="text-[10px] text-gray-500 italic">agent marks addressed when fix lands</span>
+            <span class="text-xs text-gray-500 italic">agent marks addressed when fix lands</span>
             <span class="flex-1"></span>
             <button style="transform: translateY(1px); filter: brightness(0.9);" class="text-[11px] font-semibold px-2 py-1 rounded border border-gray-500 text-gray-100 bg-gray-600">Dismiss</button>
           </div>
@@ -391,7 +395,7 @@
     <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Every feedback card shows a small origin pill at top-left so the reviewer can tell at a glance where an item came from. WCAG AA contrast verified for every pair below (text vs. badge bg &gt; 4.5:1 in light, &gt; 4.5:1 in dark).</p>
     <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
       <table class="w-full text-xs">
-        <thead class="bg-gray-50 dark:bg-gray-800/50 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+        <thead class="bg-gray-50 dark:bg-gray-800/50 text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
           <tr>
             <th class="text-left px-3 py-2">origin</th>
             <th class="text-left px-3 py-2">light</th>
@@ -402,51 +406,51 @@
         </thead>
         <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
           <tr>
-            <td class="px-3 py-2 font-mono text-[11px]">adversarial-review</td>
-            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-rose-100 text-rose-700 border-rose-200"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span></td>
-            <td class="px-3 py-2 dark bg-gray-950 rounded"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-rose-900/30 text-rose-400 border-rose-800"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span></td>
+            <td class="px-3 py-2 font-mono text-xs">adversarial-review</td>
+            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span></td>
+            <td class="px-3 py-2 dark bg-gray-950 rounded"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-900/30 text-rose-400 border-rose-800"><span aria-hidden="true">&#x1F6E1;&#xFE0F;</span>Review Agent</span></td>
             <td class="px-3 py-2 text-gray-500 dark:text-gray-400">Agent (adversarial reviewer / feedback assessor)</td>
-            <td class="px-3 py-2"><span class="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[10px] font-semibold">PASS</span></td>
+            <td class="px-3 py-2"><span class="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-semibold">PASS</span></td>
           </tr>
           <tr>
-            <td class="px-3 py-2 font-mono text-[11px]">external-pr</td>
-            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-violet-100 text-violet-700 border-violet-200"><span aria-hidden="true">&#x1F500;</span>External PR</span></td>
-            <td class="px-3 py-2 dark bg-gray-950 rounded"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-violet-900/30 text-violet-400 border-violet-800"><span aria-hidden="true">&#x1F500;</span>External PR</span></td>
+            <td class="px-3 py-2 font-mono text-xs">external-pr</td>
+            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200"><span aria-hidden="true">&#x1F500;</span>External PR</span></td>
+            <td class="px-3 py-2 dark bg-gray-950 rounded"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-900/30 text-violet-400 border-violet-800"><span aria-hidden="true">&#x1F500;</span>External PR</span></td>
             <td class="px-3 py-2 text-gray-500 dark:text-gray-400">User (GitHub reviewer via provider translation)</td>
-            <td class="px-3 py-2"><span class="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[10px] font-semibold">PASS</span></td>
+            <td class="px-3 py-2"><span class="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-semibold">PASS</span></td>
           </tr>
           <tr>
-            <td class="px-3 py-2 font-mono text-[11px]">external-mr</td>
-            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-violet-100 text-violet-700 border-violet-200"><span aria-hidden="true">&#x1F500;</span>External MR</span></td>
-            <td class="px-3 py-2 dark bg-gray-950 rounded"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-violet-900/30 text-violet-400 border-violet-800"><span aria-hidden="true">&#x1F500;</span>External MR</span></td>
+            <td class="px-3 py-2 font-mono text-xs">external-mr</td>
+            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200"><span aria-hidden="true">&#x1F500;</span>External MR</span></td>
+            <td class="px-3 py-2 dark bg-gray-950 rounded"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-900/30 text-violet-400 border-violet-800"><span aria-hidden="true">&#x1F500;</span>External MR</span></td>
             <td class="px-3 py-2 text-gray-500 dark:text-gray-400">User (GitLab reviewer via provider translation)</td>
-            <td class="px-3 py-2"><span class="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[10px] font-semibold">PASS</span></td>
+            <td class="px-3 py-2"><span class="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-semibold">PASS</span></td>
           </tr>
           <tr>
-            <td class="px-3 py-2 font-mono text-[11px]">user-visual</td>
-            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-sky-100 text-sky-700 border-sky-200"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span></td>
-            <td class="px-3 py-2 dark bg-gray-950 rounded"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span></td>
+            <td class="px-3 py-2 font-mono text-xs">user-visual</td>
+            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span></td>
+            <td class="px-3 py-2 dark bg-gray-950 rounded"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-900/30 text-sky-400 border-sky-800"><span aria-hidden="true">&#x1F441;&#xFE0F;</span>User Visual</span></td>
             <td class="px-3 py-2 text-gray-500 dark:text-gray-400">User (annotation on doc / mockup)</td>
-            <td class="px-3 py-2"><span class="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[10px] font-semibold">PASS</span></td>
+            <td class="px-3 py-2"><span class="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-semibold">PASS</span></td>
           </tr>
           <tr>
-            <td class="px-3 py-2 font-mono text-[11px]">user-chat</td>
-            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-sky-100 text-sky-700 border-sky-200"><span aria-hidden="true">&#x1F4AC;</span>User Chat</span></td>
-            <td class="px-3 py-2 dark bg-gray-950 rounded"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800"><span aria-hidden="true">&#x1F4AC;</span>User Chat</span></td>
+            <td class="px-3 py-2 font-mono text-xs">user-chat</td>
+            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200"><span aria-hidden="true">&#x1F4AC;</span>User Chat</span></td>
+            <td class="px-3 py-2 dark bg-gray-950 rounded"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-900/30 text-sky-400 border-sky-800"><span aria-hidden="true">&#x1F4AC;</span>User Chat</span></td>
             <td class="px-3 py-2 text-gray-500 dark:text-gray-400">User (typed feedback from review app)</td>
-            <td class="px-3 py-2"><span class="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[10px] font-semibold">PASS</span></td>
+            <td class="px-3 py-2"><span class="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-semibold">PASS</span></td>
           </tr>
           <tr>
-            <td class="px-3 py-2 font-mono text-[11px]">agent</td>
-            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-teal-100 text-teal-700 border-teal-200"><span aria-hidden="true">&#x2728;</span>Agent</span></td>
-            <td class="px-3 py-2 dark bg-gray-950 rounded"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-teal-900/30 text-teal-400 border-teal-800"><span aria-hidden="true">&#x2728;</span>Agent</span></td>
+            <td class="px-3 py-2 font-mono text-xs">agent</td>
+            <td class="px-3 py-2"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200"><span aria-hidden="true">&#x2728;</span>Agent</span></td>
+            <td class="px-3 py-2 dark bg-gray-950 rounded"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-900/30 text-teal-400 border-teal-800"><span aria-hidden="true">&#x2728;</span>Agent</span></td>
             <td class="px-3 py-2 text-gray-500 dark:text-gray-400">Agent (system / orchestrator / feedback assessor)</td>
-            <td class="px-3 py-2"><span class="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[10px] font-semibold">PASS</span></td>
+            <td class="px-3 py-2"><span class="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-semibold">PASS</span></td>
           </tr>
         </tbody>
       </table>
     </div>
-    <p class="mt-2 text-[11px] text-gray-500 dark:text-gray-400">Rose is reserved for the review-agent specifically (distinct "adversarial" voice). External PR &amp; MR share the violet palette because they fill the same role from the reviewer's perspective — both are "a human left this on the VCS platform". Sky covers user-originated items whether visual or text.</p>
+    <p class="mt-2 text-xs text-gray-500 dark:text-stone-600">Rose is reserved for the review-agent specifically (distinct "adversarial" voice). External PR &amp; MR share the violet palette because they fill the same role from the reviewer's perspective — both are "a human left this on the VCS platform". Sky covers user-originated items whether visual or text.</p>
   </section>
 
   <!-- Section 5: Optimistic UI pattern -->
@@ -454,15 +458,15 @@
     <h2 id="sec-optimistic" class="text-base font-semibold mb-3">5. Optimistic UI Pattern</h2>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Step 1 · Optimistic update</div>
+        <div class="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Step 1 · Optimistic update</div>
         <p class="text-xs text-gray-700 dark:text-gray-300">User clicks <strong>Verify &amp; Close</strong>. Card status badge flips to <code>closed</code> immediately, left-border turns green, footer buttons update to show <strong>Re-open</strong>. A brief <code>feedback-status-change</code> flash (0.4s) confirms the transition visually.</p>
       </div>
       <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Step 2 · Tool call in flight</div>
+        <div class="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Step 2 · Tool call in flight</div>
         <p class="text-xs text-gray-700 dark:text-gray-300">Footer buttons enter <em>disabled</em> state with a spinner in the header row. The card sets <code>aria-busy="true"</code>. If the call resolves OK, the disabled state clears and the card stays in its new status.</p>
       </div>
       <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Step 3 · On failure — revert</div>
+        <div class="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Step 3 · On failure — revert</div>
         <p class="text-xs text-gray-700 dark:text-gray-300">If the tool call rejects, the card reverts to its previous status (badge, border, buttons). A toast appears bottom-right with the guard-specific copy below. Card shakes briefly (0.2s horizontal translate) to draw attention.</p>
       </div>
     </div>
@@ -474,7 +478,7 @@
     <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">When the tool layer rejects a transition, the review app renders one of these toasts. Copy is <strong>explicit about why</strong> — no generic "something went wrong".</p>
     <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
       <table class="w-full text-xs">
-        <thead class="bg-gray-50 dark:bg-gray-800/50 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+        <thead class="bg-gray-50 dark:bg-gray-800/50 text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
           <tr>
             <th class="text-left px-3 py-2 w-56">guard outcome code</th>
             <th class="text-left px-3 py-2">toast title</th>
@@ -483,39 +487,39 @@
         </thead>
         <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
           <tr>
-            <td class="px-3 py-2 font-mono text-[11px]">not_user_initiable</td>
+            <td class="px-3 py-2 font-mono text-xs">not_user_initiable</td>
             <td class="px-3 py-2 font-semibold">Agents mark that — not reviewers</td>
             <td class="px-3 py-2 text-gray-500 dark:text-gray-400">"<code>pending → addressed</code> and <code>pending → closed</code> are owned by the agent. This card will update automatically when the fix lands or the gate verifies."</td>
           </tr>
           <tr>
-            <td class="px-3 py-2 font-mono text-[11px]">invalid_transition</td>
+            <td class="px-3 py-2 font-mono text-xs">invalid_transition</td>
             <td class="px-3 py-2 font-semibold">That move isn't valid from here</td>
             <td class="px-3 py-2 text-gray-500 dark:text-gray-400">"You can't go from <code>{from}</code> to <code>{to}</code> directly. Re-open it first, then make your change."</td>
           </tr>
           <tr>
-            <td class="px-3 py-2 font-mono text-[11px]">stale_version</td>
+            <td class="px-3 py-2 font-mono text-xs">stale_version</td>
             <td class="px-3 py-2 font-semibold">Someone else moved faster</td>
             <td class="px-3 py-2 text-gray-500 dark:text-gray-400">"The card changed to <code>{server_status}</code> while you were looking. Your action didn't apply — refresh and decide again."</td>
           </tr>
           <tr>
-            <td class="px-3 py-2 font-mono text-[11px]">author_type_mismatch</td>
+            <td class="px-3 py-2 font-mono text-xs">author_type_mismatch</td>
             <td class="px-3 py-2 font-semibold">Only a human can do that</td>
             <td class="px-3 py-2 text-gray-500 dark:text-gray-400">"This transition requires a user session. The tool rejected it because the caller's <code>author_type</code> is <code>agent</code>."</td>
           </tr>
           <tr>
-            <td class="px-3 py-2 font-mono text-[11px]">feedback_not_found</td>
+            <td class="px-3 py-2 font-mono text-xs">feedback_not_found</td>
             <td class="px-3 py-2 font-semibold">Feedback item missing</td>
             <td class="px-3 py-2 text-gray-500 dark:text-gray-400">"Couldn't find <code>{fbId}</code> on disk. It may have been deleted or renamed — reload the page."</td>
           </tr>
           <tr>
-            <td class="px-3 py-2 font-mono text-[11px]">network_error</td>
+            <td class="px-3 py-2 font-mono text-xs">network_error</td>
             <td class="px-3 py-2 font-semibold">Can't reach the MCP server</td>
             <td class="px-3 py-2 text-gray-500 dark:text-gray-400">"Your change didn't go through. Check that the H·AI·K·U review server is still running, then try again."</td>
           </tr>
         </tbody>
       </table>
     </div>
-    <p class="mt-3 text-[11px] text-gray-500 dark:text-gray-400">Toast spec: <code>role="status"</code> container, <code>aria-live="polite"</code>, auto-dismiss at 6s with a close button for manual dismissal. On failure toasts, auto-dismiss extends to 8s. All toasts render above the card stack at <code>z-50</code>.</p>
+    <p class="mt-3 text-xs text-gray-500 dark:text-stone-600">Toast spec: <code>role="status"</code> container, <code>aria-live="polite"</code>, auto-dismiss at 6s with a close button for manual dismissal. On failure toasts, auto-dismiss extends to 8s. All toasts render above the card stack at <code>z-50</code>.</p>
   </section>
 
   <!-- Section 7: Responsive + a11y -->
@@ -523,7 +527,7 @@
     <h2 id="sec-a11y" class="text-base font-semibold mb-3">7. Responsive &amp; Accessibility Requirements</h2>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Mobile (375px)</div>
+        <div class="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Mobile (375px)</div>
         <ul class="text-xs text-gray-700 dark:text-gray-300 space-y-1.5 list-disc pl-4">
           <li>Footer buttons min-height 44px</li>
           <li>Buttons stack to full-width below card body</li>
@@ -531,7 +535,7 @@
         </ul>
       </div>
       <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Tablet (768px) &amp; Desktop (1280px)</div>
+        <div class="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Tablet (768px) &amp; Desktop (1280px)</div>
         <ul class="text-xs text-gray-700 dark:text-gray-300 space-y-1.5 list-disc pl-4">
           <li>Footer buttons compact 28px height, right-aligned</li>
           <li>Badges remain on same row as title</li>
@@ -539,7 +543,7 @@
         </ul>
       </div>
       <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Accessibility</div>
+        <div class="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Accessibility</div>
         <ul class="text-xs text-gray-700 dark:text-gray-300 space-y-1.5 list-disc pl-4">
           <li>Cards are <code>&lt;article&gt;</code> with <code>tabindex="0"</code>; ENTER opens detail</li>
           <li>Every footer button has <code>aria-label</code> including FB-id and action</li>

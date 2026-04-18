@@ -21,8 +21,11 @@ The review app uses Tailwind's `stone` scale as its neutral palette, with `teal`
 | Background (code) | `bg-stone-100` | `dark:bg-stone-800` |
 | Text (primary) | `text-stone-900` | `dark:text-stone-100` |
 | Text (secondary) | `text-stone-700` | `dark:text-stone-300` |
-| Text (muted) | `text-stone-500` | `dark:text-stone-400` |
-| Text (faint) | `text-stone-400` | `dark:text-stone-500` / `dark:text-stone-600` |
+| Text (muted) | `text-stone-600` | `dark:text-stone-300` |
+| Text (faint) | `text-stone-500` | `dark:text-stone-400` |
+| Text (muted, AAA) | `text-stone-600` on white (7.14:1) | `dark:text-stone-300` on stone-900 (12.6:1) |
+
+> **Unit-11 note:** `text-stone-400` / `text-gray-400` are no longer valid for body text on any light card surface (white, stone-50, stone-100, amber-50/50, blue-50/50, green-50/30, sky-50) — they fail 4.5:1 AA. `text-stone-500` is the absolute floor for text on light surfaces (4.61:1 on white); prefer `text-stone-600` (≥ 6.85:1) for any metadata line. In dark mode, `text-stone-500` is the floor on `stone-900`; prefer `text-stone-300` for metadata.
 | Border (standard) | `border-stone-200` | `dark:border-stone-700` |
 | Border (subtle) | `border-stone-100` | `dark:border-stone-800` |
 | Border (heavy) | `border-stone-300` | `dark:border-stone-600` |
@@ -42,6 +45,18 @@ The review app uses Tailwind's `stone` scale as its neutral palette, with `teal`
 | Accent (hover) | `hover:bg-blue-700` | -- |
 | Approve button | `bg-green-600` | -- |
 | Request changes button | `bg-amber-600` | -- |
+
+### 1.1a Banned Text-on-Surface Pairs (unit-11, WCAG 2.1 AA)
+
+Any combination in this table MUST NOT appear in `stages/design/artifacts/*.html` or in the production review app. CI grep will fail the unit if any pair reappears.
+
+| Foreground token | Forbidden background tokens | Measured ratio | Required remediation |
+|---|---|---|---|
+| `text-stone-400` / `text-gray-400` | `bg-white`, `bg-stone-50`, `bg-stone-100`, `bg-amber-50/50`, `bg-blue-50/50`, `bg-green-50/30`, `bg-green-50/60`, `bg-sky-50` | 2.79 – 3.0:1 | Lift to `text-stone-600` (≥ 6.85:1) for metadata, `text-stone-500` (4.61:1) minimum for body |
+| `text-stone-500 dark:text-stone-500` on dark mode | `dark:bg-stone-800`, `dark:bg-stone-900`, `dark:bg-stone-950`, `dark:bg-green-950/15`, `dark:bg-amber-950/20`, `dark:bg-blue-950/20`, `dark:bg-stone-800/30` | ≈ 3.1 – 4.4:1 | Use `dark:text-stone-300` (≥ 10:1) for metadata |
+| `opacity-50` / `opacity-70` applied to an entire feedback card root | any | α-composite drops metadata text below 2:1 | Remove the opacity entirely. Convey muted-finality state via muted background tokens (`bg-green-50/60`, `bg-stone-100`) + a non-color second signal (glyph + text prefix) |
+| `bg-green-600/50 text-white/80` (disabled button composite) | — | α-composited effective contrast ≈ 2.6:1 | Use opaque token pair `bg-green-300 text-green-800 dark:bg-green-900/40 dark:text-green-200` |
+| `text-[9px]`, `text-[10px]` on user-facing information | — | fails 1.4.4 Resize Text at 200% | Use `text-xs` (12px) minimum. `text-[11px]` allowed only with `font-semibold`/`font-bold` |
 
 ### 1.2 Status Badge Colors (Shared StatusBadge)
 
