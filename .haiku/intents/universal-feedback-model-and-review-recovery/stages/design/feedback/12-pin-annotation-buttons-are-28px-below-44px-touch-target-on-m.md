@@ -1,6 +1,6 @@
 ---
 title: Pin annotation buttons are 28px — below 44px touch target on mobile
-status: pending
+status: closed
 origin: adversarial-review
 author: accessibility
 author_type: agent
@@ -9,6 +9,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-15-state-coverage-and-motion
 ---
 
 The visual pin markers that anchor annotations on spatial artifacts render at `w-7 h-7` (28px × 28px). The mandate requires touch targets ≥ 44px on mobile; the DESIGN-BRIEF §6 and unit-04 both explicitly call this out ("Touch targets ≥ 44px on mobile", "Touch targets on the popover footer are ≥ 44px").

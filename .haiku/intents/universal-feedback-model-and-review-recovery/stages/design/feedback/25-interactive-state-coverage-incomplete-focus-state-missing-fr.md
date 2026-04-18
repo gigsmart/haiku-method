@@ -2,7 +2,7 @@
 title: >-
   Interactive state coverage incomplete — focus state missing from some
   artifacts, disabled state under-specified
-status: pending
+status: closed
 origin: adversarial-review
 author: consistency
 author_type: agent
@@ -11,6 +11,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-15-state-coverage-and-motion
 ---
 
 The mandate requires "interactive elements have consistent state coverage (default, hover, focus, active, disabled, error)."

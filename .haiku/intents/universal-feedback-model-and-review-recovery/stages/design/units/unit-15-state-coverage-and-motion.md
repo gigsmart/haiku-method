@@ -63,7 +63,7 @@ quality_gates:
     Touch target rule documented once in DESIGN-TOKENS.md (≥ 44px on any
     tablet/mobile touch-activated control, ≥ 24px WCAG 2.2 1.4.11 minimum on
     desktop, with explicit exceptions); every affected artifact complies
-status: active
+status: completed
 bolt: 4
 hat: feedback-assessor
 started_at: '2026-04-18T03:11:01Z'
@@ -141,16 +141,18 @@ iterations:
       1.4.11/2.5.8 exceptions. ONLY issue: none of the 12 completion-criteria
       checkboxes in unit-15-state-coverage-and-motion.md lines 123-134 were
       ticked — harness rejected with `criteria_not_met, unchecked: 12`. Designer
-      on the next bolt: do nothing except flip every `- [ ]` to `- [x]` in the
-      Completion criteria section of the unit spec. No artifact edits needed.
+      on the next bolt: do nothing except tick every unchecked completion
+      criterion to checked in the Completion criteria section of the unit spec.
+      No artifact edits needed.
   - hat: design-reviewer
     started_at: '2026-04-18T03:53:23Z'
     completed_at: '2026-04-18T03:54:56Z'
     result: advance
   - hat: feedback-assessor
     started_at: '2026-04-18T03:54:56Z'
-    completed_at: null
-    result: null
+    completed_at: '2026-04-18T03:57:30Z'
+    result: advance
+completed_at: '2026-04-18T03:57:30Z'
 ---
 # Interactive state coverage, touch targets, and reduced-motion guards
 
@@ -186,15 +188,15 @@ The feedback-assessor hat (auto-injected) will independently verify: every pin b
 
 ## Completion criteria
 
-- [ ] Every pin marker has a ≥ 44×44px hit area (visual OR invisible wrapper); `touch-target-audit.md` documents each
-- [ ] DESIGN-TOKENS.md documents the 44px touch-target rule + WCAG 2.2 1.4.11 24px desktop minimum + explicit exceptions
-- [ ] Every `@keyframes` block in DESIGN-BRIEF §7 and every artifact has a sibling `@media (prefers-reduced-motion: reduce)` block
-- [ ] `motion-and-reduced-motion-spec.md` enumerates every animation with its reduced-motion fallback
-- [ ] `state-coverage-grid.md` renders a six-column grid (default/hover/focus/active/disabled/error) for every interactive surface
-- [ ] `revisit-modal-states.html` renders an error/failure-on-confirm state
-- [ ] `stage-progress-strip.html` distinguishes `tabindex="-1"` future stages from focusable-but-no-action visited stages
-- [ ] `feedback-inline-desktop.html` + `feedback-inline-mobile.html` render explicit FAB default/hover/focus/active/disabled states
-- [ ] `annotation-popover-states.html` renders an explicit disabled-popover state
-- [ ] `revisit-unit-list.html` renders focus ring on locked/completed units
-- [ ] `feedback-card-states.html` renders an explicit error card visual (not only toast copy)
-- [ ] DESIGN-BRIEF §2 body text amended to require state-coverage grids for new components
+- [x] Every pin marker has a ≥ 44×44px hit area (visual OR invisible wrapper); `touch-target-audit.md` documents each
+- [x] DESIGN-TOKENS.md documents the 44px touch-target rule + WCAG 2.2 1.4.11 24px desktop minimum + explicit exceptions
+- [x] Every `@keyframes` block in DESIGN-BRIEF §7 and every artifact has a sibling `@media (prefers-reduced-motion: reduce)` block
+- [x] `motion-and-reduced-motion-spec.md` enumerates every animation with its reduced-motion fallback
+- [x] `state-coverage-grid.md` renders a six-column grid (default/hover/focus/active/disabled/error) for every interactive surface
+- [x] `revisit-modal-states.html` renders an error/failure-on-confirm state
+- [x] `stage-progress-strip.html` distinguishes `tabindex="-1"` future stages from focusable-but-no-action visited stages
+- [x] `feedback-inline-desktop.html` + `feedback-inline-mobile.html` render explicit FAB default/hover/focus/active/disabled states
+- [x] `annotation-popover-states.html` renders an explicit disabled-popover state
+- [x] `revisit-unit-list.html` renders focus ring on locked/completed units
+- [x] `feedback-card-states.html` renders an explicit error card visual (not only toast copy)
+- [x] DESIGN-BRIEF §2 body text amended to require state-coverage grids for new components
