@@ -1712,6 +1712,172 @@ export function stageStatePath(slug: string, stage: string): string {
 	return join(stageDir(slug, stage), "state.json")
 }
 
+/**
+ * Minimal glob matcher. Accepts:
+ *   - exact path: "stages/design/artifacts/foo.html"
+ *   - directory path (prefix match): "stages/design/artifacts/" or "stages/design/artifacts"
+ *   - single-star glob: "stages/design/artifacts/*.html"
+ *   - double-star glob: "stages/design/artifacts/**"
+ */
+function matchesGlob(candidate: string, pattern: string): boolean {
+	const c = candidate.replace(/^\.\//, "")
+	const p = pattern.replace(/^\.\//, "")
+	if (c === p) return true
+	// Directory prefix: pattern ends with / or /** or is a plain dir
+	if (p.endsWith("/**")) {
+		const prefix = p.slice(0, -3)
+		return c === prefix || c.startsWith(`${prefix}/`)
+	}
+	if (p.endsWith("/")) {
+		return c.startsWith(p)
+	}
+	// Plain dir (no trailing slash, no star): treat as prefix if candidate is under it
+	if (!p.includes("*") && c.startsWith(`${p}/`)) return true
+	// Star wildcards: convert to regex
+	if (p.includes("*")) {
+		const esc = p.replace(/[.+?^${}()|[\]\\]/g, "\\$&")
+		const regex = new RegExp(`^${esc.replace(/\*\*/g, ".*").replace(/\*/g, "[^/]*")}$`)
+		return regex.test(c)
+	}
+	return false
+}
+
+/**
+ * List files changed in the unit's worktree since it forked from its stage
+ * branch. Returns paths relative to the worktree root (i.e. intent root).
+ * Git-only. Returns null if not in git mode or worktree missing.
+ */
+function getUnitWorktreeChanges(
+	slug: string,
+	unit: string,
+	stage: string,
+): string[] | null {
+	if (!isGitRepo()) return null
+	const unitBase = unit.replace(/\.md$/, "")
+	const worktreePath = join(
+		findHaikuRoot(),
+		"worktrees",
+		slug,
+		unitBase,
+	)
+	if (!existsSync(worktreePath)) return null
+	try {
+		const unitBranch = `haiku/${slug}/${unitBase}`
+		const stageBranch = `haiku/${slug}/${stage}`
+		// Fork point between unit and stage branches.
+		const forkSha = execSync(`git merge-base ${unitBranch} ${stageBranch}`, {
+			cwd: worktreePath,
+			encoding: "utf8",
+		})
+			.toString()
+			.trim()
+		const diff = execSync(
+			`git diff --name-only ${forkSha}..HEAD`,
+			{ cwd: worktreePath, encoding: "utf8" },
+		).toString()
+		return diff
+			.split("\n")
+			.map((s) => s.trim())
+			.filter(Boolean)
+	} catch {
+		return null
+	}
+}
+
+/**
+ * List files modified in the intent dir since a given timestamp.
+ * Used for filesystem (non-git) mode where there's no diff command.
+ */
+function getIntentFilesystemChangesSince(
+	slug: string,
+	sinceMs: number,
+): string[] {
+	const root = intentDir(slug)
+	if (!existsSync(root)) return []
+	const results: string[] = []
+	const walk = (abs: string) => {
+		for (const entry of readdirSync(abs, { withFileTypes: true })) {
+			const p = join(abs, entry.name)
+			if (entry.isDirectory()) {
+				walk(p)
+			} else if (entry.isFile()) {
+				try {
+					const st = statSync(p)
+					if (st.mtimeMs > sinceMs) {
+						const rel = p.startsWith(`${root}/`) ? p.slice(root.length + 1) : p
+						results.push(rel)
+					}
+				} catch {
+					/* ignore */
+				}
+			}
+		}
+	}
+	walk(root)
+	return results
+}
+
+/**
+ * Validate that the unit's writes are confined to its declared outputs
+ * plus always-allowed FSM-metadata paths. Called at unit completion
+ * (last hat advance_hat) BEFORE the worktree merges back. Harness- and
+ * persistence-mode-agnostic.
+ *
+ * Returns {violations, allowedGlobs} if scope was violated, or null if OK.
+ */
+export function validateUnitScope(
+	slug: string,
+	stage: string,
+	unit: string,
+): { violations: string[]; allowedGlobs: string[] } | null {
+	const spec = unitPath(slug, stage, unit)
+	if (!existsSync(spec)) return null
+	const { data } = parseFrontmatter(readFileSync(spec, "utf8"))
+	const outputs = (data.outputs as string[]) || []
+	const hatStartedAt = data.hat_started_at as string | undefined
+
+	// Always-allowed paths (relative to intent root). These are FSM metadata
+	// the harness needs to write as part of running the system.
+	const unitBase = unit.replace(/\.md$/, "")
+	const alwaysAllowed = [
+		// Unit spec itself (frontmatter mutations, iteration metadata)
+		`stages/${stage}/units/${unitBase}.md`,
+		// Stage FSM state
+		`stages/${stage}/state.json`,
+		`stages/${stage}/iteration.json`,
+		// Feedback written by reviewers to this stage
+		`stages/${stage}/feedback/**`,
+		// Intent-level sealing + integrity artifacts
+		`state/**`,
+		`.integrity.json`,
+	]
+
+	const allowedGlobs = [...outputs, ...alwaysAllowed]
+
+	// Collect changed files (git diff OR filesystem mtime)
+	let changed: string[] | null = getUnitWorktreeChanges(slug, unit, stage)
+	if (changed === null && hatStartedAt) {
+		// Filesystem fallback: compare mtimes against hat_started_at for a
+		// conservative window. This catches writes that happened during the
+		// current hat but won't see writes from prior hats that escaped their
+		// worktree (those are caught by git-mode validation).
+		const sinceMs = new Date(hatStartedAt).getTime()
+		if (!Number.isNaN(sinceMs)) {
+			changed = getIntentFilesystemChangesSince(slug, sinceMs)
+		}
+	}
+	if (!changed || changed.length === 0) return null
+
+	const violations: string[] = []
+	for (const file of changed) {
+		if (!allowedGlobs.some((g) => matchesGlob(file, g))) {
+			violations.push(file)
+		}
+	}
+	if (violations.length === 0) return null
+	return { violations, allowedGlobs }
+}
+
 // ── Iteration tracking ─────────────────────────────────────────────────────
 // Stage-level iterations replace the legacy scalar `visits` counter. Each
 // entry records why a fresh elaborate cycle started (trigger), when it
@@ -3634,6 +3800,42 @@ export function handleStateTool(
 							message: `Cannot complete unit: ${unchecked} completion criteria still unchecked. Address them, then call haiku_unit_advance_hat again.`,
 						}),
 					)
+				}
+
+				// ── Scope enforcement (harness-agnostic) ──
+				// Verify every file this unit wrote is inside declared outputs
+				// or always-allowed FSM metadata paths. Catches "break free"
+				// attempts where a hat wrote to production paths belonging to a
+				// later stage, or outside the unit's scope entirely.
+				{
+					const scope = validateUnitScope(
+						args.intent as string,
+						advStage,
+						args.unit as string,
+					)
+					if (scope) {
+						const sf = args.state_file as string | undefined
+						if (sf)
+							logSessionEvent(sf, {
+								event: "unit_scope_violation",
+								intent: args.intent,
+								stage: advStage,
+								unit: args.unit,
+								violations: scope.violations,
+							})
+						return text(
+							JSON.stringify({
+								error: "unit_scope_violation",
+								violations: scope.violations,
+								allowed_globs: scope.allowedGlobs,
+								message:
+									`Cannot complete unit: ${scope.violations.length} file(s) were written outside the unit's declared scope.\n\n` +
+									`Out-of-bounds files:\n${scope.violations.map((v) => `  - ${v}`).join("\n")}\n\n` +
+									`Allowed paths (unit.outputs[] + FSM metadata):\n${scope.allowedGlobs.map((g) => `  - ${g}`).join("\n")}\n\n` +
+									`To resolve: either (a) delete the out-of-bounds writes if they don't belong to this unit, (b) add them to the unit's \`outputs:\` frontmatter if they genuinely do, or (c) call \`haiku_revisit\` if the scope itself is wrong. If you believe they belong to a later stage, \`git checkout HEAD -- <file>\` to revert.`,
+							}),
+						)
+					}
 				}
 
 				completeUnitIteration(advPath, "advance")
