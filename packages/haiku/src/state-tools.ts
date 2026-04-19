@@ -1695,13 +1695,37 @@ export function unitOutputExists(
 	unit: string,
 	outputPath: string,
 ): boolean {
+	// Intent-relative: main intent dir or the unit worktree's intent dir.
 	const mainResolved = resolve(intentDir(slug), outputPath)
 	if (existsSync(mainResolved)) return true
 	const wtRoot = join(findHaikuRoot(), "worktrees", slug, unit)
 	const wtIntentDir = join(wtRoot, ".haiku", "intents", slug)
-	if (!existsSync(wtIntentDir)) return false
-	const wtResolved = resolve(wtIntentDir, outputPath)
-	return existsSync(wtResolved)
+	if (existsSync(wtIntentDir)) {
+		const wtResolved = resolve(wtIntentDir, outputPath)
+		if (existsSync(wtResolved)) return true
+	}
+	// Repo-relative: auto-populated outputs from `scope: repo` stages record
+	// paths like `packages/foo/src/bar.ts`. Resolve against the repo root
+	// (two levels up from .haiku) or, if running in the unit worktree, the
+	// worktree root itself.
+	const repoRoot = (() => {
+		try {
+			return execSync("git rev-parse --show-toplevel", {
+				encoding: "utf8",
+			}).trim()
+		} catch {
+			return null
+		}
+	})()
+	if (repoRoot) {
+		const repoResolved = resolve(repoRoot, outputPath)
+		if (existsSync(repoResolved)) return true
+	}
+	if (existsSync(wtRoot)) {
+		const wtRepoResolved = resolve(wtRoot, outputPath)
+		if (existsSync(wtRepoResolved)) return true
+	}
+	return false
 }
 
 export function stageDir(slug: string, stage: string): string {
@@ -1722,9 +1746,11 @@ export function stageStatePath(slug: string, stage: string): string {
  *   - exact path: "stages/design/artifacts/foo.html"
  *   - directory path (prefix match): "stages/design/artifacts/" or "stages/design/artifacts"
  *   - single-star glob: "stages/design/artifacts/*.html"
- *   - double-star glob: "stages/design/artifacts/**"
+ *   - double-star glob: trailing or mid-string (e.g. packages\/&#42;&#42;\/src)
+ *
+ * Exported for direct testing (no stable API guarantee).
  */
-function matchesGlob(candidate: string, pattern: string): boolean {
+export function matchesGlob(candidate: string, pattern: string): boolean {
 	const c = candidate.replace(/^\.\//, "")
 	const p = pattern.replace(/^\.\//, "")
 	if (c === p) return true
@@ -1816,14 +1842,22 @@ function computeStageScope(
 ): { intentGlobs: string[]; repoGlobs: string[]; repoWildcard: boolean } {
 	const unitBase = unit.replace(/\.md$/, "")
 	const intentGlobs: string[] = [
-		// Unit spec itself (frontmatter mutations, iteration metadata)
+		// Unit spec itself — only THIS unit's file. Cross-unit writes
+		// (unit-04 writing to unit-05.md) are a scope violation.
 		`stages/${stage}/units/${unitBase}.md`,
-		// Everything under the stage's own dir is always allowed — that's
-		// the stage's sandbox for intent-scoped artifacts. Covers state.json,
-		// iteration.json, feedback/**, artifacts/**, and anything else the
-		// studio author might put here. Repo-level writes are still gated
-		// by repoGlobs / repoWildcard.
-		`stages/${stage}/**`,
+		// Stage FSM bookkeeping
+		`stages/${stage}/state.json`,
+		`stages/${stage}/iteration.json`,
+		// Feedback written by reviewers to this stage (reviewer agents,
+		// feedback-assessor)
+		`stages/${stage}/feedback/**`,
+		// Stage artifacts and outputs (covered by output templates below,
+		// but listed here as a baseline for stages that use these dirs
+		// without declaring every artifact in a template)
+		`stages/${stage}/artifacts/**`,
+		`stages/${stage}/outputs/**`,
+		// Discovery artifacts authored during this stage's elaborate phase
+		`stages/${stage}/discovery/**`,
 		// Intent-level sealing + integrity artifacts
 		`state/**`,
 		`.integrity.json`,
@@ -2027,13 +2061,15 @@ export function validateUnitScope(
 		}
 	}
 
-	// Auto-populate outputs[] regardless of violation state — the record
-	// is useful even for a rejected advance (shows what the unit tried to
-	// write) and makes the list harness-consistent.
+	// Only auto-populate outputs[] when scope is clean. Writing violating
+	// paths into outputs[] would pollute the unit spec: after the agent
+	// reverts the bad file, the unit would fail `unit_outputs_missing` on
+	// the next advance for a path it never meant to record.
+	if (violations.length > 0) {
+		return { violations, scope }
+	}
 	autoPopulateOutputs(slug, stage, unit, changed)
-
-	if (violations.length === 0) return null
-	return { violations, scope }
+	return null
 }
 
 // ── Iteration tracking ─────────────────────────────────────────────────────
@@ -4211,23 +4247,18 @@ export function handleStateTool(
 			}
 
 			// ── NOT last hat: advance to next ──
-			// Quality gates run at every hat transition on hookless harnesses
-			// (CC runs them via the Stop hook after each subagent). This keeps
-			// behavior consistent: a failing gate blocks hat advance on all
-			// harnesses, not just at unit completion.
-			if (!getCapabilities().hooks) {
-				const qualityGates = runInlineQualityGates(
-					args.intent as string,
-					advPath,
-				)
-				if (qualityGates) {
-					return text(JSON.stringify(qualityGates))
-				}
-			}
-
-			// Scope validation runs at every hat transition — not just the
-			// terminal one — so out-of-bounds writes by an earlier hat are
-			// caught before downstream hats run blind on contaminated state.
+			// NOTE: Quality gates run ONLY at unit completion (last hat) on
+			// hookless harnesses. The intent-+-unit gate list is unscoped —
+			// running them per-hat would punish early hats for outputs the
+			// later hats haven't produced yet (e.g. `npm test` before any
+			// code is written). CC's Stop hook fires per-subagent but each
+			// subagent's Stop is the "natural endpoint" for its hat's work;
+			// we don't have that signal in hookless mode, so we enforce the
+			// safer "once at completion" boundary.
+			//
+			// Scope validation DOES run at every hat transition — it has
+			// per-hat meaning (out-of-bounds writes accumulate forever until
+			// surfaced) and no false-positive risk for early hats.
 			{
 				const intentFile = `${intentDir(args.intent as string)}/intent.md`
 				const { data: iFm } = parseFrontmatter(readFileSync(intentFile, "utf8"))
@@ -4355,6 +4386,40 @@ export function handleStateTool(
 				)
 			const failPath = rejectInfo.path
 			const rejectStage = rejectInfo.stage
+
+			// Scope-validate BEFORE rollback. If the rejected hat left
+			// out-of-bounds writes in the worktree, surface them now so the
+			// agent reverts before the next bolt starts — otherwise the
+			// violation persists across bolts (git diff still shows it) and
+			// every subsequent advance re-flags the same files until someone
+			// runs `git checkout HEAD -- <file>` manually.
+			{
+				const intentFile = `${intentDir(args.intent as string)}/intent.md`
+				const { data: iFm } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+				const scopeStudio = (iFm.studio as string) || ""
+				const scopeResult = scopeStudio
+					? validateUnitScope(
+							args.intent as string,
+							scopeStudio,
+							rejectStage,
+							args.unit as string,
+						)
+					: null
+				if (scopeResult) {
+					return text(
+						JSON.stringify({
+							error: "unit_scope_violation_on_reject",
+							violations: scopeResult.violations,
+							scope: scopeResult.scope,
+							message:
+								`Cannot reject hat: the unit worktree still contains ${scopeResult.violations.length} out-of-scope write(s) that must be reverted first. ` +
+								`If these persist into the next bolt, every subsequent advance will re-flag them.\n\n` +
+								`Out-of-bounds files:\n${scopeResult.violations.map((v) => `  - ${v}`).join("\n")}\n\n` +
+								`Revert each with \`git checkout HEAD -- <file>\` in the unit worktree, commit, then call reject_hat again.`,
+						}),
+					)
+				}
+			}
 
 			const { data: failData } = parseFrontmatter(
 				readFileSync(failPath, "utf8"),
