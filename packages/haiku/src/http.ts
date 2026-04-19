@@ -22,6 +22,7 @@ import type {
 	QuestionAnswer,
 	ReviewAnnotations,
 } from "./sessions.js"
+import { ensureOnStageBranch } from "./git-worktree.js"
 import {
 	FEEDBACK_ORIGINS,
 	FEEDBACK_STATUSES,
@@ -1019,6 +1020,19 @@ async function handleFeedbackPost(
 		)
 	}
 
+	// Align the checkout with the stage branch before writing. If main has
+	// drifted ahead, merge main -> stage first so the feedback file lands
+	// where the FSM will find it. Non-git mode: no-op.
+	const branchGuard = ensureOnStageBranch(intent, stage)
+	if (!branchGuard.ok) {
+		return Response.json(
+			{
+				error: `Stage-branch enforcement failed: ${branchGuard.message}`,
+			},
+			{ status: 409 },
+		)
+	}
+
 	const result = writeFeedbackFile(intent, stage, {
 		title: body.title,
 		body: body.body,
@@ -1099,6 +1113,19 @@ async function handleFeedbackPut(
 		)
 	}
 
+	// Align checkout with the stage branch before reading or writing. If we
+	// read first on the wrong branch, a file that only exists on stage would
+	// return "not found" even though it's there.
+	const updateBranchGuard = ensureOnStageBranch(intent, stage)
+	if (!updateBranchGuard.ok) {
+		return Response.json(
+			{
+				error: `Stage-branch enforcement failed: ${updateBranchGuard.message}`,
+			},
+			{ status: 409 },
+		)
+	}
+
 	// HTTP endpoint is human context — no author-type restrictions
 	const result = updateFeedbackFile(
 		intent,
@@ -1147,6 +1174,16 @@ async function handleFeedbackDelete(
 	}
 	if (!validateStage(intent, stage)) {
 		return Response.json({ error: "Stage not found" }, { status: 404 })
+	}
+
+	const deleteBranchGuard = ensureOnStageBranch(intent, stage)
+	if (!deleteBranchGuard.ok) {
+		return Response.json(
+			{
+				error: `Stage-branch enforcement failed: ${deleteBranchGuard.message}`,
+			},
+			{ status: 409 },
+		)
 	}
 
 	// HTTP endpoint is human context — no author-type restrictions
