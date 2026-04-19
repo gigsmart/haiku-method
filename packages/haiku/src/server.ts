@@ -50,6 +50,7 @@ import type {
 	DesignParameterData,
 	QuestionDef,
 } from "./sessions.js"
+import { ensureOnStageBranch } from "./git-worktree.js"
 import {
 	findHaikuRoot,
 	parseFrontmatter,
@@ -778,6 +779,18 @@ async function handleToolCall(request: {
 				const intentFm = parseFrontmatter(intentRaw)
 				const activeStage = (intentFm.data.active_stage as string) || ""
 				if (activeStage) {
+					// Re-enforce stage branch after the (up to 30-min) wait —
+					// the user may have checked out another branch during the
+					// design-direction selection. Without this, the stage-state
+					// write below would land on whatever branch is current.
+					const guard = ensureOnStageBranch(input.intent_slug, activeStage)
+					if (!guard.ok) {
+						// Non-fatal: log via throw so the outer catch records it,
+						// and the orchestrator flag will need manual set.
+						throw new Error(
+							`stage-branch enforcement failed after design-direction wait: ${guard.message}`,
+						)
+					}
 					const ssPath = stageStatePath(input.intent_slug, activeStage)
 					const ssData = readJson(ssPath)
 					ssData.design_direction_selected = true
