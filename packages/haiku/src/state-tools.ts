@@ -4069,10 +4069,15 @@ export function handleStateTool(
 				// Clean scope — reset the reject-attempts counter. Otherwise a
 				// counter bumped by a prior reject cycle would persist through
 				// a clean advance and falsely escalate the next reject cycle.
+				// Reseal immediately because subsequent early returns
+				// (unit_outputs_empty / criteria_not_met) would otherwise exit
+				// with an unsealed counter write, tripping tamper detection
+				// on the next runNext.
 				if (
 					(((unitFmAfter.scope_reject_attempts as number) ?? 0) as number) > 0
 				) {
 					setFrontmatterField(advPath, "scope_reject_attempts", 0)
+					sealIntentState(args.intent as string)
 				}
 
 				// Require at least one tracked output.
