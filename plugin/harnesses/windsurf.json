@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "haiku": {
+      "command": "/path/to/haiku-method/plugin/bin/haiku",
+      "args": ["mcp", "--harness", "windsurf"],
+      "env": {}
+    }
+  }
+}

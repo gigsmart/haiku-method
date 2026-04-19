@@ -99,6 +99,7 @@ function handleSessionApi(sessionId: string): Response {
 		if (session.knowledgeFiles) data.knowledge_files = session.knowledgeFiles
 		if (session.stageArtifacts) data.stage_artifacts = session.stageArtifacts
 		if (session.outputArtifacts) data.output_artifacts = session.outputArtifacts
+		if (session.previousReview) data.previous_review = session.previousReview
 	}
 
 	if (session.session_type === "question") {

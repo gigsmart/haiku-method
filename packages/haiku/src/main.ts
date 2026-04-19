@@ -12,7 +12,38 @@ import { reportError } from "./sentry.js"
 const [cmd, ...args] = process.argv.slice(2)
 
 if (cmd === "mcp") {
-	import("./server.js")
+	// Parse --harness <name> from args before loading the server module.
+	// Remaining args are forwarded in case future flags are added.
+	let harnessName = ""
+	const filteredArgs: string[] = []
+	for (let i = 0; i < args.length; i++) {
+		if (args[i] === "--harness" && i + 1 < args.length) {
+			harnessName = args[++i]
+		} else if (args[i].startsWith("--harness=")) {
+			harnessName = args[i].split("=", 2)[1]
+		} else {
+			filteredArgs.push(args[i])
+		}
+	}
+
+	// Also check env var as fallback (useful for non-configurable harnesses)
+	if (!harnessName) {
+		harnessName = process.env.HAIKU_HARNESS || ""
+	}
+
+	// Set harness BEFORE importing server — server.ts module-level code reads
+	// capabilities at init time (skill bridging, tool filtering).
+	const harnessReady = harnessName
+		? import("./harness.js").then((m) => m.setHarness(harnessName))
+		: Promise.resolve()
+
+	harnessReady
+		.then(() => import("./server.js"))
+		.catch((err) => {
+			reportError(err)
+			console.error(`haiku mcp: ${err.message}`)
+			process.exit(1)
+		})
 } else if (cmd === "hook") {
 	const hookName = args[0]
 	if (!hookName) {

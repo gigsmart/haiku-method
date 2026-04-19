@@ -3,7 +3,7 @@
 // One tool per resource per operation. Under the hood: frontmatter + JSON files.
 // The caller doesn't need to know file paths — just resource identifiers.
 
-import { execFileSync, spawnSync } from "node:child_process"
+import { execFileSync, execSync, spawnSync } from "node:child_process"
 import {
 	existsSync,
 	mkdirSync,
@@ -16,7 +16,8 @@ import {
 import { join, resolve } from "node:path"
 import matter from "gray-matter"
 import { getPendingVersion, hasPendingUpdate } from "./auto-update.js"
-import { features } from "./config.js"
+import { features, resolvePluginRoot } from "./config.js"
+import { UNIT_FIELDS } from "./fsm-fields.js"
 import {
 	addTempWorktree,
 	commitAndPushFromWorktree,
@@ -32,8 +33,10 @@ import {
 	readFileFromBranch,
 	removeTempWorktree,
 } from "./git-worktree.js"
+import { getCapabilities } from "./harness.js"
 import { escalate } from "./model-selection.js"
 import { logSessionEvent, writeHaikuMetadata } from "./session-metadata.js"
+import { sealIntentState } from "./state-integrity.js"
 import {
 	listStudios,
 	readOperationDefs,
@@ -460,7 +463,7 @@ function buildStudioMap(root: string): {
 	searchPaths: string[]
 } {
 	const studioMap = new Map<string, string[]>()
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 	const searchPaths = [join(root, "studios"), join(pluginRoot, "studios")]
 	for (const base of searchPaths) {
 		if (!existsSync(base)) continue
@@ -1551,6 +1554,101 @@ export function isGitRepo(): boolean {
 	return _isGitRepo
 }
 
+// ── Inline quality gates (for hookless harnesses) ─────────────────────────
+//
+// Mirrors the quality-gate Stop hook logic but runs inside haiku_unit_advance_hat.
+// Returns an error object if any gate fails, or null if all pass.
+
+function runInlineQualityGates(
+	intentSlug: string,
+	unitPath: string,
+): {
+	error: string
+	message: string
+	failures: Array<{
+		name: string
+		command: string
+		exit_code: number
+		output: string
+	}>
+} | null {
+	// Read quality_gates from intent and unit frontmatter
+	const root = findHaikuRoot()
+	const intentFile = join(root, "intents", intentSlug, "intent.md")
+
+	function readGates(filePath: string): Array<Record<string, string>> {
+		if (!existsSync(filePath)) return []
+		const raw = readFileSync(filePath, "utf8")
+		const { data } = parseFrontmatter(raw)
+		const gates = data.quality_gates
+		if (!Array.isArray(gates)) return []
+		return gates as Array<Record<string, string>>
+	}
+
+	const intentGates = readGates(intentFile)
+	const unitGates = readGates(unitPath)
+	const allGates = [...intentGates, ...unitGates]
+	if (allGates.length === 0) return null
+
+	// Resolve repo root for cwd
+	let repoRoot = process.cwd()
+	try {
+		repoRoot = execSync("git rev-parse --show-toplevel", {
+			encoding: "utf8",
+		}).trim()
+	} catch {
+		/* use cwd */
+	}
+
+	const failures: Array<{
+		name: string
+		command: string
+		exit_code: number
+		output: string
+	}> = []
+
+	for (let i = 0; i < allGates.length; i++) {
+		const gate = allGates[i]
+		const gateName = gate.name ?? `gate-${i}`
+		const gateCmd = gate.command ?? ""
+		if (!gateCmd) continue
+
+		const cwd = gate.dir ? resolve(repoRoot, gate.dir) : repoRoot
+
+		// Per-gate timeout defaults to 30s; override via HAIKU_GATE_TIMEOUT_MS.
+		const gateTimeoutMs =
+			Number.parseInt(process.env.HAIKU_GATE_TIMEOUT_MS ?? "", 10) || 30000
+		try {
+			execSync(gateCmd, {
+				cwd,
+				encoding: "utf8",
+				timeout: gateTimeoutMs,
+				stdio: ["pipe", "pipe", "pipe"],
+			})
+		} catch (err: unknown) {
+			const execErr = err as {
+				status?: number
+				stdout?: string
+				stderr?: string
+			}
+			failures.push({
+				name: gateName,
+				command: gateCmd,
+				exit_code: execErr.status ?? 1,
+				output: ((execErr.stdout ?? "") + (execErr.stderr ?? "")).slice(0, 500),
+			})
+		}
+	}
+
+	if (failures.length === 0) return null
+
+	return {
+		error: "quality_gate_failed",
+		message: `Cannot advance hat: ${failures.length} quality gate(s) failed. Fix the issues and try again.\n${failures.map((f) => `- ${f.name}: '${f.command}' exited ${f.exit_code}${f.output ? `: ${f.output}` : ""}`).join("\n")}`,
+		failures,
+	}
+}
+
 // ── Path resolution ────────────────────────────────────────────────────────
 
 export function findHaikuRoot(): string {
@@ -2195,7 +2293,7 @@ function resolveStageHats(intent: string, stage: string): string[] {
 		const studio = (data.studio as string) || ""
 		if (!studio) return []
 
-		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+		const pluginRoot = resolvePluginRoot()
 		for (const base of [
 			join(process.cwd(), ".haiku", "studios"),
 			join(pluginRoot, "studios"),
@@ -2223,7 +2321,7 @@ function resolveStageScope(intent: string, stage: string): string {
 		const studio = (data.studio as string) || ""
 		if (!studio) return ""
 
-		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+		const pluginRoot = resolvePluginRoot()
 		for (const base of [
 			join(process.cwd(), ".haiku", "studios"),
 			join(pluginRoot, "studios"),
@@ -2293,7 +2391,7 @@ export function syncSessionMetadata(
 
 		let stageDescription = activeStage
 		if (studio && activeStage) {
-			const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+			const pluginRoot = resolvePluginRoot()
 			for (const base of [
 				join(process.cwd(), ".haiku", "studios"),
 				join(pluginRoot, "studios"),
@@ -3112,7 +3210,7 @@ export const stateToolDefs = [
 	{
 		name: "haiku_repair",
 		description:
-			"Scan intents for metadata issues and auto-apply safe fixes. In a git repo, the default behavior is to scan ALL `haiku/<slug>/main` intent branches sequentially via temporary worktrees, auto-apply safe fixes (overlong title trim, legacy field renames, missing defaults, studio alias migration), commit and push the fixes to each branch, and open a PR/MR back to mainline if the branch was already merged. Pass `intent` to repair a single intent in the current working directory only. Pass `skip_branches: true` to force cwd-only mode in a git repo. Pass `apply: false` to scan without applying fixes.",
+			"Scan intents for metadata issues and auto-apply safe fixes. In a git repo, scans all intent branches sequentially, auto-applies safe fixes, syncs changes, and opens PRs/MRs for already-merged branches. In filesystem mode, scans intents in the current working directory. Pass `intent` to repair a single intent only. Pass `skip_branches: true` to force cwd-only mode in a git repo. Pass `apply: false` to scan without applying fixes.",
 		inputSchema: {
 			type: "object" as const,
 			properties: {
@@ -3255,6 +3353,24 @@ export function handleStateTool(
 			)
 		}
 		case "haiku_unit_set": {
+			// Guard FSM-controlled fields for hookless harnesses.
+			// When hooks are available (Claude Code, Kiro), the guard-fsm-fields
+			// PreToolUse hook blocks direct file writes. For hookless harnesses,
+			// validate here inside the MCP tool itself.
+			//
+			// Shared with state-integrity.ts via fsm-fields.ts so the write
+			// guard and the tamper detector cannot drift out of alignment.
+			const fsmProtectedFields = new Set<string>(UNIT_FIELDS)
+			const field = args.field as string
+			if (!getCapabilities().hooks && fsmProtectedFields.has(field)) {
+				return text(
+					JSON.stringify({
+						error: "fsm_field_protected",
+						field,
+						message: `Cannot set '${field}' directly — it is controlled by the FSM. Use haiku_run_next, haiku_unit_start, haiku_unit_advance_hat, or haiku_unit_reject_hat instead.`,
+					}),
+				)
+			}
 			const path = unitPath(
 				args.intent as string,
 				args.stage as string,
@@ -3322,6 +3438,9 @@ export function handleStateTool(
 			setFrontmatterField(uPath, "started_at", timestamp())
 			setFrontmatterField(uPath, "hat_started_at", timestamp())
 			startUnitIteration(uPath, firstHat)
+			// Reseal: these are UNIT_FIELDS, so the tamper detector needs the
+			// updated checksum before the next verifyIntentState() call.
+			sealIntentState(args.intent as string)
 			emitTelemetry("haiku.unit.started", {
 				intent: args.intent as string,
 				stage,
@@ -3455,6 +3574,25 @@ export function handleStateTool(
 			if (isLastHat) {
 				// ── AUTO-COMPLETE: This was the last hat ──
 
+				// ── Quality gate enforcement for hookless harnesses ──
+				// When hooks are available (Claude Code, Kiro), the Stop hook runs
+				// quality_gates commands. For hookless harnesses, run them here
+				// before allowing the unit to complete.
+				//
+				// Run unconditionally on unit completion — runInlineQualityGates
+				// is a no-op when the unit has no quality_gates defined, so this
+				// works for any stage/hat combination including custom studios
+				// that use non-standard hat names.
+				if (!getCapabilities().hooks) {
+					const qualityGates = runInlineQualityGates(
+						args.intent as string,
+						advPath,
+					)
+					if (qualityGates) {
+						return text(JSON.stringify(qualityGates))
+					}
+				}
+
 				// Require at least one tracked output. The track-outputs PostToolUse
 				// hook auto-populates this as files are written, so an empty list
 				// means the unit produced no concrete artifacts.
@@ -3514,6 +3652,8 @@ export function handleStateTool(
 					"completed_at",
 					timestamp(),
 				)
+				// Reseal: UNIT_FIELDS write before _runNext triggers verify.
+				sealIntentState(args.intent as string)
 
 				// Feedback closure is the exclusive responsibility of the
 				// `feedback-assessor` hat. The unit's `closes:` field is the
@@ -3662,6 +3802,8 @@ export function handleStateTool(
 			setFrontmatterField(advPath, "hat", nextHat)
 			setFrontmatterField(advPath, "hat_started_at", timestamp())
 			startUnitIteration(advPath, nextHat)
+			// Reseal: UNIT_FIELDS write before _runNext triggers verify.
+			sealIntentState(args.intent as string)
 			{
 				const sf = args.state_file as string | undefined
 				if (sf)
@@ -3778,6 +3920,8 @@ export function handleStateTool(
 			setFrontmatterField(failPath, "bolt", currentBolt + 1)
 			setFrontmatterField(failPath, "hat_started_at", timestamp())
 			startUnitIteration(failPath, prevHat)
+			// Reseal: UNIT_FIELDS write; next haiku_run_next triggers verify.
+			sealIntentState(args.intent as string)
 			{
 				const sf = args.state_file as string | undefined
 				if (sf)
@@ -3833,6 +3977,8 @@ export function handleStateTool(
 			}
 
 			setFrontmatterField(path, "bolt", current + 1)
+			// Reseal: bolt is in UNIT_FIELDS.
+			sealIntentState(args.intent as string)
 			emitTelemetry("haiku.bolt.iteration", {
 				intent: args.intent as string,
 				stage: args.stage as string,
@@ -4502,7 +4648,7 @@ export function handleStateTool(
 			const version = (args.version as string) || ""
 			// Search for CHANGELOG.md — try plugin root first, then walk up from cwd
 			let changelogPath = ""
-			const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+			const pluginRoot = resolvePluginRoot()
 			if (pluginRoot) {
 				const p = join(pluginRoot, "CHANGELOG.md")
 				if (existsSync(p)) changelogPath = p

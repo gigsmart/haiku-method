@@ -10,6 +10,7 @@
 // Also injects permission_mode into Agent/Task tool_input when present.
 // Overrides Plan subagent type to general-purpose.
 
+import { getCapabilities } from "../harness.js"
 import { generateSubagentContext } from "./subagent-context.js"
 
 export async function subagentHook(
@@ -17,10 +18,15 @@ export async function subagentHook(
 	pluginRoot: string,
 ): Promise<void> {
 	const toolName = input.tool_name as string
+	const caps = getCapabilities()
 
-	// Determine target field: prompt for Agent/Task, args for Skill
-	const isAgentTool = toolName === "Agent" || toolName === "Task"
-	const targetField = isAgentTool ? "prompt" : "args"
+	// Determine if this is a subagent tool based on the active harness's tool names.
+	// Claude Code: Agent, Task, Skill. Kiro: /spawn. Others may vary.
+	const agentToolNames = new Set(caps.subagents.toolNames)
+	const isAgentTool =
+		toolName === "Agent" || toolName === "Task" || agentToolNames.has(toolName)
+	const isSkillTool = toolName === "Skill"
+	const targetField = isAgentTool ? "prompt" : isSkillTool ? "args" : "prompt"
 
 	// Extract the original tool_input and the target field value
 	let toolInput = (input.tool_input ?? {}) as Record<string, unknown>

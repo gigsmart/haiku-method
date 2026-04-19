@@ -810,6 +810,7 @@ export function mergeUnitWorktree(
 		// Reap the unit worktree and branch — its work is now on the stage branch.
 		tryRun(["git", "worktree", "remove", worktreePath, "--force"])
 		tryRun(["git", "branch", "-D", unitBranch])
+		tryRun(["git", "push", "origin", "--delete", unitBranch])
 
 		return {
 			success: true,
