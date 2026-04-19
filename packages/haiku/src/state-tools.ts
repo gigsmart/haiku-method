@@ -1786,39 +1786,6 @@ function getUnitWorktreeChanges(
 }
 
 /**
- * List files modified in the intent dir since a given timestamp.
- * Used for filesystem (non-git) mode where there's no diff command.
- */
-function getIntentFilesystemChangesSince(
-	slug: string,
-	sinceMs: number,
-): string[] {
-	const root = intentDir(slug)
-	if (!existsSync(root)) return []
-	const results: string[] = []
-	const walk = (abs: string) => {
-		for (const entry of readdirSync(abs, { withFileTypes: true })) {
-			const p = join(abs, entry.name)
-			if (entry.isDirectory()) {
-				walk(p)
-			} else if (entry.isFile()) {
-				try {
-					const st = statSync(p)
-					if (st.mtimeMs > sinceMs) {
-						const rel = p.startsWith(`${root}/`) ? p.slice(root.length + 1) : p
-						results.push(rel)
-					}
-				} catch {
-					/* ignore */
-				}
-			}
-		}
-	}
-	walk(root)
-	return results
-}
-
-/**
  * Compute the allowed write scope for a stage. Derives from:
  *   - Stage output templates' `location:` fields (with `scope:` intent|repo)
  *   - Stage discovery templates' `location:` fields (for pre-execute hats)
@@ -1857,6 +1824,14 @@ function computeStageScope(
 
 	// Pull stage's artifact definitions (discovery + outputs)
 	const defs = readStageArtifactDefs(studio, stage)
+
+	// If the stage declares no artifact templates at all, fall back to the
+	// stage's own intent dir as the allowed zone. This covers inception /
+	// review-only stages that don't produce stage-specific artifacts.
+	if (defs.length === 0) {
+		intentGlobs.push(`stages/${stage}/**`)
+	}
+
 	for (const def of defs) {
 		const loc = (def.location || "").trim()
 		const declaredScope = def.scope || "intent"
@@ -1894,21 +1869,24 @@ function computeStageScope(
 
 /**
  * List changed files for this unit since its worktree forked from the stage
- * branch. Returns null if we can't determine the diff (non-git, missing
- * worktree, etc.) and the caller should fall back to filesystem mtime.
+ * branch. Returns null if we can't determine the diff reliably.
+ *
+ * Scope enforcement is a GIT-mode feature. Filesystem-mode (no git) falls
+ * through to no changes — mtime is too noisy a heuristic in practice
+ * (fixture creation, metadata touches, editor saves all update mtime), and
+ * surfacing false-positive violations degrades the UX more than having no
+ * enforcement. Users wanting structural scope enforcement must run in git
+ * mode.
  */
 function getUnitChanges(
 	slug: string,
 	stage: string,
 	unit: string,
-	hatStartedAt: string | undefined,
+	_hatStartedAt: string | undefined,
 ): string[] {
 	const gitChanged = getUnitWorktreeChanges(slug, unit, stage)
 	if (gitChanged !== null) return gitChanged
-	if (!hatStartedAt) return []
-	const sinceMs = new Date(hatStartedAt).getTime()
-	if (Number.isNaN(sinceMs)) return []
-	return getIntentFilesystemChangesSince(slug, sinceMs)
+	return []
 }
 
 /**
@@ -2977,9 +2955,19 @@ export function readFeedbackFiles(slug: string, stage: string): FeedbackItem[] {
  */
 export function countPendingFeedback(slug: string, stage: string): number {
 	return readFeedbackFiles(slug, stage).filter((item) => {
+		// An item blocks the gate when it is not yet resolved. Resolved means:
+		//   - `closed_by` set (any unit closed it), OR
+		//   - status is one of "closed" / "addressed" / "rejected"
+		// Everything else (status "pending", regardless of other fields) blocks.
 		const closedBy = (item as { closed_by?: unknown }).closed_by
 		if (typeof closedBy === "string" && closedBy.length > 0) return false
-		return item.status !== "rejected"
+		if (
+			item.status === "closed" ||
+			item.status === "addressed" ||
+			item.status === "rejected"
+		)
+			return false
+		return true
 	}).length
 }
 
@@ -4203,6 +4191,61 @@ export function handleStateTool(
 			}
 
 			// ── NOT last hat: advance to next ──
+			// Scope validation runs at every hat transition — not just the
+			// terminal one — so out-of-bounds writes by an earlier hat are
+			// caught before downstream hats run blind on contaminated state.
+			{
+				const intentFile = `${intentDir(args.intent as string)}/intent.md`
+				const { data: iFm } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+				const scopeStudio = (iFm.studio as string) || ""
+				const scopeResult = scopeStudio
+					? validateUnitScope(
+							args.intent as string,
+							scopeStudio,
+							advStage,
+							args.unit as string,
+						)
+					: null
+				if (scopeResult) {
+					const sf = args.state_file as string | undefined
+					if (sf)
+						logSessionEvent(sf, {
+							event: "unit_scope_violation",
+							intent: args.intent,
+							stage: advStage,
+							unit: args.unit,
+							hat: currentHat,
+							violations: scopeResult.violations,
+						})
+					const allowedSummary = [
+						...scopeResult.scope.intentGlobs.map(
+							(g) => `  - \`${g}\` (intent-relative)`,
+						),
+						...scopeResult.scope.repoGlobs.map(
+							(g) => `  - \`${g}\` (repo-relative)`,
+						),
+						scopeResult.scope.repoWildcard
+							? "  - any repo-level path (stage declares scope: repo with wildcard location)"
+							: "",
+					]
+						.filter(Boolean)
+						.join("\n")
+					return text(
+						JSON.stringify({
+							error: "unit_scope_violation",
+							hat: currentHat,
+							violations: scopeResult.violations,
+							scope: scopeResult.scope,
+							message:
+								`Cannot advance hat '${currentHat}': ${scopeResult.violations.length} file(s) were written outside the stage's declared scope.\n\n` +
+								`Out-of-bounds files:\n${scopeResult.violations.map((v) => `  - ${v}`).join("\n")}\n\n` +
+								`Allowed paths (stage output templates + FSM metadata):\n${allowedSummary}\n\n` +
+								`Revert with \`git checkout HEAD -- <file>\` in the unit worktree, or update the stage's output template if this pattern is legitimate. Do NOT advance with scope violations — downstream hats will run blind.`,
+						}),
+					)
+				}
+			}
+
 			const nextHat = stageHats[nextIdx]
 
 			completeUnitIteration(advPath, "advance")

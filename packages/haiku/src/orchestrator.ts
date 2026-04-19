@@ -2308,10 +2308,18 @@ export function runNext(slug: string): OrchestratorAction {
 		// addresses findings before the stage can advance.
 		const pendingCount = countPendingFeedback(slug, currentStage)
 		if (pendingCount > 0) {
-			// Blocking = items without `closed_by` and not rejected. The
-			// feedback-assessor hat (per-unit) is the only path to `closed_by`.
+			// Blocking = items countPendingFeedback counts: no closed_by AND
+			// status is not closed/addressed/rejected. Stay in sync with
+			// countPendingFeedback so count and list never diverge.
 			const pendingItems = readFeedbackFiles(slug, currentStage).filter(
-				(item) => !item.closed_by && item.status !== "rejected",
+				(item) => {
+					if (item.closed_by) return false
+					return (
+						item.status !== "closed" &&
+						item.status !== "addressed" &&
+						item.status !== "rejected"
+					)
+				},
 			)
 			const statePath = stageStatePath(slug, currentStage)
 			const gateState = readJson(statePath)

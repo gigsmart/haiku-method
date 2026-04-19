@@ -19,7 +19,14 @@
 // Cleanup is handled by a SessionStart hook that wipes stale session dirs
 // older than 24h.
 
-import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs"
+import {
+	mkdirSync,
+	readdirSync,
+	renameSync,
+	rmSync,
+	statSync,
+	writeFileSync,
+} from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -67,7 +74,7 @@ export function writeSubagentPrompt(opts: {
 	const { unit, hat, bolt, content } = opts
 	const slug = `${unit.replace(/\.md$/, "")}-${hat}-${bolt}`
 	const path = join(promptDir(), `${slug}.prompt.md`)
-	writeFileSync(path, content, "utf8")
+	atomicWrite(path, content)
 
 	const parentInstruction =
 		`Read the file at \`${path}\` and execute its instructions exactly. ` +
@@ -75,6 +82,18 @@ export function writeSubagentPrompt(opts: {
 		`do not paraphrase or skip any of it.`
 
 	return { path, parentInstruction }
+}
+
+/**
+ * Write-then-rename for atomicity. Prevents readers from seeing a partial
+ * file if the writer is interrupted mid-write. The rename is atomic on
+ * POSIX filesystems (same-volume rename replaces the target without a
+ * partial-state window).
+ */
+function atomicWrite(path: string, content: string): void {
+	const tmp = `${path}.${process.pid}.tmp`
+	writeFileSync(tmp, content, "utf8")
+	renameSync(tmp, path)
 }
 
 /**
@@ -93,7 +112,7 @@ export function resultPathFor(opts: {
 }
 
 export function writeResultFile(resultPath: string, payload: unknown): void {
-	writeFileSync(resultPath, JSON.stringify(payload, null, 2), "utf8")
+	atomicWrite(resultPath, JSON.stringify(payload, null, 2))
 }
 
 /**
