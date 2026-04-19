@@ -6019,6 +6019,45 @@ export async function handleOrchestratorTool(
 			)
 		}
 
+		// Force checkout of the repo mainline BEFORE writing the new intent.
+		// Without this, if the agent is currently on another intent's stage
+		// branch, (a) the new intent files land on that foreign branch and
+		// (b) the subsequent createIntentBranch forks haiku/{new-slug}/main
+		// off that foreign branch, inheriting its history. A fresh intent
+		// must be born on the repo mainline (main/master/whatever origin/HEAD
+		// points at) so its haiku/{slug}/main starts from a clean base.
+		if (isGitRepo()) {
+			try {
+				const mainlineBranch = getMainlineBranch()
+				let currentBranch = ""
+				try {
+					currentBranch = execFileSync(
+						"git",
+						["rev-parse", "--abbrev-ref", "HEAD"],
+						{ encoding: "utf8", stdio: "pipe" },
+					).trim()
+				} catch {
+					/* non-fatal: detached HEAD or similar */
+				}
+				if (mainlineBranch && currentBranch !== mainlineBranch) {
+					execFileSync("git", ["checkout", mainlineBranch], {
+						encoding: "utf8",
+						stdio: "pipe",
+					})
+				}
+			} catch (err) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: `Error: failed to checkout repo mainline before creating intent '${slug}' — ${err instanceof Error ? err.message : String(err)}. Stash or commit uncommitted changes, then retry.`,
+						},
+					],
+					isError: true,
+				}
+			}
+		}
+
 		// Create directory structure
 		mkdirSync(join(iDir, "knowledge"), { recursive: true })
 		mkdirSync(join(iDir, "stages"), { recursive: true })

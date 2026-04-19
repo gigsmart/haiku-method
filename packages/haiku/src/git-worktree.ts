@@ -730,10 +730,40 @@ export function ensureOnStageBranch(
 	const stageBranch = stage ? `haiku/${slug}/${stage}` : ""
 	const targetBranch =
 		stage && branchExists(stageBranch) ? stageBranch : intentMain
+	const current = getCurrentBranch()
 
 	if (!branchExists(targetBranch)) {
-		// Can't enforce what doesn't exist — caller (e.g. fsmStartStage) will
-		// create branches as needed. This is a pre-init state; skip the guard.
+		// Pre-init state: the intent's branches haven't been created yet.
+		// We can't enforce what doesn't exist, but we MUST avoid leaving the
+		// agent on a foreign intent's branch — otherwise the caller
+		// (fsmStartStage → createIntentBranch) would fork haiku/{slug}/main
+		// off that foreign branch and inherit its history. Fall back to the
+		// repo mainline (main/master/etc.) so branch creation forks from a
+		// clean, neutral base.
+		const mainlineBranch = getMainlineBranch()
+		if (
+			mainlineBranch &&
+			branchExists(mainlineBranch) &&
+			current !== mainlineBranch
+		) {
+			try {
+				run(["git", "checkout", mainlineBranch])
+				return {
+					ok: true,
+					branch: mainlineBranch,
+					message: `target branch '${targetBranch}' not yet created — fell back to repo mainline '${mainlineBranch}' for safe branch creation`,
+					switched: true,
+				}
+			} catch (err) {
+				const raw = err instanceof Error ? err.message : String(err)
+				return {
+					ok: false,
+					branch: current,
+					message: `target branch '${targetBranch}' not yet created, and failed to fall back to mainline '${mainlineBranch}': ${raw}`,
+					switched: false,
+				}
+			}
+		}
 		return {
 			ok: true,
 			branch: targetBranch,
@@ -741,8 +771,6 @@ export function ensureOnStageBranch(
 			switched: false,
 		}
 	}
-
-	const current = getCurrentBranch()
 	if (current === targetBranch) {
 		return {
 			ok: true,
