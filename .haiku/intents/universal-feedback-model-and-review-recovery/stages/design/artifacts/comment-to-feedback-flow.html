@@ -129,8 +129,11 @@
 </head>
 <body class="dark bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
 
-  <!-- Header -->
-  <header class="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
+  <!-- Skip link -->
+  <a href="#main-content" class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-[100] focus-visible:px-3 focus-visible:py-2 focus-visible:bg-teal-600 focus-visible:text-white focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900">Skip to main content</a>
+
+  <!-- Header (role="banner") -->
+  <header role="banner" class="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
     <div class="max-w-[1400px] mx-auto px-4 sm:px-5 py-3 flex items-center justify-between">
       <div>
         <h1 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Comment-to-Feedback Flow Diagram</h1>
@@ -142,7 +145,7 @@
     </div>
   </header>
 
-  <main class="max-w-[1400px] mx-auto px-4 sm:px-5 py-6 space-y-6">
+  <main id="main-content" role="main" aria-label="Feedback flows" class="max-w-[1400px] mx-auto px-4 sm:px-5 py-6 space-y-6">
 
     <!-- ================================================================ -->
     <!-- FLOW 1: TEXT SELECTION -> INLINE ANNOTATION -->
@@ -197,7 +200,7 @@
             <p class="text-gray-300 leading-relaxed opacity-40">...ephemeral batch comments...</p>
             <!-- Expanded input -->
             <div class="mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-3">
-              <textarea class="w-full min-h-[40px] p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-xs focus:ring-1 focus:ring-teal-500 resize-none" readonly>This should persist across review cycles|</textarea>
+              <textarea class="w-full min-h-[40px] p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-xs focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none resize-none" readonly>This should persist across review cycles|</textarea>
               <div class="flex justify-between items-center mt-2">
                 <span class="text-[10px] text-gray-500 save-pulsing">Saving...</span>
                 <div class="flex gap-1">
@@ -246,7 +249,7 @@
             <div class="mt-2 fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 transition-all feedback-status-changed">
               <div class="flex items-center gap-1 mb-1">
                 <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
-                  &#x1F441;&#xFE0F; Annotation
+                  &#x270E; Annotation
                 </span>
                 <span class="flex-1"></span>
                 <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
@@ -374,7 +377,7 @@
             <div class="absolute z-20 w-[160px]" style="left: calc(40% + 20px); top: calc(35% - 12px);">
               <div class="border-l-[3px] border-l-amber-400 p-2 rounded-lg bg-amber-950/20 border border-gray-700 feedback-status-changed">
                 <div class="flex items-center gap-1 mb-0.5">
-                  <span class="text-[9px] text-sky-400">&#x1F441;&#xFE0F;</span>
+                  <span class="text-[9px] text-sky-400">&#x270E;</span>
                   <span class="flex-1"></span>
                   <span class="inline-flex items-center px-1 py-0.5 rounded-full text-[9px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
                 </div>
@@ -408,7 +411,7 @@
           <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-blue-400 dark:border-blue-500 transition-all cursor-pointer">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800">
-                &#x1F441;&#xFE0F; Annotation
+                &#x270E; Annotation
               </span>
               <span class="flex-1"></span>
               <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
@@ -428,12 +431,12 @@
           <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-blue-400 dark:border-blue-500">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800">
-                &#x1F441;&#xFE0F; Annotation
+                &#x270E; Annotation
               </span>
               <span class="flex-1"></span>
               <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
             </div>
-            <textarea class="w-full min-h-[48px] p-2 border border-teal-500 rounded-md bg-gray-900 text-gray-100 text-xs focus:ring-1 focus:ring-teal-500 resize-y" readonly>Header alignment feels off on mobile too|</textarea>
+            <textarea class="w-full min-h-[48px] p-2 border border-teal-500 rounded-md bg-gray-900 text-gray-100 text-xs focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none resize-y" readonly>Header alignment feels off on mobile too|</textarea>
             <div class="flex items-center justify-between mt-1.5">
               <span class="text-[10px] text-gray-500 save-pulsing">Saving...</span>
               <div class="flex gap-1">
@@ -475,7 +478,7 @@
           <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer feedback-status-changed">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800">
-                &#x1F441;&#xFE0F; Annotation
+                &#x270E; Annotation
               </span>
               <span class="flex-1"></span>
               <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
@@ -509,7 +512,7 @@
           <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-blue-400 dark:border-blue-500">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800">
-                &#x1F441;&#xFE0F; Annotation
+                &#x270E; Annotation
               </span>
               <span class="flex-1"></span>
               <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
@@ -569,7 +572,7 @@
           <div class="fade-out-card border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800">
-                &#x1F441;&#xFE0F; Annotation
+                &#x270E; Annotation
               </span>
               <span class="flex-1"></span>
               <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
@@ -601,7 +604,7 @@
             <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer">
               <div class="flex items-center gap-2 mb-1">
                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800">
-                  &#x1F441;&#xFE0F; Annotation
+                  &#x270E; Annotation
                 </span>
                 <span class="flex-1"></span>
                 <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
@@ -630,7 +633,7 @@
             <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer">
               <div class="flex items-center gap-2 mb-1">
                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-rose-900/30 text-rose-400 border-rose-800">
-                  &#x1F6E1;&#xFE0F; Review Agent
+                  &#x1F50D; Review Agent
                 </span>
                 <span class="flex-1"></span>
                 <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
@@ -648,7 +651,7 @@
             <div class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer">
               <div class="flex items-center gap-2 mb-1">
                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-violet-900/30 text-violet-400 border-violet-800">
-                  &#x1F500; PR Comment
+                  &#x1F517; PR Comment
                 </span>
                 <span class="flex-1"></span>
                 <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-900/30 text-blue-300">addressed</span>
@@ -670,12 +673,12 @@
       <div class="mt-6 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
         <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Origin Badge Reference</p>
         <div class="flex items-center gap-3 flex-wrap">
-          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-rose-900/30 text-rose-400 border-rose-800">&#x1F6E1;&#xFE0F; Review Agent</span>
-          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-violet-900/30 text-violet-400 border-violet-800">&#x1F500; PR Comment</span>
-          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-violet-900/30 text-violet-400 border-violet-800">&#x1F500; MR Comment</span>
-          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800">&#x1F441;&#xFE0F; Annotation</span>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-rose-900/30 text-rose-400 border-rose-800">&#x1F50D; Review Agent</span>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-violet-900/30 text-violet-400 border-violet-800">&#x1F517; PR Comment</span>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-violet-900/30 text-violet-400 border-violet-800">&#x1F517; MR Comment</span>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800">&#x270E; Annotation</span>
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-gray-800 text-gray-400 border-gray-600">&#x1F4AC; Comment</span>
-          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-teal-900/30 text-teal-400 border-teal-800">&#x2728; Agent</span>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-teal-900/30 text-teal-400 border-teal-800">&#x1F916; Agent</span>
         </div>
       </div>
     </section>
@@ -698,7 +701,7 @@
           <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-sky-900/30 text-sky-400 border-sky-800">
-                &#x1F441;&#xFE0F; Annotation
+                &#x270E; Annotation
               </span>
               <span class="flex-1"></span>
               <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300">pending</span>
@@ -847,7 +850,7 @@
               <div class="overflow-y-auto p-2 space-y-1.5" style="max-height: 180px;">
                 <div class="border-l-[3px] border-l-amber-400 p-2 rounded-lg bg-amber-950/20 border border-gray-700">
                   <div class="flex items-center gap-1">
-                    <span class="text-[9px] text-rose-400">&#x1F6E1;&#xFE0F;</span>
+                    <span class="text-[9px] text-rose-400">&#x1F50D;</span>
                     <span class="text-[9px] text-gray-400">Review Agent</span>
                     <span class="flex-1"></span>
                     <span class="text-[9px] bg-amber-900/30 text-amber-300 px-1 rounded-full">pending</span>
@@ -856,7 +859,7 @@
                 </div>
                 <div class="border-l-[3px] border-l-amber-400 p-2 rounded-lg bg-amber-950/20 border border-gray-700">
                   <div class="flex items-center gap-1">
-                    <span class="text-[9px] text-sky-400">&#x1F441;&#xFE0F;</span>
+                    <span class="text-[9px] text-sky-400">&#x270E;</span>
                     <span class="text-[9px] text-gray-400">Annotation</span>
                     <span class="flex-1"></span>
                     <span class="text-[9px] bg-amber-900/30 text-amber-300 px-1 rounded-full">pending</span>
@@ -865,7 +868,7 @@
                 </div>
                 <div class="border-l-[3px] border-l-blue-400 p-2 rounded-lg bg-blue-950/20 border border-gray-700">
                   <div class="flex items-center gap-1">
-                    <span class="text-[9px] text-violet-400">&#x1F500;</span>
+                    <span class="text-[9px] text-violet-400">&#x1F517;</span>
                     <span class="text-[9px] text-gray-400">PR Comment</span>
                     <span class="flex-1"></span>
                     <span class="text-[9px] bg-blue-900/30 text-blue-300 px-1 rounded-full">addressed</span>
@@ -927,7 +930,7 @@
               <div class="p-2">
                 <div class="border-l-[3px] border-l-amber-400 p-2.5 rounded-lg bg-amber-950/20 border border-teal-500">
                   <div class="flex items-center gap-1 mb-1">
-                    <span class="text-[9px] text-rose-400">&#x1F6E1;&#xFE0F; Review Agent</span>
+                    <span class="text-[9px] text-rose-400">&#x1F50D; Review Agent</span>
                     <span class="flex-1"></span>
                     <span class="text-[9px] bg-amber-900/30 text-amber-300 px-1 rounded-full">pending</span>
                   </div>

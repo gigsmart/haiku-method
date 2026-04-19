@@ -86,10 +86,13 @@
 </head>
 <body class="dark bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
 
-  <div class="max-w-[1400px] mx-auto px-4 py-8">
+  <!-- Skip link -->
+  <a href="#main-content" class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-[100] focus-visible:px-3 focus-visible:py-2 focus-visible:bg-teal-600 focus-visible:text-white focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900">Skip to main content</a>
 
-    <!-- Header -->
-    <header class="mb-8">
+  <main id="main-content" role="main" aria-label="Review package structure" class="max-w-[1400px] mx-auto px-4 py-8">
+
+    <!-- Header (role="banner") -->
+    <header role="banner" class="mb-8">
       <div class="flex items-center gap-3 mb-2">
         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">design artifact</span>
         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-03</span>
@@ -1037,7 +1040,7 @@
       &middot; unit-03-review-package-unification &middot; design stage
     </footer>
 
-  </div>
+  </main>
 
 </body>
 </html>

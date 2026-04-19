@@ -52,15 +52,15 @@
 </head>
 <body class="dark bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
 
-  <!-- FB-30: Skip links. First focusable elements; visually hidden until focused. -->
-  <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:px-3 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white">Skip to main content</a>
-  <a href="#feedback-list" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-44 focus:z-[200] focus:px-3 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white">Skip to feedback list</a>
+  <!-- FB-30/FB-35: Skip links — first focusable elements; visually hidden until focused. Bypass header nav (landmark structure). -->
+  <a href="#main-content" class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-[200] focus-visible:px-3 focus-visible:py-2 focus-visible:bg-teal-600 focus-visible:text-white focus-visible:rounded-md focus-visible:shadow-lg focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900">Skip to main content</a>
+  <a href="#feedback-list" class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-44 focus-visible:z-[200] focus-visible:px-3 focus-visible:py-2 focus-visible:bg-teal-600 focus-visible:text-white focus-visible:rounded-md focus-visible:shadow-lg focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900">Skip to feedback list</a>
 
-  <!-- Header -->
-  <header class="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
+  <!-- Header (role="banner") -->
+  <header role="banner" class="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
     <div class="max-w-[1400px] mx-auto px-4 sm:px-5 py-3 flex items-center justify-between">
       <h1 class="text-lg font-semibold truncate">Review: Universal Feedback Model</h1>
-      <button class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:ring-2 focus:ring-teal-500"
+      <button class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none"
               aria-label="Toggle color theme">
         Light / Dark
       </button>
@@ -70,16 +70,16 @@
   <!-- Two-column layout -->
   <div class="max-w-[1400px] mx-auto px-4 sm:px-5 py-6 lg:flex lg:gap-4">
 
-    <!-- Main content -->
-    <main id="main-content" class="flex-1 min-w-0">
+    <!-- Main content (role="main" explicit + aria-label for landmark clarity) -->
+    <main id="main-content" role="main" aria-label="Review content" class="flex-1 min-w-0">
 
       <!-- Tabs -->
       <div class="sticky top-[53px] z-30 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-700 mb-4">
         <div role="tablist" aria-label="Review sections" class="flex overflow-x-auto -mx-1">
-          <button role="tab" aria-selected="true" tabindex="0" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 focus:ring-2 focus:ring-teal-500">Overview</button>
-          <button role="tab" aria-selected="false" tabindex="-1" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer focus:ring-2 focus:ring-teal-500">Units (12)</button>
-          <button role="tab" aria-selected="false" tabindex="-1" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer focus:ring-2 focus:ring-teal-500">Knowledge</button>
-          <button role="tab" aria-selected="false" tabindex="-1" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer focus:ring-2 focus:ring-teal-500">Outputs (3)</button>
+          <button role="tab" aria-selected="true" tabindex="0" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 focus-visible:ring-2 focus-visible:ring-teal-500">Overview</button>
+          <button role="tab" aria-selected="false" tabindex="-1" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500">Units (12)</button>
+          <button role="tab" aria-selected="false" tabindex="-1" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500">Knowledge</button>
+          <button role="tab" aria-selected="false" tabindex="-1" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500">Outputs (3)</button>
         </div>
       </div>
 
@@ -101,10 +101,10 @@
                 <!-- Floating inline annotation card — connected by dashed line -->
                 <div class="absolute -right-[340px] top-0 w-[300px] z-20">
                   <div class="annotation-connector border-t border-dashed border-gray-400 dark:border-gray-600"></div>
-                  <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
+                  <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
                     <div class="flex items-center gap-2 mb-1">
                       <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
-                        <span aria-hidden="true">&#x1F6E1;&#xFE0F;</span> Review Agent
+                        <span aria-hidden="true">&#x1F50D;</span> Review Agent
                       </span>
                       <span class="flex-1"></span>
                       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
@@ -125,10 +125,10 @@
                 <!-- Floating card — addressed state -->
                 <div class="absolute -right-[340px] top-0 w-[300px] z-20">
                   <div class="annotation-connector border-t border-dashed border-gray-400 dark:border-gray-600"></div>
-                  <div class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
+                  <div class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
                     <div class="flex items-center gap-2 mb-1">
                       <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800">
-                        <span aria-hidden="true">&#x1F500;</span> PR Comment
+                        <span aria-hidden="true">&#x1F517;</span> PR Comment
                       </span>
                       <span class="flex-1"></span>
                       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" aria-label="Status: addressed">addressed</span>
@@ -176,7 +176,7 @@
               <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer w-[240px]">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
-                    <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
+                    <span aria-hidden="true">&#x270E;</span> Annotation
                   </span>
                   <span class="flex-1"></span>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
@@ -213,10 +213,10 @@
             <!-- Default / Collapsed -->
             <div>
               <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Default (collapsed)</p>
-              <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
+              <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
-                    <span aria-hidden="true">&#x1F6E1;&#xFE0F;</span> Review Agent
+                    <span aria-hidden="true">&#x1F50D;</span> Review Agent
                   </span>
                   <span class="flex-1"></span>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
@@ -232,7 +232,7 @@
               <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-blue-400 dark:border-blue-500 transition-all cursor-pointer" style="transform: translateY(-1px); box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
-                    <span aria-hidden="true">&#x2728;</span> Agent
+                    <span aria-hidden="true">&#x1F916;</span> Agent
                   </span>
                   <span class="flex-1"></span>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
@@ -248,7 +248,7 @@
               <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-blue-400 dark:border-blue-500 transition-all">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
-                    <span aria-hidden="true">&#x1F6E1;&#xFE0F;</span> Review Agent
+                    <span aria-hidden="true">&#x1F50D;</span> Review Agent
                   </span>
                   <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-bold leading-none bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">4x</span>
                   <span class="flex-1"></span>
@@ -270,10 +270,10 @@
             <!-- Addressed state -->
             <div>
               <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Addressed (blue left border + link)</p>
-              <div class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
+              <div class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800">
-                    <span aria-hidden="true">&#x1F500;</span> PR Comment
+                    <span aria-hidden="true">&#x1F517;</span> PR Comment
                   </span>
                   <span class="flex-1"></span>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">addressed</span>
@@ -291,7 +291,7 @@
                 <div class="flex items-center gap-2 mb-1">
                   <span aria-hidden="true" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-600 dark:bg-green-500 text-white text-xs font-bold leading-none">&check;</span>
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
-                    <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
+                    <span aria-hidden="true">&#x270E;</span> Annotation
                   </span>
                   <span class="flex-1"></span>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" aria-label="Status: closed">closed</span>
@@ -308,7 +308,7 @@
                 <div class="flex items-center gap-2 mb-1">
                   <span aria-hidden="true" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-stone-500 dark:bg-stone-400 text-white dark:text-stone-900 text-xs font-bold leading-none">&times;</span>
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
-                    <span aria-hidden="true">&#x2728;</span> Agent
+                    <span aria-hidden="true">&#x1F916;</span> Agent
                   </span>
                   <span class="flex-1"></span>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-200" aria-label="Status: rejected">rejected</span>
@@ -322,9 +322,11 @@
       </div>
     </main>
 
-    <!-- Review sidebar: sticky on desktop -->
+    <!-- Review sidebar: sticky on desktop — <aside role="complementary" aria-label="Review sidebar"> (FB-35) -->
     <div class="hidden lg:block w-80 shrink-0">
-      <aside id="feedback-list" aria-label="Feedback list" role="complementary"
+      <aside id="feedback-list"
+        role="complementary"
+        aria-label="Feedback list"
         class="sticky top-20 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 flex flex-col"
         style="max-height: calc(100vh - 6rem); overflow-y: auto;">
 
@@ -332,7 +334,7 @@
         <div class="shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
           <div class="flex items-center justify-between mb-2">
             <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Review</h2>
-            <button class="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 focus:ring-2 focus:ring-teal-500">Clear all</button>
+            <button class="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 focus-visible:ring-2 focus-visible:ring-teal-500">Clear all</button>
           </div>
 
           <!-- Unified Comments header + AgentFeedbackToggle (replaces retired Feedback / Mine segmented control) -->
@@ -345,7 +347,7 @@
               role="switch"
               aria-checked="false"
               aria-label="Show agent feedback inline"
-              class="relative inline-flex items-center focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-gray-50 dark:focus:ring-offset-gray-800 rounded-full"
+              class="relative inline-flex items-center focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-50 dark:focus-visible:ring-offset-gray-800 rounded-full"
             >
               <span class="w-8 h-4 rounded-full bg-gray-300 dark:bg-gray-600 transition-colors"></span>
               <span class="absolute left-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm transform transition-transform"></span>
@@ -353,25 +355,25 @@
           </div>
         </div>
 
-        <!-- Summary bar with filter pills -->
-        <div class="shrink-0 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2 flex-wrap">
-          <button class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700 transition-colors focus:ring-2 focus:ring-teal-500">All</button>
-          <button class="px-2 py-1 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 cursor-pointer transition-colors focus:ring-2 focus:ring-teal-500">
-            <span class="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1"></span>Pending
-            <span class="ml-0.5 font-bold">3</span>
+        <!-- Summary bar with filter pills — role="group" wraps filter toggles; dots aria-hidden -->
+        <div class="shrink-0 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2 flex-wrap" role="group" aria-label="Filter feedback by status">
+          <button aria-pressed="true" class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700 transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">All</button>
+          <button aria-pressed="false" aria-label="Pending, 3 items" class="px-2 py-1 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
+            <span aria-hidden="true" class="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1"></span>Pending
+            <span aria-hidden="true" class="ml-0.5 font-bold">3</span>
           </button>
-          <button class="px-2 py-1 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 cursor-pointer transition-colors focus:ring-2 focus:ring-teal-500">
-            <span class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Addressed
-            <span class="ml-0.5 font-bold">1</span>
+          <button aria-pressed="false" aria-label="Addressed, 1 item" class="px-2 py-1 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
+            <span aria-hidden="true" class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Addressed
+            <span aria-hidden="true" class="ml-0.5 font-bold">1</span>
           </button>
-          <button class="px-2 py-1 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 cursor-pointer transition-colors focus:ring-2 focus:ring-teal-500">
-            <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Closed
-            <span class="ml-0.5 font-bold">1</span>
+          <button aria-pressed="false" aria-label="Closed, 1 item" class="px-2 py-1 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
+            <span aria-hidden="true" class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Closed
+            <span aria-hidden="true" class="ml-0.5 font-bold">1</span>
           </button>
         </div>
 
-        <!-- Feedback list (scrollable) -->
-        <div class="flex-1 overflow-y-auto p-3 space-y-2" role="list">
+        <!-- Feedback list (scrollable) — role="list" aria-label so screen reader announces count -->
+        <div class="flex-1 overflow-y-auto p-3 space-y-2" role="list" aria-label="Feedback items">
 
           <!-- Group: Current Visit -->
           <div class="flex items-center gap-2 px-1 py-1">
@@ -380,10 +382,10 @@
           </div>
 
           <!-- Pending item 1 -->
-          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
+          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
-                <span aria-hidden="true">&#x1F6E1;&#xFE0F;</span> Review Agent
+                <span aria-hidden="true">&#x1F50D;</span> Review Agent
               </span>
               <span class="flex-1"></span>
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
@@ -393,10 +395,10 @@
           </div>
 
           <!-- Pending item 2 -->
-          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
+          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
-                <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
+                <span aria-hidden="true">&#x270E;</span> Annotation
               </span>
               <span class="flex-1"></span>
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
@@ -406,10 +408,10 @@
           </div>
 
           <!-- Pending item 3 (agent) -->
-          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
+          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
-                <span aria-hidden="true">&#x2728;</span> Agent
+                <span aria-hidden="true">&#x1F916;</span> Agent
               </span>
               <span class="flex-1"></span>
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">pending</span>
@@ -425,10 +427,10 @@
           </div>
 
           <!-- Addressed item -->
-          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
+          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 outline-none">
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800">
-                <span aria-hidden="true">&#x1F500;</span> PR Comment
+                <span aria-hidden="true">&#x1F517;</span> PR Comment
               </span>
               <span class="flex-1"></span>
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">addressed</span>
@@ -443,7 +445,7 @@
             <div class="flex items-center gap-2 mb-1">
               <span aria-hidden="true" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-600 dark:bg-green-500 text-white text-xs font-bold leading-none">&check;</span>
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
-                <span aria-hidden="true">&#x1F441;&#xFE0F;</span> Annotation
+                <span aria-hidden="true">&#x270E;</span> Annotation
               </span>
               <span class="flex-1"></span>
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" aria-label="Status: closed">closed</span>
@@ -458,13 +460,13 @@
           <div>
             <label for="sidebar-general-comment" class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">General comment</label>
             <textarea id="sidebar-general-comment"
-                      class="w-full text-sm p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y" rows="3" placeholder="Leave a general comment..."></textarea>
+                      class="w-full text-sm p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus-visible:border-teal-500 focus:outline-none resize-y" rows="3" placeholder="Leave a general comment..."></textarea>
           </div>
           <div class="flex gap-2">
-            <button class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:bg-green-300 disabled:text-green-800 dark:disabled:bg-green-900/40 dark:disabled:text-green-200 disabled:cursor-not-allowed">
+            <button class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 disabled:bg-green-300 disabled:text-green-800 dark:disabled:bg-green-900/40 dark:disabled:text-green-200 disabled:cursor-not-allowed">
               Approve
             </button>
-            <button class="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:bg-amber-200 disabled:text-amber-900 dark:disabled:bg-amber-900/40 dark:disabled:text-amber-200 disabled:cursor-not-allowed">
+            <button class="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 disabled:bg-amber-200 disabled:text-amber-900 dark:disabled:bg-amber-900/40 dark:disabled:text-amber-200 disabled:cursor-not-allowed">
               Request Changes
             </button>
           </div>
@@ -473,7 +475,12 @@
     </div>
   </div>
 
-  <!-- Live region for screen reader announcements -->
-  <div role="status" aria-live="polite" class="sr-only"></div>
+  <!--
+    Live regions for screen reader announcements (FB-26 aria-live sequencing).
+    See aria-live-sequencing-spec.md for the three-phase announcement template per transition.
+    Separate polite/assertive nodes so in-flight "marking…" text is not overwritten before readout.
+  -->
+  <div id="feedback-live-polite" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+  <div id="feedback-live-assertive" role="alert" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
 </body>
 </html>

@@ -95,17 +95,17 @@
           <div class="absolute inset-4 rounded-lg bg-white/40 dark:bg-stone-900/40 pointer-events-none"></div>
 
           <!-- The modal -->
-          <div class="relative w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden">
+          <div role="dialog" aria-modal="true" aria-labelledby="revisit-modal-title-desktop" aria-describedby="revisit-modal-lede-desktop" class="relative w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden">
             <!-- (A) Header -->
             <div data-anno="A" class="relative px-5 py-4 border-b border-stone-200 dark:border-stone-700 flex items-center gap-2">
               <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500 text-white text-sm font-bold" aria-hidden="true">↩</span>
-              <h2 class="text-base font-bold text-stone-900 dark:text-stone-100">Confirm revisit</h2>
+              <h2 id="revisit-modal-title-desktop" class="text-base font-bold text-stone-900 dark:text-stone-100">Confirm revisit</h2>
             </div>
 
             <!-- Body -->
             <div class="px-5 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
               <!-- (B) Lede -->
-              <p data-anno="B" class="relative text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
+              <p id="revisit-modal-lede-desktop" data-anno="B" class="relative text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
                 This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-xs">haiku_revisit</code>, rewriting state and pushing to the main intent branch.
               </p>
 
@@ -164,7 +164,7 @@
 
             <!-- (5) Footer actions -->
             <div data-anno="5" class="relative px-5 py-3 border-t border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/60 flex items-center justify-end gap-2">
-              <button class="px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">Cancel</button>
+              <button class="px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:outline-none">Cancel</button>
               <button class="px-3 py-1.5 text-xs font-semibold rounded-md bg-amber-600 hover:bg-amber-700 text-white focus:ring-2 focus:ring-amber-500 focus:outline-none">Confirm &amp; Revisit to Product · resets 3 downstream stages</button>
             </div>
           </div>
@@ -210,10 +210,10 @@
       <p class="text-sm text-stone-500 dark:text-stone-400 max-w-3xl">FSM is paused at a review gate. Reviewer clicked Request Changes. <code class="px-1 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-xs">earliestUnaddressedStage()</code> returns a real stage — it becomes the target.</p>
 
       <div class="rounded-xl bg-stone-900/80 dark:bg-black/60 p-8 flex items-start justify-center">
-        <div class="w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden">
+        <div role="dialog" aria-modal="true" aria-labelledby="revisit-modal-title-variant-a" class="w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden">
           <div class="px-5 py-4 border-b border-stone-200 dark:border-stone-700 flex items-center gap-2">
             <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500 text-white text-sm font-bold">↩</span>
-            <h3 class="text-base font-bold text-stone-900 dark:text-stone-100">Confirm revisit</h3>
+            <h3 id="revisit-modal-title-variant-a" class="text-base font-bold text-stone-900 dark:text-stone-100">Confirm revisit</h3>
             <span class="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">gate paused</span>
           </div>
           <div class="px-5 py-4 space-y-3">
@@ -251,7 +251,7 @@
             </section>
           </div>
           <div class="px-5 py-3 border-t border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/60 flex items-center justify-end gap-2">
-            <button class="px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">Cancel</button>
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:outline-none">Cancel</button>
             <button class="px-3 py-1.5 text-xs font-semibold rounded-md bg-amber-600 hover:bg-amber-700 text-white focus:ring-2 focus:ring-amber-500 focus:outline-none">Confirm &amp; Revisit to Product · resets 3 downstream stages</button>
           </div>
         </div>
@@ -280,10 +280,10 @@
       </p>
 
       <div class="rounded-xl bg-stone-900/80 dark:bg-black/60 p-8 flex items-start justify-center">
-        <div class="w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden">
+        <div role="dialog" aria-modal="true" aria-labelledby="revisit-modal-title-variant-b" class="w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden">
           <div class="px-5 py-4 border-b border-stone-200 dark:border-stone-700 flex items-center gap-2">
             <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500 text-white text-sm font-bold">↩</span>
-            <h3 class="text-base font-bold text-stone-900 dark:text-stone-100">Confirm revisit</h3>
+            <h3 id="revisit-modal-title-variant-b" class="text-base font-bold text-stone-900 dark:text-stone-100">Confirm revisit</h3>
             <span class="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400">no active gate</span>
           </div>
           <div class="px-5 py-4 space-y-3">
@@ -314,7 +314,7 @@
             <!-- No "open feedback in scope" section when list is empty — suppressed, not shown as empty. -->
           </div>
           <div class="px-5 py-3 border-t border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/60 flex items-center justify-end gap-2">
-            <button class="px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">Cancel</button>
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:outline-none">Cancel</button>
             <button class="px-3 py-1.5 text-xs font-semibold rounded-md bg-amber-600 hover:bg-amber-700 text-white focus:ring-2 focus:ring-amber-500 focus:outline-none">Confirm &amp; Revisit to Design · resets 4 downstream stages</button>
           </div>
         </div>
@@ -342,10 +342,10 @@
       <p class="text-sm text-stone-500 dark:text-stone-400 max-w-3xl">Reviewer typed free-form feedback into the sidebar textarea before clicking Request Changes. The preview card surfaces exactly how it will be stored.</p>
 
       <div class="rounded-xl bg-stone-900/80 dark:bg-black/60 p-8 flex items-start justify-center">
-        <div class="w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden">
+        <div role="dialog" aria-modal="true" aria-labelledby="revisit-modal-title-variant-c" class="w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden">
           <div class="px-5 py-4 border-b border-stone-200 dark:border-stone-700 flex items-center gap-2">
             <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500 text-white text-sm font-bold">↩</span>
-            <h3 class="text-base font-bold text-stone-900 dark:text-stone-100">Confirm revisit</h3>
+            <h3 id="revisit-modal-title-variant-c" class="text-base font-bold text-stone-900 dark:text-stone-100">Confirm revisit</h3>
           </div>
           <div class="px-5 py-4 space-y-3">
             <p class="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
@@ -397,7 +397,7 @@
             </section>
           </div>
           <div class="px-5 py-3 border-t border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/60 flex items-center justify-end gap-2">
-            <button class="px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">Cancel</button>
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:outline-none">Cancel</button>
             <button class="px-3 py-1.5 text-xs font-semibold rounded-md bg-amber-600 hover:bg-amber-700 text-white focus:ring-2 focus:ring-amber-500 focus:outline-none">Confirm &amp; Revisit to Product · resets 3 downstream stages · adds 1 new</button>
           </div>
         </div>
@@ -424,10 +424,10 @@
         <div>
           <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Light</p>
           <div class="rounded-xl bg-stone-200 p-6 flex items-start justify-center">
-            <div class="w-full max-w-sm bg-white rounded-xl shadow-2xl border border-stone-200 overflow-hidden">
+            <div role="dialog" aria-modal="true" aria-labelledby="revisit-modal-title-compact-light" class="w-full max-w-sm bg-white rounded-xl shadow-2xl border border-stone-200 overflow-hidden">
               <div class="px-4 py-3 border-b border-stone-200 flex items-center gap-2">
                 <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold">↩</span>
-                <h3 class="text-sm font-bold text-stone-900">Confirm revisit</h3>
+                <h3 id="revisit-modal-title-compact-light" class="text-sm font-bold text-stone-900">Confirm revisit</h3>
               </div>
               <div class="px-4 py-3 space-y-2">
                 <p class="text-xs text-stone-700 leading-snug">This will invoke <code class="px-1 py-0.5 rounded bg-stone-100 font-mono text-xs">haiku_revisit</code>.</p>
@@ -437,7 +437,7 @@
                 </div>
               </div>
               <div class="px-4 py-2.5 border-t border-stone-200 bg-stone-50 flex items-center justify-end gap-2">
-                <button class="px-2.5 py-1 text-[11px] font-semibold rounded-md border border-stone-300 text-stone-700">Cancel</button>
+                <button class="px-2.5 py-1 text-[11px] font-semibold rounded-md border border-stone-300 text-stone-700 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:outline-none">Cancel</button>
                 <button class="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-amber-600 text-white">Confirm &amp; Revisit</button>
               </div>
             </div>
@@ -448,10 +448,10 @@
         <div class="dark">
           <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Dark</p>
           <div class="rounded-xl bg-black/60 p-6 flex items-start justify-center">
-            <div class="w-full max-w-sm bg-stone-900 rounded-xl shadow-2xl border border-stone-700 overflow-hidden">
+            <div role="dialog" aria-modal="true" aria-labelledby="revisit-modal-title-compact-dark" class="w-full max-w-sm bg-stone-900 rounded-xl shadow-2xl border border-stone-700 overflow-hidden">
               <div class="px-4 py-3 border-b border-stone-700 flex items-center gap-2">
                 <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold">↩</span>
-                <h3 class="text-sm font-bold text-stone-100">Confirm revisit</h3>
+                <h3 id="revisit-modal-title-compact-dark" class="text-sm font-bold text-stone-100">Confirm revisit</h3>
               </div>
               <div class="px-4 py-3 space-y-2">
                 <p class="text-xs text-stone-300 leading-snug">This will invoke <code class="px-1 py-0.5 rounded bg-stone-800 font-mono text-xs text-stone-200">haiku_revisit</code>.</p>
@@ -461,7 +461,7 @@
                 </div>
               </div>
               <div class="px-4 py-2.5 border-t border-stone-700 bg-stone-900/60 flex items-center justify-end gap-2">
-                <button class="px-2.5 py-1 text-[11px] font-semibold rounded-md border border-stone-600 text-stone-300">Cancel</button>
+                <button class="px-2.5 py-1 text-[11px] font-semibold rounded-md border border-stone-600 text-stone-300 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:outline-none">Cancel</button>
                 <button class="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-amber-600 text-white">Confirm &amp; Revisit</button>
               </div>
             </div>
@@ -490,10 +490,10 @@
             <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
             <!-- modal -->
             <div class="absolute inset-x-2 bottom-2 top-2 flex items-end">
-              <div class="w-full bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden max-h-[96%] flex flex-col">
+              <div role="dialog" aria-modal="true" aria-labelledby="revisit-modal-title-mobile" class="w-full bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden max-h-[96%] flex flex-col">
                 <div class="px-4 py-3 border-b border-stone-200 dark:border-stone-700 flex items-center gap-2">
                   <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold">↩</span>
-                  <h3 class="text-sm font-bold text-stone-900 dark:text-stone-100">Confirm revisit</h3>
+                  <h3 id="revisit-modal-title-mobile" class="text-sm font-bold text-stone-900 dark:text-stone-100">Confirm revisit</h3>
                   <button class="ml-auto w-11 h-11 -mr-2 flex items-center justify-center rounded-md text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800" aria-label="Close">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                   </button>

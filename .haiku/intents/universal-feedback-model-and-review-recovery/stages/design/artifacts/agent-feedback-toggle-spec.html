@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Feedback Toggle — Accessible Switch Spec</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: {} } };
+  </script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+
+    /* Canonical focus ring (focus-ring-spec.html §1) — applied via focus-visible */
+    .af-switch:focus-visible {
+      outline: 2px solid rgb(20 184 166); /* teal-500 */
+      outline-offset: 2px;
+      border-radius: 9999px;
+    }
+    .dark .af-switch:focus-visible {
+      outline-color: rgb(45 212 191); /* teal-400 (dark-mode variant) */
+    }
+    /* Remove browser default outline when focus-visible does the work */
+    .af-switch:focus:not(:focus-visible) { outline: none; }
+
+    /* 44px minimum touch target wraps the 32x16 visual */
+    .af-touch {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  </style>
+</head>
+<body class="dark bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
+
+  <a href="#main-content" class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-[100] focus-visible:px-3 focus-visible:py-2 focus-visible:bg-teal-600 focus-visible:text-white focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900">Skip to main content</a>
+
+  <main id="main-content" role="main" aria-label="Agent feedback toggle spec" class="max-w-[960px] mx-auto px-4 py-8">
+
+    <header class="mb-8">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Agent Feedback Toggle — Accessible Switch Spec</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400">Closes FB-32. Replaces the custom `&lt;label&gt;` + styled `&lt;span&gt;` at <code class="px-1 py-0.5 bg-gray-200 dark:bg-gray-800 rounded text-xs">comments-list-with-agent-toggle.html:65-76</code> with a proper `role="switch" aria-checked` button wrapped in a 44px hit area.</p>
+    </header>
+
+    <!-- Section 1: Canonical markup -->
+    <section class="mb-8 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">1. Canonical markup</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Use a real <code>&lt;button role="switch"&gt;</code> — this is the pattern recommended by WAI-ARIA Authoring Practices for a binary toggle without a required form-submission value. Native keyboard handling (Space + Enter) is handled by the browser; no JS keyboard listener required for activation.</p>
+
+      <pre class="bg-gray-100 dark:bg-gray-950 text-gray-800 dark:text-gray-200 text-xs p-3 rounded-md overflow-x-auto"><code>&lt;!-- 44px hit area wraps the 32x16 visual so touch targets meet WCAG 2.5.5 (Level AAA) / ATAG B.2.4.1 --&gt;
+&lt;label class="af-touch inline-flex items-center gap-2 cursor-pointer group"&gt;
+  &lt;button
+    type="button"
+    role="switch"
+    aria-checked="false"
+    aria-label="Show agent feedback"
+    class="af-switch relative inline-block w-8 h-4 rounded-full bg-gray-300 dark:bg-gray-600
+           data-[checked=true]:bg-teal-600 dark:data-[checked=true]:bg-teal-500
+           transition-colors"
+    data-checked="false"
+    onclick="var b=this;var next=b.getAttribute('aria-checked')==='true'?'false':'true';b.setAttribute('aria-checked',next);b.setAttribute('data-checked',next);b.querySelector('span').style.transform=next==='true'?'translateX(16px)':'translateX(0)';"
+  &gt;
+    &lt;span aria-hidden="true"
+          class="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow
+                 transition-transform"
+          style="transform: translateX(0);"&gt;&lt;/span&gt;
+  &lt;/button&gt;
+  &lt;span class="text-xs font-medium text-gray-700 dark:text-gray-300"&gt;Show agent feedback&lt;/span&gt;
+&lt;/label&gt;</code></pre>
+
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-3">Key properties:</p>
+      <ul class="text-xs text-gray-600 dark:text-gray-400 mt-2 space-y-1 list-disc list-inside">
+        <li><code>role="switch"</code> + <code>aria-checked</code> — announced by AT as "switch, off" / "switch, on".</li>
+        <li><code>aria-label="Show agent feedback"</code> — redundant with the visible text span but guarantees a label even if the surrounding <code>&lt;label&gt;</code> is stripped.</li>
+        <li>Native <kbd>Space</kbd> / <kbd>Enter</kbd> activate the button (browser default — no keyDown listener required).</li>
+        <li><code>focus-visible:ring-2 focus-visible:ring-teal-500</code> (via <code>.af-switch:focus-visible</code>) — canonical focus ring per focus-ring-spec.html §1.</li>
+        <li>44px touch target via <code>.af-touch</code> wrapper — WCAG 2.5.5.</li>
+        <li>Color alone is not the only state signal — the thumb also slides position, and <code>aria-checked</code> is exposed to AT.</li>
+      </ul>
+    </section>
+
+    <!-- Section 2: States -->
+    <section class="mb-8 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">2. Rendered states (default, checked, focus, hover, disabled)</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        <!-- Default (off) -->
+        <div class="p-4 rounded-md border border-gray-200 dark:border-gray-700">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3">Default (off)</p>
+          <label class="af-touch inline-flex items-center gap-2 cursor-pointer group">
+            <button
+              type="button"
+              role="switch"
+              aria-checked="false"
+              aria-label="Show agent feedback"
+              class="af-switch relative inline-block w-8 h-4 rounded-full bg-gray-300 dark:bg-gray-600 transition-colors"
+            >
+              <span aria-hidden="true" class="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform"></span>
+            </button>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Show agent feedback</span>
+          </label>
+          <p class="text-[10px] text-gray-500 dark:text-gray-500 mt-2">aria-checked="false"; thumb left; track gray-300</p>
+        </div>
+
+        <!-- Checked (on) -->
+        <div class="p-4 rounded-md border border-gray-200 dark:border-gray-700">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3">Checked (on)</p>
+          <label class="af-touch inline-flex items-center gap-2 cursor-pointer group">
+            <button
+              type="button"
+              role="switch"
+              aria-checked="true"
+              aria-label="Show agent feedback"
+              class="af-switch relative inline-block w-8 h-4 rounded-full bg-teal-600 dark:bg-teal-500 transition-colors"
+            >
+              <span aria-hidden="true" class="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform" style="transform: translateX(16px);"></span>
+            </button>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Show agent feedback</span>
+          </label>
+          <p class="text-[10px] text-gray-500 dark:text-gray-500 mt-2">aria-checked="true"; thumb right; track teal-600</p>
+        </div>
+
+        <!-- Focus -->
+        <div class="p-4 rounded-md border border-gray-200 dark:border-gray-700">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3">Focus (keyboard)</p>
+          <label class="af-touch inline-flex items-center gap-2 cursor-pointer group">
+            <button
+              type="button"
+              role="switch"
+              aria-checked="false"
+              aria-label="Show agent feedback"
+              style="outline: 2px solid rgb(20 184 166); outline-offset: 2px; border-radius: 9999px;"
+              class="relative inline-block w-8 h-4 rounded-full bg-gray-300 dark:bg-gray-600 transition-colors"
+            >
+              <span aria-hidden="true" class="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform"></span>
+            </button>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Show agent feedback</span>
+          </label>
+          <p class="text-[10px] text-gray-500 dark:text-gray-500 mt-2">2px teal-500 outline at 2px offset — matches canonical focus-ring spec §1</p>
+        </div>
+
+        <!-- Hover -->
+        <div class="p-4 rounded-md border border-gray-200 dark:border-gray-700">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3">Hover</p>
+          <label class="af-touch inline-flex items-center gap-2 cursor-pointer group">
+            <button
+              type="button"
+              role="switch"
+              aria-checked="false"
+              aria-label="Show agent feedback"
+              class="af-switch relative inline-block w-8 h-4 rounded-full bg-gray-400 dark:bg-gray-500 transition-colors ring-2 ring-teal-400/30"
+            >
+              <span aria-hidden="true" class="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform"></span>
+            </button>
+            <span class="text-xs font-medium text-gray-900 dark:text-gray-100">Show agent feedback</span>
+          </label>
+          <p class="text-[10px] text-gray-500 dark:text-gray-500 mt-2">Track darkens (gray-400), soft teal halo (30% opacity), label bolder</p>
+        </div>
+
+        <!-- Hover (checked) -->
+        <div class="p-4 rounded-md border border-gray-200 dark:border-gray-700">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3">Hover (checked)</p>
+          <label class="af-touch inline-flex items-center gap-2 cursor-pointer group">
+            <button
+              type="button"
+              role="switch"
+              aria-checked="true"
+              aria-label="Show agent feedback"
+              class="af-switch relative inline-block w-8 h-4 rounded-full bg-teal-700 dark:bg-teal-400 transition-colors ring-2 ring-teal-400/30"
+            >
+              <span aria-hidden="true" class="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform" style="transform: translateX(16px);"></span>
+            </button>
+            <span class="text-xs font-medium text-gray-900 dark:text-gray-100">Show agent feedback</span>
+          </label>
+          <p class="text-[10px] text-gray-500 dark:text-gray-500 mt-2">Track darker teal (teal-700), soft teal halo</p>
+        </div>
+
+        <!-- Disabled -->
+        <div class="p-4 rounded-md border border-gray-200 dark:border-gray-700">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3">Disabled</p>
+          <label class="af-touch inline-flex items-center gap-2 cursor-not-allowed opacity-50">
+            <button
+              type="button"
+              role="switch"
+              aria-checked="false"
+              aria-label="Show agent feedback"
+              aria-disabled="true"
+              disabled
+              class="af-switch relative inline-block w-8 h-4 rounded-full bg-gray-200 dark:bg-gray-700 cursor-not-allowed"
+            >
+              <span aria-hidden="true" class="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-gray-100 dark:bg-gray-600 shadow-none"></span>
+            </button>
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-500">Show agent feedback</span>
+          </label>
+          <p class="text-[10px] text-gray-500 dark:text-gray-500 mt-2">disabled + aria-disabled="true"; opacity-50; track muted gray-200; cursor-not-allowed; still reaches 3:1 contrast for non-text UI (WCAG 1.4.11)</p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Section 3: Keyboard + screen-reader contract -->
+    <section class="mb-8 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">3. Keyboard + screen-reader contract</h2>
+
+      <table class="w-full text-xs text-left text-gray-700 dark:text-gray-300">
+        <thead class="text-[10px] uppercase tracking-widest text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+          <tr><th class="py-2 pr-4">Input</th><th class="py-2 pr-4">Action</th><th class="py-2">AT announcement</th></tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          <tr><td class="py-2 pr-4"><kbd>Tab</kbd></td><td class="py-2 pr-4">Move focus to the switch</td><td class="py-2">"Show agent feedback, switch, off" (VoiceOver) / "Show agent feedback toggle switch off" (NVDA)</td></tr>
+          <tr><td class="py-2 pr-4"><kbd>Space</kbd></td><td class="py-2 pr-4">Toggle state</td><td class="py-2">"On" / "Off"</td></tr>
+          <tr><td class="py-2 pr-4"><kbd>Enter</kbd></td><td class="py-2 pr-4">Toggle state (browser default for button)</td><td class="py-2">"On" / "Off"</td></tr>
+          <tr><td class="py-2 pr-4">Click / tap</td><td class="py-2 pr-4">Toggle state (via <code>onclick</code>)</td><td class="py-2">"On" / "Off"</td></tr>
+          <tr><td class="py-2 pr-4"><kbd>Shift</kbd>+<kbd>Tab</kbd></td><td class="py-2 pr-4">Move focus to previous element</td><td class="py-2">(focus leaves the switch)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Section 4: Replacement instruction for comments-list-with-agent-toggle.html -->
+    <section class="mb-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-6">
+      <h2 class="text-lg font-semibold text-amber-900 dark:text-amber-200 mb-2">4. Replacement instruction</h2>
+      <p class="text-xs text-amber-800 dark:text-amber-300 mb-3">The dev stage <strong>MUST</strong> replace both toggle instances in <code>comments-list-with-agent-toggle.html</code> (lines 65-76 OFF state, lines 170-185 ON state) with the canonical markup in §1. Do not keep the old <code>&lt;label&gt;</code> + styled <code>&lt;span&gt;</code> pattern — it fails WCAG 2.1.1 Keyboard, 4.1.2 Name/Role/Value, 2.4.7 Focus Visible, and 2.5.5 Target Size.</p>
+      <p class="text-xs text-amber-800 dark:text-amber-300">Also render the same component in any future artifact that needs an agent-feedback filter (feedback-inline-desktop.html, feedback-inline-mobile.html, and the assessor-summary-card if it grows a filter).</p>
+    </section>
+
+    <!-- Section 5: Verification checklist -->
+    <section class="mb-8 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">5. Verification (feedback-assessor + dev-stage gate)</h2>
+      <ul class="text-xs text-gray-700 dark:text-gray-300 space-y-1 list-disc list-inside">
+        <li><code>grep -rEn 'role="switch"' stages/design/artifacts/comments-list-with-agent-toggle.html</code> returns ≥ 1 match.</li>
+        <li><code>grep -rEn 'aria-checked' stages/design/artifacts/comments-list-with-agent-toggle.html</code> returns ≥ 1 match.</li>
+        <li><code>grep -rEn 'focus-visible:ring-2' stages/design/artifacts/agent-feedback-toggle-spec.html</code> or outline via CSS class returns ≥ 1 match (this artifact self-documents).</li>
+        <li>Manual test: Tab to the toggle, press Space, verify AT announces "on" / "off".</li>
+        <li>Measure touch target with dev-tools: outer <code>&lt;label&gt;</code> ≥ 44×44 px.</li>
+      </ul>
+    </section>
+
+  </main>
+</body>
+</html>
