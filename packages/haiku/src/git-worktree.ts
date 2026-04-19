@@ -692,6 +692,124 @@ export function ensureStageBranch(slug: string, stage: string): string {
 	return stageBranch
 }
 
+/**
+ * Ensure the MCP's current git checkout is on the correct branch for
+ * writing stage-scoped state. This is the steady-state guard that runs
+ * before every stage-scoped state-mutating tool (feedback, run_next,
+ * unit advance/reject, etc.) so stage work never leaks onto the intent
+ * main branch.
+ *
+ * Contract:
+ *   - Non-git: no-op.
+ *   - `haiku/{slug}/{stage}` exists: ensure we're on it. If intent main has
+ *     commits not yet on the stage branch (drift / recovery case), merge
+ *     main → stage BEFORE switching so feedback files and state writes
+ *     that leaked to main travel with the work.
+ *   - Stage branch doesn't exist: fall back to ensuring we're on intent
+ *     main (`haiku/{slug}/main`). This covers continuous-mode intents and
+ *     pre-stage-start calls.
+ *
+ * Non-fatal: returns { ok: false } on any failure and leaves the repo in
+ * the best-effort state — callers log the warning but never crash.
+ *
+ * WHY: the FSM must reside on the stage branch for the full lifetime of
+ * the stage. Main is only updated at stage exit (merge stage → main).
+ * Without this guard, any drift — user checkout, hook side-effect, an
+ * earlier FSM bug — causes subsequent state writes to land on the wrong
+ * branch, producing the exact "stage work shipped to dev without the
+ * sweep fixes" problem.
+ */
+export function ensureOnStageBranch(
+	slug: string,
+	stage: string | undefined,
+): { ok: boolean; branch: string; message: string; switched: boolean } {
+	if (!isGitRepo())
+		return { ok: true, branch: "", message: "no git", switched: false }
+
+	const intentMain = `haiku/${slug}/main`
+	const stageBranch = stage ? `haiku/${slug}/${stage}` : ""
+	const targetBranch =
+		stage && branchExists(stageBranch) ? stageBranch : intentMain
+
+	if (!branchExists(targetBranch)) {
+		// Can't enforce what doesn't exist — caller (e.g. fsmStartStage) will
+		// create branches as needed. This is a pre-init state; skip the guard.
+		return {
+			ok: true,
+			branch: targetBranch,
+			message: `target branch '${targetBranch}' not yet created — skipping enforcement`,
+			switched: false,
+		}
+	}
+
+	const current = getCurrentBranch()
+	if (current === targetBranch) {
+		return {
+			ok: true,
+			branch: targetBranch,
+			message: "already on target",
+			switched: false,
+		}
+	}
+
+	// Recovery case: switching to stage branch but intent main has drifted ahead.
+	// Merge main → stage FIRST so any work mis-written to main (feedback files,
+	// state.json mutations) travels with the stage branch.
+	if (targetBranch === stageBranch && branchExists(intentMain)) {
+		const aheadCount = tryRun([
+			"git",
+			"rev-list",
+			"--count",
+			`${stageBranch}..${intentMain}`,
+		])
+		if (aheadCount && parseInt(aheadCount, 10) > 0) {
+			try {
+				run(["git", "checkout", stageBranch])
+				run([
+					"git",
+					"merge",
+					intentMain,
+					"--no-edit",
+					"-m",
+					`haiku: merge intent-main → stage ${stage} (FSM branch enforcement)`,
+				])
+				return {
+					ok: true,
+					branch: stageBranch,
+					message: `merged main → stage, now on ${stageBranch}`,
+					switched: true,
+				}
+			} catch (err) {
+				tryRun(["git", "merge", "--abort"])
+				return {
+					ok: false,
+					branch: current,
+					message: `failed to merge main into stage: ${err instanceof Error ? err.message : String(err)}. Resolve conflicts on '${stageBranch}' manually, then retry.`,
+					switched: false,
+				}
+			}
+		}
+	}
+
+	// Plain checkout — no merge needed.
+	try {
+		run(["git", "checkout", targetBranch])
+		return {
+			ok: true,
+			branch: targetBranch,
+			message: `checked out ${targetBranch}`,
+			switched: true,
+		}
+	} catch (err) {
+		return {
+			ok: false,
+			branch: current,
+			message: `failed to checkout ${targetBranch}: ${err instanceof Error ? err.message : String(err)}`,
+			switched: false,
+		}
+	}
+}
+
 /** Create a temporary worktree checked out on `branch`, run `fn` with its
  *  absolute path, then always remove the worktree. Used for merges that must
  *  not disturb the main repo checkout. */

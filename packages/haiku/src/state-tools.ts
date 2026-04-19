@@ -22,6 +22,7 @@ import {
 	addTempWorktree,
 	commitAndPushFromWorktree,
 	consolidateStageBranches,
+	ensureOnStageBranch,
 	fetchOrigin,
 	getCurrentBranch,
 	getMainlineBranch,
@@ -2623,6 +2624,36 @@ function resolveActiveStage(intent: string): string {
 	return (data.active_stage as string) || ""
 }
 
+/**
+ * Pre-flight branch enforcement for stage-scoped state-mutating tools.
+ *
+ * Ensures the MCP's current git checkout is on `haiku/{intent}/{stage}`
+ * before the caller writes any stage state. If main drifted ahead (feedback
+ * files or state leaked there), merges main → stage first so nothing is lost.
+ *
+ * Returns null on success (caller continues) or an MCP error response
+ * (caller returns it directly) when the branch couldn't be aligned.
+ * No-op in filesystem / non-git mode.
+ */
+function enforceStageBranch(
+	intent: string,
+	stage: string | undefined,
+): { content: Array<{ type: "text"; text: string }>; isError: true } | null {
+	const guard = ensureOnStageBranch(intent, stage)
+	if (!guard.ok) {
+		return {
+			content: [
+				{
+					type: "text",
+					text: `Error: stage-branch enforcement failed for intent '${intent}', stage '${stage ?? "(none)"}' — ${guard.message}. Resolve manually and retry.`,
+				},
+			],
+			isError: true as const,
+		}
+	}
+	return null
+}
+
 /** Find a unit file by searching through stages. Returns { path, stage } or null. */
 function findUnitFile(
 	intent: string,
@@ -3780,6 +3811,11 @@ export function handleStateTool(
 					}),
 				)
 			}
+			const unitSetBranchErr = enforceStageBranch(
+				args.intent as string,
+				args.stage as string,
+			)
+			if (unitSetBranchErr) return unitSetBranchErr
 			const path = unitPath(
 				args.intent as string,
 				args.stage as string,
@@ -3818,6 +3854,11 @@ export function handleStateTool(
 							"No active stage found for this intent. Call haiku_run_next first.",
 					}),
 				)
+			const unitStartBranchErr = enforceStageBranch(
+				args.intent as string,
+				stage,
+			)
+			if (unitStartBranchErr) return unitStartBranchErr
 			const uPath = unitPath(args.intent as string, stage, args.unit as string)
 
 			// Guard: reject if unit is already active (prevents duplicate work)
@@ -3887,6 +3928,12 @@ export function handleStateTool(
 				)
 			const advPath = unitInfo.path
 			const advStage = unitInfo.stage
+
+			const advBranchErr = enforceStageBranch(
+				args.intent as string,
+				advStage,
+			)
+			if (advBranchErr) return advBranchErr
 
 			const unitRaw = readFileSync(advPath, "utf8")
 			const { data: unitFm } = parseFrontmatter(unitRaw)
@@ -4441,6 +4488,12 @@ export function handleStateTool(
 			const failPath = rejectInfo.path
 			const rejectStage = rejectInfo.stage
 
+			const rejectBranchErr = enforceStageBranch(
+				args.intent as string,
+				rejectStage,
+			)
+			if (rejectBranchErr) return rejectBranchErr
+
 			const { data: failData } = parseFrontmatter(
 				readFileSync(failPath, "utf8"),
 			)
@@ -4629,6 +4682,11 @@ export function handleStateTool(
 			}
 		}
 		case "haiku_unit_increment_bolt": {
+			const boltBranchErr = enforceStageBranch(
+				args.intent as string,
+				args.stage as string,
+			)
+			if (boltBranchErr) return boltBranchErr
 			const path = unitPath(
 				args.intent as string,
 				args.stage as string,
@@ -5533,6 +5591,9 @@ export function handleStateTool(
 				mkdirSync(stgDir, { recursive: true })
 			}
 
+			const feedbackBranchErr = enforceStageBranch(intent, stage)
+			if (feedbackBranchErr) return feedbackBranchErr
+
 			const result = writeFeedbackFile(intent, stage, {
 				title,
 				body,
@@ -5580,6 +5641,9 @@ export function handleStateTool(
 			if (args.status !== undefined) updateFields.status = args.status as string
 			if (args.closed_by !== undefined)
 				updateFields.closed_by = args.closed_by as string
+
+			const feedbackUpdateBranchErr = enforceStageBranch(intent, stage)
+			if (feedbackUpdateBranchErr) return feedbackUpdateBranchErr
 
 			const updateResult = updateFeedbackFile(
 				intent,
@@ -5638,6 +5702,9 @@ export function handleStateTool(
 					content: [{ type: "text", text: "Error: feedback_id is required" }],
 					isError: true,
 				}
+
+			const feedbackDeleteBranchErr = enforceStageBranch(intent, stage)
+			if (feedbackDeleteBranchErr) return feedbackDeleteBranchErr
 
 			const deleteResult = deleteFeedbackFile(
 				intent,
@@ -5743,6 +5810,9 @@ export function handleStateTool(
 					isError: true,
 				}
 			}
+
+			const feedbackRejectBranchErr = enforceStageBranch(intent, stage)
+			if (feedbackRejectBranchErr) return feedbackRejectBranchErr
 
 			// Apply rejection: set status to rejected and append reason to body
 			const rejectData = { ...rejectFound.data, status: "rejected" }

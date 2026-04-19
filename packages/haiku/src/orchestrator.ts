@@ -29,6 +29,7 @@ import {
 	createStageBranch,
 	createUnitWorktree,
 	deleteStageBranch,
+	ensureOnStageBranch,
 	finalizeIntentBranches,
 	getMainlineBranch,
 	isBranchMerged,
@@ -5325,6 +5326,30 @@ export async function handleOrchestratorTool(
 			return {
 				content: [{ type: "text" as const, text: branchCheck }],
 				isError: true,
+			}
+		}
+
+		// Stage-branch enforcement: before the FSM reads state, align the
+		// current checkout with the active stage branch. If main has drifted
+		// ahead (feedback files or state leaked there), merge main → stage
+		// first so the FSM sees a consistent view. No-op in filesystem mode.
+		{
+			const intentFile = join(findHaikuRoot(), "intents", slug, "intent.md")
+			if (existsSync(intentFile)) {
+				const im = readFrontmatter(intentFile)
+				const activeStage = (im.active_stage as string) || ""
+				const guard = ensureOnStageBranch(slug, activeStage || undefined)
+				if (!guard.ok) {
+					return {
+						content: [
+							{
+								type: "text" as const,
+								text: `Error: stage-branch enforcement failed for intent '${slug}', stage '${activeStage || "(none)"}' — ${guard.message}. Resolve manually and retry.`,
+							},
+						],
+						isError: true,
+					}
+				}
 			}
 		}
 
