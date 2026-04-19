@@ -31,4 +31,5 @@ export const UNIT_FIELDS = [
 	"bolt",
 	"hat",
 	"hat_started_at",
+	"scope_reject_attempts",
 ]

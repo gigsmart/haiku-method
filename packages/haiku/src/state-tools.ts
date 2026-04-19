@@ -4439,15 +4439,11 @@ export function handleStateTool(
 				)
 			}
 
-			// Scope-validate BEFORE rollback. If the rejected hat left
-			// out-of-bounds writes in the worktree, surface them now so the
-			// agent reverts before the next bolt starts — otherwise the
-			// violation persists across bolts (git diff still shows it) and
-			// every subsequent advance re-flags the same files.
-			//
-			// Guarded by the MAX_BOLTS check above: if the agent can't clear
-			// the violation after MAX_BOLTS_FAIL attempts, the MAX_BOLTS
-			// escape fires instead of deadlocking.
+			// Scope-validate before rollback. CRITICAL: we increment a
+			// separate `scope_reject_attempts` counter on every scope-failure
+			// return so that repeated failures accumulate toward MAX_BOLTS.
+			// Without the counter bump the bolt field never advances (it only
+			// moves on SUCCESSFUL reject), and the agent loops forever.
 			{
 				const intentFile = `${intentDir(args.intent as string)}/intent.md`
 				const { data: iFm } = parseFrontmatter(readFileSync(intentFile, "utf8"))
@@ -4461,20 +4457,55 @@ export function handleStateTool(
 						)
 					: null
 				if (scopeResult) {
+					// Persisted counter of scope-violation returns from reject_hat.
+					// Accumulates across calls so MAX_BOLTS_FAIL trips even when
+					// the agent never clears the violation. Reset to 0 on any
+					// successful scope-clean reject (see below).
+					const { data: attemptsFm } = parseFrontmatter(
+						readFileSync(failPath, "utf8"),
+					)
+					const prevAttempts =
+						Number(attemptsFm.scope_reject_attempts as number | undefined) || 0
+					const newAttempts = prevAttempts + 1
+					setFrontmatterField(failPath, "scope_reject_attempts", newAttempts)
+					sealIntentState(args.intent as string)
+
+					if (newAttempts >= MAX_BOLTS_FAIL) {
+						return text(
+							JSON.stringify({
+								error: "max_bolts_exceeded",
+								reason: "persistent_scope_violation",
+								attempts: newAttempts,
+								max: MAX_BOLTS_FAIL,
+								violations: scopeResult.violations,
+								message: `Unit has hit ${newAttempts} consecutive scope-violation rejects. Escalate to the user. The worktree still contains out-of-scope commits that must be reverted manually: \`git reset --hard $(git merge-base HEAD haiku/${args.intent as string}/${rejectStage})\` in the unit worktree.`,
+							}),
+						)
+					}
+
 					return text(
 						JSON.stringify({
 							error: "unit_scope_violation_on_reject",
 							bolt: currentBolt,
-							max_bolts: MAX_BOLTS_FAIL,
+							scope_reject_attempts: newAttempts,
+							max_attempts: MAX_BOLTS_FAIL,
 							violations: scopeResult.violations,
 							scope: scopeResult.scope,
 							message:
 								`Cannot reject hat: the unit worktree still contains ${scopeResult.violations.length} out-of-scope write(s) that must be reverted first. ` +
-								`Retry budget remaining before MAX_BOLTS escalation: ${MAX_BOLTS_FAIL - currentBolt}.\n\n` +
+								`Attempt ${newAttempts}/${MAX_BOLTS_FAIL} — after ${MAX_BOLTS_FAIL} scope-violation rejects, the FSM escalates to the user.\n\n` +
 								`Out-of-bounds files:\n${scopeResult.violations.map((v) => `  - ${v}`).join("\n")}\n\n` +
 								`Revert the out-of-bounds commits in the unit worktree: drop all unit commits with \`git reset --hard $(git merge-base HEAD haiku/${args.intent as string}/${rejectStage})\`, or amend a single file out with \`git rm <file> && git commit --amend --no-edit\`, or \`git revert --no-edit <commit-sha>\` for a whole commit. NOTE: \`git checkout HEAD -- <file>\` is a NO-OP on committed files and will not clear the violation. After the revert, call reject_hat again.`,
 						}),
 					)
+				}
+
+				// Clean scope — reset the persistent counter.
+				const { data: cleanFm } = parseFrontmatter(
+					readFileSync(failPath, "utf8"),
+				)
+				if ((cleanFm.scope_reject_attempts as number) ?? 0 > 0) {
+					setFrontmatterField(failPath, "scope_reject_attempts", 0)
 				}
 			}
 
