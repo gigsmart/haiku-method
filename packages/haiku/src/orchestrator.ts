@@ -3305,6 +3305,24 @@ function enrichActionWithPreview(action: OrchestratorAction): void {
 // receives the same guidance.
 
 /**
+ * Read a file from disk and emit it as a fenced markdown block with a
+ * heading. Used to inline referenced files into subagent prompts so the
+ * subagent reads ONE file (the prompt tmpfile) instead of fanning out N
+ * Read tool calls.
+ *
+ * Returns "" if the file doesn't exist (caller decides whether to include).
+ * Large files are NOT truncated — size is bounded by the studio's file
+ * design, not this function.
+ */
+function inlineFile(absPath: string, heading: string): string {
+	if (!existsSync(absPath)) return ""
+	const content = readFileSync(absPath, "utf8")
+	// Use ~~~~ fences to survive inlined content that contains triple
+	// backticks (common in prompt bodies).
+	return `### ${heading}\n\n*Source: \`${absPath}\`*\n\n~~~~\n${content}\n~~~~\n`
+}
+
+/**
  * Emit a subagent <subagent> block that points at a tmpfile instead of
  * inlining the prompt. The full prompt is written to a session-scoped
  * tmpfile; the `<subagent>` body becomes a terse instruction to read it.
@@ -3617,9 +3635,6 @@ function buildRunInstructions(
 					.join(", ")
 				const plural = discoveryArtifacts.length !== 1 ? "s" : ""
 				const intentPath = join(dir, "intent.md")
-				const intentPathRel = intentPath.startsWith(`${dir}/`)
-					? intentPath.slice(dir.length + 1)
-					: intentPath
 				const stagePath = resolveStudioFilePath(
 					join(studio, "stages", stage, "STAGE.md"),
 				)
@@ -3630,14 +3645,17 @@ function buildRunInstructions(
 					const lines: string[] = [
 						`You are researching and producing the "${a.name}" discovery artifact for intent "${slug}" in stage "${stage}" of studio "${studio}".`,
 						"",
-						"## Required reading (MUST read fully before starting)",
-						"Files may be markdown, HTML, SVG, PNG/JPG, or PDF — use the appropriate tool to open visual artifacts.",
+						"## Required context (inlined below)",
+						"The intent goal, stage scope, and your discovery template are embedded below — no need to fan out Read tool calls for them.",
 						"",
-						`- Intent goal — \`${intentPathRel}\``,
+						inlineFile(intentPath, "Intent goal"),
 					]
-					if (stagePath) lines.push(`- Stage scope — \`${stagePath}\``)
+					if (stagePath) lines.push(inlineFile(stagePath, "Stage scope"))
 					lines.push(
-						`- Discovery template (your content guide + quality signals) — \`${a.templatePath}\``,
+						inlineFile(
+							a.templatePath,
+							`Discovery template: ${a.name} (content guide + quality signals + output location)`,
+						),
 					)
 					lines.push(
 						"",
@@ -3646,7 +3664,7 @@ function buildRunInstructions(
 						"1. Research the problem space along the axis defined by your template.",
 						"2. Use the template's Content Guide as the document structure.",
 						"3. Meet the template's Quality Signals as your acceptance bar.",
-						"4. Write the populated document to the stage's discovery path (as defined in the template's `location:` frontmatter).",
+						"4. Write the populated document to the stage's discovery path (as defined in the template's `location:` frontmatter above). **This is your ONLY write path** — any file you write elsewhere is a scope violation.",
 						"5. Be thorough — this artifact informs all downstream work.",
 					)
 					fanOutText +=
@@ -3953,15 +3971,15 @@ function buildRunInstructions(
 				)
 			}
 			prompt.push(
-				"## Required reading (MUST read fully before starting)",
-				"Files may be markdown, HTML, SVG, PNG/JPG, or PDF — use the appropriate tool to open visual artifacts.",
+				"## Required context (inlined below)",
+				"Everything you need for this hat is embedded in this prompt — no need to fan out Read tool calls for the required files. If you need VISUAL artifacts (SVG, PNG, PDF), open them by path as listed in the unit spec.",
 				"",
 			)
-			if (stagePath) prompt.push(`- Stage scope — \`${stagePath}\``)
+			if (stagePath) prompt.push(inlineFile(stagePath, "Stage scope"))
 			if (executionPath)
-				prompt.push(`- Execute-phase focus — \`${executionPath}\``)
-			if (hatPath) prompt.push(`- Your hat — \`${hatPath}\``)
-			prompt.push(`- Your unit spec — \`${unitAbsPath}\``)
+				prompt.push(inlineFile(executionPath, "Execute-phase focus"))
+			if (hatPath) prompt.push(inlineFile(hatPath, `Hat: ${hat}`))
+			prompt.push(inlineFile(unitAbsPath, `Unit spec: ${unit}`))
 			if (outputsDir)
 				prompt.push(`- Stage output templates — \`${outputsDir}/\``)
 
@@ -3969,6 +3987,7 @@ function buildRunInstructions(
 				prompt.push(
 					"",
 					"## Unit inputs (MUST read — scoped to this unit)",
+					"Inputs may be markdown, HTML, SVG, PNG/JPG, or PDF — fetch each with the appropriate tool.",
 					"",
 					...unitInputPaths.map((p) => `- \`${join(intentRoot, p)}\``),
 				)
@@ -4208,15 +4227,15 @@ function buildRunInstructions(
 						)
 					}
 					prompt.push(
-						"## Required reading (MUST read fully before starting)",
-						"Files may be markdown, HTML, SVG, PNG/JPG, or PDF — use the appropriate tool to open visual artifacts.",
+						"## Required context (inlined below)",
+						"Everything you need for this hat is embedded in this prompt — no need to fan out Read tool calls for the required files. If you need VISUAL artifacts (SVG, PNG, PDF), open them by path as listed in the unit spec.",
 						"",
 					)
-					if (stagePath) prompt.push(`- Stage scope — \`${stagePath}\``)
+					if (stagePath) prompt.push(inlineFile(stagePath, "Stage scope"))
 					if (executionPath)
-						prompt.push(`- Execute-phase focus — \`${executionPath}\``)
-					if (hatPath) prompt.push(`- Your hat — \`${hatPath}\``)
-					prompt.push(`- Your unit spec — \`${unitAbsPath}\``)
+						prompt.push(inlineFile(executionPath, "Execute-phase focus"))
+					if (hatPath) prompt.push(inlineFile(hatPath, `Hat: ${firstHat}`))
+					prompt.push(inlineFile(unitAbsPath, `Unit spec: ${unitName}`))
 					if (outputsDir)
 						prompt.push(`- Stage output templates — \`${outputsDir}/\``)
 
@@ -4224,6 +4243,7 @@ function buildRunInstructions(
 						prompt.push(
 							"",
 							"## Unit inputs (MUST read — scoped to this unit)",
+							"Inputs may be markdown, HTML, SVG, PNG/JPG, or PDF — fetch each with the appropriate tool.",
 							"",
 							...unitInputPaths.map((p) => `- \`${join(unitIntentRoot, p)}\``),
 						)
@@ -4493,15 +4513,15 @@ function buildRunInstructions(
 					)
 				}
 				prompt.push(
-					"## Required reading (MUST read fully before starting)",
-					"Files may be markdown, HTML, SVG, PNG/JPG, or PDF — use the appropriate tool to open visual artifacts.",
+					"## Required context (inlined below)",
+					"Everything you need for this hat is embedded in this prompt — no need to fan out Read tool calls for the required files. If you need VISUAL artifacts (SVG, PNG, PDF), open them by path as listed in the unit spec.",
 					"",
 				)
-				if (stagePath) prompt.push(`- Stage scope — \`${stagePath}\``)
+				if (stagePath) prompt.push(inlineFile(stagePath, "Stage scope"))
 				if (executionPath)
-					prompt.push(`- Execute-phase focus — \`${executionPath}\``)
-				if (hatPath) prompt.push(`- Your hat — \`${hatPath}\``)
-				prompt.push(`- Your unit spec — \`${unitAbsPath}\``)
+					prompt.push(inlineFile(executionPath, "Execute-phase focus"))
+				if (hatPath) prompt.push(inlineFile(hatPath, `Hat: ${hat}`))
+				prompt.push(inlineFile(unitAbsPath, `Unit spec: ${unitName}`))
 				if (outputsDir)
 					prompt.push(`- Stage output templates — \`${outputsDir}/\``)
 
@@ -4509,6 +4529,7 @@ function buildRunInstructions(
 					prompt.push(
 						"",
 						"## Unit inputs (MUST read — scoped to this unit)",
+						"Inputs may be markdown, HTML, SVG, PNG/JPG, or PDF — fetch each with the appropriate tool.",
 						"",
 						...unitInputPaths.map((p) => `- \`${join(unitIntentRoot, p)}\``),
 					)
@@ -4621,13 +4642,17 @@ function buildRunInstructions(
 					const reviewLines: string[] = [
 						`You are the **${name}** review agent for stage "${stage}" of intent "${slug}".`,
 						"",
-						"## Required reading (MUST read fully before starting)",
+						"## Required context (inlined below)",
+						"Your review mandate is embedded in this prompt.",
 						"",
-						`- Your mandate — \`${mandatePath}\``,
+						inlineFile(mandatePath, `Mandate: ${name}`),
+						"",
+						"## Write scope (STRICT)",
+						"**You MUST NOT write, edit, or create any file.** Your ONLY output channel is the `haiku_feedback` MCP tool. If you're tempted to fix an issue yourself, log it as feedback instead. Any file write is a scope violation.",
 						"",
 						"## Instructions",
 						"",
-						"1. Read your mandate (above) — it defines what you look for.",
+						"1. Use your mandate (above) as the lens for this review.",
 					]
 					let reviewStep = 2
 					if (isGitRepo()) {
@@ -4636,7 +4661,7 @@ function buildRunInstructions(
 						)
 					}
 					reviewLines.push(
-						`${reviewStep++}. Read the stage's output artifacts in \`.haiku/intents/${slug}/stages/${stage}/\`.`,
+						`${reviewStep++}. Read the stage's output artifacts in \`.haiku/intents/${slug}/stages/${stage}/\` (types vary — use the appropriate tool for each file).`,
 						`${reviewStep++}. Review through your mandate's lens.`,
 						`${reviewStep++}. For each issue you find, call \`haiku_feedback({ intent: "${slug}", stage: "${stage}", title: "<short title>", body: "<full description with file:line refs>", origin: "adversarial-review", author: "${name}" })\`.`,
 						`${reviewStep++}. Return only a summary count of how many findings you logged.`,
@@ -4840,13 +4865,17 @@ function buildRunInstructions(
 					const prompt = [
 						`You are the **${name}** review agent reviewing elaboration artifacts for stage "${stage}" of intent "${slug}".`,
 						"",
-						"## Required reading (MUST read fully before starting)",
+						"## Required context (inlined below)",
+						"Your review mandate is embedded in this prompt.",
 						"",
-						`- Your mandate — \`${mandatePath}\``,
+						inlineFile(mandatePath, `Mandate: ${name}`),
+						"",
+						"## Write scope (STRICT)",
+						"**You MUST NOT write, edit, or create any file.** Your ONLY output channel is the `haiku_feedback` MCP tool. If you're tempted to fix an issue yourself, log it as feedback instead. Any file write is a scope violation.",
 						"",
 						"## Instructions",
 						"",
-						"1. Read your mandate (above) — it defines what you look for.",
+						"1. Use your mandate (above) as the lens for this review.",
 						`2. Read the elaboration specs: unit files in \`.haiku/intents/${slug}/stages/${stage}/units/\`.`,
 						`3. Read discovery artifacts in \`.haiku/intents/${slug}/knowledge/\`.`,
 						"4. Review through your mandate's lens.",
