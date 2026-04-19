@@ -1808,14 +1808,44 @@ function getUnitWorktreeChanges(
 		})
 			.toString()
 			.trim()
-		const diff = execSync(
-			`git diff --name-only ${forkSha}..HEAD`,
-			{ cwd: worktreePath, encoding: "utf8" },
-		).toString()
-		return diff
-			.split("\n")
-			.map((s) => s.trim())
-			.filter(Boolean)
+		// Committed changes since fork + uncommitted working-tree changes.
+		// Uncommitted writes matter because a subagent might write a file
+		// outside scope, not commit it, and "pass" scope validation — then
+		// the file gets lost on merge. Include staged + unstaged diffs.
+		const lines = new Set<string>()
+		const add = (s: string) => {
+			for (const line of s.split("\n").map((l) => l.trim())) {
+				if (line) lines.add(line)
+			}
+		}
+		add(
+			execSync(`git diff --name-only ${forkSha}..HEAD`, {
+				cwd: worktreePath,
+				encoding: "utf8",
+			}).toString(),
+		)
+		// Unstaged (working tree vs HEAD).
+		add(
+			execSync("git diff --name-only HEAD", {
+				cwd: worktreePath,
+				encoding: "utf8",
+			}).toString(),
+		)
+		// Staged (index vs HEAD).
+		add(
+			execSync("git diff --name-only --cached", {
+				cwd: worktreePath,
+				encoding: "utf8",
+			}).toString(),
+		)
+		// Untracked files too (new files the subagent created but didn't add).
+		add(
+			execSync("git ls-files --others --exclude-standard", {
+				cwd: worktreePath,
+				encoding: "utf8",
+			}).toString(),
+		)
+		return [...lines]
 	} catch {
 		return null
 	}
@@ -4024,7 +4054,7 @@ export function handleStateTool(
 									`Cannot complete unit: ${scopeResult.violations.length} file(s) were written outside the stage's declared scope.\n\n` +
 									`Out-of-bounds files:\n${scopeResult.violations.map((v) => `  - ${v}`).join("\n")}\n\n` +
 									`Allowed paths (stage output templates + FSM metadata):\n${allowedSummary}\n\n` +
-									`To resolve: either (a) revert out-of-bounds writes (\`git checkout HEAD -- <file>\` in the unit worktree) if they don't belong to this unit, (b) update the stage's output template \`location:\` / \`scope:\` if this is a legitimate output pattern not yet declared, or (c) call \`haiku_revisit\` if the scope itself is wrong.`,
+									`To resolve (in the unit worktree): (a) drop ALL unit commits with \`git reset --hard $(git merge-base HEAD haiku/${args.intent as string}/${advStage})\` — recommended if the unit just started and few commits landed; or (b) amend the bad file out of the latest commit with \`git rm <file> && git commit --amend --no-edit\`; or (c) whole-commit rollback with \`git revert --no-edit <commit-sha>\` for each bad commit.\n\nNOTE: \`git checkout HEAD -- <file>\` does NOT work on committed files (it's a no-op when the file matches HEAD). Use one of the above.\n\nAlternatively: (d) update the stage's output template \`location:\` / \`scope:\` if this pattern is legitimate, or (e) call \`haiku_revisit\` if the scope itself is wrong.`,
 							}),
 						)
 					}
@@ -4305,7 +4335,7 @@ export function handleStateTool(
 								`Cannot advance hat '${currentHat}': ${scopeResult.violations.length} file(s) were written outside the stage's declared scope.\n\n` +
 								`Out-of-bounds files:\n${scopeResult.violations.map((v) => `  - ${v}`).join("\n")}\n\n` +
 								`Allowed paths (stage output templates + FSM metadata):\n${allowedSummary}\n\n` +
-								`Revert with \`git checkout HEAD -- <file>\` in the unit worktree, or update the stage's output template if this pattern is legitimate. Do NOT advance with scope violations — downstream hats will run blind.`,
+								`Revert the out-of-bounds commits in the unit worktree: drop all unit commits with \`git reset --hard $(git merge-base HEAD haiku/${args.intent as string}/${advStage})\`, or amend a single file out with \`git rm <file> && git commit --amend --no-edit\`, or \`git revert --no-edit <commit-sha>\` for a whole commit. NOTE: \`git checkout HEAD -- <file>\` is a no-op on committed files. Or update the stage's output template if this pattern is legitimate. Do NOT advance with scope violations — downstream hats will run blind.`,
 						}),
 					)
 				}
@@ -4387,12 +4417,37 @@ export function handleStateTool(
 			const failPath = rejectInfo.path
 			const rejectStage = rejectInfo.stage
 
+			const { data: failData } = parseFrontmatter(
+				readFileSync(failPath, "utf8"),
+			)
+			const currentHat = (failData.hat as string) || ""
+			const currentBolt = (failData.bolt as number) || 1
+
+			// Enforce max bolt limit FIRST — this is the absolute escape
+			// hatch. Must run before the scope gate so a repeatedly-rejected
+			// unit with a committed scope violation can still hit MAX_BOLTS
+			// and escalate to the user instead of deadlocking.
+			const MAX_BOLTS_FAIL = 5
+			if (currentBolt + 1 > MAX_BOLTS_FAIL) {
+				return text(
+					JSON.stringify({
+						error: "max_bolts_exceeded",
+						bolt: currentBolt,
+						max: MAX_BOLTS_FAIL,
+						message: `Unit has exceeded ${MAX_BOLTS_FAIL} bolt iterations. Escalate to the user — this unit may need to be redesigned, split, or have a persistent scope violation manually reverted (\`git reset --hard $(git merge-base HEAD haiku/${args.intent as string}/${rejectStage})\` in the unit worktree).`,
+					}),
+				)
+			}
+
 			// Scope-validate BEFORE rollback. If the rejected hat left
 			// out-of-bounds writes in the worktree, surface them now so the
 			// agent reverts before the next bolt starts — otherwise the
 			// violation persists across bolts (git diff still shows it) and
-			// every subsequent advance re-flags the same files until someone
-			// runs `git checkout HEAD -- <file>` manually.
+			// every subsequent advance re-flags the same files.
+			//
+			// Guarded by the MAX_BOLTS check above: if the agent can't clear
+			// the violation after MAX_BOLTS_FAIL attempts, the MAX_BOLTS
+			// escape fires instead of deadlocking.
 			{
 				const intentFile = `${intentDir(args.intent as string)}/intent.md`
 				const { data: iFm } = parseFrontmatter(readFileSync(intentFile, "utf8"))
@@ -4409,35 +4464,18 @@ export function handleStateTool(
 					return text(
 						JSON.stringify({
 							error: "unit_scope_violation_on_reject",
+							bolt: currentBolt,
+							max_bolts: MAX_BOLTS_FAIL,
 							violations: scopeResult.violations,
 							scope: scopeResult.scope,
 							message:
 								`Cannot reject hat: the unit worktree still contains ${scopeResult.violations.length} out-of-scope write(s) that must be reverted first. ` +
-								`If these persist into the next bolt, every subsequent advance will re-flag them.\n\n` +
+								`Retry budget remaining before MAX_BOLTS escalation: ${MAX_BOLTS_FAIL - currentBolt}.\n\n` +
 								`Out-of-bounds files:\n${scopeResult.violations.map((v) => `  - ${v}`).join("\n")}\n\n` +
-								`Revert each with \`git checkout HEAD -- <file>\` in the unit worktree, commit, then call reject_hat again.`,
+								`Revert the out-of-bounds commits in the unit worktree: drop all unit commits with \`git reset --hard $(git merge-base HEAD haiku/${args.intent as string}/${rejectStage})\`, or amend a single file out with \`git rm <file> && git commit --amend --no-edit\`, or \`git revert --no-edit <commit-sha>\` for a whole commit. NOTE: \`git checkout HEAD -- <file>\` is a NO-OP on committed files and will not clear the violation. After the revert, call reject_hat again.`,
 						}),
 					)
 				}
-			}
-
-			const { data: failData } = parseFrontmatter(
-				readFileSync(failPath, "utf8"),
-			)
-			const currentHat = (failData.hat as string) || ""
-			const currentBolt = (failData.bolt as number) || 1
-
-			// Enforce max bolt limit
-			const MAX_BOLTS_FAIL = 5
-			if (currentBolt + 1 > MAX_BOLTS_FAIL) {
-				return text(
-					JSON.stringify({
-						error: "max_bolts_exceeded",
-						bolt: currentBolt,
-						max: MAX_BOLTS_FAIL,
-						message: `Unit has exceeded ${MAX_BOLTS_FAIL} bolt iterations. Escalate to the user — this unit may need to be redesigned or split.`,
-					}),
-				)
 			}
 
 			// Resolve the hat sequence — unit-aware so `feedback-assessor`

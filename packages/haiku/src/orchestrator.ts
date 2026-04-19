@@ -3322,6 +3322,31 @@ function enrichActionWithPreview(action: OrchestratorAction): void {
  * Large files are NOT truncated — size is bounded by the studio's file
  * design, not this function.
  */
+/**
+ * Standard error-recovery appendix for subagent prompts. Documents the
+ * shape of advance_hat / reject_hat error responses and the correct
+ * recovery for each. Without this, subagents stuck on scope violations
+ * get only an opaque error JSON and try wrong things (e.g. git checkout).
+ */
+const SUBAGENT_ERROR_RECOVERY = [
+	"## Error Recovery (if advance_hat / reject_hat returns an error)",
+	"",
+	"Tool responses containing `\"error\": \"...\"` mean the FSM refused the action. Read the `message` field — it describes the exact fix. Common errors and recovery:",
+	"",
+	"- `unit_scope_violation` / `unit_scope_violation_on_reject` — your unit worktree contains commits that wrote files outside the stage's declared scope. **`git checkout HEAD -- <file>` is a NO-OP on committed files.** Use ONE of:",
+	"  - `git reset --hard $(git merge-base HEAD <stage-branch>)` — drops ALL unit commits (recommended early in a unit)",
+	"  - `git rm <file> && git commit --amend --no-edit` — removes a single file from the latest commit",
+	"  - `git revert --no-edit <commit-sha>` — creates a new commit that undoes a bad commit",
+	"  Then re-run `git add -A && git commit` if needed, and retry `advance_hat` / `reject_hat`.",
+	"- `unit_outputs_empty` — your unit made no tracked writes. Either produce an artifact in a scope-allowed path and commit, or explicitly add paths to the unit's `outputs:` frontmatter field if they exist outside auto-detection.",
+	"- `unit_outputs_missing` — a declared output path doesn't exist on disk. Create it, or remove the path from `outputs:` if declared in error.",
+	"- `unit_outputs_escaped` — a declared output path resolves outside the intent dir. Fix the path to be intent-relative or repo-relative; absolute paths and `..` escapes are rejected.",
+	"- `hat_too_fast` — less than 30 seconds since hat start. Do real work before advancing.",
+	"- `max_bolts_exceeded` — unit hit the iteration ceiling. Stop and report to the user; this needs human intervention.",
+	"",
+	"After fixing the underlying issue, call the SAME tool again (advance_hat or reject_hat as appropriate). Do NOT call haiku_run_next as a bypass — the FSM will return the same error.",
+].join("\n")
+
 function inlineFile(absPath: string, heading: string): string {
 	if (!existsSync(absPath)) return ""
 	const content = readFileSync(absPath, "utf8")
@@ -4035,6 +4060,8 @@ function buildRunInstructions(
 				`${step++}. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
 				"",
 				"**Autonomy:** You are in the execution phase. Execute without asking the user to confirm per-step. Use `AskUserQuestion`/`ask_user_visual_question` only when genuinely blocked on ambiguous requirements — always with pre-populated options.",
+				"",
+				SUBAGENT_ERROR_RECOVERY,
 			)
 
 			if (unitCaps.subagents.supported) {
@@ -4288,6 +4315,8 @@ function buildRunInstructions(
 						`${step++}. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
 						"",
 						"**Autonomy:** You are one of a parallel wave — execute without asking the user to confirm per-step. The FSM coordinates the wave. Do NOT ask which unit runs first, whether to advance a hat, whether to commit/push. Use `AskUserQuestion`/`ask_user_visual_question` only when genuinely blocked on ambiguous requirements.",
+						"",
+						SUBAGENT_ERROR_RECOVERY,
 					)
 
 					const promptBody = inlineCtxParallel
@@ -4570,6 +4599,8 @@ function buildRunInstructions(
 					`${step++}. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
 					"",
 					"**Autonomy:** You are one of a parallel wave — execute without asking the user to confirm per-step. The FSM coordinates the wave. Do NOT ask which unit runs first, whether to advance a hat, whether to commit/push. Use `AskUserQuestion`/`ask_user_visual_question` only when genuinely blocked on ambiguous requirements.",
+					"",
+					SUBAGENT_ERROR_RECOVERY,
 				)
 
 				sections.push(
