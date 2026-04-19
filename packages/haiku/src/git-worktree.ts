@@ -752,9 +752,33 @@ export function ensureOnStageBranch(
 		}
 	}
 
+	// Detect an in-progress merge/rebase/cherry-pick before attempting
+	// checkout. git's error messages are cryptic; surface the state clearly
+	// so the agent knows to finish the in-progress operation first.
+	const gitDir = tryRun(["git", "rev-parse", "--git-dir"])
+	if (gitDir) {
+		for (const marker of [
+			"MERGE_HEAD",
+			"REBASE_HEAD",
+			"CHERRY_PICK_HEAD",
+			"REVERT_HEAD",
+		]) {
+			if (existsSync(join(gitDir, marker))) {
+				return {
+					ok: false,
+					branch: current,
+					message: `A git operation is in progress (${marker} present). Finish or abort it before stage-branch enforcement can realign the checkout.`,
+					switched: false,
+				}
+			}
+		}
+	}
+
 	// Recovery case: switching to stage branch but intent main has drifted ahead.
 	// Merge main → stage FIRST so any work mis-written to main (feedback files,
-	// state.json mutations) travels with the stage branch.
+	// state.json mutations) travels with the stage branch. On conflict, leave
+	// the repo in the merging state so the agent can resolve and commit, then
+	// retry — the next call detects main is already merged and skips.
 	if (targetBranch === stageBranch && branchExists(intentMain)) {
 		const aheadCount = tryRun([
 			"git",
@@ -780,11 +804,30 @@ export function ensureOnStageBranch(
 					switched: true,
 				}
 			} catch (err) {
-				tryRun(["git", "merge", "--abort"])
+				// Detect conflicts via git status so the agent sees exactly
+				// which files to resolve. Do NOT abort — leaving the merge
+				// in progress lets the agent fix and commit, then retry.
+				const status = tryRun(["git", "status", "--porcelain"])
+				const conflicts = (status || "")
+					.split("\n")
+					.filter(
+						(l) =>
+							l.startsWith("UU ") ||
+							l.startsWith("AA ") ||
+							l.startsWith("DD ") ||
+							l.startsWith("AU ") ||
+							l.startsWith("UA ") ||
+							l.startsWith("DU ") ||
+							l.startsWith("UD "),
+					)
+					.map((l) => l.slice(3).trim())
 				return {
 					ok: false,
-					branch: current,
-					message: `failed to merge main into stage: ${err instanceof Error ? err.message : String(err)}. Resolve conflicts on '${stageBranch}' manually, then retry.`,
+					branch: getCurrentBranch() || current,
+					message:
+						conflicts.length > 0
+							? `Merge intent-main → stage '${stage}' left ${conflicts.length} conflicted file(s): ${conflicts.join(", ")}. Resolve conflicts on '${stageBranch}' (edit files, \`git add\`, \`git commit\`), then retry. A clean retry will detect main is already merged and skip this step.`
+							: `failed to merge main into stage: ${err instanceof Error ? err.message : String(err)}. Resolve manually on '${stageBranch}', then retry.`,
 					switched: false,
 				}
 			}
@@ -1076,40 +1119,6 @@ export function finalizeIntentBranches(
  *
  * No-op in non-git environments.
  */
-export function recreateStageBranchFromMain(
-	slug: string,
-	stage: string,
-): { success: boolean; message: string } {
-	if (!isGitRepo()) return { success: true, message: "no git" }
-	if (stage === "main")
-		return { success: false, message: "cannot recreate 'main'" }
-	const stageBranch = `haiku/${slug}/${stage}`
-	const mainBranch = `haiku/${slug}/main`
-	if (!branchExists(mainBranch))
-		return { success: false, message: `${mainBranch} does not exist` }
-
-	try {
-		// Can't delete the branch we're on — jump to main first.
-		if (getCurrentBranch() === stageBranch) {
-			run(["git", "checkout", mainBranch])
-		}
-		if (branchExists(stageBranch)) {
-			tryRun(["git", "worktree", "prune"])
-			run(["git", "branch", "-D", stageBranch])
-		}
-		run(["git", "checkout", "-b", stageBranch, mainBranch])
-		return {
-			success: true,
-			message: `recreated ${stageBranch} from ${mainBranch}`,
-		}
-	} catch (err) {
-		return {
-			success: false,
-			message: err instanceof Error ? err.message : String(err),
-		}
-	}
-}
-
 /**
  * Prepare the target stage branch for a go-back revisit.
  *
@@ -1143,6 +1152,25 @@ export function prepareRevisitBranch(
 	if (!branchExists(mainBranch))
 		return { success: false, message: `${mainBranch} does not exist` }
 
+	// List conflicted files by reading git's unmerged index entries (code U*/AA/DD).
+	function listConflicts(): string[] {
+		const status = tryRun(["git", "status", "--porcelain"])
+		if (!status) return []
+		return status
+			.split("\n")
+			.filter(
+				(l) =>
+					l.startsWith("UU ") ||
+					l.startsWith("AA ") ||
+					l.startsWith("DD ") ||
+					l.startsWith("AU ") ||
+					l.startsWith("UA ") ||
+					l.startsWith("DU ") ||
+					l.startsWith("UD "),
+			)
+			.map((l) => l.slice(3).trim())
+	}
+
 	try {
 		// 1. Ensure target branch exists — fork from main if missing.
 		if (!branchExists(targetBranch)) {
@@ -1154,7 +1182,10 @@ export function prepareRevisitBranch(
 			run(["git", "checkout", targetBranch])
 		}
 
-		// 3. Merge main → target (approved upstream changes).
+		// 3. Merge main → target (approved upstream changes). On conflict,
+		//    leave the repo in the merging state so the agent can resolve
+		//    files and commit, then retry the revisit (idempotent — a clean
+		//    retry will see main as already merged and skip).
 		const mainAhead = tryRun([
 			"git",
 			"rev-list",
@@ -1162,19 +1193,33 @@ export function prepareRevisitBranch(
 			`${targetBranch}..${mainBranch}`,
 		])
 		if (mainAhead && parseInt(mainAhead, 10) > 0) {
-			run([
-				"git",
-				"merge",
-				mainBranch,
-				"--no-edit",
-				"-m",
-				`haiku: merge main → ${targetStage} (revisit prep)`,
-			])
+			try {
+				run([
+					"git",
+					"merge",
+					mainBranch,
+					"--no-edit",
+					"-m",
+					`haiku: merge main → ${targetStage} (revisit prep)`,
+				])
+			} catch (mergeErr) {
+				const conflicts = listConflicts()
+				return {
+					success: false,
+					message:
+						conflicts.length > 0
+							? `Merge main → ${targetStage} left ${conflicts.length} conflicted file(s): ${conflicts.join(", ")}. Resolve conflicts on branch '${targetBranch}' (edit files, \`git add\`, \`git commit\`), then retry the revisit — the FSM will detect main is already merged and continue with the ${fromStage} merge.`
+							: `Merge main → ${targetStage} failed: ${mergeErr instanceof Error ? mergeErr.message : String(mergeErr)}`,
+				}
+			}
 		}
 
 		// 4. Merge fromStage → target (carry unapproved future-stage work
 		//    like feedback files and in-flight artifacts forward so they
-		//    survive the revisit).
+		//    survive the revisit). On conflict, leave the repo merging and
+		//    return a detailed error — the agent resolves and retries. The
+		//    main merge from step 3 is NOT rolled back: partial progress is
+		//    valuable, and the retry is idempotent.
 		if (fromBranch && fromStage !== targetStage && branchExists(fromBranch)) {
 			const fromAhead = tryRun([
 				"git",
@@ -1183,14 +1228,25 @@ export function prepareRevisitBranch(
 				`${targetBranch}..${fromBranch}`,
 			])
 			if (fromAhead && parseInt(fromAhead, 10) > 0) {
-				run([
-					"git",
-					"merge",
-					fromBranch,
-					"--no-edit",
-					"-m",
-					`haiku: merge ${fromStage} → ${targetStage} (revisit carries future-stage work back)`,
-				])
+				try {
+					run([
+						"git",
+						"merge",
+						fromBranch,
+						"--no-edit",
+						"-m",
+						`haiku: merge ${fromStage} → ${targetStage} (revisit carries future-stage work back)`,
+					])
+				} catch (mergeErr) {
+					const conflicts = listConflicts()
+					return {
+						success: false,
+						message:
+							conflicts.length > 0
+								? `Merge ${fromStage} → ${targetStage} left ${conflicts.length} conflicted file(s): ${conflicts.join(", ")}. Resolve conflicts on branch '${targetBranch}' (edit files, \`git add\`, \`git commit\`), then retry the revisit. Main has already been merged cleanly and won't be remerged.`
+								: `Merge ${fromStage} → ${targetStage} failed: ${mergeErr instanceof Error ? mergeErr.message : String(mergeErr)}`,
+					}
+				}
 			}
 		}
 
@@ -1199,7 +1255,6 @@ export function prepareRevisitBranch(
 			message: `prepared ${targetBranch} with main${fromBranch && fromStage !== targetStage ? ` + ${fromStage}` : ""} merged in`,
 		}
 	} catch (err) {
-		tryRun(["git", "merge", "--abort"])
 		return {
 			success: false,
 			message: err instanceof Error ? err.message : String(err),

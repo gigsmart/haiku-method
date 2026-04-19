@@ -5311,26 +5311,6 @@ export async function handleOrchestratorTool(
 		const slug = args.intent as string
 		const stFile = args.state_file as string | undefined
 
-		// Gap 8: If external_review_url is passed and stage is blocked, store it
-		if (args.external_review_url) {
-			try {
-				const root = findHaikuRoot()
-				const intentFile = join(root, "intents", slug, "intent.md")
-				if (existsSync(intentFile)) {
-					const intentFm = readFrontmatter(intentFile)
-					const activeStage = (intentFm.active_stage as string) || ""
-					if (activeStage) {
-						const ssPath = stageStatePath(slug, activeStage)
-						const ssData = readJson(ssPath)
-						ssData.external_review_url = args.external_review_url as string
-						writeJson(ssPath, ssData)
-					}
-				}
-			} catch {
-				/* non-fatal */
-			}
-		}
-
 		// Validate we're on the correct intent branch
 		const branchCheck = validateBranch(slug, "intent")
 		if (branchCheck) {
@@ -5340,10 +5320,12 @@ export async function handleOrchestratorTool(
 			}
 		}
 
-		// Stage-branch enforcement: before the FSM reads state, align the
+		// Stage-branch enforcement: before ANY stage-scoped write, align the
 		// current checkout with the active stage branch. If main has drifted
 		// ahead (feedback files or state leaked there), merge main → stage
 		// first so the FSM sees a consistent view. No-op in filesystem mode.
+		// Must run BEFORE the external_review_url write below — otherwise that
+		// write could land on the wrong branch.
 		{
 			const intentFile = join(findHaikuRoot(), "intents", slug, "intent.md")
 			if (existsSync(intentFile)) {
@@ -5361,6 +5343,28 @@ export async function handleOrchestratorTool(
 						isError: true,
 					}
 				}
+			}
+		}
+
+		// Gap 8: If external_review_url is passed and stage is blocked, store it.
+		// Placed AFTER the stage-branch guard so this write lands on the stage
+		// branch, not intent main.
+		if (args.external_review_url) {
+			try {
+				const root = findHaikuRoot()
+				const intentFile = join(root, "intents", slug, "intent.md")
+				if (existsSync(intentFile)) {
+					const intentFm = readFrontmatter(intentFile)
+					const activeStage = (intentFm.active_stage as string) || ""
+					if (activeStage) {
+						const ssPath = stageStatePath(slug, activeStage)
+						const ssData = readJson(ssPath)
+						ssData.external_review_url = args.external_review_url as string
+						writeJson(ssPath, ssData)
+					}
+				}
+			} catch {
+				/* non-fatal */
 			}
 		}
 

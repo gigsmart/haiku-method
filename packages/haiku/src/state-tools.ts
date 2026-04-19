@@ -5569,6 +5569,13 @@ export function handleStateTool(
 				}
 			}
 
+			// Enforce branch BEFORE any stage-dir check/create — otherwise a
+			// mkdirSync on intent main leaks an empty stage dir onto the wrong
+			// branch, and the subsequent write lands on whatever branch git
+			// was on at call time.
+			const feedbackBranchErr = enforceStageBranch(intent, stage)
+			if (feedbackBranchErr) return feedbackBranchErr
+
 			// Validate stage exists
 			const stgDir = stageDir(intent, stage)
 			if (!existsSync(stgDir)) {
@@ -5590,9 +5597,6 @@ export function handleStateTool(
 				}
 				mkdirSync(stgDir, { recursive: true })
 			}
-
-			const feedbackBranchErr = enforceStageBranch(intent, stage)
-			if (feedbackBranchErr) return feedbackBranchErr
 
 			const result = writeFeedbackFile(intent, stage, {
 				title,
