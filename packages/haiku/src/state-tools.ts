@@ -1820,8 +1820,16 @@ function getIntentFilesystemChangesSince(
 /**
  * Validate that the unit's writes are confined to its declared outputs
  * plus always-allowed FSM-metadata paths. Called at unit completion
- * (last hat advance_hat) BEFORE the worktree merges back. Harness- and
- * persistence-mode-agnostic.
+ * (last hat advance_hat) BEFORE the worktree merges back.
+ *
+ * Outputs in `unit.outputs[]` can be either:
+ *   - intent-relative (e.g. `stages/design/artifacts/foo.html`)
+ *   - repo-relative   (e.g. `packages/haiku/src/foo.ts`)
+ *
+ * Changed-file paths from `git diff` are repo-relative. We match each
+ * changed path against declared globs in BOTH scope interpretations, so
+ * the common intent-scoped case and the repo-level output case both work
+ * without the user having to declare which scope they meant.
  *
  * Returns {violations, allowedGlobs} if scope was violated, or null if OK.
  */
@@ -1836,31 +1844,25 @@ export function validateUnitScope(
 	const outputs = (data.outputs as string[]) || []
 	const hatStartedAt = data.hat_started_at as string | undefined
 
-	// Always-allowed paths (relative to intent root). These are FSM metadata
-	// the harness needs to write as part of running the system.
+	// Always-allowed paths (intent-relative). FSM metadata the harness needs
+	// to write as part of running the system.
 	const unitBase = unit.replace(/\.md$/, "")
-	const alwaysAllowed = [
-		// Unit spec itself (frontmatter mutations, iteration metadata)
+	const intentRelativeAlwaysAllowed = [
 		`stages/${stage}/units/${unitBase}.md`,
-		// Stage FSM state
 		`stages/${stage}/state.json`,
 		`stages/${stage}/iteration.json`,
-		// Feedback written by reviewers to this stage
 		`stages/${stage}/feedback/**`,
-		// Intent-level sealing + integrity artifacts
 		`state/**`,
 		`.integrity.json`,
 	]
 
-	const allowedGlobs = [...outputs, ...alwaysAllowed]
+	const allowedGlobs = [...outputs, ...intentRelativeAlwaysAllowed]
 
-	// Collect changed files (git diff OR filesystem mtime)
+	// Collect changed files. Git mode returns repo-relative paths; filesystem
+	// mode returns intent-relative paths (same space as always-allowed).
+	const gitMode = isGitRepo()
 	let changed: string[] | null = getUnitWorktreeChanges(slug, unit, stage)
 	if (changed === null && hatStartedAt) {
-		// Filesystem fallback: compare mtimes against hat_started_at for a
-		// conservative window. This catches writes that happened during the
-		// current hat but won't see writes from prior hats that escaped their
-		// worktree (those are caught by git-mode validation).
 		const sinceMs = new Date(hatStartedAt).getTime()
 		if (!Number.isNaN(sinceMs)) {
 			changed = getIntentFilesystemChangesSince(slug, sinceMs)
@@ -1868,11 +1870,28 @@ export function validateUnitScope(
 	}
 	if (!changed || changed.length === 0) return null
 
+	const intentPrefix = `.haiku/intents/${slug}/`
 	const violations: string[] = []
+
 	for (const file of changed) {
-		if (!allowedGlobs.some((g) => matchesGlob(file, g))) {
-			violations.push(file)
-		}
+		// Compute intent-relative view if the file is inside the intent dir.
+		// Git-mode paths that don't start with intentPrefix are repo-level
+		// (packages/foo/src/bar.ts, etc.) — those are matched only as
+		// repo-relative.
+		const intentRel =
+			gitMode && file.startsWith(intentPrefix)
+				? file.slice(intentPrefix.length)
+				: gitMode
+					? null
+					: file // filesystem mode: already intent-relative
+
+		// Candidate matches if ANY allowed glob matches EITHER view.
+		const ok = allowedGlobs.some((g) => {
+			if (matchesGlob(file, g)) return true
+			if (intentRel !== null && matchesGlob(intentRel, g)) return true
+			return false
+		})
+		if (!ok) violations.push(file)
 	}
 	if (violations.length === 0) return null
 	return { violations, allowedGlobs }
