@@ -5866,6 +5866,28 @@ export async function handleOrchestratorTool(
 
 				const repairResult = await runRepairAgent(diagnosis)
 
+				// Re-enforce stage branch after the repair-agent await — it can
+				// take minutes, during which the user or the repair agent itself
+				// may have touched the checkout. Every downstream write depends
+				// on the correct branch.
+				{
+					const postRepairGuard = ensureOnStageBranch(
+						slug,
+						(result.stage as string) || undefined,
+					)
+					if (!postRepairGuard.ok) {
+						return {
+							content: [
+								{
+									type: "text" as const,
+									text: `Error: stage-branch enforcement failed after repair-agent run for intent '${slug}' — ${postRepairGuard.message}. Resolve manually and retry.`,
+								},
+							],
+							isError: true,
+						}
+					}
+				}
+
 				if (repairResult.success && !repairResult.fallbackUsed) {
 					// Repair agent succeeded — run FSM again to get the real next action
 					const postRepairResult = runNext(slug)
@@ -6274,6 +6296,26 @@ export async function handleOrchestratorTool(
 			}
 		}
 
+		// Re-enforce branch after the studio-selection elicit(s) completed.
+		// Studio selection is pre-stage — the intent has no active_stage yet —
+		// so ensureOnStageBranch correctly falls back to intent-main. The user
+		// may have flipped branches while the picker was open; subsequent
+		// writes to intent.md must land on intent-main.
+		{
+			const postStudioGuard = ensureOnStageBranch(slug, undefined)
+			if (!postStudioGuard.ok) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: `Error: branch enforcement failed after studio selection for intent '${slug}' — ${postStudioGuard.message}. Resolve manually and retry.`,
+						},
+					],
+					isError: true,
+				}
+			}
+		}
+
 		// Update intent.md with selected studio — only set stages if not already overridden
 		const intentFmCheck = readFrontmatter(intentFile)
 		const existingStages = intentFmCheck.stages as string[] | undefined
@@ -6424,6 +6466,31 @@ export async function handleOrchestratorTool(
 			}
 		}
 
+		// Align branch with the current active stage BEFORE writing feedback
+		// files. Without this, feedback can land on whatever branch was
+		// checked out at call time (e.g. intent-main) and prepareRevisitBranch
+		// only merges main + fromStage into the target — so feedback mis-written
+		// to a third branch wouldn't make it into the revisit.
+		const revisitPreBranchErr = (() => {
+			const guard = ensureOnStageBranch(
+				revisitSlug,
+				(revisitIntentData.active_stage as string) || undefined,
+			)
+			if (!guard.ok) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: `Error: stage-branch enforcement failed for revisit of intent '${revisitSlug}' — ${guard.message}. Resolve manually and retry.`,
+						},
+					],
+					isError: true as const,
+				}
+			}
+			return null
+		})()
+		if (revisitPreBranchErr) return revisitPreBranchErr
+
 		// Write feedback files
 		const createdFeedback: Array<{
 			feedback_id: string
@@ -6447,6 +6514,13 @@ export async function handleOrchestratorTool(
 
 		// Now perform the revisit (rolls phase to elaborate)
 		const revisitResult = revisit(revisitSlug, args.stage as string | undefined)
+
+		// If revisit() failed (e.g. prepareRevisitBranch hit a merge conflict),
+		// short-circuit BEFORE appending an iteration entry. Otherwise a retry
+		// after conflict resolution would produce a duplicate iteration record.
+		if (revisitResult.action === "error") {
+			return text(JSON.stringify(revisitResult, null, 2))
+		}
 
 		// Record a user-revisit iteration on the target stage. User-invoked
 		// revisits are NOT capped — explicit human intent always wins over

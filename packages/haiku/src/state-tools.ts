@@ -3825,6 +3825,14 @@ export function handleStateTool(
 			return text("ok")
 		}
 		case "haiku_unit_list": {
+			// Align branch before reading — unit files live on the stage branch.
+			// On intent-main, existsSync would return false and the caller would
+			// see an empty list even when units exist on the stage branch.
+			const unitListBranchErr = enforceStageBranch(
+				args.intent as string,
+				args.stage as string,
+			)
+			if (unitListBranchErr) return unitListBranchErr
 			const dir = join(
 				stageDir(args.intent as string, args.stage as string),
 				"units",
@@ -5910,6 +5918,16 @@ export function handleStateTool(
 					isError: true,
 				}
 			}
+
+			// Align branch BEFORE reading feedback files. Without this, when
+			// main has drifted ahead of the stage branch (or vice versa), the
+			// caller sees a stale/incomplete list. Use the provided stage filter
+			// if any, otherwise the active stage.
+			const listBranchErr = enforceStageBranch(
+				intent,
+				stageFilt ?? resolveActiveStage(intent),
+			)
+			if (listBranchErr) return listBranchErr
 
 			// Determine which stages to list
 			let stagesToList: string[]

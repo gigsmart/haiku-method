@@ -1015,23 +1015,10 @@ async function handleFeedbackPost(
 		return Response.json({ error: "Intent not found" }, { status: 404 })
 	}
 
-	// Align the checkout with the stage branch BEFORE validateStage and before
-	// writing. If main has drifted ahead, the stage dir may only exist on the
-	// stage branch and validateStage would spuriously 404.
-	const branchGuard = ensureOnStageBranch(intent, stage)
-	if (!branchGuard.ok) {
-		return Response.json(
-			{
-				error: `Stage-branch enforcement failed: ${branchGuard.message}`,
-			},
-			{ status: 409 },
-		)
-	}
-
-	if (!validateStage(intent, stage)) {
-		return Response.json({ error: "Stage not found" }, { status: 404 })
-	}
-
+	// Parse the body FIRST so the guard and the write run contiguously with
+	// no awaits between them. This closes a concurrency race where two
+	// concurrent HTTP handlers could interleave guard → await → write and
+	// end up writing on each other's branch.
 	let body: z.infer<typeof FeedbackCreateSchema>
 	try {
 		body = FeedbackCreateSchema.parse(await req.json())
@@ -1044,6 +1031,23 @@ async function handleFeedbackPost(
 			{ error: "Invalid request body", details },
 			{ status: 400 },
 		)
+	}
+
+	// Align the checkout with the stage branch. No awaits between here and
+	// the write, so Node's single-threaded event loop ensures atomicity
+	// within this handler's tail.
+	const branchGuard = ensureOnStageBranch(intent, stage)
+	if (!branchGuard.ok) {
+		return Response.json(
+			{
+				error: `Stage-branch enforcement failed: ${branchGuard.message}`,
+			},
+			{ status: 409 },
+		)
+	}
+
+	if (!validateStage(intent, stage)) {
+		return Response.json({ error: "Stage not found" }, { status: 404 })
 	}
 
 	const result = writeFeedbackFile(intent, stage, {
@@ -1100,21 +1104,9 @@ async function handleFeedbackPut(
 		return Response.json({ error: "Intent not found" }, { status: 404 })
 	}
 
-	// Align checkout with the stage branch before validateStage or any read.
-	const updateBranchGuard = ensureOnStageBranch(intent, stage)
-	if (!updateBranchGuard.ok) {
-		return Response.json(
-			{
-				error: `Stage-branch enforcement failed: ${updateBranchGuard.message}`,
-			},
-			{ status: 409 },
-		)
-	}
-
-	if (!validateStage(intent, stage)) {
-		return Response.json({ error: "Stage not found" }, { status: 404 })
-	}
-
+	// Parse body FIRST so the guard and write run contiguously (no awaits
+	// between them). Prevents interleaving when two concurrent handlers
+	// would otherwise switch branches on each other.
 	let body: z.infer<typeof FeedbackUpdateSchema>
 	try {
 		body = FeedbackUpdateSchema.parse(await req.json())
@@ -1136,6 +1128,21 @@ async function handleFeedbackPut(
 			{ error: "Invalid request body", details: "Invalid JSON" },
 			{ status: 400 },
 		)
+	}
+
+	// Align checkout with the stage branch before validateStage or any read.
+	const updateBranchGuard = ensureOnStageBranch(intent, stage)
+	if (!updateBranchGuard.ok) {
+		return Response.json(
+			{
+				error: `Stage-branch enforcement failed: ${updateBranchGuard.message}`,
+			},
+			{ status: 409 },
+		)
+	}
+
+	if (!validateStage(intent, stage)) {
+		return Response.json({ error: "Stage not found" }, { status: 404 })
 	}
 
 	// HTTP endpoint is human context — no author-type restrictions
