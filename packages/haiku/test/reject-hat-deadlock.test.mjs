@@ -1,18 +1,15 @@
 #!/usr/bin/env npx tsx
-// Test suite for reject_hat + scope-violation deadlock prevention.
+// Regression test for the reject_hat scope-violation deadlock.
 //
 // The deadlock shape: a hat commits an out-of-scope file, then every
 // subsequent reject_hat call returns unit_scope_violation_on_reject
 // without advancing any counter. Without a persistent counter, the
 // MAX_BOLTS escape never fires and the unit is stuck forever.
 //
-// This suite verifies that:
-//   1. reject_hat with a clean worktree succeeds (no regression)
-//   2. reject_hat with a scope violation returns unit_scope_violation_on_reject
-//   3. Repeated scope-violation rejects bump scope_reject_attempts
-//   4. After MAX_BOLTS_FAIL attempts, max_bolts_exceeded fires
-//      (persistent_scope_violation reason)
-//   5. A successful scope-clean reject resets the counter
+// This suite verifies the critical escape path: after MAX_BOLTS_FAIL (5)
+// scope-violation rejects, max_bolts_exceeded fires with reason
+// `persistent_scope_violation`. The first 4 attempts return
+// unit_scope_violation_on_reject with incrementing scope_reject_attempts.
 
 import { execSync } from "node:child_process"
 import {

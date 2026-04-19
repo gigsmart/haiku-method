@@ -4066,6 +4066,15 @@ export function handleStateTool(
 				const { data: unitFmAfter } = parseFrontmatter(unitRawAfterPopulate)
 				const unitOutputsAfter = (unitFmAfter.outputs as string[]) || []
 
+				// Clean scope — reset the reject-attempts counter. Otherwise a
+				// counter bumped by a prior reject cycle would persist through
+				// a clean advance and falsely escalate the next reject cycle.
+				if (
+					(((unitFmAfter.scope_reject_attempts as number) ?? 0) as number) > 0
+				) {
+					setFrontmatterField(advPath, "scope_reject_attempts", 0)
+				}
+
 				// Require at least one tracked output.
 				if (unitOutputsAfter.length === 0) {
 					const sf = args.state_file as string | undefined
@@ -4341,6 +4350,16 @@ export function handleStateTool(
 				}
 			}
 
+			// Clean scope — reset the reject-attempts counter.
+			{
+				const { data: advFm } = parseFrontmatter(readFileSync(advPath, "utf8"))
+				if (
+					(((advFm.scope_reject_attempts as number) ?? 0) as number) > 0
+				) {
+					setFrontmatterField(advPath, "scope_reject_attempts", 0)
+				}
+			}
+
 			const nextHat = stageHats[nextIdx]
 
 			completeUnitIteration(advPath, "advance")
@@ -4504,7 +4523,9 @@ export function handleStateTool(
 				const { data: cleanFm } = parseFrontmatter(
 					readFileSync(failPath, "utf8"),
 				)
-				if ((cleanFm.scope_reject_attempts as number) ?? 0 > 0) {
+				if (
+					(((cleanFm.scope_reject_attempts as number) ?? 0) as number) > 0
+				) {
 					setFrontmatterField(failPath, "scope_reject_attempts", 0)
 				}
 			}
