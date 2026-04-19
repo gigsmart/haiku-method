@@ -1,6 +1,6 @@
 ---
 title: Mobile bottom sheet missing focus trap markup in wireframe
-status: pending
+status: closed
 origin: adversarial-review
 author: accessibility
 author_type: agent
@@ -9,6 +9,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-13-aria-and-semantic-structure
 ---
 
 The DESIGN-BRIEF.md §6 correctly specifies that the mobile feedback sheet should trap focus, return focus to the FAB on close, and move focus to the segmented control on open. The mobile wireframe `artifacts/feedback-inline-mobile.html:116-259` implements none of this in the DOM structure:

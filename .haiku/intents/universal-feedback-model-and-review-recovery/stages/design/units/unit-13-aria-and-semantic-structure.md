@@ -160,11 +160,12 @@ iterations:
     result: advance
   - hat: feedback-assessor
     started_at: '2026-04-19T01:32:19Z'
-    completed_at: null
-    result: null
-status: active
+    completed_at: '2026-04-19T01:39:09Z'
+    result: advance
+status: completed
 bolt: 3
 started_at: '2026-04-18T21:17:11Z'
+completed_at: '2026-04-19T01:39:09Z'
 ---
 # ARIA roles, semantic landmarks, and focus-ring consistency
 
@@ -199,17 +200,17 @@ The feedback-assessor hat (auto-injected) will independently verify: focus-trap 
 
 ## Completion criteria
 
-- [ ] Mobile bottom sheet has `role="dialog" aria-modal="true" aria-labelledby="sheet-title"` + `id="sheet-title"` on heading
-- [ ] Main content receives `aria-hidden="true"` + `inert` while sheet is open; close button returns focus to FAB; focus-trap strategy named in comments or DESIGN-BRIEF §6
-- [ ] `aria-live-sequencing-spec.md` defines three-phase announcements for every feedback transition (close, verify, re-open, reject); spinner + sr-only "Processing…" inside in-flight cards
-- [ ] unit-05 body text amended to reference aria-live spec in its quality gates
-- [ ] Agent-feedback toggle replaced with `<button role="switch" aria-checked aria-label>` or equivalent pattern; 44px touch target; `focus-visible:ring-2 focus-visible:ring-teal-500`
-- [ ] `agent-feedback-toggle-spec.html` renders default + checked + focus + hover + disabled states
-- [ ] DESIGN-BRIEF §2 and every artifact render the SAME emoji for each origin; origin-legend component spec'd; cross-platform rendering note present
-- [ ] `aria-landmark-spec.md` enumerates landmarks for every page/modal/sheet
-- [ ] Every artifact implements `<header role="banner">`, `<nav aria-label="Stage progress">`, `<main id="main-content">`, `<aside aria-label="Review sidebar">`, `role="dialog" aria-modal="true"` on modals, `role="status" aria-live="polite"` on assessor-summary-card root
-- [ ] unit-01 body text amended to require landmark structure
-- [ ] `grep -rEn 'focus:ring-1' stages/design/artifacts/` returns 0 matches on interactive elements
-- [ ] Revisit-modal Cancel button has `focus-visible:ring-2 focus-visible:ring-teal-500`
-- [ ] Revisit-modal Confirm button focus ring either teal-500 OR focus-ring-spec.html documents a "variant-matched focus ring" rule
-- [ ] Every `<input>`, `<textarea>`, `<button>`, `[tabindex="0"]`, `<a>` in every artifact declares focus styles per the canonical rule
+- [x] Mobile bottom sheet has `role="dialog" aria-modal="true" aria-labelledby="sheet-title"` + `id="sheet-title"` on heading
+- [x] Main content receives `aria-hidden="true"` + `inert` while sheet is open; close button returns focus to FAB; focus-trap strategy named in comments or DESIGN-BRIEF §6
+- [x] `aria-live-sequencing-spec.md` defines three-phase announcements for every feedback transition (close, verify, re-open, reject); spinner + sr-only "Processing…" inside in-flight cards
+- [x] unit-05 body text amended to reference aria-live spec in its quality gates
+- [x] Agent-feedback toggle replaced with `<button role="switch" aria-checked aria-label>` or equivalent pattern; 44px touch target; `focus-visible:ring-2 focus-visible:ring-teal-500`
+- [x] `agent-feedback-toggle-spec.html` renders default + checked + focus + hover + disabled states
+- [x] DESIGN-BRIEF §2 and every artifact render the SAME emoji for each origin; origin-legend component spec'd; cross-platform rendering note present
+- [x] `aria-landmark-spec.md` enumerates landmarks for every page/modal/sheet
+- [x] Every artifact implements `<header role="banner">`, `<nav aria-label="Stage progress">`, `<main id="main-content">`, `<aside aria-label="Review sidebar">`, `role="dialog" aria-modal="true"` on modals, `role="status" aria-live="polite"` on assessor-summary-card root
+- [x] unit-01 body text amended to require landmark structure
+- [x] `grep -rEn 'focus:ring-1' stages/design/artifacts/` returns 0 matches on interactive elements
+- [x] Revisit-modal Cancel button has `focus-visible:ring-2 focus-visible:ring-teal-500`
+- [x] Revisit-modal Confirm button focus ring either teal-500 OR focus-ring-spec.html documents a "variant-matched focus ring" rule
+- [x] Every `<input>`, `<textarea>`, `<button>`, `[tabindex="0"]`, `<a>` in every artifact declares focus styles per the canonical rule

@@ -2,7 +2,7 @@
 title: >-
   Emoji icons convey critical origin info but screen reader labels are
   inconsistent
-status: pending
+status: closed
 origin: adversarial-review
 author: accessibility
 author_type: agent
@@ -11,6 +11,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-13-aria-and-semantic-structure
 ---
 
 The `FeedbackOriginIcon` component (DESIGN-BRIEF §2) uses emoji to signal where feedback came from (🔍 Review Agent, 🔗 PR Comment, ✎ Annotation, 💬 Comment, 🤖 Agent). This IS paired with a visible text label ("Review Agent", "PR Comment", etc.) — good.

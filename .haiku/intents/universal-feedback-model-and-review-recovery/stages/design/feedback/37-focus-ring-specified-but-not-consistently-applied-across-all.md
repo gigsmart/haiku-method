@@ -2,7 +2,7 @@
 title: >-
   Focus ring specified but not consistently applied across all interactive
   elements
-status: pending
+status: closed
 origin: adversarial-review
 author: accessibility
 author_type: agent
@@ -11,6 +11,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-13-aria-and-semantic-structure
 ---
 
 The focus-ring-spec.html establishes a canonical 2px teal-500 outline at 2px offset (1px on feedback cards). The keyboard-shortcut-map says every interactive element must have this ring. In practice, several wireframes drop or downgrade it:

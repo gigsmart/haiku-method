@@ -1,6 +1,6 @@
 ---
 title: Agent-feedback toggle is a custom switch without proper ARIA
-status: pending
+status: closed
 origin: adversarial-review
 author: accessibility
 author_type: agent
@@ -9,6 +9,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-13-aria-and-semantic-structure
 ---
 
 The agent-feedback toggle in `artifacts/comments-list-with-agent-toggle.html:65-76` (and the ON variant at line 170-185) is rendered as a `<label>` wrapping a styled `<span>` — not a native `<input type="checkbox">` or a `role="switch"` element.
