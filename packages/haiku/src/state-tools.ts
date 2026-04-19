@@ -5770,6 +5770,12 @@ export function handleStateTool(
 					isError: true,
 				}
 
+			// Enforce branch BEFORE reading the feedback file — if main has
+			// drifted ahead, the file may only exist on the stage branch.
+			// Reading first would spuriously report "not found".
+			const feedbackRejectBranchErr = enforceStageBranch(intent, stage)
+			if (feedbackRejectBranchErr) return feedbackRejectBranchErr
+
 			// Find the feedback file
 			const rejectFound = findFeedbackFile(intent, stage, feedbackId)
 			if (!rejectFound) {
@@ -5810,9 +5816,6 @@ export function handleStateTool(
 					isError: true,
 				}
 			}
-
-			const feedbackRejectBranchErr = enforceStageBranch(intent, stage)
-			if (feedbackRejectBranchErr) return feedbackRejectBranchErr
 
 			// Apply rejection: set status to rejected and append reason to body
 			const rejectData = { ...rejectFound.data, status: "rejected" }
