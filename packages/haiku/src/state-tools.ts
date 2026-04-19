@@ -35,6 +35,7 @@ import {
 } from "./git-worktree.js"
 import { getCapabilities } from "./harness.js"
 import { escalate } from "./model-selection.js"
+import { resultPathFor, writeResultFile } from "./subagent-prompt-file.js"
 import { logSessionEvent, writeHaikuMetadata } from "./session-metadata.js"
 import { sealIntentState } from "./state-integrity.js"
 import {
@@ -3778,15 +3779,21 @@ export function handleStateTool(
 					// Phase/stage-level transitions (advance_phase, review, advance_stage,
 					// intent_complete, etc.) — return so the last wave subagent can
 					// signal the transition back to the parent.
+					const payload = injectPushWarning(
+						{ ...next, _unit_completed: args.unit, _merge: mergeNote },
+						completeGit,
+					)
+					const resultPath = resultPathFor({
+						unit: args.unit as string,
+						hat: currentHat,
+						bolt: (unitFm.bolt as number) || 1,
+					})
+					writeResultFile(resultPath, payload)
 					return text(
-						JSON.stringify(
-							injectPushWarning(
-								{ ...next, _unit_completed: args.unit, _merge: mergeNote },
-								completeGit,
-							),
-							null,
-							2,
-						),
+						`FSM Result written to: ${resultPath}\n\n` +
+							`YOUR FINAL MESSAGE TO THE PARENT MUST BE EXACTLY ONE LINE:\n\n` +
+							`FSM Result: ${resultPath}\n\n` +
+							`Do NOT add prose, summary, or description. The parent reads the file to drive the next FSM action (phase/stage/intent transition).`,
 					)
 				}
 
@@ -3831,12 +3838,21 @@ export function handleStateTool(
 			// Internally call runNext — returns continue_unit with next hat context for the parent
 			if (_runNext) {
 				const next = _runNext(args.intent as string)
+				const payload = injectPushWarning(
+					{ ...next, _hat_advanced: nextHat },
+					advGit,
+				)
+				const resultPath = resultPathFor({
+					unit: args.unit as string,
+					hat: currentHat,
+					bolt: (unitFm.bolt as number) || 1,
+				})
+				writeResultFile(resultPath, payload)
 				return text(
-					JSON.stringify(
-						injectPushWarning({ ...next, _hat_advanced: nextHat }, advGit),
-						null,
-						2,
-					),
+					`FSM Result written to: ${resultPath}\n\n` +
+						`YOUR FINAL MESSAGE TO THE PARENT MUST BE EXACTLY ONE LINE:\n\n` +
+						`FSM Result: ${resultPath}\n\n` +
+						`Do NOT add prose, summary, or description. The parent reads the file to drive the next FSM action.`,
 				)
 			}
 
@@ -3950,9 +3966,30 @@ export function handleStateTool(
 				args.intent as string,
 				args.state_file as string | undefined,
 			)
-			return text(
-				`rejected — back to ${prevHat}, bolt ${currentBolt + 1}${pushWarning(rejectGit)}`,
-			)
+			{
+				const resultPath = resultPathFor({
+					unit: args.unit as string,
+					hat: currentHat,
+					bolt: currentBolt,
+				})
+				writeResultFile(resultPath, {
+					action: "continue_unit",
+					intent: args.intent,
+					stage: rejectStage,
+					unit: args.unit,
+					hat: prevHat,
+					bolt: currentBolt + 1,
+					reason: rejectReason ?? null,
+					_rejected_from: currentHat,
+					_push_warning: pushWarning(rejectGit) || undefined,
+				})
+				return text(
+					`FSM Result written to: ${resultPath}\n\n` +
+						`YOUR FINAL MESSAGE TO THE PARENT MUST BE EXACTLY ONE LINE:\n\n` +
+						`FSM Result: ${resultPath}\n\n` +
+						`Do NOT add prose or summary. Parent reads the file to drive the rebolt.`,
+				)
+			}
 		}
 		case "haiku_unit_increment_bolt": {
 			const path = unitPath(

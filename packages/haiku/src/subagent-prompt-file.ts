@@ -19,7 +19,7 @@
 // Cleanup is handled by a SessionStart hook that wipes stale session dirs
 // older than 24h.
 
-import { mkdirSync, writeFileSync } from "node:fs"
+import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -81,4 +81,29 @@ export function resultPathFor(opts: {
 
 export function writeResultFile(resultPath: string, payload: unknown): void {
 	writeFileSync(resultPath, JSON.stringify(payload, null, 2), "utf8")
+}
+
+/**
+ * Clean up stale session prompt/result tmpfiles older than `maxAgeHours`.
+ * Intended to be called from a SessionStart hook.
+ */
+export function cleanupStaleTmpfiles(maxAgeHours = 24): void {
+	const root = join(tmpdir(), "haiku-prompts")
+	try {
+		const now = Date.now()
+		const maxMs = maxAgeHours * 60 * 60 * 1000
+		for (const sessionDir of readdirSync(root)) {
+			const p = join(root, sessionDir)
+			try {
+				const stat = statSync(p)
+				if (now - stat.mtimeMs > maxMs) {
+					rmSync(p, { recursive: true, force: true })
+				}
+			} catch {
+				/* ignore */
+			}
+		}
+	} catch {
+		/* root doesn't exist yet — nothing to clean */
+	}
 }

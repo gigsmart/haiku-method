@@ -3649,7 +3649,15 @@ function buildRunInstructions(
 						"4. Write the populated document to the stage's discovery path (as defined in the template's `location:` frontmatter).",
 						"5. Be thorough — this artifact informs all downstream work.",
 					)
-					fanOutText += `### Subagent: \`${a.name}\`\n\n<subagent>\n${lines.join("\n")}\n</subagent>\n\n`
+					fanOutText +=
+						emitSubagentDispatchBlock({
+							unit: "discovery",
+							hat: a.name,
+							bolt: 1,
+							agentType: "general-purpose",
+							promptBody: lines.join("\n"),
+							heading: `### Subagent: \`${a.name}\``,
+						}) + "\n\n"
 				}
 
 				fanOutText +=
@@ -3995,7 +4003,7 @@ function buildRunInstructions(
 			prompt.push(
 				`${step++}. When done: call \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unit}" }\``,
 				`${step++}. If blocked: call \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unit}" }\``,
-				`${step++}. **CRITICAL — Relay the FSM response.** Your final message MUST include the complete raw tool response from \`advance_hat\` (or \`reject_hat\`) verbatim inside a fenced \`\`\`json block (or as plaintext if the tool returned plaintext), under a heading \`## FSM Response (relay to parent)\`. The parent drives the next action from this. Do NOT summarize or drop fields.`,
+				`${step++}. **CRITICAL — Relay the FSM Result path.** When \`advance_hat\` or \`reject_hat\` returns, its tool response contains a result-file path and instructs you to reply with exactly \`FSM Result: <path>\`. Your FINAL MESSAGE to the parent MUST BE EXACTLY that one line — nothing before, nothing after. Do NOT summarize the work, do NOT describe what you did, do NOT paraphrase the result. The parent reads the file to drive the next FSM action. If the tool returned plaintext instead of a result path (e.g. "job ends here — parent will call haiku_run_next"), relay THAT plaintext verbatim as your final message.`,
 				`${step++}. Track outputs in unit frontmatter \`outputs:\` field`,
 				`${step++}. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
 				"",
@@ -4020,7 +4028,7 @@ function buildRunInstructions(
 
 				// Parent-only instructions OUTSIDE the tag
 				sections.push(
-					"### Parent Instructions (do NOT include in subagent prompt)\n\nAfter the subagent returns: call `haiku_run_next { intent: ... }` to get the next FSM action. If the subagent's `advance_hat` result carried a phase-level transition (`advance_phase`, `review`, `advance_stage`, `intent_complete`), you may act on it directly instead of calling run_next. For unit-level actions (`continue_unit`, `start_unit`, `start_units`), always call run_next — those belong to the parent orchestrator, not the subagent. The subagent's prompt is written to the tmpfile path in the `prompt_file` attribute above — pass that path to the subagent (or relay the <subagent> block to your harness, which will map `prompt_file` to its Agent spawn primitive).",
+					"### Parent Instructions (do NOT include in subagent prompt)\n\nSpawn the subagent using the `type`, `model`, and `prompt_file` attributes from the `<subagent>` block above. The subagent's prompt is the file at `prompt_file` — pass `\"Read <prompt_file> and execute its instructions exactly.\"` as the spawn prompt.\n\n**When the subagent returns, its final message will be one of:**\n- `FSM Result: <path>` — read that JSON file and act on its `action` field. Valid actions: `continue_unit` (spawn next subagent for same unit), `start_units` (dispatch wave), `advance_phase`, `review`, `advance_stage`, `intent_complete`, `blocked`. For unit-level actions, call `haiku_run_next { intent: ... }` to get the FSM's canonical next step (the result file and run_next return the same data; run_next is the authoritative drive step).\n- Plaintext \"job ends here\" message — another subagent in the wave will produce the structured result; do not dispatch yet.\n- Anything else (subagent non-compliant) — fall back: call `haiku_run_next { intent: ... }`.\n\nDo NOT stop until run_next returns `gate_review`, `advance_stage → intent_complete`, `intent_complete`, or `error`.",
 				)
 			} else {
 				// ── Subagentless: direct execution in current context ──
@@ -4247,7 +4255,7 @@ function buildRunInstructions(
 					prompt.push(
 						`${step++}. Call \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unitName}" }\` when done`,
 						`${step++}. If blocked: call \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unitName}" }\``,
-						`${step++}. **CRITICAL — Relay the FSM response.** Your final message MUST include the complete raw tool response from \`advance_hat\` (or \`reject_hat\`) verbatim inside a fenced \`\`\`json block (or as plaintext if the tool returned plaintext), under a heading \`## FSM Response (relay to parent)\`. The parent drives the next action from this. Do NOT summarize or drop fields.`,
+						`${step++}. **CRITICAL — Relay the FSM Result path.** When \`advance_hat\` or \`reject_hat\` returns, its tool response contains a result-file path and instructs you to reply with exactly \`FSM Result: <path>\`. Your FINAL MESSAGE to the parent MUST BE EXACTLY that one line — nothing before, nothing after. Do NOT summarize the work, do NOT describe what you did, do NOT paraphrase the result. The parent reads the file to drive the next FSM action. If the tool returned plaintext instead of a result path (e.g. "job ends here — parent will call haiku_run_next"), relay THAT plaintext verbatim as your final message.`,
 						`${step++}. Track outputs in unit frontmatter \`outputs:\` field`,
 						`${step++}. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
 						"",
@@ -4273,7 +4281,7 @@ function buildRunInstructions(
 
 				// Parent instructions
 				sections.push(
-					`### Parent Instructions (do NOT include in subagent prompts)\n\n**IMMEDIATELY** spawn ALL subagents above **in parallel, in a single response**. No questions, no confirmation, no menu. Your harness maps each \`<subagent>\` block to its native spawn primitive (use the \`type\` and \`model\` attributes as hints).\nEach \`<subagent>\` block is a complete prompt — relay verbatim. The prompt is intentionally path-heavy; the subagent reads the files itself so the parent context stays clean.\n\n**Drive forward on every return — do NOT wait for the whole batch.** The moment ANY subagent returns (advance OR reject), call \`haiku_run_next { intent: "${slug}" }\`. The FSM will include every still-active unit plus the newly-ready work. Waiting for the whole batch strands the other units. The only time you should stop driving is when run_next returns \`gate_review\`, \`escalate\`, \`intent_complete\`, or \`error\`.`,
+					`### Parent Instructions (do NOT include in subagent prompts)\n\n**IMMEDIATELY** spawn ALL subagents above **in parallel, in a single response**. Each \`<subagent>\` block has \`type\`, \`model\`, and \`prompt_file\` attributes. Spawn each with prompt: \`"Read <prompt_file> and execute its instructions exactly."\` — no other text. The FSM owns the authoritative prompt at \`prompt_file\`; do not paraphrase.\n\n**Drive forward on every return — do NOT wait for the whole batch.** The moment ANY subagent returns, inspect its final message:\n- \`FSM Result: <path>\` → read that JSON file, then call \`haiku_run_next { intent: "${slug}" }\` (run_next is authoritative). The FSM will include every still-active unit plus the newly-ready work.\n- Plaintext \"job ends here\" → another subagent will emit the structured result; do NOT dispatch yet.\n- Anything else (non-compliant) → fall back: call \`haiku_run_next { intent: "${slug}" }\`.\n\nWaiting for the whole batch strands other units. Stop driving only when run_next returns \`gate_review\`, \`escalate\`, \`intent_complete\`, or \`error\`.`,
 				)
 			} else {
 				// ── Subagentless harness: sequential execution in current context ──
@@ -4528,7 +4536,7 @@ function buildRunInstructions(
 				prompt.push(
 					`${step++}. When done: call \`haiku_unit_advance_hat { intent: "${slug}", unit: "${unitName}" }\``,
 					`${step++}. If blocked: call \`haiku_unit_reject_hat { intent: "${slug}", unit: "${unitName}" }\``,
-					`${step++}. **CRITICAL — Relay the FSM response.** Your final message MUST include the complete raw tool response from \`advance_hat\` (or \`reject_hat\`) verbatim inside a fenced \`\`\`json block (or as plaintext if the tool returned plaintext), under a heading \`## FSM Response (relay to parent)\`. The parent drives the next action from this. Do NOT summarize or drop fields.`,
+					`${step++}. **CRITICAL — Relay the FSM Result path.** When \`advance_hat\` or \`reject_hat\` returns, its tool response contains a result-file path and instructs you to reply with exactly \`FSM Result: <path>\`. Your FINAL MESSAGE to the parent MUST BE EXACTLY that one line — nothing before, nothing after. Do NOT summarize the work, do NOT describe what you did, do NOT paraphrase the result. The parent reads the file to drive the next FSM action. If the tool returned plaintext instead of a result path (e.g. "job ends here — parent will call haiku_run_next"), relay THAT plaintext verbatim as your final message.`,
 					`${step++}. Track outputs in unit frontmatter \`outputs:\` field`,
 					`${step++}. If outputs from a previous stage are missing: call \`haiku_revisit { intent: "${slug}" }\``,
 					"",
@@ -4549,7 +4557,7 @@ function buildRunInstructions(
 			}
 
 			sections.push(
-				`### Parent Instructions (do NOT include in subagent prompts)\n\n**IMMEDIATELY** spawn ALL subagents above **in parallel, in a single response**. No questions, no confirmation, no menu. Each \`<subagent>\` block is a complete prompt — relay verbatim. The prompt is path-heavy; each subagent reads its files itself so the parent context stays clean.\n\n**Drive forward on every return — do NOT wait for the whole batch.** The moment ANY subagent returns (advance OR reject), call \`haiku_run_next { intent: "${slug}" }\`. The FSM will include every still-active unit plus the newly-ready work. Waiting for the whole batch strands the other units. The only time you should stop driving is when run_next returns \`gate_review\`, \`escalate\`, \`intent_complete\`, or \`error\`.`,
+				`### Parent Instructions (do NOT include in subagent prompts)\n\n**IMMEDIATELY** spawn ALL subagents above **in parallel, in a single response**. Each \`<subagent>\` block has \`type\`, \`model\`, and \`prompt_file\` attributes. Spawn each with prompt: \`"Read <prompt_file> and execute its instructions exactly."\` — no other text. The FSM owns the authoritative prompt at \`prompt_file\`; do not paraphrase.\n\n**Drive forward on every return — do NOT wait for the whole batch.** The moment ANY subagent returns, inspect its final message:\n- \`FSM Result: <path>\` → read that JSON file, then call \`haiku_run_next { intent: "${slug}" }\` (run_next is authoritative).\n- Plaintext \"job ends here\" → another subagent will emit the structured result; do NOT dispatch yet.\n- Anything else → fall back: call \`haiku_run_next { intent: "${slug}" }\`.\n\nStop driving only when run_next returns \`gate_review\`, \`escalate\`, \`intent_complete\`, or \`error\`.`,
 			)
 
 			// Suppress unused-var warning for hats (kept in payload for forward-compat)
@@ -4635,13 +4643,20 @@ function buildRunInstructions(
 					)
 					const prompt = reviewLines.join("\n")
 					sections.push(
-						`#### Subagent: \`${name}\`\n\n<subagent>\n${prompt}\n</subagent>\n`,
+						emitSubagentDispatchBlock({
+							unit: `review-${stage}`,
+							hat: name,
+							bolt: 1,
+							agentType: "general-purpose",
+							promptBody: prompt,
+							heading: `#### Subagent: \`${name}\``,
+						}) + "\n",
 					)
 				}
 			}
 
 			sections.push(
-				`### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn review subagents in parallel. They persist findings directly via haiku_feedback. After all complete, call \`haiku_run_next { intent: "${slug}" }\`.`,
+				`### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn review subagents in parallel using the \`prompt_file\` attribute — pass \`"Read <prompt_file> and execute its instructions exactly."\` as the spawn prompt. They persist findings directly via haiku_feedback. After all complete, call \`haiku_run_next { intent: "${slug}" }\`.`,
 			)
 			break
 		}
@@ -4839,12 +4854,19 @@ function buildRunInstructions(
 						"6. Return only a summary count of how many findings you logged.",
 					].join("\n")
 					sections.push(
-						`#### Subagent: \`${name}\`\n\n<subagent>\n${prompt}\n</subagent>\n`,
+						emitSubagentDispatchBlock({
+							unit: `review-elab-${stage}`,
+							hat: name,
+							bolt: 1,
+							agentType: "general-purpose",
+							promptBody: prompt,
+							heading: `#### Subagent: \`${name}\``,
+						}) + "\n",
 					)
 				}
 			}
 			sections.push(
-				`### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn review subagents in parallel. They persist findings directly via haiku_feedback. After all complete, call \`haiku_run_next { intent: "${slug}" }\` to advance.`,
+				`### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn review subagents in parallel using the \`prompt_file\` attribute — pass \`"Read <prompt_file> and execute its instructions exactly."\` as the spawn prompt. They persist findings directly via haiku_feedback. After all complete, call \`haiku_run_next { intent: "${slug}" }\` to advance.`,
 			)
 			break
 		}

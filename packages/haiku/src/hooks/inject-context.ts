@@ -64,6 +64,17 @@ export async function injectContext(
 	input: Record<string, unknown>,
 	_pluginRoot: string,
 ): Promise<void> {
+	// Clean up stale subagent prompt/result tmpfiles from prior sessions.
+	// Runs best-effort; failures here must not block SessionStart.
+	try {
+		const { cleanupStaleTmpfiles } = await import(
+			"../subagent-prompt-file.js"
+		)
+		cleanupStaleTmpfiles(24)
+	} catch {
+		/* ignore */
+	}
+
 	// Extract session ID from hook payload or env
 	const sessionId =
 		(input.session_id as string) || process.env.CLAUDE_SESSION_ID || undefined
