@@ -6627,7 +6627,9 @@ export async function handleOrchestratorTool(
 			}
 		}
 
-		// Read conversation context if it exists (preserve it)
+		// Read conversation context if it exists (preserve it). Read this
+		// BEFORE the branch switch so we read from whatever branch has the
+		// ctx file (most recent state), not whatever branch we end up on.
 		let conversationContext = ""
 		const ctxFile = join(iDir, "knowledge", "CONVERSATION-CONTEXT.md")
 		if (existsSync(ctxFile)) {
@@ -6635,6 +6637,42 @@ export async function handleOrchestratorTool(
 				/^# Conversation Context\n\n/,
 				"",
 			)
+		}
+
+		// Reset is intent-scoped — land on intent-main so the delete applies
+		// there, not split-brain on a stage branch. Without this guard, if the
+		// agent resets while checked out on a stage branch, the delete lands
+		// on the stage branch only; intent-main still holds the full intent
+		// and the next haiku_intent_create would see existsSync=true.
+		{
+			const resetGuard = ensureOnStageBranch(slug, undefined)
+			if (!resetGuard.ok) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: `Error: branch enforcement failed for intent reset '${slug}' — ${resetGuard.message}. Resolve manually and retry.`,
+						},
+					],
+					isError: true,
+				}
+			}
+		}
+
+		// Clean up any existing stage branches so the recreated intent starts
+		// from a truly clean slate. Without this, the next fsmStartStage would
+		// see pre-existing stage branches and try to merge stale work into the
+		// new intent's lifecycle.
+		const intentFm = parseFrontmatter(raw).data
+		const studio = (intentFm.studio as string) || ""
+		if (studio && isGitRepo()) {
+			const allStudioStages = resolveStudioStages(studio)
+			for (const stg of allStudioStages) {
+				const stgBranch = `haiku/${slug}/${stg}`
+				if (branchExists(stgBranch)) {
+					deleteStageBranch(slug, stg)
+				}
+			}
 		}
 
 		// Delete the intent directory
@@ -6695,6 +6733,24 @@ export async function handleOrchestratorTool(
 			)
 		}
 
+		// Archive is intent-scoped metadata — land on intent-main so the mutation
+		// is visible everywhere, not split-brain on whatever stage branch the
+		// agent happens to be on when they archive.
+		{
+			const archiveGuard = ensureOnStageBranch(slug, undefined)
+			if (!archiveGuard.ok) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: `Error: branch enforcement failed for intent archive '${slug}' — ${archiveGuard.message}. Resolve manually and retry.`,
+						},
+					],
+					isError: true,
+				}
+			}
+		}
+
 		setFrontmatterField(intentFile, "archived", true)
 		gitCommitState(`haiku: archive intent ${slug}`)
 
@@ -6746,6 +6802,23 @@ export async function handleOrchestratorTool(
 					2,
 				),
 			)
+		}
+
+		// Unarchive is intent-scoped metadata — land on intent-main so the
+		// mutation is visible everywhere, not split-brain on a stage branch.
+		{
+			const unarchiveGuard = ensureOnStageBranch(slug, undefined)
+			if (!unarchiveGuard.ok) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: `Error: branch enforcement failed for intent unarchive '${slug}' — ${unarchiveGuard.message}. Resolve manually and retry.`,
+						},
+					],
+					isError: true,
+				}
+			}
 		}
 
 		// Remove the `archived` key entirely rather than leaving `archived: false`.
