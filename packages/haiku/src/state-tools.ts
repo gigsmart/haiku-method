@@ -42,6 +42,7 @@ import {
 	listStudios,
 	readOperationDefs,
 	readReflectionDefs,
+	readStageArtifactDefs,
 	resolveStudio,
 } from "./studio-reader.js"
 import { emitTelemetry } from "./telemetry.js"
@@ -1818,83 +1819,239 @@ function getIntentFilesystemChangesSince(
 }
 
 /**
- * Validate that the unit's writes are confined to its declared outputs
- * plus always-allowed FSM-metadata paths. Called at unit completion
- * (last hat advance_hat) BEFORE the worktree merges back.
+ * Compute the allowed write scope for a stage. Derives from:
+ *   - Stage output templates' `location:` fields (with `scope:` intent|repo)
+ *   - Stage discovery templates' `location:` fields (for pre-execute hats)
+ *   - Always-allowed FSM metadata paths
  *
- * Outputs in `unit.outputs[]` can be either:
- *   - intent-relative (e.g. `stages/design/artifacts/foo.html`)
- *   - repo-relative   (e.g. `packages/haiku/src/foo.ts`)
- *
- * Changed-file paths from `git diff` are repo-relative. We match each
- * changed path against declared globs in BOTH scope interpretations, so
- * the common intent-scoped case and the repo-level output case both work
- * without the user having to declare which scope they meant.
- *
- * Returns {violations, allowedGlobs} if scope was violated, or null if OK.
+ * Returns { intentGlobs, repoGlobs, repoWildcard } where:
+ *   - intentGlobs: globs to match against intent-relative paths
+ *   - repoGlobs:   globs to match against repo-relative paths
+ *   - repoWildcard: true if any template declared `scope: repo` with a
+ *     non-specific location ("(project source tree)", "anywhere", empty) —
+ *     in which case any repo-level write is allowed.
  */
-export function validateUnitScope(
+function computeStageScope(
+	slug: string,
+	studio: string,
+	stage: string,
+	unit: string,
+): { intentGlobs: string[]; repoGlobs: string[]; repoWildcard: boolean } {
+	const unitBase = unit.replace(/\.md$/, "")
+	const intentGlobs: string[] = [
+		// Unit spec itself (frontmatter mutations, iteration metadata)
+		`stages/${stage}/units/${unitBase}.md`,
+		// Stage FSM state
+		`stages/${stage}/state.json`,
+		`stages/${stage}/iteration.json`,
+		// Feedback written by reviewers to this stage
+		`stages/${stage}/feedback/**`,
+		// Intent-level sealing + integrity artifacts
+		`state/**`,
+		`.integrity.json`,
+		// Discovery knowledge (populated by early hats, read by later)
+		`knowledge/**`,
+	]
+	const repoGlobs: string[] = []
+	let repoWildcard = false
+
+	// Pull stage's artifact definitions (discovery + outputs)
+	const defs = readStageArtifactDefs(studio, stage)
+	for (const def of defs) {
+		const loc = (def.location || "").trim()
+		const declaredScope = def.scope || "intent"
+		if (!loc) {
+			if (declaredScope === "repo") repoWildcard = true
+			continue
+		}
+		// Heuristic: locations wrapped in parentheses are descriptive
+		// placeholders ("(project source tree)", "(anywhere)"), not globs.
+		if (loc.startsWith("(") && loc.endsWith(")")) {
+			if (declaredScope === "repo") repoWildcard = true
+			continue
+		}
+		// Substitute common template tokens. We support the canonical ones
+		// present in current studios; unknown tokens leave the literal glob
+		// in place (the matcher treats unmatched tokens as path chars and
+		// will simply never match — safe default).
+		const expanded = loc
+			.replace(/\{intent-slug\}/g, slug)
+			.replace(/\{stage\}/g, stage)
+		if (declaredScope === "repo") {
+			repoGlobs.push(expanded)
+		} else {
+			// Intent-scoped: strip the `.haiku/intents/{slug}/` prefix if the
+			// location was written as an absolute-in-intent path.
+			const prefix = `.haiku/intents/${slug}/`
+			const stripped = expanded.startsWith(prefix)
+				? expanded.slice(prefix.length)
+				: expanded
+			intentGlobs.push(stripped)
+		}
+	}
+	return { intentGlobs, repoGlobs, repoWildcard }
+}
+
+/**
+ * List changed files for this unit since its worktree forked from the stage
+ * branch. Returns null if we can't determine the diff (non-git, missing
+ * worktree, etc.) and the caller should fall back to filesystem mtime.
+ */
+function getUnitChanges(
 	slug: string,
 	stage: string,
 	unit: string,
-): { violations: string[]; allowedGlobs: string[] } | null {
-	const spec = unitPath(slug, stage, unit)
-	if (!existsSync(spec)) return null
-	const { data } = parseFrontmatter(readFileSync(spec, "utf8"))
-	const outputs = (data.outputs as string[]) || []
-	const hatStartedAt = data.hat_started_at as string | undefined
+	hatStartedAt: string | undefined,
+): string[] {
+	const gitChanged = getUnitWorktreeChanges(slug, unit, stage)
+	if (gitChanged !== null) return gitChanged
+	if (!hatStartedAt) return []
+	const sinceMs = new Date(hatStartedAt).getTime()
+	if (Number.isNaN(sinceMs)) return []
+	return getIntentFilesystemChangesSince(slug, sinceMs)
+}
 
-	// Always-allowed paths (intent-relative). FSM metadata the harness needs
-	// to write as part of running the system.
+/**
+ * Classify a changed-file path against the stage's scope. Returns true if
+ * the path is allowed, false if it's a scope violation.
+ */
+function pathInStageScope(
+	file: string,
+	slug: string,
+	scope: { intentGlobs: string[]; repoGlobs: string[]; repoWildcard: boolean },
+	gitMode: boolean,
+): boolean {
+	// Intent-relative view if the file is inside the intent dir.
+	const intentPrefix = `.haiku/intents/${slug}/`
+	const intentRel = gitMode
+		? file.startsWith(intentPrefix)
+			? file.slice(intentPrefix.length)
+			: null
+		: file // filesystem mode: already intent-relative
+
+	if (intentRel !== null) {
+		if (scope.intentGlobs.some((g) => matchesGlob(intentRel, g))) return true
+	}
+	// If git-mode and file is outside the intent dir, it's a repo-level write.
+	if (gitMode && intentRel === null) {
+		if (scope.repoWildcard) return true
+		if (scope.repoGlobs.some((g) => matchesGlob(file, g))) return true
+	}
+	return false
+}
+
+/**
+ * Auto-track writes into unit.outputs[]. Called at advance_hat to record
+ * what the unit actually wrote. Harness-agnostic replacement for the CC
+ * track-outputs PostToolUse hook (which keeps working for real-time CC
+ * tracking but isn't required).
+ *
+ * Always-allowed FSM metadata paths (state.json, iteration.json, unit
+ * spec, feedback/, state/, .integrity.json) are excluded — those are
+ * harness bookkeeping, not unit deliverables.
+ */
+function autoPopulateOutputs(
+	slug: string,
+	stage: string,
+	unit: string,
+	changed: string[],
+): void {
+	if (changed.length === 0) return
+	const spec = unitPath(slug, stage, unit)
+	if (!existsSync(spec)) return
+	const raw = readFileSync(spec, "utf8")
+	const { data, content } = matter(raw)
+	const existing = new Set<string>(((data.outputs as string[]) || []).map((o) => o))
 	const unitBase = unit.replace(/\.md$/, "")
-	const intentRelativeAlwaysAllowed = [
+	const bookkeeping = new Set<string>([
 		`stages/${stage}/units/${unitBase}.md`,
 		`stages/${stage}/state.json`,
 		`stages/${stage}/iteration.json`,
-		`stages/${stage}/feedback/**`,
-		`state/**`,
 		`.integrity.json`,
+	])
+	const bookkeepingPrefixes = [
+		`stages/${stage}/feedback/`,
+		`state/`,
 	]
-
-	const allowedGlobs = [...outputs, ...intentRelativeAlwaysAllowed]
-
-	// Collect changed files. Git mode returns repo-relative paths; filesystem
-	// mode returns intent-relative paths (same space as always-allowed).
 	const gitMode = isGitRepo()
-	let changed: string[] | null = getUnitWorktreeChanges(slug, unit, stage)
-	if (changed === null && hatStartedAt) {
-		const sinceMs = new Date(hatStartedAt).getTime()
-		if (!Number.isNaN(sinceMs)) {
-			changed = getIntentFilesystemChangesSince(slug, sinceMs)
+	const intentPrefix = `.haiku/intents/${slug}/`
+	const toAdd: string[] = []
+	for (const file of changed) {
+		// Normalize to intent-relative if inside intent dir (git-mode);
+		// filesystem mode paths are already intent-relative.
+		const intentRel = gitMode
+			? file.startsWith(intentPrefix)
+				? file.slice(intentPrefix.length)
+				: null
+			: file
+		// Skip harness bookkeeping
+		if (intentRel !== null) {
+			if (bookkeeping.has(intentRel)) continue
+			if (bookkeepingPrefixes.some((p) => intentRel.startsWith(p))) continue
+		}
+		// Record the path in its natural form: intent-relative when inside the
+		// intent dir, repo-relative otherwise.
+		const record = intentRel ?? file
+		if (existing.has(record)) continue
+		existing.add(record)
+		toAdd.push(record)
+	}
+	if (toAdd.length === 0) return
+	const merged = [...((data.outputs as string[]) || []), ...toAdd]
+	data.outputs = merged
+	writeFileSync(spec, matter.stringify(content, data))
+}
+
+/**
+ * Validate that the unit's writes stay within the stage's declared scope
+ * (output templates + always-allowed FSM metadata). Called at unit
+ * completion (last hat advance_hat) BEFORE the worktree merges back.
+ *
+ * Scope source of truth:
+ *   - Stage's output templates' `location:` + `scope:` fields (intent|repo)
+ *   - Templates with `scope: repo` and descriptive locations ("(project
+ *     source tree)") grant a repo-wide wildcard
+ *   - Always-allowed FSM metadata (unit spec, state files, feedback dir,
+ *     intent state dir, integrity, knowledge)
+ *
+ * Unit.outputs[] is AUTO-POPULATED from the diff as a side effect — no
+ * CC hook dependency. The outputs list becomes a record of actual writes.
+ *
+ * Returns {violations, scope} if scope was violated, or null if OK.
+ */
+export function validateUnitScope(
+	slug: string,
+	studio: string,
+	stage: string,
+	unit: string,
+): {
+	violations: string[]
+	scope: { intentGlobs: string[]; repoGlobs: string[]; repoWildcard: boolean }
+} | null {
+	const spec = unitPath(slug, stage, unit)
+	if (!existsSync(spec)) return null
+	const { data } = parseFrontmatter(readFileSync(spec, "utf8"))
+	const hatStartedAt = data.hat_started_at as string | undefined
+
+	const changed = getUnitChanges(slug, stage, unit, hatStartedAt)
+	if (changed.length === 0) return null
+
+	const scope = computeStageScope(slug, studio, stage, unit)
+	const gitMode = isGitRepo()
+	const violations: string[] = []
+	for (const file of changed) {
+		if (!pathInStageScope(file, slug, scope, gitMode)) {
+			violations.push(file)
 		}
 	}
-	if (!changed || changed.length === 0) return null
 
-	const intentPrefix = `.haiku/intents/${slug}/`
-	const violations: string[] = []
+	// Auto-populate outputs[] regardless of violation state — the record
+	// is useful even for a rejected advance (shows what the unit tried to
+	// write) and makes the list harness-consistent.
+	autoPopulateOutputs(slug, stage, unit, changed)
 
-	for (const file of changed) {
-		// Compute intent-relative view if the file is inside the intent dir.
-		// Git-mode paths that don't start with intentPrefix are repo-level
-		// (packages/foo/src/bar.ts, etc.) — those are matched only as
-		// repo-relative.
-		const intentRel =
-			gitMode && file.startsWith(intentPrefix)
-				? file.slice(intentPrefix.length)
-				: gitMode
-					? null
-					: file // filesystem mode: already intent-relative
-
-		// Candidate matches if ANY allowed glob matches EITHER view.
-		const ok = allowedGlobs.some((g) => {
-			if (matchesGlob(file, g)) return true
-			if (intentRel !== null && matchesGlob(intentRel, g)) return true
-			return false
-		})
-		if (!ok) violations.push(file)
-	}
 	if (violations.length === 0) return null
-	return { violations, allowedGlobs }
+	return { violations, scope }
 }
 
 // ── Iteration tracking ─────────────────────────────────────────────────────
@@ -3827,12 +3984,21 @@ export function handleStateTool(
 				// attempts where a hat wrote to production paths belonging to a
 				// later stage, or outside the unit's scope entirely.
 				{
-					const scope = validateUnitScope(
-						args.intent as string,
-						advStage,
-						args.unit as string,
+					// Read studio from intent frontmatter for scope resolution
+					const intentFile = `${intentDir(args.intent as string)}/intent.md`
+					const { data: iFm } = parseFrontmatter(
+						readFileSync(intentFile, "utf8"),
 					)
-					if (scope) {
+					const scopeStudio = (iFm.studio as string) || ""
+					const scopeResult = scopeStudio
+						? validateUnitScope(
+								args.intent as string,
+								scopeStudio,
+								advStage,
+								args.unit as string,
+							)
+						: null
+					if (scopeResult) {
 						const sf = args.state_file as string | undefined
 						if (sf)
 							logSessionEvent(sf, {
@@ -3840,18 +4006,31 @@ export function handleStateTool(
 								intent: args.intent,
 								stage: advStage,
 								unit: args.unit,
-								violations: scope.violations,
+								violations: scopeResult.violations,
 							})
+						const allowedSummary = [
+							...scopeResult.scope.intentGlobs.map(
+								(g) => `  - \`${g}\` (intent-relative)`,
+							),
+							...scopeResult.scope.repoGlobs.map(
+								(g) => `  - \`${g}\` (repo-relative)`,
+							),
+							scopeResult.scope.repoWildcard
+								? "  - any repo-level path (stage declares scope: repo with wildcard location)"
+								: "",
+						]
+							.filter(Boolean)
+							.join("\n")
 						return text(
 							JSON.stringify({
 								error: "unit_scope_violation",
-								violations: scope.violations,
-								allowed_globs: scope.allowedGlobs,
+								violations: scopeResult.violations,
+								scope: scopeResult.scope,
 								message:
-									`Cannot complete unit: ${scope.violations.length} file(s) were written outside the unit's declared scope.\n\n` +
-									`Out-of-bounds files:\n${scope.violations.map((v) => `  - ${v}`).join("\n")}\n\n` +
-									`Allowed paths (unit.outputs[] + FSM metadata):\n${scope.allowedGlobs.map((g) => `  - ${g}`).join("\n")}\n\n` +
-									`To resolve: either (a) delete the out-of-bounds writes if they don't belong to this unit, (b) add them to the unit's \`outputs:\` frontmatter if they genuinely do, or (c) call \`haiku_revisit\` if the scope itself is wrong. If you believe they belong to a later stage, \`git checkout HEAD -- <file>\` to revert.`,
+									`Cannot complete unit: ${scopeResult.violations.length} file(s) were written outside the stage's declared scope.\n\n` +
+									`Out-of-bounds files:\n${scopeResult.violations.map((v) => `  - ${v}`).join("\n")}\n\n` +
+									`Allowed paths (stage output templates + FSM metadata):\n${allowedSummary}\n\n` +
+									`To resolve: either (a) revert out-of-bounds writes (\`git checkout HEAD -- <file>\` in the unit worktree) if they don't belong to this unit, (b) update the stage's output template \`location:\` / \`scope:\` if this is a legitimate output pattern not yet declared, or (c) call \`haiku_revisit\` if the scope itself is wrong.`,
 							}),
 						)
 					}
