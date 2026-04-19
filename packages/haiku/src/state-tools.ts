@@ -35,7 +35,11 @@ import {
 } from "./git-worktree.js"
 import { getCapabilities } from "./harness.js"
 import { escalate } from "./model-selection.js"
-import { resultPathFor, writeResultFile } from "./subagent-prompt-file.js"
+import {
+	resultPathFor,
+	setSessionId,
+	writeResultFile,
+} from "./subagent-prompt-file.js"
 import { logSessionEvent, writeHaikuMetadata } from "./session-metadata.js"
 import { sealIntentState } from "./state-integrity.js"
 import {
@@ -1814,11 +1818,12 @@ function computeStageScope(
 	const intentGlobs: string[] = [
 		// Unit spec itself (frontmatter mutations, iteration metadata)
 		`stages/${stage}/units/${unitBase}.md`,
-		// Stage FSM state
-		`stages/${stage}/state.json`,
-		`stages/${stage}/iteration.json`,
-		// Feedback written by reviewers to this stage
-		`stages/${stage}/feedback/**`,
+		// Everything under the stage's own dir is always allowed — that's
+		// the stage's sandbox for intent-scoped artifacts. Covers state.json,
+		// iteration.json, feedback/**, artifacts/**, and anything else the
+		// studio author might put here. Repo-level writes are still gated
+		// by repoGlobs / repoWildcard.
+		`stages/${stage}/**`,
 		// Intent-level sealing + integrity artifacts
 		`state/**`,
 		`.integrity.json`,
@@ -1830,13 +1835,6 @@ function computeStageScope(
 
 	// Pull stage's artifact definitions (discovery + outputs)
 	const defs = readStageArtifactDefs(studio, stage)
-
-	// If the stage declares no artifact templates at all, fall back to the
-	// stage's own intent dir as the allowed zone. This covers inception /
-	// review-only stages that don't produce stage-specific artifacts.
-	if (defs.length === 0) {
-		intentGlobs.push(`stages/${stage}/**`)
-	}
 
 	for (const def of defs) {
 		const loc = (def.location || "").trim()
@@ -3621,6 +3619,14 @@ export function handleStateTool(
 		content: [{ type: "text" as const, text: s }],
 	})
 
+	// Capture the CC session id from the hook-injected _session_context so
+	// subagent-prompt tmpfiles are scoped to the right session dir instead
+	// of falling back to process PID.
+	const ctx = args._session_context as Record<string, string> | undefined
+	if (ctx?.CLAUDE_SESSION_ID) {
+		setSessionId(ctx.CLAUDE_SESSION_ID)
+	}
+
 	const validationError = validateSlugArgs(args)
 	if (validationError) return validationError
 
@@ -4205,6 +4211,20 @@ export function handleStateTool(
 			}
 
 			// ── NOT last hat: advance to next ──
+			// Quality gates run at every hat transition on hookless harnesses
+			// (CC runs them via the Stop hook after each subagent). This keeps
+			// behavior consistent: a failing gate blocks hat advance on all
+			// harnesses, not just at unit completion.
+			if (!getCapabilities().hooks) {
+				const qualityGates = runInlineQualityGates(
+					args.intent as string,
+					advPath,
+				)
+				if (qualityGates) {
+					return text(JSON.stringify(qualityGates))
+				}
+			}
+
 			// Scope validation runs at every hat transition — not just the
 			// terminal one — so out-of-bounds writes by an earlier hat are
 			// caught before downstream hats run blind on contaminated state.

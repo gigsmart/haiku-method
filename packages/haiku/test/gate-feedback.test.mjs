@@ -785,6 +785,56 @@ try {
 		)
 	})
 
+	// =========================================================================
+	// feedback_revisit payload shape — each pending item carries the fields
+	// downstream consumers (review UI, revisit command) rely on.
+	// =========================================================================
+
+	console.log("\n=== feedback_revisit payload shape ===")
+
+	test("feedback_revisit pending_items carries id, title, status, origin, author, file", () => {
+		const { projDir, intentDirPath, slug } = createProject("gate-fb-payload", {
+			active_stage: "plan",
+			stageConfig: { plan: { review: "auto" } },
+		})
+		createStageState(intentDirPath, "plan", { phase: "gate" })
+		createFeedbackFile(intentDirPath, slug, "plan", "Payload finding A", {
+			status: "pending",
+			origin: "adversarial-review",
+			author: "reviewer-bot",
+		})
+		createFeedbackFile(intentDirPath, slug, "plan", "Payload finding B", {
+			status: "pending",
+			origin: "user-visual",
+			author: "alice",
+		})
+
+		process.chdir(projDir)
+		const result = runNext(slug)
+
+		assert.strictEqual(result.action, "feedback_revisit")
+		assert.strictEqual(result.pending_count, 2)
+		assert.strictEqual(result.pending_items.length, 2)
+
+		// Every pending item must carry the required fields for the review UI
+		// and revisit flow to work downstream. Dropping any of these would
+		// break the review page or the per-item reject/close flow.
+		for (const item of result.pending_items) {
+			assert.ok(typeof item.feedback_id === "string" && item.feedback_id.length > 0)
+			assert.ok(typeof item.title === "string" && item.title.length > 0)
+			assert.ok(typeof item.status === "string")
+			assert.ok(typeof item.origin === "string")
+			assert.ok(typeof item.author === "string")
+			assert.ok(typeof item.file === "string" && item.file.length > 0)
+		}
+
+		// Origins are preserved (adversarial-review, user-visual); not coerced
+		// to a single default.
+		const origins = new Set(result.pending_items.map((i) => i.origin))
+		assert.ok(origins.has("adversarial-review"))
+		assert.ok(origins.has("user-visual"))
+	})
+
 	// ── Cleanup ───────────────────────────────────────────────────────────────
 
 	console.log(`\n${passed} passed, ${failed} failed\n`)

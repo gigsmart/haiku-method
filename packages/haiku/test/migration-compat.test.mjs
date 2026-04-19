@@ -229,7 +229,7 @@ try {
 
   console.log("\n=== (b) No visits field in state.json ===")
 
-  test("state.json without visits field loads cleanly without crashing", () => {
+  test("state.json without visits field loads cleanly and does not escalate", () => {
     const { projDir, intentDirPath, slug } = createProject("no-visits", {
       active_stage: "plan",
     })
@@ -251,11 +251,20 @@ try {
     createUnit(intentDirPath, "plan", "unit-01-discover", { status: "completed" })
 
     process.chdir(projDir)
-    // Smoke test: legacy state without `visits:` must not throw. The specific
-    // action returned depends on the current elaborate-phase semantics and
-    // is exercised by other tests.
     const result = runNext(slug)
     assert.ok(result && typeof result.action === "string")
+    // Missing `visits:` must be treated as 0 (first visit), not as some
+    // elevated state that triggers escalation or error.
+    assert.notStrictEqual(
+      result.action,
+      "escalate",
+      `Missing visits field should not trigger escalation, got action=${result.action}`,
+    )
+    assert.notStrictEqual(
+      result.action,
+      "error",
+      `Missing visits field should not surface an error, got: ${JSON.stringify(result)}`,
+    )
   })
 
   test("legacy state.json visits defaults to 0 in readJson", () => {
@@ -284,7 +293,7 @@ try {
 
   console.log("\n=== (c) No closes: field in units ===")
 
-  test("units without closes: field load cleanly (visits === 0)", () => {
+  test("units without closes: field load cleanly and do not escalate at visits=0", () => {
     const { projDir, intentDirPath, slug } = createProject("no-closes", {
       active_stage: "plan",
     })
@@ -298,11 +307,13 @@ try {
     createUnit(intentDirPath, "plan", "unit-02-build", { status: "pending" })
 
     process.chdir(projDir)
-    // Smoke test: missing closes: on units must not crash the orchestrator.
-    // Whether closes: is required at elaborate time is governed by current
-    // semantics in other tests; this test only verifies legacy shape loads.
     const result = runNext(slug)
     assert.ok(result && typeof result.action === "string")
+    // Legacy units missing closes: on a first-visit (visits=0) elaborate
+    // must neither escalate nor error. They should flow through normal
+    // elaborate/execute handling.
+    assert.notStrictEqual(result.action, "escalate")
+    assert.notStrictEqual(result.action, "error")
   })
 
   test("units without closes: field trigger validation error when visits > 0", () => {

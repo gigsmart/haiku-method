@@ -20,6 +20,7 @@ import {
   stageStatePath,
 } from "../src/state-tools.ts"
 import { validateIdentifier, textMsg, singleMessage, studioSearchPaths } from "../src/prompts/helpers.ts"
+import { computeFeedbackSignature } from "../src/state-tools.ts"
 
 // ── Setup ──────────────────────────────────────────────────────────────────
 
@@ -427,6 +428,39 @@ test("returns array of paths", () => {
 test("includes project-local studios path first", () => {
   const paths = studioSearchPaths()
   assert.ok(paths[0].includes(".haiku/studios"))
+})
+
+// ── computeFeedbackSignature (loop-detection canonicalization) ────────────
+
+console.log("\n=== computeFeedbackSignature canonicalization ===")
+
+test("signature is identical regardless of title input order", () => {
+  const a = computeFeedbackSignature(["Finding B", "Finding A", "Finding C"])
+  const b = computeFeedbackSignature(["Finding C", "Finding A", "Finding B"])
+  assert.strictEqual(a, b)
+})
+
+test("signature ignores case and surrounding whitespace", () => {
+  const a = computeFeedbackSignature(["  Finding A  ", "finding b"])
+  const b = computeFeedbackSignature(["FINDING A", "  Finding B"])
+  assert.strictEqual(a, b)
+})
+
+test("signature differs when titles differ", () => {
+  const a = computeFeedbackSignature(["Finding A", "Finding B"])
+  const b = computeFeedbackSignature(["Finding A", "Finding C"])
+  assert.notStrictEqual(a, b)
+})
+
+test("signature for empty or all-blank input is empty string", () => {
+  assert.strictEqual(computeFeedbackSignature([]), "")
+  assert.strictEqual(computeFeedbackSignature(["", "  ", "\t"]), "")
+})
+
+test("signature has a stable prefix format", () => {
+  const sig = computeFeedbackSignature(["Finding X"])
+  assert.ok(sig.startsWith("sig:"), `expected sig: prefix, got: ${sig}`)
+  assert.ok(sig.length > 4, `expected hex body, got: ${sig}`)
 })
 
 } finally {

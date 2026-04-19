@@ -6,18 +6,13 @@
 // complete prompt to a tmpfile and the parent only tells the subagent to read
 // that file.
 //
-// Benefits:
-//   - Parent context stays thin (one path, not N kb of prompt)
-//   - Single source of truth: FSM owns the prompt, parent cannot paraphrase
-//   - Subagent reads one file instead of fanning out to N reads (hat, unit,
-//     inputs, upstream artifacts) — the FSM inlines or references as needed
-//   - Deterministic cleanup: session-scoped tmpfiles wiped on SessionStart
-//
 // File layout:
 //   $TMPDIR/haiku-prompts/{session_id}/{unit}-{hat}-{bolt}.prompt.md
+//   $TMPDIR/haiku-prompts/{session_id}/{unit}-{hat}-{bolt}.result.json
 //
-// Cleanup is handled by a SessionStart hook that wipes stale session dirs
-// older than 24h.
+// Cleanup policy (all best-effort, never blocks):
+//   - First write per MCP process: sweep cross-session dirs older than 24h.
+//   - Every Nth write: sweep own-session files older than 1h.
 
 import {
 	mkdirSync,
@@ -30,27 +25,72 @@ import {
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
-function sessionIdOrPid(): string {
-	return process.env.CLAUDE_SESSION_ID || String(process.pid)
+/** Explicit session identity, set at MCP bootstrap when available. */
+let explicitSessionId: string | null = null
+
+/**
+ * Set the session identity used for per-session tmpfile directories.
+ * Call from MCP tool handlers when `_session_context.CLAUDE_SESSION_ID` is
+ * available (injected by the inject-state-file hook). Safe to call with
+ * the same value repeatedly; ignored if a different id would clobber.
+ */
+export function setSessionId(id: string | undefined | null): void {
+	if (!id) return
+	if (explicitSessionId && explicitSessionId !== id) return
+	explicitSessionId = id
 }
 
-// Opportunistic cleanup runs at most once per MCP process lifetime. Replaces
-// the inject-context SessionStart hook's cleanup pass with something that's
-// harness-agnostic and lazy — we only clean when we actually use the tmpdir.
-let cleanupAttempted = false
+function sessionIdOrFallback(): string {
+	return (
+		explicitSessionId ||
+		process.env.CLAUDE_SESSION_ID ||
+		process.env.HAIKU_SESSION_ID ||
+		String(process.pid)
+	)
+}
+
+// Cross-session cleanup: one-shot per MCP process.
+let crossSessionCleanupAttempted = false
+
+// Own-session cleanup: periodic sweep every N writes.
+const PERIODIC_CLEANUP_EVERY_N_WRITES = 100
+const OWN_SESSION_MAX_AGE_MS = 60 * 60 * 1000 // 1h
+let writesSinceCleanup = 0
 
 function promptDir(): string {
-	if (!cleanupAttempted) {
-		cleanupAttempted = true
+	if (!crossSessionCleanupAttempted) {
+		crossSessionCleanupAttempted = true
 		try {
 			cleanupStaleTmpfiles(24)
 		} catch {
 			/* best-effort */
 		}
 	}
-	const dir = join(tmpdir(), "haiku-prompts", sessionIdOrPid())
+	const dir = join(tmpdir(), "haiku-prompts", sessionIdOrFallback())
 	mkdirSync(dir, { recursive: true })
 	return dir
+}
+
+function maybePeriodicOwnSessionCleanup(dir: string): void {
+	writesSinceCleanup++
+	if (writesSinceCleanup < PERIODIC_CLEANUP_EVERY_N_WRITES) return
+	writesSinceCleanup = 0
+	try {
+		const now = Date.now()
+		for (const f of readdirSync(dir)) {
+			const p = join(dir, f)
+			try {
+				const st = statSync(p)
+				if (now - st.mtimeMs > OWN_SESSION_MAX_AGE_MS) {
+					rmSync(p, { force: true })
+				}
+			} catch {
+				/* ignore */
+			}
+		}
+	} catch {
+		/* best-effort */
+	}
 }
 
 export interface SubagentPromptFile {
@@ -73,8 +113,10 @@ export function writeSubagentPrompt(opts: {
 }): SubagentPromptFile {
 	const { unit, hat, bolt, content } = opts
 	const slug = `${unit.replace(/\.md$/, "")}-${hat}-${bolt}`
-	const path = join(promptDir(), `${slug}.prompt.md`)
+	const dir = promptDir()
+	const path = join(dir, `${slug}.prompt.md`)
 	atomicWrite(path, content)
+	maybePeriodicOwnSessionCleanup(dir)
 
 	const parentInstruction =
 		`Read the file at \`${path}\` and execute its instructions exactly. ` +
@@ -82,18 +124,6 @@ export function writeSubagentPrompt(opts: {
 		`do not paraphrase or skip any of it.`
 
 	return { path, parentInstruction }
-}
-
-/**
- * Write-then-rename for atomicity. Prevents readers from seeing a partial
- * file if the writer is interrupted mid-write. The rename is atomic on
- * POSIX filesystems (same-volume rename replaces the target without a
- * partial-state window).
- */
-function atomicWrite(path: string, content: string): void {
-	const tmp = `${path}.${process.pid}.tmp`
-	writeFileSync(tmp, content, "utf8")
-	renameSync(tmp, path)
 }
 
 /**
@@ -116,8 +146,31 @@ export function writeResultFile(resultPath: string, payload: unknown): void {
 }
 
 /**
+ * Write-then-rename for atomicity. Prevents readers from seeing a partial
+ * file if the writer is interrupted mid-write. The rename is atomic on
+ * POSIX filesystems IF the temp path and final path share a filesystem —
+ * enforced here by placing the temp next to the final path inside the
+ * same promptDir.
+ */
+function atomicWrite(path: string, content: string): void {
+	const tmp = `${path}.${process.pid}.tmp`
+	writeFileSync(tmp, content, "utf8")
+	try {
+		renameSync(tmp, path)
+	} catch (err) {
+		try {
+			rmSync(tmp, { force: true })
+		} catch {
+			/* ignore cleanup failure */
+		}
+		throw new Error(
+			`atomicWrite: rename failed — tmp and final must share a filesystem. Original: ${err instanceof Error ? err.message : String(err)}`,
+		)
+	}
+}
+
+/**
  * Clean up stale session prompt/result tmpfiles older than `maxAgeHours`.
- * Intended to be called from a SessionStart hook.
  */
 export function cleanupStaleTmpfiles(maxAgeHours = 24): void {
 	const root = join(tmpdir(), "haiku-prompts")
