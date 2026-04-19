@@ -844,10 +844,19 @@ export function ensureOnStageBranch(
 			switched: true,
 		}
 	} catch (err) {
+		const raw = err instanceof Error ? err.message : String(err)
+		// Give a clearer hint when the user has uncommitted modifications
+		// that would be clobbered by the checkout — the raw git message is
+		// long and the action ("stash or commit") isn't obvious to an agent.
+		const looksLikeDirtyTree =
+			raw.includes("would be overwritten by checkout") ||
+			raw.includes("Please commit your changes or stash them")
 		return {
 			ok: false,
 			branch: current,
-			message: `failed to checkout ${targetBranch}: ${err instanceof Error ? err.message : String(err)}`,
+			message: looksLikeDirtyTree
+				? `Uncommitted changes on branch '${current}' would be overwritten by switching to '${targetBranch}'. Stash (\`git stash\`) or commit them, then retry. Raw git error: ${raw}`
+				: `failed to checkout ${targetBranch}: ${raw}`,
 			switched: false,
 		}
 	}

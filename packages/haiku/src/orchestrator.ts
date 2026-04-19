@@ -5472,6 +5472,26 @@ export async function handleOrchestratorTool(
 					"intent",
 					gateType,
 				)
+
+				// Re-enforce stage branch after the await — the user may have
+				// manually checked out another branch during the review wait.
+				// Every downstream branch of this switch writes stage or intent
+				// state, so alignment must be re-verified here.
+				{
+					const postReviewGuard = ensureOnStageBranch(slug, stage)
+					if (!postReviewGuard.ok) {
+						return {
+							content: [
+								{
+									type: "text" as const,
+									text: `Error: stage-branch enforcement failed after review wait for intent '${slug}', stage '${stage}' — ${postReviewGuard.message}. Resolve manually and retry.`,
+								},
+							],
+							isError: true,
+						}
+					}
+				}
+
 				if (stFile)
 					logSessionEvent(stFile, {
 						event: "gate_decision",
@@ -5676,6 +5696,24 @@ export async function handleOrchestratorTool(
 								required: ["decision"],
 							},
 						})
+
+						// Re-enforce stage branch after the elicitation await —
+						// user may have switched branches while the prompt was up.
+						{
+							const postElicitGuard = ensureOnStageBranch(slug, stage)
+							if (!postElicitGuard.ok) {
+								return {
+									content: [
+										{
+											type: "text" as const,
+											text: `Error: stage-branch enforcement failed after elicitation for intent '${slug}', stage '${stage}' — ${postElicitGuard.message}. Resolve manually and retry.`,
+										},
+									],
+									isError: true,
+								}
+							}
+						}
+
 						if (elicitResult.action === "accept" && elicitResult.content) {
 							const decision = (elicitResult.content as Record<string, string>)
 								.decision

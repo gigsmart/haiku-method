@@ -933,6 +933,18 @@ function handleFeedbackGet(intent: string, stage: string, url: URL): Response {
 	if (!validateIntent(intent)) {
 		return Response.json({ error: "Intent not found" }, { status: 404 })
 	}
+	// Align branch BEFORE validateStage and readFeedbackFiles — if main has
+	// drifted, the stage dir may only exist on the stage branch and reads
+	// would return stale/empty. The SPA needs a consistent view.
+	const getBranchGuard = ensureOnStageBranch(intent, stage)
+	if (!getBranchGuard.ok) {
+		return Response.json(
+			{
+				error: `Stage-branch enforcement failed: ${getBranchGuard.message}`,
+			},
+			{ status: 409 },
+		)
+	}
 	if (!validateStage(intent, stage)) {
 		return Response.json({ error: "Stage not found" }, { status: 404 })
 	}
@@ -1002,6 +1014,20 @@ async function handleFeedbackPost(
 	if (!validateIntent(intent)) {
 		return Response.json({ error: "Intent not found" }, { status: 404 })
 	}
+
+	// Align the checkout with the stage branch BEFORE validateStage and before
+	// writing. If main has drifted ahead, the stage dir may only exist on the
+	// stage branch and validateStage would spuriously 404.
+	const branchGuard = ensureOnStageBranch(intent, stage)
+	if (!branchGuard.ok) {
+		return Response.json(
+			{
+				error: `Stage-branch enforcement failed: ${branchGuard.message}`,
+			},
+			{ status: 409 },
+		)
+	}
+
 	if (!validateStage(intent, stage)) {
 		return Response.json({ error: "Stage not found" }, { status: 404 })
 	}
@@ -1017,19 +1043,6 @@ async function handleFeedbackPost(
 		return Response.json(
 			{ error: "Invalid request body", details },
 			{ status: 400 },
-		)
-	}
-
-	// Align the checkout with the stage branch before writing. If main has
-	// drifted ahead, merge main -> stage first so the feedback file lands
-	// where the FSM will find it. Non-git mode: no-op.
-	const branchGuard = ensureOnStageBranch(intent, stage)
-	if (!branchGuard.ok) {
-		return Response.json(
-			{
-				error: `Stage-branch enforcement failed: ${branchGuard.message}`,
-			},
-			{ status: 409 },
 		)
 	}
 
@@ -1086,6 +1099,18 @@ async function handleFeedbackPut(
 	if (!validateIntent(intent)) {
 		return Response.json({ error: "Intent not found" }, { status: 404 })
 	}
+
+	// Align checkout with the stage branch before validateStage or any read.
+	const updateBranchGuard = ensureOnStageBranch(intent, stage)
+	if (!updateBranchGuard.ok) {
+		return Response.json(
+			{
+				error: `Stage-branch enforcement failed: ${updateBranchGuard.message}`,
+			},
+			{ status: 409 },
+		)
+	}
+
 	if (!validateStage(intent, stage)) {
 		return Response.json({ error: "Stage not found" }, { status: 404 })
 	}
@@ -1110,19 +1135,6 @@ async function handleFeedbackPut(
 		return Response.json(
 			{ error: "Invalid request body", details: "Invalid JSON" },
 			{ status: 400 },
-		)
-	}
-
-	// Align checkout with the stage branch before reading or writing. If we
-	// read first on the wrong branch, a file that only exists on stage would
-	// return "not found" even though it's there.
-	const updateBranchGuard = ensureOnStageBranch(intent, stage)
-	if (!updateBranchGuard.ok) {
-		return Response.json(
-			{
-				error: `Stage-branch enforcement failed: ${updateBranchGuard.message}`,
-			},
-			{ status: 409 },
 		)
 	}
 
@@ -1172,10 +1184,8 @@ async function handleFeedbackDelete(
 	if (!validateIntent(intent)) {
 		return Response.json({ error: "Intent not found" }, { status: 404 })
 	}
-	if (!validateStage(intent, stage)) {
-		return Response.json({ error: "Stage not found" }, { status: 404 })
-	}
 
+	// Align checkout with the stage branch before validateStage or any read.
 	const deleteBranchGuard = ensureOnStageBranch(intent, stage)
 	if (!deleteBranchGuard.ok) {
 		return Response.json(
@@ -1184,6 +1194,10 @@ async function handleFeedbackDelete(
 			},
 			{ status: 409 },
 		)
+	}
+
+	if (!validateStage(intent, stage)) {
+		return Response.json({ error: "Stage not found" }, { status: 404 })
 	}
 
 	// HTTP endpoint is human context — no author-type restrictions

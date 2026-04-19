@@ -3917,6 +3917,16 @@ export function handleStateTool(
 			return text((scope ? `ok\n\n${scope}` : "ok") + pushWarning(gitResult))
 		}
 		case "haiku_unit_advance_hat": {
+			// Align branch BEFORE findUnitFile — the unit spec lives on the stage
+			// branch, so lookups from intent-main spuriously report unit_not_found.
+			// Use active_stage as the best-guess stage to align; findUnitFile below
+			// handles the rare cross-stage case internally.
+			const advPreBranchErr = enforceStageBranch(
+				args.intent as string,
+				resolveActiveStage(args.intent as string),
+			)
+			if (advPreBranchErr) return advPreBranchErr
+
 			// Resolve stage and unit path internally
 			const unitInfo = findUnitFile(args.intent as string, args.unit as string)
 			if (!unitInfo)
@@ -3929,6 +3939,8 @@ export function handleStateTool(
 			const advPath = unitInfo.path
 			const advStage = unitInfo.stage
 
+			// Re-enforce if findUnitFile resolved to a different stage (rare but
+			// possible for cross-stage go-backs); idempotent when already aligned.
 			const advBranchErr = enforceStageBranch(
 				args.intent as string,
 				advStage,
@@ -4473,6 +4485,16 @@ export function handleStateTool(
 			)
 		}
 		case "haiku_unit_reject_hat": {
+			// Align branch BEFORE findUnitFile — see haiku_unit_advance_hat for
+			// the rationale. Without this, a unit file that lives only on the
+			// stage branch spuriously returns unit_not_found when checkout is
+			// on intent-main.
+			const rejectPreBranchErr = enforceStageBranch(
+				args.intent as string,
+				resolveActiveStage(args.intent as string),
+			)
+			if (rejectPreBranchErr) return rejectPreBranchErr
+
 			// Hat failed — move back one hat, increment bolt count
 			const rejectInfo = findUnitFile(
 				args.intent as string,
@@ -4488,6 +4510,7 @@ export function handleStateTool(
 			const failPath = rejectInfo.path
 			const rejectStage = rejectInfo.stage
 
+			// Re-enforce for cross-stage case; idempotent when already aligned.
 			const rejectBranchErr = enforceStageBranch(
 				args.intent as string,
 				rejectStage,
