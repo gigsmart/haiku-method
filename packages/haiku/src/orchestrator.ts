@@ -44,6 +44,7 @@ import { type ModelTier, resolveModel } from "./model-selection.js"
 import { validateIdentifier } from "./prompts/helpers.js"
 import { reportError } from "./sentry.js"
 import { getSessionIntent, logSessionEvent } from "./session-metadata.js"
+import { writeSubagentPrompt } from "./subagent-prompt-file.js"
 import {
 	sanitizeForContext,
 	sealIntentState,
@@ -3303,6 +3304,48 @@ function enrichActionWithPreview(action: OrchestratorAction): void {
 // orchestrator's instructions so the agent (or its subagent equivalent)
 // receives the same guidance.
 
+/**
+ * Emit a subagent <subagent> block that points at a tmpfile instead of
+ * inlining the prompt. The full prompt is written to a session-scoped
+ * tmpfile; the `<subagent>` body becomes a terse instruction to read it.
+ *
+ * Returns the formatted markdown section to push.
+ */
+function emitSubagentDispatchBlock(opts: {
+	unit: string
+	hat: string
+	bolt: number
+	agentType: string
+	model?: string | null
+	promptBody: string
+	heading?: string // e.g., "## Subagent Dispatch (MANDATORY — relay verbatim)" or "### Subagent: <name>"
+	toolAttr?: boolean // whether to include tool="Agent"
+}): string {
+	const {
+		unit,
+		hat,
+		bolt,
+		agentType,
+		model,
+		promptBody,
+		heading,
+		toolAttr,
+	} = opts
+	const { path, parentInstruction } = writeSubagentPrompt({
+		unit,
+		hat,
+		bolt,
+		content: promptBody,
+	})
+	const tool = toolAttr ? ` tool="Agent"` : ""
+	const modelAttr = model ? ` model="${model}"` : ""
+	const h = heading ?? "## Subagent Dispatch (MANDATORY — relay verbatim)"
+	return (
+		`${h}\n\n<subagent${tool} type="${agentType}"${modelAttr}` +
+		` prompt_file="${path}">\n${parentInstruction}\n</subagent>`
+	)
+}
+
 function buildInlineSubagentContext(
 	slug: string,
 	stage: string,
@@ -3869,7 +3912,15 @@ function buildRunInstructions(
 						? `${inlineCtx}\n\n${assessorPrompt}`
 						: assessorPrompt
 					sections.push(
-						`## Subagent Dispatch (MANDATORY — relay verbatim)\n\n<subagent tool="Agent" type="${hatAgentType}"${resolvedModel ? ` model="${resolvedModel}"` : ""}>\n${assessorBody}\n</subagent>`,
+						emitSubagentDispatchBlock({
+							unit,
+							hat,
+							bolt,
+							agentType: hatAgentType,
+							model: resolvedModel,
+							promptBody: assessorBody,
+							toolAttr: true,
+						}),
 					)
 					sections.push(
 						"### Parent Instructions (do NOT include in subagent prompt)\n\nAfter the assessor returns: call `haiku_run_next { intent: ... }`. If it approved, the FSM has marked the unit's claimed feedback items as `closed`. If it rejected, the unit has bolted back to the first hat and the feedback items remain `pending`.",
@@ -3956,12 +4007,20 @@ function buildRunInstructions(
 					? `${inlineCtx}\n\n${prompt.join("\n")}`
 					: prompt.join("\n")
 				sections.push(
-					`## Subagent Dispatch (MANDATORY — relay verbatim)\n\n<subagent tool="Agent" type="${hatAgentType}"${resolvedModel ? ` model="${resolvedModel}"` : ""}>\n${promptBody}\n</subagent>`,
+					emitSubagentDispatchBlock({
+						unit,
+						hat,
+						bolt,
+						agentType: hatAgentType,
+						model: resolvedModel,
+						promptBody,
+						toolAttr: true,
+					}),
 				)
 
 				// Parent-only instructions OUTSIDE the tag
 				sections.push(
-					"### Parent Instructions (do NOT include in subagent prompt)\n\nAfter the subagent returns: call `haiku_run_next { intent: ... }` to get the next FSM action. If the subagent's `advance_hat` result carried a phase-level transition (`advance_phase`, `review`, `advance_stage`, `intent_complete`), you may act on it directly instead of calling run_next. For unit-level actions (`continue_unit`, `start_unit`, `start_units`), always call run_next — those belong to the parent orchestrator, not the subagent. The subagent's prompt above is path-based; the subagent reads the files itself so the parent context stays clean.",
+					"### Parent Instructions (do NOT include in subagent prompt)\n\nAfter the subagent returns: call `haiku_run_next { intent: ... }` to get the next FSM action. If the subagent's `advance_hat` result carried a phase-level transition (`advance_phase`, `review`, `advance_stage`, `intent_complete`), you may act on it directly instead of calling run_next. For unit-level actions (`continue_unit`, `start_unit`, `start_units`), always call run_next — those belong to the parent orchestrator, not the subagent. The subagent's prompt is written to the tmpfile path in the `prompt_file` attribute above — pass that path to the subagent (or relay the <subagent> block to your harness, which will map `prompt_file` to its Agent spawn primitive).",
 				)
 			} else {
 				// ── Subagentless: direct execution in current context ──
@@ -4199,7 +4258,16 @@ function buildRunInstructions(
 						? `${inlineCtxParallel}\n\n${prompt.join("\n")}`
 						: prompt.join("\n")
 					sections.push(
-						`### Subagent: ${unitName}\n\n<subagent tool="Agent" type="${hatAgentType}"${resolvedModelParallel ? ` model="${resolvedModelParallel}"` : ""}>\n${promptBody}\n</subagent>`,
+						emitSubagentDispatchBlock({
+							unit: unitName,
+							hat: firstHat,
+							bolt: 1,
+							agentType: hatAgentType,
+							model: resolvedModelParallel,
+							promptBody,
+							heading: `### Subagent: ${unitName}`,
+							toolAttr: true,
+						}),
 					)
 				}
 
@@ -4373,7 +4441,15 @@ function buildRunInstructions(
 						unitOutputs,
 					})
 					sections.push(
-						`### Subagent: ${unitName} (feedback-assessor · bolt ${bolt})\n\n<subagent type="${hatAgentType}"${resolvedModel ? ` model="${resolvedModel}"` : ""}>\n${assessorPrompt}\n</subagent>`,
+						emitSubagentDispatchBlock({
+							unit: unitName,
+							hat: "feedback-assessor",
+							bolt,
+							agentType: hatAgentType,
+							model: resolvedModel,
+							promptBody: assessorPrompt,
+							heading: `### Subagent: ${unitName} (feedback-assessor · bolt ${bolt})`,
+						}),
 					)
 					continue
 				}
@@ -4460,7 +4536,15 @@ function buildRunInstructions(
 				)
 
 				sections.push(
-					`### Subagent: ${unitName} (${hat} · bolt ${bolt})\n\n<subagent type="${hatAgentType}"${resolvedModel ? ` model="${resolvedModel}"` : ""}>\n${prompt.join("\n")}\n</subagent>`,
+					emitSubagentDispatchBlock({
+						unit: unitName,
+						hat,
+						bolt,
+						agentType: hatAgentType,
+						model: resolvedModel,
+						promptBody: prompt.join("\n"),
+						heading: `### Subagent: ${unitName} (${hat} · bolt ${bolt})`,
+					}),
 				)
 			}
 
