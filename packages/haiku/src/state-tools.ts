@@ -1569,6 +1569,37 @@ export function intentDir(slug: string): string {
 	return join(findHaikuRoot(), "intents", slug)
 }
 
+/**
+ * Return the unit's worktree intent dir if the worktree exists on disk,
+ * else the main intent dir. Used to validate unit-produced artifacts BEFORE
+ * the worktree merges back to the parent branch — otherwise validation
+ * runs against the parent's (still stale) copy and false-reports missing.
+ */
+export function unitIntentDir(slug: string, unit: string): string {
+	const workTreePath = join(findHaikuRoot(), "worktrees", slug, unit)
+	const workTreeIntentDir = join(workTreePath, ".haiku", "intents", slug)
+	if (existsSync(workTreeIntentDir)) return workTreeIntentDir
+	return intentDir(slug)
+}
+
+/**
+ * Check if an intent-relative output path exists in either the unit's
+ * worktree or the main intent dir. Returns true if present at EITHER location.
+ */
+export function unitOutputExists(
+	slug: string,
+	unit: string,
+	outputPath: string,
+): boolean {
+	const mainResolved = resolve(intentDir(slug), outputPath)
+	if (existsSync(mainResolved)) return true
+	const wtRoot = join(findHaikuRoot(), "worktrees", slug, unit)
+	const wtIntentDir = join(wtRoot, ".haiku", "intents", slug)
+	if (!existsSync(wtIntentDir)) return false
+	const wtResolved = resolve(wtIntentDir, outputPath)
+	return existsSync(wtResolved)
+}
+
 export function stageDir(slug: string, stage: string): string {
 	return join(intentDir(slug), "stages", stage)
 }
@@ -1580,6 +1611,268 @@ export function unitPath(slug: string, stage: string, unit: string): string {
 
 export function stageStatePath(slug: string, stage: string): string {
 	return join(stageDir(slug, stage), "state.json")
+}
+
+// ── Iteration tracking ─────────────────────────────────────────────────────
+// Stage-level iterations replace the legacy scalar `visits` counter. Each
+// entry records why a fresh elaborate cycle started (trigger), when it
+// opened, when it closed, and what resolved it (result), and a signature
+// of the feedback set that drove it (for loop detection).
+
+export type StageIterationTrigger =
+	| "initial"
+	| "external-changes"
+	| "feedback"
+	| "user-revisit"
+
+export type StageIterationResult =
+	| "advanced"
+	| "feedback-revisit"
+	| "external-changes"
+	| "user-revisit"
+	| "rejected"
+
+export interface StageIteration {
+	index: number
+	started_at: string
+	completed_at: string | null
+	trigger: StageIterationTrigger
+	result: StageIterationResult | null
+	reason?: string
+	/** SHA1 of the sorted-joined feedback titles pending at the moment this
+	 *  iteration opened. Two consecutive iterations with the same signature
+	 *  indicate a loop — the agent keeps generating the same findings. */
+	feedback_signature?: string
+}
+
+/** Maximum number of agent-invoked iterations allowed before the FSM
+ *  escalates to the human. User-invoked revisits (`trigger: "user-revisit"`)
+ *  are NOT capped — explicit user intent always wins. */
+export const MAX_STAGE_ITERATIONS = 5
+
+/** Build a loop-detection signature from a list of feedback titles.
+ *  Stable hash of the sorted, normalized title set. */
+export function computeFeedbackSignature(titles: string[]): string {
+	const norm = titles
+		.map((t) => (t || "").trim().toLowerCase())
+		.filter((t) => t.length > 0)
+		.sort()
+	if (norm.length === 0) return ""
+	// Lazy sha1 — avoid dragging in crypto for large surface area. djb2 is
+	// plenty for detecting "same set of findings as last iteration".
+	let hash = 5381
+	for (const s of norm) {
+		for (let i = 0; i < s.length; i++) {
+			hash = ((hash << 5) + hash + s.charCodeAt(i)) | 0
+		}
+		hash = ((hash << 5) + hash + 0x2c) | 0 // comma separator
+	}
+	return `sig:${(hash >>> 0).toString(16)}`
+}
+
+export interface AppendIterationResult {
+	count: number
+	exceeded: boolean
+	loopDetected: boolean
+	signature: string
+}
+
+/** Normalized iteration count — prefer the iterations array, fall back to
+ *  the legacy `visits` scalar so existing state files stay readable. */
+export function getStageIterationCount(
+	stageState: Record<string, unknown>,
+): number {
+	const arr = stageState.iterations as StageIteration[] | undefined
+	if (Array.isArray(arr)) return arr.length
+	const legacy = stageState.visits as number | undefined
+	return typeof legacy === "number" ? legacy : 0
+}
+
+/** Read the iterations array with a migration fallback from `visits: N`. */
+function readIterations(
+	stageState: Record<string, unknown>,
+): StageIteration[] {
+	const arr = stageState.iterations as StageIteration[] | undefined
+	if (Array.isArray(arr)) return arr.slice()
+	const legacyVisits = (stageState.visits as number) || 0
+	if (legacyVisits <= 0) return []
+	// Synthesize a minimal iterations array so the new code path sees
+	// something it can append to. Legacy entries are marked unknown.
+	const now = timestamp()
+	return Array.from({ length: legacyVisits }, (_, i) => ({
+		index: i + 1,
+		started_at: now,
+		completed_at: i < legacyVisits - 1 ? now : null,
+		trigger: "initial" as StageIterationTrigger,
+		result: i < legacyVisits - 1 ? ("advanced" as StageIterationResult) : null,
+	}))
+}
+
+/** Append a new stage iteration. Closes the previous one (if open) with
+ *  `prevResult`, then opens a fresh entry.
+ *
+ *  Returns a result object with:
+ *  - count: new iteration count
+ *  - exceeded: true when count > MAX_STAGE_ITERATIONS and the trigger is
+ *    agent-invoked (`feedback`, `external-changes`). User-invoked revisits
+ *    never exceed.
+ *  - loopDetected: true when this iteration's `feedback_signature` matches
+ *    the previous iteration's — i.e. the same set of findings recurred.
+ *  - signature: the signature recorded on the new iteration.
+ */
+export function appendStageIteration(
+	slug: string,
+	stage: string,
+	entry: {
+		trigger: StageIterationTrigger
+		reason?: string
+		feedbackTitles?: string[]
+	},
+	prevResult: StageIterationResult = "feedback-revisit",
+): AppendIterationResult {
+	const path = stageStatePath(slug, stage)
+	const state = readJson(path)
+	const iters = readIterations(state)
+	const now = timestamp()
+	if (iters.length > 0) {
+		const last = iters[iters.length - 1]
+		if (!last.completed_at) last.completed_at = now
+		if (!last.result) last.result = prevResult
+	}
+	const signature = entry.feedbackTitles
+		? computeFeedbackSignature(entry.feedbackTitles)
+		: ""
+	iters.push({
+		index: iters.length + 1,
+		started_at: now,
+		completed_at: null,
+		trigger: entry.trigger,
+		result: null,
+		...(entry.reason ? { reason: entry.reason } : {}),
+		...(signature ? { feedback_signature: signature } : {}),
+	})
+	state.iterations = iters
+	// Maintain `visits` as a shadow for any legacy reader that still
+	// dereferences it. New code should use getStageIterationCount.
+	state.visits = iters.length
+	writeJson(path, state)
+
+	const count = iters.length
+	const isAgentInvoked =
+		entry.trigger === "feedback" || entry.trigger === "external-changes"
+	const exceeded = isAgentInvoked && count > MAX_STAGE_ITERATIONS
+	let loopDetected = false
+	if (signature && isAgentInvoked && iters.length >= 2) {
+		const prev = iters[iters.length - 2]
+		if (prev.feedback_signature && prev.feedback_signature === signature) {
+			loopDetected = true
+		}
+	}
+
+	// Per-iteration telemetry so the trend is observable — not just at
+	// escalation time. External dashboards can chart iteration count by
+	// stage and surface stages climbing toward the cap.
+	emitTelemetry("haiku.stage.iteration", {
+		intent: slug,
+		stage,
+		iteration: String(count),
+		trigger: entry.trigger,
+		signature,
+		exceeded: String(exceeded),
+		loop_detected: String(loopDetected),
+	})
+
+	return { count, exceeded, loopDetected, signature }
+}
+
+/** Close the currently-open iteration with a terminal result (used when a
+ *  stage advances or is rejected without spawning a new iteration). */
+export function closeCurrentStageIteration(
+	slug: string,
+	stage: string,
+	result: StageIterationResult,
+	reason?: string,
+): void {
+	const path = stageStatePath(slug, stage)
+	const state = readJson(path)
+	const iters = readIterations(state)
+	if (iters.length === 0) {
+		// No prior iteration recorded — synthesize an "initial" one so the
+		// history isn't blank.
+		iters.push({
+			index: 1,
+			started_at: timestamp(),
+			completed_at: timestamp(),
+			trigger: "initial",
+			result,
+			...(reason ? { reason } : {}),
+		})
+	} else {
+		const last = iters[iters.length - 1]
+		if (!last.completed_at) last.completed_at = timestamp()
+		last.result = result
+		if (reason) last.reason = reason
+	}
+	state.iterations = iters
+	state.visits = iters.length
+	writeJson(path, state)
+}
+
+// ── Unit iteration tracking ────────────────────────────────────────────────
+// Records per-hat progression on the unit itself so the unit frontmatter
+// carries its own history (how many hats ran, in what order, with what
+// outcome). This is orthogonal to the unit's bolt counter — bolts track
+// full designer → reviewer cycles; iterations track individual hat runs.
+
+export type UnitHatResult = "advance" | "reject"
+
+export interface UnitIteration {
+	hat: string
+	started_at: string
+	completed_at: string | null
+	result: UnitHatResult | null
+	reason?: string
+}
+
+/** Append a hat-start event to a unit's iterations. If the previous entry
+ *  is still open (no completed_at), leaves it alone — callers should close
+ *  the prior one first via completeUnitIteration. */
+export function startUnitIteration(unitFile: string, hat: string): void {
+	if (!existsSync(unitFile)) return
+	const { data, body } = parseFrontmatter(readFileSync(unitFile, "utf8"))
+	const iters = Array.isArray(data.iterations)
+		? (data.iterations as UnitIteration[]).slice()
+		: []
+	iters.push({
+		hat,
+		started_at: timestamp(),
+		completed_at: null,
+		result: null,
+	})
+	data.iterations = iters
+	writeFileSync(unitFile, matter.stringify(body, data))
+}
+
+/** Close the most recent iteration on the unit with a result + optional
+ *  reason. No-op if the file doesn't exist or no open iteration is found. */
+export function completeUnitIteration(
+	unitFile: string,
+	result: UnitHatResult,
+	reason?: string,
+): void {
+	if (!existsSync(unitFile)) return
+	const { data, body } = parseFrontmatter(readFileSync(unitFile, "utf8"))
+	const iters = Array.isArray(data.iterations)
+		? (data.iterations as UnitIteration[]).slice()
+		: []
+	if (iters.length === 0) return
+	const last = iters[iters.length - 1]
+	if (last.completed_at) return
+	last.completed_at = timestamp()
+	last.result = result
+	if (reason) last.reason = reason
+	data.iterations = iters
+	writeFileSync(unitFile, matter.stringify(body, data))
 }
 
 // ── Frontmatter helpers ────────────────────────────────────────────────────
@@ -1675,6 +1968,40 @@ export function setFrontmatterField(
 			normalizeDates(updated as Record<string, unknown>),
 		),
 	)
+}
+
+/** Write a unit frontmatter field to BOTH the parent worktree's copy AND
+ *  the unit's dedicated worktree (if one exists). The dual write is what
+ *  keeps the FSM's reads (parent) in sync with the merge commits produced
+ *  by `mergeUnitWorktree` (unit worktree). Missing either side causes the
+ *  status-drift bug where a unit completes in one view but appears active
+ *  in the other. */
+export function setUnitFrontmatterField(
+	slug: string,
+	stage: string,
+	unit: string,
+	field: string,
+	value: unknown,
+): void {
+	const parentPath = unitPath(slug, stage, unit)
+	if (existsSync(parentPath)) setFrontmatterField(parentPath, field, value)
+	// findHaikuRoot() returns the `.haiku` directory itself; worktrees live
+	// under `<haikuRoot>/worktrees/{slug}/{unit}`.
+	const worktreeBase = join(findHaikuRoot(), "worktrees", slug, unit)
+	if (!existsSync(worktreeBase)) return
+	const worktreeUnitPath = join(
+		worktreeBase,
+		".haiku",
+		"intents",
+		slug,
+		"stages",
+		stage,
+		"units",
+		unit.endsWith(".md") ? unit : `${unit}.md`,
+	)
+	if (existsSync(worktreeUnitPath)) {
+		setFrontmatterField(worktreeUnitPath, field, value)
+	}
 }
 
 function parseYaml(raw: string): Record<string, unknown> {
@@ -1829,6 +2156,35 @@ function findUnitFile(
 	return null
 }
 
+/** The built-in terminal hat auto-injected on any unit that declares `closes:`
+ *  feedback items. Verifies the unit's output actually resolves each claim
+ *  and marks them closed/addressed; rejects back to the designer if not. */
+export const FEEDBACK_ASSESSOR_HAT = "feedback-assessor"
+
+/** Resolve the hat sequence for a specific unit. Starts from the stage's
+ *  declared hats and appends `feedback-assessor` as the terminal hat when
+ *  the unit has `closes:` references — so any unit claiming closures gets
+ *  independently verified before completion. */
+export function resolveUnitHats(
+	intent: string,
+	stage: string,
+	unit: string,
+): string[] {
+	const stageHats = resolveStageHats(intent, stage)
+	try {
+		const p = unitPath(intent, stage, unit)
+		if (!existsSync(p)) return stageHats
+		const { data } = parseFrontmatter(readFileSync(p, "utf8"))
+		const closes = (data.closes as string[]) || []
+		if (closes.length > 0 && !stageHats.includes(FEEDBACK_ASSESSOR_HAT)) {
+			return [...stageHats, FEEDBACK_ASSESSOR_HAT]
+		}
+	} catch {
+		/* non-fatal */
+	}
+	return stageHats
+}
+
 /** Resolve hat sequence for a stage — used by haiku_unit_advance_hat and haiku_unit_reject_hat */
 function resolveStageHats(intent: string, stage: string): string[] {
 	try {
@@ -1980,7 +2336,19 @@ export const FEEDBACK_ORIGINS = [
 
 export type FeedbackOrigin = (typeof FEEDBACK_ORIGINS)[number]
 
-/** Valid status values for feedback items. */
+/** Valid status values for feedback items.
+ *
+ * Lifecycle:
+ *   pending    — open finding. Stays pending until an independent assessor
+ *                verifies resolution. A unit completing with `closes: [FB-XX]`
+ *                writes `closed_by: <unit>` on the feedback item but DOES
+ *                NOT change its status — the agent doing the work cannot
+ *                self-certify.
+ *   addressed  — an independent actor (feedback-assessor hat, human via the
+ *                review UI, or another agent) verified the closure.
+ *   closed     — terminal; the feedback author confirmed resolution.
+ *   rejected   — terminal; rejected with reason.
+ */
 export const FEEDBACK_STATUSES = [
 	"pending",
 	"addressed",
@@ -2058,7 +2426,10 @@ export interface FeedbackItem {
 	created_at: string
 	visit: number
 	source_ref: string | null
-	addressed_by: string | null
+	// closed_by is the only signal of closure — the unit whose output the
+	// feedback-assessor hat validated as resolving this finding. `null`
+	// means open (pending) and blocks the stage gate.
+	closed_by: string | null
 }
 
 /**
@@ -2090,10 +2461,10 @@ export function writeFeedbackFile(
 	const authorType = deriveAuthorType(origin)
 	const author = opts.author || deriveDefaultAuthor(origin)
 
-	// Read current visit count from stage state
+	// Read current iteration count from stage state
 	const stateFile = stageStatePath(slug, stage)
 	const stageState = readJson(stateFile)
-	const visit = (stageState.visits as number) || 0
+	const iteration = getStageIterationCount(stageState)
 
 	const frontmatter: Record<string, unknown> = {
 		title: opts.title,
@@ -2102,9 +2473,10 @@ export function writeFeedbackFile(
 		author,
 		author_type: authorType,
 		created_at: timestamp(),
-		visit,
+		iteration,
+		visit: iteration, // legacy alias
 		source_ref: opts.source_ref ?? null,
-		addressed_by: null,
+		closed_by: null,
 	}
 
 	const content = matter.stringify(`\n${opts.body}\n`, frontmatter)
@@ -2149,7 +2521,7 @@ export function readFeedbackFiles(slug: string, stage: string): FeedbackItem[] {
 			created_at: (data.created_at as string) || "",
 			visit: (data.visit as number) || 0,
 			source_ref: (data.source_ref as string) || null,
-			addressed_by: (data.addressed_by as string) || null,
+			closed_by: (data.closed_by as string) || null,
 		})
 	}
 
@@ -2157,12 +2529,17 @@ export function readFeedbackFiles(slug: string, stage: string): FeedbackItem[] {
 }
 
 /**
- * Count feedback items with status === "pending" in a stage.
+ * Count feedback items that still block the stage gate. An item is open
+ * (blocking) when it has neither been independently verified (`closed_by`
+ * set by the feedback-assessor hat) nor rejected. `status` is derived —
+ * `closed_by` is the source of truth.
  */
 export function countPendingFeedback(slug: string, stage: string): number {
-	return readFeedbackFiles(slug, stage).filter(
-		(item) => item.status === "pending",
-	).length
+	return readFeedbackFiles(slug, stage).filter((item) => {
+		const closedBy = (item as { closed_by?: unknown }).closed_by
+		if (typeof closedBy === "string" && closedBy.length > 0) return false
+		return item.status !== "rejected"
+	}).length
 }
 
 /**
@@ -2209,7 +2586,10 @@ export function updateFeedbackFile(
 	slug: string,
 	stage: string,
 	feedbackId: string,
-	fields: { status?: string; addressed_by?: string },
+	fields: {
+		status?: string
+		closed_by?: string | null
+	},
 	callerContext: "agent" | "human" = "agent",
 ): { ok: true; updated_fields: string[] } | { ok: false; error: string } {
 	const found = findFeedbackFile(slug, stage, feedbackId)
@@ -2221,11 +2601,11 @@ export function updateFeedbackFile(
 	}
 
 	// At least one updatable field must be provided
-	if (fields.status === undefined && fields.addressed_by === undefined) {
+	if (fields.status === undefined && fields.closed_by === undefined) {
 		return {
 			ok: false,
 			error:
-				"Error: at least one of 'status' or 'addressed_by' must be provided",
+				"Error: at least one of 'status' or 'closed_by' must be provided",
 		}
 	}
 
@@ -2240,16 +2620,19 @@ export function updateFeedbackFile(
 		}
 	}
 
-	// Guard: agents cannot set status 'closed' on human-authored feedback
+	// Guard: agents cannot mark human-authored feedback as `closed` by setting
+	// `closed_by`. Human-authored items may only be closed by the human who
+	// authored them, via the review UI.
 	if (
 		callerContext === "agent" &&
-		fields.status === "closed" &&
+		typeof fields.closed_by === "string" &&
+		fields.closed_by.length > 0 &&
 		found.data.author_type === "human"
 	) {
 		return {
 			ok: false,
 			error:
-				"Error: agents cannot set status 'closed' on human-authored feedback. Only the original author can close it.",
+				"Error: agents cannot close human-authored feedback. Only the original author may set `closed_by` via the review UI.",
 		}
 	}
 
@@ -2261,9 +2644,13 @@ export function updateFeedbackFile(
 		newData.status = fields.status
 		updated.push("status")
 	}
-	if (fields.addressed_by !== undefined) {
-		newData.addressed_by = fields.addressed_by
-		updated.push("addressed_by")
+	if (fields.closed_by !== undefined) {
+		if (fields.closed_by === null) {
+			delete newData.closed_by
+		} else {
+			newData.closed_by = fields.closed_by
+		}
+		updated.push("closed_by")
 	}
 
 	writeFileSync(found.path, matter.stringify(`\n${found.body}\n`, newData))
@@ -2414,10 +2801,18 @@ export const stateToolDefs = [
 	{
 		name: "haiku_unit_reject_hat",
 		description:
-			"Reject the current hat's work — moves back to the previous hat and increments bolt. The system resolves stage and hat positions internally.",
+			"Reject the current hat's work — moves back to the previous hat and increments bolt. Pass `reason` so the unit's iteration history records why the hat was rejected (what failed, which criterion wasn't met).",
 		inputSchema: {
 			type: "object" as const,
-			properties: { intent: { type: "string" }, unit: { type: "string" } },
+			properties: {
+				intent: { type: "string" },
+				unit: { type: "string" },
+				reason: {
+					type: "string",
+					description:
+						"Short explanation of why the current hat's output was rejected (e.g. 'touch targets <44px on mobile', 'missing dark-mode tokens'). Recorded in the unit's iterations history.",
+				},
+			},
 			required: ["intent", "unit"],
 		},
 	},
@@ -2630,11 +3025,12 @@ export const stateToolDefs = [
 				},
 				status: {
 					type: "string",
-					description: "New status: pending | addressed | closed | rejected",
+					description: "New status: pending | closed | rejected",
 				},
-				addressed_by: {
+				closed_by: {
 					type: "string",
-					description: "Unit slug that addresses this feedback",
+					description:
+						"Unit slug whose work the feedback-assessor validated as closing this feedback item (set only by the feedback-assessor hat or via the human review UI).",
 				},
 			},
 			required: ["intent", "stage", "feedback_id"],
@@ -2925,6 +3321,7 @@ export function handleStateTool(
 			setFrontmatterField(uPath, "hat", firstHat)
 			setFrontmatterField(uPath, "started_at", timestamp())
 			setFrontmatterField(uPath, "hat_started_at", timestamp())
+			startUnitIteration(uPath, firstHat)
 			emitTelemetry("haiku.unit.started", {
 				intent: args.intent as string,
 				stage,
@@ -2997,6 +3394,9 @@ export function handleStateTool(
 			}
 
 			// ── Validate declared outputs exist (every hat transition) ──
+			// Artifacts may live in the UNIT'S worktree (if running via start_units)
+			// OR the main intent dir — check both. Merging to the parent branch
+			// happens AFTER this validation, so we can't require parent-dir presence.
 			const unitOutputs = (unitFm.outputs as string[]) || []
 			if (unitOutputs.length > 0) {
 				const iDir = intentDir(args.intent as string)
@@ -3013,11 +3413,14 @@ export function handleStateTool(
 						}),
 					)
 				}
-				const missing = unitOutputs.filter((o) => {
-					const resolved = resolve(iDir, o)
-					if (!resolved.startsWith(`${resolve(iDir)}/`)) return false // escaped — already caught above
-					return !existsSync(resolved)
-				})
+				const missing = unitOutputs.filter(
+					(o) =>
+						!unitOutputExists(
+							args.intent as string,
+							args.unit as string,
+							o,
+						),
+				)
 				if (missing.length > 0) {
 					const sf = args.state_file as string | undefined
 					if (sf)
@@ -3032,14 +3435,19 @@ export function handleStateTool(
 						JSON.stringify({
 							error: "unit_outputs_missing",
 							missing,
-							message: `Cannot advance hat: ${missing.length} declared output(s) not found: ${missing.join(", ")}. Create them or remove them from the outputs list.`,
+							message: `Cannot advance hat: ${missing.length} declared output(s) not found in unit worktree or main intent dir: ${missing.join(", ")}. Create them (in the unit worktree if you have one, otherwise in the main intent dir) or remove them from the outputs list.`,
 						}),
 					)
 				}
 			}
 
-			// Resolve hat sequence
-			const stageHats = resolveStageHats(args.intent as string, advStage)
+			// Resolve hat sequence — unit-aware so `feedback-assessor` is
+			// appended when the unit declares `closes:` feedback items.
+			const stageHats = resolveUnitHats(
+				args.intent as string,
+				advStage,
+				args.unit as string,
+			)
 			const currentIdx = stageHats.indexOf(currentHat)
 			const nextIdx = currentIdx + 1
 			const isLastHat = nextIdx >= stageHats.length
@@ -3089,24 +3497,52 @@ export function handleStateTool(
 					)
 				}
 
-				setFrontmatterField(advPath, "status", "completed")
-				setFrontmatterField(advPath, "completed_at", timestamp())
+				completeUnitIteration(advPath, "advance")
+				// Dual-write: parent (for FSM reads) AND unit worktree (so
+				// the merge commit captures the completion state).
+				setUnitFrontmatterField(
+					args.intent as string,
+					advStage,
+					args.unit as string,
+					"status",
+					"completed",
+				)
+				setUnitFrontmatterField(
+					args.intent as string,
+					advStage,
+					args.unit as string,
+					"completed_at",
+					timestamp(),
+				)
 
-				// Close feedback items referenced by this unit's `closes:` field
-				{
-					const unitRaw = readFileSync(advPath, "utf8")
-					const unitParsed = parseFrontmatter(unitRaw)
+				// Feedback closure is the exclusive responsibility of the
+				// `feedback-assessor` hat. The unit's `closes:` field is the
+				// CLAIM (written at elaborate time); the assessor reads that
+				// claim, verifies the unit's outputs against each feedback
+				// body, and — on advance — sets `closed_by` on the feedback
+				// items it validated. Any other hat completing the unit does
+				// NOT touch feedback state; it cannot self-certify.
+				if (currentHat === FEEDBACK_ASSESSOR_HAT) {
+					const unitRaw2 = readFileSync(advPath, "utf8")
+					const unitParsed = parseFrontmatter(unitRaw2)
 					const closes = (unitParsed.data.closes as string[]) || []
-					if (closes.length > 0) {
-						for (const fbId of closes) {
-							updateFeedbackFile(
-								args.intent as string,
-								advStage,
-								fbId,
-								{ status: "addressed", addressed_by: args.unit as string },
-								"agent",
-							)
-						}
+					for (const fbId of closes) {
+						const found = findFeedbackFile(
+							args.intent as string,
+							advStage,
+							fbId,
+						)
+						// Agents cannot close human-authored feedback — the
+						// human author must do that themselves. Leave such
+						// items untouched; the review UI will surface them.
+						if (found?.data.author_type === "human") continue
+						updateFeedbackFile(
+							args.intent as string,
+							advStage,
+							fbId,
+							{ status: "closed", closed_by: args.unit as string },
+							"agent",
+						)
 					}
 				}
 
@@ -3129,23 +3565,18 @@ export function handleStateTool(
 					`haiku: complete unit ${args.unit as string}`,
 				)
 
-				// Merge unit worktree back to parent branch (if running in a worktree)
-				// In discrete mode, parent is the stage branch; in continuous, it's the intent main branch
+				// Merge the unit branch into its STAGE branch. Units ALWAYS
+				// fan in to their stage branch regardless of whatever branch
+				// the MCP's parent worktree happens to be on — the FSM works
+				// in the scope of the stage, not the parent worktree.
+				// `mergeUnitWorktree` uses a temp worktree so the MCP's
+				// checkout is never disturbed.
 				const intentSlug = args.intent as string
-				// Use current branch as ground truth: if we're on a stage branch, merge back
-				// to the stage branch. If we're on the intent main branch, merge there.
-				// This correctly handles continuous, discrete, and hybrid (where the
-				// orchestrator already placed us on the right branch).
-				const currentBr = getCurrentBranch()
-				const onStageBranch = currentBr === `haiku/${intentSlug}/${advStage}`
-				const discreteStage = onStageBranch ? advStage : undefined
-				const parentBranchName = discreteStage
-					? `haiku/${intentSlug}/${discreteStage}`
-					: `haiku/${intentSlug}/main`
+				const parentBranchName = `haiku/${intentSlug}/${advStage}`
 				const mergeResult = mergeUnitWorktree(
 					intentSlug,
 					args.unit as string,
-					discreteStage,
+					advStage,
 				)
 				if (!mergeResult.success) {
 					const worktreePath = join(
@@ -3181,16 +3612,32 @@ export function handleStateTool(
 						? ""
 						: ` (${mergeResult.message})`
 
-				// Internally call runNext to progress the FSM
+				// Internally call runNext to progress the FSM state, but DO NOT
+				// return orchestration-level actions (start_units, start_unit) to
+				// the caller — those are for the PARENT agent, not the subagent
+				// that just finished its hat. The subagent's job ends here; the
+				// parent calls haiku_run_next after all wave subagents return.
+				//
+				// Phase/stage transitions (advance_phase, advance_stage, review,
+				// intent_complete) are returned so the last caller can propagate
+				// the signal back to the parent via its final message.
 				if (_runNext) {
 					const next = _runNext(args.intent as string)
-					// If other units in this wave are still active, this is a no-op for this agent
-					if (next.action === "continue_unit" || next.action === "blocked") {
+					const subagentLocalActions = new Set([
+						"continue_unit",
+						"continue_units",
+						"blocked",
+						"start_units",
+						"start_unit",
+					])
+					if (subagentLocalActions.has(next.action as string)) {
 						return text(
-							`completed (last hat)${mergeNote}. Other units still in progress — waiting on wave to finish.${pushWarning(completeGit)}`,
+							`Unit ${args.unit} completed (last hat)${mergeNote}. FSM next action (${next.action}) is for the parent orchestrator — this subagent's job ends here. The parent will call haiku_run_next when all wave subagents return.${pushWarning(completeGit)}`,
 						)
 					}
-					// Otherwise, return the next FSM action (next wave, phase advance, etc.)
+					// Phase/stage-level transitions (advance_phase, review, advance_stage,
+					// intent_complete, etc.) — return so the last wave subagent can
+					// signal the transition back to the parent.
 					return text(
 						JSON.stringify(
 							injectPushWarning(
@@ -3211,8 +3658,10 @@ export function handleStateTool(
 			// ── NOT last hat: advance to next ──
 			const nextHat = stageHats[nextIdx]
 
+			completeUnitIteration(advPath, "advance")
 			setFrontmatterField(advPath, "hat", nextHat)
 			setFrontmatterField(advPath, "hat_started_at", timestamp())
+			startUnitIteration(advPath, nextHat)
 			{
 				const sf = args.state_file as string | undefined
 				if (sf)
@@ -3291,10 +3740,24 @@ export function handleStateTool(
 				)
 			}
 
-			// Resolve the hat sequence to find the previous hat
-			const stageHats = resolveStageHats(args.intent as string, rejectStage)
+			// Resolve the hat sequence — unit-aware so `feedback-assessor`
+			// participates in reject-to-previous-hat transitions.
+			const stageHats = resolveUnitHats(
+				args.intent as string,
+				rejectStage,
+				args.unit as string,
+			)
 			const hatIdx = stageHats.indexOf(currentHat)
-			const prevHat = hatIdx > 0 ? stageHats[hatIdx - 1] : stageHats[0]
+			// Feedback-assessor rejections always bolt to the FIRST hat
+			// (designer) — the assessor is verifying the work itself, not the
+			// prior reviewer's judgment, so the fix requires new artifact
+			// output, not a re-review. All other hat rejections step back one.
+			const prevHat =
+				currentHat === FEEDBACK_ASSESSOR_HAT
+					? stageHats[0]
+					: hatIdx > 0
+						? stageHats[hatIdx - 1]
+						: stageHats[0]
 
 			// Auto-escalate model tier on rejection (gated by features.modelSelection)
 			if (features.modelSelection) {
@@ -3309,9 +3772,12 @@ export function handleStateTool(
 				}
 			}
 
+			const rejectReason = (args.reason as string) || undefined
+			completeUnitIteration(failPath, "reject", rejectReason)
 			setFrontmatterField(failPath, "hat", prevHat)
 			setFrontmatterField(failPath, "bolt", currentBolt + 1)
 			setFrontmatterField(failPath, "hat_started_at", timestamp())
+			startUnitIteration(failPath, prevHat)
 			{
 				const sf = args.state_file as string | undefined
 				if (sf)
@@ -4290,10 +4756,10 @@ export function handleStateTool(
 					isError: true,
 				}
 
-			const updateFields: { status?: string; addressed_by?: string } = {}
+			const updateFields: { status?: string; closed_by?: string } = {}
 			if (args.status !== undefined) updateFields.status = args.status as string
-			if (args.addressed_by !== undefined)
-				updateFields.addressed_by = args.addressed_by as string
+			if (args.closed_by !== undefined)
+				updateFields.closed_by = args.closed_by as string
 
 			const updateResult = updateFeedbackFile(
 				intent,
@@ -4557,7 +5023,7 @@ export function handleStateTool(
 						created_at: item.created_at,
 						visit: item.visit,
 						source_ref: item.source_ref,
-						addressed_by: item.addressed_by,
+						closed_by: item.closed_by,
 					}
 					// Include stage field when listing across stages
 					if (!stageFilt) {

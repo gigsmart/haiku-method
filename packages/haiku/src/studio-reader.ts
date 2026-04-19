@@ -101,6 +101,24 @@ export function readReviewAgentDefs(
 	return agents
 }
 
+/** Return review agent NAME → FILE PATH mapping (project overrides plugin). Subagent reads the file itself. */
+export function readReviewAgentPaths(
+	studio: string,
+	stage: string,
+): Record<string, string> {
+	validateIdentifier(studio, "studio")
+	validateIdentifier(stage, "stage")
+	const agents: Record<string, string> = {}
+	for (const base of [...studioSearchPaths()].reverse()) {
+		const agentsDir = join(base, studio, "stages", stage, "review-agents")
+		if (!existsSync(agentsDir)) continue
+		for (const f of readdirSync(agentsDir).filter((f) => f.endsWith(".md"))) {
+			agents[f.replace(/\.md$/, "")] = join(agentsDir, f)
+		}
+	}
+	return agents
+}
+
 /** Read discovery and output artifact definitions for a stage */
 export interface ArtifactDef {
 	name: string

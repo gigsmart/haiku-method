@@ -305,13 +305,13 @@
     "revisions": [
       {
         "version": "2",
-        "date": "2026-04-12",
-        "commitHash": "f76f306",
-        "fullCommitHash": "f76f306484ebc031c2c4e41b05db6fc3f0a23aa6",
-        "commitMessage": "feat: split software studio into product-family studios + fixes (#187)",
+        "date": "2026-04-15",
+        "commitHash": "f5d0755",
+        "fullCommitHash": "f5d0755d742d34aae1c15bcfc20272827a385d5a",
+        "commitMessage": "feat(orchestrator): comprehensive artifact injection across all FSM phases (#219)",
         "stats": {
-          "linesAdded": 284,
-          "linesRemoved": 993
+          "linesAdded": 292,
+          "linesRemoved": 994
         },
         "sectionChanges": [
           {
@@ -423,7 +423,7 @@
             "section": "What a Stage Defines",
             "originalSection": "What a Stage Defines",
             "isNew": true,
-            "linesAdded": 11,
+            "linesAdded": 20,
             "linesRemoved": 0
           },
           {
@@ -599,7 +599,7 @@
             "section": "Creating a Custom Studio",
             "originalSection": "Creating a Custom Studio",
             "isNew": true,
-            "linesAdded": 10,
+            "linesAdded": 11,
             "linesRemoved": 0
           },
           {
