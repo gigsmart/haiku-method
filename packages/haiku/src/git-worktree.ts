@@ -756,10 +756,18 @@ export function ensureOnStageBranch(
 				}
 			} catch (err) {
 				const raw = err instanceof Error ? err.message : String(err)
+				// Apply the same dirty-tree message-rewriting the plain-checkout
+				// path does — the raw git error is cryptic and the action
+				// ("stash or commit") is not obvious.
+				const looksLikeDirtyTree =
+					raw.includes("would be overwritten by checkout") ||
+					raw.includes("Please commit your changes or stash them")
 				return {
 					ok: false,
 					branch: current,
-					message: `target branch '${targetBranch}' not yet created, and failed to fall back to mainline '${mainlineBranch}': ${raw}`,
+					message: looksLikeDirtyTree
+						? `Uncommitted changes on branch '${current}' would be overwritten by falling back to repo mainline '${mainlineBranch}'. Stash (\`git stash\`) or commit them, then retry. Raw git error: ${raw}`
+						: `target branch '${targetBranch}' not yet created, and failed to fall back to mainline '${mainlineBranch}': ${raw}`,
 					switched: false,
 				}
 			}

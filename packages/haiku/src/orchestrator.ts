@@ -28,6 +28,7 @@ import {
 	cleanupIntentWorktrees,
 	createStageBranch,
 	createUnitWorktree,
+	deleteBranch,
 	deleteStageBranch,
 	ensureOnStageBranch,
 	finalizeIntentBranches,
@@ -6006,26 +6007,17 @@ export async function handleOrchestratorTool(
 			}
 		}
 
-		// Check if intent already exists
+		// Force checkout of the repo mainline BEFORE ANY filesystem checks or
+		// writes for the new intent. If we ran existsSync on the current
+		// (potentially foreign) branch first, we could:
+		//   - return spurious intent_exists when a stray intents/{slug}/ dir
+		//     sits on a foreign stage branch, or
+		//   - miss a genuine existing intent on mainline.
+		// Plus, subsequent createIntentBranch forks haiku/{new-slug}/main off
+		// whatever branch is current — a fresh intent must be born on the
+		// repo mainline so its haiku/{slug}/main starts from a clean base.
 		const root = findHaikuRoot()
 		const iDir = join(root, "intents", slug)
-		if (existsSync(join(iDir, "intent.md"))) {
-			return text(
-				JSON.stringify({
-					error: "intent_exists",
-					slug,
-					message: `Intent '${slug}' already exists`,
-				}),
-			)
-		}
-
-		// Force checkout of the repo mainline BEFORE writing the new intent.
-		// Without this, if the agent is currently on another intent's stage
-		// branch, (a) the new intent files land on that foreign branch and
-		// (b) the subsequent createIntentBranch forks haiku/{new-slug}/main
-		// off that foreign branch, inheriting its history. A fresh intent
-		// must be born on the repo mainline (main/master/whatever origin/HEAD
-		// points at) so its haiku/{slug}/main starts from a clean base.
 		if (isGitRepo()) {
 			try {
 				const mainlineBranch = getMainlineBranch()
@@ -6046,16 +6038,28 @@ export async function handleOrchestratorTool(
 					})
 				}
 			} catch (err) {
+				const raw = err instanceof Error ? err.message : String(err)
 				return {
 					content: [
 						{
 							type: "text" as const,
-							text: `Error: failed to checkout repo mainline before creating intent '${slug}' — ${err instanceof Error ? err.message : String(err)}. Stash or commit uncommitted changes, then retry.`,
+							text: `Error: failed to checkout repo mainline before creating intent '${slug}'. Stash or commit uncommitted changes, then retry. Raw git error: ${raw}`,
 						},
 					],
 					isError: true,
 				}
 			}
+		}
+
+		// Check if intent already exists — now running on the canonical branch.
+		if (existsSync(join(iDir, "intent.md"))) {
+			return text(
+				JSON.stringify({
+					error: "intent_exists",
+					slug,
+					message: `Intent '${slug}' already exists`,
+				}),
+			)
 		}
 
 		// Create directory structure
@@ -6667,8 +6671,8 @@ export async function handleOrchestratorTool(
 		}
 
 		// Read conversation context if it exists (preserve it). Read this
-		// BEFORE the branch switch so we read from whatever branch has the
-		// ctx file (most recent state), not whatever branch we end up on.
+		// BEFORE any branch switch so we read from whatever branch has the
+		// ctx file at call time. The intent's most-recent context wins.
 		let conversationContext = ""
 		const ctxFile = join(iDir, "knowledge", "CONVERSATION-CONTEXT.md")
 		if (existsSync(ctxFile)) {
@@ -6678,39 +6682,69 @@ export async function handleOrchestratorTool(
 			)
 		}
 
-		// Reset is intent-scoped — land on intent-main so the delete applies
-		// there, not split-brain on a stage branch. Without this guard, if the
-		// agent resets while checked out on a stage branch, the delete lands
-		// on the stage branch only; intent-main still holds the full intent
-		// and the next haiku_intent_create would see existsSync=true.
-		{
-			const resetGuard = ensureOnStageBranch(slug, undefined)
-			if (!resetGuard.ok) {
+		// Read intent frontmatter now (while the file is still available on
+		// current branch) so we know which studio's stages to clean up.
+		const intentFm = parseFrontmatter(raw).data
+		const studio = (intentFm.studio as string) || ""
+
+		// Reset must land on repo mainline (not intent-main or a stage branch)
+		// because we are about to delete EVERY haiku/{slug}/* branch including
+		// intent-main itself. Git refuses to delete the branch you're on, so
+		// we must first move HEAD off all of them.
+		if (isGitRepo()) {
+			try {
+				const mainlineBranch = getMainlineBranch()
+				let currentBranch = ""
+				try {
+					currentBranch = execFileSync(
+						"git",
+						["rev-parse", "--abbrev-ref", "HEAD"],
+						{ encoding: "utf8", stdio: "pipe" },
+					).trim()
+				} catch {
+					/* non-fatal: detached HEAD */
+				}
+				if (mainlineBranch && currentBranch !== mainlineBranch) {
+					execFileSync("git", ["checkout", mainlineBranch], {
+						encoding: "utf8",
+						stdio: "pipe",
+					})
+				}
+			} catch (err) {
+				const raw = err instanceof Error ? err.message : String(err)
 				return {
 					content: [
 						{
 							type: "text" as const,
-							text: `Error: branch enforcement failed for intent reset '${slug}' — ${resetGuard.message}. Resolve manually and retry.`,
+							text: `Error: failed to checkout repo mainline before resetting intent '${slug}'. Stash or commit uncommitted changes, then retry. Raw git error: ${raw}`,
 						},
 					],
 					isError: true,
 				}
 			}
-		}
 
-		// Clean up any existing stage branches so the recreated intent starts
-		// from a truly clean slate. Without this, the next fsmStartStage would
-		// see pre-existing stage branches and try to merge stale work into the
-		// new intent's lifecycle.
-		const intentFm = parseFrontmatter(raw).data
-		const studio = (intentFm.studio as string) || ""
-		if (studio && isGitRepo()) {
-			const allStudioStages = resolveStudioStages(studio)
-			for (const stg of allStudioStages) {
-				const stgBranch = `haiku/${slug}/${stg}`
-				if (branchExists(stgBranch)) {
-					deleteStageBranch(slug, stg)
+			// Clean up unit worktrees BEFORE deleting their backing branches —
+			// otherwise `git branch -D` refuses because the branch is checked
+			// out in a worktree.
+			cleanupIntentWorktrees(slug)
+
+			// Delete every stage branch so the recreated intent starts clean.
+			if (studio) {
+				const allStudioStages = resolveStudioStages(studio)
+				for (const stg of allStudioStages) {
+					const stgBranch = `haiku/${slug}/${stg}`
+					if (branchExists(stgBranch)) {
+						deleteStageBranch(slug, stg)
+					}
 				}
+			}
+
+			// Finally, delete the intent-main branch itself. Without this the
+			// subsequent haiku_intent_create's createIntentBranch would
+			// checkout the stale haiku/{slug}/main and inherit its history.
+			const intentMainBranch = `haiku/${slug}/main`
+			if (branchExists(intentMainBranch)) {
+				deleteBranch(intentMainBranch)
 			}
 		}
 
