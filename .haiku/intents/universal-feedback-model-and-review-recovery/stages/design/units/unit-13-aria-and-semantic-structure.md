@@ -85,8 +85,8 @@ quality_gates:
     color-matched focus rings per variant; every `<input>`, `<textarea>`,
     `<button>`, `[tabindex="0"]`, `<a>` declares `focus-visible:ring-2
     focus-visible:ring-teal-500` (or the variant rule)
-hat: designer
-hat_started_at: '2026-04-18T21:40:53Z'
+hat: design-reviewer
+hat_started_at: '2026-04-19T00:57:03Z'
 iterations:
   - hat: designer
     started_at: '2026-04-18T04:30:46Z'
@@ -152,6 +152,10 @@ iterations:
     reason: "FB-33 (emoji ↔ origin mapping drift) NOT addressed. Bolt-2 commit (f8c2f0d0) explicitly scoped to FB-22/26/32/35/37 and skipped FB-33. aria-landmark-spec.md §6 declares canonical emojis (Review Agent = \U0001F50D U+1F50D, External PR/MR = \U0001F517 U+1F517, Agent = \U0001F916 U+1F916) and §9 verification grep forbids the drifted codepoints in stages/design/. Bolt-2 artifacts still use forbidden emoji: comments-list-with-agent-toggle.html has 10 occurrences of &#x1F6E1 (shield) / &#x1F500 (shuffle) / &#x2728 (sparkles); feedback-card-states.html has 18. Assessor's own §9 grep would fail against its own artifacts. FB-22/26/32/35/37 verified clean: revisit-modal-spec has role=dialog + aria-modal + focus rings on Cancel; agent-feedback-toggle-spec defines role=switch + 44px hit area + focus-visible; aria-landmark-spec maps landmarks + focus-trap contract for mobile sheet; aria-live-sequencing-spec defines polite/assertive two-node pattern; feedback-card-states adds aria-busy + sr-only Processing; unit-05 body amendment present; focus-ring-spec §2 explicitly permits variant-matched amber ring for warning primary. Fix: sweep &#x1F6E1 → &#x1F50D, &#x1F500 → &#x1F517, &#x2728 → &#x1F916 across all design artifacts (not just the 5 bolt-2 files — grep shows drift across 7 files including feedback-inline-desktop/mobile, review-context-header, comment-to-feedback-flow)."
   - hat: designer
     started_at: '2026-04-18T21:40:53Z'
+    completed_at: '2026-04-19T00:57:03Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-19T00:57:03Z'
     completed_at: null
     result: null
 status: active
