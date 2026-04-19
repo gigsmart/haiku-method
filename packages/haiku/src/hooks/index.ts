@@ -39,6 +39,21 @@ export async function runHook(name: string, _args: string[]): Promise<void> {
 	const { resolvePluginRoot } = await import("../config.js")
 	const pluginRoot = resolvePluginRoot()
 
+	// Removed hooks: hook registrations are cached in Claude Code's session
+	// state, so a user who updated hooks.json mid-session may still have CC
+	// firing these. The binary accepts them as silent no-ops so the user
+	// doesn't get "hook 'X' not implemented" stop-feedback errors until
+	// their next full CC restart reloads hooks.json.
+	const REMOVED_HOOKS = new Set([
+		"quality-gate",
+		"track-outputs",
+		"ensure-deps",
+		"inject-context",
+		"subagent-hook",
+		"subagent-context",
+	])
+	if (REMOVED_HOOKS.has(name)) return
+
 	switch (name) {
 		case "prompt-guard":
 			await promptGuard(parsed, pluginRoot)

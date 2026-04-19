@@ -3351,10 +3351,22 @@ const SUBAGENT_ERROR_RECOVERY = [
 
 function inlineFile(absPath: string, heading: string): string {
 	if (!existsSync(absPath)) return ""
-	const content = readFileSync(absPath, "utf8")
+	const raw = readFileSync(absPath, "utf8")
+	// Strip YAML frontmatter before inlining. Frontmatter carries FSM
+	// metadata (name, agent_type, model, scope, location, format, required,
+	// etc.) that the orchestrator already consumed — the subagent should
+	// see only the authoritative body. Including frontmatter adds noise
+	// and risks the subagent misinterpreting metadata as instructions.
+	let body: string
+	try {
+		body = matter(raw).content.trim()
+	} catch {
+		body = raw
+	}
+	if (!body) return ""
 	// Use ~~~~ fences to survive inlined content that contains triple
 	// backticks (common in prompt bodies).
-	return `### ${heading}\n\n*Source: \`${absPath}\`*\n\n~~~~\n${content}\n~~~~\n`
+	return `### ${heading}\n\n*Source: \`${absPath}\`*\n\n~~~~\n${body}\n~~~~\n`
 }
 
 /**
