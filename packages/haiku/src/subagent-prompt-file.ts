@@ -27,7 +27,20 @@ function sessionIdOrPid(): string {
 	return process.env.CLAUDE_SESSION_ID || String(process.pid)
 }
 
+// Opportunistic cleanup runs at most once per MCP process lifetime. Replaces
+// the inject-context SessionStart hook's cleanup pass with something that's
+// harness-agnostic and lazy — we only clean when we actually use the tmpdir.
+let cleanupAttempted = false
+
 function promptDir(): string {
+	if (!cleanupAttempted) {
+		cleanupAttempted = true
+		try {
+			cleanupStaleTmpfiles(24)
+		} catch {
+			/* best-effort */
+		}
+	}
 	const dir = join(tmpdir(), "haiku-prompts", sessionIdOrPid())
 	mkdirSync(dir, { recursive: true })
 	return dir

@@ -155,4 +155,27 @@ export async function enforceIteration(
 	if (intentStatus !== "active") {
 		setFrontmatterField(intentFile, "status", "active")
 	}
+
+	// Report the iteration miss to Sentry so we can track how often the
+	// primary drive-forward mechanism (FSM Result relay → run_next) fails
+	// and the Stop hook has to rescue the loop. High miss counts signal
+	// the MCP-level pattern needs tightening. Best-effort; never blocks.
+	try {
+		const { reportError } = await import("../sentry.js")
+		reportError(
+			new Error(
+				`enforce-iteration rescue: stop intercepted with work remaining in stage '${activeStage}'`,
+			),
+			{
+				intent: intentSlug,
+				stage: activeStage,
+				in_progress: String(inProgressCount),
+				ready: String(readyCount),
+				blocked: String(blocked),
+				completed: String(completed),
+			},
+		)
+	} catch {
+		/* best-effort telemetry */
+	}
 }

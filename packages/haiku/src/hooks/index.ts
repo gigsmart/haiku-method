@@ -1,22 +1,20 @@
 // hooks/index.ts — Hook dispatch for the H·AI·K·U binary
 //
 // Called via: haiku hook <name>
-// Hooks receive input on stdin (JSON from Claude Code hook system)
-// and output to stdout (text injected into the conversation).
+// Hooks receive input on stdin (JSON from Claude Code hook system) and
+// output to stdout (text injected into the conversation).
+//
+// Hooks are OPTIONAL additional safety layers for harnesses that support
+// them (Claude Code). Every load-bearing enforcement has an MCP-tool
+// equivalent so the system works identically on harnesses with no hooks.
 
 import { readFileSync } from "node:fs"
 import { contextMonitor } from "./context-monitor.js"
 import { enforceIteration } from "./enforce-iteration.js"
-import { ensureDeps } from "./ensure-deps.js"
 import { guardFsmFields } from "./guard-fsm-fields.js"
-import { injectContext } from "./inject-context.js"
 import { injectStateFile } from "./inject-state-file.js"
 import { promptGuard } from "./prompt-guard.js"
-import { qualityGate } from "./quality-gate.js"
 import { redirectPlanMode } from "./redirect-plan-mode.js"
-import { generateSubagentContext } from "./subagent-context.js"
-import { subagentHook } from "./subagent-hook.js"
-import { trackOutputs } from "./track-outputs.js"
 import { workflowGuard } from "./workflow-guard.js"
 
 // Read stdin synchronously (hooks are synchronous)
@@ -57,36 +55,14 @@ export async function runHook(name: string, _args: string[]): Promise<void> {
 		case "enforce-iteration":
 			await enforceIteration(parsed, pluginRoot)
 			break
-		case "ensure-deps":
-			await ensureDeps(parsed, pluginRoot)
-			break
-		case "quality-gate":
-			await qualityGate(parsed, pluginRoot)
-			break
-		case "subagent-hook":
-			await subagentHook(parsed, pluginRoot)
-			break
-		case "subagent-context":
-			await generateSubagentContext(parsed, pluginRoot)
-			break
-		case "inject-context":
-			await injectContext(parsed, pluginRoot)
-			break
 		case "inject-state-file":
 			await injectStateFile(parsed)
 			break
 		case "guard-fsm-fields":
 			await guardFsmFields(parsed)
 			break
-		case "track-outputs":
-			await trackOutputs(parsed, pluginRoot)
-			break
 		default:
-			// For hooks not yet ported to TypeScript, fall through
-			// The shell wrapper will handle them
-			console.error(
-				`haiku: hook '${name}' not implemented in binary — use shell fallback`,
-			)
-			process.exit(2) // Exit code 2 = not handled, shell wrapper should try .sh
+			console.error(`haiku: hook '${name}' not implemented`)
+			process.exit(2)
 	}
 }
