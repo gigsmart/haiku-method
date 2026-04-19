@@ -37,7 +37,7 @@ import {
 	isOnStageBranch,
 	mergeStageBranchForward,
 	mergeStageBranchIntoMain,
-	recreateStageBranchFromMain,
+	prepareRevisitBranch,
 } from "./git-worktree.js"
 import { adaptInstructions } from "./harness-instructions.js"
 import { getCapabilities } from "./harness.js"
@@ -2913,17 +2913,24 @@ function revisitCurrentStage(
 	// If the intent was marked completed, revisit reactivates it
 	uncompleteIntent(intentFile)
 
-	// In discrete mode, re-fork the current stage branch fresh off intent main
-	// so we don't keep accumulating partial work from prior attempts.
+	// In discrete mode, merge main into the current stage branch (non-destructive)
+	// and clean up unit worktrees so the re-queued units start fresh. We keep the
+	// stage branch history so feedback files and partial artifacts from prior
+	// attempts are preserved — the unit state reset below re-queues the work
+	// without losing context.
 	const branchMode = resolveEffectiveBranchMode(slug, currentActiveStage)
 	if (branchMode === "discrete") {
-		gitCommitState(`haiku: revisit elaborate ${currentActiveStage} (pre-fork)`)
+		gitCommitState(`haiku: revisit elaborate ${currentActiveStage} (pre-merge)`)
 		cleanupIntentWorktrees(slug)
-		const recreated = recreateStageBranchFromMain(slug, currentActiveStage)
-		if (!recreated.success) {
+		const prepared = prepareRevisitBranch(
+			slug,
+			currentActiveStage,
+			currentActiveStage,
+		)
+		if (!prepared.success) {
 			return {
 				action: "error",
-				message: `Failed to re-fork stage branch '${currentActiveStage}' off intent main: ${recreated.message}`,
+				message: `Failed to prepare stage branch '${currentActiveStage}' for revisit: ${prepared.message}. Resolve conflicts on the stage branch manually, then retry.`,
 			}
 		}
 	}
@@ -2973,20 +2980,24 @@ function revisitEarlierStage(
 	// stage. This is intentional: revisit fixes one stage without forcing a
 	// full replay of everything that came after.
 
-	// In discrete mode, re-fork the target stage's branch FRESH off intent main.
-	// Any prior work on haiku/<slug>/<targetStage> is discarded — revisit means
-	// we're starting that stage over from the current intent-main state.
+	// In discrete mode, merge BOTH intent main (approved upstream) AND the
+	// fromStage branch (unapproved future-stage work — feedback files and
+	// in-flight artifacts) into the target stage branch. This ensures feedback
+	// and artifacts raised on fromStage survive the revisit even when they
+	// haven't been merged into intent main yet. Non-destructive: the target
+	// stage branch's own history is preserved; the unit state reset below
+	// re-queues the work without losing context.
 	const branchMode = resolveEffectiveBranchMode(slug, targetStage)
 	if (branchMode === "discrete") {
 		gitCommitState(`haiku: revisit from ${fromStage}`)
-		// Blow away unit worktrees tied to the target stage first — otherwise
-		// `git branch -D` can't reap the branch.
+		// Clean up unit worktrees tied to the target stage first so the
+		// re-queued units start fresh.
 		cleanupIntentWorktrees(slug)
-		const recreated = recreateStageBranchFromMain(slug, targetStage)
-		if (!recreated.success) {
+		const prepared = prepareRevisitBranch(slug, fromStage, targetStage)
+		if (!prepared.success) {
 			return {
 				action: "error",
-				message: `Failed to re-fork stage branch '${targetStage}' off intent main: ${recreated.message}`,
+				message: `Failed to prepare stage branch '${targetStage}' for revisit from '${fromStage}': ${prepared.message}. Resolve conflicts on the target branch manually, then retry.`,
 			}
 		}
 	}

@@ -1109,3 +1109,100 @@ export function recreateStageBranchFromMain(
 		}
 	}
 }
+
+/**
+ * Prepare the target stage branch for a go-back revisit.
+ *
+ * Per FSM contract: on revisit from fromStage → targetStage, the target
+ * stage merges in BOTH intent main (approved upstream changes) AND the
+ * fromStage branch (unapproved future work — feedback files, in-flight
+ * artifacts, state notes). This ensures feedback and artifacts from the
+ * stage we are currently on survive the revisit even when those changes
+ * haven't been merged into intent main yet.
+ *
+ * Non-destructive: never deletes branches. All commits on fromStage and
+ * targetStage are preserved. Unit state reset (re-queueing to pending) is
+ * the caller's responsibility and happens in a separate step via the FSM
+ * state-writing code path.
+ *
+ * No-op in non-git environments.
+ */
+export function prepareRevisitBranch(
+	slug: string,
+	fromStage: string,
+	targetStage: string,
+): { success: boolean; message: string } {
+	if (!isGitRepo()) return { success: true, message: "no git" }
+	if (targetStage === "main")
+		return { success: false, message: "cannot revisit 'main'" }
+
+	const targetBranch = `haiku/${slug}/${targetStage}`
+	const fromBranch = fromStage ? `haiku/${slug}/${fromStage}` : ""
+	const mainBranch = `haiku/${slug}/main`
+
+	if (!branchExists(mainBranch))
+		return { success: false, message: `${mainBranch} does not exist` }
+
+	try {
+		// 1. Ensure target branch exists — fork from main if missing.
+		if (!branchExists(targetBranch)) {
+			run(["git", "branch", targetBranch, mainBranch])
+		}
+
+		// 2. Switch to target branch so merges land there.
+		if (getCurrentBranch() !== targetBranch) {
+			run(["git", "checkout", targetBranch])
+		}
+
+		// 3. Merge main → target (approved upstream changes).
+		const mainAhead = tryRun([
+			"git",
+			"rev-list",
+			"--count",
+			`${targetBranch}..${mainBranch}`,
+		])
+		if (mainAhead && parseInt(mainAhead, 10) > 0) {
+			run([
+				"git",
+				"merge",
+				mainBranch,
+				"--no-edit",
+				"-m",
+				`haiku: merge main → ${targetStage} (revisit prep)`,
+			])
+		}
+
+		// 4. Merge fromStage → target (carry unapproved future-stage work
+		//    like feedback files and in-flight artifacts forward so they
+		//    survive the revisit).
+		if (fromBranch && fromStage !== targetStage && branchExists(fromBranch)) {
+			const fromAhead = tryRun([
+				"git",
+				"rev-list",
+				"--count",
+				`${targetBranch}..${fromBranch}`,
+			])
+			if (fromAhead && parseInt(fromAhead, 10) > 0) {
+				run([
+					"git",
+					"merge",
+					fromBranch,
+					"--no-edit",
+					"-m",
+					`haiku: merge ${fromStage} → ${targetStage} (revisit carries future-stage work back)`,
+				])
+			}
+		}
+
+		return {
+			success: true,
+			message: `prepared ${targetBranch} with main${fromBranch && fromStage !== targetStage ? ` + ${fromStage}` : ""} merged in`,
+		}
+	} catch (err) {
+		tryRun(["git", "merge", "--abort"])
+		return {
+			success: false,
+			message: err instanceof Error ? err.message : String(err),
+		}
+	}
+}
