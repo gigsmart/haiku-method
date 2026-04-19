@@ -147,6 +147,16 @@ export interface ReviewCurrentResponse {
   stages: Array<{ name: string; status: string; phase?: string; visits?: number }>;
 }
 
+/** Snapshot of the prior review when the current review is a re-review
+ *  following a changes_requested decision. Used to render a delta banner
+ *  and "Changed since last review" badges on units that were edited. */
+export interface PreviousReviewSnapshot {
+  feedback: string;
+  reviewedAt: string;
+  intentRawContent: string;
+  unitRawContents: Record<string, string>;
+}
+
 /** The API response from /api/session/:sessionId */
 export interface SessionData {
   session_id: string;
@@ -169,6 +179,7 @@ export interface SessionData {
   knowledge_files?: KnowledgeFile[];
   stage_artifacts?: StageArtifact[];
   output_artifacts?: OutputArtifact[];
+  previous_review?: PreviousReviewSnapshot;
 
   // Question sessions
   title?: string;

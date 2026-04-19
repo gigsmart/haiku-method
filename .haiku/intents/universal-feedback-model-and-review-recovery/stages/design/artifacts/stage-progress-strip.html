@@ -42,6 +42,28 @@
     }
     /* Suppress the default (non focus-visible) outline since we own the ring */
     .stage-node:focus:not(:focus-visible) { outline: none; }
+
+    /* Explicit tabindex policy baked into the stylesheet so this is
+       self-documenting: a stage is EITHER in the tab order OR it is not.
+       - Completed + current + previously visited: tabindex="0" (focusable).
+         Reachable by Tab and carries hover/focus affordance.
+       - Future / never-visited: tabindex="-1" (NOT focusable via Tab).
+         The element stays in the DOM for SR reading but is skipped by the
+         keyboard walker; it has no hover/focus affordance. */
+    .stage-node[tabindex="-1"] {
+      cursor: default;
+    }
+    .stage-node[tabindex="-1"]:hover .stage-tooltip {
+      /* tooltip still appears on pointer-hover so the user knows why the
+         stage is not interactive — but no focus ring, because it is not
+         focusable via keyboard. */
+      opacity: 1;
+    }
+
+    /* Reduced-motion — tooltip still toggles instantly; no other animations. */
+    @media (prefers-reduced-motion: reduce) {
+      .stage-tooltip { transition: none; }
+    }
   </style>
 </head>
 <body class="dark bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
@@ -103,8 +125,12 @@
           <!-- Connector — current to future -->
           <div class="h-0.5 flex-1 min-w-5 bg-gray-300 dark:bg-gray-600 mt-[-18px]"></div>
 
-          <!-- Stage 4: Operations — future -->
-          <div class="stage-node flex flex-col items-center relative" aria-label="Operations stage, upcoming" aria-disabled="true">
+          <!-- Stage 4: Operations — future (never visited) -->
+          <!-- tabindex="-1" explicitly removes the node from the Tab order.
+               It stays in the accessibility tree (aria-label + role=link) so
+               SR users can navigate by landmark / heading, but keyboard users
+               don't land on nodes with no action. -->
+          <div class="stage-node flex flex-col items-center relative" tabindex="-1" role="link" aria-label="Operations stage, upcoming (not in tab order)" aria-disabled="true">
             <div class="stage-tooltip px-2 py-1 rounded-lg bg-gray-800 dark:bg-gray-700 text-xs text-white shadow-lg">
               Operations &middot; Upcoming
             </div>
@@ -117,8 +143,8 @@
           <!-- Connector — future to future -->
           <div class="h-0.5 flex-1 min-w-5 bg-gray-300 dark:bg-gray-600 mt-[-18px]"></div>
 
-          <!-- Stage 5: Security — future -->
-          <div class="stage-node flex flex-col items-center relative" aria-label="Security stage, upcoming" aria-disabled="true">
+          <!-- Stage 5: Security — future (never visited) -->
+          <div class="stage-node flex flex-col items-center relative" tabindex="-1" role="link" aria-label="Security stage, upcoming (not in tab order)" aria-disabled="true">
             <div class="stage-tooltip px-2 py-1 rounded-lg bg-gray-800 dark:bg-gray-700 text-xs text-white shadow-lg">
               Security &middot; Upcoming
             </div>
@@ -208,8 +234,8 @@
 
           <div class="h-0.5 flex-1 min-w-5 bg-gray-300 dark:bg-gray-600 mt-[-18px]"></div>
 
-          <!-- Security — future, never visited -->
-          <div class="stage-node flex flex-col items-center relative" aria-label="Security, upcoming" aria-disabled="true">
+          <!-- Security — future, never visited (not in tab order) -->
+          <div class="stage-node flex flex-col items-center relative" tabindex="-1" role="link" aria-label="Security, upcoming (not in tab order)" aria-disabled="true">
             <div class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all relative bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600">
               <span class="text-[10px]">&#9675;</span>
             </div>
@@ -322,6 +348,59 @@
           </div>
         </nav>
       </div>
+    </section>
+
+    <!-- ============================================================
+         Focus-order policy — explicit tabindex rule (FB-25)
+    ============================================================ -->
+    <section>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Focus-order policy</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Every stage node has an explicit tabindex. This eliminates ambiguity between "focusable-but-no-action" and "not in the tab order" — two states that look identical to pointer users but are wildly different for keyboard users.</p>
+
+      <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <table class="w-full text-xs">
+          <thead class="bg-gray-50 dark:bg-gray-800 text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+            <tr>
+              <th class="text-left px-3 py-2 w-40">Stage condition</th>
+              <th class="text-left px-3 py-2">tabindex</th>
+              <th class="text-left px-3 py-2">Hover</th>
+              <th class="text-left px-3 py-2">Focus ring</th>
+              <th class="text-left px-3 py-2">Activation</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
+            <tr>
+              <td class="px-3 py-2 font-semibold">Completed (prior stage)</td>
+              <td class="px-3 py-2"><code class="font-mono">0</code></td>
+              <td class="px-3 py-2">teal border + tooltip</td>
+              <td class="px-3 py-2">teal 2px outline, 2px offset</td>
+              <td class="px-3 py-2">Enter opens stage (jump-to-stage)</td>
+            </tr>
+            <tr>
+              <td class="px-3 py-2 font-semibold">Current (in-progress)</td>
+              <td class="px-3 py-2"><code class="font-mono">0</code></td>
+              <td class="px-3 py-2">diamond badge lifts</td>
+              <td class="px-3 py-2">teal outline on diamond</td>
+              <td class="px-3 py-2">Enter scrolls to stage's active unit</td>
+            </tr>
+            <tr>
+              <td class="px-3 py-2 font-semibold">Previously visited (now "future")</td>
+              <td class="px-3 py-2"><code class="font-mono">0</code></td>
+              <td class="px-3 py-2">border darkens, tooltip</td>
+              <td class="px-3 py-2">teal outline</td>
+              <td class="px-3 py-2">Enter opens read-only view of prior visit</td>
+            </tr>
+            <tr>
+              <td class="px-3 py-2 font-semibold">Future, never visited</td>
+              <td class="px-3 py-2"><code class="font-mono">-1</code></td>
+              <td class="px-3 py-2">tooltip only (no border change)</td>
+              <td class="px-3 py-2"><em class="text-stone-500 dark:text-stone-400">not focusable via Tab</em></td>
+              <td class="px-3 py-2"><em class="text-stone-500 dark:text-stone-400">n/a — no action</em></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mt-3 italic">Future never-visited stages remain in the a11y tree (<code class="font-mono">role="link"</code> + <code class="font-mono">aria-disabled="true"</code>) so assistive tech still announces their existence — they are just not a Tab stop, because there is nothing to activate.</p>
     </section>
 
   </main>

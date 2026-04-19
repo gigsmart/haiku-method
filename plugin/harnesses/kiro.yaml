@@ -1,0 +1,9 @@
+# Kiro MCP configuration for H·AI·K·U
+# Place in .kiro/agents/ or configure via Kiro Settings UI
+mcpServers:
+  haiku:
+    command: /path/to/haiku-method/plugin/bin/haiku
+    args:
+      - mcp
+      - --harness
+      - kiro

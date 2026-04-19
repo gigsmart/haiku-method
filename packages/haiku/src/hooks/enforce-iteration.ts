@@ -1,17 +1,34 @@
 // enforce-iteration — Stop hook for H·AI·K·U
 //
-// Rescue mechanism when the execution loop exits unexpectedly.
-// Determines the appropriate action:
-// 1. Work remains (units ready or in progress): instruct agent to call /haiku:execute
-// 2. All complete: intent is done
-// 3. Truly blocked: alert the user
+// Secondary guard for the "parent stops after subagent returns" bug.
+// When the parent agent tries to end but the active stage still has work,
+// emit a blocking JSON decision and push the agent back into the FSM.
+//
+// Behavior:
+//   - stop_hook_active retry -> no-op (prevents infinite loops)
+//   - SubagentStop event     -> no-op (subagents must return so parent can drive)
+//   - Unit-branch session    -> no-op (also a subagent signal, belt-and-suspenders)
+//   - No active intent       -> no-op (user isn't in a managed flow)
+//   - Intent paused          -> no-op (explicit user pause)
+//   - Stage/intent completed -> no-op
+//   - Stage blocked          -> no-op
+//   - Awaiting external      -> no-op (PR/MR merge, external gate, await event)
+//   - In gate/gate_review    -> no-op (human approval wait)
+//   - No ready+in-progress   -> no-op (truly stuck; human must intervene)
+//   - Work remains           -> BLOCK and inject `haiku_run_next` instruction
+//
+// The injected reason tells the parent to call `haiku_run_next` and follow
+// the returned action — NOT to stop until the FSM advances past the stage.
+//
+// Legitimate wait states MUST be detected first — otherwise a stage sitting
+// in `external_review` or `ask` gate would loop forever with the hook trying
+// to force a run_next call while the FSM correctly refuses to advance.
 
+import { existsSync, readdirSync } from "node:fs"
 import { basename, join } from "node:path"
 import {
-	allStagesCompleted,
 	checkIntentCriteria,
 	findActiveIntent,
-	findUnitFiles,
 	getCurrentBranch,
 	isUnitBranch,
 	readFrontmatterField,
@@ -19,150 +36,146 @@ import {
 	setFrontmatterField,
 } from "./utils.js"
 
-function out(s: string): void {
-	process.stdout.write(`${s}\n`)
+function emitBlock(reason: string): void {
+	process.stdout.write(JSON.stringify({ decision: "block", reason }))
+}
+
+function findUnitFilesInStage(intentDir: string, stage: string): string[] {
+	const unitsDir = join(intentDir, "stages", stage, "units")
+	if (!existsSync(unitsDir)) return []
+	return readdirSync(unitsDir)
+		.filter((f) => f.startsWith("unit-") && f.endsWith(".md"))
+		.map((f) => join(unitsDir, f))
 }
 
 export async function enforceIteration(
-	_input: Record<string, unknown>,
+	input: Record<string, unknown>,
 	_pluginRoot: string,
 ): Promise<void> {
-	const currentBranch = getCurrentBranch()
-	const onUnitBranch = isUnitBranch(currentBranch)
+	// Retry guard: if we already blocked once this turn, let the agent stop.
+	if (input.stop_hook_active === true || input.stop_hook_active === "true") {
+		return
+	}
 
-	// Find active intent
+	// SubagentStop fires the same hook — subagents MUST be allowed to return so
+	// the parent can call haiku_run_next. Only block on parent Stop.
+	if (input.hook_event_name === "SubagentStop") return
+
+	// Belt-and-suspenders: unit-branch sessions are subagent sessions.
+	if (isUnitBranch(getCurrentBranch())) return
+
 	const intentDir = findActiveIntent()
+	if (!intentDir) return
 
-	// Unit-branch sessions should NOT be told to /haiku:execute
-	if (onUnitBranch) {
-		out("## H\u00b7AI\u00b7K\u00b7U: Unit Session Ending")
-		out("")
-		out("Ensure you committed changes and saved progress.")
-		return
-	}
-
-	if (!intentDir) {
-		// No H·AI·K·U state - not using the methodology, skip
-		return
-	}
-
-	// Read state from the new model: intent frontmatter + stage state.json + unit frontmatter
 	const intentFile = `${intentDir}/intent.md`
 	const intentStatus = readFrontmatterField(intentFile, "status")
 	const activeStage = readFrontmatterField(intentFile, "active_stage")
 
-	// If no active stage, no state to enforce
+	if (intentStatus === "completed" || intentStatus === "paused") return
 	if (!activeStage) return
 
-	// Read stage state for phase info
 	const stageState = readJson(
 		join(intentDir, "stages", activeStage, "state.json"),
 	)
 	const stageStatus = (stageState.status as string) ?? ""
+	if (stageStatus === "completed" || stageStatus === "blocked") return
 
-	// Find the active unit to get hat and bolt
-	const unitFiles = findUnitFiles(intentDir)
-	let hat = ""
-	let bolt = 1
-	let activeUnitName = ""
-	for (const uf of unitFiles) {
-		const uStatus = readFrontmatterField(uf, "status")
-		if (uStatus === "active") {
-			hat = readFrontmatterField(uf, "hat") || "builder"
-			bolt = Number(readFrontmatterField(uf, "bolt") || "1")
-			activeUnitName = basename(uf, ".md")
-			break
-		}
-	}
-	if (!hat) hat = "builder"
+	// Legitimate wait states — FSM correctly refuses to advance and a blocking
+	// loop here would spin forever against the user. Detect and allow stop.
+	const phase = (stageState.phase as string) ?? ""
+	if (phase === "gate" || phase === "gate_review") return
 
-	// If task is already complete, don't enforce iteration
-	if (intentStatus === "completed" || stageStatus === "completed") {
-		return
-	}
+	// Awaiting external review (PR/MR merge, external gate system).
+	if (stageState.external_review_url) return
 
-	// Get intent slug and check DAG status
-	const intentSlug = basename(intentDir)
+	// Await gate — external event signal (customer response, pipeline, etc.).
+	if (stageStatus === "awaiting_external" || stageStatus === "awaiting") return
+
+	// Count unit states in the ACTIVE stage only. Prior stages' completed units
+	// and future stages' pending units must not influence this decision.
+	const unitFiles = findUnitFilesInStage(intentDir, activeStage)
+
 	let readyCount = 0
 	let inProgressCount = 0
+	let completed = 0
+	let blocked = 0
 
-	// Check unit-level status for the "session exhausted" / "blocked" messages
 	for (const uf of unitFiles) {
 		const unitStatus = readFrontmatterField(uf, "status") || "pending"
 		switch (unitStatus) {
 			case "completed":
+				completed++
 				break
 			case "active":
 			case "in_progress":
 				inProgressCount++
 				break
 			case "blocked":
+				blocked++
 				break
-			case "pending": {
-				// Check if dependencies are satisfied to determine if "ready"
-				readyCount++ // simplified: count pending as ready for now
-				break
-			}
 			default:
+				readyCount++
 				break
 		}
 	}
 
-	// Intent-level completion: check whether every declared stage has
-	// status "completed" in its state.json. This avoids the old bug where
-	// unit files only existing in elaborated stages caused a false positive
-	// when later stages hadn't been elaborated yet.
-	const allComplete = allStagesCompleted(intentDir)
+	const intentSlug = basename(intentDir)
+	const allUnitsDone =
+		unitFiles.length > 0 &&
+		completed === unitFiles.length &&
+		readyCount === 0 &&
+		inProgressCount === 0 &&
+		blocked === 0
 
-	out("")
-	out("---")
-	out("")
-
-	if (allComplete) {
-		// Auto-reconcile: if all units complete but intent not marked completed
+	// All stage units done — reconcile intent state if needed and allow stop.
+	// The agent is expected to have called haiku_run_next already; if not, the
+	// NEXT prompt will surface the pending phase/stage transition.
+	if (allUnitsDone) {
 		if (intentStatus === "active") {
-			setFrontmatterField(intentFile, "status", "completed")
 			checkIntentCriteria(intentDir)
 		}
-		out("## H\u00b7AI\u00b7K\u00b7U: All Units Complete")
-		out("")
-		out("All units have been completed. Intent has been marked as completed.")
-		out("")
-	} else if (readyCount > 0 || inProgressCount > 0) {
-		// Work remains - instruct agent to continue
-		out("## H\u00b7AI\u00b7K\u00b7U: Session Exhausted - Continue Execution")
-		out("")
-		out(`**Bolt:** ${bolt} | **Hat:** ${hat} | **Stage:** ${activeStage}`)
-		out(`**Ready units:** ${readyCount} | **In progress:** ${inProgressCount}`)
-		out("")
-		out("### ACTION REQUIRED")
-		out("")
-		if (activeUnitName) {
-			out(
-				`Call \`/haiku:execute ${intentSlug} ${activeUnitName}\` to continue targeted execution.`,
-			)
-		} else {
-			out("Call `/haiku:execute` to continue the autonomous loop.")
-		}
-		out("")
-		out("**Note:** Subagents have clean context. No `/clear` needed.")
-		out("")
-	} else {
-		// Truly blocked - human must intervene
-		out("## H\u00b7AI\u00b7K\u00b7U: BLOCKED - Human Intervention Required")
-		out("")
-		out(`**Bolt:** ${bolt} | **Hat:** ${hat} | **Stage:** ${activeStage}`)
-		out("")
-		out("No units are ready to work on. All remaining units are blocked.")
-		out("")
-		out("**User action required:**")
-		out(
-			`1. Review blockers: read \`.haiku/intents/${intentSlug}/state/blockers.md\``,
-		)
-		out("2. Unblock units or resolve dependencies")
-		out("3. Run `/haiku:execute` to resume")
-		out("")
+		return
 	}
 
-	out(`Progress preserved in \`.haiku/intents/${intentSlug}/\`.`)
+	// Nothing to drive forward (no ready, no in-progress) — human must unblock.
+	// Don't force a loop; let the agent stop so the user sees the blockers.
+	if (readyCount === 0 && inProgressCount === 0) return
+
+	// Work remains in the active stage. Block the stop and push back into FSM.
+	const reason = [
+		`H·AI·K·U: stage '${activeStage}' is not complete.`,
+		`Intent '${intentSlug}' has ${inProgressCount} unit(s) in progress and ${readyCount} ready.`,
+		`Call \`haiku_run_next { intent: "${intentSlug}" }\` now and follow the returned action.`,
+		"Drive forward on every subagent return — do NOT stop until the FSM advances past this stage.",
+	].join(" ")
+
+	emitBlock(reason)
+
+	// Mark intent as still active if it drifted.
+	if (intentStatus !== "active") {
+		setFrontmatterField(intentFile, "status", "active")
+	}
+
+	// Report the iteration miss to Sentry so we can track how often the
+	// primary drive-forward mechanism (FSM Result relay → run_next) fails
+	// and the Stop hook has to rescue the loop. High miss counts signal
+	// the MCP-level pattern needs tightening. Best-effort; never blocks.
+	try {
+		const { reportError } = await import("../sentry.js")
+		reportError(
+			new Error(
+				`enforce-iteration rescue: stop intercepted with work remaining in stage '${activeStage}'`,
+			),
+			{
+				intent: intentSlug,
+				stage: activeStage,
+				in_progress: String(inProgressCount),
+				ready: String(readyCount),
+				blocked: String(blocked),
+				completed: String(completed),
+			},
+		)
+	} catch {
+		/* best-effort telemetry */
+	}
 }

@@ -1,6 +1,6 @@
 ---
 title: Screen reader announcements undefined for optimistic UI state changes
-status: pending
+status: closed
 origin: adversarial-review
 author: accessibility
 author_type: agent
@@ -9,6 +9,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-13-aria-and-semantic-structure
 ---
 
 DESIGN-BRIEF.md §6 correctly specifies a `role="status" aria-live="polite"` live region for status change announcements (e.g. "Feedback FB-03 marked as closed"). The mobile wireframe `artifacts/feedback-inline-mobile.html:262` adds the live region element.

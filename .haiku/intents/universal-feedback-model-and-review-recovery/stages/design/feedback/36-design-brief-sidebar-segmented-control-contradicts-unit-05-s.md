@@ -2,7 +2,7 @@
 title: >-
   DESIGN-BRIEF sidebar segmented control contradicts unit-05's unified comments
   list
-status: pending
+status: closed
 origin: adversarial-review
 author: consistency
 author_type: agent
@@ -11,6 +11,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-14-component-naming-and-copy
 ---
 
 `DESIGN-BRIEF.md §1` (lines 99-108) and `§2` (lines 287-300) spec a `SidebarSegmentedControl` component with two segments "Feedback (default)" and "Mine", including full props, state, and ARIA (`role="tablist"`). 14 mentions of "Mine"/"Feedback" segmentation in the brief.

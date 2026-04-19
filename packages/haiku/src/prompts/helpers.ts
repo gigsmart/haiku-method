@@ -3,6 +3,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { join } from "node:path"
 import type { GetPromptResult } from "@modelcontextprotocol/sdk/types.js"
+import { resolvePluginRoot } from "../config.js"
 import { findHaikuRoot, intentDir, parseFrontmatter } from "../state-tools.js"
 
 // ── Message builders ─────────────────────────────────────────────────────────
@@ -43,7 +44,7 @@ export { validateSlugArgs } from "../state-tools.js"
 
 /** Studio search paths: project-local first (overrides), then plugin built-in */
 export function studioSearchPaths(): string[] {
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 	return [join(process.cwd(), ".haiku", "studios"), join(pluginRoot, "studios")]
 }
 

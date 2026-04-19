@@ -16,6 +16,21 @@
     }
     @keyframes spin-slow { to { transform: rotate(360deg); } }
     .spin { animation: spin-slow 0.9s linear infinite; }
+
+    /* Toast slide-in for failure-on-confirm (FB-25 added state) */
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .toast-in { animation: toast-in 180ms ease-out; }
+
+    /* Reduced-motion — spinner collapses to a static dot cluster and the toast
+       appears in place. The surrounding copy still describes the failure so the
+       user's task flow is unaffected. FB-20, WCAG 2.3.3. */
+    @media (prefers-reduced-motion: reduce) {
+      .spin { animation: none; }
+      .toast-in { animation: none; }
+    }
   </style>
 </head>
 <body class="bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 min-h-screen">
@@ -37,6 +52,7 @@
       <a href="#preview-card" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Preview card</a>
       <a href="#modal-lifecycle" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Modal lifecycle</a>
       <a href="#error" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Error</a>
+      <a href="#error-mid-commit" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Rollback</a>
       <a href="#loading" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Loading</a>
       <a href="#empty" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Empty</a>
       <a href="#edge-long" class="px-2 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">Long-content</a>
@@ -362,6 +378,54 @@
         <li><code class="font-mono">role="alert"</code> so screen readers announce it without needing focus.</li>
         <li>Confirm label switches to "Retry" when an error is present, then returns to the default Confirm copy once the user edits the state or reopens.</li>
         <li>Cancel remains functional — user can back out without retrying.</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Failure-on-confirm — mid-commit rollback toast (FB-25) -->
+    <!-- ============================================================ -->
+    <section id="error-mid-commit" class="space-y-3">
+      <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">Failure-on-confirm — mid-commit rollback</h2>
+      <p class="text-sm text-stone-500 dark:text-stone-400 max-w-3xl">
+        Distinct from the in-modal error above: this is the state where the modal already closed (the confirm handler returned synchronously but the async <code class="font-mono">haiku_revisit</code> call failed mid-commit — worktree was half-mutated). Mirrors the feedback-card toast+revert pattern in <code class="font-mono">feedback-card-states.html</code>: the UI optimistically advanced, the tool rejected, we roll back state and surface a toast.
+      </p>
+
+      <div class="rounded-xl bg-stone-900/80 dark:bg-black/60 p-8 flex items-start justify-center relative">
+        <!-- Dimmed review UI behind -->
+        <div class="w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-xl border border-stone-200 dark:border-stone-700 overflow-hidden opacity-90">
+          <div class="px-5 py-4 border-b border-stone-200 dark:border-stone-700 flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-stone-200 dark:bg-stone-700 text-stone-500 text-xs">✕</span>
+            <h3 class="text-sm font-semibold text-stone-500 dark:text-stone-400">Review UI (reverted)</h3>
+          </div>
+          <div class="px-5 py-4 space-y-2">
+            <p class="text-xs text-stone-500 dark:text-stone-400">Stage advanced to Product then rolled back to Design. Target stage chip is restored; feedback state unchanged.</p>
+            <p class="text-[10px] text-stone-400 dark:text-stone-500 italic">State on disk matches what the user saw before confirming.</p>
+          </div>
+        </div>
+
+        <!-- Toast docked bottom-center -->
+        <div role="status" aria-live="polite" class="toast-in absolute bottom-5 left-1/2 -translate-x-1/2 w-[320px] rounded-lg border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/40 text-red-900 dark:text-red-100 shadow-lg px-3 py-2">
+          <div class="flex items-start gap-2">
+            <span aria-hidden="true" class="text-sm leading-tight">⚠</span>
+            <div class="flex-1 text-xs">
+              <p class="font-semibold leading-tight">Revisit rolled back</p>
+              <p class="leading-snug mt-0.5">Remote rejected the state push. No changes were committed. Review UI restored.</p>
+              <div class="flex gap-2 mt-1.5">
+                <button class="text-[11px] font-semibold px-2 py-0.5 rounded bg-red-600 text-white hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900">Retry</button>
+                <button class="text-[11px] font-semibold px-2 py-0.5 rounded border border-red-300 dark:border-red-700 text-red-700 dark:text-red-200 hover:bg-red-100/60 dark:hover:bg-red-900/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900">Open repair</button>
+                <button aria-label="Dismiss" class="ml-auto text-[11px] text-red-500 hover:text-red-700 dark:hover:text-red-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ul class="text-xs text-stone-600 dark:text-stone-300 list-disc pl-5 space-y-1">
+        <li>Mirrors <code class="font-mono">feedback-card-states.html §5 Optimistic UI</code>: advance optimistically, revert on tool rejection, surface toast.</li>
+        <li>Toast is dismissible but also auto-persists until the user acts — rollback info is too important to auto-dismiss after 3s.</li>
+        <li>Retry re-opens the modal with the same target; Open repair drops into <code class="font-mono">haiku_repair</code>.</li>
+        <li>Focus moves to the Retry button when the toast mounts. Escape dismisses. <code class="font-mono">role="status"</code> + <code class="font-mono">aria-live="polite"</code> ensure SR announcement.</li>
+        <li>Under <code class="font-mono">prefers-reduced-motion: reduce</code> the toast-in slide is disabled; the toast appears in place.</li>
       </ul>
     </section>
 

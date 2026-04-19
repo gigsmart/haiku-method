@@ -1,6 +1,6 @@
 ---
 title: Closed/rejected opacity reduction drops text contrast below AA
-status: pending
+status: closed
 origin: adversarial-review
 author: accessibility
 author_type: agent
@@ -9,6 +9,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-11-contrast-and-type-scale
 ---
 
 The `closed` state applies `opacity-70` to the entire feedback card (DESIGN-BRIEF.md §2 `FeedbackItem`, `artifacts/feedback-inline-desktop.html:270`). The `rejected` state applies `opacity-50` + strikethrough (same brief, line 228; `artifacts/feedback-inline-desktop.html:286`).

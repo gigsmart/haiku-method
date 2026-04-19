@@ -48,8 +48,13 @@
       border-radius: 16px 16px 0 0;
     }
 
-    /* Pin marker for "in-context" state renderings */
+    /* Pin marker for "in-context" state renderings.
+       Visual 28px preserved for brand / overlay density, but the hit area is
+       expanded to 44×44 via ::before pseudo-element so touch activation meets
+       FB-12 / WCAG 2.5.5 (44×44 minimum target). Focus ring is teal and sits
+       outside the hit area so it remains visible on light + dark surfaces. */
     .pin {
+      position: relative;
       width: 28px; height: 28px;
       border-radius: 9999px;
       border: 2px solid white;
@@ -62,12 +67,36 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
     .dark .pin { border-color: rgb(28, 25, 23); }
+    .pin::before {
+      content: "";
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 44px; height: 44px;
+      transform: translate(-50%, -50%);
+      border-radius: 9999px;
+      /* transparent hit-area; pointer events captured here */
+    }
+    /* Interactive states for pins */
+    .pin:hover { filter: brightness(1.08); transform: scale(1.05); }
+    .pin:active { transform: scale(0.95); }
+    .pin:focus-visible { outline: 2px solid rgb(20 184 166); outline-offset: 3px; }
+    .pin[aria-disabled="true"],
+    .pin:disabled { opacity: 0.45; cursor: not-allowed; filter: grayscale(0.6); }
 
     .ghost {
+      position: relative;
       width: 28px; height: 28px;
       border-radius: 9999px;
       border: 2px dashed rgba(13, 148, 136, 0.75);
       background: rgba(13, 148, 136, 0.1);
+    }
+    .ghost::before {
+      content: "";
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 44px; height: 44px;
+      transform: translate(-50%, -50%);
+      border-radius: 9999px;
     }
 
     /* Connector line from popover to its anchor pin */
@@ -89,6 +118,11 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
+    }
+
+    /* Reduced-motion guard — static equivalents for every transform / transition */
+    @media (prefers-reduced-motion: reduce) {
+      .pin:hover, .pin:active { transform: none; filter: none; }
     }
   </style>
 </head>
@@ -318,6 +352,57 @@
         </div>
       </div>
     </div>
+  </section>
+
+  <!-- ============================================================
+       STATE 4b — DISABLED (EMPTY BODY — CREATE IS INERT)
+       FB-25: the Create button's disabled state was previously only
+       described in unit-04-design-review §5 as copy. Here it's rendered.
+  ============================================================ -->
+  <section id="state-disabled" class="space-y-4">
+    <div class="flex items-baseline gap-3">
+      <span class="label-pill bg-stone-200 text-stone-600 dark:bg-stone-800 dark:text-stone-400">State 4b</span>
+      <h2 class="text-lg font-semibold">Disabled — empty body — Create is inert</h2>
+    </div>
+    <p class="text-sm text-stone-700 dark:text-stone-300">
+      The Create button must be <strong>disabled</strong> while the body
+      textarea is empty (whitespace-only counts as empty). The title is
+      optional and auto-filled from the first 60 chars of body on save, so
+      the body is the blocker. Disabled state uses <code>aria-disabled="true"</code>
+      + <code>disabled</code> attribute so SR users hear "dimmed" + keyboard
+      Enter is a no-op.
+    </p>
+
+    <div class="relative h-80 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 stage-backdrop overflow-hidden">
+      <div class="ghost absolute" style="left: 200px; top: 140px; transform: translate(-50%, -50%);"></div>
+      <div class="popover absolute" style="left: 220px; top: 150px;" role="dialog" aria-modal="true" aria-label="Create feedback at 42%, 60%">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">New feedback @ <span>42%, 60%</span></p>
+          <button aria-label="Close popover" class="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 text-sm leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 rounded-sm">&times;</button>
+        </div>
+        <input type="text" placeholder="Title (optional)"
+               class="w-full text-xs p-2 mb-1.5 border border-stone-300 dark:border-stone-600 rounded-md bg-white dark:bg-stone-800 placeholder-stone-400 dark:placeholder-stone-500"/>
+        <!-- Empty body — Create button is disabled as a result -->
+        <textarea rows="3" placeholder="What's the feedback? (required)"
+                  aria-describedby="disabled-hint"
+                  class="w-full text-xs p-2 mb-1 border border-stone-300 dark:border-stone-600 rounded-md bg-white dark:bg-stone-800 resize-none placeholder-stone-400 dark:placeholder-stone-500"></textarea>
+        <p id="disabled-hint" class="text-[10px] text-stone-500 dark:text-stone-400 mb-2">Body is required.</p>
+        <div class="flex items-center justify-end gap-1.5">
+          <button class="px-2.5 py-1 text-[10px] font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900">Cancel</button>
+          <button disabled aria-disabled="true"
+                  title="Body is empty — Create is disabled"
+                  class="px-2.5 py-1 text-[10px] font-semibold rounded-md bg-teal-600 text-white opacity-50 cursor-not-allowed">Create</button>
+        </div>
+      </div>
+    </div>
+
+    <ul class="text-xs text-stone-600 dark:text-stone-300 list-disc pl-5 space-y-1">
+      <li><code class="font-mono">disabled</code> attribute so Enter / click in the button do nothing.</li>
+      <li><code class="font-mono">aria-disabled="true"</code> so SR users hear "Create, dimmed" (belt + suspenders — some AT reads <code>disabled</code> differently).</li>
+      <li>Button keeps the teal color at <code class="font-mono">opacity: 0.5</code> so the brand / primary-action meaning is preserved; a user recognizes "this is the primary action but it's not ready yet."</li>
+      <li>The hint text under the textarea (<code class="font-mono">aria-describedby</code>) spells out why — no reliance on color or button state alone.</li>
+      <li>As soon as the textarea has any non-whitespace character, the button re-enables and the hint disappears.</li>
+    </ul>
   </section>
 
   <!-- ============================================================

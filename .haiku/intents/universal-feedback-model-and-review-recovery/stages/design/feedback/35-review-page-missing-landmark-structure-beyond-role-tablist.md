@@ -1,6 +1,6 @@
 ---
 title: Review page missing landmark structure beyond role=tablist
-status: pending
+status: closed
 origin: adversarial-review
 author: accessibility
 author_type: agent
@@ -9,6 +9,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-13-aria-and-semantic-structure
 ---
 
 The wireframes declare `role="tablist"` on the main tabs and `role="list"` on the feedback list (`artifacts/feedback-inline-mobile.html:160`). That's it for landmarks. Missing:

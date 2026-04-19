@@ -185,7 +185,7 @@ try {
       raw.includes("source_ref: https://github.com/org/repo/pull/42"),
       `source_ref not found in frontmatter: ${raw.split("---")[1]}`
     )
-    assert.ok(raw.includes("addressed_by: null"))
+    assert.ok(raw.includes("closed_by: null"))
     assert.ok(raw.includes("The handler at line 42 does not check for null."))
   })
 
@@ -346,28 +346,28 @@ try {
     assert.strictEqual(found.data.status, "addressed")
   })
 
-  test("updates addressed_by field", () => {
+  test("updates closed_by field", () => {
     const result = updateFeedbackFile(intentSlug, stageName, "FB-02", {
-      addressed_by: "unit-05-fix-null",
+      closed_by: "unit-05-fix-null",
     })
     assert.ok(result.ok)
     if (result.ok) {
-      assert.deepStrictEqual(result.updated_fields, ["addressed_by"])
+      assert.deepStrictEqual(result.updated_fields, ["closed_by"])
     }
 
     const found = findFeedbackFile(intentSlug, stageName, "FB-02")
-    assert.strictEqual(found.data.addressed_by, "unit-05-fix-null")
+    assert.strictEqual(found.data.closed_by, "unit-05-fix-null")
   })
 
   test("updates multiple fields at once", () => {
     const result = updateFeedbackFile(intentSlug, stageName, "FB-03", {
       status: "addressed",
-      addressed_by: "unit-06-defaults",
+      closed_by: "unit-06-defaults",
     })
     assert.ok(result.ok)
     if (result.ok) {
       assert.ok(result.updated_fields.includes("status"))
-      assert.ok(result.updated_fields.includes("addressed_by"))
+      assert.ok(result.updated_fields.includes("closed_by"))
     }
   })
 
@@ -400,17 +400,19 @@ try {
   })
 
   test("agent cannot close human-authored feedback", () => {
-    // FB-04 is human-authored (origin: user-visual)
+    // FB-04 is human-authored (origin: user-visual).
+    // Agents close via `closed_by`; the FSM forbids setting it on
+    // human-authored items.
     const result = updateFeedbackFile(
       intentSlug,
       stageName,
       "FB-04",
-      { status: "closed" },
+      { closed_by: "unit-05-fix-null" },
       "agent"
     )
     assert.ok(!result.ok)
     if (!result.ok) {
-      assert.ok(result.error.includes("agents cannot set status"))
+      assert.ok(result.error.includes("agents cannot close human-authored feedback"))
     }
   })
 
@@ -430,7 +432,7 @@ try {
   console.log("\n=== deleteFeedbackFile ===")
 
   test("cannot delete pending feedback", () => {
-    // FB-02 was updated to have addressed_by but its status is still pending
+    // FB-02 was updated to have closed_by but its status is still pending
     // Let's make sure FB-02 is pending first
     updateFeedbackFile(intentSlug, stageName, "FB-02", { status: "pending" })
     const result = deleteFeedbackFile(intentSlug, stageName, "FB-02")
@@ -481,9 +483,11 @@ try {
   console.log("\n=== countPendingFeedback after mutations ===")
 
   test("count reflects deletions and status changes", () => {
-    // FB-01: deleted, FB-02: pending, FB-03: addressed, FB-04: deleted
+    // FB-01: deleted. FB-02: status=pending but closed_by set → counted
+    // resolved because any closed_by signals closure. FB-03: status=addressed
+    // (also resolved). FB-04: deleted. No pending items remain.
     const count = countPendingFeedback(intentSlug, stageName)
-    assert.strictEqual(count, 1) // only FB-02 remains pending
+    assert.strictEqual(count, 0)
   })
 
   // ── haiku_feedback MCP tool (end-to-end) ─────────────────────────────────
@@ -637,19 +641,19 @@ try {
     assert.strictEqual(found.data.status, "addressed")
   })
 
-  test("updates addressed_by via MCP tool", () => {
+  test("updates closed_by via MCP tool", () => {
     const result = handleStateTool("haiku_feedback_update", {
       intent: intentSlug,
       stage: stageName,
       feedback_id: "FB-02",
-      addressed_by: "unit-99-mcp-fix",
+      closed_by: "unit-99-mcp-fix",
     })
     assert.ok(!result.isError, `Expected success, got: ${getTextResult(result)}`)
     const parsed = JSON.parse(getTextResult(result))
-    assert.ok(parsed.updated_fields.includes("addressed_by"))
+    assert.ok(parsed.updated_fields.includes("closed_by"))
 
     const found = findFeedbackFile(intentSlug, stageName, "FB-02")
-    assert.strictEqual(found.data.addressed_by, "unit-99-mcp-fix")
+    assert.strictEqual(found.data.closed_by, "unit-99-mcp-fix")
   })
 
   test("MCP update rejects missing feedback_id", () => {
@@ -711,10 +715,10 @@ try {
       intent: intentSlug,
       stage: stageName,
       feedback_id: humanItem.id,
-      status: "closed",
+      closed_by: "unit-99-fix",
     })
     assert.ok(result.isError)
-    assert.ok(getTextResult(result).includes("agents cannot set status"))
+    assert.ok(getTextResult(result).includes("agents cannot close human-authored feedback"))
   })
 
   // ── haiku_feedback_delete MCP tool ──────────────────────────────────────

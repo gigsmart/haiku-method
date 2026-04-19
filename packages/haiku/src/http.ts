@@ -99,6 +99,7 @@ function handleSessionApi(sessionId: string): Response {
 		if (session.knowledgeFiles) data.knowledge_files = session.knowledgeFiles
 		if (session.stageArtifacts) data.stage_artifacts = session.stageArtifacts
 		if (session.outputArtifacts) data.output_artifacts = session.outputArtifacts
+		if (session.previousReview) data.previous_review = session.previousReview
 	}
 
 	if (session.session_type === "question") {
@@ -968,7 +969,7 @@ function handleFeedbackGet(intent: string, stage: string, url: URL): Response {
 			created_at: i.created_at,
 			visit: i.visit,
 			source_ref: i.source_ref,
-			addressed_by: i.addressed_by,
+			closed_by: i.closed_by,
 		})),
 	})
 }
@@ -1044,12 +1045,12 @@ const FeedbackUpdateSchema = z
 		status: z
 			.enum(FEEDBACK_STATUSES as unknown as [string, ...string[]])
 			.optional(),
-		addressed_by: z.string().optional(),
+		closed_by: z.string().optional(),
 	})
 	.refine(
-		(data) => data.status !== undefined || data.addressed_by !== undefined,
+		(data) => data.status !== undefined || data.closed_by !== undefined,
 		{
-			message: "At least one of 'status' or 'addressed_by' must be provided",
+			message: "At least one of 'status' or 'closed_by' must be provided",
 		},
 	)
 
@@ -1103,7 +1104,7 @@ async function handleFeedbackPut(
 		intent,
 		stage,
 		feedbackId,
-		{ status: body.status, addressed_by: body.addressed_by },
+		{ status: body.status, closed_by: body.closed_by },
 		"human",
 	)
 
@@ -1229,17 +1230,26 @@ function handleReviewCurrent(): Response {
 		name: string
 		status: string
 		phase?: string
+		iteration?: number
+		iterations?: unknown[]
 		visits?: number
 	}> = []
 	for (const stageName of stagesList) {
 		try {
 			const stateFile = stageStatePath(activeIntent, stageName)
 			const stageState = readJson(stateFile)
+			const iters = Array.isArray(stageState.iterations)
+				? (stageState.iterations as unknown[])
+				: undefined
+			const iteration =
+				iters?.length ?? ((stageState.visits as number) || 0)
 			stages.push({
 				name: stageName,
 				status: (stageState.status as string) || "pending",
 				phase: (stageState.phase as string) || undefined,
-				visits: (stageState.visits as number) || 0,
+				iteration,
+				iterations: iters,
+				visits: iteration, // legacy alias
 			})
 		} catch {
 			stages.push({ name: stageName, status: "pending" })

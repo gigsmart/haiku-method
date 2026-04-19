@@ -1,6 +1,6 @@
 ---
 title: Low-contrast metadata text fails WCAG AA across all artifacts
-status: pending
+status: closed
 origin: adversarial-review
 author: accessibility
 author_type: agent
@@ -9,6 +9,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-11-contrast-and-type-scale
 ---
 
 The metadata footer lines on every feedback card (`FB-XX · Visit N · origin`) use `text-gray-400 dark:text-gray-500` or `text-stone-400 dark:text-stone-500`. These colors hit roughly 2.8–3.0:1 contrast against the card backgrounds (white / stone-50 / amber-50/50), which is **below the WCAG 2.1 AA requirement of 4.5:1 for normal body text**.

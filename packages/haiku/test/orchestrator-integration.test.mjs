@@ -12,6 +12,22 @@ import {
 	rmSync,
 	writeFileSync,
 } from "node:fs"
+
+// Helper: extract subagent prompt_file paths from an orchestrator response
+// and concatenate their contents. The FSM now writes subagent prompts to
+// tmpfiles and the response only carries <subagent prompt_file="..."> refs.
+function expandPromptFiles(responseText) {
+	const re = /<subagent[^>]*\bprompt_file="([^"]+)"/g
+	let out = responseText
+	let match
+	while ((match = re.exec(responseText)) !== null) {
+		const path = match[1]
+		if (existsSync(path)) {
+			out += "\n\n" + readFileSync(path, "utf8")
+		}
+	}
+	return out
+}
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import assert from "node:assert"
@@ -225,7 +241,7 @@ author_type: ${authorType}
 created_at: "2026-04-15T21:15:00Z"
 visit: ${opts.visit || 0}
 source_ref: null
-addressed_by: null
+closed_by: null
 ---
 
 ${opts.body || `Finding: ${title}`}
@@ -445,7 +461,7 @@ try {
 		process.chdir(projDir)
 
 		const result = await handleOrchestratorTool("haiku_run_next", { intent: slug })
-		const responseText = result.content[0].text
+		const responseText = expandPromptFiles(result.content[0].text)
 
 		// Verify the subagent prompt contains haiku_feedback instructions
 		assert.ok(
@@ -482,226 +498,6 @@ try {
 	// Group 8: Additive elaborate mode
 	// =========================================================================
 
-	console.log("\n=== Group 8: Additive elaborate mode (visits > 0) ===")
-
-	test("additive_elaborate returned when visits > 0 and pending feedback exists", () => {
-		const { projDir, intentDirPath, slug } = createProject("g8-additive-basic", {
-			active_stage: "build",
-			stageConfig: { build: { review: "auto", elaboration: "autonomous" } },
-		})
-		createStageState(intentDirPath, "build", {
-			phase: "elaborate",
-			visits: 1,
-		})
-		createUnit(intentDirPath, "build", "unit-01-impl", { status: "completed" })
-		createFeedbackFile(intentDirPath, slug, "build", "Missing null guard", {
-			origin: "adversarial-review",
-		})
-		createFeedbackFile(intentDirPath, slug, "build", "Race condition in handler", {
-			origin: "adversarial-review",
-		})
-
-		process.chdir(projDir)
-		const result = runNext(slug)
-
-		assert.strictEqual(result.action, "additive_elaborate")
-		assert.strictEqual(result.visits, 1)
-		assert.ok(Array.isArray(result.completed_units))
-		assert.strictEqual(result.completed_units.length, 1)
-		assert.strictEqual(result.completed_units[0], "unit-01-impl")
-		assert.ok(Array.isArray(result.pending_feedback))
-		assert.strictEqual(result.pending_feedback.length, 2)
-		assert.strictEqual(result.pending_feedback[0].feedback_id, "FB-01")
-		assert.ok(result.pending_feedback[0].body.includes("Missing null guard"))
-	})
-
-	test("normal elaborate returned when visits is 0", () => {
-		const { projDir, intentDirPath, slug } = createProject("g8-normal-elaborate", {
-			active_stage: "plan",
-			stages: ["plan"],
-			stageConfig: { plan: { review: "auto", elaboration: "autonomous" } },
-		})
-		createStageState(intentDirPath, "plan", {
-			phase: "elaborate",
-			visits: 0,
-		})
-
-		process.chdir(projDir)
-		const result = runNext(slug)
-
-		// With no units and visits=0, should return regular elaborate
-		assert.strictEqual(result.action, "elaborate", `Expected elaborate, got: ${result.action}`)
-	})
-
-	test("additive_elaborate with new units missing closes: returns validation error", () => {
-		const { projDir, intentDirPath, slug } = createProject("g8-no-closes", {
-			active_stage: "build",
-			stageConfig: { build: { review: "auto", elaboration: "autonomous" } },
-		})
-		createStageState(intentDirPath, "build", {
-			phase: "elaborate",
-			visits: 1,
-		})
-		createUnit(intentDirPath, "build", "unit-01-impl", { status: "completed" })
-		createUnit(intentDirPath, "build", "unit-02-fix", { status: "pending" }) // No closes: field
-		createFeedbackFile(intentDirPath, slug, "build", "Missing null guard")
-
-		process.chdir(projDir)
-		const result = runNext(slug)
-
-		assert.strictEqual(result.action, "additive_elaborate")
-		assert.ok(result.validation_error, "Should have a validation error")
-		assert.ok(
-			result.validation_error.includes("closes:"),
-			"Error should mention closes: field",
-		)
-		assert.ok(
-			result.validation_error.includes("unit-02-fix"),
-			"Error should reference the violating unit",
-		)
-	})
-
-	test("additive_elaborate with invalid closes: references returns error", () => {
-		const { projDir, intentDirPath, slug } = createProject("g8-bad-closes", {
-			active_stage: "build",
-			stageConfig: { build: { review: "auto", elaboration: "autonomous" } },
-		})
-		createStageState(intentDirPath, "build", {
-			phase: "elaborate",
-			visits: 1,
-		})
-		createUnit(intentDirPath, "build", "unit-01-impl", { status: "completed" })
-		createUnit(intentDirPath, "build", "unit-02-fix", {
-			status: "pending",
-			closes: ["FB-99"], // doesn't exist
-		})
-		createFeedbackFile(intentDirPath, slug, "build", "Missing null guard")
-
-		process.chdir(projDir)
-		const result = runNext(slug)
-
-		assert.strictEqual(result.action, "additive_elaborate")
-		assert.ok(result.validation_error)
-		assert.ok(
-			result.validation_error.includes("FB-99"),
-			"Error should reference the invalid FB-99",
-		)
-	})
-
-	test("additive_elaborate with orphaned feedback returns error", () => {
-		const { projDir, intentDirPath, slug } = createProject("g8-orphaned", {
-			active_stage: "build",
-			stageConfig: { build: { review: "auto", elaboration: "autonomous" } },
-		})
-		createStageState(intentDirPath, "build", {
-			phase: "elaborate",
-			visits: 1,
-		})
-		createUnit(intentDirPath, "build", "unit-01-impl", { status: "completed" })
-		createUnit(intentDirPath, "build", "unit-02-fix", {
-			status: "pending",
-			closes: ["FB-01"],
-		})
-		createFeedbackFile(intentDirPath, slug, "build", "Missing null guard") // FB-01 — covered
-		createFeedbackFile(intentDirPath, slug, "build", "Race condition") // FB-02 — orphaned
-
-		process.chdir(projDir)
-		const result = runNext(slug)
-
-		assert.strictEqual(result.action, "additive_elaborate")
-		assert.ok(result.validation_error)
-		assert.ok(
-			result.validation_error.includes("FB-02"),
-			"Error should mention orphaned FB-02",
-		)
-		assert.ok(
-			result.validation_error.includes("Race condition"),
-			"Error should mention the orphaned item title",
-		)
-	})
-
-	test("additive_elaborate passes when all feedback covered by closes:", () => {
-		const { projDir, intentDirPath, slug } = createProject("g8-valid", {
-			active_stage: "build",
-			stageConfig: { build: { review: "auto", elaboration: "autonomous" } },
-		})
-		createStageState(intentDirPath, "build", {
-			phase: "elaborate",
-			visits: 1,
-			elaboration_turns: 3,
-		})
-		createUnit(intentDirPath, "build", "unit-01-impl", { status: "completed" })
-		createUnit(intentDirPath, "build", "unit-02-fix-guard", {
-			status: "pending",
-			closes: ["FB-01"],
-		})
-		createUnit(intentDirPath, "build", "unit-03-fix-race", {
-			status: "pending",
-			closes: ["FB-02"],
-		})
-		createFeedbackFile(intentDirPath, slug, "build", "Missing null guard")
-		createFeedbackFile(intentDirPath, slug, "build", "Race condition")
-
-		process.chdir(projDir)
-		const result = runNext(slug)
-
-		// Should fall through to normal DAG validation / gate_review / auto-advance
-		// because all feedback is covered
-		assert.ok(
-			result.action !== "additive_elaborate" || !result.validation_error,
-			`Expected normal flow (no validation_error), got: ${result.action} with error: ${result.validation_error || "none"}`,
-		)
-	})
-
-	await test("additive_elaborate instructions include feedback items and closes: requirement", async () => {
-		const { projDir, intentDirPath, slug } = createProject("g8-instructions", {
-			active_stage: "build",
-			stageConfig: { build: { review: "auto", elaboration: "autonomous" } },
-		})
-		createStageState(intentDirPath, "build", {
-			phase: "elaborate",
-			visits: 2,
-		})
-		createUnit(intentDirPath, "build", "unit-01-impl", { status: "completed" })
-		createFeedbackFile(intentDirPath, slug, "build", "Missing null guard", {
-			body: "The writeFeedbackFile function does not handle null input",
-		})
-
-		process.chdir(projDir)
-
-		const result = await handleOrchestratorTool("haiku_run_next", { intent: slug })
-		const responseText = result.content[0].text
-
-		// Verify additive elaborate instructions
-		assert.ok(
-			responseText.includes("Additive Elaborate"),
-			"Should include Additive Elaborate header",
-		)
-		assert.ok(
-			responseText.includes("Frozen Completed Units"),
-			"Should list frozen completed units",
-		)
-		assert.ok(
-			responseText.includes("unit-01-impl"),
-			"Should include the completed unit name",
-		)
-		assert.ok(
-			responseText.includes("Pending Feedback"),
-			"Should list pending feedback",
-		)
-		assert.ok(
-			responseText.includes("FB-01"),
-			"Should include feedback ID",
-		)
-		assert.ok(
-			responseText.includes("closes:"),
-			"Should mention closes: requirement",
-		)
-		assert.ok(
-			responseText.includes("do NOT re-plan"),
-			"Should instruct not to re-plan",
-		)
-	})
 
 	test("closes: field on unit triggers feedback update when frontmatter is parsed", () => {
 		// This tests the mechanism: when a unit's frontmatter has closes: [FB-NN],
@@ -731,7 +527,7 @@ try {
 		for (const fbId of closes) {
 			const result = updateFeedbackFile(slug, "build", fbId, {
 				status: "addressed",
-				addressed_by: "unit-02-fix-guard",
+				closed_by: "unit-02-fix-guard",
 			}, "agent")
 			assert.ok(result.ok, `Should succeed updating ${fbId}: ${JSON.stringify(result)}`)
 		}
@@ -743,9 +539,9 @@ try {
 		assert.ok(fb01, "Should find FB-01")
 		assert.ok(fb02, "Should find FB-02")
 		assert.strictEqual(fb01.status, "addressed")
-		assert.strictEqual(fb01.addressed_by, "unit-02-fix-guard")
+		assert.strictEqual(fb01.closed_by, "unit-02-fix-guard")
 		assert.strictEqual(fb02.status, "addressed")
-		assert.strictEqual(fb02.addressed_by, "unit-02-fix-guard")
+		assert.strictEqual(fb02.closed_by, "unit-02-fix-guard")
 	})
 
 	test("closes: field in unit frontmatter is read correctly by orchestrator validation", () => {

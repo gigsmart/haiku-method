@@ -25,6 +25,23 @@
       border-radius: 0.5rem;
       pointer-events: none;
     }
+    /* Locked / completed cards are focusable for read-only inspection
+       (keyboard users can still land on them to read the SR summary). The
+       focus ring is teal even though the card is dimmed — the ring must be
+       brighter than the surrounding content so keyboard users see where
+       they are. FB-25: focus ring documented for locked/completed units. */
+    .locked-card:focus-visible {
+      outline: 2px solid rgb(20 184 166);
+      outline-offset: 3px;
+      opacity: 0.95; /* briefly restore visibility of content while focused */
+    }
+    .locked-card:hover {
+      opacity: 0.8; /* pointer hover restores some visibility too */
+    }
+    /* Reduced-motion — no transitions on focus/hover opacity */
+    @media (prefers-reduced-motion: reduce) {
+      .locked-card { transition: none; }
+    }
   </style>
 </head>
 <body class="dark bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
@@ -223,7 +240,7 @@
 
       <div class="space-y-2">
         <!-- Completed unit 1 -->
-        <div class="locked-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 opacity-60">
+        <div tabindex="0" role="article" aria-label="Completed unit (read-only — locked for editing, focusable for inspection)" class="locked-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 opacity-60 transition-opacity outline-none">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-01</span>
@@ -235,7 +252,7 @@
         </div>
 
         <!-- Completed unit 2 -->
-        <div class="locked-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 opacity-60">
+        <div tabindex="0" role="article" aria-label="Completed unit (read-only — locked for editing, focusable for inspection)" class="locked-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 opacity-60 transition-opacity outline-none">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-02</span>
@@ -247,7 +264,7 @@
         </div>
 
         <!-- Completed unit 3 -->
-        <div class="locked-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 opacity-60">
+        <div tabindex="0" role="article" aria-label="Completed unit (read-only — locked for editing, focusable for inspection)" class="locked-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 opacity-60 transition-opacity outline-none">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-03</span>
@@ -259,7 +276,7 @@
         </div>
 
         <!-- Completed unit 4 -->
-        <div class="locked-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 opacity-60">
+        <div tabindex="0" role="article" aria-label="Completed unit (read-only — locked for editing, focusable for inspection)" class="locked-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 opacity-60 transition-opacity outline-none">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-04</span>
@@ -271,7 +288,7 @@
         </div>
 
         <!-- Completed unit 5 -->
-        <div class="locked-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 opacity-60">
+        <div tabindex="0" role="article" aria-label="Completed unit (read-only — locked for editing, focusable for inspection)" class="locked-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 opacity-60 transition-opacity outline-none">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-05</span>
@@ -283,7 +300,7 @@
         </div>
 
         <!-- Completed unit 6 -->
-        <div class="locked-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 opacity-60">
+        <div tabindex="0" role="article" aria-label="Completed unit (read-only — locked for editing, focusable for inspection)" class="locked-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 opacity-60 transition-opacity outline-none">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-06</span>
@@ -295,7 +312,7 @@
         </div>
 
         <!-- Completed unit 7 -->
-        <div class="locked-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 opacity-60">
+        <div tabindex="0" role="article" aria-label="Completed unit (read-only — locked for editing, focusable for inspection)" class="locked-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 opacity-60 transition-opacity outline-none">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-07</span>
@@ -304,6 +321,83 @@
             <span class="text-gray-400 dark:text-gray-600 text-xs">&#x1F512;</span>
           </div>
           <h3 class="text-sm font-medium text-gray-700 dark:text-gray-400 mt-1">Comment-to-Feedback Migration Layer</h3>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         State-coverage reference (FB-25) — focus ring on locked units
+         and the full matrix for the new-unit and locked-unit cards.
+    ============================================================ -->
+    <section class="mb-6" aria-labelledby="state-ref-h">
+      <h2 id="state-ref-h" class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">State coverage — read-only locked units</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Locked / completed unit cards are dimmed by default but remain in the Tab order (<code class="font-mono">tabindex="0"</code>) so keyboard users can land on them for read-only inspection. Focus ring restores visibility while focused. Hover opacity bumps also help pointer users spot them.</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Default (dimmed) -->
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">Default (locked, opacity 60%)</p>
+          <div tabindex="0" role="article" aria-label="Locked unit default"
+               class="locked-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 opacity-60 transition-opacity">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-01</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+              </div>
+              <span class="text-gray-400 dark:text-gray-600 text-xs">&#x1F512;</span>
+            </div>
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-400 mt-1">Feedback Data Model Design</h3>
+          </div>
+        </div>
+
+        <!-- Hover (simulated 80% opacity) -->
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">Hover (opacity 80%)</p>
+          <div role="article" aria-label="Locked unit hover"
+               class="locked-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4" style="opacity: 0.8;">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-01</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+              </div>
+              <span class="text-gray-400 dark:text-gray-600 text-xs">&#x1F512;</span>
+            </div>
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-400 mt-1">Feedback Data Model Design</h3>
+          </div>
+        </div>
+
+        <!-- Focus (simulated teal ring) -->
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">Focus (teal 2px ring, opacity 95%)</p>
+          <div role="article" aria-label="Locked unit focus"
+               class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4" style="opacity: 0.95; outline: 2px solid rgb(20 184 166); outline-offset: 3px;">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-01</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+              </div>
+              <span class="text-gray-400 dark:text-gray-600 text-xs">&#x1F512;</span>
+            </div>
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-400 mt-1">Feedback Data Model Design</h3>
+          </div>
+        </div>
+
+        <!-- Disabled semantics spelled out -->
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">Semantic disabled (aria-disabled="true")</p>
+          <div role="article" aria-disabled="true" aria-label="Locked unit — cannot be edited"
+               class="locked-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 opacity-60">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-01</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400">read-only</span>
+              </div>
+              <span class="text-gray-400 dark:text-gray-600 text-xs">&#x1F512;</span>
+            </div>
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-400 mt-1">Feedback Data Model Design</h3>
+            <p class="text-[10px] text-gray-500 dark:text-gray-500 mt-1 italic">Focus still works (tabindex=0, read-only inspection); content is uneditable.</p>
+          </div>
         </div>
       </div>
     </section>

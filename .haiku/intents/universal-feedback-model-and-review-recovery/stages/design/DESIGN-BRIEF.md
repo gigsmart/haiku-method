@@ -114,6 +114,8 @@ The sidebar header is a single **"Comments"** heading with an adjacent **AgentFe
 
 ## 2. Component Inventory
 
+> **State-coverage requirement (added in unit-15 / FB-25).** Every new component in this intent — and every new component introduced in downstream stages — **MUST** ship with a six-state grid (default / hover / focus / active / disabled / error) rendered alongside its component spec. Use `stages/design/artifacts/state-coverage-grid.md` as the template. Components whose element cannot reach a given state (e.g. a non-focusable label) **MUST** mark the state `N/A` with a one-line rationale; silently omitting a state is not acceptable. The design-reviewer hat walks this grid row-by-row before approval.
+
 ### Typography Floor (unit-11)
 
 Hard rules, enforced by grep across `stages/design/artifacts/`:
@@ -145,7 +147,6 @@ WCAG 2.2 1.4.11 Non-Text Contrast requires ≥ 3:1 for disabled-state indicators
 | Button (secondary, disabled, dark) | `dark:bg-stone-800 dark:text-stone-300 dark:border-stone-500` | 10.2:1 | 3.2:1 |
 | Button (primary green, disabled) | `bg-green-300 text-green-800 dark:bg-green-900/40 dark:text-green-200` | 5.1:1 light / 7.8:1 dark | — |
 | Every disabled control MUST carry `aria-disabled="true"` alongside the native `disabled` attribute so screen readers announce the state explicitly. | | | |
-
 
 
 ### New Components

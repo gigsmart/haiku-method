@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm run *)",
+      "Bash(cp ../../plugin/bin/haiku /Volumes/dev/src/github.com/gigsmart/haiku-method/plugin/bin/haiku)",
+      "Read(//Volumes/dev/src/github.com/gigsmart/haiku-method/plugin/bin/**)"
     ]
   }
 }

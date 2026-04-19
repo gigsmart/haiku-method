@@ -2,7 +2,7 @@
 title: >-
   Status distinguished only by colored left border — fails
   information-not-by-color-alone
-status: pending
+status: closed
 origin: adversarial-review
 author: accessibility
 author_type: agent
@@ -11,6 +11,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-11-contrast-and-type-scale
 ---
 
 The feedback card design relies on a 3px left border color to convey status (amber=pending, blue=addressed, green=closed, gray=rejected) — DESIGN-BRIEF.md §2 `FeedbackItem` interaction states, and every card artifact.

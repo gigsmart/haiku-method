@@ -96,6 +96,20 @@
       animation: retry-spin 1s linear infinite;
     }
 
+    /* Reduced-motion guards — every @keyframes declared in this file has a
+       sibling fallback that disables the animation while preserving the final
+       legible state. Spinners collapse to a static "loading" dot cluster; the
+       card-lift hover drops to color-only feedback (FB-20, WCAG 2.3.3). */
+    @media (prefers-reduced-motion: reduce) {
+      .feedback-status-changed { animation: none; }
+      .fb-card-hover:hover { transform: none; box-shadow: 0 0 0 1px rgb(20 184 166); }
+      .dark .fb-card-hover:hover { box-shadow: 0 0 0 1px rgb(45 212 191); }
+      .save-pulsing { animation: none; opacity: 0.7; }
+      .fade-out-card { animation: none; opacity: 0; }
+      .slide-up { animation: none; }
+      .retry-spin { animation: none; }
+    }
+
     /* Code line highlight for annotated lines — Tailwind amber-400 at 8% opacity */
     .code-line-annotated {
       @apply bg-amber-400/[0.08];

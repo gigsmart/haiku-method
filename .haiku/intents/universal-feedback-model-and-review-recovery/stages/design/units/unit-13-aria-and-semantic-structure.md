@@ -49,7 +49,7 @@ quality_gates:
     Optimistic UI aria-live sequence specified in aria-live-sequencing-spec.md:
     on click → "FB-XX marking as closed…" (present progressive); on success →
     "FB-XX closed."; on failure → "FB-XX close failed; reverted to addressed."
-    Every transition (close, verify, reopen, reject) has its own three-phase
+    Every transition (close, verify, re-open, reject) has its own three-phase
     template. unit-05's quality gates amended (body text) to reference this
     spec.
   - >-
@@ -85,16 +85,87 @@ quality_gates:
     color-matched focus rings per variant; every `<input>`, `<textarea>`,
     `<button>`, `[tabindex="0"]`, `<a>` declares `focus-visible:ring-2
     focus-visible:ring-teal-500` (or the variant rule)
-status: active
-bolt: 1
-hat: designer
-started_at: '2026-04-18T03:59:39Z'
-hat_started_at: '2026-04-18T03:59:39Z'
+hat: feedback-assessor
+hat_started_at: '2026-04-19T01:32:19Z'
 iterations:
   - hat: designer
-    started_at: '2026-04-18T03:59:39Z'
+    started_at: '2026-04-18T04:30:46Z'
     completed_at: null
     result: null
+  - hat: designer
+    started_at: '2026-04-18T21:17:11Z'
+    completed_at: '2026-04-18T21:17:41Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-18T21:17:42Z'
+    completed_at: '2026-04-18T21:22:06Z'
+    result: advance
+  - hat: feedback-assessor
+    started_at: '2026-04-18T21:22:06Z'
+    completed_at: '2026-04-18T21:25:56Z'
+    result: reject
+    reason: >-
+      Four new spec artifacts (aria-landmark-spec.md,
+      aria-live-sequencing-spec.md, agent-feedback-toggle-spec.html,
+      focus-ring-spec.html) are high-quality, and unit-01 body-text landmark
+      amendment is in. But the cross-artifact sweep the unit explicitly scopes
+      (and that FB-32/FB-35/FB-37/FB-26 quality gates require) is not done in
+      the unit worktree: (1) FB-32 — comments-list-with-agent-toggle.html is
+      absent; the spec's own §4 says 'dev stage MUST replace both toggle
+      instances (lines 65-76 OFF, lines 170-185 ON)' but no such artifact exists
+      in the unit worktree for the replacement to land on. FB-32 gate requires
+      the actual role=switch + aria-checked + 44px hit area in
+      comments-list-with-agent-toggle.html, not just a new spec file. (2) FB-35
+      — assessor-summary-card.html is absent; gate requires role='status'
+      aria-live='polite' on the card root, and the landmark spec's own §9
+      checklist and per-surface table mandate it. (3) FB-35 + FB-37 —
+      revisit-modal-spec.html is absent; FB-37 gate requires revisit-modal
+      Cancel button focus-visible:ring-2 focus-visible:ring-teal-500 and FB-35
+      requires role='dialog' aria-modal='true' on it. (4) FB-26 —
+      feedback-card-states.html is absent; gate requires spinner + sr-only
+      'Processing...' inside in-flight cards. (5) FB-37 —
+      annotation-popover-states.html is absent; gate requires focus:ring-1
+      removal at lines 247/249. (6) FB-26 — unit-05 body-text amendment was not
+      made (gate text: 'unit-05's quality gates amended (body text) to reference
+      this spec'); unit-05 file contains zero references to
+      aria-live-sequencing-spec. Pull the five missing artifacts
+      (comments-list-with-agent-toggle.html, assessor-summary-card.html,
+      revisit-modal-spec.html, feedback-card-states.html,
+      annotation-popover-states.html) into the unit worktree, apply the required
+      ARIA/focus edits, and append the unit-05 body-text amendment referencing
+      aria-live-sequencing-spec.md. Minor: name focus-trap-react explicitly in
+      feedback-inline-mobile.html sheet comments or DESIGN-BRIEF §6 (landmark
+      spec §3.1 names it, but gate text requires the naming in the sheet
+      artifact comments OR DESIGN-BRIEF §6, not in a peer spec).
+  - hat: designer
+    started_at: '2026-04-18T21:25:56Z'
+    completed_at: '2026-04-18T21:34:59Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-18T21:34:59Z'
+    completed_at: '2026-04-18T21:36:26Z'
+    result: advance
+  - hat: feedback-assessor
+    started_at: '2026-04-18T21:36:26Z'
+    completed_at: '2026-04-18T21:40:53Z'
+    result: reject
+    reason: "FB-33 (emoji ↔ origin mapping drift) NOT addressed. Bolt-2 commit (f8c2f0d0) explicitly scoped to FB-22/26/32/35/37 and skipped FB-33. aria-landmark-spec.md §6 declares canonical emojis (Review Agent = \U0001F50D U+1F50D, External PR/MR = \U0001F517 U+1F517, Agent = \U0001F916 U+1F916) and §9 verification grep forbids the drifted codepoints in stages/design/. Bolt-2 artifacts still use forbidden emoji: comments-list-with-agent-toggle.html has 10 occurrences of &#x1F6E1 (shield) / &#x1F500 (shuffle) / &#x2728 (sparkles); feedback-card-states.html has 18. Assessor's own §9 grep would fail against its own artifacts. FB-22/26/32/35/37 verified clean: revisit-modal-spec has role=dialog + aria-modal + focus rings on Cancel; agent-feedback-toggle-spec defines role=switch + 44px hit area + focus-visible; aria-landmark-spec maps landmarks + focus-trap contract for mobile sheet; aria-live-sequencing-spec defines polite/assertive two-node pattern; feedback-card-states adds aria-busy + sr-only Processing; unit-05 body amendment present; focus-ring-spec §2 explicitly permits variant-matched amber ring for warning primary. Fix: sweep &#x1F6E1 → &#x1F50D, &#x1F500 → &#x1F517, &#x2728 → &#x1F916 across all design artifacts (not just the 5 bolt-2 files — grep shows drift across 7 files including feedback-inline-desktop/mobile, review-context-header, comment-to-feedback-flow)."
+  - hat: designer
+    started_at: '2026-04-18T21:40:53Z'
+    completed_at: '2026-04-19T00:57:03Z'
+    result: advance
+  - hat: design-reviewer
+    started_at: '2026-04-19T00:57:03Z'
+    completed_at: '2026-04-19T01:32:19Z'
+    result: advance
+  - hat: feedback-assessor
+    started_at: '2026-04-19T01:32:19Z'
+    completed_at: '2026-04-19T01:39:09Z'
+    result: advance
+status: completed
+bolt: 3
+started_at: '2026-04-18T21:17:11Z'
+completed_at: '2026-04-19T01:39:09Z'
 ---
 # ARIA roles, semantic landmarks, and focus-ring consistency
 
@@ -105,7 +176,7 @@ Six FB items all cluster on "the artifacts produce the visual but not the semant
 **FB-to-fix mapping:**
 
 - **FB-22** (mobile bottom-sheet focus trap): add `role="dialog" aria-modal="true" aria-labelledby="sheet-title"` to `feedback-inline-mobile.html:116` sheet container; add `id="sheet-title"` to the Feedback h2; document focus-trap strategy (library name or inert-attribute approach) in sheet artifact comments AND DESIGN-BRIEF §6; close button returns focus to FAB; main content gets `aria-hidden="true"` + `inert` while sheet is open.
-- **FB-26** (aria-live sequencing for optimistic UI): produce `aria-live-sequencing-spec.md` defining three-phase announcements for every transition (close, verify, reopen, reject). Spinner visible + `<span class="sr-only">Processing…</span>` inside in-flight cards. Amend unit-05's body text to reference this spec (do not modify unit-05 FSM fields).
+- **FB-26** (aria-live sequencing for optimistic UI): produce `aria-live-sequencing-spec.md` defining three-phase announcements for every transition (close, verify, re-open, reject). Spinner visible + `<span class="sr-only">Processing…</span>` inside in-flight cards. Amend unit-05's body text to reference this spec (do not modify unit-05 FSM fields).
 - **FB-32** (agent-feedback toggle ARIA): replace the `<label>` + styled `<span>` at `comments-list-with-agent-toggle.html:65-76` with an accessible switch control. Produce `agent-feedback-toggle-spec.html` rendering default/checked/focus/hover/disabled states. Wrap in a 44px touch target.
 - **FB-33** (emoji ↔ origin mapping): reconcile DESIGN-BRIEF §2 spec with artifact implementations. Pick one emoji set (recommend adopting unit-05's richer pill choices: 🛡 adversarial-review, 🔀 external-pr/mr, 👁 user-visual, 💬 user-chat, ✨ agent — OR revert to the brief's simpler set 🔍/🔗/✎/💬/🤖; either works but both docs must match). Add origin-legend spec. Include emoji-rendering cross-platform note.
 - **FB-35** (landmarks): mandate landmark structure in unit-01 completion criteria amendment AND implement in every affected artifact (`feedback-inline-desktop.html:70` main, every sidebar → `<aside>`, stage-progress-strip → `<nav>`, revisit-modal-spec.html → `role="dialog"`, assessor-summary-card.html:47 → `role="status"`). Produce `aria-landmark-spec.md` enumerating the complete landmark map.
@@ -129,17 +200,17 @@ The feedback-assessor hat (auto-injected) will independently verify: focus-trap 
 
 ## Completion criteria
 
-- [ ] Mobile bottom sheet has `role="dialog" aria-modal="true" aria-labelledby="sheet-title"` + `id="sheet-title"` on heading
-- [ ] Main content receives `aria-hidden="true"` + `inert` while sheet is open; close button returns focus to FAB; focus-trap strategy named in comments or DESIGN-BRIEF §6
-- [ ] `aria-live-sequencing-spec.md` defines three-phase announcements for every feedback transition (close, verify, reopen, reject); spinner + sr-only "Processing…" inside in-flight cards
-- [ ] unit-05 body text amended to reference aria-live spec in its quality gates
-- [ ] Agent-feedback toggle replaced with `<button role="switch" aria-checked aria-label>` or equivalent pattern; 44px touch target; `focus-visible:ring-2 focus-visible:ring-teal-500`
-- [ ] `agent-feedback-toggle-spec.html` renders default + checked + focus + hover + disabled states
-- [ ] DESIGN-BRIEF §2 and every artifact render the SAME emoji for each origin; origin-legend component spec'd; cross-platform rendering note present
-- [ ] `aria-landmark-spec.md` enumerates landmarks for every page/modal/sheet
-- [ ] Every artifact implements `<header role="banner">`, `<nav aria-label="Stage progress">`, `<main id="main-content">`, `<aside aria-label="Review sidebar">`, `role="dialog" aria-modal="true"` on modals, `role="status" aria-live="polite"` on assessor-summary-card root
-- [ ] unit-01 body text amended to require landmark structure
-- [ ] `grep -rEn 'focus:ring-1' stages/design/artifacts/` returns 0 matches on interactive elements
-- [ ] Revisit-modal Cancel button has `focus-visible:ring-2 focus-visible:ring-teal-500`
-- [ ] Revisit-modal Confirm button focus ring either teal-500 OR focus-ring-spec.html documents a "variant-matched focus ring" rule
-- [ ] Every `<input>`, `<textarea>`, `<button>`, `[tabindex="0"]`, `<a>` in every artifact declares focus styles per the canonical rule
+- [x] Mobile bottom sheet has `role="dialog" aria-modal="true" aria-labelledby="sheet-title"` + `id="sheet-title"` on heading
+- [x] Main content receives `aria-hidden="true"` + `inert` while sheet is open; close button returns focus to FAB; focus-trap strategy named in comments or DESIGN-BRIEF §6
+- [x] `aria-live-sequencing-spec.md` defines three-phase announcements for every feedback transition (close, verify, re-open, reject); spinner + sr-only "Processing…" inside in-flight cards
+- [x] unit-05 body text amended to reference aria-live spec in its quality gates
+- [x] Agent-feedback toggle replaced with `<button role="switch" aria-checked aria-label>` or equivalent pattern; 44px touch target; `focus-visible:ring-2 focus-visible:ring-teal-500`
+- [x] `agent-feedback-toggle-spec.html` renders default + checked + focus + hover + disabled states
+- [x] DESIGN-BRIEF §2 and every artifact render the SAME emoji for each origin; origin-legend component spec'd; cross-platform rendering note present
+- [x] `aria-landmark-spec.md` enumerates landmarks for every page/modal/sheet
+- [x] Every artifact implements `<header role="banner">`, `<nav aria-label="Stage progress">`, `<main id="main-content">`, `<aside aria-label="Review sidebar">`, `role="dialog" aria-modal="true"` on modals, `role="status" aria-live="polite"` on assessor-summary-card root
+- [x] unit-01 body text amended to require landmark structure
+- [x] `grep -rEn 'focus:ring-1' stages/design/artifacts/` returns 0 matches on interactive elements
+- [x] Revisit-modal Cancel button has `focus-visible:ring-2 focus-visible:ring-teal-500`
+- [x] Revisit-modal Confirm button focus ring either teal-500 OR focus-ring-spec.html documents a "variant-matched focus ring" rule
+- [x] Every `<input>`, `<textarea>`, `<button>`, `[tabindex="0"]`, `<a>` in every artifact declares focus styles per the canonical rule

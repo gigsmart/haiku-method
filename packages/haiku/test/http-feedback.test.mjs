@@ -289,15 +289,15 @@ async function run() {
     assert.ok(data.message.includes("FB-01 updated"))
   })
 
-  await test("updates addressed_by field", async () => {
+  await test("updates closed_by field", async () => {
     const res = await fetch(`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-01`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ addressed_by: "unit-99-fix" }),
+      body: JSON.stringify({ closed_by: "unit-99-fix" }),
     })
     assert.strictEqual(res.status, 200)
     const data = await res.json()
-    assert.ok(data.updated_fields.includes("addressed_by"))
+    assert.ok(data.updated_fields.includes("closed_by"))
   })
 
   await test("human can close human-authored feedback via PUT", async () => {

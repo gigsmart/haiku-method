@@ -1,6 +1,6 @@
 ---
 title: Keyboard shortcut 'r' conflict with screen-reader browse-mode virtual keys
-status: pending
+status: closed
 origin: adversarial-review
 author: accessibility
 author_type: agent
@@ -9,6 +9,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-12-keyboard-reach-and-shortcuts
 ---
 
 The keyboard shortcut map at `artifacts/keyboard-shortcut-map.html:180-191` assigns bare single-key shortcuts (`j`, `k`, `r`, `a`, `n`, `/`, `?`) as global captures. These collide with how screen readers (NVDA, JAWS, VoiceOver) work:

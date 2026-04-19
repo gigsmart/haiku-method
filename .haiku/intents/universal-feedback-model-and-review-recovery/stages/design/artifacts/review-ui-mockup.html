@@ -1948,6 +1948,12 @@
       transition: none;
     }
     .fb-focused { outline: 2px solid rgb(20 184 166); outline-offset: 1px; }
+
+    /* Reduced-motion — drop the pulsing cross-flash but keep the static
+       teal border so the "you're here" cue remains. FB-20, WCAG 2.3.3. */
+    @media (prefers-reduced-motion: reduce) {
+      .fb-flash { animation: none; }
+    }
   </style>
 
 </body>

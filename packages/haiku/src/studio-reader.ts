@@ -15,6 +15,7 @@ import {
 
 // Re-export so consumers don't need to reach into prompts/helpers
 export const studioSearchPaths = _studioSearchPaths
+import { resolvePluginRoot } from "./config.js"
 import { parseFrontmatter } from "./state-tools.js"
 
 /** Read a studio stage definition file */
@@ -96,6 +97,24 @@ export function readReviewAgentDefs(
 		if (!existsSync(agentsDir)) continue
 		for (const f of readdirSync(agentsDir).filter((f) => f.endsWith(".md"))) {
 			agents[f.replace(/\.md$/, "")] = readFileSync(join(agentsDir, f), "utf8")
+		}
+	}
+	return agents
+}
+
+/** Return review agent NAME → FILE PATH mapping (project overrides plugin). Subagent reads the file itself. */
+export function readReviewAgentPaths(
+	studio: string,
+	stage: string,
+): Record<string, string> {
+	validateIdentifier(studio, "studio")
+	validateIdentifier(stage, "stage")
+	const agents: Record<string, string> = {}
+	for (const base of [...studioSearchPaths()].reverse()) {
+		const agentsDir = join(base, studio, "stages", stage, "review-agents")
+		if (!existsSync(agentsDir)) continue
+		for (const f of readdirSync(agentsDir).filter((f) => f.endsWith(".md"))) {
+			agents[f.replace(/\.md$/, "")] = join(agentsDir, f)
 		}
 	}
 	return agents
@@ -332,7 +351,7 @@ export function clearStudioCache(): void {
 
 function scanStudiosFromDisk(): StudioInfo[] {
 	const seen = new Map<string, StudioInfo>()
-	const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+	const pluginRoot = resolvePluginRoot()
 	const paths = studioSearchPaths()
 	// paths is [project, plugin]; reverse so plugin loads first, then project overwrites
 	for (const base of [...paths].reverse()) {

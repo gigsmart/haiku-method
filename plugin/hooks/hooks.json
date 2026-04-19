@@ -12,16 +12,6 @@
         ]
       },
       {
-        "matcher": "Agent|Task|Skill",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook subagent-hook",
-            "timeout": 30
-          }
-        ]
-      },
-      {
         "matcher": "mcp__.*__haiku_",
         "hooks": [
           {
@@ -54,16 +44,6 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook track-outputs",
-            "timeout": 5
-          }
-        ]
-      },
-      {
         "matcher": ".*",
         "hooks": [
           {
@@ -74,46 +54,9 @@
         ]
       }
     ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook ensure-deps",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook inject-context",
-            "async": true
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook quality-gate",
-            "timeout": 120
-          },
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook enforce-iteration",
-            "async": true
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook quality-gate",
-            "timeout": 120
-          },
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook enforce-iteration",

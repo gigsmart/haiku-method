@@ -2,7 +2,7 @@
 title: >-
   Pin markers have tabindex=-1 making keyboard users unable to reach inline
   annotations
-status: pending
+status: closed
 origin: adversarial-review
 author: accessibility
 author_type: agent
@@ -11,6 +11,7 @@ iteration: 1
 visit: 1
 source_ref: null
 addressed_by: null
+closed_by: unit-12-keyboard-reach-and-shortcuts
 ---
 
 In `artifacts/feedback-inline-desktop.html:193` and `artifacts/annotation-gesture-spec.html:193`, pin annotation buttons are rendered with `tabindex="-1"`, removing them from the keyboard focus order entirely. This violates WCAG 2.1.1 Keyboard — every interactive element must be reachable by keyboard.
