@@ -807,10 +807,14 @@ export function mergeUnitWorktree(
 			])
 		})
 
-		// Reap the unit worktree and branch — its work is now on the stage branch.
+		// Reap the unit worktree and local branch — its work is now on the
+		// stage branch. Do NOT delete the remote unit branch here: if the
+		// team opened a PR/MR against it for review, deletion would yank
+		// the source out from under the review. Remote branch cleanup, if
+		// desired, should happen at stage-complete (after fan-in) or be
+		// driven by the review provider.
 		tryRun(["git", "worktree", "remove", worktreePath, "--force"])
 		tryRun(["git", "branch", "-D", unitBranch])
-		tryRun(["git", "push", "origin", "--delete", unitBranch])
 
 		return {
 			success: true,

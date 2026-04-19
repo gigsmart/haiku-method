@@ -1734,10 +1734,16 @@ function matchesGlob(candidate: string, pattern: string): boolean {
 	}
 	// Plain dir (no trailing slash, no star): treat as prefix if candidate is under it
 	if (!p.includes("*") && c.startsWith(`${p}/`)) return true
-	// Star wildcards: convert to regex
+	// Star wildcards: convert to regex. Use a NUL placeholder for `**` so
+	// the subsequent single-`*` expansion doesn't re-expand the `.*`.
 	if (p.includes("*")) {
 		const esc = p.replace(/[.+?^${}()|[\]\\]/g, "\\$&")
-		const regex = new RegExp(`^${esc.replace(/\*\*/g, ".*").replace(/\*/g, "[^/]*")}$`)
+		const regex = new RegExp(
+			`^${esc
+				.replace(/\*\*/g, "\x00")
+				.replace(/\*/g, "[^/]*")
+				.replace(/\x00/g, ".*")}$`,
+		)
 		return regex.test(c)
 	}
 	return false
@@ -3924,55 +3930,13 @@ export function handleStateTool(
 					}
 				}
 
-				// Require at least one tracked output. The track-outputs PostToolUse
-				// hook auto-populates this as files are written, so an empty list
-				// means the unit produced no concrete artifacts.
-				if (unitOutputs.length === 0) {
-					const sf = args.state_file as string | undefined
-					if (sf)
-						logSessionEvent(sf, {
-							event: "outputs_empty",
-							intent: args.intent,
-							stage: advStage,
-							unit: args.unit,
-						})
-					return text(
-						JSON.stringify({
-							error: "unit_outputs_empty",
-							message:
-								"Cannot complete unit: no outputs were produced. Every unit must write at least one artifact under the intent directory — either a stage artifact (stages/<stage>/... excluding units/ and state.json) or a knowledge document (knowledge/...). The track-outputs hook auto-populates `outputs:` as files are written; if your work is done but nothing was tracked, add the produced paths manually to the unit's `outputs:` frontmatter field.",
-						}),
-					)
-				}
-
-				// Verify completion criteria are checked
-				const unchecked = (unitRaw.match(/- \[ \]/g) || []).length
-				if (unchecked > 0) {
-					const sf = args.state_file as string | undefined
-					if (sf)
-						logSessionEvent(sf, {
-							event: "criteria_not_met",
-							intent: args.intent,
-							stage: advStage,
-							unit: args.unit,
-							unchecked,
-						})
-					return text(
-						JSON.stringify({
-							error: "criteria_not_met",
-							unchecked,
-							message: `Cannot complete unit: ${unchecked} completion criteria still unchecked. Address them, then call haiku_unit_advance_hat again.`,
-						}),
-					)
-				}
-
-				// ── Scope enforcement (harness-agnostic) ──
-				// Verify every file this unit wrote is inside declared outputs
-				// or always-allowed FSM metadata paths. Catches "break free"
-				// attempts where a hat wrote to production paths belonging to a
-				// later stage, or outside the unit's scope entirely.
+				// ── Scope enforcement + output auto-population (harness-agnostic) ──
+				// MUST run before the outputs-empty check: validateUnitScope
+				// auto-populates unit.outputs[] from the git diff as a side
+				// effect, so hookless harnesses end up with a correctly populated
+				// outputs list. Also catches writes outside the stage's declared
+				// scope.
 				{
-					// Read studio from intent frontmatter for scope resolution
 					const intentFile = `${intentDir(args.intent as string)}/intent.md`
 					const { data: iFm } = parseFrontmatter(
 						readFileSync(intentFile, "utf8"),
@@ -4023,6 +3987,56 @@ export function handleStateTool(
 						)
 					}
 				}
+
+				// Re-read the unit frontmatter: validateUnitScope may have
+				// auto-populated outputs[] from the git diff.
+				const unitRawAfterPopulate = readFileSync(advPath, "utf8")
+				const { data: unitFmAfter } = parseFrontmatter(unitRawAfterPopulate)
+				const unitOutputsAfter = (unitFmAfter.outputs as string[]) || []
+
+				// Require at least one tracked output.
+				if (unitOutputsAfter.length === 0) {
+					const sf = args.state_file as string | undefined
+					if (sf)
+						logSessionEvent(sf, {
+							event: "outputs_empty",
+							intent: args.intent,
+							stage: advStage,
+							unit: args.unit,
+						})
+					return text(
+						JSON.stringify({
+							error: "unit_outputs_empty",
+							message:
+								"Cannot complete unit: no outputs were produced. Every unit must write at least one artifact that the FSM can detect (stage artifact under `stages/<stage>/...` excluding `units/`/`state.json`, knowledge document under `knowledge/`, or a file matching a stage output template `location:`). The FSM auto-populates `outputs:` from the git diff at advance time; if you've written files but they're not showing up, verify they've been committed in the unit worktree, or add them explicitly to the unit's `outputs:` frontmatter field.",
+						}),
+					)
+				}
+
+				// Verify completion criteria are checked
+				const unchecked = (unitRaw.match(/- \[ \]/g) || []).length
+				if (unchecked > 0) {
+					const sf = args.state_file as string | undefined
+					if (sf)
+						logSessionEvent(sf, {
+							event: "criteria_not_met",
+							intent: args.intent,
+							stage: advStage,
+							unit: args.unit,
+							unchecked,
+						})
+					return text(
+						JSON.stringify({
+							error: "criteria_not_met",
+							unchecked,
+							message: `Cannot complete unit: ${unchecked} completion criteria still unchecked. Address them, then call haiku_unit_advance_hat again.`,
+						}),
+					)
+				}
+
+				// Scope enforcement already ran above (moved before the
+				// outputs-empty check so validateUnitScope can auto-populate
+				// outputs[] before we validate non-emptiness).
 
 				completeUnitIteration(advPath, "advance")
 				// Dual-write: parent (for FSM reads) AND unit worktree (so
