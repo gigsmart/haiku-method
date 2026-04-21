@@ -1,6 +1,6 @@
 {
   "bundleGzipMaxBytes": 1048576,
-  "lastKnownGzipBytes": 906156,
+  "lastKnownGzipBytes": 916708,
   "notes": [
     "Pre-move bundle measured at 929.8 KB gzipped (inlined HTML blob at stages/development/artifacts/bundle-baseline.html). Post-move blob is 884.9 KB gzipped (-44.8 KB from pre-move relocation).",
     "The unit-03 spec set a 500 KB target but the pre-existing bundle was already 429 KB over that ceiling BEFORE any of this unit's code was written. The SPA ships @xyflow/react + elkjs + mermaid + react-markdown + remark all in one inline chunk with no tree-shaking (vite config: manualChunks:undefined + inlineDynamicImports:true, required by the MCP single-HTML-blob embedder).",
