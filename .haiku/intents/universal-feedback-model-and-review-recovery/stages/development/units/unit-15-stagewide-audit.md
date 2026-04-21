@@ -1,5 +1,7 @@
 ---
-title: Stage-wide audit — contrast (rendered), state coverage, banned patterns, bundle, runtime parity
+title: >-
+  Stage-wide audit — contrast (rendered), state coverage, banned patterns,
+  bundle, runtime parity
 type: audit
 depends_on:
   - unit-07-review-page-desktop-and-mobile
@@ -26,11 +28,17 @@ inputs:
   - stages/design/artifacts/keyboard-shortcut-map.html
   - stages/design/artifacts/aria-live-sequencing-spec.md
   - stages/design/artifacts/aria-landmark-spec.md
-status: pending
-bolt: 0
-hat: ""
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-21T19:27:51Z'
+hat_started_at: '2026-04-21T19:27:51Z'
+iterations:
+  - hat: planner
+    started_at: '2026-04-21T19:27:51Z'
+    completed_at: null
+    result: null
 ---
-
 # Stage-wide audit
 
 Single final unit. Runs the superset audits after every component unit lands. Every gate is a deterministic executable — no prose gates.
