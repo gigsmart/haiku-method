@@ -30,9 +30,9 @@ inputs:
   - stages/design/artifacts/aria-landmark-spec.md
 status: active
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-21T19:27:51Z'
-hat_started_at: '2026-04-21T19:33:36Z'
+hat_started_at: '2026-04-21T20:10:06Z'
 iterations:
   - hat: planner
     started_at: '2026-04-21T19:27:51Z'
@@ -40,10 +40,60 @@ iterations:
     result: advance
   - hat: builder
     started_at: '2026-04-21T19:33:36Z'
+    completed_at: '2026-04-21T20:10:06Z'
+    result: advance
+  - hat: reviewer
+    started_at: '2026-04-21T20:10:06Z'
     completed_at: null
     result: null
 outputs:
   - stages/development/artifacts/unit-15-tactical-plan.md
+  - packages/haiku-api/package.json
+  - packages/haiku-api/scripts/audit-openapi-parity.mjs
+  - packages/haiku-ui/audit-config.json
+  - packages/haiku-ui/budget-baseline.json
+  - packages/haiku-ui/budget.json
+  - packages/haiku-ui/package.json
+  - packages/haiku-ui/scripts/audit-banned-patterns.mjs
+  - packages/haiku-ui/scripts/audit-bundle-size.mjs
+  - packages/haiku-ui/scripts/audit-contrast.mjs
+  - packages/haiku-ui/scripts/audit-keyboard-shortcuts.mjs
+  - packages/haiku-ui/scripts/audit-live-regions.mjs
+  - packages/haiku-ui/scripts/audit-reduced-motion.mjs
+  - packages/haiku-ui/scripts/audit-state-coverage.mjs
+  - packages/haiku-ui/scripts/audit-touch-targets.mjs
+  - packages/haiku-ui/src/components/AnnotationCanvas.tsx
+  - packages/haiku-ui/src/components/InlineComments.tsx
+  - packages/haiku-ui/src/components/MermaidDiagram.tsx
+  - packages/haiku-ui/src/components/MermaidFlow.tsx
+  - >-
+    packages/haiku-ui/src/components/__tests__/AssessorSummaryCard.states.test.tsx
+  - packages/haiku-ui/src/components/__tests__/RevisitModal.states.test.tsx
+  - >-
+    packages/haiku-ui/src/components/__tests__/StageProgressStrip.states.test.tsx
+  - >-
+    packages/haiku-ui/src/components/__tests__/__snapshots__/AssessorSummaryCard.states.test.tsx.snap
+  - >-
+    packages/haiku-ui/src/components/__tests__/__snapshots__/RevisitModal.states.test.tsx.snap
+  - >-
+    packages/haiku-ui/src/components/__tests__/__snapshots__/StageProgressStrip.states.test.tsx.snap
+  - packages/haiku-ui/src/components/feedback/FeedbackItem.tsx
+  - >-
+    packages/haiku-ui/src/components/feedback/__tests__/AgentFeedbackToggle.states.test.tsx
+  - >-
+    packages/haiku-ui/src/components/feedback/__tests__/FeedbackFloatingButton.states.test.tsx
+  - >-
+    packages/haiku-ui/src/components/feedback/__tests__/FeedbackSheet.states.test.tsx
+  - >-
+    packages/haiku-ui/src/components/feedback/__tests__/__snapshots__/AgentFeedbackToggle.states.test.tsx.snap
+  - >-
+    packages/haiku-ui/src/components/feedback/__tests__/__snapshots__/FeedbackFloatingButton.states.test.tsx.snap
+  - >-
+    packages/haiku-ui/src/components/feedback/__tests__/__snapshots__/FeedbackSheet.states.test.tsx.snap
+  - packages/haiku-ui/src/components/mermaid-flow/layout.ts
+  - packages/haiku-ui/src/index.css
+  - packages/haiku-ui/src/shell/ShellLayout.tsx
+  - packages/haiku-ui/tests/__snapshots__/parity.spec.tsx.snap
 ---
 # Stage-wide audit
 
