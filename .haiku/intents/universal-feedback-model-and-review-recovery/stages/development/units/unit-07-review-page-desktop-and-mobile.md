@@ -17,9 +17,9 @@ inputs:
   - stages/design/artifacts/footer-button-copy-spec.md
 status: active
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-21T15:00:25Z'
-hat_started_at: '2026-04-21T15:10:18Z'
+hat_started_at: '2026-04-21T15:38:15Z'
 iterations:
   - hat: planner
     started_at: '2026-04-21T15:00:25Z'
@@ -27,10 +27,30 @@ iterations:
     result: advance
   - hat: builder
     started_at: '2026-04-21T15:10:18Z'
+    completed_at: '2026-04-21T15:38:15Z'
+    result: advance
+  - hat: reviewer
+    started_at: '2026-04-21T15:38:15Z'
     completed_at: null
     result: null
 outputs:
   - stages/development/artifacts/unit-07-tactical-plan.md
+  - packages/haiku-ui/package.json
+  - packages/haiku-ui/playwright.config.ts
+  - packages/haiku-ui/src/components/ReviewPage.tsx
+  - packages/haiku-ui/src/pages/review/ArtifactsPane.tsx
+  - packages/haiku-ui/src/pages/review/FeedbackSidebar.tsx
+  - packages/haiku-ui/src/pages/review/FooterBar.tsx
+  - packages/haiku-ui/src/pages/review/ReviewPage.tsx
+  - packages/haiku-ui/src/pages/review/__tests__/responsive.test.tsx
+  - packages/haiku-ui/src/pages/review/__tests__/status-announce.test.tsx
+  - packages/haiku-ui/src/pages/review/index.tsx
+  - packages/haiku-ui/src/pages/review/useIsMobile.ts
+  - packages/haiku-ui/test-fixtures/review-feedback-full.json
+  - packages/haiku-ui/test-fixtures/review-session-full.json
+  - packages/haiku-ui/tests/__snapshots__/parity.spec.tsx.snap
+  - packages/haiku-ui/tests/review-page.spec.ts
+  - packages/haiku-ui/vitest.config.ts
 ---
 # Review page — desktop + mobile
 
