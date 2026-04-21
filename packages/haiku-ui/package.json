@@ -24,7 +24,6 @@
 		"remark-html": "^16.0.0"
 	},
 	"devDependencies": {
-		"@playwright/test": "^1.58.2",
 		"@tailwindcss/typography": "^0.5.19",
 		"@tailwindcss/vite": "^4.1.4",
 		"@testing-library/react": "^16.0.0",

@@ -17,9 +17,6 @@ export default defineConfig({
 			"src/**/*.spec.ts",
 			"src/**/*.spec.tsx",
 		],
-		// Playwright specs are NOT Vitest specs — their `test` import
-		// throws outside the Playwright runner. Explicitly exclude any
-		// Playwright spec under `tests/`. See unit-07 tactical plan §I.
-		exclude: ["node_modules/**", "dist/**", "tests/review-page.spec.ts"],
+		exclude: ["node_modules/**", "dist/**"],
 	},
 })

@@ -139,7 +139,10 @@ export function ReviewPage({
 			{session.previous_review && (
 				<RereviewBanner snapshot={session.previous_review} />
 			)}
-			<div className="flex flex-col xl:flex-row xl:gap-6">
+			<div
+				data-testid="review-split"
+				className="flex flex-col xl:flex-row xl:gap-6"
+			>
 				<ArtifactsPane
 					session={session}
 					sessionId={sessionId}

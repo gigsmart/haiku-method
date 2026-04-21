@@ -24,11 +24,10 @@ outputs:
   - packages/haiku-ui/src/pages/review/index.tsx
   - packages/haiku-ui/src/pages/review/__tests__/responsive.test.tsx
   - packages/haiku-ui/src/pages/review/__tests__/status-announce.test.tsx
+  - packages/haiku-ui/src/pages/review/__tests__/layout.test.tsx
   - packages/haiku-ui/src/components/ReviewPage.tsx
   - packages/haiku-ui/test-fixtures/review-session-full.json
   - packages/haiku-ui/test-fixtures/review-feedback-full.json
-  - packages/haiku-ui/playwright.config.ts
-  - packages/haiku-ui/tests/review-page.spec.ts
   - packages/haiku-ui/vitest.config.ts
   - packages/haiku-ui/package.json
   - stages/development/artifacts/unit-07-tactical-plan.md
@@ -49,13 +48,15 @@ Rebuild the review page (stage artifacts + feedback list + annotation canvas + f
 - Responsive: `xl:flex` desktop split (artifacts left, sidebar `w-[var(--sidebar-width)] xl:w-[var(--sidebar-width-xl)]` right), `flex-col` mobile with sheet triggered from the FAB.
 - Status-badge transitions announced via `useAnnounce('polite', ...)`.
 
-**Visual regression — concrete harness:**
-- Playwright tests at `packages/haiku-ui/tests/review-page.spec.ts`:
-  - Viewports: 1440×900 desktop, 390×844 mobile.
-  - Fixture session: `packages/haiku-ui/test-fixtures/review-session-full.json` (realistic payload committed in this unit — 20 feedback items across all statuses).
-  - Compares against `packages/haiku-ui/tests/__snapshots__/review-page-{desktop,mobile}.png` using `expect(page).toHaveScreenshot({ maxDiffPixelRatio: 0.005 })`. Baselines captured by the unit author against the design HTML mockups in the same viewport.
+**Layout verification — structural (no browser launcher):**
+
+Playwright and Lighthouse are BANNED here — they wedge or clobber the developer's Chrome on this machine. Structural assertions go through vitest + RTL instead.
+
+- Structural layout test at `packages/haiku-ui/src/pages/review/__tests__/layout.test.tsx`:
+  - Desktop branch (matchMedia stubbed to `isMobile=false`): assert the outer flex row uses `xl:flex-row` (desktop split), the `[data-testid="feedback-sidebar-desktop"]` element is present, its className contains the canonical width tokens `w-[var(--sidebar-width)]` and `xl:w-[var(--sidebar-width-xl)]`, and NO `[data-testid="feedback-fab"]` / `[data-testid="feedback-sheet"]` exist.
+  - Mobile branch (matchMedia stubbed to `isMobile=true`): assert the outer container uses `flex-col`, the FAB (`[data-testid="feedback-fab"]`) is present, and the desktop sidebar (`[data-testid="feedback-sidebar-desktop"]`) is NOT rendered.
 - Responsive-parity test at `packages/haiku-ui/src/pages/review/__tests__/responsive.test.tsx`:
-  - Renders ReviewPage with same fixture at desktop + mobile viewports.
+  - Renders ReviewPage with the `review-session-full.json` fixture at desktop + mobile viewports.
   - Extracts text content of every rendered feedback item via `screen.findAllByRole('listitem')`.
   - Asserts the two arrays are element-wise equal — "identical data" is mechanically proven.
 
@@ -72,7 +73,7 @@ Rebuild the review page (stage artifacts + feedback list + annotation canvas + f
 - Footer buttons use only canonical verbs — `audit-banned-patterns.mjs --profile=tokens` invoked on the page source returns zero hits for banned verbs.
 - Responsive breakpoints match DESIGN-TOKENS `--breakpoint-*` values (no literal breakpoint values in the page source).
 - Every interactive element has `focusRingClass` — audit-banned-patterns catches `focus:ring-1` regressions.
-- Playwright screenshot diffs ≤ 0.5% per URL at both viewports.
+- Structural layout test passes (desktop uses `xl:flex-row` with sidebar width tokens; mobile uses `flex-col` with FAB instead of sidebar).
 - Responsive-parity test passes.
 - `useAnnounce` fires on status-badge transitions — RTL test triggers a status change and asserts live-region text updates.
 - `npx tsc --noEmit` passes.
