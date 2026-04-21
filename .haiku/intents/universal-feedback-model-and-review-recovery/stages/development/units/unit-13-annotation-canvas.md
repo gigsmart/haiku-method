@@ -15,14 +15,20 @@ inputs:
   - stages/design/artifacts/annotation-gesture-spec.html
 status: active
 bolt: 1
-hat: planner
+hat: builder
 started_at: '2026-04-21T18:51:58Z'
-hat_started_at: '2026-04-21T18:51:58Z'
+hat_started_at: '2026-04-21T19:00:06Z'
 iterations:
   - hat: planner
     started_at: '2026-04-21T18:51:58Z'
+    completed_at: '2026-04-21T19:00:06Z'
+    result: advance
+  - hat: builder
+    started_at: '2026-04-21T19:00:06Z'
     completed_at: null
     result: null
+outputs:
+  - stages/development/artifacts/unit-13-tactical-plan.md
 ---
 # Annotation canvas UX
 
