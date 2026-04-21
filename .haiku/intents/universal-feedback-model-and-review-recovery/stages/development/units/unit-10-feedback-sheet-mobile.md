@@ -11,6 +11,17 @@ inputs:
   - knowledge/DESIGN-TOKENS.md
   - stages/design/DESIGN-BRIEF.md
   - stages/design/artifacts/feedback-inline-mobile.html
+outputs:
+  - stages/development/artifacts/unit-10-tactical-plan.md
+  - packages/haiku-ui/src/components/feedback/FeedbackSheet.tsx
+  - packages/haiku-ui/src/components/feedback/FeedbackFloatingButton.tsx
+  - >-
+    packages/haiku-ui/src/components/feedback/__tests__/FeedbackSheet.test.tsx
+  - >-
+    packages/haiku-ui/src/components/feedback/__tests__/FeedbackFloatingButton.states.test.tsx
+  - packages/haiku-ui/src/components/feedback/index.ts
+  - packages/haiku-ui/src/index.css
+  - packages/haiku-ui/BROWSER-SUPPORT.md
 status: pending
 bolt: 0
 hat: ""

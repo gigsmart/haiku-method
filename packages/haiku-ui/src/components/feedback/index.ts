@@ -5,6 +5,8 @@
  * `stages/development/artifacts/unit-08-tactical-plan.md` for scope.
  */
 
+export type { FeedbackFloatingButtonProps } from "./FeedbackFloatingButton"
+export { FeedbackFloatingButton } from "./FeedbackFloatingButton"
 export type { FeedbackItemProps } from "./FeedbackItem"
 export { FeedbackItem } from "./FeedbackItem"
 export type { FeedbackListProps } from "./FeedbackList"
@@ -20,6 +22,8 @@ export {
 	originIcons,
 	originLabels,
 } from "./FeedbackOriginIcon"
+export type { FeedbackSheetProps } from "./FeedbackSheet"
+export { FeedbackSheet } from "./FeedbackSheet"
 export type { FeedbackStatusBadgeProps } from "./FeedbackStatusBadge"
 export { FeedbackStatusBadge } from "./FeedbackStatusBadge"
 export type { FeedbackSummaryBarProps } from "./FeedbackSummaryBar"
