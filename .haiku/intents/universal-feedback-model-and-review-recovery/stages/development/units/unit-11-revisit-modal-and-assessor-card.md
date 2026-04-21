@@ -19,14 +19,20 @@ inputs:
   - stages/design/artifacts/rollback-reason-banner.html
 status: active
 bolt: 1
-hat: planner
+hat: builder
 started_at: '2026-04-21T15:00:31Z'
-hat_started_at: '2026-04-21T15:00:31Z'
+hat_started_at: '2026-04-21T15:08:49Z'
 iterations:
   - hat: planner
     started_at: '2026-04-21T15:00:31Z'
+    completed_at: '2026-04-21T15:08:49Z'
+    result: advance
+  - hat: builder
+    started_at: '2026-04-21T15:08:49Z'
     completed_at: null
     result: null
+outputs:
+  - stages/development/artifacts/unit-11-tactical-plan.md
 ---
 # RevisitModal + AssessorSummaryCard
 
