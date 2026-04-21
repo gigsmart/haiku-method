@@ -14,6 +14,20 @@ inputs:
   - stages/design/artifacts/aria-landmark-spec.md
   - stages/design/artifacts/aria-live-sequencing-spec.md
   - stages/design/artifacts/state-signaling-inventory.html
+outputs:
+  - stages/development/artifacts/unit-14-tactical-plan.md
+  - packages/haiku-ui/src/pages/question/QuestionPage.tsx
+  - packages/haiku-ui/src/pages/question/index.tsx
+  - packages/haiku-ui/src/pages/question/__tests__/QuestionPage.test.tsx
+  - packages/haiku-ui/src/pages/direction/DirectionPage.tsx
+  - packages/haiku-ui/src/pages/direction/index.tsx
+  - packages/haiku-ui/src/pages/direction/__tests__/DirectionPage.test.tsx
+  - packages/haiku-ui/test-fixtures/question-session.json
+  - packages/haiku-ui/test-fixtures/question-session-multi-choice.json
+  - packages/haiku-ui/test-fixtures/question-session-free-text.json
+  - packages/haiku-ui/test-fixtures/direction-session.json
+  - packages/haiku-ui/tests/a11y-pages.spec.tsx
+  - packages/haiku-ui/tests/__snapshots__/parity.spec.tsx.snap
 status: pending
 bolt: 0
 hat: ""
