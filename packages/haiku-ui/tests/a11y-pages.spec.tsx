@@ -45,6 +45,18 @@ function loadFixture<T extends SessionPayload>(file: string): T {
 }
 
 /**
+ * Multi-fixture map — the `/question/:id` route needs different fixture bodies
+ * for the demo-multi-choice and demo-free-text routes (unit-14). We wire a
+ * sessionId → fixture lookup through the mock client rather than multiplying
+ * per-case mocks.
+ */
+const QUESTION_FIXTURES_BY_SESSION_ID: Record<string, string> = {
+	"test-question-1": "question-session.json",
+	"demo-multi-choice": "question-session-multi-choice.json",
+	"demo-free-text": "question-session-free-text.json",
+}
+
+/**
  * Minimal valid `ReviewCurrentPayload` — validated against
  * `ReviewCurrentPayloadSchema` in haiku-api. The `/review/current` page only
  * needs this shape to render without error; individual field content does
@@ -78,7 +90,12 @@ const REVIEW_CURRENT_FIXTURE: ReviewCurrentPayload = {
 
 function makeMockClient(session: SessionPayload | null): ApiClient {
 	return {
-		fetchSession: vi.fn(async () => {
+		fetchSession: vi.fn(async (sessionId: string) => {
+			// Question fixtures are multiplexed by sessionId (unit-14 demo routes).
+			if (QUESTION_FIXTURES_BY_SESSION_ID[sessionId]) {
+				const file = QUESTION_FIXTURES_BY_SESSION_ID[sessionId]
+				return loadFixture<SessionPayload>(file)
+			}
 			if (!session) throw new Error("no session fixture wired")
 			return session
 		}),
@@ -177,6 +194,16 @@ const PAGE_CASES: readonly PageCase[] = [
 		name: "question (/question/:id)",
 		pathname: "/question/test-question-1",
 		fixtureFile: "question-session.json",
+	},
+	{
+		name: "question demo-multi-choice (/question/demo-multi-choice)",
+		pathname: "/question/demo-multi-choice",
+		fixtureFile: "question-session-multi-choice.json",
+	},
+	{
+		name: "question demo-free-text (/question/demo-free-text)",
+		pathname: "/question/demo-free-text",
+		fixtureFile: "question-session-free-text.json",
 	},
 	{
 		name: "direction (/direction/:id)",

@@ -10,9 +10,9 @@
  */
 
 import { useEffect } from "react"
-import { DesignPicker } from "../../components/DesignPicker"
 import { useSession, useSessionWebSocket } from "../../hooks/useSession"
 import { usePageTitle } from "../../shell/PageTitleContext"
+import { DirectionPage } from "./DirectionPage"
 
 export interface DirectionPageModuleProps {
 	sessionId: string
@@ -71,5 +71,5 @@ export function DirectionPageModule({
 		)
 	}
 
-	return <DesignPicker session={session} sessionId={sessionId} wsRef={wsRef} />
+	return <DirectionPage session={session} sessionId={sessionId} wsRef={wsRef} />
 }

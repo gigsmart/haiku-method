@@ -6,9 +6,9 @@
  */
 
 import { useEffect } from "react"
-import { QuestionPage } from "../../components/QuestionPage"
 import { useSession, useSessionWebSocket } from "../../hooks/useSession"
 import { usePageTitle } from "../../shell/PageTitleContext"
+import { QuestionPage } from "./QuestionPage"
 
 export interface QuestionPageModuleProps {
 	sessionId: string
