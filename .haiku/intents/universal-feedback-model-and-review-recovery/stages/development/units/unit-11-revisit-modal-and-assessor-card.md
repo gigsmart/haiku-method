@@ -17,11 +17,17 @@ inputs:
   - stages/design/artifacts/assessor-summary-card.html
   - stages/design/artifacts/review-flow-with-feedback-assessor.html
   - stages/design/artifacts/rollback-reason-banner.html
-status: pending
-bolt: 0
-hat: ""
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-21T15:00:31Z'
+hat_started_at: '2026-04-21T15:00:31Z'
+iterations:
+  - hat: planner
+    started_at: '2026-04-21T15:00:31Z'
+    completed_at: null
+    result: null
 ---
-
 # RevisitModal + AssessorSummaryCard
 
 Two modal-adjacent components grouped because both need dialog/live-region semantics and share a11y patterns.
