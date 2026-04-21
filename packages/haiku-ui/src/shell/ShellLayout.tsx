@@ -68,7 +68,7 @@ export function ShellFooter(): React.ReactElement {
 				href="https://haikumethod.ai"
 				target="_blank"
 				rel="noopener noreferrer"
-				className="text-teal-600 dark:text-teal-400 hover:underline"
+				className="text-teal-700 dark:text-teal-300 hover:underline"
 			>
 				H·AI·K·U
 			</a>{" "}
