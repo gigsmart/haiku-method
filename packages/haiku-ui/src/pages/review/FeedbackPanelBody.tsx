@@ -1,0 +1,62 @@
+/**
+ * FeedbackPanelBody — the shared body composition used by both the desktop
+ * sidebar and the mobile sheet. Owns the per-status filter state
+ * (`activeStatus`) and lays out `FeedbackSummaryBar` over `FeedbackList`.
+ *
+ * Extracted from `FeedbackSidebar.tsx` per FB-38.
+ */
+
+import { useMemo, useState } from "react"
+import {
+	FeedbackList,
+	FeedbackSummaryBar,
+	type FeedbackStatus,
+} from "../../components/feedback"
+import type { FeedbackItemData } from "../../types"
+
+export interface FeedbackPanelBodyProps {
+	items: FeedbackItemData[]
+	loading: boolean
+	error: string | null
+	onStatusChange: (id: string, next: FeedbackStatus) => void
+	onDelete: (id: string) => void
+	onRetry: () => void
+}
+
+export function FeedbackPanelBody({
+	items,
+	loading,
+	error,
+	onStatusChange,
+	onDelete,
+	onRetry,
+}: FeedbackPanelBodyProps): React.ReactElement {
+	const [activeStatus, setActiveStatus] = useState<FeedbackStatus | null>(null)
+
+	const filtered = useMemo(() => {
+		if (!activeStatus) return items
+		return items.filter((item) => item.status === activeStatus)
+	}, [items, activeStatus])
+
+	return (
+		<div className="flex flex-col flex-1 min-h-0">
+			<div className="shrink-0 px-4 py-3 border-b border-stone-200 dark:border-stone-700">
+				<FeedbackSummaryBar
+					items={items}
+					activeStatus={activeStatus}
+					onFilter={setActiveStatus}
+				/>
+			</div>
+			<div className="flex-1 overflow-y-auto p-3">
+				<FeedbackList
+					items={filtered}
+					isLoading={loading}
+					error={error}
+					onRetry={onRetry}
+					onStatusChange={onStatusChange}
+					onDelete={onDelete}
+				/>
+			</div>
+		</div>
+	)
+}

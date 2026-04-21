@@ -42,11 +42,9 @@ import { ReviewContextHeader } from "../../components/ReviewContextHeader"
 import { StageProgressStrip } from "../../components/StageProgressStrip"
 import type { ReviewAnnotations } from "../../types"
 import { ArtifactsPane } from "./ArtifactsPane"
-import {
-	FeedbackFloatingButton,
-	FeedbackSheet,
-	FeedbackSidebar,
-} from "./FeedbackSidebar"
+import { FeedbackFloatingButton } from "./FeedbackFloatingButton"
+import { FeedbackSheet } from "./FeedbackSheet"
+import { FeedbackSidebar } from "./FeedbackSidebar"
 import { FooterBar } from "./FooterBar"
 import { useIsMobile } from "./useIsMobile"
 
