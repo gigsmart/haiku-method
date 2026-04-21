@@ -67,6 +67,22 @@ export const FeedbackListResponseSchema = z
 	.describe("GET /api/feedback/:intent/:stage response body")
 export type FeedbackListResponse = z.infer<typeof FeedbackListResponseSchema>
 
+/** Pin-anchor metadata for visual (pin-drop) annotations. Optional on
+ *  `FeedbackCreateRequestSchema` — only `origin: "user-visual"` traffic ships
+ *  this block. `x`/`y` are unit-interval fractions of the viewport; `viewport*`
+ *  are the pixel extents at the time the pin was dropped so later consumers
+ *  can re-project into a different artifact scale. */
+export const FeedbackAnchorSchema = z
+	.object({
+		pageId: z.string().min(1).max(200),
+		x: z.number().min(0).max(1),
+		y: z.number().min(0).max(1),
+		viewportWidth: z.number().int().positive().max(10000),
+		viewportHeight: z.number().int().positive().max(10000),
+	})
+	.describe("Pin anchor metadata for visual annotations")
+export type FeedbackAnchor = z.infer<typeof FeedbackAnchorSchema>
+
 /** POST /api/feedback/:intent/:stage request body. */
 export const FeedbackCreateRequestSchema = z
 	.object({
@@ -74,6 +90,7 @@ export const FeedbackCreateRequestSchema = z
 		body: z.string().min(1),
 		origin: FeedbackOriginSchema.optional().default("user-visual"),
 		source_ref: z.string().nullable().optional(),
+		anchor: FeedbackAnchorSchema.optional(),
 	})
 	.describe("POST /api/feedback/:intent/:stage request body")
 export type FeedbackCreateRequest = z.infer<typeof FeedbackCreateRequestSchema>

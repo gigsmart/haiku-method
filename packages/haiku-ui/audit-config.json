@@ -107,6 +107,27 @@
 						"packages/haiku-ui/src/components/feedback/AgentFeedbackToggle.tsx"
 					],
 					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-pin-tabindex-negative",
+					"description": "tabindex=\"-1\" banned on AnnotationCanvas pin markers — unit-13 regression guard for the 'pin-markers-at-tabindex-negative-one' class of bug. Pin <button>s MUST carry tabindex=\"0\".",
+					"pattern": "tabindex=[\"']-1[\"']",
+					"scope": [
+						"packages/haiku-ui/src/pages/review/AnnotationCanvas.tsx"
+					],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-xss-sinks-annotation-path",
+					"description": "XSS sinks (dangerouslySetInnerHTML / innerHTML / eval / new Function / document.write) banned in the annotation review path — unit-13 XSS hardening.",
+					"pattern": "(dangerouslySetInnerHTML|innerHTML\\s*=|\\beval\\(|new Function\\(|document\\.write\\()",
+					"scope": ["packages/haiku-ui/src/pages/review/**/*.{ts,tsx}"],
+					"exclude": [
+						"**/__tests__/**",
+						"**/__snapshots__/**",
+						"**/*.test.{ts,tsx}",
+						"**/*.spec.{ts,tsx}"
+					]
 				}
 			]
 		}

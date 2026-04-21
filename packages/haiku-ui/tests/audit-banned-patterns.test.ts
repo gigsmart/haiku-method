@@ -59,5 +59,10 @@ describe("audit-banned-patterns.mjs", () => {
 		expect(stdout).toMatch(
 			/require-agent-feedback-toggle-canonical \(required-presence/,
 		)
+		// unit-13 regression guards must be wired in and green:
+		//   banned-pin-tabindex-negative — pin markers MUST NOT carry tabindex="-1"
+		//   banned-xss-sinks-annotation-path — no dangerouslySetInnerHTML etc.
+		expect(stdout).toMatch(/\[OK\] banned-pin-tabindex-negative/)
+		expect(stdout).toMatch(/\[OK\] banned-xss-sinks-annotation-path/)
 	})
 })

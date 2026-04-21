@@ -61,6 +61,9 @@ function buildMockClient(items: FeedbackItemData[]): ApiClient {
 		async submitDirection() {
 			return {} as never
 		},
+		async submitRevisit() {
+			return {} as never
+		},
 		feedback: {
 			list: (async () => ({
 				intent: "test-intent",
