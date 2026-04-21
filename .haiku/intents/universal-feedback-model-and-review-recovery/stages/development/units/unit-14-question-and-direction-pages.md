@@ -14,7 +14,7 @@ inputs:
   - stages/design/artifacts/aria-landmark-spec.md
   - stages/design/artifacts/aria-live-sequencing-spec.md
   - stages/design/artifacts/state-signaling-inventory.html
-status: active
+status: completed
 bolt: 1
 hat: reviewer
 started_at: '2026-04-21T15:00:33Z'
@@ -30,8 +30,8 @@ iterations:
     result: advance
   - hat: reviewer
     started_at: '2026-04-21T15:35:45Z'
-    completed_at: null
-    result: null
+    completed_at: '2026-04-21T15:43:18Z'
+    result: advance
 outputs:
   - stages/development/artifacts/unit-14-tactical-plan.md
   - packages/haiku-ui/src/components/DesignPicker.tsx
@@ -48,6 +48,7 @@ outputs:
   - packages/haiku-ui/test-fixtures/question-session.json
   - packages/haiku-ui/tests/__snapshots__/parity.spec.tsx.snap
   - packages/haiku-ui/tests/a11y-pages.spec.tsx
+completed_at: '2026-04-21T15:43:18Z'
 ---
 # Question page + Direction page refactors
 
