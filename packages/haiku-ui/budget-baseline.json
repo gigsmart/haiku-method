@@ -1,0 +1,9 @@
+{
+  "createdAt": "2026-04-21T19:55:34.075Z",
+  "gzipBytes": 919137,
+  "notes": [
+    "Seed baseline generated on first run of audit-bundle-size.mjs.",
+    "Future runs fail if current gzipBytes > baseline * 1.05.",
+    "Update only via `audit-bundle-size.mjs --update-baseline` (explicit PR)."
+  ]
+}

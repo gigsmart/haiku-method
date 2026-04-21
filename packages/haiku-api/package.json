@@ -20,7 +20,8 @@
 	"scripts": {
 		"build": "tsc && node scripts/emit-openapi.mjs",
 		"typecheck": "tsc --noEmit",
-		"test": "node test/run-all.mjs"
+		"test": "node test/run-all.mjs",
+		"audit:openapi-parity": "node scripts/audit-openapi-parity.mjs"
 	},
 	"dependencies": {
 		"zod": "^3.23.0",

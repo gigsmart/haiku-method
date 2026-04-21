@@ -1,0 +1,580 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`StageProgressStrip — state matrix > renders every documented state cell (snapshot) 1`] = `
+<div>
+  <div
+    data-cell="default"
+  >
+    <div
+      class="flex items-center gap-0 overflow-x-auto py-2 px-1"
+    >
+      <div
+        class="flex items-center"
+      >
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          title="inception (completed)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          inception
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          title="design (completed)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          design
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          title="product (current)"
+          type="button"
+        >
+          <span
+            class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
+          />
+        </button>
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
+        >
+          product
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          disabled=""
+          title="development (future)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          development
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          disabled=""
+          title="review (future)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          review
+        </span>
+      </div>
+    </div>
+  </div>
+  <div
+    data-cell="first-stage-current"
+  >
+    <div
+      class="flex items-center gap-0 overflow-x-auto py-2 px-1"
+    >
+      <div
+        class="flex items-center"
+      >
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          title="inception (completed)"
+          type="button"
+        >
+          <span
+            class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
+          />
+        </button>
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
+        >
+          inception
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          title="design (completed)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          design
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border-2 border-stone-400 dark:border-stone-500 bg-transparent cursor-pointer hover:border-teal-400 dark:hover:border-teal-400"
+          title="product (current)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          product
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          disabled=""
+          title="development (future)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          development
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          disabled=""
+          title="review (future)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          review
+        </span>
+      </div>
+    </div>
+  </div>
+  <div
+    data-cell="last-stage-completed"
+  >
+    <div
+      class="flex items-center gap-0 overflow-x-auto py-2 px-1"
+    >
+      <div
+        class="flex items-center"
+      >
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          title="inception (completed)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          inception
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          title="design (completed)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          design
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          title="product (completed)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          product
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          title="development (completed)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          development
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          title="review (completed)"
+          type="button"
+        >
+          <span
+            class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
+          />
+        </button>
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
+        >
+          review
+        </span>
+      </div>
+    </div>
+  </div>
+  <div
+    data-cell="with-click-handler"
+  >
+    <div
+      class="flex items-center gap-0 overflow-x-auto py-2 px-1"
+    >
+      <div
+        class="flex items-center"
+      >
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          title="inception (completed)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          inception
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          title="design (completed)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          design
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          title="product (current)"
+          type="button"
+        >
+          <span
+            class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
+          />
+        </button>
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
+        >
+          product
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          disabled=""
+          title="development (future)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          development
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          disabled=""
+          title="review (future)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          review
+        </span>
+      </div>
+    </div>
+  </div>
+  <div
+    data-cell="visited-but-not-current"
+  >
+    <div
+      class="flex items-center gap-0 overflow-x-auto py-2 px-1"
+    >
+      <div
+        class="flex items-center"
+      >
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          title="inception (completed)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          inception
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          title="design (completed)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          design
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          title="product (current)"
+          type="button"
+        >
+          <span
+            class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
+          />
+        </button>
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
+        >
+          product
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border-2 border-stone-400 dark:border-stone-500 bg-transparent cursor-pointer hover:border-teal-400 dark:hover:border-teal-400"
+          title="development (future)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          development
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          disabled=""
+          title="review (future)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          review
+        </span>
+      </div>
+    </div>
+  </div>
+  <div
+    data-cell="never-visited"
+  >
+    <div
+      class="flex items-center gap-0 overflow-x-auto py-2 px-1"
+    >
+      <div
+        class="flex items-center"
+      >
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          title="inception (completed)"
+          type="button"
+        >
+          <span
+            class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
+          />
+        </button>
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
+        >
+          inception
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          title="design (completed)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          design
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          disabled=""
+          title="product (current)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          product
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          disabled=""
+          title="development (future)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          development
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          disabled=""
+          title="review (future)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          review
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+`;

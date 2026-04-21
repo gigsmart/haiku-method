@@ -189,10 +189,10 @@ export function MermaidFlow({
 
 	const styledEdges = layout.edges.map((e) => ({
 		...e,
-		style: { ...e.style, stroke: e.style?.stroke ?? "#78716c" },
-		labelStyle: { fill: "#e7e5e4", fontSize: 12, fontWeight: 500 },
+		style: { ...e.style, stroke: e.style?.stroke ?? "#78716c" }, // audit-allow: xyflow theme color
+		labelStyle: { fill: "#e7e5e4", fontSize: 12, fontWeight: 500 }, // audit-allow: xyflow label fill
 		labelBgStyle: e.label
-			? { fill: "#1c1917", fillOpacity: 0.85 }
+			? { fill: "#1c1917", fillOpacity: 0.85 } // audit-allow: xyflow label bg
 			: { fillOpacity: 0 },
 	}))
 
@@ -211,6 +211,7 @@ export function MermaidFlow({
 				nodesConnectable={false}
 				elementsSelectable
 			>
+				{/* audit-allow: xyflow Background color prop takes raw hex */}
 				<Background gap={20} size={1} color="#44403c" />
 				<Controls showInteractive={false} />
 				{showMiniMap && (

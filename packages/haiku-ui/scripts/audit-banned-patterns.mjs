@@ -183,8 +183,21 @@ async function main() {
 			// Rewind the regex before every use — `g` flag keeps lastIndex state.
 			rule.regex.lastIndex = 0
 			const lines = content.split("\n")
+			const allowRe = /\/\/\s*audit-allow:|\{\/\*\s*audit-allow:/
 			for (let i = 0; i < lines.length; i += 1) {
 				const line = lines[i]
+				// Allow-list: `// audit-allow: <reason>` (TS/JS) and
+				// `{/* audit-allow: <reason> */}` (JSX) suppresses matches when
+				// the comment is on the same line as the match OR on the
+				// immediately preceding line (common for JSX attrs spanning
+				// multi-line renders). Required-presence rules ignore the allow-list.
+				const prevLine = i > 0 ? lines[i - 1] : ""
+				if (
+					!rule.requirePresence &&
+					(allowRe.test(line) || allowRe.test(prevLine))
+				) {
+					continue
+				}
 				const localRe = new RegExp(rule.pattern, "g")
 				let match = localRe.exec(line)
 				while (match !== null) {

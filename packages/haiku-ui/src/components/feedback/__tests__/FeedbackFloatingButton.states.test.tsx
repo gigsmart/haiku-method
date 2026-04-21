@@ -1,5 +1,6 @@
 /**
- * FeedbackFloatingButton — regression coverage per unit-10 spec + tactical plan §F.
+ * FeedbackFloatingButton — regression coverage per unit-10 spec + tactical plan §F
+ * plus state-matrix snapshot for state-coverage-grid.md §7.9.
  *
  * Covers:
  *   - aria-haspopup / aria-expanded / aria-controls wiring.
@@ -10,6 +11,7 @@
  *   - Decorative pulse animation drops under reduced-motion (class still
  *     present but the stage-wide `@media (prefers-reduced-motion: reduce)`
  *     rule in src/index.css sets `animation: none`).
+ *   - State-matrix snapshot for audit-state-coverage.mjs (6 cells).
  */
 
 import { cleanup, fireEvent, render, screen } from "@testing-library/react"
@@ -144,5 +146,33 @@ describe("FeedbackFloatingButton — canonical a11y classes", () => {
 		render(<FeedbackFloatingButton open={false} onToggle={() => {}} />)
 		const btn = screen.getByRole("button")
 		expect(btn.className).toMatch(/\bmd:hidden\b/)
+	})
+})
+
+describe("FeedbackFloatingButton — state matrix", () => {
+	it("renders every documented state cell (snapshot)", () => {
+		const { container } = render(
+			<div>
+				<div data-cell="closed-no-count">
+					<FeedbackFloatingButton open={false} onToggle={() => {}} />
+				</div>
+				<div data-cell="closed-pending-1">
+					<FeedbackFloatingButton open={false} onToggle={() => {}} count={1} />
+				</div>
+				<div data-cell="closed-pending-5">
+					<FeedbackFloatingButton open={false} onToggle={() => {}} count={5} />
+				</div>
+				<div data-cell="open">
+					<FeedbackFloatingButton open={true} onToggle={() => {}} />
+				</div>
+				<div data-cell="open-with-count">
+					<FeedbackFloatingButton open={true} onToggle={() => {}} count={2} />
+				</div>
+				<div data-cell="closed-zero">
+					<FeedbackFloatingButton open={false} onToggle={() => {}} count={0} />
+				</div>
+			</div>,
+		)
+		expect(container.firstChild).toMatchSnapshot()
 	})
 })

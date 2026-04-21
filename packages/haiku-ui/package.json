@@ -7,7 +7,9 @@
 		"dev": "vite",
 		"build": "tsc -b && vite build",
 		"typecheck": "tsc --noEmit",
-		"test": "vitest run"
+		"test": "vitest run",
+		"audit:tokens": "node scripts/verify-tokens.mjs && node scripts/audit-contrast.mjs --mode=tokens && node scripts/audit-banned-patterns.mjs --profile=tokens",
+		"audit:stage-wide": "node scripts/verify-tokens.mjs && node scripts/audit-contrast.mjs --mode=tokens && node scripts/audit-contrast.mjs --mode=rendered && node scripts/audit-touch-targets.mjs && node scripts/audit-bundle-size.mjs && node scripts/audit-state-coverage.mjs && node scripts/audit-banned-patterns.mjs --profile=stage-wide && node scripts/audit-reduced-motion.mjs && node scripts/audit-keyboard-shortcuts.mjs && node scripts/audit-live-regions.mjs"
 	},
 	"dependencies": {
 		"@haiku/shared": "file:../shared",

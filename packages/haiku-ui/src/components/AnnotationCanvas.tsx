@@ -127,7 +127,7 @@ export function AnnotationCanvas({ imageUrl, onPinsChange }: Props) {
 		const coords = getCanvasCoords(e)
 		ctx.beginPath()
 		ctx.moveTo(coords.x, coords.y)
-		ctx.strokeStyle = "#e11d48"
+		ctx.strokeStyle = "#e11d48" // audit-allow: canvas 2D context takes raw hex (rose-600)
 		ctx.lineWidth = 3
 		ctx.lineCap = "round"
 		ctx.lineJoin = "round"
@@ -475,7 +475,7 @@ export function captureAnnotations(
 		const py = (pins[i].y / 100) * canvasEl.height
 		ctx.beginPath()
 		ctx.arc(px, py, 14, 0, 2 * Math.PI)
-		ctx.fillStyle = "#e11d48"
+		ctx.fillStyle = "#e11d48" // audit-allow: canvas 2D context takes raw hex (rose-600)
 		ctx.fill()
 		ctx.strokeStyle = "#fff"
 		ctx.lineWidth = 2

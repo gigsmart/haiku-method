@@ -286,12 +286,311 @@ async function runTokenMode() {
 	process.exit(0)
 }
 
+// ─── --mode=rendered ──────────────────────────────────────────────────────
+//
+// Headless-browser walk of the built SPA (`packages/haiku-ui/dist/index.html`),
+// exercising each top-level route via `window.history.replaceState` and then
+// sampling every visible text node's computed `color` + nearest ancestor
+// `background-color`. Pairs are deduplicated by
+// `(fg-token, bg-token, font-size-bucket)` and each unique pair is checked
+// against WCAG 2.1 thresholds (4.5:1 normal / 3:1 large).
+//
+// Budget: 30s wall-clock (spec unit-15 §Scope). Unique-pair ceiling: 200
+// (spec unit-15 §Scope — sanity canary; regression that explodes the inline
+// style surface will trip this rather than silently passing).
+//
+// Exit codes:
+//   0 — every unique pair passes its threshold AND unique-pair count < 200
+//   1 — one or more pairs fail OR > 200 unique pairs OR budget exceeded
+//   2 — playwright boot error / fixture load error
+async function loadInlinedHtml() {
+	const { readFile: rf } = await import("node:fs/promises")
+	const fs = await import("node:fs")
+	const distDir = path.join(PACKAGE_DIR, "dist")
+	const distHtmlPath = path.join(distDir, "index.html")
+	let html = await rf(distHtmlPath, "utf8")
+	const scriptRe = /<script\b[^>]*\bsrc="\/assets\/([^"]+)"[^>]*><\/script>/g
+	const linkRe = /<link\b[^>]*\bhref="\/assets\/([^"]+\.css)"[^>]*>/g
+	html = html.replace(scriptRe, (m, filename) => {
+		const filePath = path.join(distDir, "assets", filename)
+		if (!fs.existsSync(filePath)) return m
+		return `<script type="module">${fs.readFileSync(filePath, "utf8")}</script>`
+	})
+	html = html.replace(linkRe, (m, filename) => {
+		const filePath = path.join(distDir, "assets", filename)
+		if (!fs.existsSync(filePath)) return m
+		return `<style>${fs.readFileSync(filePath, "utf8")}</style>`
+	})
+	return html
+}
+
+async function runRenderedMode() {
+	const BUDGET_MS = 30_000
+	const PAIR_CEILING = 200
+	const distHtmlPath = path.join(PACKAGE_DIR, "dist", "index.html")
+
+	let distHtml
+	try {
+		distHtml = await loadInlinedHtml()
+	} catch (err) {
+		console.error(
+			`audit-contrast · mode=rendered · cannot read ${distHtmlPath}. Run \`npm run build\` first.`,
+		)
+		console.error(err instanceof Error ? err.message : String(err))
+		process.exit(2)
+	}
+
+	let playwright
+	try {
+		playwright = await import("playwright")
+	} catch (err) {
+		console.error(
+			"audit-contrast · mode=rendered · playwright not installed. Run `bun install` (or `npm install`) at the repo root.",
+		)
+		console.error(err instanceof Error ? err.message : String(err))
+		process.exit(2)
+	}
+
+	const routes = [
+		{ path: "/", label: "home" },
+		{ path: "/review/example-session", label: "review" },
+		{ path: "/question/example-session", label: "question" },
+		{ path: "/direction/example-session", label: "direction" },
+	]
+
+	const thresholdFor = (bucket) =>
+		bucket === "text-large" || bucket === "ui-nontext" ? 3.0 : 4.5
+
+	const uniquePairs = new Map()
+	const failures = []
+
+	const started = Date.now()
+	const withBudget = async (promise) => {
+		return await Promise.race([
+			promise,
+			new Promise((_, reject) =>
+				setTimeout(
+					() => reject(new Error("rendered-audit budget exceeded (30s)")),
+					BUDGET_MS,
+				),
+			),
+		])
+	}
+
+	// Spin up a tiny local HTTP server so the SPA gets a real origin. The
+	// in-memory hash-based routes can then be toggled via replaceState.
+	const http = await import("node:http")
+	const server = http.createServer((req, res) => {
+		res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" })
+		res.end(distHtml)
+	})
+	await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve))
+	const port = server.address().port
+	const baseUrl = `http://127.0.0.1:${port}`
+
+	try {
+		const browser = await withBudget(
+			playwright.chromium.launch({ headless: true }),
+		)
+		try {
+			const context = await browser.newContext({
+				viewport: { width: 1280, height: 720 },
+			})
+			const page = await context.newPage()
+			page.on("pageerror", (err) =>
+				console.error(`[page.error] ${err.message}`),
+			)
+			await page.goto(baseUrl, { waitUntil: "networkidle" })
+			// Wait for the React root to render. The SPA mounts to #root.
+			await page.waitForTimeout(2000)
+			const mountChildren = await page.evaluate(
+				() => document.querySelector("#root")?.children.length ?? -1,
+			)
+			if (mountChildren <= 0) {
+				console.error(
+					`  WARN: SPA did not mount (root children = ${mountChildren}). Pairs will be empty.`,
+				)
+			}
+
+			for (const r of routes) {
+				if (Date.now() - started > BUDGET_MS) break
+				await page.evaluate((href) => {
+					window.history.replaceState({}, "", href)
+					window.dispatchEvent(new PopStateEvent("popstate"))
+				}, r.path)
+				// Give the SPA a tick to render the route.
+				await page.waitForTimeout(300)
+
+				const pairs = await page.evaluate(() => {
+					// Browsers may report computed color as rgb()/rgba() or (since
+					// CSS Color 4) oklch() / oklab() / color(). Use the canvas 2D
+					// fallback to coerce any valid color string into a canonical
+					// RGB triple.
+					const canvas = document.createElement("canvas")
+					canvas.width = 1
+					canvas.height = 1
+					const ctx = canvas.getContext("2d")
+					function toHex(color) {
+						if (!color) return null
+						// Cheap path: rgb / rgba.
+						const m = color.match(
+							/rgba?\(([\d.]+),?\s*([\d.]+),?\s*([\d.]+)(?:(?:\s*,|\s*\/)\s*([\d.]+))?\)/,
+						)
+						if (m) {
+							const r = Math.round(Number(m[1]))
+							const g = Math.round(Number(m[2]))
+							const b = Math.round(Number(m[3]))
+							const a = m[4] !== undefined ? Number(m[4]) : 1
+							if (a < 1) {
+								const R = Math.round(r * a + 255 * (1 - a))
+								const G = Math.round(g * a + 255 * (1 - a))
+								const B = Math.round(b * a + 255 * (1 - a))
+								return (
+									"#" +
+									[R, G, B]
+										.map((n) => n.toString(16).padStart(2, "0"))
+										.join("")
+								)
+							}
+							return (
+								"#" +
+								[r, g, b]
+									.map((n) => n.toString(16).padStart(2, "0"))
+									.join("")
+							)
+						}
+						// Canvas fallback for oklch / color(srgb ...) / named.
+						try {
+							ctx.clearRect(0, 0, 1, 1)
+							ctx.fillStyle = "#000000"
+							ctx.fillStyle = color // will normalize or remain "#000000"
+							const px = ctx.fillStyle
+							if (typeof px === "string" && px.startsWith("#")) {
+								return px.toLowerCase()
+							}
+							ctx.fillRect(0, 0, 1, 1)
+							const d = ctx.getImageData(0, 0, 1, 1).data
+							return (
+								"#" +
+								[d[0], d[1], d[2]]
+									.map((n) => n.toString(16).padStart(2, "0"))
+									.join("")
+							)
+						} catch {
+							return null
+						}
+					}
+					function ancestorBg(el) {
+						let node = el
+						while (node) {
+							const cs = getComputedStyle(node)
+							const bg = cs.backgroundColor
+							if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
+								return toHex(bg)
+							}
+							node = node.parentElement
+						}
+						return "#ffffff"
+					}
+					const out = []
+					const all = document.body.querySelectorAll("*")
+					for (const el of all) {
+						let hasText = false
+						let textSample = ""
+						for (const child of el.childNodes) {
+							if (child.nodeType === 3) {
+								const t = (child.nodeValue || "").trim()
+								if (t) {
+									hasText = true
+									if (!textSample) textSample = t
+								}
+							}
+						}
+						if (!hasText) continue
+						const cs = getComputedStyle(el)
+						const fontSize = Number.parseFloat(cs.fontSize)
+						const fontWeight = Number(cs.fontWeight) || 400
+						const large =
+							fontSize >= 24 ||
+							(fontSize >= 18.66 && fontWeight >= 700)
+						const bucket = large ? "text-large" : "text-normal"
+						const fg = toHex(cs.color)
+						const bg = ancestorBg(el)
+						if (!fg || !bg) continue
+						out.push({ fg, bg, bucket, sample: textSample.slice(0, 40) })
+					}
+					return out
+				})
+
+				for (const p of pairs) {
+					const key = `${p.fg}|${p.bg}|${p.bucket}`
+					if (uniquePairs.has(key)) continue
+					uniquePairs.set(key, { ...p, route: r.label })
+				}
+			}
+		} finally {
+			await browser.close()
+		}
+	} catch (err) {
+		console.error(
+			`audit-contrast · mode=rendered · ${err instanceof Error ? err.message : String(err)}`,
+		)
+		process.exit(1)
+	} finally {
+		server.close()
+	}
+
+	for (const [, p] of uniquePairs) {
+		const ratio = contrast(p.fg, p.bg)
+		const thr = thresholdFor(p.bucket)
+		if (ratio < thr) {
+			failures.push({ ...p, ratio: Number(ratio.toFixed(2)), threshold: thr })
+		}
+	}
+
+	await mkdir(REPORTS_DIR, { recursive: true })
+	const reportPath = path.join(REPORTS_DIR, "contrast-rendered.json")
+	await writeFile(
+		reportPath,
+		`${JSON.stringify(
+			{
+				uniquePairs: uniquePairs.size,
+				failures,
+				topPairs: [...uniquePairs.values()].slice(0, 20),
+			},
+			null,
+			2,
+		)}\n`,
+	)
+
+	const elapsed = Date.now() - started
+	console.log(
+		`audit-contrast · mode=rendered · ${uniquePairs.size} unique pairs · ${failures.length} fail · ${elapsed}ms`,
+	)
+	console.log(`  report: ${path.relative(process.cwd(), reportPath)}`)
+
+	if (uniquePairs.size >= PAIR_CEILING) {
+		console.error(
+			`  FAIL unique-pair count ${uniquePairs.size} ≥ ceiling ${PAIR_CEILING} — inline-style explosion regression`,
+		)
+		process.exit(1)
+	}
+	if (failures.length > 0) {
+		for (const f of failures) {
+			console.error(
+				`  FAIL [${f.route}] ${f.fg} on ${f.bg} (${f.bucket}) — ratio ${f.ratio} < ${f.threshold}`,
+			)
+			console.error(`    sample: "${f.sample}"`)
+		}
+		process.exit(1)
+	}
+	process.exit(0)
+}
+
 async function main() {
 	if (mode === "rendered") {
-		console.log(
-			"audit-contrast · mode=rendered · deferred to unit-15. Exit 0.",
-		)
-		process.exit(0)
+		await runRenderedMode()
+		return
 	}
 	if (mode !== "tokens") {
 		console.error(`Unknown mode '${mode}'. Use --mode=tokens or --mode=rendered.`)
