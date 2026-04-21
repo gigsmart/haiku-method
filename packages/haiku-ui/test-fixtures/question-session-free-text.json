@@ -11,7 +11,5 @@
 			"options": []
 		}
 	],
-	"image_urls": [
-		"https://example.test/images/demo-free-text-hero.png"
-	]
+	"image_urls": ["https://example.test/images/demo-free-text-hero.png"]
 }

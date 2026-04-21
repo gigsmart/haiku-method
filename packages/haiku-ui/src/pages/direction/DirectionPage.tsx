@@ -1,3 +1,6 @@
+/** biome-ignore-all lint/a11y/noNoninteractiveElementToInteractiveRole: unit-14 spec requires <fieldset role="radiogroup"> on the archetype card container */
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: preview-dialog backdrop click-to-close is a standard modal affordance alongside the close button and Escape handler */
+/** biome-ignore-all lint/a11y/useKeyWithClickEvents: keyboard dismissal is handled at document level via the Escape handler in the parent component */
 /**
  * DirectionPage — canonical implementation for /direction/:sessionId.
  *
@@ -13,7 +16,7 @@
  *   - Submit posts { archetype, parameters } via ApiClient.submitDirection.
  */
 
-import type { DirectionSessionPayload } from "haiku-api"
+import type { DesignArchetypeData, DirectionSessionPayload } from "haiku-api"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { focusRingClass, touchTargetClass, useAnnounce } from "../../a11y"
 import { useApiClient } from "../../api/context"
@@ -36,8 +39,14 @@ export function DirectionPage({
 	const client = useApiClient()
 	const announce = useAnnounce()
 
-	const archetypes = useMemo(() => session.archetypes ?? [], [session.archetypes])
-	const parameters = useMemo(() => session.parameters ?? [], [session.parameters])
+	const archetypes = useMemo(
+		() => session.archetypes ?? [],
+		[session.archetypes],
+	)
+	const parameters = useMemo(
+		() => session.parameters ?? [],
+		[session.parameters],
+	)
 
 	const [selectedArchetype, setSelectedArchetype] = useState<string>(
 		archetypes[0]?.name ?? "",
@@ -73,7 +82,9 @@ export function DirectionPage({
 		setParamValues((prev) => ({ ...prev, [name]: value }))
 	}
 
-	function handleRadiogroupKeyDown(e: React.KeyboardEvent<HTMLFieldSetElement>) {
+	function handleRadiogroupKeyDown(
+		e: React.KeyboardEvent<HTMLFieldSetElement>,
+	) {
 		if (archetypes.length === 0) return
 		const names = archetypes.map((a) => a.name)
 		const idx = names.indexOf(selectedArchetype)
@@ -114,7 +125,11 @@ export function DirectionPage({
 			setDone(true)
 			tryCloseTab({
 				url: `/direction/${sessionId}/select`,
-				body: { archetype: selectedArchetype, parameters: paramValues, comment },
+				body: {
+					archetype: selectedArchetype,
+					parameters: paramValues,
+					comment,
+				},
 			})
 		} catch (err) {
 			const message =
@@ -135,7 +150,9 @@ export function DirectionPage({
 	}, [previewArchetype])
 
 	if (done) {
-		return <SubmitSuccess message={`Direction selected: ${selectedArchetype}`} />
+		return (
+			<SubmitSuccess message={`Direction selected: ${selectedArchetype}`} />
+		)
 	}
 
 	const legendId = "direction-prompt-title"
@@ -144,76 +161,16 @@ export function DirectionPage({
 	return (
 		<form onSubmit={handleSubmit} noValidate>
 			<Card>
-				<fieldset
-					role="radiogroup"
-					aria-labelledby={legendId}
+				<ArchetypeRadiogroup
+					legendId={legendId}
+					title={session.title || "Design Direction"}
+					archetypes={archetypes}
+					selectedArchetype={selectedArchetype}
+					submitting={submitting}
+					onSelect={selectArchetype}
 					onKeyDown={handleRadiogroupKeyDown}
-					className="border-0 p-0 m-0"
-				>
-					<legend
-						id={legendId}
-						className="text-lg font-semibold mb-3 text-stone-900 dark:text-stone-100"
-					>
-						{session.title || "Design Direction"}
-					</legend>
-					<p className="text-sm text-stone-600 dark:text-stone-300 mb-4">
-						Select an archetype, tune the parameters, then submit.
-					</p>
-
-					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-						{archetypes.map((arch) => {
-							const selected = arch.name === selectedArchetype
-							const radioId = radioIdFor(arch.name)
-							return (
-								<div key={arch.name} className="relative">
-									<label
-										htmlFor={radioId}
-										className={`group relative block w-full cursor-pointer rounded-xl border-2 p-4 text-left transition-colors ${
-											selected
-												? "border-teal-600 dark:border-teal-400 bg-teal-50 dark:bg-teal-900/20"
-												: "border-stone-200 dark:border-stone-700 hover:border-stone-400 dark:hover:border-stone-500"
-										}`}
-									>
-										<div className="flex items-center gap-2 mb-2">
-											<input
-												id={radioId}
-												type="radio"
-												name="direction"
-												value={arch.name}
-												checked={selected}
-												aria-checked={selected}
-												onChange={() => selectArchetype(arch.name)}
-												disabled={submitting}
-												className={`w-4 h-4 text-teal-600 ${focusRingClass}`}
-											/>
-											<span className="font-semibold text-stone-900 dark:text-stone-100">
-												{arch.name}
-											</span>
-										</div>
-										<p className="text-sm text-stone-600 dark:text-stone-300 mb-3">
-											{arch.description}
-										</p>
-										<iframe
-											srcDoc={arch.preview_html}
-											sandbox=""
-											title={`Preview: ${arch.name}`}
-											aria-label={`Preview: ${arch.name}`}
-											className="w-full h-40 rounded-lg border border-stone-200 dark:border-stone-700 bg-white pointer-events-none"
-										/>
-									</label>
-									<button
-										type="button"
-										onClick={() => setPreviewArchetype(arch.name)}
-										aria-label={`View full size preview: ${arch.name}`}
-										className={`mt-2 text-xs text-teal-700 dark:text-teal-300 underline underline-offset-2 rounded-sm ${focusRingClass}`}
-									>
-										View full size
-									</button>
-								</div>
-							)
-						})}
-					</div>
-				</fieldset>
+					onPreview={setPreviewArchetype}
+				/>
 			</Card>
 
 			{parameters.length > 0 && (
@@ -328,6 +285,103 @@ function radioIdFor(name: string): string {
 	return `direction-radio-${name.replace(/\s+/g, "-").toLowerCase()}`
 }
 
+// ── Archetype radiogroup (extracted so the fieldset role suppression attaches cleanly) ──
+
+interface ArchetypeRadiogroupProps {
+	legendId: string
+	title: string
+	archetypes: DesignArchetypeData[]
+	selectedArchetype: string
+	submitting: boolean
+	onSelect: (name: string) => void
+	onKeyDown: (e: React.KeyboardEvent<HTMLFieldSetElement>) => void
+	onPreview: (name: string) => void
+}
+
+function ArchetypeRadiogroup({
+	legendId,
+	title,
+	archetypes,
+	selectedArchetype,
+	submitting,
+	onSelect,
+	onKeyDown,
+	onPreview,
+}: ArchetypeRadiogroupProps): React.ReactElement {
+	return (
+		<fieldset
+			role="radiogroup"
+			aria-labelledby={legendId}
+			onKeyDown={onKeyDown}
+			className="border-0 p-0 m-0"
+		>
+			<legend
+				id={legendId}
+				className="text-lg font-semibold mb-3 text-stone-900 dark:text-stone-100"
+			>
+				{title}
+			</legend>
+			<p className="text-sm text-stone-600 dark:text-stone-300 mb-4">
+				Select an archetype, tune the parameters, then submit.
+			</p>
+
+			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+				{archetypes.map((arch) => {
+					const selected = arch.name === selectedArchetype
+					const radioId = radioIdFor(arch.name)
+					return (
+						<div key={arch.name} className="relative">
+							<label
+								htmlFor={radioId}
+								className={`group relative block w-full cursor-pointer rounded-xl border-2 p-4 text-left transition-colors ${
+									selected
+										? "border-teal-600 dark:border-teal-400 bg-teal-50 dark:bg-teal-900/20"
+										: "border-stone-200 dark:border-stone-700 hover:border-stone-400 dark:hover:border-stone-500"
+								}`}
+							>
+								<div className="flex items-center gap-2 mb-2">
+									<input
+										id={radioId}
+										type="radio"
+										name="direction"
+										value={arch.name}
+										checked={selected}
+										aria-checked={selected}
+										onChange={() => onSelect(arch.name)}
+										disabled={submitting}
+										className={`w-4 h-4 text-teal-600 ${focusRingClass}`}
+									/>
+									<span className="font-semibold text-stone-900 dark:text-stone-100">
+										{arch.name}
+									</span>
+								</div>
+								<p className="text-sm text-stone-600 dark:text-stone-300 mb-3">
+									{arch.description}
+								</p>
+								<iframe
+									srcDoc={arch.preview_html}
+									sandbox=""
+									title={`Preview: ${arch.name}`}
+									aria-label={`Preview: ${arch.name}`}
+									className="w-full h-40 rounded-lg border border-stone-200 dark:border-stone-700 bg-white pointer-events-none"
+								/>
+							</label>
+							<button
+								type="button"
+								onClick={() => onPreview(arch.name)}
+								aria-label={`View full size preview: ${arch.name}`}
+								className={`mt-2 text-xs text-teal-700 dark:text-teal-300 underline underline-offset-2 rounded-sm ${focusRingClass}`}
+							>
+								View full size
+							</button>
+						</div>
+					)
+				})}
+			</div>
+		</fieldset>
+	)
+}
+
 // ── Preview dialog (full-size iframe) ───────────────────────────────────────
 
 function PreviewDialog({
@@ -339,8 +393,6 @@ function PreviewDialog({
 }): React.ReactElement | null {
 	if (!archetype) return null
 	return (
-		// biome-ignore lint/a11y/noStaticElementInteractions: modal dialog backdrop; click-to-close is a standard modal affordance alongside the close button and Escape handler
-		// biome-ignore lint/a11y/useKeyWithClickEvents: keyboard dismissal is handled at document level via the Escape handler in the parent component
 		<div
 			className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
 			onClick={onClose}
@@ -348,8 +400,6 @@ function PreviewDialog({
 			aria-modal="true"
 			aria-label={`Full size preview: ${archetype.name}`}
 		>
-			{/* biome-ignore lint/a11y/noStaticElementInteractions: inner container traps click events so they don't close the modal */}
-			{/* biome-ignore lint/a11y/useKeyWithClickEvents: stopPropagation suppresses backdrop close on inner clicks; not a user affordance */}
 			<div
 				className="relative bg-white dark:bg-stone-900 rounded-xl shadow-2xl"
 				style={{ width: "90vw", height: "90vh" }}

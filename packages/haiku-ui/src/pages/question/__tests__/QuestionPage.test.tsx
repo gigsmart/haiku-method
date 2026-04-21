@@ -25,9 +25,9 @@ import {
 import type { QuestionAnswerRequest, QuestionSessionPayload } from "haiku-api"
 import type { ReactNode } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { LiveRegionShell } from "../../../a11y"
 import type { ApiClient } from "../../../api/client"
 import { ApiClientProvider } from "../../../api/context"
-import { LiveRegionShell } from "../../../a11y"
 import { QuestionPage } from "../QuestionPage"
 
 function loadFixture(file: string): QuestionSessionPayload {
@@ -172,7 +172,9 @@ describe("QuestionPage — free-text variant", () => {
 		fireEvent.change(textarea, { target: { value: "   " } })
 		expect(submit.disabled).toBe(true)
 
-		fireEvent.change(textarea, { target: { value: "A warm, optimistic tone." } })
+		fireEvent.change(textarea, {
+			target: { value: "A warm, optimistic tone." },
+		})
 		expect(submit.disabled).toBe(false)
 	})
 })
@@ -191,7 +193,9 @@ describe("QuestionPage — carousel", () => {
 			</Harness>,
 		)
 
-		const region = container.querySelector('[role="region"][aria-roledescription="carousel"]') as HTMLElement
+		const region = container.querySelector(
+			'[role="region"][aria-roledescription="carousel"]',
+		) as HTMLElement
 		expect(region).toBeTruthy()
 
 		function activeIndex(): number {

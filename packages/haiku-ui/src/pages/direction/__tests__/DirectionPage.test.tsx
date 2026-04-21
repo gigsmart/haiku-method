@@ -22,9 +22,9 @@ import {
 import type { DirectionSelectRequest, DirectionSessionPayload } from "haiku-api"
 import type { ReactNode } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { LiveRegionShell } from "../../../a11y"
 import type { ApiClient } from "../../../api/client"
 import { ApiClientProvider } from "../../../api/context"
-import { LiveRegionShell } from "../../../a11y"
 import { DirectionPage } from "../DirectionPage"
 
 const PRIMITIVE_BASE_SIGNATURE = "rounded-lg"
