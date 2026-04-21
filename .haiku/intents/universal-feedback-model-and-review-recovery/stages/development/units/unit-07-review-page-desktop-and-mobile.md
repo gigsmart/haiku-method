@@ -17,14 +17,20 @@ inputs:
   - stages/design/artifacts/footer-button-copy-spec.md
 status: active
 bolt: 1
-hat: planner
+hat: builder
 started_at: '2026-04-21T15:00:25Z'
-hat_started_at: '2026-04-21T15:00:25Z'
+hat_started_at: '2026-04-21T15:10:18Z'
 iterations:
   - hat: planner
     started_at: '2026-04-21T15:00:25Z'
+    completed_at: '2026-04-21T15:10:18Z'
+    result: advance
+  - hat: builder
+    started_at: '2026-04-21T15:10:18Z'
     completed_at: null
     result: null
+outputs:
+  - stages/development/artifacts/unit-07-tactical-plan.md
 ---
 # Review page — desktop + mobile
 
