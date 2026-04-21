@@ -15,16 +15,16 @@ outputs:
   - stages/development/artifacts/unit-10-tactical-plan.md
   - packages/haiku-ui/src/components/feedback/FeedbackSheet.tsx
   - packages/haiku-ui/src/components/feedback/FeedbackFloatingButton.tsx
-  - >-
-    packages/haiku-ui/src/components/feedback/__tests__/FeedbackSheet.test.tsx
+  - packages/haiku-ui/src/components/feedback/__tests__/FeedbackSheet.test.tsx
   - >-
     packages/haiku-ui/src/components/feedback/__tests__/FeedbackFloatingButton.states.test.tsx
   - packages/haiku-ui/src/components/feedback/index.ts
   - packages/haiku-ui/src/index.css
   - packages/haiku-ui/BROWSER-SUPPORT.md
-status: pending
+status: completed
 bolt: 0
-hat: ""
+hat: ''
+completed_at: '2026-04-21T15:41:11Z'
 ---
 
 # FeedbackSheet — mobile bottom sheet
