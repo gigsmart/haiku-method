@@ -15,11 +15,17 @@ inputs:
   - stages/design/artifacts/comment-to-feedback-flow.html
   - stages/design/artifacts/state-coverage-grid.md
   - stages/design/artifacts/footer-button-copy-spec.md
-status: pending
-bolt: 0
-hat: ""
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-21T15:00:25Z'
+hat_started_at: '2026-04-21T15:00:25Z'
+iterations:
+  - hat: planner
+    started_at: '2026-04-21T15:00:25Z'
+    completed_at: null
+    result: null
 ---
-
 # Review page — desktop + mobile
 
 Rebuild the review page (stage artifacts + feedback list + annotation canvas + footer actions) to match DESIGN-BRIEF §3-4 and the updated mockups.
