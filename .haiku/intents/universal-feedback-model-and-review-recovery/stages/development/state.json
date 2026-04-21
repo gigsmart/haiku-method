@@ -1,7 +1,7 @@
 {
   "stage": "development",
   "status": "active",
-  "phase": "execute",
+  "phase": "gate",
   "started_at": null,
   "completed_at": null,
   "gate_entered_at": null,
