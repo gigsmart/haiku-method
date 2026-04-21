@@ -16,14 +16,20 @@ inputs:
   - stages/design/artifacts/state-signaling-inventory.html
 status: active
 bolt: 1
-hat: planner
+hat: builder
 started_at: '2026-04-21T15:00:33Z'
-hat_started_at: '2026-04-21T15:00:33Z'
+hat_started_at: '2026-04-21T15:07:30Z'
 iterations:
   - hat: planner
     started_at: '2026-04-21T15:00:33Z'
+    completed_at: '2026-04-21T15:07:30Z'
+    result: advance
+  - hat: builder
+    started_at: '2026-04-21T15:07:30Z'
     completed_at: null
     result: null
+outputs:
+  - stages/development/artifacts/unit-14-tactical-plan.md
 ---
 # Question page + Direction page refactors
 
