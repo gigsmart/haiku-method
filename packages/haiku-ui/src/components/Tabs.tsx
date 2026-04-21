@@ -5,6 +5,7 @@ import {
 	useRef,
 	useState,
 } from "react"
+import { focusRingClass } from "../a11y"
 
 export interface TabDef {
 	id: string
@@ -59,7 +60,7 @@ export function Tabs({ groupId, tabs }: Props) {
 			<div
 				role="tablist"
 				aria-label="Review sections"
-				className="flex overflow-x-auto border-b border-stone-200 dark:border-stone-700 -mx-1 mb-6 sticky top-[53px] z-30 bg-white dark:bg-stone-950 pb-0"
+				className="flex overflow-x-auto border-b border-stone-200 dark:border-stone-700 -mx-1 mb-6 sticky top-[var(--header-height)] z-30 bg-white dark:bg-stone-950 pb-0"
 				onKeyDown={handleKeyDown}
 			>
 				{tabs.map((tab) => {
@@ -77,7 +78,7 @@ export function Tabs({ groupId, tabs }: Props) {
 							tabIndex={isActive && !disabled ? 0 : -1}
 							aria-disabled={disabled || undefined}
 							onClick={() => !disabled && activate(tab.id)}
-							className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+							className={`${focusRingClass} px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
 								disabled
 									? "border-transparent text-stone-600 dark:text-stone-300 cursor-not-allowed"
 									: isActive
@@ -100,7 +101,7 @@ export function Tabs({ groupId, tabs }: Props) {
 						id={`panel-${groupId}-${tab.id}`}
 						aria-labelledby={`tab-${groupId}-${tab.id}`}
 						hidden={!isActive || tab.disabled}
-						className="focus:outline-none"
+						className={focusRingClass}
 					>
 						{isActive && tab.content}
 					</div>

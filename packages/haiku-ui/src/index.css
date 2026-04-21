@@ -45,6 +45,12 @@
 	--sidebar-width: 20rem;
 	--sidebar-width-xl: 24rem;
 	--content-max: 1400px;
+	/* Sticky header height (Header.tsx: py-3 + text-lg font-semibold → ~53px).
+	   Consumed by Tabs.tsx sticky offset via top-[var(--header-height)] so the
+	   tablist stays pinned immediately below the banner without a hand-measured
+	   magic number. If Header padding changes, update this token — Tabs and any
+	   other below-header sticky surface will follow. */
+	--header-height: 53px;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
