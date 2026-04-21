@@ -15,10 +15,7 @@
 
 import type { ReviewSessionPayload } from "haiku-api"
 import { useEffect } from "react"
-import {
-	ReviewPage,
-	type ReviewPageSessionData,
-} from "../../components/ReviewPage"
+import { ReviewPage, type ReviewPageSessionData } from "./ReviewPage"
 import { useSession, useSessionWebSocket } from "../../hooks/useSession"
 import { usePageTitle } from "../../shell/PageTitleContext"
 

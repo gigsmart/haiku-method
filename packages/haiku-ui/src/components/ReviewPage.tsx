@@ -141,7 +141,20 @@ function saveDraft(sessionId: string, draft: ReviewDraft): void {
 	}
 }
 
-export function ReviewPage({ session, sessionId, wsRef }: Props) {
+/**
+ * Legacy monolithic review-page composition. Retained in-place so the
+ * `IntentReview` / `UnitReview` leaf views stay colocated with their
+ * helpers. The canonical `ReviewPage` export now lives at
+ * `pages/review/ReviewPage.tsx` — we re-export it below for backwards
+ * compatibility with existing imports. The inner function below is kept
+ * as `LegacyReviewPage` so tests that depend on the original composition
+ * can opt in explicitly.
+ */
+// Re-export the canonical composition so
+// `import { ReviewPage } from "../components/ReviewPage"` still works.
+export { ReviewPage } from "../pages/review/ReviewPage"
+
+export function LegacyReviewPage({ session, sessionId, wsRef }: Props) {
 	// Feedback integration
 	const intentSlug = session.intent_slug ?? session.intent?.slug ?? null
 	const stageStates = session.stage_states ?? {}
@@ -510,7 +523,7 @@ export function ReviewPage({ session, sessionId, wsRef }: Props) {
 
 // --- Intent Review ---
 
-interface SubReviewProps {
+export interface SubReviewProps {
 	session: SessionData
 	sessionId: string
 	getAnnotations: () => ReviewAnnotations | undefined
@@ -519,7 +532,7 @@ interface SubReviewProps {
 	onPinsChange: (pins: AnnotationPin[]) => void
 }
 
-function IntentReview({
+export function IntentReview({
 	session,
 	onInlineCommentsChange,
 	onPinsChange,
@@ -895,7 +908,7 @@ function IntentReview({
 
 // --- Unit Review ---
 
-function UnitReview({
+export function UnitReview({
 	session,
 	onInlineCommentsChange,
 	onPinsChange,
@@ -1617,7 +1630,7 @@ function formatRelativeTime(iso: string): string {
  *  reviewer's feedback and when it was submitted, so the user can see what
  *  they asked for without hunting for it. The per-unit "Changed" badges
  *  elsewhere indicate which units were actually edited in response. */
-function RereviewBanner({ snapshot }: { snapshot: PreviousReviewSnapshot }) {
+export function RereviewBanner({ snapshot }: { snapshot: PreviousReviewSnapshot }) {
 	const relative = formatRelativeTime(snapshot.reviewedAt)
 	return (
 		<div className="mb-4 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 p-4">
