@@ -39,7 +39,7 @@ export function Header({
 				"sticky top-0 z-40 bg-white/80 dark:bg-stone-900/80 backdrop-blur border-b border-stone-200 dark:border-stone-800"
 			}
 		>
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3 justify-between">
+			<div className="max-w-[var(--content-max)] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3 justify-between">
 				<div className="flex items-center gap-3 min-w-0">
 					<h1 className="text-lg font-semibold truncate">{title}</h1>
 					{breadcrumb ? (

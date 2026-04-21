@@ -24,7 +24,7 @@ export function ShellLayout({
 	return (
 		<PageTitleProvider defaultTitle={title}>
 			<DynamicHeader />
-			<Main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+			<Main className="max-w-[var(--content-max)] mx-auto px-4 sm:px-6 lg:px-8 py-6">
 				{children}
 			</Main>
 			<ShellFooter />
@@ -43,7 +43,7 @@ export function NotFoundShell(): React.ReactElement {
 			<Header title="Not found" />
 			<Main
 				ariaLabel="Not found"
-				className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"
+				className="max-w-[var(--content-max)] mx-auto px-4 sm:px-6 lg:px-8 py-12"
 			>
 				<div className="text-center">
 					<p className="text-2xl font-semibold text-stone-900 dark:text-stone-100">
