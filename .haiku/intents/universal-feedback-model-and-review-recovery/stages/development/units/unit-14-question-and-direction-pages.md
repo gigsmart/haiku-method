@@ -14,11 +14,17 @@ inputs:
   - stages/design/artifacts/aria-landmark-spec.md
   - stages/design/artifacts/aria-live-sequencing-spec.md
   - stages/design/artifacts/state-signaling-inventory.html
-status: pending
-bolt: 0
-hat: ""
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-21T15:00:33Z'
+hat_started_at: '2026-04-21T15:00:33Z'
+iterations:
+  - hat: planner
+    started_at: '2026-04-21T15:00:33Z'
+    completed_at: null
+    result: null
 ---
-
 # Question page + Direction page refactors
 
 Bring the other two session-typed pages onto the new design foundation. Both are simpler than review, grouped into one unit.
