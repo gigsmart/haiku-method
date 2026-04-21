@@ -43,7 +43,12 @@ function makeMockClient(overrides: Partial<ApiClient> = {}): ApiClient {
 		submitAnswer: vi.fn(async () => ({ ok: true as const })),
 		submitDirection: vi.fn(),
 		feedback: {
-			list: vi.fn(async () => ({ items: [] })),
+			list: vi.fn(async (intent: string, stage: string) => ({
+				intent,
+				stage,
+				count: 0,
+				items: [],
+			})),
 			create: vi.fn(),
 			update: vi.fn(),
 			delete: vi.fn(),
@@ -245,10 +250,12 @@ describe("QuestionPage — submit announce", () => {
 		expect(polite?.textContent).toBe("Answer submitted")
 
 		// Payload shape guard — selectedOption flows through selectedOptions[]
-		const call = submitAnswer.mock.calls[0]
-		expect(call).toBeTruthy()
+		const calls = submitAnswer.mock.calls as unknown as Array<
+			[string, QuestionAnswerRequest]
+		>
+		const call = calls[0]
 		if (!call) throw new Error("no submit call")
-		const [, body] = call as [string, QuestionAnswerRequest]
+		const [, body] = call
 		expect(body.answers).toHaveLength(1)
 		expect(body.answers[0]?.selectedOptions?.[0]).toBeTruthy()
 	})

@@ -42,7 +42,12 @@ function makeMockClient(overrides: Partial<ApiClient> = {}): ApiClient {
 		submitAnswer: vi.fn(),
 		submitDirection: vi.fn(async () => ({ ok: true as const })),
 		feedback: {
-			list: vi.fn(async () => ({ items: [] })),
+			list: vi.fn(async (intent: string, stage: string) => ({
+				intent,
+				stage,
+				count: 0,
+				items: [],
+			})),
 			create: vi.fn(),
 			update: vi.fn(),
 			delete: vi.fn(),
@@ -192,10 +197,12 @@ describe("DirectionPage — submit", () => {
 			expect(submitDirection).toHaveBeenCalledTimes(1)
 		})
 
-		const call = submitDirection.mock.calls[0]
-		expect(call).toBeTruthy()
+		const calls = submitDirection.mock.calls as unknown as Array<
+			[string, DirectionSelectRequest]
+		>
+		const call = calls[0]
 		if (!call) throw new Error("no submit call")
-		const [sessionIdArg, body] = call as [string, DirectionSelectRequest]
+		const [sessionIdArg, body] = call
 		expect(sessionIdArg).toBe(session.session_id)
 		expect(body.archetype).toBe("Minimal")
 		expect(typeof body.parameters).toBe("object")
