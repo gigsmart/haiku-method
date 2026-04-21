@@ -16,10 +16,10 @@ inputs:
   - stages/design/artifacts/state-coverage-grid.md
   - stages/design/artifacts/footer-button-copy-spec.md
 status: active
-bolt: 1
-hat: reviewer
+bolt: 2
+hat: builder
 started_at: '2026-04-21T15:00:25Z'
-hat_started_at: '2026-04-21T15:38:15Z'
+hat_started_at: '2026-04-21T15:46:42Z'
 iterations:
   - hat: planner
     started_at: '2026-04-21T15:00:25Z'
@@ -31,6 +31,17 @@ iterations:
     result: advance
   - hat: reviewer
     started_at: '2026-04-21T15:38:15Z'
+    completed_at: '2026-04-21T15:46:42Z'
+    result: reject
+    reason: >-
+      Playwright visual-regression harness not runnable: @playwright/test not
+      installed, no fixture loader reads ?fixture= querystring, no baseline
+      PNGs. Six of seven completion criteria pass (routes, tsc, vitest 176/176,
+      audit-banned-patterns 0 hits, focusRingClass coverage, responsive-parity
+      test, useAnnounce RTL test). See
+      stages/development/artifacts/unit-07-review-findings.md.
+  - hat: builder
+    started_at: '2026-04-21T15:46:42Z'
     completed_at: null
     result: null
 outputs:
@@ -51,6 +62,7 @@ outputs:
   - packages/haiku-ui/tests/__snapshots__/parity.spec.tsx.snap
   - packages/haiku-ui/tests/review-page.spec.ts
   - packages/haiku-ui/vitest.config.ts
+  - stages/development/artifacts/unit-07-review-findings.md
 ---
 # Review page — desktop + mobile
 
