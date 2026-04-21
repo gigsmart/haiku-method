@@ -16,9 +16,9 @@ inputs:
   - stages/design/artifacts/state-signaling-inventory.html
 status: active
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-21T15:00:33Z'
-hat_started_at: '2026-04-21T15:07:30Z'
+hat_started_at: '2026-04-21T15:35:45Z'
 iterations:
   - hat: planner
     started_at: '2026-04-21T15:00:33Z'
@@ -26,10 +26,28 @@ iterations:
     result: advance
   - hat: builder
     started_at: '2026-04-21T15:07:30Z'
+    completed_at: '2026-04-21T15:35:45Z'
+    result: advance
+  - hat: reviewer
+    started_at: '2026-04-21T15:35:45Z'
     completed_at: null
     result: null
 outputs:
   - stages/development/artifacts/unit-14-tactical-plan.md
+  - packages/haiku-ui/src/components/DesignPicker.tsx
+  - packages/haiku-ui/src/components/QuestionPage.tsx
+  - packages/haiku-ui/src/pages/direction/DirectionPage.tsx
+  - packages/haiku-ui/src/pages/direction/__tests__/DirectionPage.test.tsx
+  - packages/haiku-ui/src/pages/direction/index.tsx
+  - packages/haiku-ui/src/pages/question/QuestionPage.tsx
+  - packages/haiku-ui/src/pages/question/__tests__/QuestionPage.test.tsx
+  - packages/haiku-ui/src/pages/question/index.tsx
+  - packages/haiku-ui/test-fixtures/direction-session.json
+  - packages/haiku-ui/test-fixtures/question-session-free-text.json
+  - packages/haiku-ui/test-fixtures/question-session-multi-choice.json
+  - packages/haiku-ui/test-fixtures/question-session.json
+  - packages/haiku-ui/tests/__snapshots__/parity.spec.tsx.snap
+  - packages/haiku-ui/tests/a11y-pages.spec.tsx
 ---
 # Question page + Direction page refactors
 
