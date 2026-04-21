@@ -19,9 +19,9 @@ inputs:
   - stages/design/artifacts/rollback-reason-banner.html
 status: active
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-21T15:00:31Z'
-hat_started_at: '2026-04-21T15:08:49Z'
+hat_started_at: '2026-04-21T15:29:25Z'
 iterations:
   - hat: planner
     started_at: '2026-04-21T15:00:31Z'
@@ -29,10 +29,20 @@ iterations:
     result: advance
   - hat: builder
     started_at: '2026-04-21T15:08:49Z'
+    completed_at: '2026-04-21T15:29:25Z'
+    result: advance
+  - hat: reviewer
+    started_at: '2026-04-21T15:29:25Z'
     completed_at: null
     result: null
 outputs:
   - stages/development/artifacts/unit-11-tactical-plan.md
+  - packages/haiku-ui/package.json
+  - packages/haiku-ui/src/api/client.ts
+  - packages/haiku-ui/src/components/AssessorSummaryCard.tsx
+  - packages/haiku-ui/src/components/RevisitModal.tsx
+  - packages/haiku-ui/src/components/__tests__/AssessorSummaryCard.test.tsx
+  - packages/haiku-ui/src/components/__tests__/RevisitModal.test.tsx
 ---
 # RevisitModal + AssessorSummaryCard
 
