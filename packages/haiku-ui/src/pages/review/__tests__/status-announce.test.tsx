@@ -75,6 +75,9 @@ describe("ReviewPage — status-change announcement", () => {
 			async submitDirection() {
 				return {} as never
 			},
+			async submitRevisit() {
+				return {} as never
+			},
 			feedback: {
 				list: (async () => ({
 					intent: "test-intent",
