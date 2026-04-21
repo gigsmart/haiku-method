@@ -13,9 +13,9 @@ inputs:
   - stages/design/artifacts/feedback-inline-mobile.html
 status: active
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-21T15:00:28Z'
-hat_started_at: '2026-04-21T15:06:28Z'
+hat_started_at: '2026-04-21T15:24:45Z'
 iterations:
   - hat: planner
     started_at: '2026-04-21T15:00:28Z'
@@ -23,10 +23,22 @@ iterations:
     result: advance
   - hat: builder
     started_at: '2026-04-21T15:06:28Z'
+    completed_at: '2026-04-21T15:24:45Z'
+    result: advance
+  - hat: reviewer
+    started_at: '2026-04-21T15:24:45Z'
     completed_at: null
     result: null
 outputs:
   - stages/development/artifacts/unit-10-tactical-plan.md
+  - packages/haiku-ui/BROWSER-SUPPORT.md
+  - packages/haiku-ui/src/components/feedback/FeedbackFloatingButton.tsx
+  - packages/haiku-ui/src/components/feedback/FeedbackSheet.tsx
+  - >-
+    packages/haiku-ui/src/components/feedback/__tests__/FeedbackFloatingButton.states.test.tsx
+  - packages/haiku-ui/src/components/feedback/__tests__/FeedbackSheet.test.tsx
+  - packages/haiku-ui/src/components/feedback/index.ts
+  - packages/haiku-ui/src/index.css
 ---
 # FeedbackSheet — mobile bottom sheet
 
