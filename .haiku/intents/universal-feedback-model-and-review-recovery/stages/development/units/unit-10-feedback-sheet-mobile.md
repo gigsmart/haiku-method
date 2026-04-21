@@ -13,14 +13,20 @@ inputs:
   - stages/design/artifacts/feedback-inline-mobile.html
 status: active
 bolt: 1
-hat: planner
+hat: builder
 started_at: '2026-04-21T15:00:28Z'
-hat_started_at: '2026-04-21T15:00:28Z'
+hat_started_at: '2026-04-21T15:06:28Z'
 iterations:
   - hat: planner
     started_at: '2026-04-21T15:00:28Z'
+    completed_at: '2026-04-21T15:06:28Z'
+    result: advance
+  - hat: builder
+    started_at: '2026-04-21T15:06:28Z'
     completed_at: null
     result: null
+outputs:
+  - stages/development/artifacts/unit-10-tactical-plan.md
 ---
 # FeedbackSheet — mobile bottom sheet
 
