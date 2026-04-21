@@ -15,9 +15,9 @@ inputs:
   - stages/design/artifacts/annotation-gesture-spec.html
 status: active
 bolt: 1
-hat: builder
+hat: reviewer
 started_at: '2026-04-21T18:51:58Z'
-hat_started_at: '2026-04-21T19:00:06Z'
+hat_started_at: '2026-04-21T19:21:09Z'
 iterations:
   - hat: planner
     started_at: '2026-04-21T18:51:58Z'
@@ -25,10 +25,26 @@ iterations:
     result: advance
   - hat: builder
     started_at: '2026-04-21T19:00:06Z'
+    completed_at: '2026-04-21T19:21:09Z'
+    result: advance
+  - hat: reviewer
+    started_at: '2026-04-21T19:21:09Z'
     completed_at: null
     result: null
 outputs:
   - stages/development/artifacts/unit-13-tactical-plan.md
+  - package-lock.json
+  - packages/haiku-api/src/schemas/feedback.ts
+  - packages/haiku-ui/audit-config.json
+  - packages/haiku-ui/src/pages/direction/__tests__/DirectionPage.test.tsx
+  - packages/haiku-ui/src/pages/question/__tests__/QuestionPage.test.tsx
+  - packages/haiku-ui/src/pages/review/AnnotationCanvas.tsx
+  - packages/haiku-ui/src/pages/review/__tests__/AnnotationCanvas.test.tsx
+  - packages/haiku-ui/src/pages/review/__tests__/layout.test.tsx
+  - packages/haiku-ui/src/pages/review/__tests__/responsive.test.tsx
+  - packages/haiku-ui/src/pages/review/__tests__/status-announce.test.tsx
+  - packages/haiku-ui/tests/annotation-perf.spec.tsx
+  - packages/haiku-ui/tests/audit-banned-patterns.test.ts
 ---
 # Annotation canvas UX
 
