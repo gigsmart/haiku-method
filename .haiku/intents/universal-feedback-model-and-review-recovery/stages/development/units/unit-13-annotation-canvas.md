@@ -13,7 +13,7 @@ inputs:
   - stages/design/DESIGN-BRIEF.md
   - stages/design/artifacts/annotation-popover-states.html
   - stages/design/artifacts/annotation-gesture-spec.html
-status: active
+status: completed
 bolt: 1
 hat: reviewer
 started_at: '2026-04-21T18:51:58Z'
@@ -29,8 +29,8 @@ iterations:
     result: advance
   - hat: reviewer
     started_at: '2026-04-21T19:21:09Z'
-    completed_at: null
-    result: null
+    completed_at: '2026-04-21T19:27:15Z'
+    result: advance
 outputs:
   - stages/development/artifacts/unit-13-tactical-plan.md
   - package-lock.json
@@ -45,6 +45,8 @@ outputs:
   - packages/haiku-ui/src/pages/review/__tests__/status-announce.test.tsx
   - packages/haiku-ui/tests/annotation-perf.spec.tsx
   - packages/haiku-ui/tests/audit-banned-patterns.test.ts
+  - stages/development/artifacts/unit-13-review-findings.md
+completed_at: '2026-04-21T19:27:15Z'
 ---
 # Annotation canvas UX
 
