@@ -279,12 +279,22 @@ dialog.feedback-sheet[open]::backdrop {
 
 /* Global stage-wide guard at @media (prefers-reduced-motion: reduce) above
    already clamps animation-duration to 0.01ms. Drop backdrop-filter here
-   (vestibular trigger per unit-15 / FB-20). The `.sheet-enter--reduced`
-   sentinel class is applied by the React component and has no CSS body —
-   it is a pure marker the test harness asserts on. */
+   (vestibular trigger per unit-15 / FB-20). Explicitly null the decorative
+   sheet-up + backdrop-fade-in animations — the sheet still paints in its
+   final position via the 0.01ms clamp; the explicit `animation: none` is
+   the spec-recommended belt-and-suspenders override for purely decorative
+   slide / fade motion (motion-and-reduced-motion-spec.md §10). The
+   `.sheet-enter--reduced` sentinel class is applied by the React component
+   and has no CSS body — it is a pure marker the test harness asserts on. */
 @media (prefers-reduced-motion: reduce) {
 	dialog.feedback-sheet::backdrop {
 		backdrop-filter: none;
+		/* Kill the backdrop-fade-in decorative fade under reduced-motion. */
+		animation: none;
+	}
+	dialog.feedback-sheet.sheet-enter {
+		/* Kill the sheet-up decorative slide under reduced-motion. */
+		animation: none;
 	}
 }
 
