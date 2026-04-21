@@ -600,9 +600,10 @@ export function AnnotationCanvas({
 			tabIndex={0}
 		>
 			{children}
-			{/* Pin layer — explicit tabindex="0" on every pin button.
+			{/* Pin layer — explicit tabindex=0 on every pin button.
 			    The regression guard `banned-pin-tabindex-negative` greps for
-			    tabindex="-1" in this file; do not introduce a negative tabindex. */}
+			    a negative-one tabindex string in this file; do not introduce
+			    a negative tabindex on any pin button. */}
 			<div
 				className="pointer-events-none absolute inset-0"
 				data-testid="annotation-pin-layer"

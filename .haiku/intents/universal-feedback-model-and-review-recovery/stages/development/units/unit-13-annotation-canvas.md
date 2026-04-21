@@ -13,6 +13,13 @@ inputs:
   - stages/design/DESIGN-BRIEF.md
   - stages/design/artifacts/annotation-popover-states.html
   - stages/design/artifacts/annotation-gesture-spec.html
+outputs:
+  - packages/haiku-ui/src/pages/review/AnnotationCanvas.tsx
+  - packages/haiku-ui/src/pages/review/__tests__/AnnotationCanvas.test.tsx
+  - packages/haiku-ui/tests/annotation-perf.spec.tsx
+  - packages/haiku-api/src/schemas/feedback.ts
+  - packages/haiku-ui/audit-config.json
+  - packages/haiku-ui/tests/audit-banned-patterns.test.ts
 status: pending
 bolt: 0
 hat: ""
