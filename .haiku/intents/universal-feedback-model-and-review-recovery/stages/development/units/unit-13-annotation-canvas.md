@@ -20,9 +20,10 @@ outputs:
   - packages/haiku-api/src/schemas/feedback.ts
   - packages/haiku-ui/audit-config.json
   - packages/haiku-ui/tests/audit-banned-patterns.test.ts
-status: pending
+status: completed
 bolt: 0
-hat: ""
+hat: ''
+completed_at: '2026-04-21T19:27:15Z'
 ---
 
 # Annotation canvas UX
