@@ -21,5 +21,6 @@ export default defineConfig({
 			"src/**/*.spec.ts",
 			"src/**/*.spec.tsx",
 		],
+		exclude: ["node_modules/**", "dist/**"],
 	},
 })
