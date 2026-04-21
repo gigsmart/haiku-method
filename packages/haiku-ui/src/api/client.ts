@@ -23,6 +23,8 @@ import {
 	type ReviewCurrentPayload,
 	type ReviewDecisionRequest,
 	type ReviewDecisionResponse,
+	type RevisitRequest,
+	type RevisitResponse,
 	type SessionPayload,
 } from "haiku-api"
 
@@ -58,6 +60,10 @@ export interface ApiClient {
 		sessionId: string,
 		body: DirectionSelectRequest,
 	): Promise<DirectionSelectResponse>
+	submitRevisit(
+		sessionId: string,
+		body: RevisitRequest,
+	): Promise<RevisitResponse>
 	feedback: {
 		list(
 			intent: string,
@@ -124,6 +130,15 @@ export function createDefaultApiClient(): ApiClient {
 				keepalive: true,
 			})
 			return parseJsonOrThrow<DirectionSelectResponse>(res)
+		},
+		async submitRevisit(sessionId, body) {
+			const res = await fetch(paths.revisit(sessionId), {
+				method: "POST",
+				headers: JSON_HEADERS,
+				body: JSON.stringify(body),
+				keepalive: true,
+			})
+			return parseJsonOrThrow<RevisitResponse>(res)
 		},
 		feedback: {
 			async list(intent, stage, status) {
