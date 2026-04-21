@@ -13,11 +13,17 @@ inputs:
   - stages/design/DESIGN-BRIEF.md
   - stages/design/artifacts/annotation-popover-states.html
   - stages/design/artifacts/annotation-gesture-spec.html
-status: pending
-bolt: 0
-hat: ""
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-21T18:51:58Z'
+hat_started_at: '2026-04-21T18:51:58Z'
+iterations:
+  - hat: planner
+    started_at: '2026-04-21T18:51:58Z'
+    completed_at: null
+    result: null
 ---
-
 # Annotation canvas UX
 
 Pin-drop + popover UX for annotating stage artifacts. Regression guard for pin-markers-at-tabindex-negative-one + draft-data-loss classes.
