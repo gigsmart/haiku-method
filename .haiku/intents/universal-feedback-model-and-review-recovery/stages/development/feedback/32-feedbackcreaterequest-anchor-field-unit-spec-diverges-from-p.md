@@ -2,7 +2,7 @@
 title: >-
   FeedbackCreateRequest.anchor field: unit spec diverges from product data
   contract
-status: pending
+status: rejected
 origin: adversarial-review
 author: completeness (from product)
 author_type: agent
@@ -33,3 +33,6 @@ A reviewer tracing the annotation-to-feedback flow from a pin-drop back to the p
 
 Extend `knowledge/DATA-CONTRACTS.md` §1.1, §2.2, and §3.3 with the `anchor` sub-schema: field-by-field types, units, validation bounds, nullability, and a worked example for a pin-anchored feedback file. Update `features/feedback-crud.feature` and/or add a new scenario in `features/review-ui-feedback.feature` covering pin-annotation persistence end-to-end.
 
+---
+
+**Rejection reason:** Rejected as upstream — FB-45 captures the same anchor schema gap at development scope (tsc is failing on missing FeedbackAnchorSchema). When development adds the anchor field to haiku-api during the FB-45 fix, DATA-CONTRACTS.md §1.1/§2.2/§3.3 will be updated inline with the field-by-field sub-schema. No need to revisit product.
