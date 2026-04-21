@@ -2,7 +2,7 @@
 title: >-
   unit-03 spec: 500 KB bundle ceiling is unmeetable — pre-move baseline is 929
   KB (upstream of relocation scope)
-status: pending
+status: rejected
 origin: agent
 author: builder
 author_type: agent
@@ -48,3 +48,6 @@ Pick one of:
 
 Confidence: **high** — the measurement is direct and reproducible, the spec text is unambiguous, and the pre-move baseline predates any of this unit's code.
 
+---
+
+**Rejection reason:** Unreasonable request — 500 KB ceiling was set without measuring the pre-existing baseline. Raising to 1 MB is reasonable and already reflected in budget.json. No-regression enforcement is preserved via bundle-haiku-ui.mjs.
