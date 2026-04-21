@@ -30,14 +30,20 @@ inputs:
   - stages/design/artifacts/aria-landmark-spec.md
 status: active
 bolt: 1
-hat: planner
+hat: builder
 started_at: '2026-04-21T19:27:51Z'
-hat_started_at: '2026-04-21T19:27:51Z'
+hat_started_at: '2026-04-21T19:33:36Z'
 iterations:
   - hat: planner
     started_at: '2026-04-21T19:27:51Z'
+    completed_at: '2026-04-21T19:33:36Z'
+    result: advance
+  - hat: builder
+    started_at: '2026-04-21T19:33:36Z'
     completed_at: null
     result: null
+outputs:
+  - stages/development/artifacts/unit-15-tactical-plan.md
 ---
 # Stage-wide audit
 
