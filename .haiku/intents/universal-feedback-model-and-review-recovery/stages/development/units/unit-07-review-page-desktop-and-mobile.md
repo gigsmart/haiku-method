@@ -15,6 +15,23 @@ inputs:
   - stages/design/artifacts/comment-to-feedback-flow.html
   - stages/design/artifacts/state-coverage-grid.md
   - stages/design/artifacts/footer-button-copy-spec.md
+outputs:
+  - packages/haiku-ui/src/pages/review/ReviewPage.tsx
+  - packages/haiku-ui/src/pages/review/ArtifactsPane.tsx
+  - packages/haiku-ui/src/pages/review/FeedbackSidebar.tsx
+  - packages/haiku-ui/src/pages/review/FooterBar.tsx
+  - packages/haiku-ui/src/pages/review/useIsMobile.ts
+  - packages/haiku-ui/src/pages/review/index.tsx
+  - packages/haiku-ui/src/pages/review/__tests__/responsive.test.tsx
+  - packages/haiku-ui/src/pages/review/__tests__/status-announce.test.tsx
+  - packages/haiku-ui/src/components/ReviewPage.tsx
+  - packages/haiku-ui/test-fixtures/review-session-full.json
+  - packages/haiku-ui/test-fixtures/review-feedback-full.json
+  - packages/haiku-ui/playwright.config.ts
+  - packages/haiku-ui/tests/review-page.spec.ts
+  - packages/haiku-ui/vitest.config.ts
+  - packages/haiku-ui/package.json
+  - stages/development/artifacts/unit-07-tactical-plan.md
 status: pending
 bolt: 0
 hat: ""
