@@ -1,5 +1,7 @@
 ---
-title: Stage-wide audit — contrast (rendered), state coverage, banned patterns, bundle, runtime parity
+title: >-
+  Stage-wide audit — contrast (rendered), state coverage, banned patterns,
+  bundle, runtime parity
 type: audit
 depends_on:
   - unit-07-review-page-desktop-and-mobile
@@ -26,9 +28,9 @@ inputs:
   - stages/design/artifacts/keyboard-shortcut-map.html
   - stages/design/artifacts/aria-live-sequencing-spec.md
   - stages/design/artifacts/aria-landmark-spec.md
-status: pending
+status: completed
 bolt: 0
-hat: ""
+hat: ''
 outputs:
   - packages/haiku-ui/scripts/audit-touch-targets.mjs
   - packages/haiku-ui/scripts/audit-bundle-size.mjs
@@ -43,14 +45,20 @@ outputs:
   - packages/haiku-ui/package.json
   - packages/haiku-ui/src/shell/ShellLayout.tsx
   - packages/haiku-ui/src/index.css
-  - packages/haiku-ui/src/components/feedback/__tests__/AgentFeedbackToggle.states.test.tsx
-  - packages/haiku-ui/src/components/feedback/__tests__/FeedbackSheet.states.test.tsx
-  - packages/haiku-ui/src/components/feedback/__tests__/FeedbackFloatingButton.states.test.tsx
-  - packages/haiku-ui/src/components/__tests__/AssessorSummaryCard.states.test.tsx
-  - packages/haiku-ui/src/components/__tests__/StageProgressStrip.states.test.tsx
+  - >-
+    packages/haiku-ui/src/components/feedback/__tests__/AgentFeedbackToggle.states.test.tsx
+  - >-
+    packages/haiku-ui/src/components/feedback/__tests__/FeedbackSheet.states.test.tsx
+  - >-
+    packages/haiku-ui/src/components/feedback/__tests__/FeedbackFloatingButton.states.test.tsx
+  - >-
+    packages/haiku-ui/src/components/__tests__/AssessorSummaryCard.states.test.tsx
+  - >-
+    packages/haiku-ui/src/components/__tests__/StageProgressStrip.states.test.tsx
   - packages/haiku-ui/src/components/__tests__/RevisitModal.states.test.tsx
   - packages/haiku-api/scripts/audit-openapi-parity.mjs
   - packages/haiku-api/package.json
+completed_at: '2026-04-21T20:18:05Z'
 ---
 
 # Stage-wide audit
