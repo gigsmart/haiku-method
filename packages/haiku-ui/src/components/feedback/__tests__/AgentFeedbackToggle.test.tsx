@@ -7,13 +7,12 @@
  * from unit-05.
  *
  * Notes:
- *   - @testing-library/user-event is not installed in this workspace. The
- *     test harness uses fireEvent for keyboard simulation. The browser
- *     (and jsdom) dispatches `click` on Space/Enter for `<button>` natively,
- *     so `fireEvent.click(btn)` is the faithful stand-in for "user presses
- *     Space"/"user presses Enter" when the button already has focus.
- *     Separate assertions drive the native key events through the element
- *     via `fireEvent.keyDown`/`keyUp` for completeness.
+ *   - Keyboard activation uses `@testing-library/user-event`. Unlike
+ *     `fireEvent.keyDown/keyUp` — which jsdom does NOT translate into a
+ *     click on `<button>` — `user.keyboard("{Space}")` / `{Enter}` synthesize
+ *     the full browser-faithful keydown → keypress → click sequence on the
+ *     focused element. That means the keyboard tests genuinely exercise the
+ *     onClick → onChange path, not a cosmetic `expect(btn).toBeTruthy()`.
  *   - `useAnnounce()` no-ops when the `#feedback-live-polite` region isn't
  *     mounted. Every test that touches the live region wraps the toggle
  *     in `<LiveRegionShell />` per live-regions.tsx contract.
@@ -28,6 +27,7 @@ import {
 	screen,
 	within,
 } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import {
 	afterEach,
 	beforeAll,
@@ -101,7 +101,7 @@ describe("AgentFeedbackToggle — default render & accessibility tree", () => {
 })
 
 describe("AgentFeedbackToggle — keyboard activation", () => {
-	it("toggles on click (faithful Space/Enter stand-in — jsdom + browsers both fire click)", () => {
+	it("toggles on click (pointer activation path)", () => {
 		render(
 			<>
 				<LiveRegionShell />
@@ -117,36 +117,52 @@ describe("AgentFeedbackToggle — keyboard activation", () => {
 		expect(btn.getAttribute("aria-checked")).toBe("false")
 	})
 
-	it("dispatches native key events without crashing (Space)", () => {
+	it("activates via Space — aria-checked flips and onChange fires with next boolean", async () => {
+		const onChange = vi.fn()
 		render(
 			<>
 				<LiveRegionShell />
-				<AgentFeedbackToggle />
+				<AgentFeedbackToggle onChange={onChange} />
 			</>,
 		)
+		const user = userEvent.setup()
 		const btn = screen.getByRole("switch") as HTMLButtonElement
 		btn.focus()
-		// Key event path — jsdom does not synthesize click from keydown, so
-		// the click path above is the authoritative activation test. This
-		// assertion just verifies the component tolerates raw key events
-		// without throwing (no manual keydown listener suppressing them).
-		fireEvent.keyDown(btn, { key: " ", code: "Space" })
-		fireEvent.keyUp(btn, { key: " ", code: "Space" })
-		expect(btn).toBeTruthy()
+		expect(document.activeElement).toBe(btn)
+		expect(btn.getAttribute("aria-checked")).toBe("false")
+		// user-event synthesizes the full keydown→keypress→click chain on a
+		// focused <button>, matching real browser WAI-ARIA switch activation.
+		await user.keyboard("{ }")
+		expect(btn.getAttribute("aria-checked")).toBe("true")
+		expect(onChange).toHaveBeenCalledTimes(1)
+		expect(onChange).toHaveBeenLastCalledWith(true)
+		await user.keyboard("{ }")
+		expect(btn.getAttribute("aria-checked")).toBe("false")
+		expect(onChange).toHaveBeenCalledTimes(2)
+		expect(onChange).toHaveBeenLastCalledWith(false)
 	})
 
-	it("dispatches native key events without crashing (Enter)", () => {
+	it("activates via Enter — aria-checked flips and onChange fires with next boolean", async () => {
+		const onChange = vi.fn()
 		render(
 			<>
 				<LiveRegionShell />
-				<AgentFeedbackToggle />
+				<AgentFeedbackToggle onChange={onChange} />
 			</>,
 		)
+		const user = userEvent.setup()
 		const btn = screen.getByRole("switch") as HTMLButtonElement
 		btn.focus()
-		fireEvent.keyDown(btn, { key: "Enter", code: "Enter" })
-		fireEvent.keyUp(btn, { key: "Enter", code: "Enter" })
-		expect(btn).toBeTruthy()
+		expect(document.activeElement).toBe(btn)
+		expect(btn.getAttribute("aria-checked")).toBe("false")
+		await user.keyboard("{Enter}")
+		expect(btn.getAttribute("aria-checked")).toBe("true")
+		expect(onChange).toHaveBeenCalledTimes(1)
+		expect(onChange).toHaveBeenLastCalledWith(true)
+		await user.keyboard("{Enter}")
+		expect(btn.getAttribute("aria-checked")).toBe("false")
+		expect(onChange).toHaveBeenCalledTimes(2)
+		expect(onChange).toHaveBeenLastCalledWith(false)
 	})
 })
 
