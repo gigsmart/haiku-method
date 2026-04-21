@@ -226,3 +226,83 @@ pre {
 		animation: none;
 	}
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   FeedbackSheet — native <dialog> styling (unit-10).
+   See stages/development/artifacts/unit-10-tactical-plan.md §C.
+   ───────────────────────────────────────────────────────────────────────── */
+dialog.feedback-sheet {
+	padding: 0;
+	border: none;
+	max-width: none;
+	max-height: none;
+	width: 100vw;
+	height: 100dvh;
+	margin: 0;
+	background: white;
+	color: inherit;
+}
+
+/* dark mode — match DESIGN-TOKENS §2.5 bg-stone-900 */
+:where(.dark) dialog.feedback-sheet {
+	background: #1c1917;
+}
+
+dialog.feedback-sheet::backdrop {
+	background: rgba(0, 0, 0, 0.5);
+	backdrop-filter: blur(2px);
+}
+
+@keyframes sheet-up {
+	from {
+		transform: translateY(100%);
+	}
+	to {
+		transform: translateY(0);
+	}
+}
+dialog.feedback-sheet.sheet-enter {
+	animation: sheet-up 0.3s ease-out;
+}
+
+@keyframes backdrop-fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+dialog.feedback-sheet[open]::backdrop {
+	animation: backdrop-fade-in 0.15s ease-out;
+}
+
+/* Global stage-wide guard at @media (prefers-reduced-motion: reduce) above
+   already clamps animation-duration to 0.01ms. Drop backdrop-filter here
+   (vestibular trigger per unit-15 / FB-20). The `.sheet-enter--reduced`
+   sentinel class is applied by the React component and has no CSS body —
+   it is a pure marker the test harness asserts on. */
+@media (prefers-reduced-motion: reduce) {
+	dialog.feedback-sheet::backdrop {
+		backdrop-filter: none;
+	}
+}
+
+/* FeedbackFloatingButton — decorative pulse animation gated by reduced-motion. */
+@keyframes feedback-fab-pulse {
+	0%,
+	100% {
+		box-shadow: 0 0 0 0 rgb(13 148 136 / 0.4);
+	}
+	50% {
+		box-shadow: 0 0 0 8px rgb(13 148 136 / 0);
+	}
+}
+.feedback-fab-pulse {
+	animation: feedback-fab-pulse 2s ease-in-out 3;
+}
+@media (prefers-reduced-motion: reduce) {
+	.feedback-fab-pulse {
+		animation: none;
+	}
+}
