@@ -734,12 +734,6 @@ export function AnnotationCanvas({
 						placeholder="What needs attention?"
 						className="w-full rounded-md border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-950 px-2 py-1 text-sm text-stone-900 dark:text-stone-100 mb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
 					/>
-					{/* Body rendered as React text children only (no innerHTML).
-					    The XSS regression guard `banned-xss-sinks-annotation-path`
-					    prevents future drift. */}
-					<p className="text-[11px] text-stone-600 dark:text-stone-400 line-clamp-3 mb-2">
-						{currentDraft.body}
-					</p>
 					<div className="flex items-center justify-between">
 						<span className="text-xs text-stone-600 dark:text-stone-400">
 							Esc to cancel
