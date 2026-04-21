@@ -29,6 +29,28 @@ inputs:
 status: pending
 bolt: 0
 hat: ""
+outputs:
+  - packages/haiku-ui/scripts/audit-touch-targets.mjs
+  - packages/haiku-ui/scripts/audit-bundle-size.mjs
+  - packages/haiku-ui/scripts/audit-state-coverage.mjs
+  - packages/haiku-ui/scripts/audit-reduced-motion.mjs
+  - packages/haiku-ui/scripts/audit-keyboard-shortcuts.mjs
+  - packages/haiku-ui/scripts/audit-live-regions.mjs
+  - packages/haiku-ui/scripts/audit-contrast.mjs
+  - packages/haiku-ui/scripts/audit-banned-patterns.mjs
+  - packages/haiku-ui/audit-config.json
+  - packages/haiku-ui/budget-baseline.json
+  - packages/haiku-ui/package.json
+  - packages/haiku-ui/src/shell/ShellLayout.tsx
+  - packages/haiku-ui/src/index.css
+  - packages/haiku-ui/src/components/feedback/__tests__/AgentFeedbackToggle.states.test.tsx
+  - packages/haiku-ui/src/components/feedback/__tests__/FeedbackSheet.states.test.tsx
+  - packages/haiku-ui/src/components/feedback/__tests__/FeedbackFloatingButton.states.test.tsx
+  - packages/haiku-ui/src/components/__tests__/AssessorSummaryCard.states.test.tsx
+  - packages/haiku-ui/src/components/__tests__/StageProgressStrip.states.test.tsx
+  - packages/haiku-ui/src/components/__tests__/RevisitModal.states.test.tsx
+  - packages/haiku-api/scripts/audit-openapi-parity.mjs
+  - packages/haiku-api/package.json
 ---
 
 # Stage-wide audit
