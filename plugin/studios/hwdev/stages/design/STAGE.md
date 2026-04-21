@@ -21,9 +21,22 @@ components add cost, unjustified features add risk. Component selection
 matters: lead times, second sources, and end-of-life status are part of the
 design, not an afterthought.
 
+## EDA Platform: tscircuit
+
+This studio uses [tscircuit](https://tscircuit.com) for electronics design.
+Schematics and PCB layouts are authored as TypeScript/React (`.tsx`) circuit
+code — components are composable elements, not canvas objects. Authoring
+happens in the normal repo tree; live preview is served by `tsci dev` on
+`http://localhost:3020`; packages are consumed via `tsci add` from the
+tscircuit registry; Gerbers, pick-and-place, and BOM are exported with the
+`tsci` CLI. The source-of-truth design artifact is the circuit code itself,
+not a proprietary EDA binary.
+
 ## Completion Signal (RFC 2119)
 
 Schematic **MUST** be complete and reviewed. PCB layout **MUST** pass design
 rule check (DRC). Mechanical design **MUST** pass fit and clearance checks
-against PCB. BOM **MUST** be sourced with confirmed lead times and second
-sources for critical components.
+against the tscircuit-exported PCB outline and 3D preview. BOM **MUST** be
+sourced with confirmed lead times and second sources for critical components.
+Manufacturing exports (Gerbers, pick-and-place, BOM CSV) **MUST** be produced
+from the tscircuit source and committed alongside the `.tsx` circuit code.
