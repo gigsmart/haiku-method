@@ -173,7 +173,7 @@ exports[`AssessorSummaryCard — state matrix > renders every documented state c
         >
           <span
             aria-hidden="true"
-            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-blue-500"
+            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-green-500"
           />
           <span
             class="min-w-0"
@@ -200,7 +200,7 @@ exports[`AssessorSummaryCard — state matrix > renders every documented state c
         >
           <span
             aria-hidden="true"
-            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-blue-500"
+            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-green-500"
           />
           <span
             class="min-w-0"
@@ -227,7 +227,7 @@ exports[`AssessorSummaryCard — state matrix > renders every documented state c
         >
           <span
             aria-hidden="true"
-            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-blue-500"
+            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-green-500"
           />
           <span
             class="min-w-0"
@@ -338,7 +338,7 @@ exports[`AssessorSummaryCard — state matrix > renders every documented state c
         >
           <span
             aria-hidden="true"
-            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-blue-500"
+            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-green-500"
           />
           <span
             class="min-w-0"
@@ -365,7 +365,7 @@ exports[`AssessorSummaryCard — state matrix > renders every documented state c
         >
           <span
             aria-hidden="true"
-            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-blue-500"
+            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-green-500"
           />
           <span
             class="min-w-0"
@@ -509,7 +509,7 @@ exports[`AssessorSummaryCard — state matrix > renders every documented state c
         >
           <span
             aria-hidden="true"
-            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-red-500"
+            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-stone-400 dark:bg-stone-500"
           />
           <span
             class="min-w-0"
@@ -536,7 +536,7 @@ exports[`AssessorSummaryCard — state matrix > renders every documented state c
         >
           <span
             aria-hidden="true"
-            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-red-500"
+            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-stone-400 dark:bg-stone-500"
           />
           <span
             class="min-w-0"
@@ -647,7 +647,7 @@ exports[`AssessorSummaryCard — state matrix > renders every documented state c
         >
           <span
             aria-hidden="true"
-            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-blue-500"
+            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-green-500"
           />
           <span
             class="min-w-0"
@@ -674,7 +674,7 @@ exports[`AssessorSummaryCard — state matrix > renders every documented state c
         >
           <span
             aria-hidden="true"
-            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-blue-500"
+            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-green-500"
           />
           <span
             class="min-w-0"
@@ -760,7 +760,7 @@ exports[`AssessorSummaryCard — state matrix > renders every documented state c
         <span
           class="text-xs text-stone-600 dark:text-stone-300"
         >
-          ran 8h ago
+          ran 10h ago
         </span>
       </div>
       <div
@@ -817,7 +817,7 @@ exports[`AssessorSummaryCard — state matrix > renders every documented state c
         >
           <span
             aria-hidden="true"
-            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-blue-500"
+            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-green-500"
           />
           <span
             class="min-w-0"
@@ -844,7 +844,7 @@ exports[`AssessorSummaryCard — state matrix > renders every documented state c
         >
           <span
             aria-hidden="true"
-            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-blue-500"
+            class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-green-500"
           />
           <span
             class="min-w-0"

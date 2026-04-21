@@ -20,7 +20,17 @@
 
 import { useEffect, useRef } from "react"
 import { useAnnounce } from "../a11y/live-regions"
+import { statusDotClasses as canonicalStatusDotClasses } from "./feedback/tokens"
 
+/**
+ * A finding's status as surfaced by the feedback-assessor. This is a subset of
+ * the canonical `FeedbackStatus` taxonomy (`haiku-api`) — the assessor never
+ * renders `fixing` because the fix loop has, by definition, moved past that
+ * state by the time the assessor runs. The string literals MUST remain a
+ * subset of `FeedbackStatus` so the canonical `statusDotClasses` map from
+ * `./feedback/tokens` (mirrored from DESIGN-TOKENS §2.1) is usable verbatim
+ * — see FB-13. Do NOT redefine status→color locally.
+ */
 export type AssessorFindingStatus =
 	| "addressed"
 	| "closed"
@@ -71,16 +81,15 @@ function composeAnnouncement(totals: Totals): string {
 	return `${stillOpen} findings pending`
 }
 
+/**
+ * Status-dot color for a given finding status. Delegates to the canonical
+ * `statusDotClasses` map in `./feedback/tokens` (mirrored from DESIGN-TOKENS
+ * §2.1). This component MUST NOT hold a private color table — two components
+ * rendering the same `FeedbackStatus` must render the same color, otherwise
+ * cross-component color-semantics drift (DESIGN-TOKENS §1.2a).
+ */
 function statusDotClasses(status: AssessorFindingStatus): string {
-	switch (status) {
-		case "closed":
-		case "addressed":
-			return "bg-blue-500"
-		case "rejected":
-			return "bg-red-500"
-		case "pending":
-			return "bg-amber-500"
-	}
+	return canonicalStatusDotClasses[status]
 }
 
 function statusDotLabel(status: AssessorFindingStatus): string {
