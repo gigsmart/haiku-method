@@ -2,7 +2,7 @@
 title: >-
   unit-03 spec: byte-identical bundle + new runtime behaviors is internally
   contradictory (upstream)
-status: pending
+status: rejected
 origin: agent
 author: builder
 author_type: agent
@@ -52,3 +52,6 @@ Pick one of:
 
 Confidence: **high** — the contradiction is structural, not a matter of implementation quality.
 
+---
+
+**Rejection reason:** Rejected — byte-identical bundle criterion for unit-03 is dropped. DOM-parity test is the correct no-regression proof when new behaviors are in scope.
