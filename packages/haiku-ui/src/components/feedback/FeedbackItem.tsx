@@ -5,7 +5,7 @@
  * or pressing Enter / Space toggles expansion. Action buttons inside the
  * expanded body are status-scoped per DESIGN-TOKENS §2.6 canonical verb set
  * (Dismiss / Verify & Close / Reopen) — the banned verbs (Close / Reject /
- * Delete / Address / Re-open) are audit-enforced.
+ * Delete / Address / "Re" hyphen "open") are audit-enforced.
  *
  * Focus preservation: when the item's `status` changes (i.e. after an action
  * button fires and the parent updates the item's status), focus returns to

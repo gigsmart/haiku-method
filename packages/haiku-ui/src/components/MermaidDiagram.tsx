@@ -43,17 +43,18 @@ function MermaidSvgDiagram({ definition }: Props) {
 				startOnLoad: false,
 				theme: "dark",
 				themeVariables: {
-					primaryColor: "#0d9488",
-					primaryTextColor: "#f5f5f4",
-					primaryBorderColor: "#44403c",
-					lineColor: "#78716c",
-					secondaryColor: "#292524",
-					tertiaryColor: "#1c1917",
+					primaryColor: "#0d9488", // audit-allow: mermaid themeVariables take raw hex
+					primaryTextColor: "#f5f5f4", // audit-allow: mermaid themeVariables take raw hex
+					primaryBorderColor: "#44403c", // audit-allow: mermaid themeVariables take raw hex
+					lineColor: "#78716c", // audit-allow: mermaid themeVariables take raw hex
+					secondaryColor: "#292524", // audit-allow: mermaid themeVariables take raw hex
+					tertiaryColor: "#1c1917", // audit-allow: mermaid themeVariables take raw hex
 				},
 			})
 			mermaid
 				.render(`mermaid-${Date.now()}`, definition)
 				.then(({ svg }) => {
+					// audit-allow: mermaid returns pre-sanitized SVG; no user-supplied HTML
 					if (ref.current) ref.current.innerHTML = svg
 					setLoading(false)
 				})

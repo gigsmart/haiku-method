@@ -201,12 +201,12 @@ export async function layoutFlow(
 		zIndex: 2,
 		style: {
 			strokeDasharray: e.dashed ? "6 4" : undefined,
-			stroke: e.color ?? "#94a3b8",
+			stroke: e.color ?? "#94a3b8", // audit-allow: xyflow theme color, not a tailwind class
 			strokeWidth: 1.5,
 		},
-		labelStyle: { fill: "#1f2937", fontSize: 12, fontWeight: 500 },
+		labelStyle: { fill: "#1f2937", fontSize: 12, fontWeight: 500 }, // audit-allow: xyflow label style raw hex
 		labelBgStyle: e.label
-			? { fill: "#f8fafc", fillOpacity: 0.9 }
+			? { fill: "#f8fafc", fillOpacity: 0.9 } // audit-allow: xyflow label-bg raw hex
 			: { fillOpacity: 0 },
 		labelBgPadding: [4, 2] as [number, number],
 		labelBgBorderRadius: 3,

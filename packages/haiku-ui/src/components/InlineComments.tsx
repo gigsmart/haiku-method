@@ -241,6 +241,7 @@ export function InlineComments({
           selection:bg-amber-200 dark:selection:bg-amber-700/50"
 				onMouseUp={handleMouseUp}
 				// biome-ignore lint/security/noDangerouslySetInnerHtml: htmlContent is sanitized markdown-it output from trusted intent docs
+				// audit-allow: htmlContent is sanitized markdown-it output from trusted intent docs
 				dangerouslySetInnerHTML={{ __html: htmlContent }}
 			/>
 
