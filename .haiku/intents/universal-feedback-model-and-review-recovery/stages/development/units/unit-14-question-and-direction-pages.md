@@ -28,9 +28,10 @@ outputs:
   - packages/haiku-ui/test-fixtures/direction-session.json
   - packages/haiku-ui/tests/a11y-pages.spec.tsx
   - packages/haiku-ui/tests/__snapshots__/parity.spec.tsx.snap
-status: pending
+status: completed
 bolt: 0
-hat: ""
+hat: ''
+completed_at: '2026-04-21T15:43:18Z'
 ---
 
 # Question page + Direction page refactors
