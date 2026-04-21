@@ -2,7 +2,7 @@
 title: >-
   unit-13: AnnotationCanvas duplicates textarea body as a read-only paragraph
   below the editor — data-echo UX bug
-status: pending
+status: fixing
 origin: adversarial-review
 author: correctness
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 

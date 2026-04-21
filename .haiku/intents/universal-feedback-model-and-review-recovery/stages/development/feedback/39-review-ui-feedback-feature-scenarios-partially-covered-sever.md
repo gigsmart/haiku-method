@@ -2,7 +2,7 @@
 title: >-
   review-ui-feedback.feature scenarios partially covered — several behaviors
   have no unit-level criteria
-status: pending
+status: fixing
 origin: adversarial-review
 author: completeness (from product)
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 
@@ -45,4 +45,3 @@ The mandate: "every user-facing flow has defined happy path, error states, and e
 ## Required remedy
 
 Add completion criteria (with specific RTL assertions, endpoint expectations, and/or audit-banned-patterns coverage) to unit-07 (footer approve-with-pending), unit-08 (FeedbackItem action menu + sort), and a new or extended unit for feedback-status WebSocket realtime. Each should cite the specific product-stage scenario it closes via `closes: [FB-NN]` once this feedback is filed.
-

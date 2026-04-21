@@ -2,7 +2,7 @@
 title: >-
   External-review happy-path covered, but compound gate [external, ask] +
   changes-requested pathway has no unit criteria
-status: pending
+status: fixing
 origin: adversarial-review
 author: completeness (from product)
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 
@@ -30,4 +30,3 @@ The mandate: "every user-facing flow has defined happy path, error states, and e
 ## Required remedy
 
 Extend `features/external-review-feedback.feature:138` with explicit Given/When/Then for the 2-3 sub-cases (changes-requested on external, ask approves; changes-requested on external, ask rejects; feedback pending while external=approved, ask=approves). Add unit criteria covering the compound-gate resolution path in a current-visit development unit, either as a new regression test or extending the legacy `unit-04-gate-feedback-check.md` into a proper unit.
-

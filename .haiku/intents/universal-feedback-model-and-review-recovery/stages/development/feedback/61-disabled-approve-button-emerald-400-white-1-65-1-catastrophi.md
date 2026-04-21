@@ -2,7 +2,7 @@
 title: >-
   Disabled Approve button emerald-400+white: 1.65:1 — catastrophic contrast
   failure
-status: pending
+status: fixing
 origin: adversarial-review
 author: accessibility (from design)
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 

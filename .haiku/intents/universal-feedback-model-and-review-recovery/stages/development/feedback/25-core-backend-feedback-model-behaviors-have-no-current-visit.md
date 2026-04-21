@@ -2,7 +2,7 @@
 title: >-
   Core backend feedback-model behaviors have no current-visit unit; coverage
   claim is unverifiable
-status: pending
+status: fixing
 origin: adversarial-review
 author: completeness (from product)
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 
@@ -36,4 +36,3 @@ Either (a) add a final regression-gate unit that runs the six feature-file scena
 ## Scope
 
 intent-wide. The gap is independent of the UI work shipped in units 01-15.
-

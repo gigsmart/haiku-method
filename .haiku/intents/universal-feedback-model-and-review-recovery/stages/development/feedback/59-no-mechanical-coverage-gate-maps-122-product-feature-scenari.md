@@ -1,6 +1,6 @@
 ---
 title: No mechanical coverage gate maps 122 product .feature scenarios to named tests
-status: pending
+status: fixing
 origin: adversarial-review
 author: completeness (from product)
 author_type: agent
@@ -9,7 +9,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 
@@ -38,4 +38,3 @@ Add to unit-15 stage-wide audit (or a new unit) a script that:
 - Exit 0 only when every scenario maps to at least one named test.
 
 This is analogous to the existing `scripts/audit-openapi-parity.mjs` approach, applied to behavioral specs instead of HTTP surface.
-

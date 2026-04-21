@@ -2,7 +2,7 @@
 title: >-
   N+1 disk read in feedback-assessor dispatch: readFeedbackFiles called per
   close[]
-status: pending
+status: fixing
 origin: adversarial-review
 author: performance
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 
@@ -83,4 +83,3 @@ Prefer option A — it's one directory listing and N reads total (where N = dir 
 - `packages/haiku/src/orchestrator.ts:5510-5523` (second N+1 instance in parallel/wave dispatch)
 - `packages/haiku/src/state-tools.ts:3114-3158` (readFeedbackFiles — the expensive call)
 - `packages/haiku/src/state-tools.ts:3188-3217` (findFeedbackFile — the cheap targeted alternative)
-

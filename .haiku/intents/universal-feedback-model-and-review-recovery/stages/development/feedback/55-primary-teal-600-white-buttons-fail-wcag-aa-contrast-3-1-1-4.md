@@ -1,6 +1,6 @@
 ---
 title: 'Primary teal-600+white buttons fail WCAG AA contrast (3.1:1 < 4.5:1)'
-status: pending
+status: fixing
 origin: adversarial-review
 author: accessibility (from design)
 author_type: agent
@@ -9,7 +9,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 

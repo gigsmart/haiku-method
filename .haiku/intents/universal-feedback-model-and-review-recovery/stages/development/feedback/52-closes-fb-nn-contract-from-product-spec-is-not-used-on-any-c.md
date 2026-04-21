@@ -2,7 +2,7 @@
 title: >-
   closes: [FB-NN] contract from product spec is not used on any current-visit
   unit despite 10 open FB items at stage entry
-status: pending
+status: fixing
 origin: adversarial-review
 author: completeness (from product)
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 
@@ -36,4 +36,3 @@ The development stage has 10 feedback items in `stages/development/feedback/` (0
 Either: (a) Retro-annotate each unit with the FB-NN items it closed (e.g., unit-02 → `closes: [FB-01]`, unit-03 → `closes: [FB-02, FB-03, FB-04, FB-05, FB-06]`), or (b) Document in intent.md or STAGE.md why the `closes:` convention does not apply to this particular visit (e.g., initial implementation of the additive-elaborate feature itself) and how the behavior is instead validated.
 
 Without this, the product-spec scenario `additive-elaborate.feature:75` ("new unit without closes field fails validation in additive mode") can never be true for this stage because validation is not enforced on the stage whose feedback count is 10 and visits > 0.
-

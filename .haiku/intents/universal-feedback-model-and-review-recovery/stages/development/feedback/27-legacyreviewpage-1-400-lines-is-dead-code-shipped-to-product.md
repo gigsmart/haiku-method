@@ -1,6 +1,6 @@
 ---
 title: 'LegacyReviewPage (~1,400 lines) is dead code shipped to production'
-status: pending
+status: fixing
 origin: adversarial-review
 author: performance
 author_type: agent
@@ -9,7 +9,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 
@@ -57,4 +57,3 @@ $ rg 'LegacyReviewPage' packages/haiku-ui  # → 0 matches outside the file itse
 - `packages/haiku-ui/src/components/ReviewPage.tsx:157-522` (the dead function body)
 - `packages/haiku-ui/src/components/ReviewPage.tsx:153-155` (the re-export that's the ACTUAL entry point)
 - `packages/haiku-ui/src/pages/review/ReviewPage.tsx` (the real ReviewPage — 185 lines — that gets rendered)
-

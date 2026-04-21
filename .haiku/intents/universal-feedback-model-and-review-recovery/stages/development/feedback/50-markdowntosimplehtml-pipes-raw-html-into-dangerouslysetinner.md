@@ -2,7 +2,7 @@
 title: >-
   markdownToSimpleHtml pipes raw HTML into dangerouslySetInnerHTML without
   sanitization
-status: pending
+status: fixing
 origin: adversarial-review
 author: security
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 

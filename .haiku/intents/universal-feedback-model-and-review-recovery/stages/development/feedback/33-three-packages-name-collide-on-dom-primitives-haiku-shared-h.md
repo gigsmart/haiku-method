@@ -2,7 +2,7 @@
 title: >-
   Three packages name-collide on DOM primitives: @haiku/shared,
   haiku-ui/components, haiku-ui/primitives
-status: pending
+status: fixing
 origin: adversarial-review
 author: architecture
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 

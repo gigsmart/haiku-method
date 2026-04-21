@@ -1,6 +1,6 @@
 ---
 title: Duplicate FeedbackSheet + FeedbackFloatingButton with incompatible APIs
-status: pending
+status: fixing
 origin: adversarial-review
 author: architecture
 author_type: agent
@@ -9,7 +9,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 

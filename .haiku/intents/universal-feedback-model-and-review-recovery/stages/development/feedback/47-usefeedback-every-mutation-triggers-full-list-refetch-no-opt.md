@@ -1,6 +1,6 @@
 ---
 title: 'useFeedback: every mutation triggers full-list refetch, no optimistic updates'
-status: pending
+status: fixing
 origin: adversarial-review
 author: performance
 author_type: agent
@@ -9,7 +9,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 
@@ -56,4 +56,3 @@ When the dir contains 50 items, that's 500 file reads to service a workflow that
 - `packages/haiku/src/http.ts:1068-1124` (list handler, no cache headers, sync dir scan)
 - `packages/haiku/src/state-tools.ts:3114-3158` (synchronous IO on every call)
 - `packages/haiku/src/http.ts:1194-1269` (update handler doesn't return the updated item — only an ack)
-

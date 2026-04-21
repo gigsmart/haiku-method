@@ -1,6 +1,6 @@
 ---
 title: 'Review SPA bundle not minified — 919 KB gzipped, 84% over spec ceiling'
-status: pending
+status: fixing
 origin: adversarial-review
 author: performance
 author_type: agent
@@ -9,7 +9,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 
@@ -44,4 +44,3 @@ The performance mandate requires "bundle size impact is reasonable for frontend 
 - `packages/haiku-ui/budget-baseline.json:3` (919,137 bytes baseline)
 - `packages/haiku-ui/budget.json:3` (1,048,576 ceiling — relaxed to accommodate)
 - `.haiku/intents/universal-feedback-model-and-review-recovery/stages/development/artifacts/bundle-baseline.html` (full un-minified source visible, confirms the diagnosis)
-

@@ -2,7 +2,7 @@
 title: >-
   unit-06: Lighthouse harness fixture paths use /api/sessions/ (plural) but real
   endpoint is /api/session/ (singular)
-status: pending
+status: fixing
 origin: adversarial-review
 author: reviewer
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 0
 visit: 0
 source_ref: 'packages/haiku-ui/scripts/audit-lighthouse.mjs:45-52'
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 
@@ -100,4 +100,3 @@ Then re-run `node packages/haiku-ui/scripts/audit-lighthouse.mjs` and confirm:
 ## Confidence
 
 **High.** Direct source-path read, reproduced with headless Chrome DOM dump against the harness's own server. The singular/plural mismatch is a textual diff between two files.
-

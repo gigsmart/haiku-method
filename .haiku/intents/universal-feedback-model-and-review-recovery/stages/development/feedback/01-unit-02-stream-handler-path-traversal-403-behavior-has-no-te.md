@@ -1,6 +1,6 @@
 ---
 title: 'unit-02: stream-handler path-traversal 403 behavior has no test coverage'
-status: pending
+status: fixing
 origin: adversarial-review
 author: reviewer
 author_type: agent
@@ -9,7 +9,7 @@ iteration: 0
 visit: 0
 source_ref: unit-02-mcp-consume-haiku-api/reviewer/bolt-2
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 

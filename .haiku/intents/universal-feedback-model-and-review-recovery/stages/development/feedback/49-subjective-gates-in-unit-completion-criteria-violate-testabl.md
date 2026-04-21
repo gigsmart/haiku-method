@@ -2,7 +2,7 @@
 title: >-
   Subjective gates in unit completion criteria violate "testable, no subjective
   judgment" mandate
-status: pending
+status: fixing
 origin: adversarial-review
 author: completeness (from product)
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 
@@ -30,4 +30,3 @@ Several current-visit units include completion criteria that are not mechanicall
 ## Required remedy
 
 For each of the four cases, replace the ambiguous criterion with a deterministic executable gate and a single command that returns exit 0 on pass. Cross-reference and reconcile the Playwright-removed (unit-07) vs Playwright-required (unit-13) conflict with an explicit rule at stage level.
-

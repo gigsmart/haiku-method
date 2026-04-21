@@ -2,7 +2,7 @@
 title: >-
   LegacyReviewPage: markdownToSimpleHtml (remark pipeline) re-runs on every
   render
-status: pending
+status: fixing
 origin: adversarial-review
 author: performance
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 
@@ -59,4 +59,3 @@ The content is static per session — only when the server pushes a new `session
 - `packages/haiku-ui/src/components/ReviewPage.tsx:1610-1614` (the un-memoized function)
 - `packages/haiku-ui/src/components/ReviewPage.tsx:625,832,843,1066,1248,1503` (six call-sites, all inline in JSX)
 - `packages/haiku-ui/src/components/ReviewPage.tsx:1442-1449` (`unitContent` string is also rebuilt inline on every UnitsTable render)
-

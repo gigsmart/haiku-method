@@ -2,7 +2,7 @@
 title: >-
   Unit-numbering collision: unit-NN.md (current visit) vs unit-NN-*.md (older
   visit) refer to different work
-status: pending
+status: fixing
 origin: adversarial-review
 author: completeness (from product)
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 
@@ -44,4 +44,3 @@ unit-06-shell-and-routing.md       # current
 ```
 
 No file in this stage disambiguates the overlap.
-

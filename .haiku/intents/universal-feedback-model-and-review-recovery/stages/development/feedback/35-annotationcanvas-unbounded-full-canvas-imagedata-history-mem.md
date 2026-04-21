@@ -2,7 +2,7 @@
 title: >-
   AnnotationCanvas: unbounded full-canvas ImageData history → memory leak on pen
   strokes
-status: pending
+status: fixing
 origin: adversarial-review
 author: performance
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 0
 visit: 0
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 
@@ -67,4 +67,3 @@ The performance mandate requires "no blocking operations on hot paths" and "larg
 - `packages/haiku-ui/src/components/AnnotationCanvas.tsx:118-134` (`handleMouseDown` calls saveDrawState on every pen stroke)
 - `packages/haiku-ui/src/components/AnnotationCanvas.tsx:192-210` (`handleUndo` does full-canvas putImageData)
 - `packages/haiku-ui/src/components/AnnotationCanvas.tsx:212-222` (`handleClear` does clear the array — good — but that only helps *after* the reviewer explicitly clicks Clear)
-

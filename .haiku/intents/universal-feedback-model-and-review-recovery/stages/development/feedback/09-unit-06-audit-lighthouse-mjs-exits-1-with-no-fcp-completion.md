@@ -2,7 +2,7 @@
 title: >-
   unit-06: audit-lighthouse.mjs exits 1 with NO_FCP — completion criterion
   "exits 0 with a11y ≥ 0.95" not met
-status: pending
+status: fixing
 origin: adversarial-review
 author: reviewer
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 0
 visit: 0
 source_ref: packages/haiku-ui/scripts/audit-lighthouse.mjs
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 ---
 
@@ -102,4 +102,3 @@ and verify:
 ## Confidence
 
 **High.** Reproduced directly with `node scripts/audit-lighthouse.mjs` → exit 1, lhci log shows `Run #1...failed!` and the script's `await runLhci(...)` correctly sets `process.exitCode = exitCode`. The spec says exit 0; it exits 1.
-
