@@ -11,11 +11,17 @@ inputs:
   - knowledge/DESIGN-TOKENS.md
   - stages/design/DESIGN-BRIEF.md
   - stages/design/artifacts/feedback-inline-mobile.html
-status: pending
-bolt: 0
-hat: ""
+status: active
+bolt: 1
+hat: planner
+started_at: '2026-04-21T15:00:28Z'
+hat_started_at: '2026-04-21T15:00:28Z'
+iterations:
+  - hat: planner
+    started_at: '2026-04-21T15:00:28Z'
+    completed_at: null
+    result: null
 ---
-
 # FeedbackSheet — mobile bottom sheet
 
 Proper dialog semantics + focus trap + inert background on the mobile feedback sheet. Regression guard for missing-dialog-role + no-focus-trap + non-inert-background classes.
