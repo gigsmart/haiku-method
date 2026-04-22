@@ -79,6 +79,10 @@ function buildMockClient(items: FeedbackItemData[]): ApiClient {
 				ok: true,
 			})) as unknown as ApiClient["feedback"]["delete"],
 		},
+		setSessionId() {},
+		getSessionId() {
+			return null
+		},
 		openWebSocket() {
 			return null
 		},

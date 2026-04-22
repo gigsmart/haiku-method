@@ -1,12 +1,28 @@
 import { useCallback, useEffect, useState } from "react"
+import { useApiClient } from "../api/context"
+import { SESSION_HEADER } from "../api/client"
 import type { FeedbackItemData, FeedbackListResponse } from "../types"
 
 const FETCH_HEADERS = { "bypass-tunnel-reminder": "1" }
+
+/**
+ * Attach the cross-session auth header if the ApiClient has a sessionId
+ * registered. The server requires this header on POST/PUT/DELETE feedback
+ * mutations when remote review is enabled (tunnel live) — see
+ * `verifyFeedbackMutationAuth` in `packages/haiku/src/http.ts`.
+ */
+function mutationHeaders(
+	sessionId: string | null,
+	base: Record<string, string>,
+): Record<string, string> {
+	return sessionId ? { ...base, [SESSION_HEADER]: sessionId } : base
+}
 
 export function useFeedback(intent: string | null, stage: string | null) {
 	const [items, setItems] = useState<FeedbackItemData[]>([])
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
+	const apiClient = useApiClient()
 
 	const fetchFeedback = useCallback(
 		async (statusFilter?: string) => {
@@ -43,11 +59,15 @@ export function useFeedback(intent: string | null, stage: string | null) {
 	const createFeedback = useCallback(
 		async (title: string, body: string, origin = "user-visual") => {
 			if (!(intent && stage)) return null
+			const sessionId = apiClient.getSessionId()
 			const res = await fetch(
 				`/api/feedback/${encodeURIComponent(intent)}/${encodeURIComponent(stage)}`,
 				{
 					method: "POST",
-					headers: { "Content-Type": "application/json", ...FETCH_HEADERS },
+					headers: mutationHeaders(sessionId, {
+						"Content-Type": "application/json",
+						...FETCH_HEADERS,
+					}),
 					body: JSON.stringify({ title, body, origin }),
 				},
 			)
@@ -59,7 +79,7 @@ export function useFeedback(intent: string | null, stage: string | null) {
 			await fetchFeedback()
 			return result
 		},
-		[intent, stage, fetchFeedback],
+		[intent, stage, fetchFeedback, apiClient],
 	)
 
 	const updateFeedback = useCallback(
@@ -68,11 +88,15 @@ export function useFeedback(intent: string | null, stage: string | null) {
 			fields: { status?: string; closed_by?: string },
 		) => {
 			if (!(intent && stage)) return null
+			const sessionId = apiClient.getSessionId()
 			const res = await fetch(
 				`/api/feedback/${encodeURIComponent(intent)}/${encodeURIComponent(stage)}/${encodeURIComponent(feedbackId)}`,
 				{
 					method: "PUT",
-					headers: { "Content-Type": "application/json", ...FETCH_HEADERS },
+					headers: mutationHeaders(sessionId, {
+						"Content-Type": "application/json",
+						...FETCH_HEADERS,
+					}),
 					body: JSON.stringify(fields),
 				},
 			)
@@ -84,17 +108,18 @@ export function useFeedback(intent: string | null, stage: string | null) {
 			await fetchFeedback()
 			return result
 		},
-		[intent, stage, fetchFeedback],
+		[intent, stage, fetchFeedback, apiClient],
 	)
 
 	const deleteFeedback = useCallback(
 		async (feedbackId: string) => {
 			if (!(intent && stage)) return null
+			const sessionId = apiClient.getSessionId()
 			const res = await fetch(
 				`/api/feedback/${encodeURIComponent(intent)}/${encodeURIComponent(stage)}/${encodeURIComponent(feedbackId)}`,
 				{
 					method: "DELETE",
-					headers: FETCH_HEADERS,
+					headers: mutationHeaders(sessionId, FETCH_HEADERS),
 				},
 			)
 			if (!res.ok) {
@@ -105,7 +130,7 @@ export function useFeedback(intent: string | null, stage: string | null) {
 			await fetchFeedback()
 			return result
 		},
-		[intent, stage, fetchFeedback],
+		[intent, stage, fetchFeedback, apiClient],
 	)
 
 	return {

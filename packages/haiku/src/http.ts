@@ -336,11 +336,13 @@ function withCors(response: Response): Response {
 	headers.set("Access-Control-Allow-Origin", "*")
 	headers.set("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS")
 	// `bypass-tunnel-reminder` is the custom header the SPA sends to skip
-	// loca.lt's interstitial reminder page. Custom headers trigger a CORS
-	// preflight and must be explicitly allowed.
+	// loca.lt's interstitial reminder page. `X-Haiku-Session-Id` is the
+	// cross-session auth header required on mutating feedback calls when the
+	// tunnel is live (see `verifyFeedbackMutationAuth`). Custom headers
+	// trigger a CORS preflight and must be explicitly allowed.
 	headers.set(
 		"Access-Control-Allow-Headers",
-		"Content-Type, bypass-tunnel-reminder",
+		"Content-Type, bypass-tunnel-reminder, X-Haiku-Session-Id",
 	)
 	// `X-E2E-Encrypted` / `X-Original-Content-Type` are read by the SPA's
 	// e2eFetch helper to decide whether to decrypt. Custom response headers
@@ -1342,12 +1344,19 @@ async function handleFeedbackDelete(
 // ─── Cross-session feedback mutation guard ──────────────────────────────────
 //
 // The review UI advertises its session via the `X-Haiku-Session-Id` header
-// on mutating feedback calls (POST/PUT/DELETE). When present, the session
-// MUST belong to the same intent as the URL path — otherwise we 403.
+// on mutating feedback calls (POST/PUT/DELETE). The session MUST belong to
+// the same intent as the URL path — otherwise we 403.
 //
-// For v1 the header is OPTIONAL (the review-app still sends no header from
-// unit-03-). Absence does not 403, but it is logged at warn level so the
-// follow-up plumbing in unit-08 can flip the default to strict.
+// When remote review is enabled (`isRemoteReviewEnabled()` — i.e. a public
+// `*.loca.lt` tunnel is live with permissive CORS), absence of the header is
+// a HARD 401. Before this flip the gate was fail-open: any unauthenticated
+// cross-origin caller could POST/PUT/DELETE feedback simply by omitting the
+// header, letting attackers poison review state and mass-close findings to
+// silently unblock gate advancement (see FB-20).
+//
+// In local-only mode (no tunnel) the header remains optional — same-origin
+// review UI plus CLI-dispatched MCP tools are the only callers, and requiring
+// the header there would break the local happy path.
 
 function verifyFeedbackMutationAuth(
 	req: Request,
@@ -1355,9 +1364,24 @@ function verifyFeedbackMutationAuth(
 ): { ok: true } | { ok: false; response: Response } {
 	const sessionHeader = req.headers.get("x-haiku-session-id")
 	if (!sessionHeader) {
-		// Soft gate — log without body content (allow-listed fields only).
+		if (isRemoteReviewEnabled()) {
+			// Strict gate — public tunnel is live. An unauthenticated mutation
+			// attempt is a 401 with no ambiguity. Log intent (no body content).
+			console.error(
+				"[feedback-auth] 401 mutation without X-Haiku-Session-Id (intent=%s, tunnel=true)",
+				intent,
+			)
+			return {
+				ok: false,
+				response: Response.json(
+					{ error: "unauthorized", reason: "missing_session_header" },
+					{ status: 401 },
+				),
+			}
+		}
+		// Local-only mode — log and allow, but we still want visibility.
 		console.error(
-			"[feedback-auth] mutation without X-Haiku-Session-Id (intent=%s)",
+			"[feedback-auth] mutation without X-Haiku-Session-Id (intent=%s, tunnel=false)",
 			intent,
 		)
 		return { ok: true }

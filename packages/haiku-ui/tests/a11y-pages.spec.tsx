@@ -109,6 +109,8 @@ function makeMockClient(session: SessionPayload | null): ApiClient {
 			update: vi.fn(),
 			delete: vi.fn(),
 		},
+		setSessionId: vi.fn(),
+		getSessionId: () => null,
 		openWebSocket: () => null,
 	}
 }

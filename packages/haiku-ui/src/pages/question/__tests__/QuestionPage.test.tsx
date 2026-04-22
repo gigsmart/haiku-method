@@ -54,6 +54,8 @@ function makeMockClient(overrides: Partial<ApiClient> = {}): ApiClient {
 			update: vi.fn(),
 			delete: vi.fn(),
 		},
+		setSessionId: vi.fn(),
+		getSessionId: () => null,
 		openWebSocket: () => null,
 		...overrides,
 	}

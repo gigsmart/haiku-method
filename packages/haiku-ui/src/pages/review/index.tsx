@@ -16,6 +16,7 @@
 import type { ReviewSessionPayload } from "haiku-api"
 import { useEffect } from "react"
 import { ReviewPage, type ReviewPageSessionData } from "./ReviewPage"
+import { useApiClient } from "../../api/context"
 import { useSession, useSessionWebSocket } from "../../hooks/useSession"
 import { usePageTitle } from "../../shell/PageTitleContext"
 
@@ -37,6 +38,7 @@ export function ReviewPageModule({
 }: ReviewPageModuleProps): React.ReactElement {
 	const { session, loading, error } = useSession(sessionId)
 	const wsRef = useSessionWebSocket(sessionId)
+	const apiClient = useApiClient()
 	const dynamicTitle =
 		session && session.session_type === "review" && session.intent?.title
 			? `Review: ${session.intent.title}`
@@ -46,6 +48,17 @@ export function ReviewPageModule({
 	useEffect(() => {
 		if (dynamicTitle) document.title = dynamicTitle
 	}, [dynamicTitle])
+
+	// Publish the sessionId to the shared ApiClient so feedback mutations
+	// (POST/PUT/DELETE) attach the `X-Haiku-Session-Id` header. The server
+	// rejects mutations without this header when remote review is enabled
+	// (tunnel live) — see verifyFeedbackMutationAuth in http.ts.
+	useEffect(() => {
+		apiClient.setSessionId(sessionId)
+		return () => {
+			apiClient.setSessionId(null)
+		}
+	}, [apiClient, sessionId])
 
 	if (loading) return <LoadingState message="Loading session..." />
 	if (error || !session) return <ErrorState error={error} />

@@ -41,12 +41,15 @@ function makeClient(ws: FakeWebSocket): ApiClient {
 		submitDecision: vi.fn(),
 		submitAnswer: vi.fn(),
 		submitDirection: vi.fn(),
+		submitRevisit: vi.fn(),
 		feedback: {
 			list: vi.fn(),
 			create: vi.fn(),
 			update: vi.fn(),
 			delete: vi.fn(),
 		},
+		setSessionId: vi.fn(),
+		getSessionId: () => null,
 		openWebSocket: () => ws as unknown as WebSocket,
 	}
 }

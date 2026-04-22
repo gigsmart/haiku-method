@@ -37,6 +37,14 @@ const JSON_HEADERS: Record<string, string> = {
 	...FETCH_HEADERS,
 }
 
+/**
+ * Name of the cross-session auth header the server requires on feedback
+ * mutations (POST/PUT/DELETE `/api/feedback/...`). Server-side verification
+ * lives in `verifyFeedbackMutationAuth` (packages/haiku/src/http.ts) — when
+ * remote review is enabled (tunnel live), absence of this header is a 401.
+ */
+export const SESSION_HEADER = "X-Haiku-Session-Id"
+
 async function parseJsonOrThrow<T>(res: Response): Promise<T> {
 	if (!res.ok) {
 		const body = (await res.json().catch(() => ({}))) as { error?: string }
@@ -87,10 +95,27 @@ export interface ApiClient {
 			id: string,
 		): Promise<FeedbackDeleteResponse>
 	}
+	/**
+	 * Set the session ID the client will attach as `X-Haiku-Session-Id` on
+	 * feedback mutation requests. Pass `null` to clear. Called by the page
+	 * shell once the session ID is known (URL param or initial payload) —
+	 * required when the server runs with remote review enabled.
+	 */
+	setSessionId(sessionId: string | null): void
+	/** Current session ID attached to mutations, or null if not set. */
+	getSessionId(): string | null
 	openWebSocket(sessionId: string): WebSocket | null
 }
 
 export function createDefaultApiClient(): ApiClient {
+	// Closure-held sessionId — gets attached as `X-Haiku-Session-Id` on every
+	// feedback mutation (POST/PUT/DELETE). The page shell calls
+	// `setSessionId(...)` once it has the id from the URL/session payload.
+	let sessionId: string | null = null
+	const mutationHeaders = (
+		base: Record<string, string>,
+	): Record<string, string> =>
+		sessionId ? { ...base, [SESSION_HEADER]: sessionId } : base
 	return {
 		async fetchSession(sessionId) {
 			const res = await fetch(paths.session(sessionId), {
@@ -157,7 +182,7 @@ export function createDefaultApiClient(): ApiClient {
 					),
 					{
 						method: "POST",
-						headers: JSON_HEADERS,
+						headers: mutationHeaders(JSON_HEADERS),
 						body: JSON.stringify(body),
 					},
 				)
@@ -172,7 +197,7 @@ export function createDefaultApiClient(): ApiClient {
 					),
 					{
 						method: "PUT",
-						headers: JSON_HEADERS,
+						headers: mutationHeaders(JSON_HEADERS),
 						body: JSON.stringify(body),
 					},
 				)
@@ -185,10 +210,16 @@ export function createDefaultApiClient(): ApiClient {
 						encodeURIComponent(stage),
 						encodeURIComponent(id),
 					),
-					{ method: "DELETE", headers: FETCH_HEADERS },
+					{ method: "DELETE", headers: mutationHeaders(FETCH_HEADERS) },
 				)
 				return parseJsonOrThrow<FeedbackDeleteResponse>(res)
 			},
+		},
+		setSessionId(next) {
+			sessionId = next
+		},
+		getSessionId() {
+			return sessionId
 		},
 		openWebSocket(sessionId) {
 			if (typeof window === "undefined" || typeof WebSocket === "undefined") {
