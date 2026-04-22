@@ -1017,6 +1017,8 @@ import {
 	RevisitResponseSchema,
 	ROUTE_BODY_LIMITS,
 	RouteTransportSchema,
+	SessionTokenSchema,
+	TransportInvariantSchema,
 	ValidationErrorSchema,
 	ZodIssueWireSchema,
 } from "../dist/index.js"
@@ -1148,6 +1150,56 @@ describe("schemas/common.ts — RouteTransportSchema", () => {
 	})
 	test("rejects invalid", () => {
 		assertInvalid(RouteTransportSchema, "public")
+	})
+})
+
+describe("schemas/auth.ts — TransportInvariantSchema", () => {
+	test("parses 'loopback'", () => {
+		assertValid(TransportInvariantSchema, "loopback")
+	})
+	test("parses 'token'", () => {
+		assertValid(TransportInvariantSchema, "token")
+	})
+	test("rejects other variants", () => {
+		assertInvalid(TransportInvariantSchema, "public")
+		assertInvalid(TransportInvariantSchema, "")
+	})
+})
+
+describe("schemas/auth.ts — SessionTokenSchema", () => {
+	test("parses minimum valid (token + issued_at)", () => {
+		assertValid(SessionTokenSchema, {
+			token: "t",
+			issued_at: "2026-04-21T00:00:00Z",
+		})
+	})
+	test("parses full valid (with expires_at)", () => {
+		assertValid(SessionTokenSchema, {
+			token: "t".repeat(512),
+			issued_at: "2026-04-21T00:00:00Z",
+			expires_at: "2026-04-22T00:00:00Z",
+		})
+	})
+	test("rejects empty token", () => {
+		assertInvalid(SessionTokenSchema, {
+			token: "",
+			issued_at: "2026-04-21T00:00:00Z",
+		})
+	})
+	test("rejects oversize token (> 512 chars)", () => {
+		assertInvalid(SessionTokenSchema, {
+			token: "t".repeat(513),
+			issued_at: "2026-04-21T00:00:00Z",
+		})
+	})
+	test("rejects missing issued_at", () => {
+		assertInvalid(SessionTokenSchema, { token: "t" })
+	})
+	test("rejects oversize issued_at (> 64 chars)", () => {
+		assertInvalid(SessionTokenSchema, {
+			token: "t",
+			issued_at: "x".repeat(65),
+		})
 	})
 })
 

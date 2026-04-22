@@ -20,6 +20,7 @@ export type { HttpMethod, RouteSpec } from "./routes.js"
 // Route table + path builders
 export { paths, routeBodyLimit, routes, routesWithSchemas } from "./routes.js"
 // Schema barrel exports
+export * from "./schemas/auth.js"
 export * from "./schemas/common.js"
 export * from "./schemas/direction.js"
 export * from "./schemas/feedback.js"

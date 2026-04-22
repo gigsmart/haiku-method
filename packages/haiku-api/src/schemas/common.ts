@@ -140,14 +140,20 @@ export const ValidationErrorSchema = z
 	)
 export type ValidationError = z.infer<typeof ValidationErrorSchema>
 
-/** Transport label for a route. v1 only allows loopback — this is the
- *  security invariant: every declared route must be reachable only via the
- *  local 127.0.0.1 / ::1 listener (legitimate remote access is muxed via the
- *  tunnel, which itself fronts a loopback bind). */
-export const RouteTransportSchema = z.enum(["loopback"]).describe(
-	"Transport invariant — routes in haiku-api MUST declare 'loopback'.",
-)
-export type RouteTransport = z.infer<typeof RouteTransportSchema>
+/** Transport label for a route — re-exported from `./auth.ts` where the
+ *  transport + session-token schemas are centralized. v1 runtime policy:
+ *  every declared route sets `transport: "loopback"` (enforced by the
+ *  runtime invariant test in `test/schemas.test.mjs`). The schema itself
+ *  permits `"loopback" | "token"` so future non-loopback routes are a
+ *  one-line table edit, not a schema migration. */
+export {
+	RouteTransportSchema,
+	SessionTokenSchema,
+	TransportInvariantSchema,
+	type RouteTransport,
+	type SessionToken,
+	type TransportInvariant,
+} from "./auth.js"
 
 /** Default body-size cap for JSON request bodies (1 MiB). */
 export const DEFAULT_BODY_MAX_BYTES = 1_048_576 as const
